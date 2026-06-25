@@ -12,7 +12,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto max-w-6xl px-6 py-10 space-y-6 text-sm text-muted-foreground">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
-              <img src={logoAsset.url} alt="Faktero" className="h-7 w-auto opacity-80" />
+              <img src={`${logoAsset.url}?v=${logoAsset.asset_id}`} alt="Faktero" className="h-7 w-auto opacity-80" />
               <span>© {new Date().getFullYear()} Faktero. Všetky práva vyhradené.</span>
             </div>
             <div className="flex flex-wrap gap-x-5 gap-y-2">

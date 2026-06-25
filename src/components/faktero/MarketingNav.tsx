@@ -77,7 +77,7 @@ export function MarketingNav() {
       <header className="border-t border-border/40">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-6">
           <Link to="/" className="flex items-center shrink-0" aria-label="Faktero">
-            <img src={logoAsset.url} alt="Faktero" className="h-9 md:h-11 w-auto" />
+            <img src={`${logoAsset.url}?v=${logoAsset.asset_id}`} alt="Faktero" className="h-9 md:h-11 w-auto" />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1 text-sm">
