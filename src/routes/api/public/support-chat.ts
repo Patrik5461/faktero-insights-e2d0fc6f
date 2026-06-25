@@ -23,7 +23,7 @@ Tento zoznam je autoritatívny. NIKDY netvrď, že modul z Knowledge Base neexis
 Pri otázke "Prečo Faktero?" alebo "Čo všetko viete?" vymenuj hlavné moduly: Fakturácia, FinStat, GoPay, Sklad, Kniha jázd, Commander GPS, API, eFaktúra, Import zo SuperFaktúry.
 
 Cenník a plány: aktuálne plány zahŕňajú Free, Pro a Enterprise. Presné ceny nájde používateľ na /cennik.
-Skúšobná verzia: 15 dní zdarma, bez platobnej karty pri registrácii.
+Skúšobná verzia: 2 mesiace zdarma, bez platobnej karty pri registrácii.
 Registrácia: /registracia. Prihlásenie: /prihlasenie.
 Podpora: podpora@faktero.sk.
 Pomocník: /pomoc. Dokumentácia API: /docs/api.
