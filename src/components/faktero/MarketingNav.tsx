@@ -132,7 +132,7 @@ export function MarketingNav() {
           <div className="flex items-center gap-3 text-sm">
             <span className="hidden md:inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              15 dní zdarma
+              2 mesiace zdarma
             </span>
             <Link
               to="/prihlasenie"
