@@ -43,7 +43,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Vystavujte faktúry, posielajte PDF, automatizujte cez API a pripravte firmu na eFaktúru 2027. Pohoda export, import zo SuperFaktúry. 15 dní zdarma.",
+          "Vystavujte faktúry, posielajte PDF, automatizujte cez API a pripravte firmu na eFaktúru 2027. Pohoda export, import zo SuperFaktúry. 2 mesiace zdarma.",
       },
       { property: "og:title", content: "Faktero — Fakturácia pre moderné firmy" },
       {
@@ -232,7 +232,7 @@ function Hero() {
               </a>
             </div>
             <ul className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-              {["15 dní zdarma", "Bezpečné platby cez GoPay", "Zrušenie kedykoľvek"].map((t) => (
+              {["2 mesiace zdarma", "Bezpečné platby cez GoPay", "Zrušenie kedykoľvek"].map((t) => (
                 <li key={t} className="inline-flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-primary" /> {t}
                 </li>
@@ -897,7 +897,7 @@ function PricingSection() {
       <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
         <SectionHeader
           eyebrow="Cenník"
-          title="Jednoduchý cenník. 15 dní zdarma."
+          title="Jednoduchý cenník. 2 mesiace zdarma."
           subtitle="Začnite zdarma, prejdite na platený plán až keď vám Faktero ušetrí čas."
         />
         <div className="mt-14 grid gap-6 lg:grid-cols-3">
@@ -1049,7 +1049,7 @@ function FinalCta() {
           Prestaňte strácať čas <span className="text-primary">fakturáciou</span>.
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-sidebar-foreground/70">
-          Začnite za pár minút. 15 dní zdarma, bez platobnej karty.
+          Začnite za pár minút. 2 mesiace zdarma, bez platobnej karty.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
@@ -1066,7 +1066,7 @@ function FinalCta() {
           </a>
         </div>
         <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-sidebar-foreground/60">
-          {["15 dní zdarma", "Bez platobnej karty", "Slovenská podpora", "GDPR"].map((t) => (
+          {["2 mesiace zdarma", "Bez platobnej karty", "Slovenská podpora", "GDPR"].map((t) => (
             <span key={t} className="inline-flex items-center gap-1.5">
               <BadgeCheck className="h-3.5 w-3.5 text-primary" /> {t}
             </span>
@@ -1512,7 +1512,7 @@ function FounderStory() {
 
 function FaqSection() {
   const faqs = [
-    { q: "Ako funguje skúšobná verzia?", a: "Po registrácii dostávate 15 dní zdarma s prístupom ku všetkým funkciám zvoleného plánu. Po skončení skúšky si vyberiete plán alebo môžete účet nechať bez aktivácie." },
+    { q: "Ako funguje skúšobná verzia?", a: "Po registrácii dostávate 2 mesiace zdarma s prístupom ku všetkým funkciám zvoleného plánu. Po skončení skúšky si vyberiete plán alebo môžete účet nechať bez aktivácie." },
     { q: "Potrebujem platobnú kartu?", a: "Nie. Skúšobná verzia neviaže žiadnu platobnú kartu. Platobné údaje zadávate až pri aktivácii plateného plánu cez GoPay." },
     { q: "Môžem prejsť zo SuperFaktúry?", a: "Áno. Faktero podporuje hromadný import faktúr, odberateľov a číselných radov zo SuperFaktúry, CSV alebo XML — bez straty histórie." },
     { q: "Máte API?", a: "Áno. REST API s test / live režimom, Bearer autentifikáciou, idempotenciou cez external_id a real-time webhookmi. Dostupné v pláne Business a Enterprise." },
