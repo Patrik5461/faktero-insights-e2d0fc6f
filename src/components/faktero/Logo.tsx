@@ -16,7 +16,7 @@ export function Logo({ variant = "header", className }: LogoProps) {
         aria-label="Faktero"
       >
         {/* Icon: rounded square with F */}
-        <rect x="4" y="10" width="48" height="48" rx="10" fill="oklch(0.68 0.16 162)" />
+        <rect x="4" y="10" width="48" height="48" rx="10" fill="currentColor" className="text-primary" />
         <text
           x="28"
           y="42"
@@ -34,11 +34,12 @@ export function Logo({ variant = "header", className }: LogoProps) {
           x="64"
           y="32"
           dominantBaseline="central"
-          fill="oklch(0.18 0.03 250)"
+          fill="currentColor"
+          className="text-foreground"
           fontFamily="system-ui, -apple-system, sans-serif"
           fontWeight="700"
           fontSize="24"
-          letterSpacing="-0.02em"
+          letterSpacing="0"
         >
           Faktero
         </text>
@@ -47,7 +48,8 @@ export function Logo({ variant = "header", className }: LogoProps) {
           x="64"
           y="52"
           dominantBaseline="central"
-          fill="oklch(0.50 0.02 250)"
+          fill="currentColor"
+          className="text-muted-foreground"
           fontFamily="system-ui, -apple-system, sans-serif"
           fontWeight="400"
           fontSize="11"
@@ -68,7 +70,7 @@ export function Logo({ variant = "header", className }: LogoProps) {
       aria-label="Faktero"
     >
       {/* Icon: rounded square with F */}
-      <rect x="2" y="4" width="32" height="32" rx="8" fill="oklch(0.68 0.16 162)" />
+      <rect x="2" y="4" width="32" height="32" rx="8" fill="currentColor" className="text-primary" />
       <text
         x="18"
         y="20"
@@ -86,11 +88,12 @@ export function Logo({ variant = "header", className }: LogoProps) {
         x="42"
         y="20"
         dominantBaseline="central"
-        fill="oklch(0.18 0.03 250)"
+        fill="currentColor"
+        className="text-foreground"
         fontFamily="system-ui, -apple-system, sans-serif"
         fontWeight="700"
         fontSize="20"
-        letterSpacing="-0.02em"
+        letterSpacing="0"
       >
         Faktero
       </text>
