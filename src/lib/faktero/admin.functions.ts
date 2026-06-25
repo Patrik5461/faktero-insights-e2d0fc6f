@@ -49,8 +49,7 @@ async function logAudit(
 export const getMyAdminRole = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
+    const { data } = await context.supabase
       .from("platform_admins")
       .select("role")
       .eq("user_id", context.userId)
