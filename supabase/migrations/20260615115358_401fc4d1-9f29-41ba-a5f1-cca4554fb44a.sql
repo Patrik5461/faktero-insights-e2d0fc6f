@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trg_invoices_stock_sync ON public.invoices;
