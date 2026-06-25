@@ -5,6 +5,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import { recordLegalAcceptance } from "@/lib/legal.functions";
 import { LEGAL_VERSION } from "@/components/faktero/LegalShell";
+import { Logo } from "@/components/faktero/Logo";
 
 export const Route = createFileRoute("/registracia")({
   head: () => ({
@@ -81,9 +82,8 @@ function RegisterPage() {
   return (
     <div className="grid min-h-screen place-items-center bg-background px-4">
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
-        <Link to="/" className="mb-6 flex items-center gap-2 text-lg font-semibold">
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-primary font-bold text-primary-foreground">F</span>
-          Faktero
+        <Link to="/" className="mb-6 inline-flex items-center">
+          <Logo variant="header" className="h-8" />
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">Vytvorte si účet</h1>
         <p className="mt-1 text-sm text-muted-foreground">Zdarma, bez platobnej karty.</p>
