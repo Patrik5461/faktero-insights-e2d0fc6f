@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, Rocket, Menu, X } from "lucide-react";
 import { useState } from "react";
-import logoAsset from "@/assets/faktero-logo.png.asset.json";
+import { Logo } from "./Logo";
 
 type Item = { label: string; href: string };
 type Menu = { label: string; href: string; items: Item[] };
@@ -77,7 +77,7 @@ export function MarketingNav() {
       <header className="border-t border-border/40">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-6">
           <Link to="/" className="flex items-center shrink-0" aria-label="Faktero">
-            <img src={`${logoAsset.url}?v=${logoAsset.asset_id}`} alt="Faktero" className="h-9 md:h-11 w-auto" />
+            <Logo className="h-9 w-[144px] md:h-10 md:w-[160px]" />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1 text-sm">
