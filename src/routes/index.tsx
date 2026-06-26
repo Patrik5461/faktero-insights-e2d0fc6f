@@ -78,7 +78,7 @@ const features = [
   { icon: CreditCard, title: "GoPay platby", text: "Online platby kartou a tlačidlami priamo z faktúry. Stav sa páruje cez webhook." },
   { icon: Download, title: "Pohoda export", text: "XML export priamo do Pohody. Účtovník dostáva podklady stlačením jediného tlačidla." },
   { icon: Upload, title: "SuperFaktúra import", text: "Prejdite na Faktero bez straty histórie faktúr, odberateľov a číselných radov." },
-  { icon: ShieldCheck, title: "eFaktúra 2027", text: "Štruktúrované XML, Peppol a Digitálny poštár. Pripravujeme sa, aby ste nemuseli vy." },
+  { icon: ShieldCheck, title: "eFaktúra 2027", text: "Štruktúrované XML, Peppol and Digitálny poštár. Sme pripravení, aby ste nemuseli vy." },
   { icon: Boxes, title: "Skladové hospodárstvo", text: "Príjemky, výdajky, viacero skladov a prepojenie skladových položiek priamo s faktúrami." },
   { icon: MapPin, title: "Kniha jázd + Commander GPS", text: "Prepojenie na Commander GPS — jazdy a tankovania sa sťahujú automaticky do knihy jázd." },
 ] as const;

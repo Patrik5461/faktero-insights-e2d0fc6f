@@ -357,7 +357,7 @@ export const efakturacia: HubContent = {
   hubSlug: "efakturacia",
   hubTitle: "eFaktúra 2027",
   hubDescription:
-    "Od 1.1.2027 bude eFaktúra povinná pre B2B transakcie na Slovensku. Faktero bude pripravené včas.",
+    "Od 1.1.2027 bude eFaktúra povinná pre B2B transakcie na Slovensku. Faktero je pripravené včas.",
   hubLead:
     "Štrukturovaná elektronická faktúra (eFaktúra), Peppol sieť a Digitálny poštár — všetko, čo o tom potrebujete vedieť.",
   items: [
@@ -406,7 +406,7 @@ export const efakturacia: HubContent = {
         },
         {
           type: "callout",
-          title: "Faktero bude ready včas",
+          title: "Faktero je ready včas",
           body:
             "Pracujeme na podpore Peppol BIS 3.0 a integrácii s Digitálnym poštárom tak, aby ste boli pripravení mesiace pred legislatívnym termínom. Vaše dáta migrujeme automaticky — nemusíte riešiť nič.",
         },

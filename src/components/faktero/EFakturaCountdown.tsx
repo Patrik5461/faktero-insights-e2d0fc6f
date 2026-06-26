@@ -63,7 +63,7 @@ export function EFakturaCountdown() {
         <div>
           <h3 className="text-base font-semibold">eFaktúra 2027</h3>
           <p className="text-xs text-muted-foreground">
-            Povinná eFaktúra sa blíži. Faktero bude pripravené.
+            Povinná eFaktúra sa blíži. Faktero je pripravené.
           </p>
         </div>
       </div>
