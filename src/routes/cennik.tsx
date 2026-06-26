@@ -30,9 +30,9 @@ const PLANS = [
 ];
 
 const FAQ = [
-  { q: "Je naozaj 2 mesiace zdarma bez karty?", a: "Áno. Začnete bez platobnej karty a po skúšobnej dobe sa rozhodnete, či si vyberiete platený plán." },
+  { q: "Je naozaj 2 Mesiace zdarma bez karty?", a: "Áno. Začnete bez platobnej karty a po skúšobnej dobe sa rozhodnete, či si vyberiete platený plán." },
   { q: "Môžem kedykoľvek zmeniť plán?", a: "Áno, plán meníte v sekcii Predplatné. Rozdiel doúčtujeme alikvótne." },
-  { q: "Ako funguje fakturácia?", a: "Mesačne alebo ročne. Pri ročnej platbe získate zľavu 2 mesiace zdarma." },
+  { q: "Ako funguje fakturácia?", a: "Mesačne alebo ročne. Pri ročnej platbe získate zľavu 2 Mesiace zdarma." },
   { q: "Sú platby bezpečné?", a: "Áno, platby spracúva GoPay. Faktero nevidí údaje vašej karty." },
 ];
 
@@ -40,9 +40,9 @@ export const Route = createFileRoute("/cennik")({
   head: () => ({
     meta: [
       { title: "Cenník — Faktero" },
-      { name: "description", content: "Jednoduchý cenník: Starter 9 € / mesiac, Business 24 € / mesiac, Enterprise na mieru. 2 mesiace zdarma bez karty." },
+      { name: "description", content: "Jednoduchý cenník: Starter 9 € / mesiac, Business 24 € / mesiac, Enterprise na mieru. 2 Mesiace zdarma bez karty." },
       { property: "og:title", content: "Cenník Faktero" },
-      { property: "og:description", content: "Starter, Business a Enterprise plány. 2 mesiace zdarma." },
+      { property: "og:description", content: "Starter, Business a Enterprise plány. 2 Mesiace zdarma." },
     ],
   }),
   component: CennikPage,
@@ -56,7 +56,7 @@ function CennikPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">Cenník</p>
           <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">Jednoduché ceny. Bez prekvapení.</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            2 mesiace zdarma bez platobnej karty. Bezpečné platby cez GoPay.
+            2 Mesiace zdarma bez platobnej karty. Bezpečné platby cez GoPay.
           </p>
         </div>
       </section>
