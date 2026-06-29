@@ -145,7 +145,8 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
