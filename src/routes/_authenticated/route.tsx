@@ -5,6 +5,7 @@ import { AppShell, type ProductMode } from "@/components/faktero/AppShell";
 import { getActiveCompanyId, setActiveCompanyId, fetchMyCompanies } from "@/lib/faktero/active-company";
 import { PlanGateBanner } from "@/components/faktero/PlanGateBanner";
 import { ProductModePicker } from "@/components/faktero/ProductModePicker";
+import { getActiveProduct, setActiveProduct, type ActiveProduct } from "@/lib/faktero/active-product";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -80,11 +81,23 @@ function AuthedLayout() {
     return <ProductModePicker onPicked={(m) => setProductMode(m)} />;
   }
 
+  // Resolve which product view to render. If the user has access to only one,
+  // that one wins. Otherwise use their last-selected product (localStorage),
+  // defaulting to invoicing for a brand-new session.
+  const stored = getActiveProduct();
+  const activeProduct: ActiveProduct =
+    productMode === "invoicing" ? "invoicing"
+    : productMode === "logbook" ? "logbook"
+    : (stored ?? "invoicing");
+  // Keep localStorage in sync so the login page pre-selects it next time.
+  if (stored !== activeProduct) setActiveProduct(activeProduct);
+
   return (
     <AppShell
       companies={companies}
       activeId={activeId}
       productMode={productMode}
+      activeProduct={activeProduct}
       onChangeCompany={(id) => {
         setActiveCompanyId(id);
         setActiveId(id);
