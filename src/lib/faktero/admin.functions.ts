@@ -401,7 +401,7 @@ export const adminSetCompanyPlan = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({
       companyId: z.string().uuid(),
-      planSlug: z.enum(["starter", "business", "premium", "enterprise"]),
+      planSlug: z.enum(["starter", "premium", "enterprise"]),
     }).parse(input)
   )
   .handler(async ({ context, data }) => {

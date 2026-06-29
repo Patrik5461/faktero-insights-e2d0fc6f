@@ -90,7 +90,7 @@ function AdminSubscriptionsPage() {
     setRows(res.rows); setTotal(res.total);
   }
   async function onSetPlan(companyId: string) {
-    const slug = window.prompt("Plán (starter/business/premium/enterprise):", "business");
+    const slug = window.prompt("Plán (starter/premium/enterprise):", "premium");
     if (!slug) return;
     try { await setPlanFn({ data: { companyId, planSlug: slug as any } }); toast.success("Plán nastavený"); await reload(); }
     catch (e: any) { toast.error(e?.message ?? "Chyba"); }

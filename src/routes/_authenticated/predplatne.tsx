@@ -397,8 +397,8 @@ function PlanCard({
   onSelect: () => void;
 }) {
   const icon = p.slug === "premium" ? <Crown className="h-4 w-4" />
-    : p.slug === "business" ? <Zap className="h-4 w-4" />
     : p.slug === "enterprise" ? <ShieldCheck className="h-4 w-4" />
+    : p.slug === "starter" ? <Zap className="h-4 w-4" />
     : <CreditCard className="h-4 w-4" />;
 
   const features: string[] = [];
