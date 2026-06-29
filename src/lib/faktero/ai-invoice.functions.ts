@@ -14,7 +14,7 @@ export const aiParseInvoiceFn = createServerFn({ method: "POST" })
   .inputValidator((input: { prompt: string }) => input)
   .handler(async ({ data }): Promise<AiResult> => {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY missing");
+    if (!apiKey) throw new Error("AI funkcie momentálne nedostupné");
 
     const system = `Si asistent pre vytváranie slovenských faktúr. Z textu používateľa extrahuj položky faktúry.
 Vráť VÝLUČNE JSON v tvare:
