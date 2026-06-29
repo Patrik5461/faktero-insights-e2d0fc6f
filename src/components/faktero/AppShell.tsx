@@ -249,7 +249,7 @@ export function AppShell({
           </Sheet>
 
           {/* Logo */}
-          <Link to="/dashboard" className="flex shrink-0 items-center gap-2">
+          <Link to={homePath as any} className="flex shrink-0 items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/70 font-bold text-primary-foreground shadow-sm">F</span>
             <span className="hidden text-base font-semibold tracking-tight sm:inline">Faktero</span>
           </Link>
@@ -316,6 +316,24 @@ export function AppShell({
 
           {/* Right cluster */}
           <div className="ml-auto flex items-center gap-2">
+            {/* Product switcher (only if user has access to both) */}
+            {canSwitch && (
+              <button
+                type="button"
+                onClick={switchProduct}
+                title={view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
+                className="hidden h-9 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground/80 hover:bg-secondary sm:inline-flex"
+              >
+                <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="hidden md:inline">
+                  {view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
+                </span>
+                <span className="md:hidden">
+                  {view === "invoicing" ? "Kniha jázd" : "Fakturácia"}
+                </span>
+              </button>
+            )}
+
             {/* Search */}
             <form onSubmit={submitSearch} className="hidden md:block">
               <div className="relative">
@@ -330,7 +348,7 @@ export function AppShell({
             </form>
 
             {/* Quick create */}
-            {productMode !== "logbook" && (
+            {view !== "logbook" && (
             <DropdownMenu>
               <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90">
                 <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Vytvoriť</span>
