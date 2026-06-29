@@ -168,7 +168,7 @@ function CennikPage() {
             <p className="text-sm text-muted-foreground">Faktúry, eFaktúra, API, bankové párovanie, sklad.</p>
           </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {INVOICING_PLANS.map((p) => <PlanCard key={p.name} p={p} />)}
         </div>
       </section>
