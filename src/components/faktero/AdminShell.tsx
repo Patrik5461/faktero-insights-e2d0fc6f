@@ -12,10 +12,12 @@ import {
   ShieldAlert,
   ListChecks,
   FileText,
+  HeartPulse,
 } from "lucide-react";
 
 const NAV = [
   { to: "/admin", label: "Prehľad", icon: LayoutDashboard, exact: true },
+  { to: "/admin/health", label: "Health check", icon: HeartPulse },
   { to: "/admin/companies", label: "Firmy", icon: Building2 },
   { to: "/admin/users", label: "Používatelia", icon: Users },
   { to: "/admin/subscriptions", label: "Predplatné", icon: CreditCard },

@@ -50,6 +50,7 @@ import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscript
 import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.payment-providers'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminIntegrationsRouteImport } from './routes/admin.integrations'
+import { Route as AdminHealthRouteImport } from './routes/admin.health'
 import { Route as AdminErrorsRouteImport } from './routes/admin.errors'
 import { Route as AdminBetaChecklistRouteImport } from './routes/admin.beta-checklist'
 import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
@@ -352,6 +353,11 @@ const AdminLegalRoute = AdminLegalRouteImport.update({
 const AdminIntegrationsRoute = AdminIntegrationsRouteImport.update({
   id: '/integrations',
   path: '/integrations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminHealthRoute = AdminHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminErrorsRoute = AdminErrorsRouteImport.update({
@@ -921,6 +927,7 @@ export interface FileRoutesByFullPath {
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/beta-checklist': typeof AdminBetaChecklistRoute
   '/admin/errors': typeof AdminErrorsRoute
+  '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
@@ -1054,6 +1061,7 @@ export interface FileRoutesByTo {
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/beta-checklist': typeof AdminBetaChecklistRoute
   '/admin/errors': typeof AdminErrorsRoute
+  '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
@@ -1195,6 +1203,7 @@ export interface FileRoutesById {
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/beta-checklist': typeof AdminBetaChecklistRoute
   '/admin/errors': typeof AdminErrorsRoute
+  '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
@@ -1337,6 +1346,7 @@ export interface FileRouteTypes {
     | '/admin/audit-log'
     | '/admin/beta-checklist'
     | '/admin/errors'
+    | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
@@ -1470,6 +1480,7 @@ export interface FileRouteTypes {
     | '/admin/audit-log'
     | '/admin/beta-checklist'
     | '/admin/errors'
+    | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
@@ -1610,6 +1621,7 @@ export interface FileRouteTypes {
     | '/admin/audit-log'
     | '/admin/beta-checklist'
     | '/admin/errors'
+    | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
@@ -2058,6 +2070,13 @@ declare module '@tanstack/react-router' {
       path: '/integrations'
       fullPath: '/admin/integrations'
       preLoaderRoute: typeof AdminIntegrationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/health': {
+      id: '/admin/health'
+      path: '/health'
+      fullPath: '/admin/health'
+      preLoaderRoute: typeof AdminHealthRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/errors': {
@@ -2966,6 +2985,7 @@ interface AdminRouteChildren {
   AdminAuditLogRoute: typeof AdminAuditLogRoute
   AdminBetaChecklistRoute: typeof AdminBetaChecklistRoute
   AdminErrorsRoute: typeof AdminErrorsRoute
+  AdminHealthRoute: typeof AdminHealthRoute
   AdminIntegrationsRoute: typeof AdminIntegrationsRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminPaymentProvidersRoute: typeof AdminPaymentProvidersRoute
@@ -2981,6 +3001,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditLogRoute: AdminAuditLogRoute,
   AdminBetaChecklistRoute: AdminBetaChecklistRoute,
   AdminErrorsRoute: AdminErrorsRoute,
+  AdminHealthRoute: AdminHealthRoute,
   AdminIntegrationsRoute: AdminIntegrationsRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminPaymentProvidersRoute: AdminPaymentProvidersRoute,
