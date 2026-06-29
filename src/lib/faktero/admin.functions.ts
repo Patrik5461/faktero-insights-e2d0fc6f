@@ -660,7 +660,7 @@ export const getBetaChecklistStatus = createServerFn({ method: "GET" })
       finstat_public_key: !!process.env.FINSTAT_PUBLIC_KEY,
       finstat_private_key: !!process.env.FINSTAT_PRIVATE_KEY,
       resend_api_key: !!process.env.RESEND_API_KEY,
-      lovable_api_key: !!process.env.LOVABLE_API_KEY,
+      openai_api_key: !!process.env.OPENAI_API_KEY,
       billing: {
         payments_count: bp.count ?? 0,
         latest_payment: (bpLatest as any).data ?? null,
