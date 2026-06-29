@@ -225,6 +225,85 @@ export const getSystemHealth = createServerFn({ method: "GET" })
       checks.push({ key: "cron", label: "Recurring cron", status: "info", message: "Tabuľka behu nedostupná" });
     }
 
+    // ── 8. eFaktúra status ───────────────────────────────────────────────
+    try {
+      const [profiles, docs24, sent24, failed24, rejected24, pending, received24] = await Promise.all([
+        supabaseAdmin.from("efaktura_profiles").select("id", { count: "exact", head: true }),
+        supabaseAdmin
+          .from("efaktura_documents")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", since24h),
+        supabaseAdmin
+          .from("efaktura_deliveries")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["sent", "accepted", "delivered"])
+          .gte("created_at", since24h),
+        supabaseAdmin
+          .from("efaktura_deliveries")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "failed")
+          .gte("created_at", since24h),
+        supabaseAdmin
+          .from("efaktura_deliveries")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "rejected")
+          .gte("created_at", since24h),
+        supabaseAdmin
+          .from("efaktura_deliveries")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending"),
+        supabaseAdmin
+          .from("efaktura_received_documents")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", since24h),
+      ]);
+
+      checks.push({
+        key: "efa_profiles",
+        label: "eFaktúra · profily firiem",
+        status: (profiles.count ?? 0) > 0 ? "ok" : "info",
+        message: `${profiles.count ?? 0} profilov`,
+      });
+      checks.push({
+        key: "efa_docs_24h",
+        label: "eFaktúra · vygenerované doklady (24h)",
+        status: "info",
+        message: `${docs24.count ?? 0} dokladov`,
+      });
+      checks.push({
+        key: "efa_sent_24h",
+        label: "eFaktúra · úspešne odoslané (24h)",
+        status: "ok",
+        message: `${sent24.count ?? 0} doručení`,
+      });
+      checks.push({
+        key: "efa_failed_24h",
+        label: "eFaktúra · zlyhané doručenia (24h)",
+        status: (failed24.count ?? 0) === 0 ? "ok" : (failed24.count ?? 0) > 10 ? "fail" : "warn",
+        message: `${failed24.count ?? 0} záznamov`,
+      });
+      checks.push({
+        key: "efa_rejected_24h",
+        label: "eFaktúra · zamietnuté (24h)",
+        status: (rejected24.count ?? 0) === 0 ? "ok" : "warn",
+        message: `${rejected24.count ?? 0} záznamov`,
+      });
+      checks.push({
+        key: "efa_pending",
+        label: "eFaktúra · čakajúce vo fronte",
+        status: (pending.count ?? 0) > 100 ? "warn" : "ok",
+        message: `${pending.count ?? 0} dokladov`,
+      });
+      checks.push({
+        key: "efa_received_24h",
+        label: "eFaktúra · prijaté doklady (24h)",
+        status: "info",
+        message: `${received24.count ?? 0} dokladov`,
+      });
+    } catch (e: any) {
+      checks.push({ key: "efa_status", label: "eFaktúra status", status: "warn", message: e?.message ?? "Nedostupné" });
+    }
+
     // ── Summary ──────────────────────────────────────────────────────────
     const summary = {
       ok: checks.filter((c) => c.status === "ok").length,
