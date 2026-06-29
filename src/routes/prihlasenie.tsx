@@ -31,10 +31,11 @@ function LoginPage() {
   }
 
   async function onGoogle() {
-    const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/dashboard" });
-    if (res.error) toast.error(res.error.message);
-    if (res.redirected) return;
-    navigate({ to: "/dashboard" });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + "/dashboard" },
+    });
+    if (error) toast.error(error.message);
   }
 
   return (
