@@ -350,31 +350,58 @@ export type ParticipantLookup = {
   raw: unknown;
 };
 
+const SANDBOX_PARTICIPANTS = new Set([
+  "0245:5843291067", // Tobify sandbox 2
+  "0245:4286179504", // Tobify sandbox 1
+]);
+
 export async function lookupParticipant(peppolId: string): Promise<ParticipantLookup> {
-  // Per OpenAPI: /peppol/participants/resolve requires documentTypeId+processId
-  // for routing-capability checks. For a pure "does this participant exist in SMP"
-  // check we use the path-based SMP lookup: GET /peppol/participants/{scheme}/{identifier}
   const [scheme, identifier] = peppolId.includes(":")
     ? peppolId.split(":", 2)
     : ["0245", peppolId];
-  const path = `/api/v1/peppol/participants/${encodeURIComponent(scheme)}/${encodeURIComponent(identifier)}`;
+  const full = `${scheme}:${identifier}`;
+  const { env } = getConfig();
+
+  // 1) Try company/lookup/{ico} — works for SK companies regardless of SMP presence.
   try {
-    const res = await epostakFetch<any>(path);
-    const docs = res?.supportedDocuments
-      ?? res?.documentTypes
-      ?? res?.documentTypeIds
-      ?? (Array.isArray(res?.services) ? res.services.map((s: any) => s?.documentTypeId).filter(Boolean) : undefined);
+    const res = await epostakFetch<any>(`/api/v1/company/lookup/${encodeURIComponent(identifier)}`);
     return {
       exists: true,
-      peppolId: `${scheme}:${identifier}`,
-      supportedDocuments: docs,
+      peppolId: full,
+      supportedDocuments: res?.supportedDocuments ?? res?.documentTypes,
       raw: res,
     };
   } catch (e: any) {
-    if (e?.status === 404) return { exists: false, peppolId: `${scheme}:${identifier}`, raw: e.response };
+    // Fall through to SMP lookup / sandbox stub.
+    if (e?.status && ![400, 404].includes(e.status)) throw e;
+  }
+
+  // 2) Sandbox stub: sandbox SMP is not publicly resolvable. Simulate success
+  //    for the documented sandbox firms so transport tests can proceed.
+  if (env !== "production" && SANDBOX_PARTICIPANTS.has(full)) {
+    return {
+      exists: true,
+      peppolId: full,
+      supportedDocuments: ["peppol_bis_3"],
+      raw: { simulated: true, note: "Sandbox Peppol lookup simulated — real SMP lookup runs in production." },
+    };
+  }
+
+  // 3) Last resort: real SMP path lookup (works in production).
+  try {
+    const res = await epostakFetch<any>(`/api/v1/peppol/participants/${encodeURIComponent(scheme)}/${encodeURIComponent(identifier)}`);
+    return {
+      exists: true,
+      peppolId: full,
+      supportedDocuments: res?.supportedDocuments ?? res?.documentTypes,
+      raw: res,
+    };
+  } catch (e: any) {
+    if (e?.status === 404 || e?.status === 400) return { exists: false, peppolId: full, raw: e.response };
     throw e;
   }
 }
+
 
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
