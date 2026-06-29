@@ -117,8 +117,8 @@ export const getPlatformGopayStatus = createServerFn({ method: "POST" })
 const SaveSchema = z.object({
   env: z.enum(["sandbox", "production"]),
   goid: z.string().trim().min(3).max(40),
-  clientId: z.string().trim().min(3).max(200),
-  // empty string means "keep existing"
+  // empty string => keep existing
+  clientId: z.string().max(200).optional().default(""),
   clientSecret: z.string().max(500).optional().default(""),
   webhookSecret: z.string().max(500).optional().default(""),
 });
@@ -131,16 +131,23 @@ export const savePlatformGopaySettings = createServerFn({ method: "POST" })
     const { encryptSecret } = await import("@/lib/faktero/payment-crypto.server");
     const stored = (await readStored(supabaseAdmin)) ?? {};
 
+    const newClientId = data.clientId.trim();
+    if (!newClientId && !stored.client_id_enc && !process.env.GOPAY_CLIENT_ID) {
+      throw new Error("Client ID je povinné.");
+    }
+
     const next: StoredGopay = {
       env: data.env,
       goid: data.goid.trim(),
-      client_id_enc: encryptSecret(data.clientId.trim()),
+      client_id_enc: newClientId
+        ? encryptSecret(newClientId)
+        : stored.client_id_enc ?? (process.env.GOPAY_CLIENT_ID ? encryptSecret(process.env.GOPAY_CLIENT_ID) : undefined),
       client_secret_enc: data.clientSecret && data.clientSecret.length > 0
         ? encryptSecret(data.clientSecret)
-        : stored.client_secret_enc,
+        : stored.client_secret_enc ?? (process.env.GOPAY_CLIENT_SECRET ? encryptSecret(process.env.GOPAY_CLIENT_SECRET) : undefined),
       webhook_secret_enc: data.webhookSecret && data.webhookSecret.length > 0
         ? encryptSecret(data.webhookSecret)
-        : stored.webhook_secret_enc,
+        : stored.webhook_secret_enc ?? (process.env.GOPAY_WEBHOOK_SECRET ? encryptSecret(process.env.GOPAY_WEBHOOK_SECRET) : undefined),
     };
 
     const { error } = await supabaseAdmin
