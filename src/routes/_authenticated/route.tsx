@@ -81,15 +81,30 @@ function AuthedLayout() {
     return <ProductModePicker onPicked={(m) => setProductMode(m)} />;
   }
 
-  // Resolve which product view to render. If the user has access to only one,
-  // that one wins. Otherwise use their last-selected product (localStorage),
-  // defaulting to invoicing for a brand-new session.
+  // Resolve which product view to render. The user's explicit choice on the
+  // login screen (stored in localStorage) is authoritative: if they picked a
+  // product their profile doesn't currently grant, upgrade their access to
+  // "both" so the choice actually takes effect (same account, two products).
   const stored = getActiveProduct();
-  const activeProduct: ActiveProduct =
-    productMode === "invoicing" ? "invoicing"
-    : productMode === "logbook" ? "logbook"
-    : (stored ?? "invoicing");
-  // Keep localStorage in sync so the login page pre-selects it next time.
+  let activeProduct: ActiveProduct;
+  if (productMode === "both") {
+    activeProduct = stored ?? "invoicing";
+  } else if (stored && stored !== productMode) {
+    // Explicit cross-product login — grant access to both, honor the choice.
+    activeProduct = stored;
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        supabase.from("profiles")
+          .update({ product_mode: "both" })
+          .eq("id", data.user.id)
+          .then(() => {});
+      }
+    });
+    // Reflect locally without waiting for the round-trip.
+    setProductMode("both");
+  } else {
+    activeProduct = productMode as ActiveProduct;
+  }
   if (stored !== activeProduct) setActiveProduct(activeProduct);
 
   return (
