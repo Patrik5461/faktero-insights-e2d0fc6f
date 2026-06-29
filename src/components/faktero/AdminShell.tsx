@@ -28,6 +28,7 @@ const NAV = [
   { to: "/admin/audit-log", label: "Audit log", icon: ScrollText },
   { to: "/admin/legal", label: "Právne dokumenty", icon: FileText },
   { to: "/admin/beta-checklist", label: "Beta checklist", icon: ListChecks },
+  { to: "/admin/efaktura-test", label: "ePošťák test (TODO)", icon: AlertTriangle },
 ];
 
 
