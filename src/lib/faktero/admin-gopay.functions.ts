@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 function mask(v?: string | null, keep = 3) {
@@ -18,17 +19,45 @@ async function assertAdmin(userId: string) {
   return supabaseAdmin;
 }
 
+type StoredGopay = {
+  env?: string;
+  goid?: string;
+  client_id_enc?: string;
+  client_secret_enc?: string;
+  webhook_secret_enc?: string;
+};
+
+async function readStored(supabaseAdmin: any): Promise<StoredGopay | null> {
+  const { data } = await supabaseAdmin
+    .from("platform_settings")
+    .select("value, updated_at")
+    .eq("key", "gopay")
+    .maybeSingle();
+  return data?.value ?? null;
+}
+
 export const getPlatformGopayStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const supabaseAdmin = await assertAdmin(context.userId);
+    const stored = await readStored(supabaseAdmin);
 
-    const clientId = process.env.GOPAY_CLIENT_ID ?? null;
-    const clientSecret = process.env.GOPAY_CLIENT_SECRET ?? null;
-    const goid = process.env.GOPAY_GOID ?? null;
-    const env = (process.env.GOPAY_ENV ?? "sandbox").toLowerCase();
-    const webhookSecret = process.env.GOPAY_WEBHOOK_SECRET ?? null;
+    const { decryptSecret } = await import("@/lib/faktero/payment-crypto.server");
+    const safeDecrypt = (v?: string | null) => {
+      if (!v) return null;
+      try { return decryptSecret(v); } catch { return null; }
+    };
+
+    // Resolve effective config (DB overrides env per-field)
+    const env = (stored?.env ?? process.env.GOPAY_ENV ?? "sandbox").toLowerCase();
+    const goid = stored?.goid ?? process.env.GOPAY_GOID ?? null;
+    const clientId = safeDecrypt(stored?.client_id_enc) ?? process.env.GOPAY_CLIENT_ID ?? null;
+    const clientSecret = safeDecrypt(stored?.client_secret_enc) ?? process.env.GOPAY_CLIENT_SECRET ?? null;
+    const webhookSecret = safeDecrypt(stored?.webhook_secret_enc) ?? process.env.GOPAY_WEBHOOK_SECRET ?? null;
     const appUrl = process.env.APP_PUBLIC_URL ?? null;
+
+    const sourceOf = (dbVal: unknown, envVal: unknown) =>
+      dbVal ? "db" : envVal ? "env" : "missing";
 
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const { data: payments } = await supabaseAdmin
@@ -60,7 +89,16 @@ export const getPlatformGopayStatus = createServerFn({ method: "POST" })
         hasAppUrl: !!appUrl,
         goid,
         clientIdMasked: mask(clientId, 4),
+        clientSecretMasked: mask(clientSecret, 0),
+        webhookSecretMasked: mask(webhookSecret, 0),
         webhookUrl: appUrl ? `${appUrl.replace(/\/$/, "")}/api/webhooks/gopay` : null,
+        sources: {
+          env: stored?.env ? "db" : (process.env.GOPAY_ENV ? "env" : "default"),
+          goid: sourceOf(stored?.goid, process.env.GOPAY_GOID),
+          clientId: sourceOf(stored?.client_id_enc, process.env.GOPAY_CLIENT_ID),
+          clientSecret: sourceOf(stored?.client_secret_enc, process.env.GOPAY_CLIENT_SECRET),
+          webhookSecret: sourceOf(stored?.webhook_secret_enc, process.env.GOPAY_WEBHOOK_SECRET),
+        },
       },
       payments30d: {
         ...counts,
@@ -76,24 +114,71 @@ export const getPlatformGopayStatus = createServerFn({ method: "POST" })
     };
   });
 
+const SaveSchema = z.object({
+  env: z.enum(["sandbox", "production"]),
+  goid: z.string().trim().min(3).max(40),
+  clientId: z.string().trim().min(3).max(200),
+  // empty string means "keep existing"
+  clientSecret: z.string().max(500).optional().default(""),
+  webhookSecret: z.string().max(500).optional().default(""),
+});
+
+export const savePlatformGopaySettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => SaveSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const supabaseAdmin = await assertAdmin(context.userId);
+    const { encryptSecret } = await import("@/lib/faktero/payment-crypto.server");
+    const stored = (await readStored(supabaseAdmin)) ?? {};
+
+    const next: StoredGopay = {
+      env: data.env,
+      goid: data.goid.trim(),
+      client_id_enc: encryptSecret(data.clientId.trim()),
+      client_secret_enc: data.clientSecret && data.clientSecret.length > 0
+        ? encryptSecret(data.clientSecret)
+        : stored.client_secret_enc,
+      webhook_secret_enc: data.webhookSecret && data.webhookSecret.length > 0
+        ? encryptSecret(data.webhookSecret)
+        : stored.webhook_secret_enc,
+    };
+
+    const { error } = await supabaseAdmin
+      .from("platform_settings")
+      .upsert({
+        key: "gopay",
+        value: next,
+        updated_at: new Date().toISOString(),
+        updated_by: context.userId,
+      });
+    if (error) throw new Error(error.message);
+
+    const { invalidateGopayTokenCache } = await import("@/lib/faktero/gopay.server");
+    invalidateGopayTokenCache();
+
+    return { ok: true };
+  });
+
+export const clearPlatformGopaySettings = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const supabaseAdmin = await assertAdmin(context.userId);
+    await supabaseAdmin.from("platform_settings").delete().eq("key", "gopay");
+    const { invalidateGopayTokenCache } = await import("@/lib/faktero/gopay.server");
+    invalidateGopayTokenCache();
+    return { ok: true };
+  });
+
 export const testPlatformGopayConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const clientId = process.env.GOPAY_CLIENT_ID;
-    const clientSecret = process.env.GOPAY_CLIENT_SECRET;
-    const goid = process.env.GOPAY_GOID;
-    const env = (process.env.GOPAY_ENV ?? "sandbox").toLowerCase();
-    if (!clientId || !clientSecret || !goid) {
-      throw new Error("Chýbajú GOPAY_CLIENT_ID / GOPAY_CLIENT_SECRET / GOPAY_GOID.");
-    }
-    const baseUrl =
-      env === "production"
-        ? "https://gate.gopay.cz/api"
-        : "https://gw.sandbox.gopay.com/api";
-    const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+    const { loadPlatformGopayConfig, invalidateGopayTokenCache } = await import("@/lib/faktero/gopay.server");
+    invalidateGopayTokenCache();
+    const cfg = await loadPlatformGopayConfig();
+    const basic = Buffer.from(`${cfg.clientId}:${cfg.clientSecret}`).toString("base64");
     const body = new URLSearchParams({ grant_type: "client_credentials", scope: "payment-all" });
-    const res = await fetch(`${baseUrl}/oauth2/token`, {
+    const res = await fetch(`${cfg.baseUrl}/oauth2/token`, {
       method: "POST",
       headers: {
         Authorization: `Basic ${basic}`,
@@ -104,8 +189,8 @@ export const testPlatformGopayConnection = createServerFn({ method: "POST" })
     });
     if (!res.ok) {
       const txt = await res.text().catch(() => "");
-      throw new Error(`GoPay token zlyhal (${res.status}): ${txt.slice(0, 200)}`);
+      throw new Error(`GoPay token zlyhal (${res.status}): ${txt.slice(0, 300)}`);
     }
     const json = (await res.json()) as { expires_in?: number };
-    return { ok: true, env, expiresInSec: json.expires_in ?? null, testedAt: new Date().toISOString() };
+    return { ok: true, env: cfg.env, expiresInSec: json.expires_in ?? null, testedAt: new Date().toISOString() };
   });
