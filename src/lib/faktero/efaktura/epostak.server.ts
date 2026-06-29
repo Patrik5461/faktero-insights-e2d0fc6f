@@ -55,7 +55,11 @@ export async function getEPostakToken(): Promise<string> {
       const res = await fetch(`${baseUrl}/api/v1/auth/token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
+        body: JSON.stringify({
+          grant_type: "client_credentials",
+          client_id: clientId,
+          client_secret: clientSecret,
+        }),
       });
       if (!res.ok) {
         const body = await res.text().catch(() => "");
