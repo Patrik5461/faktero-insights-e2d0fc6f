@@ -1210,7 +1210,7 @@ function ScreenshotShowcase() {
         <SectionHeader
           eyebrow="Produkt"
           title="Pozrite si Faktero v akcii"
-          subtitle="Skutočné obrazovky aplikácie — od prehľadu cez faktúru po eFaktúru."
+          subtitle="Skutočné obrazovky aplikácie od prehľadu cez faktúru po eFaktúru."
         />
         <div className="mt-10 flex flex-wrap justify-center gap-2">
           {shots.map((s) => (
