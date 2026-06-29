@@ -430,12 +430,17 @@ export function AppShell({
 }
 
 function MobileNav({
-  pathname, active, companies, nav, onChangeCompany, onSignOut, onAddCompany, onClose,
+  pathname, active, companies, nav, homePath, view, canSwitch, onSwitchProduct,
+  onChangeCompany, onSignOut, onAddCompany, onClose,
 }: {
   pathname: string;
   active: Company | undefined;
   companies: Company[];
   nav: NavGroup[];
+  homePath: string;
+  view: ActiveProduct;
+  canSwitch: boolean;
+  onSwitchProduct: () => void;
   onChangeCompany: (id: string) => void;
   onSignOut: () => void;
   onAddCompany: () => void;
@@ -444,12 +449,22 @@ function MobileNav({
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
-        <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2">
+        <Link to={homePath as any} onClick={onClose} className="flex items-center gap-2">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary font-bold text-primary-foreground">F</span>
           <span className="font-semibold">Faktero</span>
         </Link>
         <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md hover:bg-secondary"><X className="h-4 w-4" /></button>
       </div>
+      {canSwitch && (
+        <button
+          type="button"
+          onClick={() => { onClose(); onSwitchProduct(); }}
+          className="flex items-center justify-center gap-1.5 border-b border-border bg-secondary/40 px-4 py-2 text-xs font-medium text-foreground/80 hover:bg-secondary"
+        >
+          <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
+          {view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
+        </button>
+      )}
       {active && (
         <div className="border-b border-border px-4 py-3">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Firma</div>
