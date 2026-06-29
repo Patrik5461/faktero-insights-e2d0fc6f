@@ -383,11 +383,12 @@ export function AppShell({
 }
 
 function MobileNav({
-  pathname, active, companies, onChangeCompany, onSignOut, onAddCompany, onClose,
+  pathname, active, companies, nav, onChangeCompany, onSignOut, onAddCompany, onClose,
 }: {
   pathname: string;
   active: Company | undefined;
   companies: Company[];
+  nav: NavGroup[];
   onChangeCompany: (id: string) => void;
   onSignOut: () => void;
   onAddCompany: () => void;
