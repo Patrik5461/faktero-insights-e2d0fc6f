@@ -13,6 +13,7 @@ import {
   getMessagesFn,
   sendChatFn,
 } from "@/lib/faktero/ai-assistant.functions";
+import { getAiAvailabilityFn } from "@/lib/faktero/ai-availability.functions";
 
 const SUGGESTED = [
   "Ktoré faktúry sú po splatnosti?",
@@ -27,6 +28,12 @@ export function FloatingAIButton() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const availabilityFn = useServerFn(getAiAvailabilityFn);
+  const availability = useQuery({
+    queryKey: ["ai-availability"],
+    queryFn: () => availabilityFn(),
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     setCompanyId(getActiveCompanyId());
@@ -42,6 +49,7 @@ export function FloatingAIButton() {
   }, [open]);
 
   if (pathname.startsWith("/ai-asistent")) return null;
+  if (availability.data && !availability.data.available) return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">

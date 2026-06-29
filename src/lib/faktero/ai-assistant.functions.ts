@@ -146,7 +146,7 @@ export const sendChatFn = createServerFn({ method: "POST" })
   .inputValidator((d: { conversationId: string; companyId: string; content: string }) => d)
   .handler(async ({ data, context }) => {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY chýba");
+    if (!apiKey) throw new Error("AI funkcie momentálne nedostupné");
 
     // Insert user message
     await context.supabase.from("ai_messages").insert({
