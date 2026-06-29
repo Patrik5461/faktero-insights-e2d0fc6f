@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FileText, Car, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { setActiveProduct } from "@/lib/faktero/active-product";
 
 type Mode = "invoicing" | "logbook" | "both";
 
@@ -40,6 +41,7 @@ export function ProductModePicker({ onPicked }: { onPicked: (mode: Mode) => void
         .update({ product_mode: mode })
         .eq("id", u.user.id);
       if (error) throw error;
+      setActiveProduct(mode === "logbook" ? "logbook" : "invoicing");
       onPicked(mode);
     } catch (err: any) {
       toast.error(err?.message ?? "Nepodarilo sa uložiť výber");

@@ -25,6 +25,7 @@ type NavGroup = {
   icon: any;
   match: string[]; // route prefixes
   children: NavChild[];
+  exact?: boolean;
 };
 
 const NAV: NavGroup[] = [
@@ -71,15 +72,34 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "jazdy", label: "Kniha jázd", icon: Car,
-    match: ["/jazdy"],
+    key: "logbook-prehlad", label: "Prehľad", icon: LayoutDashboard,
+    match: ["/jazdy/prehlad"],
+    children: [],
+  },
+  {
+    key: "jazdy", label: "Jazdy", icon: Car,
+    match: ["/jazdy", "/jazdy/nova", "/jazdy/export"],
+    exact: true,
     children: [
       { to: "/jazdy", label: "Jazdy" },
       { to: "/jazdy/nova", label: "Nová jazda" },
-      { to: "/jazdy/vozidla", label: "Vozidlá a tankovanie" },
-      { to: "/jazdy/prehlad", label: "Prehľad a reporty" },
       { to: "/jazdy/export", label: "Export" },
-      { to: "/jazdy/integracie", label: "Integrácie (GPS)" },
+    ],
+  },
+  {
+    key: "vozidla", label: "Vozidlá", icon: Car,
+    match: ["/jazdy/vozidla"],
+    children: [
+      { to: "/jazdy/vozidla", label: "Vozidlá a tankovanie" },
+    ],
+  },
+  {
+    key: "integracie", label: "Integrácie", icon: ArrowRightLeft,
+    match: ["/jazdy/integracie"],
+    children: [
+      { to: "/jazdy/integracie", label: "Prehľad integrácií" },
+      { to: "/jazdy/integracie/commander", label: "Commander GPS" },
+      { to: "/jazdy/integracie/tesla", label: "Tesla Fleet API" },
     ],
   },
   {
@@ -145,14 +165,14 @@ const QUICK_CREATE = [
   { to: "/opakovane/nova", label: "Nová opakovaná faktúra" },
 ];
 
-function isPathActive(pathname: string, match: string[]) {
-  return match.some((m) => pathname === m || pathname.startsWith(m + "/"));
+function isPathActive(pathname: string, group: Pick<NavGroup, "match" | "exact">) {
+  return group.match.some((m) => pathname === m || (!group.exact && pathname.startsWith(m + "/")));
 }
 
 export type ProductMode = "invoicing" | "logbook" | "both";
 
-const INVOICING_KEYS = new Set(["prehlad","fakturacia","kontakty","produkty","sklad","uctovnictvo","efaktura","banka","api","nastavenia"]);
-const LOGBOOK_KEYS = new Set(["prehlad","jazdy","nastavenia"]);
+const INVOICING_KEYS = new Set(["prehlad","fakturacia","kontakty","produkty","sklad","uctovnictvo","efaktura","banka","api"]);
+const LOGBOOK_KEYS = new Set(["logbook-prehlad","jazdy","vozidla","integracie"]);
 
 /**
  * Resolve the *view* to render based on access (productMode) and the user's
@@ -213,7 +233,7 @@ export function AppShell({
     return () => { cancelled = true; };
   }, []);
 
-  const activeGroup = nav.find((g) => isPathActive(pathname, g.match));
+  const activeGroup = nav.find((g) => isPathActive(pathname, g));
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -287,7 +307,7 @@ export function AppShell({
           {/* Center nav */}
           <nav className="ml-2 hidden flex-1 items-center gap-0.5 lg:flex">
             {nav.map((g) => {
-              const active = isPathActive(pathname, g.match);
+              const active = isPathActive(pathname, g);
               if (g.children.length === 0) {
                 return (
                   <Link key={g.key} to={g.match[0]}
@@ -339,7 +359,7 @@ export function AppShell({
             )}
 
             {/* Search */}
-            <form onSubmit={submitSearch} className="hidden md:block">
+            {view !== "logbook" && <form onSubmit={submitSearch} className="hidden md:block">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <input
@@ -349,7 +369,7 @@ export function AppShell({
                   className="h-9 w-56 rounded-md border border-border bg-background pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:w-72 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 lg:w-64"
                 />
               </div>
-            </form>
+            </form>}
 
             {/* Quick create */}
             {view !== "logbook" && (
@@ -369,9 +389,9 @@ export function AppShell({
             )}
 
             {/* Help */}
-            <Link to={"/api-dokumentacia" as any} className="hidden h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-secondary md:grid" aria-label="Pomoc">
+            {view !== "logbook" && <Link to={"/api-dokumentacia" as any} className="hidden h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-secondary md:grid" aria-label="Pomoc">
               <HelpCircle className="h-4 w-4" />
-            </Link>
+            </Link>}
 
             {/* Profile */}
             <DropdownMenu>

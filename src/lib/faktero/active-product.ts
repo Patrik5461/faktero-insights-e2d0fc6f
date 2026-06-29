@@ -9,6 +9,7 @@
 export type ActiveProduct = "invoicing" | "logbook";
 
 const KEY = "faktero.active_product";
+export const ACTIVE_PRODUCT_EVENT = "faktero:active-product-changed";
 
 export function getActiveProduct(): ActiveProduct | null {
   if (typeof window === "undefined") return null;
@@ -19,6 +20,7 @@ export function getActiveProduct(): ActiveProduct | null {
 export function setActiveProduct(p: ActiveProduct): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(KEY, p);
+  window.dispatchEvent(new CustomEvent(ACTIVE_PRODUCT_EVENT, { detail: p }));
 }
 
 export function landingPathFor(p: ActiveProduct): string {
