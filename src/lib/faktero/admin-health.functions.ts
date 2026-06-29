@@ -205,7 +205,7 @@ export const getSystemHealth = createServerFn({ method: "GET" })
     // ── 7. Recurring invoices cron ───────────────────────────────────────
     try {
       const { data: lastRun } = await supabaseAdmin
-        .from("recurring_invoice_runs")
+        .from("recurring_invoice_logs")
         .select("created_at, status")
         .order("created_at", { ascending: false })
         .limit(1)
