@@ -50,7 +50,7 @@ export const Route = createFileRoute("/api/public/support-chat")({
           });
         }
 
-        const apiKey = process.env.LOVABLE_API_KEY;
+        const apiKey = process.env.OPENAI_API_KEY;
         if (!apiKey) {
           return new Response(JSON.stringify({ error: "ai_unavailable" }), {
             status: 503,
@@ -59,14 +59,15 @@ export const Route = createFileRoute("/api/public/support-chat")({
         }
 
         try {
-          const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+          const res = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${apiKey}`,
             },
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
+              model,
               messages: [
                 { role: "system", content: SYSTEM },
                 { role: "system", content: getProductCapabilitiesMarkdown() },
@@ -81,10 +82,10 @@ export const Route = createFileRoute("/api/public/support-chat")({
               { status: 429, headers: { "Content-Type": "application/json" } },
             );
           }
-          if (res.status === 402) {
+          if (res.status === 401) {
             return new Response(
-              JSON.stringify({ error: "credits_exhausted", message: "AI podpora je dočasne nedostupná. Napíšte nám na podpora@faktero.sk." }),
-              { status: 402, headers: { "Content-Type": "application/json" } },
+              JSON.stringify({ error: "ai_unavailable", message: "AI podpora je dočasne nedostupná. Napíšte nám na podpora@faktero.sk." }),
+              { status: 503, headers: { "Content-Type": "application/json" } },
             );
           }
           if (!res.ok) {
