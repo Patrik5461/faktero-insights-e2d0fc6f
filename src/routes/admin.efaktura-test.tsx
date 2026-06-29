@@ -101,8 +101,12 @@ function EfakturaTestPage() {
                 </Button>
               </div>
             </div>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Sandbox Peppol lookup je simulovaný — reálny lookup funguje v produkcii.
+            </p>
             <ResultBox state={lookupRes} />
           </section>
+
 
           <section className="rounded-lg border border-border bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
