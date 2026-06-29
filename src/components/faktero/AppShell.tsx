@@ -216,6 +216,7 @@ export function AppShell({
             </SheetTrigger>
             <SheetContent side="left" className="w-80 overflow-y-auto p-0">
               <MobileNav pathname={pathname} active={active} companies={companies}
+                nav={nav}
                 onChangeCompany={onChangeCompany} onSignOut={signOut}
                 onAddCompany={() => { setMobileOpen(false); setCreateOpen(true); }}
                 onClose={() => setMobileOpen(false)} />
