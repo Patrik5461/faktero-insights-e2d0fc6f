@@ -120,7 +120,7 @@ function AuthedLayout() {
     <AppShell
       companies={companies}
       activeId={activeId}
-      productMode={productMode}
+      productMode={shellProductMode}
       activeProduct={activeProduct}
       onChangeCompany={(id) => {
         setActiveCompanyId(id);
