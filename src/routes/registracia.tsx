@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+
 import { toast } from "sonner";
 import { recordLegalAcceptance } from "@/lib/legal.functions";
 import { LEGAL_VERSION } from "@/components/faktero/LegalShell";
