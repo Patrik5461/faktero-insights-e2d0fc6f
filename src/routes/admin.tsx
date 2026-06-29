@@ -1,21 +1,21 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/faktero/AdminShell";
-import { getMyAdminRole } from "@/lib/faktero/admin.functions";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
   beforeLoad: async () => {
     const { data: sess } = await supabase.auth.getSession();
-    if (!sess.session?.user) throw redirect({ to: "/prihlasenie" });
-    try {
-      const { role } = await getMyAdminRole();
-      if (!role) throw redirect({ to: "/dashboard" });
-      return { adminRole: role };
-    } catch (e: any) {
-      if (e?.options?.to) throw e;
-      throw redirect({ to: "/dashboard" });
-    }
+    const user = sess.session?.user ?? (await supabase.auth.getUser()).data.user;
+    if (!user) throw redirect({ to: "/prihlasenie" });
+    const { data } = await supabase
+      .from("platform_admins")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const role = (data?.role as string | undefined) ?? null;
+    if (!role) throw redirect({ to: "/dashboard" });
+    return { adminRole: role };
   },
   component: () => (
     <AdminShell>
