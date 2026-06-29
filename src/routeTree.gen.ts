@@ -51,6 +51,7 @@ import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.paymen
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminIntegrationsRouteImport } from './routes/admin.integrations'
 import { Route as AdminHealthRouteImport } from './routes/admin.health'
+import { Route as AdminGopayRouteImport } from './routes/admin.gopay'
 import { Route as AdminErrorsRouteImport } from './routes/admin.errors'
 import { Route as AdminBetaChecklistRouteImport } from './routes/admin.beta-checklist'
 import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
@@ -358,6 +359,11 @@ const AdminIntegrationsRoute = AdminIntegrationsRouteImport.update({
 const AdminHealthRoute = AdminHealthRouteImport.update({
   id: '/health',
   path: '/health',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGopayRoute = AdminGopayRouteImport.update({
+  id: '/gopay',
+  path: '/gopay',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminErrorsRoute = AdminErrorsRouteImport.update({
@@ -927,6 +933,7 @@ export interface FileRoutesByFullPath {
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/beta-checklist': typeof AdminBetaChecklistRoute
   '/admin/errors': typeof AdminErrorsRoute
+  '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
@@ -1061,6 +1068,7 @@ export interface FileRoutesByTo {
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/beta-checklist': typeof AdminBetaChecklistRoute
   '/admin/errors': typeof AdminErrorsRoute
+  '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
@@ -1203,6 +1211,7 @@ export interface FileRoutesById {
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/beta-checklist': typeof AdminBetaChecklistRoute
   '/admin/errors': typeof AdminErrorsRoute
+  '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
@@ -1346,6 +1355,7 @@ export interface FileRouteTypes {
     | '/admin/audit-log'
     | '/admin/beta-checklist'
     | '/admin/errors'
+    | '/admin/gopay'
     | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
@@ -1480,6 +1490,7 @@ export interface FileRouteTypes {
     | '/admin/audit-log'
     | '/admin/beta-checklist'
     | '/admin/errors'
+    | '/admin/gopay'
     | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
@@ -1621,6 +1632,7 @@ export interface FileRouteTypes {
     | '/admin/audit-log'
     | '/admin/beta-checklist'
     | '/admin/errors'
+    | '/admin/gopay'
     | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
@@ -2077,6 +2089,13 @@ declare module '@tanstack/react-router' {
       path: '/health'
       fullPath: '/admin/health'
       preLoaderRoute: typeof AdminHealthRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/gopay': {
+      id: '/admin/gopay'
+      path: '/gopay'
+      fullPath: '/admin/gopay'
+      preLoaderRoute: typeof AdminGopayRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/errors': {
@@ -2985,6 +3004,7 @@ interface AdminRouteChildren {
   AdminAuditLogRoute: typeof AdminAuditLogRoute
   AdminBetaChecklistRoute: typeof AdminBetaChecklistRoute
   AdminErrorsRoute: typeof AdminErrorsRoute
+  AdminGopayRoute: typeof AdminGopayRoute
   AdminHealthRoute: typeof AdminHealthRoute
   AdminIntegrationsRoute: typeof AdminIntegrationsRoute
   AdminLegalRoute: typeof AdminLegalRoute
@@ -3001,6 +3021,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditLogRoute: AdminAuditLogRoute,
   AdminBetaChecklistRoute: AdminBetaChecklistRoute,
   AdminErrorsRoute: AdminErrorsRoute,
+  AdminGopayRoute: AdminGopayRoute,
   AdminHealthRoute: AdminHealthRoute,
   AdminIntegrationsRoute: AdminIntegrationsRoute,
   AdminLegalRoute: AdminLegalRoute,
