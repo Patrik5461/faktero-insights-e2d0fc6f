@@ -10,52 +10,44 @@ const INVOICING_PLANS = [
     tagline: "Pre živnostníkov a malé firmy — všetko podstatné bez limitu.",
     features: [
       "Neobmedzené faktúry",
-      "2 používatelia",
-      "PDF s QR platbou",
-      "Pohoda export",
+      "2 používatelia + 1 účtovník (čítanie/export)",
+      "1 firma",
       "eFaktúra (Peppol)",
       "Opakované faktúry",
       "Bankové párovanie",
+      "PDF s QR platbou",
+      "Pohoda export",
       "E-mail podpora",
     ],
     featured: false,
   },
   {
-    name: "Business",
+    name: "Premium",
     price: "19 €",
     period: "/ mesiac",
-    tagline: "Pre rastúce tímy — API a viac firiem.",
+    tagline: "Pre rastúce tímy bez stropov — API, webhooky a import.",
     features: [
       "Všetko zo Starter",
-      "Neobmedzené faktúry",
-      "10 používateľov",
-      "5 firiem",
-      "REST API + webhooky",
+      "Neobmedzení používatelia",
+      "Neobmedzené firmy",
+      "API + Webhooky",
+      "Import zo SuperFaktúry",
+      "Audit log",
       "Prioritná podpora",
     ],
     featured: true,
   },
   {
-    name: "Premium",
-    price: "39 €",
-    period: "/ mesiac",
-    tagline: "Pre väčšie firmy bez stropov a s dedikovanou podporou.",
-    features: [
-      "Všetko z Business",
-      "Neobmedzení používatelia",
-      "Neobmedzené firmy",
-      "Pokročilé reporty a analytics",
-      "SLA podpora",
-      "Dedikovaný onboarding",
-    ],
-    featured: false,
-  },
-  {
     name: "Enterprise",
-    price: "Na mieru",
+    price: "Individuálne",
     period: "",
-    tagline: "Pre firmy s vlastnou integráciou a vyšším objemom.",
-    features: ["Všetko z Premium", "SSO a audit logy", "Vlastné SLA", "Konzultácie pri integrácii", "Vlastné podmienky"],
+    tagline: "Pre väčšie firmy s vlastným onboardingom a SLA.",
+    features: [
+      "Všetko z Premium",
+      "SLA zmluva",
+      "Dedikovaný account manager",
+      "Vlastný onboarding",
+    ],
     featured: false,
   },
 ];
@@ -176,7 +168,7 @@ function CennikPage() {
             <p className="text-sm text-muted-foreground">Faktúry, eFaktúra, API, bankové párovanie, sklad.</p>
           </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {INVOICING_PLANS.map((p) => <PlanCard key={p.name} p={p} />)}
         </div>
       </section>

@@ -6,7 +6,7 @@ import { getCompanyPlan } from "@/lib/faktero/plan-enforcement";
 const CompanyInput = z.object({ companyId: z.string().uuid() });
 const CheckoutInput = z.object({
   companyId: z.string().uuid(),
-  planSlug: z.enum(["starter", "business", "premium"]),
+  planSlug: z.enum(["starter", "premium", "enterprise"]),
 });
 
 async function assertCompanyAdmin(supabase: any, companyId: string, userId: string) {

@@ -2955,12 +2955,16 @@ export type Database = {
       }
       subscription_plans: {
         Row: {
+          accountant_seats: number
           active: boolean
           api_enabled: boolean
+          audit_log_enabled: boolean
           bank_matching_enabled: boolean
+          company_limit: number | null
           created_at: string
           efaktura_enabled: boolean
           id: string
+          import_enabled: boolean
           invoice_limit: number | null
           name: string
           price_monthly_cents: number | null
@@ -2973,12 +2977,16 @@ export type Database = {
           webhooks_enabled: boolean
         }
         Insert: {
+          accountant_seats?: number
           active?: boolean
           api_enabled?: boolean
+          audit_log_enabled?: boolean
           bank_matching_enabled?: boolean
+          company_limit?: number | null
           created_at?: string
           efaktura_enabled?: boolean
           id?: string
+          import_enabled?: boolean
           invoice_limit?: number | null
           name: string
           price_monthly_cents?: number | null
@@ -2991,12 +2999,16 @@ export type Database = {
           webhooks_enabled?: boolean
         }
         Update: {
+          accountant_seats?: number
           active?: boolean
           api_enabled?: boolean
+          audit_log_enabled?: boolean
           bank_matching_enabled?: boolean
+          company_limit?: number | null
           created_at?: string
           efaktura_enabled?: boolean
           id?: string
+          import_enabled?: boolean
           invoice_limit?: number | null
           name?: string
           price_monthly_cents?: number | null
