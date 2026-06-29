@@ -13,6 +13,7 @@ import {
   getMessagesFn,
   sendChatFn,
 } from "@/lib/faktero/ai-assistant.functions";
+import { getAiAvailabilityFn } from "@/lib/faktero/ai-availability.functions";
 
 const SUGGESTED = [
   "Ktoré faktúry sú po splatnosti?",
