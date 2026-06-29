@@ -351,21 +351,31 @@ export type ParticipantLookup = {
 };
 
 export async function lookupParticipant(peppolId: string): Promise<ParticipantLookup> {
+  // Per OpenAPI: /peppol/participants/resolve requires documentTypeId+processId
+  // for routing-capability checks. For a pure "does this participant exist in SMP"
+  // check we use the path-based SMP lookup: GET /peppol/participants/{scheme}/{identifier}
+  const [scheme, identifier] = peppolId.includes(":")
+    ? peppolId.split(":", 2)
+    : ["0245", peppolId];
+  const path = `/api/v1/peppol/participants/${encodeURIComponent(scheme)}/${encodeURIComponent(identifier)}`;
   try {
-    const res = await epostakFetch<any>("/api/v1/peppol/participants/resolve", {
-      query: { peppolId },
-    });
+    const res = await epostakFetch<any>(path);
+    const docs = res?.supportedDocuments
+      ?? res?.documentTypes
+      ?? res?.documentTypeIds
+      ?? (Array.isArray(res?.services) ? res.services.map((s: any) => s?.documentTypeId).filter(Boolean) : undefined);
     return {
-      exists: Boolean(res?.exists ?? res?.found ?? res?.participantId ?? true),
-      peppolId,
-      supportedDocuments: res?.supportedDocuments ?? res?.documentTypes ?? undefined,
+      exists: true,
+      peppolId: `${scheme}:${identifier}`,
+      supportedDocuments: docs,
       raw: res,
     };
   } catch (e: any) {
-    if (e?.status === 404) return { exists: false, peppolId, raw: e.response };
+    if (e?.status === 404) return { exists: false, peppolId: `${scheme}:${identifier}`, raw: e.response };
     throw e;
   }
 }
+
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
