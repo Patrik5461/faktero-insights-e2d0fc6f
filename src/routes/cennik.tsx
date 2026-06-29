@@ -93,7 +93,7 @@ function CennikPage() {
         </div>
       </section>
       <section className="mx-auto max-w-6xl px-6 py-14">
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {PLANS.map((p) => (
             <div
               key={p.name}
