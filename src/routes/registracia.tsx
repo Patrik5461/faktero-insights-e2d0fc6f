@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+
 import { toast } from "sonner";
 import { recordLegalAcceptance } from "@/lib/legal.functions";
 import { LEGAL_VERSION } from "@/components/faktero/LegalShell";
@@ -73,10 +73,11 @@ function RegisterPage() {
     try {
       sessionStorage.setItem("faktero_legal_pending", LEGAL_VERSION);
     } catch {}
-    const res = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/onboarding" });
-    if (res.error) toast.error(res.error.message);
-    if (res.redirected) return;
-    navigate({ to: "/onboarding" });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + "/onboarding" },
+    });
+    if (error) toast.error(error.message);
   }
 
   return (

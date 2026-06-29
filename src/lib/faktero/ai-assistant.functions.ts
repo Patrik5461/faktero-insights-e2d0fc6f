@@ -145,8 +145,8 @@ export const sendChatFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { conversationId: string; companyId: string; content: string }) => d)
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY chýba");
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("OPENAI_API_KEY chýba");
 
     // Insert user message
     await context.supabase.from("ai_messages").insert({
@@ -174,14 +174,15 @@ ${JSON.stringify(ctx, null, 2)}`;
       ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: "google/gemini-2.5-flash", messages }),
+      body: JSON.stringify({ model, messages }),
     });
 
     if (res.status === 429) throw new Error("Prekročený limit požiadaviek na AI. Skúste o chvíľu znova.");
-    if (res.status === 402) throw new Error("AI kredity vyčerpané. Doplňte ich v nastaveniach pracovného priestoru.");
+    if (res.status === 401) throw new Error("OpenAI API kľúč je neplatný.");
     if (!res.ok) {
       const t = await res.text();
       throw new Error(`AI chyba: ${res.status} ${t.slice(0, 200)}`);
