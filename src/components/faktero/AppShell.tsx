@@ -2,8 +2,9 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, Users, Package, FileSpreadsheet, FileCheck2,
   KeyRound, Settings, ChevronDown, Plus, Search, HelpCircle, LogOut,
-  Building2, CreditCard, User, Menu, X, Sparkles, Landmark, Shield, Warehouse, Car,
+  Building2, CreditCard, User, Menu, X, Sparkles, Landmark, Shield, Warehouse, Car, ArrowRightLeft,
 } from "lucide-react";
+import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, type ReactNode } from "react";
 import {
@@ -153,20 +154,33 @@ export type ProductMode = "invoicing" | "logbook" | "both";
 const INVOICING_KEYS = new Set(["prehlad","fakturacia","kontakty","produkty","sklad","uctovnictvo","efaktura","banka","api","nastavenia"]);
 const LOGBOOK_KEYS = new Set(["prehlad","jazdy","nastavenia"]);
 
-function filterNav(productMode: ProductMode): NavGroup[] {
-  if (productMode === "both") return NAV;
-  const allowed = productMode === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
+/**
+ * Resolve the *view* to render based on access (productMode) and the user's
+ * currently selected product (activeProduct from localStorage). When the user
+ * only has access to one product, that product wins regardless of activeProduct.
+ */
+function resolveView(productMode: ProductMode, activeProduct: ActiveProduct): ActiveProduct {
+  if (productMode === "invoicing") return "invoicing";
+  if (productMode === "logbook") return "logbook";
+  return activeProduct;
+}
+
+function filterNav(view: ActiveProduct): NavGroup[] {
+  const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
   return NAV.filter((g) => allowed.has(g.key));
 }
 
 export function AppShell({
-  companies, activeId, onChangeCompany, children, productMode = "both",
+  companies, activeId, onChangeCompany, children,
+  productMode = "both",
+  activeProduct = "invoicing",
 }: {
   companies: Company[];
   activeId: string | null;
   onChangeCompany: (id: string) => void;
   children: ReactNode;
   productMode?: ProductMode;
+  activeProduct?: ActiveProduct;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
@@ -176,7 +190,18 @@ export function AppShell({
   const [createOpen, setCreateOpen] = useState(false);
   const [adminRole, setAdminRole] = useState<string | null>(null);
 
-  const nav = filterNav(productMode);
+  const view = resolveView(productMode, activeProduct);
+  const nav = filterNav(view);
+  const homePath = landingPathFor(view);
+  const canSwitch = productMode === "both";
+
+  function switchProduct() {
+    const next: ActiveProduct = view === "invoicing" ? "logbook" : "invoicing";
+    setActiveProduct(next);
+    navigate({ to: landingPathFor(next) as any });
+    // Force a reload so the shell re-renders with the new view immediately.
+    setTimeout(() => window.location.reload(), 0);
+  }
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
@@ -217,6 +242,10 @@ export function AppShell({
             <SheetContent side="left" className="w-80 overflow-y-auto p-0">
               <MobileNav pathname={pathname} active={active} companies={companies}
                 nav={nav}
+                homePath={homePath}
+                view={view}
+                canSwitch={canSwitch}
+                onSwitchProduct={switchProduct}
                 onChangeCompany={onChangeCompany} onSignOut={signOut}
                 onAddCompany={() => { setMobileOpen(false); setCreateOpen(true); }}
                 onClose={() => setMobileOpen(false)} />
@@ -224,7 +253,7 @@ export function AppShell({
           </Sheet>
 
           {/* Logo */}
-          <Link to="/dashboard" className="flex shrink-0 items-center gap-2">
+          <Link to={homePath as any} className="flex shrink-0 items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/70 font-bold text-primary-foreground shadow-sm">F</span>
             <span className="hidden text-base font-semibold tracking-tight sm:inline">Faktero</span>
           </Link>
@@ -291,6 +320,24 @@ export function AppShell({
 
           {/* Right cluster */}
           <div className="ml-auto flex items-center gap-2">
+            {/* Product switcher (only if user has access to both) */}
+            {canSwitch && (
+              <button
+                type="button"
+                onClick={switchProduct}
+                title={view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
+                className="hidden h-9 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground/80 hover:bg-secondary sm:inline-flex"
+              >
+                <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="hidden md:inline">
+                  {view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
+                </span>
+                <span className="md:hidden">
+                  {view === "invoicing" ? "Kniha jázd" : "Fakturácia"}
+                </span>
+              </button>
+            )}
+
             {/* Search */}
             <form onSubmit={submitSearch} className="hidden md:block">
               <div className="relative">
@@ -305,7 +352,7 @@ export function AppShell({
             </form>
 
             {/* Quick create */}
-            {productMode !== "logbook" && (
+            {view !== "logbook" && (
             <DropdownMenu>
               <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90">
                 <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Vytvoriť</span>
@@ -383,12 +430,17 @@ export function AppShell({
 }
 
 function MobileNav({
-  pathname, active, companies, nav, onChangeCompany, onSignOut, onAddCompany, onClose,
+  pathname, active, companies, nav, homePath, view, canSwitch, onSwitchProduct,
+  onChangeCompany, onSignOut, onAddCompany, onClose,
 }: {
   pathname: string;
   active: Company | undefined;
   companies: Company[];
   nav: NavGroup[];
+  homePath: string;
+  view: ActiveProduct;
+  canSwitch: boolean;
+  onSwitchProduct: () => void;
   onChangeCompany: (id: string) => void;
   onSignOut: () => void;
   onAddCompany: () => void;
@@ -397,12 +449,22 @@ function MobileNav({
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
-        <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2">
+        <Link to={homePath as any} onClick={onClose} className="flex items-center gap-2">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary font-bold text-primary-foreground">F</span>
           <span className="font-semibold">Faktero</span>
         </Link>
         <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md hover:bg-secondary"><X className="h-4 w-4" /></button>
       </div>
+      {canSwitch && (
+        <button
+          type="button"
+          onClick={() => { onClose(); onSwitchProduct(); }}
+          className="flex items-center justify-center gap-1.5 border-b border-border bg-secondary/40 px-4 py-2 text-xs font-medium text-foreground/80 hover:bg-secondary"
+        >
+          <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
+          {view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
+        </button>
+      )}
       {active && (
         <div className="border-b border-border px-4 py-3">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Firma</div>
