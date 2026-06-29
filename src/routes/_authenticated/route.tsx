@@ -83,28 +83,19 @@ function AuthedLayout() {
 
   // Resolve which product view to render. The user's explicit choice on the
   // login screen (stored in localStorage) is authoritative: if they picked a
-  // product their profile doesn't currently grant, upgrade their access to
-  // "both" so the choice actually takes effect (same account, two products).
+  // product their profile doesn't currently grant, treat them as having access
+  // to both so the choice actually takes effect (same account, two products).
   const stored = getActiveProduct();
-  let activeProduct: ActiveProduct;
-  if (productMode === "both") {
-    activeProduct = stored ?? "invoicing";
-  } else if (stored && stored !== productMode) {
-    // Explicit cross-product login — grant access to both, honor the choice.
-    activeProduct = stored;
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        supabase.from("profiles")
-          .update({ product_mode: "both" })
-          .eq("id", data.user.id)
-          .then(() => {});
-      }
-    });
-    // Reflect locally without waiting for the round-trip.
-    setProductMode("both");
-  } else {
-    activeProduct = productMode as ActiveProduct;
-  }
+  const effectiveMode: ProductMode =
+    productMode === "both"
+      ? "both"
+      : stored && stored !== productMode
+        ? "both"
+        : productMode;
+  const activeProduct: ActiveProduct =
+    effectiveMode === "both"
+      ? (stored ?? "invoicing")
+      : (effectiveMode as ActiveProduct);
   if (stored !== activeProduct) setActiveProduct(activeProduct);
 
   return (
