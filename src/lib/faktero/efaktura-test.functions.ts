@@ -39,7 +39,7 @@ export const testEPostakLookup = createServerFn({ method: "POST" })
       ok: true,
       exists: r.exists,
       supportedDocuments: r.supportedDocuments ?? null,
-      raw: r.raw,
+      raw: JSON.parse(JSON.stringify(r.raw ?? null)) as any,
     };
   });
 
@@ -52,5 +52,10 @@ export const testEPostakSend = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
     const { sendEfaktura } = await import("./efaktura/epostak.server");
     const r = await sendEfaktura(data.invoiceId, data.firmEpostakId);
-    return { ok: true, documentId: r.documentId, status: r.status, providerResponse: r.providerResponse };
+    return {
+      ok: true,
+      documentId: r.documentId,
+      status: r.status,
+      providerResponse: JSON.parse(JSON.stringify(r.providerResponse ?? null)) as any,
+    };
   });
