@@ -148,13 +148,25 @@ function isPathActive(pathname: string, match: string[]) {
   return match.some((m) => pathname === m || pathname.startsWith(m + "/"));
 }
 
+export type ProductMode = "invoicing" | "logbook" | "both";
+
+const INVOICING_KEYS = new Set(["prehlad","fakturacia","kontakty","produkty","sklad","uctovnictvo","efaktura","banka","api","nastavenia"]);
+const LOGBOOK_KEYS = new Set(["prehlad","jazdy","nastavenia"]);
+
+function filterNav(productMode: ProductMode): NavGroup[] {
+  if (productMode === "both") return NAV;
+  const allowed = productMode === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
+  return NAV.filter((g) => allowed.has(g.key));
+}
+
 export function AppShell({
-  companies, activeId, onChangeCompany, children,
+  companies, activeId, onChangeCompany, children, productMode = "both",
 }: {
   companies: Company[];
   activeId: string | null;
   onChangeCompany: (id: string) => void;
   children: ReactNode;
+  productMode?: ProductMode;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
@@ -163,6 +175,8 @@ export function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [adminRole, setAdminRole] = useState<string | null>(null);
+
+  const nav = filterNav(productMode);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
@@ -174,7 +188,7 @@ export function AppShell({
     return () => { cancelled = true; };
   }, []);
 
-  const activeGroup = NAV.find((g) => isPathActive(pathname, g.match));
+  const activeGroup = nav.find((g) => isPathActive(pathname, g.match));
 
   async function signOut() {
     await supabase.auth.signOut();
