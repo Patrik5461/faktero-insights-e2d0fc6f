@@ -81,22 +81,46 @@ function AuthedLayout() {
     return <ProductModePicker onPicked={(m) => setProductMode(m)} />;
   }
 
-  // Resolve which product view to render. If the user has access to only one,
-  // that one wins. Otherwise use their last-selected product (localStorage),
-  // defaulting to invoicing for a brand-new session.
+  // Resolve which product view to render. The user's explicit choice on the
+  // login screen (stored in localStorage) is authoritative: if they picked a
+  // product their profile doesn't currently grant, treat them as having access
+  // to both so the choice actually takes effect (same account, two products).
   const stored = getActiveProduct();
+  const effectiveMode: ProductMode =
+    productMode === "both"
+      ? "both"
+      : stored && stored !== productMode
+        ? "both"
+        : productMode;
   const activeProduct: ActiveProduct =
-    productMode === "invoicing" ? "invoicing"
-    : productMode === "logbook" ? "logbook"
-    : (stored ?? "invoicing");
-  // Keep localStorage in sync so the login page pre-selects it next time.
+    effectiveMode === "both"
+      ? (stored ?? "invoicing")
+      : (effectiveMode as ActiveProduct);
   if (stored !== activeProduct) setActiveProduct(activeProduct);
+
+  // Persist a cross-product login by upgrading the profile to "both" once.
+  const needsUpgrade = effectiveMode === "both" && productMode !== "both";
+  useEffect(() => {
+    if (!needsUpgrade) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user || cancelled) return;
+      await supabase.from("profiles").update({ product_mode: "both" }).eq("id", data.user.id);
+      if (!cancelled) setProductMode("both");
+    })();
+    return () => { cancelled = true; };
+  }, [needsUpgrade]);
+
+  // Pass the effective mode to AppShell so the switcher appears immediately
+  // (without waiting for the DB round-trip above).
+  const shellProductMode: ProductMode = effectiveMode;
 
   return (
     <AppShell
       companies={companies}
       activeId={activeId}
-      productMode={productMode}
+      productMode={shellProductMode}
       activeProduct={activeProduct}
       onChangeCompany={(id) => {
         setActiveCompanyId(id);
