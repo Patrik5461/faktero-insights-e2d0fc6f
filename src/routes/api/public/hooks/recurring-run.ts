@@ -5,12 +5,8 @@ export const Route = createFileRoute("/api/public/hooks/recurring-run")({
     handlers: {
       POST: async ({ request }) => {
         const cronToken = request.headers.get("x-faktero-cron-token");
-        const apikey = request.headers.get("apikey") || request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
         const expectedCron = process.env.FAKTERO_CRON_TOKEN;
-        const expectedKey = process.env.SUPABASE_PUBLISHABLE_KEY;
-        const ok =
-          (expectedCron && cronToken && cronToken === expectedCron) ||
-          (expectedKey && apikey && apikey === expectedKey);
+        const ok = expectedCron && cronToken && cronToken === expectedCron;
         if (!ok) {
           return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { "content-type": "application/json" } });
         }
