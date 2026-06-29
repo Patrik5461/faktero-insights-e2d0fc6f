@@ -256,7 +256,7 @@ export function AppShell({
 
           {/* Center nav */}
           <nav className="ml-2 hidden flex-1 items-center gap-0.5 lg:flex">
-            {NAV.map((g) => {
+            {nav.map((g) => {
               const active = isPathActive(pathname, g.match);
               if (g.children.length === 0) {
                 return (
