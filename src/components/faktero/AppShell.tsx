@@ -227,9 +227,20 @@ export function AppShell({
 
   useEffect(() => {
     let cancelled = false;
-    getMyAdminRole()
-      .then((r) => { if (!cancelled) setAdminRole(r?.role ?? null); })
-      .catch(() => { if (!cancelled) setAdminRole(null); });
+    (async () => {
+      try {
+        const { data: u } = await supabase.auth.getUser();
+        if (!u.user || cancelled) return;
+        const { data } = await supabase
+          .from("platform_admins")
+          .select("role")
+          .eq("user_id", u.user.id)
+          .maybeSingle();
+        if (!cancelled) setAdminRole((data?.role as string | undefined) ?? null);
+      } catch {
+        if (!cancelled) setAdminRole(null);
+      }
+    })();
     return () => { cancelled = true; };
   }, []);
 
