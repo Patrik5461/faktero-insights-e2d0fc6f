@@ -98,6 +98,24 @@ function AuthedLayout() {
       : (effectiveMode as ActiveProduct);
   if (stored !== activeProduct) setActiveProduct(activeProduct);
 
+  // Persist a cross-product login by upgrading the profile to "both" once.
+  const needsUpgrade = effectiveMode === "both" && productMode !== "both";
+  useEffect(() => {
+    if (!needsUpgrade) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user || cancelled) return;
+      await supabase.from("profiles").update({ product_mode: "both" }).eq("id", data.user.id);
+      if (!cancelled) setProductMode("both");
+    })();
+    return () => { cancelled = true; };
+  }, [needsUpgrade]);
+
+  // Pass the effective mode to AppShell so the switcher appears immediately
+  // (without waiting for the DB round-trip above).
+  const shellProductMode: ProductMode = effectiveMode;
+
   return (
     <AppShell
       companies={companies}
