@@ -420,7 +420,7 @@ function MobileNav({
         </div>
       )}
       <nav className="flex-1 overflow-y-auto px-2 py-3">
-        {NAV.map((g) => (
+        {nav.map((g) => (
           <div key={g.key} className="mb-3">
             <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{g.label}</div>
             {g.children.length === 0 ? (
