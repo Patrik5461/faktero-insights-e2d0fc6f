@@ -1,0 +1,1 @@
+UPDATE public.subscription_plans SET efaktura_enabled = true WHERE efaktura_enabled IS DISTINCT FROM true;

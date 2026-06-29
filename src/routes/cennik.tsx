@@ -8,7 +8,7 @@ const PLANS = [
     price: "9 €",
     period: "/ mesiac",
     tagline: "Pre živnostníkov, ktorí vystavia pár faktúr mesačne.",
-    features: ["1 firma", "Neobmedzene faktúr a ponúk", "PDF s QR platbou", "Pohoda export", "E-mailová podpora"],
+    features: ["1 firma", "Neobmedzene faktúr a ponúk", "PDF s QR platbou", "eFaktúra (Peppol)", "Pohoda export", "E-mailová podpora"],
     featured: false,
   },
   {
@@ -16,7 +16,7 @@ const PLANS = [
     price: "24 €",
     period: "/ mesiac",
     tagline: "Pre s.r.o. a tímy. API, webhooky a opakované faktúry.",
-    features: ["5 firiem", "Opakované faktúry", "REST API + webhooky", "Test / live režim", "Prioritná podpora"],
+    features: ["5 firiem", "Opakované faktúry", "REST API + webhooky", "eFaktúra (Peppol)", "Test / live režim", "Prioritná podpora"],
     featured: true,
   },
   {
@@ -24,7 +24,7 @@ const PLANS = [
     price: "Na mieru",
     period: "",
     tagline: "Pre firmy s vlastnou integráciou a vyšším objemom.",
-    features: ["Neobmedzene firiem", "SLA a dedikovaná podpora", "SSO a audit logy", "Konzultácie pri integrácii", "Vlastné podmienky"],
+    features: ["Neobmedzene firiem", "eFaktúra (Peppol)", "SLA a dedikovaná podpora", "SSO a audit logy", "Konzultácie pri integrácii", "Vlastné podmienky"],
     featured: false,
   },
 ];
