@@ -2,8 +2,9 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, Users, Package, FileSpreadsheet, FileCheck2,
   KeyRound, Settings, ChevronDown, Plus, Search, HelpCircle, LogOut,
-  Building2, CreditCard, User, Menu, X, Sparkles, Landmark, Shield, Warehouse, Car,
+  Building2, CreditCard, User, Menu, X, Sparkles, Landmark, Shield, Warehouse, Car, ArrowRightLeft,
 } from "lucide-react";
+import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, type ReactNode } from "react";
 import {
@@ -153,20 +154,33 @@ export type ProductMode = "invoicing" | "logbook" | "both";
 const INVOICING_KEYS = new Set(["prehlad","fakturacia","kontakty","produkty","sklad","uctovnictvo","efaktura","banka","api","nastavenia"]);
 const LOGBOOK_KEYS = new Set(["prehlad","jazdy","nastavenia"]);
 
-function filterNav(productMode: ProductMode): NavGroup[] {
-  if (productMode === "both") return NAV;
-  const allowed = productMode === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
+/**
+ * Resolve the *view* to render based on access (productMode) and the user's
+ * currently selected product (activeProduct from localStorage). When the user
+ * only has access to one product, that product wins regardless of activeProduct.
+ */
+function resolveView(productMode: ProductMode, activeProduct: ActiveProduct): ActiveProduct {
+  if (productMode === "invoicing") return "invoicing";
+  if (productMode === "logbook") return "logbook";
+  return activeProduct;
+}
+
+function filterNav(view: ActiveProduct): NavGroup[] {
+  const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
   return NAV.filter((g) => allowed.has(g.key));
 }
 
 export function AppShell({
-  companies, activeId, onChangeCompany, children, productMode = "both",
+  companies, activeId, onChangeCompany, children,
+  productMode = "both",
+  activeProduct = "invoicing",
 }: {
   companies: Company[];
   activeId: string | null;
   onChangeCompany: (id: string) => void;
   children: ReactNode;
   productMode?: ProductMode;
+  activeProduct?: ActiveProduct;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
@@ -176,7 +190,18 @@ export function AppShell({
   const [createOpen, setCreateOpen] = useState(false);
   const [adminRole, setAdminRole] = useState<string | null>(null);
 
-  const nav = filterNav(productMode);
+  const view = resolveView(productMode, activeProduct);
+  const nav = filterNav(view);
+  const homePath = landingPathFor(view);
+  const canSwitch = productMode === "both";
+
+  function switchProduct() {
+    const next: ActiveProduct = view === "invoicing" ? "logbook" : "invoicing";
+    setActiveProduct(next);
+    navigate({ to: landingPathFor(next) as any });
+    // Force a reload so the shell re-renders with the new view immediately.
+    setTimeout(() => window.location.reload(), 0);
+  }
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
