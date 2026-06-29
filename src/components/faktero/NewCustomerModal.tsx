@@ -79,7 +79,6 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
     onCreated(data);
   }
 
-  return (
   if (typeof document === "undefined") return null;
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
