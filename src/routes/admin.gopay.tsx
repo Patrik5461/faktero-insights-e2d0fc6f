@@ -101,27 +101,17 @@ function AdminGopayPage() {
   }
 
   async function onSave() {
-    // Don't send the masked placeholder as a "new" clientId
     const clientIdToSend = form.clientId.includes("•••") ? "" : form.clientId.trim();
-    if (!clientIdToSend && !data?.config?.hasClientId) {
-      toast.error("Zadajte Client ID.");
-      return;
-    }
-    if (!form.goid.trim()) {
-      toast.error("Zadajte GoID.");
-      return;
-    }
-    if (!data?.config?.hasClientSecret && !form.clientSecret) {
-      toast.error("Zadajte Client Secret.");
-      return;
-    }
+    if (!form.goid.trim()) { toast.error("Zadajte GoID."); return; }
+    if (!clientIdToSend && !data?.config?.hasClientId) { toast.error("Zadajte Client ID."); return; }
+    if (!data?.config?.hasClientSecret && !form.clientSecret) { toast.error("Zadajte Client Secret."); return; }
     setBusy("save");
     try {
       await fnSave({
         data: {
           env: form.env,
           goid: form.goid.trim(),
-          clientId: clientIdToSend || (data?.config?.clientIdMasked ?? ""), // keep existing if untouched? handled server-side via fallback to encrypted DB
+          clientId: clientIdToSend,
           clientSecret: form.clientSecret,
           webhookSecret: form.webhookSecret,
         },
