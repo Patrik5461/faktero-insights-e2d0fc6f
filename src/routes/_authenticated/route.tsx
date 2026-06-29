@@ -5,7 +5,7 @@ import { AppShell, type ProductMode } from "@/components/faktero/AppShell";
 import { getActiveCompanyId, setActiveCompanyId, fetchMyCompanies } from "@/lib/faktero/active-company";
 import { PlanGateBanner } from "@/components/faktero/PlanGateBanner";
 import { ProductModePicker } from "@/components/faktero/ProductModePicker";
-import { getActiveProduct, setActiveProduct, type ActiveProduct } from "@/lib/faktero/active-product";
+import { ACTIVE_PRODUCT_EVENT, getActiveProduct, setActiveProduct, type ActiveProduct } from "@/lib/faktero/active-product";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -30,8 +30,31 @@ function AuthedLayout() {
   const [companies, setCompanies] = useState<any[] | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [productMode, setProductMode] = useState<ProductMode | null>(null);
+  const [activeProduct, setActiveProductState] = useState<ActiveProduct | null>(() => getActiveProduct());
   const [profileLoaded, setProfileLoaded] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const requestedProduct: ActiveProduct = activeProduct ?? (productMode === "logbook" ? "logbook" : "invoicing");
+  const effectiveMode: ProductMode | null = productMode
+    ? productMode === "both"
+      ? "both"
+      : requestedProduct !== productMode
+        ? "both"
+        : productMode
+    : null;
+  const shellActiveProduct: ActiveProduct = effectiveMode === "logbook" ? "logbook" : requestedProduct;
+  const needsUpgrade = !!productMode && effectiveMode === "both" && productMode !== "both";
+
+  useEffect(() => {
+    const sync = () => setActiveProductState(getActiveProduct());
+    sync();
+    window.addEventListener("storage", sync);
+    window.addEventListener(ACTIVE_PRODUCT_EVENT, sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener(ACTIVE_PRODUCT_EVENT, sync);
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -67,6 +90,23 @@ function AuthedLayout() {
     return () => { mounted = false; };
   }, [pathname]);
 
+  useEffect(() => {
+    if (!profileLoaded || !productMode) return;
+    if (activeProduct !== shellActiveProduct) setActiveProduct(shellActiveProduct);
+  }, [activeProduct, productMode, profileLoaded, shellActiveProduct]);
+
+  useEffect(() => {
+    if (!needsUpgrade) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user || cancelled) return;
+      await supabase.from("profiles").update({ product_mode: "both" }).eq("id", data.user.id);
+      if (!cancelled) setProductMode("both");
+    })();
+    return () => { cancelled = true; };
+  }, [needsUpgrade]);
+
   if (companies === null || !profileLoaded) {
     return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Načítavam…</div>;
   }
@@ -81,47 +121,16 @@ function AuthedLayout() {
     return <ProductModePicker onPicked={(m) => setProductMode(m)} />;
   }
 
-  // Resolve which product view to render. The user's explicit choice on the
-  // login screen (stored in localStorage) is authoritative: if they picked a
-  // product their profile doesn't currently grant, treat them as having access
-  // to both so the choice actually takes effect (same account, two products).
-  const stored = getActiveProduct();
-  const effectiveMode: ProductMode =
-    productMode === "both"
-      ? "both"
-      : stored && stored !== productMode
-        ? "both"
-        : productMode;
-  const activeProduct: ActiveProduct =
-    effectiveMode === "both"
-      ? (stored ?? "invoicing")
-      : (effectiveMode as ActiveProduct);
-  if (stored !== activeProduct) setActiveProduct(activeProduct);
-
-  // Persist a cross-product login by upgrading the profile to "both" once.
-  const needsUpgrade = effectiveMode === "both" && productMode !== "both";
-  useEffect(() => {
-    if (!needsUpgrade) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user || cancelled) return;
-      await supabase.from("profiles").update({ product_mode: "both" }).eq("id", data.user.id);
-      if (!cancelled) setProductMode("both");
-    })();
-    return () => { cancelled = true; };
-  }, [needsUpgrade]);
-
   // Pass the effective mode to AppShell so the switcher appears immediately
   // (without waiting for the DB round-trip above).
-  const shellProductMode: ProductMode = effectiveMode;
+  const shellProductMode: ProductMode = effectiveMode ?? productMode;
 
   return (
     <AppShell
       companies={companies}
       activeId={activeId}
       productMode={shellProductMode}
-      activeProduct={activeProduct}
+      activeProduct={shellActiveProduct}
       onChangeCompany={(id) => {
         setActiveCompanyId(id);
         setActiveId(id);

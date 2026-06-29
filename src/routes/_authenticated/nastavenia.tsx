@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
+import { setActiveProduct } from "@/lib/faktero/active-product";
 
 export const Route = createFileRoute("/_authenticated/nastavenia")({
   head: () => ({ meta: [{ title: "Nastavenia — Faktero" }] }),
@@ -35,6 +36,7 @@ function SettingsPage() {
   async function saveMode(mode: "invoicing" | "logbook" | "both") {
     const { error } = await supabase.from("profiles").update({ product_mode: mode }).eq("id", profile.id);
     if (error) return toast.error(error.message);
+    setActiveProduct(mode === "logbook" ? "logbook" : "invoicing");
     setProfile({ ...profile, product_mode: mode });
     toast.success("Produkt aktualizovaný — obnovujem…");
     setTimeout(() => window.location.reload(), 500);
