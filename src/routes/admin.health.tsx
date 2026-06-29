@@ -44,7 +44,7 @@ function AdminHealthPage() {
     { title: "Infraštruktúra", prefix: (k) => ["db", "auth_admin", "storage", "service_role_any"].includes(k) },
     { title: "Core secrets", prefix: (k) => /^(SUPABASE_|FAKTERO_|APP_PUBLIC_URL|PAYMENT_SECRETS_KEY|COMMANDER_)/.test(k) },
     { title: "Integrácie", prefix: (k) => k.startsWith("int_") },
-    { title: "Prevádzka (24h)", prefix: (k) => k.endsWith("_24h") || k === "cron" || k === "errors_24h" },
+    { title: "Prevádzka (24h)", prefix: (k) => k.endsWith("_24h") || k === "cron" || k === "errors_24h" || k === "efa_pending" || k === "efa_profiles" || k === "efa_status" },
   ];
 
   return (
