@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS product_mode text;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_product_mode_check CHECK (product_mode IS NULL OR product_mode IN ('invoicing','logbook','both'));

@@ -148,13 +148,25 @@ function isPathActive(pathname: string, match: string[]) {
   return match.some((m) => pathname === m || pathname.startsWith(m + "/"));
 }
 
+export type ProductMode = "invoicing" | "logbook" | "both";
+
+const INVOICING_KEYS = new Set(["prehlad","fakturacia","kontakty","produkty","sklad","uctovnictvo","efaktura","banka","api","nastavenia"]);
+const LOGBOOK_KEYS = new Set(["prehlad","jazdy","nastavenia"]);
+
+function filterNav(productMode: ProductMode): NavGroup[] {
+  if (productMode === "both") return NAV;
+  const allowed = productMode === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
+  return NAV.filter((g) => allowed.has(g.key));
+}
+
 export function AppShell({
-  companies, activeId, onChangeCompany, children,
+  companies, activeId, onChangeCompany, children, productMode = "both",
 }: {
   companies: Company[];
   activeId: string | null;
   onChangeCompany: (id: string) => void;
   children: ReactNode;
+  productMode?: ProductMode;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
@@ -163,6 +175,8 @@ export function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [adminRole, setAdminRole] = useState<string | null>(null);
+
+  const nav = filterNav(productMode);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
@@ -174,7 +188,7 @@ export function AppShell({
     return () => { cancelled = true; };
   }, []);
 
-  const activeGroup = NAV.find((g) => isPathActive(pathname, g.match));
+  const activeGroup = nav.find((g) => isPathActive(pathname, g.match));
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -202,6 +216,7 @@ export function AppShell({
             </SheetTrigger>
             <SheetContent side="left" className="w-80 overflow-y-auto p-0">
               <MobileNav pathname={pathname} active={active} companies={companies}
+                nav={nav}
                 onChangeCompany={onChangeCompany} onSignOut={signOut}
                 onAddCompany={() => { setMobileOpen(false); setCreateOpen(true); }}
                 onClose={() => setMobileOpen(false)} />
@@ -242,7 +257,7 @@ export function AppShell({
 
           {/* Center nav */}
           <nav className="ml-2 hidden flex-1 items-center gap-0.5 lg:flex">
-            {NAV.map((g) => {
+            {nav.map((g) => {
               const active = isPathActive(pathname, g.match);
               if (g.children.length === 0) {
                 return (
@@ -290,6 +305,7 @@ export function AppShell({
             </form>
 
             {/* Quick create */}
+            {productMode !== "logbook" && (
             <DropdownMenu>
               <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90">
                 <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Vytvoriť</span>
@@ -303,6 +319,7 @@ export function AppShell({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
 
             {/* Help */}
             <Link to={"/api-dokumentacia" as any} className="hidden h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-secondary md:grid" aria-label="Pomoc">
@@ -366,11 +383,12 @@ export function AppShell({
 }
 
 function MobileNav({
-  pathname, active, companies, onChangeCompany, onSignOut, onAddCompany, onClose,
+  pathname, active, companies, nav, onChangeCompany, onSignOut, onAddCompany, onClose,
 }: {
   pathname: string;
   active: Company | undefined;
   companies: Company[];
+  nav: NavGroup[];
   onChangeCompany: (id: string) => void;
   onSignOut: () => void;
   onAddCompany: () => void;
@@ -402,7 +420,7 @@ function MobileNav({
         </div>
       )}
       <nav className="flex-1 overflow-y-auto px-2 py-3">
-        {NAV.map((g) => (
+        {nav.map((g) => (
           <div key={g.key} className="mb-3">
             <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{g.label}</div>
             {g.children.length === 0 ? (
