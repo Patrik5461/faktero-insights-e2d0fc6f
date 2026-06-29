@@ -13,19 +13,20 @@ export const aiParseInvoiceFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { prompt: string }) => input)
   .handler(async ({ data }): Promise<AiResult> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("OPENAI_API_KEY missing");
 
     const system = `Si asistent pre vytváranie slovenských faktúr. Z textu používateľa extrahuj položky faktúry.
 Vráť VÝLUČNE JSON v tvare:
 {"customer_hint": string | null, "currency": "EUR", "notes": string | null, "items": [{"name": string, "quantity": number, "unit": "ks"|"hod"|"m"|"kg"|"l", "unit_price": number, "vat_rate": 0|10|20}]}
 Ak cena je s DPH, odhadni jednotkovú cenu bez DPH. Štandardná DPH je 20%.`;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model,
         messages: [
           { role: "system", content: system },
           { role: "user", content: data.prompt },
@@ -35,7 +36,7 @@ Ak cena je s DPH, odhadni jednotkovú cenu bez DPH. Štandardná DPH je 20%.`;
     });
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`AI gateway: ${res.status} ${text.slice(0, 200)}`);
+      throw new Error(`OpenAI: ${res.status} ${text.slice(0, 200)}`);
     }
     const json: any = await res.json();
     const content = json?.choices?.[0]?.message?.content ?? "{}";
