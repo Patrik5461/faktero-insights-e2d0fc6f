@@ -304,6 +304,7 @@ export function AppShell({
             </form>
 
             {/* Quick create */}
+            {productMode !== "logbook" && (
             <DropdownMenu>
               <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90">
                 <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Vytvoriť</span>
@@ -317,6 +318,7 @@ export function AppShell({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
 
             {/* Help */}
             <Link to={"/api-dokumentacia" as any} className="hidden h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-secondary md:grid" aria-label="Pomoc">
