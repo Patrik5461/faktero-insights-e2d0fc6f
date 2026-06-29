@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { FileText, Car, Check } from "lucide-react";
 
@@ -27,9 +27,14 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [product, setProduct] = useState<ActiveProduct>(
-    () => getActiveProduct() ?? "invoicing",
-  );
+  // Start with a deterministic value so SSR markup matches first client render,
+  // then hydrate from localStorage to avoid hydration mismatch warnings.
+  const [product, setProduct] = useState<ActiveProduct>("invoicing");
+  useEffect(() => {
+    const stored = getActiveProduct();
+    if (stored && stored !== product) setProduct(stored);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function chooseProduct(p: ActiveProduct) {
     setProduct(p);
