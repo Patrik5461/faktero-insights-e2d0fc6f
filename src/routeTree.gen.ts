@@ -116,6 +116,7 @@ import { Route as AuthenticatedJazdyVozidlaRouteImport } from './routes/_authent
 import { Route as AuthenticatedJazdyPrehladRouteImport } from './routes/_authenticated/jazdy.prehlad'
 import { Route as AuthenticatedJazdyNovaRouteImport } from './routes/_authenticated/jazdy.nova'
 import { Route as AuthenticatedJazdyIntegracieRouteImport } from './routes/_authenticated/jazdy.integracie'
+import { Route as AuthenticatedJazdyGpsRouteImport } from './routes/_authenticated/jazdy.gps'
 import { Route as AuthenticatedJazdyExportRouteImport } from './routes/_authenticated/jazdy.export'
 import { Route as AuthenticatedImportySuperfakturaRouteImport } from './routes/_authenticated/importy.superfaktura'
 import { Route as AuthenticatedFakturySkenerRouteImport } from './routes/_authenticated/faktury.skener'
@@ -716,6 +717,11 @@ const AuthenticatedJazdyIntegracieRoute =
     path: '/jazdy/integracie',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedJazdyGpsRoute = AuthenticatedJazdyGpsRouteImport.update({
+  id: '/jazdy/gps',
+  path: '/jazdy/gps',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedJazdyExportRoute =
   AuthenticatedJazdyExportRouteImport.update({
     id: '/jazdy/export',
@@ -1004,6 +1010,7 @@ export interface FileRoutesByFullPath {
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
   '/jazdy/export': typeof AuthenticatedJazdyExportRoute
+  '/jazdy/gps': typeof AuthenticatedJazdyGpsRoute
   '/jazdy/integracie': typeof AuthenticatedJazdyIntegracieRouteWithChildren
   '/jazdy/nova': typeof AuthenticatedJazdyNovaRoute
   '/jazdy/prehlad': typeof AuthenticatedJazdyPrehladRoute
@@ -1143,6 +1150,7 @@ export interface FileRoutesByTo {
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
   '/jazdy/export': typeof AuthenticatedJazdyExportRoute
+  '/jazdy/gps': typeof AuthenticatedJazdyGpsRoute
   '/jazdy/nova': typeof AuthenticatedJazdyNovaRoute
   '/jazdy/prehlad': typeof AuthenticatedJazdyPrehladRoute
   '/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
@@ -1290,6 +1298,7 @@ export interface FileRoutesById {
   '/_authenticated/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/_authenticated/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
   '/_authenticated/jazdy/export': typeof AuthenticatedJazdyExportRoute
+  '/_authenticated/jazdy/gps': typeof AuthenticatedJazdyGpsRoute
   '/_authenticated/jazdy/integracie': typeof AuthenticatedJazdyIntegracieRouteWithChildren
   '/_authenticated/jazdy/nova': typeof AuthenticatedJazdyNovaRoute
   '/_authenticated/jazdy/prehlad': typeof AuthenticatedJazdyPrehladRoute
@@ -1438,6 +1447,7 @@ export interface FileRouteTypes {
     | '/faktury/skener'
     | '/importy/superfaktura'
     | '/jazdy/export'
+    | '/jazdy/gps'
     | '/jazdy/integracie'
     | '/jazdy/nova'
     | '/jazdy/prehlad'
@@ -1577,6 +1587,7 @@ export interface FileRouteTypes {
     | '/faktury/skener'
     | '/importy/superfaktura'
     | '/jazdy/export'
+    | '/jazdy/gps'
     | '/jazdy/nova'
     | '/jazdy/prehlad'
     | '/jazdy/vozidla'
@@ -1723,6 +1734,7 @@ export interface FileRouteTypes {
     | '/_authenticated/faktury/skener'
     | '/_authenticated/importy/superfaktura'
     | '/_authenticated/jazdy/export'
+    | '/_authenticated/jazdy/gps'
     | '/_authenticated/jazdy/integracie'
     | '/_authenticated/jazdy/nova'
     | '/_authenticated/jazdy/prehlad'
@@ -2597,6 +2609,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJazdyIntegracieRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/jazdy/gps': {
+      id: '/_authenticated/jazdy/gps'
+      path: '/jazdy/gps'
+      fullPath: '/jazdy/gps'
+      preLoaderRoute: typeof AuthenticatedJazdyGpsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/jazdy/export': {
       id: '/_authenticated/jazdy/export'
       path: '/jazdy/export'
@@ -3019,6 +3038,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFakturySkenerRoute: typeof AuthenticatedFakturySkenerRoute
   AuthenticatedImportySuperfakturaRoute: typeof AuthenticatedImportySuperfakturaRoute
   AuthenticatedJazdyExportRoute: typeof AuthenticatedJazdyExportRoute
+  AuthenticatedJazdyGpsRoute: typeof AuthenticatedJazdyGpsRoute
   AuthenticatedJazdyIntegracieRoute: typeof AuthenticatedJazdyIntegracieRouteWithChildren
   AuthenticatedJazdyNovaRoute: typeof AuthenticatedJazdyNovaRoute
   AuthenticatedJazdyPrehladRoute: typeof AuthenticatedJazdyPrehladRoute
@@ -3064,6 +3084,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFakturySkenerRoute: AuthenticatedFakturySkenerRoute,
   AuthenticatedImportySuperfakturaRoute: AuthenticatedImportySuperfakturaRoute,
   AuthenticatedJazdyExportRoute: AuthenticatedJazdyExportRoute,
+  AuthenticatedJazdyGpsRoute: AuthenticatedJazdyGpsRoute,
   AuthenticatedJazdyIntegracieRoute:
     AuthenticatedJazdyIntegracieRouteWithChildren,
   AuthenticatedJazdyNovaRoute: AuthenticatedJazdyNovaRoute,
