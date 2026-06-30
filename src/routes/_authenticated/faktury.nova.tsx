@@ -250,6 +250,25 @@ function NewInvoice() {
                 />
               </div>
               <div>
+                <label className="text-xs font-medium text-muted-foreground">Typ dokladu</label>
+                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as any })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="regular">Faktúra</option>
+                  <option value="proforma">Zálohová faktúra</option>
+                  <option value="credit_note">Dobropis</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Dátum vystavenia</label>
+                <input type="date" value={form.issue_date} onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Dátum dodania</label>
+                <input type="date" value={form.delivery_date} onChange={(e) => setForm({ ...form, delivery_date: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
                 <label className="text-xs font-medium text-muted-foreground">Splatnosť</label>
                 <div className="mt-1 flex gap-2">
                   <input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })}
@@ -266,21 +285,28 @@ function NewInvoice() {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Dátum vystavenia</label>
-                <input type="date" value={form.issue_date} onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
+                <label className="text-xs font-medium text-muted-foreground">Variabilný symbol</label>
+                <input value={form.variable_symbol} onChange={(e) => setForm({ ...form, variable_symbol: e.target.value })}
+                  placeholder="Automaticky podľa čísla faktúry"
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Typ dokladu</label>
-                <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as any })}
+                <label className="text-xs font-medium text-muted-foreground">Spôsob platby</label>
+                <select value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="regular">Faktúra</option>
-                  <option value="proforma">Zálohová faktúra</option>
-                  <option value="credit_note">Dobropis</option>
+                  <option value="bank_transfer">Bankový prevod</option>
+                  <option value="cash">Hotovosť</option>
+                  <option value="card">Karta</option>
                 </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Mena</label>
+                <input value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
               </div>
             </div>
           </section>
+
 
           {/* SECTION 2 — items */}
           <section className="rounded-2xl border border-border bg-card p-5">
@@ -409,22 +435,11 @@ function NewInvoice() {
               {advancedOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
             </button>
             {advancedOpen && (
-              <div className="grid gap-4 p-5 pt-0 sm:grid-cols-2">
-                <In label="Dátum dodania" type="date" value={form.delivery_date} onChange={(v) => setForm({ ...form, delivery_date: v })} />
-                <In label="Variabilný symbol" value={form.variable_symbol} onChange={(v) => setForm({ ...form, variable_symbol: v })} />
-                <In label="Mena" value={form.currency} onChange={(v) => setForm({ ...form, currency: v })} />
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Spôsob platby</label>
-                  <select value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
-                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="bank_transfer">Bankový prevod</option>
-                    <option value="cash">Hotovosť</option>
-                    <option value="card">Karta</option>
-                  </select>
-                </div>
-                <label className="block sm:col-span-2">
+              <div className="grid gap-4 p-5 pt-0">
+                <label className="block">
                   <span className="text-xs font-medium text-muted-foreground">Poznámka</span>
                   <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                    placeholder="Voliteľná poznámka, ktorá sa zobrazí na faktúre"
                     className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                 </label>
               </div>
@@ -809,14 +824,5 @@ function AiModal({ prompt, setPrompt, loading, onClose, onRun }: {
         </div>
       </div>
     </div>
-  );
-}
-
-function In({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
-  return (
-    <label className="block">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-    </label>
   );
 }
