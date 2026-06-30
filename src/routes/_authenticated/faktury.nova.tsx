@@ -64,6 +64,8 @@ function NewInvoice() {
     payment_method: "bank_transfer",
     delivery_method: "",
     rounding_mode: "per_document" as "per_item" | "per_document" | "retail",
+    reverse_charge: false,
+    reverse_charge_type: "" as "" | "domestic_69" | "eu_b2b" | "export",
     advance_invoice_id: "" as string | "",
     advance_amount: 0,
     notes: "",
