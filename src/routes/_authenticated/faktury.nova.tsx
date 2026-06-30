@@ -19,6 +19,10 @@ import { findCustomerByIcoFn } from "@/lib/faktero/company-lookup.functions";
 
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    type: (s.type === "proforma" || s.type === "credit_note" ? s.type : undefined) as
+      | "proforma" | "credit_note" | undefined,
+  }),
   component: NewInvoice,
 });
 
@@ -38,6 +42,7 @@ type StockMeta = { stock_item_id: string; track_stock: boolean; available: numbe
 
 function NewInvoice() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const triggerEvt = useServerFn(triggerEventFn);
   const aiParse = useServerFn(aiParseInvoiceFn);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -51,7 +56,7 @@ function NewInvoice() {
   const [aiLoading, setAiLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
-    type: "regular" as "regular" | "proforma" | "credit_note",
+    type: (search.type ?? "regular") as "regular" | "proforma" | "credit_note",
     customer_id: "",
     issue_date: new Date().toISOString().slice(0, 10),
     delivery_date: new Date().toISOString().slice(0, 10),

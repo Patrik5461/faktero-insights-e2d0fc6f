@@ -11,9 +11,10 @@ export type PagedListOptions = {
   searchColumns?: string[]; // ilike OR search
   orderBy?: { column: string; ascending?: boolean };
   pageSizeKey?: string; // localStorage key suffix
+  equals?: Record<string, string | number | boolean | null>;
 };
 
-export function usePagedList({ resource, searchColumns = [], orderBy, pageSizeKey }: PagedListOptions) {
+export function usePagedList({ resource, searchColumns = [], orderBy, pageSizeKey, equals }: PagedListOptions) {
   const [pageSize, setPageSize] = useStoredPageSize(pageSizeKey ?? resource);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -41,6 +42,11 @@ export function usePagedList({ resource, searchColumns = [], orderBy, pageSizeKe
         .from(resource as any)
         .select("*", { count: "exact" })
         .eq("company_id", cid);
+      if (equals) {
+        for (const [k, v] of Object.entries(equals)) {
+          q = v === null ? q.is(k, null) : q.eq(k, v);
+        }
+      }
       q = showDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
       if (search.trim() && searchColumns.length) {
         const term = search.trim().replace(/[%_,]/g, "");
@@ -61,7 +67,7 @@ export function usePagedList({ resource, searchColumns = [], orderBy, pageSizeKe
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [resource, page, pageSize, search, showDeleted, nonce, orderBy?.column, orderBy?.ascending, searchColumns.join(",")]);
+  }, [resource, page, pageSize, search, showDeleted, nonce, orderBy?.column, orderBy?.ascending, searchColumns.join(","), JSON.stringify(equals ?? {})]);
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 

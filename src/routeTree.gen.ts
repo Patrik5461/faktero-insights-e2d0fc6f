@@ -75,6 +75,7 @@ import { Route as AuthenticatedApiKluceRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedApiDokumentaciaRouteImport } from './routes/_authenticated/api-dokumentacia'
 import { Route as AuthenticatedAiAsistentRouteImport } from './routes/_authenticated/ai-asistent'
 import { Route as AdminCompaniesIndexRouteImport } from './routes/admin.companies.index'
+import { Route as AuthenticatedZalohoveIndexRouteImport } from './routes/_authenticated/zalohove.index'
 import { Route as AuthenticatedSkladIndexRouteImport } from './routes/_authenticated/sklad.index'
 import { Route as AuthenticatedPonukyIndexRouteImport } from './routes/_authenticated/ponuky.index'
 import { Route as AuthenticatedOpakovaneIndexRouteImport } from './routes/_authenticated/opakovane.index'
@@ -487,6 +488,12 @@ const AdminCompaniesIndexRoute = AdminCompaniesIndexRouteImport.update({
   path: '/companies/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AuthenticatedZalohoveIndexRoute =
+  AuthenticatedZalohoveIndexRouteImport.update({
+    id: '/zalohove/',
+    path: '/zalohove/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSkladIndexRoute = AuthenticatedSkladIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -1021,6 +1028,7 @@ export interface FileRoutesByFullPath {
   '/opakovane/': typeof AuthenticatedOpakovaneIndexRoute
   '/ponuky/': typeof AuthenticatedPonukyIndexRoute
   '/sklad/': typeof AuthenticatedSkladIndexRoute
+  '/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
@@ -1156,6 +1164,7 @@ export interface FileRoutesByTo {
   '/opakovane': typeof AuthenticatedOpakovaneIndexRoute
   '/ponuky': typeof AuthenticatedPonukyIndexRoute
   '/sklad': typeof AuthenticatedSkladIndexRoute
+  '/zalohove': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies': typeof AdminCompaniesIndexRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
@@ -1301,6 +1310,7 @@ export interface FileRoutesById {
   '/_authenticated/opakovane/': typeof AuthenticatedOpakovaneIndexRoute
   '/_authenticated/ponuky/': typeof AuthenticatedPonukyIndexRoute
   '/_authenticated/sklad/': typeof AuthenticatedSkladIndexRoute
+  '/_authenticated/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
   '/_authenticated/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/_authenticated/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
@@ -1446,6 +1456,7 @@ export interface FileRouteTypes {
     | '/opakovane/'
     | '/ponuky/'
     | '/sklad/'
+    | '/zalohove/'
     | '/admin/companies/'
     | '/faktury/$id/upravit'
     | '/jazdy/integracie/commander'
@@ -1581,6 +1592,7 @@ export interface FileRouteTypes {
     | '/opakovane'
     | '/ponuky'
     | '/sklad'
+    | '/zalohove'
     | '/admin/companies'
     | '/faktury/$id/upravit'
     | '/jazdy/integracie/commander'
@@ -1725,6 +1737,7 @@ export interface FileRouteTypes {
     | '/_authenticated/opakovane/'
     | '/_authenticated/ponuky/'
     | '/_authenticated/sklad/'
+    | '/_authenticated/zalohove/'
     | '/admin/companies/'
     | '/_authenticated/faktury/$id/upravit'
     | '/_authenticated/jazdy/integracie/commander'
@@ -2270,6 +2283,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/companies/'
       preLoaderRoute: typeof AdminCompaniesIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/_authenticated/zalohove/': {
+      id: '/_authenticated/zalohove/'
+      path: '/zalohove'
+      fullPath: '/zalohove/'
+      preLoaderRoute: typeof AuthenticatedZalohoveIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/sklad/': {
       id: '/_authenticated/sklad/'
@@ -2971,6 +2991,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedJazdyIndexRoute: typeof AuthenticatedJazdyIndexRoute
   AuthenticatedOpakovaneIndexRoute: typeof AuthenticatedOpakovaneIndexRoute
   AuthenticatedPonukyIndexRoute: typeof AuthenticatedPonukyIndexRoute
+  AuthenticatedZalohoveIndexRoute: typeof AuthenticatedZalohoveIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -3014,6 +3035,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedJazdyIndexRoute: AuthenticatedJazdyIndexRoute,
   AuthenticatedOpakovaneIndexRoute: AuthenticatedOpakovaneIndexRoute,
   AuthenticatedPonukyIndexRoute: AuthenticatedPonukyIndexRoute,
+  AuthenticatedZalohoveIndexRoute: AuthenticatedZalohoveIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

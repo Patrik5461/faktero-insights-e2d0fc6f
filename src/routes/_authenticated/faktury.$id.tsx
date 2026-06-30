@@ -55,6 +55,8 @@ function InvoiceDetail() {
   const [syncBusy, setSyncBusy] = useState(false);
   const syncPayFn = useServerFn(syncInvoicePayment);
   const [hasPayLink, setHasPayLink] = useState(false);
+  const [settledIn, setSettledIn] = useState<any | null>(null); // for proforma: invoice that consumed it
+  const [advanceProforma, setAdvanceProforma] = useState<any | null>(null); // for regular: linked proforma
 
   async function handleCreatePayLink() {
     if (!inv?.company_id) return;
@@ -155,6 +157,23 @@ function InvoiceDetail() {
         const sm: Record<string, string> = {}; (sis ?? []).forEach((s: any) => { sm[s.id] = s.sku ?? s.id.slice(0, 6); });
         setWarehouseNames(wm); setStockSkus(sm);
       } else { setWarehouseNames({}); setStockSkus({}); }
+      // Advance linkage
+      if (data.type === "proforma") {
+        const { data: consumer } = await supabase.from("invoices")
+          .select("id, invoice_number, status, issue_date, total, currency, type")
+          .eq("advance_invoice_id", data.id).is("deleted_at", null)
+          .order("created_at", { ascending: false }).limit(1).maybeSingle();
+        setSettledIn(consumer ?? null);
+        setAdvanceProforma(null);
+      } else if (data.advance_invoice_id) {
+        const { data: pf } = await supabase.from("invoices")
+          .select("id, invoice_number, status, issue_date, total, currency, type")
+          .eq("id", data.advance_invoice_id).maybeSingle();
+        setAdvanceProforma(pf ?? null);
+        setSettledIn(null);
+      } else {
+        setSettledIn(null); setAdvanceProforma(null);
+      }
     }
   }
   useEffect(() => { load(); }, [id]);
@@ -326,7 +345,7 @@ function InvoiceDetail() {
   return (
     <>
       <PageHeader
-        title={`Faktúra ${inv.invoice_number}`}
+        title={`${inv.type === "proforma" ? "Zálohová faktúra" : inv.type === "credit_note" ? "Dobropis" : "Faktúra"} ${inv.invoice_number}`}
         description={`Vystavená ${inv.issue_date} · splatná ${inv.due_date}`}
         action={
           <div className="flex flex-wrap gap-2">
@@ -459,6 +478,39 @@ function InvoiceDetail() {
               <div>Variabilný symbol: <span className="font-mono">{inv.variable_symbol}</span></div>
               <div>Splatnosť: {inv.due_date}</div>
             </div>
+            {inv.type === "proforma" && (
+              <div className="rounded-xl border border-border bg-card p-5 text-sm">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Zálohová faktúra</div>
+                {settledIn ? (
+                  <div className="mt-2 space-y-1">
+                    <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">Zúčtovaná</div>
+                    <div>Zúčtovaná vo faktúre:{" "}
+                      <Link to="/faktury/$id" params={{ id: settledIn.id }} className="font-medium text-primary hover:underline">
+                        {settledIn.invoice_number}
+                      </Link>
+                    </div>
+                    <div className="text-xs text-muted-foreground">{settledIn.issue_date} · {Number(settledIn.total).toFixed(2)} {settledIn.currency}</div>
+                  </div>
+                ) : (
+                  <div className="mt-2 text-muted-foreground">Zatiaľ nezúčtovaná. Zálohu môžete použiť pri vytváraní novej faktúry cez „Pridať zálohovú faktúru".</div>
+                )}
+              </div>
+            )}
+            {advanceProforma && (
+              <div className="rounded-xl border border-border bg-card p-5 text-sm">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Zúčtovaná záloha</div>
+                <div className="mt-2 space-y-1">
+                  <div>Zálohová faktúra:{" "}
+                    <Link to="/faktury/$id" params={{ id: advanceProforma.id }} className="font-medium text-primary hover:underline">
+                      {advanceProforma.invoice_number}
+                    </Link>
+                  </div>
+                  {inv.advance_amount != null && (
+                    <div className="text-xs text-muted-foreground">Odpočítaná suma: {Number(inv.advance_amount).toFixed(2)} {inv.currency}</div>
+                  )}
+                </div>
+              </div>
+            )}
             {stockMoves.length > 0 && (
               <div className="rounded-xl border border-border bg-card p-5 text-sm">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Sklad</div>
