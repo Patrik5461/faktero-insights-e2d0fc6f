@@ -49,7 +49,10 @@ type InvoiceRow = {
   customer_zip?: string | null;
   customer_country?: string | null;
   customer_email?: string | null;
+  reverse_charge?: boolean | null;
+  reverse_charge_type?: "domestic_69" | "eu_b2b" | "export" | null;
 };
+
 
 type InvoiceItemRow = {
   id: string;
