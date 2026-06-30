@@ -339,11 +339,78 @@ function NewInvoice() {
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Mena</label>
-                <input value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.flag} {c.code} {c.symbol} — {c.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Quick action links */}
+            <div className="mt-4 flex flex-wrap gap-3 border-t border-border pt-4 text-sm">
+              <button type="button" onClick={() => setPickerOpen("copy")}
+                className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                <FileDown className="h-4 w-4" /> Načítať položky z dokladu
+              </button>
+              <button type="button" onClick={() => setPickerOpen("advance")}
+                className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                <Link2 className="h-4 w-4" /> {form.advance_invoice_id ? "Zmeniť zálohovú faktúru" : "Pridať zálohovú faktúru"}
+              </button>
+              {form.advance_invoice_id && (
+                <span className="text-xs text-muted-foreground">
+                  Záloha odpočítaná: <strong>{Number(form.advance_amount).toFixed(2)} {form.currency}</strong>
+                  <button type="button" onClick={() => setForm({ ...form, advance_invoice_id: "", advance_amount: 0 })}
+                    className="ml-2 text-destructive hover:underline">Zrušiť</button>
+                </span>
+              )}
+            </div>
+          </section>
+
+          {/* SECTION 1b — payment & symbols */}
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <SectionHeader icon={CreditCard} title="Platobné údaje a symboly" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Konštantný symbol</label>
+                <input value={form.constant_symbol} onChange={(e) => setForm({ ...form, constant_symbol: e.target.value })}
+                  placeholder="napr. 0308"
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Špecifický symbol</label>
+                <input value={form.specific_symbol} onChange={(e) => setForm({ ...form, specific_symbol: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Číslo objednávky</label>
+                <input value={form.order_number} onChange={(e) => setForm({ ...form, order_number: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Spôsob dodania</label>
+                <select value={form.delivery_method} onChange={(e) => setForm({ ...form, delivery_method: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">— nevyplnené —</option>
+                  <option value="personal">Osobne</option>
+                  <option value="courier">Kuriér</option>
+                  <option value="post">Pošta</option>
+                  <option value="electronic">Elektronicky</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted-foreground">Spôsob zaokrúhľovania</label>
+                <select value={form.rounding_mode} onChange={(e) => setForm({ ...form, rounding_mode: e.target.value as any })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="per_item">Po položkách (zaokrúhli každú položku zvlášť)</option>
+                  <option value="per_document">Za celý doklad (zaokrúhli až finálny súčet)</option>
+                  <option value="retail">Maloobchod (na 0,05 €, SK pravidlá)</option>
+                </select>
               </div>
             </div>
           </section>
+
 
 
           {/* SECTION 2 — items */}
