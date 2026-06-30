@@ -2306,6 +2306,9 @@ export type Database = {
           full_name: string | null
           id: string
           product_mode: string | null
+          push_platform: string | null
+          push_token: string | null
+          push_updated_at: string | null
           updated_at: string
         }
         Insert: {
@@ -2315,6 +2318,9 @@ export type Database = {
           full_name?: string | null
           id: string
           product_mode?: string | null
+          push_platform?: string | null
+          push_token?: string | null
+          push_updated_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -2324,6 +2330,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           product_mode?: string | null
+          push_platform?: string | null
+          push_token?: string | null
+          push_updated_at?: string | null
           updated_at?: string
         }
         Relationships: []
