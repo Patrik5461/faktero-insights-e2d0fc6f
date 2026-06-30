@@ -20,10 +20,11 @@ export const Route = createFileRoute("/api/public/hooks/push-overdue")({
         const today = new Date().toISOString().slice(0, 10);
         const { data: invoices, error } = await supabaseAdmin
           .from("invoices")
-          .select("id, invoice_number, company_id, total_amount, currency, due_date, status")
+          .select("id, invoice_number, company_id, total, currency, due_date, status")
           .lt("due_date", today)
-          .in("status", ["sent"])
+          .eq("status", "sent")
           .is("paid_at", null)
+          .is("deleted_at", null)
           .limit(500);
 
         if (error) return Response.json({ ok: false, error: error.message }, { status: 500 });
@@ -33,7 +34,7 @@ export const Route = createFileRoute("/api/public/hooks/push-overdue")({
           const r = await sendPush({
             company_id: inv.company_id,
             title: "Faktúra po splatnosti ⚠️",
-            body: `Faktúra ${inv.invoice_number} (${inv.total_amount} ${inv.currency ?? "EUR"}) je po splatnosti.`,
+            body: `Faktúra ${inv.invoice_number} (${inv.total} ${inv.currency ?? "EUR"}) je po splatnosti.`,
             data: { path: `/faktury/${inv.id}`, invoice_id: inv.id },
           });
           if (r.ok) sent += r.sent ?? 0;
