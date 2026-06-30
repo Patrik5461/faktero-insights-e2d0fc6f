@@ -142,6 +142,7 @@ import { Route as ApiPublicWebhooksGopayMerchantRouteImport } from './routes/api
 import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/tesla/callback'
 import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/public/tatrabanka/callback'
 import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/public/hooks/recurring-run'
+import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
 import { Route as AuthenticatedSkladProduktyIdRouteImport } from './routes/_authenticated/sklad.produkty.$id'
 import { Route as AuthenticatedSkladPohybyIdRouteImport } from './routes/_authenticated/sklad.pohyby.$id'
@@ -862,6 +863,12 @@ const ApiPublicHooksRecurringRunRoute =
     path: '/api/public/hooks/recurring-run',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksPushOverdueRoute =
+  ApiPublicHooksPushOverdueRouteImport.update({
+    id: '/api/public/hooks/push-overdue',
+    path: '/api/public/hooks/push-overdue',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksCommanderSyncRoute =
   ApiPublicHooksCommanderSyncRouteImport.update({
     id: '/api/public/hooks/commander-sync',
@@ -1059,6 +1066,7 @@ export interface FileRoutesByFullPath {
   '/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
   '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
@@ -1198,6 +1206,7 @@ export interface FileRoutesByTo {
   '/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
   '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
@@ -1347,6 +1356,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
   '/_authenticated/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
@@ -1496,6 +1506,7 @@ export interface FileRouteTypes {
     | '/sklad/pohyby/$id'
     | '/sklad/produkty/$id'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tesla/callback'
@@ -1635,6 +1646,7 @@ export interface FileRouteTypes {
     | '/sklad/pohyby/$id'
     | '/sklad/produkty/$id'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tesla/callback'
@@ -1783,6 +1795,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/pohyby/$id'
     | '/_authenticated/sklad/produkty/$id'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tesla/callback'
@@ -1847,6 +1860,7 @@ export interface RootRouteChildren {
   DocsOnlinePlatbyGopayRoute: typeof DocsOnlinePlatbyGopayRoute
   PomocOnlinePlatbyGopayRoute: typeof PomocOnlinePlatbyGopayRoute
   ApiPublicHooksCommanderSyncRoute: typeof ApiPublicHooksCommanderSyncRoute
+  ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
   ApiPublicHooksRecurringRunRoute: typeof ApiPublicHooksRecurringRunRoute
   ApiPublicTatrabankaCallbackRoute: typeof ApiPublicTatrabankaCallbackRoute
   ApiPublicTeslaCallbackRoute: typeof ApiPublicTeslaCallbackRoute
@@ -2791,6 +2805,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRecurringRunRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/push-overdue': {
+      id: '/api/public/hooks/push-overdue'
+      path: '/api/public/hooks/push-overdue'
+      fullPath: '/api/public/hooks/push-overdue'
+      preLoaderRoute: typeof ApiPublicHooksPushOverdueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/commander-sync': {
       id: '/api/public/hooks/commander-sync'
       path: '/api/public/hooks/commander-sync'
@@ -3343,6 +3364,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsOnlinePlatbyGopayRoute: DocsOnlinePlatbyGopayRoute,
   PomocOnlinePlatbyGopayRoute: PomocOnlinePlatbyGopayRoute,
   ApiPublicHooksCommanderSyncRoute: ApiPublicHooksCommanderSyncRoute,
+  ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,
   ApiPublicHooksRecurringRunRoute: ApiPublicHooksRecurringRunRoute,
   ApiPublicTatrabankaCallbackRoute: ApiPublicTatrabankaCallbackRoute,
   ApiPublicTeslaCallbackRoute: ApiPublicTeslaCallbackRoute,
@@ -3356,13 +3378,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
