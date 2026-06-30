@@ -57,11 +57,29 @@ function NewInvoice() {
     delivery_date: new Date().toISOString().slice(0, 10),
     due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
     variable_symbol: "",
+    constant_symbol: "",
+    specific_symbol: "",
+    order_number: "",
     currency: "EUR",
     payment_method: "bank_transfer",
+    delivery_method: "",
+    rounding_mode: "per_document" as "per_item" | "per_document" | "retail",
+    advance_invoice_id: "" as string | "",
+    advance_amount: 0,
     notes: "",
   });
   const [items, setItems] = useState<Item[]>([{ ...EMPTY_ITEM }]);
+  const [pickerOpen, setPickerOpen] = useState<null | "copy" | "advance">(null);
+
+  const CURRENCIES: { code: string; symbol: string; flag: string; name: string }[] = [
+    { code: "EUR", symbol: "€",  flag: "🇪🇺", name: "Euro" },
+    { code: "CZK", symbol: "Kč", flag: "🇨🇿", name: "Česká koruna" },
+    { code: "USD", symbol: "$",  flag: "🇺🇸", name: "US dolár" },
+    { code: "GBP", symbol: "£",  flag: "🇬🇧", name: "Libra" },
+    { code: "PLN", symbol: "zł", flag: "🇵🇱", name: "Zlotý" },
+    { code: "HUF", symbol: "Ft", flag: "🇭🇺", name: "Forint" },
+    { code: "CHF", symbol: "₣",  flag: "🇨🇭", name: "Frank" },
+  ];
 
   useEffect(() => {
     const cid = getActiveCompanyId();
