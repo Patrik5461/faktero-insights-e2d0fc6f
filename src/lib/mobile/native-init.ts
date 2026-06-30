@@ -3,6 +3,12 @@
  * Spúšťať z `useEffect` v root layoute. Bezpečné na webe — všetko sa preskočí.
  */
 export async function initNativePlatform(): Promise<void> {
+  // Offline queue listeners — fungujú aj na webe (PWA)
+  try {
+    const { initOfflineSync } = await import("./offline-queue");
+    initOfflineSync();
+  } catch {}
+
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return;

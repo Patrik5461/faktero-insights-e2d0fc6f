@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Car, Check } from "lucide-react";
+import { FileText, Car, Check, Fingerprint } from "lucide-react";
+import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
 
 import { toast } from "sonner";
 import { Logo } from "@/components/faktero/Logo";
@@ -136,6 +137,8 @@ function LoginPage() {
           </button>
         </form>
 
+        <BiometricLoginButton onSuccess={() => navigate({ to: landingPathFor(product) as any })} />
+
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Nemáte účet?{" "}
           <Link to="/registracia" className="font-medium text-primary hover:underline">
@@ -170,6 +173,26 @@ function ProductButton({
       </span>
       <span className="flex-1">{label}</span>
       {selected && <Check className="h-3.5 w-3.5 text-primary" />}
+    </button>
+  );
+}
+
+function BiometricLoginButton({ onSuccess }: { onSuccess: () => void }) {
+  const [available, setAvailable] = useState(false);
+  useEffect(() => { isBiometricAvailable().then(setAvailable); }, []);
+  if (!available) return null;
+  async function go() {
+    const r = await loginWithBiometric();
+    if (!r.ok) return toast.error(r.error ?? "Biometria zlyhala");
+    onSuccess();
+  }
+  return (
+    <button
+      type="button"
+      onClick={go}
+      className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-secondary"
+    >
+      <Fingerprint className="h-4 w-4" /> Prihlásiť sa biometriou
     </button>
   );
 }
