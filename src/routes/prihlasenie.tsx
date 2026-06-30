@@ -176,3 +176,23 @@ function ProductButton({
     </button>
   );
 }
+
+function BiometricLoginButton({ onSuccess }: { onSuccess: () => void }) {
+  const [available, setAvailable] = useState(false);
+  useEffect(() => { isBiometricAvailable().then(setAvailable); }, []);
+  if (!available) return null;
+  async function go() {
+    const r = await loginWithBiometric();
+    if (!r.ok) return toast.error(r.error ?? "Biometria zlyhala");
+    onSuccess();
+  }
+  return (
+    <button
+      type="button"
+      onClick={go}
+      className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-secondary"
+    >
+      <Fingerprint className="h-4 w-4" /> Prihlásiť sa biometriou
+    </button>
+  );
+}
