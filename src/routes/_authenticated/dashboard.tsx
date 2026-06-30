@@ -189,7 +189,7 @@ function Dashboard() {
       />
       <PageBody>
         {/* TOP KPI ROW — 5 cards, debtors highlighted */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
           <KpiCard
             icon={TrendingUp}
             label="Obrat tento mesiac"
@@ -229,7 +229,7 @@ function Dashboard() {
         </div>
 
         {/* MAIN CHARTS */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
           <Panel className="lg:col-span-2" title="Obrat (posledných 12 mesiacov)" icon={TrendingUp}>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -292,7 +292,7 @@ function Dashboard() {
         </div>
 
         {/* SECOND ROW */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
           <Panel title="Pohľadávky" icon={HandCoins}>
             <Row label="Celkové pohľadávky" value={fmt(metrics.receivables)} strong />
             <Row label="Po splatnosti" value={fmt(metrics.overdueAmount)} tone="destructive" />
@@ -332,7 +332,7 @@ function Dashboard() {
         </div>
 
         {/* THIRD ROW */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6">
             <div className="absolute -right-12 -top-12 h-44 w-44 rounded-full bg-primary/20 blur-3xl" />
             <div className="relative">
@@ -405,7 +405,7 @@ function Dashboard() {
             </Link>
           </div>
           <div className="mb-6">
-            <Link to="/jazdy" className="group flex items-center justify-between rounded-2xl border border-border bg-card p-5 transition-colors hover:bg-muted/30">
+            <Link to="/jazdy" className="group flex items-center justify-between rounded-2xl border border-border/60 bg-card p-6 transition-colors hover:bg-muted/30">
               <div className="flex items-center gap-4">
                 <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary"><Car className="h-5 w-5" /></div>
                 <div>
@@ -528,7 +528,7 @@ function KpiCard({
 }: { icon: any; label: string; value: string; sublabel?: string; trend?: number; tone?: "destructive" }) {
   const trendUp = (trend ?? 0) >= 0;
   return (
-    <div className="group rounded-2xl border border-border bg-card p-5 transition hover:shadow-md">
+    <div className="group rounded-2xl border border-border/60 bg-card p-6 transition hover:shadow-md">
       <div className="flex items-center justify-between">
         <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
         <Icon className={`h-4 w-4 ${tone === "destructive" ? "text-destructive" : "text-muted-foreground"}`} />
@@ -566,7 +566,7 @@ function HighlightKpi({ label, value, sublabel }: { label: string; value: string
 
 function Panel({ title, icon: Icon, children, className }: { title: string; icon?: any; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-border bg-card p-5 ${className ?? ""}`}>
+    <div className={`rounded-2xl border border-border/60 bg-card p-6 ${className ?? ""}`}>
       <div className="mb-4 flex items-center gap-2">
         {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
         <h2 className="text-sm font-semibold uppercase tracking-wide">{title}</h2>
