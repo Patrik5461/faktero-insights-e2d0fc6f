@@ -46,6 +46,30 @@ export async function triggerEvent(opts: {
     .from("webhooks")
     .select("id, url, secret, events, active")
     .eq("company_id", opts.company_id);
+  // Fire-and-forget push notifikácia (samostatne od webhookov)
+  try {
+    const { sendPush } = await import("./push.server");
+    if (opts.event === "invoice.paid") {
+      const inv = opts.data as any;
+      await sendPush({
+        company_id: opts.company_id,
+        title: "Faktúra zaplatená 💰",
+        body: `Faktúra ${inv.invoice_number ?? ""} bola označená ako uhradená.`,
+        data: { path: `/faktury/${inv.id}`, invoice_id: String(inv.id ?? "") },
+      });
+    } else if (opts.event === "efaktura.received") {
+      const d = opts.data as any;
+      await sendPush({
+        company_id: opts.company_id,
+        title: "Nová eFaktúra 📄",
+        body: `Prijatá eFaktúra od ${d.supplier_name ?? "dodávateľa"}.`,
+        data: { path: `/efaktura/prijate`, doc_id: String(d.id ?? "") },
+      });
+    }
+  } catch (e) {
+    console.warn("[push] send failed:", e);
+  }
+
   if (!hooks?.length) return;
 
   const payload = {
