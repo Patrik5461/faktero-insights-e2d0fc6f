@@ -413,9 +413,29 @@ function NewInvoice() {
                   <option value="per_document">Za celý doklad (zaokrúhli až finálny súčet)</option>
                   <option value="retail">Maloobchod (na 0,05 €, SK pravidlá)</option>
                 </select>
+              <div className="sm:col-span-2 rounded-md border border-border bg-muted/30 p-3">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.reverse_charge}
+                    onChange={(e) => setForm({ ...form, reverse_charge: e.target.checked, reverse_charge_type: e.target.checked ? (form.reverse_charge_type || "domestic_69") : "" })}
+                    className="mt-0.5" />
+                  <span className="text-sm">
+                    <strong>Prenos daňovej povinnosti (PDP)</strong>
+                    <span className="block text-xs text-muted-foreground">DPH neúčtujem — daň odvedie odberateľ. Sadzba na položkách bude 0 %.</span>
+                  </span>
+                </label>
+                {form.reverse_charge && (
+                  <select value={form.reverse_charge_type || "domestic_69"}
+                    onChange={(e) => setForm({ ...form, reverse_charge_type: e.target.value as any })}
+                    className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                    <option value="domestic_69">Tuzemský prenos podľa §69 zákona o DPH (stavebné práce, kovový odpad…)</option>
+                    <option value="eu_b2b">Intrakomunitárne dodanie do EÚ (B2B, odberateľ má IČ DPH)</option>
+                    <option value="export">Vývoz mimo EÚ (oslobodené podľa §47)</option>
+                  </select>
+                )}
               </div>
             </div>
           </section>
+
 
 
 
