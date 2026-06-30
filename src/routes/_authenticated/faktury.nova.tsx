@@ -435,22 +435,11 @@ function NewInvoice() {
               {advancedOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
             </button>
             {advancedOpen && (
-              <div className="grid gap-4 p-5 pt-0 sm:grid-cols-2">
-                <In label="Dátum dodania" type="date" value={form.delivery_date} onChange={(v) => setForm({ ...form, delivery_date: v })} />
-                <In label="Variabilný symbol" value={form.variable_symbol} onChange={(v) => setForm({ ...form, variable_symbol: v })} />
-                <In label="Mena" value={form.currency} onChange={(v) => setForm({ ...form, currency: v })} />
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Spôsob platby</label>
-                  <select value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
-                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="bank_transfer">Bankový prevod</option>
-                    <option value="cash">Hotovosť</option>
-                    <option value="card">Karta</option>
-                  </select>
-                </div>
-                <label className="block sm:col-span-2">
+              <div className="grid gap-4 p-5 pt-0">
+                <label className="block">
                   <span className="text-xs font-medium text-muted-foreground">Poznámka</span>
                   <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                    placeholder="Voliteľná poznámka, ktorá sa zobrazí na faktúre"
                     className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
                 </label>
               </div>
