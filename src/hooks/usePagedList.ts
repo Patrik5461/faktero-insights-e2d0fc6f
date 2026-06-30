@@ -67,7 +67,7 @@ export function usePagedList({ resource, searchColumns = [], orderBy, pageSizeKe
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [resource, page, pageSize, search, showDeleted, nonce, orderBy?.column, orderBy?.ascending, searchColumns.join(",")]);
+  }, [resource, page, pageSize, search, showDeleted, nonce, orderBy?.column, orderBy?.ascending, searchColumns.join(","), JSON.stringify(equals ?? {})]);
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
