@@ -531,13 +531,17 @@ function NewInvoice() {
                     <input value={it.unit} onChange={(e) => setItem(idx, { unit: e.target.value })}
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm" />
                     <CellNum value={it.unit_price} onChange={(v) => setItem(idx, { unit_price: v })} />
-                    <select value={it.vat_rate} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
-                      className="rounded-md border border-input bg-background px-2 py-1.5 text-sm">
-                      <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
-                    </select>
+                    {form.reverse_charge ? (
+                      <span className="inline-flex items-center justify-center rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900">PDP</span>
+                    ) : (
+                      <select value={it.vat_rate} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
+                        className="rounded-md border border-input bg-background px-2 py-1.5 text-sm">
+                        <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
+                      </select>
+                    )}
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
-                    <span className="font-medium tabular-nums">{(it.quantity * it.unit_price * (1 + it.vat_rate / 100)).toFixed(2)} {form.currency}</span>
+                    <span className="font-medium tabular-nums">{(it.quantity * it.unit_price * (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)).toFixed(2)} {form.currency}</span>
                     <button type="button" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="text-destructive">
                       <Trash2 className="h-4 w-4" />
                     </button>
