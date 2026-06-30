@@ -439,13 +439,29 @@ function NewInvoice() {
                   </span>
                 </label>
                 {form.reverse_charge && (
-                  <select value={form.reverse_charge_type || "domestic_69"}
-                    onChange={(e) => setForm({ ...form, reverse_charge_type: e.target.value as any })}
-                    className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="domestic_69">Tuzemský prenos podľa §69 zákona o DPH (stavebné práce, kovový odpad…)</option>
-                    <option value="eu_b2b">Intrakomunitárne dodanie do EÚ (B2B, odberateľ má IČ DPH)</option>
-                    <option value="export">Vývoz mimo EÚ (oslobodené podľa §47)</option>
-                  </select>
+                  <>
+                    <select value={form.reverse_charge_type || "domestic_69"}
+                      onChange={(e) => setForm({ ...form, reverse_charge_type: e.target.value as any })}
+                      className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                      <option value="domestic_69">Tuzemský prenos podľa §69 zákona o DPH (stavebné práce, kovový odpad…)</option>
+                      <option value="eu_b2b">Intrakomunitárne dodanie do EÚ (B2B, odberateľ má IČ DPH)</option>
+                      <option value="export">Vývoz mimo EÚ (oslobodené podľa §47)</option>
+                    </select>
+                    {form.reverse_charge_type === "eu_b2b" && (() => {
+                      const cust = customers.find((c) => c.id === form.customer_id);
+                      const vat = (cust?.ic_dph || "").trim();
+                      const ok = vat && /^[A-Z]{2}[A-Z0-9]{2,}$/i.test(vat) && !/^SK/i.test(vat);
+                      if (ok) return null;
+                      return (
+                        <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                          {!cust ? "Vyberte odberateľa s platným IČ DPH z iného členského štátu EÚ." :
+                            !vat ? "Odberateľ nemá vyplnené IČ DPH. Pri intrakomunitárnom dodaní je povinné — doplňte ho v karte odberateľa." :
+                            /^SK/i.test(vat) ? "Odberateľ má slovenské IČ DPH. Intrakomunitárne dodanie sa vzťahuje len na iné členské štáty EÚ." :
+                            "IČ DPH odberateľa nie je v platnom EU formáte (napr. CZ12345678)."}
+                        </p>
+                      );
+                    })()}
+                  </>
                 )}
               </div>
             </div>
