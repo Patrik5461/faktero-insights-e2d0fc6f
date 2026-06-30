@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VyvojariRouteImport } from './routes/vyvojari'
 import { Route as UctovniciRouteImport } from './routes/uctovnici'
+import { Route as TestKsRouteImport } from './routes/test-ks'
 import { Route as RegistraciaRouteImport } from './routes/registracia'
 import { Route as PrihlasenieRouteImport } from './routes/prihlasenie'
 import { Route as FunkcieRouteImport } from './routes/funkcie'
@@ -161,6 +162,11 @@ const VyvojariRoute = VyvojariRouteImport.update({
 const UctovniciRoute = UctovniciRouteImport.update({
   id: '/uctovnici',
   path: '/uctovnici',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TestKsRoute = TestKsRouteImport.update({
+  id: '/test-ks',
+  path: '/test-ks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistraciaRoute = RegistraciaRouteImport.update({
@@ -923,6 +929,7 @@ export interface FileRoutesByFullPath {
   '/funkcie': typeof FunkcieRouteWithChildren
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/test-ks': typeof TestKsRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
@@ -1064,6 +1071,7 @@ export interface FileRoutesByTo {
   '/cennik': typeof CennikRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/test-ks': typeof TestKsRoute
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
   '/api-dokumentacia': typeof AuthenticatedApiDokumentaciaRoute
   '/api-kluce': typeof AuthenticatedApiKluceRoute
@@ -1205,6 +1213,7 @@ export interface FileRoutesById {
   '/funkcie': typeof FunkcieRouteWithChildren
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/test-ks': typeof TestKsRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
   '/_authenticated/ai-asistent': typeof AuthenticatedAiAsistentRoute
@@ -1351,6 +1360,7 @@ export interface FileRouteTypes {
     | '/funkcie'
     | '/prihlasenie'
     | '/registracia'
+    | '/test-ks'
     | '/uctovnici'
     | '/vyvojari'
     | '/ai-asistent'
@@ -1492,6 +1502,7 @@ export interface FileRouteTypes {
     | '/cennik'
     | '/prihlasenie'
     | '/registracia'
+    | '/test-ks'
     | '/ai-asistent'
     | '/api-dokumentacia'
     | '/api-kluce'
@@ -1632,6 +1643,7 @@ export interface FileRouteTypes {
     | '/funkcie'
     | '/prihlasenie'
     | '/registracia'
+    | '/test-ks'
     | '/uctovnici'
     | '/vyvojari'
     | '/_authenticated/ai-asistent'
@@ -1778,6 +1790,7 @@ export interface RootRouteChildren {
   FunkcieRoute: typeof FunkcieRouteWithChildren
   PrihlasenieRoute: typeof PrihlasenieRoute
   RegistraciaRoute: typeof RegistraciaRoute
+  TestKsRoute: typeof TestKsRoute
   UctovniciRoute: typeof UctovniciRouteWithChildren
   VyvojariRoute: typeof VyvojariRouteWithChildren
   DocsApiRoute: typeof DocsApiRoute
@@ -1834,6 +1847,13 @@ declare module '@tanstack/react-router' {
       path: '/uctovnici'
       fullPath: '/uctovnici'
       preLoaderRoute: typeof UctovniciRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/test-ks': {
+      id: '/test-ks'
+      path: '/test-ks'
+      fullPath: '/test-ks'
+      preLoaderRoute: typeof TestKsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/registracia': {
@@ -3247,6 +3267,7 @@ const rootRouteChildren: RootRouteChildren = {
   FunkcieRoute: FunkcieRouteWithChildren,
   PrihlasenieRoute: PrihlasenieRoute,
   RegistraciaRoute: RegistraciaRoute,
+  TestKsRoute: TestKsRoute,
   UctovniciRoute: UctovniciRouteWithChildren,
   VyvojariRoute: VyvojariRouteWithChildren,
   DocsApiRoute: DocsApiRoute,
