@@ -963,3 +963,90 @@ function AiModal({ prompt, setPrompt, loading, onClose, onRun }: {
     </div>
   );
 }
+
+function InvoicePickerModal({
+  mode,
+  onClose,
+  onPickCopy,
+  onPickAdvance,
+}: {
+  mode: "copy" | "advance";
+  onClose: () => void;
+  onPickCopy: (items: Partial<Item>[]) => void;
+  onPickAdvance: (inv: { id: string; invoice_number: string; total: number }) => void;
+}) {
+  const [list, setList] = useState<any[]>([]);
+  const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    let query = supabase
+      .from("invoices")
+      .select("id, invoice_number, customer_name, total, currency, issue_date, type, status")
+      .eq("company_id", cid)
+      .order("issue_date", { ascending: false })
+      .limit(50);
+    if (mode === "advance") query = query.eq("type", "proforma");
+    query.then(({ data }) => { setList(data ?? []); setLoading(false); });
+  }, [mode]);
+
+  const filtered = q
+    ? list.filter((i) => `${i.invoice_number} ${i.customer_name ?? ""}`.toLowerCase().includes(q.toLowerCase()))
+    : list;
+
+  async function handlePick(inv: any) {
+    if (mode === "advance") {
+      onPickAdvance({ id: inv.id, invoice_number: inv.invoice_number, total: Number(inv.total) });
+      return;
+    }
+    const { data } = await supabase
+      .from("invoice_items")
+      .select("name, description, quantity, unit, unit_price, vat_rate")
+      .eq("invoice_id", inv.id)
+      .order("position");
+    onPickCopy((data ?? []) as Partial<Item>[]);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border px-5 py-3">
+          <h3 className="text-sm font-semibold">
+            {mode === "copy" ? "Načítať položky z dokladu" : "Vybrať zálohovú faktúru"}
+          </h3>
+          <button type="button" onClick={onClose} className="rounded-md p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="border-b border-border px-3 py-2">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)}
+              placeholder="Hľadať podľa čísla alebo odberateľa…"
+              className="flex-1 bg-transparent text-sm outline-none" />
+          </div>
+        </div>
+        <ul className="max-h-96 overflow-auto">
+          {loading && <li className="p-4 text-sm text-muted-foreground">Načítavam…</li>}
+          {!loading && filtered.length === 0 && (
+            <li className="p-4 text-sm text-muted-foreground">
+              {mode === "advance" ? "Žiadne zálohové faktúry." : "Žiadne faktúry."}
+            </li>
+          )}
+          {filtered.map((inv) => (
+            <li key={inv.id} className="border-b border-border last:border-0">
+              <button type="button" onClick={() => handlePick(inv)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-muted/60">
+                <div>
+                  <div className="font-medium">{inv.invoice_number}</div>
+                  <div className="text-xs text-muted-foreground">{inv.customer_name} · {inv.issue_date}</div>
+                </div>
+                <div className="tabular-nums font-medium">{Number(inv.total).toFixed(2)} {inv.currency}</div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
