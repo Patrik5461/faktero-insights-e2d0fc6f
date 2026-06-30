@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Car, Check } from "lucide-react";
+import { FileText, Car, Check, Fingerprint } from "lucide-react";
+import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
 
 import { toast } from "sonner";
 import { Logo } from "@/components/faktero/Logo";
