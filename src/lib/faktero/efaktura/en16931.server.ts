@@ -238,8 +238,8 @@ export function mapToEN16931(args: {
             reference: invoice.variable_symbol || invoice.invoice_number,
           }
         : undefined,
-    lines: buildLines(items),
-    taxSubtotals: buildTaxSubtotals(items),
+    lines: buildLines(items, invoice),
+    taxSubtotals: buildTaxSubtotals(items, invoice),
     totals: {
       lineExtensionAmount: Number(invoice.subtotal),
       taxExclusiveAmount: Number(invoice.subtotal),
