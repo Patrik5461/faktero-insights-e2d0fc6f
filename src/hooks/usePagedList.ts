@@ -42,6 +42,11 @@ export function usePagedList({ resource, searchColumns = [], orderBy, pageSizeKe
         .from(resource as any)
         .select("*", { count: "exact" })
         .eq("company_id", cid);
+      if (equals) {
+        for (const [k, v] of Object.entries(equals)) {
+          q = v === null ? q.is(k, null) : q.eq(k, v);
+        }
+      }
       q = showDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
       if (search.trim() && searchColumns.length) {
         const term = search.trim().replace(/[%_,]/g, "");
