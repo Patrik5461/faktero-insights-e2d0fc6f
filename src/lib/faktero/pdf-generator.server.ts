@@ -227,7 +227,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawAligned(cur, font, fmtQty(it.quantity),               cols.qty.x   + cols.qty.w   - PAD, numBaseline, 10, ink, "right");
     cur.drawText(String(it.unit ?? ""),                       { x: cols.unit.x + PAD, y: numBaseline, size: 10, font, color: ink });
     drawAligned(cur, font, fmt(Number(it.unit_price), invoice.currency), cols.price.x + cols.price.w - PAD, numBaseline, 10, ink, "right");
-    drawAligned(cur, font, `${Number(it.vat_rate)}%`,         cols.vat.x   + cols.vat.w   - PAD, numBaseline, 10, ink, "right");
+    drawAligned(cur, font, invoice.reverse_charge ? "PDP" : `${Number(it.vat_rate)}%`, cols.vat.x + cols.vat.w - PAD, numBaseline, 10, ink, "right");
     drawAligned(cur, bold, fmt(Number(it.total), invoice.currency),      cols.tot.x   + cols.tot.w   - PAD, numBaseline, 10, ink, "right");
 
     y -= rowH;
@@ -255,12 +255,17 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
 
   let ty = y;
   drawTotalRow(cur, font, "Medzisúčet", fmt(Number(invoice.subtotal), invoice.currency), totalsX, ty, totalsBlockW, ink, sub); ty -= 18;
-  drawTotalRow(cur, font, "DPH",        fmt(Number(invoice.vat_total), invoice.currency), totalsX, ty, totalsBlockW, ink, sub); ty -= 18;
+  if (!invoice.reverse_charge) {
+    drawTotalRow(cur, font, "DPH",        fmt(Number(invoice.vat_total), invoice.currency), totalsX, ty, totalsBlockW, ink, sub); ty -= 18;
+  } else {
+    drawTotalRow(cur, font, "DPH (PDP)",  "0,00\u00A0" + invoice.currency, totalsX, ty, totalsBlockW, ink, sub); ty -= 18;
+  }
   if (discount > 0) {
     drawTotalRow(cur, font, "Zľava",    `− ${fmt(discount, invoice.currency)}`, totalsX, ty, totalsBlockW, ink, sub); ty -= 18;
   }
   cur.drawLine({ start: { x: totalsX, y: ty + 6 }, end: { x: totalsX + totalsBlockW, y: ty + 6 }, color: hairline, thickness: 0.5 });
   ty -= 4;
+
 
   const heroH = 56;
   cur.drawRectangle({ x: totalsX, y: ty - heroH, width: totalsBlockW, height: heroH, color: primary });
@@ -363,7 +368,26 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     }
   }
 
-  // ── Notes (only if present) ──
+  // ── Reverse charge legal text ──
+  if (invoice.reverse_charge) {
+    const rcText =
+      invoice.reverse_charge_type === "eu_b2b"
+        ? "Intrakomunitárne dodanie tovaru/služby oslobodené od DPH podľa §43 zákona č. 222/2004 Z. z. Daň je povinný priznať odberateľ."
+        : invoice.reverse_charge_type === "export"
+        ? "Vývoz tovaru mimo územia EÚ oslobodený od DPH podľa §47 zákona č. 222/2004 Z. z."
+        : "Prenesenie daňovej povinnosti podľa §69 ods. 12 zákona č. 222/2004 Z. z. o DPH. Daň je povinný priznať a odviesť odberateľ.";
+    const rcLines = wrapLines(rcText, bold, 9.5, innerW - 16);
+    const needed = 18 + rcLines.length * 12 + 16;
+    ensureSpace(needed);
+    cur.drawRectangle({ x: margin, y: y - (rcLines.length * 12 + 14), width: innerW, height: rcLines.length * 12 + 14, color: rgb(0.98, 0.94, 0.84), borderColor: rgb(0.85, 0.70, 0.30), borderWidth: 0.7 });
+    let ry = y - 12;
+    rcLines.forEach((ln) => {
+      cur.drawText(ln, { x: margin + 8, y: ry, size: 9.5, font: bold, color: rgb(0.40, 0.28, 0.05) });
+      ry -= 12;
+    });
+    y -= rcLines.length * 12 + 22;
+  }
+
   if (invoice.notes) {
     const noteLines = wrapLines(String(invoice.notes), font, 9.5, innerW);
     const needed = 18 + noteLines.length * 12 + 12;

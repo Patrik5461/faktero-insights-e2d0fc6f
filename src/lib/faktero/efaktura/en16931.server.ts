@@ -49,7 +49,11 @@ type InvoiceRow = {
   customer_zip?: string | null;
   customer_country?: string | null;
   customer_email?: string | null;
+  reverse_charge?: boolean | null;
+  reverse_charge_type?: string | null;
 };
+
+
 
 type InvoiceItemRow = {
   id: string;
@@ -96,11 +100,25 @@ function mapDocType(type: string): EN16931Invoice["documentType"] {
   return "380";
 }
 
-/** Map VAT rate to EN 16931 category (SK domestic rules — simplified). */
-function mapVatCategory(rate: number): EN16931Line["vatCategory"] {
+/** Map invoice + rate to EN 16931 category code (UNCL5305). */
+function mapVatCategory(rate: number, invoice?: Pick<InvoiceRow, "reverse_charge" | "reverse_charge_type">): EN16931Line["vatCategory"] {
+  if (invoice?.reverse_charge) {
+    if (invoice.reverse_charge_type === "eu_b2b") return "K";   // VAT exempt for EEA intra-community supply
+    if (invoice.reverse_charge_type === "export") return "G";   // Free export item, tax not charged
+    return "AE";                                                 // Reverse charge (domestic §69)
+  }
   if (rate === 0) return "Z";
   return "S";
 }
+
+function reverseChargeReason(invoice: Pick<InvoiceRow, "reverse_charge_type">): string {
+  if (invoice.reverse_charge_type === "eu_b2b")
+    return "Intra-Community supply — reverse charge (§43 zákona o DPH)";
+  if (invoice.reverse_charge_type === "export")
+    return "Export outside EU — VAT exempt (§47 zákona o DPH)";
+  return "Reverse charge — domestic supply (§69 ods. 12 zákona o DPH)";
+}
+
 
 function buildSellerParty(company: CompanyRow, profile?: ProfileRow | null): EN16931Party {
   return {
@@ -142,7 +160,7 @@ function buildBuyerParty(inv: InvoiceRow): EN16931Party {
   };
 }
 
-function buildLines(items: InvoiceItemRow[]): EN16931Line[] {
+function buildLines(items: InvoiceItemRow[], invoice: InvoiceRow): EN16931Line[] {
   return items
     .slice()
     .sort((a, b) => a.position - b.position)
@@ -154,25 +172,27 @@ function buildLines(items: InvoiceItemRow[]): EN16931Line[] {
       unitCode: mapUnit(it.unit),
       unitPrice: Number(it.unit_price),
       lineExtensionAmount: Number(it.subtotal),
-      vatCategory: mapVatCategory(Number(it.vat_rate)),
-      vatPercent: Number(it.vat_rate),
+      vatCategory: mapVatCategory(Number(it.vat_rate), invoice),
+      vatPercent: invoice.reverse_charge ? 0 : Number(it.vat_rate),
     }));
 }
 
-function buildTaxSubtotals(items: InvoiceItemRow[]): EN16931TaxSubtotal[] {
+function buildTaxSubtotals(items: InvoiceItemRow[], invoice: InvoiceRow): EN16931TaxSubtotal[] {
   const groups = new Map<string, EN16931TaxSubtotal>();
+  const reason = invoice.reverse_charge ? reverseChargeReason(invoice) : undefined;
   for (const it of items) {
-    const rate = Number(it.vat_rate);
-    const cat = mapVatCategory(rate);
+    const rate = invoice.reverse_charge ? 0 : Number(it.vat_rate);
+    const cat = mapVatCategory(rate, invoice);
     const key = `${cat}:${rate}`;
     const cur = groups.get(key) ?? {
       taxableAmount: 0,
       taxAmount: 0,
       vatCategory: cat,
       vatPercent: rate,
+      exemptionReason: reason,
     };
     cur.taxableAmount += Number(it.subtotal);
-    cur.taxAmount += Number(it.vat_amount);
+    cur.taxAmount += invoice.reverse_charge ? 0 : Number(it.vat_amount);
     groups.set(key, cur);
   }
   return Array.from(groups.values()).map((g) => ({
@@ -180,6 +200,7 @@ function buildTaxSubtotals(items: InvoiceItemRow[]): EN16931TaxSubtotal[] {
     taxableAmount: Math.round(g.taxableAmount * 100) / 100,
     taxAmount: Math.round(g.taxAmount * 100) / 100,
   }));
+
 }
 
 export function mapToEN16931(args: {
@@ -217,15 +238,15 @@ export function mapToEN16931(args: {
             reference: invoice.variable_symbol || invoice.invoice_number,
           }
         : undefined,
-    lines: buildLines(items),
-    taxSubtotals: buildTaxSubtotals(items),
+    lines: buildLines(items, invoice),
+    taxSubtotals: buildTaxSubtotals(items, invoice),
     totals: {
       lineExtensionAmount: Number(invoice.subtotal),
       taxExclusiveAmount: Number(invoice.subtotal),
       taxInclusiveAmount: Number(invoice.total),
-      taxAmount: Number(invoice.vat_total),
+      taxAmount: invoice.reverse_charge ? 0 : Number(invoice.vat_total),
       payableAmount: Number(invoice.total),
     },
-    note: invoice.notes || undefined,
+    note: [invoice.reverse_charge ? reverseChargeReason(invoice) : null, invoice.notes || null].filter(Boolean).join(" | ") || undefined,
   };
 }

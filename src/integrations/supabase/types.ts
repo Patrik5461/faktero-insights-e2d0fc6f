@@ -1926,6 +1926,8 @@ export type Database = {
           paid_at: string | null
           payment_method: string | null
           pdf_url: string | null
+          reverse_charge: boolean
+          reverse_charge_type: string | null
           rounding_mode: string | null
           sent_at: string | null
           specific_symbol: string | null
@@ -1972,6 +1974,8 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           pdf_url?: string | null
+          reverse_charge?: boolean
+          reverse_charge_type?: string | null
           rounding_mode?: string | null
           sent_at?: string | null
           specific_symbol?: string | null
@@ -2018,6 +2022,8 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           pdf_url?: string | null
+          reverse_charge?: boolean
+          reverse_charge_type?: string | null
           rounding_mode?: string | null
           sent_at?: string | null
           specific_symbol?: string | null

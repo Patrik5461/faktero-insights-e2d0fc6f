@@ -64,6 +64,8 @@ function NewInvoice() {
     payment_method: "bank_transfer",
     delivery_method: "",
     rounding_mode: "per_document" as "per_item" | "per_document" | "retail",
+    reverse_charge: false,
+    reverse_charge_type: "" as "" | "domestic_69" | "eu_b2b" | "export",
     advance_invoice_id: "" as string | "",
     advance_amount: 0,
     notes: "",
@@ -122,25 +124,26 @@ function NewInvoice() {
 
   const totals = useMemo(() => {
     const mode = form.rounding_mode;
+    const rc = form.reverse_charge;
     const r2 = (n: number) => Math.round(n * 100) / 100;
     let sub = 0, vat = 0;
     for (const it of items) {
       let s = Number(it.quantity) * Number(it.unit_price);
-      let v = s * (Number(it.vat_rate) / 100);
+      let v = rc ? 0 : s * (Number(it.vat_rate) / 100);
       if (mode === "per_item") { s = r2(s); v = r2(v); }
       sub += s; vat += v;
     }
     let total = sub + vat;
     if (mode === "per_document") { sub = r2(sub); vat = r2(vat); total = r2(sub + vat); }
     if (mode === "retail") {
-      // SK retail rounding to nearest 0.05 EUR for cash payments
       sub = r2(sub); vat = r2(vat);
       total = Math.round((sub + vat) * 20) / 20;
     }
     const advance = Number(form.advance_amount) || 0;
     const payable = r2(total - advance);
     return { subtotal: sub, vat_total: vat, total, advance, payable };
-  }, [items, form.rounding_mode, form.advance_amount]);
+  }, [items, form.rounding_mode, form.advance_amount, form.reverse_charge]);
+
 
   function setItem(idx: number, patch: Partial<Item>) {
     setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
@@ -213,6 +216,8 @@ function NewInvoice() {
       order_number: form.order_number || null,
       delivery_method: form.delivery_method || null,
       rounding_mode: form.rounding_mode,
+      reverse_charge: form.reverse_charge,
+      reverse_charge_type: form.reverse_charge ? (form.reverse_charge_type || "domestic_69") : null,
       advance_invoice_id: form.advance_invoice_id || null,
       advance_amount: form.advance_amount ? Number(form.advance_amount) : null,
       issue_date: form.issue_date,
@@ -229,13 +234,14 @@ function NewInvoice() {
 
     const rows = items.map((it, idx) => {
       const s = Number(it.quantity) * Number(it.unit_price);
-      const v = s * (Number(it.vat_rate) / 100);
+      const effRate = form.reverse_charge ? 0 : Number(it.vat_rate);
+      const v = s * (effRate / 100);
       return {
         invoice_id: inv.id, position: idx,
         name: it.name, description: it.description,
         product_id: it.product_id ?? null,
         stock_item_id: it.stock_item_id ?? null,
-        quantity: it.quantity, unit: it.unit, unit_price: it.unit_price, vat_rate: it.vat_rate,
+        quantity: it.quantity, unit: it.unit, unit_price: it.unit_price, vat_rate: effRate,
         subtotal: Number(s.toFixed(2)), vat_amount: Number(v.toFixed(2)), total: Number((s + v).toFixed(2)),
       };
     });
@@ -408,8 +414,30 @@ function NewInvoice() {
                   <option value="retail">Maloobchod (na 0,05 €, SK pravidlá)</option>
                 </select>
               </div>
+              <div className="sm:col-span-2 rounded-md border border-border bg-muted/30 p-3">
+
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.reverse_charge}
+                    onChange={(e) => setForm({ ...form, reverse_charge: e.target.checked, reverse_charge_type: e.target.checked ? (form.reverse_charge_type || "domestic_69") : "" })}
+                    className="mt-0.5" />
+                  <span className="text-sm">
+                    <strong>Prenos daňovej povinnosti (PDP)</strong>
+                    <span className="block text-xs text-muted-foreground">DPH neúčtujem — daň odvedie odberateľ. Sadzba na položkách bude 0 %.</span>
+                  </span>
+                </label>
+                {form.reverse_charge && (
+                  <select value={form.reverse_charge_type || "domestic_69"}
+                    onChange={(e) => setForm({ ...form, reverse_charge_type: e.target.value as any })}
+                    className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                    <option value="domestic_69">Tuzemský prenos podľa §69 zákona o DPH (stavebné práce, kovový odpad…)</option>
+                    <option value="eu_b2b">Intrakomunitárne dodanie do EÚ (B2B, odberateľ má IČ DPH)</option>
+                    <option value="export">Vývoz mimo EÚ (oslobodené podľa §47)</option>
+                  </select>
+                )}
+              </div>
             </div>
           </section>
+
 
 
 
@@ -467,13 +495,17 @@ function NewInvoice() {
                       </td>
                       <td className="py-2 pl-3"><CellNum value={it.unit_price} onChange={(v) => setItem(idx, { unit_price: v })} w="w-24" align="right" /></td>
                       <td className="py-2 pl-3">
-                        <select value={it.vat_rate} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
-                          className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background">
-                          <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
-                        </select>
+                        {form.reverse_charge ? (
+                          <span className="inline-block rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900" title="Prenesenie daňovej povinnosti">PDP</span>
+                        ) : (
+                          <select value={it.vat_rate} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
+                            className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background">
+                            <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
+                          </select>
+                        )}
                       </td>
                       <td className="py-2 pl-3 text-right tabular-nums font-medium">
-                        {(it.quantity * it.unit_price * (1 + it.vat_rate / 100)).toFixed(2)}
+                        {(it.quantity * it.unit_price * (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)).toFixed(2)}
                       </td>
                       <td className="py-2 pl-2">
                         <button type="button" onClick={() => setItems(items.filter((_, i) => i !== idx))}
@@ -499,13 +531,17 @@ function NewInvoice() {
                     <input value={it.unit} onChange={(e) => setItem(idx, { unit: e.target.value })}
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm" />
                     <CellNum value={it.unit_price} onChange={(v) => setItem(idx, { unit_price: v })} />
-                    <select value={it.vat_rate} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
-                      className="rounded-md border border-input bg-background px-2 py-1.5 text-sm">
-                      <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
-                    </select>
+                    {form.reverse_charge ? (
+                      <span className="inline-flex items-center justify-center rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900">PDP</span>
+                    ) : (
+                      <select value={it.vat_rate} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
+                        className="rounded-md border border-input bg-background px-2 py-1.5 text-sm">
+                        <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
+                      </select>
+                    )}
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
-                    <span className="font-medium tabular-nums">{(it.quantity * it.unit_price * (1 + it.vat_rate / 100)).toFixed(2)} {form.currency}</span>
+                    <span className="font-medium tabular-nums">{(it.quantity * it.unit_price * (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)).toFixed(2)} {form.currency}</span>
                     <button type="button" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="text-destructive">
                       <Trash2 className="h-4 w-4" />
                     </button>
