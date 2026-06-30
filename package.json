@@ -14,7 +14,8 @@
     "cap:ios": "cap open ios",
     "cap:android": "cap open android",
     "cap:add:ios": "cap add ios",
-    "cap:add:android": "cap add android"
+    "cap:add:android": "cap add android",
+    "build:mobile": "NITRO_PRESET=static vite build && cap sync"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",
