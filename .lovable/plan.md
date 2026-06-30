@@ -1,72 +1,102 @@
+# Faktero Mobile — Fáza 2 hotová
 
-# Faktero Mobile (Capacitor) — plán a otvorené otázky
+## Build target: B (bundled SPA)
+- `package.json` script `build:mobile` = `NITRO_PRESET=static vite build && cap sync`
+- Server functions (`createServerFn`, /api/v1/*) ostávajú na produkčnom doméne `www.faktero.sk`
+- Mobilná appka volá API priamo cez `fetch`/`useServerFn` proti tej istej doméne (CORS same-origin, cookie auth)
 
-Pred kódom treba doriešiť 4 veci, inak vyrobíme nefunkčnú appku. Potom navrhujem rozdeliť do **3 fáz** namiesto jedného PR.
+## Implementované fičúry
 
----
+| Fíčer | Súbory |
+|---|---|
+| Skener dokladov + AI parsing | `src/lib/mobile/receipt-scanner.ts`, `src/lib/faktero/ai-receipt.functions.ts`, `src/routes/_authenticated/faktury.skener.tsx` |
+| Biometrické prihlásenie | `src/lib/mobile/biometric.ts`, biometric tlačidlo v `prihlasenie.tsx` |
+| Rýchla faktúra (3 kroky) | `src/routes/_authenticated/faktury.rychla.tsx` |
+| Zdieľanie PDF | `src/lib/mobile/share-pdf.ts` (použiteľný v invoice detaile) |
+| Offline cache + sync fronta | `src/lib/mobile/offline-queue.ts`, init v `native-init.ts` |
+| GPS tracking jázd | `src/lib/mobile/gps-tracker.ts`, `src/routes/_authenticated/jazdy.gps.tsx` |
+| Mobile bottom nav | upravený FAB → `/faktury/skener`, „Viac" obsahuje Rýchlu faktúru a GPS jazdu |
 
-## A) Kritické rozhodnutia (treba odpoveď)
-
-### 1. Build target — toto rozhoduje o všetkom ďalšom
-Faktero beží na **TanStack Start + SSR na Cloudflare Workers**. Capacitor potrebuje **statický web bundle** (`webDir`). Máme dve cesty:
-
-- **(A) `server.url = "https://www.faktero.sk"`** (ako píšeš v kroku 1) — appka je v podstate WebView nad live stránkou. ✅ rýchle, ✅ vždy aktuálne, ❌ **bez internetu appka nefunguje vôbec** (rozporné s krokom 7 „Offline režim"), ❌ Apple App Store toto často **odmieta** ako „len wrapper okolo web stránky" (Guideline 4.2).
-- **(B) Bundled SPA build** — pridať druhý Vite build bez SSR, ktorý generuje statické `index.html` + JS, všetky dáta cez Supabase priamo z klienta. ✅ offline možný, ✅ App Store-friendly, ❌ ~3-5 dní práce navyše, ❌ stratíme SSR loadery (musíme prepísať na `useQuery`), ❌ niektoré server functions (PDF gen, eFaktúra) zostávajú server-side a appka ich volá ako API.
-
-**Bez rozhodnutia tu nemá zmysel pokračovať.**
-
-### 2. Push notifikácie — backend
-Krok 8 hovorí „Edge Function `send-push` cez FCM + APNs". To znamená:
-- Firebase projekt + service account JSON (FCM)
-- Apple Developer Account + APNs key `.p8` (APNs)
-- Tieto secrets nemám, musíš ich poskytnúť **až po vytvorení Apple/Google účtov** (krok 4-5 z tvojich otázok). Implementujem teraz len **kostru** (DB stĺpce, registrácia tokenu, prázdny endpoint), reálne odosielanie po dodaní credentials.
-
-### 3. Home Screen Widget (krok 11)
-Toto **nejde cez Capacitor pluginy** v plnom rozsahu. `@capacitor-community/app-widget` existuje ale je experimentálne a iOS WidgetKit vyžaduje **natívny Swift kód v Xcode** (samostatný Widget Extension target). Návrh: **vynechať z V1**, pridať po publikácii v App Store ako natívne rozšírenie. Súhlasíš?
-
-### 4. Biometria — knižnica
-`@capacitor-community/biometric-auth` neexistuje pod týmto názvom. Štandard je **`@aparajita/capacitor-biometric-auth`** alebo **`capacitor-native-biometric`**. Pôjdem s prvou (aktívne udržiavaná).
+## Otvorené pre Fázu 3
+- Push notifikácie (Firebase + APNs credentials od teba)
+- Background GPS na iOS (vyžaduje background-location capability)
+- Home Screen Widget — natívny Swift/Kotlin, mimo Capacitor
 
 ---
 
-## B) Navrhované fázovanie
+## Lokálny build — presný postup
 
-### Fáza 1 — Capacitor shell + mobile UI (1 PR, ~1 deň)
-- Kroky 1, 2, 3 (Capacitor inštalácia, pluginy, bottom tab bar)
-- `capacitor.config.ts`, scripts
-- `useIsNative()` hook, `MobileBottomNav` komponent
-- Status bar (zelená), splash screen
-- **Výstup:** appka sa otvorí v Xcode/Android Studio, zobrazí web cez `server.url` (alebo SPA build podľa A1), s natívnou spodnou navigáciou
+### Predpoklady
+- **macOS** + **Xcode 15+** + Apple Developer účet ($99/rok)
+- **Android Studio** Hedgehog+ + **JDK 17** + Android SDK 34
+- Node 20+, Bun nainštalovaný
 
-### Fáza 2 — Mobile-native features (1 PR, ~1 deň)
-- Krok 4 (skener + AI parsing) — kamera → base64 → `aiParseInvoiceFn`
-- Krok 5 (rýchla faktúra, swipe-to-paid, share)
-- Krok 6 (biometria)
-- Krok 10 (share PDF, save to Files)
+### 1) Klonni projekt a nainštaluj
+```bash
+git clone <repo>
+cd faktero
+bun install
+```
 
-### Fáza 3 — Background features (1 PR, ~1 deň + tvoje credentials)
-- Krok 7 (offline queue + sync) — **len ak A1 = B**
-- Krok 8 (push notifikácie) — DB + endpoint kostra teraz, FCM/APNs po dodaní kľúčov
-- Krok 9 (GPS tracker pre knihu jázd)
+### 2) Skontroluj `capacitor.config.ts`
+Pre App Store buildup **odstráň/zakomentuj** `server.url`, aby appka načítavala
+bundled SPA z `webDir` (inak Apple zamietne ako webview wrapper):
+```ts
+// server: { url: "https://www.faktero.sk", ... }  // len pre dev live-reload
+```
 
-### Vynechané z V1
-- Krok 11 (widget) — vyžaduje natívny Swift/Kotlin nad rámec Capacitoru
+### 3) Bundled SPA build
+```bash
+bun run build:mobile
+# = NITRO_PRESET=static vite build && cap sync
+```
+Výstup je v `.output/public/` a synchronizuje sa do `ios/App/App/public` resp.
+`android/app/src/main/assets/public`.
 
----
+### 4a) iOS
+```bash
+bun run cap:add:ios     # iba prvýkrát
+bunx cap sync ios
+bun run cap:ios         # otvorí Xcode
+```
+V Xcode:
+- **Signing & Capabilities** → vyber svoj Team, Bundle ID `sk.faktero.app`
+- **Capabilities** → pridaj *Push Notifications*, *Background Modes → Remote notifications*
+- **Info.plist** doplň:
+  - `NSCameraUsageDescription` = „Skenovanie dokladov a fotografie faktúr"
+  - `NSLocationWhenInUseUsageDescription` = „Záznam trasy v knihe jázd"
+  - `NSFaceIDUsageDescription` = „Rýchle prihlásenie cez Face ID"
+- Cmd+R → spusti na simulátore alebo zariadení
 
-## C) Odpovede na tvoje záverečné otázky (vopred, nech vieš)
+### 4b) Android
+```bash
+bun run cap:add:android
+bunx cap sync android
+bun run cap:android     # otvorí Android Studio
+```
+V `android/app/src/main/AndroidManifest.xml` doplň:
+```xml
+<uses-permission android:name="android.permission.CAMERA"/>
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+<uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+<uses-permission android:name="android.permission.INTERNET"/>
+```
+Run → vyber emulátor / pripojený telefón.
 
-1. **Nitro SSR vs mobile:** capacitor.config.ts s `server.url` je technicky kompatibilný (appka len načíta URL), ale **nedoporučujem** — viď A1. Pre App Store treba B (bundled SPA).
-2. **iOS build:** macOS + Xcode 15+ + Apple Developer účet ($99/rok) + CocoaPods. `npx cap add ios && npx cap open ios`.
-3. **Android build:** Android Studio (Hedgehog+) + JDK 17 + Android SDK 34. `npx cap add android && npx cap open android`.
-4. **Apple Developer:** Bundle ID `sk.faktero.app`, App ID s Push Notifications capability, APNs Auth Key (.p8) v Keys sekcii, Provisioning Profile.
-5. **Google Play + Firebase:** Firebase projekt → Add Android app s package `sk.faktero.app` → stiahnuť `google-services.json` → Cloud Messaging API enabled → Service Account JSON pre server-side FCM v3 API.
-6. **Plne implementovateľné cez Capacitor:** kroky 1-10. **Vyžaduje natívny kód:** krok 11 (widgets), prípadne pokročilé background GPS tracking na iOS.
+### 5) Apple Developer Console (pred submit)
+- App ID `sk.faktero.app` + capability *Push Notifications*
+- APNs Auth Key `.p8` (Keys → +) — uložiť pre Fázu 3
+- Provisioning Profile (Distribution → App Store)
+- App Store Connect → vytvor app záznam, screenshoty, ikona 1024×1024
 
----
+### 6) Google Play Console + Firebase (pred submit)
+- Firebase projekt → *Add Android app* s package `sk.faktero.app`
+- Stiahnuť `google-services.json` → `android/app/`
+- *Cloud Messaging* enabled, *Service Account JSON* pre server-side push (Fáza 3)
+- Play Console → Internal testing track → upload AAB (`./gradlew bundleRelease`)
 
-## Odo mňa potrebujem:
-
-1. **A1: A alebo B?** (live WebView vs bundled SPA) — najdôležitejšie
-2. **A3:** OK vynechať widget z V1?
-3. Začať Fázou 1, alebo upraviť rozsah?
+### 7) Otestovanie offline režimu
+1. V appke prepni Network off (Airplane mode)
+2. Vytvor faktúru/jazdu → uloží sa do queue (toast „Queued")
+3. Zapni Network → automatický sync, queue sa vyprázdni
