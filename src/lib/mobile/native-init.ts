@@ -31,7 +31,7 @@ export async function initNativePlatform(): Promise<void> {
       registerPushNotifications().catch((e) => console.warn("[native-init] push:", e));
     } catch {}
 
-    // pôvodný catch blok pokračuje nižšie — odstránime duplikát
+    
 
     // Splash screen — schovať po načítaní web obsahu
     try {
