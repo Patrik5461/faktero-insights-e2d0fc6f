@@ -15,6 +15,8 @@ const TABS: Tab[] = [
 ];
 
 const MORE_LINKS: { to: string; label: string }[] = [
+  { to: "/faktury/rychla", label: "Rýchla faktúra" },
+  { to: "/jazdy/gps", label: "GPS jazda" },
   { to: "/odberatelia", label: "Odberatelia" },
   { to: "/produkty", label: "Produkty" },
   { to: "/sklad", label: "Sklad" },
