@@ -157,6 +157,23 @@ function InvoiceDetail() {
         const sm: Record<string, string> = {}; (sis ?? []).forEach((s: any) => { sm[s.id] = s.sku ?? s.id.slice(0, 6); });
         setWarehouseNames(wm); setStockSkus(sm);
       } else { setWarehouseNames({}); setStockSkus({}); }
+      // Advance linkage
+      if (data.type === "proforma") {
+        const { data: consumer } = await supabase.from("invoices")
+          .select("id, invoice_number, status, issue_date, total, currency, type")
+          .eq("advance_invoice_id", data.id).is("deleted_at", null)
+          .order("created_at", { ascending: false }).limit(1).maybeSingle();
+        setSettledIn(consumer ?? null);
+        setAdvanceProforma(null);
+      } else if (data.advance_invoice_id) {
+        const { data: pf } = await supabase.from("invoices")
+          .select("id, invoice_number, status, issue_date, total, currency, type")
+          .eq("id", data.advance_invoice_id).maybeSingle();
+        setAdvanceProforma(pf ?? null);
+        setSettledIn(null);
+      } else {
+        setSettledIn(null); setAdvanceProforma(null);
+      }
     }
   }
   useEffect(() => { load(); }, [id]);
