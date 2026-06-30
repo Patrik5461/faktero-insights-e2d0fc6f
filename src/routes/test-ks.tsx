@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombobox";
 
-export const Route = (createFileRoute as any)("/_test-ks")({
+export const Route = (createFileRoute as any)("/test-ks")({
   component: () => {
     const [v, setV] = useState("0098");
     return (
