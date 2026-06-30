@@ -192,6 +192,19 @@ function NewInvoice() {
     const cust = customers.find((c) => c.id === form.customer_id);
     if (!cust) return toast.error("Vyberte odberateľa");
     if (!items.length || !items[0].name) return toast.error("Pridajte aspoň jednu položku");
+    // Reverse charge validations
+    if (form.reverse_charge && form.reverse_charge_type === "eu_b2b") {
+      const vat = (cust.ic_dph || "").trim();
+      if (!vat) {
+        return toast.error("Pri intrakomunitárnom dodaní (EÚ B2B) je IČ DPH odberateľa povinné. Doplňte ho v karte odberateľa.");
+      }
+      if (!/^[A-Z]{2}[A-Z0-9]{2,}$/i.test(vat)) {
+        return toast.error("IČ DPH odberateľa musí byť v platnom EU formáte (napr. CZ12345678).");
+      }
+      if (/^SK/i.test(vat)) {
+        return toast.error("Pri intrakomunitárnom dodaní musí byť odberateľ z iného členského štátu EÚ (nie SK).");
+      }
+    }
     // Block submit if any stock-tracked line exceeds available
     const offending = items.find((it) => it.stock_item_id && it._track_stock && Number(it.quantity) > Number(it._available ?? 0));
     if (offending) {
