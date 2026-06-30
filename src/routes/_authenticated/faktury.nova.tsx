@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import {
   Trash2, Plus, Sparkles, Search, ChevronDown, ChevronUp,
   User, Package, Calendar, FileText, Loader2, Command, UserPlus, X, AlertTriangle,
+  CreditCard, Link2, FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";

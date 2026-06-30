@@ -1892,8 +1892,11 @@ export type Database = {
       }
       invoices: {
         Row: {
+          advance_amount: number | null
+          advance_invoice_id: string | null
           cancelled_at: string | null
           company_id: string
+          constant_symbol: string | null
           created_at: string
           created_by: string | null
           currency: string
@@ -1909,6 +1912,7 @@ export type Database = {
           customer_zip: string | null
           deleted_at: string | null
           delivery_date: string | null
+          delivery_method: string | null
           due_date: string
           external_id: string | null
           id: string
@@ -1917,11 +1921,14 @@ export type Database = {
           invoice_number: string
           issue_date: string
           notes: string | null
+          order_number: string | null
           original_external_id: string | null
           paid_at: string | null
           payment_method: string | null
           pdf_url: string | null
+          rounding_mode: string | null
           sent_at: string | null
+          specific_symbol: string | null
           status: Database["public"]["Enums"]["invoice_status"]
           subtotal: number
           total: number
@@ -1931,8 +1938,11 @@ export type Database = {
           vat_total: number
         }
         Insert: {
+          advance_amount?: number | null
+          advance_invoice_id?: string | null
           cancelled_at?: string | null
           company_id: string
+          constant_symbol?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -1948,6 +1958,7 @@ export type Database = {
           customer_zip?: string | null
           deleted_at?: string | null
           delivery_date?: string | null
+          delivery_method?: string | null
           due_date?: string
           external_id?: string | null
           id?: string
@@ -1956,11 +1967,14 @@ export type Database = {
           invoice_number: string
           issue_date?: string
           notes?: string | null
+          order_number?: string | null
           original_external_id?: string | null
           paid_at?: string | null
           payment_method?: string | null
           pdf_url?: string | null
+          rounding_mode?: string | null
           sent_at?: string | null
+          specific_symbol?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           total?: number
@@ -1970,8 +1984,11 @@ export type Database = {
           vat_total?: number
         }
         Update: {
+          advance_amount?: number | null
+          advance_invoice_id?: string | null
           cancelled_at?: string | null
           company_id?: string
+          constant_symbol?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -1987,6 +2004,7 @@ export type Database = {
           customer_zip?: string | null
           deleted_at?: string | null
           delivery_date?: string | null
+          delivery_method?: string | null
           due_date?: string
           external_id?: string | null
           id?: string
@@ -1995,11 +2013,14 @@ export type Database = {
           invoice_number?: string
           issue_date?: string
           notes?: string | null
+          order_number?: string | null
           original_external_id?: string | null
           paid_at?: string | null
           payment_method?: string | null
           pdf_url?: string | null
+          rounding_mode?: string | null
           sent_at?: string | null
+          specific_symbol?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
           total?: number
@@ -2009,6 +2030,13 @@ export type Database = {
           vat_total?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_advance_invoice_id_fkey"
+            columns: ["advance_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_company_id_fkey"
             columns: ["company_id"]
