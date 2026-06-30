@@ -36,12 +36,12 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  draft: "hsl(var(--muted-foreground))",
-  issued: "hsl(220 90% 56%)",
-  sent: "hsl(260 80% 60%)",
-  paid: "hsl(var(--primary))",
+  draft: "oklch(0.80 0.02 250)",
+  issued: "oklch(0.78 0.14 162)",
+  sent: "oklch(0.85 0.13 85)",
+  paid: "oklch(0.68 0.16 162)",
   overdue: "hsl(var(--destructive))",
-  cancelled: "hsl(0 0% 50%)",
+  cancelled: "oklch(0.60 0.02 250)",
 };
 
 function monthKey(d: Date) {
