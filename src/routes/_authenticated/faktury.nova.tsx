@@ -413,7 +413,9 @@ function NewInvoice() {
                   <option value="per_document">Za celý doklad (zaokrúhli až finálny súčet)</option>
                   <option value="retail">Maloobchod (na 0,05 €, SK pravidlá)</option>
                 </select>
+              </div>
               <div className="sm:col-span-2 rounded-md border border-border bg-muted/30 p-3">
+
                 <label className="flex items-start gap-2 cursor-pointer">
                   <input type="checkbox" checked={form.reverse_charge}
                     onChange={(e) => setForm({ ...form, reverse_charge: e.target.checked, reverse_charge_type: e.target.checked ? (form.reverse_charge_type || "domestic_69") : "" })}
