@@ -121,14 +121,26 @@ function NewInvoice() {
   }, []);
 
   const totals = useMemo(() => {
+    const mode = form.rounding_mode;
+    const r2 = (n: number) => Math.round(n * 100) / 100;
     let sub = 0, vat = 0;
     for (const it of items) {
-      const s = Number(it.quantity) * Number(it.unit_price);
-      sub += s;
-      vat += s * (Number(it.vat_rate) / 100);
+      let s = Number(it.quantity) * Number(it.unit_price);
+      let v = s * (Number(it.vat_rate) / 100);
+      if (mode === "per_item") { s = r2(s); v = r2(v); }
+      sub += s; vat += v;
     }
-    return { subtotal: sub, vat_total: vat, total: sub + vat };
-  }, [items]);
+    let total = sub + vat;
+    if (mode === "per_document") { sub = r2(sub); vat = r2(vat); total = r2(sub + vat); }
+    if (mode === "retail") {
+      // SK retail rounding to nearest 0.05 EUR for cash payments
+      sub = r2(sub); vat = r2(vat);
+      total = Math.round((sub + vat) * 20) / 20;
+    }
+    const advance = Number(form.advance_amount) || 0;
+    const payable = r2(total - advance);
+    return { subtotal: sub, vat_total: vat, total, advance, payable };
+  }, [items, form.rounding_mode, form.advance_amount]);
 
   function setItem(idx: number, patch: Partial<Item>) {
     setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
