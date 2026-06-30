@@ -2,7 +2,7 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, Users, Package, FileSpreadsheet, FileCheck2,
   KeyRound, Settings, ChevronDown, Plus, Search, HelpCircle, LogOut,
-  Building2, CreditCard, User, Menu, X, Sparkles, Landmark, Shield, Warehouse, Car, ArrowRightLeft,
+  Building2, CreditCard, User, Menu, X, Sparkles, Landmark, Shield, Warehouse, Car, ArrowRightLeft, Bell,
 } from "lucide-react";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
