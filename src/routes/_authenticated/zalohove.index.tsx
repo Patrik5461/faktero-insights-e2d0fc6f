@@ -118,7 +118,7 @@ function ProformaListPage() {
           emptyText={
             list.showDeleted
               ? "Žiadne vymazané zálohové faktúry."
-              : "Žiadne zálohové faktúry. Vytvorte prvú tlačidlom „Nová zálohová faktúra"."
+              : 'Žiadne zálohové faktúry. Vytvorte prvú tlačidlom „Nová zálohová faktúra".'
           }
           mobileCard={(i: any) => {
             const s = statusFor(i);
