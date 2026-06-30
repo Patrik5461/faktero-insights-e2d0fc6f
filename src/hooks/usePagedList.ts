@@ -14,7 +14,7 @@ export type PagedListOptions = {
   equals?: Record<string, string | number | boolean | null>;
 };
 
-export function usePagedList({ resource, searchColumns = [], orderBy, pageSizeKey }: PagedListOptions) {
+export function usePagedList({ resource, searchColumns = [], orderBy, pageSizeKey, equals }: PagedListOptions) {
   const [pageSize, setPageSize] = useStoredPageSize(pageSizeKey ?? resource);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
