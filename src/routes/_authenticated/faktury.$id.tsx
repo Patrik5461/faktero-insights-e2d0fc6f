@@ -55,6 +55,8 @@ function InvoiceDetail() {
   const [syncBusy, setSyncBusy] = useState(false);
   const syncPayFn = useServerFn(syncInvoicePayment);
   const [hasPayLink, setHasPayLink] = useState(false);
+  const [settledIn, setSettledIn] = useState<any | null>(null); // for proforma: invoice that consumed it
+  const [advanceProforma, setAdvanceProforma] = useState<any | null>(null); // for regular: linked proforma
 
   async function handleCreatePayLink() {
     if (!inv?.company_id) return;
