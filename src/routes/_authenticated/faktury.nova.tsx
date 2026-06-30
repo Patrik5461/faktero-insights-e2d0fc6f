@@ -216,6 +216,8 @@ function NewInvoice() {
       order_number: form.order_number || null,
       delivery_method: form.delivery_method || null,
       rounding_mode: form.rounding_mode,
+      reverse_charge: form.reverse_charge,
+      reverse_charge_type: form.reverse_charge ? (form.reverse_charge_type || "domestic_69") : null,
       advance_invoice_id: form.advance_invoice_id || null,
       advance_amount: form.advance_amount ? Number(form.advance_amount) : null,
       issue_date: form.issue_date,
