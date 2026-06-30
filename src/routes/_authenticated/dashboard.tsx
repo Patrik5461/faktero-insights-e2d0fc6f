@@ -738,7 +738,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
     });
     if (i.status === "sent" || i.status === "paid") {
       items.push({
-        icon: Send, tone: "bg-blue-500/15 text-blue-500",
+        icon: Send, tone: "bg-primary/15 text-primary",
         title: `Faktúra ${i.invoice_number} odoslaná`,
         subtitle: i.customer_name ?? "—",
         time: fmtTime(i.created_at), at: new Date(i.created_at).getTime() + 1,
