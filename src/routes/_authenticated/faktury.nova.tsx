@@ -42,6 +42,7 @@ type StockMeta = { stock_item_id: string; track_stock: boolean; available: numbe
 
 function NewInvoice() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const triggerEvt = useServerFn(triggerEventFn);
   const aiParse = useServerFn(aiParseInvoiceFn);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -55,7 +56,7 @@ function NewInvoice() {
   const [aiLoading, setAiLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
-    type: "regular" as "regular" | "proforma" | "credit_note",
+    type: (search.type ?? "regular") as "regular" | "proforma" | "credit_note",
     customer_id: "",
     issue_date: new Date().toISOString().slice(0, 10),
     delivery_date: new Date().toISOString().slice(0, 10),
