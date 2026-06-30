@@ -258,10 +258,27 @@ export function AppShell({
     navigate({ to: "/faktury", search: { q } as any });
   }
 
+  // Deterministic accent color for the company avatar initial.
+  const AVATAR_COLORS = [
+    "from-rose-500 to-rose-700",
+    "from-amber-500 to-orange-600",
+    "from-emerald-500 to-teal-600",
+    "from-sky-500 to-indigo-600",
+    "from-violet-500 to-fuchsia-600",
+    "from-cyan-500 to-blue-600",
+  ];
+  function avatarGradient(name?: string) {
+    const s = name ?? "";
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+  }
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
       {/* Top header */}
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        {/* Row 1 — identity, context, actions */}
         <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
           {/* Mobile menu trigger */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -289,18 +306,26 @@ export function AppShell({
             <span className="hidden text-base font-semibold tracking-tight sm:inline">Faktero</span>
           </Link>
 
-          {/* Company switcher */}
+          {/* Divider */}
+          <div className="hidden h-6 w-px bg-border md:block" />
+
+          {/* Company switcher with colored avatar */}
           {active && (
             <DropdownMenu>
-              <DropdownMenuTrigger className="hidden min-w-0 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-sm hover:bg-secondary md:inline-flex">
-                <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="max-w-[160px] truncate font-medium">{active.name}</span>
+              <DropdownMenuTrigger className="hidden min-w-0 items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-sm hover:bg-secondary md:inline-flex">
+                <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br ${avatarGradient(active.name)} text-[11px] font-semibold text-white shadow-sm`}>
+                  {(active.name?.[0] ?? "F").toUpperCase()}
+                </span>
+                <span className="max-w-[180px] truncate font-medium">{active.name}</span>
                 <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64">
                 <DropdownMenuLabel>Firmy</DropdownMenuLabel>
                 {companies.map((c) => (
                   <DropdownMenuItem key={c.id} onClick={() => onChangeCompany(c.id)} className={c.id === activeId ? "font-semibold" : ""}>
+                    <span className={`mr-2 grid h-5 w-5 shrink-0 place-items-center rounded bg-gradient-to-br ${avatarGradient(c.name)} text-[10px] font-semibold text-white`}>
+                      {(c.name?.[0] ?? "F").toUpperCase()}
+                    </span>
                     <span className="truncate">{c.name}</span>
                     <span className="ml-auto text-xs text-muted-foreground">{c.role}</span>
                   </DropdownMenuItem>
@@ -315,96 +340,69 @@ export function AppShell({
             </DropdownMenu>
           )}
 
-          {/* Center nav */}
-          <nav className="ml-2 hidden flex-1 items-center gap-0.5 lg:flex">
-            {nav.map((g) => {
-              const active = isPathActive(pathname, g);
-              if (g.children.length === 0) {
-                return (
-                  <Link key={g.key} to={g.match[0]}
-                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                      active ? "bg-primary/10 text-primary" : "text-foreground/70 hover:bg-secondary hover:text-foreground"
-                    }`}>
-                    {g.label}
-                  </Link>
-                );
-              }
-              return (
-                <DropdownMenu key={g.key}>
-                  <DropdownMenuTrigger className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                    active ? "bg-primary/10 text-primary" : "text-foreground/70 hover:bg-secondary hover:text-foreground"
-                  }`}>
-                    {g.label}
-                    <ChevronDown className="h-3.5 w-3.5 opacity-60" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    {g.children.map((c) => (
-                      <DropdownMenuItem key={c.to + c.label} asChild>
-                        <Link to={c.to as any}>{c.label}</Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              );
-            })}
-          </nav>
+          {/* Search — expanded */}
+          {view !== "logbook" && (
+            <form onSubmit={submitSearch} className="hidden flex-1 md:block">
+              <div className="relative mx-auto max-w-2xl">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Vyhľadať faktúru, odberateľa, ponuku, produkt…"
+                  className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </form>
+          )}
+          {view === "logbook" && <div className="flex-1" />}
 
           {/* Right cluster */}
-          <div className="ml-auto flex items-center gap-2">
-            {/* Product switcher (only if user has access to both) */}
+          <div className="flex items-center gap-1.5">
+            {/* Product switcher — ghost */}
             {canSwitch && (
               <button
                 type="button"
                 onClick={switchProduct}
                 title={view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
-                className="hidden h-9 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground/80 hover:bg-secondary sm:inline-flex"
+                className="hidden h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-foreground/70 hover:bg-secondary hover:text-foreground sm:inline-flex"
               >
-                <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="hidden md:inline">
+                <ArrowRightLeft className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">
                   {view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
                 </span>
-                <span className="md:hidden">
+                <span className="lg:hidden">
                   {view === "invoicing" ? "Kniha jázd" : "Fakturácia"}
                 </span>
               </button>
             )}
 
-            {/* Search */}
-            {view !== "logbook" && <form onSubmit={submitSearch} className="hidden md:block">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Vyhľadať faktúru, odberateľa, ponuku…"
-                  className="h-9 w-56 rounded-md border border-border bg-background pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:w-72 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 lg:w-64"
-                />
-              </div>
-            </form>}
-
-            {/* Quick create */}
+            {/* Quick create — the only filled button */}
             {view !== "logbook" && (
-            <DropdownMenu>
-              <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90">
-                <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Vytvoriť</span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="flex items-center gap-1.5 text-xs">
-                  <Sparkles className="h-3 w-3" /> Rýchle vytvorenie
-                </DropdownMenuLabel>
-                {QUICK_CREATE.map((c) => (
-                  <DropdownMenuItem key={c.to} asChild><Link to={c.to as any}>{c.label}</Link></DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90">
+                  <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Vytvoriť</span>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="flex items-center gap-1.5 text-xs">
+                    <Sparkles className="h-3 w-3" /> Rýchle vytvorenie
+                  </DropdownMenuLabel>
+                  {QUICK_CREATE.map((c) => (
+                    <DropdownMenuItem key={c.to} asChild><Link to={c.to as any}>{c.label}</Link></DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
 
-            {/* Help */}
-            {view !== "logbook" && <Link to={"/api-dokumentacia" as any} className="hidden h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-secondary md:grid" aria-label="Pomoc">
-              <HelpCircle className="h-4 w-4" />
-            </Link>}
+            {/* Notifications */}
+            <button
+              type="button"
+              aria-label="Notifikácie"
+              className="relative hidden h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground md:grid"
+            >
+              <Bell className="h-4 w-4" />
+            </button>
 
-            {/* Profile */}
+            {/* Profile avatar */}
             <DropdownMenu>
               <DropdownMenuTrigger className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-sm font-semibold text-primary ring-1 ring-border hover:ring-primary/40">
                 {(active?.name?.[0] ?? "U").toUpperCase()}
@@ -414,6 +412,7 @@ export function AppShell({
                 <DropdownMenuItem asChild><Link to={"/nastavenia" as any}><User className="mr-2 h-3.5 w-3.5" /> Profil</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/firma"><Building2 className="mr-2 h-3.5 w-3.5" /> Firma</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link to="/predplatne"><CreditCard className="mr-2 h-3.5 w-3.5" /> Predplatné</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link to={"/api-dokumentacia" as any}><HelpCircle className="mr-2 h-3.5 w-3.5" /> Pomoc</Link></DropdownMenuItem>
                 {adminRole && (
                   <>
                     <DropdownMenuSeparator />
@@ -431,12 +430,47 @@ export function AppShell({
           </div>
         </div>
 
-        {/* Secondary nav */}
+        {/* Row 2 — primary navigation (own subtle strip) */}
+        <div className="hidden border-t border-border bg-muted/30 lg:block">
+          <nav className="flex h-11 items-center gap-1 overflow-x-auto px-4 lg:px-6">
+            {nav.map((g) => {
+              const isActive = isPathActive(pathname, g);
+              const base = `inline-flex shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-secondary text-foreground shadow-sm"
+                  : "text-foreground/70 hover:bg-secondary/60 hover:text-foreground"
+              }`;
+              if (g.children.length === 0) {
+                return (
+                  <Link key={g.key} to={g.match[0]} className={base}>
+                    {g.label}
+                  </Link>
+                );
+              }
+              return (
+                <DropdownMenu key={g.key}>
+                  <DropdownMenuTrigger className={base}>
+                    {g.label}
+                    <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    {g.children.map((c) => (
+                      <DropdownMenuItem key={c.to + c.label} asChild>
+                        <Link to={c.to as any}>{c.label}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Secondary nav (active group children) */}
         {activeGroup && activeGroup.children.length > 0 && (
           <div className="border-t border-border bg-background/60">
             <div className="flex h-11 items-center gap-1 overflow-x-auto px-4 lg:px-6">
               {activeGroup.children.map((c) => {
-                // Strip query for active-match
                 const base = c.to.split("?")[0];
                 const isActive = pathname === base;
                 return (
@@ -452,6 +486,7 @@ export function AppShell({
           </div>
         )}
       </header>
+
 
       <main className="flex min-w-0 flex-1 flex-col">{children}</main>
       <CreateCompanyDialog open={createOpen} onOpenChange={setCreateOpen} />
