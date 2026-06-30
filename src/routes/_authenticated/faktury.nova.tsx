@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import {
   Trash2, Plus, Sparkles, Search, ChevronDown, ChevronUp,
   User, Package, Calendar, FileText, Loader2, Command, UserPlus, X, AlertTriangle,
+  CreditCard, Link2, FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -56,11 +57,29 @@ function NewInvoice() {
     delivery_date: new Date().toISOString().slice(0, 10),
     due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
     variable_symbol: "",
+    constant_symbol: "",
+    specific_symbol: "",
+    order_number: "",
     currency: "EUR",
     payment_method: "bank_transfer",
+    delivery_method: "",
+    rounding_mode: "per_document" as "per_item" | "per_document" | "retail",
+    advance_invoice_id: "" as string | "",
+    advance_amount: 0,
     notes: "",
   });
   const [items, setItems] = useState<Item[]>([{ ...EMPTY_ITEM }]);
+  const [pickerOpen, setPickerOpen] = useState<null | "copy" | "advance">(null);
+
+  const CURRENCIES: { code: string; symbol: string; flag: string; name: string }[] = [
+    { code: "EUR", symbol: "€",  flag: "🇪🇺", name: "Euro" },
+    { code: "CZK", symbol: "Kč", flag: "🇨🇿", name: "Česká koruna" },
+    { code: "USD", symbol: "$",  flag: "🇺🇸", name: "US dolár" },
+    { code: "GBP", symbol: "£",  flag: "🇬🇧", name: "Libra" },
+    { code: "PLN", symbol: "zł", flag: "🇵🇱", name: "Zlotý" },
+    { code: "HUF", symbol: "Ft", flag: "🇭🇺", name: "Forint" },
+    { code: "CHF", symbol: "₣",  flag: "🇨🇭", name: "Frank" },
+  ];
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -102,14 +121,26 @@ function NewInvoice() {
   }, []);
 
   const totals = useMemo(() => {
+    const mode = form.rounding_mode;
+    const r2 = (n: number) => Math.round(n * 100) / 100;
     let sub = 0, vat = 0;
     for (const it of items) {
-      const s = Number(it.quantity) * Number(it.unit_price);
-      sub += s;
-      vat += s * (Number(it.vat_rate) / 100);
+      let s = Number(it.quantity) * Number(it.unit_price);
+      let v = s * (Number(it.vat_rate) / 100);
+      if (mode === "per_item") { s = r2(s); v = r2(v); }
+      sub += s; vat += v;
     }
-    return { subtotal: sub, vat_total: vat, total: sub + vat };
-  }, [items]);
+    let total = sub + vat;
+    if (mode === "per_document") { sub = r2(sub); vat = r2(vat); total = r2(sub + vat); }
+    if (mode === "retail") {
+      // SK retail rounding to nearest 0.05 EUR for cash payments
+      sub = r2(sub); vat = r2(vat);
+      total = Math.round((sub + vat) * 20) / 20;
+    }
+    const advance = Number(form.advance_amount) || 0;
+    const payable = r2(total - advance);
+    return { subtotal: sub, vat_total: vat, total, advance, payable };
+  }, [items, form.rounding_mode, form.advance_amount]);
 
   function setItem(idx: number, patch: Partial<Item>) {
     setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
@@ -177,6 +208,13 @@ function NewInvoice() {
       status: "issued",
       invoice_number,
       variable_symbol,
+      constant_symbol: form.constant_symbol || null,
+      specific_symbol: form.specific_symbol || null,
+      order_number: form.order_number || null,
+      delivery_method: form.delivery_method || null,
+      rounding_mode: form.rounding_mode,
+      advance_invoice_id: form.advance_invoice_id || null,
+      advance_amount: form.advance_amount ? Number(form.advance_amount) : null,
       issue_date: form.issue_date,
       delivery_date: form.delivery_date,
       due_date: form.due_date,
@@ -301,11 +339,78 @@ function NewInvoice() {
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Mena</label>
-                <input value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  {CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.flag} {c.code} {c.symbol} — {c.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Quick action links */}
+            <div className="mt-4 flex flex-wrap gap-3 border-t border-border pt-4 text-sm">
+              <button type="button" onClick={() => setPickerOpen("copy")}
+                className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                <FileDown className="h-4 w-4" /> Načítať položky z dokladu
+              </button>
+              <button type="button" onClick={() => setPickerOpen("advance")}
+                className="inline-flex items-center gap-1.5 text-primary hover:underline">
+                <Link2 className="h-4 w-4" /> {form.advance_invoice_id ? "Zmeniť zálohovú faktúru" : "Pridať zálohovú faktúru"}
+              </button>
+              {form.advance_invoice_id && (
+                <span className="text-xs text-muted-foreground">
+                  Záloha odpočítaná: <strong>{Number(form.advance_amount).toFixed(2)} {form.currency}</strong>
+                  <button type="button" onClick={() => setForm({ ...form, advance_invoice_id: "", advance_amount: 0 })}
+                    className="ml-2 text-destructive hover:underline">Zrušiť</button>
+                </span>
+              )}
+            </div>
+          </section>
+
+          {/* SECTION 1b — payment & symbols */}
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <SectionHeader icon={CreditCard} title="Platobné údaje a symboly" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Konštantný symbol</label>
+                <input value={form.constant_symbol} onChange={(e) => setForm({ ...form, constant_symbol: e.target.value })}
+                  placeholder="napr. 0308"
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Špecifický symbol</label>
+                <input value={form.specific_symbol} onChange={(e) => setForm({ ...form, specific_symbol: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Číslo objednávky</label>
+                <input value={form.order_number} onChange={(e) => setForm({ ...form, order_number: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Spôsob dodania</label>
+                <select value={form.delivery_method} onChange={(e) => setForm({ ...form, delivery_method: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">— nevyplnené —</option>
+                  <option value="personal">Osobne</option>
+                  <option value="courier">Kuriér</option>
+                  <option value="post">Pošta</option>
+                  <option value="electronic">Elektronicky</option>
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-xs font-medium text-muted-foreground">Spôsob zaokrúhľovania</label>
+                <select value={form.rounding_mode} onChange={(e) => setForm({ ...form, rounding_mode: e.target.value as any })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="per_item">Po položkách (zaokrúhli každú položku zvlášť)</option>
+                  <option value="per_document">Za celý doklad (zaokrúhli až finálny súčet)</option>
+                  <option value="retail">Maloobchod (na 0,05 €, SK pravidlá)</option>
+                </select>
               </div>
             </div>
           </section>
+
 
 
           {/* SECTION 2 — items */}
@@ -421,11 +526,25 @@ function NewInvoice() {
             <div className="ml-auto max-w-sm space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Bez DPH</span><span className="tabular-nums">{totals.subtotal.toFixed(2)} {form.currency}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">DPH</span><span className="tabular-nums">{totals.vat_total.toFixed(2)} {form.currency}</span></div>
-              <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
-                <span>Spolu</span><span className="tabular-nums text-primary">{totals.total.toFixed(2)} {form.currency}</span>
+              <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
+                <span>Celkom</span><span className="tabular-nums">{totals.total.toFixed(2)} {form.currency}</span>
               </div>
+              {totals.advance > 0 && (
+                <>
+                  <div className="flex justify-between text-muted-foreground"><span>Odpočet zálohy</span><span className="tabular-nums">−{totals.advance.toFixed(2)} {form.currency}</span></div>
+                  <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
+                    <span>K úhrade</span><span className="tabular-nums text-primary">{totals.payable.toFixed(2)} {form.currency}</span>
+                  </div>
+                </>
+              )}
+              {totals.advance === 0 && (
+                <div className="flex justify-between text-lg font-bold">
+                  <span>K úhrade</span><span className="tabular-nums text-primary">{totals.total.toFixed(2)} {form.currency}</span>
+                </div>
+              )}
             </div>
           </section>
+
 
           {/* SECTION 4 — advanced */}
           <section className="rounded-2xl border border-border bg-card">
@@ -475,7 +594,25 @@ function NewInvoice() {
             onRun={runAi}
           />
         )}
+
+        {pickerOpen && (
+          <InvoicePickerModal
+            mode={pickerOpen}
+            onClose={() => setPickerOpen(null)}
+            onPickCopy={(loaded) => {
+              setItems(loaded.map((it) => ({ ...EMPTY_ITEM, ...it })));
+              toast.success(`Načítaných ${loaded.length} položiek`);
+              setPickerOpen(null);
+            }}
+            onPickAdvance={(inv) => {
+              setForm((f) => ({ ...f, advance_invoice_id: inv.id, advance_amount: Number(inv.total) }));
+              toast.success(`Záloha pripojená: ${inv.invoice_number}`);
+              setPickerOpen(null);
+            }}
+          />
+        )}
       </PageBody>
+
     </>
   );
 }
@@ -822,6 +959,93 @@ function AiModal({ prompt, setPrompt, loading, onClose, onRun }: {
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function InvoicePickerModal({
+  mode,
+  onClose,
+  onPickCopy,
+  onPickAdvance,
+}: {
+  mode: "copy" | "advance";
+  onClose: () => void;
+  onPickCopy: (items: Partial<Item>[]) => void;
+  onPickAdvance: (inv: { id: string; invoice_number: string; total: number }) => void;
+}) {
+  const [list, setList] = useState<any[]>([]);
+  const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    let query = supabase
+      .from("invoices")
+      .select("id, invoice_number, customer_name, total, currency, issue_date, type, status")
+      .eq("company_id", cid)
+      .order("issue_date", { ascending: false })
+      .limit(50);
+    if (mode === "advance") query = query.eq("type", "proforma");
+    query.then(({ data }) => { setList(data ?? []); setLoading(false); });
+  }, [mode]);
+
+  const filtered = q
+    ? list.filter((i) => `${i.invoice_number} ${i.customer_name ?? ""}`.toLowerCase().includes(q.toLowerCase()))
+    : list;
+
+  async function handlePick(inv: any) {
+    if (mode === "advance") {
+      onPickAdvance({ id: inv.id, invoice_number: inv.invoice_number, total: Number(inv.total) });
+      return;
+    }
+    const { data } = await supabase
+      .from("invoice_items")
+      .select("name, description, quantity, unit, unit_price, vat_rate")
+      .eq("invoice_id", inv.id)
+      .order("position");
+    onPickCopy((data ?? []) as Partial<Item>[]);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border px-5 py-3">
+          <h3 className="text-sm font-semibold">
+            {mode === "copy" ? "Načítať položky z dokladu" : "Vybrať zálohovú faktúru"}
+          </h3>
+          <button type="button" onClick={onClose} className="rounded-md p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="border-b border-border px-3 py-2">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)}
+              placeholder="Hľadať podľa čísla alebo odberateľa…"
+              className="flex-1 bg-transparent text-sm outline-none" />
+          </div>
+        </div>
+        <ul className="max-h-96 overflow-auto">
+          {loading && <li className="p-4 text-sm text-muted-foreground">Načítavam…</li>}
+          {!loading && filtered.length === 0 && (
+            <li className="p-4 text-sm text-muted-foreground">
+              {mode === "advance" ? "Žiadne zálohové faktúry." : "Žiadne faktúry."}
+            </li>
+          )}
+          {filtered.map((inv) => (
+            <li key={inv.id} className="border-b border-border last:border-0">
+              <button type="button" onClick={() => handlePick(inv)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-muted/60">
+                <div>
+                  <div className="font-medium">{inv.invoice_number}</div>
+                  <div className="text-xs text-muted-foreground">{inv.customer_name} · {inv.issue_date}</div>
+                </div>
+                <div className="tabular-nums font-medium">{Number(inv.total).toFixed(2)} {inv.currency}</div>
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
