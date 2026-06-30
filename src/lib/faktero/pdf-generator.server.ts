@@ -255,12 +255,17 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
 
   let ty = y;
   drawTotalRow(cur, font, "Medzisúčet", fmt(Number(invoice.subtotal), invoice.currency), totalsX, ty, totalsBlockW, ink, sub); ty -= 18;
-  drawTotalRow(cur, font, "DPH",        fmt(Number(invoice.vat_total), invoice.currency), totalsX, ty, totalsBlockW, ink, sub); ty -= 18;
+  if (!invoice.reverse_charge) {
+    drawTotalRow(cur, font, "DPH",        fmt(Number(invoice.vat_total), invoice.currency), totalsX, ty, totalsBlockW, ink, sub); ty -= 18;
+  } else {
+    drawTotalRow(cur, font, "DPH (PDP)",  "0,00\u00A0" + invoice.currency, totalsX, ty, totalsBlockW, ink, sub); ty -= 18;
+  }
   if (discount > 0) {
     drawTotalRow(cur, font, "Zľava",    `− ${fmt(discount, invoice.currency)}`, totalsX, ty, totalsBlockW, ink, sub); ty -= 18;
   }
   cur.drawLine({ start: { x: totalsX, y: ty + 6 }, end: { x: totalsX + totalsBlockW, y: ty + 6 }, color: hairline, thickness: 0.5 });
   ty -= 4;
+
 
   const heroH = 56;
   cur.drawRectangle({ x: totalsX, y: ty - heroH, width: totalsBlockW, height: heroH, color: primary });
