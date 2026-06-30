@@ -591,5 +591,5 @@ export function PageHeader({ title, description, action }: { title: string; desc
 }
 
 export function PageBody({ children }: { children: ReactNode }) {
-  return <div className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">{children}</div>;
+  return <div className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">{children}</div>;
 }
