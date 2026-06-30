@@ -495,13 +495,17 @@ function NewInvoice() {
                       </td>
                       <td className="py-2 pl-3"><CellNum value={it.unit_price} onChange={(v) => setItem(idx, { unit_price: v })} w="w-24" align="right" /></td>
                       <td className="py-2 pl-3">
-                        <select value={it.vat_rate} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
-                          className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background">
-                          <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
-                        </select>
+                        {form.reverse_charge ? (
+                          <span className="inline-block rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900" title="Prenesenie daňovej povinnosti">PDP</span>
+                        ) : (
+                          <select value={it.vat_rate} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
+                            className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background">
+                            <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
+                          </select>
+                        )}
                       </td>
                       <td className="py-2 pl-3 text-right tabular-nums font-medium">
-                        {(it.quantity * it.unit_price * (1 + it.vat_rate / 100)).toFixed(2)}
+                        {(it.quantity * it.unit_price * (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)).toFixed(2)}
                       </td>
                       <td className="py-2 pl-2">
                         <button type="button" onClick={() => setItems(items.filter((_, i) => i !== idx))}
