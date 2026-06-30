@@ -160,7 +160,7 @@ function buildBuyerParty(inv: InvoiceRow): EN16931Party {
   };
 }
 
-function buildLines(items: InvoiceItemRow[]): EN16931Line[] {
+function buildLines(items: InvoiceItemRow[], invoice: InvoiceRow): EN16931Line[] {
   return items
     .slice()
     .sort((a, b) => a.position - b.position)
@@ -172,25 +172,27 @@ function buildLines(items: InvoiceItemRow[]): EN16931Line[] {
       unitCode: mapUnit(it.unit),
       unitPrice: Number(it.unit_price),
       lineExtensionAmount: Number(it.subtotal),
-      vatCategory: mapVatCategory(Number(it.vat_rate)),
-      vatPercent: Number(it.vat_rate),
+      vatCategory: mapVatCategory(Number(it.vat_rate), invoice),
+      vatPercent: invoice.reverse_charge ? 0 : Number(it.vat_rate),
     }));
 }
 
-function buildTaxSubtotals(items: InvoiceItemRow[]): EN16931TaxSubtotal[] {
+function buildTaxSubtotals(items: InvoiceItemRow[], invoice: InvoiceRow): EN16931TaxSubtotal[] {
   const groups = new Map<string, EN16931TaxSubtotal>();
+  const reason = invoice.reverse_charge ? reverseChargeReason(invoice) : undefined;
   for (const it of items) {
-    const rate = Number(it.vat_rate);
-    const cat = mapVatCategory(rate);
+    const rate = invoice.reverse_charge ? 0 : Number(it.vat_rate);
+    const cat = mapVatCategory(rate, invoice);
     const key = `${cat}:${rate}`;
     const cur = groups.get(key) ?? {
       taxableAmount: 0,
       taxAmount: 0,
       vatCategory: cat,
       vatPercent: rate,
+      exemptionReason: reason,
     };
     cur.taxableAmount += Number(it.subtotal);
-    cur.taxAmount += Number(it.vat_amount);
+    cur.taxAmount += invoice.reverse_charge ? 0 : Number(it.vat_amount);
     groups.set(key, cur);
   }
   return Array.from(groups.values()).map((g) => ({
@@ -198,6 +200,7 @@ function buildTaxSubtotals(items: InvoiceItemRow[]): EN16931TaxSubtotal[] {
     taxableAmount: Math.round(g.taxableAmount * 100) / 100,
     taxAmount: Math.round(g.taxAmount * 100) / 100,
   }));
+
 }
 
 export function mapToEN16931(args: {
