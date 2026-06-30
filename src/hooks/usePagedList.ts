@@ -11,6 +11,7 @@ export type PagedListOptions = {
   searchColumns?: string[]; // ilike OR search
   orderBy?: { column: string; ascending?: boolean };
   pageSizeKey?: string; // localStorage key suffix
+  equals?: Record<string, string | number | boolean | null>;
 };
 
 export function usePagedList({ resource, searchColumns = [], orderBy, pageSizeKey }: PagedListOptions) {
