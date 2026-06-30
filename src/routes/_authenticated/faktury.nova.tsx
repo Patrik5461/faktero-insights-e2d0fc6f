@@ -19,6 +19,10 @@ import { findCustomerByIcoFn } from "@/lib/faktero/company-lookup.functions";
 
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    type: (s.type === "proforma" || s.type === "credit_note" ? s.type : undefined) as
+      | "proforma" | "credit_note" | undefined,
+  }),
   component: NewInvoice,
 });
 
