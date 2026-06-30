@@ -227,7 +227,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawAligned(cur, font, fmtQty(it.quantity),               cols.qty.x   + cols.qty.w   - PAD, numBaseline, 10, ink, "right");
     cur.drawText(String(it.unit ?? ""),                       { x: cols.unit.x + PAD, y: numBaseline, size: 10, font, color: ink });
     drawAligned(cur, font, fmt(Number(it.unit_price), invoice.currency), cols.price.x + cols.price.w - PAD, numBaseline, 10, ink, "right");
-    drawAligned(cur, font, `${Number(it.vat_rate)}%`,         cols.vat.x   + cols.vat.w   - PAD, numBaseline, 10, ink, "right");
+    drawAligned(cur, font, invoice.reverse_charge ? "PDP" : `${Number(it.vat_rate)}%`, cols.vat.x + cols.vat.w - PAD, numBaseline, 10, ink, "right");
     drawAligned(cur, bold, fmt(Number(it.total), invoice.currency),      cols.tot.x   + cols.tot.w   - PAD, numBaseline, 10, ink, "right");
 
     y -= rowH;
