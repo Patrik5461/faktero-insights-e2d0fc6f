@@ -100,11 +100,25 @@ function mapDocType(type: string): EN16931Invoice["documentType"] {
   return "380";
 }
 
-/** Map VAT rate to EN 16931 category (SK domestic rules — simplified). */
-function mapVatCategory(rate: number): EN16931Line["vatCategory"] {
+/** Map invoice + rate to EN 16931 category code (UNCL5305). */
+function mapVatCategory(rate: number, invoice?: Pick<InvoiceRow, "reverse_charge" | "reverse_charge_type">): EN16931Line["vatCategory"] {
+  if (invoice?.reverse_charge) {
+    if (invoice.reverse_charge_type === "eu_b2b") return "K";   // VAT exempt for EEA intra-community supply
+    if (invoice.reverse_charge_type === "export") return "G";   // Free export item, tax not charged
+    return "AE";                                                 // Reverse charge (domestic §69)
+  }
   if (rate === 0) return "Z";
   return "S";
 }
+
+function reverseChargeReason(invoice: Pick<InvoiceRow, "reverse_charge_type">): string {
+  if (invoice.reverse_charge_type === "eu_b2b")
+    return "Intra-Community supply — reverse charge (§43 zákona o DPH)";
+  if (invoice.reverse_charge_type === "export")
+    return "Export outside EU — VAT exempt (§47 zákona o DPH)";
+  return "Reverse charge — domestic supply (§69 ods. 12 zákona o DPH)";
+}
+
 
 function buildSellerParty(company: CompanyRow, profile?: ProfileRow | null): EN16931Party {
   return {
