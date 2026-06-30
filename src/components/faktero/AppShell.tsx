@@ -36,6 +36,7 @@ const NAV: NavGroup[] = [
     children: [
       { to: "/faktury", label: "Faktúry" },
       { to: "/faktury/nova", label: "Nová faktúra" },
+      { to: "/zalohove", label: "Zálohové faktúry" },
       { to: "/ponuky", label: "Cenové ponuky" },
       { to: "/opakovane", label: "Opakované faktúry" },
       { to: "/faktury?type=credit", label: "Dobropisy" },
