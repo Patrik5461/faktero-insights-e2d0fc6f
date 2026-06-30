@@ -345,7 +345,7 @@ function InvoiceDetail() {
   return (
     <>
       <PageHeader
-        title={`Faktúra ${inv.invoice_number}`}
+        title={`${inv.type === "proforma" ? "Zálohová faktúra" : inv.type === "credit_note" ? "Dobropis" : "Faktúra"} ${inv.invoice_number}`}
         description={`Vystavená ${inv.issue_date} · splatná ${inv.due_date}`}
         action={
           <div className="flex flex-wrap gap-2">
