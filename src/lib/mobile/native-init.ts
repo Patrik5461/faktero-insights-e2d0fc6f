@@ -25,6 +25,14 @@ export async function initNativePlatform(): Promise<void> {
       console.warn("[native-init] StatusBar:", e);
     }
 
+    // Push notifikácie — registrácia tokenu po prihlásení
+    try {
+      const { registerPushNotifications } = await import("./push");
+      registerPushNotifications().catch((e) => console.warn("[native-init] push:", e));
+    } catch {}
+
+    
+
     // Splash screen — schovať po načítaní web obsahu
     try {
       const { SplashScreen } = await import("@capacitor/splash-screen");
