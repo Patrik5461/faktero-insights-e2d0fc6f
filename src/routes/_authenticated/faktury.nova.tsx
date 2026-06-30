@@ -16,6 +16,7 @@ import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocomplete";
 import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { findCustomerByIcoFn } from "@/lib/faktero/company-lookup.functions";
+import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombobox";
 
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
