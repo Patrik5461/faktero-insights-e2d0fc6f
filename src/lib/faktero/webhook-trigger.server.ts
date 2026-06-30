@@ -6,7 +6,8 @@ export type FakteroEvent =
   | "invoice.sent"
   | "invoice.paid"
   | "invoice.cancelled"
-  | "customer.created";
+  | "customer.created"
+  | "efaktura.received";
 
 const RETRY_DELAYS_MS = [0, 1500, 4000];
 
