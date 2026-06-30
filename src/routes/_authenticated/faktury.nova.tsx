@@ -234,13 +234,14 @@ function NewInvoice() {
 
     const rows = items.map((it, idx) => {
       const s = Number(it.quantity) * Number(it.unit_price);
-      const v = s * (Number(it.vat_rate) / 100);
+      const effRate = form.reverse_charge ? 0 : Number(it.vat_rate);
+      const v = s * (effRate / 100);
       return {
         invoice_id: inv.id, position: idx,
         name: it.name, description: it.description,
         product_id: it.product_id ?? null,
         stock_item_id: it.stock_item_id ?? null,
-        quantity: it.quantity, unit: it.unit, unit_price: it.unit_price, vat_rate: it.vat_rate,
+        quantity: it.quantity, unit: it.unit, unit_price: it.unit_price, vat_rate: effRate,
         subtotal: Number(s.toFixed(2)), vat_amount: Number(v.toFixed(2)), total: Number((s + v).toFixed(2)),
       };
     });
