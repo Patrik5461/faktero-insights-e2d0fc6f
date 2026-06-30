@@ -136,6 +136,8 @@ function LoginPage() {
           </button>
         </form>
 
+        <BiometricLoginButton onSuccess={() => navigate({ to: landingPathFor(product) as any })} />
+
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Nemáte účet?{" "}
           <Link to="/registracia" className="font-medium text-primary hover:underline">
