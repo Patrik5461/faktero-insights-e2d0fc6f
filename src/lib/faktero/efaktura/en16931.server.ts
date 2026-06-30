@@ -247,6 +247,6 @@ export function mapToEN16931(args: {
       taxAmount: invoice.reverse_charge ? 0 : Number(invoice.vat_total),
       payableAmount: Number(invoice.total),
     },
-    note: invoice.notes || undefined,
+    note: [invoice.reverse_charge ? reverseChargeReason(invoice) : null, invoice.notes || null].filter(Boolean).join(" | ") || undefined,
   };
 }
