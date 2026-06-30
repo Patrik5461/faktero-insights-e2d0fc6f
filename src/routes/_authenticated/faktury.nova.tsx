@@ -526,11 +526,25 @@ function NewInvoice() {
             <div className="ml-auto max-w-sm space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Bez DPH</span><span className="tabular-nums">{totals.subtotal.toFixed(2)} {form.currency}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">DPH</span><span className="tabular-nums">{totals.vat_total.toFixed(2)} {form.currency}</span></div>
-              <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
-                <span>Spolu</span><span className="tabular-nums text-primary">{totals.total.toFixed(2)} {form.currency}</span>
+              <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
+                <span>Celkom</span><span className="tabular-nums">{totals.total.toFixed(2)} {form.currency}</span>
               </div>
+              {totals.advance > 0 && (
+                <>
+                  <div className="flex justify-between text-muted-foreground"><span>Odpočet zálohy</span><span className="tabular-nums">−{totals.advance.toFixed(2)} {form.currency}</span></div>
+                  <div className="flex justify-between border-t border-border pt-2 text-lg font-bold">
+                    <span>K úhrade</span><span className="tabular-nums text-primary">{totals.payable.toFixed(2)} {form.currency}</span>
+                  </div>
+                </>
+              )}
+              {totals.advance === 0 && (
+                <div className="flex justify-between text-lg font-bold">
+                  <span>K úhrade</span><span className="tabular-nums text-primary">{totals.total.toFixed(2)} {form.currency}</span>
+                </div>
+              )}
             </div>
           </section>
+
 
           {/* SECTION 4 — advanced */}
           <section className="rounded-2xl border border-border bg-card">
