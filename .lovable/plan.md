@@ -1,89 +1,72 @@
-# GoPay Billing — Implementačný plán
 
-## 1. Tajné kľúče (vyžaduje akciu používateľa)
-Pridám 4 runtime secrets (server-side only, nikdy vo frontende):
-- `GOPAY_CLIENT_ID`
-- `GOPAY_CLIENT_SECRET`
-- `GOPAY_GOID`
-- `GOPAY_ENV` (`sandbox`)
+# Faktero Mobile (Capacitor) — plán a otvorené otázky
 
-Spustí sa secure formulár — hodnoty zadáš ty.
-
-## 2. Databáza (jedna migrácia)
-
-**`subscription_plans`** — katalóg plánov
-- `slug`, `name`, `price_monthly` (cent), `invoice_limit` (NULL = neobmedzené), `user_limit`, `api_enabled`, `webhooks_enabled`, `recurring_enabled`, `active`
-
-Seed: `starter` (9 €), `business` (19 €), `premium` (39 €), `enterprise` (cena NULL).
-
-**`subscriptions`** — jedna aktívna na company
-- `company_id`, `plan_id`, `status` (`trialing`/`active`/`past_due`/`canceled`/`expired`), `trial_ends_at`, `current_period_start/end`, `gopay_payment_id`, `gopay_subscription_id`, `cancel_at_period_end`
-
-**`billing_payments`** — história platieb, unique na `(provider, provider_payment_id)` pre idempotenciu
-
-**`billing_events`** — audit GoPay notifikácií / interných udalostí
-
-RLS: členovia firmy môžu čítať svoje záznamy; zápis len cez server functions (service role).
-
-**Trigger:** rozšírim `handle_new_company` (alebo `create_company_with_owner`) o automatické založenie 14-dňového trial `subscriptions` riadku na business plán.
-
-## 3. Server functions — `src/lib/faktero/billing.functions.ts`
-- `getMyBilling()` — aktuálny plán + trial + použitie (faktúry tento mesiac, počet userov, API on/off)
-- `listPlans()`
-- `createCheckout({ planSlug })` — vytvorí GoPay payment cez REST API, vráti `gw_url`
-- `getPaymentHistory()`
-- `cancelSubscription()` — nastaví `cancel_at_period_end`
-- `reactivateSubscription()`
-
-**Helpers** (`src/lib/faktero/plan-enforcement.ts`):
-- `getCompanyPlan(companyId)`, `hasFeature(companyId, feature)`, `enforceInvoiceLimit`, `enforceUserLimit`
-
-Zapojím `enforceInvoiceLimit` do existujúcich `createInvoice` server fns a `enforceUserLimit` do invite flow. API endpoints a recurring jobs skontrolujú `hasFeature`.
-
-## 4. GoPay klient (`src/lib/faktero/gopay.server.ts`)
-- OAuth token cache
-- `createPayment({ amount, orderNumber, returnUrl, notifyUrl, payerEmail })`
-- `getPaymentStatus(id)`
-- Base URL podľa `GOPAY_ENV` (sandbox vs prod)
-
-## 5. Webhook — `src/routes/api/webhooks/gopay.ts`
-GoPay posiela GET notifikáciu s `id` parametrom. Handler:
-1. Načíta status z GoPay servera (nikdy nedôveruje payloadu).
-2. Upsert `billing_payments` podľa `provider_payment_id` (idempotentné).
-3. Pri `PAID` → aktivuje/predĺži `subscriptions`, posunie `current_period_end` o mesiac.
-4. Zapíše `billing_events`.
-
-URL pre GoPay konfiguráciu vrátim po nasadení.
-
-## 6. Frontend — `/predplatne`
-Nový route `src/routes/_authenticated/predplatne.tsx`:
-- Karta s aktuálnym plánom + trial countdown + usage bary (faktúry, používatelia)
-- Mriežka plánov so „Zvoliť plán" tlačidlami → `createCheckout` → redirect na `gw_url`
-- Po návrate `?payment=success|failed` zobrazí toast a refetchne stav
-- Tabuľka histórie platieb
-- Tlačidlá zrušiť / reaktivovať
-
-Banner „Skúšobná verzia končí o X dní" v `AppShell` ked je trial < 7 dní; banner „Predplatné je neaktívne — read-only režim" keď expired.
-
-Read-only enforcement: server fns na vytvorenie faktúr/zákazníkov/quote/API key vrátia chybu, UI tlačidlá disabled.
-
-## 7. Admin — `/admin/subscriptions`
-Rozšírim existujúcu stránku:
-- stĺpce: company, plan, status, trial ends, period, GoPay ID, mesačná cena, posledná platba
-- akcie (modal): nastav plán / predĺž trial / zruš / reaktivuj
-- každá akcia → server fn s `requireSupabaseAuth` + `is_platform_admin` check + zápis do `platform_audit_logs`
-
-## 8. Bezpečnosť
-- GoPay tajomstvá len v `*.server.ts`, načítané vnútri handlerov
-- Všetky billing zápisy cez `supabaseAdmin` v server fns
-- Webhook idempotent cez unique constraint
-- Žiadna aktivácia plánu bez potvrdenia GoPay statusu
-
-## 9. Mimo rozsahu (zatiaľ)
-- GoPay recurring (`gopay_subscription_id` len pripravené v schéme)
-- Produkčný mód
-- Faktúra za predplatné (faktúry pre Faktero zákazníkov vystaví Faktero team mimo systém)
+Pred kódom treba doriešiť 4 veci, inak vyrobíme nefunkčnú appku. Potom navrhujem rozdeliť do **3 fáz** namiesto jedného PR.
 
 ---
 
-Po schválení plánu si vyžiadam GoPay sandbox credentials cez secure formulár, potom spustím migráciu a postupne dodám kód.
+## A) Kritické rozhodnutia (treba odpoveď)
+
+### 1. Build target — toto rozhoduje o všetkom ďalšom
+Faktero beží na **TanStack Start + SSR na Cloudflare Workers**. Capacitor potrebuje **statický web bundle** (`webDir`). Máme dve cesty:
+
+- **(A) `server.url = "https://www.faktero.sk"`** (ako píšeš v kroku 1) — appka je v podstate WebView nad live stránkou. ✅ rýchle, ✅ vždy aktuálne, ❌ **bez internetu appka nefunguje vôbec** (rozporné s krokom 7 „Offline režim"), ❌ Apple App Store toto často **odmieta** ako „len wrapper okolo web stránky" (Guideline 4.2).
+- **(B) Bundled SPA build** — pridať druhý Vite build bez SSR, ktorý generuje statické `index.html` + JS, všetky dáta cez Supabase priamo z klienta. ✅ offline možný, ✅ App Store-friendly, ❌ ~3-5 dní práce navyše, ❌ stratíme SSR loadery (musíme prepísať na `useQuery`), ❌ niektoré server functions (PDF gen, eFaktúra) zostávajú server-side a appka ich volá ako API.
+
+**Bez rozhodnutia tu nemá zmysel pokračovať.**
+
+### 2. Push notifikácie — backend
+Krok 8 hovorí „Edge Function `send-push` cez FCM + APNs". To znamená:
+- Firebase projekt + service account JSON (FCM)
+- Apple Developer Account + APNs key `.p8` (APNs)
+- Tieto secrets nemám, musíš ich poskytnúť **až po vytvorení Apple/Google účtov** (krok 4-5 z tvojich otázok). Implementujem teraz len **kostru** (DB stĺpce, registrácia tokenu, prázdny endpoint), reálne odosielanie po dodaní credentials.
+
+### 3. Home Screen Widget (krok 11)
+Toto **nejde cez Capacitor pluginy** v plnom rozsahu. `@capacitor-community/app-widget` existuje ale je experimentálne a iOS WidgetKit vyžaduje **natívny Swift kód v Xcode** (samostatný Widget Extension target). Návrh: **vynechať z V1**, pridať po publikácii v App Store ako natívne rozšírenie. Súhlasíš?
+
+### 4. Biometria — knižnica
+`@capacitor-community/biometric-auth` neexistuje pod týmto názvom. Štandard je **`@aparajita/capacitor-biometric-auth`** alebo **`capacitor-native-biometric`**. Pôjdem s prvou (aktívne udržiavaná).
+
+---
+
+## B) Navrhované fázovanie
+
+### Fáza 1 — Capacitor shell + mobile UI (1 PR, ~1 deň)
+- Kroky 1, 2, 3 (Capacitor inštalácia, pluginy, bottom tab bar)
+- `capacitor.config.ts`, scripts
+- `useIsNative()` hook, `MobileBottomNav` komponent
+- Status bar (zelená), splash screen
+- **Výstup:** appka sa otvorí v Xcode/Android Studio, zobrazí web cez `server.url` (alebo SPA build podľa A1), s natívnou spodnou navigáciou
+
+### Fáza 2 — Mobile-native features (1 PR, ~1 deň)
+- Krok 4 (skener + AI parsing) — kamera → base64 → `aiParseInvoiceFn`
+- Krok 5 (rýchla faktúra, swipe-to-paid, share)
+- Krok 6 (biometria)
+- Krok 10 (share PDF, save to Files)
+
+### Fáza 3 — Background features (1 PR, ~1 deň + tvoje credentials)
+- Krok 7 (offline queue + sync) — **len ak A1 = B**
+- Krok 8 (push notifikácie) — DB + endpoint kostra teraz, FCM/APNs po dodaní kľúčov
+- Krok 9 (GPS tracker pre knihu jázd)
+
+### Vynechané z V1
+- Krok 11 (widget) — vyžaduje natívny Swift/Kotlin nad rámec Capacitoru
+
+---
+
+## C) Odpovede na tvoje záverečné otázky (vopred, nech vieš)
+
+1. **Nitro SSR vs mobile:** capacitor.config.ts s `server.url` je technicky kompatibilný (appka len načíta URL), ale **nedoporučujem** — viď A1. Pre App Store treba B (bundled SPA).
+2. **iOS build:** macOS + Xcode 15+ + Apple Developer účet ($99/rok) + CocoaPods. `npx cap add ios && npx cap open ios`.
+3. **Android build:** Android Studio (Hedgehog+) + JDK 17 + Android SDK 34. `npx cap add android && npx cap open android`.
+4. **Apple Developer:** Bundle ID `sk.faktero.app`, App ID s Push Notifications capability, APNs Auth Key (.p8) v Keys sekcii, Provisioning Profile.
+5. **Google Play + Firebase:** Firebase projekt → Add Android app s package `sk.faktero.app` → stiahnuť `google-services.json` → Cloud Messaging API enabled → Service Account JSON pre server-side FCM v3 API.
+6. **Plne implementovateľné cez Capacitor:** kroky 1-10. **Vyžaduje natívny kód:** krok 11 (widgets), prípadne pokročilé background GPS tracking na iOS.
+
+---
+
+## Odo mňa potrebujem:
+
+1. **A1: A alebo B?** (live WebView vs bundled SPA) — najdôležitejšie
+2. **A3:** OK vynechať widget z V1?
+3. Začať Fázou 1, alebo upraviť rozsah?
