@@ -244,7 +244,7 @@ export function mapToEN16931(args: {
       lineExtensionAmount: Number(invoice.subtotal),
       taxExclusiveAmount: Number(invoice.subtotal),
       taxInclusiveAmount: Number(invoice.total),
-      taxAmount: Number(invoice.vat_total),
+      taxAmount: invoice.reverse_charge ? 0 : Number(invoice.vat_total),
       payableAmount: Number(invoice.total),
     },
     note: invoice.notes || undefined,
