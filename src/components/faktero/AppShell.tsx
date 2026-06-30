@@ -260,12 +260,12 @@ export function AppShell({
 
   // Deterministic accent color for the company avatar initial.
   const AVATAR_COLORS = [
-    "from-rose-500 to-rose-700",
-    "from-amber-500 to-orange-600",
     "from-emerald-500 to-teal-600",
-    "from-sky-500 to-indigo-600",
-    "from-violet-500 to-fuchsia-600",
-    "from-cyan-500 to-blue-600",
+    "from-emerald-600 to-green-700",
+    "from-teal-500 to-emerald-700",
+    "from-amber-500 to-orange-600",
+    "from-lime-500 to-emerald-600",
+    "from-emerald-400 to-cyan-600",
   ];
   function avatarGradient(name?: string) {
     const s = name ?? "";
