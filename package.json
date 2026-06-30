@@ -9,7 +9,12 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "cap:sync": "cap sync",
+    "cap:ios": "cap open ios",
+    "cap:android": "cap open android",
+    "cap:add:ios": "cap add ios",
+    "cap:add:android": "cap add android"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",
