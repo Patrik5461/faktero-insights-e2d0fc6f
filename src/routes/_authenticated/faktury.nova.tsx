@@ -594,7 +594,25 @@ function NewInvoice() {
             onRun={runAi}
           />
         )}
+
+        {pickerOpen && (
+          <InvoicePickerModal
+            mode={pickerOpen}
+            onClose={() => setPickerOpen(null)}
+            onPickCopy={(loaded) => {
+              setItems(loaded.map((it) => ({ ...EMPTY_ITEM, ...it })));
+              toast.success(`Načítaných ${loaded.length} položiek`);
+              setPickerOpen(null);
+            }}
+            onPickAdvance={(inv) => {
+              setForm((f) => ({ ...f, advance_invoice_id: inv.id, advance_amount: Number(inv.total) }));
+              toast.success(`Záloha pripojená: ${inv.invoice_number}`);
+              setPickerOpen(null);
+            }}
+          />
+        )}
       </PageBody>
+
     </>
   );
 }
