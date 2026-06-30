@@ -15,6 +15,9 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CreateCompanyDialog } from "@/components/faktero/CreateCompanyDialog";
 import { FloatingAIButton } from "@/components/faktero/FloatingAIButton";
 import { getMyAdminRole } from "@/lib/faktero/admin.functions";
+import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
+import { useIsNative } from "@/hooks/useIsNative";
+import { initNativePlatform } from "@/lib/mobile/native-init";
 
 type Company = { id: string; name: string; logo_url?: string | null; role: string };
 
@@ -492,8 +495,16 @@ export function AppShell({
       <main className="flex min-w-0 flex-1 flex-col">{children}</main>
       <CreateCompanyDialog open={createOpen} onOpenChange={setCreateOpen} />
       <FloatingAIButton />
+      <NativeShellExtras />
     </div>
   );
+}
+
+function NativeShellExtras() {
+  const isNative = useIsNative();
+  useEffect(() => { initNativePlatform(); }, []);
+  if (!isNative) return null;
+  return <MobileBottomNav />;
 }
 
 function MobileNav({
