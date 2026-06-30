@@ -43,7 +43,7 @@ function QuickInvoicePage() {
       company_id: cid,
       customer_id: customerId,
       customer_name: customer?.name ?? "",
-      type: "invoice",
+      type: "regular",
       status: "draft",
       issue_date: today,
       due_date: due,

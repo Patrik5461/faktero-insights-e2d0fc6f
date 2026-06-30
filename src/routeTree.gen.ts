@@ -119,6 +119,7 @@ import { Route as AuthenticatedJazdyIntegracieRouteImport } from './routes/_auth
 import { Route as AuthenticatedJazdyExportRouteImport } from './routes/_authenticated/jazdy.export'
 import { Route as AuthenticatedImportySuperfakturaRouteImport } from './routes/_authenticated/importy.superfaktura'
 import { Route as AuthenticatedFakturySkenerRouteImport } from './routes/_authenticated/faktury.skener'
+import { Route as AuthenticatedFakturyRychlaRouteImport } from './routes/_authenticated/faktury.rychla'
 import { Route as AuthenticatedFakturyNovaRouteImport } from './routes/_authenticated/faktury.nova'
 import { Route as AuthenticatedFakturyIdRouteImport } from './routes/_authenticated/faktury.$id'
 import { Route as AuthenticatedEfakturaPrijateRouteImport } from './routes/_authenticated/efaktura.prijate'
@@ -733,6 +734,12 @@ const AuthenticatedFakturySkenerRoute =
     path: '/faktury/skener',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedFakturyRychlaRoute =
+  AuthenticatedFakturyRychlaRouteImport.update({
+    id: '/faktury/rychla',
+    path: '/faktury/rychla',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedFakturyNovaRoute =
   AuthenticatedFakturyNovaRouteImport.update({
     id: '/faktury/nova',
@@ -993,6 +1000,7 @@ export interface FileRoutesByFullPath {
   '/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
   '/faktury/$id': typeof AuthenticatedFakturyIdRouteWithChildren
   '/faktury/nova': typeof AuthenticatedFakturyNovaRoute
+  '/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
   '/jazdy/export': typeof AuthenticatedJazdyExportRoute
@@ -1131,6 +1139,7 @@ export interface FileRoutesByTo {
   '/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
   '/faktury/$id': typeof AuthenticatedFakturyIdRouteWithChildren
   '/faktury/nova': typeof AuthenticatedFakturyNovaRoute
+  '/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
   '/jazdy/export': typeof AuthenticatedJazdyExportRoute
@@ -1277,6 +1286,7 @@ export interface FileRoutesById {
   '/_authenticated/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
   '/_authenticated/faktury/$id': typeof AuthenticatedFakturyIdRouteWithChildren
   '/_authenticated/faktury/nova': typeof AuthenticatedFakturyNovaRoute
+  '/_authenticated/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/_authenticated/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/_authenticated/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
   '/_authenticated/jazdy/export': typeof AuthenticatedJazdyExportRoute
@@ -1424,6 +1434,7 @@ export interface FileRouteTypes {
     | '/efaktura/prijate'
     | '/faktury/$id'
     | '/faktury/nova'
+    | '/faktury/rychla'
     | '/faktury/skener'
     | '/importy/superfaktura'
     | '/jazdy/export'
@@ -1562,6 +1573,7 @@ export interface FileRouteTypes {
     | '/efaktura/prijate'
     | '/faktury/$id'
     | '/faktury/nova'
+    | '/faktury/rychla'
     | '/faktury/skener'
     | '/importy/superfaktura'
     | '/jazdy/export'
@@ -1707,6 +1719,7 @@ export interface FileRouteTypes {
     | '/_authenticated/efaktura/prijate'
     | '/_authenticated/faktury/$id'
     | '/_authenticated/faktury/nova'
+    | '/_authenticated/faktury/rychla'
     | '/_authenticated/faktury/skener'
     | '/_authenticated/importy/superfaktura'
     | '/_authenticated/jazdy/export'
@@ -2605,6 +2618,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFakturySkenerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/faktury/rychla': {
+      id: '/_authenticated/faktury/rychla'
+      path: '/faktury/rychla'
+      fullPath: '/faktury/rychla'
+      preLoaderRoute: typeof AuthenticatedFakturyRychlaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/faktury/nova': {
       id: '/_authenticated/faktury/nova'
       path: '/faktury/nova'
@@ -2995,6 +3015,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBankoveUctyTransakcieRoute: typeof AuthenticatedBankoveUctyTransakcieRoute
   AuthenticatedFakturyIdRoute: typeof AuthenticatedFakturyIdRouteWithChildren
   AuthenticatedFakturyNovaRoute: typeof AuthenticatedFakturyNovaRoute
+  AuthenticatedFakturyRychlaRoute: typeof AuthenticatedFakturyRychlaRoute
   AuthenticatedFakturySkenerRoute: typeof AuthenticatedFakturySkenerRoute
   AuthenticatedImportySuperfakturaRoute: typeof AuthenticatedImportySuperfakturaRoute
   AuthenticatedJazdyExportRoute: typeof AuthenticatedJazdyExportRoute
@@ -3039,6 +3060,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedBankoveUctyTransakcieRoute,
   AuthenticatedFakturyIdRoute: AuthenticatedFakturyIdRouteWithChildren,
   AuthenticatedFakturyNovaRoute: AuthenticatedFakturyNovaRoute,
+  AuthenticatedFakturyRychlaRoute: AuthenticatedFakturyRychlaRoute,
   AuthenticatedFakturySkenerRoute: AuthenticatedFakturySkenerRoute,
   AuthenticatedImportySuperfakturaRoute: AuthenticatedImportySuperfakturaRoute,
   AuthenticatedJazdyExportRoute: AuthenticatedJazdyExportRoute,
