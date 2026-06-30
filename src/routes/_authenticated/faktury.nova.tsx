@@ -62,7 +62,7 @@ function NewInvoice() {
     delivery_date: new Date().toISOString().slice(0, 10),
     due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
     variable_symbol: "",
-    constant_symbol: "",
+    constant_symbol: "0098",
     specific_symbol: "",
     order_number: "",
     currency: "EUR",
@@ -398,9 +398,12 @@ function NewInvoice() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Konštantný symbol</label>
-                <input value={form.constant_symbol} onChange={(e) => setForm({ ...form, constant_symbol: e.target.value })}
-                  placeholder="napr. 0308"
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+                <div className="mt-1">
+                  <ConstantSymbolCombobox
+                    value={form.constant_symbol}
+                    onChange={(v) => setForm({ ...form, constant_symbol: v })}
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Špecifický symbol</label>
