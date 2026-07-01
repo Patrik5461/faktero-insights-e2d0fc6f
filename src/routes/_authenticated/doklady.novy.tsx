@@ -252,9 +252,35 @@ function NovyDokladPage() {
           )}
 
           {qrRaw && (
-            <div className="rounded-lg border border-border bg-secondary/40 p-3 text-xs">
-              <div className="mb-1 font-medium">QR obsah</div>
-              <div className="break-all font-mono">{qrRaw}</div>
+            <div className="space-y-2">
+              {ekasaBadge && (
+                <div className="flex flex-wrap gap-2">
+                  {ekasaBadge.overeny && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                      ✓ Overené na Finančnej správe
+                    </span>
+                  )}
+                  {ekasaBadge.source === "lzma" && !ekasaBadge.overeny && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                      Dekódované lokálne (LZMA)
+                    </span>
+                  )}
+                  {ekasaBadge.source === "online" && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
+                      Online overenie FS
+                    </span>
+                  )}
+                  {ekasaBadge.source === "heuristic" && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground">
+                      Heuristika (needekódované)
+                    </span>
+                  )}
+                </div>
+              )}
+              <div className="rounded-lg border border-border bg-secondary/40 p-3 text-xs">
+                <div className="mb-1 font-medium">QR obsah</div>
+                <div className="break-all font-mono">{qrRaw}</div>
+              </div>
             </div>
           )}
 
