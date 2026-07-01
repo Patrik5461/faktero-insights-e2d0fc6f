@@ -107,6 +107,14 @@ const NAV: NavGroup[] = [
     ],
   },
   {
+    key: "doklady", label: "Doklady", icon: FileText,
+    match: ["/doklady"],
+    children: [
+      { to: "/doklady", label: "Prehľad dokladov" },
+      { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
+    ],
+  },
+  {
     key: "uctovnictvo", label: "Účtovníctvo", icon: FileSpreadsheet,
     match: ["/exporty", "/importy"],
     children: [
