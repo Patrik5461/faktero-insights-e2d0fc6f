@@ -1,3 +1,16 @@
+# Faktero Mobile — Fáza 3 hotová
+
+## Fáza 3
+- Push cez FCM HTTP v1 (Android + iOS APNs cez FCM): `src/lib/faktero/push.server.ts`
+- Registrácia tokenu: `src/lib/mobile/push.ts` (init v `native-init.ts`), ukladá do `profiles.push_token/push_platform`
+- Triggery: `invoice.paid` + `efaktura.received` v `webhook-trigger.server.ts`; cron `faktero-push-overdue-daily` (8:00) → `/api/public/hooks/push-overdue`
+- Widget: **Capacitor plugin neexistuje** → natívny Swift/Kotlin, návod v `.lovable/widget-readme.md`
+- App Store prep: `src/lib/mobile/app-store-prep.ts` + kompletný checklist `.lovable/app-store-checklist.md`
+- DB: pridané `profiles.push_token`, `push_platform`, `push_updated_at`
+- Nové secrety: `FCM_PROJECT_ID`, `FCM_SERVICE_ACCOUNT_JSON`
+
+---
+
 # Faktero Mobile — Fáza 2 hotová
 
 ## Build target: B (bundled SPA)
