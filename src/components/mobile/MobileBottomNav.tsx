@@ -53,7 +53,7 @@ export function MobileBottomNav() {
 
           {/* Centrálny FAB — Skenovať doklad */}
           <Link
-            to="/faktury/skener"
+            to="/doklady/novy"
             className="flex flex-col items-center justify-end gap-0.5 pb-1"
           >
             <span className="grid h-14 w-14 -translate-y-3 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background">
