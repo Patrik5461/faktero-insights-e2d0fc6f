@@ -10,6 +10,7 @@ const config: CapacitorConfig = {
     url: "https://www.faktero.sk",
     cleartext: false,
     androidScheme: "https",
+    errorPath: "/prihlasenie",
   },
   ios: {
     contentInset: "always",
@@ -20,7 +21,8 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 1500,
+      launchShowDuration: 3000,
+      launchAutoHide: false,
       backgroundColor: "#10b981",
       androidSplashResourceName: "splash",
       showSpinner: false,

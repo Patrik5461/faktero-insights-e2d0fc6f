@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { CookieConsentBanner } from "@/components/faktero/cookie-consent";
+import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
 
 function NotFoundComponent() {
   return (
@@ -123,6 +124,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      <NativeRouteGuard />
       <Outlet />
       <Toaster />
       <CookieConsentBanner />
