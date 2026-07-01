@@ -83,6 +83,7 @@ import { Route as AuthenticatedJazdyIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedImportyIndexRouteImport } from './routes/_authenticated/importy.index'
 import { Route as AuthenticatedFakturyIndexRouteImport } from './routes/_authenticated/faktury.index'
 import { Route as AuthenticatedEfakturaIndexRouteImport } from './routes/_authenticated/efaktura.index'
+import { Route as AuthenticatedDokladyIndexRouteImport } from './routes/_authenticated/doklady.index'
 import { Route as AuthenticatedBankoveUctyIndexRouteImport } from './routes/_authenticated/bankove-ucty.index'
 import { Route as PomocOnlinePlatbyGopayRouteImport } from './routes/pomoc.online-platby.gopay'
 import { Route as DocsOnlinePlatbyGopayRouteImport } from './routes/docs.online-platby.gopay'
@@ -126,6 +127,7 @@ import { Route as AuthenticatedFakturyIdRouteImport } from './routes/_authentica
 import { Route as AuthenticatedEfakturaPrijateRouteImport } from './routes/_authenticated/efaktura.prijate'
 import { Route as AuthenticatedEfakturaOdoslaneRouteImport } from './routes/_authenticated/efaktura.odoslane'
 import { Route as AuthenticatedEfakturaDoruceniaRouteImport } from './routes/_authenticated/efaktura.dorucenia'
+import { Route as AuthenticatedDokladyNovyRouteImport } from './routes/_authenticated/doklady.novy'
 import { Route as AuthenticatedBankoveUctyTransakcieRouteImport } from './routes/_authenticated/bankove-ucty.transakcie'
 import { Route as AuthenticatedBankoveUctyPripojitRouteImport } from './routes/_authenticated/bankove-ucty.pripojit'
 import { Route as AuthenticatedJazdyIntegracieIndexRouteImport } from './routes/_authenticated/jazdy.integracie.index'
@@ -538,6 +540,12 @@ const AuthenticatedEfakturaIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedEfakturaRoute,
   } as any)
+const AuthenticatedDokladyIndexRoute =
+  AuthenticatedDokladyIndexRouteImport.update({
+    id: '/doklady/',
+    path: '/doklady/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedBankoveUctyIndexRoute =
   AuthenticatedBankoveUctyIndexRouteImport.update({
     id: '/bankove-ucty/',
@@ -776,6 +784,12 @@ const AuthenticatedEfakturaDoruceniaRoute =
     path: '/dorucenia',
     getParentRoute: () => AuthenticatedEfakturaRoute,
   } as any)
+const AuthenticatedDokladyNovyRoute =
+  AuthenticatedDokladyNovyRouteImport.update({
+    id: '/doklady/novy',
+    path: '/doklady/novy',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedBankoveUctyTransakcieRoute =
   AuthenticatedBankoveUctyTransakcieRouteImport.update({
     id: '/bankove-ucty/transakcie',
@@ -1008,6 +1022,7 @@ export interface FileRoutesByFullPath {
   '/vyvojari/': typeof VyvojariIndexRoute
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
+  '/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
   '/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
@@ -1051,6 +1066,7 @@ export interface FileRoutesByFullPath {
   '/docs/online-platby/gopay': typeof DocsOnlinePlatbyGopayRoute
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/bankove-ucty/': typeof AuthenticatedBankoveUctyIndexRoute
+  '/doklady/': typeof AuthenticatedDokladyIndexRoute
   '/efaktura/': typeof AuthenticatedEfakturaIndexRoute
   '/faktury/': typeof AuthenticatedFakturyIndexRoute
   '/importy/': typeof AuthenticatedImportyIndexRoute
@@ -1149,6 +1165,7 @@ export interface FileRoutesByTo {
   '/vyvojari': typeof VyvojariIndexRoute
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
+  '/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
   '/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
@@ -1191,6 +1208,7 @@ export interface FileRoutesByTo {
   '/docs/online-platby/gopay': typeof DocsOnlinePlatbyGopayRoute
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/bankove-ucty': typeof AuthenticatedBankoveUctyIndexRoute
+  '/doklady': typeof AuthenticatedDokladyIndexRoute
   '/efaktura': typeof AuthenticatedEfakturaIndexRoute
   '/faktury': typeof AuthenticatedFakturyIndexRoute
   '/importy': typeof AuthenticatedImportyIndexRoute
@@ -1298,6 +1316,7 @@ export interface FileRoutesById {
   '/vyvojari/': typeof VyvojariIndexRoute
   '/_authenticated/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/_authenticated/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
+  '/_authenticated/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/_authenticated/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/_authenticated/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
   '/_authenticated/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
@@ -1341,6 +1360,7 @@ export interface FileRoutesById {
   '/docs/online-platby/gopay': typeof DocsOnlinePlatbyGopayRoute
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/_authenticated/bankove-ucty/': typeof AuthenticatedBankoveUctyIndexRoute
+  '/_authenticated/doklady/': typeof AuthenticatedDokladyIndexRoute
   '/_authenticated/efaktura/': typeof AuthenticatedEfakturaIndexRoute
   '/_authenticated/faktury/': typeof AuthenticatedFakturyIndexRoute
   '/_authenticated/importy/': typeof AuthenticatedImportyIndexRoute
@@ -1448,6 +1468,7 @@ export interface FileRouteTypes {
     | '/vyvojari/'
     | '/bankove-ucty/pripojit'
     | '/bankove-ucty/transakcie'
+    | '/doklady/novy'
     | '/efaktura/dorucenia'
     | '/efaktura/odoslane'
     | '/efaktura/prijate'
@@ -1491,6 +1512,7 @@ export interface FileRouteTypes {
     | '/docs/online-platby/gopay'
     | '/pomoc/online-platby/gopay'
     | '/bankove-ucty/'
+    | '/doklady/'
     | '/efaktura/'
     | '/faktury/'
     | '/importy/'
@@ -1589,6 +1611,7 @@ export interface FileRouteTypes {
     | '/vyvojari'
     | '/bankove-ucty/pripojit'
     | '/bankove-ucty/transakcie'
+    | '/doklady/novy'
     | '/efaktura/dorucenia'
     | '/efaktura/odoslane'
     | '/efaktura/prijate'
@@ -1631,6 +1654,7 @@ export interface FileRouteTypes {
     | '/docs/online-platby/gopay'
     | '/pomoc/online-platby/gopay'
     | '/bankove-ucty'
+    | '/doklady'
     | '/efaktura'
     | '/faktury'
     | '/importy'
@@ -1737,6 +1761,7 @@ export interface FileRouteTypes {
     | '/vyvojari/'
     | '/_authenticated/bankove-ucty/pripojit'
     | '/_authenticated/bankove-ucty/transakcie'
+    | '/_authenticated/doklady/novy'
     | '/_authenticated/efaktura/dorucenia'
     | '/_authenticated/efaktura/odoslane'
     | '/_authenticated/efaktura/prijate'
@@ -1780,6 +1805,7 @@ export interface FileRouteTypes {
     | '/docs/online-platby/gopay'
     | '/pomoc/online-platby/gopay'
     | '/_authenticated/bankove-ucty/'
+    | '/_authenticated/doklady/'
     | '/_authenticated/efaktura/'
     | '/_authenticated/faktury/'
     | '/_authenticated/importy/'
@@ -2392,6 +2418,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEfakturaIndexRouteImport
       parentRoute: typeof AuthenticatedEfakturaRoute
     }
+    '/_authenticated/doklady/': {
+      id: '/_authenticated/doklady/'
+      path: '/doklady'
+      fullPath: '/doklady/'
+      preLoaderRoute: typeof AuthenticatedDokladyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/bankove-ucty/': {
       id: '/_authenticated/bankove-ucty/'
       path: '/bankove-ucty'
@@ -2692,6 +2725,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/efaktura/dorucenia'
       preLoaderRoute: typeof AuthenticatedEfakturaDoruceniaRouteImport
       parentRoute: typeof AuthenticatedEfakturaRoute
+    }
+    '/_authenticated/doklady/novy': {
+      id: '/_authenticated/doklady/novy'
+      path: '/doklady/novy'
+      fullPath: '/doklady/novy'
+      preLoaderRoute: typeof AuthenticatedDokladyNovyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/bankove-ucty/transakcie': {
       id: '/_authenticated/bankove-ucty/transakcie'
@@ -3053,6 +3093,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedWebhookyLogyRoute: typeof AuthenticatedWebhookyLogyRoute
   AuthenticatedBankoveUctyPripojitRoute: typeof AuthenticatedBankoveUctyPripojitRoute
   AuthenticatedBankoveUctyTransakcieRoute: typeof AuthenticatedBankoveUctyTransakcieRoute
+  AuthenticatedDokladyNovyRoute: typeof AuthenticatedDokladyNovyRoute
   AuthenticatedFakturyIdRoute: typeof AuthenticatedFakturyIdRouteWithChildren
   AuthenticatedFakturyNovaRoute: typeof AuthenticatedFakturyNovaRoute
   AuthenticatedFakturyRychlaRoute: typeof AuthenticatedFakturyRychlaRoute
@@ -3069,6 +3110,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPonukyIdRoute: typeof AuthenticatedPonukyIdRoute
   AuthenticatedPonukyNovaRoute: typeof AuthenticatedPonukyNovaRoute
   AuthenticatedBankoveUctyIndexRoute: typeof AuthenticatedBankoveUctyIndexRoute
+  AuthenticatedDokladyIndexRoute: typeof AuthenticatedDokladyIndexRoute
   AuthenticatedFakturyIndexRoute: typeof AuthenticatedFakturyIndexRoute
   AuthenticatedImportyIndexRoute: typeof AuthenticatedImportyIndexRoute
   AuthenticatedJazdyIndexRoute: typeof AuthenticatedJazdyIndexRoute
@@ -3099,6 +3141,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBankoveUctyPripojitRoute: AuthenticatedBankoveUctyPripojitRoute,
   AuthenticatedBankoveUctyTransakcieRoute:
     AuthenticatedBankoveUctyTransakcieRoute,
+  AuthenticatedDokladyNovyRoute: AuthenticatedDokladyNovyRoute,
   AuthenticatedFakturyIdRoute: AuthenticatedFakturyIdRouteWithChildren,
   AuthenticatedFakturyNovaRoute: AuthenticatedFakturyNovaRoute,
   AuthenticatedFakturyRychlaRoute: AuthenticatedFakturyRychlaRoute,
@@ -3116,6 +3159,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPonukyIdRoute: AuthenticatedPonukyIdRoute,
   AuthenticatedPonukyNovaRoute: AuthenticatedPonukyNovaRoute,
   AuthenticatedBankoveUctyIndexRoute: AuthenticatedBankoveUctyIndexRoute,
+  AuthenticatedDokladyIndexRoute: AuthenticatedDokladyIndexRoute,
   AuthenticatedFakturyIndexRoute: AuthenticatedFakturyIndexRoute,
   AuthenticatedImportyIndexRoute: AuthenticatedImportyIndexRoute,
   AuthenticatedJazdyIndexRoute: AuthenticatedJazdyIndexRoute,
@@ -3378,13 +3422,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

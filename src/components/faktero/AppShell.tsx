@@ -107,6 +107,14 @@ const NAV: NavGroup[] = [
     ],
   },
   {
+    key: "doklady", label: "Doklady", icon: FileText,
+    match: ["/doklady"],
+    children: [
+      { to: "/doklady", label: "Prehľad dokladov" },
+      { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
+    ],
+  },
+  {
     key: "uctovnictvo", label: "Účtovníctvo", icon: FileSpreadsheet,
     match: ["/exporty", "/importy"],
     children: [
@@ -175,7 +183,7 @@ function isPathActive(pathname: string, group: Pick<NavGroup, "match" | "exact">
 
 export type ProductMode = "invoicing" | "logbook" | "both";
 
-const INVOICING_KEYS = new Set(["prehlad","fakturacia","kontakty","produkty","sklad","uctovnictvo","efaktura","banka","api"]);
+const INVOICING_KEYS = new Set(["prehlad","fakturacia","kontakty","produkty","sklad","doklady","uctovnictvo","efaktura","banka","api"]);
 const LOGBOOK_KEYS = new Set(["logbook-prehlad","jazdy","vozidla","integracie"]);
 
 /**

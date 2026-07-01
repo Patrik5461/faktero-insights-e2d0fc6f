@@ -11,11 +11,13 @@ const TABS: Tab[] = [
   { to: "/dashboard", label: "Prehľad", icon: Home, match: ["/dashboard"] },
   { to: "/faktury", label: "Faktúry", icon: FileText, match: ["/faktury", "/zalohove", "/ponuky"] },
   // index 2 — Skenovať (centrálne FAB)
-  { to: "/jazdy", label: "Jazdy", icon: Car, match: ["/jazdy"] },
+  { to: "/doklady", label: "Doklady", icon: FileText, match: ["/doklady"] },
 ];
 
 const MORE_LINKS: { to: string; label: string }[] = [
+  { to: "/doklady", label: "Doklady (bločky)" },
   { to: "/faktury/rychla", label: "Rýchla faktúra" },
+  { to: "/jazdy", label: "Jazdy" },
   { to: "/jazdy/gps", label: "GPS jazda" },
   { to: "/odberatelia", label: "Odberatelia" },
   { to: "/produkty", label: "Produkty" },
@@ -51,7 +53,7 @@ export function MobileBottomNav() {
 
           {/* Centrálny FAB — Skenovať doklad */}
           <Link
-            to="/faktury/skener"
+            to="/doklady/novy"
             className="flex flex-col items-center justify-end gap-0.5 pb-1"
           >
             <span className="grid h-14 w-14 -translate-y-3 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background">
