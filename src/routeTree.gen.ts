@@ -83,6 +83,7 @@ import { Route as AuthenticatedJazdyIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedImportyIndexRouteImport } from './routes/_authenticated/importy.index'
 import { Route as AuthenticatedFakturyIndexRouteImport } from './routes/_authenticated/faktury.index'
 import { Route as AuthenticatedEfakturaIndexRouteImport } from './routes/_authenticated/efaktura.index'
+import { Route as AuthenticatedDokladyIndexRouteImport } from './routes/_authenticated/doklady.index'
 import { Route as AuthenticatedBankoveUctyIndexRouteImport } from './routes/_authenticated/bankove-ucty.index'
 import { Route as PomocOnlinePlatbyGopayRouteImport } from './routes/pomoc.online-platby.gopay'
 import { Route as DocsOnlinePlatbyGopayRouteImport } from './routes/docs.online-platby.gopay'
@@ -537,6 +538,12 @@ const AuthenticatedEfakturaIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedEfakturaRoute,
+  } as any)
+const AuthenticatedDokladyIndexRoute =
+  AuthenticatedDokladyIndexRouteImport.update({
+    id: '/doklady/',
+    path: '/doklady/',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedBankoveUctyIndexRoute =
   AuthenticatedBankoveUctyIndexRouteImport.update({
@@ -1051,6 +1058,7 @@ export interface FileRoutesByFullPath {
   '/docs/online-platby/gopay': typeof DocsOnlinePlatbyGopayRoute
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/bankove-ucty/': typeof AuthenticatedBankoveUctyIndexRoute
+  '/doklady/': typeof AuthenticatedDokladyIndexRoute
   '/efaktura/': typeof AuthenticatedEfakturaIndexRoute
   '/faktury/': typeof AuthenticatedFakturyIndexRoute
   '/importy/': typeof AuthenticatedImportyIndexRoute
@@ -1191,6 +1199,7 @@ export interface FileRoutesByTo {
   '/docs/online-platby/gopay': typeof DocsOnlinePlatbyGopayRoute
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/bankove-ucty': typeof AuthenticatedBankoveUctyIndexRoute
+  '/doklady': typeof AuthenticatedDokladyIndexRoute
   '/efaktura': typeof AuthenticatedEfakturaIndexRoute
   '/faktury': typeof AuthenticatedFakturyIndexRoute
   '/importy': typeof AuthenticatedImportyIndexRoute
@@ -1341,6 +1350,7 @@ export interface FileRoutesById {
   '/docs/online-platby/gopay': typeof DocsOnlinePlatbyGopayRoute
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/_authenticated/bankove-ucty/': typeof AuthenticatedBankoveUctyIndexRoute
+  '/_authenticated/doklady/': typeof AuthenticatedDokladyIndexRoute
   '/_authenticated/efaktura/': typeof AuthenticatedEfakturaIndexRoute
   '/_authenticated/faktury/': typeof AuthenticatedFakturyIndexRoute
   '/_authenticated/importy/': typeof AuthenticatedImportyIndexRoute
@@ -1491,6 +1501,7 @@ export interface FileRouteTypes {
     | '/docs/online-platby/gopay'
     | '/pomoc/online-platby/gopay'
     | '/bankove-ucty/'
+    | '/doklady/'
     | '/efaktura/'
     | '/faktury/'
     | '/importy/'
@@ -1631,6 +1642,7 @@ export interface FileRouteTypes {
     | '/docs/online-platby/gopay'
     | '/pomoc/online-platby/gopay'
     | '/bankove-ucty'
+    | '/doklady'
     | '/efaktura'
     | '/faktury'
     | '/importy'
@@ -1780,6 +1792,7 @@ export interface FileRouteTypes {
     | '/docs/online-platby/gopay'
     | '/pomoc/online-platby/gopay'
     | '/_authenticated/bankove-ucty/'
+    | '/_authenticated/doklady/'
     | '/_authenticated/efaktura/'
     | '/_authenticated/faktury/'
     | '/_authenticated/importy/'
@@ -2391,6 +2404,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/efaktura/'
       preLoaderRoute: typeof AuthenticatedEfakturaIndexRouteImport
       parentRoute: typeof AuthenticatedEfakturaRoute
+    }
+    '/_authenticated/doklady/': {
+      id: '/_authenticated/doklady/'
+      path: '/doklady'
+      fullPath: '/doklady/'
+      preLoaderRoute: typeof AuthenticatedDokladyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/bankove-ucty/': {
       id: '/_authenticated/bankove-ucty/'
@@ -3069,6 +3089,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPonukyIdRoute: typeof AuthenticatedPonukyIdRoute
   AuthenticatedPonukyNovaRoute: typeof AuthenticatedPonukyNovaRoute
   AuthenticatedBankoveUctyIndexRoute: typeof AuthenticatedBankoveUctyIndexRoute
+  AuthenticatedDokladyIndexRoute: typeof AuthenticatedDokladyIndexRoute
   AuthenticatedFakturyIndexRoute: typeof AuthenticatedFakturyIndexRoute
   AuthenticatedImportyIndexRoute: typeof AuthenticatedImportyIndexRoute
   AuthenticatedJazdyIndexRoute: typeof AuthenticatedJazdyIndexRoute
@@ -3116,6 +3137,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPonukyIdRoute: AuthenticatedPonukyIdRoute,
   AuthenticatedPonukyNovaRoute: AuthenticatedPonukyNovaRoute,
   AuthenticatedBankoveUctyIndexRoute: AuthenticatedBankoveUctyIndexRoute,
+  AuthenticatedDokladyIndexRoute: AuthenticatedDokladyIndexRoute,
   AuthenticatedFakturyIndexRoute: AuthenticatedFakturyIndexRoute,
   AuthenticatedImportyIndexRoute: AuthenticatedImportyIndexRoute,
   AuthenticatedJazdyIndexRoute: AuthenticatedJazdyIndexRoute,
