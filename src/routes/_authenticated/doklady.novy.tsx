@@ -46,6 +46,7 @@ function NovyDokladPage() {
   const [uploadedFile, setUploadedFile] = useState<{ path: string; mime: string; size: number } | null>(null);
   const [source, setSource] = useState<"photo" | "qr" | "upload" | "web">("photo");
   const [qrRaw, setQrRaw] = useState<string | null>(null);
+  const [ekasaBadge, setEkasaBadge] = useState<null | { source: "lzma" | "online" | "heuristic"; overeny: boolean }>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
