@@ -22,6 +22,16 @@ export function NativeRouteGuard() {
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
+  // Inicializuj natívne pluginy (status bar, push, deep links, splash hide) čo najskôr.
+  useEffect(() => {
+    (async () => {
+      try {
+        const { initNativePlatform } = await import("@/lib/mobile/native-init");
+        await initNativePlatform();
+      } catch {}
+    })();
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
