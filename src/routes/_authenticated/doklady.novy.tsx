@@ -66,7 +66,7 @@ function NovyDokladPage() {
         net_amount: data.net_amount?.toString() ?? "", vat_rate: data.vat_rate?.toString() ?? "20",
         currency: data.currency ?? "EUR", category: data.category ?? "", note: data.note ?? "",
       });
-      setSource(data.source);
+      setSource(data.source as "photo" | "qr" | "upload" | "web");
       setQrRaw(data.qr_raw);
       if (data.file_path) {
         setUploadedFile({ path: data.file_path, mime: data.file_mime ?? "", size: data.file_size ?? 0 });
