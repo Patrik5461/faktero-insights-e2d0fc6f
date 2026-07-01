@@ -79,7 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" },
       { title: "Faktero — Moderná fakturácia pre SK a CZ firmy" },
       { name: "description", content: "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API." },
       { property: "og:title", content: "Faktero — Moderná fakturácia pre SK a CZ firmy" },

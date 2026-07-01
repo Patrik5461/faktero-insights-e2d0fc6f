@@ -141,20 +141,33 @@
 }
 
 @layer base {
-  * {
+  *,
+  *::before,
+  *::after {
     border-color: var(--color-border);
+    box-sizing: border-box;
+  }
+
+  html {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    max-width: 100%;
     /* Prevent runaway horizontal scroll on mobile when a single child
        overflows; helps keep narrow viewports clean. Individual scrollers
        (tables, code blocks) opt back in with overflow-x-auto. */
     overflow-x: hidden;
+    /* Respect iPhone notch / rounded corners. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 
-  html {
-    overflow-x: hidden;
+  /* Grid/flex children shouldn't force min-content width and blow layout. */
+  .min-w-0-children > * {
+    min-width: 0;
   }
 }
