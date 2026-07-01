@@ -1302,6 +1302,101 @@ export type Database = {
           },
         ]
       }
+      expense_documents: {
+        Row: {
+          ai_raw: Json | null
+          category: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          document_number: string | null
+          export_job_id: string | null
+          exported_at: string | null
+          file_mime: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          issue_date: string | null
+          net_amount: number | null
+          note: string | null
+          qr_raw: string | null
+          source: string
+          status: string
+          supplier_ic_dph: string | null
+          supplier_ico: string | null
+          supplier_name: string | null
+          total_amount: number | null
+          updated_at: string
+          vat_amount: number | null
+          vat_rate: number | null
+        }
+        Insert: {
+          ai_raw?: Json | null
+          category?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          document_number?: string | null
+          export_job_id?: string | null
+          exported_at?: string | null
+          file_mime?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          issue_date?: string | null
+          net_amount?: number | null
+          note?: string | null
+          qr_raw?: string | null
+          source?: string
+          status?: string
+          supplier_ic_dph?: string | null
+          supplier_ico?: string | null
+          supplier_name?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          vat_amount?: number | null
+          vat_rate?: number | null
+        }
+        Update: {
+          ai_raw?: Json | null
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          document_number?: string | null
+          export_job_id?: string | null
+          exported_at?: string | null
+          file_mime?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          issue_date?: string | null
+          net_amount?: number | null
+          note?: string | null
+          qr_raw?: string | null
+          source?: string
+          status?: string
+          supplier_ic_dph?: string | null
+          supplier_ico?: string | null
+          supplier_name?: string | null
+          total_amount?: number | null
+          updated_at?: string
+          vat_amount?: number | null
+          vat_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       export_jobs: {
         Row: {
           company_id: string
