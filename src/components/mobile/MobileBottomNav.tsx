@@ -11,7 +11,7 @@ const TABS: Tab[] = [
   { to: "/dashboard", label: "Prehľad", icon: Home, match: ["/dashboard"] },
   { to: "/faktury", label: "Faktúry", icon: FileText, match: ["/faktury", "/zalohove", "/ponuky"] },
   // index 2 — Skenovať (centrálne FAB)
-  { to: "/jazdy", label: "Jazdy", icon: Car, match: ["/jazdy"] },
+  { to: "/doklady", label: "Doklady", icon: FileText, match: ["/doklady"] },
 ];
 
 const MORE_LINKS: { to: string; label: string }[] = [
