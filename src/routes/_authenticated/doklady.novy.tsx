@@ -113,12 +113,17 @@ function NovyDokladPage() {
     setQrRaw(res.raw);
     setLoading(true);
     try {
-      const { parsed } = await parseQr({ data: { raw: res.raw } });
+      const { parsed, source: src, overeny } = await parseQr({ data: { raw: res.raw } });
       if (parsed.supplier_ico) updateForm("supplier_ico", parsed.supplier_ico);
+      if (parsed.supplier_ic_dph) updateForm("supplier_ic_dph", parsed.supplier_ic_dph);
       if (parsed.total_amount != null) updateForm("total_amount", String(parsed.total_amount));
+      if (parsed.vat_amount != null) updateForm("vat_amount", String(parsed.vat_amount));
       if (parsed.issue_date) updateForm("issue_date", parsed.issue_date);
       if (parsed.document_number) updateForm("document_number", parsed.document_number);
-      toast.success("QR kód načítaný");
+      if (parsed.currency) updateForm("currency", parsed.currency);
+      setEkasaBadge({ source: src ?? "heuristic", overeny: !!overeny });
+      if (src === "lzma" || src === "online") toast.success("eKasa QR dekódovaný");
+      else toast.success("QR kód načítaný");
     } catch (e: any) { toast.error(e?.message ?? "QR sa nepodarilo spracovať"); }
     finally { setLoading(false); }
   }
