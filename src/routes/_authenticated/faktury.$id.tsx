@@ -8,7 +8,15 @@ import { useServerFn } from "@tanstack/react-start";
 import { generateInvoicePdf, getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.functions";
 import { sendInvoiceEmailFn, triggerEventFn } from "@/lib/faktero/email.functions";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
-import { Download, FileText, RefreshCw, Mail, FileCode2, Trash2, Pencil, FileCheck2, CreditCard, Copy, RotateCw, Send, CheckCircle2, XCircle, Clock as ClockIcon } from "lucide-react";
+import { Download, FileText, RefreshCw, Mail, FileCode2, Trash2, Pencil, FileCheck2, CreditCard, Copy, RotateCw, Send, CheckCircle2, XCircle, Clock as ClockIcon, MoreHorizontal, Ban } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { requestInvoiceApproval } from "@/lib/faktero/invoice-approval.functions";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import {
