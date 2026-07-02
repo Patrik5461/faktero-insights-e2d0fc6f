@@ -33,7 +33,7 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
           // Best-effort initial accounts sync
           try {
             const { fetchAccounts } = await import("@/lib/faktero/tatrabanka.server");
-            const accounts = await fetchAccounts(tokens.access_token, consentId);
+            const accounts = await fetchAccounts(tokens.access_token, tokens.consent_id ?? null);
             for (const a of accounts) {
               await supabaseAdmin.from("bank_accounts").insert({
                 company_id: conn.company_id, bank_connection_id: conn.id,
