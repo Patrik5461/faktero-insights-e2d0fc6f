@@ -77,6 +77,7 @@ import { Route as AuthenticatedAiAsistentRouteImport } from './routes/_authentic
 import { Route as AdminCompaniesIndexRouteImport } from './routes/admin.companies.index'
 import { Route as AuthenticatedZalohoveIndexRouteImport } from './routes/_authenticated/zalohove.index'
 import { Route as AuthenticatedSkladIndexRouteImport } from './routes/_authenticated/sklad.index'
+import { Route as AuthenticatedPrijateFakturyIndexRouteImport } from './routes/_authenticated/prijate-faktury.index'
 import { Route as AuthenticatedPonukyIndexRouteImport } from './routes/_authenticated/ponuky.index'
 import { Route as AuthenticatedOpakovaneIndexRouteImport } from './routes/_authenticated/opakovane.index'
 import { Route as AuthenticatedJazdyIndexRouteImport } from './routes/_authenticated/jazdy.index'
@@ -108,6 +109,8 @@ import { Route as AuthenticatedSkladMinimumRouteImport } from './routes/_authent
 import { Route as AuthenticatedSkladInventuraRouteImport } from './routes/_authenticated/sklad.inventura'
 import { Route as AuthenticatedSkladImportRouteImport } from './routes/_authenticated/sklad.import'
 import { Route as AuthenticatedSkladHodnotaRouteImport } from './routes/_authenticated/sklad.hodnota'
+import { Route as AuthenticatedPrijateFakturyNovaRouteImport } from './routes/_authenticated/prijate-faktury.nova'
+import { Route as AuthenticatedPrijateFakturyIdRouteImport } from './routes/_authenticated/prijate-faktury.$id'
 import { Route as AuthenticatedPonukyNovaRouteImport } from './routes/_authenticated/ponuky.nova'
 import { Route as AuthenticatedPonukyIdRouteImport } from './routes/_authenticated/ponuky.$id'
 import { Route as AuthenticatedOpakovaneNovaRouteImport } from './routes/_authenticated/opakovane.nova'
@@ -505,6 +508,12 @@ const AuthenticatedSkladIndexRoute = AuthenticatedSkladIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedSkladRoute,
 } as any)
+const AuthenticatedPrijateFakturyIndexRoute =
+  AuthenticatedPrijateFakturyIndexRouteImport.update({
+    id: '/prijate-faktury/',
+    path: '/prijate-faktury/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPonukyIndexRoute =
   AuthenticatedPonukyIndexRouteImport.update({
     id: '/ponuky/',
@@ -674,6 +683,18 @@ const AuthenticatedSkladHodnotaRoute =
     id: '/hodnota',
     path: '/hodnota',
     getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedPrijateFakturyNovaRoute =
+  AuthenticatedPrijateFakturyNovaRouteImport.update({
+    id: '/prijate-faktury/nova',
+    path: '/prijate-faktury/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPrijateFakturyIdRoute =
+  AuthenticatedPrijateFakturyIdRouteImport.update({
+    id: '/prijate-faktury/$id',
+    path: '/prijate-faktury/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPonukyNovaRoute = AuthenticatedPonukyNovaRouteImport.update({
   id: '/ponuky/nova',
@@ -1042,6 +1063,8 @@ export interface FileRoutesByFullPath {
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
+  '/prijate-faktury/$id': typeof AuthenticatedPrijateFakturyIdRoute
+  '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
   '/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/sklad/import': typeof AuthenticatedSkladImportRoute
   '/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
@@ -1073,6 +1096,7 @@ export interface FileRoutesByFullPath {
   '/jazdy/': typeof AuthenticatedJazdyIndexRoute
   '/opakovane/': typeof AuthenticatedOpakovaneIndexRoute
   '/ponuky/': typeof AuthenticatedPonukyIndexRoute
+  '/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
   '/sklad/': typeof AuthenticatedSkladIndexRoute
   '/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
@@ -1184,6 +1208,8 @@ export interface FileRoutesByTo {
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
+  '/prijate-faktury/$id': typeof AuthenticatedPrijateFakturyIdRoute
+  '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
   '/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/sklad/import': typeof AuthenticatedSkladImportRoute
   '/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
@@ -1215,6 +1241,7 @@ export interface FileRoutesByTo {
   '/jazdy': typeof AuthenticatedJazdyIndexRoute
   '/opakovane': typeof AuthenticatedOpakovaneIndexRoute
   '/ponuky': typeof AuthenticatedPonukyIndexRoute
+  '/prijate-faktury': typeof AuthenticatedPrijateFakturyIndexRoute
   '/sklad': typeof AuthenticatedSkladIndexRoute
   '/zalohove': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies': typeof AdminCompaniesIndexRoute
@@ -1336,6 +1363,8 @@ export interface FileRoutesById {
   '/_authenticated/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/_authenticated/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/_authenticated/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
+  '/_authenticated/prijate-faktury/$id': typeof AuthenticatedPrijateFakturyIdRoute
+  '/_authenticated/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
   '/_authenticated/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/_authenticated/sklad/import': typeof AuthenticatedSkladImportRoute
   '/_authenticated/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
@@ -1367,6 +1396,7 @@ export interface FileRoutesById {
   '/_authenticated/jazdy/': typeof AuthenticatedJazdyIndexRoute
   '/_authenticated/opakovane/': typeof AuthenticatedOpakovaneIndexRoute
   '/_authenticated/ponuky/': typeof AuthenticatedPonukyIndexRoute
+  '/_authenticated/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
   '/_authenticated/sklad/': typeof AuthenticatedSkladIndexRoute
   '/_authenticated/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
@@ -1488,6 +1518,8 @@ export interface FileRouteTypes {
     | '/opakovane/nova'
     | '/ponuky/$id'
     | '/ponuky/nova'
+    | '/prijate-faktury/$id'
+    | '/prijate-faktury/nova'
     | '/sklad/hodnota'
     | '/sklad/import'
     | '/sklad/inventura'
@@ -1519,6 +1551,7 @@ export interface FileRouteTypes {
     | '/jazdy/'
     | '/opakovane/'
     | '/ponuky/'
+    | '/prijate-faktury/'
     | '/sklad/'
     | '/zalohove/'
     | '/admin/companies/'
@@ -1630,6 +1663,8 @@ export interface FileRouteTypes {
     | '/opakovane/nova'
     | '/ponuky/$id'
     | '/ponuky/nova'
+    | '/prijate-faktury/$id'
+    | '/prijate-faktury/nova'
     | '/sklad/hodnota'
     | '/sklad/import'
     | '/sklad/inventura'
@@ -1661,6 +1696,7 @@ export interface FileRouteTypes {
     | '/jazdy'
     | '/opakovane'
     | '/ponuky'
+    | '/prijate-faktury'
     | '/sklad'
     | '/zalohove'
     | '/admin/companies'
@@ -1781,6 +1817,8 @@ export interface FileRouteTypes {
     | '/_authenticated/opakovane/nova'
     | '/_authenticated/ponuky/$id'
     | '/_authenticated/ponuky/nova'
+    | '/_authenticated/prijate-faktury/$id'
+    | '/_authenticated/prijate-faktury/nova'
     | '/_authenticated/sklad/hodnota'
     | '/_authenticated/sklad/import'
     | '/_authenticated/sklad/inventura'
@@ -1812,6 +1850,7 @@ export interface FileRouteTypes {
     | '/_authenticated/jazdy/'
     | '/_authenticated/opakovane/'
     | '/_authenticated/ponuky/'
+    | '/_authenticated/prijate-faktury/'
     | '/_authenticated/sklad/'
     | '/_authenticated/zalohove/'
     | '/admin/companies/'
@@ -2376,6 +2415,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSkladIndexRouteImport
       parentRoute: typeof AuthenticatedSkladRoute
     }
+    '/_authenticated/prijate-faktury/': {
+      id: '/_authenticated/prijate-faktury/'
+      path: '/prijate-faktury'
+      fullPath: '/prijate-faktury/'
+      preLoaderRoute: typeof AuthenticatedPrijateFakturyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ponuky/': {
       id: '/_authenticated/ponuky/'
       path: '/ponuky'
@@ -2592,6 +2638,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/sklad/hodnota'
       preLoaderRoute: typeof AuthenticatedSkladHodnotaRouteImport
       parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/prijate-faktury/nova': {
+      id: '/_authenticated/prijate-faktury/nova'
+      path: '/prijate-faktury/nova'
+      fullPath: '/prijate-faktury/nova'
+      preLoaderRoute: typeof AuthenticatedPrijateFakturyNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/prijate-faktury/$id': {
+      id: '/_authenticated/prijate-faktury/$id'
+      path: '/prijate-faktury/$id'
+      fullPath: '/prijate-faktury/$id'
+      preLoaderRoute: typeof AuthenticatedPrijateFakturyIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ponuky/nova': {
       id: '/_authenticated/ponuky/nova'
@@ -3109,6 +3169,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOpakovaneNovaRoute: typeof AuthenticatedOpakovaneNovaRoute
   AuthenticatedPonukyIdRoute: typeof AuthenticatedPonukyIdRoute
   AuthenticatedPonukyNovaRoute: typeof AuthenticatedPonukyNovaRoute
+  AuthenticatedPrijateFakturyIdRoute: typeof AuthenticatedPrijateFakturyIdRoute
+  AuthenticatedPrijateFakturyNovaRoute: typeof AuthenticatedPrijateFakturyNovaRoute
   AuthenticatedBankoveUctyIndexRoute: typeof AuthenticatedBankoveUctyIndexRoute
   AuthenticatedDokladyIndexRoute: typeof AuthenticatedDokladyIndexRoute
   AuthenticatedFakturyIndexRoute: typeof AuthenticatedFakturyIndexRoute
@@ -3116,6 +3178,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedJazdyIndexRoute: typeof AuthenticatedJazdyIndexRoute
   AuthenticatedOpakovaneIndexRoute: typeof AuthenticatedOpakovaneIndexRoute
   AuthenticatedPonukyIndexRoute: typeof AuthenticatedPonukyIndexRoute
+  AuthenticatedPrijateFakturyIndexRoute: typeof AuthenticatedPrijateFakturyIndexRoute
   AuthenticatedZalohoveIndexRoute: typeof AuthenticatedZalohoveIndexRoute
 }
 
@@ -3158,6 +3221,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOpakovaneNovaRoute: AuthenticatedOpakovaneNovaRoute,
   AuthenticatedPonukyIdRoute: AuthenticatedPonukyIdRoute,
   AuthenticatedPonukyNovaRoute: AuthenticatedPonukyNovaRoute,
+  AuthenticatedPrijateFakturyIdRoute: AuthenticatedPrijateFakturyIdRoute,
+  AuthenticatedPrijateFakturyNovaRoute: AuthenticatedPrijateFakturyNovaRoute,
   AuthenticatedBankoveUctyIndexRoute: AuthenticatedBankoveUctyIndexRoute,
   AuthenticatedDokladyIndexRoute: AuthenticatedDokladyIndexRoute,
   AuthenticatedFakturyIndexRoute: AuthenticatedFakturyIndexRoute,
@@ -3165,6 +3230,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedJazdyIndexRoute: AuthenticatedJazdyIndexRoute,
   AuthenticatedOpakovaneIndexRoute: AuthenticatedOpakovaneIndexRoute,
   AuthenticatedPonukyIndexRoute: AuthenticatedPonukyIndexRoute,
+  AuthenticatedPrijateFakturyIndexRoute: AuthenticatedPrijateFakturyIndexRoute,
   AuthenticatedZalohoveIndexRoute: AuthenticatedZalohoveIndexRoute,
 }
 

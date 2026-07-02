@@ -2432,6 +2432,101 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_invoices: {
+        Row: {
+          amount_total: number
+          amount_without_vat: number
+          company_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          deleted_at: string | null
+          due_date: string
+          file_mime: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          invoice_number: string
+          issue_date: string
+          note: string | null
+          payment_date: string | null
+          payment_method: string | null
+          pdf_url: string | null
+          received_date: string
+          status: string
+          supplier_dic: string | null
+          supplier_ic_dph: string | null
+          supplier_ico: string | null
+          supplier_name: string
+          updated_at: string
+          vat_amount: number
+        }
+        Insert: {
+          amount_total?: number
+          amount_without_vat?: number
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          due_date: string
+          file_mime?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          invoice_number: string
+          issue_date: string
+          note?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          pdf_url?: string | null
+          received_date?: string
+          status?: string
+          supplier_dic?: string | null
+          supplier_ic_dph?: string | null
+          supplier_ico?: string | null
+          supplier_name: string
+          updated_at?: string
+          vat_amount?: number
+        }
+        Update: {
+          amount_total?: number
+          amount_without_vat?: number
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          deleted_at?: string | null
+          due_date?: string
+          file_mime?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          note?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          pdf_url?: string | null
+          received_date?: string
+          status?: string
+          supplier_dic?: string | null
+          supplier_ic_dph?: string | null
+          supplier_ico?: string | null
+          supplier_name?: string
+          updated_at?: string
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quote_email_logs: {
         Row: {
           company_id: string

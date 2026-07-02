@@ -81,6 +81,7 @@ function Dashboard() {
   const [webhookDeliveries, setWebhookDeliveries] = useState<any[]>([]);
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   const [tripStats, setTripStats] = useState<{ km_month: number; last: any | null } | null>(null);
+  const [payables, setPayables] = useState<{ unpaid: number; overdueCount: number; count: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -158,6 +159,22 @@ function Dashboard() {
       ]);
       const km = (month ?? []).reduce((a: number, r: any) => a + Number(r.distance_km), 0);
       setTripStats({ km_month: km, last: last?.[0] ?? null });
+    })();
+    (async () => {
+      const cid = getActiveCompanyId();
+      if (!cid) return;
+      const { data } = await supabase.from("purchase_invoices")
+        .select("amount_total, status, due_date")
+        .eq("company_id", cid).is("deleted_at", null);
+      const today = new Date().toISOString().slice(0, 10);
+      let unpaid = 0, overdueCount = 0;
+      (data ?? []).forEach((r: any) => {
+        if (r.status !== "paid" && r.status !== "cancelled") {
+          unpaid += Number(r.amount_total ?? 0);
+          if (r.due_date < today) overdueCount++;
+        }
+      });
+      setPayables({ unpaid, overdueCount, count: data?.length ?? 0 });
     })();
   }, []);
 
@@ -292,7 +309,7 @@ function Dashboard() {
         </div>
 
         {/* SECOND ROW */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        <div className="mt-8 grid gap-6 lg:grid-cols-4">
           <Panel title="Pohľadávky" icon={HandCoins}>
             <Row label="Celkové pohľadávky" value={fmt(metrics.receivables)} strong />
             <Row label="Po splatnosti" value={fmt(metrics.overdueAmount)} tone="destructive" />
@@ -328,6 +345,17 @@ function Dashboard() {
             <Row label="Výdavky (odhad)" value={fmt(metrics.yearExpenses)} />
             <Row label="Odhad základu dane" value={fmt(Math.max(0, metrics.yearIncome - metrics.yearExpenses))} strong />
             <p className="mt-3 text-xs text-muted-foreground">Indikatívny výpočet — nenahrádza účtovníka.</p>
+          </Panel>
+
+          <Panel title="Záväzky" icon={TrendingDown}>
+            <Row label="Neuhradené prijaté faktúry" value={fmt(payables?.unpaid ?? 0)} strong />
+            <Row label="Po splatnosti" value={String(payables?.overdueCount ?? 0)} tone={(payables?.overdueCount ?? 0) > 0 ? "destructive" : undefined} />
+            <Row label="Evidovaných spolu" value={String(payables?.count ?? 0)} />
+            <div className="mt-3 border-t border-border pt-3">
+              <Link to="/prijate-faktury" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                Otvoriť prijaté faktúry <ArrowUpRight className="h-3 w-3" />
+              </Link>
+            </div>
           </Panel>
         </div>
 
