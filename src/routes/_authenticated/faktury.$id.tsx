@@ -206,8 +206,50 @@ function InvoiceDetail() {
       } else {
         setSettledIn(null); setAdvanceProforma(null);
       }
+      const { data: rems } = await supabase.from("invoice_reminders")
+        .select("id, reminder_number, sent_at, status, email_to, triggered_by")
+        .eq("invoice_id", id).order("sent_at", { ascending: false });
+      setReminders(rems ?? []);
     }
   }
+
+  async function openReminder() {
+    try {
+      const sentSet = new Set(reminders.filter((r) => r.status === "sent").map((r) => r.reminder_number));
+      let next: 1 | 2 | 3 = 1;
+      if (sentSet.has(1)) next = 2;
+      if (sentSet.has(2)) next = 3;
+      const preview = await previewReminder({ data: { invoiceId: id, reminderNumber: next } });
+      setReminderForm({
+        reminderNumber: next,
+        recipient_email: preview.recipient_email ?? "",
+        subject: preview.subject,
+        message: preview.message,
+      });
+      setReminderOpen(true);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa načítať upomienku");
+    }
+  }
+
+  async function submitReminder() {
+    setReminderBusy(true);
+    try {
+      await sendReminder({ data: {
+        invoiceId: id,
+        reminderNumber: reminderForm.reminderNumber,
+        recipient_email: reminderForm.recipient_email,
+        subject: reminderForm.subject,
+        message: reminderForm.message,
+      } });
+      toast.success("Upomienka odoslaná");
+      setReminderOpen(false);
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Odoslanie upomienky zlyhalo");
+    } finally { setReminderBusy(false); }
+  }
+
   useEffect(() => { load(); }, [id]);
 
   async function handleDelete() {
