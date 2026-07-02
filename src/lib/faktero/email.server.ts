@@ -126,7 +126,8 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
     ctaHtml;
 
   const senderName = company?.email_sender_name || company?.name || "Faktero";
-  const from = `${senderName} <onboarding@resend.dev>`;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
+  const from = `${senderName} <${fromEmail}>`;
 
   const { data: log } = await supabaseAdmin.from("invoice_email_logs").insert({
     company_id: input.company_id, invoice_id: invoice.id,
