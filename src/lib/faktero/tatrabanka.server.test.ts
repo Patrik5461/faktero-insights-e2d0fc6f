@@ -111,7 +111,7 @@ describe("tatrabanka.server", () => {
   });
 
   describe("fetchAccounts (bank sync)", () => {
-    it("success: maps accounts + closing balance and sends Bearer + Consent-ID", async () => {
+    it("success: maps accounts + closing balance and sends Bearer + X-Request-ID", async () => {
       let capturedInit: any = null;
       let capturedUrl = "";
       mockFetch((url, init) => {
