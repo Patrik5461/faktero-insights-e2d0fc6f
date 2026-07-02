@@ -3,15 +3,22 @@ import { useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
-import { Plus, FileCode2, Loader2, Trash2, RotateCcw, Copy, Bell } from "lucide-react";
+import { Plus, FileCode2, Loader2, Trash2, RotateCcw, Copy, Bell, CheckCircle2, Mail, CalendarPlus, Archive } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
+import { bulkMarkPaidFn } from "@/lib/faktero/invoice-bulk.functions";
+import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
+import { sendReminderFn } from "@/lib/faktero/reminders.functions";
+import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
 import { Pagination, PageSizeSelect, ConfirmDialog, BulkBar, DeletedToggle } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { supabase } from "@/integrations/supabase/client";
+import JSZip from "jszip";
+
+type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
 
 export const Route = createFileRoute("/_authenticated/faktury/")({
   head: () => ({ meta: [{ title: "Faktúry — Faktero" }] }),
@@ -30,6 +37,13 @@ function InvoicesPage() {
   const [overdueNoReminder, setOverdueNoReminder] = useState(false);
   const exportFn = useServerFn(exportInvoicesFn);
   const cloneFn = useServerFn(cloneInvoiceFn);
+  const markPaidFn = useServerFn(bulkMarkPaidFn);
+  const emailFn = useServerFn(sendInvoiceEmailFn);
+  const reminderFn = useServerFn(sendReminderFn);
+  const pdfFn = useServerFn(generateInvoicePdf);
+
+  const [bulkAction, setBulkAction] = useState<BulkAction>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
   useEffect(() => {
     const ids = list.rows.map((r: any) => r.id);
@@ -104,6 +118,155 @@ function InvoicesPage() {
     catch (e: any) { toast.error(e?.message ?? "Chyba"); }
   }
 
+  const selectedRows = useMemo(
+    () => list.rows.filter((r: any) => list.selected[r.id]),
+    [list.rows, list.selected],
+  );
+  const emailableCount = selectedRows.filter(
+    (r: any) => (r.status === "issued" || r.status === "sent") && r.customer_email,
+  ).length;
+  const overdueSelectedCount = selectedRows.filter(
+    (r: any) =>
+      (r.status === "issued" || r.status === "sent") &&
+      r.due_date && r.due_date < today && !r.paid_at,
+  ).length;
+
+  async function runBulkPaid() {
+    setBusy(true);
+    setBulkAction(null);
+    try {
+      const r = await markPaidFn({ data: { invoiceIds: list.selectedIds } });
+      toast.success(
+        r.skipped > 0
+          ? `${r.updated} faktúr označených ako zaplatené (${r.skipped} preskočených)`
+          : `${r.updated} faktúr označených ako zaplatené`,
+      );
+      list.clearSelection();
+      list.reload();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Označenie zlyhalo");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runBulkEmail() {
+    setBulkAction(null);
+    const targets = selectedRows.filter(
+      (r: any) => (r.status === "issued" || r.status === "sent") && r.customer_email,
+    );
+    if (!targets.length) { toast.error("Žiadne odosielateľné faktúry (chýba email alebo nesprávny stav)."); return; }
+    setBusy(true);
+    setProgress({ current: 0, total: targets.length });
+    let ok = 0, fail = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const inv = targets[i];
+      try {
+        await emailFn({ data: { invoiceId: inv.id, recipient_email: inv.customer_email } });
+        ok++;
+      } catch (e) { console.error("bulk email failed", inv.id, e); fail++; }
+      setProgress({ current: i + 1, total: targets.length });
+    }
+    setProgress(null);
+    setBusy(false);
+    if (fail === 0) toast.success(`Odoslaných ${ok} emailov`);
+    else toast.error(`Odoslaných ${ok}, zlyhalo ${fail}`);
+    list.clearSelection();
+    list.reload();
+  }
+
+  async function runBulkClone() {
+    setBulkAction(null);
+    const ids = list.selectedIds;
+    setBusy(true);
+    setProgress({ current: 0, total: ids.length });
+    let ok = 0, fail = 0;
+    for (let i = 0; i < ids.length; i++) {
+      try { await cloneFn({ data: { invoiceId: ids[i] } }); ok++; }
+      catch (e) { console.error("bulk clone failed", ids[i], e); fail++; }
+      setProgress({ current: i + 1, total: ids.length });
+    }
+    setProgress(null);
+    setBusy(false);
+    if (fail === 0) toast.success(`Vytvorených ${ok} kópií pre ďalší mesiac`);
+    else toast.error(`Vytvorených ${ok}, zlyhalo ${fail}`);
+    list.clearSelection();
+    list.reload();
+  }
+
+  async function runBulkReminder() {
+    setBulkAction(null);
+    const targets = selectedRows.filter(
+      (r: any) =>
+        (r.status === "issued" || r.status === "sent") &&
+        r.due_date && r.due_date < today && !r.paid_at && r.customer_email,
+    );
+    if (!targets.length) { toast.error("Žiadne po splatnosti faktúry s emailom."); return; }
+    setBusy(true);
+    setProgress({ current: 0, total: targets.length });
+    let ok = 0, fail = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const inv = targets[i];
+      const next = Math.min(3, (reminderMap[inv.id] ?? 0) + 1) as 1 | 2 | 3;
+      try {
+        await reminderFn({ data: { invoiceId: inv.id, reminderNumber: next, recipient_email: inv.customer_email } });
+        ok++;
+      } catch (e) { console.error("bulk reminder failed", inv.id, e); fail++; }
+      setProgress({ current: i + 1, total: targets.length });
+    }
+    setProgress(null);
+    setBusy(false);
+    if (fail === 0) toast.success(`Odoslaných ${ok} upomienok`);
+    else toast.error(`Odoslaných ${ok}, zlyhalo ${fail}`);
+    list.clearSelection();
+    list.reload();
+  }
+
+  async function runBulkZip() {
+    setBulkAction(null);
+    const ids = list.selectedIds;
+    setBusy(true);
+    setProgress({ current: 0, total: ids.length });
+    const zip = new JSZip();
+    let ok = 0, fail = 0;
+    for (let i = 0; i < ids.length; i++) {
+      try {
+        const r = await pdfFn({ data: { invoiceId: ids[i] } });
+        const resp = await fetch(r.signedUrl);
+        if (!resp.ok) throw new Error("PDF fetch failed");
+        const bytes = new Uint8Array(await resp.arrayBuffer());
+        zip.file(r.fileName, bytes);
+        ok++;
+      } catch (e) { console.error("bulk pdf failed", ids[i], e); fail++; }
+      setProgress({ current: i + 1, total: ids.length });
+    }
+    setProgress(null);
+    if (ok > 0) {
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `faktury-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+    setBusy(false);
+    if (fail === 0) toast.success(`ZIP so ${ok} faktúrami stiahnutý`);
+    else toast.error(`Do ZIPu pridaných ${ok}, zlyhalo ${fail}`);
+    list.clearSelection();
+  }
+
+  const confirmMessages: Record<Exclude<BulkAction, null>, { title: string; message: string }> = {
+    paid: { title: `Označiť ${list.selectedIds.length} faktúr ako zaplatené?`, message: "Stornované a už zaplatené faktúry budú preskočené. Nastaví sa dnešný dátum úhrady." },
+    email: { title: `Odoslať emailom ${emailableCount} faktúr?`, message: "Odosielajú sa iba vystavené/odoslané faktúry s emailom odberateľa." },
+    clone: { title: `Vytvoriť kópie ${list.selectedIds.length} faktúr pre ďalší mesiac?`, message: "Vytvoria sa nové koncepty s inkrementovaným mesiacom v popisoch." },
+    reminder: { title: `Odoslať upomienky pre ${overdueSelectedCount} faktúr?`, message: "Odosielajú sa iba po splatnosti faktúry s emailom odberateľa. Číslo upomienky sa určí automaticky." },
+    zip: { title: `Stiahnuť PDF ZIP pre ${list.selectedIds.length} faktúr?`, message: "Pre každú faktúru sa vygeneruje PDF a spakuje do jedného ZIP archívu." },
+  };
+  const runners: Record<Exclude<BulkAction, null>, () => Promise<void>> = {
+    paid: runBulkPaid, email: runBulkEmail, clone: runBulkClone, reminder: runBulkReminder, zip: runBulkZip,
+  };
+
   const rowWarning = rowDelete && (rowDelete.status === "paid" || rowDelete.status === "sent");
   return (
     <>
@@ -148,6 +311,38 @@ function InvoicesPage() {
           onRestore={bulkRestoreNow}
           onClear={list.clearSelection}
         />
+        {list.selectedIds.length > 0 && !list.showDeleted && (
+          <div className="sticky top-16 z-20 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/40 bg-card/95 px-3 py-2 text-sm shadow-sm backdrop-blur">
+            <span className="font-medium text-primary">{list.selectedIds.length} faktúr vybraných</span>
+            <div className="flex flex-wrap gap-2">
+              <button disabled={busy} onClick={() => setBulkAction("paid")}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Označiť ako zaplatené
+              </button>
+              <button disabled={busy || emailableCount === 0} onClick={() => setBulkAction("email")}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50">
+                <Mail className="h-3.5 w-3.5" /> Odoslať emailom {emailableCount > 0 ? `(${emailableCount})` : ""}
+              </button>
+              <button disabled={busy} onClick={() => setBulkAction("clone")}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50">
+                <CalendarPlus className="h-3.5 w-3.5" /> Vystaviť pre ďalší mesiac
+              </button>
+              <button disabled={busy || overdueSelectedCount === 0} onClick={() => setBulkAction("reminder")}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50">
+                <Bell className="h-3.5 w-3.5" /> Poslať upomienku {overdueSelectedCount > 0 ? `(${overdueSelectedCount})` : ""}
+              </button>
+              <button disabled={busy} onClick={() => setBulkAction("zip")}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50">
+                <Archive className="h-3.5 w-3.5" /> Exportovať PDF (ZIP)
+              </button>
+              {progress && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-primary">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Spracováva sa {progress.current}/{progress.total}…
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         <ResponsiveTable
           className="mt-3"
           items={visibleRows}
@@ -257,6 +452,13 @@ function InvoicesPage() {
         warning={sensitiveSelected > 0 ? `${sensitiveSelected} z vybratých je odoslaných alebo zaplatených. Mazanie môže narušiť účtovnú stopu.` : undefined}
         onCancel={() => setBulkDelete(false)}
         onConfirm={confirmBulkDelete}
+      />
+      <ConfirmDialog
+        open={!!bulkAction}
+        title={bulkAction ? confirmMessages[bulkAction].title : ""}
+        message={bulkAction ? confirmMessages[bulkAction].message : ""}
+        onCancel={() => setBulkAction(null)}
+        onConfirm={() => { if (bulkAction) runners[bulkAction](); }}
       />
     </>
   );
