@@ -133,7 +133,8 @@ export async function sendReminder(input: SendReminderInput) {
   });
 
   const senderName = company?.email_sender_name || company?.name || "Faktero";
-  const from = `${senderName} <onboarding@resend.dev>`;
+  const fromEmail = process.env.RESEND_FROM_NOREPLY || "noreply@faktero.sk";
+  const from = `${senderName} <${fromEmail}>`;
 
   let providerId: string | null = null;
   let errorMessage: string | null = null;
