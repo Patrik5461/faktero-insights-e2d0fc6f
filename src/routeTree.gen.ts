@@ -117,6 +117,7 @@ import { Route as AuthenticatedPonukyIdRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedOpakovaneNovaRouteImport } from './routes/_authenticated/opakovane.nova'
 import { Route as AuthenticatedOpakovaneIdRouteImport } from './routes/_authenticated/opakovane.$id'
 import { Route as AuthenticatedNastaveniaOnlinePlatbyRouteImport } from './routes/_authenticated/nastavenia.online-platby'
+import { Route as AuthenticatedNastaveniaEmailSablonyRouteImport } from './routes/_authenticated/nastavenia.email-sablony'
 import { Route as AuthenticatedJazdyVozidlaRouteImport } from './routes/_authenticated/jazdy.vozidla'
 import { Route as AuthenticatedJazdyPrehladRouteImport } from './routes/_authenticated/jazdy.prehlad'
 import { Route as AuthenticatedJazdyNovaRouteImport } from './routes/_authenticated/jazdy.nova'
@@ -731,6 +732,12 @@ const AuthenticatedNastaveniaOnlinePlatbyRoute =
     path: '/online-platby',
     getParentRoute: () => AuthenticatedNastaveniaRoute,
   } as any)
+const AuthenticatedNastaveniaEmailSablonyRoute =
+  AuthenticatedNastaveniaEmailSablonyRouteImport.update({
+    id: '/email-sablony',
+    path: '/email-sablony',
+    getParentRoute: () => AuthenticatedNastaveniaRoute,
+  } as any)
 const AuthenticatedJazdyVozidlaRoute =
   AuthenticatedJazdyVozidlaRouteImport.update({
     id: '/jazdy/vozidla',
@@ -1071,6 +1078,7 @@ export interface FileRoutesByFullPath {
   '/jazdy/nova': typeof AuthenticatedJazdyNovaRoute
   '/jazdy/prehlad': typeof AuthenticatedJazdyPrehladRoute
   '/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
+  '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
   '/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
@@ -1218,6 +1226,7 @@ export interface FileRoutesByTo {
   '/jazdy/nova': typeof AuthenticatedJazdyNovaRoute
   '/jazdy/prehlad': typeof AuthenticatedJazdyPrehladRoute
   '/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
+  '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
   '/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
@@ -1375,6 +1384,7 @@ export interface FileRoutesById {
   '/_authenticated/jazdy/nova': typeof AuthenticatedJazdyNovaRoute
   '/_authenticated/jazdy/prehlad': typeof AuthenticatedJazdyPrehladRoute
   '/_authenticated/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
+  '/_authenticated/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/_authenticated/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
   '/_authenticated/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/_authenticated/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
@@ -1532,6 +1542,7 @@ export interface FileRouteTypes {
     | '/jazdy/nova'
     | '/jazdy/prehlad'
     | '/jazdy/vozidla'
+    | '/nastavenia/email-sablony'
     | '/nastavenia/online-platby'
     | '/opakovane/$id'
     | '/opakovane/nova'
@@ -1679,6 +1690,7 @@ export interface FileRouteTypes {
     | '/jazdy/nova'
     | '/jazdy/prehlad'
     | '/jazdy/vozidla'
+    | '/nastavenia/email-sablony'
     | '/nastavenia/online-platby'
     | '/opakovane/$id'
     | '/opakovane/nova'
@@ -1835,6 +1847,7 @@ export interface FileRouteTypes {
     | '/_authenticated/jazdy/nova'
     | '/_authenticated/jazdy/prehlad'
     | '/_authenticated/jazdy/vozidla'
+    | '/_authenticated/nastavenia/email-sablony'
     | '/_authenticated/nastavenia/online-platby'
     | '/_authenticated/opakovane/$id'
     | '/_authenticated/opakovane/nova'
@@ -2721,6 +2734,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRouteImport
       parentRoute: typeof AuthenticatedNastaveniaRoute
     }
+    '/_authenticated/nastavenia/email-sablony': {
+      id: '/_authenticated/nastavenia/email-sablony'
+      path: '/email-sablony'
+      fullPath: '/nastavenia/email-sablony'
+      preLoaderRoute: typeof AuthenticatedNastaveniaEmailSablonyRouteImport
+      parentRoute: typeof AuthenticatedNastaveniaRoute
+    }
     '/_authenticated/jazdy/vozidla': {
       id: '/_authenticated/jazdy/vozidla'
       path: '/jazdy/vozidla'
@@ -3066,11 +3086,14 @@ const AuthenticatedEfakturaRouteWithChildren =
   )
 
 interface AuthenticatedNastaveniaRouteChildren {
+  AuthenticatedNastaveniaEmailSablonyRoute: typeof AuthenticatedNastaveniaEmailSablonyRoute
   AuthenticatedNastaveniaOnlinePlatbyRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRoute
 }
 
 const AuthenticatedNastaveniaRouteChildren: AuthenticatedNastaveniaRouteChildren =
   {
+    AuthenticatedNastaveniaEmailSablonyRoute:
+      AuthenticatedNastaveniaEmailSablonyRoute,
     AuthenticatedNastaveniaOnlinePlatbyRoute:
       AuthenticatedNastaveniaOnlinePlatbyRoute,
   }

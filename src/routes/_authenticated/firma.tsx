@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -98,6 +98,15 @@ function CompanyPage() {
             <textarea rows={5} value={c.email_default_message ?? ""} onChange={(e) => setC({ ...c, email_default_message: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
             <span className="mt-1 block text-xs text-muted-foreground">Premenné: {"{invoice_number}"}, {"{due_date}"}, {"{total}"}, {"{company_name}"}</span>
           </label>
+          <div className="sm:col-span-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="font-medium">Email šablóny</div>
+                <div className="text-xs text-muted-foreground">Editor pre odoslanie faktúry, upomienky a žiadosti o schválenie.</div>
+              </div>
+              <Link to="/nastavenia/email-sablony" className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90">Otvoriť editor</Link>
+            </div>
+          </div>
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Automatické upomienky po splatnosti</h3>

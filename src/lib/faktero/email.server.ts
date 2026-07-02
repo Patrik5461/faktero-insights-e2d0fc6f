@@ -9,11 +9,21 @@ export type SendInvoiceEmailInput = {
 };
 
 function applyVars(s: string, inv: any, company: any) {
-  return s
-    .replaceAll("{invoice_number}", inv.invoice_number ?? "")
-    .replaceAll("{due_date}", inv.due_date ?? "")
-    .replaceAll("{total}", `${Number(inv.total).toFixed(2)} ${inv.currency}`)
-    .replaceAll("{company_name}", company?.name ?? "");
+  const total = `${Number(inv.total).toFixed(2)} ${inv.currency}`;
+  const pairs: Array<[string, string]> = [
+    ["invoice_number", inv.invoice_number ?? ""],
+    ["due_date", inv.due_date ?? ""],
+    ["total", total],
+    ["company_name", company?.name ?? ""],
+    ["customer_name", inv.customer_name ?? ""],
+    ["iban", company?.iban ?? ""],
+    ["variable_symbol", inv.variable_symbol ?? inv.invoice_number ?? ""],
+  ];
+  let out = s;
+  for (const [k, v] of pairs) {
+    out = out.split(`{{${k}}}`).join(v).split(`{${k}}`).join(v);
+  }
+  return out;
 }
 
 function arrayBufferToBase64(buf: ArrayBuffer | Uint8Array): string {
@@ -80,8 +90,16 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
   if (dlErr || !pdfBlob) throw new Error(dlErr?.message ?? "PDF sa nepodarilo načítať.");
   const pdfB64 = arrayBufferToBase64(await pdfBlob.arrayBuffer());
 
-  const subject = (input.subject ?? company?.email_default_subject ?? "Faktúra {invoice_number}");
-  const message = (input.message ?? company?.email_default_message ?? "V prílohe posielame faktúru {invoice_number}.");
+  let tplSubject: string | undefined;
+  let tplBody: string | undefined;
+  try {
+    const { getEmailTemplate } = await import("./email-templates.server");
+    const tpl = await getEmailTemplate(input.company_id, "invoice_send");
+    if (tpl.fromDb) { tplSubject = tpl.subject; tplBody = tpl.body; }
+  } catch { /* ignore */ }
+
+  const subject = (input.subject ?? tplSubject ?? company?.email_default_subject ?? "Faktúra {invoice_number}");
+  const message = (input.message ?? tplBody ?? company?.email_default_message ?? "V prílohe posielame faktúru {invoice_number}.");
   const finalSubject = applyVars(subject, invoice, company);
   const finalMessage = applyVars(message, invoice, company);
 

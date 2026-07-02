@@ -26,13 +26,20 @@ export function defaultReminderMessage(n: ReminderNumber) {
 
 function applyVars(s: string, inv: any, company: any) {
   const total = `${Number(inv.total ?? 0).toFixed(2)} ${inv.currency ?? "EUR"}`;
-  return s
-    .replaceAll("{invoice_number}", inv.invoice_number ?? "")
-    .replaceAll("{due_date}", inv.due_date ?? "")
-    .replaceAll("{total}", total)
-    .replaceAll("{company_name}", company?.name ?? "")
-    .replaceAll("{iban}", company?.iban ?? "")
-    .replaceAll("{variable_symbol}", inv.variable_symbol ?? inv.invoice_number ?? "");
+  const pairs: Array<[string, string]> = [
+    ["invoice_number", inv.invoice_number ?? ""],
+    ["due_date", inv.due_date ?? ""],
+    ["total", total],
+    ["company_name", company?.name ?? ""],
+    ["customer_name", inv.customer_name ?? ""],
+    ["iban", company?.iban ?? ""],
+    ["variable_symbol", inv.variable_symbol ?? inv.invoice_number ?? ""],
+  ];
+  let out = s;
+  for (const [k, v] of pairs) {
+    out = out.split(`{{${k}}}`).join(v).split(`{${k}}`).join(v);
+  }
+  return out;
 }
 
 function escapeHtml(s: string) {
@@ -109,11 +116,20 @@ export async function sendReminder(input: SendReminderInput) {
   }
   if (!recipient) throw new Error("Chýba e-mail príjemcu.");
 
+  // Load editable DB template (falls back to hardcoded defaults + legacy company columns)
+  let dbSubject: string | undefined;
+  let dbBody: string | undefined;
+  try {
+    const { getEmailTemplate } = await import("./email-templates.server");
+    const tpl = await getEmailTemplate(input.company_id, `reminder_${input.reminderNumber}` as any);
+    if (tpl.fromDb) { dbSubject = tpl.subject; dbBody = tpl.body; }
+  } catch { /* ignore */ }
+
   const built = buildReminderContent({
     invoice, company,
     reminderNumber: input.reminderNumber,
-    overrideSubject: input.overrideSubject,
-    overrideMessage: input.overrideMessage,
+    overrideSubject: input.overrideSubject ?? dbSubject,
+    overrideMessage: input.overrideMessage ?? dbBody,
   });
 
   const senderName = company?.email_sender_name || company?.name || "Faktero";
