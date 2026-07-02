@@ -74,11 +74,12 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
     const message = (data.message ?? `V prílohe Vám posielame cenovú ponuku ${q.quote_number}.`).replaceAll("{quote_number}", q.quote_number);
     const senderName = company?.email_sender_name || company?.name || "Faktero";
 
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        from: `${senderName} <onboarding@resend.dev>`,
+        from: `${senderName} <${fromEmail}>`,
         to: [data.recipient_email],
         subject,
         reply_to: company?.email_reply_to || undefined,
