@@ -3,9 +3,10 @@ import { useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
-import { Plus, FileCode2, Loader2, Trash2, RotateCcw } from "lucide-react";
+import { Plus, FileCode2, Loader2, Trash2, RotateCcw, Copy } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
+import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
 import { Pagination, PageSizeSelect, ConfirmDialog, BulkBar, DeletedToggle } from "@/components/faktero/ListControls";
@@ -25,6 +26,15 @@ function InvoicesPage() {
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
   const exportFn = useServerFn(exportInvoicesFn);
+  const cloneFn = useServerFn(cloneInvoiceFn);
+
+  async function cloneRow(invoiceId: string) {
+    try {
+      const r = await cloneFn({ data: { invoiceId } });
+      toast.success("Faktúra bola skopírovaná");
+      window.location.href = `/faktury/${r.id}/upravit`;
+    } catch (e: any) { toast.error(e?.message ?? "Klonovanie zlyhalo"); }
+  }
 
   const sensitiveSelected = list.rows
     .filter((r) => list.selected[r.id] && (r.status === "paid" || r.status === "sent")).length;
@@ -122,10 +132,16 @@ function InvoicesPage() {
                     className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-primary hover:bg-primary/10"
                   ><RotateCcw className="h-3.5 w-3.5" /> Obnoviť</button>
                 ) : (
-                  <button
-                    onClick={() => setRowDelete(i)}
-                    className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
-                  ><Trash2 className="h-3.5 w-3.5" /> Vymazať</button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => cloneRow(i.id)}
+                      className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    ><Copy className="h-3.5 w-3.5" /> Klonovať</button>
+                    <button
+                      onClick={() => setRowDelete(i)}
+                      className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+                    ><Trash2 className="h-3.5 w-3.5" /> Vymazať</button>
+                  </div>
                 )
               }
             />
@@ -161,8 +177,12 @@ function InvoicesPage() {
                       <button title="Obnoviť" onClick={async () => { try { await list.restore([i.id]); toast.success("Obnovené"); } catch (e: any) { toast.error(e?.message ?? "Chyba"); } }}
                         className="rounded p-1.5 text-primary hover:bg-primary/10"><RotateCcw className="h-4 w-4" /></button>
                     ) : (
-                      <button title="Vymazať" onClick={() => setRowDelete(i)}
-                        className="rounded p-1.5 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
+                      <div className="flex justify-end gap-1">
+                        <button title="Klonovať" onClick={() => cloneRow(i.id)}
+                          className="rounded p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"><Copy className="h-4 w-4" /></button>
+                        <button title="Vymazať" onClick={() => setRowDelete(i)}
+                          className="rounded p-1.5 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
+                      </div>
                     )}
                   </td>
                 </tr>
