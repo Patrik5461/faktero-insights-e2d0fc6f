@@ -117,8 +117,9 @@ const NAV: NavGroup[] = [
   },
   {
     key: "uctovnictvo", label: "Účtovníctvo", icon: FileSpreadsheet,
-    match: ["/exporty", "/importy"],
+    match: ["/exporty", "/importy", "/uctovnictvo"],
     children: [
+      { to: "/uctovnictvo/dph", label: "DPH prehľad" },
       { to: "/exporty", label: "Účtovné exporty" },
       { to: "/exporty?provider=pohoda", label: "Pohoda export" },
       { to: "/exporty?tab=history", label: "História exportov" },

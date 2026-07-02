@@ -101,6 +101,7 @@ import { Route as ApiV1CustomersRouteImport } from './routes/api/v1/customers'
 import { Route as ApiPublicSupportChatRouteImport } from './routes/api/public/support-chat'
 import { Route as ApiAdminMigrationExportRouteImport } from './routes/api/admin/migration-export'
 import { Route as AdminCompaniesIdRouteImport } from './routes/admin.companies.$id'
+import { Route as AuthenticatedUctovnictvoDphRouteImport } from './routes/_authenticated/uctovnictvo.dph'
 import { Route as AuthenticatedSkladVydajRouteImport } from './routes/_authenticated/sklad.vydaj'
 import { Route as AuthenticatedSkladProduktyRouteImport } from './routes/_authenticated/sklad.produkty'
 import { Route as AuthenticatedSkladPrijemRouteImport } from './routes/_authenticated/sklad.prijem'
@@ -639,6 +640,12 @@ const AdminCompaniesIdRoute = AdminCompaniesIdRouteImport.update({
   path: '/companies/$id',
   getParentRoute: () => AdminRoute,
 } as any)
+const AuthenticatedUctovnictvoDphRoute =
+  AuthenticatedUctovnictvoDphRouteImport.update({
+    id: '/uctovnictvo/dph',
+    path: '/uctovnictvo/dph',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSkladVydajRoute = AuthenticatedSkladVydajRouteImport.update({
   id: '/vydaj',
   path: '/vydaj',
@@ -1095,6 +1102,7 @@ export interface FileRoutesByFullPath {
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/produkty': typeof AuthenticatedSkladProduktyRouteWithChildren
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
+  '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
@@ -1243,6 +1251,7 @@ export interface FileRoutesByTo {
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/produkty': typeof AuthenticatedSkladProduktyRouteWithChildren
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
+  '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
@@ -1401,6 +1410,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/_authenticated/sklad/produkty': typeof AuthenticatedSkladProduktyRouteWithChildren
   '/_authenticated/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
+  '/_authenticated/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
@@ -1559,6 +1569,7 @@ export interface FileRouteTypes {
     | '/sklad/prijem'
     | '/sklad/produkty'
     | '/sklad/vydaj'
+    | '/uctovnictvo/dph'
     | '/admin/companies/$id'
     | '/api/admin/migration-export'
     | '/api/public/support-chat'
@@ -1707,6 +1718,7 @@ export interface FileRouteTypes {
     | '/sklad/prijem'
     | '/sklad/produkty'
     | '/sklad/vydaj'
+    | '/uctovnictvo/dph'
     | '/admin/companies/$id'
     | '/api/admin/migration-export'
     | '/api/public/support-chat'
@@ -1864,6 +1876,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/prijem'
     | '/_authenticated/sklad/produkty'
     | '/_authenticated/sklad/vydaj'
+    | '/_authenticated/uctovnictvo/dph'
     | '/admin/companies/$id'
     | '/api/admin/migration-export'
     | '/api/public/support-chat'
@@ -2622,6 +2635,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCompaniesIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_authenticated/uctovnictvo/dph': {
+      id: '/_authenticated/uctovnictvo/dph'
+      path: '/uctovnictvo/dph'
+      fullPath: '/uctovnictvo/dph'
+      preLoaderRoute: typeof AuthenticatedUctovnictvoDphRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/sklad/vydaj': {
       id: '/_authenticated/sklad/vydaj'
       path: '/vydaj'
@@ -3234,6 +3254,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPonukyNovaRoute: typeof AuthenticatedPonukyNovaRoute
   AuthenticatedPrijateFakturyIdRoute: typeof AuthenticatedPrijateFakturyIdRoute
   AuthenticatedPrijateFakturyNovaRoute: typeof AuthenticatedPrijateFakturyNovaRoute
+  AuthenticatedUctovnictvoDphRoute: typeof AuthenticatedUctovnictvoDphRoute
   AuthenticatedBankoveUctyIndexRoute: typeof AuthenticatedBankoveUctyIndexRoute
   AuthenticatedDokladyIndexRoute: typeof AuthenticatedDokladyIndexRoute
   AuthenticatedFakturyIndexRoute: typeof AuthenticatedFakturyIndexRoute
@@ -3286,6 +3307,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPonukyNovaRoute: AuthenticatedPonukyNovaRoute,
   AuthenticatedPrijateFakturyIdRoute: AuthenticatedPrijateFakturyIdRoute,
   AuthenticatedPrijateFakturyNovaRoute: AuthenticatedPrijateFakturyNovaRoute,
+  AuthenticatedUctovnictvoDphRoute: AuthenticatedUctovnictvoDphRoute,
   AuthenticatedBankoveUctyIndexRoute: AuthenticatedBankoveUctyIndexRoute,
   AuthenticatedDokladyIndexRoute: AuthenticatedDokladyIndexRoute,
   AuthenticatedFakturyIndexRoute: AuthenticatedFakturyIndexRoute,
