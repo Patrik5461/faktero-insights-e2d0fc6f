@@ -22,6 +22,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { createInvoicePaymentLink, syncInvoicePayment } from "@/lib/faktero/payments.functions";
+import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 
 export const Route = createFileRoute("/_authenticated/faktury/$id")({
   head: () => ({ meta: [{ title: "Detail faktúry — Faktero" }] }),
@@ -48,7 +49,9 @@ function InvoiceDetail() {
   const sendEmail = useServerFn(sendInvoiceEmailFn);
   const triggerEvt = useServerFn(triggerEventFn);
   const exportFn = useServerFn(exportInvoicesFn);
+  const cloneFn = useServerFn(cloneInvoiceFn);
   const [exportBusy, setExportBusy] = useState(false);
+  const [cloneBusy, setCloneBusy] = useState(false);
   const [payBusy, setPayBusy] = useState(false);
   const [payLink, setPayLink] = useState<string | null>(null);
   const createPayLink = useServerFn(createInvoicePaymentLink);
@@ -314,6 +317,17 @@ function InvoiceDetail() {
     } finally { setExportBusy(false); }
   }
 
+  async function handleClone() {
+    setCloneBusy(true);
+    try {
+      const r = await cloneFn({ data: { invoiceId: id } });
+      toast.success("Faktúra bola skopírovaná");
+      navigate({ to: "/faktury/$id/upravit", params: { id: r.id } });
+    } catch (e: any) {
+      toast.error(friendlyError(e, e?.message ?? "Klonovanie zlyhalo"));
+    } finally { setCloneBusy(false); }
+  }
+
   if (!inv) return <PageBody>Načítavam…</PageBody>;
 
   function openEmail() {
@@ -393,6 +407,9 @@ function InvoiceDetail() {
             {inv.status !== "cancelled" && <button onClick={() => setStatus("cancelled")} className="rounded-md border border-border px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10">Stornovať</button>}
             <button onClick={handlePohodaExport} disabled={exportBusy} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50">
               <FileCode2 className="h-4 w-4" /> {exportBusy ? "Exportujem…" : "Export do Pohody XML"}
+            </button>
+            <button onClick={handleClone} disabled={cloneBusy} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50">
+              <Copy className="h-4 w-4" /> {cloneBusy ? "Klonujem…" : "Klonovať"}
             </button>
             <EfakturaStatusBadge status={efakturaUi} />
             <button
