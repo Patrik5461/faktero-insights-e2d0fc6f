@@ -29,6 +29,10 @@ describe("tatrabanka.server", () => {
   beforeEach(() => {
     process.env.TB_CLIENT_ID = CID;
     process.env.TB_CLIENT_SECRET = SEC;
+    // Force canonical redirect_uri to match REDIRECT so both authorize + token
+    // exchange use identical value (TB rejects any mismatch with 400).
+    process.env.APP_PUBLIC_URL = "https://app.example.com";
+    delete process.env.TB_REDIRECT_URI;
   });
   afterEach(() => vi.restoreAllMocks());
 
