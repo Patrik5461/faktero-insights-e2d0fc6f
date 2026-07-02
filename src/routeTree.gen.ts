@@ -147,6 +147,7 @@ import { Route as ApiV1CustomersIdRouteImport } from './routes/api/v1/customers.
 import { Route as ApiPublicWebhooksGopayMerchantRouteImport } from './routes/api/public/webhooks/gopay-merchant'
 import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/tesla/callback'
 import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/public/tatrabanka/callback'
+import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public/hooks/reminders'
 import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/public/hooks/recurring-run'
 import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
@@ -898,6 +899,11 @@ const ApiPublicTatrabankaCallbackRoute =
     path: '/api/public/tatrabanka/callback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksRemindersRoute = ApiPublicHooksRemindersRouteImport.update({
+  id: '/api/public/hooks/reminders',
+  path: '/api/public/hooks/reminders',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksRecurringRunRoute =
   ApiPublicHooksRecurringRunRouteImport.update({
     id: '/api/public/hooks/recurring-run',
@@ -1115,6 +1121,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
+  '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
@@ -1261,6 +1268,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
+  '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
@@ -1417,6 +1425,7 @@ export interface FileRoutesById {
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
+  '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
@@ -1573,6 +1582,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
+    | '/api/public/hooks/reminders'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
@@ -1719,6 +1729,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
+    | '/api/public/hooks/reminders'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
@@ -1874,6 +1885,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
+    | '/api/public/hooks/reminders'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
@@ -1940,6 +1952,7 @@ export interface RootRouteChildren {
   ApiPublicHooksCommanderSyncRoute: typeof ApiPublicHooksCommanderSyncRoute
   ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
   ApiPublicHooksRecurringRunRoute: typeof ApiPublicHooksRecurringRunRoute
+  ApiPublicHooksRemindersRoute: typeof ApiPublicHooksRemindersRoute
   ApiPublicTatrabankaCallbackRoute: typeof ApiPublicTatrabankaCallbackRoute
   ApiPublicTeslaCallbackRoute: typeof ApiPublicTeslaCallbackRoute
   ApiPublicWebhooksGopayMerchantRoute: typeof ApiPublicWebhooksGopayMerchantRoute
@@ -2918,6 +2931,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicTatrabankaCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/reminders': {
+      id: '/api/public/hooks/reminders'
+      path: '/api/public/hooks/reminders'
+      fullPath: '/api/public/hooks/reminders'
+      preLoaderRoute: typeof ApiPublicHooksRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/recurring-run': {
       id: '/api/public/hooks/recurring-run'
       path: '/api/public/hooks/recurring-run'
@@ -3497,6 +3517,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksCommanderSyncRoute: ApiPublicHooksCommanderSyncRoute,
   ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,
   ApiPublicHooksRecurringRunRoute: ApiPublicHooksRecurringRunRoute,
+  ApiPublicHooksRemindersRoute: ApiPublicHooksRemindersRoute,
   ApiPublicTatrabankaCallbackRoute: ApiPublicTatrabankaCallbackRoute,
   ApiPublicTeslaCallbackRoute: ApiPublicTeslaCallbackRoute,
   ApiPublicWebhooksGopayMerchantRoute: ApiPublicWebhooksGopayMerchantRoute,
