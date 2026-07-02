@@ -43,6 +43,13 @@ function InvoiceDetail() {
   const [stockSkus, setStockSkus] = useState<Record<string, string>>({});
   const [pdfBusy, setPdfBusy] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [reminderBusy, setReminderBusy] = useState(false);
+  const [reminderForm, setReminderForm] = useState({ reminderNumber: 1 as 1 | 2 | 3, recipient_email: "", subject: "", message: "" });
+  const [reminders, setReminders] = useState<any[]>([]);
+  const sendReminder = useServerFn(sendReminderFn);
+  const previewReminder = useServerFn(previewReminderFn);
+
   const [emailBusy, setEmailBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
