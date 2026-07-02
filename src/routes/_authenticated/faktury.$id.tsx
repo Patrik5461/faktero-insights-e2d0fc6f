@@ -505,8 +505,11 @@ function InvoiceDetail() {
               <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuLabel>Stav faktúry</DropdownMenuLabel>
                 {inv.status !== "sent" && inv.status !== "paid" && (
-                  <DropdownMenuItem onClick={() => setStatus("sent")}>
-                    <Send className="mr-2 h-4 w-4" /> Označiť ako odoslanú
+                  <DropdownMenuItem
+                    onClick={() => setStatus("sent")}
+                    title="Použite, ak ste faktúru odoslali mimo Faktera (poštou, osobne). Po odoslaní emailom sa stav nastaví automaticky."
+                  >
+                    <Send className="mr-2 h-4 w-4" /> Odoslané iným spôsobom
                   </DropdownMenuItem>
                 )}
                 {inv.status !== "paid" && (
