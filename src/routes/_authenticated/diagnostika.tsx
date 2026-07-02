@@ -2,8 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getRecurringDiagnostics } from "@/lib/faktero/recurring.functions";
+import { previewTatraAuthorizeUrl } from "@/lib/faktero/tatrabanka.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Activity, AlertTriangle, CheckCircle2, Clock, RefreshCw } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, Clock, RefreshCw, Link2, Copy } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/diagnostika")({
   head: () => ({ meta: [{ title: "Diagnostika — Faktero" }] }),
@@ -12,7 +14,10 @@ export const Route = createFileRoute("/_authenticated/diagnostika")({
 
 function DiagnostikaPage() {
   const fetchDiag = useServerFn(getRecurringDiagnostics);
+  const fetchTb = useServerFn(previewTatraAuthorizeUrl);
   const [data, setData] = useState<any | null>(null);
+  const [tb, setTb] = useState<any | null>(null);
+  const [tbErr, setTbErr] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,6 +31,13 @@ function DiagnostikaPage() {
       setErr(e?.message ?? "Chyba pri načítaní");
     } finally {
       setLoading(false);
+    }
+    try {
+      const t = await fetchTb();
+      setTb(t);
+      setTbErr(null);
+    } catch (e: any) {
+      setTbErr(e?.message ?? "Chyba");
     }
   }
   useEffect(() => { load(); }, []);
@@ -117,6 +129,38 @@ function DiagnostikaPage() {
                   </li>
                 ))}
               </ul>
+            )}
+          </Card>
+        </div>
+
+        <div className="mt-6">
+          <Card title="Tatra banka — OAuth authorize URL" icon={Link2}>
+            {tbErr && <div className="text-sm text-destructive">{tbErr}</div>}
+            {!tb && !tbErr && <div className="text-sm text-muted-foreground">Načítavam…</div>}
+            {tb && (
+              <div className="space-y-3 text-sm">
+                <Row k="Konfigurované" v={tb.configured ? "Áno" : "Nie (chýba TB_CLIENT_ID/SECRET)"} />
+                <Row k="Prostredie (TB_ENV)" v={tb.env} />
+                <Row k="Scope" v={tb.scope} />
+                <Row k="Origin" v={tb.origin} />
+                <Row k="redirect_uri" v={tb.redirect_uri} />
+                <div>
+                  <div className="mb-1 text-xs text-muted-foreground">authorize_url (state je preview placeholder)</div>
+                  <div className="flex items-start gap-2">
+                    <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md border border-border bg-muted/40 p-2 text-xs">
+{tb.authorize_url ?? "—"}
+                    </pre>
+                    {tb.authorize_url && (
+                      <button
+                        onClick={() => { navigator.clipboard.writeText(tb.authorize_url); toast.success("Skopírované"); }}
+                        className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-border px-2 text-xs hover:bg-muted/60"
+                      >
+                        <Copy className="h-3 w-3" /> Kopírovať
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
           </Card>
         </div>
