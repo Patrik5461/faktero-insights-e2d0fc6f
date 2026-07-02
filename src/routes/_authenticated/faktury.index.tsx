@@ -118,6 +118,155 @@ function InvoicesPage() {
     catch (e: any) { toast.error(e?.message ?? "Chyba"); }
   }
 
+  const selectedRows = useMemo(
+    () => list.rows.filter((r: any) => list.selected[r.id]),
+    [list.rows, list.selected],
+  );
+  const emailableCount = selectedRows.filter(
+    (r: any) => (r.status === "issued" || r.status === "sent") && r.customer_email,
+  ).length;
+  const overdueSelectedCount = selectedRows.filter(
+    (r: any) =>
+      (r.status === "issued" || r.status === "sent") &&
+      r.due_date && r.due_date < today && !r.paid_at,
+  ).length;
+
+  async function runBulkPaid() {
+    setBusy(true);
+    setBulkAction(null);
+    try {
+      const r = await markPaidFn({ data: { invoiceIds: list.selectedIds } });
+      toast.success(
+        r.skipped > 0
+          ? `${r.updated} faktúr označených ako zaplatené (${r.skipped} preskočených)`
+          : `${r.updated} faktúr označených ako zaplatené`,
+      );
+      list.clearSelection();
+      list.refresh?.();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Označenie zlyhalo");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function runBulkEmail() {
+    setBulkAction(null);
+    const targets = selectedRows.filter(
+      (r: any) => (r.status === "issued" || r.status === "sent") && r.customer_email,
+    );
+    if (!targets.length) { toast.error("Žiadne odosielateľné faktúry (chýba email alebo nesprávny stav)."); return; }
+    setBusy(true);
+    setProgress({ current: 0, total: targets.length });
+    let ok = 0, fail = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const inv = targets[i];
+      try {
+        await emailFn({ data: { invoiceId: inv.id, recipient_email: inv.customer_email } });
+        ok++;
+      } catch (e) { console.error("bulk email failed", inv.id, e); fail++; }
+      setProgress({ current: i + 1, total: targets.length });
+    }
+    setProgress(null);
+    setBusy(false);
+    if (fail === 0) toast.success(`Odoslaných ${ok} emailov`);
+    else toast.error(`Odoslaných ${ok}, zlyhalo ${fail}`);
+    list.clearSelection();
+    list.refresh?.();
+  }
+
+  async function runBulkClone() {
+    setBulkAction(null);
+    const ids = list.selectedIds;
+    setBusy(true);
+    setProgress({ current: 0, total: ids.length });
+    let ok = 0, fail = 0;
+    for (let i = 0; i < ids.length; i++) {
+      try { await cloneFn({ data: { invoiceId: ids[i] } }); ok++; }
+      catch (e) { console.error("bulk clone failed", ids[i], e); fail++; }
+      setProgress({ current: i + 1, total: ids.length });
+    }
+    setProgress(null);
+    setBusy(false);
+    if (fail === 0) toast.success(`Vytvorených ${ok} kópií pre ďalší mesiac`);
+    else toast.error(`Vytvorených ${ok}, zlyhalo ${fail}`);
+    list.clearSelection();
+    list.refresh?.();
+  }
+
+  async function runBulkReminder() {
+    setBulkAction(null);
+    const targets = selectedRows.filter(
+      (r: any) =>
+        (r.status === "issued" || r.status === "sent") &&
+        r.due_date && r.due_date < today && !r.paid_at && r.customer_email,
+    );
+    if (!targets.length) { toast.error("Žiadne po splatnosti faktúry s emailom."); return; }
+    setBusy(true);
+    setProgress({ current: 0, total: targets.length });
+    let ok = 0, fail = 0;
+    for (let i = 0; i < targets.length; i++) {
+      const inv = targets[i];
+      const next = Math.min(3, (reminderMap[inv.id] ?? 0) + 1) as 1 | 2 | 3;
+      try {
+        await reminderFn({ data: { invoiceId: inv.id, reminderNumber: next, recipient_email: inv.customer_email } });
+        ok++;
+      } catch (e) { console.error("bulk reminder failed", inv.id, e); fail++; }
+      setProgress({ current: i + 1, total: targets.length });
+    }
+    setProgress(null);
+    setBusy(false);
+    if (fail === 0) toast.success(`Odoslaných ${ok} upomienok`);
+    else toast.error(`Odoslaných ${ok}, zlyhalo ${fail}`);
+    list.clearSelection();
+    list.refresh?.();
+  }
+
+  async function runBulkZip() {
+    setBulkAction(null);
+    const ids = list.selectedIds;
+    setBusy(true);
+    setProgress({ current: 0, total: ids.length });
+    const zip = new JSZip();
+    let ok = 0, fail = 0;
+    for (let i = 0; i < ids.length; i++) {
+      try {
+        const r = await pdfFn({ data: { invoiceId: ids[i] } });
+        const resp = await fetch(r.signedUrl);
+        if (!resp.ok) throw new Error("PDF fetch failed");
+        const bytes = new Uint8Array(await resp.arrayBuffer());
+        zip.file(r.fileName, bytes);
+        ok++;
+      } catch (e) { console.error("bulk pdf failed", ids[i], e); fail++; }
+      setProgress({ current: i + 1, total: ids.length });
+    }
+    setProgress(null);
+    if (ok > 0) {
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `faktury-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+    setBusy(false);
+    if (fail === 0) toast.success(`ZIP so ${ok} faktúrami stiahnutý`);
+    else toast.error(`Do ZIPu pridaných ${ok}, zlyhalo ${fail}`);
+    list.clearSelection();
+  }
+
+  const confirmMessages: Record<Exclude<BulkAction, null>, { title: string; message: string }> = {
+    paid: { title: `Označiť ${list.selectedIds.length} faktúr ako zaplatené?`, message: "Stornované a už zaplatené faktúry budú preskočené. Nastaví sa dnešný dátum úhrady." },
+    email: { title: `Odoslať emailom ${emailableCount} faktúr?`, message: "Odosielajú sa iba vystavené/odoslané faktúry s emailom odberateľa." },
+    clone: { title: `Vytvoriť kópie ${list.selectedIds.length} faktúr pre ďalší mesiac?`, message: "Vytvoria sa nové koncepty s inkrementovaným mesiacom v popisoch." },
+    reminder: { title: `Odoslať upomienky pre ${overdueSelectedCount} faktúr?`, message: "Odosielajú sa iba po splatnosti faktúry s emailom odberateľa. Číslo upomienky sa určí automaticky." },
+    zip: { title: `Stiahnuť PDF ZIP pre ${list.selectedIds.length} faktúr?`, message: "Pre každú faktúru sa vygeneruje PDF a spakuje do jedného ZIP archívu." },
+  };
+  const runners: Record<Exclude<BulkAction, null>, () => Promise<void>> = {
+    paid: runBulkPaid, email: runBulkEmail, clone: runBulkClone, reminder: runBulkReminder, zip: runBulkZip,
+  };
+
   const rowWarning = rowDelete && (rowDelete.status === "paid" || rowDelete.status === "sent");
   return (
     <>
