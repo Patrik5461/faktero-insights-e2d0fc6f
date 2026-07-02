@@ -197,13 +197,23 @@ function InvoicesPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {list.loading && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
-              {!list.loading && list.rows.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{list.showDeleted ? "Žiadne vymazané faktúry." : "Žiadne faktúry."}</td></tr>}
-              {list.rows.map((i) => (
+              {!list.loading && visibleRows.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{list.showDeleted ? "Žiadne vymazané faktúry." : "Žiadne faktúry."}</td></tr>}
+              {visibleRows.map((i) => (
                 <tr key={i.id} className="hover:bg-muted/30">
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={!!list.selected[i.id]} onChange={(e) => list.toggleSelect(i.id, e.target.checked)} />
                   </td>
-                  <td className="p-3 font-medium cursor-pointer" onClick={() => (window.location.href = `/faktury/${i.id}`)}>{i.invoice_number}</td>
+                  <td className="p-3 font-medium cursor-pointer" onClick={() => (window.location.href = `/faktury/${i.id}`)}>
+                    <span className="inline-flex items-center gap-2">
+                      {i.invoice_number}
+                      {reminderMap[i.id] ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800" title="Upomienka bola odoslaná">
+                          <Bell className="h-3 w-3" /> #{reminderMap[i.id]}
+                        </span>
+                      ) : null}
+                    </span>
+                  </td>
+
                   <td className="p-3 cursor-pointer" onClick={() => (window.location.href = `/faktury/${i.id}`)}>{i.customer_name ?? "—"}</td>
                   <td className="p-3 cursor-pointer" onClick={() => (window.location.href = `/faktury/${i.id}`)}>{i.issue_date}</td>
                   <td className="p-3 cursor-pointer" onClick={() => (window.location.href = `/faktury/${i.id}`)}>{i.due_date}</td>
