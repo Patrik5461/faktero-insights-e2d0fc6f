@@ -469,6 +469,12 @@ function InvoiceDetail() {
             <button onClick={openEmail} disabled={inv.status === "cancelled"} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
               <Mail className="h-4 w-4" /> Poslať e-mailom
             </button>
+            {inv.status !== "cancelled" && inv.status !== "paid" && (
+              <button onClick={openReminder} className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100">
+                <Mail className="h-4 w-4" /> Poslať upomienku
+              </button>
+            )}
+
             {company?.online_payments_enabled && inv.status !== "paid" && inv.status !== "cancelled" && (
               <button onClick={handleCreatePayLink} disabled={payBusy} className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100 disabled:opacity-50">
                 <CreditCard className="h-4 w-4" /> {payBusy ? "…" : "Vytvoriť platobný odkaz"}
