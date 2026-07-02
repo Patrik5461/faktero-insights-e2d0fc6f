@@ -46,12 +46,9 @@ export function buildAuthorizeUrl(opts: { state: string; redirectUri: string }):
     redirect_uri: opts.redirectUri,
     state: opts.state,
   });
-  // TB sandbox rejects unknown scope values with invalid_scope. Only include
-  // scope when TB_SCOPE env is explicitly set; otherwise omit the param.
-  const scope = process.env.TB_SCOPE?.trim();
-  if (scope && scope.length > 0) {
-    params.set("scope", scope);
-  }
+  // Scope is required by TB — default to "AISP" when TB_SCOPE env is missing/empty.
+  const scope = process.env.TB_SCOPE?.trim() || "AISP";
+  params.set("scope", scope);
   return `${authBase()}/authorize?${params.toString()}`;
 }
 
