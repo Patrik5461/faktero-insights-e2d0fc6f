@@ -142,7 +142,7 @@ function InvoicesPage() {
           : `${r.updated} faktúr označených ako zaplatené`,
       );
       list.clearSelection();
-      list.refresh?.();
+      list.reload();
     } catch (e: any) {
       toast.error(e?.message ?? "Označenie zlyhalo");
     } finally {
@@ -172,7 +172,7 @@ function InvoicesPage() {
     if (fail === 0) toast.success(`Odoslaných ${ok} emailov`);
     else toast.error(`Odoslaných ${ok}, zlyhalo ${fail}`);
     list.clearSelection();
-    list.refresh?.();
+    list.reload();
   }
 
   async function runBulkClone() {
@@ -191,7 +191,7 @@ function InvoicesPage() {
     if (fail === 0) toast.success(`Vytvorených ${ok} kópií pre ďalší mesiac`);
     else toast.error(`Vytvorených ${ok}, zlyhalo ${fail}`);
     list.clearSelection();
-    list.refresh?.();
+    list.reload();
   }
 
   async function runBulkReminder() {
@@ -219,7 +219,7 @@ function InvoicesPage() {
     if (fail === 0) toast.success(`Odoslaných ${ok} upomienok`);
     else toast.error(`Odoslaných ${ok}, zlyhalo ${fail}`);
     list.clearSelection();
-    list.refresh?.();
+    list.reload();
   }
 
   async function runBulkZip() {
