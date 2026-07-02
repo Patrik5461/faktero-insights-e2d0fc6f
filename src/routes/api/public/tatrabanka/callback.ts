@@ -21,26 +21,19 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
           if (!conn) return redirect(`${back}?error=invalid_state`);
           const tokens = await exchangeCodeForToken(code, getRedirectUri(origin));
           const expiresAt = new Date(Date.now() + (tokens.expires_in ?? 3600) * 1000).toISOString();
-          // TB Premium AISP requires an explicit consent before /accounts works.
-          let consentId: string | null = tokens.consent_id ?? null;
-          try {
-            const { createConsent } = await import("@/lib/faktero/tatrabanka.server");
-            consentId = await createConsent(tokens.access_token, getRedirectUri(origin));
-            console.log(`[tatrabanka callback] consent created: ${consentId}`);
-          } catch (e) {
-            console.error("[tatrabanka callback] consent creation failed", e);
-          }
+          // TB Premium API: consent is implicit in the OAuth access_token.
+          // No separate /consents call — that endpoint doesn't exist here.
           await supabaseAdmin.from("bank_connections").update({
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token ?? null,
             token_expires_at: expiresAt,
-            consent_id: consentId,
+            consent_id: tokens.consent_id ?? null,
             status: "connected",
           }).eq("id", conn.id);
           // Best-effort initial accounts sync
           try {
             const { fetchAccounts } = await import("@/lib/faktero/tatrabanka.server");
-            const accounts = await fetchAccounts(tokens.access_token, consentId);
+            const accounts = await fetchAccounts(tokens.access_token, tokens.consent_id ?? null);
             for (const a of accounts) {
               await supabaseAdmin.from("bank_accounts").insert({
                 company_id: conn.company_id, bank_connection_id: conn.id,

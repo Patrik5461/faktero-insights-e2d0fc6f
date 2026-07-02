@@ -108,14 +108,17 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
   return JSON.parse(txt);
 }
 
-async function apiGet(path: string, accessToken: string, consentId?: string | null) {
+async function apiGet(path: string, accessToken: string, _consentId?: string | null) {
+  // TB Premium API grants consent implicitly via the OAuth access_token.
+  // Do NOT send Consent-ID — it's a PSD2 XS2A header and returns 404 here.
+  const url = `${apiBase()}${path}`;
+  const requestId = crypto.randomUUID();
   const headers: Record<string, string> = {
     Authorization: `Bearer ${accessToken}`,
     Accept: "application/json",
+    "X-Request-ID": requestId,
   };
-  if (consentId) headers["Consent-ID"] = consentId;
-  const url = `${apiBase()}${path}`;
-  console.log(`[tatrabanka] GET ${url} (consent=${consentId ? "yes" : "no"})`);
+  console.log(`[tatrabanka] GET ${url} (X-Request-ID=${requestId})`);
   const res = await fetch(url, { headers });
   const txt = await res.text();
   if (!res.ok) {
@@ -123,47 +126,6 @@ async function apiGet(path: string, accessToken: string, consentId?: string | nu
     throw new Error(`tb_api_error: ${res.status} ${url} ${txt.slice(0, 500)}`);
   }
   return JSON.parse(txt);
-}
-
-/**
- * Create a PSD2 AISP consent — required by TB Premium API before /accounts
- * calls succeed. Returns the consentId to store in bank_connections.consent_id
- * and pass as `Consent-ID` header on subsequent requests.
- */
-export async function createConsent(accessToken: string, tppRedirectUri?: string): Promise<string> {
-  const url = `${apiBase()}/consents`;
-  // valid ~90 days (max per PSD2 without SCA renewal)
-  const validUntil = new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString().slice(0, 10);
-  const requestId = crypto.randomUUID();
-  const redirect = tppRedirectUri ?? getRedirectUri();
-  const body = {
-    access: { accounts: [], balances: [], transactions: [] },
-    recurringIndicator: true,
-    validUntil,
-    frequencyPerDay: 4,
-    combinedServiceIndicator: false,
-  };
-  console.log(`[tatrabanka] POST ${url} (create consent, redirect=${redirect})`);
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      "X-Request-ID": requestId,
-      "TPP-Redirect-URI": redirect,
-    },
-    body: JSON.stringify(body),
-  });
-  const txt = await res.text();
-  if (!res.ok) {
-    console.error(`[tatrabanka] consent ${res.status} — body: ${txt.slice(0, 500)}`);
-    throw new Error(`tb_consent_failed: ${res.status} ${txt.slice(0, 500)}`);
-  }
-  const json = JSON.parse(txt);
-  const consentId = json.consentId ?? json.consent_id ?? json.id;
-  if (!consentId) throw new Error(`tb_consent_failed: missing consentId in response ${txt.slice(0, 300)}`);
-  return String(consentId);
 }
 
 export type TbAccount = {
