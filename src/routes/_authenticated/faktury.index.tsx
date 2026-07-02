@@ -311,6 +311,38 @@ function InvoicesPage() {
           onRestore={bulkRestoreNow}
           onClear={list.clearSelection}
         />
+        {list.selectedIds.length > 0 && !list.showDeleted && (
+          <div className="sticky top-16 z-20 mt-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/40 bg-card/95 px-3 py-2 text-sm shadow-sm backdrop-blur">
+            <span className="font-medium text-primary">{list.selectedIds.length} faktúr vybraných</span>
+            <div className="flex flex-wrap gap-2">
+              <button disabled={busy} onClick={() => setBulkAction("paid")}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Označiť ako zaplatené
+              </button>
+              <button disabled={busy || emailableCount === 0} onClick={() => setBulkAction("email")}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50">
+                <Mail className="h-3.5 w-3.5" /> Odoslať emailom {emailableCount > 0 ? `(${emailableCount})` : ""}
+              </button>
+              <button disabled={busy} onClick={() => setBulkAction("clone")}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50">
+                <CalendarPlus className="h-3.5 w-3.5" /> Vystaviť pre ďalší mesiac
+              </button>
+              <button disabled={busy || overdueSelectedCount === 0} onClick={() => setBulkAction("reminder")}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50">
+                <Bell className="h-3.5 w-3.5" /> Poslať upomienku {overdueSelectedCount > 0 ? `(${overdueSelectedCount})` : ""}
+              </button>
+              <button disabled={busy} onClick={() => setBulkAction("zip")}
+                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-50">
+                <Archive className="h-3.5 w-3.5" /> Exportovať PDF (ZIP)
+              </button>
+              {progress && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-primary">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Spracováva sa {progress.current}/{progress.total}…
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         <ResponsiveTable
           className="mt-3"
           items={visibleRows}
