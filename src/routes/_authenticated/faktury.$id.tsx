@@ -706,6 +706,32 @@ function InvoiceDetail() {
           </div>
         </div>
       )}
+      {reminderOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5">
+            <h3 className="text-lg font-semibold">Poslať upomienku ({reminderForm.reminderNumber}.)</h3>
+            <label className="block text-sm"><span className="font-medium">Príjemca</span>
+              <input value={reminderForm.recipient_email} onChange={(e) => setReminderForm({ ...reminderForm, recipient_email: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </label>
+            <label className="block text-sm"><span className="font-medium">Predmet</span>
+              <input value={reminderForm.subject} onChange={(e) => setReminderForm({ ...reminderForm, subject: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </label>
+            <label className="block text-sm"><span className="font-medium">Správa</span>
+              <textarea rows={10} value={reminderForm.message} onChange={(e) => setReminderForm({ ...reminderForm, message: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </label>
+            {reminders.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                Predchádzajúce upomienky: {reminders.map((r) => `#${r.reminder_number} (${new Date(r.sent_at).toLocaleDateString("sk-SK")})`).join(", ")}
+              </div>
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setReminderOpen(false)} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">Zrušiť</button>
+              <button onClick={submitReminder} disabled={reminderBusy} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{reminderBusy ? "Odosielam…" : "Odoslať upomienku"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ConfirmDialog
         open={deleteOpen}
         title="Naozaj chcete vymazať túto faktúru?"
