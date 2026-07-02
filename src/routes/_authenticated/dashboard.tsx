@@ -309,8 +309,7 @@ function Dashboard() {
         </div>
 
         {/* SECOND ROW */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          <Panel title="Pohľadávky" icon={HandCoins}>
+        <div className="mt-8 grid gap-6 lg:grid-cols-4">
             <Row label="Celkové pohľadávky" value={fmt(metrics.receivables)} strong />
             <Row label="Po splatnosti" value={fmt(metrics.overdueAmount)} tone="destructive" />
             <Row label="Priemerná doba úhrady" value={`${metrics.avgPayDays.toFixed(0)} dní`} />
