@@ -33,6 +33,8 @@ describe("tatrabanka.server", () => {
     // exchange use identical value (TB rejects any mismatch with 400).
     process.env.APP_PUBLIC_URL = "https://app.example.com";
     delete process.env.TB_REDIRECT_URI;
+    delete process.env.TB_REDIRECT_URI;
+    delete process.env.TB_SCOPE;
   });
   afterEach(() => vi.restoreAllMocks());
 
