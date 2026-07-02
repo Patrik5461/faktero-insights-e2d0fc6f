@@ -67,11 +67,14 @@ function basicAuth(): string {
   return "Basic " + Buffer.from(`${id}:${secret}`).toString("base64");
 }
 
-export async function exchangeCodeForToken(code: string, redirectUri: string): Promise<TokenResponse> {
+export async function exchangeCodeForToken(code: string, redirectUri?: string): Promise<TokenResponse> {
+  // ALWAYS use the canonical redirect_uri from env — must match buildAuthorizeUrl()
+  // exactly (byte-for-byte), otherwise TB returns 400 invalid_redirect_uri.
+  const canonical = getRedirectUri(redirectUri);
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code,
-    redirect_uri: redirectUri,
+    redirect_uri: canonical,
   });
   const res = await fetch(`${authBase()}/token`, {
     method: "POST",
