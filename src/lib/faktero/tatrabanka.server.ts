@@ -3,13 +3,20 @@
  * Read-only integration. OAuth2 confidential client flow.
  */
 
-// Tatra banka sandbox (Premium API / Open Banking AISP)
-// Endpointy podľa oficiálnej sandbox konfigurácie:
-//   authorize: https://api.tatrabanka.sk/sandbox/auth/oauth/v2/authorize
-//   token:     https://api.tatrabanka.sk/sandbox/auth/oauth/v2/token
-//   api base:  https://api.tatrabanka.sk/sandbox/api/v1
-const AUTH_BASE = "https://api.tatrabanka.sk/sandbox/auth/oauth/v2";
-const API_BASE = "https://api.tatrabanka.sk/sandbox/api/v1";
+// Tatra banka Premium API / Open Banking AISP
+// TB_ENV=sandbox (default) → https://api.tatrabanka.sk/sandbox/...
+// TB_ENV=production        → https://api.tatrabanka.sk/...
+//   authorize: <base>/auth/oauth/v2/authorize
+//   token:     <base>/auth/oauth/v2/token
+//   api base:  <base>/api/v1
+function tbBase(): string {
+  const env = (process.env.TB_ENV ?? "sandbox").toLowerCase();
+  return env === "production" || env === "prod"
+    ? "https://api.tatrabanka.sk"
+    : "https://api.tatrabanka.sk/sandbox";
+}
+function authBase(): string { return `${tbBase()}/auth/oauth/v2`; }
+function apiBase(): string { return `${tbBase()}/api/v1`; }
 
 export function isTatraConfigured(): boolean {
   return !!process.env.TB_CLIENT_ID && !!process.env.TB_CLIENT_SECRET;
@@ -30,7 +37,7 @@ export function buildAuthorizeUrl(opts: { state: string; redirectUri: string }):
   if (scope && scope.trim().length > 0) {
     params.set("scope", scope.trim());
   }
-  return `${AUTH_BASE}/authorize?${params.toString()}`;
+  return `${authBase()}/authorize?${params.toString()}`;
 }
 
 export type TokenResponse = {
@@ -53,7 +60,7 @@ export async function exchangeCodeForToken(code: string, redirectUri: string): P
     code,
     redirect_uri: redirectUri,
   });
-  const res = await fetch(`${AUTH_BASE}/token`, {
+  const res = await fetch(`${authBase()}/token`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -72,7 +79,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
     grant_type: "refresh_token",
     refresh_token: refreshToken,
   });
-  const res = await fetch(`${AUTH_BASE}/token`, {
+  const res = await fetch(`${authBase()}/token`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -92,7 +99,7 @@ async function apiGet(path: string, accessToken: string, consentId?: string | nu
     Accept: "application/json",
   };
   if (consentId) headers["Consent-ID"] = consentId;
-  const res = await fetch(`${API_BASE}${path}`, { headers });
+  const res = await fetch(`${apiBase()}${path}`, { headers });
   const txt = await res.text();
   if (!res.ok) throw new Error(`tb_api_error: ${res.status} ${txt.slice(0, 500)}`);
   return JSON.parse(txt);
