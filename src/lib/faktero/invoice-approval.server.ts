@@ -37,26 +37,30 @@ export async function sendApprovalRequestEmail(params: {
   const link = `${baseUrl()}/schvalit/${token}`;
   const senderName = company?.email_sender_name || company?.name || "Faktero";
   const from = `${senderName} <onboarding@resend.dev>`;
-  const subject = `Žiadosť o schválenie faktúry ${invoice.invoice_number}`;
   const total = `${Number(invoice.total).toFixed(2)} ${invoice.currency}`;
-  const text =
-`Dobrý deň,
 
-dodávateľ ${company?.name ?? ""} Vás žiada o schválenie faktúry ${invoice.invoice_number} v sume ${total}.
+  // Load editable DB template (falls back to hardcoded default)
+  const { getEmailTemplate, applyTemplateVars, DEFAULT_TEMPLATES } = await import("./email-templates.server");
+  let subject = DEFAULT_TEMPLATES.approval_request.subject;
+  let bodyTpl = DEFAULT_TEMPLATES.approval_request.body;
+  try {
+    const tpl = await getEmailTemplate(company?.id ?? invoice.company_id, "approval_request");
+    subject = tpl.subject; bodyTpl = tpl.body;
+  } catch { /* ignore */ }
+  subject = applyTemplateVars(subject, { invoice, company });
+  const bodyText = applyTemplateVars(bodyTpl, { invoice, company });
+
+  const text =
+`${bodyText}
 
 Faktúru si môžete pozrieť a schváliť alebo zamietnuť na tomto odkaze:
 ${link}
 
-Odkaz je platný 7 dní.
-
-S pozdravom,
-${company?.name ?? "Faktero"}`;
+Odkaz je platný 7 dní.`;
 
   const html = `
   <div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;max-width:560px">
-    <p>Dobrý deň,</p>
-    <p>dodávateľ <strong>${escapeHtml(company?.name ?? "")}</strong> Vás žiada o schválenie faktúry
-    <strong>${escapeHtml(invoice.invoice_number)}</strong> v sume <strong>${escapeHtml(total)}</strong>.</p>
+    <div style="white-space:pre-wrap">${escapeHtml(bodyText)}</div>
     <p style="margin:24px 0">
       <a href="${escapeHtml(link)}" style="display:inline-block;background:#12734f;color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:8px">
         Zobraziť a schváliť faktúru
@@ -64,7 +68,7 @@ ${company?.name ?? "Faktero"}`;
     </p>
     <p style="color:#6b7280;font-size:12px">Odkaz je platný 7 dní. Alebo skopírujte do prehliadača:<br>
     <span style="word-break:break-all">${escapeHtml(link)}</span></p>
-    <p style="color:#6b7280;font-size:12px;margin-top:24px">S pozdravom,<br>${escapeHtml(company?.name ?? "Faktero")}</p>
+    <p style="color:#6b7280;font-size:12px;margin-top:24px">Suma faktúry: <strong>${escapeHtml(total)}</strong></p>
   </div>`;
 
   await sendMail({ to: recipientEmail, subject, html, text, from, reply_to: company?.email_reply_to });
