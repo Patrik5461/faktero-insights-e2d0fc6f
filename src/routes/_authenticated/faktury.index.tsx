@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
-import { Plus, FileCode2, Loader2, Trash2, RotateCcw, Copy } from "lucide-react";
+import { Plus, FileCode2, Loader2, Trash2, RotateCcw, Copy, Bell } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
 import { Pagination, PageSizeSelect, ConfirmDialog, BulkBar, DeletedToggle } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/faktury/")({
   head: () => ({ meta: [{ title: "Faktúry — Faktero" }] }),
@@ -25,8 +26,38 @@ function InvoicesPage() {
   const [busy, setBusy] = useState(false);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
+  const [reminderMap, setReminderMap] = useState<Record<string, number>>({});
+  const [overdueNoReminder, setOverdueNoReminder] = useState(false);
   const exportFn = useServerFn(exportInvoicesFn);
   const cloneFn = useServerFn(cloneInvoiceFn);
+
+  useEffect(() => {
+    const ids = list.rows.map((r: any) => r.id);
+    if (ids.length === 0) { setReminderMap({}); return; }
+    supabase.from("invoice_reminders")
+      .select("invoice_id, reminder_number")
+      .in("invoice_id", ids)
+      .eq("status", "sent")
+      .then(({ data }) => {
+        const m: Record<string, number> = {};
+        for (const r of data ?? []) {
+          const n = (r as any).reminder_number as number;
+          const id = (r as any).invoice_id as string;
+          if (!m[id] || m[id] < n) m[id] = n;
+        }
+        setReminderMap(m);
+      });
+  }, [list.rows]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const visibleRows = useMemo(() => {
+    if (!overdueNoReminder) return list.rows;
+    return list.rows.filter((r: any) =>
+      (r.status === "issued" || r.status === "sent") &&
+      r.due_date && r.due_date < today && !r.paid_at &&
+      !reminderMap[r.id]);
+  }, [list.rows, overdueNoReminder, reminderMap, today]);
+
 
   async function cloneRow(invoiceId: string) {
     try {
