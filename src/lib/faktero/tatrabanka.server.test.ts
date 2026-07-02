@@ -137,7 +137,8 @@ describe("tatrabanka.server", () => {
       const list = await fetchAccounts("AT", "C1");
       expect(capturedUrl).toContain("/accounts");
       expect(capturedInit.headers.Authorization).toBe("Bearer AT");
-      expect(capturedInit.headers["Consent-ID"]).toBe("C1");
+      expect(capturedInit.headers["X-Request-ID"]).toMatch(/^[0-9a-f-]{36}$/);
+      expect(capturedInit.headers["Consent-ID"]).toBeUndefined();
       expect(list).toHaveLength(1);
       expect(list[0]).toMatchObject({
         external_account_id: "acc-1",
