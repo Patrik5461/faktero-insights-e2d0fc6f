@@ -441,7 +441,7 @@ function InvoiceDetail() {
         title={`${inv.type === "proforma" ? "Zálohová faktúra" : inv.type === "credit_note" ? "Dobropis" : "Faktúra"} ${inv.invoice_number}`}
         description={`Vystavená ${inv.issue_date} · splatná ${inv.due_date}`}
         action={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={inv.status} />
             {inv.approval_status === "pending" && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
@@ -450,99 +450,140 @@ function InvoiceDetail() {
             )}
             {inv.approval_status === "approved" && (
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400">
-                <CheckCircle2 className="h-3 w-3" /> Schválené zákazníkom
+                <CheckCircle2 className="h-3 w-3" /> Schválené
               </span>
             )}
             {inv.approval_status === "rejected" && (
               <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800 dark:bg-red-500/15 dark:text-red-400">
-                <XCircle className="h-3 w-3" /> Zamietnuté zákazníkom
+                <XCircle className="h-3 w-3" /> Zamietnuté
               </span>
             )}
-            {(inv.status === "draft" || inv.status === "issued") && inv.approval_status !== "approved" && (
-              <button
-                onClick={handleRequestApproval}
-                disabled={approvalBusy}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-                title="Poslať zákazníkovi odkaz na schválenie faktúry"
+
+            {/* Primárne akcie */}
+            <button
+              onClick={openEmail}
+              disabled={inv.status === "cancelled"}
+              className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              <Mail className="h-4 w-4" /> Odoslať emailom
+            </button>
+            <button
+              onClick={inv.pdf_url ? handleDownload : handleGenerate}
+              disabled={pdfBusy}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              {inv.pdf_url ? <Download className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+              {pdfBusy ? "…" : inv.pdf_url ? "Stiahnuť PDF" : "Vygenerovať PDF"}
+            </button>
+            {inv.status === "draft" && (
+              <Link
+                to="/faktury/$id/upravit"
+                params={{ id }}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
               >
-                <Send className="h-4 w-4" />
-                {approvalBusy ? "Odosielam…" : inv.approval_status === "pending" ? "Poslať znova na schválenie" : "Poslať na schválenie"}
-              </button>
-            )}
-            {inv.status !== "paid" && inv.status !== "cancelled" && (
-              <Link to="/faktury/$id/upravit" params={{ id }} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
                 <Pencil className="h-4 w-4" /> Upraviť
               </Link>
             )}
-            <button onClick={openEmail} disabled={inv.status === "cancelled"} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
-              <Mail className="h-4 w-4" /> Poslať e-mailom
-            </button>
-            {inv.status !== "cancelled" && inv.status !== "paid" && (
-              <button onClick={openReminder} className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100">
-                <Mail className="h-4 w-4" /> Poslať upomienku
-              </button>
-            )}
 
-            {company?.online_payments_enabled && inv.status !== "paid" && inv.status !== "cancelled" && (
-              <button onClick={handleCreatePayLink} disabled={payBusy} className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100 disabled:opacity-50">
-                <CreditCard className="h-4 w-4" /> {payBusy ? "…" : "Vytvoriť platobný odkaz"}
-              </button>
-            )}
-            {payLink && (
-              <a href={payLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary" title={payLink}>
-                <Copy className="h-3.5 w-3.5" /> Otvoriť odkaz
-              </a>
-            )}
-            {hasPayLink && inv.status !== "cancelled" && (
-              <button onClick={handleSyncPayment} disabled={syncBusy} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50" title="Načítať stav platby z GoPay">
-                <RotateCw className="h-4 w-4" /> {syncBusy ? "Synchronizujem…" : "Synchronizovať platbu"}
-              </button>
-            )}
-            {!inv.pdf_url && (
-              <button onClick={handleGenerate} disabled={pdfBusy} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                <FileText className="h-4 w-4" /> {pdfBusy ? "Generujem…" : "Vygenerovať PDF"}
-              </button>
-            )}
-            {inv.pdf_url && (
-              <>
-                <button onClick={handleDownload} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90">
-                  <Download className="h-4 w-4" /> Stiahnuť PDF
+            {/* Ďalšie akcie */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background text-sm hover:bg-secondary"
+                  aria-label="Ďalšie akcie"
+                  title="Ďalšie akcie"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
                 </button>
-                <button onClick={handleGenerate} disabled={pdfBusy} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50">
-                  <RefreshCw className="h-4 w-4" /> {pdfBusy ? "…" : "Pregenerovať"}
-                </button>
-              </>
-            )}
-            {inv.status !== "paid" && <button onClick={() => setStatus("paid")} className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90">Označiť ako uhradenú</button>}
-            {inv.status !== "sent" && inv.status !== "paid" && <button onClick={() => setStatus("sent")} className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">Označiť ako odoslanú</button>}
-            {inv.status !== "cancelled" && <button onClick={() => setStatus("cancelled")} className="rounded-md border border-border px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10">Stornovať</button>}
-            <button onClick={handlePohodaExport} disabled={exportBusy} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50">
-              <FileCode2 className="h-4 w-4" /> {exportBusy ? "Exportujem…" : "Export do Pohody XML"}
-            </button>
-            <button onClick={handleClone} disabled={cloneBusy} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50">
-              <Copy className="h-4 w-4" /> {cloneBusy ? "Klonujem…" : "Klonovať"}
-            </button>
-            <EfakturaStatusBadge status={efakturaUi} />
-            <button
-              onClick={handleGenerateXml}
-              disabled={xmlBusy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-            >
-              <FileCheck2 className="h-4 w-4" />
-              {xmlBusy ? "…" : efakturaDoc ? "Pregenerovať eFaktúru XML" : "Vygenerovať eFaktúru XML"}
-            </button>
-            {efakturaDoc && (
-              <button
-                onClick={handleDownloadXml}
-                disabled={xmlBusy}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-              >
-                <Download className="h-4 w-4" /> Stiahnuť XML
-              </button>
-            )}
-            <button onClick={() => setDeleteOpen(true)} className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10">
-              <Trash2 className="h-4 w-4" /> Vymazať
-            </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel>Stav faktúry</DropdownMenuLabel>
+                {inv.status !== "sent" && inv.status !== "paid" && (
+                  <DropdownMenuItem onClick={() => setStatus("sent")}>
+                    <Send className="mr-2 h-4 w-4" /> Označiť ako odoslanú
+                  </DropdownMenuItem>
+                )}
+                {inv.status !== "paid" && (
+                  <DropdownMenuItem onClick={() => setStatus("paid")}>
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> Označiť ako uhradenú
+                  </DropdownMenuItem>
+                )}
+                {inv.pdf_url && (
+                  <DropdownMenuItem onClick={handleGenerate} disabled={pdfBusy}>
+                    <RefreshCw className="mr-2 h-4 w-4" /> Pregenerovať PDF
+                  </DropdownMenuItem>
+                )}
+                {inv.status !== "cancelled" && (
+                  <DropdownMenuItem onClick={() => setStatus("cancelled")} className="text-destructive focus:text-destructive">
+                    <Ban className="mr-2 h-4 w-4" /> Stornovať
+                  </DropdownMenuItem>
+                )}
+
+                {(inv.status === "draft" || inv.status === "issued") && inv.approval_status !== "approved" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>Schvaľovanie</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={handleRequestApproval} disabled={approvalBusy}>
+                      <Send className="mr-2 h-4 w-4" />
+                      {inv.approval_status === "pending" ? "Poslať znova na schválenie" : "Poslať na schválenie"}
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {isOverdue && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>Upomienky</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={openReminder}>
+                      <Mail className="mr-2 h-4 w-4" /> Poslať upomienku
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {company?.online_payments_enabled && inv.status !== "paid" && inv.status !== "cancelled" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>Online platba</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={handleCreatePayLink} disabled={payBusy}>
+                      <CreditCard className="mr-2 h-4 w-4" /> Vytvoriť platobný odkaz
+                    </DropdownMenuItem>
+                    {hasPayLink && (
+                      <DropdownMenuItem onClick={handleSyncPayment} disabled={syncBusy}>
+                        <RotateCw className="mr-2 h-4 w-4" /> Synchronizovať platbu
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
+
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Export</DropdownMenuLabel>
+                <DropdownMenuItem onClick={handlePohodaExport} disabled={exportBusy}>
+                  <FileCode2 className="mr-2 h-4 w-4" /> Export do Pohody XML
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleGenerateXml} disabled={xmlBusy}>
+                  <FileCheck2 className="mr-2 h-4 w-4" />
+                  {efakturaDoc ? "Pregenerovať eFaktúru XML" : "Vygenerovať eFaktúru XML"}
+                </DropdownMenuItem>
+                {efakturaDoc && (
+                  <DropdownMenuItem onClick={handleDownloadXml} disabled={xmlBusy}>
+                    <Download className="mr-2 h-4 w-4" /> Stiahnuť eFaktúru XML
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Ostatné</DropdownMenuLabel>
+                <DropdownMenuItem onClick={handleClone} disabled={cloneBusy}>
+                  <Copy className="mr-2 h-4 w-4" /> Klonovať
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setDeleteOpen(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Vymazať
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <Link to="/faktury" className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">Späť</Link>
           </div>
         }
