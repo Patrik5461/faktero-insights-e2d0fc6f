@@ -36,7 +36,7 @@ export async function sendApprovalRequestEmail(params: {
   const { invoice, company, recipientEmail, token } = params;
   const link = `${baseUrl()}/schvalit/${token}`;
   const senderName = company?.email_sender_name || company?.name || "Faktero";
-  const from = `${senderName} <onboarding@resend.dev>`;
+  const from = `${senderName} <${process.env.RESEND_FROM_NOREPLY || "noreply@faktero.sk"}>`;
   const total = `${Number(invoice.total).toFixed(2)} ${invoice.currency}`;
 
   // Load editable DB template (falls back to hardcoded default)
