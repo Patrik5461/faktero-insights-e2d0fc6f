@@ -150,13 +150,14 @@ function InvoicesPage() {
         />
         <ResponsiveTable
           className="mt-3"
-          items={list.rows}
+          items={visibleRows}
           loading={list.loading}
           emptyText={list.showDeleted ? "Žiadne vymazané faktúry." : "Žiadne faktúry."}
           mobileCard={(i: any) => (
             <MobileListCard
               onClick={() => (window.location.href = `/faktury/${i.id}`)}
-              title={i.invoice_number}
+              title={<span className="inline-flex items-center gap-2">{i.invoice_number}{reminderMap[i.id] ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800"><Bell className="h-3 w-3" /> Upomienka #{reminderMap[i.id]}</span> : null}</span> as any}
+
               subtitle={i.customer_name ?? "—"}
               status={<StatusBadge status={i.status} />}
               meta={`${i.issue_date} · splat. ${i.due_date}`}
