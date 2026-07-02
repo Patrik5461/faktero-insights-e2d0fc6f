@@ -22,8 +22,21 @@ export function isTatraConfigured(): boolean {
   return !!process.env.TB_CLIENT_ID && !!process.env.TB_CLIENT_SECRET;
 }
 
-export function getRedirectUri(origin: string): string {
-  return `${origin}/api/public/tatrabanka/callback`;
+/**
+ * Canonical OAuth redirect_uri. MUST be byte-for-byte identical between
+ * buildAuthorizeUrl() and exchangeCodeForToken() — TB rejects any mismatch
+ * with 400 invalid_redirect_uri.
+ * Priority:
+ *   1. TB_REDIRECT_URI       (explicit override, wins over everything)
+ *   2. APP_PUBLIC_URL        (canonical public origin of the app)
+ *   3. `origin` fallback     (only used when neither env is set)
+ */
+export function getRedirectUri(origin?: string): string {
+  const explicit = process.env.TB_REDIRECT_URI?.trim();
+  if (explicit) return explicit;
+  const base = process.env.APP_PUBLIC_URL?.replace(/\/$/, "") ?? origin?.replace(/\/$/, "");
+  if (!base) throw new Error("APP_PUBLIC_URL not configured");
+  return `${base}/api/public/tatrabanka/callback`;
 }
 
 export function buildAuthorizeUrl(opts: { state: string; redirectUri: string }): string {
