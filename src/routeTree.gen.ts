@@ -54,8 +54,6 @@ import { Route as AdminIntegrationsRouteImport } from './routes/admin.integratio
 import { Route as AdminHealthRouteImport } from './routes/admin.health'
 import { Route as AdminGopayRouteImport } from './routes/admin.gopay'
 import { Route as AdminErrorsRouteImport } from './routes/admin.errors'
-import { Route as AdminEfakturaTestRouteImport } from './routes/admin.efaktura-test'
-import { Route as AdminBetaChecklistRouteImport } from './routes/admin.beta-checklist'
 import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
 import { Route as AuthenticatedWebhookyLogyRouteImport } from './routes/_authenticated/webhooky-logy'
 import { Route as AuthenticatedWebhookyRouteImport } from './routes/_authenticated/webhooky'
@@ -389,16 +387,6 @@ const AdminGopayRoute = AdminGopayRouteImport.update({
 const AdminErrorsRoute = AdminErrorsRouteImport.update({
   id: '/errors',
   path: '/errors',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminEfakturaTestRoute = AdminEfakturaTestRouteImport.update({
-  id: '/efaktura-test',
-  path: '/efaktura-test',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBetaChecklistRoute = AdminBetaChecklistRouteImport.update({
-  id: '/beta-checklist',
-  path: '/beta-checklist',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAuditLogRoute = AdminAuditLogRouteImport.update({
@@ -1032,8 +1020,6 @@ export interface FileRoutesByFullPath {
   '/webhooky': typeof AuthenticatedWebhookyRoute
   '/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
-  '/admin/beta-checklist': typeof AdminBetaChecklistRoute
-  '/admin/efaktura-test': typeof AdminEfakturaTestRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
@@ -1182,8 +1168,6 @@ export interface FileRoutesByTo {
   '/webhooky': typeof AuthenticatedWebhookyRoute
   '/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
-  '/admin/beta-checklist': typeof AdminBetaChecklistRoute
-  '/admin/efaktura-test': typeof AdminEfakturaTestRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
@@ -1340,8 +1324,6 @@ export interface FileRoutesById {
   '/_authenticated/webhooky': typeof AuthenticatedWebhookyRoute
   '/_authenticated/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
-  '/admin/beta-checklist': typeof AdminBetaChecklistRoute
-  '/admin/efaktura-test': typeof AdminEfakturaTestRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
@@ -1499,8 +1481,6 @@ export interface FileRouteTypes {
     | '/webhooky'
     | '/webhooky-logy'
     | '/admin/audit-log'
-    | '/admin/beta-checklist'
-    | '/admin/efaktura-test'
     | '/admin/errors'
     | '/admin/gopay'
     | '/admin/health'
@@ -1649,8 +1629,6 @@ export interface FileRouteTypes {
     | '/webhooky'
     | '/webhooky-logy'
     | '/admin/audit-log'
-    | '/admin/beta-checklist'
-    | '/admin/efaktura-test'
     | '/admin/errors'
     | '/admin/gopay'
     | '/admin/health'
@@ -1806,8 +1784,6 @@ export interface FileRouteTypes {
     | '/_authenticated/webhooky'
     | '/_authenticated/webhooky-logy'
     | '/admin/audit-log'
-    | '/admin/beta-checklist'
-    | '/admin/efaktura-test'
     | '/admin/errors'
     | '/admin/gopay'
     | '/admin/health'
@@ -2304,20 +2280,6 @@ declare module '@tanstack/react-router' {
       path: '/errors'
       fullPath: '/admin/errors'
       preLoaderRoute: typeof AdminErrorsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/efaktura-test': {
-      id: '/admin/efaktura-test'
-      path: '/efaktura-test'
-      fullPath: '/admin/efaktura-test'
-      preLoaderRoute: typeof AdminEfakturaTestRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/beta-checklist': {
-      id: '/admin/beta-checklist'
-      path: '/beta-checklist'
-      fullPath: '/admin/beta-checklist'
-      preLoaderRoute: typeof AdminBetaChecklistRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/audit-log': {
@@ -3324,8 +3286,6 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface AdminRouteChildren {
   AdminAuditLogRoute: typeof AdminAuditLogRoute
-  AdminBetaChecklistRoute: typeof AdminBetaChecklistRoute
-  AdminEfakturaTestRoute: typeof AdminEfakturaTestRoute
   AdminErrorsRoute: typeof AdminErrorsRoute
   AdminGopayRoute: typeof AdminGopayRoute
   AdminHealthRoute: typeof AdminHealthRoute
@@ -3342,8 +3302,6 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditLogRoute: AdminAuditLogRoute,
-  AdminBetaChecklistRoute: AdminBetaChecklistRoute,
-  AdminEfakturaTestRoute: AdminEfakturaTestRoute,
   AdminErrorsRoute: AdminErrorsRoute,
   AdminGopayRoute: AdminGopayRoute,
   AdminHealthRoute: AdminHealthRoute,
