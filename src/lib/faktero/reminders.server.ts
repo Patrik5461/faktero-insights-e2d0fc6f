@@ -109,11 +109,20 @@ export async function sendReminder(input: SendReminderInput) {
   }
   if (!recipient) throw new Error("Chýba e-mail príjemcu.");
 
+  // Load editable DB template (falls back to hardcoded defaults + legacy company columns)
+  let dbSubject: string | undefined;
+  let dbBody: string | undefined;
+  try {
+    const { getEmailTemplate } = await import("./email-templates.server");
+    const tpl = await getEmailTemplate(input.company_id, `reminder_${input.reminderNumber}` as any);
+    if (tpl.fromDb) { dbSubject = tpl.subject; dbBody = tpl.body; }
+  } catch { /* ignore */ }
+
   const built = buildReminderContent({
     invoice, company,
     reminderNumber: input.reminderNumber,
-    overrideSubject: input.overrideSubject,
-    overrideMessage: input.overrideMessage,
+    overrideSubject: input.overrideSubject ?? dbSubject,
+    overrideMessage: input.overrideMessage ?? dbBody,
   });
 
   const senderName = company?.email_sender_name || company?.name || "Faktero";
