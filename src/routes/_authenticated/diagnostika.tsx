@@ -14,7 +14,10 @@ export const Route = createFileRoute("/_authenticated/diagnostika")({
 
 function DiagnostikaPage() {
   const fetchDiag = useServerFn(getRecurringDiagnostics);
+  const fetchTb = useServerFn(previewTatraAuthorizeUrl);
   const [data, setData] = useState<any | null>(null);
+  const [tb, setTb] = useState<any | null>(null);
+  const [tbErr, setTbErr] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
