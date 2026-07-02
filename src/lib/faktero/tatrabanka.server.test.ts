@@ -45,7 +45,7 @@ describe("tatrabanka.server", () => {
       expect(u.searchParams.get("response_type")).toBe("code");
       expect(u.searchParams.get("client_id")).toBe(CID);
       expect(u.searchParams.get("redirect_uri")).toBe(REDIRECT);
-      expect(u.searchParams.get("scope")).toBe("PREMIUM_AISP");
+      expect(u.searchParams.get("scope")).toBe("AISP");
       expect(u.searchParams.get("state")).toBe("conn-1");
     });
   });
