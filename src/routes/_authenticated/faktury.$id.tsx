@@ -8,7 +8,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { generateInvoicePdf, getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.functions";
 import { sendInvoiceEmailFn, triggerEventFn } from "@/lib/faktero/email.functions";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
-import { Download, FileText, RefreshCw, Mail, FileCode2, Trash2, Pencil, FileCheck2, CreditCard, Copy, RotateCw } from "lucide-react";
+import { Download, FileText, RefreshCw, Mail, FileCode2, Trash2, Pencil, FileCheck2, CreditCard, Copy, RotateCw, Send, CheckCircle2, XCircle, Clock as ClockIcon } from "lucide-react";
+import { requestInvoiceApproval } from "@/lib/faktero/invoice-approval.functions";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import {
   generateEfakturaXmlFn,
@@ -60,6 +61,25 @@ function InvoiceDetail() {
   const [hasPayLink, setHasPayLink] = useState(false);
   const [settledIn, setSettledIn] = useState<any | null>(null); // for proforma: invoice that consumed it
   const [advanceProforma, setAdvanceProforma] = useState<any | null>(null); // for regular: linked proforma
+  const [approvalBusy, setApprovalBusy] = useState(false);
+  const requestApprovalFn = useServerFn(requestInvoiceApproval);
+
+  async function handleRequestApproval() {
+    if (!inv) return;
+    const suggested = inv.customer_email ?? "";
+    const email = window.prompt("Email zákazníka pre schválenie:", suggested);
+    if (!email) return;
+    setApprovalBusy(true);
+    try {
+      await requestApprovalFn({ data: { invoiceId: inv.id, recipientEmail: email.trim() } });
+      toast.success("Žiadosť o schválenie bola odoslaná.");
+      load();
+    } catch (e: any) {
+      toast.error(friendlyError(e, "Nepodarilo sa odoslať žiadosť."));
+    } finally {
+      setApprovalBusy(false);
+    }
+  }
 
   async function handleCreatePayLink() {
     if (!inv?.company_id) return;
@@ -364,6 +384,32 @@ function InvoiceDetail() {
         action={
           <div className="flex flex-wrap gap-2">
             <StatusBadge status={inv.status} />
+            {inv.approval_status === "pending" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
+                <ClockIcon className="h-3 w-3" /> Čaká na schválenie
+              </span>
+            )}
+            {inv.approval_status === "approved" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400">
+                <CheckCircle2 className="h-3 w-3" /> Schválené zákazníkom
+              </span>
+            )}
+            {inv.approval_status === "rejected" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800 dark:bg-red-500/15 dark:text-red-400">
+                <XCircle className="h-3 w-3" /> Zamietnuté zákazníkom
+              </span>
+            )}
+            {(inv.status === "draft" || inv.status === "issued") && inv.approval_status !== "approved" && (
+              <button
+                onClick={handleRequestApproval}
+                disabled={approvalBusy}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+                title="Poslať zákazníkovi odkaz na schválenie faktúry"
+              >
+                <Send className="h-4 w-4" />
+                {approvalBusy ? "Odosielam…" : inv.approval_status === "pending" ? "Poslať znova na schválenie" : "Poslať na schválenie"}
+              </button>
+            )}
             {inv.status !== "paid" && inv.status !== "cancelled" && (
               <Link to="/faktury/$id/upravit" params={{ id }} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
                 <Pencil className="h-4 w-4" /> Upraviť
@@ -437,6 +483,30 @@ function InvoiceDetail() {
         }
       />
       <PageBody>
+        {inv.approval_status === "rejected" && inv.approval_note && (
+          <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
+              <XCircle className="h-4 w-4" /> Faktúra bola zamietnutá zákazníkom
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {inv.approval_responded_at ? new Date(inv.approval_responded_at).toLocaleString("sk-SK") : ""}
+            </div>
+            <div className="mt-2 whitespace-pre-wrap text-sm text-foreground">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">Dôvod: </span>
+              {inv.approval_note}
+            </div>
+          </div>
+        )}
+        {inv.approval_status === "pending" && inv.approval_requested_at && (
+          <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
+            <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
+              <ClockIcon className="h-4 w-4" /> Čaká sa na schválenie zákazníkom
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Odoslané {new Date(inv.approval_requested_at).toLocaleString("sk-SK")} · odkaz platí 7 dní
+            </div>
+          </div>
+        )}
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
             <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">

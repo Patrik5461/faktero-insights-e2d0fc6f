@@ -1989,6 +1989,11 @@ export type Database = {
         Row: {
           advance_amount: number | null
           advance_invoice_id: string | null
+          approval_note: string | null
+          approval_requested_at: string | null
+          approval_responded_at: string | null
+          approval_status: string | null
+          approval_token: string | null
           cancelled_at: string | null
           company_id: string
           constant_symbol: string | null
@@ -2037,6 +2042,11 @@ export type Database = {
         Insert: {
           advance_amount?: number | null
           advance_invoice_id?: string | null
+          approval_note?: string | null
+          approval_requested_at?: string | null
+          approval_responded_at?: string | null
+          approval_status?: string | null
+          approval_token?: string | null
           cancelled_at?: string | null
           company_id: string
           constant_symbol?: string | null
@@ -2085,6 +2095,11 @@ export type Database = {
         Update: {
           advance_amount?: number | null
           advance_invoice_id?: string | null
+          approval_note?: string | null
+          approval_requested_at?: string | null
+          approval_responded_at?: string | null
+          approval_status?: string | null
+          approval_token?: string | null
           cancelled_at?: string | null
           company_id?: string
           constant_symbol?: string | null
