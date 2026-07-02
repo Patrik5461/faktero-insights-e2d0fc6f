@@ -82,6 +82,7 @@ function Dashboard() {
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   const [tripStats, setTripStats] = useState<{ km_month: number; last: any | null } | null>(null);
   const [payables, setPayables] = useState<{ unpaid: number; overdueCount: number; count: number } | null>(null);
+  const [purchaseInvoices, setPurchaseInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
