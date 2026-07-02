@@ -409,6 +409,12 @@ function InvoiceDetail() {
 
   if (!inv) return <PageBody>Načítavam…</PageBody>;
 
+  const isOverdue =
+    inv.status !== "paid" &&
+    inv.status !== "cancelled" &&
+    !!inv.due_date &&
+    new Date(inv.due_date) < new Date(new Date().toDateString());
+
   function openEmail() {
     if (!inv.customer_email) {
       toast.error("Odberateľ nemá e-mail. Doplňte e-mail v karte odberateľa.");
