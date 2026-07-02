@@ -66,6 +66,22 @@ export const startBankConnect = createServerFn({ method: "POST" })
     return { authorize_url: url };
   });
 
+/** Diagnostic preview: build the authorize URL without touching the DB. */
+export const previewTatraAuthorizeUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri } = await import("./tatrabanka.server");
+    const configured = isTatraConfigured();
+    const org = origin();
+    const redirectUri = getRedirectUri(org);
+    const authorize_url = configured
+      ? buildAuthorizeUrl({ state: "preview-state-0000", redirectUri })
+      : null;
+    const scope = (process.env.TB_SCOPE ?? "AISP").trim();
+    const env = (process.env.TB_ENV ?? "sandbox").toLowerCase();
+    return { configured, env, origin: org, redirect_uri: redirectUri, scope, authorize_url };
+  });
+
 const ConnInput = z.object({ company_id: z.string().uuid(), connection_id: z.string().uuid() });
 
 /** Sync accounts list from TB for a connection. */
