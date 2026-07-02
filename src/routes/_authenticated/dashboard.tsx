@@ -81,6 +81,7 @@ function Dashboard() {
   const [webhookDeliveries, setWebhookDeliveries] = useState<any[]>([]);
   const [lowStockCount, setLowStockCount] = useState<number>(0);
   const [tripStats, setTripStats] = useState<{ km_month: number; last: any | null } | null>(null);
+  const [payables, setPayables] = useState<{ unpaid: number; overdueCount: number; count: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -158,6 +159,22 @@ function Dashboard() {
       ]);
       const km = (month ?? []).reduce((a: number, r: any) => a + Number(r.distance_km), 0);
       setTripStats({ km_month: km, last: last?.[0] ?? null });
+    })();
+    (async () => {
+      const cid = getActiveCompanyId();
+      if (!cid) return;
+      const { data } = await supabase.from("purchase_invoices")
+        .select("amount_total, status, due_date")
+        .eq("company_id", cid).is("deleted_at", null);
+      const today = new Date().toISOString().slice(0, 10);
+      let unpaid = 0, overdueCount = 0;
+      (data ?? []).forEach((r: any) => {
+        if (r.status !== "paid" && r.status !== "cancelled") {
+          unpaid += Number(r.amount_total ?? 0);
+          if (r.due_date < today) overdueCount++;
+        }
+      });
+      setPayables({ unpaid, overdueCount, count: data?.length ?? 0 });
     })();
   }, []);
 
