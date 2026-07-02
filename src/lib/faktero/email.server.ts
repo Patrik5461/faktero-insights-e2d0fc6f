@@ -9,11 +9,21 @@ export type SendInvoiceEmailInput = {
 };
 
 function applyVars(s: string, inv: any, company: any) {
-  return s
-    .replaceAll("{invoice_number}", inv.invoice_number ?? "")
-    .replaceAll("{due_date}", inv.due_date ?? "")
-    .replaceAll("{total}", `${Number(inv.total).toFixed(2)} ${inv.currency}`)
-    .replaceAll("{company_name}", company?.name ?? "");
+  const total = `${Number(inv.total).toFixed(2)} ${inv.currency}`;
+  const pairs: Array<[string, string]> = [
+    ["invoice_number", inv.invoice_number ?? ""],
+    ["due_date", inv.due_date ?? ""],
+    ["total", total],
+    ["company_name", company?.name ?? ""],
+    ["customer_name", inv.customer_name ?? ""],
+    ["iban", company?.iban ?? ""],
+    ["variable_symbol", inv.variable_symbol ?? inv.invoice_number ?? ""],
+  ];
+  let out = s;
+  for (const [k, v] of pairs) {
+    out = out.split(`{{${k}}}`).join(v).split(`{${k}}`).join(v);
+  }
+  return out;
 }
 
 function arrayBufferToBase64(buf: ArrayBuffer | Uint8Array): string {
