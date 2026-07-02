@@ -114,9 +114,14 @@ async function apiGet(path: string, accessToken: string, consentId?: string | nu
     Accept: "application/json",
   };
   if (consentId) headers["Consent-ID"] = consentId;
-  const res = await fetch(`${apiBase()}${path}`, { headers });
+  const url = `${apiBase()}${path}`;
+  console.log(`[tatrabanka] GET ${url} (consent=${consentId ? "yes" : "no"})`);
+  const res = await fetch(url, { headers });
   const txt = await res.text();
-  if (!res.ok) throw new Error(`tb_api_error: ${res.status} ${txt.slice(0, 500)}`);
+  if (!res.ok) {
+    console.error(`[tatrabanka] ${res.status} ${res.statusText} for ${url} — body: ${txt.slice(0, 300)}`);
+    throw new Error(`tb_api_error: ${res.status} ${url} ${txt.slice(0, 500)}`);
+  }
   return JSON.parse(txt);
 }
 
