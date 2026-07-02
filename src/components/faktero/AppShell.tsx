@@ -35,7 +35,7 @@ const NAV: NavGroup[] = [
   { key: "prehlad", label: "Prehľad", icon: LayoutDashboard, match: ["/dashboard"], children: [] },
   {
     key: "fakturacia", label: "Fakturácia", icon: FileText,
-    match: ["/faktury", "/ponuky", "/opakovane"],
+    match: ["/faktury", "/ponuky", "/opakovane", "/prijate-faktury", "/zalohove"],
     children: [
       { to: "/faktury", label: "Faktúry" },
       { to: "/faktury/nova", label: "Nová faktúra" },
@@ -43,6 +43,7 @@ const NAV: NavGroup[] = [
       { to: "/ponuky", label: "Cenové ponuky" },
       { to: "/opakovane", label: "Opakované faktúry" },
       { to: "/faktury?type=credit", label: "Dobropisy" },
+      { to: "/prijate-faktury", label: "Prijaté faktúry" },
       { to: "/faktury?status=draft", label: "Koncepty" },
     ],
   },
