@@ -483,6 +483,30 @@ function InvoiceDetail() {
         }
       />
       <PageBody>
+        {inv.approval_status === "rejected" && inv.approval_note && (
+          <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
+              <XCircle className="h-4 w-4" /> Faktúra bola zamietnutá zákazníkom
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {inv.approval_responded_at ? new Date(inv.approval_responded_at).toLocaleString("sk-SK") : ""}
+            </div>
+            <div className="mt-2 whitespace-pre-wrap text-sm text-foreground">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">Dôvod: </span>
+              {inv.approval_note}
+            </div>
+          </div>
+        )}
+        {inv.approval_status === "pending" && inv.approval_requested_at && (
+          <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
+            <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
+              <ClockIcon className="h-4 w-4" /> Čaká sa na schválenie zákazníkom
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Odoslané {new Date(inv.approval_requested_at).toLocaleString("sk-SK")} · odkaz platí 7 dní
+            </div>
+          </div>
+        )}
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
             <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
