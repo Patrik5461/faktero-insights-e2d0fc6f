@@ -595,6 +595,21 @@ function InvoiceDetail() {
         }
       />
       <PageBody>
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-muted-foreground">eFaktúra:</span>
+          <EfakturaStatusBadge status={efakturaUi} />
+          {payLink && (
+            <a
+              href={payLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 hover:bg-secondary"
+              title={payLink}
+            >
+              <Copy className="h-3 w-3" /> Otvoriť platobný odkaz
+            </a>
+          )}
+        </div>
         {inv.approval_status === "rejected" && inv.approval_note && (
           <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
