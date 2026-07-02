@@ -132,9 +132,14 @@ function InvoicesPage() {
             className="w-64 rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
           <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={overdueNoReminder} onChange={(e) => setOverdueNoReminder(e.target.checked)} />
+              Po splatnosti bez upomienky
+            </label>
             <DeletedToggle value={list.showDeleted} onChange={list.setShowDeleted} />
             <PageSizeSelect value={list.pageSize} onChange={list.setPageSize} />
           </div>
+
         </div>
         <BulkBar
           count={list.selectedIds.length}
