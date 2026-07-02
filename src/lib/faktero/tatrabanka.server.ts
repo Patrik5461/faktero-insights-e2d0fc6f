@@ -37,7 +37,7 @@ export function buildAuthorizeUrl(opts: { state: string; redirectUri: string }):
   if (scope && scope.trim().length > 0) {
     params.set("scope", scope.trim());
   }
-  return `${AUTH_BASE}/authorize?${params.toString()}`;
+  return `${authBase()}/authorize?${params.toString()}`;
 }
 
 export type TokenResponse = {
@@ -60,7 +60,7 @@ export async function exchangeCodeForToken(code: string, redirectUri: string): P
     code,
     redirect_uri: redirectUri,
   });
-  const res = await fetch(`${AUTH_BASE}/token`, {
+  const res = await fetch(`${authBase()}/token`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -79,7 +79,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
     grant_type: "refresh_token",
     refresh_token: refreshToken,
   });
-  const res = await fetch(`${AUTH_BASE}/token`, {
+  const res = await fetch(`${authBase()}/token`, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -99,7 +99,7 @@ async function apiGet(path: string, accessToken: string, consentId?: string | nu
     Accept: "application/json",
   };
   if (consentId) headers["Consent-ID"] = consentId;
-  const res = await fetch(`${API_BASE}${path}`, { headers });
+  const res = await fetch(`${apiBase()}${path}`, { headers });
   const txt = await res.text();
   if (!res.ok) throw new Error(`tb_api_error: ${res.status} ${txt.slice(0, 500)}`);
   return JSON.parse(txt);
