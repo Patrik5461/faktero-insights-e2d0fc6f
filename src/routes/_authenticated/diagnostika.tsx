@@ -2,8 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getRecurringDiagnostics } from "@/lib/faktero/recurring.functions";
+import { previewTatraAuthorizeUrl } from "@/lib/faktero/tatrabanka.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Activity, AlertTriangle, CheckCircle2, Clock, RefreshCw } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, Clock, RefreshCw, Link2, Copy } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/diagnostika")({
   head: () => ({ meta: [{ title: "Diagnostika — Faktero" }] }),
