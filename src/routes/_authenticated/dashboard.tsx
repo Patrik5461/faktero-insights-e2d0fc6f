@@ -247,6 +247,17 @@ function Dashboard() {
           />
         </div>
 
+        {/* CRM: Aging + DSO + Forecast */}
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          <AgingPanel title="Aging pohľadávok" icon={HandCoins} buckets={agingReceivables} loading={loading} />
+          <AgingPanel title="Aging záväzkov" icon={TrendingDown} buckets={agingPayables} loading={loading} />
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-3">
+          <DsoCard dso={dso} loading={loading} />
+          <ForecastPanel rows={forecast} loading={loading} className="lg:col-span-2" />
+        </div>
+
         <div className="mt-6">
           <BankWidget />
         </div>
