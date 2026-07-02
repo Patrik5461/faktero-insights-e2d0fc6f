@@ -384,6 +384,32 @@ function InvoiceDetail() {
         action={
           <div className="flex flex-wrap gap-2">
             <StatusBadge status={inv.status} />
+            {inv.approval_status === "pending" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
+                <ClockIcon className="h-3 w-3" /> Čaká na schválenie
+              </span>
+            )}
+            {inv.approval_status === "approved" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400">
+                <CheckCircle2 className="h-3 w-3" /> Schválené zákazníkom
+              </span>
+            )}
+            {inv.approval_status === "rejected" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-800 dark:bg-red-500/15 dark:text-red-400">
+                <XCircle className="h-3 w-3" /> Zamietnuté zákazníkom
+              </span>
+            )}
+            {(inv.status === "draft" || inv.status === "issued") && inv.approval_status !== "approved" && (
+              <button
+                onClick={handleRequestApproval}
+                disabled={approvalBusy}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+                title="Poslať zákazníkovi odkaz na schválenie faktúry"
+              >
+                <Send className="h-4 w-4" />
+                {approvalBusy ? "Odosielam…" : inv.approval_status === "pending" ? "Poslať znova na schválenie" : "Poslať na schválenie"}
+              </button>
+            )}
             {inv.status !== "paid" && inv.status !== "cancelled" && (
               <Link to="/faktury/$id/upravit" params={{ id }} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
                 <Pencil className="h-4 w-4" /> Upraviť
