@@ -90,8 +90,16 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
   if (dlErr || !pdfBlob) throw new Error(dlErr?.message ?? "PDF sa nepodarilo načítať.");
   const pdfB64 = arrayBufferToBase64(await pdfBlob.arrayBuffer());
 
-  const subject = (input.subject ?? company?.email_default_subject ?? "Faktúra {invoice_number}");
-  const message = (input.message ?? company?.email_default_message ?? "V prílohe posielame faktúru {invoice_number}.");
+  let tplSubject: string | undefined;
+  let tplBody: string | undefined;
+  try {
+    const { getEmailTemplate } = await import("./email-templates.server");
+    const tpl = await getEmailTemplate(input.company_id, "invoice_send");
+    if (tpl.fromDb) { tplSubject = tpl.subject; tplBody = tpl.body; }
+  } catch { /* ignore */ }
+
+  const subject = (input.subject ?? tplSubject ?? company?.email_default_subject ?? "Faktúra {invoice_number}");
+  const message = (input.message ?? tplBody ?? company?.email_default_message ?? "V prílohe posielame faktúru {invoice_number}.");
   const finalSubject = applyVars(subject, invoice, company);
   const finalMessage = applyVars(message, invoice, company);
 
