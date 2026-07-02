@@ -346,6 +346,17 @@ function Dashboard() {
             <Row label="Odhad základu dane" value={fmt(Math.max(0, metrics.yearIncome - metrics.yearExpenses))} strong />
             <p className="mt-3 text-xs text-muted-foreground">Indikatívny výpočet — nenahrádza účtovníka.</p>
           </Panel>
+
+          <Panel title="Záväzky" icon={TrendingDown}>
+            <Row label="Neuhradené prijaté faktúry" value={fmt(payables?.unpaid ?? 0)} strong />
+            <Row label="Po splatnosti" value={String(payables?.overdueCount ?? 0)} tone={(payables?.overdueCount ?? 0) > 0 ? "destructive" : undefined} />
+            <Row label="Evidovaných spolu" value={String(payables?.count ?? 0)} />
+            <div className="mt-3 border-t border-border pt-3">
+              <Link to="/prijate-faktury" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                Otvoriť prijaté faktúry <ArrowUpRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </Panel>
         </div>
 
         {/* THIRD ROW */}
