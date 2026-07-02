@@ -61,6 +61,25 @@ function InvoiceDetail() {
   const [hasPayLink, setHasPayLink] = useState(false);
   const [settledIn, setSettledIn] = useState<any | null>(null); // for proforma: invoice that consumed it
   const [advanceProforma, setAdvanceProforma] = useState<any | null>(null); // for regular: linked proforma
+  const [approvalBusy, setApprovalBusy] = useState(false);
+  const requestApprovalFn = useServerFn(requestInvoiceApproval);
+
+  async function handleRequestApproval() {
+    if (!inv) return;
+    const suggested = inv.customer_email ?? "";
+    const email = window.prompt("Email zákazníka pre schválenie:", suggested);
+    if (!email) return;
+    setApprovalBusy(true);
+    try {
+      await requestApprovalFn({ data: { invoiceId: inv.id, recipientEmail: email.trim() } });
+      toast.success("Žiadosť o schválenie bola odoslaná.");
+      load();
+    } catch (e: any) {
+      toast.error(friendlyError(e, "Nepodarilo sa odoslať žiadosť."));
+    } finally {
+      setApprovalBusy(false);
+    }
+  }
 
   async function handleCreatePayLink() {
     if (!inv?.company_id) return;
