@@ -37,6 +37,13 @@ function InvoicesPage() {
   const [overdueNoReminder, setOverdueNoReminder] = useState(false);
   const exportFn = useServerFn(exportInvoicesFn);
   const cloneFn = useServerFn(cloneInvoiceFn);
+  const markPaidFn = useServerFn(bulkMarkPaidFn);
+  const emailFn = useServerFn(sendInvoiceEmailFn);
+  const reminderFn = useServerFn(sendReminderFn);
+  const pdfFn = useServerFn(generateInvoicePdf);
+
+  const [bulkAction, setBulkAction] = useState<BulkAction>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
   useEffect(() => {
     const ids = list.rows.map((r: any) => r.id);
