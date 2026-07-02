@@ -3,13 +3,20 @@
  * Read-only integration. OAuth2 confidential client flow.
  */
 
-// Tatra banka sandbox (Premium API / Open Banking AISP)
-// Endpointy podľa oficiálnej sandbox konfigurácie:
-//   authorize: https://api.tatrabanka.sk/sandbox/auth/oauth/v2/authorize
-//   token:     https://api.tatrabanka.sk/sandbox/auth/oauth/v2/token
-//   api base:  https://api.tatrabanka.sk/sandbox/api/v1
-const AUTH_BASE = "https://api.tatrabanka.sk/sandbox/auth/oauth/v2";
-const API_BASE = "https://api.tatrabanka.sk/sandbox/api/v1";
+// Tatra banka Premium API / Open Banking AISP
+// TB_ENV=sandbox (default) → https://api.tatrabanka.sk/sandbox/...
+// TB_ENV=production        → https://api.tatrabanka.sk/...
+//   authorize: <base>/auth/oauth/v2/authorize
+//   token:     <base>/auth/oauth/v2/token
+//   api base:  <base>/api/v1
+function tbBase(): string {
+  const env = (process.env.TB_ENV ?? "sandbox").toLowerCase();
+  return env === "production" || env === "prod"
+    ? "https://api.tatrabanka.sk"
+    : "https://api.tatrabanka.sk/sandbox";
+}
+function authBase(): string { return `${tbBase()}/auth/oauth/v2`; }
+function apiBase(): string { return `${tbBase()}/api/v1`; }
 
 export function isTatraConfigured(): boolean {
   return !!process.env.TB_CLIENT_ID && !!process.env.TB_CLIENT_SECRET;
