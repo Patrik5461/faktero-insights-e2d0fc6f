@@ -165,8 +165,9 @@ function Dashboard() {
       const cid = getActiveCompanyId();
       if (!cid) return;
       const { data } = await supabase.from("purchase_invoices")
-        .select("amount_total, status, due_date")
+        .select("id, amount_total, status, due_date, supplier_name, invoice_number")
         .eq("company_id", cid).is("deleted_at", null);
+      setPurchaseInvoices(data ?? []);
       const today = new Date().toISOString().slice(0, 10);
       let unpaid = 0, overdueCount = 0;
       (data ?? []).forEach((r: any) => {
