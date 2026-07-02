@@ -189,6 +189,10 @@ function Dashboard() {
     [allInvoices, customers, webhookDeliveries, apiLogs]
   );
   const apiStats = useMemo(() => computeApiStats(apiLogs), [apiLogs]);
+  const agingReceivables = useMemo(() => buildAging(allInvoices, "receivable"), [allInvoices]);
+  const agingPayables = useMemo(() => buildAging(purchaseInvoices, "payable"), [purchaseInvoices]);
+  const dso = useMemo(() => computeDSO(allInvoices), [allInvoices]);
+  const forecast = useMemo(() => buildCashflowForecast(allInvoices, purchaseInvoices), [allInvoices, purchaseInvoices]);
 
   const countdown = useCountdown(new Date("2027-01-01T00:00:00"));
 
