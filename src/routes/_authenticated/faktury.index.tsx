@@ -3,15 +3,22 @@ import { useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
-import { Plus, FileCode2, Loader2, Trash2, RotateCcw, Copy, Bell } from "lucide-react";
+import { Plus, FileCode2, Loader2, Trash2, RotateCcw, Copy, Bell, CheckCircle2, Mail, CalendarPlus, Archive } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
+import { bulkMarkPaidFn } from "@/lib/faktero/invoice-bulk.functions";
+import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
+import { sendReminderFn } from "@/lib/faktero/reminders.functions";
+import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
 import { Pagination, PageSizeSelect, ConfirmDialog, BulkBar, DeletedToggle } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { supabase } from "@/integrations/supabase/client";
+import JSZip from "jszip";
+
+type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
 
 export const Route = createFileRoute("/_authenticated/faktury/")({
   head: () => ({ meta: [{ title: "Faktúry — Faktero" }] }),
