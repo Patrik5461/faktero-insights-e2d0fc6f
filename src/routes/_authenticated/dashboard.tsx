@@ -845,3 +845,226 @@ function computeApiStats(logs: any[]) {
   const successRate = month > 0 ? (success / month) * 100 : 100;
   return { today, month, successRate };
 }
+
+/* ---------- Aging / DSO / Forecast ---------- */
+
+type AgingBucket = { key: string; label: string; count: number; amount: number; tone: string };
+
+function buildAging(rows: any[], kind: "receivable" | "payable"): AgingBucket[] {
+  const openStatuses = kind === "receivable"
+    ? new Set(["issued", "sent", "overdue"])
+    : new Set(["received", "booked"]);
+  const amountField = kind === "receivable" ? "total" : "amount_total";
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const buckets: AgingBucket[] = [
+    { key: "current", label: "V termíne", count: 0, amount: 0, tone: "text-emerald-600 dark:text-emerald-400" },
+    { key: "1_30",    label: "1–30 dní",  count: 0, amount: 0, tone: "text-amber-600 dark:text-amber-400" },
+    { key: "31_60",   label: "31–60 dní", count: 0, amount: 0, tone: "text-amber-700 dark:text-amber-300" },
+    { key: "61_90",   label: "61–90 dní", count: 0, amount: 0, tone: "text-destructive" },
+    { key: "90_plus", label: "90+ dní",   count: 0, amount: 0, tone: "text-destructive font-semibold" },
+  ];
+
+  rows.forEach((r) => {
+    if (!openStatuses.has(r.status)) return;
+    if (!r.due_date) return;
+    const due = new Date(r.due_date); due.setHours(0, 0, 0, 0);
+    const daysOver = Math.floor((today.getTime() - due.getTime()) / 86400000);
+    const amt = Number(r[amountField] ?? 0);
+    let idx = 0;
+    if (daysOver <= 0) idx = 0;
+    else if (daysOver <= 30) idx = 1;
+    else if (daysOver <= 60) idx = 2;
+    else if (daysOver <= 90) idx = 3;
+    else idx = 4;
+    buckets[idx].count += 1;
+    buckets[idx].amount += amt;
+  });
+
+  return buckets;
+}
+
+function computeDSO(invoices: any[]) {
+  const now = Date.now();
+  const yearAgo = now - 365 * 86400000;
+  const openStatuses = new Set(["issued", "sent", "overdue"]);
+  const receivables = invoices
+    .filter((i) => openStatuses.has(i.status))
+    .reduce((a, i) => a + Number(i.total ?? 0), 0);
+  const revenue365 = invoices
+    .filter((i) => i.status !== "cancelled" && new Date(i.issue_date).getTime() >= yearAgo)
+    .reduce((a, i) => a + Number(i.total ?? 0), 0);
+  const days = revenue365 > 0 ? (receivables / revenue365) * 365 : 0;
+  return { days, receivables, revenue365 };
+}
+
+type ForecastRow = { label: string; range: string; income: number; expense: number; balance: number };
+
+function buildCashflowForecast(invoices: any[], purchases: any[]): ForecastRow[] {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const openInv = new Set(["issued", "sent", "overdue"]);
+  const openPur = new Set(["received", "booked"]);
+  const rows: ForecastRow[] = [];
+  for (let w = 0; w < 4; w++) {
+    const start = new Date(today.getTime() + w * 7 * 86400000);
+    const end = new Date(today.getTime() + (w + 1) * 7 * 86400000);
+    const inRange = (d?: string) => {
+      if (!d) return false;
+      const x = new Date(d).getTime();
+      return x >= start.getTime() && x < end.getTime();
+    };
+    const income = invoices.filter((i) => openInv.has(i.status) && inRange(i.due_date))
+      .reduce((a, i) => a + Number(i.total ?? 0), 0);
+    const expense = purchases.filter((p) => openPur.has(p.status) && inRange(p.due_date))
+      .reduce((a, p) => a + Number(p.amount_total ?? 0), 0);
+    const fmtD = (d: Date) => `${d.getDate()}.${d.getMonth() + 1}.`;
+    rows.push({
+      label: `Týždeň ${w + 1}`,
+      range: `${fmtD(start)} – ${fmtD(new Date(end.getTime() - 86400000))}`,
+      income, expense, balance: income - expense,
+    });
+  }
+  return rows;
+}
+
+/* ---------- Aging / DSO / Forecast components ---------- */
+
+function AgingPanel({
+  title, icon, buckets, loading,
+}: { title: string; icon: any; buckets: AgingBucket[]; loading: boolean }) {
+  const total = buckets.reduce((a, b) => a + b.amount, 0);
+  return (
+    <Panel title={title} icon={icon}>
+      {loading ? (
+        <div className="space-y-2">
+          {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-9 animate-pulse rounded-md bg-muted/50" />)}
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th className="py-1.5 font-medium">Bucket</th>
+                  <th className="py-1.5 text-right font-medium">Počet</th>
+                  <th className="py-1.5 text-right font-medium">Suma</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {buckets.map((b) => (
+                  <tr key={b.key}>
+                    <td className={`py-2 ${b.tone}`}>{b.label}</td>
+                    <td className="py-2 text-right tabular-nums">{b.count}</td>
+                    <td className={`py-2 text-right tabular-nums ${b.tone}`}>{fmt(b.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-border">
+                  <td className="pt-2 text-xs uppercase tracking-wide text-muted-foreground">Spolu</td>
+                  <td className="pt-2 text-right text-xs text-muted-foreground tabular-nums">
+                    {buckets.reduce((a, b) => a + b.count, 0)}
+                  </td>
+                  <td className="pt-2 text-right font-semibold tabular-nums">{fmt(total)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </>
+      )}
+    </Panel>
+  );
+}
+
+function DsoCard({ dso, loading }: { dso: { days: number; receivables: number; revenue365: number }; loading: boolean }) {
+  const tone = dso.days < 30
+    ? "text-emerald-600 dark:text-emerald-400"
+    : dso.days <= 60
+      ? "text-amber-600 dark:text-amber-400"
+      : "text-destructive";
+  const badge = dso.days < 30 ? "Vynikajúce" : dso.days <= 60 ? "Priemerné" : "Kritické";
+  return (
+    <Panel title="DSO" icon={Clock}>
+      {loading ? (
+        <div className="space-y-3">
+          <div className="h-12 w-32 animate-pulse rounded-md bg-muted/50" />
+          <div className="h-4 w-48 animate-pulse rounded-md bg-muted/50" />
+        </div>
+      ) : (
+        <>
+          <div className={`text-4xl font-bold tabular-nums ${tone}`}>
+            {dso.days.toFixed(1)}
+          </div>
+          <div className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
+            Priemerná doba inkasa (dní)
+          </div>
+          <div className={`mt-3 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tone} bg-muted/40`}>
+            {badge}
+          </div>
+          <div className="mt-4 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
+            <div className="flex justify-between"><span>Pohľadávky</span><span className="tabular-nums">{fmt(dso.receivables)}</span></div>
+            <div className="flex justify-between"><span>Obrat 365 dní</span><span className="tabular-nums">{fmt(dso.revenue365)}</span></div>
+          </div>
+        </>
+      )}
+    </Panel>
+  );
+}
+
+function ForecastPanel({ rows, loading, className }: { rows: ForecastRow[]; loading: boolean; className?: string }) {
+  return (
+    <Panel title="Cash flow forecast (4 týždne)" icon={Wallet} className={className}>
+      {loading ? (
+        <div className="space-y-2">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="h-10 animate-pulse rounded-md bg-muted/50" />)}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="py-1.5 font-medium">Obdobie</th>
+                <th className="py-1.5 text-right font-medium">Príjmy</th>
+                <th className="py-1.5 text-right font-medium">Výdavky</th>
+                <th className="py-1.5 text-right font-medium">Zostatok</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {rows.map((r) => (
+                <tr key={r.label}>
+                  <td className="py-2">
+                    <div className="font-medium">{r.label}</div>
+                    <div className="text-xs text-muted-foreground">{r.range}</div>
+                  </td>
+                  <td className="py-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">
+                    {fmt(r.income)}
+                  </td>
+                  <td className="py-2 text-right tabular-nums text-destructive">
+                    {r.expense > 0 ? `−${fmt(r.expense)}` : fmt(0)}
+                  </td>
+                  <td className={`py-2 text-right font-semibold tabular-nums ${r.balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                    {fmt(r.balance)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-border">
+                <td className="pt-2 text-xs uppercase tracking-wide text-muted-foreground">Spolu 4 týždne</td>
+                <td className="pt-2 text-right text-xs tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {fmt(rows.reduce((a, r) => a + r.income, 0))}
+                </td>
+                <td className="pt-2 text-right text-xs tabular-nums text-destructive">
+                  −{fmt(rows.reduce((a, r) => a + r.expense, 0))}
+                </td>
+                <td className={`pt-2 text-right font-bold tabular-nums ${rows.reduce((a, r) => a + r.balance, 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                  {fmt(rows.reduce((a, r) => a + r.balance, 0))}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </Panel>
+  );
+}
