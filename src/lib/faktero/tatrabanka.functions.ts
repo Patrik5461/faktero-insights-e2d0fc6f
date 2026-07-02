@@ -95,8 +95,19 @@ export const syncBankAccounts = createServerFn({ method: "POST" })
       .from("bank_connections").select("*")
       .eq("id", data.connection_id).eq("company_id", data.company_id).maybeSingle();
     if (!conn || conn.status !== "connected" || !conn.access_token) throw new Error("not_connected");
-    const { fetchAccounts } = await import("./tatrabanka.server");
-    const list = await fetchAccounts(conn.access_token, conn.consent_id);
+    const { fetchAccounts, createConsent } = await import("./tatrabanka.server");
+    // Lazily create a PSD2 consent if one is missing (e.g. connections made
+    // before consent flow existed). TB /accounts returns 404 without Consent-ID.
+    let consentId: string | null = conn.consent_id ?? null;
+    if (!consentId) {
+      try {
+        consentId = await createConsent(conn.access_token);
+        await supabaseAdmin.from("bank_connections").update({ consent_id: consentId }).eq("id", conn.id);
+      } catch (e) {
+        console.error("[tatrabanka] lazy consent failed", e);
+      }
+    }
+    const list = await fetchAccounts(conn.access_token, consentId);
     for (const a of list) {
       const { data: existing } = await supabaseAdmin
         .from("bank_accounts").select("id")
