@@ -453,6 +453,13 @@ function InvoicesPage() {
         onCancel={() => setBulkDelete(false)}
         onConfirm={confirmBulkDelete}
       />
+      <ConfirmDialog
+        open={!!bulkAction}
+        title={bulkAction ? confirmMessages[bulkAction].title : ""}
+        message={bulkAction ? confirmMessages[bulkAction].message : ""}
+        onCancel={() => setBulkAction(null)}
+        onConfirm={() => { if (bulkAction) runners[bulkAction](); }}
+      />
     </>
   );
 }
