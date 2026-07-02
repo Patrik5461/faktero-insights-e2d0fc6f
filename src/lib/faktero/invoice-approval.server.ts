@@ -15,7 +15,7 @@ async function sendMail(opts: { to: string; subject: string; html: string; text:
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      from: opts.from ?? "Faktero <onboarding@resend.dev>",
+      from: opts.from ?? `Faktero <${process.env.RESEND_FROM_NOREPLY || "noreply@faktero.sk"}>`,
       to: [opts.to],
       subject: opts.subject,
       reply_to: opts.reply_to || undefined,
