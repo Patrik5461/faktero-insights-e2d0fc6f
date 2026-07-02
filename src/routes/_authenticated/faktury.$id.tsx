@@ -24,6 +24,8 @@ import { useQuery } from "@tanstack/react-query";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { createInvoicePaymentLink, syncInvoicePayment } from "@/lib/faktero/payments.functions";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
+import { sendReminderFn, previewReminderFn } from "@/lib/faktero/reminders.functions";
+
 
 export const Route = createFileRoute("/_authenticated/faktury/$id")({
   head: () => ({ meta: [{ title: "Detail faktúry — Faktero" }] }),
@@ -41,6 +43,13 @@ function InvoiceDetail() {
   const [stockSkus, setStockSkus] = useState<Record<string, string>>({});
   const [pdfBusy, setPdfBusy] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [reminderBusy, setReminderBusy] = useState(false);
+  const [reminderForm, setReminderForm] = useState({ reminderNumber: 1 as 1 | 2 | 3, recipient_email: "", subject: "", message: "" });
+  const [reminders, setReminders] = useState<any[]>([]);
+  const sendReminder = useServerFn(sendReminderFn);
+  const previewReminder = useServerFn(previewReminderFn);
+
   const [emailBusy, setEmailBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -197,8 +206,50 @@ function InvoiceDetail() {
       } else {
         setSettledIn(null); setAdvanceProforma(null);
       }
+      const { data: rems } = await supabase.from("invoice_reminders")
+        .select("id, reminder_number, sent_at, status, email_to, triggered_by")
+        .eq("invoice_id", id).order("sent_at", { ascending: false });
+      setReminders(rems ?? []);
     }
   }
+
+  async function openReminder() {
+    try {
+      const sentSet = new Set(reminders.filter((r) => r.status === "sent").map((r) => r.reminder_number));
+      let next: 1 | 2 | 3 = 1;
+      if (sentSet.has(1)) next = 2;
+      if (sentSet.has(2)) next = 3;
+      const preview = await previewReminder({ data: { invoiceId: id, reminderNumber: next } });
+      setReminderForm({
+        reminderNumber: next,
+        recipient_email: preview.recipient_email ?? "",
+        subject: preview.subject,
+        message: preview.message,
+      });
+      setReminderOpen(true);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa načítať upomienku");
+    }
+  }
+
+  async function submitReminder() {
+    setReminderBusy(true);
+    try {
+      await sendReminder({ data: {
+        invoiceId: id,
+        reminderNumber: reminderForm.reminderNumber,
+        recipient_email: reminderForm.recipient_email,
+        subject: reminderForm.subject,
+        message: reminderForm.message,
+      } });
+      toast.success("Upomienka odoslaná");
+      setReminderOpen(false);
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Odoslanie upomienky zlyhalo");
+    } finally { setReminderBusy(false); }
+  }
+
   useEffect(() => { load(); }, [id]);
 
   async function handleDelete() {
@@ -418,6 +469,12 @@ function InvoiceDetail() {
             <button onClick={openEmail} disabled={inv.status === "cancelled"} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
               <Mail className="h-4 w-4" /> Poslať e-mailom
             </button>
+            {inv.status !== "cancelled" && inv.status !== "paid" && (
+              <button onClick={openReminder} className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 hover:bg-amber-100">
+                <Mail className="h-4 w-4" /> Poslať upomienku
+              </button>
+            )}
+
             {company?.online_payments_enabled && inv.status !== "paid" && inv.status !== "cancelled" && (
               <button onClick={handleCreatePayLink} disabled={payBusy} className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100 disabled:opacity-50">
                 <CreditCard className="h-4 w-4" /> {payBusy ? "…" : "Vytvoriť platobný odkaz"}
@@ -649,6 +706,32 @@ function InvoiceDetail() {
           </div>
         </div>
       )}
+      {reminderOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5">
+            <h3 className="text-lg font-semibold">Poslať upomienku ({reminderForm.reminderNumber}.)</h3>
+            <label className="block text-sm"><span className="font-medium">Príjemca</span>
+              <input value={reminderForm.recipient_email} onChange={(e) => setReminderForm({ ...reminderForm, recipient_email: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </label>
+            <label className="block text-sm"><span className="font-medium">Predmet</span>
+              <input value={reminderForm.subject} onChange={(e) => setReminderForm({ ...reminderForm, subject: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </label>
+            <label className="block text-sm"><span className="font-medium">Správa</span>
+              <textarea rows={10} value={reminderForm.message} onChange={(e) => setReminderForm({ ...reminderForm, message: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </label>
+            {reminders.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                Predchádzajúce upomienky: {reminders.map((r) => `#${r.reminder_number} (${new Date(r.sent_at).toLocaleDateString("sk-SK")})`).join(", ")}
+              </div>
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setReminderOpen(false)} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">Zrušiť</button>
+              <button onClick={submitReminder} disabled={reminderBusy} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{reminderBusy ? "Odosielam…" : "Odoslať upomienku"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ConfirmDialog
         open={deleteOpen}
         title="Naozaj chcete vymazať túto faktúru?"

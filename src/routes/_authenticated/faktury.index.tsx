@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
-import { Plus, FileCode2, Loader2, Trash2, RotateCcw, Copy } from "lucide-react";
+import { Plus, FileCode2, Loader2, Trash2, RotateCcw, Copy, Bell } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
 import { Pagination, PageSizeSelect, ConfirmDialog, BulkBar, DeletedToggle } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/faktury/")({
   head: () => ({ meta: [{ title: "Faktúry — Faktero" }] }),
@@ -25,8 +26,38 @@ function InvoicesPage() {
   const [busy, setBusy] = useState(false);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
+  const [reminderMap, setReminderMap] = useState<Record<string, number>>({});
+  const [overdueNoReminder, setOverdueNoReminder] = useState(false);
   const exportFn = useServerFn(exportInvoicesFn);
   const cloneFn = useServerFn(cloneInvoiceFn);
+
+  useEffect(() => {
+    const ids = list.rows.map((r: any) => r.id);
+    if (ids.length === 0) { setReminderMap({}); return; }
+    supabase.from("invoice_reminders")
+      .select("invoice_id, reminder_number")
+      .in("invoice_id", ids)
+      .eq("status", "sent")
+      .then(({ data }) => {
+        const m: Record<string, number> = {};
+        for (const r of data ?? []) {
+          const n = (r as any).reminder_number as number;
+          const id = (r as any).invoice_id as string;
+          if (!m[id] || m[id] < n) m[id] = n;
+        }
+        setReminderMap(m);
+      });
+  }, [list.rows]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const visibleRows = useMemo(() => {
+    if (!overdueNoReminder) return list.rows;
+    return list.rows.filter((r: any) =>
+      (r.status === "issued" || r.status === "sent") &&
+      r.due_date && r.due_date < today && !r.paid_at &&
+      !reminderMap[r.id]);
+  }, [list.rows, overdueNoReminder, reminderMap, today]);
+
 
   async function cloneRow(invoiceId: string) {
     try {
@@ -101,9 +132,14 @@ function InvoicesPage() {
             className="w-64 rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
           <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={overdueNoReminder} onChange={(e) => setOverdueNoReminder(e.target.checked)} />
+              Po splatnosti bez upomienky
+            </label>
             <DeletedToggle value={list.showDeleted} onChange={list.setShowDeleted} />
             <PageSizeSelect value={list.pageSize} onChange={list.setPageSize} />
           </div>
+
         </div>
         <BulkBar
           count={list.selectedIds.length}
@@ -114,13 +150,14 @@ function InvoicesPage() {
         />
         <ResponsiveTable
           className="mt-3"
-          items={list.rows}
+          items={visibleRows}
           loading={list.loading}
           emptyText={list.showDeleted ? "Žiadne vymazané faktúry." : "Žiadne faktúry."}
           mobileCard={(i: any) => (
             <MobileListCard
               onClick={() => (window.location.href = `/faktury/${i.id}`)}
-              title={i.invoice_number}
+              title={<span className="inline-flex items-center gap-2">{i.invoice_number}{reminderMap[i.id] ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800"><Bell className="h-3 w-3" /> Upomienka #{reminderMap[i.id]}</span> : null}</span>}
+
               subtitle={i.customer_name ?? "—"}
               status={<StatusBadge status={i.status} />}
               meta={`${i.issue_date} · splat. ${i.due_date}`}
@@ -160,13 +197,23 @@ function InvoicesPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {list.loading && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
-              {!list.loading && list.rows.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{list.showDeleted ? "Žiadne vymazané faktúry." : "Žiadne faktúry."}</td></tr>}
-              {list.rows.map((i) => (
+              {!list.loading && visibleRows.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{list.showDeleted ? "Žiadne vymazané faktúry." : "Žiadne faktúry."}</td></tr>}
+              {visibleRows.map((i) => (
                 <tr key={i.id} className="hover:bg-muted/30">
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={!!list.selected[i.id]} onChange={(e) => list.toggleSelect(i.id, e.target.checked)} />
                   </td>
-                  <td className="p-3 font-medium cursor-pointer" onClick={() => (window.location.href = `/faktury/${i.id}`)}>{i.invoice_number}</td>
+                  <td className="p-3 font-medium cursor-pointer" onClick={() => (window.location.href = `/faktury/${i.id}`)}>
+                    <span className="inline-flex items-center gap-2">
+                      {i.invoice_number}
+                      {reminderMap[i.id] ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800" title="Upomienka bola odoslaná">
+                          <Bell className="h-3 w-3" /> #{reminderMap[i.id]}
+                        </span>
+                      ) : null}
+                    </span>
+                  </td>
+
                   <td className="p-3 cursor-pointer" onClick={() => (window.location.href = `/faktury/${i.id}`)}>{i.customer_name ?? "—"}</td>
                   <td className="p-3 cursor-pointer" onClick={() => (window.location.href = `/faktury/${i.id}`)}>{i.issue_date}</td>
                   <td className="p-3 cursor-pointer" onClick={() => (window.location.href = `/faktury/${i.id}`)}>{i.due_date}</td>
