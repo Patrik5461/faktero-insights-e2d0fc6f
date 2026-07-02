@@ -230,7 +230,7 @@ function DphPage() {
 
   return (
     <>
-      <PageHeader title="DPH prehľad" subtitle="Informatívny prehľad DPH na výstupe a vstupe" />
+      <PageHeader title="DPH prehľad" description="Informatívny prehľad DPH na výstupe a vstupe" />
       <PageBody>
         <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 flex gap-2 items-start">
           <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
