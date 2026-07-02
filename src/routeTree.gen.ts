@@ -29,6 +29,7 @@ import { Route as EfakturaciaIndexRouteImport } from './routes/efakturacia.index
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VyvojariSlugRouteImport } from './routes/vyvojari.$slug'
 import { Route as UctovniciSlugRouteImport } from './routes/uctovnici.$slug'
+import { Route as SchvalitTokenRouteImport } from './routes/schvalit.$token'
 import { Route as PravneTeslaPodmienkyRouteImport } from './routes/pravne.tesla-podmienky'
 import { Route as PravneReklamacnyPoriadokRouteImport } from './routes/pravne.reklamacny-poriadok'
 import { Route as PravneObchodnePodmienkyRouteImport } from './routes/pravne.obchodne-podmienky'
@@ -260,6 +261,11 @@ const UctovniciSlugRoute = UctovniciSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => UctovniciRoute,
+} as any)
+const SchvalitTokenRoute = SchvalitTokenRouteImport.update({
+  id: '/schvalit/$token',
+  path: '/schvalit/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PravneTeslaPodmienkyRoute = PravneTeslaPodmienkyRouteImport.update({
   id: '/pravne/tesla-podmienky',
@@ -1032,6 +1038,7 @@ export interface FileRoutesByFullPath {
   '/pravne/obchodne-podmienky': typeof PravneObchodnePodmienkyRoute
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
+  '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
   '/vyvojari/$slug': typeof VyvojariSlugRoute
   '/admin/': typeof AdminIndexRoute
@@ -1178,6 +1185,7 @@ export interface FileRoutesByTo {
   '/pravne/obchodne-podmienky': typeof PravneObchodnePodmienkyRoute
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
+  '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
   '/vyvojari/$slug': typeof VyvojariSlugRoute
   '/admin': typeof AdminIndexRoute
@@ -1332,6 +1340,7 @@ export interface FileRoutesById {
   '/pravne/obchodne-podmienky': typeof PravneObchodnePodmienkyRoute
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
+  '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
   '/vyvojari/$slug': typeof VyvojariSlugRoute
   '/admin/': typeof AdminIndexRoute
@@ -1487,6 +1496,7 @@ export interface FileRouteTypes {
     | '/pravne/obchodne-podmienky'
     | '/pravne/reklamacny-poriadok'
     | '/pravne/tesla-podmienky'
+    | '/schvalit/$token'
     | '/uctovnici/$slug'
     | '/vyvojari/$slug'
     | '/admin/'
@@ -1633,6 +1643,7 @@ export interface FileRouteTypes {
     | '/pravne/obchodne-podmienky'
     | '/pravne/reklamacny-poriadok'
     | '/pravne/tesla-podmienky'
+    | '/schvalit/$token'
     | '/uctovnici/$slug'
     | '/vyvojari/$slug'
     | '/admin'
@@ -1786,6 +1797,7 @@ export interface FileRouteTypes {
     | '/pravne/obchodne-podmienky'
     | '/pravne/reklamacny-poriadok'
     | '/pravne/tesla-podmienky'
+    | '/schvalit/$token'
     | '/uctovnici/$slug'
     | '/vyvojari/$slug'
     | '/admin/'
@@ -1909,6 +1921,7 @@ export interface RootRouteChildren {
   PravneObchodnePodmienkyRoute: typeof PravneObchodnePodmienkyRoute
   PravneReklamacnyPoriadokRoute: typeof PravneReklamacnyPoriadokRoute
   PravneTeslaPodmienkyRoute: typeof PravneTeslaPodmienkyRoute
+  SchvalitTokenRoute: typeof SchvalitTokenRoute
   PomocIndexRoute: typeof PomocIndexRoute
   PravneIndexRoute: typeof PravneIndexRoute
   ApiAdminMigrationExportRoute: typeof ApiAdminMigrationExportRoute
@@ -2078,6 +2091,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/uctovnici/$slug'
       preLoaderRoute: typeof UctovniciSlugRouteImport
       parentRoute: typeof UctovniciRoute
+    }
+    '/schvalit/$token': {
+      id: '/schvalit/$token'
+      path: '/schvalit/$token'
+      fullPath: '/schvalit/$token'
+      preLoaderRoute: typeof SchvalitTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/pravne/tesla-podmienky': {
       id: '/pravne/tesla-podmienky'
@@ -3458,6 +3478,7 @@ const rootRouteChildren: RootRouteChildren = {
   PravneObchodnePodmienkyRoute: PravneObchodnePodmienkyRoute,
   PravneReklamacnyPoriadokRoute: PravneReklamacnyPoriadokRoute,
   PravneTeslaPodmienkyRoute: PravneTeslaPodmienkyRoute,
+  SchvalitTokenRoute: SchvalitTokenRoute,
   PomocIndexRoute: PomocIndexRoute,
   PravneIndexRoute: PravneIndexRoute,
   ApiAdminMigrationExportRoute: ApiAdminMigrationExportRoute,
