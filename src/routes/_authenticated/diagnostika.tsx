@@ -32,6 +32,13 @@ function DiagnostikaPage() {
     } finally {
       setLoading(false);
     }
+    try {
+      const t = await fetchTb();
+      setTb(t);
+      setTbErr(null);
+    } catch (e: any) {
+      setTbErr(e?.message ?? "Chyba");
+    }
   }
   useEffect(() => { load(); }, []);
 
