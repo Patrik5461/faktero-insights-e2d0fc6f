@@ -664,6 +664,16 @@ export type Database = {
           online_payments_enabled: boolean
           phone: string | null
           preferred_accounting_system: Database["public"]["Enums"]["accounting_system"]
+          reminder_days_1: number
+          reminder_days_2: number
+          reminder_days_3: number
+          reminder_message_1: string | null
+          reminder_message_2: string | null
+          reminder_message_3: string | null
+          reminder_subject_1: string | null
+          reminder_subject_2: string | null
+          reminder_subject_3: string | null
+          reminders_enabled: boolean
           street: string | null
           suspended_at: string | null
           suspended_reason: string | null
@@ -695,6 +705,16 @@ export type Database = {
           online_payments_enabled?: boolean
           phone?: string | null
           preferred_accounting_system?: Database["public"]["Enums"]["accounting_system"]
+          reminder_days_1?: number
+          reminder_days_2?: number
+          reminder_days_3?: number
+          reminder_message_1?: string | null
+          reminder_message_2?: string | null
+          reminder_message_3?: string | null
+          reminder_subject_1?: string | null
+          reminder_subject_2?: string | null
+          reminder_subject_3?: string | null
+          reminders_enabled?: boolean
           street?: string | null
           suspended_at?: string | null
           suspended_reason?: string | null
@@ -726,6 +746,16 @@ export type Database = {
           online_payments_enabled?: boolean
           phone?: string | null
           preferred_accounting_system?: Database["public"]["Enums"]["accounting_system"]
+          reminder_days_1?: number
+          reminder_days_2?: number
+          reminder_days_3?: number
+          reminder_message_1?: string | null
+          reminder_message_2?: string | null
+          reminder_message_3?: string | null
+          reminder_subject_1?: string | null
+          reminder_subject_2?: string | null
+          reminder_subject_3?: string | null
+          reminders_enabled?: boolean
           street?: string | null
           suspended_at?: string | null
           suspended_reason?: string | null
@@ -1985,6 +2015,69 @@ export type Database = {
           },
         ]
       }
+      invoice_reminders: {
+        Row: {
+          company_id: string
+          created_at: string
+          email_to: string
+          error_message: string | null
+          id: string
+          invoice_id: string
+          message: string | null
+          provider_message_id: string | null
+          reminder_number: number
+          sent_at: string
+          status: string
+          subject: string | null
+          triggered_by: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          email_to: string
+          error_message?: string | null
+          id?: string
+          invoice_id: string
+          message?: string | null
+          provider_message_id?: string | null
+          reminder_number: number
+          sent_at?: string
+          status?: string
+          subject?: string | null
+          triggered_by?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          email_to?: string
+          error_message?: string | null
+          id?: string
+          invoice_id?: string
+          message?: string | null
+          provider_message_id?: string | null
+          reminder_number?: number
+          sent_at?: string
+          status?: string
+          subject?: string | null
+          triggered_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_reminders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_reminders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           advance_amount: number | null
@@ -2026,6 +2119,7 @@ export type Database = {
           paid_at: string | null
           payment_method: string | null
           pdf_url: string | null
+          reminders_enabled: boolean
           reverse_charge: boolean
           reverse_charge_type: string | null
           rounding_mode: string | null
@@ -2079,6 +2173,7 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           pdf_url?: string | null
+          reminders_enabled?: boolean
           reverse_charge?: boolean
           reverse_charge_type?: string | null
           rounding_mode?: string | null
@@ -2132,6 +2227,7 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           pdf_url?: string | null
+          reminders_enabled?: boolean
           reverse_charge?: boolean
           reverse_charge_type?: string | null
           rounding_mode?: string | null
