@@ -98,9 +98,59 @@ function CompanyPage() {
             <textarea rows={5} value={c.email_default_message ?? ""} onChange={(e) => setC({ ...c, email_default_message: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
             <span className="mt-1 block text-xs text-muted-foreground">Premenné: {"{invoice_number}"}, {"{due_date}"}, {"{total}"}, {"{company_name}"}</span>
           </label>
+
+          <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Automatické upomienky po splatnosti</h3>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={c.reminders_enabled ?? true}
+                onChange={(e) => setC({ ...c, reminders_enabled: e.target.checked })}
+              />
+              Zapnúť automatické upomienky
+            </label>
+          </div>
+          <label className="block">
+            <span className="text-sm font-medium">Dní po splatnosti — 1. upomienka</span>
+            <input type="number" min={1} value={c.reminder_days_1 ?? 3}
+              onChange={(e) => setC({ ...c, reminder_days_1: Number(e.target.value) })}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">Dní po splatnosti — 2. upomienka</span>
+            <input type="number" min={1} value={c.reminder_days_2 ?? 7}
+              onChange={(e) => setC({ ...c, reminder_days_2: Number(e.target.value) })}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">Dní po splatnosti — 3. upomienka</span>
+            <input type="number" min={1} value={c.reminder_days_3 ?? 14}
+              onChange={(e) => setC({ ...c, reminder_days_3: Number(e.target.value) })}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+          </label>
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="sm:col-span-2 grid gap-2 rounded-md border border-border p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{n}. upomienka — e-mail</div>
+              <input
+                placeholder={`Predmet (napr. Upomienka: Faktúra {invoice_number})`}
+                value={c[`reminder_subject_${n}`] ?? ""}
+                onChange={(e) => setC({ ...c, [`reminder_subject_${n}`]: e.target.value })}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+              <textarea
+                rows={4}
+                placeholder="Text upomienky (premenné: {invoice_number}, {due_date}, {total}, {company_name}, {iban}, {variable_symbol})"
+                value={c[`reminder_message_${n}`] ?? ""}
+                onChange={(e) => setC({ ...c, [`reminder_message_${n}`]: e.target.value })}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          ))}
+
           <div className="sm:col-span-2 flex justify-end">
             <button type="submit" className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Uložiť zmeny</button>
           </div>
+
         </form>
       </PageBody>
     </>
