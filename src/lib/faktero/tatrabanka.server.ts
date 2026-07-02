@@ -33,9 +33,9 @@ export function buildAuthorizeUrl(opts: { state: string; redirectUri: string }):
     redirect_uri: opts.redirectUri,
     state: opts.state,
   });
-  const scope = process.env.TB_SCOPE;
-  if (scope && scope.trim().length > 0) {
-    params.set("scope", scope.trim());
+  const scope = (process.env.TB_SCOPE ?? "AISP").trim();
+  if (scope.length > 0) {
+    params.set("scope", scope);
   }
   return `${authBase()}/authorize?${params.toString()}`;
 }
