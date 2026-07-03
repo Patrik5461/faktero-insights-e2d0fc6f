@@ -988,6 +988,11 @@ function ComparisonSection() {
     { label: "Opakované faktúry", faktero: true, sf: true, manual: false },
     { label: "GoPay platby", faktero: true, sf: "Plánované", manual: false },
     { label: "FinStat integrácia", faktero: true, sf: false, manual: false },
+    { label: "Bankové párovanie", faktero: true, sf: "Obmedzene", manual: false },
+    { label: "Prijaté faktúry", faktero: true, sf: true, manual: false },
+    { label: "Mobilná appka (iOS + Android)", faktero: true, sf: false, manual: false },
+    { label: "Upomienky po splatnosti", faktero: true, sf: "Obmedzene", manual: false },
+    { label: "Schvaľovanie faktúr zákazníkom", faktero: true, sf: false, manual: false },
     { label: "Skladové hospodárstvo", faktero: true, sf: false, manual: false },
     { label: "Kniha jázd + Commander GPS", faktero: true, sf: false, manual: false },
   ];
