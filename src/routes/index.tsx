@@ -1056,6 +1056,100 @@ function ComparisonSection() {
   );
 }
 
+function MobileAppSection() {
+  const items = [
+    { icon: ScanLine, title: "Skenovanie dokladov s AI OCR", text: "Odfotíte doklad — AI vyplní sumu, DPH, dodávateľa aj dátum." },
+    { icon: MapPin, title: "GPS tracking jázd", text: "Automatický záznam trás pre knihu jázd priamo z mobilu." },
+    { icon: BellRing, title: "Push notifikácie", text: "Okamžite viete, keď vám prišla platba alebo je faktúra po splatnosti." },
+    { icon: Wifi, title: "Offline režim", text: "Fakturujte aj bez signálu — po pripojení sa všetko synchronizuje." },
+  ];
+  return (
+    <section id="mobil" className="border-y border-border/60 bg-card/40">
+      <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              <Smartphone className="h-3 w-3" /> iOS & Android
+            </div>
+            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
+              Faktero v mobile — <span className="text-primary">fakturujte kdekoľvek</span>
+            </h2>
+            <p className="mt-5 max-w-lg text-muted-foreground">
+              iOS a Android appka s offline režimom, skenovaním dokladov a GPS knihou jázd.
+            </p>
+            <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+              {items.map((i) => (
+                <li key={i.title} className="rounded-xl border border-border bg-card p-4">
+                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary">
+                    <i.icon className="h-4 w-4" />
+                  </div>
+                  <div className="mt-3 text-sm font-semibold">{i.title}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{i.text}</div>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <button
+                type="button"
+                disabled
+                className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold text-muted-foreground opacity-70"
+              >
+                <Smartphone className="h-4 w-4" /> App Store
+                <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">Čoskoro</span>
+              </button>
+              <button
+                type="button"
+                disabled
+                className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold text-muted-foreground opacity-70"
+              >
+                <Smartphone className="h-4 w-4" /> Google Play
+                <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">Čoskoro</span>
+              </button>
+            </div>
+          </div>
+          <div className="relative mx-auto w-full max-w-sm">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] opacity-60 blur-3xl"
+              style={{ background: "var(--brand-gradient)" }}
+            />
+            <div className="relative rounded-[2.5rem] border-[10px] border-foreground/90 bg-background p-4 shadow-[var(--shadow-elegant)]">
+              <div className="mx-auto mb-3 h-1.5 w-16 rounded-full bg-foreground/20" />
+              <div className="space-y-3">
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Dnes</div>
+                  <div className="mt-1 text-sm font-semibold">3 nové platby · +2 340 €</div>
+                </div>
+                <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.08] p-3">
+                  <div className="flex items-center gap-2">
+                    <ScanLine className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <div className="text-sm font-semibold">Doklad naskenovaný</div>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">Shell · 62,40 € · DPH 23 %</div>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <div className="text-sm font-semibold">Kniha jázd</div>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">BA → TT · 68 km · automaticky</div>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <div className="flex items-center gap-2">
+                    <BellRing className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <div className="text-sm font-semibold">FA2026-0042 uhradená</div>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">Acme s.r.o. · 1 698,60 €</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FinalCta() {
   return (
     <section className="mx-auto max-w-7xl px-6 pb-24">
