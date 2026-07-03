@@ -1635,6 +1635,7 @@ function FaqSection() {
     { q: "Môžem prejsť zo SuperFaktúry?", a: "Áno. Faktero podporuje hromadný import faktúr, odberateľov a číselných radov zo SuperFaktúry, CSV alebo XML — bez straty histórie." },
     { q: "Máte API?", a: "Áno. REST API s test / live režimom, Bearer autentifikáciou, idempotenciou cez external_id a real-time webhookmi. Dostupné v pláne Business a Enterprise." },
     { q: "Budete podporovať eFaktúru?", a: "Áno. Pripravujeme štruktúrované XML (UBL 2.1), Peppol identifikátor a integráciu s Digitálnym poštárom tak, aby ste boli pripravení na 1.1.2027." },
+    { q: "Koľko stojí odoslanie eFaktúry?", a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero. Žiadne skryté poplatky za odoslanú faktúru." },
     { q: "Je možné exportovať do Pohody?", a: "Áno. XML export priamo do Pohody dostávate v každom pláne — účtovník dostane podklady jedným klikom." },
   ];
   return (
