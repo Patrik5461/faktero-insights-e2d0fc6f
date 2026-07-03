@@ -175,6 +175,7 @@ function Landing() {
         <EFakturaSection />
         <IntegrationsTrust />
         <AccountingSection />
+        <MobileAppSection />
         <ComparisonSection />
         <PricingSection />
         <FounderStory />
