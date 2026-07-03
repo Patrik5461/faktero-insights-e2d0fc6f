@@ -9,10 +9,10 @@ const INVOICING_PLANS = [
     period: "/ mesiac",
     tagline: "Pre živnostníkov a malé firmy — všetko podstatné bez limitu.",
     features: [
+      "eFaktúra zadarmo (Peppol)",
       "Neobmedzené faktúry",
       "2 používatelia + 1 účtovník (čítanie/export)",
       "1 firma",
-      "eFaktúra (Peppol)",
       "Opakované faktúry",
       "Bankové párovanie",
       "PDF s QR platbou",
@@ -27,6 +27,7 @@ const INVOICING_PLANS = [
     period: "/ mesiac",
     tagline: "Pre rastúce tímy bez stropov — API, webhooky a import.",
     features: [
+      "eFaktúra zadarmo (Peppol)",
       "Všetko zo Starter",
       "Neobmedzení používatelia",
       "Neobmedzené firmy",
@@ -43,6 +44,7 @@ const INVOICING_PLANS = [
     period: "",
     tagline: "Pre väčšie firmy s vlastným onboardingom a SLA.",
     features: [
+      "eFaktúra zadarmo (Peppol)",
       "Všetko z Premium",
       "SLA zmluva",
       "Dedikovaný account manager",
