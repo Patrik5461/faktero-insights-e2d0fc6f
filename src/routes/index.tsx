@@ -38,6 +38,7 @@ import {
   Webhook,
   Wifi,
   X,
+  Zap,
 } from "lucide-react";
 import { MarketingNav } from "@/components/faktero/MarketingNav";
 import { PublicSupportWidget } from "@/components/faktero/PublicSupportWidget";
