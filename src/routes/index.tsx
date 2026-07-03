@@ -6,26 +6,40 @@ import {
   ArrowUpRight,
   BadgeCheck,
   Banknote,
+  BellRing,
+  Blocks,
+  Boxes,
+  Building,
   Building2,
   Calculator,
   CheckCircle2,
   Code2,
+  CreditCard,
+  Database,
   Download,
   FileSpreadsheet,
   FileText,
   Landmark,
+  MapPin,
+  Minus,
   Quote,
   Receipt,
   Repeat,
+  Rocket,
+  ScanLine,
+  Send,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   TrendingUp,
   Upload,
+  UserPlus,
   Wallet,
+  Webhook,
+  Wifi,
+  X,
   Zap,
 } from "lucide-react";
-import { CreditCard, Database, Minus, Webhook, X, Boxes, MapPin } from "lucide-react";
-import { Building, Rocket, Send, UserPlus } from "lucide-react";
 import { MarketingNav } from "@/components/faktero/MarketingNav";
 import { PublicSupportWidget } from "@/components/faktero/PublicSupportWidget";
 import {
@@ -76,6 +90,12 @@ const features = [
   { icon: Repeat, title: "Opakované faktúry", text: "Mesačné a ročné šablóny — generujú a odosielajú sa automaticky bez vašej účasti." },
   { icon: Code2, title: "API a webhooky", text: "REST API s test / live režimom, idempotencia cez external_id a real-time webhooky." },
   { icon: CreditCard, title: "GoPay platby", text: "Online platby kartou a tlačidlami priamo z faktúry. Stav sa páruje cez webhook." },
+  { icon: Landmark, title: "Bankové párovanie", text: "Automatické párovanie platieb s faktúrami. Prepojenie s Tatra bankou, ČSOB, SLSP, VÚB a ďalšími bankami." },
+  { icon: Receipt, title: "Prijaté faktúry", text: "Evidujte výdavky a prijaté faktúry. Aging záväzkov, DPH na vstupe, export pre účtovníka." },
+  { icon: BellRing, title: "Upomienky", text: "Automatické upomienky po splatnosti. 3 úrovne, vlastné texty, prehľad odoslaných upomienok." },
+  { icon: BadgeCheck, title: "Schvaľovanie zákazníkom", text: "Zákazník schváli faktúru jedným kliknutím cez email. Bez registrácie, okamžite." },
+  { icon: Send, title: "Email šablóny", text: "Vlastné texty emailov pre faktúry, upomienky aj schvaľovanie. Slovenčina aj angličtina." },
+  { icon: Blocks, title: "Hromadné akcie", text: "Označte, odošlite alebo exportujte desiatky faktúr naraz. Ušetrite hodiny manuálnej práce." },
   { icon: Download, title: "Pohoda export", text: "XML export priamo do Pohody. Účtovník dostáva podklady stlačením jediného tlačidla." },
   { icon: Upload, title: "SuperFaktúra import", text: "Prejdite na Faktero bez straty histórie faktúr, odberateľov a číselných radov." },
   { icon: ShieldCheck, title: "eFaktúra 2027", text: "Štruktúrované XML, Peppol and Digitálny poštár. Sme pripravení, aby ste nemuseli vy." },
@@ -155,6 +175,7 @@ function Landing() {
         <EFakturaSection />
         <IntegrationsTrust />
         <AccountingSection />
+        <MobileAppSection />
         <ComparisonSection />
         <PricingSection />
         <FounderStory />
@@ -967,6 +988,11 @@ function ComparisonSection() {
     { label: "Opakované faktúry", faktero: true, sf: true, manual: false },
     { label: "GoPay platby", faktero: true, sf: "Plánované", manual: false },
     { label: "FinStat integrácia", faktero: true, sf: false, manual: false },
+    { label: "Bankové párovanie", faktero: true, sf: "Obmedzene", manual: false },
+    { label: "Prijaté faktúry", faktero: true, sf: true, manual: false },
+    { label: "Mobilná appka (iOS + Android)", faktero: true, sf: false, manual: false },
+    { label: "Upomienky po splatnosti", faktero: true, sf: "Obmedzene", manual: false },
+    { label: "Schvaľovanie faktúr zákazníkom", faktero: true, sf: false, manual: false },
     { label: "Skladové hospodárstvo", faktero: true, sf: false, manual: false },
     { label: "Kniha jázd + Commander GPS", faktero: true, sf: false, manual: false },
   ];
@@ -1025,6 +1051,100 @@ function ComparisonSection() {
         <p className="mt-6 text-center text-xs text-muted-foreground">
           Údaje k {new Date().toLocaleDateString("sk-SK", { month: "long", year: "numeric" })}. Funkcie konkurencie sa môžu meniť.
         </p>
+      </div>
+    </section>
+  );
+}
+
+function MobileAppSection() {
+  const items = [
+    { icon: ScanLine, title: "Skenovanie dokladov s AI OCR", text: "Odfotíte doklad — AI vyplní sumu, DPH, dodávateľa aj dátum." },
+    { icon: MapPin, title: "GPS tracking jázd", text: "Automatický záznam trás pre knihu jázd priamo z mobilu." },
+    { icon: BellRing, title: "Push notifikácie", text: "Okamžite viete, keď vám prišla platba alebo je faktúra po splatnosti." },
+    { icon: Wifi, title: "Offline režim", text: "Fakturujte aj bez signálu — po pripojení sa všetko synchronizuje." },
+  ];
+  return (
+    <section id="mobil" className="border-y border-border/60 bg-card/40">
+      <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              <Smartphone className="h-3 w-3" /> iOS & Android
+            </div>
+            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
+              Faktero v mobile — <span className="text-primary">fakturujte kdekoľvek</span>
+            </h2>
+            <p className="mt-5 max-w-lg text-muted-foreground">
+              iOS a Android appka s offline režimom, skenovaním dokladov a GPS knihou jázd.
+            </p>
+            <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+              {items.map((i) => (
+                <li key={i.title} className="rounded-xl border border-border bg-card p-4">
+                  <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary">
+                    <i.icon className="h-4 w-4" />
+                  </div>
+                  <div className="mt-3 text-sm font-semibold">{i.title}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{i.text}</div>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <button
+                type="button"
+                disabled
+                className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold text-muted-foreground opacity-70"
+              >
+                <Smartphone className="h-4 w-4" /> App Store
+                <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">Čoskoro</span>
+              </button>
+              <button
+                type="button"
+                disabled
+                className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold text-muted-foreground opacity-70"
+              >
+                <Smartphone className="h-4 w-4" /> Google Play
+                <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">Čoskoro</span>
+              </button>
+            </div>
+          </div>
+          <div className="relative mx-auto w-full max-w-sm">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -inset-8 -z-10 rounded-[3rem] opacity-60 blur-3xl"
+              style={{ background: "var(--brand-gradient)" }}
+            />
+            <div className="relative rounded-[2.5rem] border-[10px] border-foreground/90 bg-background p-4 shadow-[var(--shadow-elegant)]">
+              <div className="mx-auto mb-3 h-1.5 w-16 rounded-full bg-foreground/20" />
+              <div className="space-y-3">
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Dnes</div>
+                  <div className="mt-1 text-sm font-semibold">3 nové platby · +2 340 €</div>
+                </div>
+                <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.08] p-3">
+                  <div className="flex items-center gap-2">
+                    <ScanLine className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <div className="text-sm font-semibold">Doklad naskenovaný</div>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">Shell · 62,40 € · DPH 23 %</div>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <div className="text-sm font-semibold">Kniha jázd</div>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">BA → TT · 68 km · automaticky</div>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <div className="flex items-center gap-2">
+                    <BellRing className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <div className="text-sm font-semibold">FA2026-0042 uhradená</div>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">Acme s.r.o. · 1 698,60 €</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
