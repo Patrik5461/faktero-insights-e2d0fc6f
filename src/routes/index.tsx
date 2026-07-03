@@ -215,7 +215,7 @@ function Hero() {
           <div>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3 py-1 text-xs font-medium text-primary backdrop-blur">
               <Sparkles className="h-3 w-3" />
-              Pripravené na povinnú eFaktúru 1.1.2027
+              eFaktúra 2027 — zadarmo v každom pláne
             </div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Private Beta · Prijímame prvých testerov
@@ -741,23 +741,21 @@ function EFakturaSection() {
         <div className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              eFaktúra 2027
+              Pripravené na 2027 ✓
             </div>
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
-              eFaktúra <span className="text-primary">nie je PDF</span>.
+              eFaktúra <span className="text-primary">zadarmo</span> v každom pláne
             </h2>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Je to štruktúrovaný{" "}
-              <span className="font-semibold text-foreground">XML formát</span> pripravený pre
-              digitálnu výmenu dokladov cez sieť Peppol a Digitálny poštár. Od{" "}
-              <strong className="text-foreground">1. januára 2027</strong> bude povinný pre B2B a B2G.
+              Faktero automaticky odošle každú faktúru cez Peppol sieť. Žiadna extra
+              registrácia, žiadne skryté poplatky — <span className="font-semibold text-foreground">eFaktúra je zahrnutá v cene</span>.
             </p>
             <ul className="mt-8 space-y-3 text-sm">
               {[
-                "Strojovo čitateľný XML formát namiesto PDF prílohy.",
-                "Posiela sa cez sieť Peppol alebo Digitálneho poštára.",
-                "Povinnosť pre B2B a B2G vystavovanie od 1.1.2027.",
-                "Faktero sa pripravuje — vaše dáta budú pripravené tiež.",
+                "Automatické odoslanie cez sieť Peppol — bez extra krokov.",
+                "Žiadne poplatky za odoslanú eFaktúru, v každom pláne.",
+                "Strojovo čitateľný XML formát (UBL 2.1) namiesto PDF prílohy.",
+                "Pripravené na povinnosť pre B2B a B2G od 1.1.2027.",
               ].map((t) => (
                 <li key={t} className="flex items-start gap-2">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -1637,6 +1635,7 @@ function FaqSection() {
     { q: "Môžem prejsť zo SuperFaktúry?", a: "Áno. Faktero podporuje hromadný import faktúr, odberateľov a číselných radov zo SuperFaktúry, CSV alebo XML — bez straty histórie." },
     { q: "Máte API?", a: "Áno. REST API s test / live režimom, Bearer autentifikáciou, idempotenciou cez external_id a real-time webhookmi. Dostupné v pláne Business a Enterprise." },
     { q: "Budete podporovať eFaktúru?", a: "Áno. Pripravujeme štruktúrované XML (UBL 2.1), Peppol identifikátor a integráciu s Digitálnym poštárom tak, aby ste boli pripravení na 1.1.2027." },
+    { q: "Koľko stojí odoslanie eFaktúry?", a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero. Žiadne skryté poplatky za odoslanú faktúru." },
     { q: "Je možné exportovať do Pohody?", a: "Áno. XML export priamo do Pohody dostávate v každom pláne — účtovník dostane podklady jedným klikom." },
   ];
   return (

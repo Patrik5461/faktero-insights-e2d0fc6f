@@ -9,10 +9,10 @@ const INVOICING_PLANS = [
     period: "/ mesiac",
     tagline: "Pre živnostníkov a malé firmy — všetko podstatné bez limitu.",
     features: [
+      "eFaktúra zadarmo (Peppol)",
       "Neobmedzené faktúry",
       "2 používatelia + 1 účtovník (čítanie/export)",
       "1 firma",
-      "eFaktúra (Peppol)",
       "Opakované faktúry",
       "Bankové párovanie",
       "PDF s QR platbou",
@@ -27,6 +27,7 @@ const INVOICING_PLANS = [
     period: "/ mesiac",
     tagline: "Pre rastúce tímy bez stropov — API, webhooky a import.",
     features: [
+      "eFaktúra zadarmo (Peppol)",
       "Všetko zo Starter",
       "Neobmedzení používatelia",
       "Neobmedzené firmy",
@@ -43,6 +44,7 @@ const INVOICING_PLANS = [
     period: "",
     tagline: "Pre väčšie firmy s vlastným onboardingom a SLA.",
     features: [
+      "eFaktúra zadarmo (Peppol)",
       "Všetko z Premium",
       "SLA zmluva",
       "Dedikovaný account manager",
@@ -85,6 +87,7 @@ const LOGBOOK_PLANS = [
 ];
 
 const FAQ = [
+  { q: "Koľko stojí odoslanie eFaktúry?", a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero. Žiadne skryté poplatky za odoslanú faktúru." },
   { q: "Je naozaj 2 Mesiace zdarma bez karty?", a: "Áno. Začnete bez platobnej karty a po skúšobnej dobe sa rozhodnete, či si vyberiete platený plán." },
   { q: "Môžem kedykoľvek zmeniť plán?", a: "Áno, plán meníte v sekcii Predplatné. Rozdiel doúčtujeme alikvótne." },
   { q: "Môžem mať fakturáciu aj knihu jázd súčasne?", a: "Áno — sú to dva samostatné produkty, ale viete ich kombinovať v jednom účte." },
