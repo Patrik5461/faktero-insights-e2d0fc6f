@@ -110,7 +110,9 @@ function StatCard({
 
 function AdminOverviewPage() {
   const fetchOverview = useServerFn(getAdminOverview);
+  const fetchUsage = useServerFn(getSupabaseUsage);
   const [data, setData] = useState<Stats | null>(null);
+  const [usage, setUsage] = useState<Usage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -119,8 +121,17 @@ function AdminOverviewPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetchOverview();
-        if (!cancelled) setData(res);
+        const [res, u] = await Promise.all([
+          fetchOverview(),
+          fetchUsage().catch((e) => {
+            console.error("usage fetch failed", e);
+            return null;
+          }),
+        ]);
+        if (!cancelled) {
+          setData(res);
+          setUsage(u as Usage | null);
+        }
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Chyba pri načítaní");
       } finally {
@@ -130,7 +141,7 @@ function AdminOverviewPage() {
     return () => {
       cancelled = true;
     };
-  }, [fetchOverview]);
+  }, [fetchOverview, fetchUsage]);
 
   const suspendedCount =
     data ? data.totalCompanies - data.activeCompanies : null;
