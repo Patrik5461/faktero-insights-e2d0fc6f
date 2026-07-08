@@ -766,6 +766,36 @@ export type Database = {
         }
         Relationships: []
       }
+      company_cache: {
+        Row: {
+          data: Json | null
+          fetched_at: string
+          ico: string
+          raw: Json | null
+          region: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          data?: Json | null
+          fetched_at?: string
+          ico: string
+          raw?: Json | null
+          region?: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          data?: Json | null
+          fetched_at?: string
+          ico?: string
+          raw?: Json | null
+          region?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       company_lookup_logs: {
         Row: {
           cached: boolean
