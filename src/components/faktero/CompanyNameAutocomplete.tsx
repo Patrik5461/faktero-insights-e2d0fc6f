@@ -27,6 +27,7 @@ export function CompanyNameAutocomplete({
   placeholder,
 }: Props) {
   const [enabled, setEnabled] = useState(false);
+  const [nameSearchDisabled, setNameSearchDisabled] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
