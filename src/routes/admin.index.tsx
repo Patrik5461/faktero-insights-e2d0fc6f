@@ -220,6 +220,108 @@ function AdminOverviewPage() {
             />
           </div>
         ) : null}
+
+        {usage && (
+          <div className="mt-8 space-y-4">
+            <h2 className="text-lg font-semibold">Supabase využitie</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <UsageBar
+                icon={Database}
+                label="Databáza (Free 500 MB)"
+                used={usage.db.used_bytes}
+                limit={usage.db.limit_bytes}
+              />
+              <UsageBar
+                icon={HardDrive}
+                label="Storage (Free 1 GB)"
+                used={usage.storage.used_bytes}
+                limit={usage.storage.limit_bytes}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+                  <Table2 className="h-4 w-4 text-muted-foreground" />
+                  Top 5 najväčších tabuliek
+                </div>
+                <div className="space-y-2">
+                  {usage.db.tables.slice(0, 5).map((t) => {
+                    const pct =
+                      usage.db.used_bytes > 0
+                        ? (t.size_bytes / usage.db.used_bytes) * 100
+                        : 0;
+                    return (
+                      <div key={t.table} className="text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs">{t.table}</span>
+                          <span className="tabular-nums text-muted-foreground">
+                            {t.size_pretty}
+                          </span>
+                        </div>
+                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full bg-primary/60"
+                            style={{ width: `${Math.min(100, pct)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {usage.db.tables.length === 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      Dáta nedostupné.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  Počty záznamov
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {Object.entries(usage.row_counts).map(([k, v]) => (
+                    <div
+                      key={k}
+                      className="flex items-center justify-between rounded-md bg-muted/40 px-2 py-1.5"
+                    >
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {k}
+                      </span>
+                      <span className="font-semibold tabular-nums">
+                        {v.toLocaleString("sk-SK")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {usage.storage.buckets.length > 0 && (
+                  <>
+                    <div className="mt-4 mb-2 flex items-center gap-2 text-sm font-medium">
+                      <HardDrive className="h-4 w-4 text-muted-foreground" />
+                      Storage buckety
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      {usage.storage.buckets.map((b) => (
+                        <div
+                          key={b.name}
+                          className="flex items-center justify-between rounded-md bg-muted/40 px-2 py-1.5"
+                        >
+                          <span className="font-mono text-xs">{b.name}</span>
+                          <span className="tabular-nums text-muted-foreground">
+                            {b.files} · {formatBytes(b.size_bytes)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </AdminPageBody>
     </>
   );
