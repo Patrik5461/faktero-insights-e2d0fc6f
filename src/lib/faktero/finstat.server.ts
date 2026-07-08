@@ -156,7 +156,7 @@ export async function finstatAutocomplete(
     if (res.status === 402 || res.status === 403) {
       return {
         status: "error",
-        message: "Autorizácia FinStat API zlyhala. Skontrolujte API kľúče alebo spôsob generovania hash.",
+        message: "autocomplete_not_entitled",
       };
     }
     if (res.status === 404) return { status: "ok", data: [] };

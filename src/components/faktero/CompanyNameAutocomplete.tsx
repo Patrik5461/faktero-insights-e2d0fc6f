@@ -27,6 +27,7 @@ export function CompanyNameAutocomplete({
   placeholder,
 }: Props) {
   const [enabled, setEnabled] = useState(false);
+  const [nameSearchDisabled, setNameSearchDisabled] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +59,7 @@ export function CompanyNameAutocomplete({
 
   // Debounced name search
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || nameSearchDisabled) return;
     const q = (value ?? "").trim();
     if (q.length < 3) {
       setItems([]);
@@ -83,6 +84,12 @@ export function CompanyNameAutocomplete({
           setItems(res.data);
           setError(null);
           setOpen(true);
+        } else if (res.message === "autocomplete_not_entitled") {
+          // FinStat plan doesn't include autocomplete → silently disable name search.
+          setItems([]);
+          setError(null);
+          setOpen(false);
+          setNameSearchDisabled(true);
         } else {
           setItems([]);
           setError("FinStat momentálne neodpovedá.");
@@ -97,7 +104,7 @@ export function CompanyNameAutocomplete({
       }
     }, 600);
     return () => clearTimeout(handle);
-  }, [value, enabled]);
+  }, [value, enabled, nameSearchDisabled]);
 
   // Close on outside click
   useEffect(() => {
