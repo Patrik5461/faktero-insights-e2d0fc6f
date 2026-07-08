@@ -72,6 +72,7 @@ export const Route = createFileRoute("/admin/")({
 });
 
 type Stats = Awaited<ReturnType<typeof getAdminOverview>>;
+type Usage = Awaited<ReturnType<typeof getSupabaseUsage>>;
 
 function StatCard({
   icon: Icon,
