@@ -451,8 +451,8 @@ function mapFinancials(idx: Map<string, unknown>): FinancialsSummary {
   return null;
 }
 
-function mapRiskIndicators(idx: Map<string, unknown>): Record<string, unknown> | null {
-  const out: Record<string, unknown> = {};
+function mapRiskIndicators(idx: Map<string, unknown>): RiskIndicators | null {
+  const out: RiskIndicators = {};
   const debtor = pickBool(idx, "IsDebtor", "Debtor");
   const paidVat = pickBool(idx, "IsPaidVat", "IsVatPayer");
   const inLiquidation = pickBool(idx, "InLiquidation", "IsInLiquidation");
