@@ -15,7 +15,9 @@ type Props = {
 };
 
 export function IcoLookupButton({ ico, onResult, className, autoLookup = true }: Props) {
-  const [enabled, setEnabled] = useState(false);
+  // Optimistic default: show the button immediately. Server config check
+  // only downgrades to `false` if FinStat is confirmed missing.
+  const [enabled, setEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [missing, setMissing] = useState<null | { dic: boolean; ic_dph: boolean }>(null);
   const [success, setSuccess] = useState<string | null>(null);
