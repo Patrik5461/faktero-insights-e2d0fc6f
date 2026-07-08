@@ -31,6 +31,15 @@ export type StatutoryRepresentative = {
   from?: string | null;
 };
 
+export type RiskIndicators = {
+  debtor?: boolean;
+  paidVat?: boolean;
+  inLiquidation?: boolean;
+  bankrupt?: boolean;
+  score?: number;
+  suspended?: string;
+};
+
 export type NormalizedCompany = {
   ico: string;
   name: string;
@@ -45,7 +54,7 @@ export type NormalizedCompany = {
   registrationDate: string | null;
   vatStatus: VatStatus;
   financials: FinancialsSummary;
-  riskIndicators: Record<string, unknown> | null;
+  riskIndicators: RiskIndicators | null;
   statutoryRepresentatives: StatutoryRepresentative[];
 };
 
