@@ -108,22 +108,27 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
     return () => clearTimeout(handle);
   }, [ico, enabled, autoLookup]);
 
-  if (!enabled) return null;
-
   return (
     <div className="flex flex-col items-start gap-1">
       <button
         type="button"
         onClick={() => run(false)}
-        disabled={loading}
+        disabled={loading || !enabled}
+        title={!enabled ? "FinStat API nie je nakonfigurované na serveri." : undefined}
         className={
           className ??
-          "inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-2 text-xs hover:bg-secondary disabled:opacity-50"
+          "inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-2 text-xs hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
         }
       >
         {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
         {loading ? "Vyhľadávam vo FinState..." : "Načítať podľa IČO"}
       </button>
+      {!enabled && (
+        <p className="flex items-start gap-1 text-[11px] text-muted-foreground">
+          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+          FinStat API nie je nakonfigurované.
+        </p>
+      )}
       {success && !error && (
         <p className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
           <CheckCircle2 className="h-3 w-3 shrink-0" />
