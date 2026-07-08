@@ -135,6 +135,8 @@ export async function finstatAutocomplete(
     json: "true",
   }).toString()}`;
 
+  console.log(`[finstat-ac] → region=${region} query=${JSON.stringify(q)} url=${FINSTAT_BASE[region]}/autocomplete?query=${encodeURIComponent(q)}&apikey=${maskSecret(apiKey)}&hash=${hash.slice(0, 8)}…&json=true`);
+
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 8_000);
   let res: Response;
@@ -151,18 +153,12 @@ export async function finstatAutocomplete(
   }
   clearTimeout(t);
 
-
-
   const text = await res.text();
+  console.log(`[finstat-ac] ← region=${region} status=${res.status} ct="${res.headers.get("content-type") ?? ""}" bytes=${text.length} preview=${JSON.stringify(text.slice(0, 300))}`);
+
   if (!res.ok) {
-    console.warn(
-      `[finstat-ac] non-ok region=${region} status=${res.status} query="${q}" ct="${res.headers.get("content-type") ?? ""}" preview=${JSON.stringify(text.slice(0, 400))}`,
-    );
     if (res.status === 402 || res.status === 403) {
-      return {
-        status: "error",
-        message: "autocomplete_not_entitled",
-      };
+      return { status: "error", message: "autocomplete_not_entitled" };
     }
     if (res.status === 404) return { status: "ok", data: [] };
     return { status: "error", message: `http_${res.status}` };
@@ -176,7 +172,10 @@ export async function finstatAutocomplete(
   if (!parsed && (ct.includes("xml") || text.trim().startsWith("<"))) {
     parsed = parseAutocompleteXml(text);
   }
-  if (!parsed) return { status: "error", message: "invalid_response" };
+  if (!parsed) {
+    console.warn(`[finstat-ac] invalid_response region=${region} ct="${ct}" preview=${JSON.stringify(text.slice(0, 200))}`);
+    return { status: "error", message: "invalid_response" };
+  }
 
   const rows: unknown[] = Array.isArray(parsed)
     ? parsed
@@ -184,6 +183,8 @@ export async function finstatAutocomplete(
     : Array.isArray((parsed as { results?: unknown[] }).results) ? (parsed as { results: unknown[] }).results
     : Array.isArray((parsed as { SuggestResult?: unknown[] }).SuggestResult) ? (parsed as { SuggestResult: unknown[] }).SuggestResult
     : [];
+
+  console.log(`[finstat-ac] parsed region=${region} rowKeys=${!Array.isArray(parsed) && parsed && typeof parsed === "object" ? Object.keys(parsed as object).join(",") : "(array)"} rows=${rows.length} firstRow=${JSON.stringify(rows[0] ?? null).slice(0, 300)}`);
 
   const data: FinstatSuggestion[] = rows
     .map((r) => {
@@ -201,6 +202,7 @@ export async function finstatAutocomplete(
     .filter((r) => r.ico && r.name)
     .slice(0, 10);
 
+  console.log(`[finstat-ac] result region=${region} suggestions=${data.length}`);
   return { status: "ok", data };
 }
 
