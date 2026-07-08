@@ -124,6 +124,15 @@ export function CompanyNameAutocomplete({
     try {
       const res = await lookup({ data: { ico: s.ico } });
       if (res.status === "ok") {
+        // Force the official company name into the input, regardless of what
+        // the user typed as the search query. Update lastQueryRef so the
+        // debounced search effect doesn't immediately re-trigger for the
+        // newly-set name.
+        const officialName = res.data.name || s.name;
+        if (officialName) {
+          lastQueryRef.current = officialName;
+          onChange(officialName);
+        }
         onPick(res.data, { auto: true });
         setItems([]);
         setError(null);
