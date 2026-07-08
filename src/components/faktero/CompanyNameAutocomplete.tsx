@@ -59,7 +59,7 @@ export function CompanyNameAutocomplete({
 
   // Debounced name search
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || nameSearchDisabled) return;
     const q = (value ?? "").trim();
     if (q.length < 3) {
       setItems([]);
