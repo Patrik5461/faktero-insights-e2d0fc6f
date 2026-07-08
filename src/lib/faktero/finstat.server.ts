@@ -149,13 +149,25 @@ export async function finstatAutocomplete(
   clearTimeout(t);
 
   const text = await res.text();
-  if (res.status === 402 || res.status === 403) {
-    return {
-      status: "error",
-      message: "Autorizácia FinStat API zlyhala. Skontrolujte API kľúče alebo spôsob generovania hash.",
-    };
+  if (!res.ok) {
+    if (isDev()) {
+      console.warn("[finstat-ac] non-ok response", {
+        region,
+        query: q,
+        status: res.status,
+        urlMasked: `${FINSTAT_BASE[region]}/autocomplete?query=${encodeURIComponent(q)}&apikey=${maskSecret(apiKey)}&hash=${hash}`,
+        preview: text.slice(0, 300),
+      });
+    }
+    if (res.status === 402 || res.status === 403) {
+      return {
+        status: "error",
+        message: "Autorizácia FinStat API zlyhala. Skontrolujte API kľúče alebo spôsob generovania hash.",
+      };
+    }
+    if (res.status === 404) return { status: "ok", data: [] };
+    return { status: "error", message: `http_${res.status}` };
   }
-  if (!res.ok) return { status: "error", message: `http_${res.status}` };
 
   const ct = (res.headers.get("content-type") ?? "").toLowerCase();
   let parsed: unknown = null;
