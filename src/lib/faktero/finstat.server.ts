@@ -150,15 +150,9 @@ export async function finstatAutocomplete(
 
   const text = await res.text();
   if (!res.ok) {
-    if (isDev()) {
-      console.warn("[finstat-ac] non-ok response", {
-        region,
-        query: q,
-        status: res.status,
-        urlMasked: `${FINSTAT_BASE[region]}/autocomplete?query=${encodeURIComponent(q)}&apikey=${maskSecret(apiKey)}&hash=${hash}`,
-        preview: text.slice(0, 300),
-      });
-    }
+    console.warn(
+      `[finstat-ac] non-ok region=${region} status=${res.status} query="${q}" ct="${res.headers.get("content-type") ?? ""}" preview=${JSON.stringify(text.slice(0, 400))}`,
+    );
     if (res.status === 402 || res.status === 403) {
       return {
         status: "error",
