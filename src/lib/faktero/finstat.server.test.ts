@@ -63,8 +63,8 @@ describe("finstatLookup", () => {
 
     const u = new URL(capturedUrl);
     expect(u.searchParams.get("ico")).toBe(ICO);
-    expect(u.searchParams.get("apiKey")).toBe(PUB);
-    expect(u.searchParams.get("Hash")).toBe(expectedHash);
+    expect(u.searchParams.get("apikey")).toBe(PUB);
+    expect(u.searchParams.get("hash")).toBe(expectedHash);
     expect(u.searchParams.get("StationId")).toBeNull();
     expect(u.searchParams.get("StationName")).toBeNull();
   });
