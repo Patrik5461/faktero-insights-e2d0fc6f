@@ -1067,10 +1067,10 @@ function MobileAppSection() {
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              <Smartphone className="h-3 w-3" /> iOS & Android
+              <Smartphone className="h-3 w-3" /> iOS & Android (pripravujeme)
             </div>
-            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
-              Faktero v mobile — <span className="text-primary">fakturujte kdekoľvek</span>
+            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl whitespace-pre-line">
+              Faktero v mobile{"\n"}<span className="text-primary">fakturujte kdekoľvek</span>
             </h2>
             <p className="mt-5 max-w-lg text-muted-foreground">
               iOS a Android appka s offline režimom, skenovaním dokladov a GPS knihou jázd.
