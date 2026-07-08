@@ -84,6 +84,12 @@ export function CompanyNameAutocomplete({
           setItems(res.data);
           setError(null);
           setOpen(true);
+        } else if (res.message === "autocomplete_not_entitled") {
+          // FinStat plan doesn't include autocomplete → silently disable name search.
+          setItems([]);
+          setError(null);
+          setOpen(false);
+          setNameSearchDisabled(true);
         } else {
           setItems([]);
           setError("FinStat momentálne neodpovedá.");
