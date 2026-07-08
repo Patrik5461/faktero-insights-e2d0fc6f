@@ -126,19 +126,29 @@ export async function finstatAutocomplete(
   if (q.length < 3) return { status: "ok", data: [] };
 
   const hash = buildHash(apiKey, privateKey, q);
-  const url = `${FINSTAT_BASE[region]}/autocomplete?${new URLSearchParams({
+  // FinStat official client posts autocomplete as form-urlencoded body with
+  // camelCase field names (apiKey / Hash), not GET query params. Detail
+  // tolerates GET+lowercase, autocomplete does not.
+  const url = `${FINSTAT_BASE[region]}/autocomplete.json`;
+  const body = new URLSearchParams({
+    apiKey,
+    Hash: hash,
+    StationId: "",
+    StationName: "",
     query: q,
-    apikey: apiKey,
-    hash,
-  }).toString()}`;
+  });
 
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 8_000);
   let res: Response;
   try {
     res = await fetch(url, {
-      method: "GET",
-      headers: { Accept: "application/json, application/xml;q=0.9, */*;q=0.5" },
+      method: "POST",
+      headers: {
+        Accept: "application/json, application/xml;q=0.9, */*;q=0.5",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
       signal: ctrl.signal,
     });
   } catch (e) {
@@ -147,6 +157,7 @@ export async function finstatAutocomplete(
     return { status: "error", message: "network" };
   }
   clearTimeout(t);
+
 
   const text = await res.text();
   if (!res.ok) {
