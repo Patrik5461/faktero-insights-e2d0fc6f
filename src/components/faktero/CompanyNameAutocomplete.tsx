@@ -80,6 +80,7 @@ export function CompanyNameAutocomplete({
       setError(null);
       try {
         const res = await search({ data: { query: q } });
+        console.log("[CompanyNameAutocomplete] search response", res);
         if (res.status === "ok") {
           setItems(res.data);
           setError(null);
@@ -95,7 +96,8 @@ export function CompanyNameAutocomplete({
           setError("FinStat momentálne neodpovedá.");
           setOpen(true);
         }
-      } catch {
+      } catch (err) {
+        console.warn("[CompanyNameAutocomplete] search error", err);
         setItems([]);
         setError("FinStat momentálne neodpovedá.");
         setOpen(true);
@@ -152,7 +154,7 @@ export function CompanyNameAutocomplete({
         className={className ?? "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"}
         autoComplete="off"
       />
-      {enabled && open && (loading || error || items.length > 0) && (
+      {enabled && open && (value ?? "").trim().length >= 3 && (
         <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto rounded-md border border-border bg-popover shadow-lg">
           {loading && (
             <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
