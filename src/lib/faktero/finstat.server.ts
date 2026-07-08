@@ -126,29 +126,22 @@ export async function finstatAutocomplete(
   if (q.length < 3) return { status: "ok", data: [] };
 
   const hash = buildHash(apiKey, privateKey, q);
-  // FinStat official client posts autocomplete as form-urlencoded body with
-  // camelCase field names (apiKey / Hash), not GET query params. Detail
-  // tolerates GET+lowercase, autocomplete does not.
-  const url = `${FINSTAT_BASE[region]}/autocomplete.json`;
-  const body = new URLSearchParams({
-    apiKey,
-    Hash: hash,
-    StationId: "",
-    StationName: "",
+  // GET /api/autocomplete?query=...&apikey=...&hash=...&json=true
+  // Hash base: SomeSalt+{apiKey}+{privateKey}++{query}+ended  (SHA-256 lowercase hex)
+  const url = `${FINSTAT_BASE[region]}/autocomplete?${new URLSearchParams({
     query: q,
-  });
+    apikey: apiKey,
+    hash,
+    json: "true",
+  }).toString()}`;
 
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 8_000);
   let res: Response;
   try {
     res = await fetch(url, {
-      method: "POST",
-      headers: {
-        Accept: "application/json, application/xml;q=0.9, */*;q=0.5",
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: body.toString(),
+      method: "GET",
+      headers: { Accept: "application/json, application/xml;q=0.9, */*;q=0.5" },
       signal: ctrl.signal,
     });
   } catch (e) {
@@ -157,6 +150,7 @@ export async function finstatAutocomplete(
     return { status: "error", message: "network" };
   }
   clearTimeout(t);
+
 
 
   const text = await res.text();
