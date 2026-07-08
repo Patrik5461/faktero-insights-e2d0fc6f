@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHash } from "crypto";
-import { finstatLookup } from "./finstat.server";
+import { finstatLookup, finstatAutocomplete } from "./finstat.server";
 
 const ICO = "12345678";
 const PUB = "pubkey";
