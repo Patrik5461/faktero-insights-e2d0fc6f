@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { getAdminOverview } from "@/lib/faktero/admin.functions";
+import { getSupabaseUsage } from "@/lib/faktero/admin-usage.functions";
 import {
   Building2,
   Users,
@@ -14,7 +15,56 @@ import {
   AlertTriangle,
   Banknote,
   Clock,
+  Database,
+  HardDrive,
+  Table2,
 } from "lucide-react";
+
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes < 1024) return `${bytes ?? 0} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  if (mb < 1024) return `${mb.toFixed(1)} MB`;
+  return `${(mb / 1024).toFixed(2)} GB`;
+}
+
+function UsageBar({
+  icon: Icon,
+  label,
+  used,
+  limit,
+}: {
+  icon: any;
+  label: string;
+  used: number;
+  limit: number;
+}) {
+  const pct = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+  const tone = pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-amber-500" : "bg-emerald-500";
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <Icon className="h-4 w-4" />
+          {label}
+        </span>
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {pct.toFixed(1)}%
+        </span>
+      </div>
+      <div className="mt-2 text-lg font-semibold tabular-nums">
+        {formatBytes(used)}{" "}
+        <span className="text-sm font-normal text-muted-foreground">
+          / {formatBytes(limit)}
+        </span>
+      </div>
+      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
+        <div className={`h-full ${tone} transition-all`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({ meta: [{ title: "Admin · Prehľad — Faktero" }] }),
