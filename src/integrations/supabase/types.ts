@@ -4038,6 +4038,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_db_usage_stats: { Args: never; Returns: Json }
       apply_stock_movement: {
         Args: {
           _company_id: string
