@@ -104,7 +104,7 @@ export function CompanyNameAutocomplete({
       }
     }, 600);
     return () => clearTimeout(handle);
-  }, [value, enabled]);
+  }, [value, enabled, nameSearchDisabled]);
 
   // Close on outside click
   useEffect(() => {
