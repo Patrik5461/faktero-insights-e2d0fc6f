@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Check, CreditCard, Crown, ShieldCheck, Zap, Loader2, Info } from "lucide-react";
+import { Check, CreditCard, Crown, ShieldCheck, Zap, Loader2, Info, FileText, Car } from "lucide-react";
 import { getActiveCompanyId, fetchMyCompanies } from "@/lib/faktero/active-company";
 import {
   listPlans,
@@ -19,6 +19,43 @@ import {
 } from "@/lib/faktero/billing.functions";
 import { plDni } from "@/lib/faktero/plan-enforcement";
 import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { getActiveProduct } from "@/lib/faktero/active-product";
+
+type ProductMode = "invoicing" | "logbook" | "both";
+type ProductTab = "invoicing" | "logbook";
+
+const LOGBOOK_PLANS = [
+  {
+    slug: "logbook_mini",
+    name: "Kniha jázd Mini",
+    price: "5 €",
+    tagline: "Pre živnostníkov s jedným či dvoma vozidlami.",
+    features: [
+      "Do 2 vozidiel",
+      "Manuálne aj GPS jazdy",
+      "Mesačné prehľady a exporty",
+      "PDF kniha jázd",
+      "E-mail podpora",
+    ],
+    featured: false,
+  },
+  {
+    slug: "logbook_pro",
+    name: "Kniha jázd Pro",
+    price: "9 €",
+    tagline: "Pre firmy s flotilou a GPS integráciami.",
+    features: [
+      "Neobmedzene vozidiel",
+      "Commander GPS integrácia",
+      "Tesla Fleet API",
+      "Automatické importy jázd",
+      "Pokročilé reporty",
+      "Prioritná podpora",
+    ],
+    featured: true,
+  },
+];
 
 export const Route = createFileRoute("/_authenticated/predplatne")({
   head: () => ({ meta: [{ title: "Predplatné — Faktero" }] }),
