@@ -213,12 +213,14 @@ function Hero() {
       <div className="mx-auto max-w-7xl px-6 pb-20 pt-16 md:pb-28 md:pt-24">
         <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
           <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3 py-1 text-xs font-medium text-primary backdrop-blur">
-              <Sparkles className="h-3 w-3" />
-              eFaktúra 2027 — zadarmo v každom pláne
-            </div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Private Beta · Prijímame prvých testerov
+            <div className="mb-6 flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3 py-1 text-xs font-medium text-primary backdrop-blur">
+                <Sparkles className="h-3 w-3" />
+                eFaktúra 2027 — zadarmo v každom pláne
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Private Beta · Prijímame prvých testerov
+              </div>
             </div>
             <h1 className="text-[2.5rem] font-semibold leading-[1.02] tracking-[-0.03em] text-foreground sm:text-5xl md:text-6xl lg:text-[4.25rem]">
               Fakturácia pripravená na{" "}
