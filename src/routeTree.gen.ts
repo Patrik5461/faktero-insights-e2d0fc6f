@@ -13,11 +13,13 @@ import { Route as VyvojariRouteImport } from './routes/vyvojari'
 import { Route as UctovniciRouteImport } from './routes/uctovnici'
 import { Route as RegistraciaRouteImport } from './routes/registracia'
 import { Route as PrihlasenieRouteImport } from './routes/prihlasenie'
+import { Route as ObjednavkaRouteImport } from './routes/objednavka'
 import { Route as KontaktRouteImport } from './routes/kontakt'
 import { Route as FunkcieRouteImport } from './routes/funkcie'
 import { Route as EfakturaciaRouteImport } from './routes/efakturacia'
 import { Route as CennikRouteImport } from './routes/cennik'
 import { Route as BlogRouteImport } from './routes/blog'
+import { Route as AktivovatRouteImport } from './routes/aktivovat'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -186,6 +188,11 @@ const PrihlasenieRoute = PrihlasenieRouteImport.update({
   path: '/prihlasenie',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ObjednavkaRoute = ObjednavkaRouteImport.update({
+  id: '/objednavka',
+  path: '/objednavka',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KontaktRoute = KontaktRouteImport.update({
   id: '/kontakt',
   path: '/kontakt',
@@ -209,6 +216,11 @@ const CennikRoute = CennikRouteImport.update({
 const BlogRoute = BlogRouteImport.update({
   id: '/blog',
   path: '/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AktivovatRoute = AktivovatRouteImport.update({
+  id: '/aktivovat',
+  path: '/aktivovat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -1005,11 +1017,13 @@ const ApiV1InvoicesIdCancelRoute = ApiV1InvoicesIdCancelRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/aktivovat': typeof AktivovatRoute
   '/blog': typeof BlogRoute
   '/cennik': typeof CennikRoute
   '/efakturacia': typeof EfakturaciaRouteWithChildren
   '/funkcie': typeof FunkcieRouteWithChildren
   '/kontakt': typeof KontaktRoute
+  '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
@@ -1161,9 +1175,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/aktivovat': typeof AktivovatRoute
   '/blog': typeof BlogRoute
   '/cennik': typeof CennikRoute
   '/kontakt': typeof KontaktRoute
+  '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
@@ -1313,11 +1329,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/aktivovat': typeof AktivovatRoute
   '/blog': typeof BlogRoute
   '/cennik': typeof CennikRoute
   '/efakturacia': typeof EfakturaciaRouteWithChildren
   '/funkcie': typeof FunkcieRouteWithChildren
   '/kontakt': typeof KontaktRoute
+  '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
@@ -1472,11 +1490,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/aktivovat'
     | '/blog'
     | '/cennik'
     | '/efakturacia'
     | '/funkcie'
     | '/kontakt'
+    | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
     | '/uctovnici'
@@ -1628,9 +1648,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/aktivovat'
     | '/blog'
     | '/cennik'
     | '/kontakt'
+    | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
     | '/ai-asistent'
@@ -1779,11 +1801,13 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/admin'
+    | '/aktivovat'
     | '/blog'
     | '/cennik'
     | '/efakturacia'
     | '/funkcie'
     | '/kontakt'
+    | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
     | '/uctovnici'
@@ -1938,11 +1962,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  AktivovatRoute: typeof AktivovatRoute
   BlogRoute: typeof BlogRoute
   CennikRoute: typeof CennikRoute
   EfakturaciaRoute: typeof EfakturaciaRouteWithChildren
   FunkcieRoute: typeof FunkcieRouteWithChildren
   KontaktRoute: typeof KontaktRoute
+  ObjednavkaRoute: typeof ObjednavkaRoute
   PrihlasenieRoute: typeof PrihlasenieRoute
   RegistraciaRoute: typeof RegistraciaRoute
   UctovniciRoute: typeof UctovniciRouteWithChildren
@@ -2021,6 +2047,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrihlasenieRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/objednavka': {
+      id: '/objednavka'
+      path: '/objednavka'
+      fullPath: '/objednavka'
+      preLoaderRoute: typeof ObjednavkaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/kontakt': {
       id: '/kontakt'
       path: '/kontakt'
@@ -2054,6 +2087,13 @@ declare module '@tanstack/react-router' {
       path: '/blog'
       fullPath: '/blog'
       preLoaderRoute: typeof BlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aktivovat': {
+      id: '/aktivovat'
+      path: '/aktivovat'
+      fullPath: '/aktivovat'
+      preLoaderRoute: typeof AktivovatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -3520,11 +3560,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  AktivovatRoute: AktivovatRoute,
   BlogRoute: BlogRoute,
   CennikRoute: CennikRoute,
   EfakturaciaRoute: EfakturaciaRouteWithChildren,
   FunkcieRoute: FunkcieRouteWithChildren,
   KontaktRoute: KontaktRoute,
+  ObjednavkaRoute: ObjednavkaRoute,
   PrihlasenieRoute: PrihlasenieRoute,
   RegistraciaRoute: RegistraciaRoute,
   UctovniciRoute: UctovniciRouteWithChildren,
@@ -3575,3 +3617,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
