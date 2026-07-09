@@ -531,15 +531,22 @@ function MiniApiStatusCard() {
 function TrustRow() {
   return (
     <section className="border-y border-border/60 bg-card/40 backdrop-blur">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-6 py-8 sm:grid-cols-3 md:py-10 lg:grid-cols-6">
-        {trustMetrics.map(({ label, icon: Icon }) => (
-          <div key={label} className="flex items-center gap-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-              <Icon className="h-4 w-4" />
+      <div className="mx-auto max-w-7xl px-6 py-8 md:py-10">
+        <div className="grid grid-cols-2 items-center gap-x-4 gap-y-8 sm:grid-cols-3 lg:flex lg:justify-between">
+          {trustMetrics.map(({ label, icon: Icon }) => (
+            <div
+              key={label}
+              className="group flex items-center justify-start gap-3"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <Icon className="h-5 w-5" />
+              </div>
+              <span className="whitespace-nowrap text-[15px] font-medium text-foreground">
+                {label}
+              </span>
             </div>
-            <span className="text-sm font-semibold text-foreground">{label}</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
