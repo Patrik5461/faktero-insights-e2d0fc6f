@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Check, CreditCard, Crown, ShieldCheck, Zap, Loader2, Info } from "lucide-react";
+import { Check, CreditCard, Crown, ShieldCheck, Zap, Loader2, Info, FileText, Car } from "lucide-react";
 import { getActiveCompanyId, fetchMyCompanies } from "@/lib/faktero/active-company";
 import {
   listPlans,
@@ -19,6 +19,43 @@ import {
 } from "@/lib/faktero/billing.functions";
 import { plDni } from "@/lib/faktero/plan-enforcement";
 import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { getActiveProduct } from "@/lib/faktero/active-product";
+
+type ProductMode = "invoicing" | "logbook" | "both";
+type ProductTab = "invoicing" | "logbook";
+
+const LOGBOOK_PLANS = [
+  {
+    slug: "logbook_mini",
+    name: "Kniha jázd Mini",
+    price: "5 €",
+    tagline: "Pre živnostníkov s jedným či dvoma vozidlami.",
+    features: [
+      "Do 2 vozidiel",
+      "Manuálne aj GPS jazdy",
+      "Mesačné prehľady a exporty",
+      "PDF kniha jázd",
+      "E-mail podpora",
+    ],
+    featured: false,
+  },
+  {
+    slug: "logbook_pro",
+    name: "Kniha jázd Pro",
+    price: "9 €",
+    tagline: "Pre firmy s flotilou a GPS integráciami.",
+    features: [
+      "Neobmedzene vozidiel",
+      "Commander GPS integrácia",
+      "Tesla Fleet API",
+      "Automatické importy jázd",
+      "Pokročilé reporty",
+      "Prioritná podpora",
+    ],
+    featured: true,
+  },
+];
 
 export const Route = createFileRoute("/_authenticated/predplatne")({
   head: () => ({ meta: [{ title: "Predplatné — Faktero" }] }),
@@ -62,6 +99,8 @@ function PredplatnePage() {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busySlug, setBusySlug] = useState<string | null>(null);
+  const [productMode, setProductMode] = useState<ProductMode>("invoicing");
+  const [tab, setTab] = useState<ProductTab>(() => getActiveProduct() ?? "invoicing");
 
   useEffect(() => {
     // Detect ?payment=return
@@ -71,6 +110,27 @@ function PredplatnePage() {
       toast.info("Spracúvame výsledok platby. Stav sa aktualizuje po potvrdení z GoPay.");
       window.history.replaceState({}, "", window.location.pathname);
     }
+  }, []);
+
+  // Load user's product_mode from profile
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user || cancelled) return;
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("product_mode")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const mode = (p?.product_mode ?? "invoicing") as ProductMode;
+      setProductMode(mode);
+      // If user only has logbook access, default tab to logbook
+      if (mode === "logbook") setTab("logbook");
+      else if (mode === "invoicing") setTab("invoicing");
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -293,19 +353,45 @@ function PredplatnePage() {
 
       {/* Plans grid */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight">Zmeniť plán</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {plans.map((p) => (
-            <PlanCard
-              key={p.slug}
-              p={p}
-              current={p.slug === plan?.plan_slug}
-              loading={busySlug === p.slug}
-              disabled={!isAdminLike || busySlug !== null}
-              onSelect={() => selectPlan(p.slug)}
-            />
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-tight">Zmeniť plán</h2>
+          {productMode === "both" && (
+            <div className="inline-flex rounded-lg border border-border bg-muted p-1 text-sm">
+              <button
+                type="button"
+                onClick={() => setTab("invoicing")}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${tab === "invoicing" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <FileText className="h-3.5 w-3.5" /> Fakturačný systém
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab("logbook")}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${tab === "logbook" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Car className="h-3.5 w-3.5" /> Kniha jázd
+              </button>
+            </div>
+          )}
         </div>
+
+        {tab === "invoicing" ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {plans.map((p) => (
+              <PlanCard
+                key={p.slug}
+                p={p}
+                current={p.slug === plan?.plan_slug}
+                loading={busySlug === p.slug}
+                disabled={!isAdminLike || busySlug !== null}
+                onSelect={() => selectPlan(p.slug)}
+              />
+            ))}
+          </div>
+        ) : (
+          <LogbookPlans isAdminLike={isAdminLike} />
+        )}
+
         {!isAdminLike && (
           <p className="text-xs text-muted-foreground">
             Plán môže meniť iba majiteľ alebo administrátor firmy.
@@ -469,5 +555,55 @@ function PlanCard({
         </Button>
       </CardContent>
     </Card>
+  );
+}
+
+function LogbookPlans({ isAdminLike }: { isAdminLike: boolean }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+        <p>
+          Predplatné pre <strong>Knihu jázd</strong> je zatiaľ dostupné na
+          vyžiadanie. Napíšte nám a aktivujeme vám vybraný plán.
+        </p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {LOGBOOK_PLANS.map((p) => (
+          <Card key={p.slug} className={p.featured ? "border-primary ring-1 ring-primary/30" : ""}>
+            <CardHeader>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Car className="h-4 w-4" /> {p.name}
+              </div>
+              <div className="pt-2">
+                <span className="text-3xl font-semibold">{p.price}</span>
+                <span className="text-sm text-muted-foreground"> / mes.</span>
+              </div>
+              <p className="pt-1 text-xs text-muted-foreground">{p.tagline}</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <ul className="space-y-1.5 text-sm">
+                {p.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 text-emerald-600" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                asChild
+                className="w-full"
+                variant={p.featured ? "default" : "secondary"}
+                disabled={!isAdminLike}
+              >
+                <a href={`mailto:info@faktero.sk?subject=Aktivácia plánu ${p.name}`}>
+                  Kontaktovať pre aktiváciu
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 }
