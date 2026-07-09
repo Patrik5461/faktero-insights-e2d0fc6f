@@ -87,7 +87,7 @@ function RegisterPage() {
           <Logo variant="header" className="h-8" />
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">Vytvorte si účet</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Zdarma, bez platobnej karty.</p>
+        <p className="mt-1 text-sm text-muted-foreground">2 mesiace zadarmo na pláne Premium. Bez platobnej karty.</p>
 
         <button onClick={onGoogle} className="mt-6 w-full rounded-md border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-secondary">
           Pokračovať cez Google
