@@ -210,7 +210,13 @@ function CennikPage() {
             </div>
           ))}
         </dl>
+        <div className="mt-8 rounded-xl border border-border bg-card p-5 text-xs text-muted-foreground space-y-1">
+          <p><strong className="text-foreground">Ceny a DPH:</strong> Všetky ceny sú uvedené bez DPH. Platná sadzba DPH v SR je 23 %. Predplatné sa účtuje mesačne a automaticky sa obnovuje, kým ho nezrušíte v sekcii Predplatné.</p>
+          <p><strong className="text-foreground">Platba:</strong> Bezpečne cez GoPay — platobnou kartou (Visa, Mastercard) alebo okamžitým bankovým prevodom. Údaje karty spracúva výhradne GoPay.</p>
+          <p>Podrobnosti: <a href="/pravne/obchodne-podmienky" className="underline">Obchodné podmienky</a> · <a href="/pravne/gopay-podmienky" className="underline">GoPay podmienky</a>.</p>
+        </div>
       </section>
+
     </MarketingShell>
   );
 }
