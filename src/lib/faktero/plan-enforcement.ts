@@ -72,7 +72,7 @@ export async function getCompanyPlan(
   const { data: sub } = await supabase
     .from("subscriptions")
     .select(
-      `status, trial_ends_at, current_period_end, plan, subscription_plans(${PLAN_COLS})`
+      `status, trial_ends_at, current_period_end, plan, is_post_trial_free, subscription_plans(${PLAN_COLS})`
     )
     .eq("company_id", companyId)
     .maybeSingle();
