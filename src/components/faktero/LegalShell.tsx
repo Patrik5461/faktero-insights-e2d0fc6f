@@ -6,6 +6,7 @@ const LINKS = [
   { to: "/pravne/gdpr", label: "GDPR" },
   { to: "/pravne/reklamacny-poriadok", label: "Reklamačný poriadok" },
   { to: "/pravne/gopay-podmienky", label: "GoPay podmienky" },
+  { to: "/pravne/opakovane-platby", label: "Opakované platby" },
   { to: "/pravne/cookies", label: "Cookies" },
   { to: "/pravne/tesla-podmienky", label: "Tesla Fleet API" },
 ] as const;
