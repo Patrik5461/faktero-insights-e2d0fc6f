@@ -127,7 +127,16 @@ function PlanCard({ p }: { p: typeof INVOICING_PLANS[number] }) {
         <span className="text-4xl font-bold tracking-tight">{p.price}</span>
         <span className="text-sm text-muted-foreground">{p.period}</span>
       </div>
+      {p.price !== "Individuálne" && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Ceny sú uvedené bez DPH. S DPH 23%:{" "}
+          <span className="font-medium text-foreground">
+            {(parseFloat(p.price.replace(/[^\d.]/g, "")) * 1.23).toFixed(2).replace(".", ",")} €
+          </span>
+        </p>
+      )}
       <p className="mt-2 text-sm text-muted-foreground">{p.tagline}</p>
+
       <ul className="mt-5 space-y-2 text-sm">
         {p.features.map((f) => (
           <li key={f} className="flex gap-2">
