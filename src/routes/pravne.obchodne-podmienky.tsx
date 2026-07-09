@@ -74,19 +74,40 @@ function Page() {
       </p>
 
 
-      <h2>6. Automatické obnovenie predplatného</h2>
+      <h2>7. Automatické obnovenie predplatného</h2>
       <p>
         <strong>Predplatné sa po skončení fakturačného obdobia automaticky obnovuje, pokiaľ ho používateľ nezruší.</strong>
         Pri aktivácii platby kartou alebo opakovanej platby cez GoPay používateľ udeľuje súhlas s opakovaným
-        strhávaním poplatku zodpovedajúceho zvolenému plánu.
+        strhávaním poplatku zodpovedajúceho zvolenému plánu. O nadchádzajúcom obnovení a jeho výške je používateľ
+        informovaný e-mailom.
       </p>
 
-      <h2>7. Zrušenie predplatného</h2>
+      <h2>8. Odstúpenie od zmluvy (spotrebiteľ)</h2>
       <p>
-        Používateľ môže predplatné kedykoľvek zrušiť v sekcii Nastavenia → Predplatné. Zrušenie sa prejaví od
-        nasledujúceho fakturačného obdobia; už uhradené poplatky sa nevracajú s výnimkou prípadov vyžadovaných
-        platnými právnymi predpismi.
+        Ak je používateľ spotrebiteľom v zmysle zákona č. 108/2024 Z. z., má právo odstúpiť od zmluvy do
+        <strong> 14 dní</strong> od jej uzavretia (aktivácie plateného plánu) bez uvedenia dôvodu. Odstúpenie
+        zašle e-mailom na <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>. Ak používateľ pri
+        aktivácii výslovne požiadal o okamžité začatie poskytovania digitálnej služby ešte pred uplynutím 14-dňovej
+        lehoty a bol poučený o strate práva na odstúpenie, právo na odstúpenie sa nevzťahuje na už poskytnutú časť
+        Služby. Pre podnikateľov (B2B) sa zákonné právo na odstúpenie neuplatňuje.
       </p>
+
+      <h2>9. Zrušenie predplatného</h2>
+      <p>
+        Používateľ môže predplatné kedykoľvek zrušiť v sekcii <em>Nastavenia → Predplatné</em>. Zrušenie sa prejaví
+        na konci aktuálneho fakturačného obdobia; už uhradený poplatok za bežiace obdobie sa <strong>nevracia</strong>
+        (zostatok obdobia nie je refundovaný), s výnimkou prípadov vyžadovaných platnými právnymi predpismi
+        (napr. odstúpenie podľa čl. 8).
+      </p>
+
+      <h2>10. Reklamačný postup</h2>
+      <p>
+        Reklamáciu poskytovanej Služby môže používateľ uplatniť e-mailom na
+        <a href={`mailto:${LEGAL_COMPANY.email}`}> {LEGAL_COMPANY.email}</a> alebo písomne na adresu sídla Prevádzkovateľa
+        ({LEGAL_COMPANY.address}). Reklamácia bude vybavená bez zbytočného odkladu, najneskôr do <strong>30 dní</strong>
+        od doručenia. Podrobnosti upravuje samostatný <a href="/pravne/reklamacny-poriadok">Reklamačný poriadok</a>.
+      </p>
+
 
       <h2>8. Dostupnosť služby</h2>
       <p>
