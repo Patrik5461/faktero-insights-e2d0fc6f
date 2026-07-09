@@ -74,11 +74,12 @@ const sections: HelpSection[] = [
     title: "Čo sa stane po skončení trialu",
     body: (
       <>
-        <p>Ak si nevyberiete plán do uplynutia 14 dní:</p>
+        <p>Ak si nevyberiete platený plán do uplynutia 60 dní:</p>
         <ul>
-          <li>Účet sa prepne do <strong>read-only</strong> režimu.</li>
-          <li>Existujúce dáta vidíte, ale nemôžete vystavovať nové faktúry, používať API ani webhooky.</li>
-          <li>Kedykoľvek aktivujte plán a všetko pokračuje tam, kde ste skončili.</li>
+          <li>Účet <strong>automaticky prejde na plán Starter</strong> — aplikácia zostáva plne funkčná.</li>
+          <li>Prémiové funkcie (API, webhooky, import zo SuperFaktúry, audit log) sa vypnú, kým si nezvolíte Premium.</li>
+          <li>3 dni pred koncom trialu vám pošleme pripomienku emailom.</li>
+          <li>Kedykoľvek si môžete aktivovať vyšší plán a všetko pokračuje tam, kde ste skončili.</li>
         </ul>
       </>
     ),
