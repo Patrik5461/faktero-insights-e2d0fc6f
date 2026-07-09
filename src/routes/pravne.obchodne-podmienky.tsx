@@ -42,18 +42,37 @@ function Page() {
       </p>
       <p>Pri registrácii používateľ potvrdzuje súhlas s týmito Obchodnými podmienkami a berie na vedomie spracúvanie osobných údajov v zmysle dokumentu GDPR.</p>
 
-      <h2>4. Predplatné a fakturácia</h2>
+      <h2>4. Predplatné, ceny a fakturácia</h2>
       <p>
-        Služba je poskytovaná v rámci platených plánov podľa aktuálneho cenníka zverejneného na faktero.sk/cennik.
-        Fakturácia prebieha mesačne alebo ročne, podľa zvoleného plánu. Cena je uvádzaná bez DPH a s DPH samostatne.
+        Služba je poskytovaná v rámci platených plánov podľa aktuálneho cenníka zverejneného na
+        <a href="/cennik"> faktero.sk/cennik</a>. Aktuálne ceny platených plánov (bez DPH):
+      </p>
+      <ul>
+        <li><strong>Starter — 9,00 € / mesiac</strong> bez DPH (s DPH 23 %: 11,07 € / mesiac).</li>
+        <li><strong>Premium — 19,00 € / mesiac</strong> bez DPH (s DPH 23 %: 23,37 € / mesiac).</li>
+        <li><strong>Enterprise</strong> — cena stanovená individuálne podľa rozsahu.</li>
+      </ul>
+      <p>
+        Prevádzkovateľ je platcom DPH; na všetky ceny sa uplatňuje platná sadzba DPH v Slovenskej republike
+        (aktuálne <strong>23 %</strong>). Fakturácia prebieha mesačne, po každej úspešnej platbe je používateľovi
+        vystavený daňový doklad dostupný v aplikácii.
       </p>
 
-      <h2>5. Skúšobná verzia</h2>
+      <h2>5. Spôsob platby</h2>
       <p>
-        Prevádzkovateľ poskytuje nových používateľom 14-dňovú bezplatnú skúšobnú verziu. Počas trvania skúšky nie
-        je vyžadované zadanie platobných údajov. Po uplynutí skúšky je potrebné aktivovať platený plán, inak bude
-        prístup do aplikácie obmedzený.
+        Platby predplatného sú realizované prostredníctvom platobnej brány <strong>GoPay</strong>
+        (prevádzkovateľ GoPay s.r.o., ČR). Podporované sú platby platobnou kartou (Visa, Mastercard) a okamžitý
+        bankový prevod. Údaje platobnej karty používateľa <strong>Faktero nevidí ani neuchováva</strong> —
+        spracúva ich výhradne GoPay v súlade s PCI DSS a 3-D Secure.
       </p>
+
+      <h2>6. Skúšobná verzia</h2>
+      <p>
+        Prevádzkovateľ poskytuje novým používateľom bezplatnú skúšobnú verziu (aktuálne 2 mesiace). Počas trvania
+        skúšky nie je vyžadované zadanie platobných údajov. Po uplynutí skúšky je potrebné aktivovať platený plán,
+        inak bude prístup do aplikácie obmedzený.
+      </p>
+
 
       <h2>6. Automatické obnovenie predplatného</h2>
       <p>
