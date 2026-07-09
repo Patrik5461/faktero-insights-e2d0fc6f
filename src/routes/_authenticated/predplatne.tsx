@@ -557,3 +557,53 @@ function PlanCard({
     </Card>
   );
 }
+
+function LogbookPlans({ isAdminLike }: { isAdminLike: boolean }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+        <p>
+          Predplatné pre <strong>Knihu jázd</strong> je zatiaľ dostupné na
+          vyžiadanie. Napíšte nám a aktivujeme vám vybraný plán.
+        </p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {LOGBOOK_PLANS.map((p) => (
+          <Card key={p.slug} className={p.featured ? "border-primary ring-1 ring-primary/30" : ""}>
+            <CardHeader>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Car className="h-4 w-4" /> {p.name}
+              </div>
+              <div className="pt-2">
+                <span className="text-3xl font-semibold">{p.price}</span>
+                <span className="text-sm text-muted-foreground"> / mes.</span>
+              </div>
+              <p className="pt-1 text-xs text-muted-foreground">{p.tagline}</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <ul className="space-y-1.5 text-sm">
+                {p.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 text-emerald-600" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button
+                asChild
+                className="w-full"
+                variant={p.featured ? "default" : "secondary"}
+                disabled={!isAdminLike}
+              >
+                <a href={`mailto:info@faktero.sk?subject=Aktivácia plánu ${p.name}`}>
+                  Kontaktovať pre aktiváciu
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
