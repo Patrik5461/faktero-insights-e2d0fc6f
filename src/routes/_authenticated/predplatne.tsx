@@ -112,6 +112,27 @@ function PredplatnePage() {
     }
   }, []);
 
+  // Load user's product_mode from profile
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user || cancelled) return;
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("product_mode")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const mode = (p?.product_mode ?? "invoicing") as ProductMode;
+      setProductMode(mode);
+      // If user only has logbook access, default tab to logbook
+      if (mode === "logbook") setTab("logbook");
+      else if (mode === "invoicing") setTab("invoicing");
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
