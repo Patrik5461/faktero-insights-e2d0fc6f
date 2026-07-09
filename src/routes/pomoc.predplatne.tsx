@@ -21,7 +21,7 @@ const sections: HelpSection[] = [
     title: "Skúšobné obdobie (trial)",
     body: (
       <>
-        <p>Po registrácii dostáva každá firma <strong>14-dňový trial plánu Business</strong> zadarmo. Počas trialu môžete využívať všetky funkcie bez obmedzenia.</p>
+        <p>Po registrácii dostáva každá firma <strong>2 mesiace zadarmo na pláne Premium</strong> (60 dní). Počas trialu môžete využívať všetky funkcie bez obmedzenia.</p>
         <p>Trial sa <strong>nepredlžuje automaticky</strong> a nepýtame si platobné údaje vopred.</p>
       </>
     ),
