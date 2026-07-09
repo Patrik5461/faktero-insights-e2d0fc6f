@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check, ArrowRight, FileText, Car } from "lucide-react";
+import { Check, ArrowRight, FileText, Car, RefreshCw, ShieldCheck, Mail, Lock } from "lucide-react";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 
 const INVOICING_PLANS = [
@@ -171,6 +171,56 @@ function CennikPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-14">
+        <div className="relative overflow-hidden rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-100 via-amber-50 to-yellow-100 p-6 md:p-8 shadow-lg">
+          <div className="absolute right-0 top-0 h-32 w-32 -translate-y-1/2 translate-x-1/2 rounded-full bg-primary/10 blur-2xl" />
+          <div className="relative flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+            <div className="flex-1 space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-200 px-3 py-1 text-sm font-semibold text-amber-900">
+                <RefreshCw className="h-4 w-4" />
+                Opakované platby — automatické obnovovanie
+              </div>
+              <p className="max-w-2xl text-base leading-relaxed text-amber-950 md:text-lg">
+                Predplatné Faktero sa automaticky obnovuje každý mesiac. Platba je strhnutá z vašej platobnej karty cez bezpečnú bránu GoPay (Visa / Mastercard / 3D Secure).
+              </p>
+              <ul className="space-y-2 text-sm text-amber-900/80">
+                <li className="flex items-start gap-2">
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                  <span>Zrušiť môžete kedykoľvek — bez poplatkov, okamžite v nastaveniach vášho účtu</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Mail className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                  <span>Pred každou obnovou vám pošleme emailové upozornenie</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                  <span>Plná kontrola nad predplatným kedykoľvek</span>
+                </li>
+              </ul>
+              <div>
+                <Link
+                  to="/pravne/opakovane-platby"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-800 hover:underline"
+                >
+                  Podmienky opakovaných platieb <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+            <div className="flex flex-col items-start gap-3 md:items-end md:pt-8">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-md bg-[#1A4DB5] px-3 py-1.5 text-xs font-bold text-white">GoPay</span>
+                <span className="rounded-md bg-[#1A1F71] px-3 py-1.5 text-xs font-bold text-white">VISA</span>
+                <span className="rounded-md bg-[#EB001B] px-3 py-1.5 text-xs font-bold text-white">Mastercard</span>
+                <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground border border-border">
+                  <ShieldCheck className="h-3.5 w-3.5" /> 3D Secure
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">Bezpečné platby cez certifikovanú platobnú bránu.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-6 pb-14">
         <div className="mb-8 flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
             <FileText className="h-5 w-5" />
