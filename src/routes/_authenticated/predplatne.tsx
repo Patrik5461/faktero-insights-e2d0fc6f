@@ -236,6 +236,15 @@ function PredplatnePage() {
             </div>
           )}
 
+          {plan?.is_active && (
+            <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-900 dark:text-blue-100">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
+              <p>
+                Predplatné sa automaticky obnovuje každý mesiac. Platba je spracovaná cez GoPay (Visa/Mastercard). Zrušiť môžete kedykoľvek kliknutím na „Zrušiť predplatné“.
+              </p>
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <UsageRow
               label="Faktúry tento mesiac"
