@@ -175,31 +175,31 @@ function CennikPage() {
           <div className="absolute right-0 top-0 h-32 w-32 -translate-y-1/2 translate-x-1/2 rounded-full bg-primary/10 blur-2xl" />
           <div className="relative flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <div className="flex-1 space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/15 px-3 py-1 text-sm font-semibold text-primary">
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-200 px-3 py-1 text-sm font-semibold text-amber-900">
                 <RefreshCw className="h-4 w-4" />
                 Opakované platby — automatické obnovovanie
               </div>
-              <p className="max-w-2xl text-base leading-relaxed text-foreground md:text-lg">
+              <p className="max-w-2xl text-base leading-relaxed text-amber-950 md:text-lg">
                 Predplatné Faktero sa automaticky obnovuje každý mesiac. Platba je strhnutá z vašej platobnej karty cez bezpečnú bránu GoPay (Visa / Mastercard / 3D Secure).
               </p>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-sm text-amber-900/80">
                 <li className="flex items-start gap-2">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
                   <span>Zrušiť môžete kedykoľvek — bez poplatkov, okamžite v nastaveniach vášho účtu</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <Mail className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
                   <span>Pred každou obnovou vám pošleme emailové upozornenie</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
                   <span>Plná kontrola nad predplatným kedykoľvek</span>
                 </li>
               </ul>
               <div>
                 <Link
                   to="/pravne/opakovane-platby"
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-800 hover:underline"
                 >
                   Podmienky opakovaných platieb <ArrowRight className="h-4 w-4" />
                 </Link>
