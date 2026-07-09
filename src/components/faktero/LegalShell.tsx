@@ -56,12 +56,14 @@ export function LegalShell({
 export const LEGAL_VERSION = "1.0";
 export const LEGAL_UPDATED = "13.06.2026";
 export const LEGAL_COMPANY = {
-  name: "PALIERA s.r.o.",
-  ico: "54613124",
-  dic: "2121733614",
-  icDph: "SK2121733614",
-  address: "Športová 707/43, 919 26 Zavar, Slovensko",
-  email: "faktero@paliera.sk",
+  name: "Tobify s. r. o.",
+  ico: "56607016",
+  dic: "2122358579",
+  icDph: "SK2122358579",
+  address: "Športová 707/43, 919 26 Zavar, Slovenská republika",
+  email: "info@faktero.sk",
   phone: "+421 907 702 422",
-  web: "https://faktero.sk",
+  web: "https://www.faktero.sk",
+  statutar: "Patrik Henček",
+  incorporated: "31. októbra 2024",
 };
