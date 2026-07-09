@@ -22,7 +22,7 @@ function Page() {
         inštitúciou</strong> ani inštitúciou elektronických peňazí v zmysle zákona č. 492/2009 Z. z. o platobných službách.
       </p>
       <p>
-        <strong>PALIERA s.r.o. neprijíma ani nespracováva finančné prostriedky zákazníkov svojich používateľov.</strong>
+        <strong>Tobify s. r. o. neprijíma ani nespracováva finančné prostriedky zákazníkov svojich používateľov.</strong>
       </p>
 
       <h2>2. Peniaze nikdy nejdú cez Faktero</h2>
@@ -41,7 +41,7 @@ function Page() {
       <h2>4. Zákazník platí priamo obchodníkovi</h2>
       <p>
         <strong>Zákazník platí priamo na účet obchodníka prostredníctvom GoPay.</strong> Zmluvný vzťah pri platbe je
-        medzi zákazníkom a obchodníkom (používateľom Faktera), nie medzi zákazníkom a spoločnosťou PALIERA s.r.o.
+        medzi zákazníkom a obchodníkom (používateľom Faktera), nie medzi zákazníkom a spoločnosťou Tobify s. r. o.
       </p>
 
       <h2>5. Úloha GoPay</h2>
