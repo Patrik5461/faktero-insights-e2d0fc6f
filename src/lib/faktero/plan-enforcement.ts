@@ -40,6 +40,7 @@ export type CompanyPlanInfo = {
   is_active: boolean; // can still write
   is_trialing: boolean;
   trial_days_left: number | null;
+  is_post_trial_free: boolean;
 };
 
 export function isActiveStatus(status: SubscriptionStatus): boolean {
@@ -71,7 +72,7 @@ export async function getCompanyPlan(
   const { data: sub } = await supabase
     .from("subscriptions")
     .select(
-      `status, trial_ends_at, current_period_end, plan, subscription_plans(${PLAN_COLS})`
+      `status, trial_ends_at, current_period_end, plan, is_post_trial_free, subscription_plans(${PLAN_COLS})`
     )
     .eq("company_id", companyId)
     .maybeSingle();
@@ -109,6 +110,7 @@ export async function getCompanyPlan(
     is_active: isActiveStatus(status),
     is_trialing: status === "trialing",
     trial_days_left: trialDaysLeft((sub as any).trial_ends_at),
+    is_post_trial_free: !!(sub as any).is_post_trial_free,
   };
 }
 

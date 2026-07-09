@@ -38,6 +38,16 @@ export function PlanGateBanner({ companyId }: { companyId: string | null }) {
     );
   }
 
+  // 1b. Trial ended → auto-downgraded to Starter (free)
+  if ((plan as any).is_post_trial_free) {
+    return (
+      <Banner tone="warning" icon={<Clock className="h-4 w-4" />}>
+        <strong>Váš 2-mesačný trial skončil.</strong> Účet pokračuje na bezplatnom pláne Starter. Pre plný prístup k Premium funkciám si aktivujte plán.{" "}
+        <Link to="/predplatne" className="underline">Vybrať plán</Link>
+      </Banner>
+    );
+  }
+
   // 2. Trial ending soon
   if (plan.is_trialing && plan.trial_days_left != null && plan.trial_days_left <= 3) {
     return (

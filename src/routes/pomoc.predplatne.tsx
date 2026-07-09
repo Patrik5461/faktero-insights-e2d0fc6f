@@ -21,7 +21,7 @@ const sections: HelpSection[] = [
     title: "Skúšobné obdobie (trial)",
     body: (
       <>
-        <p>Po registrácii dostáva každá firma <strong>14-dňový trial plánu Business</strong> zadarmo. Počas trialu môžete využívať všetky funkcie bez obmedzenia.</p>
+        <p>Po registrácii dostáva každá firma <strong>2 mesiace zadarmo na pláne Premium</strong> (60 dní). Počas trialu môžete využívať všetky funkcie bez obmedzenia.</p>
         <p>Trial sa <strong>nepredlžuje automaticky</strong> a nepýtame si platobné údaje vopred.</p>
       </>
     ),
@@ -74,11 +74,12 @@ const sections: HelpSection[] = [
     title: "Čo sa stane po skončení trialu",
     body: (
       <>
-        <p>Ak si nevyberiete plán do uplynutia 14 dní:</p>
+        <p>Ak si nevyberiete platený plán do uplynutia 60 dní:</p>
         <ul>
-          <li>Účet sa prepne do <strong>read-only</strong> režimu.</li>
-          <li>Existujúce dáta vidíte, ale nemôžete vystavovať nové faktúry, používať API ani webhooky.</li>
-          <li>Kedykoľvek aktivujte plán a všetko pokračuje tam, kde ste skončili.</li>
+          <li>Účet <strong>automaticky prejde na plán Starter</strong> — aplikácia zostáva plne funkčná.</li>
+          <li>Prémiové funkcie (API, webhooky, import zo SuperFaktúry, audit log) sa vypnú, kým si nezvolíte Premium.</li>
+          <li>3 dni pred koncom trialu vám pošleme pripomienku emailom.</li>
+          <li>Kedykoľvek si môžete aktivovať vyšší plán a všetko pokračuje tam, kde ste skončili.</li>
         </ul>
       </>
     ),
