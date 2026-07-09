@@ -117,7 +117,7 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
         title={!enabled ? "FinStat API nie je nakonfigurované na serveri." : undefined}
         className={
           className ??
-          "relative h-10 inline-flex shrink-0 items-center gap-2 rounded-r-md border border-input border-l-0 bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary/80 focus:z-20 focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+          "relative h-10 inline-flex shrink-0 items-center gap-2 rounded-r-md border border-input bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary/80 focus:z-20 focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
         }
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4 text-muted-foreground" />}
