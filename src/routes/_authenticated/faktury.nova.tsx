@@ -889,8 +889,8 @@ function NewCustomerModal({ defaultName, onClose, onCreated }: { defaultName?: s
               />
             </Field>
             <Field label="IČO *">
-              <div className="flex gap-2">
-                <input value={f.ico} onChange={(e) => setF({ ...f, ico: e.target.value })} className={modalInput} />
+              <div className="flex -space-x-px items-start">
+                <input value={f.ico} onChange={(e) => setF({ ...f, ico: e.target.value })} className={`${modalInput} rounded-l-md focus:z-10`} />
                 <IcoLookupButton
                   ico={f.ico}
                   onResult={(d, { auto }) => setF((prev) => mergeCompanyAutofill(prev, d, { mode: auto ? "fill-empty" : "overwrite" }))}

@@ -177,8 +177,8 @@ function CustomerDialog({ initial, onClose, onSave }: { initial: Customer; onClo
           )}
           <label className="block">
             <span className="text-sm font-medium">IČO</span>
-            <div className="mt-1 flex gap-2">
-              <input value={c.ico ?? ""} onChange={(e) => f("ico", e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <div className="mt-1 flex -space-x-px items-start">
+              <input value={c.ico ?? ""} onChange={(e) => f("ico", e.target.value)} className="w-full rounded-l-md border border-input bg-background px-3 py-2 text-sm focus:z-10" />
               <IcoLookupButton
                 ico={c.ico ?? ""}
                 onResult={(d, { auto }) => setC((prev) => mergeCompanyAutofill(prev, d, { mode: auto ? "fill-empty" : "overwrite" }) as Customer)}

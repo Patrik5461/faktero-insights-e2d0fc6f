@@ -90,8 +90,8 @@ function Onboarding() {
         <div className="grid gap-4 sm:grid-cols-3">
           <label className="block">
             <span className="text-sm font-medium">IČO</span>
-            <div className="mt-1 flex gap-2">
-              <input value={form.ico} onChange={(e) => set("ico", e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+            <div className="mt-1 flex -space-x-px items-start">
+              <input value={form.ico} onChange={(e) => set("ico", e.target.value)} className="w-full rounded-l-md border border-input bg-background px-3 py-2 text-sm outline-none focus:z-10 focus:ring-2 focus:ring-ring" />
               <IcoLookupButton
                 ico={form.ico}
                 onResult={(d, { auto }) => setForm((f) => mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }))}

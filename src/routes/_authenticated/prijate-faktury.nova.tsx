@@ -133,9 +133,9 @@ function NewPurchaseInvoicePage() {
                   className="input" />
               </Field>
               <Field label="IČO">
-                <div className="flex gap-2">
+                <div className="flex -space-x-px items-start">
                   <input value={form.supplier_ico} onChange={(e) => set("supplier_ico", e.target.value)}
-                    className="input flex-1" />
+                    className="input flex-1 rounded-l-md focus:z-10" />
                   <IcoLookupButton
                     ico={form.supplier_ico}
                     onResult={(r) => {
