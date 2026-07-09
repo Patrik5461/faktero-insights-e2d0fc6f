@@ -53,6 +53,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
             <Link to="/pravne/gdpr" className="hover:text-foreground">GDPR</Link>
             <Link to="/pravne/reklamacny-poriadok" className="hover:text-foreground">Reklamačný poriadok</Link>
             <Link to="/pravne/gopay-podmienky" className="hover:text-foreground">GoPay podmienky</Link>
+            <Link to="/pravne/opakovane-platby" className="hover:text-foreground">Opakované platby</Link>
             <Link to="/pravne/cookies" className="hover:text-foreground">Cookies</Link>
             <Link to="/pravne/tesla-podmienky" className="hover:text-foreground">Tesla Fleet API</Link>
           </div>

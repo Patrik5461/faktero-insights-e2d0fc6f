@@ -33,6 +33,7 @@ import { Route as UctovniciSlugRouteImport } from './routes/uctovnici.$slug'
 import { Route as SchvalitTokenRouteImport } from './routes/schvalit.$token'
 import { Route as PravneTeslaPodmienkyRouteImport } from './routes/pravne.tesla-podmienky'
 import { Route as PravneReklamacnyPoriadokRouteImport } from './routes/pravne.reklamacny-poriadok'
+import { Route as PravneOpakovanePlatbyRouteImport } from './routes/pravne.opakovane-platby'
 import { Route as PravneObchodnePodmienkyRouteImport } from './routes/pravne.obchodne-podmienky'
 import { Route as PravneGopayPodmienkyRouteImport } from './routes/pravne.gopay-podmienky'
 import { Route as PravneGdprRouteImport } from './routes/pravne.gdpr'
@@ -285,6 +286,11 @@ const PravneReklamacnyPoriadokRoute =
     path: '/pravne/reklamacny-poriadok',
     getParentRoute: () => rootRouteImport,
   } as any)
+const PravneOpakovanePlatbyRoute = PravneOpakovanePlatbyRouteImport.update({
+  id: '/pravne/opakovane-platby',
+  path: '/pravne/opakovane-platby',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PravneObchodnePodmienkyRoute = PravneObchodnePodmienkyRouteImport.update({
   id: '/pravne/obchodne-podmienky',
   path: '/pravne/obchodne-podmienky',
@@ -1049,6 +1055,7 @@ export interface FileRoutesByFullPath {
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
   '/pravne/obchodne-podmienky': typeof PravneObchodnePodmienkyRoute
+  '/pravne/opakovane-platby': typeof PravneOpakovanePlatbyRoute
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
@@ -1198,6 +1205,7 @@ export interface FileRoutesByTo {
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
   '/pravne/obchodne-podmienky': typeof PravneObchodnePodmienkyRoute
+  '/pravne/opakovane-platby': typeof PravneOpakovanePlatbyRoute
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
@@ -1355,6 +1363,7 @@ export interface FileRoutesById {
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
   '/pravne/obchodne-podmienky': typeof PravneObchodnePodmienkyRoute
+  '/pravne/opakovane-platby': typeof PravneOpakovanePlatbyRoute
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
@@ -1513,6 +1522,7 @@ export interface FileRouteTypes {
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
     | '/pravne/obchodne-podmienky'
+    | '/pravne/opakovane-platby'
     | '/pravne/reklamacny-poriadok'
     | '/pravne/tesla-podmienky'
     | '/schvalit/$token'
@@ -1662,6 +1672,7 @@ export interface FileRouteTypes {
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
     | '/pravne/obchodne-podmienky'
+    | '/pravne/opakovane-platby'
     | '/pravne/reklamacny-poriadok'
     | '/pravne/tesla-podmienky'
     | '/schvalit/$token'
@@ -1818,6 +1829,7 @@ export interface FileRouteTypes {
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
     | '/pravne/obchodne-podmienky'
+    | '/pravne/opakovane-platby'
     | '/pravne/reklamacny-poriadok'
     | '/pravne/tesla-podmienky'
     | '/schvalit/$token'
@@ -1946,6 +1958,7 @@ export interface RootRouteChildren {
   PravneGdprRoute: typeof PravneGdprRoute
   PravneGopayPodmienkyRoute: typeof PravneGopayPodmienkyRoute
   PravneObchodnePodmienkyRoute: typeof PravneObchodnePodmienkyRoute
+  PravneOpakovanePlatbyRoute: typeof PravneOpakovanePlatbyRoute
   PravneReklamacnyPoriadokRoute: typeof PravneReklamacnyPoriadokRoute
   PravneTeslaPodmienkyRoute: typeof PravneTeslaPodmienkyRoute
   SchvalitTokenRoute: typeof SchvalitTokenRoute
@@ -2146,6 +2159,13 @@ declare module '@tanstack/react-router' {
       path: '/pravne/reklamacny-poriadok'
       fullPath: '/pravne/reklamacny-poriadok'
       preLoaderRoute: typeof PravneReklamacnyPoriadokRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pravne/opakovane-platby': {
+      id: '/pravne/opakovane-platby'
+      path: '/pravne/opakovane-platby'
+      fullPath: '/pravne/opakovane-platby'
+      preLoaderRoute: typeof PravneOpakovanePlatbyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pravne/obchodne-podmienky': {
@@ -3520,6 +3540,7 @@ const rootRouteChildren: RootRouteChildren = {
   PravneGdprRoute: PravneGdprRoute,
   PravneGopayPodmienkyRoute: PravneGopayPodmienkyRoute,
   PravneObchodnePodmienkyRoute: PravneObchodnePodmienkyRoute,
+  PravneOpakovanePlatbyRoute: PravneOpakovanePlatbyRoute,
   PravneReklamacnyPoriadokRoute: PravneReklamacnyPoriadokRoute,
   PravneTeslaPodmienkyRoute: PravneTeslaPodmienkyRoute,
   SchvalitTokenRoute: SchvalitTokenRoute,
