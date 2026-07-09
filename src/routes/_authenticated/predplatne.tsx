@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Check, CreditCard, Crown, ShieldCheck, Zap, Loader2 } from "lucide-react";
+import { Check, CreditCard, Crown, ShieldCheck, Zap, Loader2, Info } from "lucide-react";
 import { getActiveCompanyId, fetchMyCompanies } from "@/lib/faktero/active-company";
 import {
   listPlans,
