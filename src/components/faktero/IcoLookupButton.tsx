@@ -117,11 +117,18 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
         title={!enabled ? "FinStat API nie je nakonfigurované na serveri." : undefined}
         className={
           className ??
-          "inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-2 text-xs hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+          "relative h-10 inline-flex shrink-0 items-center gap-2 rounded-r-md border border-input bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary/80 focus:z-20 focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
         }
       >
-        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-        {loading ? "Vyhľadávam vo FinState..." : "Načítať podľa IČO"}
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4 text-muted-foreground" />}
+        <span className="leading-tight text-left">
+          {loading ? "Vyhľadávam..." : "Načítať"}
+          {!loading && (
+            <span className="block text-[10px] uppercase tracking-wider opacity-60">
+              podľa IČO
+            </span>
+          )}
+        </span>
       </button>
       {!enabled && (
         <p className="flex items-start gap-1 text-[11px] text-muted-foreground">
