@@ -40,6 +40,7 @@ export type CompanyPlanInfo = {
   is_active: boolean; // can still write
   is_trialing: boolean;
   trial_days_left: number | null;
+  is_post_trial_free: boolean;
 };
 
 export function isActiveStatus(status: SubscriptionStatus): boolean {
