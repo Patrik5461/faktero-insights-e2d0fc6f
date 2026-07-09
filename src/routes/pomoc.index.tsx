@@ -31,7 +31,7 @@ function Page() {
         <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Pomoc</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Centrum pomoci</h1>
         <p className="mt-2 text-muted-foreground max-w-2xl">
-          Vyberte si oblasť, s ktorou potrebujete poradiť. Ak hľadáte konkrétnu odpoveď, napíšte nám na <a href="mailto:faktero@paliera.sk" className="text-primary hover:underline">faktero@paliera.sk</a>.
+          Vyberte si oblasť, s ktorou potrebujete poradiť. Ak hľadáte konkrétnu odpoveď, napíšte nám na <a href="mailto:info@faktero.sk" className="text-primary hover:underline">info@faktero.sk</a>.
         </p>
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {CATS.map((c) => {

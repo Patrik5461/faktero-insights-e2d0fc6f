@@ -36,7 +36,7 @@ export function HelpArticle({
             <div className="mt-12 rounded-xl border border-border bg-card p-5 text-sm">
               <p className="font-semibold">Potrebujete ďalšiu pomoc?</p>
               <p className="mt-1 text-muted-foreground">
-                Napíšte nám na <a href="mailto:faktero@paliera.sk" className="text-primary underline">faktero@paliera.sk</a> alebo sa vráťte do{" "}
+                Napíšte nám na <a href="mailto:info@faktero.sk" className="text-primary underline">info@faktero.sk</a> alebo sa vráťte do{" "}
                 <Link to="/pomoc" className="text-primary underline">centra pomoci</Link>.
               </p>
             </div>

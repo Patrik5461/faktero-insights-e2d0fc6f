@@ -1271,7 +1271,7 @@ function SiteFooter() {
       </div>
       <div className="border-t border-border/60">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-5 py-5 text-xs text-muted-foreground sm:items-center sm:px-6 sm:py-6 md:flex-row">
-          <div className="order-2 md:order-1">© {new Date().getFullYear()} Faktero — Fakturácia pre SK a CZ firmy</div>
+          <div className="order-2 md:order-1">© 2026 Tobify s. r. o. — Športová 707/43, 919 26 Zavar · IČO: 56607016 · DIČ: 2122358579 · info@faktero.sk</div>
           <div className="order-1 flex flex-wrap items-center gap-x-4 gap-y-2 md:order-2 md:gap-x-5">
             <a href="/pravne/obchodne-podmienky" className="hover:text-foreground">Obchodné podmienky</a>
             <a href="/pravne/gdpr" className="hover:text-foreground">GDPR</a>

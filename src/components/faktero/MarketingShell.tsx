@@ -13,7 +13,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <Logo className="h-7 w-[112px] opacity-80" />
-              <span>© {new Date().getFullYear()} Faktero. Všetky práva vyhradené.</span>
+              <span>© {new Date().getFullYear()} Tobify s. r. o. Všetky práva vyhradené.</span>
             </div>
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               <Link to="/cennik" className="hover:text-foreground">Cenník</Link>
@@ -33,8 +33,9 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
             <Link to="/pravne/cookies" className="hover:text-foreground">Cookies</Link>
             <Link to="/pravne/tesla-podmienky" className="hover:text-foreground">Tesla Fleet API</Link>
           </div>
-          <div className="text-xs text-muted-foreground/80">
-            Prevádzkovateľ: PALIERA s.r.o., Športová 707/43, 919 26 Zavar · IČO: 54613124 · DIČ: 2121733614 · IČ DPH: SK2121733614
+          <div className="text-xs text-muted-foreground/80 space-y-1">
+            <div>Prevádzkovateľ: Tobify s. r. o., Športová 707/43, 919 26 Zavar, Slovenská republika</div>
+            <div>IČO: 56607016 · DIČ: 2122358579 · IČ DPH: SK2122358579 · Email: <a href="mailto:info@faktero.sk" className="hover:text-foreground">info@faktero.sk</a></div>
           </div>
         </div>
       </footer>
