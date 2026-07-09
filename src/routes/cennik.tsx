@@ -171,7 +171,7 @@ function CennikPage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-14">
-        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-primary/10 p-6 md:p-8">
+        <div className="relative overflow-hidden rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-100 via-amber-50 to-yellow-100 p-6 md:p-8 shadow-lg">
           <div className="absolute right-0 top-0 h-32 w-32 -translate-y-1/2 translate-x-1/2 rounded-full bg-primary/10 blur-2xl" />
           <div className="relative flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <div className="flex-1 space-y-4">
