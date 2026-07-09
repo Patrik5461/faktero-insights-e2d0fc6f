@@ -353,19 +353,45 @@ function PredplatnePage() {
 
       {/* Plans grid */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight">Zmeniť plán</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {plans.map((p) => (
-            <PlanCard
-              key={p.slug}
-              p={p}
-              current={p.slug === plan?.plan_slug}
-              loading={busySlug === p.slug}
-              disabled={!isAdminLike || busySlug !== null}
-              onSelect={() => selectPlan(p.slug)}
-            />
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-tight">Zmeniť plán</h2>
+          {productMode === "both" && (
+            <div className="inline-flex rounded-lg border border-border bg-muted p-1 text-sm">
+              <button
+                type="button"
+                onClick={() => setTab("invoicing")}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${tab === "invoicing" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <FileText className="h-3.5 w-3.5" /> Fakturačný systém
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab("logbook")}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${tab === "logbook" ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <Car className="h-3.5 w-3.5" /> Kniha jázd
+              </button>
+            </div>
+          )}
         </div>
+
+        {tab === "invoicing" ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {plans.map((p) => (
+              <PlanCard
+                key={p.slug}
+                p={p}
+                current={p.slug === plan?.plan_slug}
+                loading={busySlug === p.slug}
+                disabled={!isAdminLike || busySlug !== null}
+                onSelect={() => selectPlan(p.slug)}
+              />
+            ))}
+          </div>
+        ) : (
+          <LogbookPlans isAdminLike={isAdminLike} />
+        )}
+
         {!isAdminLike && (
           <p className="text-xs text-muted-foreground">
             Plán môže meniť iba majiteľ alebo administrátor firmy.
