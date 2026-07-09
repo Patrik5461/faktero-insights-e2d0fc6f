@@ -39,6 +39,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
             <span>© {new Date().getFullYear()} {LEGAL_COMPANY.name}. Všetky práva vyhradené.</span>
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               <Link to="/cennik" className="hover:text-foreground">Cenník</Link>
+              <Link to="/objednavka" className="hover:text-foreground">Objednať</Link>
               <Link to="/funkcie" className="hover:text-foreground">Funkcie</Link>
               <Link to="/vyvojari" className="hover:text-foreground">API</Link>
               <Link to="/efakturacia" className="hover:text-foreground">eFaktúra</Link>
