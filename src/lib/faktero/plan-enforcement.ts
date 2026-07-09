@@ -110,6 +110,7 @@ export async function getCompanyPlan(
     is_active: isActiveStatus(status),
     is_trialing: status === "trialing",
     trial_days_left: trialDaysLeft((sub as any).trial_ends_at),
+    is_post_trial_free: !!(sub as any).is_post_trial_free,
   };
 }
 
