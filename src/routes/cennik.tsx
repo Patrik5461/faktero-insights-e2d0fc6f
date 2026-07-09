@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check, ArrowRight, FileText, Car } from "lucide-react";
+import { Check, ArrowRight, FileText, Car, RefreshCw, ShieldCheck, Mail, Lock } from "lucide-react";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 
 const INVOICING_PLANS = [
