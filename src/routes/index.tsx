@@ -532,11 +532,11 @@ function TrustRow() {
   return (
     <section className="border-y border-border/60 bg-card/40 backdrop-blur">
       <div className="mx-auto max-w-7xl px-6 py-8 md:py-10">
-        <div className="grid grid-cols-2 items-center justify-items-center gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 items-center gap-x-4 gap-y-8 sm:grid-cols-3 lg:flex lg:justify-between">
           {trustMetrics.map(({ label, icon: Icon }) => (
             <div
               key={label}
-              className="group flex items-center justify-start gap-3 lg:justify-center"
+              className="group flex items-center justify-start gap-3"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <Icon className="h-5 w-5" />
