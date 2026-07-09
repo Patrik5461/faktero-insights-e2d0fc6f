@@ -3446,6 +3446,7 @@ export type Database = {
           gopay_payment_id: string | null
           gopay_subscription_id: string | null
           id: string
+          is_post_trial_free: boolean
           monthly_price_cents: number | null
           next_billing_at: string | null
           payment_provider: string | null
@@ -3453,6 +3454,7 @@ export type Database = {
           plan_id: string | null
           status: Database["public"]["Enums"]["subscription_status"]
           trial_ends_at: string | null
+          trial_reminder_sent_at: string | null
           updated_at: string
         }
         Insert: {
@@ -3466,6 +3468,7 @@ export type Database = {
           gopay_payment_id?: string | null
           gopay_subscription_id?: string | null
           id?: string
+          is_post_trial_free?: boolean
           monthly_price_cents?: number | null
           next_billing_at?: string | null
           payment_provider?: string | null
@@ -3473,6 +3476,7 @@ export type Database = {
           plan_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
           trial_ends_at?: string | null
+          trial_reminder_sent_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -3486,6 +3490,7 @@ export type Database = {
           gopay_payment_id?: string | null
           gopay_subscription_id?: string | null
           id?: string
+          is_post_trial_free?: boolean
           monthly_price_cents?: number | null
           next_billing_at?: string | null
           payment_provider?: string | null
@@ -3493,6 +3498,7 @@ export type Database = {
           plan_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
           trial_ends_at?: string | null
+          trial_reminder_sent_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -4100,6 +4106,7 @@ export type Database = {
         Args: { _company_id: string; _kind: string }
         Returns: boolean
       }
+      faktero_process_trial_expiry: { Args: never; Returns: number }
       faktero_recurring_cron_status: { Args: never; Returns: Json }
       get_company_role: {
         Args: { _company_id: string; _user_id: string }
