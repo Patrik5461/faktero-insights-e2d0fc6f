@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Check, CreditCard, Crown, ShieldCheck, Zap, Loader2 } from "lucide-react";
+import { Check, CreditCard, Crown, ShieldCheck, Zap, Loader2, Info } from "lucide-react";
 import { getActiveCompanyId, fetchMyCompanies } from "@/lib/faktero/active-company";
 import {
   listPlans,
@@ -233,6 +233,15 @@ function PredplatnePage() {
           {!plan?.is_active && (
             <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
               Predplatné je neaktívne. Aplikácia je v režime len na čítanie. Aktivujte plán nižšie.
+            </div>
+          )}
+
+          {plan?.is_active && (
+            <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-900 dark:text-blue-100">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
+              <p>
+                Predplatné sa automaticky obnovuje každý mesiac. Platba je spracovaná cez GoPay (Visa/Mastercard). Zrušiť môžete kedykoľvek kliknutím na „Zrušiť predplatné“.
+              </p>
             </div>
           )}
 
