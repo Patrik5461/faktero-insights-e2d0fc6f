@@ -345,9 +345,17 @@ function PredplatnePage() {
         </CardContent>
       </Card>
 
+      <div className="rounded-xl border border-border bg-card p-4 text-xs text-muted-foreground space-y-1.5">
+        <p><strong className="text-foreground">Ceny a DPH:</strong> Uvedené ceny sú bez DPH. Prevádzkovateľ je platca DPH; k cene sa uplatňuje sadzba <strong>23 %</strong> (Starter 9 € → 11,07 € s DPH; Premium 19 € → 23,37 € s DPH).</p>
+        <p><strong className="text-foreground">Automatické obnovenie:</strong> Predplatné sa po skončení obdobia automaticky obnovuje, kým ho nezrušíte. Zrušiť môžete kedykoľvek — prístup ostáva do konca zaplateného obdobia.</p>
+        <p><strong className="text-foreground">Platba:</strong> Bezpečne cez GoPay (Visa, Mastercard, 3-D Secure, bankový prevod). Údaje karty spracúva výhradne GoPay.</p>
+        <p>Kliknutím na „Aktivovať plán“ potvrdzujete súhlas s <a href="/pravne/obchodne-podmienky" target="_blank" rel="noopener" className="underline">Obchodnými podmienkami</a> a <a href="/pravne/gopay-podmienky" target="_blank" rel="noopener" className="underline">GoPay podmienkami</a>.</p>
+      </div>
+
       <p className="pt-2 text-center text-xs text-muted-foreground">
         Platby spracováva GoPay. <Link to={"/" as any} className="underline">Späť na úvod</Link>
       </p>
+
     </div>
   );
 }

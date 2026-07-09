@@ -52,7 +52,9 @@ const menus: Menu[] = [
 const simpleLinks: Item[] = [
   { label: "Cenník", href: "/cennik" },
   { label: "Blog", href: "/blog" },
+  { label: "Kontakt", href: "/kontakt" },
 ];
+
 
 export function MarketingNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
