@@ -99,6 +99,8 @@ function PredplatnePage() {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busySlug, setBusySlug] = useState<string | null>(null);
+  const [productMode, setProductMode] = useState<ProductMode>("invoicing");
+  const [tab, setTab] = useState<ProductTab>(() => getActiveProduct() ?? "invoicing");
 
   useEffect(() => {
     // Detect ?payment=return
