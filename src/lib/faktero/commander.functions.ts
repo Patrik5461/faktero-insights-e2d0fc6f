@@ -355,7 +355,16 @@ export const syncCommanderRides = createServerFn({ method: "POST" })
       getRideDistance, getRideStartOdometer, getRideEndOdometer,
       getRideStartLocation, getRideEndLocation, getRideType, getRideDriver,
     } = await import("./commander.server");
-    const creds = await loadCreds(data.companyId);
+    const { isDecryptError } = await import("./payment-crypto.server");
+    let creds;
+    try { creds = await loadCreds(data.companyId); }
+    catch (e: any) {
+      if (isDecryptError(e)) {
+        await logSync(data.companyId, "rides", "error", DECRYPT_MSG);
+        return { ok: false, error: DECRYPT_MSG, needs_reauth: true, imported: 0, skipped: 0, duplicates: 0, unlinked: 0, errors: 0, fetched: 0 };
+      }
+      throw e;
+    }
 
     const { data: allLinks } = await supabaseAdmin
       .from("commander_vehicle_links")
