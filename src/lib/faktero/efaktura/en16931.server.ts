@@ -195,11 +195,15 @@ function buildTaxSubtotals(items: InvoiceItemRow[], invoice: InvoiceRow): EN1693
     cur.taxAmount += invoice.reverse_charge ? 0 : Number(it.vat_amount);
     groups.set(key, cur);
   }
-  return Array.from(groups.values()).map((g) => ({
-    ...g,
-    taxableAmount: Math.round(g.taxableAmount * 100) / 100,
-    taxAmount: Math.round(g.taxAmount * 100) / 100,
-  }));
+  // UBL 2.1: VAT subtotals sorted by rate ascending (0 → 5 → 19 → 23),
+  // aby účtovný softvér zoraďoval sadzby v štandardnom poradí.
+  return Array.from(groups.values())
+    .map((g) => ({
+      ...g,
+      taxableAmount: Math.round(g.taxableAmount * 100) / 100,
+      taxAmount: Math.round(g.taxAmount * 100) / 100,
+    }))
+    .sort((a, b) => a.vatPercent - b.vatPercent);
 
 }
 
