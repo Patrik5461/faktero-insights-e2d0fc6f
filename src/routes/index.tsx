@@ -604,16 +604,16 @@ function ApiSection() {
             "radial-gradient(60% 40% at 10% 0%, oklch(0.68 0.16 162 / 0.25), transparent 60%), radial-gradient(40% 30% at 90% 100%, oklch(0.85 0.13 85 / 0.18), transparent 60%)",
         }}
       />
-      <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
+      <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 md:py-32">
         <div className="grid items-center gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-          <div className="text-sidebar-foreground">
+          <div className="min-w-0 text-sidebar-foreground">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-medium text-primary">
               <Code2 className="h-3 w-3" /> Pre vývojárov
             </div>
-            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
+            <h2 className="text-balance break-words text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
               REST API, ktoré <span className="text-primary">vyzerá ako u veľkých</span>.
             </h2>
-            <p className="mt-5 max-w-lg text-sidebar-foreground/70">
+            <p className="mt-5 w-full max-w-lg break-words text-sidebar-foreground/70">
               Vystavujte faktúry priamo z vášho e-shopu, CRM alebo ERP. Predvídateľné JSON
               odpovede, idempotencia, webhooky a oddelený test / live režim.
             </p>
@@ -658,7 +658,7 @@ function ApiSection() {
 
 function CodeCard() {
   return (
-    <div className="relative">
+    <div className="relative w-full min-w-0 max-w-full">
       <div
         aria-hidden
         className="pointer-events-none absolute -inset-3 -z-10 rounded-[1.75rem] opacity-60 blur-2xl"
@@ -667,17 +667,17 @@ function CodeCard() {
             "linear-gradient(135deg, oklch(0.68 0.16 162 / 0.45), oklch(0.85 0.13 85 / 0.25))",
         }}
       />
-      <div className="rounded-2xl border border-white/10 bg-[oklch(0.13_0.02_250)] shadow-[var(--shadow-elegant)]">
+      <div className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[oklch(0.13_0.02_250)] shadow-[var(--shadow-elegant)]">
         <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
-          <span className="h-2.5 w-2.5 rounded-full bg-destructive/70" />
-          <span className="h-2.5 w-2.5 rounded-full bg-accent/80" />
-          <span className="h-2.5 w-2.5 rounded-full bg-primary/80" />
-          <span className="ml-3 text-xs font-medium text-white/60">POST /api/v1/invoices</span>
-          <span className="ml-auto rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive/70" />
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent/80" />
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/80" />
+          <span className="ml-3 truncate text-xs font-medium text-white/60">POST /api/v1/invoices</span>
+          <span className="ml-auto shrink-0 rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
             201 Created · 142 ms
           </span>
         </div>
-        <pre className="overflow-x-auto p-6 text-[12.5px] leading-relaxed">
+        <pre className="w-full min-w-0 max-w-full overflow-x-auto p-6 text-[12.5px] leading-relaxed">
           <code className="text-white/85">{highlightCode(codeExample)}</code>
         </pre>
       </div>
