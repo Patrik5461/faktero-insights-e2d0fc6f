@@ -28,9 +28,10 @@ function CommanderPage() {
   const _link = useServerFn(linkCommanderVehicle);
   const _syncR = useServerFn(syncCommanderRides);
 
-  const [state, setState] = useState<any>({ connection: null, links: [], logs: [] });
+  const [state, setState] = useState<any>({ connection: null, links: [], logs: [], credentials_invalid: false });
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [needsReauth, setNeedsReauth] = useState(false);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
