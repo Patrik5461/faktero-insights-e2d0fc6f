@@ -98,9 +98,7 @@ function QuickInvoicePage() {
               </label>
               <label className="block text-sm">DPH
                 <select value={vatRate} onChange={(e) => setVatRate(Number(e.target.value))} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value={0}>0 %</option>
-                  <option value={10}>10 %</option>
-                  <option value={20}>20 %</option>
+                  {SK_VAT_RATES.map((r) => <option key={r} value={r}>{r} %</option>)}
                 </select>
               </label>
               <label className="block text-sm">Popis
