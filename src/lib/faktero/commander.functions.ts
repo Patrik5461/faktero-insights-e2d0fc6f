@@ -123,16 +123,27 @@ async function logSync(companyId: string, sync_type: string, status: string, mes
   } catch (e) { console.error("[commander-log]", e); }
 }
 
+const DECRYPT_MSG = "Prihlasovacie údaje Commander GPS je potrebné znova zadať. Toto sa stáva po zmene bezpečnostného kľúča systému. Zadajte prosím váš Commander username a heslo znova.";
+
 export const testCommander = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { companyId: string; username?: string; password?: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { commanderTest, CommanderAuthError, CommanderRateLimitError } = await import("./commander.server");
+    const { isDecryptError } = await import("./payment-crypto.server");
     let u = data.username, p = data.password;
     if (!u || !p) {
-      const c = await loadCreds(data.companyId);
-      u = u ?? c.username; p = p ?? c.password;
+      try {
+        const c = await loadCreds(data.companyId);
+        u = u ?? c.username; p = p ?? c.password;
+      } catch (e: any) {
+        if (isDecryptError(e)) {
+          await logSync(data.companyId, "test", "error", DECRYPT_MSG);
+          return { ok: false, error: DECRYPT_MSG, needs_reauth: true };
+        }
+        throw e;
+      }
     }
     try {
       await commanderTest(u!, p!);
@@ -156,7 +167,19 @@ export const syncCommanderVehicles = createServerFn({ method: "POST" })
     const {
       commanderListVehicles, CommanderAuthError, CommanderRateLimitError, mapFuelType,
     } = await import("./commander.server");
-    const creds = await loadCreds(data.companyId);
+    const { isDecryptError } = await import("./payment-crypto.server");
+    let creds;
+    try { creds = await loadCreds(data.companyId); }
+    catch (e: any) {
+      if (isDecryptError(e)) {
+        await logSync(data.companyId, "vehicles", "error", DECRYPT_MSG);
+        await supabaseAdmin.from("commander_connections").update({
+          sync_status: "error", error_message: DECRYPT_MSG, last_sync_at: new Date().toISOString(),
+        }).eq("company_id", data.companyId);
+        return { ok: false, error: DECRYPT_MSG, needs_reauth: true };
+      }
+      throw e;
+    }
     let vehicles;
     try { vehicles = await commanderListVehicles(creds.username, creds.password); }
     catch (e: any) {
