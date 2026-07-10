@@ -98,10 +98,12 @@ export function buildPohodaInvoiceXml(opts: {
       <inv:invoiceSummary>
         <inv:homeCurrency>
           <typ:priceNone>${fixed2(sumBase(sum0))}</typ:priceNone>
-          <typ:priceLow>${fixed2(sumBase(sum10))}</typ:priceLow>
-          <typ:priceLowVAT>${fixed2(sumVat(sum10))}</typ:priceLowVAT>
-          <typ:priceHigh>${fixed2(sumBase(sum20))}</typ:priceHigh>
-          <typ:priceHighVAT>${fixed2(sumVat(sum20))}</typ:priceHighVAT>
+          <typ:priceThird>${fixed2(sumBase(sumThird))}</typ:priceThird>
+          <typ:priceThirdVAT>${fixed2(sumVat(sumThird))}</typ:priceThirdVAT>
+          <typ:priceLow>${fixed2(sumBase(sumLow))}</typ:priceLow>
+          <typ:priceLowVAT>${fixed2(sumVat(sumLow))}</typ:priceLowVAT>
+          <typ:priceHigh>${fixed2(sumBase(sumHigh))}</typ:priceHigh>
+          <typ:priceHighVAT>${fixed2(sumVat(sumHigh))}</typ:priceHighVAT>
           <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
         </inv:homeCurrency>
       </inv:invoiceSummary>
