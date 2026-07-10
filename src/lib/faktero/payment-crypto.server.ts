@@ -28,6 +28,28 @@ export function hasPaymentSecretsKey(): boolean {
   return !!process.env.PAYMENT_SECRETS_KEY;
 }
 
+export class DecryptError extends Error {
+  code = "FAKTERO_DECRYPT_ERROR" as const;
+  constructor(message = "Uložené prihlasovacie údaje nie je možné dešifrovať. Zadajte ich prosím znova.") {
+    super(message);
+    this.name = "DecryptError";
+  }
+}
+
+export function isDecryptError(e: unknown): boolean {
+  if (!e) return false;
+  if (e instanceof DecryptError) return true;
+  const msg = (e as any)?.message ? String((e as any).message) : "";
+  const code = (e as any)?.code ? String((e as any).code) : "";
+  return (
+    code === "FAKTERO_DECRYPT_ERROR" ||
+    /FAKTERO_DECRYPT_ERROR/i.test(msg) ||
+    /Unsupported state or unable to authenticate data/i.test(msg) ||
+    /unable to authenticate data/i.test(msg) ||
+    /bad decrypt/i.test(msg)
+  );
+}
+
 export function encryptSecret(plain: string): string {
   const key = candidateKeys()[0];
   const iv = randomBytes(12);
@@ -38,21 +60,28 @@ export function encryptSecret(plain: string): string {
 }
 
 export function decryptSecret(b64: string): string {
-  const buf = Buffer.from(b64, "base64");
+  let buf: Buffer;
+  try { buf = Buffer.from(b64, "base64"); }
+  catch { throw new DecryptError(); }
+  if (buf.length < 29) throw new DecryptError();
   const iv = buf.subarray(0, 12);
   const tag = buf.subarray(12, 28);
   const ct = buf.subarray(28);
-  let lastErr: unknown = null;
   for (const key of candidateKeys()) {
     try {
       const dec = createDecipheriv("aes-256-gcm", key, iv);
       dec.setAuthTag(tag);
       return Buffer.concat([dec.update(ct), dec.final()]).toString("utf8");
-    } catch (e) {
-      lastErr = e;
+    } catch {
+      // try next candidate
     }
   }
-  throw lastErr instanceof Error ? lastErr : new Error("Decryption failed");
+  throw new DecryptError();
+}
+
+export function canDecryptSecret(b64: string | null | undefined): boolean {
+  if (!b64) return false;
+  try { decryptSecret(b64); return true; } catch { return false; }
 }
 
 export function maskSecret(s: string | null | undefined): string | null {
