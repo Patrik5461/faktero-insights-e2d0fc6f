@@ -65,6 +65,7 @@ function CommanderPage() {
     try {
       await _save({ data: { companyId: cid, username: username.trim(), password: password || undefined, enabled, auto_sync_daily: autoSync } });
       setPassword("");
+      setNeedsReauth(false);
       toast.success("Uložené");
       await load();
     } catch (e: any) { toast.error(e?.message ?? "Uloženie zlyhalo"); }
