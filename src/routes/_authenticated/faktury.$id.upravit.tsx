@@ -295,7 +295,7 @@ function EditInvoice() {
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm" />
                     <select value={it.vat_rate} disabled={it._locked} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm">
-                      <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
+                      {vatRateOptions(it.vat_rate).map((r) => <option key={r} value={r}>{r}%</option>)}
                     </select>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
