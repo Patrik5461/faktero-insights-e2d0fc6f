@@ -183,8 +183,9 @@ function CommanderPage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium">Commander username</label>
+                  <label className="mb-1 block text-xs font-medium" htmlFor="commander-username">Commander username</label>
                   <input
+                    id="commander-username"
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     value={username}
                     placeholder={conn?.username_masked ?? ""}
