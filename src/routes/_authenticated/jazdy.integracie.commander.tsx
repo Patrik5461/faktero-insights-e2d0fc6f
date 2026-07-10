@@ -143,6 +143,32 @@ function CommanderPage() {
         }
       />
       <PageBody>
+        {(state.credentials_invalid || conn?.credentials_invalid) && (
+          <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="flex-1">
+                <div className="font-medium text-amber-900 dark:text-amber-200">
+                  Prihlasovacie údaje Commander GPS je potrebné znova zadať
+                </div>
+                <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-200/80">
+                  Toto sa stáva po zmene bezpečnostného kľúča systému. Zadajte prosím váš Commander username a heslo znova.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("commander-username");
+                    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    (el as HTMLInputElement | null)?.focus();
+                  }}
+                  className="mt-3 inline-flex items-center gap-2 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700"
+                >
+                  <KeyRound className="h-4 w-4" /> Zadať credentials znova
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Connection card */}
           <div className="lg:col-span-2 space-y-4">
