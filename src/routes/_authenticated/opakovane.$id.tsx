@@ -142,7 +142,7 @@ function RecurringDetail() {
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-semibold">Položky</h3>
-              <button type="button" onClick={() => setItems([...items, { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 20 }])}
+              <button type="button" onClick={() => setItems([...items, { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 23 }])}
                 className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
                 <Plus className="h-3.5 w-3.5" /> Pridať
               </button>

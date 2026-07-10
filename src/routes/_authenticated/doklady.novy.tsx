@@ -29,7 +29,7 @@ type Form = {
 const EMPTY: Form = {
   supplier_name: "", supplier_ico: "", supplier_ic_dph: "",
   document_number: "", issue_date: new Date().toISOString().slice(0, 10),
-  total_amount: "", vat_amount: "", net_amount: "", vat_rate: "20",
+  total_amount: "", vat_amount: "", net_amount: "", vat_rate: "23",
   currency: "EUR", category: "", note: "",
 };
 
@@ -64,7 +64,7 @@ function NovyDokladPage() {
         supplier_ic_dph: data.supplier_ic_dph ?? "", document_number: data.document_number ?? "",
         issue_date: data.issue_date ?? "",
         total_amount: data.total_amount?.toString() ?? "", vat_amount: data.vat_amount?.toString() ?? "",
-        net_amount: data.net_amount?.toString() ?? "", vat_rate: data.vat_rate?.toString() ?? "20",
+        net_amount: data.net_amount?.toString() ?? "", vat_rate: data.vat_rate?.toString() ?? "23",
         currency: data.currency ?? "EUR", category: data.category ?? "", note: data.note ?? "",
       });
       setSource(data.source as "photo" | "qr" | "upload" | "web");

@@ -22,7 +22,7 @@ type SI = {
   purchase_price: number; sale_price: number; vat_rate: number; unit: string;
   track_stock: boolean; min_stock: number;
 };
-const EMPTY: SI = { sku: "", barcode: "", purchase_price: 0, sale_price: 0, vat_rate: 20, unit: "ks", track_stock: true, min_stock: 0 };
+const EMPTY: SI = { sku: "", barcode: "", purchase_price: 0, sale_price: 0, vat_rate: 23, unit: "ks", track_stock: true, min_stock: 0 };
 
 type NewProduct = {
   name: string; sku: string; barcode: string; unit: string;
@@ -32,7 +32,7 @@ type NewProduct = {
 };
 const EMPTY_NEW: NewProduct = {
   name: "", sku: "", barcode: "", unit: "ks",
-  sale_price: 0, purchase_price: 0, vat_rate: 20,
+  sale_price: 0, purchase_price: 0, vat_rate: 23,
   track_stock: true, min_stock: 0,
   initial_quantity: 0, warehouse_id: "",
 };

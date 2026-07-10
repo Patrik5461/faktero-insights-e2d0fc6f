@@ -31,7 +31,7 @@ const RECIPES: Recipe[] = [
     body: (v) => JSON.stringify({
       external_id: v.external_id || `TEST-${Date.now()}`,
       customer: { name: v.customer_name || "Test s.r.o.", email: v.customer_email || "test@example.com", country: "SK" },
-      items: [{ name: "Webové služby", quantity: 1, unit: "ks", unit_price: 100, vat_rate: 20 }],
+      items: [{ name: "Webové služby", quantity: 1, unit: "ks", unit_price: 100, vat_rate: 23 }],
     }, null, 2),
     vars: [
       { key: "external_id", label: "external_id" },

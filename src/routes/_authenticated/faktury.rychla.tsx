@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
+import { DEFAULT_VAT_RATE, SK_VAT_RATES } from "@/lib/faktero/vat-rates";
 
 export const Route = createFileRoute("/_authenticated/faktury/rychla")({
   head: () => ({ meta: [{ title: "Rýchla faktúra — Faktero" }] }),
@@ -17,7 +18,7 @@ function QuickInvoicePage() {
   const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("Služby");
-  const [vatRate, setVatRate] = useState(20);
+  const [vatRate, setVatRate] = useState<number>(DEFAULT_VAT_RATE);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -97,9 +98,7 @@ function QuickInvoicePage() {
               </label>
               <label className="block text-sm">DPH
                 <select value={vatRate} onChange={(e) => setVatRate(Number(e.target.value))} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value={0}>0 %</option>
-                  <option value={10}>10 %</option>
-                  <option value={20}>20 %</option>
+                  {SK_VAT_RATES.map((r) => <option key={r} value={r}>{r} %</option>)}
                 </select>
               </label>
               <label className="block text-sm">Popis

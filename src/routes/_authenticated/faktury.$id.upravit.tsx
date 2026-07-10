@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Trash2, Plus, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { DEFAULT_VAT_RATE, vatRateOptions } from "@/lib/faktero/vat-rates";
 
 export const Route = createFileRoute("/_authenticated/faktury/$id/upravit")({
   head: () => ({ meta: [{ title: "Upraviť faktúru — Faktero" }] }),
@@ -25,7 +26,7 @@ type Item = {
   _locked?: boolean;
 };
 
-const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 20 };
+const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: DEFAULT_VAT_RATE };
 
 function EditInvoice() {
   const { id } = Route.useParams();
@@ -261,7 +262,7 @@ function EditInvoice() {
                       <td className="py-2 pl-3">
                         <select value={it.vat_rate} disabled={it._locked} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                           className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background">
-                          <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
+                          {vatRateOptions(it.vat_rate).map((r) => <option key={r} value={r}>{r}%</option>)}
                         </select>
                       </td>
                       <td className="py-2 pl-3 text-right tabular-nums font-medium">
@@ -294,7 +295,7 @@ function EditInvoice() {
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm" />
                     <select value={it.vat_rate} disabled={it._locked} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm">
-                      <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
+                      {vatRateOptions(it.vat_rate).map((r) => <option key={r} value={r}>{r}%</option>)}
                     </select>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">

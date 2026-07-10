@@ -17,6 +17,7 @@ import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocom
 import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { findCustomerByIcoFn } from "@/lib/faktero/company-lookup.functions";
 import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombobox";
+import { DEFAULT_VAT_RATE, SK_VAT_RATES } from "@/lib/faktero/vat-rates";
 
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
@@ -37,7 +38,7 @@ type Item = {
   _available?: number;
   _sku?: string | null;
 };
-const EMPTY_ITEM: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 20 };
+const EMPTY_ITEM: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: DEFAULT_VAT_RATE };
 
 type StockMeta = { stock_item_id: string; track_stock: boolean; available: number; sku: string | null };
 
@@ -490,7 +491,7 @@ function NewInvoice() {
                   const newItem: Item = {
                     name: p.name, description: p.description ?? "",
                     quantity: 1, unit: p.unit ?? "ks",
-                    unit_price: Number(p.unit_price ?? 0), vat_rate: Number(p.vat_rate ?? 20),
+                    unit_price: Number(p.unit_price ?? 0), vat_rate: Number(p.vat_rate ?? DEFAULT_VAT_RATE),
                     product_id: p.id,
                     stock_item_id: meta?.stock_item_id ?? null,
                     _track_stock: meta?.track_stock ?? false,
@@ -538,7 +539,7 @@ function NewInvoice() {
                         ) : (
                           <select value={it.vat_rate} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                             className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background">
-                            <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
+                            {SK_VAT_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
                           </select>
                         )}
                       </td>
@@ -574,7 +575,7 @@ function NewInvoice() {
                     ) : (
                       <select value={it.vat_rate} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                         className="rounded-md border border-input bg-background px-2 py-1.5 text-sm">
-                        <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
+                        {SK_VAT_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
                       </select>
                     )}
                   </div>

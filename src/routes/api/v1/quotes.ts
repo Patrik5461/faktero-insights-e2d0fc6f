@@ -7,7 +7,7 @@ const Item = z.object({
   quantity: z.number().positive().max(1000000),
   unit: z.string().max(20).optional().default("ks"),
   unit_price: z.number().nonnegative().max(10000000),
-  vat_rate: z.number().min(0).max(100).optional().default(20),
+  vat_rate: z.number().min(0).max(100).optional().default(23),
 });
 const QuoteInput = z.object({
   customer_id: z.string().uuid().optional().nullable(),
