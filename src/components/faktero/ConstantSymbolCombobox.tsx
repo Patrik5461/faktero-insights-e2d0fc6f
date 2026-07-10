@@ -53,19 +53,33 @@ export function ConstantSymbolCombobox({ value, onChange, placeholder, id }: Pro
 
   return (
     <div ref={wrapRef} className="relative">
-      <input
-        id={id}
-        value={query}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          onChange(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-        placeholder={placeholder ?? "napr. 0098"}
-        autoComplete="off"
-        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-      />
+      <div className="relative">
+        <input
+          id={id}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            onChange(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder={placeholder ?? "napr. 0098"}
+          autoComplete="off"
+          className="w-full rounded-md border border-input bg-background py-2 pl-3 pr-9 text-sm"
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setOpen((o) => !o);
+          }}
+          className="absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground hover:text-foreground"
+          aria-label="Otvoriť zoznam konštantných symbolov"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </button>
+      </div>
       {matched && !open && (
         <div className="mt-1 text-xs text-muted-foreground">{matched.label}</div>
       )}
