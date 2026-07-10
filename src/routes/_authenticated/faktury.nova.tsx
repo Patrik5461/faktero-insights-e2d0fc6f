@@ -491,7 +491,7 @@ function NewInvoice() {
                   const newItem: Item = {
                     name: p.name, description: p.description ?? "",
                     quantity: 1, unit: p.unit ?? "ks",
-                    unit_price: Number(p.unit_price ?? 0), vat_rate: Number(p.vat_rate ?? 20),
+                    unit_price: Number(p.unit_price ?? 0), vat_rate: Number(p.vat_rate ?? DEFAULT_VAT_RATE),
                     product_id: p.id,
                     stock_item_id: meta?.stock_item_id ?? null,
                     _track_stock: meta?.track_stock ?? false,
