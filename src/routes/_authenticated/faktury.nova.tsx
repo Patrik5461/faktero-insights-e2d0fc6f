@@ -64,7 +64,7 @@ function NewInvoice() {
     delivery_date: new Date().toISOString().slice(0, 10),
     due_date: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
     variable_symbol: "",
-    constant_symbol: "0098",
+    constant_symbol: "",
     specific_symbol: "",
     order_number: "",
     currency: "EUR",

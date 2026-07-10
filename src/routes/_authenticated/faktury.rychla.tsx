@@ -51,7 +51,7 @@ function QuickInvoicePage() {
       delivery_date: today,
       currency: "EUR",
       invoice_number: `RYCHLA-${Date.now().toString().slice(-6)}`,
-      constant_symbol: "0098",
+      constant_symbol: "",
       payment_method: "transfer",
     }).select().single();
     if (error || !inv) { setSaving(false); return toast.error(error?.message ?? "Chyba"); }
