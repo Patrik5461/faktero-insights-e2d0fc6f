@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Satellite, Link2, RefreshCcw, Power, PlugZap, Save, TestTube2 } from "lucide-react";
+import { ArrowLeft, Satellite, Link2, RefreshCcw, Power, PlugZap, Save, TestTube2, AlertTriangle, KeyRound } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
