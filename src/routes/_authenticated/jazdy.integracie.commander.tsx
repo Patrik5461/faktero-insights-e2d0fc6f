@@ -76,7 +76,8 @@ function CommanderPage() {
     if (!cid) return;
     setBusy("test");
     try {
-      const r = await _test({ data: { companyId: cid, username: username || undefined, password: password || undefined } });
+      const r: any = await _test({ data: { companyId: cid, username: username || undefined, password: password || undefined } });
+      if (r.needs_reauth) setNeedsReauth(true);
       if (r.ok) toast.success("Pripojenie funguje"); else toast.error(r.error ?? "Test zlyhal");
       await load();
     } catch (e: any) { toast.error(e?.message ?? "Test zlyhal"); }
@@ -87,7 +88,7 @@ function CommanderPage() {
     if (!cid) return;
     if (!confirm("Naozaj odpojiť Commander? Importované jazdy zostanú zachované.")) return;
     setBusy("disc");
-    try { await _disc({ data: { companyId: cid } }); toast.success("Odpojené"); setUsername(""); setPassword(""); await load(); }
+    try { await _disc({ data: { companyId: cid } }); toast.success("Odpojené"); setUsername(""); setPassword(""); setNeedsReauth(false); await load(); }
     catch (e: any) { toast.error(e?.message ?? "Chyba"); }
     finally { setBusy(null); }
   }
@@ -95,7 +96,12 @@ function CommanderPage() {
   async function onSyncVehicles() {
     if (!cid) return;
     setBusy("syncV");
-    try { const r = await _syncV({ data: { companyId: cid } }); r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba"); await load(); }
+    try {
+      const r: any = await _syncV({ data: { companyId: cid } });
+      if (r.needs_reauth) setNeedsReauth(true);
+      r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba");
+      await load();
+    }
     catch (e: any) { toast.error(e?.message ?? "Chyba"); }
     finally { setBusy(null); }
   }
