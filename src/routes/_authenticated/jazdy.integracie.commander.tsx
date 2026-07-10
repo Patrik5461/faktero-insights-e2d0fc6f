@@ -144,7 +144,7 @@ function CommanderPage() {
         }
       />
       <PageBody>
-        {(state.credentials_invalid || conn?.credentials_invalid) && (
+        {(state.credentials_invalid || conn?.credentials_invalid || needsReauth) && (
           <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
