@@ -18,7 +18,7 @@ function QuickInvoicePage() {
   const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("Služby");
-  const [vatRate, setVatRate] = useState(20);
+  const [vatRate, setVatRate] = useState<number>(DEFAULT_VAT_RATE);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
