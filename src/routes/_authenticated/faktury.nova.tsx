@@ -539,7 +539,7 @@ function NewInvoice() {
                         ) : (
                           <select value={it.vat_rate} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                             className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background">
-                            <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
+                            {SK_VAT_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
                           </select>
                         )}
                       </td>
