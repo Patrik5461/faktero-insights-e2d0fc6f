@@ -532,6 +532,14 @@ function PlanCard({
             </>
           )}
         </div>
+        {p.price_monthly_cents != null && (
+          <p className="text-xs text-muted-foreground">
+            s DPH 23 %:{" "}
+            <span className="font-medium text-foreground">
+              {((p.price_monthly_cents * 1.23) / 100).toFixed(2).replace(".", ",")} €
+            </span>
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         <ul className="space-y-1.5 text-sm">

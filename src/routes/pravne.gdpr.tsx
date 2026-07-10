@@ -25,6 +25,10 @@ function Page() {
 
       <h2>2. Kontaktné údaje</h2>
       <p>Pre otázky týkajúce sa spracúvania osobných údajov nás kontaktujte na <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a> alebo {LEGAL_COMPANY.phone}.</p>
+      <p>
+        Nemáme povinnosť ustanoviť zodpovednú osobu (DPO); vo veciach ochrany
+        osobných údajov kontaktujte <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>.
+      </p>
 
       <h2>3. Aké údaje spracúvame</h2>
       <ul>

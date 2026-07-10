@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CreditCard, ShieldCheck, Lock } from "lucide-react";
 import { LegalShell, LEGAL_COMPANY } from "@/components/faktero/LegalShell";
 
 export const Route = createFileRoute("/pravne/opakovane-platby")({
@@ -90,6 +91,24 @@ function Page() {
         <li>Visa</li>
         <li>Mastercard</li>
       </ul>
+      <div className="my-4 flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground">
+          <CreditCard className="h-3.5 w-3.5" /> GoPay
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-[#1a1f71]">
+          VISA
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold">
+          <span className="text-[#eb001b]">Master</span>
+          <span className="text-[#f79e1b]">card</span>
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground">
+          <Lock className="h-3.5 w-3.5" /> 3-D Secure
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground">
+          <ShieldCheck className="h-3.5 w-3.5" /> Údaje karty spracúva GoPay
+        </span>
+      </div>
       <p>
         GoPay zabezpečuje platby prostredníctvom 3-D Secure a údaje karty
         spracúva výhradne GoPay. Faktero si číslo karty ani CVV kód
