@@ -604,16 +604,16 @@ function ApiSection() {
             "radial-gradient(60% 40% at 10% 0%, oklch(0.68 0.16 162 / 0.25), transparent 60%), radial-gradient(40% 30% at 90% 100%, oklch(0.85 0.13 85 / 0.18), transparent 60%)",
         }}
       />
-      <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
+      <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 md:py-32">
         <div className="grid items-center gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-          <div className="text-sidebar-foreground">
+          <div className="min-w-0 text-sidebar-foreground">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-medium text-primary">
               <Code2 className="h-3 w-3" /> Pre vývojárov
             </div>
-            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
+            <h2 className="text-balance break-words text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
               REST API, ktoré <span className="text-primary">vyzerá ako u veľkých</span>.
             </h2>
-            <p className="mt-5 max-w-lg text-sidebar-foreground/70">
+            <p className="mt-5 w-full max-w-lg break-words text-sidebar-foreground/70">
               Vystavujte faktúry priamo z vášho e-shopu, CRM alebo ERP. Predvídateľné JSON
               odpovede, idempotencia, webhooky a oddelený test / live režim.
             </p>
