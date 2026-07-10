@@ -20,10 +20,21 @@ export const getCommanderStatus = createServerFn({ method: "POST" })
   .inputValidator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { canDecryptSecret } = await import("./payment-crypto.server");
     const { data: row } = await supabase
       .from("commander_connections")
       .select("id, enabled, username, auto_sync_daily, last_sync_at, sync_status, error_message, updated_at")
       .eq("company_id", data.companyId).maybeSingle();
+    // Probe stored password so UI can prompt for re-entry after key rotation.
+    let credentials_invalid = false;
+    if (row) {
+      const { data: sec } = await supabaseAdmin
+        .from("commander_connections")
+        .select("encrypted_password")
+        .eq("company_id", data.companyId).maybeSingle();
+      credentials_invalid = !!sec?.encrypted_password && !canDecryptSecret(sec.encrypted_password);
+    }
     const { data: links } = await supabase
       .from("commander_vehicle_links")
       .select("id, commander_vehicle_id, commander_vehicle_name, commander_license_plate, faktero_vehicle_id, last_synced_at")
@@ -36,7 +47,8 @@ export const getCommanderStatus = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(20);
     return {
-      connection: row ? { ...row, username_masked: maskUser(row.username), username: undefined } : null,
+      connection: row ? { ...row, username_masked: maskUser(row.username), username: undefined, credentials_invalid } : null,
+      credentials_invalid,
       links: links ?? [],
       logs: logs ?? [],
     };
