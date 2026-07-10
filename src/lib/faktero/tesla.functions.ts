@@ -145,6 +145,15 @@ export const syncTeslaVehicles = createServerFn({ method: "POST" })
       const token = await loadValidAccessToken(data.companyId);
       vehicles = await listTeslaVehicles(token);
     } catch (e: any) {
+      const { isDecryptError } = await import("./payment-crypto.server");
+      if (isDecryptError(e)) {
+        const msg = "Tesla prihlasovacie údaje je potrebné znova pripojiť. Toto sa stáva po zmene bezpečnostného kľúča systému. Pripojte prosím Tesla účet znovu.";
+        await logSync(data.companyId, "vehicles", "error", msg);
+        await supabaseAdmin.from("tesla_connections").update({
+          sync_status: "error", error_message: msg, last_sync_at: new Date().toISOString(),
+        }).eq("company_id", data.companyId);
+        return { ok: false, error: msg, needs_reauth: true };
+      }
       const msg = e instanceof TeslaAuthError
         ? "Tesla token vypršal. Pripojte účet znovu."
         : (e?.message ?? "Synchronizácia vozidiel zlyhala.");
@@ -152,7 +161,7 @@ export const syncTeslaVehicles = createServerFn({ method: "POST" })
       await supabaseAdmin.from("tesla_connections").update({
         sync_status: "error", error_message: msg, last_sync_at: new Date().toISOString(),
       }).eq("company_id", data.companyId);
-      return { ok: false, error: msg };
+      return { ok: false, error: msg, needs_reauth: e instanceof TeslaAuthError };
     }
 
     const { data: faktVehicles } = await supabaseAdmin
