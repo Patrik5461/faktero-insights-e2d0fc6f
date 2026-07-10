@@ -37,7 +37,7 @@ type Item = {
   _available?: number;
   _sku?: string | null;
 };
-const EMPTY_ITEM: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 20 };
+const EMPTY_ITEM: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: DEFAULT_VAT_RATE };
 
 type StockMeta = { stock_item_id: string; track_stock: boolean; available: number; sku: string | null };
 
