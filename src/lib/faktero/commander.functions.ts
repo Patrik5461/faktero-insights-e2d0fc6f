@@ -20,10 +20,21 @@ export const getCommanderStatus = createServerFn({ method: "POST" })
   .inputValidator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { canDecryptSecret } = await import("./payment-crypto.server");
     const { data: row } = await supabase
       .from("commander_connections")
       .select("id, enabled, username, auto_sync_daily, last_sync_at, sync_status, error_message, updated_at")
       .eq("company_id", data.companyId).maybeSingle();
+    // Probe stored password so UI can prompt for re-entry after key rotation.
+    let credentials_invalid = false;
+    if (row) {
+      const { data: sec } = await supabaseAdmin
+        .from("commander_connections")
+        .select("encrypted_password")
+        .eq("company_id", data.companyId).maybeSingle();
+      credentials_invalid = !!sec?.encrypted_password && !canDecryptSecret(sec.encrypted_password);
+    }
     const { data: links } = await supabase
       .from("commander_vehicle_links")
       .select("id, commander_vehicle_id, commander_vehicle_name, commander_license_plate, faktero_vehicle_id, last_synced_at")
@@ -36,7 +47,8 @@ export const getCommanderStatus = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(20);
     return {
-      connection: row ? { ...row, username_masked: maskUser(row.username), username: undefined } : null,
+      connection: row ? { ...row, username_masked: maskUser(row.username), username: undefined, credentials_invalid } : null,
+      credentials_invalid,
       links: links ?? [],
       logs: logs ?? [],
     };
@@ -111,16 +123,27 @@ async function logSync(companyId: string, sync_type: string, status: string, mes
   } catch (e) { console.error("[commander-log]", e); }
 }
 
+const DECRYPT_MSG = "Prihlasovacie údaje Commander GPS je potrebné znova zadať. Toto sa stáva po zmene bezpečnostného kľúča systému. Zadajte prosím váš Commander username a heslo znova.";
+
 export const testCommander = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { companyId: string; username?: string; password?: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { commanderTest, CommanderAuthError, CommanderRateLimitError } = await import("./commander.server");
+    const { isDecryptError } = await import("./payment-crypto.server");
     let u = data.username, p = data.password;
     if (!u || !p) {
-      const c = await loadCreds(data.companyId);
-      u = u ?? c.username; p = p ?? c.password;
+      try {
+        const c = await loadCreds(data.companyId);
+        u = u ?? c.username; p = p ?? c.password;
+      } catch (e: any) {
+        if (isDecryptError(e)) {
+          await logSync(data.companyId, "test", "error", DECRYPT_MSG);
+          return { ok: false, error: DECRYPT_MSG, needs_reauth: true };
+        }
+        throw e;
+      }
     }
     try {
       await commanderTest(u!, p!);
@@ -144,7 +167,19 @@ export const syncCommanderVehicles = createServerFn({ method: "POST" })
     const {
       commanderListVehicles, CommanderAuthError, CommanderRateLimitError, mapFuelType,
     } = await import("./commander.server");
-    const creds = await loadCreds(data.companyId);
+    const { isDecryptError } = await import("./payment-crypto.server");
+    let creds;
+    try { creds = await loadCreds(data.companyId); }
+    catch (e: any) {
+      if (isDecryptError(e)) {
+        await logSync(data.companyId, "vehicles", "error", DECRYPT_MSG);
+        await supabaseAdmin.from("commander_connections").update({
+          sync_status: "error", error_message: DECRYPT_MSG, last_sync_at: new Date().toISOString(),
+        }).eq("company_id", data.companyId);
+        return { ok: false, error: DECRYPT_MSG, needs_reauth: true };
+      }
+      throw e;
+    }
     let vehicles;
     try { vehicles = await commanderListVehicles(creds.username, creds.password); }
     catch (e: any) {
@@ -320,7 +355,16 @@ export const syncCommanderRides = createServerFn({ method: "POST" })
       getRideDistance, getRideStartOdometer, getRideEndOdometer,
       getRideStartLocation, getRideEndLocation, getRideType, getRideDriver,
     } = await import("./commander.server");
-    const creds = await loadCreds(data.companyId);
+    const { isDecryptError } = await import("./payment-crypto.server");
+    let creds;
+    try { creds = await loadCreds(data.companyId); }
+    catch (e: any) {
+      if (isDecryptError(e)) {
+        await logSync(data.companyId, "rides", "error", DECRYPT_MSG);
+        return { ok: false, error: DECRYPT_MSG, needs_reauth: true, imported: 0, skipped: 0, duplicates: 0, unlinked: 0, errors: 0, fetched: 0 };
+      }
+      throw e;
+    }
 
     const { data: allLinks } = await supabaseAdmin
       .from("commander_vehicle_links")

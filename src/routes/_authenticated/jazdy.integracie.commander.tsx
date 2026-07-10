@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Satellite, Link2, RefreshCcw, Power, PlugZap, Save, TestTube2 } from "lucide-react";
+import { ArrowLeft, Satellite, Link2, RefreshCcw, Power, PlugZap, Save, TestTube2, AlertTriangle, KeyRound } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,9 +28,10 @@ function CommanderPage() {
   const _link = useServerFn(linkCommanderVehicle);
   const _syncR = useServerFn(syncCommanderRides);
 
-  const [state, setState] = useState<any>({ connection: null, links: [], logs: [] });
+  const [state, setState] = useState<any>({ connection: null, links: [], logs: [], credentials_invalid: false });
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [needsReauth, setNeedsReauth] = useState(false);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -64,6 +65,7 @@ function CommanderPage() {
     try {
       await _save({ data: { companyId: cid, username: username.trim(), password: password || undefined, enabled, auto_sync_daily: autoSync } });
       setPassword("");
+      setNeedsReauth(false);
       toast.success("Uložené");
       await load();
     } catch (e: any) { toast.error(e?.message ?? "Uloženie zlyhalo"); }
@@ -74,7 +76,8 @@ function CommanderPage() {
     if (!cid) return;
     setBusy("test");
     try {
-      const r = await _test({ data: { companyId: cid, username: username || undefined, password: password || undefined } });
+      const r: any = await _test({ data: { companyId: cid, username: username || undefined, password: password || undefined } });
+      if (r.needs_reauth) setNeedsReauth(true);
       if (r.ok) toast.success("Pripojenie funguje"); else toast.error(r.error ?? "Test zlyhal");
       await load();
     } catch (e: any) { toast.error(e?.message ?? "Test zlyhal"); }
@@ -85,7 +88,7 @@ function CommanderPage() {
     if (!cid) return;
     if (!confirm("Naozaj odpojiť Commander? Importované jazdy zostanú zachované.")) return;
     setBusy("disc");
-    try { await _disc({ data: { companyId: cid } }); toast.success("Odpojené"); setUsername(""); setPassword(""); await load(); }
+    try { await _disc({ data: { companyId: cid } }); toast.success("Odpojené"); setUsername(""); setPassword(""); setNeedsReauth(false); await load(); }
     catch (e: any) { toast.error(e?.message ?? "Chyba"); }
     finally { setBusy(null); }
   }
@@ -93,7 +96,12 @@ function CommanderPage() {
   async function onSyncVehicles() {
     if (!cid) return;
     setBusy("syncV");
-    try { const r = await _syncV({ data: { companyId: cid } }); r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba"); await load(); }
+    try {
+      const r: any = await _syncV({ data: { companyId: cid } });
+      if (r.needs_reauth) setNeedsReauth(true);
+      r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba");
+      await load();
+    }
     catch (e: any) { toast.error(e?.message ?? "Chyba"); }
     finally { setBusy(null); }
   }
@@ -109,7 +117,8 @@ function CommanderPage() {
     if (preset === "custom" && (!from || !to)) { toast.error("Zadajte rozsah dátumov."); return; }
     setBusy("syncR");
     try {
-      const r = await _syncR({ data: { companyId: cid, preset, from: from || undefined, to: to || undefined } });
+      const r: any = await _syncR({ data: { companyId: cid, preset, from: from || undefined, to: to || undefined } });
+      if (r.needs_reauth) setNeedsReauth(true);
       r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba");
       await load();
     } catch (e: any) { toast.error(e?.message ?? "Chyba"); }
@@ -122,7 +131,8 @@ function CommanderPage() {
     if (!confirm("Znovu skontrolovať všetky jazdy a importovať tie, ktoré ešte nie sú v knihe jázd? Skutočné duplicity (podľa external_id) sa preskočia.")) return;
     setBusy("forceR");
     try {
-      const r = await _syncR({ data: { companyId: cid, preset, from: from || undefined, to: to || undefined, force: true } });
+      const r: any = await _syncR({ data: { companyId: cid, preset, from: from || undefined, to: to || undefined, force: true } });
+      if (r.needs_reauth) setNeedsReauth(true);
       r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba");
       await load();
     } catch (e: any) { toast.error(e?.message ?? "Chyba"); }
@@ -143,6 +153,32 @@ function CommanderPage() {
         }
       />
       <PageBody>
+        {(state.credentials_invalid || conn?.credentials_invalid || needsReauth) && (
+          <div className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="flex-1">
+                <div className="font-medium text-amber-900 dark:text-amber-200">
+                  Prihlasovacie údaje Commander GPS je potrebné znova zadať
+                </div>
+                <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-200/80">
+                  Toto sa stáva po zmene bezpečnostného kľúča systému. Zadajte prosím váš Commander username a heslo znova.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("commander-username");
+                    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    (el as HTMLInputElement | null)?.focus();
+                  }}
+                  className="mt-3 inline-flex items-center gap-2 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700"
+                >
+                  <KeyRound className="h-4 w-4" /> Zadať credentials znova
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Connection card */}
           <div className="lg:col-span-2 space-y-4">
@@ -157,8 +193,9 @@ function CommanderPage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium">Commander username</label>
+                  <label className="mb-1 block text-xs font-medium" htmlFor="commander-username">Commander username</label>
                   <input
+                    id="commander-username"
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     value={username}
                     placeholder={conn?.username_masked ?? ""}
