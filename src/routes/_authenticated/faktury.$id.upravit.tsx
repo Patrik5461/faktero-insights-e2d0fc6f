@@ -262,7 +262,7 @@ function EditInvoice() {
                       <td className="py-2 pl-3">
                         <select value={it.vat_rate} disabled={it._locked} onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                           className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background">
-                          <option value={0}>0%</option><option value={10}>10%</option><option value={20}>20%</option>
+                          {vatRateOptions(it.vat_rate).map((r) => <option key={r} value={r}>{r}%</option>)}
                         </select>
                       </td>
                       <td className="py-2 pl-3 text-right tabular-nums font-medium">
