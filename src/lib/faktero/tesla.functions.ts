@@ -30,10 +30,25 @@ export const getTeslaStatus = createServerFn({ method: "POST" })
   .inputValidator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { canDecryptSecret } = await import("./payment-crypto.server");
     const { data: row } = await supabase
       .from("tesla_connections")
       .select("id, enabled, tesla_account_email, token_expires_at, last_sync_at, sync_status, error_message, updated_at")
       .eq("company_id", data.companyId).maybeSingle();
+    let credentials_invalid = false;
+    if (row) {
+      const { data: sec } = await supabaseAdmin
+        .from("tesla_connections")
+        .select("encrypted_access_token, encrypted_refresh_token")
+        .eq("company_id", data.companyId).maybeSingle();
+      const hasTokens = !!(sec?.encrypted_access_token || sec?.encrypted_refresh_token);
+      if (hasTokens) {
+        const okA = sec?.encrypted_access_token ? canDecryptSecret(sec.encrypted_access_token) : true;
+        const okR = sec?.encrypted_refresh_token ? canDecryptSecret(sec.encrypted_refresh_token) : true;
+        credentials_invalid = !(okA && okR);
+      }
+    }
     const { data: links } = await supabase
       .from("tesla_vehicle_links")
       .select("id, tesla_vehicle_id, tesla_vin, tesla_display_name, tesla_license_plate, faktero_vehicle_id, last_synced_at")
@@ -52,7 +67,8 @@ export const getTeslaStatus = createServerFn({ method: "POST" })
       .order("captured_at", { ascending: false })
       .limit(50);
     return {
-      connection: row ? { ...row, email_masked: maskEmail(row.tesla_account_email), tesla_account_email: undefined } : null,
+      connection: row ? { ...row, email_masked: maskEmail(row.tesla_account_email), tesla_account_email: undefined, credentials_invalid } : null,
+      credentials_invalid,
       links: links ?? [],
       logs: logs ?? [],
       snapshots: snaps ?? [],
