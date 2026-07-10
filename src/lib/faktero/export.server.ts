@@ -34,9 +34,21 @@ export function buildPohodaInvoiceXml(opts: {
   const entries = invoices.map(({ invoice, items }, idx) => {
     const isCreditNote = invoice.type === "credit_note";
     const invoiceType = isCreditNote ? "issuedCreditNotice" : "issuedInvoice";
-    const sum0 = items.filter((it) => Number(it.vat_rate) === 0);
-    const sum10 = items.filter((it) => Number(it.vat_rate) === 10);
-    const sum20 = items.filter((it) => Number(it.vat_rate) === 20);
+    // Pohoda rateVAT enum: "none" = 0 %, "third" = super-znížená (5 %),
+    // "low" = znížená (19 %; historicky 10 %), "high" = základná (23 %; historicky 20 %).
+    const rateVatCode = (r: number) => {
+      const n = Number(r);
+      if (n === 0) return "none";
+      if (n === 5) return "third";
+      if (n === 19 || n === 10) return "low";
+      return "high"; // 23, 20 alebo iné → základná
+    };
+    const bucket = (code: "none" | "third" | "low" | "high") =>
+      items.filter((it) => rateVatCode(Number(it.vat_rate)) === code);
+    const sum0 = bucket("none");
+    const sumThird = bucket("third");
+    const sumLow = bucket("low");
+    const sumHigh = bucket("high");
     const sumBase = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.subtotal ?? 0), 0);
     const sumVat = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.vat_amount ?? 0), 0);
 
@@ -45,7 +57,7 @@ export function buildPohodaInvoiceXml(opts: {
           <inv:text>${esc(it.name)}</inv:text>
           <inv:quantity>${Number(it.quantity ?? 0)}</inv:quantity>
           <inv:unit>${esc(it.unit ?? "ks")}</inv:unit>
-          <inv:rateVAT>${Number(it.vat_rate) === 20 ? "high" : Number(it.vat_rate) === 10 ? "low" : "none"}</inv:rateVAT>
+          <inv:rateVAT>${rateVatCode(Number(it.vat_rate))}</inv:rateVAT>
           <inv:homeCurrency>
             <typ:unitPrice>${fixed2(it.unit_price)}</typ:unitPrice>
             <typ:price>${fixed2(it.subtotal)}</typ:price>
