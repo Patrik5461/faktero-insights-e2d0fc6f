@@ -19,8 +19,8 @@ export const aiParseInvoiceFn = createServerFn({ method: "POST" })
 
     const system = `Si asistent pre vytváranie slovenských faktúr. Z textu používateľa extrahuj položky faktúry.
 Vráť VÝLUČNE JSON v tvare:
-{"customer_hint": string | null, "currency": "EUR", "notes": string | null, "items": [{"name": string, "quantity": number, "unit": "ks"|"hod"|"m"|"kg"|"l", "unit_price": number, "vat_rate": 0|10|20}]}
-Ak cena je s DPH, odhadni jednotkovú cenu bez DPH. Štandardná DPH je 20%.`;
+{"customer_hint": string | null, "currency": "EUR", "notes": string | null, "items": [{"name": string, "quantity": number, "unit": "ks"|"hod"|"m"|"kg"|"l", "unit_price": number, "vat_rate": 0|5|19|23}]}
+Ak cena je s DPH, odhadni jednotkovú cenu bez DPH. Štandardná DPH je 23%.`;
 
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -54,7 +54,7 @@ Ak cena je s DPH, odhadni jednotkovú cenu bez DPH. Štandardná DPH je 20%.`;
         quantity: Number(it.quantity ?? 1),
         unit: String(it.unit ?? "ks"),
         unit_price: Number(it.unit_price ?? 0),
-        vat_rate: Number(it.vat_rate ?? 20),
+        vat_rate: Number(it.vat_rate ?? 23),
       })) : [],
     };
   });

@@ -73,7 +73,7 @@ const CreateStockProductInput = z.object({
   unit: z.string().trim().optional().default("ks"),
   sale_price: z.coerce.number().nonnegative().default(0),
   purchase_price: z.coerce.number().nonnegative().default(0),
-  vat_rate: z.coerce.number().min(0).max(100).default(20),
+  vat_rate: z.coerce.number().min(0).max(100).default(23),
   track_stock: z.boolean().default(true),
   min_stock: z.coerce.number().nonnegative().default(0),
   initial_quantity: z.coerce.number().nonnegative().default(0),
@@ -345,7 +345,7 @@ export const ensureStockItemForProduct = createServerFn({ method: "POST" })
     const { data: created, error } = await supabase.from("stock_items").insert({
       company_id: data.company_id, product_id: product.id,
       sku: product.code ?? null, sale_price: product.unit_price ?? 0,
-      vat_rate: product.vat_rate ?? 20, unit: product.unit ?? "ks",
+      vat_rate: product.vat_rate ?? 23, unit: product.unit ?? "ks",
       track_stock: true,
     }).select().single();
     if (error || !created) throw new Error(error?.message ?? "Nepodarilo sa vytvoriť skladovú položku.");
@@ -377,7 +377,7 @@ export const setProductStockTracking = createServerFn({ method: "POST" })
     const { data: created, error } = await supabase.from("stock_items").insert({
       company_id: data.company_id, product_id: product.id,
       sku: product.code ?? null, sale_price: product.unit_price ?? 0,
-      vat_rate: product.vat_rate ?? 20, unit: product.unit ?? "ks",
+      vat_rate: product.vat_rate ?? 23, unit: product.unit ?? "ks",
       track_stock: true,
     }).select().single();
     if (error || !created) throw new Error(error?.message ?? "Nepodarilo sa vytvoriť skladovú položku.");
@@ -536,7 +536,7 @@ const ImportRow = z.object({
   unit: z.string().trim().max(16).optional().default("ks"),
   purchase_price: z.coerce.number().nonnegative().optional().default(0),
   sale_price: z.coerce.number().nonnegative().optional().default(0),
-  vat_rate: z.coerce.number().min(0).max(100).optional().default(20),
+  vat_rate: z.coerce.number().min(0).max(100).optional().default(23),
   min_stock: z.coerce.number().nonnegative().optional().default(0),
   initial_stock: z.coerce.number().optional().default(0),
   warehouse_name: z.string().trim().max(255).optional().nullable(),
@@ -589,7 +589,7 @@ export const importStockCsv = createServerFn({ method: "POST" })
         } else {
           const { data: np } = await supabase.from("products").insert({
             company_id: cid, name: r.name, code: r.sku ?? null, unit: r.unit ?? "ks",
-            unit_price: r.sale_price ?? 0, vat_rate: r.vat_rate ?? 20, active: true,
+            unit_price: r.sale_price ?? 0, vat_rate: r.vat_rate ?? 23, active: true,
           }).select().single();
           product = np; createdProducts++;
         }
@@ -609,7 +609,7 @@ export const importStockCsv = createServerFn({ method: "POST" })
             company_id: cid, product_id: product.id,
             sku: r.sku ?? null, barcode: r.barcode ?? null,
             purchase_price: r.purchase_price ?? 0, sale_price: r.sale_price ?? 0,
-            vat_rate: r.vat_rate ?? 20, unit: r.unit ?? "ks",
+            vat_rate: r.vat_rate ?? 23, unit: r.unit ?? "ks",
             min_stock: r.min_stock ?? 0, track_stock: true,
           }).select().single();
           stockItem = ni; createdItems++;

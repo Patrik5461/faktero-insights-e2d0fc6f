@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/opakovane/nova")({
 });
 
 type Item = { name: string; description?: string; quantity: number; unit: string; unit_price: number; vat_rate: number };
-const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 20 };
+const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 23 };
 
 function NewRecurring() {
   const navigate = useNavigate();

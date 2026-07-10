@@ -67,7 +67,7 @@ const sections: HelpSection[] = [
   -d '{
     "customer": { "name": "ACME s.r.o.", "ico": "12345678" },
     "items": [
-      { "name": "Konzultácia", "quantity": 2, "unit_price": 50, "vat_rate": 20 }
+      { "name": "Konzultácia", "quantity": 2, "unit_price": 50, "vat_rate": 23 }
     ],
     "due_date": "2026-07-01"
   }'`}

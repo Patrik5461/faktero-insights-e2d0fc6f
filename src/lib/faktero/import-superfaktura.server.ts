@@ -596,7 +596,7 @@ export async function runImport(args: {
           description: null,
           quantity: 1, unit: "ks",
           unit_price: subtotal || total || 0,
-          vat_rate: total > 0 && subtotal > 0 ? Math.round(((total - subtotal) / subtotal) * 100) : 20,
+          vat_rate: total > 0 && subtotal > 0 ? Math.round(((total - subtotal) / subtotal) * 100) : 23,
           subtotal: subtotal || total || 0,
           vat_amount: vatTotal || (total - subtotal) || 0,
           total: total || subtotal || 0,
@@ -685,7 +685,7 @@ export async function runImport(args: {
 function buildItem(row: Record<string, string>, mapping: Partial<Record<FieldKey, string>>) {
   const quantity = num(pick(row, mapping, "item_quantity"));
   const unit_price = num(pick(row, mapping, "item_unit_price"));
-  const vat_rate = num(pick(row, mapping, "item_vat_rate")) || 20;
+  const vat_rate = num(pick(row, mapping, "item_vat_rate")) || 23;
   const total = num(pick(row, mapping, "item_total"));
   const subtotal = quantity * unit_price || (total ? total / (1 + vat_rate / 100) : 0);
   const vat_amount = subtotal * (vat_rate / 100);

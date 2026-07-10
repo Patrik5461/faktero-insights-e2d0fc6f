@@ -7,7 +7,7 @@ const Item = z.object({
   quantity: z.number().positive(),
   unit: z.string().max(20).optional().default("ks"),
   unit_price: z.number().nonnegative(),
-  vat_rate: z.number().min(0).max(100).optional().default(20),
+  vat_rate: z.number().min(0).max(100).optional().default(23),
 });
 const Input = z.object({
   name: z.string().min(1).max(255),
@@ -26,7 +26,7 @@ function totals(items: any[]) {
   let s = 0, v = 0;
   for (const it of items) {
     const line = Number(it.quantity) * Number(it.unit_price);
-    s += line; v += line * (Number(it.vat_rate ?? 20) / 100);
+    s += line; v += line * (Number(it.vat_rate ?? 23) / 100);
   }
   return { subtotal: +s.toFixed(2), vat_total: +v.toFixed(2), total: +(s + v).toFixed(2) };
 }

@@ -65,12 +65,12 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
 
   const rows = items.map((it: any, i: number) => {
     const line = +(Number(it.quantity) * Number(it.unit_price)).toFixed(2);
-    const vat = +((line * Number(it.vat_rate ?? 20)) / 100).toFixed(2);
+    const vat = +((line * Number(it.vat_rate ?? 23)) / 100).toFixed(2);
     return {
       invoice_id: inv.id, position: i,
       name: it.name, description: it.description ?? null,
       quantity: it.quantity, unit: it.unit ?? "ks",
-      unit_price: it.unit_price, vat_rate: it.vat_rate ?? 20,
+      unit_price: it.unit_price, vat_rate: it.vat_rate ?? 23,
       subtotal: line, vat_amount: vat, total: +(line + vat).toFixed(2),
     };
   });

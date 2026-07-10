@@ -21,7 +21,7 @@ type Product = {
   unit: string; unit_price: number; vat_rate: number; active: boolean;
   track_stock?: boolean; // virtual — mirrors stock_items.track_stock
 };
-const EMPTY: Product = { name: "", unit: "ks", unit_price: 0, vat_rate: 20, active: true, track_stock: false };
+const EMPTY: Product = { name: "", unit: "ks", unit_price: 0, vat_rate: 23, active: true, track_stock: false };
 
 function ProductsPage() {
   const list = usePagedList({ resource: "products", searchColumns: ["name", "code"] });
