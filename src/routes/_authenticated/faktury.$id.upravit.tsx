@@ -26,7 +26,7 @@ type Item = {
   _locked?: boolean;
 };
 
-const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 20 };
+const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: DEFAULT_VAT_RATE };
 
 function EditInvoice() {
   const { id } = Route.useParams();
