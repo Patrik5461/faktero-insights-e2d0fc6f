@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 export const CONSTANT_SYMBOLS: { code: string; label: string }[] = [
   { code: "0008", label: "Platby daní" },
