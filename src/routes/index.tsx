@@ -635,13 +635,13 @@ function ApiSection() {
             </ul>
             <div className="mt-9 flex flex-wrap gap-3">
               <a
-                href="/api/dokumentacia"
+                href="/docs/api"
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform hover:translate-y-[-1px]"
               >
                 API dokumentácia <ArrowRight className="h-4 w-4" />
               </a>
               <a
-                href="/api/playground"
+                href="/api-playground"
                 className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-sidebar-foreground hover:bg-white/10"
               >
                 Playground
