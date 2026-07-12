@@ -80,8 +80,8 @@ function Page() {
   const [globalForm, setGlobalForm] = useState<SeoRow>(global);
 
   // Sync form when selection or data changes
-  useMemo(() => setForm(current), [current.path, rows]);
-  useMemo(() => setGlobalForm(global), [rows]);
+  useEffect(() => setForm(current), [current.path, rows]);
+  useEffect(() => setGlobalForm(global), [rows]);
 
   const save = useMutation({
     mutationFn: (row: SeoRow) => upsertFn({ data: row as any }),
