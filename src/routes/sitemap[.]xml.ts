@@ -1,0 +1,75 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+
+const BASE_URL = "https://www.faktero.sk";
+
+const EXCLUDED_PREFIXES = ["/admin", "/api", "/_authenticated"];
+const EXCLUDED_EXACT = ["/diagnostika", "/pravne/tesla-podmienky", "/_global"];
+
+export const Route = createFileRoute("/sitemap.xml")({
+  server: {
+    handlers: {
+      GET: async () => {
+        const supabase = createClient(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_PUBLISHABLE_KEY!,
+          { auth: { persistSession: false } },
+        );
+
+        const { data } = await supabase.from("seo_pages" as any).select("path,priority,updated_at");
+        const rows = (data ?? []) as Array<{ path: string; priority: number | null; updated_at: string }>;
+
+        // Ensure default set present
+        const defaults = [
+          { path: "/", priority: 1.0 },
+          { path: "/cennik", priority: 0.9 },
+          { path: "/kontakt", priority: 0.7 },
+          { path: "/funkcie", priority: 0.7 },
+          { path: "/objednavka", priority: 0.7 },
+          { path: "/predplatne", priority: 0.6 },
+          { path: "/pravne/gdpr", priority: 0.4 },
+          { path: "/pravne/obchodne-podmienky", priority: 0.4 },
+          { path: "/pravne/reklamacny-poriadok", priority: 0.4 },
+          { path: "/pravne/opakovane-platby", priority: 0.4 },
+          { path: "/pravne/cookies", priority: 0.4 },
+        ];
+
+        const map = new Map<string, { priority: number; lastmod?: string }>();
+        for (const d of defaults) map.set(d.path, { priority: d.priority });
+        for (const r of rows) {
+          if (EXCLUDED_EXACT.includes(r.path)) continue;
+          if (EXCLUDED_PREFIXES.some((p) => r.path.startsWith(p))) continue;
+          if (!r.path.startsWith("/")) continue;
+          map.set(r.path, {
+            priority: r.priority ?? 0.7,
+            lastmod: r.updated_at,
+          });
+        }
+
+        const urls = Array.from(map.entries())
+          .filter(([p]) => !EXCLUDED_EXACT.includes(p) && !EXCLUDED_PREFIXES.some((pref) => p.startsWith(pref)))
+          .map(([path, meta]) => {
+            const parts = [
+              `    <loc>${BASE_URL}${path}</loc>`,
+              meta.lastmod ? `    <lastmod>${meta.lastmod.slice(0, 10)}</lastmod>` : null,
+              `    <priority>${meta.priority.toFixed(1)}</priority>`,
+            ].filter(Boolean);
+            return `  <url>\n${parts.join("\n")}\n  </url>`;
+          });
+
+        const xml =
+          `<?xml version="1.0" encoding="UTF-8"?>\n` +
+          `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+          urls.join("\n") +
+          `\n</urlset>`;
+
+        return new Response(xml, {
+          headers: {
+            "Content-Type": "application/xml; charset=utf-8",
+            "Cache-Control": "public, max-age=3600",
+          },
+        });
+      },
+    },
+  },
+});
