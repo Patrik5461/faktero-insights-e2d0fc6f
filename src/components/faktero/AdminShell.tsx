@@ -14,6 +14,7 @@ import {
   FileText,
   HeartPulse,
   Wallet,
+  Search,
 } from "lucide-react";
 
 const NAV = [
@@ -27,6 +28,7 @@ const NAV = [
   { to: "/admin/errors", label: "Chyby", icon: AlertTriangle },
   { to: "/admin/audit-log", label: "Audit log", icon: ScrollText },
   { to: "/admin/legal", label: "Právne dokumenty", icon: FileText },
+  { to: "/admin/seo", label: "SEO", icon: Search },
 ];
 
 

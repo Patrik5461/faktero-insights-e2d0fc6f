@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VyvojariRouteImport } from './routes/vyvojari'
 import { Route as UctovniciRouteImport } from './routes/uctovnici'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as RegistraciaRouteImport } from './routes/registracia'
 import { Route as PrihlasenieRouteImport } from './routes/prihlasenie'
 import { Route as ObjednavkaRouteImport } from './routes/objednavka'
@@ -52,6 +54,7 @@ import { Route as DocsApiRouteImport } from './routes/docs.api'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
+import { Route as AdminSeoRouteImport } from './routes/admin.seo'
 import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.payment-providers'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminIntegrationsRouteImport } from './routes/admin.integrations'
@@ -177,6 +180,16 @@ const VyvojariRoute = VyvojariRouteImport.update({
 const UctovniciRoute = UctovniciRouteImport.update({
   id: '/uctovnici',
   path: '/uctovnici',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistraciaRoute = RegistraciaRouteImport.update({
@@ -382,6 +395,11 @@ const AdminUsageRoute = AdminUsageRouteImport.update({
 const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
   id: '/subscriptions',
   path: '/subscriptions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSeoRoute = AdminSeoRouteImport.update({
+  id: '/seo',
+  path: '/seo',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPaymentProvidersRoute = AdminPaymentProvidersRouteImport.update({
@@ -1033,6 +1051,8 @@ export interface FileRoutesByFullPath {
   '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
@@ -1060,6 +1080,7 @@ export interface FileRoutesByFullPath {
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
@@ -1190,6 +1211,8 @@ export interface FileRoutesByTo {
   '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
   '/api-dokumentacia': typeof AuthenticatedApiDokumentaciaRoute
   '/api-kluce': typeof AuthenticatedApiKluceRoute
@@ -1213,6 +1236,7 @@ export interface FileRoutesByTo {
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
@@ -1347,6 +1371,8 @@ export interface FileRoutesById {
   '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
   '/_authenticated/ai-asistent': typeof AuthenticatedAiAsistentRoute
@@ -1374,6 +1400,7 @@ export interface FileRoutesById {
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
@@ -1509,6 +1536,8 @@ export interface FileRouteTypes {
     | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/uctovnici'
     | '/vyvojari'
     | '/ai-asistent'
@@ -1536,6 +1565,7 @@ export interface FileRouteTypes {
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
+    | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
@@ -1666,6 +1696,8 @@ export interface FileRouteTypes {
     | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/ai-asistent'
     | '/api-dokumentacia'
     | '/api-kluce'
@@ -1689,6 +1721,7 @@ export interface FileRouteTypes {
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
+    | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
@@ -1822,6 +1855,8 @@ export interface FileRouteTypes {
     | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/uctovnici'
     | '/vyvojari'
     | '/_authenticated/ai-asistent'
@@ -1849,6 +1884,7 @@ export interface FileRouteTypes {
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
+    | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
@@ -1984,6 +2020,8 @@ export interface RootRouteChildren {
   ObjednavkaRoute: typeof ObjednavkaRoute
   PrihlasenieRoute: typeof PrihlasenieRoute
   RegistraciaRoute: typeof RegistraciaRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UctovniciRoute: typeof UctovniciRouteWithChildren
   VyvojariRoute: typeof VyvojariRouteWithChildren
   DocsApiRoute: typeof DocsApiRoute
@@ -2045,6 +2083,20 @@ declare module '@tanstack/react-router' {
       path: '/uctovnici'
       fullPath: '/uctovnici'
       preLoaderRoute: typeof UctovniciRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/registracia': {
@@ -2332,6 +2384,13 @@ declare module '@tanstack/react-router' {
       path: '/subscriptions'
       fullPath: '/admin/subscriptions'
       preLoaderRoute: typeof AdminSubscriptionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/seo': {
+      id: '/admin/seo'
+      path: '/seo'
+      fullPath: '/admin/seo'
+      preLoaderRoute: typeof AdminSeoRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/payment-providers': {
@@ -3393,6 +3452,7 @@ interface AdminRouteChildren {
   AdminIntegrationsRoute: typeof AdminIntegrationsRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminPaymentProvidersRoute: typeof AdminPaymentProvidersRoute
+  AdminSeoRoute: typeof AdminSeoRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminUsageRoute: typeof AdminUsageRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -3409,6 +3469,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminIntegrationsRoute: AdminIntegrationsRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminPaymentProvidersRoute: AdminPaymentProvidersRoute,
+  AdminSeoRoute: AdminSeoRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminUsageRoute: AdminUsageRoute,
   AdminUsersRoute: AdminUsersRoute,
@@ -3590,6 +3651,8 @@ const rootRouteChildren: RootRouteChildren = {
   ObjednavkaRoute: ObjednavkaRoute,
   PrihlasenieRoute: PrihlasenieRoute,
   RegistraciaRoute: RegistraciaRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   UctovniciRoute: UctovniciRouteWithChildren,
   VyvojariRoute: VyvojariRouteWithChildren,
   DocsApiRoute: DocsApiRoute,

@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { CookieConsentBanner } from "@/components/faktero/cookie-consent";
 import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
+import { listSeoPagesPublic } from "@/lib/seo.functions";
 
 function NotFoundComponent() {
   return (
@@ -76,8 +77,22 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
+  loader: async () => {
+    try {
+      const rows = await listSeoPagesPublic();
+      const global = (rows as any[]).find((r) => r.path === "_global") ?? {};
+      return {
+        googleVerification: global.google_verification ?? null,
+        gaMeasurementId: global.ga_measurement_id ?? null,
+      };
+    } catch {
+      return { googleVerification: null, gaMeasurementId: null };
+    }
+  },
+  head: ({ loaderData }) => {
+    const gv = loaderData?.googleVerification;
+    const ga = loaderData?.gaMeasurementId;
+    const meta: any[] = [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" },
       { title: "Faktero — Moderná fakturácia pre SK a CZ firmy" },
@@ -90,15 +105,47 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API." },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/4f322507-0af1-495b-95a6-9961c2422916" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/4f322507-0af1-495b-95a6-9961c2422916" },
-    ],
-    links: [
+    ];
+    if (gv) meta.push({ name: "google-site-verification", content: gv });
+
+    const scripts: any[] = [
       {
-        rel: "stylesheet",
-        href: appCss,
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Tobify s. r. o.",
+          legalName: "Tobify s. r. o.",
+          url: "https://www.faktero.sk",
+          email: "info@faktero.sk",
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: "Športová 707/43",
+            postalCode: "919 26",
+            addressLocality: "Zavar",
+            addressCountry: "SK",
+          },
+          taxID: "SK2122358579",
+          vatID: "SK2122358579",
+        }),
       },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
-    ],
-  }),
+    ];
+    if (ga) {
+      scripts.push({ src: `https://www.googletagmanager.com/gtag/js?id=${ga}`, async: true });
+      scripts.push({
+        children: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga}');`,
+      });
+    }
+
+    return {
+      meta,
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "icon", type: "image/png", href: "/favicon.png" },
+      ],
+      scripts,
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
