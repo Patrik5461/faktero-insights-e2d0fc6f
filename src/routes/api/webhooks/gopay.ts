@@ -178,6 +178,23 @@ async function handle(request: Request): Promise<Response> {
       payload: { id: String(payment.id), state, amount: payment.amount },
     });
 
+    // Vystaviť daňový doklad Tobify s.r.o. + poslať aktivačný email.
+    // Idempotentné podľa billing_payment_id.
+    if (isPaid) {
+      try {
+        const { issueSubscriptionInvoiceForPayment } = await import(
+          "@/lib/faktero/subscription-invoice.server"
+        );
+        await issueSubscriptionInvoiceForPayment(existing.id);
+      } catch (e: any) {
+        await supabaseAdmin.from("billing_events").insert({
+          company_id: existing.company_id,
+          event_type: "platform_invoice_error",
+          payload: { error: String(e?.message ?? e), source: "webhook" } as any,
+        });
+      }
+    }
+
     return new Response("ok", { status: 200 });
   } catch (e: any) {
     // Provider/internal failure — log and return 500 so GoPay retries.

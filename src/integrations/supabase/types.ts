@@ -2537,6 +2537,90 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_invoices: {
+        Row: {
+          billing_payment_id: string | null
+          buyer_snapshot: Json
+          company_id: string
+          created_at: string
+          currency: string
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          plan_name: string
+          plan_slug: string
+          provider: string
+          provider_payment_id: string | null
+          public_token: string
+          subtotal_cents: number
+          taxable_date: string
+          total_cents: number
+          updated_at: string
+          vat_cents: number
+          vat_rate: number
+        }
+        Insert: {
+          billing_payment_id?: string | null
+          buyer_snapshot?: Json
+          company_id: string
+          created_at?: string
+          currency?: string
+          due_date?: string
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          plan_name: string
+          plan_slug: string
+          provider?: string
+          provider_payment_id?: string | null
+          public_token?: string
+          subtotal_cents: number
+          taxable_date?: string
+          total_cents: number
+          updated_at?: string
+          vat_cents: number
+          vat_rate?: number
+        }
+        Update: {
+          billing_payment_id?: string | null
+          buyer_snapshot?: Json
+          company_id?: string
+          created_at?: string
+          currency?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          plan_name?: string
+          plan_slug?: string
+          provider?: string
+          provider_payment_id?: string | null
+          public_token?: string
+          subtotal_cents?: number
+          taxable_date?: string
+          total_cents?: number
+          updated_at?: string
+          vat_cents?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_invoices_billing_payment_id_fkey"
+            columns: ["billing_payment_id"]
+            isOneToOne: false
+            referencedRelation: "billing_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_invoices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           key: string
@@ -4235,6 +4319,7 @@ export type Database = {
         Returns: boolean
       }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      next_platform_invoice_number: { Args: never; Returns: string }
     }
     Enums: {
       accounting_system: "pohoda" | "omega" | "money" | "alfa_plus" | "other"

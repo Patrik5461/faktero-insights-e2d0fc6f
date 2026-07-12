@@ -70,5 +70,20 @@ export async function syncGopayPaymentById(paymentId: string) {
     payload: { id: String(payment.id), state },
   });
 
+  if (isPaid) {
+    try {
+      const { issueSubscriptionInvoiceForPayment } = await import(
+        "./subscription-invoice.server"
+      );
+      await issueSubscriptionInvoiceForPayment(existing.id);
+    } catch (e: any) {
+      await supabaseAdmin.from("billing_events").insert({
+        company_id: existing.company_id,
+        event_type: "platform_invoice_error",
+        payload: { error: String(e?.message ?? e), source: "sync" } as any,
+      });
+    }
+  }
+
   return { state, applied: true };
 }
