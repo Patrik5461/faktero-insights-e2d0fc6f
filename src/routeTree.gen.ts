@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VyvojariRouteImport } from './routes/vyvojari'
 import { Route as UctovniciRouteImport } from './routes/uctovnici'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as RegistraciaRouteImport } from './routes/registracia'
 import { Route as PrihlasenieRouteImport } from './routes/prihlasenie'
 import { Route as ObjednavkaRouteImport } from './routes/objednavka'
@@ -184,6 +185,11 @@ const UctovniciRoute = UctovniciRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistraciaRoute = RegistraciaRouteImport.update({
@@ -1045,6 +1051,7 @@ export interface FileRoutesByFullPath {
   '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
@@ -1204,6 +1211,7 @@ export interface FileRoutesByTo {
   '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
   '/api-dokumentacia': typeof AuthenticatedApiDokumentaciaRoute
@@ -1363,6 +1371,7 @@ export interface FileRoutesById {
   '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
@@ -1527,6 +1536,7 @@ export interface FileRouteTypes {
     | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/uctovnici'
     | '/vyvojari'
@@ -1686,6 +1696,7 @@ export interface FileRouteTypes {
     | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/ai-asistent'
     | '/api-dokumentacia'
@@ -1844,6 +1855,7 @@ export interface FileRouteTypes {
     | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/uctovnici'
     | '/vyvojari'
@@ -2008,6 +2020,7 @@ export interface RootRouteChildren {
   ObjednavkaRoute: typeof ObjednavkaRoute
   PrihlasenieRoute: typeof PrihlasenieRoute
   RegistraciaRoute: typeof RegistraciaRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UctovniciRoute: typeof UctovniciRouteWithChildren
   VyvojariRoute: typeof VyvojariRouteWithChildren
@@ -2077,6 +2090,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/registracia': {
@@ -3631,6 +3651,7 @@ const rootRouteChildren: RootRouteChildren = {
   ObjednavkaRoute: ObjednavkaRoute,
   PrihlasenieRoute: PrihlasenieRoute,
   RegistraciaRoute: RegistraciaRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UctovniciRoute: UctovniciRouteWithChildren,
   VyvojariRoute: VyvojariRouteWithChildren,

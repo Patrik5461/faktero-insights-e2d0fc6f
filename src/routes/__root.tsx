@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { CookieConsentBanner } from "@/components/faktero/cookie-consent";
 import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
+import { listSeoPagesPublic } from "@/lib/seo.functions";
 
 function NotFoundComponent() {
   return (
