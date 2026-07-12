@@ -52,6 +52,7 @@ import { Route as DocsApiRouteImport } from './routes/docs.api'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
+import { Route as AdminSeoRouteImport } from './routes/admin.seo'
 import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.payment-providers'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminIntegrationsRouteImport } from './routes/admin.integrations'
@@ -382,6 +383,11 @@ const AdminUsageRoute = AdminUsageRouteImport.update({
 const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
   id: '/subscriptions',
   path: '/subscriptions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSeoRoute = AdminSeoRouteImport.update({
+  id: '/seo',
+  path: '/seo',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPaymentProvidersRoute = AdminPaymentProvidersRouteImport.update({
@@ -1060,6 +1066,7 @@ export interface FileRoutesByFullPath {
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
@@ -1213,6 +1220,7 @@ export interface FileRoutesByTo {
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
@@ -1374,6 +1382,7 @@ export interface FileRoutesById {
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
+  '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
@@ -1536,6 +1545,7 @@ export interface FileRouteTypes {
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
+    | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
@@ -1689,6 +1699,7 @@ export interface FileRouteTypes {
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
+    | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
@@ -1849,6 +1860,7 @@ export interface FileRouteTypes {
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
+    | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
@@ -2332,6 +2344,13 @@ declare module '@tanstack/react-router' {
       path: '/subscriptions'
       fullPath: '/admin/subscriptions'
       preLoaderRoute: typeof AdminSubscriptionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/seo': {
+      id: '/admin/seo'
+      path: '/seo'
+      fullPath: '/admin/seo'
+      preLoaderRoute: typeof AdminSeoRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/payment-providers': {
@@ -3393,6 +3412,7 @@ interface AdminRouteChildren {
   AdminIntegrationsRoute: typeof AdminIntegrationsRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminPaymentProvidersRoute: typeof AdminPaymentProvidersRoute
+  AdminSeoRoute: typeof AdminSeoRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminUsageRoute: typeof AdminUsageRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -3409,6 +3429,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminIntegrationsRoute: AdminIntegrationsRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminPaymentProvidersRoute: AdminPaymentProvidersRoute,
+  AdminSeoRoute: AdminSeoRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminUsageRoute: AdminUsageRoute,
   AdminUsersRoute: AdminUsersRoute,
