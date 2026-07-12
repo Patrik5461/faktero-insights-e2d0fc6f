@@ -3126,6 +3126,57 @@ export type Database = {
           },
         ]
       }
+      seo_pages: {
+        Row: {
+          canonical: string | null
+          created_at: string
+          description: string | null
+          ga_measurement_id: string | null
+          google_verification: string | null
+          id: string
+          og_description: string | null
+          og_image: string | null
+          og_title: string | null
+          path: string
+          priority: number | null
+          robots: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          canonical?: string | null
+          created_at?: string
+          description?: string | null
+          ga_measurement_id?: string | null
+          google_verification?: string | null
+          id?: string
+          og_description?: string | null
+          og_image?: string | null
+          og_title?: string | null
+          path: string
+          priority?: number | null
+          robots?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          canonical?: string | null
+          created_at?: string
+          description?: string | null
+          ga_measurement_id?: string | null
+          google_verification?: string | null
+          id?: string
+          og_description?: string | null
+          og_image?: string | null
+          og_title?: string | null
+          path?: string
+          priority?: number | null
+          robots?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stock_audit_logs: {
         Row: {
           action: string
