@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
+import { GoogleSeoPanel } from "@/components/faktero/GoogleSeoPanel";
 
 export const Route = createFileRoute("/admin/seo")({
   component: Page,
@@ -125,6 +126,9 @@ function Page() {
       />
       <AdminPageBody>
         <div className="space-y-8">
+          {/* Google API integration */}
+          <GoogleSeoPanel />
+
           {/* Global settings */}
           <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
             <h2 className="font-semibold mb-1">Globálne — Google Search Console & Analytics</h2>

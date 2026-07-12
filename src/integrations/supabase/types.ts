@@ -1660,6 +1660,45 @@ export type Database = {
           },
         ]
       }
+      google_seo_connections: {
+        Row: {
+          access_token_enc: string | null
+          connected_at: string
+          connected_by: string | null
+          expires_at: string | null
+          id: string
+          property_id: string | null
+          refresh_token_enc: string
+          scope: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          access_token_enc?: string | null
+          connected_at?: string
+          connected_by?: string | null
+          expires_at?: string | null
+          id?: string
+          property_id?: string | null
+          refresh_token_enc: string
+          scope?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          access_token_enc?: string | null
+          connected_at?: string
+          connected_by?: string | null
+          expires_at?: string | null
+          id?: string
+          property_id?: string | null
+          refresh_token_enc?: string
+          scope?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       import_jobs: {
         Row: {
           company_id: string
@@ -3125,6 +3164,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seo_cache: {
+        Row: {
+          cache_key: string
+          data: Json
+          expires_at: string
+          fetched_at: string
+          id: string
+        }
+        Insert: {
+          cache_key: string
+          data: Json
+          expires_at: string
+          fetched_at?: string
+          id?: string
+        }
+        Update: {
+          cache_key?: string
+          data?: Json
+          expires_at?: string
+          fetched_at?: string
+          id?: string
+        }
+        Relationships: []
       }
       seo_pages: {
         Row: {

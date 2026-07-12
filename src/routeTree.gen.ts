@@ -159,6 +159,7 @@ import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public
 import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/public/hooks/recurring-run'
 import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
+import { Route as ApiAdminSeoCallbackRouteImport } from './routes/api/admin/seo.callback'
 import { Route as AuthenticatedSkladProduktyIdRouteImport } from './routes/_authenticated/sklad.produkty.$id'
 import { Route as AuthenticatedSkladPohybyIdRouteImport } from './routes/_authenticated/sklad.pohyby.$id'
 import { Route as AuthenticatedJazdyIntegracieTeslaRouteImport } from './routes/_authenticated/jazdy.integracie.tesla'
@@ -973,6 +974,11 @@ const ApiPublicHooksCommanderSyncRoute =
     path: '/api/public/hooks/commander-sync',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAdminSeoCallbackRoute = ApiAdminSeoCallbackRouteImport.update({
+  id: '/api/admin/seo/callback',
+  path: '/api/admin/seo/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedSkladProduktyIdRoute =
   AuthenticatedSkladProduktyIdRouteImport.update({
     id: '/$id',
@@ -1176,6 +1182,7 @@ export interface FileRoutesByFullPath {
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
   '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRoute
+  '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
@@ -1331,6 +1338,7 @@ export interface FileRoutesByTo {
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
   '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRoute
+  '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
@@ -1496,6 +1504,7 @@ export interface FileRoutesById {
   '/_authenticated/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/_authenticated/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
   '/_authenticated/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRoute
+  '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
@@ -1661,6 +1670,7 @@ export interface FileRouteTypes {
     | '/jazdy/integracie/tesla'
     | '/sklad/pohyby/$id'
     | '/sklad/produkty/$id'
+    | '/api/admin/seo/callback'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
@@ -1816,6 +1826,7 @@ export interface FileRouteTypes {
     | '/jazdy/integracie/tesla'
     | '/sklad/pohyby/$id'
     | '/sklad/produkty/$id'
+    | '/api/admin/seo/callback'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
@@ -1980,6 +1991,7 @@ export interface FileRouteTypes {
     | '/_authenticated/jazdy/integracie/tesla'
     | '/_authenticated/sklad/pohyby/$id'
     | '/_authenticated/sklad/produkty/$id'
+    | '/api/admin/seo/callback'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
@@ -2054,6 +2066,7 @@ export interface RootRouteChildren {
   ApiWebhooksGopayRoute: typeof ApiWebhooksGopayRoute
   DocsOnlinePlatbyGopayRoute: typeof DocsOnlinePlatbyGopayRoute
   PomocOnlinePlatbyGopayRoute: typeof PomocOnlinePlatbyGopayRoute
+  ApiAdminSeoCallbackRoute: typeof ApiAdminSeoCallbackRoute
   ApiPublicHooksCommanderSyncRoute: typeof ApiPublicHooksCommanderSyncRoute
   ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
   ApiPublicHooksRecurringRunRoute: typeof ApiPublicHooksRecurringRunRoute
@@ -3121,6 +3134,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksCommanderSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/seo/callback': {
+      id: '/api/admin/seo/callback'
+      path: '/api/admin/seo/callback'
+      fullPath: '/api/admin/seo/callback'
+      preLoaderRoute: typeof ApiAdminSeoCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/sklad/produkty/$id': {
       id: '/_authenticated/sklad/produkty/$id'
       path: '/$id'
@@ -3685,6 +3705,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWebhooksGopayRoute: ApiWebhooksGopayRoute,
   DocsOnlinePlatbyGopayRoute: DocsOnlinePlatbyGopayRoute,
   PomocOnlinePlatbyGopayRoute: PomocOnlinePlatbyGopayRoute,
+  ApiAdminSeoCallbackRoute: ApiAdminSeoCallbackRoute,
   ApiPublicHooksCommanderSyncRoute: ApiPublicHooksCommanderSyncRoute,
   ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,
   ApiPublicHooksRecurringRunRoute: ApiPublicHooksRecurringRunRoute,
@@ -3702,3 +3723,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
