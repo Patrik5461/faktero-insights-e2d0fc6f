@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VyvojariRouteImport } from './routes/vyvojari'
 import { Route as UctovniciRouteImport } from './routes/uctovnici'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RegistraciaRouteImport } from './routes/registracia'
 import { Route as PrihlasenieRouteImport } from './routes/prihlasenie'
 import { Route as ObjednavkaRouteImport } from './routes/objednavka'
@@ -178,6 +179,11 @@ const VyvojariRoute = VyvojariRouteImport.update({
 const UctovniciRoute = UctovniciRouteImport.update({
   id: '/uctovnici',
   path: '/uctovnici',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistraciaRoute = RegistraciaRouteImport.update({
@@ -1039,6 +1045,7 @@ export interface FileRoutesByFullPath {
   '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
@@ -1197,6 +1204,7 @@ export interface FileRoutesByTo {
   '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
   '/api-dokumentacia': typeof AuthenticatedApiDokumentaciaRoute
   '/api-kluce': typeof AuthenticatedApiKluceRoute
@@ -1355,6 +1363,7 @@ export interface FileRoutesById {
   '/objednavka': typeof ObjednavkaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
   '/_authenticated/ai-asistent': typeof AuthenticatedAiAsistentRoute
@@ -1518,6 +1527,7 @@ export interface FileRouteTypes {
     | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
+    | '/sitemap.xml'
     | '/uctovnici'
     | '/vyvojari'
     | '/ai-asistent'
@@ -1676,6 +1686,7 @@ export interface FileRouteTypes {
     | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
+    | '/sitemap.xml'
     | '/ai-asistent'
     | '/api-dokumentacia'
     | '/api-kluce'
@@ -1833,6 +1844,7 @@ export interface FileRouteTypes {
     | '/objednavka'
     | '/prihlasenie'
     | '/registracia'
+    | '/sitemap.xml'
     | '/uctovnici'
     | '/vyvojari'
     | '/_authenticated/ai-asistent'
@@ -1996,6 +2008,7 @@ export interface RootRouteChildren {
   ObjednavkaRoute: typeof ObjednavkaRoute
   PrihlasenieRoute: typeof PrihlasenieRoute
   RegistraciaRoute: typeof RegistraciaRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UctovniciRoute: typeof UctovniciRouteWithChildren
   VyvojariRoute: typeof VyvojariRouteWithChildren
   DocsApiRoute: typeof DocsApiRoute
@@ -2057,6 +2070,13 @@ declare module '@tanstack/react-router' {
       path: '/uctovnici'
       fullPath: '/uctovnici'
       preLoaderRoute: typeof UctovniciRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/registracia': {
@@ -3611,6 +3631,7 @@ const rootRouteChildren: RootRouteChildren = {
   ObjednavkaRoute: ObjednavkaRoute,
   PrihlasenieRoute: PrihlasenieRoute,
   RegistraciaRoute: RegistraciaRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   UctovniciRoute: UctovniciRouteWithChildren,
   VyvojariRoute: VyvojariRouteWithChildren,
   DocsApiRoute: DocsApiRoute,
