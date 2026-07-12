@@ -98,9 +98,9 @@ function ConnectionCard({
   const propsFn = useServerFn(listGa4PropertiesFn);
   const setPropFn = useServerFn(setGoogleSeoProperty);
 
-  const listQuery = useQuery({
+  const listQuery = useQuery<any[]>({
     queryKey: ["google-seo-list", type],
-    queryFn: () => (type === "gsc" ? sitesFn() : propsFn()),
+    queryFn: () => (type === "gsc" ? sitesFn() : propsFn()) as Promise<any[]>,
     enabled: !!conn && !conn.property_id,
   });
 
