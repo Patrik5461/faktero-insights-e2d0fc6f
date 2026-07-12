@@ -51,6 +51,7 @@ import { Route as PayTokenRouteImport } from './routes/pay.$token'
 import { Route as FunkcieSlugRouteImport } from './routes/funkcie.$slug'
 import { Route as EfakturaciaSlugRouteImport } from './routes/efakturacia.$slug'
 import { Route as DocsApiRouteImport } from './routes/docs.api'
+import { Route as DanovyDokladTokenRouteImport } from './routes/danovy-doklad.$token'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
@@ -381,6 +382,11 @@ const EfakturaciaSlugRoute = EfakturaciaSlugRouteImport.update({
 const DocsApiRoute = DocsApiRouteImport.update({
   id: '/docs/api',
   path: '/docs/api',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DanovyDokladTokenRoute = DanovyDokladTokenRouteImport.update({
+  id: '/danovy-doklad/$token',
+  path: '/danovy-doklad/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -1090,6 +1096,7 @@ export interface FileRoutesByFullPath {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
+  '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
@@ -1247,6 +1254,7 @@ export interface FileRoutesByTo {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
+  '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
@@ -1412,6 +1420,7 @@ export interface FileRoutesById {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
+  '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
@@ -1578,6 +1587,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
+    | '/danovy-doklad/$token'
     | '/docs/api'
     | '/efakturacia/$slug'
     | '/funkcie/$slug'
@@ -1735,6 +1745,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
+    | '/danovy-doklad/$token'
     | '/docs/api'
     | '/efakturacia/$slug'
     | '/funkcie/$slug'
@@ -1899,6 +1910,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
+    | '/danovy-doklad/$token'
     | '/docs/api'
     | '/efakturacia/$slug'
     | '/funkcie/$slug'
@@ -2036,6 +2048,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UctovniciRoute: typeof UctovniciRouteWithChildren
   VyvojariRoute: typeof VyvojariRouteWithChildren
+  DanovyDokladTokenRoute: typeof DanovyDokladTokenRoute
   DocsApiRoute: typeof DocsApiRoute
   PayTokenRoute: typeof PayTokenRoute
   PomocApiRoute: typeof PomocApiRoute
@@ -2376,6 +2389,13 @@ declare module '@tanstack/react-router' {
       path: '/docs/api'
       fullPath: '/docs/api'
       preLoaderRoute: typeof DocsApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/danovy-doklad/$token': {
+      id: '/danovy-doklad/$token'
+      path: '/danovy-doklad/$token'
+      fullPath: '/danovy-doklad/$token'
+      preLoaderRoute: typeof DanovyDokladTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -3675,6 +3695,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UctovniciRoute: UctovniciRouteWithChildren,
   VyvojariRoute: VyvojariRouteWithChildren,
+  DanovyDokladTokenRoute: DanovyDokladTokenRoute,
   DocsApiRoute: DocsApiRoute,
   PayTokenRoute: PayTokenRoute,
   PomocApiRoute: PomocApiRoute,
