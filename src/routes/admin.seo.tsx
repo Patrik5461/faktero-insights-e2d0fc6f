@@ -126,6 +126,9 @@ function Page() {
       />
       <AdminPageBody>
         <div className="space-y-8">
+          {/* Google API integration */}
+          <GoogleSeoPanel />
+
           {/* Global settings */}
           <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
             <h2 className="font-semibold mb-1">Globálne — Google Search Console & Analytics</h2>
