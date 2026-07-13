@@ -15,6 +15,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as RegistraciaRouteImport } from './routes/registracia'
 import { Route as PrihlasenieRouteImport } from './routes/prihlasenie'
+import { Route as PridatPouzivatelaRouteImport } from './routes/pridat-pouzivatela'
 import { Route as ObjednavkaRouteImport } from './routes/objednavka'
 import { Route as KontaktRouteImport } from './routes/kontakt'
 import { Route as FunkcieRouteImport } from './routes/funkcie'
@@ -205,6 +206,11 @@ const RegistraciaRoute = RegistraciaRouteImport.update({
 const PrihlasenieRoute = PrihlasenieRouteImport.update({
   id: '/prihlasenie',
   path: '/prihlasenie',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PridatPouzivatelaRoute = PridatPouzivatelaRouteImport.update({
+  id: '/pridat-pouzivatela',
+  path: '/pridat-pouzivatela',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ObjednavkaRoute = ObjednavkaRouteImport.update({
@@ -1081,6 +1087,7 @@ export interface FileRoutesByFullPath {
   '/funkcie': typeof FunkcieRouteWithChildren
   '/kontakt': typeof KontaktRoute
   '/objednavka': typeof ObjednavkaRoute
+  '/pridat-pouzivatela': typeof PridatPouzivatelaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -1246,6 +1253,7 @@ export interface FileRoutesByTo {
   '/cennik': typeof CennikRoute
   '/kontakt': typeof KontaktRoute
   '/objednavka': typeof ObjednavkaRoute
+  '/pridat-pouzivatela': typeof PridatPouzivatelaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -1411,6 +1419,7 @@ export interface FileRoutesById {
   '/funkcie': typeof FunkcieRouteWithChildren
   '/kontakt': typeof KontaktRoute
   '/objednavka': typeof ObjednavkaRoute
+  '/pridat-pouzivatela': typeof PridatPouzivatelaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -1581,6 +1590,7 @@ export interface FileRouteTypes {
     | '/funkcie'
     | '/kontakt'
     | '/objednavka'
+    | '/pridat-pouzivatela'
     | '/prihlasenie'
     | '/registracia'
     | '/robots.txt'
@@ -1746,6 +1756,7 @@ export interface FileRouteTypes {
     | '/cennik'
     | '/kontakt'
     | '/objednavka'
+    | '/pridat-pouzivatela'
     | '/prihlasenie'
     | '/registracia'
     | '/robots.txt'
@@ -1910,6 +1921,7 @@ export interface FileRouteTypes {
     | '/funkcie'
     | '/kontakt'
     | '/objednavka'
+    | '/pridat-pouzivatela'
     | '/prihlasenie'
     | '/registracia'
     | '/robots.txt'
@@ -2080,6 +2092,7 @@ export interface RootRouteChildren {
   FunkcieRoute: typeof FunkcieRouteWithChildren
   KontaktRoute: typeof KontaktRoute
   ObjednavkaRoute: typeof ObjednavkaRoute
+  PridatPouzivatelaRoute: typeof PridatPouzivatelaRoute
   PrihlasenieRoute: typeof PrihlasenieRoute
   RegistraciaRoute: typeof RegistraciaRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -2175,6 +2188,13 @@ declare module '@tanstack/react-router' {
       path: '/prihlasenie'
       fullPath: '/prihlasenie'
       preLoaderRoute: typeof PrihlasenieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pridat-pouzivatela': {
+      id: '/pridat-pouzivatela'
+      path: '/pridat-pouzivatela'
+      fullPath: '/pridat-pouzivatela'
+      preLoaderRoute: typeof PridatPouzivatelaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/objednavka': {
@@ -3754,6 +3774,7 @@ const rootRouteChildren: RootRouteChildren = {
   FunkcieRoute: FunkcieRouteWithChildren,
   KontaktRoute: KontaktRoute,
   ObjednavkaRoute: ObjednavkaRoute,
+  PridatPouzivatelaRoute: PridatPouzivatelaRoute,
   PrihlasenieRoute: PrihlasenieRoute,
   RegistraciaRoute: RegistraciaRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
