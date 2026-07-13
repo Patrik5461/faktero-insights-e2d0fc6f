@@ -72,6 +72,7 @@ Ak nenájdeš žiadne položky, "items" nechaj ako prázdne pole [].`;
           { role: "user", content: userContent },
         ],
         response_format: { type: "json_object" },
+        max_tokens: 4000,
       }),
     });
 
