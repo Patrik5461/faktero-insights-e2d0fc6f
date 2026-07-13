@@ -49,10 +49,23 @@ Ak nenájdeš žiadne položky, vráť prázdne pole [].`;
     let content = "{}";
 
     if (geminiKey) {
-      // Preferuj Gemini 2.5 Flash pre vision.
-      const { geminiVision, splitDataUrl } = await import("./gemini.server");
+      // Preferuj Gemini 3.5 Flash cez Interactions API.
+      const { geminiVision, geminiText, extractPdfText, splitDataUrl, isSupportedImageMime } = await import("./gemini.server");
       const { base64, mimeType } = splitDataUrl(data.file_data_url, data.mime_type);
-      content = await geminiVision(base64, mimeType || data.mime_type, prompt);
+      const effectiveMime = (mimeType || data.mime_type || "").toLowerCase();
+      const isPdf = effectiveMime === "application/pdf" || data.file_data_url.startsWith("data:application/pdf");
+      if (isPdf) {
+        // PDF nie je podporovaný ako inline image → extrahuj text a pošli ako text prompt.
+        const extractedText = await extractPdfText(base64);
+        const trimmed = extractedText.trim();
+        if (!trimmed) throw new Error("PDF neobsahuje žiadny extrahovateľný text (možno je skenovaný — nahrajte JPG/PNG).");
+        const textPrompt = `Extrahuj VŠETKY produkty z tohto dodacieho listu (text z PDF):\n\n${trimmed}\n\n${prompt}`;
+        content = await geminiText(textPrompt);
+      } else if (isSupportedImageMime(effectiveMime)) {
+        content = await geminiVision(base64, effectiveMime, prompt);
+      } else {
+        throw new Error(`Nepodporovaný typ súboru: ${effectiveMime}. Podporované: JPG, PNG, WEBP, GIF, BMP, TIFF, PDF.`);
+      }
     } else {
       // Fallback: OpenAI gpt-4o vision.
       const isPdf = data.mime_type === "application/pdf" || data.file_data_url.startsWith("data:application/pdf");
