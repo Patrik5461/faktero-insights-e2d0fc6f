@@ -1,0 +1,1 @@
+CREATE POLICY "Platform admins can delete platform invoices" ON public.platform_invoices FOR DELETE TO authenticated USING (public.is_platform_admin(auth.uid()));

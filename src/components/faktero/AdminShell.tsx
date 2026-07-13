@@ -15,6 +15,7 @@ import {
   HeartPulse,
   Wallet,
   Search,
+  Receipt,
 } from "lucide-react";
 
 const NAV = [
@@ -24,6 +25,7 @@ const NAV = [
   { to: "/admin/users", label: "Používatelia", icon: Users },
   { to: "/admin/subscriptions", label: "Predplatné", icon: CreditCard },
   { to: "/admin/gopay", label: "GoPay (predplatné)", icon: Wallet },
+  { to: "/admin/platform-invoices", label: "Platformové faktúry", icon: Receipt },
   { to: "/admin/usage", label: "Využitie", icon: Gauge },
   { to: "/admin/errors", label: "Chyby", icon: AlertTriangle },
   { to: "/admin/audit-log", label: "Audit log", icon: ScrollText },

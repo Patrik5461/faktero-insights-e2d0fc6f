@@ -56,6 +56,7 @@ import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminSeoRouteImport } from './routes/admin.seo'
+import { Route as AdminPlatformInvoicesRouteImport } from './routes/admin.platform-invoices'
 import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.payment-providers'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
 import { Route as AdminIntegrationsRouteImport } from './routes/admin.integrations'
@@ -409,6 +410,11 @@ const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
 const AdminSeoRoute = AdminSeoRouteImport.update({
   id: '/seo',
   path: '/seo',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPlatformInvoicesRoute = AdminPlatformInvoicesRouteImport.update({
+  id: '/platform-invoices',
+  path: '/platform-invoices',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPaymentProvidersRoute = AdminPaymentProvidersRouteImport.update({
@@ -1106,6 +1112,7 @@ export interface FileRoutesByFullPath {
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
+  '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
@@ -1266,6 +1273,7 @@ export interface FileRoutesByTo {
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
+  '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
@@ -1434,6 +1442,7 @@ export interface FileRoutesById {
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
+  '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
@@ -1603,6 +1612,7 @@ export interface FileRouteTypes {
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
+    | '/admin/platform-invoices'
     | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
@@ -1763,6 +1773,7 @@ export interface FileRouteTypes {
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
+    | '/admin/platform-invoices'
     | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
@@ -1930,6 +1941,7 @@ export interface FileRouteTypes {
     | '/admin/integrations'
     | '/admin/legal'
     | '/admin/payment-providers'
+    | '/admin/platform-invoices'
     | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
@@ -2450,6 +2462,13 @@ declare module '@tanstack/react-router' {
       path: '/seo'
       fullPath: '/admin/seo'
       preLoaderRoute: typeof AdminSeoRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/platform-invoices': {
+      id: '/admin/platform-invoices'
+      path: '/platform-invoices'
+      fullPath: '/admin/platform-invoices'
+      preLoaderRoute: typeof AdminPlatformInvoicesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/payment-providers': {
@@ -3536,6 +3555,7 @@ interface AdminRouteChildren {
   AdminIntegrationsRoute: typeof AdminIntegrationsRoute
   AdminLegalRoute: typeof AdminLegalRoute
   AdminPaymentProvidersRoute: typeof AdminPaymentProvidersRoute
+  AdminPlatformInvoicesRoute: typeof AdminPlatformInvoicesRoute
   AdminSeoRoute: typeof AdminSeoRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminUsageRoute: typeof AdminUsageRoute
@@ -3553,6 +3573,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminIntegrationsRoute: AdminIntegrationsRoute,
   AdminLegalRoute: AdminLegalRoute,
   AdminPaymentProvidersRoute: AdminPaymentProvidersRoute,
+  AdminPlatformInvoicesRoute: AdminPlatformInvoicesRoute,
   AdminSeoRoute: AdminSeoRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminUsageRoute: AdminUsageRoute,
@@ -3788,13 +3809,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
