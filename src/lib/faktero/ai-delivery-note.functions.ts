@@ -26,18 +26,29 @@ export const aiParseDeliveryNoteFn = createServerFn({ method: "POST" })
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("AI služba nie je dostupná (OPENAI_API_KEY chýba)");
 
-    const system = `Si expert na extrakciu údajov zo slovenských dodacích listov.
-Extrahuj VŠETKY riadky produktov (nie súčty, dane, DPH, dopravu).
-Vráť LEN čistý JSON, žiadny text okolo. Formát:
+    const system = `Si expert na čítanie dodacích listov a skladových dokladov. Extrahuj VŠETKY produkty/položky z tohto dodacieho listu.
+
+DÔLEŽITÉ PRAVIDLÁ:
+- Extrahuj KAŽDÚ riadkovú položku bez výnimky
+- Ak je tabuľka, extrahuj každý riadok tabuľky
+- Ignoruj hlavičky stĺpcov (Názov, Množstvo, Cena...)
+- Ignoruj súhrny (Spolu, Celkom, DPH...)
+- Ignoruj informácie o dodávateľovi/odberateľovi
+- Ak nie je cena, nastav null
+- Množstvo musí byť číslo (nie text)
+- Jednotka: ks, kg, m, l, bal, krt, atď.
+
+Vráť LEN čistý JSON objekt v tomto formáte (žiadny markdown, žiadne komentáre):
 {
-  "supplier": string|null,
-  "delivery_number": string|null,
-  "date": "YYYY-MM-DD"|null,
+  "supplier": "názov dodávateľa alebo null",
+  "delivery_number": "číslo dodacieho listu alebo null",
+  "date": "YYYY-MM-DD alebo null",
   "items": [
-    { "name": string, "code": string|null, "quantity": number, "unit": string, "unit_price": number|null, "total_price": number|null }
+    { "name": "názov produktu", "code": "katalógové číslo alebo null", "quantity": číslo, "unit": "jednotka", "unit_price": číslo alebo null, "total_price": číslo alebo null }
   ]
 }
-Jednotky: ks, kg, m, l, m2, m3, bal, ... (v origináli). Ceny v EUR bez DPH ak sú uvedené. Ak niečo chýba, daj null.`;
+
+Ak nenájdeš žiadne položky, "items" nechaj ako prázdne pole [].`;
 
     const isPdf = data.mime_type === "application/pdf" || data.file_data_url.startsWith("data:application/pdf");
 
@@ -61,6 +72,7 @@ Jednotky: ks, kg, m, l, m2, m3, bal, ... (v origináli). Ceny v EUR bez DPH ak s
           { role: "user", content: userContent },
         ],
         response_format: { type: "json_object" },
+        max_tokens: 4000,
       }),
     });
 
