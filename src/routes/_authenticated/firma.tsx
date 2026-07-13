@@ -161,8 +161,109 @@ function CompanyPage() {
           </div>
 
         </form>
+
+        <TeamSection companyId={c.id} />
       </PageBody>
     </>
+  );
+}
+
+function TeamSection({ companyId }: { companyId: string }) {
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"admin" | "accountant" | "employee">("employee");
+  const [invs, setInvs] = useState<any[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    const { listInvitationsFn } = await import("@/lib/faktero/invitations.functions");
+    try {
+      const rows = await listInvitationsFn({ data: { company_id: companyId } });
+      setInvs(rows as any[]);
+    } catch (e: any) {
+      console.error(e);
+    }
+  }
+  useEffect(() => { load(); }, [companyId]);
+
+  async function invite(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      const { createInvitationFn } = await import("@/lib/faktero/invitations.functions");
+      await createInvitationFn({ data: { company_id: companyId, email, role } });
+      toast.success(`Pozvánka odoslaná na ${email}`);
+      setEmail("");
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba pri pozývaní");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revoke(id: string) {
+    if (!confirm("Zrušiť pozvánku?")) return;
+    const { revokeInvitationFn } = await import("@/lib/faktero/invitations.functions");
+    await revokeInvitationFn({ data: { id } });
+    load();
+  }
+
+  return (
+    <div className="mt-8 rounded-xl border border-border bg-card p-6">
+      <h2 className="text-lg font-semibold">Používatelia a pozvánky</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Pozvite kolegu alebo účtovníka na e-mail. Prijatie pozvánky ich pripojí k tejto firme.</p>
+
+      <form onSubmit={invite} className="mt-4 flex flex-wrap items-end gap-3">
+        <label className="block">
+          <span className="text-sm font-medium">Email</span>
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+            placeholder="kolega@firma.sk"
+            className="mt-1 w-64 rounded-md border border-input bg-background px-3 py-2 text-sm" />
+        </label>
+        <label className="block">
+          <span className="text-sm font-medium">Rola</span>
+          <select value={role} onChange={(e) => setRole(e.target.value as any)}
+            className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <option value="employee">Používateľ</option>
+            <option value="accountant">Účtovník (read-only)</option>
+            <option value="admin">Administrátor</option>
+          </select>
+        </label>
+        <button type="submit" disabled={busy}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+          {busy ? "Odosielam…" : "Pozvať používateľa"}
+        </button>
+      </form>
+
+      {invs.length > 0 && (
+        <div className="mt-6 overflow-hidden rounded-md border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr><th className="p-3">Email</th><th className="p-3">Rola</th><th className="p-3">Stav</th><th className="p-3">Vytvorené</th><th className="p-3"></th></tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {invs.map((r) => {
+                const expired = new Date(r.expires_at) < new Date();
+                const status = r.accepted_at ? "Prijaté" : expired ? "Expirované" : "Čaká sa";
+                return (
+                  <tr key={r.id}>
+                    <td className="p-3">{r.email}</td>
+                    <td className="p-3">{r.role}</td>
+                    <td className="p-3">{status}</td>
+                    <td className="p-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("sk-SK")}</td>
+                    <td className="p-3 text-right">
+                      {!r.accepted_at && (
+                        <button onClick={() => revoke(r.id)} className="text-xs text-rose-600 hover:underline">Zrušiť</button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
 

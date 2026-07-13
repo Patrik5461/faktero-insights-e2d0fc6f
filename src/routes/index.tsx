@@ -90,7 +90,7 @@ const features = [
   { icon: Repeat, title: "Opakované faktúry", text: "Mesačné a ročné šablóny — generujú a odosielajú sa automaticky bez vašej účasti." },
   { icon: Code2, title: "API a webhooky", text: "REST API s test / live režimom, idempotencia cez external_id a real-time webhooky." },
   { icon: CreditCard, title: "GoPay platby", text: "Online platby kartou a tlačidlami priamo z faktúry. Stav sa páruje cez webhook." },
-  { icon: Landmark, title: "Bankové párovanie (pripravujeme)", text: "Automatické párovanie platieb s faktúrami. Prepojenie s Tatra bankou, ČSOB, SLSP, VÚB a ďalšími bankami." },
+  { icon: Landmark, title: "Bankové párovanie", text: "Automatické párovanie platieb s faktúrami. Prepojenie s Tatra bankou, ČSOB, SLSP, VÚB a ďalšími bankami." },
   { icon: Receipt, title: "Prijaté faktúry", text: "Evidujte výdavky a prijaté faktúry. Aging záväzkov, DPH na vstupe, export pre účtovníka." },
   { icon: BellRing, title: "Upomienky", text: "Automatické upomienky po splatnosti. 3 úrovne, vlastné texty, prehľad odoslaných upomienok." },
   { icon: BadgeCheck, title: "Schvaľovanie zákazníkom", text: "Zákazník schváli faktúru jedným kliknutím cez email. Bez registrácie, okamžite." },
@@ -995,7 +995,7 @@ function ComparisonSection() {
     { label: "Opakované faktúry", faktero: true, sf: true, manual: false },
     { label: "GoPay platby", faktero: true, sf: "Plánované", manual: false },
     { label: "FinStat integrácia", faktero: true, sf: false, manual: false },
-    { label: "Bankové párovanie (pripravujeme)", faktero: true, sf: "Obmedzene", manual: false },
+    { label: "Bankové párovanie", faktero: true, sf: "Obmedzene", manual: false },
     { label: "Prijaté faktúry", faktero: true, sf: true, manual: false },
     { label: "Mobilná appka (iOS + Android)", faktero: true, sf: false, manual: false },
     { label: "Upomienky po splatnosti", faktero: true, sf: "Obmedzene", manual: false },
@@ -1278,6 +1278,12 @@ function SiteFooter() {
             <a href="/pravne/tesla-podmienky" className="hover:text-foreground">Tesla Fleet API</a>
             <a href="/kontakt" className="hover:text-foreground">Kontakt</a>
           </div>
+        </div>
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-5 pb-6 sm:px-6" aria-label="Podporované spôsoby platby">
+          <span className="text-xs text-muted-foreground">Platby zabezpečuje:</span>
+          <img src="https://cdn.gopay.com/img/logo/gopay_logo.svg" alt="GoPay" width={64} height={20} loading="lazy" className="h-5 w-auto" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" width={40} height={16} loading="lazy" className="h-4 w-auto" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={28} height={20} loading="lazy" className="h-5 w-auto" />
         </div>
       </div>
     </footer>
