@@ -1,5 +1,5 @@
 // Gemini vision client for OCR/vision tasks.
-// Uses gemini-2.5-flash via generativelanguage.googleapis.com.
+// Uses Interactions API (gemini-2.5-flash) via generativelanguage.googleapis.com.
 
 async function geminiVision(
   base64: string,
@@ -9,35 +9,27 @@ async function geminiVision(
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
 
-  const isAuthKey = apiKey.startsWith("AQ.");
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  let url: string;
-  if (isAuthKey) {
-    headers["x-goog-api-key"] = apiKey;
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-  } else {
-    url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
-  }
-
-  const res = await fetch(url, {
+  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
     method: "POST",
-    headers,
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
+    },
     body: JSON.stringify({
-      contents: [
+      model: "gemini-2.5-flash",
+      input: [
         {
+          role: "user",
           parts: [
             { inline_data: { mime_type: mimeType, data: base64 } },
             { text: prompt },
           ],
         },
       ],
-      generationConfig: {
+      config: {
+        response_mime_type: "application/json",
         temperature: 0,
-        maxOutputTokens: 8000,
-        responseMimeType: "application/json",
+        max_output_tokens: 8000,
       },
     }),
   });
@@ -48,7 +40,7 @@ async function geminiVision(
   }
 
   const data: any = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]";
+  return data.output_text ?? "[]";
 }
 
 /**
