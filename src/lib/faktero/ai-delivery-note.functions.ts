@@ -23,8 +23,8 @@ export const aiParseDeliveryNoteFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => ParseInput.parse(d))
   .handler(async ({ data }): Promise<{ items: DeliveryNoteItem[]; supplier?: string | null; delivery_number?: string | null; date?: string | null }> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI služba nie je dostupná (LOVABLE_API_KEY chýba)");
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("AI služba nie je dostupná (OPENAI_API_KEY chýba)");
 
     const system = `Si expert na extrakciu údajov zo slovenských dodacích listov.
 Extrahuj VŠETKY riadky produktov (nie súčty, dane, DPH, dopravu).
@@ -43,16 +43,20 @@ Jednotky: ks, kg, m, l, m2, m3, bal, ... (v origináli). Ceny v EUR bez DPH ak s
 
     const userContent: any[] = [{ type: "text", text: "Extrahuj položky z tohto dodacieho listu." }];
     if (isPdf) {
-      userContent.push({ type: "file", file: { filename: "dodaci-list.pdf", file_data: data.file_data_url } });
+      // OpenAI Chat Completions nepodporuje priamo PDF v `file` bloku — necháme model
+      // spracovať aspoň ako base64 file (fallback). Väčšina dodacích listov je foto/scan.
+      userContent.push({ type: "text", text: "(PDF príloha nižšie ako base64 data URL)" });
+      userContent.push({ type: "text", text: data.file_data_url.slice(0, 8000) });
     } else {
       userContent.push({ type: "image_url", image_url: { url: data.file_data_url } });
     }
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const model = process.env.OPENAI_VISION_MODEL || "gpt-4o-mini";
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model,
         messages: [
           { role: "system", content: system },
           { role: "user", content: userContent },
@@ -64,8 +68,8 @@ Jednotky: ks, kg, m, l, m2, m3, bal, ... (v origináli). Ceny v EUR bez DPH ak s
     if (!resp.ok) {
       const body = await resp.text();
       if (resp.status === 429) throw new Error("AI limit prekročený, skúste neskôr.");
-      if (resp.status === 402) throw new Error("AI kredity vyčerpané. Doplňte kredity v nastaveniach.");
-      throw new Error(`AI Gateway ${resp.status}: ${body.slice(0, 200)}`);
+      if (resp.status === 401) throw new Error("OpenAI API kľúč je neplatný.");
+      throw new Error(`OpenAI ${resp.status}: ${body.slice(0, 200)}`);
     }
     const json = await resp.json();
     const content = json.choices?.[0]?.message?.content ?? "{}";
