@@ -14,22 +14,14 @@ async function geminiVision(
     headers: {
       "Content-Type": "application/json",
       "x-goog-api-key": apiKey,
+      "Api-Revision": "2026-05-20",
     },
     body: JSON.stringify({
       model: "gemini-3.5-flash",
       input: [
-        {
-          role: "user",
-          parts: [
-            { inline_data: { mime_type: mimeType, data: base64 } },
-            { text: prompt },
-          ],
-        },
+        { type: "text", text: prompt },
+        { type: "image", data: base64, mime_type: mimeType },
       ],
-      generation_config: {
-        temperature: 0,
-        max_output_tokens: 8000,
-      },
     }),
   });
 
