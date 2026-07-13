@@ -117,6 +117,7 @@ import { Route as AuthenticatedSkladMinimumRouteImport } from './routes/_authent
 import { Route as AuthenticatedSkladInventuraRouteImport } from './routes/_authenticated/sklad.inventura'
 import { Route as AuthenticatedSkladImportRouteImport } from './routes/_authenticated/sklad.import'
 import { Route as AuthenticatedSkladHodnotaRouteImport } from './routes/_authenticated/sklad.hodnota'
+import { Route as AuthenticatedSkladDodaciListRouteImport } from './routes/_authenticated/sklad.dodaci-list'
 import { Route as AuthenticatedPrijateFakturyNovaRouteImport } from './routes/_authenticated/prijate-faktury.nova'
 import { Route as AuthenticatedPrijateFakturyIdRouteImport } from './routes/_authenticated/prijate-faktury.$id'
 import { Route as AuthenticatedPonukyNovaRouteImport } from './routes/_authenticated/ponuky.nova'
@@ -737,6 +738,12 @@ const AuthenticatedSkladHodnotaRoute =
     path: '/hodnota',
     getParentRoute: () => AuthenticatedSkladRoute,
   } as any)
+const AuthenticatedSkladDodaciListRoute =
+  AuthenticatedSkladDodaciListRouteImport.update({
+    id: '/dodaci-list',
+    path: '/dodaci-list',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
 const AuthenticatedPrijateFakturyNovaRoute =
   AuthenticatedPrijateFakturyNovaRouteImport.update({
     id: '/prijate-faktury/nova',
@@ -1148,6 +1155,7 @@ export interface FileRoutesByFullPath {
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/prijate-faktury/$id': typeof AuthenticatedPrijateFakturyIdRoute
   '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
+  '/sklad/dodaci-list': typeof AuthenticatedSkladDodaciListRoute
   '/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/sklad/import': typeof AuthenticatedSkladImportRoute
   '/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
@@ -1305,6 +1313,7 @@ export interface FileRoutesByTo {
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/prijate-faktury/$id': typeof AuthenticatedPrijateFakturyIdRoute
   '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
+  '/sklad/dodaci-list': typeof AuthenticatedSkladDodaciListRoute
   '/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/sklad/import': typeof AuthenticatedSkladImportRoute
   '/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
@@ -1472,6 +1481,7 @@ export interface FileRoutesById {
   '/_authenticated/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/_authenticated/prijate-faktury/$id': typeof AuthenticatedPrijateFakturyIdRoute
   '/_authenticated/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
+  '/_authenticated/sklad/dodaci-list': typeof AuthenticatedSkladDodaciListRoute
   '/_authenticated/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/_authenticated/sklad/import': typeof AuthenticatedSkladImportRoute
   '/_authenticated/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
@@ -1639,6 +1649,7 @@ export interface FileRouteTypes {
     | '/ponuky/nova'
     | '/prijate-faktury/$id'
     | '/prijate-faktury/nova'
+    | '/sklad/dodaci-list'
     | '/sklad/hodnota'
     | '/sklad/import'
     | '/sklad/inventura'
@@ -1796,6 +1807,7 @@ export interface FileRouteTypes {
     | '/ponuky/nova'
     | '/prijate-faktury/$id'
     | '/prijate-faktury/nova'
+    | '/sklad/dodaci-list'
     | '/sklad/hodnota'
     | '/sklad/import'
     | '/sklad/inventura'
@@ -1962,6 +1974,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ponuky/nova'
     | '/_authenticated/prijate-faktury/$id'
     | '/_authenticated/prijate-faktury/nova'
+    | '/_authenticated/sklad/dodaci-list'
     | '/_authenticated/sklad/hodnota'
     | '/_authenticated/sklad/import'
     | '/_authenticated/sklad/inventura'
@@ -2853,6 +2866,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSkladHodnotaRouteImport
       parentRoute: typeof AuthenticatedSkladRoute
     }
+    '/_authenticated/sklad/dodaci-list': {
+      id: '/_authenticated/sklad/dodaci-list'
+      path: '/dodaci-list'
+      fullPath: '/sklad/dodaci-list'
+      preLoaderRoute: typeof AuthenticatedSkladDodaciListRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
     '/_authenticated/prijate-faktury/nova': {
       id: '/_authenticated/prijate-faktury/nova'
       path: '/prijate-faktury/nova'
@@ -3314,6 +3334,7 @@ const AuthenticatedSkladProduktyRouteWithChildren =
   )
 
 interface AuthenticatedSkladRouteChildren {
+  AuthenticatedSkladDodaciListRoute: typeof AuthenticatedSkladDodaciListRoute
   AuthenticatedSkladHodnotaRoute: typeof AuthenticatedSkladHodnotaRoute
   AuthenticatedSkladImportRoute: typeof AuthenticatedSkladImportRoute
   AuthenticatedSkladInventuraRoute: typeof AuthenticatedSkladInventuraRoute
@@ -3327,6 +3348,7 @@ interface AuthenticatedSkladRouteChildren {
 }
 
 const AuthenticatedSkladRouteChildren: AuthenticatedSkladRouteChildren = {
+  AuthenticatedSkladDodaciListRoute: AuthenticatedSkladDodaciListRoute,
   AuthenticatedSkladHodnotaRoute: AuthenticatedSkladHodnotaRoute,
   AuthenticatedSkladImportRoute: AuthenticatedSkladImportRoute,
   AuthenticatedSkladInventuraRoute: AuthenticatedSkladInventuraRoute,
