@@ -26,10 +26,10 @@ async function geminiVision(
           ],
         },
       ],
-      generationConfig: {
-        responseMimeType: "application/json",
+      generation_config: {
+        response_mime_type: "application/json",
         temperature: 0,
-        maxOutputTokens: 8000,
+        max_output_tokens: 8000,
       },
     }),
   });
