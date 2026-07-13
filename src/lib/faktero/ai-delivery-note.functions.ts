@@ -23,12 +23,13 @@ export const aiParseDeliveryNoteFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => ParseInput.parse(d))
   .handler(async ({ data }): Promise<{ items: DeliveryNoteItem[]; supplier?: string | null; delivery_number?: string | null; date?: string | null }> => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("AI služba nie je dostupná (OPENAI_API_KEY chýba)");
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!geminiKey && !openaiKey) throw new Error("AI služba nie je dostupná (GEMINI_API_KEY ani OPENAI_API_KEY nie sú nastavené)");
 
-    const system = `Si expert na čítanie dodacích listov a skladových dokladov. Extrahuj VŠETKY produkty/položky z tohto dodacieho listu.
+    const prompt = `Si expert na čítanie dodacích listov a skladových dokladov. Extrahuj VŠETKY produkty/položky z tohto dodacieho listu.
 
-DÔLEŽITÉ PRAVIDLÁ:
+PRAVIDLÁ:
 - Extrahuj KAŽDÚ riadkovú položku bez výnimky
 - Ak je tabuľka, extrahuj každý riadok tabuľky
 - Ignoruj hlavičky stĺpcov (Názov, Množstvo, Cena...)
@@ -38,52 +39,57 @@ DÔLEŽITÉ PRAVIDLÁ:
 - Množstvo musí byť číslo (nie text)
 - Jednotka: ks, kg, m, l, bal, krt, atď.
 
-Vráť LEN čistý JSON objekt v tomto formáte (žiadny markdown, žiadne komentáre):
+Vráť VÝHRADNE JSON objekt v tomto formáte (žiadny markdown, žiadne backticky, žiadny iný text):
 {
   "supplier": "názov dodávateľa alebo null",
   "delivery_number": "číslo dodacieho listu alebo null",
   "date": "YYYY-MM-DD alebo null",
   "items": [
-    { "name": "názov produktu", "code": "katalógové číslo alebo null", "quantity": číslo, "unit": "jednotka", "unit_price": číslo alebo null, "total_price": číslo alebo null }
+    { "name": "názov produktu", "code": "katalógové číslo alebo null", "quantity": number, "unit": "jednotka", "unit_price": number | null, "total_price": number | null }
   ]
 }
 
 Ak nenájdeš žiadne položky, "items" nechaj ako prázdne pole [].`;
 
-    const isPdf = data.mime_type === "application/pdf" || data.file_data_url.startsWith("data:application/pdf");
+    let content = "{}";
 
-    const userContent: any[] = [{ type: "text", text: "Extrahuj položky z tohto dodacieho listu." }];
-    if (isPdf) {
-      // OpenAI gpt-4o podporuje PDF cez `file` blok s base64 data URL.
-      userContent.push({ type: "file", file: { filename: "dodaci-list.pdf", file_data: data.file_data_url } });
+    if (geminiKey) {
+      // Preferuj Gemini 2.5 Flash pre vision.
+      const { geminiVision, splitDataUrl } = await import("./gemini.server");
+      const { base64, mimeType } = splitDataUrl(data.file_data_url, data.mime_type);
+      content = await geminiVision(base64, mimeType || data.mime_type, prompt);
     } else {
-      userContent.push({ type: "image_url", image_url: { url: data.file_data_url } });
+      // Fallback: OpenAI gpt-4o vision.
+      const isPdf = data.mime_type === "application/pdf" || data.file_data_url.startsWith("data:application/pdf");
+      const userContent: any[] = [{ type: "text", text: "Extrahuj položky z tohto dodacieho listu." }];
+      if (isPdf) {
+        userContent.push({ type: "file", file: { filename: "dodaci-list.pdf", file_data: data.file_data_url } });
+      } else {
+        userContent.push({ type: "image_url", image_url: { url: data.file_data_url } });
+      }
+      const model = process.env.OPENAI_VISION_MODEL || "gpt-4o";
+      const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: prompt },
+            { role: "user", content: userContent },
+          ],
+          response_format: { type: "json_object" },
+          max_tokens: 4000,
+        }),
+      });
+      if (!resp.ok) {
+        const body = await resp.text();
+        if (resp.status === 429) throw new Error("AI limit prekročený, skúste neskôr.");
+        if (resp.status === 401) throw new Error("OpenAI API kľúč je neplatný.");
+        throw new Error(`OpenAI ${resp.status}: ${body.slice(0, 200)}`);
+      }
+      const json = await resp.json();
+      content = json.choices?.[0]?.message?.content ?? "{}";
     }
-
-    // Vision/OCR úlohy vyžadujú model s vision podporou — default gpt-4o.
-    const model = process.env.OPENAI_VISION_MODEL || "gpt-4o";
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: userContent },
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 4000,
-      }),
-    });
-
-    if (!resp.ok) {
-      const body = await resp.text();
-      if (resp.status === 429) throw new Error("AI limit prekročený, skúste neskôr.");
-      if (resp.status === 401) throw new Error("OpenAI API kľúč je neplatný.");
-      throw new Error(`OpenAI ${resp.status}: ${body.slice(0, 200)}`);
-    }
-    const json = await resp.json();
-    const content = json.choices?.[0]?.message?.content ?? "{}";
     let parsed: any = {};
     try { parsed = JSON.parse(content); }
     catch {
