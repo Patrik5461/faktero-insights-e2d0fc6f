@@ -86,13 +86,26 @@ export async function handleApi(
     .eq("api_key_id", keyRow.id)
     .gte("created_at", windowStart);
   if ((recentCount ?? 0) >= 300) {
-    const r = jsonResp(429, {
+    const retryAfterSec = 300; // 5-minute window
+    const body = {
       error: {
         code: "rate_limit_exceeded",
-        message: "Prekročili ste limit API požiadaviek. Skúste to neskôr.",
+        message: "Prekročili ste limit API požiadaviek (300 / 5 minút). Skúste to neskôr.",
+      },
+    };
+    const r = new Response(JSON.stringify(body), {
+      status: 429,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "access-control-allow-origin": "*",
+        "access-control-allow-headers": "authorization, content-type",
+        "access-control-allow-methods": "GET,POST,PUT,DELETE,OPTIONS",
+        "retry-after": String(retryAfterSec),
+        "x-ratelimit-limit": "300",
+        "x-ratelimit-window": "300",
       },
     });
-    await logRequest({ company_id: keyRow.company_id, api_key_id: keyRow.id, method, path, status: 429, requestBody, responseBody: null, userAgent, ip, duration: Date.now() - started });
+    await logRequest({ company_id: keyRow.company_id, api_key_id: keyRow.id, method, path, status: 429, requestBody, responseBody: body, userAgent, ip, duration: Date.now() - started });
     return r;
   }
 
