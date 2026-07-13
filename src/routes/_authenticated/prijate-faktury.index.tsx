@@ -194,10 +194,25 @@ function PurchaseInvoicesPage() {
             className="h-9 w-56 rounded-md border border-input bg-background px-3 text-sm" />
         </div>
 
+        {selected.size > 0 && (
+          <div className="mt-4 flex items-center gap-3 rounded-md border border-primary/40 bg-primary/5 p-3 text-sm">
+            <span className="font-medium">{selected.size} vybraných</span>
+            <button onClick={runBulkZip} disabled={zipBusy}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+              {zipBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Archive className="h-3.5 w-3.5" />}
+              Stiahnuť ZIP (PDF + CSV)
+            </button>
+            <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground">Zrušiť výber</button>
+          </div>
+        )}
+
         <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
+                <th className="w-8 p-3"><input type="checkbox"
+                  checked={rows.length > 0 && selected.size === rows.length}
+                  onChange={toggleAll} /></th>
                 <th className="p-3">Číslo</th>
                 <th className="p-3">Dodávateľ</th>
                 <th className="p-3">Vystavená</th>
@@ -207,18 +222,20 @@ function PurchaseInvoicesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {loading && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
+              {loading && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
               {!loading && rows.length === 0 && (
-                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">
+                <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">
                   <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
                   Žiadne prijaté faktúry. Pridajte prvú cez „Nová prijatá faktúra".
                 </td></tr>
               )}
               {rows.map((r) => (
-                <tr key={r.id} className="cursor-pointer hover:bg-muted/30"
-                  onClick={() => (window.location.href = `/prijate-faktury/${r.id}`)}>
-                  <td className="p-3 font-medium">{r.invoice_number}</td>
-                  <td className="p-3">{r.supplier_name}</td>
+                <tr key={r.id} className="hover:bg-muted/30">
+                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                    <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggle(r.id)} />
+                  </td>
+                  <td className="p-3 font-medium cursor-pointer" onClick={() => (window.location.href = `/prijate-faktury/${r.id}`)}>{r.invoice_number}</td>
+                  <td className="p-3 cursor-pointer" onClick={() => (window.location.href = `/prijate-faktury/${r.id}`)}>{r.supplier_name}</td>
                   <td className="p-3">{r.issue_date}</td>
                   <td className="p-3">{r.due_date}</td>
                   <td className="p-3 text-right tabular-nums">{fmtMoney(Number(r.amount_total ?? 0), r.currency)}</td>
