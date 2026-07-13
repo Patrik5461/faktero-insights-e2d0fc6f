@@ -1,5 +1,5 @@
 // Gemini vision client for OCR/vision tasks.
-// Uses gemini-1.5-flash via generativelanguage.googleapis.com.
+// Uses gemini-2.5-flash via generativelanguage.googleapis.com.
 
 async function geminiVision(
   base64: string,
