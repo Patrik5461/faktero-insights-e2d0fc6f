@@ -21,7 +21,7 @@ export const aiParseReceiptFn = createServerFn({ method: "POST" })
     const system = `Si OCR asistent pre slovenské bločky a faktúry. Z fotky extrahuj polia.
 Vráť VÝLUČNE JSON: {"supplier":string|null,"total":number|null,"vat_rate":0|5|19|23|null,"currency":"EUR","date":"YYYY-MM-DD"|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":0|5|19|23}]}`;
 
-    const model = process.env.OPENAI_VISION_MODEL || "gpt-4o-mini";
+    const model = process.env.OPENAI_VISION_MODEL || "gpt-4o";
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
