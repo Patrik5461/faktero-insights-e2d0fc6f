@@ -12,15 +12,25 @@ export async function geminiVision(
 
   const ai = new GoogleGenAI({ apiKey });
 
-  const interaction = await (ai as any).interactions.create({
+  const interaction = await ai.interactions.create({
     model: "gemini-3.5-flash",
     input: [
-      { text: prompt },
-      { inlineData: { mimeType, data: base64 } },
+      {
+        role: "user",
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: base64,
+            },
+          },
+        ],
+      },
     ],
   });
 
-  return (interaction as any).output_text ?? "[]";
+  return interaction.output_text ?? "[]";
 }
 
 /**
