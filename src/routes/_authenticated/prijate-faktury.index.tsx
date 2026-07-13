@@ -57,6 +57,69 @@ function PurchaseInvoicesPage() {
   const [status, setStatus] = useState<string>("");
   const [month, setMonth] = useState<string>("");
   const [supplier, setSupplier] = useState<string>("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [zipBusy, setZipBusy] = useState(false);
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  function toggleAll() {
+    if (selected.size === rows.length) setSelected(new Set());
+    else setSelected(new Set(rows.map((r) => r.id)));
+  }
+
+  async function csvSummary(items: any[]) {
+    const header = ["Číslo","Dodávateľ","IČO","Vystavená","Splatnosť","Suma","Mena","Stav","VS"];
+    const rowsCsv = items.map((r) => [
+      r.invoice_number, r.supplier_name, r.supplier_ico ?? "",
+      r.issue_date, r.due_date,
+      Number(r.amount_total ?? 0).toFixed(2), r.currency ?? "EUR",
+      r.status, r.variable_symbol ?? "",
+    ].map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";"));
+    return "\uFEFF" + [header.join(";"), ...rowsCsv].join("\n");
+  }
+
+  async function runBulkZip() {
+    const items = rows.filter((r) => selected.has(r.id));
+    if (!items.length) return;
+    setZipBusy(true);
+    try {
+      const zip = new JSZip();
+      let ok = 0, fail = 0;
+      for (const r of items) {
+        if (!r.file_path) { fail++; continue; }
+        try {
+          const { data } = await supabase.storage.from("purchase-invoices")
+            .createSignedUrl(r.file_path, 300);
+          if (!data?.signedUrl) { fail++; continue; }
+          const resp = await fetch(data.signedUrl);
+          if (!resp.ok) { fail++; continue; }
+          const bytes = new Uint8Array(await resp.arrayBuffer());
+          const ext = r.file_path.split(".").pop() || "pdf";
+          const safe = String(r.invoice_number ?? r.id).replace(/[^\w.-]+/g, "_");
+          zip.file(`${safe}.${ext}`, bytes);
+          ok++;
+        } catch { fail++; }
+      }
+      zip.file("_suhrn.csv", await csvSummary(items));
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `prijate-faktury-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (fail === 0) toast.success(`ZIP so ${ok} faktúrami stiahnutý`);
+      else toast.warning(`ZIP: ${ok} v poriadku, ${fail} bez prílohy alebo chyba`);
+      setSelected(new Set());
+    } finally {
+      setZipBusy(false);
+    }
+  }
 
   async function load() {
     const cid = getActiveCompanyId();
