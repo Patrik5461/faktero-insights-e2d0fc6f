@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { AdminShell, AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
+import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import {
   getPlatformGopayStatus,
   testPlatformGopayConnection,
@@ -150,7 +150,7 @@ function AdminGopayPage() {
   const allConfigured = cfg && cfg.hasClientId && cfg.hasClientSecret && cfg.hasGoid && cfg.hasWebhookSecret && cfg.hasAppUrl;
 
   return (
-    <AdminShell>
+    <>
       <AdminPageHeader
         title="GoPay — platformové predplatné"
         description="Konfigurácia GoPay účtu, cez ktorý Faktero účtuje predplatné svojim zákazníkom."
@@ -391,6 +391,6 @@ function AdminGopayPage() {
           </div>
         )}
       </AdminPageBody>
-    </AdminShell>
+    </>
   );
 }
