@@ -12,15 +12,24 @@ export async function geminiVision(
 
   const ai = new GoogleGenAI({ apiKey });
 
-  const interaction = await (ai as any).interactions.create({
+  const isPdf = mimeType === "application/pdf";
+
+  const interaction = await ai.interactions.create({
     model: "gemini-3.5-flash",
     input: [
-      { text: prompt },
-      { inlineData: { mimeType, data: base64 } },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          isPdf
+            ? { type: "document", data: base64, mime_type: mimeType }
+            : { type: "image", data: base64, mime_type: mimeType },
+        ],
+      },
     ],
   });
 
-  return (interaction as any).output_text ?? "[]";
+  return interaction.output_text ?? "[]";
 }
 
 /**
