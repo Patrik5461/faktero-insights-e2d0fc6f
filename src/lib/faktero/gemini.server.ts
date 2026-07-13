@@ -1,5 +1,5 @@
 // Gemini vision client for OCR/vision tasks.
-// Uses Interactions API (gemini-2.5-flash) via generativelanguage.googleapis.com.
+// Uses Interactions API (gemini-3.5-flash) via generativelanguage.googleapis.com.
 
 async function geminiVision(
   base64: string,
@@ -16,7 +16,7 @@ async function geminiVision(
       "x-goog-api-key": apiKey,
     },
     body: JSON.stringify({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       input: [
         {
           role: "user",
