@@ -1279,6 +1279,12 @@ function SiteFooter() {
             <a href="/kontakt" className="hover:text-foreground">Kontakt</a>
           </div>
         </div>
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-5 pb-6 sm:px-6" aria-label="Podporované spôsoby platby">
+          <span className="text-xs text-muted-foreground">Platby zabezpečuje:</span>
+          <img src="https://cdn.gopay.com/img/logo/gopay_logo.svg" alt="GoPay" width={64} height={20} loading="lazy" className="h-5 w-auto" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" width={40} height={16} loading="lazy" className="h-4 w-auto" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={28} height={20} loading="lazy" className="h-5 w-auto" />
+        </div>
       </div>
     </footer>
   );
