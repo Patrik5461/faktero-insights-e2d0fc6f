@@ -62,8 +62,8 @@ export function MarketingNav() {
   return (
     <div className="border-b border-border/60 bg-background">
       {/* Announcement bar */}
-      <a
-        href="/efaktura"
+      <Link
+        to="/efaktura"
         className="block w-full bg-primary/10 text-center text-sm text-foreground hover:bg-primary/15 transition-colors"
       >
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-2 px-6 py-2">
@@ -73,7 +73,7 @@ export function MarketingNav() {
             <span className="font-semibold text-primary">1.1.2027</span>
           </span>
         </div>
-      </a>
+      </Link>
 
       {/* Main nav */}
       <header className="border-t border-border/40">
@@ -90,44 +90,44 @@ export function MarketingNav() {
                 onMouseEnter={() => setOpenMenu(menu.label)}
                 onMouseLeave={() => setOpenMenu((v) => (v === menu.label ? null : v))}
               >
-                <a
-                  href={menu.href}
+                <Link
+                  to={menu.href}
                   className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
                   onClick={() => setOpenMenu(null)}
                 >
                   {menu.label}
                   <ChevronDown className="h-3.5 w-3.5 opacity-60 group-hover:rotate-180 transition-transform" />
-                </a>
+                </Link>
                 <div className="invisible opacity-0 translate-y-1 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 transition-all absolute left-0 top-full pt-2 z-50">
                   <div className="min-w-[240px] rounded-xl border border-border bg-card p-2 shadow-lg shadow-black/5">
-                    <a
-                      href={menu.href}
+                    <Link
+                      to={menu.href}
                       className="block rounded-md px-3 py-2 text-sm font-semibold text-primary hover:bg-secondary"
                     >
                       Prehľad — {menu.label}
-                    </a>
+                    </Link>
                     <div className="my-1 h-px bg-border" />
                     {menu.items.map((it) => (
-                      <a
+                      <Link
                         key={it.label}
-                        href={it.href}
+                        to={it.href}
                         className="block rounded-md px-3 py-2 text-sm text-foreground hover:bg-secondary"
                       >
                         {it.label}
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 </div>
               </div>
             ))}
             {simpleLinks.map((l) => (
-              <a
+              <Link
                 key={l.label}
-                href={l.href}
+                to={l.href}
                 className="rounded-md px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
               >
                 {l.label}
-              </a>
+              </Link>
             ))}
           </nav>
 
@@ -167,12 +167,12 @@ export function MarketingNav() {
                 return (
                   <div key={menu.label} className="border-b border-border/60 last:border-0">
                     <div className="flex items-center">
-                      <a
-                        href={menu.href}
+                      <Link
+                        to={menu.href}
                         className="flex-1 py-3 text-sm font-medium text-foreground"
                       >
                         {menu.label}
-                      </a>
+                      </Link>
                       <button
                         type="button"
                         onClick={() => setOpenMenu(isOpen ? null : menu.label)}
@@ -187,13 +187,13 @@ export function MarketingNav() {
                     {isOpen && (
                       <div className="pb-3 pl-3">
                         {menu.items.map((it) => (
-                          <a
+                          <Link
                             key={it.label}
-                            href={it.href}
+                            to={it.href}
                             className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground"
                           >
                             {it.label}
-                          </a>
+                          </Link>
                         ))}
                       </div>
                     )}
@@ -201,13 +201,13 @@ export function MarketingNav() {
                 );
               })}
               {simpleLinks.map((l) => (
-                <a
+                <Link
                   key={l.label}
-                  href={l.href}
+                  to={l.href}
                   className="block border-b border-border/60 py-3 text-sm font-medium text-foreground last:border-0"
                 >
                   {l.label}
-                </a>
+                </Link>
               ))}
             </div>
           </div>
