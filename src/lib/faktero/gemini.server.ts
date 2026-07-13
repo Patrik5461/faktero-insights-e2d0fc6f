@@ -9,28 +9,38 @@ async function geminiVision(
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { inline_data: { mime_type: mimeType, data: base64 } },
-              { text: prompt },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0,
-          maxOutputTokens: 8000,
-          responseMimeType: "application/json",
+  const isAuthKey = apiKey.startsWith("AQ.");
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  let url: string;
+  if (isAuthKey) {
+    headers["x-goog-api-key"] = apiKey;
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+  } else {
+    url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            { inline_data: { mime_type: mimeType, data: base64 } },
+            { text: prompt },
+          ],
         },
-      }),
-    },
-  );
+      ],
+      generationConfig: {
+        temperature: 0,
+        maxOutputTokens: 8000,
+        responseMimeType: "application/json",
+      },
+    }),
+  });
 
   if (!res.ok) {
     const body = await res.text();
