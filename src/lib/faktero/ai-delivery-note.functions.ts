@@ -39,17 +39,12 @@ PRAVIDLÁ:
 - Množstvo musí byť číslo (nie text)
 - Jednotka: ks, kg, m, l, bal, krt, atď.
 
-Vráť VÝHRADNE JSON objekt v tomto formáte (žiadny markdown, žiadne backticky, žiadny iný text):
-{
-  "supplier": "názov dodávateľa alebo null",
-  "delivery_number": "číslo dodacieho listu alebo null",
-  "date": "YYYY-MM-DD alebo null",
-  "items": [
-    { "name": "názov produktu", "code": "katalógové číslo alebo null", "quantity": number, "unit": "jednotka", "unit_price": number | null, "total_price": number | null }
-  ]
-}
+Vráť VÝHRADNE JSON array [], žiadny iný text.
 
-Ak nenájdeš žiadne položky, "items" nechaj ako prázdne pole [].`;
+Každý objekt v poli má tento formát:
+{ "name": "názov produktu", "code": "katalógové číslo alebo null", "quantity": number, "unit": "jednotka", "unit_price": number | null, "total_price": number | null }
+
+Ak nenájdeš žiadne položky, vráť prázdne pole [].`;
 
     let content = "{}";
 
