@@ -18,6 +18,7 @@ const ITEMS = [
   { to: "/pravne/gopay-podmienky", label: "GoPay podmienky", desc: "Ako fungujú online platby cez GoPay." },
   { to: "/pravne/cookies", label: "Cookies", desc: "Používanie cookies a lokálneho úložiska." },
   { to: "/pravne/tesla-podmienky", label: "Tesla Fleet API", desc: "Podmienky pripojenia Tesla vozidiel." },
+  { to: "/pravne/opakovane-platby", label: "Opakované platby", desc: "Podmienky opakovaných platieb za predplatné." },
 ] as const;
 
 function Page() {

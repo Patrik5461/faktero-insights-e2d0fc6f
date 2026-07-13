@@ -1276,7 +1276,7 @@ function SiteFooter() {
             <a href="/pravne/obchodne-podmienky" className="hover:text-foreground">Obchodné podmienky</a>
             <a href="/pravne/gdpr" className="hover:text-foreground">GDPR</a>
             <a href="/pravne/tesla-podmienky" className="hover:text-foreground">Tesla Fleet API</a>
-            <a href="/status" className="hover:text-foreground">Status</a>
+            <a href="/kontakt" className="hover:text-foreground">Kontakt</a>
           </div>
         </div>
       </div>
