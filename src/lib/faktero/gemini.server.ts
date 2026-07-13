@@ -6,7 +6,7 @@ async function geminiVision(
   mimeType: string,
   prompt: string,
 ): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
 
   const res = await fetch(
