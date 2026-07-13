@@ -43,15 +43,14 @@ Jednotky: ks, kg, m, l, m2, m3, bal, ... (v origináli). Ceny v EUR bez DPH ak s
 
     const userContent: any[] = [{ type: "text", text: "Extrahuj položky z tohto dodacieho listu." }];
     if (isPdf) {
-      // OpenAI Chat Completions nepodporuje priamo PDF v `file` bloku — necháme model
-      // spracovať aspoň ako base64 file (fallback). Väčšina dodacích listov je foto/scan.
-      userContent.push({ type: "text", text: "(PDF príloha nižšie ako base64 data URL)" });
-      userContent.push({ type: "text", text: data.file_data_url.slice(0, 8000) });
+      // OpenAI gpt-4o podporuje PDF cez `file` blok s base64 data URL.
+      userContent.push({ type: "file", file: { filename: "dodaci-list.pdf", file_data: data.file_data_url } });
     } else {
       userContent.push({ type: "image_url", image_url: { url: data.file_data_url } });
     }
 
-    const model = process.env.OPENAI_VISION_MODEL || "gpt-4o-mini";
+    // Vision/OCR úlohy vyžadujú model s vision podporou — default gpt-4o.
+    const model = process.env.OPENAI_VISION_MODEL || "gpt-4o";
     const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
