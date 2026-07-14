@@ -133,7 +133,10 @@ function DeliveryNoteScanPage() {
       clearTimeout(timeoutId);
       const meta = JSON.parse(response) as { result_path: string; count: number };
       console.log("[dodaci-list] parseFn returned meta:", meta);
-      const resultText = await fetchResultFn({ data: { result_path: meta.result_path } });
+      const { signedUrl } = await fetchResultFn({ data: { result_path: meta.result_path } });
+      const resultRes = await fetch(signedUrl);
+      if (!resultRes.ok) throw new Error(`Načítanie výsledku zlyhalo: ${resultRes.status}`);
+      const resultText = await resultRes.text();
       const result = JSON.parse(resultText);
       const items = result.items || [];
       setSupplier(result.supplier ?? "");
