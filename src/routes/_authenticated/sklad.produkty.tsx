@@ -578,7 +578,10 @@ function StockItemsPage() {
           </div>
         </div>
       )}
+
+      <StockSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} onChanged={load} />
     </>
+
   );
 }
 
