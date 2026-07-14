@@ -78,6 +78,23 @@ function InventoryPage() {
     finally { setBusy(false); }
   }
 
+  async function onScan(code: string) {
+    if (!code.trim() || !countId) return;
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    try {
+      const found = await lookup({ data: { company_id: cid, code: code.trim() } });
+      if (!found) { toast.error(`Nenájdené: ${code}`); return; }
+      const row = items.find((it) => it.stock_item_id === (found as any).id);
+      if (!row) { toast.error("Položka nie je v inventúre"); return; }
+      const next = Number(row.counted_quantity ?? 0) + 1;
+      await setCounted(row.id, String(next));
+      toast.success(`+1 → ${(found as any).sku ?? "položka"} (${next})`);
+      setScan("");
+      scanRef.current?.focus();
+    } catch (e: any) { toast.error(e?.message ?? "Chyba"); }
+  }
+
   return (
     <>
       <PageHeader title="Inventúra" description="Spočítajte fyzický stav skladu a vytvorte úpravy." />
