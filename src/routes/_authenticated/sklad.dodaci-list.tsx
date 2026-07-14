@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { aiParseDeliveryNoteFn, importDeliveryNoteFn, type DeliveryNoteItem } from "@/lib/faktero/ai-delivery-note.functions";
+import { aiParseDeliveryNoteFn, fetchDeliveryNoteResultFn, importDeliveryNoteFn, type DeliveryNoteItem } from "@/lib/faktero/ai-delivery-note.functions";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { Camera, Upload, Loader2, Trash2, Plus, FileText, History } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ type ProductOption = { id: string; name: string; code: string | null };
 function DeliveryNoteScanPage() {
   const nav = useNavigate();
   const parseFn = useServerFn(aiParseDeliveryNoteFn);
+  const fetchResultFn = useServerFn(fetchDeliveryNoteResultFn);
   const importFn = useServerFn(importDeliveryNoteFn);
 
   const [fileMeta, setFileMeta] = useState<{ name: string; mime: string; dataUrl: string } | null>(null);
@@ -130,7 +131,10 @@ function DeliveryNoteScanPage() {
         }),
       ]);
       clearTimeout(timeoutId);
-      const result = JSON.parse(response);
+      const meta = JSON.parse(response) as { result_path: string; count: number };
+      console.log("[dodaci-list] parseFn returned meta:", meta);
+      const resultText = await fetchResultFn({ data: { result_path: meta.result_path } });
+      const result = JSON.parse(resultText);
       const items = result.items || [];
       setSupplier(result.supplier ?? "");
       setDeliveryNumber(result.delivery_number ?? "");

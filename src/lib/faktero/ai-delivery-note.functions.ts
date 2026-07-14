@@ -145,16 +145,38 @@ PRÍKLAD správnej odpovede pre 3 položky:
           total_price: r.total_price != null ? Number(r.total_price) : null,
         }))
         .filter((r) => r.name.length > 0 && r.quantity > 0);
-      return JSON.stringify({
+      // Uložíme výsledok do Storage, aby Seroval nemusel serializovať veľký JSON.
+      const resultPayload = JSON.stringify({
         items,
         supplier: parsed.supplier ?? null,
         delivery_number: parsed.delivery_number ?? null,
         date: parsed.date ?? null,
       });
+      const resultPath = `${storage_path}.result.json`;
+      const { error: upErr } = await supabaseAdmin.storage
+        .from("imports")
+        .upload(resultPath, new Blob([resultPayload], { type: "application/json" }), { upsert: true, contentType: "application/json" });
+      if (upErr) throw new Error(`Uloženie výsledku zlyhalo: ${upErr.message}`);
+      console.log("[delivery] result stored at:", resultPath, "items:", items.length);
+      return JSON.stringify({ result_path: resultPath, count: items.length });
     } catch (e: any) {
       console.error("[delivery] ERROR:", e?.message ?? String(e), e?.stack ?? "");
       throw e;
     }
+  });
+
+/**
+ * Načíta uložený AI výsledok zo Storage.
+ */
+export const fetchDeliveryNoteResultFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ result_path: z.string().min(1) }).parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: blob, error } = await supabaseAdmin.storage.from("imports").download(data.result_path);
+    if (error || !blob) throw new Error(`Načítanie výsledku zlyhalo: ${error?.message ?? "neznáma chyba"}`);
+    const text = await blob.text();
+    return text;
   });
 
 const ImportItem = z.object({
