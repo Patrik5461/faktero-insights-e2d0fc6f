@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { startInventory, completeInventory } from "@/lib/faktero/stock.functions";
+import { startInventory, completeInventory, lookupStockItemByCode } from "@/lib/faktero/stock.functions";
 import { toast } from "sonner";
+import { ScanLine } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sklad/inventura")({
   head: () => ({ meta: [{ title: "Inventúra — Faktero" }] }),
@@ -15,12 +16,15 @@ export const Route = createFileRoute("/_authenticated/sklad/inventura")({
 function InventoryPage() {
   const start = useServerFn(startInventory);
   const complete = useServerFn(completeInventory);
+  const lookup = useServerFn(lookupStockItemByCode);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [warehouse, setWarehouse] = useState("");
   const [countId, setCountId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
   const [skuMap, setSkuMap] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [scan, setScan] = useState("");
+  const scanRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -74,6 +78,23 @@ function InventoryPage() {
     finally { setBusy(false); }
   }
 
+  async function onScan(code: string) {
+    if (!code.trim() || !countId) return;
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    try {
+      const found = await lookup({ data: { company_id: cid, code: code.trim() } });
+      if (!found) { toast.error(`Nenájdené: ${code}`); return; }
+      const row = items.find((it) => it.stock_item_id === (found as any).id);
+      if (!row) { toast.error("Položka nie je v inventúre"); return; }
+      const next = Number(row.counted_quantity ?? 0) + 1;
+      await setCounted(row.id, String(next));
+      toast.success(`+1 → ${(found as any).sku ?? "položka"} (${next})`);
+      setScan("");
+      scanRef.current?.focus();
+    } catch (e: any) { toast.error(e?.message ?? "Chyba"); }
+  }
+
   return (
     <>
       <PageHeader title="Inventúra" description="Spočítajte fyzický stav skladu a vytvorte úpravy." />
@@ -92,7 +113,21 @@ function InventoryPage() {
           </div>
         ) : (
           <>
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <ScanLine className="h-4 w-4 text-primary" />
+              <input
+                ref={scanRef}
+                autoFocus
+                value={scan}
+                onChange={(e) => setScan(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onScan(scan); } }}
+                placeholder="Naskenujte alebo napíšte čiarový kód / SKU a stlačte Enter…"
+                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+              <button onClick={() => onScan(scan)} className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">+1</button>
+            </div>
             <div className="overflow-hidden rounded-xl border border-border bg-card">
+
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr><th className="p-3">Položka</th><th className="p-3 text-right">Očakávané</th><th className="p-3 text-right">Spočítané</th><th className="p-3 text-right">Rozdiel</th></tr>

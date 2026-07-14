@@ -117,6 +117,7 @@ import { Route as AuthenticatedSkladPresunyRouteImport } from './routes/_authent
 import { Route as AuthenticatedSkladPohybyRouteImport } from './routes/_authenticated/sklad.pohyby'
 import { Route as AuthenticatedSkladNastaveniaRouteImport } from './routes/_authenticated/sklad.nastavenia'
 import { Route as AuthenticatedSkladMinimumRouteImport } from './routes/_authenticated/sklad.minimum'
+import { Route as AuthenticatedSkladKategorieRouteImport } from './routes/_authenticated/sklad.kategorie'
 import { Route as AuthenticatedSkladInventuraRouteImport } from './routes/_authenticated/sklad.inventura'
 import { Route as AuthenticatedSkladImportRouteImport } from './routes/_authenticated/sklad.import'
 import { Route as AuthenticatedSkladHodnotaRouteImport } from './routes/_authenticated/sklad.hodnota'
@@ -162,6 +163,7 @@ import { Route as ApiPublicWebhooksGopayMerchantRouteImport } from './routes/api
 import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/tesla/callback'
 import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/public/tatrabanka/callback'
 import { Route as ApiPublicHooksTrialLifecycleRouteImport } from './routes/api/public/hooks/trial-lifecycle'
+import { Route as ApiPublicHooksStockAlertsRouteImport } from './routes/api/public/hooks/stock-alerts'
 import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public/hooks/reminders'
 import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/public/hooks/recurring-run'
 import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
@@ -745,6 +747,12 @@ const AuthenticatedSkladMinimumRoute =
     path: '/minimum',
     getParentRoute: () => AuthenticatedSkladRoute,
   } as any)
+const AuthenticatedSkladKategorieRoute =
+  AuthenticatedSkladKategorieRouteImport.update({
+    id: '/kategorie',
+    path: '/kategorie',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
 const AuthenticatedSkladInventuraRoute =
   AuthenticatedSkladInventuraRouteImport.update({
     id: '/inventura',
@@ -1001,6 +1009,12 @@ const ApiPublicHooksTrialLifecycleRoute =
     path: '/api/public/hooks/trial-lifecycle',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksStockAlertsRoute =
+  ApiPublicHooksStockAlertsRouteImport.update({
+    id: '/api/public/hooks/stock-alerts',
+    path: '/api/public/hooks/stock-alerts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksRemindersRoute = ApiPublicHooksRemindersRouteImport.update({
   id: '/api/public/hooks/reminders',
   path: '/api/public/hooks/reminders',
@@ -1223,6 +1237,7 @@ export interface FileRoutesByFullPath {
   '/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/sklad/import': typeof AuthenticatedSkladImportRoute
   '/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
+  '/sklad/kategorie': typeof AuthenticatedSkladKategorieRoute
   '/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
@@ -1269,6 +1284,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
+  '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
@@ -1390,6 +1406,7 @@ export interface FileRoutesByTo {
   '/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/sklad/import': typeof AuthenticatedSkladImportRoute
   '/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
+  '/sklad/kategorie': typeof AuthenticatedSkladKategorieRoute
   '/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
@@ -1436,6 +1453,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
+  '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
@@ -1567,6 +1585,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/_authenticated/sklad/import': typeof AuthenticatedSkladImportRoute
   '/_authenticated/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
+  '/_authenticated/sklad/kategorie': typeof AuthenticatedSkladKategorieRoute
   '/_authenticated/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/_authenticated/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/_authenticated/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
@@ -1613,6 +1632,7 @@ export interface FileRoutesById {
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
+  '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
@@ -1744,6 +1764,7 @@ export interface FileRouteTypes {
     | '/sklad/hodnota'
     | '/sklad/import'
     | '/sklad/inventura'
+    | '/sklad/kategorie'
     | '/sklad/minimum'
     | '/sklad/nastavenia'
     | '/sklad/pohyby'
@@ -1790,6 +1811,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
+    | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tesla/callback'
@@ -1911,6 +1933,7 @@ export interface FileRouteTypes {
     | '/sklad/hodnota'
     | '/sklad/import'
     | '/sklad/inventura'
+    | '/sklad/kategorie'
     | '/sklad/minimum'
     | '/sklad/nastavenia'
     | '/sklad/pohyby'
@@ -1957,6 +1980,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
+    | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tesla/callback'
@@ -2087,6 +2111,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/hodnota'
     | '/_authenticated/sklad/import'
     | '/_authenticated/sklad/inventura'
+    | '/_authenticated/sklad/kategorie'
     | '/_authenticated/sklad/minimum'
     | '/_authenticated/sklad/nastavenia'
     | '/_authenticated/sklad/pohyby'
@@ -2133,6 +2158,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
+    | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tesla/callback'
@@ -2213,6 +2239,7 @@ export interface RootRouteChildren {
   ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
   ApiPublicHooksRecurringRunRoute: typeof ApiPublicHooksRecurringRunRoute
   ApiPublicHooksRemindersRoute: typeof ApiPublicHooksRemindersRoute
+  ApiPublicHooksStockAlertsRoute: typeof ApiPublicHooksStockAlertsRoute
   ApiPublicHooksTrialLifecycleRoute: typeof ApiPublicHooksTrialLifecycleRoute
   ApiPublicTatrabankaCallbackRoute: typeof ApiPublicTatrabankaCallbackRoute
   ApiPublicTeslaCallbackRoute: typeof ApiPublicTeslaCallbackRoute
@@ -2983,6 +3010,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSkladMinimumRouteImport
       parentRoute: typeof AuthenticatedSkladRoute
     }
+    '/_authenticated/sklad/kategorie': {
+      id: '/_authenticated/sklad/kategorie'
+      path: '/kategorie'
+      fullPath: '/sklad/kategorie'
+      preLoaderRoute: typeof AuthenticatedSkladKategorieRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
     '/_authenticated/sklad/inventura': {
       id: '/_authenticated/sklad/inventura'
       path: '/inventura'
@@ -3298,6 +3332,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksTrialLifecycleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/stock-alerts': {
+      id: '/api/public/hooks/stock-alerts'
+      path: '/api/public/hooks/stock-alerts'
+      fullPath: '/api/public/hooks/stock-alerts'
+      preLoaderRoute: typeof ApiPublicHooksStockAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/reminders': {
       id: '/api/public/hooks/reminders'
       path: '/api/public/hooks/reminders'
@@ -3551,6 +3592,7 @@ interface AuthenticatedSkladRouteChildren {
   AuthenticatedSkladHodnotaRoute: typeof AuthenticatedSkladHodnotaRoute
   AuthenticatedSkladImportRoute: typeof AuthenticatedSkladImportRoute
   AuthenticatedSkladInventuraRoute: typeof AuthenticatedSkladInventuraRoute
+  AuthenticatedSkladKategorieRoute: typeof AuthenticatedSkladKategorieRoute
   AuthenticatedSkladMinimumRoute: typeof AuthenticatedSkladMinimumRoute
   AuthenticatedSkladNastaveniaRoute: typeof AuthenticatedSkladNastaveniaRoute
   AuthenticatedSkladPohybyRoute: typeof AuthenticatedSkladPohybyRouteWithChildren
@@ -3567,6 +3609,7 @@ const AuthenticatedSkladRouteChildren: AuthenticatedSkladRouteChildren = {
   AuthenticatedSkladHodnotaRoute: AuthenticatedSkladHodnotaRoute,
   AuthenticatedSkladImportRoute: AuthenticatedSkladImportRoute,
   AuthenticatedSkladInventuraRoute: AuthenticatedSkladInventuraRoute,
+  AuthenticatedSkladKategorieRoute: AuthenticatedSkladKategorieRoute,
   AuthenticatedSkladMinimumRoute: AuthenticatedSkladMinimumRoute,
   AuthenticatedSkladNastaveniaRoute: AuthenticatedSkladNastaveniaRoute,
   AuthenticatedSkladPohybyRoute: AuthenticatedSkladPohybyRouteWithChildren,
@@ -3987,6 +4030,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,
   ApiPublicHooksRecurringRunRoute: ApiPublicHooksRecurringRunRoute,
   ApiPublicHooksRemindersRoute: ApiPublicHooksRemindersRoute,
+  ApiPublicHooksStockAlertsRoute: ApiPublicHooksStockAlertsRoute,
   ApiPublicHooksTrialLifecycleRoute: ApiPublicHooksTrialLifecycleRoute,
   ApiPublicTatrabankaCallbackRoute: ApiPublicTatrabankaCallbackRoute,
   ApiPublicTeslaCallbackRoute: ApiPublicTeslaCallbackRoute,
@@ -4002,13 +4046,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

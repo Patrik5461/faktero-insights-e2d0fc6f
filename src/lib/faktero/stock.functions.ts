@@ -1170,3 +1170,61 @@ export const cancelTransfer = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// --- v1.6 Phase 6: category update ----------------------------------------
+const UpdateCategoryInput = z.object({
+  company_id: z.string().uuid(),
+  category_id: z.string().uuid(),
+  name: z.string().trim().min(1).max(80),
+  color: z.string().trim().max(20).optional().nullable(),
+  note: z.string().trim().max(500).optional().nullable(),
+});
+export const updateStockCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => UpdateCategoryInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("stock_categories")
+      .update({ name: data.name, color: data.color ?? null, note: data.note ?? null })
+      .eq("id", data.category_id)
+      .eq("company_id", data.company_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listCategoriesWithCounts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => CompanyScoped.parse(d))
+  .handler(async ({ data, context }) => {
+    const [{ data: cats }, { data: items }] = await Promise.all([
+      context.supabase.from("stock_categories").select("id, name, color, note").eq("company_id", data.company_id).order("name"),
+      context.supabase.from("stock_items").select("category_id").eq("company_id", data.company_id).is("archived_at", null),
+    ]);
+    const counts = new Map<string, number>();
+    (items ?? []).forEach((it: any) => {
+      if (!it.category_id) return;
+      counts.set(it.category_id, (counts.get(it.category_id) ?? 0) + 1);
+    });
+    return (cats ?? []).map((c: any) => ({ ...c, product_count: counts.get(c.id) ?? 0 }));
+  });
+
+// --- v1.6 Phase 4: barcode/SKU lookup for inventory scan ------------------
+const BarcodeLookupInput = z.object({
+  company_id: z.string().uuid(),
+  code: z.string().trim().min(1).max(64),
+});
+export const lookupStockItemByCode = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => BarcodeLookupInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const code = data.code.trim();
+    // Try barcode then SKU on stock_items
+    const { data: byBarcode } = await context.supabase
+      .from("stock_items").select("id, sku, barcode, product_id")
+      .eq("company_id", data.company_id).eq("barcode", code).maybeSingle();
+    if (byBarcode) return byBarcode;
+    const { data: bySku } = await context.supabase
+      .from("stock_items").select("id, sku, barcode, product_id")
+      .eq("company_id", data.company_id).eq("sku", code).maybeSingle();
+    return bySku ?? null;
+  });
