@@ -173,10 +173,9 @@ export const fetchDeliveryNoteResultFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ result_path: z.string().min(1) }).parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: blob, error } = await supabaseAdmin.storage.from("imports").download(data.result_path);
-    if (error || !blob) throw new Error(`Načítanie výsledku zlyhalo: ${error?.message ?? "neznáma chyba"}`);
-    const text = await blob.text();
-    return text;
+    const { data: signed, error } = await supabaseAdmin.storage.from("imports").createSignedUrl(data.result_path, 60);
+    if (error || !signed) throw new Error(`Vytvorenie linku na výsledok zlyhalo: ${error?.message ?? "neznáma chyba"}`);
+    return { signedUrl: signed.signedUrl };
   });
 
 const ImportItem = z.object({
