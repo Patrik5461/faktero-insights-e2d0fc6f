@@ -403,6 +403,9 @@ export const getProductStockDetail = createServerFn({ method: "POST" })
     let invoiceRefs: any[] = [];
     let totalQuantity = 0;
     let reservedQuantity = 0;
+    let category: any = null;
+    let supplier: any = null;
+    let photoSignedUrl: string | null = null;
     if (stockItem) {
       const { data: lvl } = await supabase.from("stock_levels")
         .select("warehouse_id, quantity, reserved_quantity, warehouses(name)")
@@ -418,8 +421,20 @@ export const getProductStockDetail = createServerFn({ method: "POST" })
         const { data: invs } = await supabase.from("invoices").select("id, invoice_number, status, issue_date, total").in("id", invIds);
         invoiceRefs = invs ?? [];
       }
+      if (stockItem.category_id) {
+        const { data: c } = await supabase.from("stock_categories").select("id, name, color").eq("id", stockItem.category_id).maybeSingle();
+        category = c;
+      }
+      if (stockItem.supplier_id) {
+        const { data: s } = await supabase.from("customers").select("id, name, ico").eq("id", stockItem.supplier_id).maybeSingle();
+        supplier = s;
+      }
+      if (stockItem.photo_url && stockItem.photo_url.startsWith(`${data.company_id}/`)) {
+        const { data: signed } = await supabase.storage.from("product-photos").createSignedUrl(stockItem.photo_url, 60 * 60);
+        photoSignedUrl = signed?.signedUrl ?? null;
+      }
     }
-    return { product, stockItem, levels, movements, invoiceRefs, totalQuantity, reservedQuantity };
+    return { product, stockItem, category, supplier, photoSignedUrl, levels, movements, invoiceRefs, totalQuantity, reservedQuantity };
   });
 
 const MovementDetailInput = z.object({
@@ -668,4 +683,175 @@ export const getMyStockRole = createServerFn({ method: "POST" })
       .from("company_users").select("role")
       .eq("company_id", data.company_id).eq("user_id", context.userId).maybeSingle();
     return { role: row?.role ?? null };
+  });
+// --- v1.6 Phase 2: stock item edit / categories / suppliers ----------------
+
+export const listStockCategories = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => CompanyScoped.parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: rows } = await context.supabase
+      .from("stock_categories")
+      .select("id, name, color, note")
+      .eq("company_id", data.company_id)
+      .order("name", { ascending: true });
+    return rows ?? [];
+  });
+
+const CreateCategoryInput = z.object({
+  company_id: z.string().uuid(),
+  name: z.string().trim().min(1).max(80),
+  color: z.string().trim().max(20).optional().nullable(),
+  note: z.string().trim().max(500).optional().nullable(),
+});
+export const createStockCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => CreateCategoryInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("stock_categories")
+      .insert({
+        company_id: data.company_id,
+        name: data.name,
+        color: data.color ?? null,
+        note: data.note ?? null,
+      })
+      .select("id, name, color, note")
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+const DeleteCategoryInput = z.object({
+  company_id: z.string().uuid(),
+  category_id: z.string().uuid(),
+});
+export const deleteStockCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => DeleteCategoryInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("stock_categories")
+      .delete()
+      .eq("id", data.category_id)
+      .eq("company_id", data.company_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listSuppliers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => CompanyScoped.parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: rows } = await context.supabase
+      .from("customers")
+      .select("id, name, ico")
+      .eq("company_id", data.company_id)
+      .is("deleted_at", null)
+      .order("name", { ascending: true })
+      .limit(500);
+    return rows ?? [];
+  });
+
+const UpdateStockProductInput = z.object({
+  company_id: z.string().uuid(),
+  product_id: z.string().uuid(),
+  name: z.string().trim().min(1).max(200),
+  name_en: z.string().trim().max(200).optional().nullable(),
+  description: z.string().trim().max(2000).optional().nullable(),
+  code: z.string().trim().max(64).optional().nullable(),
+  sku: z.string().trim().max(64).optional().nullable(),
+  barcode: z.string().trim().max(64).optional().nullable(),
+  unit: z.string().trim().min(1).max(16).default("ks"),
+  vat_rate: z.coerce.number().min(0).max(100).default(23),
+  sale_price: z.coerce.number().nonnegative().default(0),
+  purchase_price: z.coerce.number().nonnegative().default(0),
+  min_stock: z.coerce.number().nonnegative().default(0),
+  track_stock: z.boolean().default(true),
+  category_id: z.string().uuid().nullable().optional(),
+  supplier_id: z.string().uuid().nullable().optional(),
+  location: z.string().trim().max(120).optional().nullable(),
+  photo_url: z.string().trim().max(500).optional().nullable(),
+  active: z.boolean().default(true),
+});
+export const updateStockProduct = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => UpdateStockProductInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+
+    const { error: pErr } = await supabase
+      .from("products")
+      .update({
+        name: data.name,
+        code: data.code || null,
+        description: data.description || null,
+        unit: data.unit,
+        unit_price: data.sale_price,
+        vat_rate: data.vat_rate,
+        active: data.active,
+      })
+      .eq("id", data.product_id)
+      .eq("company_id", data.company_id);
+    if (pErr) throw new Error(pErr.message);
+
+    const { data: existing } = await supabase
+      .from("stock_items")
+      .select("id")
+      .eq("company_id", data.company_id)
+      .eq("product_id", data.product_id)
+      .maybeSingle();
+
+    const payload = {
+      company_id: data.company_id,
+      product_id: data.product_id,
+      sku: data.sku || null,
+      barcode: data.barcode || null,
+      purchase_price: data.purchase_price,
+      sale_price: data.sale_price,
+      vat_rate: data.vat_rate,
+      unit: data.unit,
+      min_stock: data.min_stock,
+      track_stock: data.track_stock,
+      category_id: data.category_id ?? null,
+      supplier_id: data.supplier_id ?? null,
+      location: data.location || null,
+      photo_url: data.photo_url || null,
+      name_en: data.name_en || null,
+      description: data.description || null,
+    };
+
+    if (existing) {
+      const { error } = await supabase
+        .from("stock_items")
+        .update(payload)
+        .eq("id", existing.id);
+      if (error) throw new Error(error.message);
+      return { ok: true, stock_item_id: existing.id };
+    }
+    const { data: created, error } = await supabase
+      .from("stock_items")
+      .insert(payload)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { ok: true, stock_item_id: created.id };
+  });
+
+const PhotoUrlInput = z.object({
+  company_id: z.string().uuid(),
+  storage_path: z.string().trim().min(1),
+});
+export const getProductPhotoSignedUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => PhotoUrlInput.parse(d))
+  .handler(async ({ data, context }) => {
+    if (!data.storage_path.startsWith(`${data.company_id}/`)) {
+      throw new Error("Neplatná cesta k fotke.");
+    }
+    const { data: signed, error } = await context.supabase
+      .storage.from("product-photos")
+      .createSignedUrl(data.storage_path, 60 * 60);
+    if (error || !signed) throw new Error(error?.message ?? "Nepodarilo sa vytvoriť URL fotky.");
+    return { url: signed.signedUrl };
   });

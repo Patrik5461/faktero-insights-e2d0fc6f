@@ -179,6 +179,7 @@ import { Route as ApiV1InvoicesIdSendRouteImport } from './routes/api/v1/invoice
 import { Route as ApiV1InvoicesIdPdfRouteImport } from './routes/api/v1/invoices.$id.pdf'
 import { Route as ApiV1InvoicesIdMarkPaidRouteImport } from './routes/api/v1/invoices.$id.mark-paid'
 import { Route as ApiV1InvoicesIdCancelRouteImport } from './routes/api/v1/invoices.$id.cancel'
+import { Route as AuthenticatedSkladProduktyIdUpravitRouteImport } from './routes/_authenticated/sklad.produkty.$id.upravit'
 
 const VyvojariRoute = VyvojariRouteImport.update({
   id: '/vyvojari',
@@ -1090,6 +1091,12 @@ const ApiV1InvoicesIdCancelRoute = ApiV1InvoicesIdCancelRouteImport.update({
   path: '/cancel',
   getParentRoute: () => ApiV1InvoicesIdRoute,
 } as any)
+const AuthenticatedSkladProduktyIdUpravitRoute =
+  AuthenticatedSkladProduktyIdUpravitRouteImport.update({
+    id: '/upravit',
+    path: '/upravit',
+    getParentRoute: () => AuthenticatedSkladProduktyIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -1232,7 +1239,7 @@ export interface FileRoutesByFullPath {
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
-  '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRoute
+  '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -1253,6 +1260,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/stock/movements': typeof ApiV1StockMovementsRouteWithChildren
   '/api/v1/stock/valuation': typeof ApiV1StockValuationRoute
   '/jazdy/integracie/': typeof AuthenticatedJazdyIntegracieIndexRoute
+  '/sklad/produkty/$id/upravit': typeof AuthenticatedSkladProduktyIdUpravitRoute
   '/api/v1/invoices/$id/cancel': typeof ApiV1InvoicesIdCancelRoute
   '/api/v1/invoices/$id/mark-paid': typeof ApiV1InvoicesIdMarkPaidRoute
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
@@ -1395,7 +1403,7 @@ export interface FileRoutesByTo {
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
-  '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRoute
+  '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -1416,6 +1424,7 @@ export interface FileRoutesByTo {
   '/api/v1/stock/movements': typeof ApiV1StockMovementsRouteWithChildren
   '/api/v1/stock/valuation': typeof ApiV1StockValuationRoute
   '/jazdy/integracie': typeof AuthenticatedJazdyIntegracieIndexRoute
+  '/sklad/produkty/$id/upravit': typeof AuthenticatedSkladProduktyIdUpravitRoute
   '/api/v1/invoices/$id/cancel': typeof ApiV1InvoicesIdCancelRoute
   '/api/v1/invoices/$id/mark-paid': typeof ApiV1InvoicesIdMarkPaidRoute
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
@@ -1568,7 +1577,7 @@ export interface FileRoutesById {
   '/_authenticated/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/_authenticated/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/_authenticated/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
-  '/_authenticated/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRoute
+  '/_authenticated/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -1589,6 +1598,7 @@ export interface FileRoutesById {
   '/api/v1/stock/movements': typeof ApiV1StockMovementsRouteWithChildren
   '/api/v1/stock/valuation': typeof ApiV1StockValuationRoute
   '/_authenticated/jazdy/integracie/': typeof AuthenticatedJazdyIntegracieIndexRoute
+  '/_authenticated/sklad/produkty/$id/upravit': typeof AuthenticatedSkladProduktyIdUpravitRoute
   '/api/v1/invoices/$id/cancel': typeof ApiV1InvoicesIdCancelRoute
   '/api/v1/invoices/$id/mark-paid': typeof ApiV1InvoicesIdMarkPaidRoute
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
@@ -1762,6 +1772,7 @@ export interface FileRouteTypes {
     | '/api/v1/stock/movements'
     | '/api/v1/stock/valuation'
     | '/jazdy/integracie/'
+    | '/sklad/produkty/$id/upravit'
     | '/api/v1/invoices/$id/cancel'
     | '/api/v1/invoices/$id/mark-paid'
     | '/api/v1/invoices/$id/pdf'
@@ -1925,6 +1936,7 @@ export interface FileRouteTypes {
     | '/api/v1/stock/movements'
     | '/api/v1/stock/valuation'
     | '/jazdy/integracie'
+    | '/sklad/produkty/$id/upravit'
     | '/api/v1/invoices/$id/cancel'
     | '/api/v1/invoices/$id/mark-paid'
     | '/api/v1/invoices/$id/pdf'
@@ -2097,6 +2109,7 @@ export interface FileRouteTypes {
     | '/api/v1/stock/movements'
     | '/api/v1/stock/valuation'
     | '/_authenticated/jazdy/integracie/'
+    | '/_authenticated/sklad/produkty/$id/upravit'
     | '/api/v1/invoices/$id/cancel'
     | '/api/v1/invoices/$id/mark-paid'
     | '/api/v1/invoices/$id/pdf'
@@ -3365,6 +3378,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1InvoicesIdCancelRouteImport
       parentRoute: typeof ApiV1InvoicesIdRoute
     }
+    '/_authenticated/sklad/produkty/$id/upravit': {
+      id: '/_authenticated/sklad/produkty/$id/upravit'
+      path: '/upravit'
+      fullPath: '/sklad/produkty/$id/upravit'
+      preLoaderRoute: typeof AuthenticatedSkladProduktyIdUpravitRouteImport
+      parentRoute: typeof AuthenticatedSkladProduktyIdRoute
+    }
   }
 }
 
@@ -3419,13 +3439,29 @@ const AuthenticatedSkladPohybyRouteWithChildren =
     AuthenticatedSkladPohybyRouteChildren,
   )
 
+interface AuthenticatedSkladProduktyIdRouteChildren {
+  AuthenticatedSkladProduktyIdUpravitRoute: typeof AuthenticatedSkladProduktyIdUpravitRoute
+}
+
+const AuthenticatedSkladProduktyIdRouteChildren: AuthenticatedSkladProduktyIdRouteChildren =
+  {
+    AuthenticatedSkladProduktyIdUpravitRoute:
+      AuthenticatedSkladProduktyIdUpravitRoute,
+  }
+
+const AuthenticatedSkladProduktyIdRouteWithChildren =
+  AuthenticatedSkladProduktyIdRoute._addFileChildren(
+    AuthenticatedSkladProduktyIdRouteChildren,
+  )
+
 interface AuthenticatedSkladProduktyRouteChildren {
-  AuthenticatedSkladProduktyIdRoute: typeof AuthenticatedSkladProduktyIdRoute
+  AuthenticatedSkladProduktyIdRoute: typeof AuthenticatedSkladProduktyIdRouteWithChildren
 }
 
 const AuthenticatedSkladProduktyRouteChildren: AuthenticatedSkladProduktyRouteChildren =
   {
-    AuthenticatedSkladProduktyIdRoute: AuthenticatedSkladProduktyIdRoute,
+    AuthenticatedSkladProduktyIdRoute:
+      AuthenticatedSkladProduktyIdRouteWithChildren,
   }
 
 const AuthenticatedSkladProduktyRouteWithChildren =

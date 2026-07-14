@@ -1,11 +1,11 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getProductStockDetail } from "@/lib/faktero/stock.functions";
 import { useStockPermissions } from "@/hooks/useStockPermissions";
-import { ArrowLeft, Download, FileText, Package, Warehouse } from "lucide-react";
+import { ArrowLeft, Download, FileText, Package, Pencil, Warehouse } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id")({
   head: () => ({ meta: [{ title: "Skladová karta — Faktero" }] }),
@@ -23,7 +23,7 @@ function ProductStockDetail() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { canMutate, canManage } = useStockPermissions();
-  const nav = useNavigate();
+  
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -69,6 +69,11 @@ function ProductStockDetail() {
           <Link to="/sklad/produkty" className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary">
             <ArrowLeft className="h-4 w-4" /> Späť
           </Link>
+          {canManage && (
+            <Link to="/sklad/produkty/$id/upravit" params={{ id }} className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+              <Pencil className="h-4 w-4" /> Upraviť kartu
+            </Link>
+          )}
           <button onClick={exportMovementsCsv} className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary">
             <Download className="h-4 w-4" /> Export pohybov CSV
           </button>
@@ -84,16 +89,39 @@ function ProductStockDetail() {
           <Stat label="Predajná cena" value={si ? `${Number(si.sale_price).toFixed(2)} €` : "—"} />
         </div>
 
-        <div className="mt-4 rounded-xl border border-border bg-card p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold"><Package className="h-4 w-4 text-primary" /> Detaily produktu</div>
-          <dl className="grid gap-3 sm:grid-cols-2 text-sm">
-            <Pair label="Názov" value={p.name} />
-            <Pair label="Kód" value={p.code ?? "—"} />
-            <Pair label="SKU" value={si?.sku ?? "—"} />
-            <Pair label="Čiarový kód" value={si?.barcode ?? "—"} />
-            <Pair label="Jednotka" value={si?.unit ?? p.unit} />
-            <Pair label="DPH %" value={`${si?.vat_rate ?? p.vat_rate}`} />
-          </dl>
+        <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
+          <div className="rounded-xl border border-border bg-card p-3">
+            <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Fotografia</div>
+            {data.photoSignedUrl ? (
+              <img src={data.photoSignedUrl} alt={p.name} className="aspect-square w-full rounded-md object-cover" />
+            ) : (
+              <div className="flex aspect-square w-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
+                Bez fotografie
+              </div>
+            )}
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold"><Package className="h-4 w-4 text-primary" /> Detaily produktu</div>
+            <dl className="grid gap-3 sm:grid-cols-2 text-sm">
+              <Pair label="Názov (SK)" value={p.name} />
+              <Pair label="Názov (EN)" value={si?.name_en ?? "—"} />
+              <Pair label="Kód" value={p.code ?? "—"} />
+              <Pair label="SKU" value={si?.sku ?? "—"} />
+              <Pair label="Čiarový kód / EAN" value={si?.barcode ?? "—"} />
+              <Pair label="Jednotka" value={si?.unit ?? p.unit} />
+              <Pair label="DPH %" value={`${si?.vat_rate ?? p.vat_rate}`} />
+              <Pair label="Kategória" value={data.category?.name ?? "—"} />
+              <Pair label="Dodávateľ" value={data.supplier?.name ?? "—"} />
+              <Pair label="Lokácia (regál/pozícia)" value={si?.location ?? "—"} />
+              <Pair label="Sledovať zásoby" value={si?.track_stock ? "Áno" : "Nie"} />
+            </dl>
+            {(si?.description || p.description) && (
+              <div className="mt-3 border-t border-border pt-3 text-sm">
+                <div className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">Popis</div>
+                <p className="whitespace-pre-wrap text-muted-foreground">{si?.description ?? p.description}</p>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mt-4 rounded-xl border border-border bg-card p-4">
@@ -122,9 +150,6 @@ function ProductStockDetail() {
           <div className="mt-4 flex flex-wrap gap-2">
             <Link to="/sklad/prijem" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Príjem</Link>
             <Link to="/sklad/vydaj" className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary">Výdaj</Link>
-            {canManage && (
-              <button onClick={() => nav({ to: "/sklad/produkty" })} className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary">Upraviť kartu</button>
-            )}
           </div>
         )}
 
