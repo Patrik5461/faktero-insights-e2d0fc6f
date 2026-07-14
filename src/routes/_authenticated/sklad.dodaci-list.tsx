@@ -123,18 +123,20 @@ function DeliveryNoteScanPage() {
       console.log("[dodaci-list] calling parseFn with storage_path…");
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 180_000);
-      const result = await Promise.race([
+      const response = await Promise.race([
         parseFn({ data: JSON.stringify({ storage_path: uploadedPath, mime_type: processedMime }) }),
         new Promise<never>((_, rej) => {
           controller.signal.addEventListener("abort", () => rej(new Error("Časový limit vypršal (180 s). Skúste menší súbor.")));
         }),
       ]);
       clearTimeout(timeoutId);
+      const result = JSON.parse(response);
+      const items = result.items || [];
       setSupplier(result.supplier ?? "");
       setDeliveryNumber(result.delivery_number ?? "");
-      setRows(result.items.map((i) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })));
-      if (!result.items.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
-      else toast.success(`AI extrahovalo ${result.items.length} položiek.`);
+      setRows(items.map((i: DeliveryNoteItem) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })));
+      if (!items.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
+      else toast.success(`AI extrahovalo ${items.length} položiek.`);
     } catch (e: any) {
       console.error("[dodaci-list] parseFn error:", e);
       toast.error(e?.message ?? "AI spracovanie zlyhalo.");
