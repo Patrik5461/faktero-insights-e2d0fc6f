@@ -20,7 +20,10 @@ export async function geminiVision(
   });
 
   const lastStep = interaction.steps?.at(-1);
-  const text = lastStep?.content?.[0]?.text ?? "[]";
+  // SDK types union neobsahuje content na CodeExecutionCallStep, ale text step
+  // ho vždy má. Runtime logika zostáva podľa oficiálneho SDK kódu.
+  const contentArray = (lastStep as { content?: Array<{ text?: string }> } | undefined)?.content;
+  const text = contentArray?.[0]?.text ?? "[]";
   return text;
 }
 
