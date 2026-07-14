@@ -65,6 +65,11 @@ function DeliveryNoteScanPage() {
 
   async function handleFile(file: File) {
     lastFileRef.current = file;
+    // Abort any in-flight scan before starting a new one.
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    cancelledRef.current = false;
     setScanError(null);
     setScanSuccess(false);
     setScanStep(0);
