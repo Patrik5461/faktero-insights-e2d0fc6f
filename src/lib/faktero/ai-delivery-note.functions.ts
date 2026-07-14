@@ -112,13 +112,7 @@ Ak nenájdeš žiadne položky, vráť prázdne pole [].`;
         content = json.choices?.[0]?.message?.content ?? "{}";
         console.log("[delivery] openai response:", content.slice(0, 100));
       }
-      let parsed: any = {};
-      try { parsed = JSON.parse(content); }
-      catch {
-        const m = content.match(/\{[\s\S]*\}/);
-        if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
-      }
-      const rawItems: any[] = Array.isArray(parsed.items) ? parsed.items : Array.isArray(parsed) ? parsed : [];
+      const rawItems: any[] = parseDeliveryItems(content);
       const items: DeliveryNoteItem[] = rawItems
         .map((r) => ({
           name: String(r.name ?? "").trim(),
