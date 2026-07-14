@@ -20,6 +20,7 @@ type ProductOption = { id: string; name: string; code: string | null };
 function DeliveryNoteScanPage() {
   const nav = useNavigate();
   const parseFn = useServerFn(aiParseDeliveryNoteFn);
+  const fetchResultFn = useServerFn(fetchDeliveryNoteResultFn);
   const importFn = useServerFn(importDeliveryNoteFn);
 
   const [fileMeta, setFileMeta] = useState<{ name: string; mime: string; dataUrl: string } | null>(null);
