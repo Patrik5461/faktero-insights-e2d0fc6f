@@ -5,7 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getProductStockDetail } from "@/lib/faktero/stock.functions";
 import { useStockPermissions } from "@/hooks/useStockPermissions";
-import { ArrowLeft, Download, FileText, Package, Warehouse } from "lucide-react";
+import { ArrowLeft, Download, FileText, Package, Pencil, Warehouse } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id")({
   head: () => ({ meta: [{ title: "Skladová karta — Faktero" }] }),
