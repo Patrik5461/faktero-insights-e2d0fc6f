@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { startInventory, completeInventory } from "@/lib/faktero/stock.functions";
+import { startInventory, completeInventory, lookupStockItemByCode } from "@/lib/faktero/stock.functions";
 import { toast } from "sonner";
+import { ScanLine } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sklad/inventura")({
   head: () => ({ meta: [{ title: "Inventúra — Faktero" }] }),
