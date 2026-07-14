@@ -40,24 +40,43 @@ export const aiParseDeliveryNoteFn = createServerFn({ method: "POST" })
       const openaiKey = process.env.OPENAI_API_KEY;
       if (!geminiKey && !openaiKey) throw new Error("AI služba nie je dostupná (GEMINI_API_KEY ani OPENAI_API_KEY nie sú nastavené)");
 
-      const prompt = `Si expert na čítanie dodacích listov a skladových dokladov. Extrahuj VŠETKY produkty/položky z tohto dodacieho listu.
+      const prompt = `ÚLOHA: Extrahuj KOMPLETNÝ zoznam všetkých produktov/položiek z tohto dodacieho listu alebo faktúry.
 
-PRAVIDLÁ:
-- Extrahuj KAŽDÚ riadkovú položku bez výnimky
-- Ak je tabuľka, extrahuj každý riadok tabuľky
-- Ignoruj hlavičky stĺpcov (Názov, Množstvo, Cena...)
-- Ignoruj súhrny (Spolu, Celkom, DPH...)
-- Ignoruj informácie o dodávateľovi/odberateľovi
-- Ak nie je cena, nastav null
-- Množstvo musí byť číslo (nie text)
-- Jednotka: ks, kg, m, l, bal, krt, atď.
+POVINNÉ PRAVIDLÁ:
 
-Vráť VÝHRADNE JSON array [...] bez akéhokoľvek wrapper objektu. Príklad: [{...}, {...}]
+- Extrahuj KAŽDÝ riadok tabuľky s produktom
 
-Každý objekt v poli má tento formát:
-{ "name": "názov produktu", "code": "katalógové číslo alebo null", "quantity": number, "unit": "jednotka", "unit_price": number | null, "total_price": number | null }
+- NIKDY nevynechaj žiadnu položku
 
-Ak nenájdeš žiadne položky, vráť prázdne pole [].`;
+- Ak je 50 položiek, vráť 50 položiek
+
+- Ignoruj: hlavičky stĺpcov, súhrny, spolu, DPH, informácie o firme, adresa, dátum
+
+FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
+
+[
+
+  {
+
+    "name": "presný názov produktu",
+
+    "code": "katalógové číslo alebo null",
+
+    "quantity": číslo,
+
+    "unit": "ks/kg/m/l/bal",
+
+    "unit_price": číslo alebo null,
+
+    "total_price": číslo alebo null
+
+  }
+
+]
+
+PRÍKLAD správnej odpovede pre 3 položky:
+
+[{"name":"Produkt A","code":"001","quantity":10,"unit":"ks","unit_price":5.00,"total_price":50.00},{"name":"Produkt B","code":"002","quantity":5,"unit":"kg","unit_price":2.50,"total_price":12.50},{"name":"Produkt C","code":null,"quantity":1,"unit":"bal","unit_price":100.00,"total_price":100.00}]`;
 
       let content = "{}";
 
