@@ -1,16 +1,3 @@
-function parseDeliveryItems(text: string): DeliveryNoteItem[] {
-  try {
-    const json = JSON.parse(text);
-    if (Array.isArray(json)) return json;
-    if (Array.isArray(json.items)) return json.items;
-    if (Array.isArray(json.results)) return json.results;
-    if (json.name) return [json];
-    return [];
-  } catch {
-    return [];
-  }
-}
-
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
