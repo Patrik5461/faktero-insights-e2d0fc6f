@@ -116,33 +116,39 @@ function DeliveryNoteScanPage() {
       return;
     }
 
-    // Parse with 180s client-side timeout – server downloads the file from storage.
+    // Parse via plain HTTP endpoint – no server function serialization.
     setParsing(true);
     try {
-      console.log("[dodaci-list] calling parseFn with storage_path…");
+      console.log("[dodaci-list] POST /api/v1/sklad/parse-delivery-note…");
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Chýba prihlásenie.");
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 180_000);
-      const resultPath = await Promise.race([
-        parseFn({ data: JSON.stringify({ storage_path: uploadedPath, mime_type: processedMime }) }),
-        new Promise<never>((_, rej) => {
-          controller.signal.addEventListener("abort", () => rej(new Error("Časový limit vypršal (180 s). Skúste menší súbor.")));
-        }),
-      ]);
+      const res = await fetch("/api/v1/sklad/parse-delivery-note", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ storage_path: uploadedPath, mime_type: processedMime }),
+        signal: controller.signal,
+      });
       clearTimeout(timeoutId);
-      console.log("[dodaci-list] parseFn returned path:", resultPath);
-      const signedUrl = await fetchResultFn({ data: resultPath });
-      const resultRes = await fetch(signedUrl);
-      if (!resultRes.ok) throw new Error(`Načítanie výsledku zlyhalo: ${resultRes.status}`);
-      const resultText = await resultRes.text();
-      const result = JSON.parse(resultText);
-      const items = result.items || [];
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`AI zlyhalo (${res.status}): ${text.slice(0, 200)}`);
+      }
+      const result = await res.json();
+      const items: DeliveryNoteItem[] = result.items ?? [];
       setSupplier(result.supplier ?? "");
       setDeliveryNumber(result.delivery_number ?? "");
-      setRows(items.map((i: DeliveryNoteItem) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })));
+      setRows(items.map((i) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })));
       if (!items.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
       else toast.success(`AI extrahovalo ${items.length} položiek.`);
     } catch (e: any) {
-      console.error("[dodaci-list] parseFn error:", e);
+      console.error("[dodaci-list] parse error:", e);
       toast.error(e?.message ?? "AI spracovanie zlyhalo.");
     } finally {
       setParsing(false);
