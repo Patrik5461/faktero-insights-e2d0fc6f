@@ -6,7 +6,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createStockProductDebug, getStockDebugSnapshot } from "@/lib/faktero/stock.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
-import { Plus, Pencil, AlertTriangle, Download, History, Upload, ChevronDown } from "lucide-react";
+import { Plus, Pencil, AlertTriangle, Download, History, Upload, ChevronDown, Archive, ArchiveRestore, X, Check } from "lucide-react";
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty")({
@@ -57,13 +57,20 @@ function StockItemsPage() {
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
   const [debug, setDebug] = useState<any>(null);
   const [levelsByItemWh, setLevelsByItemWh] = useState<Record<string, Array<{ warehouse_id: string; quantity: number; reserved: number }>>>({});
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [showArchived, setShowArchived] = useState(false);
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   async function load() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     setLoading(true);
     const [{ data: items }, { data: lvl }, { data: prods }, { data: wh }, snapshot] = await Promise.all([
-      supabase.from("stock_items").select("*").eq("company_id", cid).order("created_at", { ascending: false }),
+      (showArchived
+        ? supabase.from("stock_items").select("*").eq("company_id", cid).not("archived_at", "is", null).order("archived_at", { ascending: false })
+        : supabase.from("stock_items").select("*").eq("company_id", cid).is("archived_at", null).order("created_at", { ascending: false })),
       supabase.from("stock_levels").select("stock_item_id, warehouse_id, quantity, reserved_quantity").eq("company_id", cid),
       supabase.from("products").select("id, name, code, unit_price, vat_rate, unit").eq("company_id", cid).is("deleted_at", null),
       supabase.from("warehouses").select("id, name").eq("company_id", cid).eq("active", true).order("created_at"),
@@ -83,7 +90,7 @@ function StockItemsPage() {
     if (SHOW_STOCK_DEBUG && snapshot) setDebug((prev: any) => ({ ...(snapshot as any), last_stock_error: prev?.last_stock_error ?? (snapshot as any)?.errors?.[0]?.message ?? null, last_created_product_id: prev?.last_created_product_id ?? null, last_created_stock_item_id: prev?.last_created_stock_item_id ?? null, last_movement_id: prev?.last_movement_id ?? null, last_raw_debug: prev?.last_raw_debug ?? null }));
     setLoading(false);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [showArchived]);
 
   // Load recent movements for the currently edited item
   useEffect(() => {
@@ -162,6 +169,74 @@ function StockItemsPage() {
     }
     return true;
   });
+
+  const selectedIds = Object.entries(selected).filter(([, v]) => v).map(([k]) => k);
+  const allOnPageSelected = filtered.length > 0 && filtered.every((r) => selected[r.id]);
+  function toggleSelect(id: string) { setSelected((p) => ({ ...p, [id]: !p[id] })); }
+  function toggleSelectAll(on: boolean) {
+    if (on) setSelected((p) => ({ ...p, ...Object.fromEntries(filtered.map((r) => [r.id, true])) }));
+    else setSelected({});
+  }
+  function clearSelection() { setSelected({}); }
+
+  async function bulkArchive() {
+    const cid = getActiveCompanyId();
+    if (!cid || !selectedIds.length) return;
+    setBulkBusy(true);
+    const { error } = await supabase.from("stock_items")
+      .update({ archived_at: new Date().toISOString() })
+      .in("id", selectedIds).eq("company_id", cid);
+    setBulkBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Archivované: ${selectedIds.length}`);
+    clearSelection(); load();
+  }
+  async function bulkRestore() {
+    const cid = getActiveCompanyId();
+    if (!cid || !selectedIds.length) return;
+    setBulkBusy(true);
+    const { error } = await supabase.from("stock_items")
+      .update({ archived_at: null })
+      .in("id", selectedIds).eq("company_id", cid);
+    setBulkBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Obnovené: ${selectedIds.length}`);
+    clearSelection(); load();
+  }
+  function bulkExportCsv() {
+    const items = rows.filter((r) => selected[r.id]);
+    if (!items.length) return toast.error("Nič nie je vybraté.");
+    const headers = ["SKU", "Názov", "Čiarový kód", "Jednotka", "Stav", "Min", "Nákup", "Predaj", "DPH %"];
+    const data: ExportRow[] = items.map((s) => {
+      const prod = products.find((p) => p.id === s.product_id);
+      return {
+        "SKU": s.sku ?? "", "Názov": prod?.name ?? "", "Čiarový kód": s.barcode ?? "",
+        "Jednotka": s.unit ?? "ks", "Stav": levels[s.id] ?? 0, "Min": Number(s.min_stock),
+        "Nákup": Number(s.purchase_price), "Predaj": Number(s.sale_price), "DPH %": Number(s.vat_rate),
+      };
+    });
+    downloadCsv(`sklad-vyber-${new Date().toISOString().slice(0, 10)}`, headers, data);
+    toast.success(`Exportované ${data.length} riadkov.`);
+  }
+
+  async function commitInlineName(item: any) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    const v = editingNameValue.trim();
+    setEditingNameId(null);
+    if (!v) return;
+    if (item.product_id) {
+      const prod = products.find((p) => p.id === item.product_id);
+      if (prod?.name === v) return;
+      const { error } = await supabase.from("products").update({ name: v }).eq("id", item.product_id).eq("company_id", cid);
+      if (error) return toast.error(error.message);
+    } else {
+      if (item.sku === v) return;
+      const { error } = await supabase.from("stock_items").update({ sku: v }).eq("id", item.id).eq("company_id", cid);
+      if (error) return toast.error(error.message);
+    }
+    toast.success("Uložené"); load();
+  }
 
   function buildExportRows(): { headers: string[]; rows: ExportRow[] } {
     const headers = [
@@ -264,13 +339,46 @@ function StockItemsPage() {
                 <Link to="/sklad/produkty" className="text-primary hover:underline">× zrušiť</Link>
               </div>
             )}
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={showArchived} onChange={(e) => { setShowArchived(e.target.checked); clearSelection(); }} />
+              Archivované
+            </label>
           </div>
           <Link to="/produkty" className="text-sm text-primary hover:underline">Spravovať produkty →</Link>
         </div>
+
+        {selectedIds.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+            <div className="text-sm">
+              <span className="font-medium">{selectedIds.length}</span> vybraných
+              <button onClick={clearSelection} className="ml-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                <X className="h-3 w-3" /> zrušiť výber
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button disabled={bulkBusy} onClick={bulkExportCsv} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60">
+                <Download className="h-3.5 w-3.5" /> Export CSV
+              </button>
+              {showArchived ? (
+                <button disabled={bulkBusy} onClick={bulkRestore} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60">
+                  <ArchiveRestore className="h-3.5 w-3.5" /> Obnoviť z archívu
+                </button>
+              ) : (
+                <button disabled={bulkBusy} onClick={bulkArchive} className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-60">
+                  <Archive className="h-3.5 w-3.5" /> Archivovať vybrané
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
+                <th className="p-3 w-10">
+                  <input type="checkbox" checked={allOnPageSelected} onChange={(e) => toggleSelectAll(e.target.checked)} aria-label="Vybrať všetky" />
+                </th>
                 <th className="p-3">SKU</th><th className="p-3">Produkt</th>
                 <th className="p-3 text-right">Stav</th><th className="p-3 text-right">Min</th>
                 <th className="p-3 text-right">Nákupná</th><th className="p-3 text-right">Predajná</th>
@@ -278,16 +386,40 @@ function StockItemsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {loading && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Žiadne skladové karty.</td></tr>}
+              {loading && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{showArchived ? "Žiadne archivované karty." : "Žiadne skladové karty."}</td></tr>}
               {filtered.map((s) => {
                 const qty = levels[s.id] ?? 0;
                 const below = s.track_stock && qty < Number(s.min_stock ?? 0);
                 const prod = products.find((p) => p.id === s.product_id);
+                const isEditingName = editingNameId === s.id;
+                const displayName = prod?.name ?? s.sku ?? "—";
+                const isArchived = !!s.archived_at;
                 return (
-                  <tr key={s.id} className="hover:bg-muted/30">
+                  <tr key={s.id} className={`hover:bg-muted/30 ${isArchived ? "opacity-60" : ""} ${selected[s.id] ? "bg-primary/5" : ""}`}>
+                    <td className="p-3">
+                      <input type="checkbox" checked={!!selected[s.id]} onChange={() => toggleSelect(s.id)} aria-label={`Vybrať ${s.sku ?? ""}`} />
+                    </td>
                     <td className="p-3 font-medium">{s.sku ?? "—"}</td>
-                    <td className="p-3 text-muted-foreground">{prod?.name ?? "—"}</td>
+                    <td
+                      className="p-3 text-muted-foreground"
+                      onDoubleClick={() => { if (isArchived) return; setEditingNameId(s.id); setEditingNameValue(displayName); }}
+                      title="Dvojklik pre úpravu názvu"
+                    >
+                      {isEditingName ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            autoFocus
+                            value={editingNameValue}
+                            onChange={(e) => setEditingNameValue(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") commitInlineName(s); if (e.key === "Escape") setEditingNameId(null); }}
+                            onBlur={() => commitInlineName(s)}
+                            className="w-full rounded border border-input bg-background px-2 py-1 text-sm"
+                          />
+                          <button onMouseDown={(e) => e.preventDefault()} onClick={() => commitInlineName(s)} className="rounded p-1 hover:bg-muted"><Check className="h-3.5 w-3.5" /></button>
+                        </div>
+                      ) : displayName}
+                    </td>
                     <td className={`p-3 text-right ${below ? "font-semibold text-amber-600" : ""}`}>
                       {below && <AlertTriangle className="mr-1 inline h-3 w-3" />}
                       {qty}
@@ -296,7 +428,33 @@ function StockItemsPage() {
                     <td className="p-3 text-right">{Number(s.purchase_price).toFixed(2)} €</td>
                     <td className="p-3 text-right">{Number(s.sale_price).toFixed(2)} €</td>
                     <td className="p-3 text-right">
-                      <button onClick={() => setEditing(s)} className="rounded p-1.5 hover:bg-muted"><Pencil className="h-4 w-4" /></button>
+                      <div className="inline-flex items-center gap-1">
+                        {isArchived ? (
+                          <button
+                            onClick={async () => {
+                              const cid = getActiveCompanyId(); if (!cid) return;
+                              const { error } = await supabase.from("stock_items").update({ archived_at: null }).eq("id", s.id).eq("company_id", cid);
+                              if (error) return toast.error(error.message);
+                              toast.success("Obnovené"); load();
+                            }}
+                            className="rounded p-1.5 hover:bg-muted" title="Obnoviť z archívu"
+                          ><ArchiveRestore className="h-4 w-4" /></button>
+                        ) : (
+                          <>
+                            <button onClick={() => setEditing(s)} className="rounded p-1.5 hover:bg-muted" title="Upraviť"><Pencil className="h-4 w-4" /></button>
+                            <button
+                              onClick={async () => {
+                                const cid = getActiveCompanyId(); if (!cid) return;
+                                if (!confirm("Archivovať túto skladovú kartu?")) return;
+                                const { error } = await supabase.from("stock_items").update({ archived_at: new Date().toISOString() }).eq("id", s.id).eq("company_id", cid);
+                                if (error) return toast.error(error.message);
+                                toast.success("Archivované"); load();
+                              }}
+                              className="rounded p-1.5 hover:bg-muted text-destructive" title="Archivovať"
+                            ><Archive className="h-4 w-4" /></button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
