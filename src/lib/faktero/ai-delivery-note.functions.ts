@@ -12,7 +12,7 @@ export type DeliveryNoteItem = {
 };
 
 const ParseInput = z.object({
-  file_data_url: z.string().min(16), // data:image/... or data:application/pdf;base64,...
+  storage_path: z.string().min(1),
   mime_type: z.string().min(3),
 });
 
