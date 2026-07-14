@@ -484,13 +484,9 @@ function AiScanOverlay({ open, step, success }: { open: boolean; step: number; s
             className={
               allDone
                 ? "absolute inset-y-0 left-0 w-full bg-primary transition-all duration-500"
-                : "absolute inset-y-0 left-0 w-1/3 animate-[shimmer_1.4s_ease-in-out_infinite] bg-primary"
+                : "absolute inset-y-0 left-0 bg-primary"
             }
-            style={
-              allDone
-                ? undefined
-                : ({ animation: "scanbar 1.4s ease-in-out infinite" } as React.CSSProperties)
-            }
+            style={allDone ? undefined : { animation: "scanbar 1.4s ease-in-out infinite", width: "40%" }}
           />
         </div>
 
