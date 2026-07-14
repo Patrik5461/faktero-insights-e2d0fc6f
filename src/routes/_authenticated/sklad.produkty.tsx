@@ -6,8 +6,9 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createStockProductDebug, getStockDebugSnapshot } from "@/lib/faktero/stock.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
-import { Plus, Pencil, AlertTriangle, Download, History, Upload, ChevronDown, Archive, ArchiveRestore, X, Check } from "lucide-react";
+import { Plus, Pencil, AlertTriangle, Download, History, Upload, ChevronDown, Archive, ArchiveRestore, X, Check, Settings } from "lucide-react";
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
+import { StockSettingsDialog } from "@/components/faktero/StockSettingsDialog";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty")({
   head: () => ({ meta: [{ title: "Skladové položky — Faktero" }] }),
@@ -53,6 +54,9 @@ function StockItemsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState<string>("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; color: string | null }>>([]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
   const [debug, setDebug] = useState<any>(null);
@@ -67,13 +71,14 @@ function StockItemsPage() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     setLoading(true);
-    const [{ data: items }, { data: lvl }, { data: prods }, { data: wh }, snapshot] = await Promise.all([
+    const [{ data: items }, { data: lvl }, { data: prods }, { data: wh }, { data: cats }, snapshot] = await Promise.all([
       (showArchived
         ? supabase.from("stock_items").select("*").eq("company_id", cid).not("archived_at", "is", null).order("archived_at", { ascending: false })
         : supabase.from("stock_items").select("*").eq("company_id", cid).is("archived_at", null).order("created_at", { ascending: false })),
       supabase.from("stock_levels").select("stock_item_id, warehouse_id, quantity, reserved_quantity").eq("company_id", cid),
       supabase.from("products").select("id, name, code, unit_price, vat_rate, unit").eq("company_id", cid).is("deleted_at", null),
       supabase.from("warehouses").select("id, name").eq("company_id", cid).eq("active", true).order("created_at"),
+      supabase.from("stock_categories").select("id, name, color").eq("company_id", cid).order("name"),
       SHOW_STOCK_DEBUG ? fetchDebugSnapshot({ data: { company_id: cid } }).catch((e) => ({ errors: [{ message: e?.message ?? String(e) }] })) : Promise.resolve(null),
     ]);
     setRows(items ?? []);
@@ -87,6 +92,7 @@ function StockItemsPage() {
     setLevelsByItemWh(perWh);
     setProducts(prods ?? []);
     setWarehouses(wh ?? []);
+    setCategories((cats ?? []) as any);
     if (SHOW_STOCK_DEBUG && snapshot) setDebug((prev: any) => ({ ...(snapshot as any), last_stock_error: prev?.last_stock_error ?? (snapshot as any)?.errors?.[0]?.message ?? null, last_created_product_id: prev?.last_created_product_id ?? null, last_created_stock_item_id: prev?.last_created_stock_item_id ?? null, last_movement_id: prev?.last_movement_id ?? null, last_raw_debug: prev?.last_raw_debug ?? null }));
     setLoading(false);
   }
@@ -166,6 +172,10 @@ function StockItemsPage() {
     if (warehouseFilter) {
       const hasInWh = (levelsByItemWh[r.id] ?? []).some((l) => l.warehouse_id === warehouseFilter);
       if (!hasInWh) return false;
+    }
+    if (categoryFilter) {
+      if (categoryFilter === "__none__") { if (r.category_id) return false; }
+      else if (r.category_id !== categoryFilter) return false;
     }
     return true;
   });
@@ -307,6 +317,9 @@ function StockItemsPage() {
           <button onClick={openCreate} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
             <Plus className="h-4 w-4" /> Pridať tovar
           </button>
+          <button onClick={() => setSettingsOpen(true)} className="inline-flex items-center justify-center rounded-md border border-border bg-card p-2 hover:bg-secondary" title="Nastavenia skladu (kategórie, sklady)" aria-label="Nastavenia skladu">
+            <Settings className="h-4 w-4" />
+          </button>
         </div>
       } />
       <PageBody>
@@ -332,6 +345,11 @@ function StockItemsPage() {
             <select value={warehouseFilter} onChange={(e) => setWarehouseFilter(e.target.value)} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
               <option value="">Všetky sklady</option>
               {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="">Všetky kategórie</option>
+              <option value="__none__">Bez kategórie</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             {urlFilter === "low_stock" && (
               <div className="inline-flex items-center gap-2 rounded-md border border-amber-300/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-300">
@@ -560,7 +578,10 @@ function StockItemsPage() {
           </div>
         </div>
       )}
+
+      <StockSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} onChanged={load} />
     </>
+
   );
 }
 

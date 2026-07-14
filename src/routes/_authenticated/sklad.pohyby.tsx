@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Download, ChevronDown } from "lucide-react";
+import { Download, ChevronDown, Plus, ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight } from "lucide-react";
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
 import { toast } from "sonner";
 
@@ -38,6 +38,7 @@ function MovementsPage() {
   const [dateTo, setDateTo] = useState<string>("");
   const [productSearch, setProductSearch] = useState<string>("");
   const [exportOpen, setExportOpen] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -133,16 +134,36 @@ function MovementsPage() {
   return (
     <>
       <PageHeader title="Skladové pohyby" description="História všetkých pohybov skladu." action={
-        <div className="relative">
-          <button onClick={() => setExportOpen((o) => !o)} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary">
-            <Download className="h-4 w-4" /> Export pohybov <ChevronDown className="h-3 w-3" />
-          </button>
-          {exportOpen && (
-            <div className="absolute right-0 z-20 mt-1 w-44 rounded-md border border-border bg-popover p-1 shadow-md">
-              <button onClick={() => exportMovements("csv")} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-muted">CSV (.csv)</button>
-              <button onClick={() => exportMovements("xlsx")} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-muted">Excel (.xlsx)</button>
-            </div>
-          )}
+        <div className="flex flex-wrap gap-2">
+          <div className="relative">
+            <button onClick={() => setExportOpen((o) => !o)} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary">
+              <Download className="h-4 w-4" /> Export pohybov <ChevronDown className="h-3 w-3" />
+            </button>
+            {exportOpen && (
+              <div className="absolute right-0 z-20 mt-1 w-44 rounded-md border border-border bg-popover p-1 shadow-md">
+                <button onClick={() => exportMovements("csv")} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-muted">CSV (.csv)</button>
+                <button onClick={() => exportMovements("xlsx")} className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-muted">Excel (.xlsx)</button>
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <button onClick={() => setNewOpen((o) => !o)} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+              <Plus className="h-4 w-4" /> Nový pohyb <ChevronDown className="h-3 w-3" />
+            </button>
+            {newOpen && (
+              <div className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-border bg-popover p-1 shadow-md">
+                <Link to="/sklad/prijem" onClick={() => setNewOpen(false)} className="flex items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted">
+                  <ArrowDownToLine className="h-4 w-4 text-emerald-600" /> Príjem
+                </Link>
+                <Link to="/sklad/vydaj" onClick={() => setNewOpen(false)} className="flex items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted">
+                  <ArrowUpFromLine className="h-4 w-4 text-destructive" /> Výdaj
+                </Link>
+                <Link to="/sklad/presuny/nova" onClick={() => setNewOpen(false)} className="flex items-center gap-2 rounded px-3 py-2 text-left text-sm hover:bg-muted">
+                  <ArrowLeftRight className="h-4 w-4 text-primary" /> Presun
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       } />
       <PageBody>
