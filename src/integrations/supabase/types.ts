@@ -1067,6 +1067,53 @@ export type Database = {
           },
         ]
       }
+      delivery_parse_jobs: {
+        Row: {
+          company_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          mime_type: string | null
+          result: Json | null
+          status: string
+          storage_path: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          mime_type?: string | null
+          result?: Json | null
+          status?: string
+          storage_path: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          mime_type?: string | null
+          result?: Json | null
+          status?: string
+          storage_path?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_parse_jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       efaktura_deliveries: {
         Row: {
           attempt_count: number
