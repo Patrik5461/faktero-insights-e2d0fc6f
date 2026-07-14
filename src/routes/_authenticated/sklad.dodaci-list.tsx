@@ -51,7 +51,21 @@ function DeliveryNoteScanPage() {
     })();
   }, []);
 
+  // Auto-advance progress steps while parsing (1 → 2 → 3 every ~3.5s).
+  useEffect(() => {
+    if (!parsing) return;
+    const timers: number[] = [];
+    timers.push(window.setTimeout(() => setScanStep((s) => Math.max(s, 1)), 500));
+    timers.push(window.setTimeout(() => setScanStep((s) => Math.max(s, 2)), 12000));
+    timers.push(window.setTimeout(() => setScanStep((s) => Math.max(s, 3)), 24000));
+    return () => { timers.forEach((t) => window.clearTimeout(t)); };
+  }, [parsing]);
+
   async function handleFile(file: File) {
+    lastFileRef.current = file;
+    setScanError(null);
+    setScanSuccess(false);
+    setScanStep(0);
     console.log("[dodaci-list] handleFile start:", { name: file.name, type: file.type, size: file.size });
     const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
     if (!allowed.includes(file.type)) return toast.error("Podporujeme JPG, PNG, WebP alebo PDF.");
