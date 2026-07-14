@@ -38,6 +38,7 @@ function MovementsPage() {
   const [dateTo, setDateTo] = useState<string>("");
   const [productSearch, setProductSearch] = useState<string>("");
   const [exportOpen, setExportOpen] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
