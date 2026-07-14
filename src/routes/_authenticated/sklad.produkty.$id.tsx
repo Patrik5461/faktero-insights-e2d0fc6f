@@ -23,7 +23,7 @@ function ProductStockDetail() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { canMutate, canManage } = useStockPermissions();
-  const nav = useNavigate();
+  void nav;
 
   useEffect(() => {
     const cid = getActiveCompanyId();
