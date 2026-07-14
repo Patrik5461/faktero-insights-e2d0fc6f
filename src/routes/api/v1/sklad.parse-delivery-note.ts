@@ -127,14 +127,26 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
             }))
             .filter((r) => r.name.length > 0 && r.quantity > 0);
 
-          console.log("[parse-delivery-note] items:", items.length);
-          return json(200, {
+          const payload = {
             items,
-            supplier: parsed?.supplier ?? null,
-            delivery_number: parsed?.delivery_number ?? null,
+            supplier: (parsed && !Array.isArray(parsed) ? parsed.supplier : null) ?? null,
+            delivery_number: (parsed && !Array.isArray(parsed) ? parsed.delivery_number : null) ?? null,
+          };
+          const bodyStr = JSON.stringify(payload);
+          console.log("[parse-delivery-note] sending response, items:", items.length, "bytes:", bodyStr.length);
+          return new Response(bodyStr, {
+            status: 200,
+            headers: {
+              "content-type": "application/json; charset=utf-8",
+              "content-length": String(new TextEncoder().encode(bodyStr).length),
+              "access-control-allow-origin": "*",
+              "access-control-allow-headers": "authorization, content-type",
+              "access-control-allow-methods": "POST, OPTIONS",
+              "cache-control": "no-store",
+            },
           });
         } catch (e: any) {
-          console.error("[parse-delivery-note] ERROR:", e?.message ?? String(e));
+          console.error("[parse-delivery-note] ERROR:", e?.message ?? String(e), e?.stack);
           return json(500, { error: "internal_error", message: e?.message ?? String(e) });
         }
       },
