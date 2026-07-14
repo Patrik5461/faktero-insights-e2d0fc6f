@@ -3459,18 +3459,62 @@ export type Database = {
           },
         ]
       }
+      stock_categories: {
+        Row: {
+          color: string | null
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_categories_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_items: {
         Row: {
           archived_at: string | null
           barcode: string | null
+          category_id: string | null
           company_id: string
           created_at: string
+          description: string | null
           id: string
+          location: string | null
           min_stock: number
+          name_en: string | null
+          photo_url: string | null
           product_id: string | null
           purchase_price: number
           sale_price: number
           sku: string | null
+          supplier_id: string | null
           track_stock: boolean
           unit: string
           updated_at: string
@@ -3479,14 +3523,20 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           barcode?: string | null
+          category_id?: string | null
           company_id: string
           created_at?: string
+          description?: string | null
           id?: string
+          location?: string | null
           min_stock?: number
+          name_en?: string | null
+          photo_url?: string | null
           product_id?: string | null
           purchase_price?: number
           sale_price?: number
           sku?: string | null
+          supplier_id?: string | null
           track_stock?: boolean
           unit?: string
           updated_at?: string
@@ -3495,20 +3545,33 @@ export type Database = {
         Update: {
           archived_at?: string | null
           barcode?: string | null
+          category_id?: string | null
           company_id?: string
           created_at?: string
+          description?: string | null
           id?: string
+          location?: string | null
           min_stock?: number
+          name_en?: string | null
+          photo_url?: string | null
           product_id?: string | null
           purchase_price?: number
           sale_price?: number
           sku?: string | null
+          supplier_id?: string | null
           track_stock?: boolean
           unit?: string
           updated_at?: string
           vat_rate?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "stock_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "stock_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stock_items_company_id_fkey"
             columns: ["company_id"]
@@ -3521,6 +3584,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
