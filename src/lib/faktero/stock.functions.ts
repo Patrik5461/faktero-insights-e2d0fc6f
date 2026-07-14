@@ -403,6 +403,9 @@ export const getProductStockDetail = createServerFn({ method: "POST" })
     let invoiceRefs: any[] = [];
     let totalQuantity = 0;
     let reservedQuantity = 0;
+    let category: any = null;
+    let supplier: any = null;
+    let photoSignedUrl: string | null = null;
     if (stockItem) {
       const { data: lvl } = await supabase.from("stock_levels")
         .select("warehouse_id, quantity, reserved_quantity, warehouses(name)")
@@ -418,8 +421,20 @@ export const getProductStockDetail = createServerFn({ method: "POST" })
         const { data: invs } = await supabase.from("invoices").select("id, invoice_number, status, issue_date, total").in("id", invIds);
         invoiceRefs = invs ?? [];
       }
+      if (stockItem.category_id) {
+        const { data: c } = await supabase.from("stock_categories").select("id, name, color").eq("id", stockItem.category_id).maybeSingle();
+        category = c;
+      }
+      if (stockItem.supplier_id) {
+        const { data: s } = await supabase.from("customers").select("id, name, ico").eq("id", stockItem.supplier_id).maybeSingle();
+        supplier = s;
+      }
+      if (stockItem.photo_url && stockItem.photo_url.startsWith(`${data.company_id}/`)) {
+        const { data: signed } = await supabase.storage.from("product-photos").createSignedUrl(stockItem.photo_url, 60 * 60);
+        photoSignedUrl = signed?.signedUrl ?? null;
+      }
     }
-    return { product, stockItem, levels, movements, invoiceRefs, totalQuantity, reservedQuantity };
+    return { product, stockItem, category, supplier, photoSignedUrl, levels, movements, invoiceRefs, totalQuantity, reservedQuantity };
   });
 
 const MovementDetailInput = z.object({
