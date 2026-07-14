@@ -138,6 +138,10 @@ import { Route as AuthenticatedJazdyIntegracieRouteImport } from './routes/_auth
 import { Route as AuthenticatedJazdyGpsRouteImport } from './routes/_authenticated/jazdy.gps'
 import { Route as AuthenticatedJazdyExportRouteImport } from './routes/_authenticated/jazdy.export'
 import { Route as AuthenticatedImportySuperfakturaRouteImport } from './routes/_authenticated/importy.superfaktura'
+import { Route as AuthenticatedImportyOmegaRouteImport } from './routes/_authenticated/importy.omega'
+import { Route as AuthenticatedImportyMoneyS3RouteImport } from './routes/_authenticated/importy.money-s3'
+import { Route as AuthenticatedImportyKrosRouteImport } from './routes/_authenticated/importy.kros'
+import { Route as AuthenticatedImportyIdokladRouteImport } from './routes/_authenticated/importy.idoklad'
 import { Route as AuthenticatedFakturySkenerRouteImport } from './routes/_authenticated/faktury.skener'
 import { Route as AuthenticatedFakturyRychlaRouteImport } from './routes/_authenticated/faktury.rychla'
 import { Route as AuthenticatedFakturyNovaRouteImport } from './routes/_authenticated/faktury.nova'
@@ -869,6 +873,30 @@ const AuthenticatedImportySuperfakturaRoute =
     path: '/importy/superfaktura',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedImportyOmegaRoute =
+  AuthenticatedImportyOmegaRouteImport.update({
+    id: '/importy/omega',
+    path: '/importy/omega',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImportyMoneyS3Route =
+  AuthenticatedImportyMoneyS3RouteImport.update({
+    id: '/importy/money-s3',
+    path: '/importy/money-s3',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImportyKrosRoute =
+  AuthenticatedImportyKrosRouteImport.update({
+    id: '/importy/kros',
+    path: '/importy/kros',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImportyIdokladRoute =
+  AuthenticatedImportyIdokladRouteImport.update({
+    id: '/importy/idoklad',
+    path: '/importy/idoklad',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedFakturySkenerRoute =
   AuthenticatedFakturySkenerRouteImport.update({
     id: '/faktury/skener',
@@ -1217,6 +1245,10 @@ export interface FileRoutesByFullPath {
   '/faktury/nova': typeof AuthenticatedFakturyNovaRoute
   '/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
+  '/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
+  '/importy/kros': typeof AuthenticatedImportyKrosRoute
+  '/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
+  '/importy/omega': typeof AuthenticatedImportyOmegaRoute
   '/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
   '/jazdy/export': typeof AuthenticatedJazdyExportRoute
   '/jazdy/gps': typeof AuthenticatedJazdyGpsRoute
@@ -1387,6 +1419,10 @@ export interface FileRoutesByTo {
   '/faktury/nova': typeof AuthenticatedFakturyNovaRoute
   '/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
+  '/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
+  '/importy/kros': typeof AuthenticatedImportyKrosRoute
+  '/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
+  '/importy/omega': typeof AuthenticatedImportyOmegaRoute
   '/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
   '/jazdy/export': typeof AuthenticatedJazdyExportRoute
   '/jazdy/gps': typeof AuthenticatedJazdyGpsRoute
@@ -1565,6 +1601,10 @@ export interface FileRoutesById {
   '/_authenticated/faktury/nova': typeof AuthenticatedFakturyNovaRoute
   '/_authenticated/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/_authenticated/faktury/skener': typeof AuthenticatedFakturySkenerRoute
+  '/_authenticated/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
+  '/_authenticated/importy/kros': typeof AuthenticatedImportyKrosRoute
+  '/_authenticated/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
+  '/_authenticated/importy/omega': typeof AuthenticatedImportyOmegaRoute
   '/_authenticated/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
   '/_authenticated/jazdy/export': typeof AuthenticatedJazdyExportRoute
   '/_authenticated/jazdy/gps': typeof AuthenticatedJazdyGpsRoute
@@ -1744,6 +1784,10 @@ export interface FileRouteTypes {
     | '/faktury/nova'
     | '/faktury/rychla'
     | '/faktury/skener'
+    | '/importy/idoklad'
+    | '/importy/kros'
+    | '/importy/money-s3'
+    | '/importy/omega'
     | '/importy/superfaktura'
     | '/jazdy/export'
     | '/jazdy/gps'
@@ -1914,6 +1958,10 @@ export interface FileRouteTypes {
     | '/faktury/nova'
     | '/faktury/rychla'
     | '/faktury/skener'
+    | '/importy/idoklad'
+    | '/importy/kros'
+    | '/importy/money-s3'
+    | '/importy/omega'
     | '/importy/superfaktura'
     | '/jazdy/export'
     | '/jazdy/gps'
@@ -2091,6 +2139,10 @@ export interface FileRouteTypes {
     | '/_authenticated/faktury/nova'
     | '/_authenticated/faktury/rychla'
     | '/_authenticated/faktury/skener'
+    | '/_authenticated/importy/idoklad'
+    | '/_authenticated/importy/kros'
+    | '/_authenticated/importy/money-s3'
+    | '/_authenticated/importy/omega'
     | '/_authenticated/importy/superfaktura'
     | '/_authenticated/jazdy/export'
     | '/_authenticated/jazdy/gps'
@@ -3157,6 +3209,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImportySuperfakturaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/importy/omega': {
+      id: '/_authenticated/importy/omega'
+      path: '/importy/omega'
+      fullPath: '/importy/omega'
+      preLoaderRoute: typeof AuthenticatedImportyOmegaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/importy/money-s3': {
+      id: '/_authenticated/importy/money-s3'
+      path: '/importy/money-s3'
+      fullPath: '/importy/money-s3'
+      preLoaderRoute: typeof AuthenticatedImportyMoneyS3RouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/importy/kros': {
+      id: '/_authenticated/importy/kros'
+      path: '/importy/kros'
+      fullPath: '/importy/kros'
+      preLoaderRoute: typeof AuthenticatedImportyKrosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/importy/idoklad': {
+      id: '/_authenticated/importy/idoklad'
+      path: '/importy/idoklad'
+      fullPath: '/importy/idoklad'
+      preLoaderRoute: typeof AuthenticatedImportyIdokladRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/faktury/skener': {
       id: '/_authenticated/faktury/skener'
       path: '/faktury/skener'
@@ -3684,6 +3764,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFakturyNovaRoute: typeof AuthenticatedFakturyNovaRoute
   AuthenticatedFakturyRychlaRoute: typeof AuthenticatedFakturyRychlaRoute
   AuthenticatedFakturySkenerRoute: typeof AuthenticatedFakturySkenerRoute
+  AuthenticatedImportyIdokladRoute: typeof AuthenticatedImportyIdokladRoute
+  AuthenticatedImportyKrosRoute: typeof AuthenticatedImportyKrosRoute
+  AuthenticatedImportyMoneyS3Route: typeof AuthenticatedImportyMoneyS3Route
+  AuthenticatedImportyOmegaRoute: typeof AuthenticatedImportyOmegaRoute
   AuthenticatedImportySuperfakturaRoute: typeof AuthenticatedImportySuperfakturaRoute
   AuthenticatedJazdyExportRoute: typeof AuthenticatedJazdyExportRoute
   AuthenticatedJazdyGpsRoute: typeof AuthenticatedJazdyGpsRoute
@@ -3736,6 +3820,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFakturyNovaRoute: AuthenticatedFakturyNovaRoute,
   AuthenticatedFakturyRychlaRoute: AuthenticatedFakturyRychlaRoute,
   AuthenticatedFakturySkenerRoute: AuthenticatedFakturySkenerRoute,
+  AuthenticatedImportyIdokladRoute: AuthenticatedImportyIdokladRoute,
+  AuthenticatedImportyKrosRoute: AuthenticatedImportyKrosRoute,
+  AuthenticatedImportyMoneyS3Route: AuthenticatedImportyMoneyS3Route,
+  AuthenticatedImportyOmegaRoute: AuthenticatedImportyOmegaRoute,
   AuthenticatedImportySuperfakturaRoute: AuthenticatedImportySuperfakturaRoute,
   AuthenticatedJazdyExportRoute: AuthenticatedJazdyExportRoute,
   AuthenticatedJazdyGpsRoute: AuthenticatedJazdyGpsRoute,
@@ -4046,13 +4134,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
