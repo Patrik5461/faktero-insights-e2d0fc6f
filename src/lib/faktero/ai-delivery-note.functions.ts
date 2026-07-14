@@ -11,6 +11,19 @@ export type DeliveryNoteItem = {
   total_price: number | null;
 };
 
+function parseDeliveryItems(text: string): DeliveryNoteItem[] {
+  try {
+    const json = JSON.parse(text);
+    if (Array.isArray(json)) return json;
+    if (Array.isArray(json.items)) return json.items;
+    if (Array.isArray(json.results)) return json.results;
+    if (json.name) return [json];
+    return [];
+  } catch {
+    return [];
+  }
+}
+
 const ParseInput = z.string().min(1);
 
 /**
@@ -39,7 +52,7 @@ PRAVIDLÁ:
 - Množstvo musí byť číslo (nie text)
 - Jednotka: ks, kg, m, l, bal, krt, atď.
 
-Vráť VÝHRADNE JSON array [], žiadny iný text.
+Vráť VÝHRADNE JSON array [...] bez akéhokoľvek wrapper objektu. Príklad: [{...}, {...}]
 
 Každý objekt v poli má tento formát:
 { "name": "názov produktu", "code": "katalógové číslo alebo null", "quantity": number, "unit": "jednotka", "unit_price": number | null, "total_price": number | null }
@@ -100,12 +113,8 @@ Ak nenájdeš žiadne položky, vráť prázdne pole [].`;
         console.log("[delivery] openai response:", content.slice(0, 100));
       }
       let parsed: any = {};
-      try { parsed = JSON.parse(content); }
-      catch {
-        const m = content.match(/\{[\s\S]*\}/);
-        if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
-      }
-      const rawItems: any[] = Array.isArray(parsed.items) ? parsed.items : Array.isArray(parsed) ? parsed : [];
+      try { parsed = JSON.parse(content); } catch {}
+      const rawItems: any[] = parseDeliveryItems(content);
       const items: DeliveryNoteItem[] = rawItems
         .map((r) => ({
           name: String(r.name ?? "").trim(),
