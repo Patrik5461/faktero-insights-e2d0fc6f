@@ -24,6 +24,19 @@ export type DeliveryNoteItem = {
   total_price: number | null;
 };
 
+function parseDeliveryItems(text: string): DeliveryNoteItem[] {
+  try {
+    const json = JSON.parse(text);
+    if (Array.isArray(json)) return json;
+    if (Array.isArray(json.items)) return json.items;
+    if (Array.isArray(json.results)) return json.results;
+    if (json.name) return [json];
+    return [];
+  } catch {
+    return [];
+  }
+}
+
 const ParseInput = z.string().min(1);
 
 /**
@@ -52,7 +65,7 @@ PRAVIDLÁ:
 - Množstvo musí byť číslo (nie text)
 - Jednotka: ks, kg, m, l, bal, krt, atď.
 
-Vráť VÝHRADNE JSON array [], žiadny iný text.
+Vráť VÝHRADNE JSON array [...] bez akéhokoľvek wrapper objektu. Príklad: [{...}, {...}]
 
 Každý objekt v poli má tento formát:
 { "name": "názov produktu", "code": "katalógové číslo alebo null", "quantity": number, "unit": "jednotka", "unit_price": number | null, "total_price": number | null }
