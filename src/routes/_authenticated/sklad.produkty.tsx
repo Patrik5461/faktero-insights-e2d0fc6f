@@ -317,6 +317,9 @@ function StockItemsPage() {
           <button onClick={openCreate} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
             <Plus className="h-4 w-4" /> Pridať tovar
           </button>
+          <button onClick={() => setSettingsOpen(true)} className="inline-flex items-center justify-center rounded-md border border-border bg-card p-2 hover:bg-secondary" title="Nastavenia skladu (kategórie, sklady)" aria-label="Nastavenia skladu">
+            <Settings className="h-4 w-4" />
+          </button>
         </div>
       } />
       <PageBody>
