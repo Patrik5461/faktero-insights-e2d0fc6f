@@ -71,13 +71,14 @@ function StockItemsPage() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     setLoading(true);
-    const [{ data: items }, { data: lvl }, { data: prods }, { data: wh }, snapshot] = await Promise.all([
+    const [{ data: items }, { data: lvl }, { data: prods }, { data: wh }, { data: cats }, snapshot] = await Promise.all([
       (showArchived
         ? supabase.from("stock_items").select("*").eq("company_id", cid).not("archived_at", "is", null).order("archived_at", { ascending: false })
         : supabase.from("stock_items").select("*").eq("company_id", cid).is("archived_at", null).order("created_at", { ascending: false })),
       supabase.from("stock_levels").select("stock_item_id, warehouse_id, quantity, reserved_quantity").eq("company_id", cid),
       supabase.from("products").select("id, name, code, unit_price, vat_rate, unit").eq("company_id", cid).is("deleted_at", null),
       supabase.from("warehouses").select("id, name").eq("company_id", cid).eq("active", true).order("created_at"),
+      supabase.from("stock_categories").select("id, name, color").eq("company_id", cid).order("name"),
       SHOW_STOCK_DEBUG ? fetchDebugSnapshot({ data: { company_id: cid } }).catch((e) => ({ errors: [{ message: e?.message ?? String(e) }] })) : Promise.resolve(null),
     ]);
     setRows(items ?? []);
