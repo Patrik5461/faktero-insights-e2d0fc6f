@@ -173,6 +173,10 @@ function StockItemsPage() {
       const hasInWh = (levelsByItemWh[r.id] ?? []).some((l) => l.warehouse_id === warehouseFilter);
       if (!hasInWh) return false;
     }
+    if (categoryFilter) {
+      if (categoryFilter === "__none__") { if (r.category_id) return false; }
+      else if (r.category_id !== categoryFilter) return false;
+    }
     return true;
   });
 
