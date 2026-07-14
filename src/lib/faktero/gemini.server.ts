@@ -20,11 +20,47 @@ export async function geminiVision(
   });
 
   const lastStep = interaction.steps?.at(-1);
-  // SDK types union neobsahuje content na CodeExecutionCallStep, ale text step
-  // ho vždy má. Runtime logika zostáva podľa oficiálneho SDK kódu.
   const contentArray = (lastStep as { content?: Array<{ text?: string }> } | undefined)?.content;
-  const text = contentArray?.[0]?.text ?? "[]";
-  return text;
+  return contentArray?.[0]?.text ?? "[]";
+}
+
+/**
+ * Pre PDF (a iné súbory nepodporované ako inline data) — nahrá súbor cez Files API
+ * a odošle referenciu na uploadovaný file URI.
+ */
+export async function geminiVisionFile(
+  base64: string,
+  mimeType: string,
+  prompt: string,
+): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
+
+  const client = new GoogleGenAI({ apiKey });
+
+  const buffer = Buffer.from(base64, "base64");
+  const blob = new Blob([buffer], { type: mimeType });
+
+  const uploadedFile = await (client as any).files.upload({
+    file: blob,
+    config: { mimeType },
+  });
+
+  const interaction = await (client as any).interactions.create({
+    model: "gemini-3.5-flash",
+    input: [
+      { type: "text", text: prompt },
+      {
+        type: "image",
+        uri: uploadedFile.uri,
+        mime_type: uploadedFile.mimeType ?? mimeType,
+      },
+    ],
+  });
+
+  const lastStep = interaction.steps?.at(-1);
+  const contentArray = (lastStep as { content?: Array<{ text?: string }> } | undefined)?.content;
+  return contentArray?.[0]?.text ?? "[]";
 }
 
 /**
