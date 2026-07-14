@@ -446,10 +446,10 @@ export function AppShell({
           <nav className="flex h-11 items-center gap-1 overflow-x-auto px-4 lg:px-6">
             {nav.map((g) => {
               const isActive = isPathActive(pathname, g);
-              const base = `inline-flex shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              const base = `relative inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-sm font-medium transition-colors after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:transition-colors ${
                 isActive
-                  ? "bg-secondary text-foreground shadow-sm"
-                  : "text-foreground/70 hover:bg-secondary/60 hover:text-foreground"
+                  ? "text-primary after:bg-primary"
+                  : "text-foreground/70 hover:text-foreground after:bg-transparent"
               }`;
               if (g.children.length === 0) {
                 return (
