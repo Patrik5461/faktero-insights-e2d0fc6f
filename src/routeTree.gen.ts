@@ -152,6 +152,7 @@ import { Route as ApiV1StockMovementsRouteImport } from './routes/api/v1/stock.m
 import { Route as ApiV1StockLowStockRouteImport } from './routes/api/v1/stock.low-stock'
 import { Route as ApiV1StockLevelsRouteImport } from './routes/api/v1/stock.levels'
 import { Route as ApiV1StockItemsRouteImport } from './routes/api/v1/stock.items'
+import { Route as ApiV1SkladParseDeliveryNoteRouteImport } from './routes/api/v1/sklad.parse-delivery-note'
 import { Route as ApiV1RecurringInvoicesIdRouteImport } from './routes/api/v1/recurring-invoices.$id'
 import { Route as ApiV1QuotesIdRouteImport } from './routes/api/v1/quotes.$id'
 import { Route as ApiV1InvoicesIdRouteImport } from './routes/api/v1/invoices.$id'
@@ -939,6 +940,12 @@ const ApiV1StockItemsRoute = ApiV1StockItemsRouteImport.update({
   path: '/api/v1/stock/items',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiV1SkladParseDeliveryNoteRoute =
+  ApiV1SkladParseDeliveryNoteRouteImport.update({
+    id: '/api/v1/sklad/parse-delivery-note',
+    path: '/api/v1/sklad/parse-delivery-note',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiV1RecurringInvoicesIdRoute =
   ApiV1RecurringInvoicesIdRouteImport.update({
     id: '/$id',
@@ -1232,6 +1239,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
+  '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRoute
   '/api/v1/stock/items': typeof ApiV1StockItemsRouteWithChildren
   '/api/v1/stock/levels': typeof ApiV1StockLevelsRoute
   '/api/v1/stock/low-stock': typeof ApiV1StockLowStockRoute
@@ -1393,6 +1401,7 @@ export interface FileRoutesByTo {
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
+  '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRoute
   '/api/v1/stock/items': typeof ApiV1StockItemsRouteWithChildren
   '/api/v1/stock/levels': typeof ApiV1StockLevelsRoute
   '/api/v1/stock/low-stock': typeof ApiV1StockLowStockRoute
@@ -1564,6 +1573,7 @@ export interface FileRoutesById {
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
+  '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRoute
   '/api/v1/stock/items': typeof ApiV1StockItemsRouteWithChildren
   '/api/v1/stock/levels': typeof ApiV1StockLevelsRoute
   '/api/v1/stock/low-stock': typeof ApiV1StockLowStockRoute
@@ -1735,6 +1745,7 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id'
     | '/api/v1/quotes/$id'
     | '/api/v1/recurring-invoices/$id'
+    | '/api/v1/sklad/parse-delivery-note'
     | '/api/v1/stock/items'
     | '/api/v1/stock/levels'
     | '/api/v1/stock/low-stock'
@@ -1896,6 +1907,7 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id'
     | '/api/v1/quotes/$id'
     | '/api/v1/recurring-invoices/$id'
+    | '/api/v1/sklad/parse-delivery-note'
     | '/api/v1/stock/items'
     | '/api/v1/stock/levels'
     | '/api/v1/stock/low-stock'
@@ -2066,6 +2078,7 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id'
     | '/api/v1/quotes/$id'
     | '/api/v1/recurring-invoices/$id'
+    | '/api/v1/sklad/parse-delivery-note'
     | '/api/v1/stock/items'
     | '/api/v1/stock/levels'
     | '/api/v1/stock/low-stock'
@@ -2139,6 +2152,7 @@ export interface RootRouteChildren {
   ApiPublicTatrabankaCallbackRoute: typeof ApiPublicTatrabankaCallbackRoute
   ApiPublicTeslaCallbackRoute: typeof ApiPublicTeslaCallbackRoute
   ApiPublicWebhooksGopayMerchantRoute: typeof ApiPublicWebhooksGopayMerchantRoute
+  ApiV1SkladParseDeliveryNoteRoute: typeof ApiV1SkladParseDeliveryNoteRoute
   ApiV1StockItemsRoute: typeof ApiV1StockItemsRouteWithChildren
   ApiV1StockLevelsRoute: typeof ApiV1StockLevelsRoute
   ApiV1StockLowStockRoute: typeof ApiV1StockLowStockRoute
@@ -3149,6 +3163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1StockItemsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/v1/sklad/parse-delivery-note': {
+      id: '/api/v1/sklad/parse-delivery-note'
+      path: '/api/v1/sklad/parse-delivery-note'
+      fullPath: '/api/v1/sklad/parse-delivery-note'
+      preLoaderRoute: typeof ApiV1SkladParseDeliveryNoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/v1/recurring-invoices/$id': {
       id: '/api/v1/recurring-invoices/$id'
       path: '/$id'
@@ -3821,6 +3842,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicTatrabankaCallbackRoute: ApiPublicTatrabankaCallbackRoute,
   ApiPublicTeslaCallbackRoute: ApiPublicTeslaCallbackRoute,
   ApiPublicWebhooksGopayMerchantRoute: ApiPublicWebhooksGopayMerchantRoute,
+  ApiV1SkladParseDeliveryNoteRoute: ApiV1SkladParseDeliveryNoteRoute,
   ApiV1StockItemsRoute: ApiV1StockItemsRouteWithChildren,
   ApiV1StockLevelsRoute: ApiV1StockLevelsRoute,
   ApiV1StockLowStockRoute: ApiV1StockLowStockRoute,
