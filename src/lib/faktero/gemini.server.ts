@@ -8,7 +8,7 @@ export async function geminiVision(
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
 
   const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent",
     {
       method: "POST",
       headers: {
