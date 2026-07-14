@@ -1,4 +1,4 @@
-// Gemini vision cez generateContent API (podporuje obrázky aj PDF ako inline_data).
+// Gemini vision cez generateContent API (podporuje obrázky aj PDF ako inline_data). Model gemini-2.0-flash.
 export async function geminiVision(
   base64: string,
   mimeType: string,
@@ -8,7 +8,7 @@ export async function geminiVision(
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
 
   const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
     {
       method: "POST",
       headers: {
