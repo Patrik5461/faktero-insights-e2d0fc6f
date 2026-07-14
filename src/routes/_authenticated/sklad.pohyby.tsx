@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Download, ChevronDown } from "lucide-react";
+import { Download, ChevronDown, Plus, ArrowDownToLine, ArrowUpFromLine, ArrowLeftRight } from "lucide-react";
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
 import { toast } from "sonner";
 
