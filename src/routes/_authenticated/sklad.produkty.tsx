@@ -68,7 +68,9 @@ function StockItemsPage() {
     if (!cid) return;
     setLoading(true);
     const [{ data: items }, { data: lvl }, { data: prods }, { data: wh }, snapshot] = await Promise.all([
-      supabase.from("stock_items").select("*").eq("company_id", cid).order("created_at", { ascending: false }),
+      (showArchived
+        ? supabase.from("stock_items").select("*").eq("company_id", cid).not("archived_at", "is", null).order("archived_at", { ascending: false })
+        : supabase.from("stock_items").select("*").eq("company_id", cid).is("archived_at", null).order("created_at", { ascending: false })),
       supabase.from("stock_levels").select("stock_item_id, warehouse_id, quantity, reserved_quantity").eq("company_id", cid),
       supabase.from("products").select("id, name, code, unit_price, vat_rate, unit").eq("company_id", cid).is("deleted_at", null),
       supabase.from("warehouses").select("id, name").eq("company_id", cid).eq("active", true).order("created_at"),
@@ -88,7 +90,7 @@ function StockItemsPage() {
     if (SHOW_STOCK_DEBUG && snapshot) setDebug((prev: any) => ({ ...(snapshot as any), last_stock_error: prev?.last_stock_error ?? (snapshot as any)?.errors?.[0]?.message ?? null, last_created_product_id: prev?.last_created_product_id ?? null, last_created_stock_item_id: prev?.last_created_stock_item_id ?? null, last_movement_id: prev?.last_movement_id ?? null, last_raw_debug: prev?.last_raw_debug ?? null }));
     setLoading(false);
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [showArchived]);
 
   // Load recent movements for the currently edited item
   useEffect(() => {
