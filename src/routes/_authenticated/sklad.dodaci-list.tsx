@@ -466,6 +466,116 @@ function DeliveryNoteScanPage() {
   );
 }
 
+function AiScanOverlay({ open, step, success }: { open: boolean; step: number; success: boolean }) {
+  if (!open) return null;
+  const steps = [
+    "Dokument nahraný",
+    "AI analyzuje obsah…",
+    "Extrahovanie položiek",
+    "Príprava náhľadu",
+  ];
+  const allDone = success || step >= 4;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-scale-in">
+        {/* Indeterminate progress bar */}
+        <div className="relative h-1.5 w-full overflow-hidden bg-muted">
+          <div
+            className={
+              allDone
+                ? "absolute inset-y-0 left-0 w-full bg-primary transition-all duration-500"
+                : "absolute inset-y-0 left-0 w-1/3 animate-[shimmer_1.4s_ease-in-out_infinite] bg-primary"
+            }
+            style={
+              allDone
+                ? undefined
+                : ({ animation: "scanbar 1.4s ease-in-out infinite" } as React.CSSProperties)
+            }
+          />
+        </div>
+
+        <div className="flex flex-col items-center gap-4 px-6 pt-6 pb-2 text-center">
+          <div
+            className={
+              "relative flex h-16 w-16 items-center justify-center rounded-2xl " +
+              (allDone ? "bg-primary/15" : "bg-primary/10")
+            }
+          >
+            {allDone ? (
+              <Check className="h-8 w-8 text-primary animate-scale-in" strokeWidth={3} />
+            ) : (
+              <>
+                <ScanLine className="h-8 w-8 text-primary animate-pulse" />
+                <Sparkles className="absolute -right-1 -top-1 h-4 w-4 text-primary animate-pulse" />
+              </>
+            )}
+          </div>
+          <div>
+            <div className="text-base font-semibold">
+              {allDone ? "Hotovo!" : "Skenujem dodací list"}
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {allDone ? "Načítavam výsledky…" : "Zvyčajne 20–40 sekúnd"}
+            </div>
+          </div>
+        </div>
+
+        <ul className="space-y-2 px-6 pb-6 pt-4 text-sm">
+          {steps.map((label, i) => {
+            const done = allDone || step > i;
+            const active = !allDone && step === i;
+            return (
+              <li key={i} className="flex items-center gap-3">
+                <span
+                  className={
+                    "flex h-6 w-6 flex-none items-center justify-center rounded-full border transition-colors " +
+                    (done
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : active
+                        ? "border-primary/50 bg-primary/10 text-primary"
+                        : "border-border bg-background text-muted-foreground")
+                  }
+                >
+                  {done ? (
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  ) : active ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+                  )}
+                </span>
+                <span
+                  className={
+                    done
+                      ? "text-foreground"
+                      : active
+                        ? "font-medium text-foreground"
+                        : "text-muted-foreground"
+                  }
+                >
+                  {label}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+
+        {allDone && (
+          <div className="pointer-events-none absolute inset-0 animate-fade-in bg-primary/10" />
+        )}
+      </div>
+
+      <style>{`
+        @keyframes scanbar {
+          0% { transform: translateX(-100%); width: 40%; }
+          50% { width: 60%; }
+          100% { transform: translateX(350%); width: 40%; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function matchExistingProduct(item: DeliveryNoteItem, products: ProductOption[]): string | null {
   if (item.code) {
     const byCode = products.find((p) => p.code && p.code.toLowerCase() === item.code!.toLowerCase());
