@@ -187,10 +187,15 @@ function DeliveryNoteScanPage() {
       setSupplier(finalSupplier ?? "");
       setDeliveryNumber(finalDelivery ?? "");
       setRows(finalItems.map((i) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })));
+      setScanStep(4);
+      setScanSuccess(true);
       if (!finalItems.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
       else toast.success(`AI extrahovalo ${finalItems.length} položiek.`);
+      // Keep overlay visible briefly for the success animation, then hide.
+      await new Promise((r) => setTimeout(r, 900));
     } catch (e: any) {
       console.error("[dodaci-list] parse error:", e);
+      setScanError(e?.message ?? "AI spracovanie zlyhalo.");
       toast.error(e?.message ?? "AI spracovanie zlyhalo.");
     } finally {
       setParsing(false);
