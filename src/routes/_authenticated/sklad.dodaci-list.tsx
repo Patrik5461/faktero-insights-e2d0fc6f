@@ -91,29 +91,40 @@ function DeliveryNoteScanPage() {
     setRows([]);
     setStoragePath(null);
 
-    // upload to storage
+    // Upload to storage first – server needs a path, not base64.
     const cid = getActiveCompanyId();
-    if (cid) {
-      try {
-        const ext = processedMime === "image/jpeg" ? "jpg" : (file.name.split(".").pop() ?? "bin");
-        // RLS on storage.objects requires first folder = company UUID.
-        const path = `${cid}/delivery-notes/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("imports").upload(path, processed, { contentType: processedMime, upsert: false });
-        if (upErr) console.warn("[dodaci-list] storage upload failed:", upErr.message);
-        else setStoragePath(path);
-      } catch (e) {
-        console.warn("[dodaci-list] storage upload exception:", e);
+    if (!cid) {
+      toast.error("Vyberte firmu.");
+      return;
+    }
+    let uploadedPath: string | null = null;
+    try {
+      const ext = processedMime === "image/jpeg" ? "jpg" : (file.name.split(".").pop() ?? "bin");
+      // RLS on storage.objects requires first folder = company UUID.
+      const path = `${cid}/delivery-notes/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("imports").upload(path, processed, { contentType: processedMime, upsert: false });
+      if (upErr) {
+        console.error("[dodaci-list] storage upload failed:", upErr.message);
+        toast.error(`Nahrávanie zlyhalo: ${upErr.message}`);
+        return;
       }
+      uploadedPath = path;
+      setStoragePath(path);
+      console.log("[dodaci-list] uploaded to storage:", path);
+    } catch (e: any) {
+      console.error("[dodaci-list] storage upload exception:", e);
+      toast.error(`Nahrávanie zlyhalo: ${e?.message ?? "neznáma chyba"}`);
+      return;
     }
 
-    // parse with 180s client-side timeout
+    // Parse with 180s client-side timeout – server downloads the file from storage.
     setParsing(true);
     try {
-      console.log("[dodaci-list] calling parseFn…");
+      console.log("[dodaci-list] calling parseFn with storage_path…");
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 180_000);
       const result = await Promise.race([
-        parseFn({ data: { file_data_url: dataUrl, mime_type: processedMime } }),
+        parseFn({ data: { storage_path: uploadedPath, mime_type: processedMime } }),
         new Promise<never>((_, rej) => {
           controller.signal.addEventListener("abort", () => rej(new Error("Časový limit vypršal (180 s). Skúste menší súbor.")));
         }),
