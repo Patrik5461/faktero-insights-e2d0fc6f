@@ -1,6 +1,4 @@
-// Gemini vision client via oficiálny @google/genai SDK (flat input array format).
-import { GoogleGenAI } from "@google/genai";
-
+// Gemini vision cez generateContent API (podporuje obrázky aj PDF ako inline_data).
 export async function geminiVision(
   base64: string,
   mimeType: string,
@@ -9,58 +7,34 @@ export async function geminiVision(
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
 
-  const client = new GoogleGenAI({ apiKey });
-
-  const interaction = await client.interactions.create({
-    model: "gemini-3.5-flash",
-    input: [
-      { type: "text", text: prompt },
-      { type: "image", data: base64, mime_type: mimeType },
-    ],
-  });
-
-  const lastStep = interaction.steps?.at(-1);
-  const contentArray = (lastStep as { content?: Array<{ text?: string }> } | undefined)?.content;
-  return contentArray?.[0]?.text ?? "[]";
-}
-
-/**
- * Pre PDF (a iné súbory nepodporované ako inline data) — nahrá súbor cez Files API
- * a odošle referenciu na uploadovaný file URI.
- */
-export async function geminiVisionFile(
-  base64: string,
-  mimeType: string,
-  prompt: string,
-): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
-
-  const client = new GoogleGenAI({ apiKey });
-
-  const buffer = Buffer.from(base64, "base64");
-  const blob = new Blob([buffer], { type: mimeType });
-
-  const uploadedFile = await (client as any).files.upload({
-    file: blob,
-    config: { mimeType },
-  });
-
-  const interaction = await (client as any).interactions.create({
-    model: "gemini-3.5-flash",
-    input: [
-      { type: "text", text: prompt },
-      {
-        type: "image",
-        uri: uploadedFile.uri,
-        mime_type: uploadedFile.mimeType ?? mimeType,
+  const res = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
       },
-    ],
-  });
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: mimeType, data: base64 } },
+            ],
+          },
+        ],
+      }),
+    },
+  );
 
-  const lastStep = interaction.steps?.at(-1);
-  const contentArray = (lastStep as { content?: Array<{ text?: string }> } | undefined)?.content;
-  return contentArray?.[0]?.text ?? "[]";
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Gemini ${res.status}: ${body.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]";
 }
 
 /**
