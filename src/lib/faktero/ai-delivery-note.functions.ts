@@ -33,9 +33,9 @@ export const aiParseDeliveryNoteFn = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<string> => {
     try {
       console.log("[delivery] gemini key exists:", !!process.env.GEMINI_API_KEY);
-      const parsed = JSON.parse(data);
-      const storage_path = parsed.storage_path;
-      const mime_type = parsed.mime_type;
+      const inputData = JSON.parse(data);
+      const storage_path = inputData.storage_path;
+      const mime_type = inputData.mime_type;
       console.log("[delivery] start, path:", storage_path);
       const geminiKey = process.env.GEMINI_API_KEY;
       const openaiKey = process.env.OPENAI_API_KEY;
