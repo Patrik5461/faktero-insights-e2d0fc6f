@@ -124,16 +124,15 @@ function DeliveryNoteScanPage() {
       console.log("[dodaci-list] calling parseFn with storage_path…");
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 180_000);
-      const response = await Promise.race([
+      const resultPath = await Promise.race([
         parseFn({ data: JSON.stringify({ storage_path: uploadedPath, mime_type: processedMime }) }),
         new Promise<never>((_, rej) => {
           controller.signal.addEventListener("abort", () => rej(new Error("Časový limit vypršal (180 s). Skúste menší súbor.")));
         }),
       ]);
       clearTimeout(timeoutId);
-      const meta = JSON.parse(response) as { result_path: string; count: number };
-      console.log("[dodaci-list] parseFn returned meta:", meta);
-      const { signedUrl } = await fetchResultFn({ data: { result_path: meta.result_path } });
+      console.log("[dodaci-list] parseFn returned path:", resultPath);
+      const signedUrl = await fetchResultFn({ data: resultPath });
       const resultRes = await fetch(signedUrl);
       if (!resultRes.ok) throw new Error(`Načítanie výsledku zlyhalo: ${resultRes.status}`);
       const resultText = await resultRes.text();
