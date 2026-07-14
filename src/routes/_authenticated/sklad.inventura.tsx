@@ -16,12 +16,15 @@ export const Route = createFileRoute("/_authenticated/sklad/inventura")({
 function InventoryPage() {
   const start = useServerFn(startInventory);
   const complete = useServerFn(completeInventory);
+  const lookup = useServerFn(lookupStockItemByCode);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [warehouse, setWarehouse] = useState("");
   const [countId, setCountId] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
   const [skuMap, setSkuMap] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [scan, setScan] = useState("");
+  const scanRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
