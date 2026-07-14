@@ -296,6 +296,8 @@ function DeliveryNoteScanPage() {
         }
       />
       <PageBody>
+        <AiScanOverlay open={parsing || scanSuccess} step={scanStep} success={scanSuccess} />
+
         {!fileMeta && (
           <div
             ref={dragRef}
