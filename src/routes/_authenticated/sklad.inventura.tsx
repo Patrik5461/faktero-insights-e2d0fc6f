@@ -113,7 +113,21 @@ function InventoryPage() {
           </div>
         ) : (
           <>
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
+              <ScanLine className="h-4 w-4 text-primary" />
+              <input
+                ref={scanRef}
+                autoFocus
+                value={scan}
+                onChange={(e) => setScan(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onScan(scan); } }}
+                placeholder="Naskenujte alebo napíšte čiarový kód / SKU a stlačte Enter…"
+                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+              <button onClick={() => onScan(scan)} className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">+1</button>
+            </div>
             <div className="overflow-hidden rounded-xl border border-border bg-card">
+
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr><th className="p-3">Položka</th><th className="p-3 text-right">Očakávané</th><th className="p-3 text-right">Spočítané</th><th className="p-3 text-right">Rozdiel</th></tr>
