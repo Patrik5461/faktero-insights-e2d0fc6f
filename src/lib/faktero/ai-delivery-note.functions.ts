@@ -112,6 +112,8 @@ Ak nenájdeš žiadne položky, vráť prázdne pole [].`;
         content = json.choices?.[0]?.message?.content ?? "{}";
         console.log("[delivery] openai response:", content.slice(0, 100));
       }
+      let parsed: any = {};
+      try { parsed = JSON.parse(content); } catch {}
       const rawItems: any[] = parseDeliveryItems(content);
       const items: DeliveryNoteItem[] = rawItems
         .map((r) => ({
