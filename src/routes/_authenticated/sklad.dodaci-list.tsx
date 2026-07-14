@@ -31,6 +31,10 @@ function DeliveryNoteScanPage() {
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [storagePath, setStoragePath] = useState<string | null>(null);
+  const [scanStep, setScanStep] = useState(0); // 0 uploaded, 1 analyzing, 2 extracting, 3 preview
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanSuccess, setScanSuccess] = useState(false);
+  const lastFileRef = useRef<File | null>(null);
   const dragRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
