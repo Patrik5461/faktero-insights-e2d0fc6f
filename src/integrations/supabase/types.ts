@@ -3461,6 +3461,7 @@ export type Database = {
       }
       stock_items: {
         Row: {
+          archived_at: string | null
           barcode: string | null
           company_id: string
           created_at: string
@@ -3476,6 +3477,7 @@ export type Database = {
           vat_rate: number
         }
         Insert: {
+          archived_at?: string | null
           barcode?: string | null
           company_id: string
           created_at?: string
@@ -3491,6 +3493,7 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
+          archived_at?: string | null
           barcode?: string | null
           company_id?: string
           created_at?: string

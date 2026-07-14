@@ -6,7 +6,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createStockProductDebug, getStockDebugSnapshot } from "@/lib/faktero/stock.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
-import { Plus, Pencil, AlertTriangle, Download, History, Upload, ChevronDown } from "lucide-react";
+import { Plus, Pencil, AlertTriangle, Download, History, Upload, ChevronDown, Archive, ArchiveRestore, X, Check } from "lucide-react";
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty")({
@@ -57,6 +57,11 @@ function StockItemsPage() {
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
   const [debug, setDebug] = useState<any>(null);
   const [levelsByItemWh, setLevelsByItemWh] = useState<Record<string, Array<{ warehouse_id: string; quantity: number; reserved: number }>>>({});
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [showArchived, setShowArchived] = useState(false);
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   async function load() {
     const cid = getActiveCompanyId();
