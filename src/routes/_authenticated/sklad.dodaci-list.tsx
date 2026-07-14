@@ -96,10 +96,14 @@ function DeliveryNoteScanPage() {
     if (cid) {
       try {
         const ext = processedMime === "image/jpeg" ? "jpg" : (file.name.split(".").pop() ?? "bin");
-        const path = `delivery-notes/${cid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error } = await supabase.storage.from("imports").upload(path, processed, { contentType: processedMime, upsert: false });
-        if (!error) setStoragePath(path);
-      } catch {}
+        // RLS on storage.objects requires first folder = company UUID.
+        const path = `${cid}/delivery-notes/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("imports").upload(path, processed, { contentType: processedMime, upsert: false });
+        if (upErr) console.warn("[dodaci-list] storage upload failed:", upErr.message);
+        else setStoragePath(path);
+      } catch (e) {
+        console.warn("[dodaci-list] storage upload exception:", e);
+      }
     }
 
     // parse with 180s client-side timeout
