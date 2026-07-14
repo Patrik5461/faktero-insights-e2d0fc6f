@@ -92,6 +92,7 @@ function StockItemsPage() {
     setLevelsByItemWh(perWh);
     setProducts(prods ?? []);
     setWarehouses(wh ?? []);
+    setCategories((cats ?? []) as any);
     if (SHOW_STOCK_DEBUG && snapshot) setDebug((prev: any) => ({ ...(snapshot as any), last_stock_error: prev?.last_stock_error ?? (snapshot as any)?.errors?.[0]?.message ?? null, last_created_product_id: prev?.last_created_product_id ?? null, last_created_stock_item_id: prev?.last_created_stock_item_id ?? null, last_movement_id: prev?.last_movement_id ?? null, last_raw_debug: prev?.last_raw_debug ?? null }));
     setLoading(false);
   }
