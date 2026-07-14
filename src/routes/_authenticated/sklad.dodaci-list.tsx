@@ -116,37 +116,61 @@ function DeliveryNoteScanPage() {
       return;
     }
 
-    // Parse via plain HTTP endpoint – no server function serialization.
+    // Async job pattern: POST creates job, then poll GET until done/error.
     setParsing(true);
     try {
-      console.log("[dodaci-list] POST /api/v1/sklad/parse-delivery-note…");
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) throw new Error("Chýba prihlásenie.");
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 180_000);
-      const res = await fetch("/api/v1/sklad/parse-delivery-note", {
+      const postRes = await fetch("/api/v1/sklad/parse-delivery-note", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ storage_path: uploadedPath, mime_type: processedMime }),
-        signal: controller.signal,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ company_id: cid, storage_path: uploadedPath, mime_type: processedMime }),
       });
-      clearTimeout(timeoutId);
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`AI zlyhalo (${res.status}): ${text.slice(0, 200)}`);
+      if (!postRes.ok) {
+        const text = await postRes.text();
+        throw new Error(`Nepodarilo sa spustiť spracovanie (${postRes.status}): ${text.slice(0, 200)}`);
       }
-      const result = await res.json();
-      const items: DeliveryNoteItem[] = result.items ?? [];
-      setSupplier(result.supplier ?? "");
-      setDeliveryNumber(result.delivery_number ?? "");
-      setRows(items.map((i) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })));
-      if (!items.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
-      else toast.success(`AI extrahovalo ${items.length} položiek.`);
+      const { job_id } = await postRes.json();
+      if (!job_id) throw new Error("Chýba job_id");
+      console.log("[dodaci-list] job created:", job_id);
+
+      // Poll every 2s, up to 5 minutes.
+      const started = Date.now();
+      const maxMs = 5 * 60 * 1000;
+      let finalItems: DeliveryNoteItem[] = [];
+      let finalSupplier: string | null = null;
+      let finalDelivery: string | null = null;
+
+      while (true) {
+        await new Promise((r) => setTimeout(r, 2000));
+        if (Date.now() - started > maxMs) throw new Error("Spracovanie trvá príliš dlho (timeout).");
+
+        const pollRes = await fetch(`/api/v1/sklad/parse-delivery-note/${job_id}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!pollRes.ok) {
+          const text = await pollRes.text();
+          throw new Error(`Chyba pri načítaní stavu (${pollRes.status}): ${text.slice(0, 200)}`);
+        }
+        const j = await pollRes.json();
+        if (j.status === "done") {
+          finalItems = (j.items ?? []) as DeliveryNoteItem[];
+          finalSupplier = j.supplier ?? null;
+          finalDelivery = j.delivery_number ?? null;
+          break;
+        }
+        if (j.status === "error") {
+          throw new Error(j.error_message || "AI spracovanie zlyhalo.");
+        }
+      }
+
+      setSupplier(finalSupplier ?? "");
+      setDeliveryNumber(finalDelivery ?? "");
+      setRows(finalItems.map((i) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })));
+      if (!finalItems.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
+      else toast.success(`AI extrahovalo ${finalItems.length} položiek.`);
     } catch (e: any) {
       console.error("[dodaci-list] parse error:", e);
       toast.error(e?.message ?? "AI spracovanie zlyhalo.");

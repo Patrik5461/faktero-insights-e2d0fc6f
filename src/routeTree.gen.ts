@@ -173,6 +173,7 @@ import { Route as AuthenticatedJazdyIntegracieCommanderRouteImport } from './rou
 import { Route as AuthenticatedFakturyIdUpravitRouteImport } from './routes/_authenticated/faktury.$id.upravit'
 import { Route as ApiV1StockMovementsIdRouteImport } from './routes/api/v1/stock.movements.$id'
 import { Route as ApiV1StockItemsIdRouteImport } from './routes/api/v1/stock.items.$id'
+import { Route as ApiV1SkladParseDeliveryNoteJobIdRouteImport } from './routes/api/v1/sklad.parse-delivery-note.$jobId'
 import { Route as ApiV1QuotesIdConvertRouteImport } from './routes/api/v1/quotes.$id.convert'
 import { Route as ApiV1InvoicesIdSendRouteImport } from './routes/api/v1/invoices.$id.send'
 import { Route as ApiV1InvoicesIdPdfRouteImport } from './routes/api/v1/invoices.$id.pdf'
@@ -1058,6 +1059,12 @@ const ApiV1StockItemsIdRoute = ApiV1StockItemsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiV1StockItemsRoute,
 } as any)
+const ApiV1SkladParseDeliveryNoteJobIdRoute =
+  ApiV1SkladParseDeliveryNoteJobIdRouteImport.update({
+    id: '/$jobId',
+    path: '/$jobId',
+    getParentRoute: () => ApiV1SkladParseDeliveryNoteRoute,
+  } as any)
 const ApiV1QuotesIdConvertRoute = ApiV1QuotesIdConvertRouteImport.update({
   id: '/convert',
   path: '/convert',
@@ -1239,7 +1246,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
-  '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRoute
+  '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
   '/api/v1/stock/items': typeof ApiV1StockItemsRouteWithChildren
   '/api/v1/stock/levels': typeof ApiV1StockLevelsRoute
   '/api/v1/stock/low-stock': typeof ApiV1StockLowStockRoute
@@ -1251,6 +1258,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
   '/api/v1/invoices/$id/send': typeof ApiV1InvoicesIdSendRoute
   '/api/v1/quotes/$id/convert': typeof ApiV1QuotesIdConvertRoute
+  '/api/v1/sklad/parse-delivery-note/$jobId': typeof ApiV1SkladParseDeliveryNoteJobIdRoute
   '/api/v1/stock/items/$id': typeof ApiV1StockItemsIdRoute
   '/api/v1/stock/movements/$id': typeof ApiV1StockMovementsIdRoute
 }
@@ -1401,7 +1409,7 @@ export interface FileRoutesByTo {
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
-  '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRoute
+  '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
   '/api/v1/stock/items': typeof ApiV1StockItemsRouteWithChildren
   '/api/v1/stock/levels': typeof ApiV1StockLevelsRoute
   '/api/v1/stock/low-stock': typeof ApiV1StockLowStockRoute
@@ -1413,6 +1421,7 @@ export interface FileRoutesByTo {
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
   '/api/v1/invoices/$id/send': typeof ApiV1InvoicesIdSendRoute
   '/api/v1/quotes/$id/convert': typeof ApiV1QuotesIdConvertRoute
+  '/api/v1/sklad/parse-delivery-note/$jobId': typeof ApiV1SkladParseDeliveryNoteJobIdRoute
   '/api/v1/stock/items/$id': typeof ApiV1StockItemsIdRoute
   '/api/v1/stock/movements/$id': typeof ApiV1StockMovementsIdRoute
 }
@@ -1573,7 +1582,7 @@ export interface FileRoutesById {
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
-  '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRoute
+  '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
   '/api/v1/stock/items': typeof ApiV1StockItemsRouteWithChildren
   '/api/v1/stock/levels': typeof ApiV1StockLevelsRoute
   '/api/v1/stock/low-stock': typeof ApiV1StockLowStockRoute
@@ -1585,6 +1594,7 @@ export interface FileRoutesById {
   '/api/v1/invoices/$id/pdf': typeof ApiV1InvoicesIdPdfRoute
   '/api/v1/invoices/$id/send': typeof ApiV1InvoicesIdSendRoute
   '/api/v1/quotes/$id/convert': typeof ApiV1QuotesIdConvertRoute
+  '/api/v1/sklad/parse-delivery-note/$jobId': typeof ApiV1SkladParseDeliveryNoteJobIdRoute
   '/api/v1/stock/items/$id': typeof ApiV1StockItemsIdRoute
   '/api/v1/stock/movements/$id': typeof ApiV1StockMovementsIdRoute
 }
@@ -1757,6 +1767,7 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id/pdf'
     | '/api/v1/invoices/$id/send'
     | '/api/v1/quotes/$id/convert'
+    | '/api/v1/sklad/parse-delivery-note/$jobId'
     | '/api/v1/stock/items/$id'
     | '/api/v1/stock/movements/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -1919,6 +1930,7 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id/pdf'
     | '/api/v1/invoices/$id/send'
     | '/api/v1/quotes/$id/convert'
+    | '/api/v1/sklad/parse-delivery-note/$jobId'
     | '/api/v1/stock/items/$id'
     | '/api/v1/stock/movements/$id'
   id:
@@ -2090,6 +2102,7 @@ export interface FileRouteTypes {
     | '/api/v1/invoices/$id/pdf'
     | '/api/v1/invoices/$id/send'
     | '/api/v1/quotes/$id/convert'
+    | '/api/v1/sklad/parse-delivery-note/$jobId'
     | '/api/v1/stock/items/$id'
     | '/api/v1/stock/movements/$id'
   fileRoutesById: FileRoutesById
@@ -2152,7 +2165,7 @@ export interface RootRouteChildren {
   ApiPublicTatrabankaCallbackRoute: typeof ApiPublicTatrabankaCallbackRoute
   ApiPublicTeslaCallbackRoute: typeof ApiPublicTeslaCallbackRoute
   ApiPublicWebhooksGopayMerchantRoute: typeof ApiPublicWebhooksGopayMerchantRoute
-  ApiV1SkladParseDeliveryNoteRoute: typeof ApiV1SkladParseDeliveryNoteRoute
+  ApiV1SkladParseDeliveryNoteRoute: typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
   ApiV1StockItemsRoute: typeof ApiV1StockItemsRouteWithChildren
   ApiV1StockLevelsRoute: typeof ApiV1StockLevelsRoute
   ApiV1StockLowStockRoute: typeof ApiV1StockLowStockRoute
@@ -3310,6 +3323,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1StockItemsIdRouteImport
       parentRoute: typeof ApiV1StockItemsRoute
     }
+    '/api/v1/sklad/parse-delivery-note/$jobId': {
+      id: '/api/v1/sklad/parse-delivery-note/$jobId'
+      path: '/$jobId'
+      fullPath: '/api/v1/sklad/parse-delivery-note/$jobId'
+      preLoaderRoute: typeof ApiV1SkladParseDeliveryNoteJobIdRouteImport
+      parentRoute: typeof ApiV1SkladParseDeliveryNoteRoute
+    }
     '/api/v1/quotes/$id/convert': {
       id: '/api/v1/quotes/$id/convert'
       path: '/convert'
@@ -3761,6 +3781,21 @@ const ApiV1RecurringInvoicesRouteWithChildren =
     ApiV1RecurringInvoicesRouteChildren,
   )
 
+interface ApiV1SkladParseDeliveryNoteRouteChildren {
+  ApiV1SkladParseDeliveryNoteJobIdRoute: typeof ApiV1SkladParseDeliveryNoteJobIdRoute
+}
+
+const ApiV1SkladParseDeliveryNoteRouteChildren: ApiV1SkladParseDeliveryNoteRouteChildren =
+  {
+    ApiV1SkladParseDeliveryNoteJobIdRoute:
+      ApiV1SkladParseDeliveryNoteJobIdRoute,
+  }
+
+const ApiV1SkladParseDeliveryNoteRouteWithChildren =
+  ApiV1SkladParseDeliveryNoteRoute._addFileChildren(
+    ApiV1SkladParseDeliveryNoteRouteChildren,
+  )
+
 interface ApiV1StockItemsRouteChildren {
   ApiV1StockItemsIdRoute: typeof ApiV1StockItemsIdRoute
 }
@@ -3842,7 +3877,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicTatrabankaCallbackRoute: ApiPublicTatrabankaCallbackRoute,
   ApiPublicTeslaCallbackRoute: ApiPublicTeslaCallbackRoute,
   ApiPublicWebhooksGopayMerchantRoute: ApiPublicWebhooksGopayMerchantRoute,
-  ApiV1SkladParseDeliveryNoteRoute: ApiV1SkladParseDeliveryNoteRoute,
+  ApiV1SkladParseDeliveryNoteRoute:
+    ApiV1SkladParseDeliveryNoteRouteWithChildren,
   ApiV1StockItemsRoute: ApiV1StockItemsRouteWithChildren,
   ApiV1StockLevelsRoute: ApiV1StockLevelsRoute,
   ApiV1StockLowStockRoute: ApiV1StockLowStockRoute,
