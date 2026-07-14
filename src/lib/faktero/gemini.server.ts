@@ -1,5 +1,4 @@
-// Gemini vision client via oficiálny @google/genai SDK.
-// Podporuje inline obrázky aj PDF (application/pdf) — SDK to spracuje interne.
+// Gemini vision client via oficiálny @google/genai SDK (flat input array format).
 import { GoogleGenAI } from "@google/genai";
 
 export async function geminiVision(
@@ -10,26 +9,22 @@ export async function geminiVision(
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
 
-  const ai = new GoogleGenAI({ apiKey });
+  const client = new GoogleGenAI({ apiKey });
 
-  const isPdf = mimeType === "application/pdf";
-
-  const interaction = await ai.interactions.create({
+  const interaction = await client.interactions.create({
     model: "gemini-3.5-flash",
     input: [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          isPdf
-            ? { type: "document", data: base64, mime_type: mimeType }
-            : { type: "image", data: base64, mime_type: mimeType },
-        ],
-      },
+      { type: "text", text: prompt },
+      { type: "image", data: base64, mime_type: mimeType },
     ],
   });
 
-  return interaction.output_text ?? "[]";
+  const lastStep = interaction.steps?.at(-1);
+  // SDK types union neobsahuje content na CodeExecutionCallStep, ale text step
+  // ho vždy má. Runtime logika zostáva podľa oficiálneho SDK kódu.
+  const contentArray = (lastStep as { content?: Array<{ text?: string }> } | undefined)?.content;
+  const text = contentArray?.[0]?.text ?? "[]";
+  return text;
 }
 
 /**
