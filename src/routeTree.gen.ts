@@ -113,6 +113,7 @@ import { Route as AuthenticatedUctovnictvoDphRouteImport } from './routes/_authe
 import { Route as AuthenticatedSkladVydajRouteImport } from './routes/_authenticated/sklad.vydaj'
 import { Route as AuthenticatedSkladProduktyRouteImport } from './routes/_authenticated/sklad.produkty'
 import { Route as AuthenticatedSkladPrijemRouteImport } from './routes/_authenticated/sklad.prijem'
+import { Route as AuthenticatedSkladPresunyRouteImport } from './routes/_authenticated/sklad.presuny'
 import { Route as AuthenticatedSkladPohybyRouteImport } from './routes/_authenticated/sklad.pohyby'
 import { Route as AuthenticatedSkladNastaveniaRouteImport } from './routes/_authenticated/sklad.nastavenia'
 import { Route as AuthenticatedSkladMinimumRouteImport } from './routes/_authenticated/sklad.minimum'
@@ -718,6 +719,12 @@ const AuthenticatedSkladPrijemRoute =
     path: '/prijem',
     getParentRoute: () => AuthenticatedSkladRoute,
   } as any)
+const AuthenticatedSkladPresunyRoute =
+  AuthenticatedSkladPresunyRouteImport.update({
+    id: '/presuny',
+    path: '/presuny',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
 const AuthenticatedSkladPohybyRoute =
   AuthenticatedSkladPohybyRouteImport.update({
     id: '/pohyby',
@@ -1205,6 +1212,7 @@ export interface FileRoutesByFullPath {
   '/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
+  '/sklad/presuny': typeof AuthenticatedSkladPresunyRoute
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/produkty': typeof AuthenticatedSkladProduktyRouteWithChildren
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
@@ -1369,6 +1377,7 @@ export interface FileRoutesByTo {
   '/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
+  '/sklad/presuny': typeof AuthenticatedSkladPresunyRoute
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/produkty': typeof AuthenticatedSkladProduktyRouteWithChildren
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
@@ -1543,6 +1552,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/_authenticated/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/_authenticated/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
+  '/_authenticated/sklad/presuny': typeof AuthenticatedSkladPresunyRoute
   '/_authenticated/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/_authenticated/sklad/produkty': typeof AuthenticatedSkladProduktyRouteWithChildren
   '/_authenticated/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
@@ -1717,6 +1727,7 @@ export interface FileRouteTypes {
     | '/sklad/minimum'
     | '/sklad/nastavenia'
     | '/sklad/pohyby'
+    | '/sklad/presuny'
     | '/sklad/prijem'
     | '/sklad/produkty'
     | '/sklad/vydaj'
@@ -1881,6 +1892,7 @@ export interface FileRouteTypes {
     | '/sklad/minimum'
     | '/sklad/nastavenia'
     | '/sklad/pohyby'
+    | '/sklad/presuny'
     | '/sklad/prijem'
     | '/sklad/produkty'
     | '/sklad/vydaj'
@@ -2054,6 +2066,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/minimum'
     | '/_authenticated/sklad/nastavenia'
     | '/_authenticated/sklad/pohyby'
+    | '/_authenticated/sklad/presuny'
     | '/_authenticated/sklad/prijem'
     | '/_authenticated/sklad/produkty'
     | '/_authenticated/sklad/vydaj'
@@ -2916,6 +2929,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSkladPrijemRouteImport
       parentRoute: typeof AuthenticatedSkladRoute
     }
+    '/_authenticated/sklad/presuny': {
+      id: '/_authenticated/sklad/presuny'
+      path: '/presuny'
+      fullPath: '/sklad/presuny'
+      preLoaderRoute: typeof AuthenticatedSkladPresunyRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
     '/_authenticated/sklad/pohyby': {
       id: '/_authenticated/sklad/pohyby'
       path: '/pohyby'
@@ -3478,6 +3498,7 @@ interface AuthenticatedSkladRouteChildren {
   AuthenticatedSkladMinimumRoute: typeof AuthenticatedSkladMinimumRoute
   AuthenticatedSkladNastaveniaRoute: typeof AuthenticatedSkladNastaveniaRoute
   AuthenticatedSkladPohybyRoute: typeof AuthenticatedSkladPohybyRouteWithChildren
+  AuthenticatedSkladPresunyRoute: typeof AuthenticatedSkladPresunyRoute
   AuthenticatedSkladPrijemRoute: typeof AuthenticatedSkladPrijemRoute
   AuthenticatedSkladProduktyRoute: typeof AuthenticatedSkladProduktyRouteWithChildren
   AuthenticatedSkladVydajRoute: typeof AuthenticatedSkladVydajRoute
@@ -3493,6 +3514,7 @@ const AuthenticatedSkladRouteChildren: AuthenticatedSkladRouteChildren = {
   AuthenticatedSkladMinimumRoute: AuthenticatedSkladMinimumRoute,
   AuthenticatedSkladNastaveniaRoute: AuthenticatedSkladNastaveniaRoute,
   AuthenticatedSkladPohybyRoute: AuthenticatedSkladPohybyRouteWithChildren,
+  AuthenticatedSkladPresunyRoute: AuthenticatedSkladPresunyRoute,
   AuthenticatedSkladPrijemRoute: AuthenticatedSkladPrijemRoute,
   AuthenticatedSkladProduktyRoute: AuthenticatedSkladProduktyRouteWithChildren,
   AuthenticatedSkladVydajRoute: AuthenticatedSkladVydajRoute,

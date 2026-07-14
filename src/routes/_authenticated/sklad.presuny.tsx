@@ -49,14 +49,18 @@ function TransfersListPage() {
 
   return (
     <>
-      <PageHeader title="Presuny skladu" description="Presúvajte tovar medzi skladmi alebo firmami">
-        <Link
-          to="/sklad/presuny/nova"
-          className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" /> Nový presun
-        </Link>
-      </PageHeader>
+      <PageHeader
+        title="Presuny skladu"
+        description="Presúvajte tovar medzi skladmi alebo firmami"
+        action={
+          <Link
+            to="/sklad/presuny/nova"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> Nový presun
+          </Link>
+        }
+      />
       <PageBody>
         {loading ? (
           <div className="rounded-md border p-6 text-sm text-muted-foreground">Načítavam…</div>
