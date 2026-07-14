@@ -36,6 +36,8 @@ function DeliveryNoteScanPage() {
   const [scanSuccess, setScanSuccess] = useState(false);
   const lastFileRef = useRef<File | null>(null);
   const dragRef = useRef<HTMLDivElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
