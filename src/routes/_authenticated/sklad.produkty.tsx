@@ -170,6 +170,74 @@ function StockItemsPage() {
     return true;
   });
 
+  const selectedIds = Object.entries(selected).filter(([, v]) => v).map(([k]) => k);
+  const allOnPageSelected = filtered.length > 0 && filtered.every((r) => selected[r.id]);
+  function toggleSelect(id: string) { setSelected((p) => ({ ...p, [id]: !p[id] })); }
+  function toggleSelectAll(on: boolean) {
+    if (on) setSelected((p) => ({ ...p, ...Object.fromEntries(filtered.map((r) => [r.id, true])) }));
+    else setSelected({});
+  }
+  function clearSelection() { setSelected({}); }
+
+  async function bulkArchive() {
+    const cid = getActiveCompanyId();
+    if (!cid || !selectedIds.length) return;
+    setBulkBusy(true);
+    const { error } = await supabase.from("stock_items")
+      .update({ archived_at: new Date().toISOString() })
+      .in("id", selectedIds).eq("company_id", cid);
+    setBulkBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Archivované: ${selectedIds.length}`);
+    clearSelection(); load();
+  }
+  async function bulkRestore() {
+    const cid = getActiveCompanyId();
+    if (!cid || !selectedIds.length) return;
+    setBulkBusy(true);
+    const { error } = await supabase.from("stock_items")
+      .update({ archived_at: null })
+      .in("id", selectedIds).eq("company_id", cid);
+    setBulkBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Obnovené: ${selectedIds.length}`);
+    clearSelection(); load();
+  }
+  function bulkExportCsv() {
+    const items = rows.filter((r) => selected[r.id]);
+    if (!items.length) return toast.error("Nič nie je vybraté.");
+    const headers = ["SKU", "Názov", "Čiarový kód", "Jednotka", "Stav", "Min", "Nákup", "Predaj", "DPH %"];
+    const data: ExportRow[] = items.map((s) => {
+      const prod = products.find((p) => p.id === s.product_id);
+      return {
+        "SKU": s.sku ?? "", "Názov": prod?.name ?? "", "Čiarový kód": s.barcode ?? "",
+        "Jednotka": s.unit ?? "ks", "Stav": levels[s.id] ?? 0, "Min": Number(s.min_stock),
+        "Nákup": Number(s.purchase_price), "Predaj": Number(s.sale_price), "DPH %": Number(s.vat_rate),
+      };
+    });
+    downloadCsv(`sklad-vyber-${new Date().toISOString().slice(0, 10)}`, headers, data);
+    toast.success(`Exportované ${data.length} riadkov.`);
+  }
+
+  async function commitInlineName(item: any) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    const v = editingNameValue.trim();
+    setEditingNameId(null);
+    if (!v) return;
+    if (item.product_id) {
+      const prod = products.find((p) => p.id === item.product_id);
+      if (prod?.name === v) return;
+      const { error } = await supabase.from("products").update({ name: v }).eq("id", item.product_id).eq("company_id", cid);
+      if (error) return toast.error(error.message);
+    } else {
+      if (item.sku === v) return;
+      const { error } = await supabase.from("stock_items").update({ sku: v }).eq("id", item.id).eq("company_id", cid);
+      if (error) return toast.error(error.message);
+    }
+    toast.success("Uložené"); load();
+  }
+
   function buildExportRows(): { headers: string[]; rows: ExportRow[] } {
     const headers = [
       "SKU", "Názov produktu", "Čiarový kód", "Jednotka", "Sklad",
