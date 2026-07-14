@@ -54,6 +54,9 @@ function StockItemsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState<string>("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; color: string | null }>>([]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
   const [debug, setDebug] = useState<any>(null);
