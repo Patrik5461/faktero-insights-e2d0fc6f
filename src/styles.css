@@ -59,50 +59,62 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-primary-hover: var(--primary-hover);
 }
 
 :root {
-  /* Faktero — Emerald Pro */
+  /* Faktero — Trustworthy Fintech (deep green + warm stone) */
   --radius: 0.625rem;
-  --background: oklch(0.992 0.004 250);
-  --foreground: oklch(0.18 0.03 250);
+  /* Warm neutral page background (#FAFAF8) */
+  --background: oklch(0.985 0.003 90);
+  --foreground: oklch(0.22 0.008 80);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.03 250);
+  --card-foreground: oklch(0.22 0.008 80);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.03 250);
-  --primary: oklch(0.68 0.16 162);
-  --primary-foreground: oklch(0.14 0.04 250);
-  --secondary: oklch(0.96 0.01 250);
-  --secondary-foreground: oklch(0.20 0.03 250);
-  --muted: oklch(0.96 0.01 250);
-  --muted-foreground: oklch(0.50 0.02 250);
-  --accent: oklch(0.85 0.13 85);
-  --accent-foreground: oklch(0.18 0.03 250);
-  --destructive: oklch(0.60 0.22 27);
+  --popover-foreground: oklch(0.22 0.008 80);
+  /* Deep saturated green ~#0F7A4D */
+  --primary: oklch(0.52 0.13 155);
+  --primary-hover: oklch(0.46 0.13 155);
+  --primary-foreground: oklch(0.99 0 0);
+  /* Warm stone secondary */
+  --secondary: oklch(0.965 0.004 90);
+  --secondary-foreground: oklch(0.24 0.01 80);
+  --muted: oklch(0.965 0.004 90);
+  --muted-foreground: oklch(0.53 0.012 80);
+  /* Amber accent for warnings/overdue ~#B45309 */
+  --accent: oklch(0.965 0.02 75);
+  --accent-foreground: oklch(0.44 0.13 62);
+  --warning: oklch(0.56 0.15 62);
+  --warning-foreground: oklch(0.99 0 0);
+  /* Error ~#B91C1C */
+  --destructive: oklch(0.52 0.22 27);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.91 0.01 250);
-  --input: oklch(0.94 0.01 250);
-  --ring: oklch(0.68 0.16 162);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.14 0.025 250);
-  --sidebar-foreground: oklch(0.95 0.01 250);
-  --sidebar-primary: oklch(0.68 0.16 162);
-  --sidebar-primary-foreground: oklch(0.14 0.04 250);
-  --sidebar-accent: oklch(0.22 0.03 250);
-  --sidebar-accent-foreground: oklch(0.97 0.01 250);
-  --sidebar-border: oklch(0.26 0.03 250);
-  --sidebar-ring: oklch(0.68 0.16 162);
+  /* Warm stone-200 border */
+  --border: oklch(0.92 0.005 85);
+  --input: oklch(0.94 0.005 85);
+  --ring: oklch(0.52 0.13 155);
+  --chart-1: oklch(0.52 0.13 155);
+  --chart-2: oklch(0.65 0.12 155);
+  --chart-3: oklch(0.56 0.15 62);
+  --chart-4: oklch(0.52 0.22 27);
+  --chart-5: oklch(0.42 0.08 200);
+  --sidebar: oklch(0.22 0.02 155);
+  --sidebar-foreground: oklch(0.95 0.005 90);
+  --sidebar-primary: oklch(0.52 0.13 155);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.28 0.025 155);
+  --sidebar-accent-foreground: oklch(0.97 0.005 90);
+  --sidebar-border: oklch(0.30 0.025 155);
+  --sidebar-ring: oklch(0.52 0.13 155);
 
-  --brand-gradient: linear-gradient(135deg, oklch(0.68 0.16 162), oklch(0.78 0.14 175));
-  --shadow-card: 0 1px 2px oklch(0.18 0.03 250 / 0.04), 0 8px 24px oklch(0.18 0.03 250 / 0.06);
-  --shadow-elegant: 0 30px 80px -30px oklch(0.18 0.03 250 / 0.25), 0 12px 30px -10px oklch(0.18 0.03 250 / 0.10);
-  --shadow-glow: 0 0 0 1px oklch(0.68 0.16 162 / 0.18), 0 20px 60px -20px oklch(0.68 0.16 162 / 0.35);
-  --gradient-hero: radial-gradient(70% 60% at 18% -10%, oklch(0.68 0.16 162 / 0.18), transparent 65%), radial-gradient(55% 50% at 95% 5%, oklch(0.85 0.13 85 / 0.16), transparent 70%), radial-gradient(40% 40% at 50% 110%, oklch(0.68 0.16 162 / 0.10), transparent 70%);
-  --gradient-dark: linear-gradient(180deg, oklch(0.16 0.03 250), oklch(0.10 0.025 250));
+  --brand-gradient: linear-gradient(135deg, oklch(0.52 0.13 155), oklch(0.62 0.12 155));
+  --shadow-card: 0 1px 2px oklch(0.22 0.008 80 / 0.04), 0 4px 12px oklch(0.22 0.008 80 / 0.05);
+  --shadow-elegant: 0 20px 50px -20px oklch(0.22 0.008 80 / 0.18), 0 8px 20px -8px oklch(0.22 0.008 80 / 0.08);
+  --shadow-glow: 0 0 0 1px oklch(0.52 0.13 155 / 0.18), 0 16px 40px -16px oklch(0.52 0.13 155 / 0.30);
+  --gradient-hero: radial-gradient(70% 60% at 18% -10%, oklch(0.52 0.13 155 / 0.14), transparent 65%), radial-gradient(55% 50% at 95% 5%, oklch(0.56 0.15 62 / 0.10), transparent 70%), radial-gradient(40% 40% at 50% 110%, oklch(0.52 0.13 155 / 0.08), transparent 70%);
+  --gradient-dark: linear-gradient(180deg, oklch(0.22 0.02 155), oklch(0.14 0.02 155));
 }
 
 .dark {
@@ -169,5 +181,31 @@
   /* Grid/flex children shouldn't force min-content width and blow layout. */
   .min-w-0-children > * {
     min-width: 0;
+  }
+
+  /* Typography refinements */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+
+  /* Tabular numerals for tables and numeric cells — fintech readability */
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+  table thead th {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--color-muted-foreground);
+  }
+  table tbody tr:hover {
+    background-color: color-mix(in oklch, var(--color-muted) 60%, transparent);
+  }
+  /* Explicit numeric utility for amounts in prose */
+  .tabular, .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
   }
 }
