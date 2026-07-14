@@ -50,8 +50,9 @@ function SkladDashboard() {
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <QuickLink to="/sklad/prijem" label="Príjem na sklad" />
-              <QuickLink to="/sklad/dodaci-list" label="📷 Naskenovať dodací list" />
               <QuickLink to="/sklad/vydaj" label="Výdaj zo skladu" />
+              <QuickLink to="/sklad/presuny" label="Presuny" />
+              <QuickLink to="/sklad/dodaci-list" label="📷 Naskenovať dodací list" />
               <QuickLink to="/sklad/inventura" label="Inventúra" />
               <QuickLink to="/sklad/hodnota" label="Hodnota skladu" />
               <QuickLink to="/sklad/minimum" label="Pod minimom" />
