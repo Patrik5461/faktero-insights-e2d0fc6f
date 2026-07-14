@@ -6,8 +6,9 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createStockProductDebug, getStockDebugSnapshot } from "@/lib/faktero/stock.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
-import { Plus, Pencil, AlertTriangle, Download, History, Upload, ChevronDown, Archive, ArchiveRestore, X, Check } from "lucide-react";
+import { Plus, Pencil, AlertTriangle, Download, History, Upload, ChevronDown, Archive, ArchiveRestore, X, Check, Settings } from "lucide-react";
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
+import { StockSettingsDialog } from "@/components/faktero/StockSettingsDialog";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty")({
   head: () => ({ meta: [{ title: "Skladové položky — Faktero" }] }),
