@@ -6,7 +6,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { importDeliveryNoteFn, type DeliveryNoteItem } from "@/lib/faktero/ai-delivery-note.functions";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
-import { Camera, Upload, Loader2, Trash2, Plus, FileText, History } from "lucide-react";
+import { Camera, Upload, Loader2, Trash2, Plus, FileText, History, ScanLine, Check, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sklad/dodaci-list")({
@@ -31,6 +31,10 @@ function DeliveryNoteScanPage() {
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [storagePath, setStoragePath] = useState<string | null>(null);
+  const [scanStep, setScanStep] = useState(0); // 0 uploaded, 1 analyzing, 2 extracting, 3 preview
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanSuccess, setScanSuccess] = useState(false);
+  const lastFileRef = useRef<File | null>(null);
   const dragRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -47,7 +51,21 @@ function DeliveryNoteScanPage() {
     })();
   }, []);
 
+  // Auto-advance progress steps while parsing (1 → 2 → 3 every ~3.5s).
+  useEffect(() => {
+    if (!parsing) return;
+    const timers: number[] = [];
+    timers.push(window.setTimeout(() => setScanStep((s) => Math.max(s, 1)), 500));
+    timers.push(window.setTimeout(() => setScanStep((s) => Math.max(s, 2)), 12000));
+    timers.push(window.setTimeout(() => setScanStep((s) => Math.max(s, 3)), 24000));
+    return () => { timers.forEach((t) => window.clearTimeout(t)); };
+  }, [parsing]);
+
   async function handleFile(file: File) {
+    lastFileRef.current = file;
+    setScanError(null);
+    setScanSuccess(false);
+    setScanStep(0);
     console.log("[dodaci-list] handleFile start:", { name: file.name, type: file.type, size: file.size });
     const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
     if (!allowed.includes(file.type)) return toast.error("Podporujeme JPG, PNG, WebP alebo PDF.");
@@ -169,10 +187,15 @@ function DeliveryNoteScanPage() {
       setSupplier(finalSupplier ?? "");
       setDeliveryNumber(finalDelivery ?? "");
       setRows(finalItems.map((i) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })));
+      setScanStep(4);
+      setScanSuccess(true);
       if (!finalItems.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
       else toast.success(`AI extrahovalo ${finalItems.length} položiek.`);
+      // Keep overlay visible briefly for the success animation, then hide.
+      await new Promise((r) => setTimeout(r, 900));
     } catch (e: any) {
       console.error("[dodaci-list] parse error:", e);
+      setScanError(e?.message ?? "AI spracovanie zlyhalo.");
       toast.error(e?.message ?? "AI spracovanie zlyhalo.");
     } finally {
       setParsing(false);
@@ -273,6 +296,8 @@ function DeliveryNoteScanPage() {
         }
       />
       <PageBody>
+        <AiScanOverlay open={parsing || scanSuccess} step={scanStep} success={scanSuccess} />
+
         {!fileMeta && (
           <div
             ref={dragRef}
@@ -326,9 +351,19 @@ function DeliveryNoteScanPage() {
             </div>
 
             <div className="space-y-3">
-              {parsing && (
-                <div className="flex items-center gap-2 rounded-md border border-border bg-card p-3 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin" /> AI spracováva dokument…
+              {scanError && !parsing && (
+                <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
+                  <AlertCircle className="mt-0.5 h-5 w-5 flex-none text-destructive" />
+                  <div className="flex-1">
+                    <div className="font-semibold text-destructive">Skenovanie zlyhalo</div>
+                    <div className="mt-0.5 text-muted-foreground">{scanError}</div>
+                  </div>
+                  <button
+                    onClick={() => { if (lastFileRef.current) handleFile(lastFileRef.current); }}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:opacity-90"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" /> Skúsiť znova
+                  </button>
                 </div>
               )}
 
@@ -428,6 +463,112 @@ function DeliveryNoteScanPage() {
         )}
       </PageBody>
     </>
+  );
+}
+
+function AiScanOverlay({ open, step, success }: { open: boolean; step: number; success: boolean }) {
+  if (!open) return null;
+  const steps = [
+    "Dokument nahraný",
+    "AI analyzuje obsah…",
+    "Extrahovanie položiek",
+    "Príprava náhľadu",
+  ];
+  const allDone = success || step >= 4;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm animate-fade-in">
+      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-scale-in">
+        {/* Indeterminate progress bar */}
+        <div className="relative h-1.5 w-full overflow-hidden bg-muted">
+          <div
+            className={
+              allDone
+                ? "absolute inset-y-0 left-0 w-full bg-primary transition-all duration-500"
+                : "absolute inset-y-0 left-0 bg-primary"
+            }
+            style={allDone ? undefined : { animation: "scanbar 1.4s ease-in-out infinite", width: "40%" }}
+          />
+        </div>
+
+        <div className="flex flex-col items-center gap-4 px-6 pt-6 pb-2 text-center">
+          <div
+            className={
+              "relative flex h-16 w-16 items-center justify-center rounded-2xl " +
+              (allDone ? "bg-primary/15" : "bg-primary/10")
+            }
+          >
+            {allDone ? (
+              <Check className="h-8 w-8 text-primary animate-scale-in" strokeWidth={3} />
+            ) : (
+              <>
+                <ScanLine className="h-8 w-8 text-primary animate-pulse" />
+                <Sparkles className="absolute -right-1 -top-1 h-4 w-4 text-primary animate-pulse" />
+              </>
+            )}
+          </div>
+          <div>
+            <div className="text-base font-semibold">
+              {allDone ? "Hotovo!" : "Skenujem dodací list"}
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {allDone ? "Načítavam výsledky…" : "Zvyčajne 20–40 sekúnd"}
+            </div>
+          </div>
+        </div>
+
+        <ul className="space-y-2 px-6 pb-6 pt-4 text-sm">
+          {steps.map((label, i) => {
+            const done = allDone || step > i;
+            const active = !allDone && step === i;
+            return (
+              <li key={i} className="flex items-center gap-3">
+                <span
+                  className={
+                    "flex h-6 w-6 flex-none items-center justify-center rounded-full border transition-colors " +
+                    (done
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : active
+                        ? "border-primary/50 bg-primary/10 text-primary"
+                        : "border-border bg-background text-muted-foreground")
+                  }
+                >
+                  {done ? (
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  ) : active ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+                  )}
+                </span>
+                <span
+                  className={
+                    done
+                      ? "text-foreground"
+                      : active
+                        ? "font-medium text-foreground"
+                        : "text-muted-foreground"
+                  }
+                >
+                  {label}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+
+        {allDone && (
+          <div className="pointer-events-none absolute inset-0 animate-fade-in bg-primary/10" />
+        )}
+      </div>
+
+      <style>{`
+        @keyframes scanbar {
+          0% { transform: translateX(-100%); width: 40%; }
+          50% { width: 60%; }
+          100% { transform: translateX(350%); width: 40%; }
+        }
+      `}</style>
+    </div>
   );
 }
 
