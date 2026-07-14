@@ -49,10 +49,15 @@ Ak nenájdeš žiadne položky, vráť prázdne pole [].`;
     let content = "{}";
 
     if (geminiKey) {
-      // Preferuj Gemini 3.5 Flash cez oficiálny @google/genai SDK (podporuje obrázky aj PDF).
-      const { geminiVision, splitDataUrl } = await import("./gemini.server");
+      // Gemini 3.5 Flash cez oficiálny @google/genai SDK.
+      // Obrázky → inline data; PDF (a iné non-image) → Files API upload.
+      const { geminiVision, geminiVisionFile, splitDataUrl } = await import("./gemini.server");
       const { base64, mimeType } = splitDataUrl(data.file_data_url, data.mime_type);
-      content = await geminiVision(base64, (mimeType || data.mime_type).toLowerCase(), prompt);
+      const mt = (mimeType || data.mime_type).toLowerCase();
+      const isImage = mt.startsWith("image/");
+      content = isImage
+        ? await geminiVision(base64, mt, prompt)
+        : await geminiVisionFile(base64, mt, prompt);
     } else {
       // Fallback: OpenAI gpt-4o vision.
       const isPdf = data.mime_type === "application/pdf" || data.file_data_url.startsWith("data:application/pdf");
