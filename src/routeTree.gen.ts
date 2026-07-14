@@ -113,6 +113,7 @@ import { Route as AuthenticatedUctovnictvoDphRouteImport } from './routes/_authe
 import { Route as AuthenticatedSkladVydajRouteImport } from './routes/_authenticated/sklad.vydaj'
 import { Route as AuthenticatedSkladProduktyRouteImport } from './routes/_authenticated/sklad.produkty'
 import { Route as AuthenticatedSkladPrijemRouteImport } from './routes/_authenticated/sklad.prijem'
+import { Route as AuthenticatedSkladPresunyRouteImport } from './routes/_authenticated/sklad.presuny'
 import { Route as AuthenticatedSkladPohybyRouteImport } from './routes/_authenticated/sklad.pohyby'
 import { Route as AuthenticatedSkladNastaveniaRouteImport } from './routes/_authenticated/sklad.nastavenia'
 import { Route as AuthenticatedSkladMinimumRouteImport } from './routes/_authenticated/sklad.minimum'
@@ -167,6 +168,8 @@ import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/publ
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
 import { Route as ApiAdminSeoCallbackRouteImport } from './routes/api/admin/seo.callback'
 import { Route as AuthenticatedSkladProduktyIdRouteImport } from './routes/_authenticated/sklad.produkty.$id'
+import { Route as AuthenticatedSkladPresunyNovaRouteImport } from './routes/_authenticated/sklad.presuny.nova'
+import { Route as AuthenticatedSkladPresunyIdRouteImport } from './routes/_authenticated/sklad.presuny.$id'
 import { Route as AuthenticatedSkladPohybyIdRouteImport } from './routes/_authenticated/sklad.pohyby.$id'
 import { Route as AuthenticatedJazdyIntegracieTeslaRouteImport } from './routes/_authenticated/jazdy.integracie.tesla'
 import { Route as AuthenticatedJazdyIntegracieCommanderRouteImport } from './routes/_authenticated/jazdy.integracie.commander'
@@ -718,6 +721,12 @@ const AuthenticatedSkladPrijemRoute =
     path: '/prijem',
     getParentRoute: () => AuthenticatedSkladRoute,
   } as any)
+const AuthenticatedSkladPresunyRoute =
+  AuthenticatedSkladPresunyRouteImport.update({
+    id: '/presuny',
+    path: '/presuny',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
 const AuthenticatedSkladPohybyRoute =
   AuthenticatedSkladPohybyRouteImport.update({
     id: '/pohyby',
@@ -1026,6 +1035,18 @@ const AuthenticatedSkladProduktyIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedSkladProduktyRoute,
   } as any)
+const AuthenticatedSkladPresunyNovaRoute =
+  AuthenticatedSkladPresunyNovaRouteImport.update({
+    id: '/nova',
+    path: '/nova',
+    getParentRoute: () => AuthenticatedSkladPresunyRoute,
+  } as any)
+const AuthenticatedSkladPresunyIdRoute =
+  AuthenticatedSkladPresunyIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedSkladPresunyRoute,
+  } as any)
 const AuthenticatedSkladPohybyIdRoute =
   AuthenticatedSkladPohybyIdRouteImport.update({
     id: '/$id',
@@ -1205,6 +1226,7 @@ export interface FileRoutesByFullPath {
   '/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
+  '/sklad/presuny': typeof AuthenticatedSkladPresunyRouteWithChildren
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/produkty': typeof AuthenticatedSkladProduktyRouteWithChildren
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
@@ -1239,6 +1261,8 @@ export interface FileRoutesByFullPath {
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
+  '/sklad/presuny/$id': typeof AuthenticatedSkladPresunyIdRoute
+  '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
@@ -1369,6 +1393,7 @@ export interface FileRoutesByTo {
   '/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
+  '/sklad/presuny': typeof AuthenticatedSkladPresunyRouteWithChildren
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/produkty': typeof AuthenticatedSkladProduktyRouteWithChildren
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
@@ -1403,6 +1428,8 @@ export interface FileRoutesByTo {
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
+  '/sklad/presuny/$id': typeof AuthenticatedSkladPresunyIdRoute
+  '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
@@ -1543,6 +1570,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/_authenticated/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/_authenticated/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
+  '/_authenticated/sklad/presuny': typeof AuthenticatedSkladPresunyRouteWithChildren
   '/_authenticated/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/_authenticated/sklad/produkty': typeof AuthenticatedSkladProduktyRouteWithChildren
   '/_authenticated/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
@@ -1577,6 +1605,8 @@ export interface FileRoutesById {
   '/_authenticated/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/_authenticated/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
   '/_authenticated/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
+  '/_authenticated/sklad/presuny/$id': typeof AuthenticatedSkladPresunyIdRoute
+  '/_authenticated/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/_authenticated/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
@@ -1717,6 +1747,7 @@ export interface FileRouteTypes {
     | '/sklad/minimum'
     | '/sklad/nastavenia'
     | '/sklad/pohyby'
+    | '/sklad/presuny'
     | '/sklad/prijem'
     | '/sklad/produkty'
     | '/sklad/vydaj'
@@ -1751,6 +1782,8 @@ export interface FileRouteTypes {
     | '/jazdy/integracie/commander'
     | '/jazdy/integracie/tesla'
     | '/sklad/pohyby/$id'
+    | '/sklad/presuny/$id'
+    | '/sklad/presuny/nova'
     | '/sklad/produkty/$id'
     | '/api/admin/seo/callback'
     | '/api/public/hooks/commander-sync'
@@ -1881,6 +1914,7 @@ export interface FileRouteTypes {
     | '/sklad/minimum'
     | '/sklad/nastavenia'
     | '/sklad/pohyby'
+    | '/sklad/presuny'
     | '/sklad/prijem'
     | '/sklad/produkty'
     | '/sklad/vydaj'
@@ -1915,6 +1949,8 @@ export interface FileRouteTypes {
     | '/jazdy/integracie/commander'
     | '/jazdy/integracie/tesla'
     | '/sklad/pohyby/$id'
+    | '/sklad/presuny/$id'
+    | '/sklad/presuny/nova'
     | '/sklad/produkty/$id'
     | '/api/admin/seo/callback'
     | '/api/public/hooks/commander-sync'
@@ -2054,6 +2090,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/minimum'
     | '/_authenticated/sklad/nastavenia'
     | '/_authenticated/sklad/pohyby'
+    | '/_authenticated/sklad/presuny'
     | '/_authenticated/sklad/prijem'
     | '/_authenticated/sklad/produkty'
     | '/_authenticated/sklad/vydaj'
@@ -2088,6 +2125,8 @@ export interface FileRouteTypes {
     | '/_authenticated/jazdy/integracie/commander'
     | '/_authenticated/jazdy/integracie/tesla'
     | '/_authenticated/sklad/pohyby/$id'
+    | '/_authenticated/sklad/presuny/$id'
+    | '/_authenticated/sklad/presuny/nova'
     | '/_authenticated/sklad/produkty/$id'
     | '/api/admin/seo/callback'
     | '/api/public/hooks/commander-sync'
@@ -2916,6 +2955,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSkladPrijemRouteImport
       parentRoute: typeof AuthenticatedSkladRoute
     }
+    '/_authenticated/sklad/presuny': {
+      id: '/_authenticated/sklad/presuny'
+      path: '/presuny'
+      fullPath: '/sklad/presuny'
+      preLoaderRoute: typeof AuthenticatedSkladPresunyRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
     '/_authenticated/sklad/pohyby': {
       id: '/_authenticated/sklad/pohyby'
       path: '/pohyby'
@@ -3294,6 +3340,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSkladProduktyIdRouteImport
       parentRoute: typeof AuthenticatedSkladProduktyRoute
     }
+    '/_authenticated/sklad/presuny/nova': {
+      id: '/_authenticated/sklad/presuny/nova'
+      path: '/nova'
+      fullPath: '/sklad/presuny/nova'
+      preLoaderRoute: typeof AuthenticatedSkladPresunyNovaRouteImport
+      parentRoute: typeof AuthenticatedSkladPresunyRoute
+    }
+    '/_authenticated/sklad/presuny/$id': {
+      id: '/_authenticated/sklad/presuny/$id'
+      path: '/$id'
+      fullPath: '/sklad/presuny/$id'
+      preLoaderRoute: typeof AuthenticatedSkladPresunyIdRouteImport
+      parentRoute: typeof AuthenticatedSkladPresunyRoute
+    }
     '/_authenticated/sklad/pohyby/$id': {
       id: '/_authenticated/sklad/pohyby/$id'
       path: '/$id'
@@ -3439,6 +3499,22 @@ const AuthenticatedSkladPohybyRouteWithChildren =
     AuthenticatedSkladPohybyRouteChildren,
   )
 
+interface AuthenticatedSkladPresunyRouteChildren {
+  AuthenticatedSkladPresunyIdRoute: typeof AuthenticatedSkladPresunyIdRoute
+  AuthenticatedSkladPresunyNovaRoute: typeof AuthenticatedSkladPresunyNovaRoute
+}
+
+const AuthenticatedSkladPresunyRouteChildren: AuthenticatedSkladPresunyRouteChildren =
+  {
+    AuthenticatedSkladPresunyIdRoute: AuthenticatedSkladPresunyIdRoute,
+    AuthenticatedSkladPresunyNovaRoute: AuthenticatedSkladPresunyNovaRoute,
+  }
+
+const AuthenticatedSkladPresunyRouteWithChildren =
+  AuthenticatedSkladPresunyRoute._addFileChildren(
+    AuthenticatedSkladPresunyRouteChildren,
+  )
+
 interface AuthenticatedSkladProduktyIdRouteChildren {
   AuthenticatedSkladProduktyIdUpravitRoute: typeof AuthenticatedSkladProduktyIdUpravitRoute
 }
@@ -3478,6 +3554,7 @@ interface AuthenticatedSkladRouteChildren {
   AuthenticatedSkladMinimumRoute: typeof AuthenticatedSkladMinimumRoute
   AuthenticatedSkladNastaveniaRoute: typeof AuthenticatedSkladNastaveniaRoute
   AuthenticatedSkladPohybyRoute: typeof AuthenticatedSkladPohybyRouteWithChildren
+  AuthenticatedSkladPresunyRoute: typeof AuthenticatedSkladPresunyRouteWithChildren
   AuthenticatedSkladPrijemRoute: typeof AuthenticatedSkladPrijemRoute
   AuthenticatedSkladProduktyRoute: typeof AuthenticatedSkladProduktyRouteWithChildren
   AuthenticatedSkladVydajRoute: typeof AuthenticatedSkladVydajRoute
@@ -3493,6 +3570,7 @@ const AuthenticatedSkladRouteChildren: AuthenticatedSkladRouteChildren = {
   AuthenticatedSkladMinimumRoute: AuthenticatedSkladMinimumRoute,
   AuthenticatedSkladNastaveniaRoute: AuthenticatedSkladNastaveniaRoute,
   AuthenticatedSkladPohybyRoute: AuthenticatedSkladPohybyRouteWithChildren,
+  AuthenticatedSkladPresunyRoute: AuthenticatedSkladPresunyRouteWithChildren,
   AuthenticatedSkladPrijemRoute: AuthenticatedSkladPrijemRoute,
   AuthenticatedSkladProduktyRoute: AuthenticatedSkladProduktyRouteWithChildren,
   AuthenticatedSkladVydajRoute: AuthenticatedSkladVydajRoute,

@@ -855,3 +855,318 @@ export const getProductPhotoSignedUrl = createServerFn({ method: "POST" })
     if (error || !signed) throw new Error(error?.message ?? "Nepodarilo sa vytvoriť URL fotky.");
     return { url: signed.signedUrl };
   });
+
+// ============= PHASE 3: STOCK TRANSFERS =============
+
+const TransferItemInput = z.object({
+  source_stock_item_id: z.string().uuid(),
+  quantity: z.coerce.number().positive(),
+  unit_price: z.coerce.number().nonnegative().default(0),
+});
+
+const CreateTransferInput = z.object({
+  company_id: z.string().uuid(),
+  warehouse_from_id: z.string().uuid(),
+  warehouse_to_id: z.string().uuid().optional().nullable(),
+  target_company_id: z.string().uuid().optional().nullable(),
+  note: z.string().trim().optional().nullable(),
+  items: z.array(TransferItemInput).min(1),
+});
+
+export const listUserCompaniesForTransfer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ exclude_company_id: z.string().uuid().optional() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: rows, error } = await supabase
+      .from("company_users")
+      .select("company_id, companies:company_id(id, name)")
+      .eq("user_id", userId);
+    if (error) throw new Error(error.message);
+    const list = (rows ?? [])
+      .map((r: any) => r.companies)
+      .filter((c: any) => c && c.id !== data.exclude_company_id);
+    return list as { id: string; name: string }[];
+  });
+
+export const listWarehousesForCompany = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: whs, error } = await context.supabase
+      .from("warehouses")
+      .select("id, name, active")
+      .eq("company_id", data.company_id)
+      .eq("active", true)
+      .order("name");
+    if (error) throw new Error(error.message);
+    return whs ?? [];
+  });
+
+export const listTransfers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("stock_transfers")
+      .select("id, status, note, created_at, completed_at, warehouse_from_id, warehouse_to_id, company_id, target_company_id")
+      .or(`company_id.eq.${data.company_id},target_company_id.eq.${data.company_id}`)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+export const getTransferDetail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: transfer, error } = await supabase
+      .from("stock_transfers")
+      .select("*")
+      .eq("id", data.id)
+      .single();
+    if (error) throw new Error(error.message);
+    const { data: items, error: itemsErr } = await supabase
+      .from("stock_transfer_items")
+      .select("id, source_stock_item_id, target_stock_item_id, quantity, unit_price")
+      .eq("transfer_id", data.id);
+    if (itemsErr) throw new Error(itemsErr.message);
+    const sourceIds = (items ?? []).map((i: any) => i.source_stock_item_id);
+    const targetIds = (items ?? []).map((i: any) => i.target_stock_item_id).filter(Boolean);
+    const allIds = Array.from(new Set([...sourceIds, ...targetIds]));
+    const [{ data: stockItems }, { data: warehouses }, { data: companies }] = await Promise.all([
+      allIds.length
+        ? supabase.from("stock_items").select("id, sku, barcode, product_id, company_id").in("id", allIds)
+        : Promise.resolve({ data: [] as any[] }),
+      supabase.from("warehouses").select("id, name, company_id"),
+      supabase.from("companies").select("id, name"),
+    ]);
+    const productIds = (stockItems ?? []).map((s: any) => s.product_id).filter(Boolean);
+    const { data: products } = productIds.length
+      ? await supabase.from("products").select("id, name").in("id", productIds)
+      : { data: [] as any[] };
+    return { transfer, items: items ?? [], stockItems: stockItems ?? [], warehouses: warehouses ?? [], companies: companies ?? [], products: products ?? [] };
+  });
+
+async function matchOrCreateTargetStockItem(supabase: any, sourceItem: any, targetCompanyId: string, userId: string) {
+  // Try SKU
+  if (sourceItem.sku) {
+    const { data } = await supabase.from("stock_items").select("id").eq("company_id", targetCompanyId).eq("sku", sourceItem.sku).maybeSingle();
+    if (data) return data.id as string;
+  }
+  // Try barcode
+  if (sourceItem.barcode) {
+    const { data } = await supabase.from("stock_items").select("id").eq("company_id", targetCompanyId).eq("barcode", sourceItem.barcode).maybeSingle();
+    if (data) return data.id as string;
+  }
+  // Create new stock_item + product in target company
+  const sourceProduct = sourceItem.product_id
+    ? (await supabase.from("products").select("name, unit, unit_price, vat_rate").eq("id", sourceItem.product_id).maybeSingle()).data
+    : null;
+  const productName = sourceProduct?.name ?? (sourceItem.sku || "Presunutá položka");
+  const { data: newProduct, error: pErr } = await supabase
+    .from("products")
+    .insert({
+      company_id: targetCompanyId,
+      name: productName,
+      code: sourceItem.sku ?? null,
+      unit: sourceProduct?.unit ?? sourceItem.unit ?? "ks",
+      unit_price: sourceProduct?.unit_price ?? sourceItem.sale_price ?? 0,
+      vat_rate: sourceProduct?.vat_rate ?? sourceItem.vat_rate ?? 23,
+    })
+    .select("id")
+    .single();
+  if (pErr || !newProduct) throw new Error(pErr?.message ?? "Nepodarilo sa vytvoriť produkt v cieľovej firme.");
+  const { data: newItem, error: siErr } = await supabase
+    .from("stock_items")
+    .insert({
+      company_id: targetCompanyId,
+      product_id: newProduct.id,
+      sku: sourceItem.sku ?? null,
+      barcode: sourceItem.barcode ?? null,
+      sale_price: sourceItem.sale_price ?? 0,
+      purchase_price: sourceItem.purchase_price ?? 0,
+      vat_rate: sourceItem.vat_rate ?? 23,
+      unit: sourceItem.unit ?? "ks",
+      track_stock: true,
+      min_stock: 0,
+    })
+    .select("id")
+    .single();
+  if (siErr || !newItem) throw new Error(siErr?.message ?? "Nepodarilo sa vytvoriť skladovú položku v cieľovej firme.");
+  return newItem.id as string;
+}
+
+export const previewTransferMatching = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      source_company_id: z.string().uuid(),
+      target_company_id: z.string().uuid(),
+      source_stock_item_ids: z.array(z.string().uuid()).min(1),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: sourceItems, error } = await supabase
+      .from("stock_items")
+      .select("id, sku, barcode, product_id")
+      .in("id", data.source_stock_item_ids)
+      .eq("company_id", data.source_company_id);
+    if (error) throw new Error(error.message);
+    const skus = (sourceItems ?? []).map((i: any) => i.sku).filter(Boolean);
+    const barcodes = (sourceItems ?? []).map((i: any) => i.barcode).filter(Boolean);
+    const [{ data: bySku }, { data: byBarcode }] = await Promise.all([
+      skus.length
+        ? supabase.from("stock_items").select("id, sku").eq("company_id", data.target_company_id).in("sku", skus)
+        : Promise.resolve({ data: [] as any[] }),
+      barcodes.length
+        ? supabase.from("stock_items").select("id, barcode").eq("company_id", data.target_company_id).in("barcode", barcodes)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const skuMap: Record<string, string> = {};
+    (bySku ?? []).forEach((r: any) => { if (r.sku) skuMap[r.sku] = r.id; });
+    const barcodeMap: Record<string, string> = {};
+    (byBarcode ?? []).forEach((r: any) => { if (r.barcode) barcodeMap[r.barcode] = r.id; });
+    return (sourceItems ?? []).map((i: any) => ({
+      source_id: i.id,
+      matched_target_id: (i.sku && skuMap[i.sku]) || (i.barcode && barcodeMap[i.barcode]) || null,
+      matched_by: i.sku && skuMap[i.sku] ? "sku" : i.barcode && barcodeMap[i.barcode] ? "barcode" : null,
+    }));
+  });
+
+export const createTransfer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => CreateTransferInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    if (!data.warehouse_to_id && !data.target_company_id) {
+      throw new Error("Zadajte cieľový sklad alebo cieľovú firmu.");
+    }
+    if (data.target_company_id && data.target_company_id === data.company_id) {
+      throw new Error("Cieľová firma sa nemôže rovnať zdrojovej.");
+    }
+    const { data: transfer, error } = await supabase
+      .from("stock_transfers")
+      .insert({
+        company_id: data.company_id,
+        warehouse_from_id: data.warehouse_from_id,
+        warehouse_to_id: data.warehouse_to_id ?? null,
+        target_company_id: data.target_company_id ?? null,
+        note: data.note ?? null,
+        status: "draft",
+        created_by: userId,
+      })
+      .select("id")
+      .single();
+    if (error || !transfer) throw new Error(error?.message ?? "Presun sa nepodarilo vytvoriť.");
+    const rows = data.items.map((it) => ({
+      transfer_id: transfer.id,
+      source_stock_item_id: it.source_stock_item_id,
+      quantity: it.quantity,
+      unit_price: it.unit_price,
+    }));
+    const { error: iErr } = await supabase.from("stock_transfer_items").insert(rows);
+    if (iErr) throw new Error(iErr.message);
+    return { id: transfer.id };
+  });
+
+export const completeTransfer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: transfer, error } = await supabase.from("stock_transfers").select("*").eq("id", data.id).single();
+    if (error || !transfer) throw new Error(error?.message ?? "Presun neexistuje.");
+    if (transfer.status !== "draft") throw new Error("Presun je už dokončený alebo zrušený.");
+
+    const { data: items, error: iErr } = await supabase.from("stock_transfer_items").select("*").eq("transfer_id", data.id);
+    if (iErr) throw new Error(iErr.message);
+    if (!items || items.length === 0) throw new Error("Presun neobsahuje žiadne položky.");
+
+    const targetCompanyId = transfer.target_company_id ?? transfer.company_id;
+    const targetWarehouseId = transfer.warehouse_to_id;
+    if (!targetWarehouseId) throw new Error("Chýba cieľový sklad.");
+
+    // Load source items
+    const sourceIds = items.map((i: any) => i.source_stock_item_id);
+    const { data: sourceStockItems } = await supabase.from("stock_items").select("*").in("id", sourceIds);
+    const sourceMap: Record<string, any> = {};
+    (sourceStockItems ?? []).forEach((s: any) => { sourceMap[s.id] = s; });
+
+    // Resolve target stock items (match or create for inter-company)
+    for (const it of items) {
+      let targetId = it.target_stock_item_id;
+      if (!targetId) {
+        if (targetCompanyId === transfer.company_id) {
+          targetId = it.source_stock_item_id;
+        } else {
+          const src = sourceMap[it.source_stock_item_id];
+          if (!src) throw new Error("Zdrojová položka nenájdená.");
+          targetId = await matchOrCreateTargetStockItem(supabase, src, targetCompanyId, userId);
+        }
+        await supabase.from("stock_transfer_items").update({ target_stock_item_id: targetId }).eq("id", it.id);
+      }
+
+      // Outbound movement (source)
+      const { error: outErr } = await supabase.from("stock_movements").insert({
+        company_id: transfer.company_id,
+        warehouse_id: transfer.warehouse_from_id,
+        stock_item_id: it.source_stock_item_id,
+        type: "vydaj",
+        quantity: it.quantity,
+        unit_price: it.unit_price,
+        total_value: it.quantity * it.unit_price,
+        reference_type: "transfer",
+        reference_id: transfer.id,
+        reference_item_id: it.id,
+        note: `Presun ${transfer.id.slice(0, 8)} — výdaj`,
+        created_by: userId,
+      });
+      if (outErr) throw new Error(`Výdaj zlyhal: ${outErr.message}`);
+
+      // Inbound movement (target) — may require admin if target company differs
+      let inboundClient = supabase;
+      if (targetCompanyId !== transfer.company_id) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        inboundClient = supabaseAdmin;
+      }
+      const { error: inErr } = await inboundClient.from("stock_movements").insert({
+        company_id: targetCompanyId,
+        warehouse_id: targetWarehouseId,
+        stock_item_id: targetId,
+        type: "prijem",
+        quantity: it.quantity,
+        unit_price: it.unit_price,
+        total_value: it.quantity * it.unit_price,
+        reference_type: "transfer",
+        reference_id: transfer.id,
+        reference_item_id: it.id,
+        note: `Presun ${transfer.id.slice(0, 8)} — príjem`,
+        created_by: userId,
+      });
+      if (inErr) throw new Error(`Príjem zlyhal: ${inErr.message}`);
+    }
+
+    const { error: uErr } = await supabase
+      .from("stock_transfers")
+      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .eq("id", data.id);
+    if (uErr) throw new Error(uErr.message);
+    return { ok: true };
+  });
+
+export const cancelTransfer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("stock_transfers")
+      .update({ status: "cancelled" })
+      .eq("id", data.id)
+      .eq("status", "draft");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

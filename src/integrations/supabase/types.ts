@@ -3730,6 +3730,129 @@ export type Database = {
           },
         ]
       }
+      stock_transfer_items: {
+        Row: {
+          created_at: string
+          id: string
+          quantity: number
+          source_stock_item_id: string
+          target_stock_item_id: string | null
+          transfer_id: string
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          quantity: number
+          source_stock_item_id: string
+          target_stock_item_id?: string | null
+          transfer_id: string
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          quantity?: number
+          source_stock_item_id?: string
+          target_stock_item_id?: string | null
+          transfer_id?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_transfer_items_source_stock_item_id_fkey"
+            columns: ["source_stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfer_items_target_stock_item_id_fkey"
+            columns: ["target_stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfer_items_transfer_id_fkey"
+            columns: ["transfer_id"]
+            isOneToOne: false
+            referencedRelation: "stock_transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_transfers: {
+        Row: {
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          status: Database["public"]["Enums"]["stock_transfer_status"]
+          target_company_id: string | null
+          updated_at: string
+          warehouse_from_id: string
+          warehouse_to_id: string | null
+        }
+        Insert: {
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["stock_transfer_status"]
+          target_company_id?: string | null
+          updated_at?: string
+          warehouse_from_id: string
+          warehouse_to_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["stock_transfer_status"]
+          target_company_id?: string | null
+          updated_at?: string
+          warehouse_from_id?: string
+          warehouse_to_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_transfers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfers_target_company_id_fkey"
+            columns: ["target_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfers_warehouse_from_id_fkey"
+            columns: ["warehouse_from_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfers_warehouse_to_id_fkey"
+            columns: ["warehouse_to_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           accountant_seats: number
@@ -4538,6 +4661,7 @@ export type Database = {
         | "inventura"
         | "faktura"
         | "dobropis"
+      stock_transfer_status: "draft" | "completed" | "cancelled"
       subscription_status:
         | "trialing"
         | "active"
@@ -4726,6 +4850,7 @@ export const Constants = {
         "faktura",
         "dobropis",
       ],
+      stock_transfer_status: ["draft", "completed", "cancelled"],
       subscription_status: [
         "trialing",
         "active",
