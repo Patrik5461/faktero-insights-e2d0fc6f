@@ -339,13 +339,46 @@ function StockItemsPage() {
                 <Link to="/sklad/produkty" className="text-primary hover:underline">× zrušiť</Link>
               </div>
             )}
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={showArchived} onChange={(e) => { setShowArchived(e.target.checked); clearSelection(); }} />
+              Archivované
+            </label>
           </div>
           <Link to="/produkty" className="text-sm text-primary hover:underline">Spravovať produkty →</Link>
         </div>
+
+        {selectedIds.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2">
+            <div className="text-sm">
+              <span className="font-medium">{selectedIds.length}</span> vybraných
+              <button onClick={clearSelection} className="ml-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                <X className="h-3 w-3" /> zrušiť výber
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button disabled={bulkBusy} onClick={bulkExportCsv} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60">
+                <Download className="h-3.5 w-3.5" /> Export CSV
+              </button>
+              {showArchived ? (
+                <button disabled={bulkBusy} onClick={bulkRestore} className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60">
+                  <ArchiveRestore className="h-3.5 w-3.5" /> Obnoviť z archívu
+                </button>
+              ) : (
+                <button disabled={bulkBusy} onClick={bulkArchive} className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-60">
+                  <Archive className="h-3.5 w-3.5" /> Archivovať vybrané
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
+                <th className="p-3 w-10">
+                  <input type="checkbox" checked={allOnPageSelected} onChange={(e) => toggleSelectAll(e.target.checked)} aria-label="Vybrať všetky" />
+                </th>
                 <th className="p-3">SKU</th><th className="p-3">Produkt</th>
                 <th className="p-3 text-right">Stav</th><th className="p-3 text-right">Min</th>
                 <th className="p-3 text-right">Nákupná</th><th className="p-3 text-right">Predajná</th>
@@ -353,16 +386,40 @@ function StockItemsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {loading && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Žiadne skladové karty.</td></tr>}
+              {loading && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{showArchived ? "Žiadne archivované karty." : "Žiadne skladové karty."}</td></tr>}
               {filtered.map((s) => {
                 const qty = levels[s.id] ?? 0;
                 const below = s.track_stock && qty < Number(s.min_stock ?? 0);
                 const prod = products.find((p) => p.id === s.product_id);
+                const isEditingName = editingNameId === s.id;
+                const displayName = prod?.name ?? s.sku ?? "—";
+                const isArchived = !!s.archived_at;
                 return (
-                  <tr key={s.id} className="hover:bg-muted/30">
+                  <tr key={s.id} className={`hover:bg-muted/30 ${isArchived ? "opacity-60" : ""} ${selected[s.id] ? "bg-primary/5" : ""}`}>
+                    <td className="p-3">
+                      <input type="checkbox" checked={!!selected[s.id]} onChange={() => toggleSelect(s.id)} aria-label={`Vybrať ${s.sku ?? ""}`} />
+                    </td>
                     <td className="p-3 font-medium">{s.sku ?? "—"}</td>
-                    <td className="p-3 text-muted-foreground">{prod?.name ?? "—"}</td>
+                    <td
+                      className="p-3 text-muted-foreground"
+                      onDoubleClick={() => { if (isArchived) return; setEditingNameId(s.id); setEditingNameValue(displayName); }}
+                      title="Dvojklik pre úpravu názvu"
+                    >
+                      {isEditingName ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            autoFocus
+                            value={editingNameValue}
+                            onChange={(e) => setEditingNameValue(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") commitInlineName(s); if (e.key === "Escape") setEditingNameId(null); }}
+                            onBlur={() => commitInlineName(s)}
+                            className="w-full rounded border border-input bg-background px-2 py-1 text-sm"
+                          />
+                          <button onMouseDown={(e) => e.preventDefault()} onClick={() => commitInlineName(s)} className="rounded p-1 hover:bg-muted"><Check className="h-3.5 w-3.5" /></button>
+                        </div>
+                      ) : displayName}
+                    </td>
                     <td className={`p-3 text-right ${below ? "font-semibold text-amber-600" : ""}`}>
                       {below && <AlertTriangle className="mr-1 inline h-3 w-3" />}
                       {qty}
@@ -371,7 +428,33 @@ function StockItemsPage() {
                     <td className="p-3 text-right">{Number(s.purchase_price).toFixed(2)} €</td>
                     <td className="p-3 text-right">{Number(s.sale_price).toFixed(2)} €</td>
                     <td className="p-3 text-right">
-                      <button onClick={() => setEditing(s)} className="rounded p-1.5 hover:bg-muted"><Pencil className="h-4 w-4" /></button>
+                      <div className="inline-flex items-center gap-1">
+                        {isArchived ? (
+                          <button
+                            onClick={async () => {
+                              const cid = getActiveCompanyId(); if (!cid) return;
+                              const { error } = await supabase.from("stock_items").update({ archived_at: null }).eq("id", s.id).eq("company_id", cid);
+                              if (error) return toast.error(error.message);
+                              toast.success("Obnovené"); load();
+                            }}
+                            className="rounded p-1.5 hover:bg-muted" title="Obnoviť z archívu"
+                          ><ArchiveRestore className="h-4 w-4" /></button>
+                        ) : (
+                          <>
+                            <button onClick={() => setEditing(s)} className="rounded p-1.5 hover:bg-muted" title="Upraviť"><Pencil className="h-4 w-4" /></button>
+                            <button
+                              onClick={async () => {
+                                const cid = getActiveCompanyId(); if (!cid) return;
+                                if (!confirm("Archivovať túto skladovú kartu?")) return;
+                                const { error } = await supabase.from("stock_items").update({ archived_at: new Date().toISOString() }).eq("id", s.id).eq("company_id", cid);
+                                if (error) return toast.error(error.message);
+                                toast.success("Archivované"); load();
+                              }}
+                              className="rounded p-1.5 hover:bg-muted text-destructive" title="Archivovať"
+                            ><Archive className="h-4 w-4" /></button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
