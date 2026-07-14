@@ -24,18 +24,18 @@ function parseDeliveryItems(text: string): DeliveryNoteItem[] {
   }
 }
 
-const ParseInput = z.string().min(1);
-
 /**
  * Extrakcia položiek dodacieho listu cez Lovable AI Gateway (gemini vision).
  */
 export const aiParseDeliveryNoteFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ParseInput.parse(d))
+  .inputValidator(z.string().min(1))
   .handler(async ({ data }): Promise<string> => {
     try {
       console.log("[delivery] gemini key exists:", !!process.env.GEMINI_API_KEY);
-      const { storage_path, mime_type } = JSON.parse(data);
+      const parsed = JSON.parse(data);
+      const storage_path = parsed.storage_path;
+      const mime_type = parsed.mime_type;
       console.log("[delivery] start, path:", storage_path);
       const geminiKey = process.env.GEMINI_API_KEY;
       const openaiKey = process.env.OPENAI_API_KEY;
