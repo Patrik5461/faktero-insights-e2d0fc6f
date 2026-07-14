@@ -124,7 +124,7 @@ function DeliveryNoteScanPage() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 180_000);
       const result = await Promise.race([
-        parseFn({ data: { storage_path: uploadedPath, mime_type: processedMime } }),
+        parseFn({ data: JSON.stringify({ storage_path: uploadedPath, mime_type: processedMime }) }),
         new Promise<never>((_, rej) => {
           controller.signal.addEventListener("abort", () => rej(new Error("Časový limit vypršal (180 s). Skúste menší súbor.")));
         }),

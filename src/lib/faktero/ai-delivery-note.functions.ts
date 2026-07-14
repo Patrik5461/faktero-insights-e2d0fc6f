@@ -11,10 +11,7 @@ export type DeliveryNoteItem = {
   total_price: number | null;
 };
 
-const ParseInput = z.object({
-  storage_path: z.string().min(1),
-  mime_type: z.string().min(3),
-});
+const ParseInput = z.string().min(1);
 
 /**
  * Extrakcia položiek dodacieho listu cez Lovable AI Gateway (gemini vision).
@@ -24,7 +21,8 @@ export const aiParseDeliveryNoteFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => ParseInput.parse(d))
   .handler(async ({ data }): Promise<{ items: DeliveryNoteItem[]; supplier?: string | null; delivery_number?: string | null; date?: string | null }> => {
     try {
-      console.log("[delivery] start, path:", data.storage_path);
+      const { storage_path, mime_type } = JSON.parse(data);
+      console.log("[delivery] start, path:", storage_path);
       const geminiKey = process.env.GEMINI_API_KEY;
       const openaiKey = process.env.OPENAI_API_KEY;
       if (!geminiKey && !openaiKey) throw new Error("AI služba nie je dostupná (GEMINI_API_KEY ani OPENAI_API_KEY nie sú nastavené)");
@@ -53,14 +51,14 @@ Ak nenájdeš žiadne položky, vráť prázdne pole [].`;
       // Download file from storage via admin client (bypasses RLS – auth already checked by middleware)
       console.log("[delivery] downloading from storage...");
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: blob, error: dlErr } = await supabaseAdmin.storage.from("imports").download(data.storage_path);
+      const { data: blob, error: dlErr } = await supabaseAdmin.storage.from("imports").download(storage_path);
       if (dlErr || !blob) throw new Error(`Súbor sa nepodarilo načítať zo storage: ${dlErr?.message ?? "neznáma chyba"}`);
       console.log("[delivery] download done, size:", blob.size);
 
       console.log("[delivery] converting to base64...");
       const arrayBuf = await blob.arrayBuffer();
       const base64 = Buffer.from(arrayBuf).toString("base64");
-      const mimeType = (blob.type || data.mime_type || "application/octet-stream").toLowerCase();
+      const mimeType = (blob.type || mime_type || "application/octet-stream").toLowerCase();
 
       if (geminiKey) {
         console.log("[delivery] calling gemini...");
