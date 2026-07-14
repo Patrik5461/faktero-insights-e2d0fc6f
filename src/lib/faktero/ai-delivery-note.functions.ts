@@ -32,7 +32,7 @@ const ParseInput = z.string().min(1);
 export const aiParseDeliveryNoteFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => ParseInput.parse(d))
-  .handler(async ({ data }): Promise<{ items: DeliveryNoteItem[]; supplier?: string | null; delivery_number?: string | null; date?: string | null }> => {
+  .handler(async ({ data }): Promise<string> => {
     try {
       console.log("[delivery] gemini key exists:", !!process.env.GEMINI_API_KEY);
       const { storage_path, mime_type } = JSON.parse(data);
@@ -145,12 +145,12 @@ PRÍKLAD správnej odpovede pre 3 položky:
           total_price: r.total_price != null ? Number(r.total_price) : null,
         }))
         .filter((r) => r.name.length > 0 && r.quantity > 0);
-      return {
+      return JSON.stringify({
         items,
         supplier: parsed.supplier ?? null,
         delivery_number: parsed.delivery_number ?? null,
         date: parsed.date ?? null,
-      };
+      });
     } catch (e: any) {
       console.error("[delivery] ERROR:", e?.message ?? String(e), e?.stack ?? "");
       throw e;
