@@ -67,15 +67,10 @@ const NAV: NavGroup[] = [
     key: "sklad", label: "Sklad", icon: Warehouse,
     match: ["/sklad"],
     children: [
-      { to: "/sklad", label: "Prehľad skladu" },
-      { to: "/sklad/produkty", label: "Skladové položky" },
-      { to: "/sklad/pohyby", label: "Skladové pohyby" },
-      { to: "/sklad/prijem", label: "Príjem na sklad" },
-      { to: "/sklad/vydaj", label: "Výdaj zo skladu" },
+      { to: "/sklad", label: "Prehľad" },
+      { to: "/sklad/produkty", label: "Položky" },
+      { to: "/sklad/pohyby", label: "Pohyby" },
       { to: "/sklad/inventura", label: "Inventúra" },
-      { to: "/sklad/presuny", label: "Presuny" },
-      { to: "/sklad/kategorie", label: "Kategórie" },
-      { to: "/sklad/nastavenia", label: "Sklady" },
     ],
   },
   {
