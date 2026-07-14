@@ -117,6 +117,7 @@ import { Route as AuthenticatedSkladPresunyRouteImport } from './routes/_authent
 import { Route as AuthenticatedSkladPohybyRouteImport } from './routes/_authenticated/sklad.pohyby'
 import { Route as AuthenticatedSkladNastaveniaRouteImport } from './routes/_authenticated/sklad.nastavenia'
 import { Route as AuthenticatedSkladMinimumRouteImport } from './routes/_authenticated/sklad.minimum'
+import { Route as AuthenticatedSkladKategorieRouteImport } from './routes/_authenticated/sklad.kategorie'
 import { Route as AuthenticatedSkladInventuraRouteImport } from './routes/_authenticated/sklad.inventura'
 import { Route as AuthenticatedSkladImportRouteImport } from './routes/_authenticated/sklad.import'
 import { Route as AuthenticatedSkladHodnotaRouteImport } from './routes/_authenticated/sklad.hodnota'
@@ -745,6 +746,12 @@ const AuthenticatedSkladMinimumRoute =
     path: '/minimum',
     getParentRoute: () => AuthenticatedSkladRoute,
   } as any)
+const AuthenticatedSkladKategorieRoute =
+  AuthenticatedSkladKategorieRouteImport.update({
+    id: '/kategorie',
+    path: '/kategorie',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
 const AuthenticatedSkladInventuraRoute =
   AuthenticatedSkladInventuraRouteImport.update({
     id: '/inventura',
@@ -1223,6 +1230,7 @@ export interface FileRoutesByFullPath {
   '/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/sklad/import': typeof AuthenticatedSkladImportRoute
   '/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
+  '/sklad/kategorie': typeof AuthenticatedSkladKategorieRoute
   '/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
@@ -1390,6 +1398,7 @@ export interface FileRoutesByTo {
   '/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/sklad/import': typeof AuthenticatedSkladImportRoute
   '/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
+  '/sklad/kategorie': typeof AuthenticatedSkladKategorieRoute
   '/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
@@ -1567,6 +1576,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
   '/_authenticated/sklad/import': typeof AuthenticatedSkladImportRoute
   '/_authenticated/sklad/inventura': typeof AuthenticatedSkladInventuraRoute
+  '/_authenticated/sklad/kategorie': typeof AuthenticatedSkladKategorieRoute
   '/_authenticated/sklad/minimum': typeof AuthenticatedSkladMinimumRoute
   '/_authenticated/sklad/nastavenia': typeof AuthenticatedSkladNastaveniaRoute
   '/_authenticated/sklad/pohyby': typeof AuthenticatedSkladPohybyRouteWithChildren
@@ -1744,6 +1754,7 @@ export interface FileRouteTypes {
     | '/sklad/hodnota'
     | '/sklad/import'
     | '/sklad/inventura'
+    | '/sklad/kategorie'
     | '/sklad/minimum'
     | '/sklad/nastavenia'
     | '/sklad/pohyby'
@@ -1911,6 +1922,7 @@ export interface FileRouteTypes {
     | '/sklad/hodnota'
     | '/sklad/import'
     | '/sklad/inventura'
+    | '/sklad/kategorie'
     | '/sklad/minimum'
     | '/sklad/nastavenia'
     | '/sklad/pohyby'
@@ -2087,6 +2099,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/hodnota'
     | '/_authenticated/sklad/import'
     | '/_authenticated/sklad/inventura'
+    | '/_authenticated/sklad/kategorie'
     | '/_authenticated/sklad/minimum'
     | '/_authenticated/sklad/nastavenia'
     | '/_authenticated/sklad/pohyby'
@@ -2983,6 +2996,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSkladMinimumRouteImport
       parentRoute: typeof AuthenticatedSkladRoute
     }
+    '/_authenticated/sklad/kategorie': {
+      id: '/_authenticated/sklad/kategorie'
+      path: '/kategorie'
+      fullPath: '/sklad/kategorie'
+      preLoaderRoute: typeof AuthenticatedSkladKategorieRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
     '/_authenticated/sklad/inventura': {
       id: '/_authenticated/sklad/inventura'
       path: '/inventura'
@@ -3551,6 +3571,7 @@ interface AuthenticatedSkladRouteChildren {
   AuthenticatedSkladHodnotaRoute: typeof AuthenticatedSkladHodnotaRoute
   AuthenticatedSkladImportRoute: typeof AuthenticatedSkladImportRoute
   AuthenticatedSkladInventuraRoute: typeof AuthenticatedSkladInventuraRoute
+  AuthenticatedSkladKategorieRoute: typeof AuthenticatedSkladKategorieRoute
   AuthenticatedSkladMinimumRoute: typeof AuthenticatedSkladMinimumRoute
   AuthenticatedSkladNastaveniaRoute: typeof AuthenticatedSkladNastaveniaRoute
   AuthenticatedSkladPohybyRoute: typeof AuthenticatedSkladPohybyRouteWithChildren
@@ -3567,6 +3588,7 @@ const AuthenticatedSkladRouteChildren: AuthenticatedSkladRouteChildren = {
   AuthenticatedSkladHodnotaRoute: AuthenticatedSkladHodnotaRoute,
   AuthenticatedSkladImportRoute: AuthenticatedSkladImportRoute,
   AuthenticatedSkladInventuraRoute: AuthenticatedSkladInventuraRoute,
+  AuthenticatedSkladKategorieRoute: AuthenticatedSkladKategorieRoute,
   AuthenticatedSkladMinimumRoute: AuthenticatedSkladMinimumRoute,
   AuthenticatedSkladNastaveniaRoute: AuthenticatedSkladNastaveniaRoute,
   AuthenticatedSkladPohybyRoute: AuthenticatedSkladPohybyRouteWithChildren,
