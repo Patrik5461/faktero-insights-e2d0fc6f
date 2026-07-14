@@ -6,7 +6,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { importDeliveryNoteFn, type DeliveryNoteItem } from "@/lib/faktero/ai-delivery-note.functions";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
-import { Camera, Upload, Loader2, Trash2, Plus, FileText, History } from "lucide-react";
+import { Camera, Upload, Loader2, Trash2, Plus, FileText, History, ScanLine, Check, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sklad/dodaci-list")({
