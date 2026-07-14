@@ -331,7 +331,14 @@ function DeliveryNoteScanPage() {
         }
       />
       <PageBody>
-        <AiScanOverlay open={parsing || scanSuccess} step={scanStep} success={scanSuccess} />
+        <AiScanOverlay
+          open={parsing || scanSuccess}
+          step={scanStep}
+          success={scanSuccess}
+          error={scanError && parsing ? scanError : null}
+          onClose={cancelScan}
+          onRetry={retryScan}
+        />
 
         {!fileMeta && (
           <div
