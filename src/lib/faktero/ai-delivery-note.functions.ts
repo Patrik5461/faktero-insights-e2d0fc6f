@@ -23,11 +23,13 @@ export const aiParseDeliveryNoteFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => ParseInput.parse(d))
   .handler(async ({ data }): Promise<{ items: DeliveryNoteItem[]; supplier?: string | null; delivery_number?: string | null; date?: string | null }> => {
-    const geminiKey = process.env.GEMINI_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (!geminiKey && !openaiKey) throw new Error("AI služba nie je dostupná (GEMINI_API_KEY ani OPENAI_API_KEY nie sú nastavené)");
+    try {
+      console.log("[delivery] start, path:", data.storage_path);
+      const geminiKey = process.env.GEMINI_API_KEY;
+      const openaiKey = process.env.OPENAI_API_KEY;
+      if (!geminiKey && !openaiKey) throw new Error("AI služba nie je dostupná (GEMINI_API_KEY ani OPENAI_API_KEY nie sú nastavené)");
 
-    const prompt = `Si expert na čítanie dodacích listov a skladových dokladov. Extrahuj VŠETKY produkty/položky z tohto dodacieho listu.
+      const prompt = `Si expert na čítanie dodacích listov a skladových dokladov. Extrahuj VŠETKY produkty/položky z tohto dodacieho listu.
 
 PRAVIDLÁ:
 - Extrahuj KAŽDÚ riadkovú položku bez výnimky
@@ -46,75 +48,86 @@ Každý objekt v poli má tento formát:
 
 Ak nenájdeš žiadne položky, vráť prázdne pole [].`;
 
-    let content = "{}";
+      let content = "{}";
 
-    // Download file from storage via admin client (bypasses RLS – auth already checked by middleware)
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: blob, error: dlErr } = await supabaseAdmin.storage.from("imports").download(data.storage_path);
-    if (dlErr || !blob) throw new Error(`Súbor sa nepodarilo načítať zo storage: ${dlErr?.message ?? "neznáma chyba"}`);
-    const arrayBuf = await blob.arrayBuffer();
-    const base64 = Buffer.from(arrayBuf).toString("base64");
-    const mimeType = (blob.type || data.mime_type || "application/octet-stream").toLowerCase();
+      // Download file from storage via admin client (bypasses RLS – auth already checked by middleware)
+      console.log("[delivery] downloading from storage...");
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: blob, error: dlErr } = await supabaseAdmin.storage.from("imports").download(data.storage_path);
+      if (dlErr || !blob) throw new Error(`Súbor sa nepodarilo načítať zo storage: ${dlErr?.message ?? "neznáma chyba"}`);
+      console.log("[delivery] download done, size:", blob.size);
 
-    if (geminiKey) {
-      const { geminiVision } = await import("./gemini.server");
-      content = await geminiVision(base64, mimeType, prompt);
-    } else {
-      // Fallback: OpenAI gpt-4o vision.
-      const isPdf = mimeType === "application/pdf";
-      const dataUrl = `data:${mimeType};base64,${base64}`;
-      const userContent: any[] = [{ type: "text", text: "Extrahuj položky z tohto dodacieho listu." }];
-      if (isPdf) {
-        userContent.push({ type: "file", file: { filename: "dodaci-list.pdf", file_data: dataUrl } });
+      console.log("[delivery] converting to base64...");
+      const arrayBuf = await blob.arrayBuffer();
+      const base64 = Buffer.from(arrayBuf).toString("base64");
+      const mimeType = (blob.type || data.mime_type || "application/octet-stream").toLowerCase();
+
+      if (geminiKey) {
+        console.log("[delivery] calling gemini...");
+        const { geminiVision } = await import("./gemini.server");
+        content = await geminiVision(base64, mimeType, prompt);
+        console.log("[delivery] gemini response:", content.slice(0, 100));
       } else {
-        userContent.push({ type: "image_url", image_url: { url: dataUrl } });
+        // Fallback: OpenAI gpt-4o vision.
+        const isPdf = mimeType === "application/pdf";
+        const dataUrl = `data:${mimeType};base64,${base64}`;
+        const userContent: any[] = [{ type: "text", text: "Extrahuj položky z tohto dodacieho listu." }];
+        if (isPdf) {
+          userContent.push({ type: "file", file: { filename: "dodaci-list.pdf", file_data: dataUrl } });
+        } else {
+          userContent.push({ type: "image_url", image_url: { url: dataUrl } });
+        }
+        const model = process.env.OPENAI_VISION_MODEL || "gpt-4o";
+        const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: prompt },
+              { role: "user", content: userContent },
+            ],
+            response_format: { type: "json_object" },
+            max_tokens: 4000,
+          }),
+        });
+        if (!resp.ok) {
+          const body = await resp.text();
+          if (resp.status === 429) throw new Error("AI limit prekročený, skúste neskôr.");
+          if (resp.status === 401) throw new Error("OpenAI API kľúč je neplatný.");
+          throw new Error(`OpenAI ${resp.status}: ${body.slice(0, 200)}`);
+        }
+        const json = await resp.json();
+        content = json.choices?.[0]?.message?.content ?? "{}";
+        console.log("[delivery] openai response:", content.slice(0, 100));
       }
-      const model = process.env.OPENAI_VISION_MODEL || "gpt-4o";
-      const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: prompt },
-            { role: "user", content: userContent },
-          ],
-          response_format: { type: "json_object" },
-          max_tokens: 4000,
-        }),
-      });
-      if (!resp.ok) {
-        const body = await resp.text();
-        if (resp.status === 429) throw new Error("AI limit prekročený, skúste neskôr.");
-        if (resp.status === 401) throw new Error("OpenAI API kľúč je neplatný.");
-        throw new Error(`OpenAI ${resp.status}: ${body.slice(0, 200)}`);
+      let parsed: any = {};
+      try { parsed = JSON.parse(content); }
+      catch {
+        const m = content.match(/\{[\s\S]*\}/);
+        if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
       }
-      const json = await resp.json();
-      content = json.choices?.[0]?.message?.content ?? "{}";
+      const rawItems: any[] = Array.isArray(parsed.items) ? parsed.items : Array.isArray(parsed) ? parsed : [];
+      const items: DeliveryNoteItem[] = rawItems
+        .map((r) => ({
+          name: String(r.name ?? "").trim(),
+          code: r.code ? String(r.code).trim() : null,
+          quantity: Number(r.quantity ?? 0) || 0,
+          unit: String(r.unit ?? "ks").trim() || "ks",
+          unit_price: r.unit_price != null ? Number(r.unit_price) : null,
+          total_price: r.total_price != null ? Number(r.total_price) : null,
+        }))
+        .filter((r) => r.name.length > 0 && r.quantity > 0);
+      return {
+        items,
+        supplier: parsed.supplier ?? null,
+        delivery_number: parsed.delivery_number ?? null,
+        date: parsed.date ?? null,
+      };
+    } catch (e: any) {
+      console.error("[delivery] ERROR:", e?.message ?? String(e), e?.stack ?? "");
+      throw e;
     }
-    let parsed: any = {};
-    try { parsed = JSON.parse(content); }
-    catch {
-      const m = content.match(/\{[\s\S]*\}/);
-      if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
-    }
-    const rawItems: any[] = Array.isArray(parsed.items) ? parsed.items : Array.isArray(parsed) ? parsed : [];
-    const items: DeliveryNoteItem[] = rawItems
-      .map((r) => ({
-        name: String(r.name ?? "").trim(),
-        code: r.code ? String(r.code).trim() : null,
-        quantity: Number(r.quantity ?? 0) || 0,
-        unit: String(r.unit ?? "ks").trim() || "ks",
-        unit_price: r.unit_price != null ? Number(r.unit_price) : null,
-        total_price: r.total_price != null ? Number(r.total_price) : null,
-      }))
-      .filter((r) => r.name.length > 0 && r.quantity > 0);
-    return {
-      items,
-      supplier: parsed.supplier ?? null,
-      delivery_number: parsed.delivery_number ?? null,
-      date: parsed.date ?? null,
-    };
   });
 
 const ImportItem = z.object({
