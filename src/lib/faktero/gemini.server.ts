@@ -7,6 +7,9 @@ export async function geminiVision(
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120000);
+
   const res = await fetch(
     "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
     {
@@ -25,8 +28,11 @@ export async function geminiVision(
           },
         ],
       }),
+      signal: controller.signal,
     },
   );
+
+  clearTimeout(timeout);
 
   if (!res.ok) {
     const body = await res.text();
