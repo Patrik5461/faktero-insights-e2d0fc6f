@@ -49,16 +49,45 @@ function DeliveryNoteScanPage() {
   }, []);
 
   async function handleFile(file: File) {
-    if (file.size > 15 * 1024 * 1024) return toast.error("Súbor je príliš veľký (max 15 MB).");
+    console.log("[dodaci-list] handleFile start:", { name: file.name, type: file.type, size: file.size });
     const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
     if (!allowed.includes(file.type)) return toast.error("Podporujeme JPG, PNG, WebP alebo PDF.");
+
+    const MAX_IMAGE = 5 * 1024 * 1024;
+    const MAX_PDF = 10 * 1024 * 1024;
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+
+    if (isPdf && file.size > MAX_PDF) {
+      return toast.error(`PDF je príliš veľké (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`);
+    }
+    if (isImage && file.size > MAX_IMAGE) {
+      return toast.error(`Obrázok je príliš veľký (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 5 MB.`);
+    }
+
+    // Resize images > 2MB
+    let processed: Blob = file;
+    let processedMime = file.type;
+    if (isImage && file.size > 2 * 1024 * 1024) {
+      try {
+        console.log("[dodaci-list] resizing image before upload…");
+        const resized = await resizeImage(file, 1920, 1080, 0.85);
+        processed = resized;
+        processedMime = "image/jpeg";
+        console.log("[dodaci-list] resized:", { originalSize: file.size, newSize: resized.size });
+      } catch (e) {
+        console.warn("[dodaci-list] resize failed, using original:", e);
+      }
+    }
+
     const dataUrl: string = await new Promise((res, rej) => {
       const r = new FileReader();
       r.onload = () => res(String(r.result));
       r.onerror = () => rej(new Error("Nepodarilo sa načítať súbor"));
-      r.readAsDataURL(file);
+      r.readAsDataURL(processed);
     });
-    setFileMeta({ name: file.name, mime: file.type, dataUrl });
+    console.log("[dodaci-list] dataUrl length:", dataUrl.length);
+    setFileMeta({ name: file.name, mime: processedMime, dataUrl });
     setRows([]);
     setStoragePath(null);
 
@@ -66,27 +95,65 @@ function DeliveryNoteScanPage() {
     const cid = getActiveCompanyId();
     if (cid) {
       try {
-        const ext = file.name.split(".").pop() ?? "bin";
+        const ext = processedMime === "image/jpeg" ? "jpg" : (file.name.split(".").pop() ?? "bin");
         const path = `delivery-notes/${cid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error } = await supabase.storage.from("imports").upload(path, file, { contentType: file.type, upsert: false });
+        const { error } = await supabase.storage.from("imports").upload(path, processed, { contentType: processedMime, upsert: false });
         if (!error) setStoragePath(path);
       } catch {}
     }
 
-    // parse
+    // parse with 180s client-side timeout
     setParsing(true);
     try {
-      const result = await parseFn({ data: { file_data_url: dataUrl, mime_type: file.type } });
+      console.log("[dodaci-list] calling parseFn…");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180_000);
+      const result = await Promise.race([
+        parseFn({ data: { file_data_url: dataUrl, mime_type: processedMime } }),
+        new Promise<never>((_, rej) => {
+          controller.signal.addEventListener("abort", () => rej(new Error("Časový limit vypršal (180 s). Skúste menší súbor.")));
+        }),
+      ]);
+      clearTimeout(timeoutId);
       setSupplier(result.supplier ?? "");
       setDeliveryNumber(result.delivery_number ?? "");
       setRows(result.items.map((i) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })));
       if (!result.items.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
       else toast.success(`AI extrahovalo ${result.items.length} položiek.`);
     } catch (e: any) {
+      console.error("[dodaci-list] parseFn error:", e);
       toast.error(e?.message ?? "AI spracovanie zlyhalo.");
     } finally {
       setParsing(false);
     }
+  }
+
+  function resizeImage(file: File, maxW: number, maxH: number, quality: number): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxW || height > maxH) {
+            const ratio = Math.min(maxW / width, maxH / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return reject(new Error("Canvas kontext nedostupný"));
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Konverzia zlyhala"))), "image/jpeg", quality);
+        };
+        img.onerror = () => reject(new Error("Nepodarilo sa načítať obrázok"));
+        img.src = String(ev.target?.result ?? "");
+      };
+      reader.onerror = () => reject(new Error("FileReader zlyhal"));
+      reader.readAsDataURL(file);
+    });
   }
 
   async function shootPhoto() {
