@@ -143,6 +143,7 @@ function DeliveryNoteScanPage() {
 
     // Async job pattern: POST creates job, then poll GET until done/error.
     setParsing(true);
+    const signal = controller.signal;
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
@@ -152,6 +153,7 @@ function DeliveryNoteScanPage() {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({ company_id: cid, storage_path: uploadedPath, mime_type: processedMime }),
+        signal,
       });
       if (!postRes.ok) {
         const text = await postRes.text();
@@ -170,10 +172,12 @@ function DeliveryNoteScanPage() {
 
       while (true) {
         await new Promise((r) => setTimeout(r, 2000));
+        if (signal.aborted) throw new DOMException("Aborted", "AbortError");
         if (Date.now() - started > maxMs) throw new Error("Spracovanie trvá príliš dlho (timeout).");
 
         const pollRes = await fetch(`/api/v1/sklad/parse-delivery-note/${job_id}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
+          signal,
         });
         if (!pollRes.ok) {
           const text = await pollRes.text();
@@ -191,6 +195,9 @@ function DeliveryNoteScanPage() {
         }
       }
 
+      if (cancelledRef.current || signal.aborted) return;
+
+      console.log("[dodaci-list] parse done, items:", finalItems.length);
       setSupplier(finalSupplier ?? "");
       setDeliveryNumber(finalDelivery ?? "");
       setRows(finalItems.map((i) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })));
@@ -198,15 +205,36 @@ function DeliveryNoteScanPage() {
       setScanSuccess(true);
       if (!finalItems.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
       else toast.success(`AI extrahovalo ${finalItems.length} položiek.`);
-      // Keep overlay visible briefly for the success animation, then hide.
-      await new Promise((r) => setTimeout(r, 900));
+      // Brief success flash, then auto-close so preview is visible.
+      await new Promise((r) => setTimeout(r, 700));
+      if (cancelledRef.current || signal.aborted) return;
+      setScanSuccess(false);
+      setParsing(false);
     } catch (e: any) {
+      if (e?.name === "AbortError" || cancelledRef.current) {
+        console.log("[dodaci-list] scan aborted by user");
+        setParsing(false);
+        setScanSuccess(false);
+        return;
+      }
       console.error("[dodaci-list] parse error:", e);
       setScanError(e?.message ?? "AI spracovanie zlyhalo.");
       toast.error(e?.message ?? "AI spracovanie zlyhalo.");
-    } finally {
       setParsing(false);
+      setScanSuccess(false);
     }
+  }
+
+  function cancelScan() {
+    cancelledRef.current = true;
+    abortRef.current?.abort();
+    setParsing(false);
+    setScanSuccess(false);
+    setScanStep(0);
+  }
+
+  function retryScan() {
+    if (lastFileRef.current) handleFile(lastFileRef.current);
   }
 
   function resizeImage(file: File, maxW: number, maxH: number, quality: number): Promise<Blob> {
