@@ -486,8 +486,8 @@ export function AppShell({
                 const isActive = pathname === base;
                 return (
                   <Link key={c.to + c.label} to={c.to as any}
-                    className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                      isActive ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                    className={`relative shrink-0 px-3 py-1.5 text-xs font-medium transition-colors after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full ${
+                      isActive ? "text-primary after:bg-primary" : "text-muted-foreground hover:text-foreground after:bg-transparent"
                     }`}>
                     {c.label}
                   </Link>
