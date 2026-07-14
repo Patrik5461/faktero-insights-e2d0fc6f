@@ -508,7 +508,38 @@ function DeliveryNoteScanPage() {
   );
 }
 
-function AiScanOverlay({ open, step, success }: { open: boolean; step: number; success: boolean }) {
+function AiScanOverlay({
+  open,
+  step,
+  success,
+  error,
+  onClose,
+  onRetry,
+}: {
+  open: boolean;
+  step: number;
+  success: boolean;
+  error: string | null;
+  onClose: () => void;
+  onRetry: () => void;
+}) {
+  // Escape to close.
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [open, onClose]);
+
+  // Safety net: if "Hotovo!" state lingers > 15s without dismissal, surface an error.
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    if (!open) { setStuck(false); return; }
+    if (!success) { setStuck(false); return; }
+    const t = window.setTimeout(() => setStuck(true), 15000);
+    return () => window.clearTimeout(t);
+  }, [open, success]);
+
   if (!open) return null;
   const steps = [
     "Dokument nahraný",
@@ -516,19 +547,40 @@ function AiScanOverlay({ open, step, success }: { open: boolean; step: number; s
     "Extrahovanie položiek",
     "Príprava náhľadu",
   ];
-  const allDone = success || step >= 4;
+  const showError = !!error || stuck;
+  const errorMessage = error ?? (stuck ? "Načítanie výsledkov trvá príliš dlho." : null);
+  const allDone = !showError && (success || step >= 4);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-scale-in">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          aria-label="Zavrieť"
+          className="absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
         {/* Indeterminate progress bar */}
         <div className="relative h-1.5 w-full overflow-hidden bg-muted">
           <div
             className={
-              allDone
-                ? "absolute inset-y-0 left-0 w-full bg-primary transition-all duration-500"
-                : "absolute inset-y-0 left-0 bg-primary"
+              showError
+                ? "absolute inset-y-0 left-0 w-full bg-destructive"
+                : allDone
+                  ? "absolute inset-y-0 left-0 w-full bg-primary transition-all duration-500"
+                  : "absolute inset-y-0 left-0 bg-primary"
             }
-            style={allDone ? undefined : { animation: "scanbar 1.4s ease-in-out infinite", width: "40%" }}
+            style={showError || allDone ? undefined : { animation: "scanbar 1.4s ease-in-out infinite", width: "40%" }}
           />
         </div>
 
@@ -536,10 +588,12 @@ function AiScanOverlay({ open, step, success }: { open: boolean; step: number; s
           <div
             className={
               "relative flex h-16 w-16 items-center justify-center rounded-2xl " +
-              (allDone ? "bg-primary/15" : "bg-primary/10")
+              (showError ? "bg-destructive/15" : allDone ? "bg-primary/15" : "bg-primary/10")
             }
           >
-            {allDone ? (
+            {showError ? (
+              <AlertCircle className="h-8 w-8 text-destructive" strokeWidth={2.5} />
+            ) : allDone ? (
               <Check className="h-8 w-8 text-primary animate-scale-in" strokeWidth={3} />
             ) : (
               <>
@@ -550,53 +604,76 @@ function AiScanOverlay({ open, step, success }: { open: boolean; step: number; s
           </div>
           <div>
             <div className="text-base font-semibold">
-              {allDone ? "Hotovo!" : "Skenujem dodací list"}
+              {showError ? "Skenovanie zlyhalo" : allDone ? "Hotovo!" : "Skenujem dodací list"}
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
-              {allDone ? "Načítavam výsledky…" : "Zvyčajne 20–40 sekúnd"}
+              {showError
+                ? errorMessage
+                : allDone
+                  ? "Načítavam výsledky…"
+                  : "Zvyčajne 20–40 sekúnd"}
             </div>
           </div>
         </div>
 
-        <ul className="space-y-2 px-6 pb-6 pt-4 text-sm">
-          {steps.map((label, i) => {
-            const done = allDone || step > i;
-            const active = !allDone && step === i;
-            return (
-              <li key={i} className="flex items-center gap-3">
-                <span
-                  className={
-                    "flex h-6 w-6 flex-none items-center justify-center rounded-full border transition-colors " +
-                    (done
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : active
-                        ? "border-primary/50 bg-primary/10 text-primary"
-                        : "border-border bg-background text-muted-foreground")
-                  }
-                >
-                  {done ? (
-                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                  ) : active ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
-                  )}
-                </span>
-                <span
-                  className={
-                    done
-                      ? "text-foreground"
-                      : active
-                        ? "font-medium text-foreground"
-                        : "text-muted-foreground"
-                  }
-                >
-                  {label}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+        {!showError && (
+          <ul className="space-y-2 px-6 pb-6 pt-4 text-sm">
+            {steps.map((label, i) => {
+              const done = allDone || step > i;
+              const active = !allDone && step === i;
+              return (
+                <li key={i} className="flex items-center gap-3">
+                  <span
+                    className={
+                      "flex h-6 w-6 flex-none items-center justify-center rounded-full border transition-colors " +
+                      (done
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : active
+                          ? "border-primary/50 bg-primary/10 text-primary"
+                          : "border-border bg-background text-muted-foreground")
+                    }
+                  >
+                    {done ? (
+                      <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                    ) : active ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+                    )}
+                  </span>
+                  <span
+                    className={
+                      done
+                        ? "text-foreground"
+                        : active
+                          ? "font-medium text-foreground"
+                          : "text-muted-foreground"
+                    }
+                  >
+                    {label}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {showError && (
+          <div className="flex justify-end gap-2 px-6 pb-6 pt-4">
+            <button
+              onClick={onClose}
+              className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+            >
+              Zavrieť
+            </button>
+            <button
+              onClick={() => { onClose(); onRetry(); }}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Skúsiť znova
+            </button>
+          </div>
+        )}
 
         {allDone && (
           <div className="pointer-events-none absolute inset-0 animate-fade-in bg-primary/10" />
@@ -613,6 +690,7 @@ function AiScanOverlay({ open, step, success }: { open: boolean; step: number; s
     </div>
   );
 }
+
 
 function matchExistingProduct(item: DeliveryNoteItem, products: ProductOption[]): string | null {
   if (item.code) {
