@@ -48,19 +48,26 @@ Ak nenájdeš žiadne položky, vráť prázdne pole [].`;
 
     let content = "{}";
 
+    // Download file from storage via admin client (bypasses RLS – auth already checked by middleware)
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: blob, error: dlErr } = await supabaseAdmin.storage.from("imports").download(data.storage_path);
+    if (dlErr || !blob) throw new Error(`Súbor sa nepodarilo načítať zo storage: ${dlErr?.message ?? "neznáma chyba"}`);
+    const arrayBuf = await blob.arrayBuffer();
+    const base64 = Buffer.from(arrayBuf).toString("base64");
+    const mimeType = (blob.type || data.mime_type || "application/octet-stream").toLowerCase();
+
     if (geminiKey) {
-      // Gemini 2.5 Flash Lite cez generateContent API (podporuje obrázky aj PDF ako inline_data).
-      const { geminiVision, splitDataUrl } = await import("./gemini.server");
-      const { base64, mimeType } = splitDataUrl(data.file_data_url, data.mime_type);
-      content = await geminiVision(base64, (mimeType || data.mime_type).toLowerCase(), prompt);
+      const { geminiVision } = await import("./gemini.server");
+      content = await geminiVision(base64, mimeType, prompt);
     } else {
       // Fallback: OpenAI gpt-4o vision.
-      const isPdf = data.mime_type === "application/pdf" || data.file_data_url.startsWith("data:application/pdf");
+      const isPdf = mimeType === "application/pdf";
+      const dataUrl = `data:${mimeType};base64,${base64}`;
       const userContent: any[] = [{ type: "text", text: "Extrahuj položky z tohto dodacieho listu." }];
       if (isPdf) {
-        userContent.push({ type: "file", file: { filename: "dodaci-list.pdf", file_data: data.file_data_url } });
+        userContent.push({ type: "file", file: { filename: "dodaci-list.pdf", file_data: dataUrl } });
       } else {
-        userContent.push({ type: "image_url", image_url: { url: data.file_data_url } });
+        userContent.push({ type: "image_url", image_url: { url: dataUrl } });
       }
       const model = process.env.OPENAI_VISION_MODEL || "gpt-4o";
       const resp = await fetch("https://api.openai.com/v1/chat/completions", {
