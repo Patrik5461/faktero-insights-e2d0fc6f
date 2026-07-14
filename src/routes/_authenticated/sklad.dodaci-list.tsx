@@ -131,7 +131,10 @@ function DeliveryNoteScanPage() {
         }),
       ]);
       clearTimeout(timeoutId);
-      const result = JSON.parse(response);
+      const meta = JSON.parse(response) as { result_path: string; count: number };
+      console.log("[dodaci-list] parseFn returned meta:", meta);
+      const resultText = await fetchResultFn({ data: { result_path: meta.result_path } });
+      const result = JSON.parse(resultText);
       const items = result.items || [];
       setSupplier(result.supplier ?? "");
       setDeliveryNumber(result.delivery_number ?? "");
