@@ -29,7 +29,7 @@ function parseDeliveryItems(text: string): DeliveryNoteItem[] {
  */
 export const aiParseDeliveryNoteFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.string().min(1))
+  .inputValidator((d: unknown) => z.string().min(1).parse(d))
   .handler(async ({ data }): Promise<string> => {
     try {
       console.log("[delivery] gemini key exists:", !!process.env.GEMINI_API_KEY);
