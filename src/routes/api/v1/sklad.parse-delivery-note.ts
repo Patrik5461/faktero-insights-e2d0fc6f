@@ -63,32 +63,59 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
       content = j.choices?.[0]?.message?.content ?? "[]";
     }
 
+    console.log("[job] ai raw response (first 300):", (content || "").slice(0, 300));
+    console.log("[job] ai raw response length:", (content || "").length);
+
+    // Strip markdown code fences that Gemini often wraps JSON in
+    let cleaned = (content || "").trim();
+    const fenceMatch = cleaned.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+    if (fenceMatch) cleaned = fenceMatch[1].trim();
+    if (!cleaned.startsWith("[") && !cleaned.startsWith("{")) {
+      const arrIdx = cleaned.indexOf("[");
+      const objIdx = cleaned.indexOf("{");
+      const start = arrIdx === -1 ? objIdx : objIdx === -1 ? arrIdx : Math.min(arrIdx, objIdx);
+      if (start >= 0) cleaned = cleaned.slice(start);
+    }
+
     let parsed: any = {};
-    try { parsed = JSON.parse(content); } catch {}
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (parseErr: any) {
+      console.error("[job] JSON parse failed:", parseErr?.message, "cleaned prefix:", cleaned.slice(0, 200));
+    }
     const rawItems: any[] = Array.isArray(parsed)
       ? parsed
       : Array.isArray(parsed?.items) ? parsed.items
       : Array.isArray(parsed?.results) ? parsed.results
+      : Array.isArray(parsed?.products) ? parsed.products
+      : Array.isArray(parsed?.data) ? parsed.data
       : parsed?.name ? [parsed] : [];
+
+    console.log("[job] raw items count:", rawItems.length);
 
     const items = rawItems
       .map((r) => ({
-        name: String(r?.name ?? "").trim(),
+        name: String(r?.name ?? r?.nazov ?? "").trim(),
         code: r?.code ? String(r.code).trim() : null,
-        quantity: Number(r?.quantity ?? 0) || 0,
-        unit: String(r?.unit ?? "ks").trim() || "ks",
+        quantity: Number(r?.quantity ?? r?.mnozstvo ?? 0) || 0,
+        unit: String(r?.unit ?? r?.jednotka ?? "ks").trim() || "ks",
         unit_price: r?.unit_price != null ? Number(r.unit_price) : null,
         total_price: r?.total_price != null ? Number(r.total_price) : null,
       }))
       .filter((r) => r.name.length > 0 && r.quantity > 0);
+
+    console.log("[job] parsed items count:", items.length);
 
     const result = {
       items,
       supplier: (parsed && !Array.isArray(parsed) ? parsed.supplier : null) ?? null,
       delivery_number: (parsed && !Array.isArray(parsed) ? parsed.delivery_number : null) ?? null,
     };
-    await supabaseAdmin.from("delivery_parse_jobs").update({ status: "done", result }).eq("id", jobId);
-    console.log("[parse-delivery-note] job done", { jobId, items: items.length });
+    const { error: updErr } = await supabaseAdmin
+      .from("delivery_parse_jobs")
+      .update({ status: "done", result })
+      .eq("id", jobId);
+    console.log("[job] db update result:", updErr?.message ?? "ok", { jobId, items: items.length });
   } catch (e: any) {
     console.error("[parse-delivery-note] job failed", { jobId, error: e?.message ?? String(e) });
     try {
