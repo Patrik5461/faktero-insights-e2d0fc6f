@@ -349,9 +349,19 @@ function DeliveryNoteScanPage() {
             </div>
 
             <div className="space-y-3">
-              {parsing && (
-                <div className="flex items-center gap-2 rounded-md border border-border bg-card p-3 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin" /> AI spracováva dokument…
+              {scanError && !parsing && (
+                <div className="flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
+                  <AlertCircle className="mt-0.5 h-5 w-5 flex-none text-destructive" />
+                  <div className="flex-1">
+                    <div className="font-semibold text-destructive">Skenovanie zlyhalo</div>
+                    <div className="mt-0.5 text-muted-foreground">{scanError}</div>
+                  </div>
+                  <button
+                    onClick={() => { if (lastFileRef.current) handleFile(lastFileRef.current); }}
+                    className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:opacity-90"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" /> Skúsiť znova
+                  </button>
                 </div>
               )}
 
