@@ -346,6 +346,11 @@ function StockItemsPage() {
               <option value="">Všetky sklady</option>
               {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
             </select>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="">Všetky kategórie</option>
+              <option value="__none__">Bez kategórie</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
             {urlFilter === "low_stock" && (
               <div className="inline-flex items-center gap-2 rounded-md border border-amber-300/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-300">
                 <AlertTriangle className="h-3.5 w-3.5" /> Filter: pod minimom
