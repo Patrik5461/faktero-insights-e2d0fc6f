@@ -239,6 +239,15 @@ function Stat({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+function SourceBadge({ type, id }: { type: string | null; id: string | null }) {
+  if (!type) return <span className="text-xs text-muted-foreground">—</span>;
+  const label: Record<string, string> = { invoice: "Faktúra", receipt_note: "Príjemka", issue_note: "Výdajka", manual: "Manuálne", inventory: "Inventúra" };
+  const cls = "inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-700";
+  if (type === "invoice" && id) {
+    return <Link to="/faktury/$id" params={{ id }} className={cls + " hover:underline"}>{label[type]}</Link>;
+  }
+  return <span className={cls}>{label[type] ?? type}</span>;
+}
 function Pair({ label, value }: { label: string; value: string }) {
   return (<div><dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-0.5">{value}</dd></div>);
 }
