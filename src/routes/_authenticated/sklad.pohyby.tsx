@@ -210,19 +210,20 @@ function MovementsPage() {
                   <td className="p-3 font-medium">{TYPE_LABEL[m.type] ?? m.type}</td>
                   <td className="p-3">{items[m.stock_item_id]?.sku ?? m.stock_item_id.slice(0, 8)}</td>
                   <td className="p-3 text-muted-foreground">{warehouses[m.warehouse_id] ?? "—"}</td>
-                  <td className={`p-3 text-right ${Number(m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}`}>{Number(m.quantity) > 0 ? "+" : ""}{m.quantity}</td>
-                  <td className="p-3 text-right">{Number(m.total_value).toFixed(2)} €</td>
-                  <td className="p-3 text-xs text-muted-foreground" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate">
-                        {m.reference_type === "invoice" && invoices[m.reference_id] ? (
-                          <Link to="/faktury/$id" params={{ id: invoices[m.reference_id].id }} className="text-primary hover:underline">
-                            Faktúra {invoices[m.reference_id].number}
-                          </Link>
-                        ) : m.note ?? ""}
+                  <td className={`p-3 text-right tabular-nums ${Number(m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}`}>{Number(m.quantity) > 0 ? "+" : ""}{m.quantity}</td>
+                  <td className="p-3 text-right tabular-nums">{m.unit_cost != null ? Number(m.unit_cost).toFixed(4) : "—"}</td>
+                  <td className="p-3 text-right tabular-nums">{Number(m.total_value).toFixed(2)} €</td>
+                  <td className="p-3 text-xs" onClick={(e) => e.stopPropagation()}>
+                    {(m.source_document_type === "invoice" || m.reference_type === "invoice") && (m.source_document_id || m.reference_id) && invoices[m.source_document_id ?? m.reference_id] ? (
+                      <Link to="/faktury/$id" params={{ id: invoices[m.source_document_id ?? m.reference_id].id }} className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-700 hover:underline">
+                        Faktúra {invoices[m.source_document_id ?? m.reference_id].number}
+                      </Link>
+                    ) : m.source_document_type ? (
+                      <span className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-700">
+                        {({ receipt_note: "Príjemka", issue_note: "Výdajka", manual: "Manuálne", inventory: "Inventúra" } as Record<string,string>)[m.source_document_type] ?? m.source_document_type}
                       </span>
-                      <Link to="/sklad/pohyby/$id" params={{ id: m.id }} className="shrink-0 text-primary hover:underline">Detail</Link>
-                    </div>
+                    ) : <span className="text-muted-foreground">—</span>}
+                    {m.note && <div className="mt-1 text-muted-foreground truncate">{m.note}</div>}
                   </td>
                 </tr>
               ))}
