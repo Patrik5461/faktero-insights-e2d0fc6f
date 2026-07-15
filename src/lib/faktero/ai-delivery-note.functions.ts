@@ -102,8 +102,8 @@ export const importDeliveryNoteFn = createServerFn({ method: "POST" })
         await supabase.from("stock_movements").insert({
           company_id: cid, warehouse_id: whId, stock_item_id: stockItem.id,
           type: "prijem", quantity: it.quantity, unit_price: unitPrice,
-          unit_cost: unitCost,
-          total_value: totalValue,
+          unit_cost: unitCost ?? undefined,
+          total_value: totalValue ?? undefined,
           note: `AI dodací list${data.supplier ? " – " + data.supplier : ""}${data.delivery_number ? " (" + data.delivery_number + ")" : ""}`,
           created_by: userId,
         });
