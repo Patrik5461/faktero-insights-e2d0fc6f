@@ -74,7 +74,7 @@ function StockItemsPage() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     setLoading(true);
-    const [{ data: items }, { data: lvl }, { data: prods }, { data: wh }, { data: cats }, snapshot] = await Promise.all([
+    const [{ data: items }, { data: lvl }, { data: prods }, { data: wh }, { data: cats }, { data: resv }, snapshot] = await Promise.all([
       (showArchived
         ? supabase.from("stock_items").select("*").eq("company_id", cid).not("archived_at", "is", null).order("archived_at", { ascending: false })
         : supabase.from("stock_items").select("*").eq("company_id", cid).is("archived_at", null).order("created_at", { ascending: false })),
@@ -82,6 +82,7 @@ function StockItemsPage() {
       supabase.from("products").select("id, name, code, unit_price, vat_rate, unit").eq("company_id", cid).is("deleted_at", null),
       supabase.from("warehouses").select("id, name").eq("company_id", cid).eq("active", true).order("created_at"),
       supabase.from("stock_categories").select("id, name, color").eq("company_id", cid).order("name"),
+      (supabase as any).from("stock_reservations").select("stock_item_id, quantity").eq("company_id", cid).eq("status", "active"),
       SHOW_STOCK_DEBUG ? fetchDebugSnapshot({ data: { company_id: cid } }).catch((e) => ({ errors: [{ message: e?.message ?? String(e) }] })) : Promise.resolve(null),
     ]);
     setRows(items ?? []);
@@ -91,8 +92,11 @@ function StockItemsPage() {
       m[l.stock_item_id] = (m[l.stock_item_id] ?? 0) + Number(l.quantity);
       (perWh[l.stock_item_id] ||= []).push({ warehouse_id: l.warehouse_id, quantity: Number(l.quantity), reserved: Number(l.reserved_quantity ?? 0) });
     });
+    const rm: Record<string, number> = {};
+    (resv ?? []).forEach((r: any) => { rm[r.stock_item_id] = (rm[r.stock_item_id] ?? 0) + Number(r.quantity); });
     setLevels(m);
     setLevelsByItemWh(perWh);
+    setReservedByItem(rm);
     setProducts(prods ?? []);
     setWarehouses(wh ?? []);
     setCategories((cats ?? []) as any);
