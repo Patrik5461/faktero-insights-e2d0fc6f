@@ -147,7 +147,7 @@ async function processGopayPayment(paymentId: string): Promise<void> {
         event_type: "gopay_unknown_payment",
         payload: { id: String(payment.id), state },
       });
-      return new Response("unknown", { status: 200 });
+      return;
     }
 
     const isPaid = state === "PAID";
