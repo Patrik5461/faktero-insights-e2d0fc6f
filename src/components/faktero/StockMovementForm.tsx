@@ -20,6 +20,7 @@ export function MovementForm({ type, title, onDone }: { type: MovementType; titl
   const [stockItem, setStockItem] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [price, setPrice] = useState("0");
+  const [sideCosts, setSideCosts] = useState("0");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [debug, setDebug] = useState<any>(null);
