@@ -63,6 +63,7 @@ function StockItemsPage() {
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
   const [debug, setDebug] = useState<any>(null);
   const [levelsByItemWh, setLevelsByItemWh] = useState<Record<string, Array<{ warehouse_id: string; quantity: number; reserved: number }>>>({});
+  const [reservedByItem, setReservedByItem] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [showArchived, setShowArchived] = useState(false);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
