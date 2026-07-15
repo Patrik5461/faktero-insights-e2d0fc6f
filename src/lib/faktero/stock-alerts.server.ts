@@ -24,15 +24,19 @@ export async function runLowStockAlerts() {
     .from("companies").select("id, name, email, created_by");
   const results: any[] = [];
   for (const c of companies ?? []) {
-    const [{ data: items }, { data: levels }] = await Promise.all([
+    const [{ data: items }, { data: levels }, { data: resv }] = await Promise.all([
       supabaseAdmin.from("stock_items")
         .select("id, sku, min_stock, unit, product_id, archived_at")
         .eq("company_id", c.id).eq("track_stock", true).is("archived_at", null),
       supabaseAdmin.from("stock_levels").select("stock_item_id, quantity").eq("company_id", c.id),
+      (supabaseAdmin as any).from("stock_reservations").select("stock_item_id, quantity").eq("company_id", c.id).eq("status", "active"),
     ]);
     const totals = new Map<string, number>();
     (levels ?? []).forEach((l: any) => totals.set(l.stock_item_id, (totals.get(l.stock_item_id) ?? 0) + Number(l.quantity)));
-    const low = (items ?? []).filter((i: any) => Number(i.min_stock ?? 0) > 0 && (totals.get(i.id) ?? 0) <= Number(i.min_stock));
+    const reservedMap = new Map<string, number>();
+    (resv ?? []).forEach((r: any) => reservedMap.set(r.stock_item_id, (reservedMap.get(r.stock_item_id) ?? 0) + Number(r.quantity)));
+    const availableOf = (id: string) => (totals.get(id) ?? 0) - (reservedMap.get(id) ?? 0);
+    const low = (items ?? []).filter((i: any) => Number(i.min_stock ?? 0) > 0 && availableOf(i.id) <= Number(i.min_stock));
     if (low.length === 0) { results.push({ company_id: c.id, skipped: true }); continue; }
     const prodIds = Array.from(new Set(low.map((i: any) => i.product_id).filter(Boolean)));
     const nameMap = new Map<string, string>();
