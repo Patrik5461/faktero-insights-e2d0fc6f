@@ -405,17 +405,23 @@ function StockItemsPage() {
                   <input type="checkbox" checked={allOnPageSelected} onChange={(e) => toggleSelectAll(e.target.checked)} aria-label="Vybrať všetky" />
                 </th>
                 <th className="p-3">SKU</th><th className="p-3">Produkt</th>
-                <th className="p-3 text-right">Stav</th><th className="p-3 text-right">Min</th>
+                <th className="p-3 text-right">Na sklade</th>
+                <th className="p-3 text-right">Rezerv.</th>
+                <th className="p-3 text-right">K dispozícii</th>
+                <th className="p-3 text-right">Min</th>
                 <th className="p-3 text-right">Nákupná</th><th className="p-3 text-right">Priem. NC</th><th className="p-3 text-right">Predajná</th>
                 <th></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {loading && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{showArchived ? "Žiadne archivované karty." : "Žiadne skladové karty."}</td></tr>}
+              {loading && <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">{showArchived ? "Žiadne archivované karty." : "Žiadne skladové karty."}</td></tr>}
               {filtered.map((s) => {
                 const qty = levels[s.id] ?? 0;
-                const below = s.track_stock && qty < Number(s.min_stock ?? 0);
+                const reserved = reservedByItem[s.id] ?? 0;
+                const available = qty - reserved;
+                const minStock = Number(s.min_stock ?? 0);
+                const belowAvail = s.track_stock && (available < 0 || available < minStock);
                 const prod = products.find((p) => p.id === s.product_id);
                 const isEditingName = editingNameId === s.id;
                 const displayName = prod?.name ?? s.sku ?? "—";
@@ -445,9 +451,11 @@ function StockItemsPage() {
                         </div>
                       ) : displayName}
                     </td>
-                    <td className={`p-3 text-right ${below ? "font-semibold text-amber-600" : ""}`}>
-                      {below && <AlertTriangle className="mr-1 inline h-3 w-3" />}
-                      {qty}
+                    <td className="p-3 text-right tabular-nums">{qty.toFixed(2)}</td>
+                    <td className="p-3 text-right tabular-nums text-muted-foreground">{reserved > 0 ? reserved.toFixed(2) : "—"}</td>
+                    <td className={`p-3 text-right tabular-nums ${belowAvail ? "font-semibold text-amber-600" : ""}`}>
+                      {belowAvail && <AlertTriangle className="mr-1 inline h-3 w-3" />}
+                      {available.toFixed(2)}
                     </td>
                     <td className="p-3 text-right">{Number(s.min_stock).toFixed(2)}</td>
                     <td className="p-3 text-right tabular-nums">{Number(s.purchase_price).toFixed(2)} €</td>
