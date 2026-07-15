@@ -214,9 +214,8 @@ async function processGopayPayment(paymentId: string): Promise<void> {
       }
     }
 
-    return new Response("ok", { status: 200 });
+    return;
   } catch (e: any) {
-    // Provider/internal failure — log and return 500 so GoPay retries.
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       await supabaseAdmin.from("billing_events").insert({
@@ -225,6 +224,6 @@ async function processGopayPayment(paymentId: string): Promise<void> {
         payload: { error: String(e?.message ?? e) },
       });
     } catch { /* ignore */ }
-    return new Response("error", { status: 500 });
+    return;
   }
 }
