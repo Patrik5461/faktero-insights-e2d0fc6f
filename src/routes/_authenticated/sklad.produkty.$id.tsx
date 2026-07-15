@@ -21,8 +21,10 @@ const TYPE_LABEL: Record<string, string> = {
 function ProductStockDetail() {
   const { id } = Route.useParams();
   const fetchDetail = useServerFn(getProductStockDetail);
+  const recompute = useServerFn(recomputeStockAvgCost);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [recomputing, setRecomputing] = useState(false);
   const { canMutate, canManage } = useStockPermissions();
   
 
