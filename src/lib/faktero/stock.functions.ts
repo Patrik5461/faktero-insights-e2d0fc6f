@@ -179,7 +179,10 @@ const CreateStockMovementInput = z.object({
   type: MovementType,
   quantity: z.coerce.number().positive(),
   unit_price: z.coerce.number().nonnegative().default(0),
+  side_costs_total: z.coerce.number().nonnegative().optional().default(0),
   note: z.string().max(500).optional().nullable(),
+  source_document_type: z.string().max(40).optional().nullable(),
+  source_document_id: z.string().uuid().optional().nullable(),
 });
 
 export const createStockMovementDebug = createServerFn({ method: "POST" })
@@ -188,12 +191,8 @@ export const createStockMovementDebug = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const debug: any = {
-      action: data.type,
-      company_id: data.company_id,
-      user_id: userId,
-      warehouse_id: data.warehouse_id ?? null,
-      stock_item_id: data.stock_item_id,
-      quantity: data.quantity,
+      action: data.type, company_id: data.company_id, user_id: userId,
+      warehouse_id: data.warehouse_id ?? null, stock_item_id: data.stock_item_id, quantity: data.quantity,
     };
     console.info("[sklad-debug:movement:start]", debug);
     let warehouseId = data.warehouse_id ?? null;
@@ -201,7 +200,6 @@ export const createStockMovementDebug = createServerFn({ method: "POST" })
       const ensured = await ensureDefaultWarehouse(supabase, data.company_id, debug);
       if (ensured.error || !ensured.warehouse) {
         debug.exact_error = serializeDbError(ensured.error) ?? { message: "Nepodarilo sa vytvoriť sklad." };
-        console.error("[sklad-debug:movement:warehouse-error]", debug);
         return { ok: false, error: debug.exact_error.message, debug };
       }
       warehouseId = ensured.warehouse.id;
@@ -209,33 +207,59 @@ export const createStockMovementDebug = createServerFn({ method: "POST" })
     const resolvedWarehouseId = warehouseId;
     if (!resolvedWarehouseId) {
       debug.exact_error = { message: "Chýba sklad pre skladový pohyb." };
-      console.error("[sklad-debug:movement:missing-warehouse]", debug);
       return { ok: false, error: debug.exact_error.message, debug };
     }
     debug.warehouse_id = resolvedWarehouseId;
-    const payload = {
+
+    // Allocate side costs into unit_cost for receipts (single-line: full amount)
+    const qty = Math.abs(data.quantity);
+    const sideCosts = data.type === "prijem" ? Number(data.side_costs_total ?? 0) : 0;
+    const unitCost = data.type === "prijem"
+      ? Number(data.unit_price) + (qty > 0 ? sideCosts / qty : 0)
+      : null; // for issues, DB trigger snapshots avg
+
+    const payload: any = {
       company_id: data.company_id,
       warehouse_id: resolvedWarehouseId,
       stock_item_id: data.stock_item_id,
       type: data.type,
       quantity: data.quantity,
       unit_price: data.unit_price,
-      total_value: Math.abs(data.quantity) * data.unit_price,
+      total_value: qty * data.unit_price,
       note: data.note || null,
       created_by: userId,
+      unit_cost: unitCost,
+      side_costs_total: data.type === "prijem" ? sideCosts : null,
+      source_document_type: data.source_document_type
+        ?? (data.type === "prijem" ? "receipt_note" : data.type === "vydaj" ? "issue_note" : "manual"),
+      source_document_id: data.source_document_id ?? null,
     };
     debug.insert_payload = payload;
-    const { data: movement, error } = await supabase.from("stock_movements").insert(payload).select("id, type, quantity, warehouse_id, stock_item_id").single();
+    const { data: movement, error } = await supabase.from("stock_movements")
+      .insert(payload)
+      .select("id, type, quantity, warehouse_id, stock_item_id, unit_cost")
+      .single();
     debug.insert_result = { data: movement, error: serializeDbError(error) };
-    debug.trigger_error = serializeDbError(error);
     debug.stock_level_after_trigger = await getStockLevel(supabase, resolvedWarehouseId, data.stock_item_id);
     if (error || !movement) {
       debug.exact_error = serializeDbError(error) ?? { message: "Pohyb sa nepodarilo uložiť." };
-      console.error("[sklad-debug:movement:error]", debug);
       return { ok: false, error: debug.exact_error.message, debug };
     }
-    console.info("[sklad-debug:movement:success]", debug);
     return { ok: true, movement, debug };
+  });
+
+const RecomputeInput = z.object({
+  company_id: z.string().uuid(),
+  stock_item_id: z.string().uuid(),
+});
+export const recomputeStockAvgCost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => RecomputeInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: result, error } = await supabase.rpc("recompute_stock_avg_cost", { _stock_item_id: data.stock_item_id });
+    if (error) throw new Error(error.message);
+    return { ok: true, result };
   });
 
 // Stats for the sklad dashboard

@@ -22,6 +22,8 @@ type SI = {
   id?: string; product_id?: string | null; sku?: string | null; barcode?: string | null;
   purchase_price: number; sale_price: number; vat_rate: number; unit: string;
   track_stock: boolean; min_stock: number;
+  avg_purchase_price?: number; last_purchase_price?: number;
+  archived_at?: string | null;
 };
 const EMPTY: SI = { sku: "", barcode: "", purchase_price: 0, sale_price: 0, vat_rate: 23, unit: "ks", track_stock: true, min_stock: 0 };
 
@@ -399,7 +401,7 @@ function StockItemsPage() {
                 </th>
                 <th className="p-3">SKU</th><th className="p-3">Produkt</th>
                 <th className="p-3 text-right">Stav</th><th className="p-3 text-right">Min</th>
-                <th className="p-3 text-right">Nákupná</th><th className="p-3 text-right">Predajná</th>
+                <th className="p-3 text-right">Nákupná</th><th className="p-3 text-right">Priem. NC</th><th className="p-3 text-right">Predajná</th>
                 <th></th>
               </tr>
             </thead>
@@ -443,8 +445,9 @@ function StockItemsPage() {
                       {qty}
                     </td>
                     <td className="p-3 text-right">{Number(s.min_stock).toFixed(2)}</td>
-                    <td className="p-3 text-right">{Number(s.purchase_price).toFixed(2)} €</td>
-                    <td className="p-3 text-right">{Number(s.sale_price).toFixed(2)} €</td>
+                    <td className="p-3 text-right tabular-nums">{Number(s.purchase_price).toFixed(2)} €</td>
+                    <td className="p-3 text-right tabular-nums text-muted-foreground">{s.avg_purchase_price != null ? `${Number(s.avg_purchase_price).toFixed(4)} €` : "—"}</td>
+                    <td className="p-3 text-right tabular-nums">{Number(s.sale_price).toFixed(2)} €</td>
                     <td className="p-3 text-right">
                       <div className="inline-flex items-center gap-1">
                         {isArchived ? (

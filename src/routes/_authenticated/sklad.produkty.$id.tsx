@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { getProductStockDetail } from "@/lib/faktero/stock.functions";
+import { getProductStockDetail, recomputeStockAvgCost } from "@/lib/faktero/stock.functions";
 import { useStockPermissions } from "@/hooks/useStockPermissions";
-import { ArrowLeft, Download, FileText, Package, Pencil, Warehouse } from "lucide-react";
+import { ArrowLeft, Download, FileText, Package, Pencil, Warehouse, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id")({
   head: () => ({ meta: [{ title: "Skladová karta — Faktero" }] }),
@@ -20,8 +21,10 @@ const TYPE_LABEL: Record<string, string> = {
 function ProductStockDetail() {
   const { id } = Route.useParams();
   const fetchDetail = useServerFn(getProductStockDetail);
+  const recompute = useServerFn(recomputeStockAvgCost);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [recomputing, setRecomputing] = useState(false);
   const { canMutate, canManage } = useStockPermissions();
   
 
@@ -33,6 +36,23 @@ function ProductStockDetail() {
       .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, [id, fetchDetail]);
+
+  async function handleRecompute() {
+    const cid = getActiveCompanyId();
+    if (!cid || !data?.stockItem?.id) return;
+    setRecomputing(true);
+    try {
+      await recompute({ data: { company_id: cid, stock_item_id: data.stockItem.id } });
+      toast.success("Priemerná nákupná cena prepočítaná.");
+      const d = await fetchDetail({ data: { company_id: cid, product_id: id } });
+      setData(d);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Prepočet zlyhal.");
+    } finally {
+      setRecomputing(false);
+    }
+  }
+
 
   function exportMovementsCsv() {
     if (!data?.movements) return;
@@ -87,7 +107,21 @@ function ProductStockDetail() {
           <Stat label="Minimálny stav" value={si ? `${Number(si.min_stock).toFixed(2)} ${si.unit}` : "—"} />
           <Stat label="Nákupná cena" value={si ? `${Number(si.purchase_price).toFixed(2)} €` : "—"} />
           <Stat label="Predajná cena" value={si ? `${Number(si.sale_price).toFixed(2)} €` : "—"} />
+          <Stat label="Priemerná nákupná cena" value={si ? `${Number(si.avg_purchase_price ?? 0).toFixed(4)} €` : "—"} />
+          <Stat label="Posledná nákupná cena" value={si?.last_purchase_price != null ? `${Number(si.last_purchase_price).toFixed(4)} €` : "—"} />
         </div>
+        {canManage && si && (
+          <div className="mt-3">
+            <button
+              onClick={handleRecompute}
+              disabled={recomputing}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary disabled:opacity-60"
+            >
+              <RefreshCw className={`h-4 w-4 ${recomputing ? "animate-spin" : ""}`} />
+              {recomputing ? "Prepočítavam…" : "Prepočítať priemernú cenu"}
+            </button>
+          </div>
+        )}
 
         <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
           <div className="rounded-xl border border-border bg-card p-3">
@@ -160,7 +194,7 @@ function ProductStockDetail() {
           ) : (
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr><th className="p-2">Dátum</th><th className="p-2">Typ</th><th className="p-2 text-right">Množstvo</th><th className="p-2 text-right">Hodnota</th><th className="p-2"></th></tr>
+                <tr><th className="p-2">Dátum</th><th className="p-2">Typ</th><th className="p-2 text-right">Množstvo</th><th className="p-2 text-right">Cena/MJ</th><th className="p-2 text-right">Hodnota</th><th className="p-2">Zdroj</th><th className="p-2"></th></tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {data.movements.map((m: any) => (
@@ -168,7 +202,9 @@ function ProductStockDetail() {
                     <td className="p-2 text-muted-foreground">{new Date(m.created_at).toLocaleString("sk-SK")}</td>
                     <td className="p-2">{TYPE_LABEL[m.type] ?? m.type}</td>
                     <td className={`p-2 text-right tabular-nums ${Number(m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}`}>{Number(m.quantity) > 0 ? "+" : ""}{m.quantity}</td>
+                    <td className="p-2 text-right tabular-nums">{m.unit_cost != null ? Number(m.unit_cost).toFixed(4) : "—"}</td>
                     <td className="p-2 text-right tabular-nums">{Number(m.total_value).toFixed(2)} €</td>
+                    <td className="p-2"><SourceBadge type={m.source_document_type} id={m.source_document_id} /></td>
                     <td className="p-2 text-right"><Link to="/sklad/pohyby/$id" params={{ id: m.id }} className="text-xs text-primary hover:underline">Detail</Link></td>
                   </tr>
                 ))}
@@ -202,6 +238,15 @@ function Stat({ label, value }: { label: string; value: string }) {
       <div className="mt-1 text-xl font-semibold tabular-nums">{value}</div>
     </div>
   );
+}
+function SourceBadge({ type, id }: { type: string | null; id: string | null }) {
+  if (!type) return <span className="text-xs text-muted-foreground">—</span>;
+  const label: Record<string, string> = { invoice: "Faktúra", receipt_note: "Príjemka", issue_note: "Výdajka", manual: "Manuálne", inventory: "Inventúra" };
+  const cls = "inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-700";
+  if (type === "invoice" && id) {
+    return <Link to="/faktury/$id" params={{ id }} className={cls + " hover:underline"}>{label[type]}</Link>;
+  }
+  return <span className={cls}>{label[type] ?? type}</span>;
 }
 function Pair({ label, value }: { label: string; value: string }) {
   return (<div><dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-0.5">{value}</dd></div>);

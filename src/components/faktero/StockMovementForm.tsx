@@ -20,6 +20,7 @@ export function MovementForm({ type, title, onDone }: { type: MovementType; titl
   const [stockItem, setStockItem] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [price, setPrice] = useState("0");
+  const [sideCosts, setSideCosts] = useState("0");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [debug, setDebug] = useState<any>(null);
@@ -58,7 +59,7 @@ export function MovementForm({ type, title, onDone }: { type: MovementType; titl
     setBusy(true);
     const unitPrice = Number(price) || 0;
     try {
-      const result = await createMovement({ data: { company_id: cid, warehouse_id: warehouse || null, stock_item_id: stockItem, type, quantity: qty, unit_price: unitPrice, note: note || null } });
+      const result = await createMovement({ data: { company_id: cid, warehouse_id: warehouse || null, stock_item_id: stockItem, type, quantity: qty, unit_price: unitPrice, side_costs_total: type === "prijem" ? (Number(sideCosts) || 0) : 0, note: note || null } });
       console.info("[sklad-debug:movement:client-result]", result);
       setDebug((result as any).debug ?? result);
       if (!(result as any).ok) {
@@ -128,6 +129,26 @@ export function MovementForm({ type, title, onDone }: { type: MovementType; titl
               <input type="number" step="0.0001" value={price} onChange={(e) => setPrice(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
             </label>
           </div>
+          {type === "prijem" && (
+            <>
+              <label className="block">
+                <span className="text-sm font-medium">Vedľajšie náklady (doprava, clo…)</span>
+                <input type="number" step="0.01" min="0" value={sideCosts} onChange={(e) => setSideCosts(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm tabular-nums" />
+                <span className="mt-1 block text-xs text-muted-foreground">Alokujú sa do obstarávacej ceny.</span>
+              </label>
+              <div className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">Obstarávacia cena / MJ</span>
+                <div className="mt-0.5 font-semibold tabular-nums">
+                  {(() => {
+                    const q = Number(quantity) || 0;
+                    const p = Number(price) || 0;
+                    const s = Number(sideCosts) || 0;
+                    return (p + (q > 0 ? s / q : 0)).toFixed(4);
+                  })()} €
+                </div>
+              </div>
+            </>
+          )}
           <label className="block">
             <span className="text-sm font-medium">Poznámka</span>
             <input value={note} onChange={(e) => setNote(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />

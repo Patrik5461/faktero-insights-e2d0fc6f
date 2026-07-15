@@ -2304,6 +2304,7 @@ export type Database = {
           customer_name: string | null
           customer_street: string | null
           customer_zip: string | null
+          deferred_stock_issue: boolean
           deleted_at: string | null
           delivery_date: string | null
           delivery_method: string | null
@@ -2358,6 +2359,7 @@ export type Database = {
           customer_name?: string | null
           customer_street?: string | null
           customer_zip?: string | null
+          deferred_stock_issue?: boolean
           deleted_at?: string | null
           delivery_date?: string | null
           delivery_method?: string | null
@@ -2412,6 +2414,7 @@ export type Database = {
           customer_name?: string | null
           customer_street?: string | null
           customer_zip?: string | null
+          deferred_stock_issue?: boolean
           deleted_at?: string | null
           delivery_date?: string | null
           delivery_method?: string | null
@@ -3500,12 +3503,14 @@ export type Database = {
       stock_items: {
         Row: {
           archived_at: string | null
+          avg_purchase_price: number
           barcode: string | null
           category_id: string | null
           company_id: string
           created_at: string
           description: string | null
           id: string
+          last_purchase_price: number | null
           location: string | null
           min_stock: number
           name_en: string | null
@@ -3522,12 +3527,14 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
+          avg_purchase_price?: number
           barcode?: string | null
           category_id?: string | null
           company_id: string
           created_at?: string
           description?: string | null
           id?: string
+          last_purchase_price?: number | null
           location?: string | null
           min_stock?: number
           name_en?: string | null
@@ -3544,12 +3551,14 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
+          avg_purchase_price?: number
           barcode?: string | null
           category_id?: string | null
           company_id?: string
           created_at?: string
           description?: string | null
           id?: string
+          last_purchase_price?: number | null
           location?: string | null
           min_stock?: number
           name_en?: string | null
@@ -3659,9 +3668,13 @@ export type Database = {
           reference_item_id: string | null
           reference_type: string | null
           reversed_movement_id: string | null
+          side_costs_total: number | null
+          source_document_id: string | null
+          source_document_type: string | null
           stock_item_id: string
           total_value: number
           type: Database["public"]["Enums"]["stock_movement_type"]
+          unit_cost: number | null
           unit_price: number
           warehouse_id: string
         }
@@ -3676,9 +3689,13 @@ export type Database = {
           reference_item_id?: string | null
           reference_type?: string | null
           reversed_movement_id?: string | null
+          side_costs_total?: number | null
+          source_document_id?: string | null
+          source_document_type?: string | null
           stock_item_id: string
           total_value?: number
           type: Database["public"]["Enums"]["stock_movement_type"]
+          unit_cost?: number | null
           unit_price?: number
           warehouse_id: string
         }
@@ -3693,9 +3710,13 @@ export type Database = {
           reference_item_id?: string | null
           reference_type?: string | null
           reversed_movement_id?: string | null
+          side_costs_total?: number | null
+          source_document_id?: string | null
+          source_document_type?: string | null
           stock_item_id?: string
           total_value?: number
           type?: Database["public"]["Enums"]["stock_movement_type"]
+          unit_cost?: number | null
           unit_price?: number
           warehouse_id?: string
         }
@@ -4610,6 +4631,10 @@ export type Database = {
       }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       next_platform_invoice_number: { Args: never; Returns: string }
+      recompute_stock_avg_cost: {
+        Args: { _stock_item_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       accounting_system: "pohoda" | "omega" | "money" | "alfa_plus" | "other"
