@@ -59,7 +59,7 @@ export function MovementForm({ type, title, onDone }: { type: MovementType; titl
     setBusy(true);
     const unitPrice = Number(price) || 0;
     try {
-      const result = await createMovement({ data: { company_id: cid, warehouse_id: warehouse || null, stock_item_id: stockItem, type, quantity: qty, unit_price: unitPrice, note: note || null } });
+      const result = await createMovement({ data: { company_id: cid, warehouse_id: warehouse || null, stock_item_id: stockItem, type, quantity: qty, unit_price: unitPrice, side_costs_total: type === "prijem" ? (Number(sideCosts) || 0) : 0, note: note || null } });
       console.info("[sklad-debug:movement:client-result]", result);
       setDebug((result as any).debug ?? result);
       if (!(result as any).ok) {
