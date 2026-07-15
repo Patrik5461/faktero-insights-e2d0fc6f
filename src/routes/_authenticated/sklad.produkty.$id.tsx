@@ -101,9 +101,10 @@ function ProductStockDetail() {
         </div>
       } />
       <PageBody>
-        <div className="grid gap-4 md:grid-cols-3">
-          <Stat label="Celkový stav" value={`${data.totalQuantity} ${si?.unit ?? ""}`} />
-          <Stat label="Rezervované" value={`${data.reservedQuantity} ${si?.unit ?? ""}`} />
+        <div className="grid gap-4 md:grid-cols-4">
+          <Stat label="Na sklade" value={`${data.totalQuantity} ${si?.unit ?? ""}`} />
+          <Stat label="Rezervované" value={`${data.reservedQuantity ?? 0} ${si?.unit ?? ""}`} />
+          <Stat label="K dispozícii" value={`${(Number(data.totalQuantity) - Number(data.reservedQuantity ?? 0)).toFixed(2)} ${si?.unit ?? ""}`} />
           <Stat label="Hodnota skladu" value={`${stockValue.toFixed(2)} €`} />
           <Stat label="Minimálny stav" value={si ? `${Number(si.min_stock).toFixed(2)} ${si.unit}` : "—"} />
           <Stat label="Nákupná cena" value={si ? `${Number(si.purchase_price).toFixed(2)} €` : "—"} />
