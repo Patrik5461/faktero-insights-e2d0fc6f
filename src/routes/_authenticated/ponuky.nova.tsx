@@ -88,6 +88,16 @@ function NewQuote() {
     });
     const { error: e2 } = await supabase.from("quote_items").insert(rows);
     if (e2) return toast.error(e2.message);
+    if (reserveStock) {
+      try {
+        const r = await reserveFn({ data: { company_id: cid, quote_id: q.id } });
+        if ((r as any).created > 0) toast.success(`Rezervovaných ${(r as any).created} položiek.`);
+        else if ((r as any).reason === "no_warehouse") toast.warning("Chýba aktívny sklad — rezervácie neboli vytvorené.");
+        else toast.info("Rezervácia: žiadne položky nebolo možné napárovať na sklad.");
+      } catch (err: any) {
+        toast.error(`Rezervácia zlyhala: ${err?.message ?? err}`);
+      }
+    }
     toast.success("Ponuka vytvorená");
     navigate({ to: "/ponuky/$id", params: { id: q.id } });
   }
