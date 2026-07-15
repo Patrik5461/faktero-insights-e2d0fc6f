@@ -107,7 +107,21 @@ function ProductStockDetail() {
           <Stat label="Minimálny stav" value={si ? `${Number(si.min_stock).toFixed(2)} ${si.unit}` : "—"} />
           <Stat label="Nákupná cena" value={si ? `${Number(si.purchase_price).toFixed(2)} €` : "—"} />
           <Stat label="Predajná cena" value={si ? `${Number(si.sale_price).toFixed(2)} €` : "—"} />
+          <Stat label="Priemerná nákupná cena" value={si ? `${Number(si.avg_purchase_price ?? 0).toFixed(4)} €` : "—"} />
+          <Stat label="Posledná nákupná cena" value={si?.last_purchase_price != null ? `${Number(si.last_purchase_price).toFixed(4)} €` : "—"} />
         </div>
+        {canManage && si && (
+          <div className="mt-3">
+            <button
+              onClick={handleRecompute}
+              disabled={recomputing}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary disabled:opacity-60"
+            >
+              <RefreshCw className={`h-4 w-4 ${recomputing ? "animate-spin" : ""}`} />
+              {recomputing ? "Prepočítavam…" : "Prepočítať priemernú cenu"}
+            </button>
+          </div>
+        )}
 
         <div className="mt-4 grid gap-4 md:grid-cols-[220px_1fr]">
           <div className="rounded-xl border border-border bg-card p-3">
