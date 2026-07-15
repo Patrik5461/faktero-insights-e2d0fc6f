@@ -202,8 +202,8 @@ function MovementsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {loading && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
-              {!loading && visibleRows.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Žiadne pohyby.</td></tr>}
+              {loading && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
+              {!loading && visibleRows.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Žiadne pohyby.</td></tr>}
               {visibleRows.map((m) => (
                 <tr key={m.id} className="cursor-pointer hover:bg-muted/30" onClick={() => navigate({ to: "/sklad/pohyby/$id", params: { id: m.id } })}>
                   <td className="p-3 text-muted-foreground">{new Date(m.created_at).toLocaleString("sk-SK")}</td>
