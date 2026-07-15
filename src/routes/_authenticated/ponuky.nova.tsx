@@ -29,6 +29,9 @@ function NewQuote() {
   });
   const [items, setItems] = useState<Item[]>([{ ...EMPTY }]);
   const [newCustOpen, setNewCustOpen] = useState(false);
+  const [reserveStock, setReserveStock] = useState(false);
+  const reserveFn = useServerFn(createReservationsFromQuote);
+
 
   useEffect(() => {
     const cid = getActiveCompanyId();
