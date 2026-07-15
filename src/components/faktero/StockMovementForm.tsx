@@ -24,6 +24,7 @@ export function MovementForm({ type, title, onDone }: { type: MovementType; titl
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [debug, setDebug] = useState<any>(null);
+  const [availability, setAvailability] = useState<{ on_hand: number; reserved: number; available: number } | null>(null);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -50,12 +51,31 @@ export function MovementForm({ type, title, onDone }: { type: MovementType; titl
     })();
   }, []);
 
+  useEffect(() => {
+    setAvailability(null);
+    const cid = getActiveCompanyId();
+    if (!cid || !stockItem || type !== "vydaj") return;
+    (async () => {
+      const [{ data: lvls }, { data: resv }] = await Promise.all([
+        supabase.from("stock_levels").select("quantity, warehouse_id").eq("company_id", cid).eq("stock_item_id", stockItem),
+        (supabase as any).from("stock_reservations").select("quantity").eq("company_id", cid).eq("stock_item_id", stockItem).eq("status", "active"),
+      ]);
+      const onHand = (lvls ?? []).reduce((s: number, l: any) => s + Number(l.quantity), 0);
+      const reserved = (resv ?? []).reduce((s: number, l: any) => s + Number(l.quantity), 0);
+      setAvailability({ on_hand: onHand, reserved, available: onHand - reserved });
+    })();
+  }, [stockItem, type]);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const cid = getActiveCompanyId();
     if (!cid || !stockItem) return toast.error("Vyplňte firmu a položku.");
     const qty = Number(quantity);
     if (!Number.isFinite(qty) || qty <= 0) return toast.error("Množstvo musí byť kladné.");
+    if (type === "vydaj" && availability && qty > availability.available) {
+      const ok = confirm(`Vydávate ${qty} ks, ale k dispozícii je len ${availability.available.toFixed(2)} (na sklade ${availability.on_hand.toFixed(2)}, rezervované ${availability.reserved.toFixed(2)}). Pokračovať a porušiť rezervácie?`);
+      if (!ok) return;
+    }
     setBusy(true);
     const unitPrice = Number(price) || 0;
     try {
@@ -119,6 +139,11 @@ export function MovementForm({ type, title, onDone }: { type: MovementType; titl
               {items.map((i) => <option key={i.id} value={i.id}>{itemLabel(i)}</option>)}
             </select>
           </label>
+          {type === "vydaj" && stockItem && availability && (
+            <div className={`rounded-md border px-3 py-2 text-xs tabular-nums ${Number(quantity) > availability.available ? "border-amber-300 bg-amber-50 text-amber-900" : "border-stone-200 bg-stone-50 text-muted-foreground"}`}>
+              Na sklade <b>{availability.on_hand.toFixed(2)}</b> · Rezervované <b>{availability.reserved.toFixed(2)}</b> · K dispozícii <b>{availability.available.toFixed(2)}</b>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="text-sm font-medium">Množstvo *</span>

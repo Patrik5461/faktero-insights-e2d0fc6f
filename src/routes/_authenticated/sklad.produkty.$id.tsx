@@ -5,6 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getProductStockDetail, recomputeStockAvgCost } from "@/lib/faktero/stock.functions";
 import { useStockPermissions } from "@/hooks/useStockPermissions";
+import { ReservationsPanel } from "@/components/faktero/ReservationsPanel";
 import { ArrowLeft, Download, FileText, Package, Pencil, Warehouse, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -100,9 +101,10 @@ function ProductStockDetail() {
         </div>
       } />
       <PageBody>
-        <div className="grid gap-4 md:grid-cols-3">
-          <Stat label="Celkový stav" value={`${data.totalQuantity} ${si?.unit ?? ""}`} />
-          <Stat label="Rezervované" value={`${data.reservedQuantity} ${si?.unit ?? ""}`} />
+        <div className="grid gap-4 md:grid-cols-4">
+          <Stat label="Na sklade" value={`${data.totalQuantity} ${si?.unit ?? ""}`} />
+          <Stat label="Rezervované" value={`${data.reservedQuantity ?? 0} ${si?.unit ?? ""}`} />
+          <Stat label="K dispozícii" value={`${(Number(data.totalQuantity) - Number(data.reservedQuantity ?? 0)).toFixed(2)} ${si?.unit ?? ""}`} />
           <Stat label="Hodnota skladu" value={`${stockValue.toFixed(2)} €`} />
           <Stat label="Minimálny stav" value={si ? `${Number(si.min_stock).toFixed(2)} ${si.unit}` : "—"} />
           <Stat label="Nákupná cena" value={si ? `${Number(si.purchase_price).toFixed(2)} €` : "—"} />
@@ -156,6 +158,10 @@ function ProductStockDetail() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="mt-4">
+          <ReservationsPanel companyId={data.stockItem?.company_id ?? p.company_id} stockItemId={si?.id ?? ""} unit={si?.unit} />
         </div>
 
         <div className="mt-4 rounded-xl border border-border bg-card p-4">

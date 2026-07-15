@@ -5,6 +5,8 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Trash2, Plus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { createReservationsFromQuote } from "@/lib/faktero/reservations.functions";
 import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
 
 export const Route = createFileRoute("/_authenticated/ponuky/nova")({
@@ -27,6 +29,9 @@ function NewQuote() {
   });
   const [items, setItems] = useState<Item[]>([{ ...EMPTY }]);
   const [newCustOpen, setNewCustOpen] = useState(false);
+  const [reserveStock, setReserveStock] = useState(false);
+  const reserveFn = useServerFn(createReservationsFromQuote);
+
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -67,6 +72,7 @@ function NewQuote() {
       customer_name: cust.name, customer_ico: cust.ico, customer_dic: cust.dic, customer_ic_dph: cust.ic_dph,
       customer_street: cust.street, customer_city: cust.city, customer_zip: cust.zip, customer_country: cust.country, customer_email: cust.email,
       subtotal: Number(totals.subtotal.toFixed(2)), vat_total: Number(totals.vat_total.toFixed(2)), total: Number(totals.total.toFixed(2)),
+      reserve_stock: reserveStock,
       notes: form.notes,
     }).select().single();
     if (error || !q) { const { friendlyError } = await import("@/lib/faktero/plan-error"); return toast.error(friendlyError(error)); }
@@ -82,6 +88,16 @@ function NewQuote() {
     });
     const { error: e2 } = await supabase.from("quote_items").insert(rows);
     if (e2) return toast.error(e2.message);
+    if (reserveStock) {
+      try {
+        const r = await reserveFn({ data: { company_id: cid, quote_id: q.id } });
+        if ((r as any).created > 0) toast.success(`Rezervovaných ${(r as any).created} položiek.`);
+        else if ((r as any).reason === "no_warehouse") toast.warning("Chýba aktívny sklad — rezervácie neboli vytvorené.");
+        else toast.info("Rezervácia: žiadne položky nebolo možné napárovať na sklad.");
+      } catch (err: any) {
+        toast.error(`Rezervácia zlyhala: ${err?.message ?? err}`);
+      }
+    }
     toast.success("Ponuka vytvorená");
     navigate({ to: "/ponuky/$id", params: { id: q.id } });
   }
@@ -137,6 +153,13 @@ function NewQuote() {
           <label className="block rounded-xl border border-border bg-card p-5">
             <span className="text-sm font-medium">Poznámka</span>
             <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+          </label>
+          <label className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+            <input type="checkbox" checked={reserveStock} onChange={(e) => setReserveStock(e.target.checked)} className="mt-0.5 h-4 w-4" />
+            <span className="text-sm">
+              <div className="font-medium">Rezervovať tovar na sklade</div>
+              <div className="text-xs text-muted-foreground">Vytvorí aktívne rezervácie pre napárované položky. Platnosť sa nastaví podľa dátumu „Platnosť do“.</div>
+            </span>
           </label>
           <div className="flex justify-end">
             <button type="submit" className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90">Vytvoriť ponuku</button>

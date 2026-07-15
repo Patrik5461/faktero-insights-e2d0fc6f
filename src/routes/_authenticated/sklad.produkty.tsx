@@ -63,6 +63,7 @@ function StockItemsPage() {
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
   const [debug, setDebug] = useState<any>(null);
   const [levelsByItemWh, setLevelsByItemWh] = useState<Record<string, Array<{ warehouse_id: string; quantity: number; reserved: number }>>>({});
+  const [reservedByItem, setReservedByItem] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [showArchived, setShowArchived] = useState(false);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
@@ -73,7 +74,7 @@ function StockItemsPage() {
     const cid = getActiveCompanyId();
     if (!cid) return;
     setLoading(true);
-    const [{ data: items }, { data: lvl }, { data: prods }, { data: wh }, { data: cats }, snapshot] = await Promise.all([
+    const [{ data: items }, { data: lvl }, { data: prods }, { data: wh }, { data: cats }, { data: resv }, snapshot] = await Promise.all([
       (showArchived
         ? supabase.from("stock_items").select("*").eq("company_id", cid).not("archived_at", "is", null).order("archived_at", { ascending: false })
         : supabase.from("stock_items").select("*").eq("company_id", cid).is("archived_at", null).order("created_at", { ascending: false })),
@@ -81,6 +82,7 @@ function StockItemsPage() {
       supabase.from("products").select("id, name, code, unit_price, vat_rate, unit").eq("company_id", cid).is("deleted_at", null),
       supabase.from("warehouses").select("id, name").eq("company_id", cid).eq("active", true).order("created_at"),
       supabase.from("stock_categories").select("id, name, color").eq("company_id", cid).order("name"),
+      (supabase as any).from("stock_reservations").select("stock_item_id, quantity").eq("company_id", cid).eq("status", "active"),
       SHOW_STOCK_DEBUG ? fetchDebugSnapshot({ data: { company_id: cid } }).catch((e) => ({ errors: [{ message: e?.message ?? String(e) }] })) : Promise.resolve(null),
     ]);
     setRows(items ?? []);
@@ -90,8 +92,11 @@ function StockItemsPage() {
       m[l.stock_item_id] = (m[l.stock_item_id] ?? 0) + Number(l.quantity);
       (perWh[l.stock_item_id] ||= []).push({ warehouse_id: l.warehouse_id, quantity: Number(l.quantity), reserved: Number(l.reserved_quantity ?? 0) });
     });
+    const rm: Record<string, number> = {};
+    (resv ?? []).forEach((r: any) => { rm[r.stock_item_id] = (rm[r.stock_item_id] ?? 0) + Number(r.quantity); });
     setLevels(m);
     setLevelsByItemWh(perWh);
+    setReservedByItem(rm);
     setProducts(prods ?? []);
     setWarehouses(wh ?? []);
     setCategories((cats ?? []) as any);
@@ -400,17 +405,23 @@ function StockItemsPage() {
                   <input type="checkbox" checked={allOnPageSelected} onChange={(e) => toggleSelectAll(e.target.checked)} aria-label="Vybrať všetky" />
                 </th>
                 <th className="p-3">SKU</th><th className="p-3">Produkt</th>
-                <th className="p-3 text-right">Stav</th><th className="p-3 text-right">Min</th>
+                <th className="p-3 text-right">Na sklade</th>
+                <th className="p-3 text-right">Rezerv.</th>
+                <th className="p-3 text-right">K dispozícii</th>
+                <th className="p-3 text-right">Min</th>
                 <th className="p-3 text-right">Nákupná</th><th className="p-3 text-right">Priem. NC</th><th className="p-3 text-right">Predajná</th>
                 <th></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {loading && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
-              {!loading && filtered.length === 0 && <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">{showArchived ? "Žiadne archivované karty." : "Žiadne skladové karty."}</td></tr>}
+              {loading && <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">Načítavam…</td></tr>}
+              {!loading && filtered.length === 0 && <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">{showArchived ? "Žiadne archivované karty." : "Žiadne skladové karty."}</td></tr>}
               {filtered.map((s) => {
                 const qty = levels[s.id] ?? 0;
-                const below = s.track_stock && qty < Number(s.min_stock ?? 0);
+                const reserved = reservedByItem[s.id] ?? 0;
+                const available = qty - reserved;
+                const minStock = Number(s.min_stock ?? 0);
+                const belowAvail = s.track_stock && (available < 0 || available < minStock);
                 const prod = products.find((p) => p.id === s.product_id);
                 const isEditingName = editingNameId === s.id;
                 const displayName = prod?.name ?? s.sku ?? "—";
@@ -440,9 +451,11 @@ function StockItemsPage() {
                         </div>
                       ) : displayName}
                     </td>
-                    <td className={`p-3 text-right ${below ? "font-semibold text-amber-600" : ""}`}>
-                      {below && <AlertTriangle className="mr-1 inline h-3 w-3" />}
-                      {qty}
+                    <td className="p-3 text-right tabular-nums">{qty.toFixed(2)}</td>
+                    <td className="p-3 text-right tabular-nums text-muted-foreground">{reserved > 0 ? reserved.toFixed(2) : "—"}</td>
+                    <td className={`p-3 text-right tabular-nums ${belowAvail ? "font-semibold text-amber-600" : ""}`}>
+                      {belowAvail && <AlertTriangle className="mr-1 inline h-3 w-3" />}
+                      {available.toFixed(2)}
                     </td>
                     <td className="p-3 text-right">{Number(s.min_stock).toFixed(2)}</td>
                     <td className="p-3 text-right tabular-nums">{Number(s.purchase_price).toFixed(2)} €</td>
