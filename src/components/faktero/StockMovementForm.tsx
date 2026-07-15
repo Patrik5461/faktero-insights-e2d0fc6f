@@ -51,6 +51,21 @@ export function MovementForm({ type, title, onDone }: { type: MovementType; titl
     })();
   }, []);
 
+  useEffect(() => {
+    setAvailability(null);
+    const cid = getActiveCompanyId();
+    if (!cid || !stockItem || type !== "vydaj") return;
+    (async () => {
+      const [{ data: lvls }, { data: resv }] = await Promise.all([
+        supabase.from("stock_levels").select("quantity, warehouse_id").eq("company_id", cid).eq("stock_item_id", stockItem),
+        (supabase as any).from("stock_reservations").select("quantity").eq("company_id", cid).eq("stock_item_id", stockItem).eq("status", "active"),
+      ]);
+      const onHand = (lvls ?? []).reduce((s: number, l: any) => s + Number(l.quantity), 0);
+      const reserved = (resv ?? []).reduce((s: number, l: any) => s + Number(l.quantity), 0);
+      setAvailability({ on_hand: onHand, reserved, available: onHand - reserved });
+    })();
+  }, [stockItem, type]);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const cid = getActiveCompanyId();
