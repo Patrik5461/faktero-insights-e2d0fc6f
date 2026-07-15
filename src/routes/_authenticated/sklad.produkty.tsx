@@ -22,7 +22,7 @@ type SI = {
   id?: string; product_id?: string | null; sku?: string | null; barcode?: string | null;
   purchase_price: number; sale_price: number; vat_rate: number; unit: string;
   track_stock: boolean; min_stock: number;
-  avg_purchase_price?: number | null; last_purchase_price?: number | null;
+  avg_purchase_price?: number; last_purchase_price?: number;
   archived_at?: string | null;
 };
 const EMPTY: SI = { sku: "", barcode: "", purchase_price: 0, sale_price: 0, vat_rate: 23, unit: "ks", track_stock: true, min_stock: 0 };
