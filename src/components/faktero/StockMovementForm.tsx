@@ -24,6 +24,7 @@ export function MovementForm({ type, title, onDone }: { type: MovementType; titl
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [debug, setDebug] = useState<any>(null);
+  const [availability, setAvailability] = useState<{ on_hand: number; reserved: number; available: number } | null>(null);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
