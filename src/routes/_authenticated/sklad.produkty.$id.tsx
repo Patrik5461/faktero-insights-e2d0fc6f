@@ -37,6 +37,23 @@ function ProductStockDetail() {
       .finally(() => setLoading(false));
   }, [id, fetchDetail]);
 
+  async function handleRecompute() {
+    const cid = getActiveCompanyId();
+    if (!cid || !data?.stockItem?.id) return;
+    setRecomputing(true);
+    try {
+      await recompute({ data: { company_id: cid, stock_item_id: data.stockItem.id } });
+      toast.success("Priemerná nákupná cena prepočítaná.");
+      const d = await fetchDetail({ data: { company_id: cid, product_id: id } });
+      setData(d);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Prepočet zlyhal.");
+    } finally {
+      setRecomputing(false);
+    }
+  }
+
+
   function exportMovementsCsv() {
     if (!data?.movements) return;
     const headers = ["Dátum", "Typ", "Množstvo", "Jedn. cena", "Hodnota", "Poznámka"];
