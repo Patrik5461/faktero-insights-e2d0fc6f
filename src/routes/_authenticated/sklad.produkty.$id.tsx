@@ -160,6 +160,10 @@ function ProductStockDetail() {
           </div>
         </div>
 
+        <div className="mt-4">
+          <ReservationsPanel companyId={data.stockItem?.company_id ?? p.company_id} stockItemId={si?.id ?? ""} unit={si?.unit} />
+        </div>
+
         <div className="mt-4 rounded-xl border border-border bg-card p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold"><Warehouse className="h-4 w-4 text-primary" /> Stav v skladoch</div>
           {data.levels.length === 0 ? (
