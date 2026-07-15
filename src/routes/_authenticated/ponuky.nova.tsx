@@ -72,6 +72,7 @@ function NewQuote() {
       customer_name: cust.name, customer_ico: cust.ico, customer_dic: cust.dic, customer_ic_dph: cust.ic_dph,
       customer_street: cust.street, customer_city: cust.city, customer_zip: cust.zip, customer_country: cust.country, customer_email: cust.email,
       subtotal: Number(totals.subtotal.toFixed(2)), vat_total: Number(totals.vat_total.toFixed(2)), total: Number(totals.total.toFixed(2)),
+      reserve_stock: reserveStock,
       notes: form.notes,
     }).select().single();
     if (error || !q) { const { friendlyError } = await import("@/lib/faktero/plan-error"); return toast.error(friendlyError(error)); }
