@@ -445,8 +445,9 @@ function StockItemsPage() {
                       {qty}
                     </td>
                     <td className="p-3 text-right">{Number(s.min_stock).toFixed(2)}</td>
-                    <td className="p-3 text-right">{Number(s.purchase_price).toFixed(2)} €</td>
-                    <td className="p-3 text-right">{Number(s.sale_price).toFixed(2)} €</td>
+                    <td className="p-3 text-right tabular-nums">{Number(s.purchase_price).toFixed(2)} €</td>
+                    <td className="p-3 text-right tabular-nums text-muted-foreground">{s.avg_purchase_price != null ? `${Number(s.avg_purchase_price).toFixed(4)} €` : "—"}</td>
+                    <td className="p-3 text-right tabular-nums">{Number(s.sale_price).toFixed(2)} €</td>
                     <td className="p-3 text-right">
                       <div className="inline-flex items-center gap-1">
                         {isArchived ? (
