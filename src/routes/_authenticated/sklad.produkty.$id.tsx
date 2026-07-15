@@ -194,7 +194,7 @@ function ProductStockDetail() {
           ) : (
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <tr><th className="p-2">Dátum</th><th className="p-2">Typ</th><th className="p-2 text-right">Množstvo</th><th className="p-2 text-right">Hodnota</th><th className="p-2"></th></tr>
+                <tr><th className="p-2">Dátum</th><th className="p-2">Typ</th><th className="p-2 text-right">Množstvo</th><th className="p-2 text-right">Cena/MJ</th><th className="p-2 text-right">Hodnota</th><th className="p-2">Zdroj</th><th className="p-2"></th></tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {data.movements.map((m: any) => (
@@ -202,7 +202,9 @@ function ProductStockDetail() {
                     <td className="p-2 text-muted-foreground">{new Date(m.created_at).toLocaleString("sk-SK")}</td>
                     <td className="p-2">{TYPE_LABEL[m.type] ?? m.type}</td>
                     <td className={`p-2 text-right tabular-nums ${Number(m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}`}>{Number(m.quantity) > 0 ? "+" : ""}{m.quantity}</td>
+                    <td className="p-2 text-right tabular-nums">{m.unit_cost != null ? Number(m.unit_cost).toFixed(4) : "—"}</td>
                     <td className="p-2 text-right tabular-nums">{Number(m.total_value).toFixed(2)} €</td>
+                    <td className="p-2"><SourceBadge type={m.source_document_type} id={m.source_document_id} /></td>
                     <td className="p-2 text-right"><Link to="/sklad/pohyby/$id" params={{ id: m.id }} className="text-xs text-primary hover:underline">Detail</Link></td>
                   </tr>
                 ))}
