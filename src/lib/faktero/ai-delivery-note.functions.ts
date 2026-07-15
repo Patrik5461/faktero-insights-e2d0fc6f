@@ -97,10 +97,13 @@ export const importDeliveryNoteFn = createServerFn({ method: "POST" })
         if (!stockItem) throw new Error("stock_item not created");
 
         const unitPrice = it.unit_price ?? 0;
+        const unitCost = typeof it.unit_price === "number" && it.unit_price > 0 ? it.unit_price : null;
+        const totalValue = it.unit_price != null ? it.quantity * unitPrice : null;
         await supabase.from("stock_movements").insert({
           company_id: cid, warehouse_id: whId, stock_item_id: stockItem.id,
           type: "prijem", quantity: it.quantity, unit_price: unitPrice,
-          total_value: it.quantity * unitPrice,
+          unit_cost: unitCost ?? undefined,
+          total_value: totalValue ?? undefined,
           note: `AI dodací list${data.supplier ? " – " + data.supplier : ""}${data.delivery_number ? " (" + data.delivery_number + ")" : ""}`,
           created_by: userId,
         });
