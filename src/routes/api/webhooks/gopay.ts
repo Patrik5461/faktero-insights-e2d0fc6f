@@ -72,40 +72,59 @@ async function handle(request: Request): Promise<Response> {
     });
   }
 
-  // 1. Shared-secret check before anything else (no logging of secret value).
-  const expected = process.env.GOPAY_WEBHOOK_SECRET;
-  if (!expected) {
-    console.error("[gopay-webhook] GOPAY_WEBHOOK_SECRET not configured");
-    return new Response("server misconfigured", { status: 500 });
+  // 1. Extract payment id first — GoPay sends GET ?id=<paymentId>&parent_id=<goid>
+  const url = new URL(request.url);
+  let paymentId = url.searchParams.get("id");
+  if (!paymentId && request.method === "POST") {
+    const ct = request.headers.get("content-type") ?? "";
+    try {
+      if (ct.includes("application/json")) {
+        const body = await request.json();
+        paymentId = body?.id ? String(body.id) : null;
+      } else if (ct.includes("application/x-www-form-urlencoded")) {
+        const text = await request.text();
+        const params = new URLSearchParams(text);
+        paymentId = params.get("id");
+      }
+    } catch { /* ignore */ }
   }
-  const url0 = new URL(request.url);
-  const provided =
-    url0.searchParams.get("secret") ??
-    request.headers.get("x-faktero-gopay-secret") ??
-    "";
-  if (!provided || !timingSafeEqualStr(provided, expected)) {
-    return new Response("unauthorized", { status: 401 });
+  if (!paymentId) {
+    return new Response("missing id", { status: 400 });
   }
 
+  // 2. Optional shared-secret check. GoPay itself does NOT send a secret —
+  // this only guards manual re-triggers. If configured AND provided, verify.
+  // Never 500 on a real GoPay notification just because the secret is unset.
+  const expected = process.env.GOPAY_WEBHOOK_SECRET;
+  const provided =
+    url.searchParams.get("secret") ??
+    request.headers.get("x-faktero-gopay-secret") ??
+    "";
+  if (expected && provided && !timingSafeEqualStr(provided, expected)) {
+    return new Response("unauthorized", { status: 401 });
+  }
+  if (!expected) {
+    console.warn("[gopay-webhook] GOPAY_WEBHOOK_SECRET not configured — accepting notification without secret verification");
+  }
+
+  // 3. Acknowledge to GoPay immediately, process asynchronously.
+  // GoPay retries on non-2xx, so we must always return 200 for a valid id.
+  const pid = paymentId;
+  Promise.resolve().then(() => processGopayPayment(pid)).catch(async (e) => {
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.from("billing_events").insert({
+        company_id: null,
+        event_type: "gopay_webhook_async_error",
+        payload: { id: pid, error: String(e?.message ?? e) },
+      });
+    } catch { /* ignore */ }
+  });
+  return new Response("ok", { status: 200 });
+}
+
+async function processGopayPayment(paymentId: string): Promise<void> {
   try {
-    const url = new URL(request.url);
-    let paymentId = url.searchParams.get("id");
-    if (!paymentId && request.method === "POST") {
-      const ct = request.headers.get("content-type") ?? "";
-      try {
-        if (ct.includes("application/json")) {
-          const body = await request.json();
-          paymentId = body?.id ? String(body.id) : null;
-        } else if (ct.includes("application/x-www-form-urlencoded")) {
-          const text = await request.text();
-          const params = new URLSearchParams(text);
-          paymentId = params.get("id");
-        }
-      } catch { /* ignore */ }
-    }
-    if (!paymentId) {
-      return new Response("missing id", { status: 400 });
-    }
 
     const { gopayGetPayment } = await import("@/lib/faktero/gopay.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -128,7 +147,7 @@ async function handle(request: Request): Promise<Response> {
         event_type: "gopay_unknown_payment",
         payload: { id: String(payment.id), state },
       });
-      return new Response("unknown", { status: 200 });
+      return;
     }
 
     const isPaid = state === "PAID";
@@ -195,9 +214,8 @@ async function handle(request: Request): Promise<Response> {
       }
     }
 
-    return new Response("ok", { status: 200 });
+    return;
   } catch (e: any) {
-    // Provider/internal failure — log and return 500 so GoPay retries.
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       await supabaseAdmin.from("billing_events").insert({
@@ -206,6 +224,6 @@ async function handle(request: Request): Promise<Response> {
         payload: { error: String(e?.message ?? e) },
       });
     } catch { /* ignore */ }
-    return new Response("error", { status: 500 });
+    return;
   }
 }
