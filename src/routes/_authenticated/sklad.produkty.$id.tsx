@@ -5,6 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getProductStockDetail, recomputeStockAvgCost } from "@/lib/faktero/stock.functions";
 import { useStockPermissions } from "@/hooks/useStockPermissions";
+import { ReservationsPanel } from "@/components/faktero/ReservationsPanel";
 import { ArrowLeft, Download, FileText, Package, Pencil, Warehouse, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
