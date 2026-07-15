@@ -401,7 +401,7 @@ function StockItemsPage() {
                 </th>
                 <th className="p-3">SKU</th><th className="p-3">Produkt</th>
                 <th className="p-3 text-right">Stav</th><th className="p-3 text-right">Min</th>
-                <th className="p-3 text-right">Nákupná</th><th className="p-3 text-right">Predajná</th>
+                <th className="p-3 text-right">Nákupná</th><th className="p-3 text-right">Priem. NC</th><th className="p-3 text-right">Predajná</th>
                 <th></th>
               </tr>
             </thead>
