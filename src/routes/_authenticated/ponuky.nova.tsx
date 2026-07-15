@@ -154,6 +154,13 @@ function NewQuote() {
             <span className="text-sm font-medium">Poznámka</span>
             <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
           </label>
+          <label className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+            <input type="checkbox" checked={reserveStock} onChange={(e) => setReserveStock(e.target.checked)} className="mt-0.5 h-4 w-4" />
+            <span className="text-sm">
+              <div className="font-medium">Rezervovať tovar na sklade</div>
+              <div className="text-xs text-muted-foreground">Vytvorí aktívne rezervácie pre napárované položky. Platnosť sa nastaví podľa dátumu „Platnosť do“.</div>
+            </span>
+          </label>
           <div className="flex justify-end">
             <button type="submit" className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90">Vytvoriť ponuku</button>
           </div>
