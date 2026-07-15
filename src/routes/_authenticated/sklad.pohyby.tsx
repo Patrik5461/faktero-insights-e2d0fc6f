@@ -197,8 +197,8 @@ function MovementsPage() {
               <tr>
                 <th className="p-3">Dátum</th><th className="p-3">Typ</th>
                 <th className="p-3">Položka</th><th className="p-3">Sklad</th>
-                <th className="p-3 text-right">Množstvo</th><th className="p-3 text-right">Hodnota</th>
-                <th className="p-3">Referencia / Poznámka</th>
+                <th className="p-3 text-right">Množstvo</th><th className="p-3 text-right">Cena/MJ</th><th className="p-3 text-right">Hodnota</th>
+                <th className="p-3">Zdroj</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
