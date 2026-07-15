@@ -72,6 +72,10 @@ export function MovementForm({ type, title, onDone }: { type: MovementType; titl
     if (!cid || !stockItem) return toast.error("Vyplňte firmu a položku.");
     const qty = Number(quantity);
     if (!Number.isFinite(qty) || qty <= 0) return toast.error("Množstvo musí byť kladné.");
+    if (type === "vydaj" && availability && qty > availability.available) {
+      const ok = confirm(`Vydávate ${qty} ks, ale k dispozícii je len ${availability.available.toFixed(2)} (na sklade ${availability.on_hand.toFixed(2)}, rezervované ${availability.reserved.toFixed(2)}). Pokračovať a porušiť rezervácie?`);
+      if (!ok) return;
+    }
     setBusy(true);
     const unitPrice = Number(price) || 0;
     try {
