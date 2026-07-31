@@ -156,15 +156,16 @@ function NewInvoice() {
     setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   }
 
-  async function generateNumber(companyId: string) {
-    const yr = new Date().getFullYear();
-    const { count } = await supabase
-      .from("invoices")
-      .select("id", { count: "exact", head: true })
-      .eq("company_id", companyId)
-      .gte("issue_date", `${yr}-01-01`);
-    const seq = String((count ?? 0) + 1).padStart(4, "0");
-    return `${yr}${seq}`;
+  async function generateNumber(companyId: string, issueDate: string) {
+    // Server-side, transactional (SELECT ... FOR UPDATE) — supports {YYYY} {YY} {MM} {NN}-{NNNN}
+    const { data, error } = await supabase.rpc("faktero_next_invoice_number", {
+      _company_id: companyId,
+      _issue_date: issueDate,
+    });
+    if (error) throw new Error(error.message);
+    const row = data as unknown as { invoice_number: string; sequence_number: number } | null;
+    if (!row?.invoice_number) throw new Error("Nepodarilo sa vygenerovať číslo faktúry.");
+    return { invoice_number: row.invoice_number, sequence_number: Number(row.sequence_number) };
   }
 
   async function runAi() {
@@ -221,7 +222,7 @@ function NewInvoice() {
     setSubmitting(true);
 
     try {
-    const invoice_number = await generateNumber(cid);
+    const { invoice_number, sequence_number } = await generateNumber(cid, form.issue_date);
     const variable_symbol = form.variable_symbol || invoice_number.replace(/\D/g, "");
 
     const { data: inv, error } = await supabase.from("invoices").insert({
@@ -230,6 +231,7 @@ function NewInvoice() {
       type: form.type,
       status: "issued",
       invoice_number,
+      sequence_number,
       variable_symbol,
       constant_symbol: form.constant_symbol || null,
       specific_symbol: form.specific_symbol || null,
