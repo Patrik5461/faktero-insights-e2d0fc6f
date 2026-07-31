@@ -287,3 +287,57 @@ function In({ label, value, onChange, full }: { label: string; value: string; on
     </label>
   );
 }
+
+/** Živý náhľad ďalšieho čísla faktúry — rovnaká logika ako DB funkcia. */
+function NumberingPreview({ companyId, format }: { companyId: string; format: string }) {
+  const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fmt = (format || "").trim() || "{YYYY}{NNNN}";
+    const d = new Date();
+    const yyyy = String(d.getFullYear());
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const monthly = fmt.includes("{MM}");
+    const start = monthly ? `${yyyy}-${mm}-01` : `${yyyy}-01-01`;
+    const end = monthly
+      ? new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().slice(0, 10)
+      : `${d.getFullYear() + 1}-01-01`;
+    const padToken = (fmt.match(/\{(N{2,4})\}/g) ?? [])
+      .map((t) => t.replace(/[{}]/g, "").length)
+      .sort((a, b) => b - a)[0];
+    const pad = padToken ?? 4;
+
+    (async () => {
+      const [periodRes, allRes] = await Promise.all([
+        supabase.from("invoices").select("sequence_number").eq("company_id", companyId)
+          .gte("issue_date", start).lt("issue_date", end),
+        supabase.from("invoices").select("invoice_number").eq("company_id", companyId),
+      ]);
+      if (cancelled) return;
+      const maxSeq = (periodRes.data ?? []).reduce((m: number, r: any) => Math.max(m, Number(r.sequence_number ?? 0)), 0);
+      const taken = new Set((allRes.data ?? []).map((r: any) => r.invoice_number));
+      let seq = maxSeq + 1;
+      let num = "";
+      for (let i = 0; i <= 1000; i++) {
+        num = fmt
+          .replace(/\{YYYY\}/g, yyyy)
+          .replace(/\{YY\}/g, yyyy.slice(2))
+          .replace(/\{MM\}/g, mm)
+          .replace(/\{N{2,4}\}/g, String(seq).padStart(pad, "0"));
+        if (!taken.has(num)) break;
+        seq += 1;
+      }
+      setPreview(num);
+    })();
+
+    return () => { cancelled = true; };
+  }, [companyId, format]);
+
+  return (
+    <p className="mt-2 text-xs text-muted-foreground">
+      Ďalšie číslo:{" "}
+      <span className="font-mono font-semibold tabular-nums text-foreground">{preview ?? "…"}</span>
+    </p>
+  );
+}
