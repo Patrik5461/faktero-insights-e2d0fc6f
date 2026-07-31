@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { nextInvoiceNumber } from "./invoice-numbering.server";
+import { nextInvoiceNumberDetailed } from "./invoice-numbering.server";
 import { triggerEvent, invoicePayload } from "./webhook-trigger.server";
 
 export type Frequency = "weekly" | "monthly" | "quarterly" | "yearly";
@@ -39,13 +39,13 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
   const today = new Date().toISOString().slice(0, 10);
   const dueDays = Number(rec.due_days ?? 14);
   const due = new Date(Date.now() + dueDays * 86400000).toISOString().slice(0, 10);
-  const invoice_number = await nextInvoiceNumber(rec.company_id);
+  const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(rec.company_id, today);
   const variable_symbol = invoice_number.replace(/\D/g, "");
 
   const { data: inv, error: insErr } = await supabaseAdmin.from("invoices").insert({
     company_id: rec.company_id,
     customer_id: rec.customer_id ?? null,
-    invoice_number, variable_symbol,
+    invoice_number, sequence_number, variable_symbol,
     issue_date: today, due_date: due,
     currency: rec.currency ?? "EUR",
     payment_method: rec.payment_method ?? "bank_transfer",

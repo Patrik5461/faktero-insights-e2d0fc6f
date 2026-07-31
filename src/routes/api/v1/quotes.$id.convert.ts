@@ -15,15 +15,15 @@ export const Route = createFileRoute("/api/v1/quotes/$id/convert")({
             return ok(inv ?? { invoice_id: q.converted_invoice_id, already: true }, 200);
           }
           const { data: items } = await ctx.supabase.from("quote_items").select("*").eq("quote_id", q.id).order("position");
-          const { nextInvoiceNumber } = await import("@/lib/faktero/invoice-numbering.server");
-          const invoice_number = await nextInvoiceNumber(ctx.company_id);
           const today = new Date().toISOString().slice(0, 10);
+          const { nextInvoiceNumberDetailed } = await import("@/lib/faktero/invoice-numbering.server");
+          const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(ctx.company_id, today);
           const due = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
           const variable_symbol = invoice_number.replace(/\D/g, "");
 
           const { data: inv, error: insErr } = await ctx.supabase.from("invoices").insert({
             company_id: ctx.company_id, customer_id: q.customer_id ?? null,
-            invoice_number, variable_symbol, issue_date: today, due_date: due,
+            invoice_number, sequence_number, variable_symbol, issue_date: today, due_date: due,
             currency: q.currency, payment_method: "bank_transfer",
             customer_name: q.customer_name, customer_ico: q.customer_ico, customer_dic: q.customer_dic,
             customer_ic_dph: q.customer_ic_dph, customer_street: q.customer_street, customer_city: q.customer_city,

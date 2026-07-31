@@ -1,24 +1,35 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export async function nextInvoiceNumber(company_id: string): Promise<string> {
-  const { data: company } = await supabaseAdmin.from("companies").select("invoice_number_format").eq("id", company_id).single();
-  const format = company?.invoice_number_format || "{YYYY}{NNNN}";
-  const year = new Date().getFullYear();
+export type NextInvoiceNumber = { invoice_number: string; sequence_number: number };
 
-  const { data: rows } = await supabaseAdmin
-    .from("invoices").select("invoice_number")
-    .eq("company_id", company_id).like("invoice_number", `${year}%`)
-    .order("invoice_number", { ascending: false }).limit(1);
+/**
+ * Generates the next invoice number for a company.
+ *
+ * The sequence is kept in invoices.sequence_number (integer) — the previous
+ * invoice_number string is NEVER parsed as an integer (that caused the year
+ * prefix to be chained: 202620260002, ...).
+ *
+ * Supported format tokens: {YYYY} {YY} {MM} {NN} {NNN} {NNNN}
+ * Sequence resets monthly when the format contains {MM}, otherwise yearly.
+ * Runs inside a DB transaction with SELECT ... FOR UPDATE on companies, so two
+ * concurrent invoices can never get the same number.
+ */
+export async function nextInvoiceNumberDetailed(
+  company_id: string,
+  issue_date?: string | null,
+): Promise<NextInvoiceNumber> {
+  const { data, error } = await supabaseAdmin.rpc("faktero_next_invoice_number", {
+    _company_id: company_id,
+    ...(issue_date ? { _issue_date: issue_date } : {}),
+  });
+  if (error) throw new Error(error.message);
+  const row = data as unknown as NextInvoiceNumber | null;
+  if (!row?.invoice_number) throw new Error("Nepodarilo sa vygenerovať číslo faktúry.");
+  return { invoice_number: row.invoice_number, sequence_number: Number(row.sequence_number) };
+}
 
-  let next = 1;
-  if (rows && rows[0]) {
-    const m = String(rows[0].invoice_number).match(/(\d+)$/);
-    if (m) next = parseInt(m[1], 10) + 1;
-  }
-  return format
-    .replace("{YYYY}", String(year))
-    .replace("{YY}", String(year).slice(-2))
-    .replace(/\{N+\}/, (m) => String(next).padStart(m.length - 2, "0"));
+export async function nextInvoiceNumber(company_id: string, issue_date?: string | null): Promise<string> {
+  return (await nextInvoiceNumberDetailed(company_id, issue_date)).invoice_number;
 }
 
 export function computeInvoiceTotals(items: { quantity: number; unit_price: number; vat_rate: number }[]) {

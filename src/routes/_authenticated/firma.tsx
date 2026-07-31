@@ -68,7 +68,13 @@ function CompanyPage() {
           <In label="IBAN" value={c.iban ?? ""} onChange={f("iban")} />
           <In label="SWIFT/BIC" value={c.swift ?? ""} onChange={f("swift")} />
           <In label="Mena" value={c.default_currency ?? "EUR"} onChange={f("default_currency")} />
-          <In label="Formát čísla faktúry" value={c.invoice_number_format ?? ""} onChange={f("invoice_number_format")} />
+          <div>
+            <In label="Formát čísla faktúry" value={c.invoice_number_format ?? ""} onChange={f("invoice_number_format")} />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Tokeny: {"{YYYY}"} rok, {"{YY}"} rok 2-cif., {"{MM}"} mesiac, {"{NN}"}–{"{NNNN}"} poradie (počet N = počet číslic).
+              Ak formát obsahuje {"{MM}"}, poradie sa resetuje mesačne, inak ročne.
+            </p>
+          </div>
           <label className="block">
             <span className="text-sm font-medium">Preferovaný účtovný systém</span>
             <select
