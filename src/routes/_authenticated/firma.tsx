@@ -70,11 +70,17 @@ function CompanyPage() {
           <In label="Mena" value={c.default_currency ?? "EUR"} onChange={f("default_currency")} />
           <div>
             <In label="Formát čísla faktúry" value={c.invoice_number_format ?? ""} onChange={f("invoice_number_format")} />
+            <NumberingPreview companyId={c.id} format={c.invoice_number_format ?? ""} />
             <p className="mt-1 text-xs text-muted-foreground">
               Tokeny: {"{YYYY}"} rok, {"{YY}"} rok 2-cif., {"{MM}"} mesiac, {"{NN}"}–{"{NNNN}"} poradie (počet N = počet číslic).
               Ak formát obsahuje {"{MM}"}, poradie sa resetuje mesačne, inak ročne.
             </p>
+            <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+              Pozor: zmena šablóny uprostred roka rozdelí číselný rad — nové faktúry budú číslované podľa novej šablóny,
+              staré zostanú nezmenené. Ak by nové číslo kolidovalo s existujúcim, poradie sa automaticky posunie na najbližšie voľné.
+            </p>
           </div>
+
           <label className="block">
             <span className="text-sm font-medium">Preferovaný účtovný systém</span>
             <select
@@ -279,5 +285,59 @@ function In({ label, value, onChange, full }: { label: string; value: string; on
       <span className="text-sm font-medium">{label}</span>
       <input value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
     </label>
+  );
+}
+
+/** Živý náhľad ďalšieho čísla faktúry — rovnaká logika ako DB funkcia. */
+function NumberingPreview({ companyId, format }: { companyId: string; format: string }) {
+  const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fmt = (format || "").trim() || "{YYYY}{NNNN}";
+    const d = new Date();
+    const yyyy = String(d.getFullYear());
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const monthly = fmt.includes("{MM}");
+    const start = monthly ? `${yyyy}-${mm}-01` : `${yyyy}-01-01`;
+    const end = monthly
+      ? new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().slice(0, 10)
+      : `${d.getFullYear() + 1}-01-01`;
+    const padToken = (fmt.match(/\{(N{2,4})\}/g) ?? [])
+      .map((t) => t.replace(/[{}]/g, "").length)
+      .sort((a, b) => b - a)[0];
+    const pad = padToken ?? 4;
+
+    (async () => {
+      const [periodRes, allRes] = await Promise.all([
+        supabase.from("invoices").select("sequence_number").eq("company_id", companyId)
+          .gte("issue_date", start).lt("issue_date", end),
+        supabase.from("invoices").select("invoice_number").eq("company_id", companyId),
+      ]);
+      if (cancelled) return;
+      const maxSeq = (periodRes.data ?? []).reduce((m: number, r: any) => Math.max(m, Number(r.sequence_number ?? 0)), 0);
+      const taken = new Set((allRes.data ?? []).map((r: any) => r.invoice_number));
+      let seq = maxSeq + 1;
+      let num = "";
+      for (let i = 0; i <= 1000; i++) {
+        num = fmt
+          .replace(/\{YYYY\}/g, yyyy)
+          .replace(/\{YY\}/g, yyyy.slice(2))
+          .replace(/\{MM\}/g, mm)
+          .replace(/\{N{2,4}\}/g, String(seq).padStart(pad, "0"));
+        if (!taken.has(num)) break;
+        seq += 1;
+      }
+      setPreview(num);
+    })();
+
+    return () => { cancelled = true; };
+  }, [companyId, format]);
+
+  return (
+    <p className="mt-2 text-xs text-muted-foreground">
+      Ďalšie číslo:{" "}
+      <span className="font-mono font-semibold tabular-nums text-foreground">{preview ?? "…"}</span>
+    </p>
   );
 }
