@@ -518,11 +518,9 @@ function InvoiceDetail() {
                     <CheckCircle2 className="mr-2 h-4 w-4" /> Označiť ako uhradenú
                   </DropdownMenuItem>
                 )}
-                {inv.pdf_url && (
-                  <DropdownMenuItem onClick={handleGenerate} disabled={pdfBusy}>
-                    <RefreshCw className="mr-2 h-4 w-4" /> Pregenerovať PDF
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={handleGenerate} disabled={pdfBusy}>
+                  <RefreshCw className="mr-2 h-4 w-4" /> Pregenerovať PDF
+                </DropdownMenuItem>
                 {inv.status !== "cancelled" && (
                   <DropdownMenuItem onClick={() => setStatus("cancelled")} className="text-destructive focus:text-destructive">
                     <Ban className="mr-2 h-4 w-4" /> Stornovať
