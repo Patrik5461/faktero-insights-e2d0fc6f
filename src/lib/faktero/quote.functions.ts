@@ -25,16 +25,16 @@ export const convertQuoteToInvoice = createServerFn({ method: "POST" })
       .from("quote_items").select("*").eq("quote_id", quote.id).order("position");
     if (itErr) throw new Error(itErr.message);
 
-    const { nextInvoiceNumber } = await import("./invoice-numbering.server");
-    const invoice_number = await nextInvoiceNumber(quote.company_id);
     const today = new Date().toISOString().slice(0, 10);
+    const { nextInvoiceNumberDetailed } = await import("./invoice-numbering.server");
+    const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(quote.company_id, today);
     const due = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
     const variable_symbol = invoice_number.replace(/\D/g, "");
 
     const { data: inv, error: insErr } = await supabase.from("invoices").insert({
       company_id: quote.company_id,
       customer_id: quote.customer_id ?? null,
-      invoice_number, variable_symbol,
+      invoice_number, sequence_number, variable_symbol,
       issue_date: today, due_date: due,
       currency: quote.currency, payment_method: "bank_transfer",
       customer_name: quote.customer_name, customer_ico: quote.customer_ico,

@@ -51,7 +51,7 @@ export const Route = createFileRoute("/api/v1/invoices")({
       },
       POST: async ({ request }) => {
         const { handleApi, ok, err } = await import("@/lib/faktero/api-auth.server");
-        const { nextInvoiceNumber, computeInvoiceTotals } = await import("@/lib/faktero/invoice-numbering.server");
+        const { nextInvoiceNumberDetailed, computeInvoiceTotals } = await import("@/lib/faktero/invoice-numbering.server");
         const { triggerEvent, invoicePayload } = await import("@/lib/faktero/webhook-trigger.server");
         return handleApi(request, async (ctx) => {
           const parsed = InvoiceInput.safeParse(ctx.requestBody);
@@ -77,16 +77,16 @@ export const Route = createFileRoute("/api/v1/invoices")({
           }
 
           const totals = computeInvoiceTotals(d.items.map((i) => ({ quantity: i.quantity, unit_price: i.unit_price, vat_rate: i.vat_rate })));
-          const invoice_number = await nextInvoiceNumber(ctx.company_id);
           const today = new Date().toISOString().slice(0, 10);
           const issue_date = d.issue_date ?? today;
+          const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(ctx.company_id, issue_date);
           const due_date = d.due_date ?? new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
           const variable_symbol = d.variable_symbol ?? invoice_number.replace(/\D/g, "");
 
           const { data: created, error: insErr } = await ctx.supabase.from("invoices").insert({
             company_id: ctx.company_id,
             customer_id: d.customer_id ?? null,
-            invoice_number, variable_symbol,
+            invoice_number, sequence_number, variable_symbol,
             issue_date, delivery_date: d.delivery_date ?? null, due_date,
             currency: d.currency ?? "EUR", payment_method: d.payment_method ?? "bank_transfer",
             customer_name: cust.name, customer_ico: cust.ico ?? null, customer_dic: cust.dic ?? null,
