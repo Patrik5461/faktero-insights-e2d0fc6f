@@ -31,6 +31,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { createInvoicePaymentLink, syncInvoicePayment } from "@/lib/faktero/payments.functions";
+import { paymentMethodLabel } from "@/lib/faktero/payment-method";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 import { sendReminderFn, previewReminderFn } from "@/lib/faktero/reminders.functions";
 
@@ -685,16 +686,31 @@ function InvoiceDetail() {
                 <Row label="Bez DPH" value={`${Number(inv.subtotal).toFixed(2)} ${inv.currency}`} />
                 <Row label="DPH" value={`${Number(inv.vat_total).toFixed(2)} ${inv.currency}`} />
               </div>
-              <div className="mt-3 border-t border-border pt-3 text-lg font-semibold">
-                {Number(inv.total).toFixed(2)} {inv.currency}
+              <div className="mt-3 border-t border-border pt-3">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {inv.status === "paid" ? "Uhradené" : "Spolu k úhrade"}
+                </div>
+                <div className="text-lg font-semibold tabular-nums">
+                  {Number(inv.total).toFixed(2)} {inv.currency}
+                </div>
               </div>
             </div>
-            <div className="rounded-xl border border-border bg-card p-5 text-sm">
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Platba</div>
-              <div className="mt-2">IBAN: <span className="font-mono">{company?.iban ?? "—"}</span></div>
-              <div>Variabilný symbol: <span className="font-mono">{inv.variable_symbol}</span></div>
-              <div>Splatnosť: {inv.due_date}</div>
-            </div>
+            {inv.status === "paid" ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900">
+                <div className="text-xs uppercase tracking-wide text-emerald-700">Uhradené</div>
+                <div className="mt-2">Dátum úhrady: {inv.paid_at ? String(inv.paid_at).slice(0, 10) : "—"}</div>
+                <div>Forma úhrady: {paymentMethodLabel(inv.payment_method)}</div>
+                <div className="mt-2 text-xs text-emerald-700">Platobné údaje sa nezobrazujú — faktúra je zaplatená.</div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border bg-card p-5 text-sm">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Platba</div>
+                <div className="mt-2">IBAN: <span className="font-mono">{company?.iban ?? "—"}</span></div>
+                <div>Variabilný symbol: <span className="font-mono">{inv.variable_symbol}</span></div>
+                <div>Splatnosť: {inv.due_date}</div>
+                <div>Forma úhrady: {paymentMethodLabel(inv.payment_method)}</div>
+              </div>
+            )}
             {inv.type === "proforma" && (
               <div className="rounded-xl border border-border bg-card p-5 text-sm">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Zálohová faktúra</div>
