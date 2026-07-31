@@ -2340,6 +2340,7 @@ export type Database = {
           reverse_charge_type: string | null
           rounding_mode: string | null
           sent_at: string | null
+          sequence_number: number | null
           specific_symbol: string | null
           status: Database["public"]["Enums"]["invoice_status"]
           subtotal: number
@@ -2395,6 +2396,7 @@ export type Database = {
           reverse_charge_type?: string | null
           rounding_mode?: string | null
           sent_at?: string | null
+          sequence_number?: number | null
           specific_symbol?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
@@ -2450,6 +2452,7 @@ export type Database = {
           reverse_charge_type?: string | null
           rounding_mode?: string | null
           sent_at?: string | null
+          sequence_number?: number | null
           specific_symbol?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
@@ -4795,6 +4798,10 @@ export type Database = {
       faktero_can_write: {
         Args: { _company_id: string; _kind: string }
         Returns: boolean
+      }
+      faktero_next_invoice_number: {
+        Args: { _company_id: string; _issue_date?: string }
+        Returns: Json
       }
       faktero_process_trial_expiry: { Args: never; Returns: number }
       faktero_recurring_cron_status: { Args: never; Returns: Json }
