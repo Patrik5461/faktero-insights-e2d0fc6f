@@ -63,28 +63,9 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
     }
   } catch { /* ignore */ }
 
-  // Ensure PDF exists
-  let pdfPath = invoice.pdf_url as string | null;
-  if (!pdfPath) {
-    const [{ data: items }] = await Promise.all([
-      supabaseAdmin.from("invoice_items").select("*").eq("invoice_id", invoice.id).order("position"),
-    ]);
-    let logoBytes: Uint8Array | null = null; let logoMime: string | null = null;
-    if (company?.logo_url) {
-      try {
-        const { data: blob } = await supabaseAdmin.storage.from("company-logos").download(company.logo_url);
-        if (blob) { logoBytes = new Uint8Array(await blob.arrayBuffer()); logoMime = blob.type; }
-      } catch {}
-    }
-    const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
-    const bytes = await generateInvoicePdfBytes({ company, invoice, items: items ?? [], logoBytes, logoMime, paymentLinkUrl });
-    pdfPath = `${invoice.company_id}/${invoice.id}.pdf`;
-    const { error: upErr } = await supabaseAdmin.storage.from("invoice-pdfs").upload(pdfPath, bytes, {
-      contentType: "application/pdf", upsert: true,
-    });
-    if (upErr) throw new Error(upErr.message);
-    await supabaseAdmin.from("invoices").update({ pdf_url: pdfPath }).eq("id", invoice.id);
-  }
+  // Ensure a fresh PDF exists (regenerates when the cached copy is stale)
+  const { ensureInvoicePdf } = await import("./invoice-pdf.server");
+  const { path: pdfPath } = await ensureInvoicePdf(invoice.id);
 
   const { data: pdfBlob, error: dlErr } = await supabaseAdmin.storage.from("invoice-pdfs").download(pdfPath);
   if (dlErr || !pdfBlob) throw new Error(dlErr?.message ?? "PDF sa nepodarilo načítať.");

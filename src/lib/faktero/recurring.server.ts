@@ -82,27 +82,8 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
 
   // Generate PDF (best effort, non-fatal)
   try {
-    const [{ data: company }, { data: invItems }] = await Promise.all([
-      supabaseAdmin.from("companies").select("*").eq("id", rec.company_id).single(),
-      supabaseAdmin.from("invoice_items").select("*").eq("invoice_id", inv.id).order("position"),
-    ]);
-    if (company) {
-      let logoBytes: Uint8Array | null = null;
-      let logoMime: string | null = null;
-      if (company.logo_url) {
-        try {
-          const { data: blob } = await supabaseAdmin.storage.from("company-logos").download(company.logo_url);
-          if (blob) { logoBytes = new Uint8Array(await blob.arrayBuffer()); logoMime = blob.type; }
-        } catch {}
-      }
-      const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
-      const bytes = await generateInvoicePdfBytes({ company, invoice: inv, items: invItems ?? [], logoBytes, logoMime });
-      const path = `${inv.company_id}/${inv.id}.pdf`;
-      await supabaseAdmin.storage.from("invoice-pdfs").upload(path, bytes, {
-        contentType: "application/pdf", upsert: true,
-      });
-      await supabaseAdmin.from("invoices").update({ pdf_url: path }).eq("id", inv.id);
-    }
+    const { ensureInvoicePdf } = await import("./invoice-pdf.server");
+    await ensureInvoicePdf(inv.id, { force: true });
   } catch (e) {
     console.error("[recurring] pdf error", e);
   }
