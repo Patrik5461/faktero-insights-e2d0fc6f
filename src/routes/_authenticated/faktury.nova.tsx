@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -360,9 +361,9 @@ function NewInvoice() {
                 <label className="text-xs font-medium text-muted-foreground">Spôsob platby</label>
                 <select value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="bank_transfer">Bankový prevod</option>
-                  <option value="cash">Hotovosť</option>
-                  <option value="card">Karta</option>
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
                 </select>
               </div>
               <div>

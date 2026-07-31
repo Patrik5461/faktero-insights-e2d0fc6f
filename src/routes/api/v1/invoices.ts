@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { normalizePaymentMethod } from "@/lib/faktero/payment-method";
 
 const Item = z.object({
   name: z.string().min(1).max(255),
@@ -88,7 +89,7 @@ export const Route = createFileRoute("/api/v1/invoices")({
             customer_id: d.customer_id ?? null,
             invoice_number, sequence_number, variable_symbol,
             issue_date, delivery_date: d.delivery_date ?? null, due_date,
-            currency: d.currency ?? "EUR", payment_method: d.payment_method ?? "bank_transfer",
+            currency: d.currency ?? "EUR", payment_method: normalizePaymentMethod(d.payment_method),
             customer_name: cust.name, customer_ico: cust.ico ?? null, customer_dic: cust.dic ?? null,
             customer_ic_dph: cust.ic_dph ?? null, customer_street: cust.street ?? null,
             customer_city: cust.city ?? null, customer_zip: cust.zip ?? null,

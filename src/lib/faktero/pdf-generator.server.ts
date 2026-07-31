@@ -3,6 +3,7 @@ import fontkit from "@pdf-lib/fontkit";
 import QRCode from "qrcode";
 import { RobotoRegularBase64 } from "./fonts/Roboto-Regular";
 import { RobotoBoldBase64 } from "./fonts/Roboto-Bold";
+import { paymentMethodLabel } from "./payment-method";
 
 function b64ToBytes(b64: string): Uint8Array {
   const bin = typeof atob === "function" ? atob(b64) : Buffer.from(b64, "base64").toString("binary");
@@ -132,13 +133,24 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   y -= Math.max(partyH, partyH2) + 22;
 
   // ── Meta strip (compact, divided) ──
-  const meta: [string, string][] = input.metaOverride ?? [
-    ["Dátum vystavenia", invoice.issue_date ?? "—"],
-    ["Dátum dodania", invoice.delivery_date ?? "—"],
-    ["Dátum splatnosti", invoice.due_date ?? "—"],
-    ["Variabilný symbol", invoice.variable_symbol ?? "—"],
-    ["Forma úhrady", invoice.payment_method === "bank_transfer" ? "Bankový prevod" : (invoice.payment_method ?? "—")],
-  ];
+  // A paid invoice must not look like a payment request (double-payment risk):
+  // due date / variable symbol are replaced by the settlement details.
+  const isPaid = invoice.status === "paid";
+  const paidDate = invoice.paid_at ? String(invoice.paid_at).slice(0, 10) : null;
+  const meta: [string, string][] = input.metaOverride ?? (isPaid
+    ? [
+        ["Dátum vystavenia", invoice.issue_date ?? "—"],
+        ["Dátum dodania", invoice.delivery_date ?? "—"],
+        ["Dátum úhrady", paidDate ?? "—"],
+        ["Forma úhrady", paymentMethodLabel(invoice.payment_method)],
+      ]
+    : [
+        ["Dátum vystavenia", invoice.issue_date ?? "—"],
+        ["Dátum dodania", invoice.delivery_date ?? "—"],
+        ["Dátum splatnosti", invoice.due_date ?? "—"],
+        ["Variabilný symbol", invoice.variable_symbol ?? "—"],
+        ["Forma úhrady", paymentMethodLabel(invoice.payment_method)],
+      ]);
   const metaBoxH = 46;
   page.drawRectangle({ x: margin, y: y - metaBoxH, width: innerW, height: metaBoxH, color: surfaceAlt, borderColor: hairline, borderWidth: 0.5 });
   const metaW = innerW / meta.length;
@@ -270,13 +282,17 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   const heroH = 56;
   cur.drawRectangle({ x: totalsX, y: ty - heroH, width: totalsBlockW, height: heroH, color: primary });
   cur.drawRectangle({ x: totalsX, y: ty - heroH, width: 4, height: heroH, color: primaryDark });
-  cur.drawText("SPOLU K ÚHRADE", { x: totalsX + 16, y: ty - 22, size: 9, font: bold, color: rgb(0.85, 0.95, 0.90) });
+  cur.drawText(isPaid ? "UHRADENÉ" : "SPOLU K ÚHRADE", { x: totalsX + 16, y: ty - 22, size: 9, font: bold, color: rgb(0.85, 0.95, 0.90) });
   drawAligned(cur, bold, fmt(Number(invoice.total), invoice.currency), totalsX + totalsBlockW - 16, ty - 42, 16, white, "right");
+  if (isPaid) {
+    const paidNote = `Uhradené ${paidDate ?? "—"} · ${paymentMethodLabel(invoice.payment_method)}`;
+    cur.drawText(san(paidNote), { x: totalsX, y: ty - heroH - 14, size: 9, font: bold, color: primaryDark });
+  }
 
-  y = ty - heroH - 24;
+  y = ty - heroH - (isPaid ? 38 : 24);
 
   // ── Payment card (full width, two columns: data | QR) ──
-  if (!input.hidePayment) {
+  if (!input.hidePayment && !isPaid) {
     const payH = 140;
     ensureSpace(payH + 12);
     const payX = margin;

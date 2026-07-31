@@ -52,7 +52,7 @@ function QuickInvoicePage() {
       currency: "EUR",
       invoice_number: `RYCHLA-${Date.now().toString().slice(-6)}`,
       constant_symbol: "",
-      payment_method: "transfer",
+      payment_method: "bank_transfer",
     }).select().single();
     if (error || !inv) { setSaving(false); return toast.error(error?.message ?? "Chyba"); }
     await supabase.from("invoice_items").insert({

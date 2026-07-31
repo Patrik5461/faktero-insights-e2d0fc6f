@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { normalizePaymentMethod } from "@/lib/faktero/payment-method";
 
 const Patch = z.object({
   notes: z.string().max(5000).nullable().optional(),
@@ -25,7 +26,9 @@ export const Route = createFileRoute("/api/v1/invoices/$id")({
         return handleApi(request, async (ctx) => {
           const parsed = Patch.safeParse(ctx.requestBody);
           if (!parsed.success) return err("validation_error", "Neplatné dáta.", 400, parsed.error.flatten());
-          const { data, error } = await ctx.supabase.from("invoices").update(parsed.data).eq("id", params.id).eq("company_id", ctx.company_id).select().maybeSingle();
+          const patch = { ...parsed.data };
+          if (patch.payment_method !== undefined) patch.payment_method = normalizePaymentMethod(patch.payment_method);
+          const { data, error } = await ctx.supabase.from("invoices").update(patch).eq("id", params.id).eq("company_id", ctx.company_id).select().maybeSingle();
           if (error) return err("db_error", error.message, 500);
           if (!data) return err("not_found", "Faktúra nenájdená.", 404);
           return ok(data);
