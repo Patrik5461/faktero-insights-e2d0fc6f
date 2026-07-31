@@ -20,7 +20,7 @@ export async function nextInvoiceNumberDetailed(
 ): Promise<NextInvoiceNumber> {
   const { data, error } = await supabaseAdmin.rpc("faktero_next_invoice_number", {
     _company_id: company_id,
-    _issue_date: issue_date ?? null,
+    ...(issue_date ? { _issue_date: issue_date } : {}),
   });
   if (error) throw new Error(error.message);
   const row = data as unknown as NextInvoiceNumber | null;
