@@ -70,11 +70,17 @@ function CompanyPage() {
           <In label="Mena" value={c.default_currency ?? "EUR"} onChange={f("default_currency")} />
           <div>
             <In label="Formát čísla faktúry" value={c.invoice_number_format ?? ""} onChange={f("invoice_number_format")} />
+            <NumberingPreview companyId={c.id} format={c.invoice_number_format ?? ""} />
             <p className="mt-1 text-xs text-muted-foreground">
               Tokeny: {"{YYYY}"} rok, {"{YY}"} rok 2-cif., {"{MM}"} mesiac, {"{NN}"}–{"{NNNN}"} poradie (počet N = počet číslic).
               Ak formát obsahuje {"{MM}"}, poradie sa resetuje mesačne, inak ročne.
             </p>
+            <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+              Pozor: zmena šablóny uprostred roka rozdelí číselný rad — nové faktúry budú číslované podľa novej šablóny,
+              staré zostanú nezmenené. Ak by nové číslo kolidovalo s existujúcim, poradie sa automaticky posunie na najbližšie voľné.
+            </p>
           </div>
+
           <label className="block">
             <span className="text-sm font-medium">Preferovaný účtovný systém</span>
             <select
