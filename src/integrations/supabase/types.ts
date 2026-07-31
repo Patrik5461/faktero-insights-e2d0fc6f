@@ -2334,6 +2334,7 @@ export type Database = {
           original_external_id: string | null
           paid_at: string | null
           payment_method: string | null
+          pdf_source_hash: string | null
           pdf_url: string | null
           reminders_enabled: boolean
           reverse_charge: boolean
@@ -2390,6 +2391,7 @@ export type Database = {
           original_external_id?: string | null
           paid_at?: string | null
           payment_method?: string | null
+          pdf_source_hash?: string | null
           pdf_url?: string | null
           reminders_enabled?: boolean
           reverse_charge?: boolean
@@ -2446,6 +2448,7 @@ export type Database = {
           original_external_id?: string | null
           paid_at?: string | null
           payment_method?: string | null
+          pdf_source_hash?: string | null
           pdf_url?: string | null
           reminders_enabled?: boolean
           reverse_charge?: boolean
@@ -4798,6 +4801,10 @@ export type Database = {
       faktero_can_write: {
         Args: { _company_id: string; _kind: string }
         Returns: boolean
+      }
+      faktero_invoice_pdf_hash: {
+        Args: { _invoice_id: string }
+        Returns: string
       }
       faktero_next_invoice_number: {
         Args: { _company_id: string; _issue_date?: string }
