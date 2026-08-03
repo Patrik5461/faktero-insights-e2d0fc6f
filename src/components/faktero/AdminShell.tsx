@@ -1,3 +1,4 @@
+import { Logo } from "@/components/faktero/Logo";
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
