@@ -1,4 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Logo } from "@/components/faktero/Logo";
 import {
   LayoutDashboard, FileText, Users, Package, FileSpreadsheet, FileCheck2,
   KeyRound, Settings, ChevronDown, Plus, Search, HelpCircle, LogOut,
@@ -316,9 +317,9 @@ export function AppShell({
           </Sheet>
 
           {/* Logo */}
-          <Link to={homePath as any} className="flex shrink-0 items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/70 font-bold text-primary-foreground shadow-sm">F</span>
-            <span className="hidden text-base font-semibold tracking-tight sm:inline">Faktero</span>
+          <Link to={homePath as any} className="flex shrink-0 items-center" aria-label="Faktero">
+            <Logo variant="icon" className="sm:hidden" />
+            <Logo className="hidden h-8 sm:block" />
           </Link>
 
           {/* Divider */}
