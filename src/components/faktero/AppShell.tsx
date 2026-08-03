@@ -1,4 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Logo } from "@/components/faktero/Logo";
 import {
   LayoutDashboard, FileText, Users, Package, FileSpreadsheet, FileCheck2,
   KeyRound, Settings, ChevronDown, Plus, Search, HelpCircle, LogOut,
