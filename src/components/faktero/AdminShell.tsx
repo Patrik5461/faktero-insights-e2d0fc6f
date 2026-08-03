@@ -46,7 +46,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       {/* Sidebar — desktop */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground lg:flex">
         <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/70 font-bold text-primary-foreground">F</span>
+          <Logo variant="icon" />
           <div className="min-w-0">
             <div className="truncate text-sm font-semibold leading-tight">Faktero</div>
             <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-primary">
