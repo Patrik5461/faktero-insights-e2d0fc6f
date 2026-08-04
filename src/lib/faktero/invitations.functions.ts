@@ -1,5 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+// randomToken() vydáva 48 hex znakov. Rozsah je zámerne voľnejší, aby prípadné
+// staršie tokeny neprestali fungovať, ale odfiltruje vstupy, ktoré tokenom ani
+// nemôžu byť — tie sa k DB dotazu vôbec nedostanú.
+const tokenSchema = z.object({
+  token: z.string().regex(/^[a-f0-9]{32,128}$/, "Neplatný formát tokenu"),
+});
 
 function randomToken(): string {
   const bytes = new Uint8Array(24);
@@ -72,7 +80,7 @@ export const createInvitationFn = createServerFn({ method: "POST" })
   });
 
 export const getInvitationByTokenFn = createServerFn({ method: "POST" })
-  .inputValidator((d: { token: string }) => d)
+  .inputValidator((d: unknown) => tokenSchema.parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: inv } = await supabaseAdmin
@@ -94,7 +102,7 @@ export const getInvitationByTokenFn = createServerFn({ method: "POST" })
 
 export const acceptInvitationFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { token: string }) => d)
+  .inputValidator((d: unknown) => tokenSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: inv } = await supabaseAdmin

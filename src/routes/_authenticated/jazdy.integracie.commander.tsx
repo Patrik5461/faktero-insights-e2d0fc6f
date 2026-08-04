@@ -154,7 +154,8 @@ function CommanderPage() {
     try {
       const r: any = await _syncV({ data: { companyId: cid } });
       if (r.needs_reauth) setNeedsReauth(true);
-      r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba");
+      if (r.ok) toast.success(r.message);
+      else toast.error(r.error ?? "Chyba");
       await load();
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba");
@@ -185,7 +186,8 @@ function CommanderPage() {
         data: { companyId: cid, preset, from: from || undefined, to: to || undefined },
       });
       if (r.needs_reauth) setNeedsReauth(true);
-      r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba");
+      if (r.ok) toast.success(r.message);
+      else toast.error(r.error ?? "Chyba");
       await load();
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba");
@@ -212,7 +214,8 @@ function CommanderPage() {
         data: { companyId: cid, preset, from: from || undefined, to: to || undefined, force: true },
       });
       if (r.needs_reauth) setNeedsReauth(true);
-      r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba");
+      if (r.ok) toast.success(r.message);
+      else toast.error(r.error ?? "Chyba");
       await load();
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba");

@@ -10,7 +10,8 @@ export const Route = createFileRoute("/api/public/hooks/push-overdue")({
     handlers: {
       POST: async ({ request }) => {
         const token = request.headers.get("x-cron-token");
-        if (!token || token !== process.env.FAKTERO_CRON_TOKEN) {
+        const { isValidCronToken } = await import("@/lib/faktero/cron-auth.server");
+        if (!isValidCronToken(token, process.env.FAKTERO_CRON_TOKEN)) {
           return new Response("Unauthorized", { status: 401 });
         }
 

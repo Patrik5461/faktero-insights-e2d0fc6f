@@ -100,7 +100,8 @@ function TeslaPage() {
     setBusy("syncV");
     try {
       const r = await _syncV({ data: { companyId: cid } });
-      r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba");
+      if (r.ok) toast.success(r.message);
+      else toast.error(r.error ?? "Chyba");
       await load();
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba");
@@ -124,7 +125,8 @@ function TeslaPage() {
     setBusy("snap");
     try {
       const r = await _syncSnap({ data: { companyId: cid } });
-      r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba");
+      if (r.ok) toast.success(r.message);
+      else toast.error(r.error ?? "Chyba");
       await load();
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba");

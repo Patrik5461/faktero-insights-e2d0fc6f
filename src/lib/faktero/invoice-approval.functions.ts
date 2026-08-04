@@ -33,9 +33,11 @@ export const requestInvoiceApproval = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { sendApprovalRequestEmail } = await import("./invoice-approval.server");
 
-    const token = (
-      globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
-    ).replace(/-/g, "");
+    // Token je jediná ochrana verejnej stránky /schvalit/$token, takže musí byť
+    // kryptograficky náhodný. Pôvodný fallback na Date.now() + Math.random() bol
+    // uhádnuteľný — radšej zlyhať, než vydať slabý token.
+    const { randomBytes } = await import("crypto");
+    const token = randomBytes(32).toString("hex");
     const nowIso = new Date().toISOString();
 
     const { error: upErr } = await supabaseAdmin

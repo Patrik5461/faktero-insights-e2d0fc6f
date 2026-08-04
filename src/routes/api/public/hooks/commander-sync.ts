@@ -26,7 +26,8 @@ export const Route = createFileRoute("/api/public/hooks/commander-sync")({
       POST: async ({ request }) => {
         const provided = request.headers.get("x-faktero-cron-secret");
         const expected = process.env.COMMANDER_SYNC_SECRET;
-        if (!expected || !provided || provided !== expected) {
+        const { isValidCronToken } = await import("@/lib/faktero/cron-auth.server");
+        if (!isValidCronToken(provided, expected)) {
           return new Response(JSON.stringify({ error: "unauthorized" }), {
             status: 401,
             headers: { "content-type": "application/json" },

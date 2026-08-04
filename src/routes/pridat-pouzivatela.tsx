@@ -29,13 +29,21 @@ function AcceptInvitationPage() {
       return;
     }
     (async () => {
-      const [{ data: userData }, res] = await Promise.all([
-        supabase.auth.getUser(),
-        getInv({ data: { token } }),
-      ]);
-      setUserEmail(userData.user?.email ?? null);
-      setInv(res);
-      setLoading(false);
+      try {
+        const [{ data: userData }, res] = await Promise.all([
+          supabase.auth.getUser(),
+          getInv({ data: { token } }),
+        ]);
+        setUserEmail(userData.user?.email ?? null);
+        setInv(res);
+      } catch {
+        // Token v zlom formáte neprejde validáciou na serveri. Z pohľadu
+        // používateľa je to to isté ako neexistujúca pozvánka — inak by
+        // stránka zostala navždy v stave „načítavam".
+        setInv({ valid: false });
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [token]);
 
