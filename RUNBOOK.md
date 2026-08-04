@@ -55,8 +55,23 @@ Deploy beží inline v `server.js` (žiadny `deploy.sh`):
 6. `pm2 startOrRestart ~/ecosystem.config.cjs --update-env`
 
 **Nastavenie v GitHube:** Settings → Webhooks → Payload URL
-`https://www.faktero.sk/webhook`, Content type `application/json`, Secret =
-obsah `~/webhook/.webhook-secret`.
+`https://www.faktero.sk/webhook`, Secret = obsah `~/webhook/.webhook-secret`.
+
+Content type môže byť `application/json` aj `application/x-www-form-urlencoded`
+— server zvládne oba (pri form variante je telo `payload=<json>`). Koncová
+lomka v Payload URL tiež nevadí, `/webhook` aj `/webhook/` fungujú rovnako.
+
+Ak deploy po pushi nebeží, pozri v GitHube Webhooks → Recent Deliveries
+odpoveď servera:
+
+| Odpoveď                             | Príčina                                               |
+| ----------------------------------- | ----------------------------------------------------- |
+| `401 invalid signature`             | secret v GitHube nesedí s `~/webhook/.webhook-secret` |
+| `503 webhook secret not configured` | súbor so secretom chýba alebo je nečitateľný          |
+| `404 not found`                     | request nie je POST, alebo nesedí cesta               |
+| `200 ignored ref: ...`              | push šiel na inú vetvu než `main`                     |
+| `200 ignored event: ...`            | v GitHube je zapnutý iný event než `push`             |
+| `202 deploy accepted`               | v poriadku, deploy beží — sleduj `pm2 logs webhook`   |
 
 Manuálny deploy (keď secret ešte nie je nastavený):
 
