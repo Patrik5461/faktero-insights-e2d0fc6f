@@ -80,9 +80,11 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   const margin = 44;
   const innerW = width - margin * 2;
 
-  // Palette — premium emerald accent, neutral surfaces
-  const primary = rgb(0.071, 0.451, 0.318); // emerald 700
-  const primaryDark = rgb(0.043, 0.337, 0.243);
+  // Palette — accent color is configurable per company (Vzhľad faktúry)
+  const accent = hexToRgb((company as any).invoice_accent_color) ?? rgb(0.071, 0.451, 0.318);
+  const primary = accent;
+  const primaryDark = darken(accent, 0.25);
+
   const ink = rgb(0.067, 0.094, 0.118);
   const sub = rgb(0.31, 0.36, 0.42);
   const muted = rgb(0.49, 0.54, 0.6);
