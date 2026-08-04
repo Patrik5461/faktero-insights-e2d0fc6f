@@ -87,23 +87,14 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "produkty",
-    label: "Produkty",
-    icon: Package,
-    match: ["/produkty"],
-    children: [
-      { to: "/produkty", label: "Produkty a služby" },
-      { to: "/produkty?new=1", label: "Nový produkt" },
-    ],
-  },
-  {
     key: "sklad",
     label: "Sklad",
     icon: Warehouse,
-    match: ["/sklad"],
+    match: ["/sklad", "/produkty"],
     children: [
       { to: "/sklad", label: "Prehľad" },
-      { to: "/sklad/produkty", label: "Položky" },
+      { to: "/produkty", label: "Produkty a služby" },
+      { to: "/sklad/produkty", label: "Skladové položky" },
       { to: "/sklad/pohyby", label: "Pohyby" },
       { to: "/sklad/inventura", label: "Inventúra" },
     ],
