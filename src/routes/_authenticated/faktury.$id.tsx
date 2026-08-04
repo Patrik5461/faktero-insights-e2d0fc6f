@@ -8,7 +8,25 @@ import { useServerFn } from "@tanstack/react-start";
 import { generateInvoicePdf, getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.functions";
 import { sendInvoiceEmailFn, triggerEventFn } from "@/lib/faktero/email.functions";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
-import { Download, FileText, RefreshCw, Mail, FileCode2, Trash2, Pencil, FileCheck2, CreditCard, Copy, RotateCw, Send, CheckCircle2, XCircle, Clock as ClockIcon, MoreHorizontal, Ban } from "lucide-react";
+import {
+  Download,
+  FileText,
+  RefreshCw,
+  Mail,
+  FileCode2,
+  Trash2,
+  Pencil,
+  FileCheck2,
+  CreditCard,
+  Copy,
+  RotateCw,
+  Send,
+  CheckCircle2,
+  XCircle,
+  Clock as ClockIcon,
+  MoreHorizontal,
+  Ban,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -35,7 +53,6 @@ import { paymentMethodLabel } from "@/lib/faktero/payment-method";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 import { sendReminderFn, previewReminderFn } from "@/lib/faktero/reminders.functions";
 
-
 export const Route = createFileRoute("/_authenticated/faktury/$id")({
   head: () => ({ meta: [{ title: "Detail faktúry — Faktero" }] }),
   component: InvoiceDetail,
@@ -54,7 +71,12 @@ function InvoiceDetail() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [reminderBusy, setReminderBusy] = useState(false);
-  const [reminderForm, setReminderForm] = useState({ reminderNumber: 1 as 1 | 2 | 3, recipient_email: "", subject: "", message: "" });
+  const [reminderForm, setReminderForm] = useState({
+    reminderNumber: 1 as 1 | 2 | 3,
+    recipient_email: "",
+    subject: "",
+    message: "",
+  });
   const [reminders, setReminders] = useState<any[]>([]);
   const sendReminder = useServerFn(sendReminderFn);
   const previewReminder = useServerFn(previewReminderFn);
@@ -107,15 +129,22 @@ function InvoiceDetail() {
       const url = `${window.location.origin}/pay/${r.token}`;
       setPayLink(url);
       setHasPayLink(true);
-      try { await navigator.clipboard.writeText(url); } catch { /* ignore */ }
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        /* ignore */
+      }
       toast.success(
         r.reused
           ? "Platobný odkaz skopírovaný."
           : "Platobný odkaz bol vytvorený. PDF bude pri ďalšom stiahnutí pregenerované.",
       );
       load();
-    } catch (e: any) { toast.error(friendlyError(e) ?? e.message); }
-    finally { setPayBusy(false); }
+    } catch (e: any) {
+      toast.error(friendlyError(e) ?? e.message);
+    } finally {
+      setPayBusy(false);
+    }
   }
 
   async function handleSyncPayment() {
@@ -126,8 +155,11 @@ function InvoiceDetail() {
       if (r.paid) toast.success("Platba prebehla. Faktúra označená ako uhradená.");
       else toast.success(`Stav platby: ${r.state || "neznámy"}`);
       load();
-    } catch (e: any) { toast.error(e?.message ?? "Synchronizácia zlyhala."); }
-    finally { setSyncBusy(false); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Synchronizácia zlyhala.");
+    } finally {
+      setSyncBusy(false);
+    }
   }
   const genXml = useServerFn(generateEfakturaXmlFn);
   const getXml = useServerFn(getEfakturaXmlUrlFn);
@@ -179,13 +211,20 @@ function InvoiceDetail() {
       setItems(its ?? []);
       setCompany(comp);
       // Check if a payment link exists for this invoice (drives the "Synchronizovať platbu" button)
-      const { data: anyLink } = await supabase.from("invoice_payment_links")
-        .select("id").eq("invoice_id", id).limit(1).maybeSingle();
+      const { data: anyLink } = await supabase
+        .from("invoice_payment_links")
+        .select("id")
+        .eq("invoice_id", id)
+        .limit(1)
+        .maybeSingle();
       setHasPayLink(!!anyLink);
       // Load stock impact (movements referencing this invoice)
-      const { data: mv } = await supabase.from("stock_movements")
+      const { data: mv } = await supabase
+        .from("stock_movements")
         .select("id, type, quantity, warehouse_id, stock_item_id, created_at, note")
-        .eq("reference_type", "invoice").eq("reference_id", id).order("created_at");
+        .eq("reference_type", "invoice")
+        .eq("reference_id", id)
+        .order("created_at");
       setStockMoves(mv ?? []);
       if (mv?.length) {
         const whIds = Array.from(new Set(mv.map((m: any) => m.warehouse_id)));
@@ -194,37 +233,58 @@ function InvoiceDetail() {
           supabase.from("warehouses").select("id, name").in("id", whIds),
           supabase.from("stock_items").select("id, sku").in("id", siIds),
         ]);
-        const wm: Record<string, string> = {}; (whs ?? []).forEach((w: any) => { wm[w.id] = w.name; });
-        const sm: Record<string, string> = {}; (sis ?? []).forEach((s: any) => { sm[s.id] = s.sku ?? s.id.slice(0, 6); });
-        setWarehouseNames(wm); setStockSkus(sm);
-      } else { setWarehouseNames({}); setStockSkus({}); }
+        const wm: Record<string, string> = {};
+        (whs ?? []).forEach((w: any) => {
+          wm[w.id] = w.name;
+        });
+        const sm: Record<string, string> = {};
+        (sis ?? []).forEach((s: any) => {
+          sm[s.id] = s.sku ?? s.id.slice(0, 6);
+        });
+        setWarehouseNames(wm);
+        setStockSkus(sm);
+      } else {
+        setWarehouseNames({});
+        setStockSkus({});
+      }
       // Advance linkage
       if (data.type === "proforma") {
-        const { data: consumer } = await supabase.from("invoices")
+        const { data: consumer } = await supabase
+          .from("invoices")
           .select("id, invoice_number, status, issue_date, total, currency, type")
-          .eq("advance_invoice_id", data.id).is("deleted_at", null)
-          .order("created_at", { ascending: false }).limit(1).maybeSingle();
+          .eq("advance_invoice_id", data.id)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
         setSettledIn(consumer ?? null);
         setAdvanceProforma(null);
       } else if (data.advance_invoice_id) {
-        const { data: pf } = await supabase.from("invoices")
+        const { data: pf } = await supabase
+          .from("invoices")
           .select("id, invoice_number, status, issue_date, total, currency, type")
-          .eq("id", data.advance_invoice_id).maybeSingle();
+          .eq("id", data.advance_invoice_id)
+          .maybeSingle();
         setAdvanceProforma(pf ?? null);
         setSettledIn(null);
       } else {
-        setSettledIn(null); setAdvanceProforma(null);
+        setSettledIn(null);
+        setAdvanceProforma(null);
       }
-      const { data: rems } = await supabase.from("invoice_reminders")
+      const { data: rems } = await supabase
+        .from("invoice_reminders")
         .select("id, reminder_number, sent_at, status, email_to, triggered_by")
-        .eq("invoice_id", id).order("sent_at", { ascending: false });
+        .eq("invoice_id", id)
+        .order("sent_at", { ascending: false });
       setReminders(rems ?? []);
     }
   }
 
   async function openReminder() {
     try {
-      const sentSet = new Set(reminders.filter((r) => r.status === "sent").map((r) => r.reminder_number));
+      const sentSet = new Set(
+        reminders.filter((r) => r.status === "sent").map((r) => r.reminder_number),
+      );
       let next: 1 | 2 | 3 = 1;
       if (sentSet.has(1)) next = 2;
       if (sentSet.has(2)) next = 3;
@@ -244,27 +304,34 @@ function InvoiceDetail() {
   async function submitReminder() {
     setReminderBusy(true);
     try {
-      await sendReminder({ data: {
-        invoiceId: id,
-        reminderNumber: reminderForm.reminderNumber,
-        recipient_email: reminderForm.recipient_email,
-        subject: reminderForm.subject,
-        message: reminderForm.message,
-      } });
+      await sendReminder({
+        data: {
+          invoiceId: id,
+          reminderNumber: reminderForm.reminderNumber,
+          recipient_email: reminderForm.recipient_email,
+          subject: reminderForm.subject,
+          message: reminderForm.message,
+        },
+      });
       toast.success("Upomienka odoslaná");
       setReminderOpen(false);
       load();
     } catch (e: any) {
       toast.error(e?.message ?? "Odoslanie upomienky zlyhalo");
-    } finally { setReminderBusy(false); }
+    } finally {
+      setReminderBusy(false);
+    }
   }
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => {
+    load();
+  }, [id]);
 
   async function handleDelete() {
     setDeleteBusy(true);
     try {
-      const { error } = await supabase.from("invoices")
+      const { error } = await supabase
+        .from("invoices")
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
@@ -280,7 +347,8 @@ function InvoiceDetail() {
 
   async function setStatus(status: string) {
     // Production-readiness checks
-    if (status === "paid" && inv?.status === "cancelled") return toast.error("Stornovanú faktúru nemožno označiť ako uhradenú.");
+    if (status === "paid" && inv?.status === "cancelled")
+      return toast.error("Stornovanú faktúru nemožno označiť ako uhradenú.");
     if (status === "cancelled" && inv?.status === "paid") {
       if (!confirm("Faktúra je uhradená. Naozaj ju chcete stornovať?")) return;
     }
@@ -292,12 +360,30 @@ function InvoiceDetail() {
     if (error) return toast.error(friendlyError(error, error.message));
     toast.success("Stav aktualizovaný");
     // Trigger webhook
-    const event = status === "paid" ? "invoice.paid" : status === "cancelled" ? "invoice.cancelled" : status === "sent" ? "invoice.sent" : null;
+    const event =
+      status === "paid"
+        ? "invoice.paid"
+        : status === "cancelled"
+          ? "invoice.cancelled"
+          : status === "sent"
+            ? "invoice.sent"
+            : null;
     if (event && inv?.company_id) {
       try {
-        await triggerEvt({ data: { companyId: inv.company_id, event: event as any, data: {
-          invoice_id: inv.id, invoice_number: inv.invoice_number, status, total: Number(inv.total), currency: inv.currency, external_id: inv.external_id ?? null,
-        } } });
+        await triggerEvt({
+          data: {
+            companyId: inv.company_id,
+            event: event as any,
+            data: {
+              invoice_id: inv.id,
+              invoice_number: inv.invoice_number,
+              status,
+              total: Number(inv.total),
+              currency: inv.currency,
+              external_id: inv.external_id ?? null,
+            },
+          },
+        });
       } catch {}
     }
     load();
@@ -385,16 +471,24 @@ function InvoiceDetail() {
     if (!inv?.company_id) return;
     setExportBusy(true);
     try {
-      const r = await exportFn({ data: { companyId: inv.company_id, invoiceIds: [inv.id], format: "pohoda_xml" } });
+      const r = await exportFn({
+        data: { companyId: inv.company_id, invoiceIds: [inv.id], format: "pohoda_xml" },
+      });
       const blob = new Blob([r.content], { type: "application/xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = r.fileName; document.body.appendChild(a); a.click();
-      document.body.removeChild(a); URL.revokeObjectURL(url);
+      a.href = url;
+      a.download = r.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       toast.success("Pohoda XML stiahnuté");
     } catch (e: any) {
       toast.error(e?.message ?? "Export zlyhal");
-    } finally { setExportBusy(false); }
+    } finally {
+      setExportBusy(false);
+    }
   }
 
   async function handleClone() {
@@ -405,7 +499,9 @@ function InvoiceDetail() {
       navigate({ to: "/faktury/$id/upravit", params: { id: r.id } });
     } catch (e: any) {
       toast.error(friendlyError(e, e?.message ?? "Klonovanie zlyhalo"));
-    } finally { setCloneBusy(false); }
+    } finally {
+      setCloneBusy(false);
+    }
   }
 
   if (!inv) return <PageBody>Načítavam…</PageBody>;
@@ -423,7 +519,10 @@ function InvoiceDetail() {
     }
     setEmailForm({
       recipient_email: inv.customer_email,
-      subject: (company?.email_default_subject ?? "Faktúra {invoice_number}").replaceAll("{invoice_number}", inv.invoice_number),
+      subject: (company?.email_default_subject ?? "Faktúra {invoice_number}").replaceAll(
+        "{invoice_number}",
+        inv.invoice_number,
+      ),
       message: (company?.email_default_message ?? "V prílohe posielame faktúru {invoice_number}.")
         .replaceAll("{invoice_number}", inv.invoice_number)
         .replaceAll("{due_date}", inv.due_date)
@@ -435,11 +534,22 @@ function InvoiceDetail() {
   async function submitEmail() {
     setEmailBusy(true);
     try {
-      await sendEmail({ data: { invoiceId: inv.id, recipient_email: emailForm.recipient_email, subject: emailForm.subject, message: emailForm.message } });
+      await sendEmail({
+        data: {
+          invoiceId: inv.id,
+          recipient_email: emailForm.recipient_email,
+          subject: emailForm.subject,
+          message: emailForm.message,
+        },
+      });
       toast.success("E-mail odoslaný");
-      setEmailOpen(false); load();
-    } catch (e: any) { toast.error(e?.message ?? "Odoslanie zlyhalo"); }
-    finally { setEmailBusy(false); }
+      setEmailOpen(false);
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Odoslanie zlyhalo");
+    } finally {
+      setEmailBusy(false);
+    }
   }
 
   return (
@@ -522,21 +632,27 @@ function InvoiceDetail() {
                   <RefreshCw className="mr-2 h-4 w-4" /> Pregenerovať PDF
                 </DropdownMenuItem>
                 {inv.status !== "cancelled" && (
-                  <DropdownMenuItem onClick={() => setStatus("cancelled")} className="text-destructive focus:text-destructive">
+                  <DropdownMenuItem
+                    onClick={() => setStatus("cancelled")}
+                    className="text-destructive focus:text-destructive"
+                  >
                     <Ban className="mr-2 h-4 w-4" /> Stornovať
                   </DropdownMenuItem>
                 )}
 
-                {(inv.status === "draft" || inv.status === "issued") && inv.approval_status !== "approved" && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Schvaľovanie</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={handleRequestApproval} disabled={approvalBusy}>
-                      <Send className="mr-2 h-4 w-4" />
-                      {inv.approval_status === "pending" ? "Poslať znova na schválenie" : "Poslať na schválenie"}
-                    </DropdownMenuItem>
-                  </>
-                )}
+                {(inv.status === "draft" || inv.status === "issued") &&
+                  inv.approval_status !== "approved" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>Schvaľovanie</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={handleRequestApproval} disabled={approvalBusy}>
+                        <Send className="mr-2 h-4 w-4" />
+                        {inv.approval_status === "pending"
+                          ? "Poslať znova na schválenie"
+                          : "Poslať na schválenie"}
+                      </DropdownMenuItem>
+                    </>
+                  )}
 
                 {isOverdue && (
                   <>
@@ -548,20 +664,22 @@ function InvoiceDetail() {
                   </>
                 )}
 
-                {company?.online_payments_enabled && inv.status !== "paid" && inv.status !== "cancelled" && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Online platba</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={handleCreatePayLink} disabled={payBusy}>
-                      <CreditCard className="mr-2 h-4 w-4" /> Vytvoriť platobný odkaz
-                    </DropdownMenuItem>
-                    {hasPayLink && (
-                      <DropdownMenuItem onClick={handleSyncPayment} disabled={syncBusy}>
-                        <RotateCw className="mr-2 h-4 w-4" /> Synchronizovať platbu
+                {company?.online_payments_enabled &&
+                  inv.status !== "paid" &&
+                  inv.status !== "cancelled" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>Online platba</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={handleCreatePayLink} disabled={payBusy}>
+                        <CreditCard className="mr-2 h-4 w-4" /> Vytvoriť platobný odkaz
                       </DropdownMenuItem>
-                    )}
-                  </>
-                )}
+                      {hasPayLink && (
+                        <DropdownMenuItem onClick={handleSyncPayment} disabled={syncBusy}>
+                          <RotateCw className="mr-2 h-4 w-4" /> Synchronizovať platbu
+                        </DropdownMenuItem>
+                      )}
+                    </>
+                  )}
 
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel>Export</DropdownMenuLabel>
@@ -592,7 +710,12 @@ function InvoiceDetail() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Link to="/faktury" className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">Späť</Link>
+            <Link
+              to="/faktury"
+              className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              Späť
+            </Link>
           </div>
         }
       />
@@ -618,7 +741,9 @@ function InvoiceDetail() {
               <XCircle className="h-4 w-4" /> Faktúra bola zamietnutá zákazníkom
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
-              {inv.approval_responded_at ? new Date(inv.approval_responded_at).toLocaleString("sk-SK") : ""}
+              {inv.approval_responded_at
+                ? new Date(inv.approval_responded_at).toLocaleString("sk-SK")
+                : ""}
             </div>
             <div className="mt-2 whitespace-pre-wrap text-sm text-foreground">
               <span className="text-xs uppercase tracking-wide text-muted-foreground">Dôvod: </span>
@@ -632,7 +757,8 @@ function InvoiceDetail() {
               <ClockIcon className="h-4 w-4" /> Čaká sa na schválenie zákazníkom
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
-              Odoslané {new Date(inv.approval_requested_at).toLocaleString("sk-SK")} · odkaz platí 7 dní
+              Odoslané {new Date(inv.approval_requested_at).toLocaleString("sk-SK")} · odkaz platí 7
+              dní
             </div>
           </div>
         )}
@@ -640,29 +766,57 @@ function InvoiceDetail() {
           <div className="space-y-6">
             <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
               <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Dodávateľ</div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Dodávateľ
+                </div>
                 <div className="mt-1 font-medium">{company?.name}</div>
-                <div className="text-sm text-muted-foreground">{company?.street}<br />{company?.zip} {company?.city}, {company?.country}</div>
-                <div className="mt-2 text-sm">IČO: {company?.ico ?? "—"} · DIČ: {company?.dic ?? "—"}</div>
+                <div className="text-sm text-muted-foreground">
+                  {company?.street}
+                  <br />
+                  {company?.zip} {company?.city}, {company?.country}
+                </div>
+                <div className="mt-2 text-sm">
+                  IČO: {company?.ico ?? "—"} · DIČ: {company?.dic ?? "—"}
+                </div>
                 {company?.ic_dph && <div className="text-sm">IČ DPH: {company.ic_dph}</div>}
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Odberateľ</div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Odberateľ
+                </div>
                 <div className="mt-1 font-medium">{inv.customer_name}</div>
-                <div className="text-sm text-muted-foreground">{inv.customer_street}<br />{inv.customer_zip} {inv.customer_city}, {inv.customer_country}</div>
-                <div className="mt-2 text-sm">IČO: {inv.customer_ico ?? "—"} · DIČ: {inv.customer_dic ?? "—"}</div>
+                <div className="text-sm text-muted-foreground">
+                  {inv.customer_street}
+                  <br />
+                  {inv.customer_zip} {inv.customer_city}, {inv.customer_country}
+                </div>
+                <div className="mt-2 text-sm">
+                  IČO: {inv.customer_ico ?? "—"} · DIČ: {inv.customer_dic ?? "—"}
+                </div>
               </div>
             </div>
 
             <div className="overflow-hidden rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr><th className="p-3">Položka</th><th className="p-3 text-right">Mn.</th><th className="p-3">MJ</th><th className="p-3 text-right">Cena</th><th className="p-3 text-right">DPH</th><th className="p-3 text-right">Spolu</th></tr>
+                  <tr>
+                    <th className="p-3">Položka</th>
+                    <th className="p-3 text-right">Mn.</th>
+                    <th className="p-3">MJ</th>
+                    <th className="p-3 text-right">Cena</th>
+                    <th className="p-3 text-right">DPH</th>
+                    <th className="p-3 text-right">Spolu</th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {items.map((it) => (
                     <tr key={it.id}>
-                      <td className="p-3"><div className="font-medium">{it.name}</div>{it.description && <div className="text-xs text-muted-foreground">{it.description}</div>}</td>
+                      <td className="p-3">
+                        <div className="font-medium">{it.name}</div>
+                        {it.description && (
+                          <div className="text-xs text-muted-foreground">{it.description}</div>
+                        )}
+                      </td>
                       <td className="p-3 text-right">{Number(it.quantity)}</td>
                       <td className="p-3">{it.unit}</td>
                       <td className="p-3 text-right">{Number(it.unit_price).toFixed(2)}</td>
@@ -674,7 +828,11 @@ function InvoiceDetail() {
               </table>
             </div>
 
-            {inv.notes && <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap">{inv.notes}</div>}
+            {inv.notes && (
+              <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap">
+                {inv.notes}
+              </div>
+            )}
           </div>
 
           <aside className="space-y-4">
@@ -696,48 +854,80 @@ function InvoiceDetail() {
             {inv.status === "paid" ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900">
                 <div className="text-xs uppercase tracking-wide text-emerald-700">Uhradené</div>
-                <div className="mt-2">Dátum úhrady: {inv.paid_at ? String(inv.paid_at).slice(0, 10) : "—"}</div>
+                <div className="mt-2">
+                  Dátum úhrady: {inv.paid_at ? String(inv.paid_at).slice(0, 10) : "—"}
+                </div>
                 <div>Forma úhrady: {paymentMethodLabel(inv.payment_method)}</div>
-                <div className="mt-2 text-xs text-emerald-700">Platobné údaje sa nezobrazujú — faktúra je zaplatená.</div>
+                <div className="mt-2 text-xs text-emerald-700">
+                  Platobné údaje sa nezobrazujú — faktúra je zaplatená.
+                </div>
               </div>
             ) : (
               <div className="rounded-xl border border-border bg-card p-5 text-sm">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Platba</div>
-                <div className="mt-2">IBAN: <span className="font-mono">{company?.iban ?? "—"}</span></div>
-                <div>Variabilný symbol: <span className="font-mono">{inv.variable_symbol}</span></div>
+                <div className="mt-2">
+                  IBAN: <span className="font-mono">{company?.iban ?? "—"}</span>
+                </div>
+                <div>
+                  Variabilný symbol: <span className="font-mono">{inv.variable_symbol}</span>
+                </div>
                 <div>Splatnosť: {inv.due_date}</div>
                 <div>Forma úhrady: {paymentMethodLabel(inv.payment_method)}</div>
               </div>
             )}
             {inv.type === "proforma" && (
               <div className="rounded-xl border border-border bg-card p-5 text-sm">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Zálohová faktúra</div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Zálohová faktúra
+                </div>
                 {settledIn ? (
                   <div className="mt-2 space-y-1">
-                    <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">Zúčtovaná</div>
-                    <div>Zúčtovaná vo faktúre:{" "}
-                      <Link to="/faktury/$id" params={{ id: settledIn.id }} className="font-medium text-primary hover:underline">
+                    <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                      Zúčtovaná
+                    </div>
+                    <div>
+                      Zúčtovaná vo faktúre:{" "}
+                      <Link
+                        to="/faktury/$id"
+                        params={{ id: settledIn.id }}
+                        className="font-medium text-primary hover:underline"
+                      >
                         {settledIn.invoice_number}
                       </Link>
                     </div>
-                    <div className="text-xs text-muted-foreground">{settledIn.issue_date} · {Number(settledIn.total).toFixed(2)} {settledIn.currency}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {settledIn.issue_date} · {Number(settledIn.total).toFixed(2)}{" "}
+                      {settledIn.currency}
+                    </div>
                   </div>
                 ) : (
-                  <div className="mt-2 text-muted-foreground">Zatiaľ nezúčtovaná. Zálohu môžete použiť pri vytváraní novej faktúry cez „Pridať zálohovú faktúru".</div>
+                  <div className="mt-2 text-muted-foreground">
+                    Zatiaľ nezúčtovaná. Zálohu môžete použiť pri vytváraní novej faktúry cez „Pridať
+                    zálohovú faktúru".
+                  </div>
                 )}
               </div>
             )}
             {advanceProforma && (
               <div className="rounded-xl border border-border bg-card p-5 text-sm">
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Zúčtovaná záloha</div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Zúčtovaná záloha
+                </div>
                 <div className="mt-2 space-y-1">
-                  <div>Zálohová faktúra:{" "}
-                    <Link to="/faktury/$id" params={{ id: advanceProforma.id }} className="font-medium text-primary hover:underline">
+                  <div>
+                    Zálohová faktúra:{" "}
+                    <Link
+                      to="/faktury/$id"
+                      params={{ id: advanceProforma.id }}
+                      className="font-medium text-primary hover:underline"
+                    >
                       {advanceProforma.invoice_number}
                     </Link>
                   </div>
                   {inv.advance_amount != null && (
-                    <div className="text-xs text-muted-foreground">Odpočítaná suma: {Number(inv.advance_amount).toFixed(2)} {inv.currency}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Odpočítaná suma: {Number(inv.advance_amount).toFixed(2)} {inv.currency}
+                    </div>
                   )}
                 </div>
               </div>
@@ -749,23 +939,37 @@ function InvoiceDetail() {
                   {stockMoves.map((m) => {
                     const reversed = m.type === "dobropis";
                     return (
-                      <div key={m.id} className="flex items-start justify-between gap-2 border-b border-border/40 pb-2 last:border-0 last:pb-0">
+                      <div
+                        key={m.id}
+                        className="flex items-start justify-between gap-2 border-b border-border/40 pb-2 last:border-0 last:pb-0"
+                      >
                         <div>
                           <div className="font-medium">
                             {reversed ? "Sklad vrátený" : "Sklad odpočítaný"}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {stockSkus[m.stock_item_id] ?? "—"} · {warehouseNames[m.warehouse_id] ?? "—"}
+                            {stockSkus[m.stock_item_id] ?? "—"} ·{" "}
+                            {warehouseNames[m.warehouse_id] ?? "—"}
                           </div>
-                          <div className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("sk-SK")}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(m.created_at).toLocaleString("sk-SK")}
+                          </div>
                         </div>
-                        <div className={`tabular-nums text-right font-semibold ${reversed ? "text-emerald-600" : "text-destructive"}`}>
-                          {reversed ? "+" : "−"}{Math.abs(Number(m.quantity))}
+                        <div
+                          className={`tabular-nums text-right font-semibold ${reversed ? "text-emerald-600" : "text-destructive"}`}
+                        >
+                          {reversed ? "+" : "−"}
+                          {Math.abs(Number(m.quantity))}
                         </div>
                       </div>
                     );
                   })}
-                  <Link to="/sklad/pohyby" className="block pt-1 text-xs text-primary hover:underline">Pozrieť všetky pohyby →</Link>
+                  <Link
+                    to="/sklad/pohyby"
+                    className="block pt-1 text-xs text-primary hover:underline"
+                  >
+                    Pozrieť všetky pohyby →
+                  </Link>
                 </div>
               </div>
             )}
@@ -776,19 +980,48 @@ function InvoiceDetail() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5">
             <h3 className="text-lg font-semibold">Odoslať faktúru e-mailom</h3>
-            <label className="block text-sm"><span className="font-medium">Príjemca</span>
-              <input value={emailForm.recipient_email} onChange={(e) => setEmailForm({ ...emailForm, recipient_email: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <label className="block text-sm">
+              <span className="font-medium">Príjemca</span>
+              <input
+                value={emailForm.recipient_email}
+                onChange={(e) => setEmailForm({ ...emailForm, recipient_email: e.target.value })}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
             </label>
-            <label className="block text-sm"><span className="font-medium">Predmet</span>
-              <input value={emailForm.subject} onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <label className="block text-sm">
+              <span className="font-medium">Predmet</span>
+              <input
+                value={emailForm.subject}
+                onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
             </label>
-            <label className="block text-sm"><span className="font-medium">Správa</span>
-              <textarea rows={6} value={emailForm.message} onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <label className="block text-sm">
+              <span className="font-medium">Správa</span>
+              <textarea
+                rows={6}
+                value={emailForm.message}
+                onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
             </label>
-            <p className="text-xs text-muted-foreground">PDF faktúry sa pripojí automaticky. Ak ešte neexistuje, vygeneruje sa pred odoslaním.</p>
+            <p className="text-xs text-muted-foreground">
+              PDF faktúry sa pripojí automaticky. Ak ešte neexistuje, vygeneruje sa pred odoslaním.
+            </p>
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setEmailOpen(false)} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">Zrušiť</button>
-              <button onClick={submitEmail} disabled={emailBusy} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{emailBusy ? "Odosielam…" : "Odoslať"}</button>
+              <button
+                onClick={() => setEmailOpen(false)}
+                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+              >
+                Zrušiť
+              </button>
+              <button
+                onClick={submitEmail}
+                disabled={emailBusy}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                {emailBusy ? "Odosielam…" : "Odoslať"}
+              </button>
             </div>
           </div>
         </div>
@@ -796,24 +1029,61 @@ function InvoiceDetail() {
       {reminderOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5">
-            <h3 className="text-lg font-semibold">Poslať upomienku ({reminderForm.reminderNumber}.)</h3>
-            <label className="block text-sm"><span className="font-medium">Príjemca</span>
-              <input value={reminderForm.recipient_email} onChange={(e) => setReminderForm({ ...reminderForm, recipient_email: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <h3 className="text-lg font-semibold">
+              Poslať upomienku ({reminderForm.reminderNumber}.)
+            </h3>
+            <label className="block text-sm">
+              <span className="font-medium">Príjemca</span>
+              <input
+                value={reminderForm.recipient_email}
+                onChange={(e) =>
+                  setReminderForm({ ...reminderForm, recipient_email: e.target.value })
+                }
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
             </label>
-            <label className="block text-sm"><span className="font-medium">Predmet</span>
-              <input value={reminderForm.subject} onChange={(e) => setReminderForm({ ...reminderForm, subject: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <label className="block text-sm">
+              <span className="font-medium">Predmet</span>
+              <input
+                value={reminderForm.subject}
+                onChange={(e) => setReminderForm({ ...reminderForm, subject: e.target.value })}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
             </label>
-            <label className="block text-sm"><span className="font-medium">Správa</span>
-              <textarea rows={10} value={reminderForm.message} onChange={(e) => setReminderForm({ ...reminderForm, message: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <label className="block text-sm">
+              <span className="font-medium">Správa</span>
+              <textarea
+                rows={10}
+                value={reminderForm.message}
+                onChange={(e) => setReminderForm({ ...reminderForm, message: e.target.value })}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
             </label>
             {reminders.length > 0 && (
               <div className="text-xs text-muted-foreground">
-                Predchádzajúce upomienky: {reminders.map((r) => `#${r.reminder_number} (${new Date(r.sent_at).toLocaleDateString("sk-SK")})`).join(", ")}
+                Predchádzajúce upomienky:{" "}
+                {reminders
+                  .map(
+                    (r) =>
+                      `#${r.reminder_number} (${new Date(r.sent_at).toLocaleDateString("sk-SK")})`,
+                  )
+                  .join(", ")}
               </div>
             )}
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setReminderOpen(false)} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">Zrušiť</button>
-              <button onClick={submitReminder} disabled={reminderBusy} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{reminderBusy ? "Odosielam…" : "Odoslať upomienku"}</button>
+              <button
+                onClick={() => setReminderOpen(false)}
+                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+              >
+                Zrušiť
+              </button>
+              <button
+                onClick={submitReminder}
+                disabled={reminderBusy}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                {reminderBusy ? "Odosielam…" : "Odoslať upomienku"}
+              </button>
             </div>
           </div>
         </div>
@@ -823,7 +1093,11 @@ function InvoiceDetail() {
         open={deleteOpen}
         title="Naozaj chcete vymazať túto faktúru?"
         message={`Faktúra ${inv.invoice_number} bude skrytá z rozhrania. Môžete ju neskôr obnoviť v zozname vymazaných.`}
-        warning={inv.status === "paid" || inv.status === "sent" ? "Táto faktúra je už odoslaná alebo zaplatená. Mazanie môže narušiť účtovnú stopu." : undefined}
+        warning={
+          inv.status === "paid" || inv.status === "sent"
+            ? "Táto faktúra je už odoslaná alebo zaplatená. Mazanie môže narušiť účtovnú stopu."
+            : undefined
+        }
         busy={deleteBusy}
         onCancel={() => setDeleteOpen(false)}
         onConfirm={handleDelete}
@@ -833,5 +1107,10 @@ function InvoiceDetail() {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
-  return <div className="flex justify-between"><span className="text-muted-foreground">{label}</span><span>{value}</span></div>;
+  return (
+    <div className="flex justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span>{value}</span>
+    </div>
+  );
 }

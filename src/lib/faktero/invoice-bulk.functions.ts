@@ -17,9 +17,7 @@ export const bulkMarkPaidFn = createServerFn({ method: "POST" })
       .in("id", data.invoiceIds);
     if (selErr) throw new Error(selErr.message);
 
-    const eligible = (rows ?? []).filter(
-      (r) => r.status !== "paid" && r.status !== "cancelled",
-    );
+    const eligible = (rows ?? []).filter((r) => r.status !== "paid" && r.status !== "cancelled");
     if (eligible.length === 0) return { updated: 0, skipped: (rows ?? []).length };
 
     const paidAt = new Date().toISOString();

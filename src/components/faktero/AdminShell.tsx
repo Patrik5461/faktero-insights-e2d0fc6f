@@ -11,7 +11,6 @@ import {
   ScrollText,
   ArrowLeftToLine,
   ShieldAlert,
-  
   FileText,
   HeartPulse,
   Wallet,
@@ -33,7 +32,6 @@ const NAV = [
   { to: "/admin/legal", label: "Právne dokumenty", icon: FileText },
   { to: "/admin/seo", label: "SEO", icon: Search },
 ];
-
 
 function isActive(pathname: string, to: string, exact?: boolean) {
   if (exact) return pathname === to;
@@ -93,7 +91,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
         {/* Mobile top bar */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-border bg-card/95 px-4 backdrop-blur lg:hidden">
           <Link to="/admin" className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/70 font-bold text-primary-foreground">F</span>
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/70 font-bold text-primary-foreground">
+              F
+            </span>
             <div className="text-xs font-semibold uppercase tracking-wider text-primary">Admin</div>
           </Link>
           <Link to="/dashboard" className="text-xs text-muted-foreground hover:text-foreground">
@@ -109,7 +109,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 key={n.to}
                 to={n.to as any}
                 className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium ${
-                  active ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground"
                 }`}
               >
                 {n.label}

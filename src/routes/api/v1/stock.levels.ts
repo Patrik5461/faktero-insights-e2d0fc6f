@@ -3,7 +3,11 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/v1/stock/levels")({
   server: {
     handlers: {
-      OPTIONS: async ({ request }) => (await import("@/lib/faktero/api-auth.server")).handleApi(request, async () => ({ status: 204, body: {} })),
+      OPTIONS: async ({ request }) =>
+        (await import("@/lib/faktero/api-auth.server")).handleApi(request, async () => ({
+          status: 204,
+          body: {},
+        })),
       GET: async ({ request }) => {
         const { handleApi, ok, err } = await import("@/lib/faktero/api-auth.server");
         return handleApi(request, async (ctx) => {

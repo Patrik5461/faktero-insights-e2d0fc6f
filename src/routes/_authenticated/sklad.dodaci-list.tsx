@@ -4,9 +4,26 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { importDeliveryNoteFn, type DeliveryNoteItem } from "@/lib/faktero/ai-delivery-note.functions";
+import {
+  importDeliveryNoteFn,
+  type DeliveryNoteItem,
+} from "@/lib/faktero/ai-delivery-note.functions";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
-import { Camera, Upload, Loader2, Trash2, Plus, FileText, History, ScanLine, Check, AlertCircle, RefreshCw, Sparkles, X } from "lucide-react";
+import {
+  Camera,
+  Upload,
+  Loader2,
+  Trash2,
+  Plus,
+  FileText,
+  History,
+  ScanLine,
+  Check,
+  AlertCircle,
+  RefreshCw,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sklad/dodaci-list")({
@@ -21,7 +38,9 @@ function DeliveryNoteScanPage() {
   const nav = useNavigate();
   const importFn = useServerFn(importDeliveryNoteFn);
 
-  const [fileMeta, setFileMeta] = useState<{ name: string; mime: string; dataUrl: string } | null>(null);
+  const [fileMeta, setFileMeta] = useState<{ name: string; mime: string; dataUrl: string } | null>(
+    null,
+  );
   const [supplier, setSupplier] = useState<string>("");
   const [deliveryNumber, setDeliveryNumber] = useState<string>("");
   const [rows, setRows] = useState<Row[]>([]);
@@ -44,8 +63,19 @@ function DeliveryNoteScanPage() {
     if (!cid) return;
     (async () => {
       const [{ data: whs }, { data: prods }] = await Promise.all([
-        supabase.from("warehouses").select("id, name").eq("company_id", cid).eq("active", true).order("name"),
-        supabase.from("products").select("id, name, code").eq("company_id", cid).is("deleted_at", null).order("name").limit(500),
+        supabase
+          .from("warehouses")
+          .select("id, name")
+          .eq("company_id", cid)
+          .eq("active", true)
+          .order("name"),
+        supabase
+          .from("products")
+          .select("id, name, code")
+          .eq("company_id", cid)
+          .is("deleted_at", null)
+          .order("name")
+          .limit(500),
       ]);
       setWarehouses(whs ?? []);
       if (whs?.length) setWarehouseId(whs[0].id);
@@ -60,7 +90,9 @@ function DeliveryNoteScanPage() {
     timers.push(window.setTimeout(() => setScanStep((s) => Math.max(s, 1)), 500));
     timers.push(window.setTimeout(() => setScanStep((s) => Math.max(s, 2)), 12000));
     timers.push(window.setTimeout(() => setScanStep((s) => Math.max(s, 3)), 24000));
-    return () => { timers.forEach((t) => window.clearTimeout(t)); };
+    return () => {
+      timers.forEach((t) => window.clearTimeout(t));
+    };
   }, [parsing]);
 
   async function handleFile(file: File) {
@@ -73,7 +105,11 @@ function DeliveryNoteScanPage() {
     setScanError(null);
     setScanSuccess(false);
     setScanStep(0);
-    console.log("[dodaci-list] handleFile start:", { name: file.name, type: file.type, size: file.size });
+    console.log("[dodaci-list] handleFile start:", {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+    });
     const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
     if (!allowed.includes(file.type)) return toast.error("Podporujeme JPG, PNG, WebP alebo PDF.");
 
@@ -83,10 +119,14 @@ function DeliveryNoteScanPage() {
     const isPdf = file.type === "application/pdf";
 
     if (isPdf && file.size > MAX_PDF) {
-      return toast.error(`PDF je príliš veľké (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`);
+      return toast.error(
+        `PDF je príliš veľké (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`,
+      );
     }
     if (isImage && file.size > MAX_IMAGE) {
-      return toast.error(`Obrázok je príliš veľký (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 5 MB.`);
+      return toast.error(
+        `Obrázok je príliš veľký (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 5 MB.`,
+      );
     }
 
     // Resize images > 2MB
@@ -126,7 +166,9 @@ function DeliveryNoteScanPage() {
       const ext = processedMime === "image/jpeg" ? "jpg" : (file.name.split(".").pop() ?? "bin");
       // RLS on storage.objects requires first folder = company UUID.
       const path = `${cid}/delivery-notes/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("imports").upload(path, processed, { contentType: processedMime, upsert: false });
+      const { error: upErr } = await supabase.storage
+        .from("imports")
+        .upload(path, processed, { contentType: processedMime, upsert: false });
       if (upErr) {
         console.error("[dodaci-list] storage upload failed:", upErr.message);
         toast.error(`Nahrávanie zlyhalo: ${upErr.message}`);
@@ -152,12 +194,18 @@ function DeliveryNoteScanPage() {
       const postRes = await fetch("/api/v1/sklad/parse-delivery-note", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ company_id: cid, storage_path: uploadedPath, mime_type: processedMime }),
+        body: JSON.stringify({
+          company_id: cid,
+          storage_path: uploadedPath,
+          mime_type: processedMime,
+        }),
         signal,
       });
       if (!postRes.ok) {
         const text = await postRes.text();
-        throw new Error(`Nepodarilo sa spustiť spracovanie (${postRes.status}): ${text.slice(0, 200)}`);
+        throw new Error(
+          `Nepodarilo sa spustiť spracovanie (${postRes.status}): ${text.slice(0, 200)}`,
+        );
       }
       const { job_id } = await postRes.json();
       if (!job_id) throw new Error("Chýba job_id");
@@ -173,7 +221,8 @@ function DeliveryNoteScanPage() {
       while (true) {
         await new Promise((r) => setTimeout(r, 2000));
         if (signal.aborted) throw new DOMException("Aborted", "AbortError");
-        if (Date.now() - started > maxMs) throw new Error("Spracovanie trvá príliš dlho (timeout).");
+        if (Date.now() - started > maxMs)
+          throw new Error("Spracovanie trvá príliš dlho (timeout).");
 
         const pollRes = await fetch(`/api/v1/sklad/parse-delivery-note/${job_id}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -200,7 +249,9 @@ function DeliveryNoteScanPage() {
       console.log("[dodaci-list] parse done, items:", finalItems.length);
       setSupplier(finalSupplier ?? "");
       setDeliveryNumber(finalDelivery ?? "");
-      setRows(finalItems.map((i) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })));
+      setRows(
+        finalItems.map((i) => ({ ...i, existing_product_id: matchExistingProduct(i, products) })),
+      );
       setScanStep(4);
       setScanSuccess(true);
       if (!finalItems.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
@@ -255,7 +306,11 @@ function DeliveryNoteScanPage() {
           const ctx = canvas.getContext("2d");
           if (!ctx) return reject(new Error("Canvas kontext nedostupný"));
           ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Konverzia zlyhala"))), "image/jpeg", quality);
+          canvas.toBlob(
+            (blob) => (blob ? resolve(blob) : reject(new Error("Konverzia zlyhala"))),
+            "image/jpeg",
+            quality,
+          );
         };
         img.onerror = () => reject(new Error("Nepodarilo sa načítať obrázok"));
         img.src = String(ev.target?.result ?? "");
@@ -281,7 +336,18 @@ function DeliveryNoteScanPage() {
     setRows((prev) => prev.filter((_, idx) => idx !== i));
   }
   function addRow() {
-    setRows((prev) => [...prev, { name: "", code: null, quantity: 1, unit: "ks", unit_price: 0, total_price: null, existing_product_id: null }]);
+    setRows((prev) => [
+      ...prev,
+      {
+        name: "",
+        code: null,
+        quantity: 1,
+        unit: "ks",
+        unit_price: 0,
+        total_price: null,
+        existing_product_id: null,
+      },
+    ]);
   }
 
   async function doImport() {
@@ -325,7 +391,10 @@ function DeliveryNoteScanPage() {
         title="Naskenovať dodací list"
         description="AI automaticky extrahuje položky z fotografie alebo PDF."
         action={
-          <Link to="/sklad/dodacie-listy" className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary">
+          <Link
+            to="/sklad/dodacie-listy"
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
+          >
             <History className="h-4 w-4" /> História
           </Link>
         }
@@ -343,7 +412,10 @@ function DeliveryNoteScanPage() {
         {!fileMeta && (
           <div
             ref={dragRef}
-            onDragOver={(e) => { e.preventDefault(); dragRef.current?.classList.add("border-primary"); }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              dragRef.current?.classList.add("border-primary");
+            }}
             onDragLeave={() => dragRef.current?.classList.remove("border-primary")}
             onDrop={(e) => {
               e.preventDefault();
@@ -356,15 +428,28 @@ function DeliveryNoteScanPage() {
             <FileText className="h-10 w-10 text-muted-foreground" />
             <div>
               <div className="text-base font-medium">Nahrajte alebo odfoťte dodací list</div>
-              <div className="mt-1 text-xs text-muted-foreground">JPG, PNG, WebP alebo PDF (max 15 MB)</div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                JPG, PNG, WebP alebo PDF (max 15 MB)
+              </div>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <button onClick={shootPhoto} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+              <button
+                onClick={shootPhoto}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
                 <Camera className="h-4 w-4" /> Odfotiť
               </button>
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-secondary">
                 <Upload className="h-4 w-4" /> Vybrať súbor
-                <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleFile(f);
+                  }}
+                />
               </label>
             </div>
             <p className="text-xs text-muted-foreground">Môžete tiež pretiahnuť súbor sem.</p>
@@ -376,7 +461,11 @@ function DeliveryNoteScanPage() {
             <div className="space-y-3">
               <div className="overflow-hidden rounded-xl border border-border bg-card p-2">
                 {fileMeta.mime.startsWith("image/") ? (
-                  <img src={fileMeta.dataUrl} alt="náhľad" className="max-h-64 w-full object-contain" />
+                  <img
+                    src={fileMeta.dataUrl}
+                    alt="náhľad"
+                    className="max-h-64 w-full object-contain"
+                  />
                 ) : (
                   <div className="flex h-40 flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
                     <FileText className="h-8 w-8" />
@@ -385,7 +474,11 @@ function DeliveryNoteScanPage() {
                 )}
               </div>
               <button
-                onClick={() => { setFileMeta(null); setRows([]); setStoragePath(null); }}
+                onClick={() => {
+                  setFileMeta(null);
+                  setRows([]);
+                  setStoragePath(null);
+                }}
                 className="w-full rounded-md border border-border bg-card px-3 py-2 text-xs hover:bg-secondary"
               >
                 Nahrať iný súbor
@@ -401,7 +494,9 @@ function DeliveryNoteScanPage() {
                     <div className="mt-0.5 text-muted-foreground">{scanError}</div>
                   </div>
                   <button
-                    onClick={() => { if (lastFileRef.current) handleFile(lastFileRef.current); }}
+                    onClick={() => {
+                      if (lastFileRef.current) handleFile(lastFileRef.current);
+                    }}
                     className="inline-flex items-center gap-1.5 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:opacity-90"
                   >
                     <RefreshCw className="h-3.5 w-3.5" /> Skúsiť znova
@@ -412,30 +507,53 @@ function DeliveryNoteScanPage() {
               <div className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3">
                 <label className="block">
                   <span className="text-xs font-medium text-muted-foreground">Sklad</span>
-                  <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm">
-                    {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                  <select
+                    value={warehouseId}
+                    onChange={(e) => setWarehouseId(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                  >
+                    {warehouses.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <label className="block">
                   <span className="text-xs font-medium text-muted-foreground">Dodávateľ</span>
-                  <input value={supplier} onChange={(e) => setSupplier(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm" placeholder="—" />
+                  <input
+                    value={supplier}
+                    onChange={(e) => setSupplier(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                    placeholder="—"
+                  />
                 </label>
                 <label className="block">
                   <span className="text-xs font-medium text-muted-foreground">Číslo DL</span>
-                  <input value={deliveryNumber} onChange={(e) => setDeliveryNumber(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm" placeholder="—" />
+                  <input
+                    value={deliveryNumber}
+                    onChange={(e) => setDeliveryNumber(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                    placeholder="—"
+                  />
                 </label>
               </div>
 
               <div className="rounded-xl border border-border bg-card">
                 <div className="flex items-center justify-between border-b border-border p-3">
                   <div className="text-sm font-semibold">Položky ({rows.length})</div>
-                  <button onClick={addRow} className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary">
+                  <button
+                    onClick={addRow}
+                    className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                  >
                     <Plus className="h-3.5 w-3.5" /> Pridať riadok
                   </button>
                 </div>
                 {rows.length === 0 ? (
                   <div className="p-6 text-center text-sm text-muted-foreground">
-                    {parsing ? "Čakám na AI…" : "Žiadne položky. Pridajte manuálne alebo nahrajte iný súbor."}
+                    {parsing
+                      ? "Čakám na AI…"
+                      : "Žiadne položky. Pridajte manuálne alebo nahrajte iný súbor."}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -454,32 +572,66 @@ function DeliveryNoteScanPage() {
                         {rows.map((r, i) => (
                           <tr key={i}>
                             <td className="p-1.5">
-                              <input value={r.name} onChange={(e) => updateRow(i, { name: e.target.value })} className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm" />
+                              <input
+                                value={r.name}
+                                onChange={(e) => updateRow(i, { name: e.target.value })}
+                                className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                              />
                               <select
                                 value={r.existing_product_id ?? ""}
-                                onChange={(e) => updateRow(i, { existing_product_id: e.target.value || null })}
+                                onChange={(e) =>
+                                  updateRow(i, { existing_product_id: e.target.value || null })
+                                }
                                 className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-xs text-muted-foreground"
                               >
                                 <option value="">— vytvoriť nový / auto-priradiť —</option>
                                 {products.map((p) => (
-                                  <option key={p.id} value={p.id}>{p.name}{p.code ? ` (${p.code})` : ""}</option>
+                                  <option key={p.id} value={p.id}>
+                                    {p.name}
+                                    {p.code ? ` (${p.code})` : ""}
+                                  </option>
                                 ))}
                               </select>
                             </td>
                             <td className="p-1.5">
-                              <input value={r.code ?? ""} onChange={(e) => updateRow(i, { code: e.target.value || null })} className="w-24 rounded-md border border-input bg-background px-2 py-1 text-sm" />
+                              <input
+                                value={r.code ?? ""}
+                                onChange={(e) => updateRow(i, { code: e.target.value || null })}
+                                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                              />
                             </td>
                             <td className="p-1.5 text-right">
-                              <input type="number" step="0.001" value={r.quantity} onChange={(e) => updateRow(i, { quantity: Number(e.target.value) })} className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm" />
+                              <input
+                                type="number"
+                                step="0.001"
+                                value={r.quantity}
+                                onChange={(e) => updateRow(i, { quantity: Number(e.target.value) })}
+                                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm"
+                              />
                             </td>
                             <td className="p-1.5">
-                              <input value={r.unit} onChange={(e) => updateRow(i, { unit: e.target.value })} className="w-16 rounded-md border border-input bg-background px-2 py-1 text-sm" />
+                              <input
+                                value={r.unit}
+                                onChange={(e) => updateRow(i, { unit: e.target.value })}
+                                className="w-16 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                              />
                             </td>
                             <td className="p-1.5 text-right">
-                              <input type="number" step="0.0001" value={r.unit_price ?? 0} onChange={(e) => updateRow(i, { unit_price: Number(e.target.value) })} className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm" />
+                              <input
+                                type="number"
+                                step="0.0001"
+                                value={r.unit_price ?? 0}
+                                onChange={(e) =>
+                                  updateRow(i, { unit_price: Number(e.target.value) })
+                                }
+                                className="w-24 rounded-md border border-input bg-background px-2 py-1 text-right text-sm"
+                              />
                             </td>
                             <td className="p-1.5 text-right">
-                              <button onClick={() => removeRow(i)} className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-destructive">
+                              <button
+                                onClick={() => removeRow(i)}
+                                className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </td>
@@ -526,7 +678,9 @@ function AiScanOverlay({
   // Escape to close.
   useEffect(() => {
     if (!open) return;
-    const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [open, onClose]);
@@ -534,8 +688,14 @@ function AiScanOverlay({
   // Safety net: if "Hotovo!" state lingers > 15s without dismissal, surface an error.
   const [stuck, setStuck] = useState(false);
   useEffect(() => {
-    if (!open) { setStuck(false); return; }
-    if (!success) { setStuck(false); return; }
+    if (!open) {
+      setStuck(false);
+      return;
+    }
+    if (!success) {
+      setStuck(false);
+      return;
+    }
     const t = window.setTimeout(() => setStuck(true), 15000);
     return () => window.clearTimeout(t);
   }, [open, success]);
@@ -580,7 +740,11 @@ function AiScanOverlay({
                   ? "absolute inset-y-0 left-0 w-full bg-primary transition-all duration-500"
                   : "absolute inset-y-0 left-0 bg-primary"
             }
-            style={showError || allDone ? undefined : { animation: "scanbar 1.4s ease-in-out infinite", width: "40%" }}
+            style={
+              showError || allDone
+                ? undefined
+                : { animation: "scanbar 1.4s ease-in-out infinite", width: "40%" }
+            }
           />
         </div>
 
@@ -607,11 +771,7 @@ function AiScanOverlay({
               {showError ? "Skenovanie zlyhalo" : allDone ? "Hotovo!" : "Skenujem dodací list"}
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
-              {showError
-                ? errorMessage
-                : allDone
-                  ? "Načítavam výsledky…"
-                  : "Zvyčajne 20–40 sekúnd"}
+              {showError ? errorMessage : allDone ? "Načítavam výsledky…" : "Zvyčajne 20–40 sekúnd"}
             </div>
           </div>
         </div>
@@ -667,7 +827,10 @@ function AiScanOverlay({
               Zavrieť
             </button>
             <button
-              onClick={() => { onClose(); onRetry(); }}
+              onClick={() => {
+                onClose();
+                onRetry();
+              }}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
               <RefreshCw className="h-3.5 w-3.5" /> Skúsiť znova
@@ -691,10 +854,11 @@ function AiScanOverlay({
   );
 }
 
-
 function matchExistingProduct(item: DeliveryNoteItem, products: ProductOption[]): string | null {
   if (item.code) {
-    const byCode = products.find((p) => p.code && p.code.toLowerCase() === item.code!.toLowerCase());
+    const byCode = products.find(
+      (p) => p.code && p.code.toLowerCase() === item.code!.toLowerCase(),
+    );
     if (byCode) return byCode.id;
   }
   const nm = item.name.toLowerCase().trim();

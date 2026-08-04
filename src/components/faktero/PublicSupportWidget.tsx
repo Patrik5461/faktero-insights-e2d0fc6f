@@ -54,8 +54,7 @@ export function PublicSupportWidget() {
           ...m,
           {
             role: "assistant",
-            content:
-              data?.message ?? "Napíšte nám na podporu a ozveme sa vám.",
+            content: data?.message ?? "Napíšte nám na podporu a ozveme sa vám.",
           },
         ]);
         setEscalate(true);

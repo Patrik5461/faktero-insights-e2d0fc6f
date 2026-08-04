@@ -24,9 +24,15 @@ function QuickInvoicePage() {
   useEffect(() => {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    supabase.from("customers").select("id,name").eq("company_id", cid).order("name").limit(100).then(({ data }) => {
-      setCustomers(data ?? []);
-    });
+    supabase
+      .from("customers")
+      .select("id,name")
+      .eq("company_id", cid)
+      .order("name")
+      .limit(100)
+      .then(({ data }) => {
+        setCustomers(data ?? []);
+      });
   }, []);
 
   async function save() {
@@ -40,21 +46,28 @@ function QuickInvoicePage() {
     const due = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
     const unitPrice = amt / (1 + vatRate / 100);
     const customer = customers.find((c) => c.id === customerId);
-    const { data: inv, error } = await supabase.from("invoices").insert({
-      company_id: cid,
-      customer_id: customerId,
-      customer_name: customer?.name ?? "",
-      type: "regular",
-      status: "draft",
-      issue_date: today,
-      due_date: due,
-      delivery_date: today,
-      currency: "EUR",
-      invoice_number: `RYCHLA-${Date.now().toString().slice(-6)}`,
-      constant_symbol: "",
-      payment_method: "bank_transfer",
-    }).select().single();
-    if (error || !inv) { setSaving(false); return toast.error(error?.message ?? "Chyba"); }
+    const { data: inv, error } = await supabase
+      .from("invoices")
+      .insert({
+        company_id: cid,
+        customer_id: customerId,
+        customer_name: customer?.name ?? "",
+        type: "regular",
+        status: "draft",
+        issue_date: today,
+        due_date: due,
+        delivery_date: today,
+        currency: "EUR",
+        invoice_number: `RYCHLA-${Date.now().toString().slice(-6)}`,
+        constant_symbol: "",
+        payment_method: "bank_transfer",
+      })
+      .select()
+      .single();
+    if (error || !inv) {
+      setSaving(false);
+      return toast.error(error?.message ?? "Chyba");
+    }
     await supabase.from("invoice_items").insert({
       invoice_id: inv.id,
       name: description,
@@ -75,38 +88,89 @@ function QuickInvoicePage() {
         <div className="mx-auto max-w-md space-y-4">
           <div className="flex gap-1">
             {[1, 2, 3].map((n) => (
-              <div key={n} className={`h-1.5 flex-1 rounded-full ${n <= step ? "bg-primary" : "bg-muted"}`} />
+              <div
+                key={n}
+                className={`h-1.5 flex-1 rounded-full ${n <= step ? "bg-primary" : "bg-muted"}`}
+              />
             ))}
           </div>
 
           {step === 1 && (
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
               <h2 className="font-medium">Odberateľ</h2>
-              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <select
+                value={customerId}
+                onChange={(e) => setCustomerId(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
                 <option value="">— vyberte —</option>
-                {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
-              <button disabled={!customerId} onClick={() => setStep(2)} className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">Ďalej</button>
+              <button
+                disabled={!customerId}
+                onClick={() => setStep(2)}
+                className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              >
+                Ďalej
+              </button>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
               <h2 className="font-medium">Suma a popis</h2>
-              <label className="block text-sm">Suma (s DPH)
-                <input type="number" inputMode="decimal" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-base" autoFocus />
+              <label className="block text-sm">
+                Suma (s DPH)
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-base"
+                  autoFocus
+                />
               </label>
-              <label className="block text-sm">DPH
-                <select value={vatRate} onChange={(e) => setVatRate(Number(e.target.value))} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  {SK_VAT_RATES.map((r) => <option key={r} value={r}>{r} %</option>)}
+              <label className="block text-sm">
+                DPH
+                <select
+                  value={vatRate}
+                  onChange={(e) => setVatRate(Number(e.target.value))}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {SK_VAT_RATES.map((r) => (
+                    <option key={r} value={r}>
+                      {r} %
+                    </option>
+                  ))}
                 </select>
               </label>
-              <label className="block text-sm">Popis
-                <input value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              <label className="block text-sm">
+                Popis
+                <input
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
               </label>
               <div className="flex gap-2">
-                <button onClick={() => setStep(1)} className="flex-1 rounded-md border border-border px-4 py-2 text-sm">Späť</button>
-                <button disabled={!amount} onClick={() => setStep(3)} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">Ďalej</button>
+                <button
+                  onClick={() => setStep(1)}
+                  className="flex-1 rounded-md border border-border px-4 py-2 text-sm"
+                >
+                  Späť
+                </button>
+                <button
+                  disabled={!amount}
+                  onClick={() => setStep(3)}
+                  className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                >
+                  Ďalej
+                </button>
               </div>
             </div>
           )}
@@ -115,13 +179,25 @@ function QuickInvoicePage() {
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
               <h2 className="font-medium">Súhrn</h2>
               <div className="space-y-1 text-sm">
-                <Row label="Odberateľ" value={customers.find((c) => c.id === customerId)?.name ?? ""} />
+                <Row
+                  label="Odberateľ"
+                  value={customers.find((c) => c.id === customerId)?.name ?? ""}
+                />
                 <Row label="Popis" value={description} />
                 <Row label="Suma" value={`${amount} € (vrátane ${vatRate}% DPH)`} />
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setStep(2)} className="flex-1 rounded-md border border-border px-4 py-2 text-sm">Späť</button>
-                <button disabled={saving} onClick={save} className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60">
+                <button
+                  onClick={() => setStep(2)}
+                  className="flex-1 rounded-md border border-border px-4 py-2 text-sm"
+                >
+                  Späť
+                </button>
+                <button
+                  disabled={saving}
+                  onClick={save}
+                  className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                >
                   {saving ? "Ukladám…" : "Vytvoriť faktúru"}
                 </button>
               </div>
@@ -134,5 +210,10 @@ function QuickInvoicePage() {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
-  return <div className="flex justify-between"><span className="text-muted-foreground">{label}</span><span className="font-medium">{value}</span></div>;
+  return (
+    <div className="flex justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
+    </div>
+  );
 }

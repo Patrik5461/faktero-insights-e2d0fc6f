@@ -30,7 +30,11 @@ const SOURCE_COLOR: Record<string, string> = {
 };
 
 function fmtDateTime(s: string) {
-  try { return new Date(s).toLocaleString("sk-SK"); } catch { return s; }
+  try {
+    return new Date(s).toLocaleString("sk-SK");
+  } catch {
+    return s;
+  }
 }
 
 function AdminErrorsPage() {
@@ -54,7 +58,9 @@ function AdminErrorsPage() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [fetchErrors, source]);
 
   return (
@@ -114,7 +120,9 @@ function AdminErrorsPage() {
                           {String(r.status)}
                         </span>
                       )}
-                      <span className="text-xs text-muted-foreground">{fmtDateTime(r.created_at)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {fmtDateTime(r.created_at)}
+                      </span>
                     </div>
                     <div className="mt-1 text-sm font-medium">{r.summary}</div>
                     {r.detail && (

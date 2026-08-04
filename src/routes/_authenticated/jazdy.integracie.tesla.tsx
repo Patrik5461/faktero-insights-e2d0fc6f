@@ -2,13 +2,27 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Car, RefreshCcw, Power, PlugZap, Link2, AlertTriangle, FileText, ExternalLink } from "lucide-react";
+import {
+  ArrowLeft,
+  Car,
+  RefreshCcw,
+  Power,
+  PlugZap,
+  Link2,
+  AlertTriangle,
+  FileText,
+  ExternalLink,
+} from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  getTeslaStatus, startTeslaOAuth, disconnectTesla,
-  syncTeslaVehicles, linkTeslaVehicle, syncTeslaSnapshots,
+  getTeslaStatus,
+  startTeslaOAuth,
+  disconnectTesla,
+  syncTeslaVehicles,
+  linkTeslaVehicle,
+  syncTeslaSnapshots,
 } from "@/lib/faktero/tesla.functions";
 
 export const Route = createFileRoute("/_authenticated/jazdy/integracie/tesla")({
@@ -16,7 +30,9 @@ export const Route = createFileRoute("/_authenticated/jazdy/integracie/tesla")({
   component: TeslaPage,
 });
 
-function fmt(ts?: string | null) { return ts ? new Date(ts).toLocaleString("sk-SK") : "—"; }
+function fmt(ts?: string | null) {
+  return ts ? new Date(ts).toLocaleString("sk-SK") : "—";
+}
 
 function TeslaPage() {
   const cid = getActiveCompanyId();
@@ -35,7 +51,11 @@ function TeslaPage() {
     if (!cid) return;
     const res = await _get({ data: { companyId: cid } });
     setState(res);
-    const { data: v } = await supabase.from("vehicles").select("id, name, license_plate").eq("company_id", cid).order("name");
+    const { data: v } = await supabase
+      .from("vehicles")
+      .select("id, name, license_plate")
+      .eq("company_id", cid)
+      .order("name");
     setVehicles(v ?? []);
   }
   useEffect(() => {
@@ -54,38 +74,63 @@ function TeslaPage() {
     try {
       const r = await _start({ data: { companyId: cid } });
       window.location.href = r.url;
-    } catch (e: any) { toast.error(e?.message ?? "Chyba"); setBusy(null); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+      setBusy(null);
+    }
   }
 
   async function onDisconnect() {
     if (!cid) return;
     if (!confirm("Naozaj odpojiť Tesla účet? Importované dáta zostanú zachované.")) return;
     setBusy("disc");
-    try { await _disc({ data: { companyId: cid } }); toast.success("Odpojené"); await load(); }
-    catch (e: any) { toast.error(e?.message ?? "Chyba"); }
-    finally { setBusy(null); }
+    try {
+      await _disc({ data: { companyId: cid } });
+      toast.success("Odpojené");
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function onSyncVehicles() {
     if (!cid) return;
     setBusy("syncV");
-    try { const r = await _syncV({ data: { companyId: cid } }); r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba"); await load(); }
-    catch (e: any) { toast.error(e?.message ?? "Chyba"); }
-    finally { setBusy(null); }
+    try {
+      const r = await _syncV({ data: { companyId: cid } });
+      r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba");
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function onLink(linkId: string, faktero_vehicle_id: string | null) {
     if (!cid) return;
-    try { await _link({ data: { companyId: cid, linkId, faktero_vehicle_id } }); await load(); }
-    catch (e: any) { toast.error(e?.message ?? "Chyba"); }
+    try {
+      await _link({ data: { companyId: cid, linkId, faktero_vehicle_id } });
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    }
   }
 
   async function onSyncSnap() {
     if (!cid) return;
     setBusy("snap");
-    try { const r = await _syncSnap({ data: { companyId: cid } }); r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba"); await load(); }
-    catch (e: any) { toast.error(e?.message ?? "Chyba"); }
-    finally { setBusy(null); }
+    try {
+      const r = await _syncSnap({ data: { companyId: cid } });
+      r.ok ? toast.success(r.message) : toast.error(r.error ?? "Chyba");
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    } finally {
+      setBusy(null);
+    }
   }
 
   const conn = state.connection;
@@ -103,7 +148,10 @@ function TeslaPage() {
         title="Tesla Fleet API"
         description="Synchronizácia Tesla vozidiel, polohy a stavu tachometra."
         action={
-          <Link to="/jazdy/integracie" className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted">
+          <Link
+            to="/jazdy/integracie"
+            className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted"
+          >
             <ArrowLeft className="h-4 w-4" /> Späť
           </Link>
         }
@@ -118,7 +166,8 @@ function TeslaPage() {
                   Tesla účet je potrebné znova pripojiť
                 </div>
                 <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-200/80">
-                  Uložené prístupové tokeny sa nedajú dešifrovať. Toto sa stáva po zmene bezpečnostného kľúča systému. Pripojte prosím Tesla účet znovu cez OAuth.
+                  Uložené prístupové tokeny sa nedajú dešifrovať. Toto sa stáva po zmene
+                  bezpečnostného kľúča systému. Pripojte prosím Tesla účet znovu cez OAuth.
                 </p>
                 <button
                   type="button"
@@ -137,23 +186,41 @@ function TeslaPage() {
             {/* Connection */}
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-4 flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2 text-primary"><Car className="h-5 w-5" /></div>
+                <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                  <Car className="h-5 w-5" />
+                </div>
                 <div>
                   <div className="font-medium">Pripojenie Tesla účtu</div>
-                  <div className="text-xs text-muted-foreground">OAuth 2.0 — tokeny sú uložené šifrovane na serveri.</div>
+                  <div className="text-xs text-muted-foreground">
+                    OAuth 2.0 — tokeny sú uložené šifrovane na serveri.
+                  </div>
                 </div>
               </div>
               <div className="grid gap-3 text-sm sm:grid-cols-2">
-                <div><span className="text-muted-foreground">Tesla účet:</span> <span className="font-mono">{conn?.email_masked ?? "—"}</span></div>
-                <div><span className="text-muted-foreground">Token platnosť:</span> {fmt(conn?.token_expires_at)}</div>
+                <div>
+                  <span className="text-muted-foreground">Tesla účet:</span>{" "}
+                  <span className="font-mono">{conn?.email_masked ?? "—"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Token platnosť:</span>{" "}
+                  {fmt(conn?.token_expires_at)}
+                </div>
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 {!isConnected ? (
-                  <button disabled={!!busy} onClick={onConnect} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                  <button
+                    disabled={!!busy}
+                    onClick={onConnect}
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  >
                     <PlugZap className="h-4 w-4" /> Pripojiť Tesla účet
                   </button>
                 ) : (
-                  <button disabled={!!busy} onClick={onDisconnect} className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50">
+                  <button
+                    disabled={!!busy}
+                    onClick={onDisconnect}
+                    className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-background px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                  >
                     <Power className="h-4 w-4" /> Odpojiť
                   </button>
                 )}
@@ -169,9 +236,9 @@ function TeslaPage() {
                 <div className="flex-1">
                   <div className="font-medium">Podmienky používania Tesla Fleet API</div>
                   <p className="mt-1 text-emerald-800/90 dark:text-emerald-100/80">
-                    Pripojením Tesla účtu súhlasíte so spracúvaním údajov o vozidle (VIN, tachometer, poloha) v
-                    rozsahu uvedenom v našich podmienkach. Faktero používa výhradne čítacie oprávnenia — žiadne
-                    príkazy do vozidla.
+                    Pripojením Tesla účtu súhlasíte so spracúvaním údajov o vozidle (VIN,
+                    tachometer, poloha) v rozsahu uvedenom v našich podmienkach. Faktero používa
+                    výhradne čítacie oprávnenia — žiadne príkazy do vozidla.
                   </p>
                   <Link
                     to="/pravne/tesla-podmienky"
@@ -189,9 +256,9 @@ function TeslaPage() {
               <div className="flex items-start gap-2">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <div>
-                  Tesla Fleet API neposkytuje hotový zoznam jázd ako Commander. Faktero vie synchronizovať vozidlá,
-                  stav tachometra a polohu. Automatická tvorba jázd bude fungovať na základe pravidelných odometrových
-                  a polohových záznamov.
+                  Tesla Fleet API neposkytuje hotový zoznam jázd ako Commander. Faktero vie
+                  synchronizovať vozidlá, stav tachometra a polohu. Automatická tvorba jázd bude
+                  fungovať na základe pravidelných odometrových a polohových záznamov.
                 </div>
               </div>
             </div>
@@ -202,10 +269,16 @@ function TeslaPage() {
                 <div>
                   <div className="font-medium">Tesla vozidlá</div>
                   <div className="text-xs text-muted-foreground">
-                    {state.links.length === 0 ? "Žiadne vozidlá ešte neboli synchronizované." : `${state.links.length} vozidiel z Tesla účtu.`}
+                    {state.links.length === 0
+                      ? "Žiadne vozidlá ešte neboli synchronizované."
+                      : `${state.links.length} vozidiel z Tesla účtu.`}
                   </div>
                 </div>
-                <button disabled={!isConnected || !!busy} onClick={onSyncVehicles} className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50">
+                <button
+                  disabled={!isConnected || !!busy}
+                  onClick={onSyncVehicles}
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                >
                   <RefreshCcw className="h-4 w-4" /> Synchronizovať vozidlá
                 </button>
               </div>
@@ -213,13 +286,21 @@ function TeslaPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="text-left text-xs uppercase text-muted-foreground">
-                      <tr><th className="py-2 pr-3">Tesla vozidlo</th><th className="py-2 pr-3">VIN</th><th className="py-2 pr-3">Faktero vozidlo</th></tr>
+                      <tr>
+                        <th className="py-2 pr-3">Tesla vozidlo</th>
+                        <th className="py-2 pr-3">VIN</th>
+                        <th className="py-2 pr-3">Faktero vozidlo</th>
+                      </tr>
                     </thead>
                     <tbody>
                       {state.links.map((l: any) => (
                         <tr key={l.id} className="border-t border-border">
-                          <td className="py-2 pr-3">{l.tesla_display_name ?? l.tesla_vehicle_id}</td>
-                          <td className="py-2 pr-3 font-mono text-xs text-muted-foreground">{l.tesla_vin ?? "—"}</td>
+                          <td className="py-2 pr-3">
+                            {l.tesla_display_name ?? l.tesla_vehicle_id}
+                          </td>
+                          <td className="py-2 pr-3 font-mono text-xs text-muted-foreground">
+                            {l.tesla_vin ?? "—"}
+                          </td>
                           <td className="py-2 pr-3">
                             <select
                               className="w-full max-w-xs rounded-md border border-input bg-background px-2 py-1.5 text-sm"
@@ -228,7 +309,10 @@ function TeslaPage() {
                             >
                               <option value="">— neprepojené —</option>
                               {vehicles.map((v) => (
-                                <option key={v.id} value={v.id}>{v.name}{v.license_plate ? ` (${v.license_plate})` : ""}</option>
+                                <option key={v.id} value={v.id}>
+                                  {v.name}
+                                  {v.license_plate ? ` (${v.license_plate})` : ""}
+                                </option>
                               ))}
                             </select>
                           </td>
@@ -244,7 +328,11 @@ function TeslaPage() {
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-3 flex items-center justify-between">
                 <div className="font-medium">Tesla dáta</div>
-                <button disabled={!isConnected || !!busy || state.links.length === 0} onClick={onSyncSnap} className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                <button
+                  disabled={!isConnected || !!busy || state.links.length === 0}
+                  onClick={onSyncSnap}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                >
                   <PlugZap className="h-4 w-4" /> Synchronizovať jazdy
                 </button>
               </div>
@@ -266,10 +354,22 @@ function TeslaPage() {
                         const s = latestByVehicle.get(l.tesla_vehicle_id);
                         return (
                           <tr key={l.id} className="border-t border-border">
-                            <td className="py-2 pr-3">{l.tesla_display_name ?? l.tesla_vehicle_id}</td>
-                            <td className="py-2 pr-3">{s?.odometer_km != null ? `${s.odometer_km.toLocaleString("sk-SK")} km` : "—"}</td>
-                            <td className="py-2 pr-3 text-xs text-muted-foreground">{s?.latitude != null && s?.longitude != null ? `${Number(s.latitude).toFixed(4)}, ${Number(s.longitude).toFixed(4)}` : "—"}</td>
-                            <td className="py-2 pr-3 text-xs text-muted-foreground">{fmt(s?.captured_at)}</td>
+                            <td className="py-2 pr-3">
+                              {l.tesla_display_name ?? l.tesla_vehicle_id}
+                            </td>
+                            <td className="py-2 pr-3">
+                              {s?.odometer_km != null
+                                ? `${s.odometer_km.toLocaleString("sk-SK")} km`
+                                : "—"}
+                            </td>
+                            <td className="py-2 pr-3 text-xs text-muted-foreground">
+                              {s?.latitude != null && s?.longitude != null
+                                ? `${Number(s.latitude).toFixed(4)}, ${Number(s.longitude).toFixed(4)}`
+                                : "—"}
+                            </td>
+                            <td className="py-2 pr-3 text-xs text-muted-foreground">
+                              {fmt(s?.captured_at)}
+                            </td>
                           </tr>
                         );
                       })}
@@ -285,15 +385,36 @@ function TeslaPage() {
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-3 font-medium">Stav</div>
               <dl className="space-y-2 text-sm">
-                <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Pripojenie</dt><dd>{isConnected ? (conn.enabled ? "Aktívne" : "Vypnuté") : "Nepripojené"}</dd></div>
-                <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Tesla účet</dt><dd className="font-mono text-xs">{conn?.email_masked ?? "—"}</dd></div>
-                <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Posledná sync.</dt><dd>{fmt(conn?.last_sync_at)}</dd></div>
-                <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Status</dt><dd>{conn?.sync_status ?? "—"}</dd></div>
-                {conn?.error_message && (<div><dt className="text-muted-foreground">Posledná chyba</dt><dd className="mt-1 rounded-md bg-destructive/10 p-2 text-xs text-destructive">{conn.error_message}</dd></div>)}
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Pripojenie</dt>
+                  <dd>{isConnected ? (conn.enabled ? "Aktívne" : "Vypnuté") : "Nepripojené"}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Tesla účet</dt>
+                  <dd className="font-mono text-xs">{conn?.email_masked ?? "—"}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Posledná sync.</dt>
+                  <dd>{fmt(conn?.last_sync_at)}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted-foreground">Status</dt>
+                  <dd>{conn?.sync_status ?? "—"}</dd>
+                </div>
+                {conn?.error_message && (
+                  <div>
+                    <dt className="text-muted-foreground">Posledná chyba</dt>
+                    <dd className="mt-1 rounded-md bg-destructive/10 p-2 text-xs text-destructive">
+                      {conn.error_message}
+                    </dd>
+                  </div>
+                )}
               </dl>
             </div>
             <div className="rounded-xl border border-border bg-card p-5">
-              <div className="mb-3 flex items-center gap-2 font-medium"><Link2 className="h-4 w-4" /> História synchronizácií</div>
+              <div className="mb-3 flex items-center gap-2 font-medium">
+                <Link2 className="h-4 w-4" /> História synchronizácií
+              </div>
               {state.logs.length === 0 ? (
                 <div className="text-sm text-muted-foreground">Žiadne záznamy.</div>
               ) : (
@@ -302,7 +423,11 @@ function TeslaPage() {
                     <li key={l.id} className="rounded-md border border-border p-2">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium">{l.sync_type}</span>
-                        <span className={l.status === "ok" ? "text-emerald-600" : "text-destructive"}>{l.status}</span>
+                        <span
+                          className={l.status === "ok" ? "text-emerald-600" : "text-destructive"}
+                        >
+                          {l.status}
+                        </span>
                       </div>
                       <div className="mt-1 text-muted-foreground">{fmt(l.created_at)}</div>
                       {l.message && <div className="mt-1">{l.message}</div>}
@@ -313,8 +438,15 @@ function TeslaPage() {
             </div>
             <div className="rounded-xl border border-border bg-muted/30 p-4 text-xs text-muted-foreground">
               <div className="mb-1 font-medium text-foreground">Commander vs Tesla</div>
-              <p className="mb-2"><strong>Commander:</strong> poskytuje hotové jazdy — importujú sa priamo do knihy jázd.</p>
-              <p><strong>Tesla:</strong> poskytuje stav vozidla, tachometer a polohu. Vytváranie jázd vyžaduje snímky/telemetriu. V1 sa zameriavame na synchronizáciu vozidiel a snímky tachometra/polohy.</p>
+              <p className="mb-2">
+                <strong>Commander:</strong> poskytuje hotové jazdy — importujú sa priamo do knihy
+                jázd.
+              </p>
+              <p>
+                <strong>Tesla:</strong> poskytuje stav vozidla, tachometer a polohu. Vytváranie jázd
+                vyžaduje snímky/telemetriu. V1 sa zameriavame na synchronizáciu vozidiel a snímky
+                tachometra/polohy.
+              </p>
             </div>
           </div>
         </div>

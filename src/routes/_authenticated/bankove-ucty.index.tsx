@@ -5,7 +5,15 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listBankData, syncBankAccounts, disconnectBank } from "@/lib/faktero/tatrabanka.functions";
 import { toast } from "sonner";
-import { Building2, Plus, RefreshCw, Trash2, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Building2,
+  Plus,
+  RefreshCw,
+  Trash2,
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/")({
   head: () => ({ meta: [{ title: "Bankové účty — Faktero" }] }),
@@ -24,7 +32,8 @@ function BankAccountsPage() {
   const [busy, setBusy] = useState<string | null>(null);
 
   async function reload() {
-    const cid = getActiveCompanyId(); if (!cid) return;
+    const cid = getActiveCompanyId();
+    if (!cid) return;
     setData(await list({ data: { company_id: cid } }));
   }
   useEffect(() => {
@@ -37,23 +46,31 @@ function BankAccountsPage() {
   }, []);
 
   async function onSync(connId: string) {
-    const cid = getActiveCompanyId(); if (!cid) return;
+    const cid = getActiveCompanyId();
+    if (!cid) return;
     setBusy(connId);
     try {
       const r = await syncAcc({ data: { company_id: cid, connection_id: connId } });
       toast.success(`Synchronizovaných ${r.count} účtov`);
       reload();
-    } catch (e: any) { toast.error(e?.message ?? "Chyba synchronizácie"); }
-    finally { setBusy(null); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba synchronizácie");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function onDisconnect(connId: string) {
     if (!confirm("Naozaj odpojiť banku? Všetky účty a transakcie budú vymazané.")) return;
-    const cid = getActiveCompanyId(); if (!cid) return;
+    const cid = getActiveCompanyId();
+    if (!cid) return;
     try {
       await disconnect({ data: { company_id: cid, connection_id: connId } });
-      toast.success("Odpojené"); reload();
-    } catch (e: any) { toast.error(e?.message ?? "Chyba"); }
+      toast.success("Odpojené");
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    }
   }
 
   const totalBalance = (data?.accounts ?? []).reduce((s, a) => s + Number(a.balance ?? 0), 0);
@@ -64,8 +81,10 @@ function BankAccountsPage() {
         title="Bankové účty"
         description="Sandbox integrácia Tatra banka Premium API (Accounts). Iba na čítanie."
         action={
-          <Link to="/bankove-ucty/pripojit"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700">
+          <Link
+            to="/bankove-ucty/pripojit"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700"
+          >
             <Plus className="h-4 w-4" /> Pripojiť banku
           </Link>
         }
@@ -74,7 +93,9 @@ function BankAccountsPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4">
             <div className="text-xs uppercase tracking-wide text-emerald-700">Celkový zostatok</div>
-            <div className="mt-1 text-2xl font-semibold text-emerald-900">{fmtMoney(totalBalance)}</div>
+            <div className="mt-1 text-2xl font-semibold text-emerald-900">
+              {fmtMoney(totalBalance)}
+            </div>
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">Počet účtov</div>
@@ -86,13 +107,17 @@ function BankAccountsPage() {
           </div>
         </div>
 
-        <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Pripojené banky</h2>
+        <h2 className="mt-8 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Pripojené banky
+        </h2>
         {data && data.connections.length === 0 && (
           <div className="mt-3 rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
             <Building2 className="mx-auto h-10 w-10 text-muted-foreground" />
             <p className="mt-2 text-sm text-muted-foreground">Žiadna banka nie je pripojená.</p>
-            <Link to="/bankove-ucty/pripojit"
-              className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700">
+            <Link
+              to="/bankove-ucty/pripojit"
+              className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700"
+            >
               <Plus className="h-4 w-4" /> Pripojiť Tatra banku (sandbox)
             </Link>
           </div>
@@ -118,38 +143,57 @@ function BankAccountsPage() {
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {c.last_synced_at ? `Posledná synchronizácia: ${new Date(c.last_synced_at).toLocaleString("sk-SK")}` : "Ešte nesynchronizované"}
+                    {c.last_synced_at
+                      ? `Posledná synchronizácia: ${new Date(c.last_synced_at).toLocaleString("sk-SK")}`
+                      : "Ešte nesynchronizované"}
                   </div>
                 </div>
-                <button onClick={() => onSync(c.id)} disabled={busy === c.id}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50">
-                  <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} /> Načítať účty
+                <button
+                  onClick={() => onSync(c.id)}
+                  disabled={busy === c.id}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
+                  Načítať účty
                 </button>
-                <button onClick={() => onDisconnect(c.id)}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10">
+                <button
+                  onClick={() => onDisconnect(c.id)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                >
                   <Trash2 className="h-3.5 w-3.5" /> Odpojiť
                 </button>
               </div>
               <div className="mt-3 grid gap-2 md:grid-cols-2">
-                {data.accounts.filter((a) => a.bank_connection_id === c.id).map((a) => (
-                  <div key={a.id} className="rounded-lg border border-border bg-muted/30 p-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">{a.account_name ?? a.iban ?? "Účet"}</div>
-                        <div className="font-mono text-xs text-muted-foreground">{a.iban ?? "—"}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-semibold tabular-nums">{fmtMoney(Number(a.balance ?? 0), a.currency)}</div>
-                        <Link to="/bankove-ucty/transakcie" search={{ account: a.id } as any}
-                          className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline">
-                          Transakcie <ArrowRight className="h-3 w-3" />
-                        </Link>
+                {data.accounts
+                  .filter((a) => a.bank_connection_id === c.id)
+                  .map((a) => (
+                    <div key={a.id} className="rounded-lg border border-border bg-muted/30 p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{a.account_name ?? a.iban ?? "Účet"}</div>
+                          <div className="font-mono text-xs text-muted-foreground">
+                            {a.iban ?? "—"}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-semibold tabular-nums">
+                            {fmtMoney(Number(a.balance ?? 0), a.currency)}
+                          </div>
+                          <Link
+                            to="/bankove-ucty/transakcie"
+                            search={{ account: a.id } as any}
+                            className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline"
+                          >
+                            Transakcie <ArrowRight className="h-3 w-3" />
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
                 {data.accounts.filter((a) => a.bank_connection_id === c.id).length === 0 && (
-                  <div className="text-sm text-muted-foreground">Žiadne účty — kliknite "Načítať účty".</div>
+                  <div className="text-sm text-muted-foreground">
+                    Žiadne účty — kliknite "Načítať účty".
+                  </div>
                 )}
               </div>
             </div>

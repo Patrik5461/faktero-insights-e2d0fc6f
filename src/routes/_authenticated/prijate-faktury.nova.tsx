@@ -12,9 +12,12 @@ export const Route = createFileRoute("/_authenticated/prijate-faktury/nova")({
   component: NewPurchaseInvoicePage,
 });
 
-function today() { return new Date().toISOString().slice(0, 10); }
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
 function addDays(iso: string, d: number) {
-  const dt = new Date(iso); dt.setDate(dt.getDate() + d);
+  const dt = new Date(iso);
+  dt.setDate(dt.getDate() + d);
   return dt.toISOString().slice(0, 10);
 }
 
@@ -72,7 +75,8 @@ function NewPurchaseInvoicePage() {
       if (file) {
         const ext = file.name.split(".").pop() ?? "bin";
         const path = `${cid}/${crypto.randomUUID()}.${ext}`;
-        const up = await supabase.storage.from("purchase-invoices")
+        const up = await supabase.storage
+          .from("purchase-invoices")
           .upload(path, file, { contentType: file.type, upsert: false });
         if (up.error) throw new Error(`Upload PDF zlyhal: ${up.error.message}`);
         file_path = path;
@@ -102,13 +106,19 @@ function NewPurchaseInvoicePage() {
         file_mime,
         file_size,
       };
-      const { data, error } = await supabase.from("purchase_invoices").insert(payload).select("id").single();
+      const { data, error } = await supabase
+        .from("purchase_invoices")
+        .insert(payload)
+        .select("id")
+        .single();
       if (error) throw error;
       toast.success("Prijatá faktúra bola uložená");
       navigate({ to: "/prijate-faktury/$id", params: { id: data!.id } });
     } catch (e: any) {
       toast.error(e?.message ?? "Uloženie zlyhalo");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -117,8 +127,10 @@ function NewPurchaseInvoicePage() {
         title="Nová prijatá faktúra"
         description="Zaevidujte faktúru od dodávateľa (nákup / výdavok)."
         action={
-          <Link to="/prijate-faktury"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary">
+          <Link
+            to="/prijate-faktury"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+          >
             <ArrowLeft className="h-4 w-4" /> Späť
           </Link>
         }
@@ -126,16 +138,25 @@ function NewPurchaseInvoicePage() {
       <PageBody>
         <form onSubmit={submit} className="mx-auto grid max-w-4xl gap-6">
           <section className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Dodávateľ</h3>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Dodávateľ
+            </h3>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Názov *">
-                <input required value={form.supplier_name} onChange={(e) => set("supplier_name", e.target.value)}
-                  className="input" />
+                <input
+                  required
+                  value={form.supplier_name}
+                  onChange={(e) => set("supplier_name", e.target.value)}
+                  className="input"
+                />
               </Field>
               <Field label="IČO">
                 <div className="flex -space-x-px items-start">
-                  <input value={form.supplier_ico} onChange={(e) => set("supplier_ico", e.target.value)}
-                    className="input flex-1 rounded-l-md focus:z-10" />
+                  <input
+                    value={form.supplier_ico}
+                    onChange={(e) => set("supplier_ico", e.target.value)}
+                    className="input flex-1 rounded-l-md focus:z-10"
+                  />
                   <IcoLookupButton
                     ico={form.supplier_ico}
                     onResult={(r) => {
@@ -147,38 +168,65 @@ function NewPurchaseInvoicePage() {
                 </div>
               </Field>
               <Field label="DIČ">
-                <input value={form.supplier_dic} onChange={(e) => set("supplier_dic", e.target.value)}
-                  className="input" />
+                <input
+                  value={form.supplier_dic}
+                  onChange={(e) => set("supplier_dic", e.target.value)}
+                  className="input"
+                />
               </Field>
               <Field label="IČ DPH">
-                <input value={form.supplier_ic_dph} onChange={(e) => set("supplier_ic_dph", e.target.value)}
-                  className="input" />
+                <input
+                  value={form.supplier_ic_dph}
+                  onChange={(e) => set("supplier_ic_dph", e.target.value)}
+                  className="input"
+                />
               </Field>
             </div>
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Faktúra</h3>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Faktúra
+            </h3>
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Číslo faktúry dodávateľa *">
-                <input required value={form.invoice_number} onChange={(e) => set("invoice_number", e.target.value)}
-                  className="input" />
+                <input
+                  required
+                  value={form.invoice_number}
+                  onChange={(e) => set("invoice_number", e.target.value)}
+                  className="input"
+                />
               </Field>
               <Field label="Dátum vystavenia">
-                <input type="date" value={form.issue_date} onChange={(e) => set("issue_date", e.target.value)}
-                  className="input" />
+                <input
+                  type="date"
+                  value={form.issue_date}
+                  onChange={(e) => set("issue_date", e.target.value)}
+                  className="input"
+                />
               </Field>
               <Field label="Dátum prijatia">
-                <input type="date" value={form.received_date} onChange={(e) => set("received_date", e.target.value)}
-                  className="input" />
+                <input
+                  type="date"
+                  value={form.received_date}
+                  onChange={(e) => set("received_date", e.target.value)}
+                  className="input"
+                />
               </Field>
               <Field label="Dátum splatnosti">
-                <input type="date" value={form.due_date} onChange={(e) => set("due_date", e.target.value)}
-                  className="input" />
+                <input
+                  type="date"
+                  value={form.due_date}
+                  onChange={(e) => set("due_date", e.target.value)}
+                  className="input"
+                />
               </Field>
               <Field label="Spôsob platby">
-                <select value={form.payment_method} onChange={(e) => set("payment_method", e.target.value)}
-                  className="input">
+                <select
+                  value={form.payment_method}
+                  onChange={(e) => set("payment_method", e.target.value)}
+                  className="input"
+                >
                   <option value="prevod">Prevod</option>
                   <option value="hotovost">Hotovosť</option>
                   <option value="karta">Karta</option>
@@ -186,8 +234,11 @@ function NewPurchaseInvoicePage() {
                 </select>
               </Field>
               <Field label="Stav">
-                <select value={form.status} onChange={(e) => set("status", e.target.value as any)}
-                  className="input">
+                <select
+                  value={form.status}
+                  onChange={(e) => set("status", e.target.value as any)}
+                  className="input"
+                >
                   <option value="draft">Koncept</option>
                   <option value="received">Prijaté</option>
                   <option value="booked">Zaúčtované</option>
@@ -198,22 +249,43 @@ function NewPurchaseInvoicePage() {
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Sumy</h3>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Sumy
+            </h3>
             <div className="grid gap-3 sm:grid-cols-4">
               <Field label="Bez DPH">
-                <input type="number" step="0.01" value={form.amount_without_vat}
-                  onChange={(e) => set("amount_without_vat", e.target.value)} className="input" />
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.amount_without_vat}
+                  onChange={(e) => set("amount_without_vat", e.target.value)}
+                  className="input"
+                />
               </Field>
               <Field label="DPH">
-                <input type="number" step="0.01" value={form.vat_amount}
-                  onChange={(e) => set("vat_amount", e.target.value)} className="input" />
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.vat_amount}
+                  onChange={(e) => set("vat_amount", e.target.value)}
+                  className="input"
+                />
               </Field>
               <Field label="Celkom">
-                <input type="number" step="0.01" value={form.amount_total}
-                  onChange={(e) => set("amount_total", e.target.value)} className="input font-semibold" />
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.amount_total}
+                  onChange={(e) => set("amount_total", e.target.value)}
+                  className="input font-semibold"
+                />
               </Field>
               <Field label="Mena">
-                <select value={form.currency} onChange={(e) => set("currency", e.target.value)} className="input">
+                <select
+                  value={form.currency}
+                  onChange={(e) => set("currency", e.target.value)}
+                  className="input"
+                >
                   <option value="EUR">EUR</option>
                   <option value="CZK">CZK</option>
                   <option value="USD">USD</option>
@@ -223,28 +295,43 @@ function NewPurchaseInvoicePage() {
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Príloha & poznámka</h3>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Príloha & poznámka
+            </h3>
             <Field label="PDF príloha">
               <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border bg-background px-4 py-6 text-sm text-muted-foreground hover:bg-muted/30">
                 <Upload className="h-4 w-4" />
                 {file ? file.name : "Kliknite pre výber PDF/obrázka"}
-                <input type="file" className="hidden" accept="application/pdf,image/*"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="application/pdf,image/*"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
               </label>
             </Field>
             <Field label="Poznámka">
-              <textarea rows={3} value={form.note} onChange={(e) => set("note", e.target.value)}
-                className="input" />
+              <textarea
+                rows={3}
+                value={form.note}
+                onChange={(e) => set("note", e.target.value)}
+                className="input"
+              />
             </Field>
           </section>
 
           <div className="flex justify-end gap-2">
-            <Link to="/prijate-faktury"
-              className="inline-flex h-10 items-center rounded-md border border-border px-4 text-sm hover:bg-secondary">
+            <Link
+              to="/prijate-faktury"
+              className="inline-flex h-10 items-center rounded-md border border-border px-4 text-sm hover:bg-secondary"
+            >
               Zrušiť
             </Link>
-            <button disabled={busy} type="submit"
-              className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+            <button
+              disabled={busy}
+              type="submit"
+              className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               Uložiť prijatú faktúru
             </button>

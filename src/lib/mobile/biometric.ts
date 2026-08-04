@@ -34,7 +34,9 @@ export async function enableBiometric(): Promise<{ ok: boolean; error?: string }
       androidTitle: "Faktero",
       androidSubtitle: "Povoliť biometriu",
     });
-    const { Preferences } = await import("@capacitor/preferences").catch(() => ({ Preferences: null as any }));
+    const { Preferences } = await import("@capacitor/preferences").catch(() => ({
+      Preferences: null as any,
+    }));
     const payload = JSON.stringify({
       refresh_token: data.session.refresh_token,
       access_token: data.session.access_token,
@@ -53,10 +55,14 @@ export async function enableBiometric(): Promise<{ ok: boolean; error?: string }
 
 export async function disableBiometric(): Promise<void> {
   try {
-    const { Preferences } = await import("@capacitor/preferences").catch(() => ({ Preferences: null as any }));
+    const { Preferences } = await import("@capacitor/preferences").catch(() => ({
+      Preferences: null as any,
+    }));
     if (Preferences) await Preferences.remove({ key: STORAGE_KEY });
   } catch {}
-  try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {}
 }
 
 export async function loginWithBiometric(): Promise<{ ok: boolean; error?: string }> {
@@ -69,7 +75,9 @@ export async function loginWithBiometric(): Promise<{ ok: boolean; error?: strin
       androidTitle: "Faktero",
       androidSubtitle: "Prihlásiť sa biometriou",
     });
-    const { Preferences } = await import("@capacitor/preferences").catch(() => ({ Preferences: null as any }));
+    const { Preferences } = await import("@capacitor/preferences").catch(() => ({
+      Preferences: null as any,
+    }));
     let raw: string | null = null;
     if (Preferences) {
       const r = await Preferences.get({ key: STORAGE_KEY });

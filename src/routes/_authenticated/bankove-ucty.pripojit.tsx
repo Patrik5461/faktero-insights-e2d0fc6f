@@ -17,7 +17,8 @@ function ConnectPage() {
   const [busy, setBusy] = useState(false);
 
   async function connect() {
-    const cid = getActiveCompanyId(); if (!cid) return;
+    const cid = getActiveCompanyId();
+    if (!cid) return;
     setBusy(true);
     try {
       const r = await startFn({ data: { company_id: cid } });
@@ -45,7 +46,10 @@ function ConnectPage() {
         title="Pripojiť banku"
         description="Tatra banka Premium API — sandbox prostredie, iba na čítanie."
         action={
-          <Link to="/bankove-ucty" className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary">
+          <Link
+            to="/bankove-ucty"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+          >
             <ArrowLeft className="h-4 w-4" /> Späť
           </Link>
         }
@@ -67,13 +71,17 @@ function ConnectPage() {
             <li>• Príprava na automatický párovanie platieb s faktúrami</li>
             <li>• Bez platobných príkazov, iba na čítanie</li>
           </ul>
-          <button onClick={connect} disabled={busy}
-            className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
+          <button
+            onClick={connect}
+            disabled={busy}
+            className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
             <ExternalLink className="h-4 w-4" />
             {busy ? "Presmerovanie…" : "Pripojiť cez Tatra banku"}
           </button>
           <p className="mt-3 text-xs text-muted-foreground">
-            Po pripojení vás presmerujeme späť do Faktera. Prístupové tokeny sa ukladajú bezpečne na serveri a nikdy nie sú dostupné v prehliadači.
+            Po pripojení vás presmerujeme späť do Faktera. Prístupové tokeny sa ukladajú bezpečne na
+            serveri a nikdy nie sú dostupné v prehliadači.
           </p>
         </div>
       </PageBody>

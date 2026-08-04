@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { listDeliveryNoteImportsFn, getDeliveryNoteSignedUrlFn } from "@/lib/faktero/ai-delivery-note.functions";
+import {
+  listDeliveryNoteImportsFn,
+  getDeliveryNoteSignedUrlFn,
+} from "@/lib/faktero/ai-delivery-note.functions";
 import { FileText, ExternalLink, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,7 +23,10 @@ function DeliveryNoteHistoryPage() {
 
   useEffect(() => {
     const cid = getActiveCompanyId();
-    if (!cid) { setLoading(false); return; }
+    if (!cid) {
+      setLoading(false);
+      return;
+    }
     listFn({ data: { company_id: cid, limit: 100 } })
       .then((r) => setRows(r.rows))
       .catch((e) => toast.error(e?.message ?? "Nepodarilo sa načítať."))
@@ -42,7 +48,10 @@ function DeliveryNoteHistoryPage() {
         title="História dodacích listov"
         description="Prehľad AI importov zo naskenovaných dokumentov."
         action={
-          <Link to="/sklad/dodaci-list" className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+          <Link
+            to="/sklad/dodaci-list"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
             <ScanLine className="h-4 w-4" /> Nový sken
           </Link>
         }
@@ -74,17 +83,25 @@ function DeliveryNoteHistoryPage() {
                   const items = Array.isArray(m.items) ? m.items.length : 0;
                   return (
                     <tr key={r.id}>
-                      <td className="p-2 whitespace-nowrap">{new Date(r.created_at).toLocaleString("sk-SK")}</td>
+                      <td className="p-2 whitespace-nowrap">
+                        {new Date(r.created_at).toLocaleString("sk-SK")}
+                      </td>
                       <td className="p-2">{m.supplier ?? "—"}</td>
                       <td className="p-2">{m.delivery_number ?? "—"}</td>
                       <td className="p-2 text-right">{items}</td>
                       <td className="p-2 text-right">{c.movements ?? "—"}</td>
                       <td className="p-2">
                         {m.storage_path ? (
-                          <button onClick={() => openDoc(m.storage_path)} className="inline-flex items-center gap-1 text-primary hover:underline">
-                            <FileText className="h-3.5 w-3.5" /> {m.source_filename ?? "otvoriť"} <ExternalLink className="h-3 w-3" />
+                          <button
+                            onClick={() => openDoc(m.storage_path)}
+                            className="inline-flex items-center gap-1 text-primary hover:underline"
+                          >
+                            <FileText className="h-3.5 w-3.5" /> {m.source_filename ?? "otvoriť"}{" "}
+                            <ExternalLink className="h-3 w-3" />
                           </button>
-                        ) : <span className="text-muted-foreground">—</span>}
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </td>
                     </tr>
                   );

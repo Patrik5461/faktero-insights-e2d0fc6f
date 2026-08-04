@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { lookupCompanyByIcoFn, companyLookupConfiguredFn } from "@/lib/faktero/company-lookup.functions";
+import {
+  lookupCompanyByIcoFn,
+  companyLookupConfiguredFn,
+} from "@/lib/faktero/company-lookup.functions";
 import type { NormalizedCompany } from "@/lib/faktero/company-registry.server";
 
 type Props = {
@@ -34,12 +37,17 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
     successTimerRef.current = setTimeout(() => setSuccess(null), 3000);
   }
 
-  useEffect(() => () => {
-    if (successTimerRef.current) clearTimeout(successTimerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
-    cfg().then((r) => setEnabled(!!r?.enabled)).catch(() => setEnabled(false));
+    cfg()
+      .then((r) => setEnabled(!!r?.enabled))
+      .catch(() => setEnabled(false));
   }, []);
 
   async function run(auto = false) {
@@ -61,7 +69,9 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
         if (dicMissing || icDphMissing) setMissing({ dic: dicMissing, ic_dph: icDphMissing });
         // Data populated successfully — guarantee no error state remains visible.
         setError(null);
-        const msg = res.cached ? "Údaje boli načítané z FinStat (cache)." : "Údaje boli načítané z FinStat.";
+        const msg = res.cached
+          ? "Údaje boli načítané z FinStat (cache)."
+          : "Údaje boli načítané z FinStat.";
         showSuccess(msg);
         if (!auto) toast.success(msg);
       } else if (res.status === "not_found") {
@@ -73,7 +83,8 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
         const m = String(res.message ?? "");
         let label = `FinStat: ${m}`;
         if (m.startsWith("auth_") || m.startsWith("Autorizácia FinStat")) {
-          label = "Autorizácia FinStat API zlyhala. Skontrolujte API kľúče alebo spôsob generovania hash.";
+          label =
+            "Autorizácia FinStat API zlyhala. Skontrolujte API kľúče alebo spôsob generovania hash.";
         } else if (m === "FinStat API nie je nakonfigurované." || m === "not_configured") {
           label = "FinStat API nie je nakonfigurované.";
         } else if (m === "network" || m.startsWith("http_") || m === "invalid_response") {
@@ -120,13 +131,15 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
           "relative h-10 inline-flex shrink-0 items-center gap-2 rounded-r-md border border-input bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary/80 focus:z-20 focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
         }
       >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4 text-muted-foreground" />}
+        {loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Download className="h-4 w-4 text-muted-foreground" />
+        )}
         <span className="leading-tight text-left">
           {loading ? "Vyhľadávam..." : "Načítať"}
           {!loading && (
-            <span className="block text-[10px] uppercase tracking-wider opacity-60">
-              podľa IČO
-            </span>
+            <span className="block text-[10px] uppercase tracking-wider opacity-60">podľa IČO</span>
           )}
         </span>
       </button>
@@ -151,7 +164,9 @@ export function IcoLookupButton({ ico, onResult, className, autoLookup = true }:
       {missing && !error && (
         <p className="flex items-start gap-1 text-[11px] text-amber-600 dark:text-amber-400">
           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-          FinStat nevrátil {missing.dic && missing.ic_dph ? "DIČ ani IČ DPH" : missing.dic ? "DIČ" : "IČ DPH"} pre túto firmu.
+          FinStat nevrátil{" "}
+          {missing.dic && missing.ic_dph ? "DIČ ani IČ DPH" : missing.dic ? "DIČ" : "IČ DPH"} pre
+          túto firmu.
         </p>
       )}
     </div>

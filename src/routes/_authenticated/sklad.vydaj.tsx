@@ -5,6 +5,12 @@ export const Route = createFileRoute("/_authenticated/sklad/vydaj")({
   head: () => ({ meta: [{ title: "Výdaj zo skladu — Faktero" }] }),
   component: () => {
     const nav = useNavigate();
-    return <MovementForm type="vydaj" title="Výdaj zo skladu" onDone={() => nav({ to: "/sklad/pohyby" })} />;
+    return (
+      <MovementForm
+        type="vydaj"
+        title="Výdaj zo skladu"
+        onDone={() => nav({ to: "/sklad/pohyby" })}
+      />
+    );
   },
 });

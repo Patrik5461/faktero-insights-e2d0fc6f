@@ -78,13 +78,19 @@ export const Route = createFileRoute("/api/public/support-chat")({
           });
           if (res.status === 429) {
             return new Response(
-              JSON.stringify({ error: "rate_limited", message: "Príliš veľa otázok. Skúste o chvíľu." }),
+              JSON.stringify({
+                error: "rate_limited",
+                message: "Príliš veľa otázok. Skúste o chvíľu.",
+              }),
               { status: 429, headers: { "Content-Type": "application/json" } },
             );
           }
           if (res.status === 401) {
             return new Response(
-              JSON.stringify({ error: "ai_unavailable", message: "AI podpora je dočasne nedostupná. Napíšte nám na podpora@faktero.sk." }),
+              JSON.stringify({
+                error: "ai_unavailable",
+                message: "AI podpora je dočasne nedostupná. Napíšte nám na podpora@faktero.sk.",
+              }),
               { status: 503, headers: { "Content-Type": "application/json" } },
             );
           }

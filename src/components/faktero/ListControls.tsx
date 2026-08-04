@@ -11,7 +11,13 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export function PageSizeSelect({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+export function PageSizeSelect({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
   return (
     <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
       Zobraziť na stranu:
@@ -20,25 +26,42 @@ export function PageSizeSelect({ value, onChange }: { value: number; onChange: (
         onChange={(e) => onChange(Number(e.target.value))}
         className="rounded-md border border-input bg-background px-2 py-1 text-sm text-foreground"
       >
-        {[5, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+        {[5, 25, 50, 100].map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
       </select>
     </label>
   );
 }
 
 export function Pagination({
-  page, pageSize, total, onPageChange,
-}: { page: number; pageSize: number; total: number; onPageChange: (p: number) => void }) {
+  page,
+  pageSize,
+  total,
+  onPageChange,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (p: number) => void;
+}) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(total, page * pageSize);
 
   const pages: (number | "…")[] = [];
-  const push = (n: number | "…") => { if (pages[pages.length - 1] !== n) pages.push(n); };
+  const push = (n: number | "…") => {
+    if (pages[pages.length - 1] !== n) pages.push(n);
+  };
   for (let i = 1; i <= totalPages; i++) {
     if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) push(i);
     else if (i < page) push("…");
-    else if (i > page) { push("…"); break; }
+    else if (i > page) {
+      push("…");
+      break;
+    }
   }
 
   return (
@@ -48,37 +71,67 @@ export function Pagination({
       </span>
       <div className="flex items-center gap-1">
         <button
-          onClick={() => onPageChange(page - 1)} disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
           className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-40"
-        ><ChevronLeft className="h-3 w-3" /> Predošlá</button>
-        {pages.map((p, i) => p === "…" ? (
-          <span key={`e${i}`} className="px-1 text-muted-foreground">…</span>
-        ) : (
-          <button key={p} onClick={() => onPageChange(p)}
-            className={`min-w-7 rounded-md px-2 py-1 text-xs ${p === page ? "bg-primary text-primary-foreground" : "border border-border hover:bg-secondary"}`}>
-            {p}
-          </button>
-        ))}
+        >
+          <ChevronLeft className="h-3 w-3" /> Predošlá
+        </button>
+        {pages.map((p, i) =>
+          p === "…" ? (
+            <span key={`e${i}`} className="px-1 text-muted-foreground">
+              …
+            </span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => onPageChange(p)}
+              className={`min-w-7 rounded-md px-2 py-1 text-xs ${p === page ? "bg-primary text-primary-foreground" : "border border-border hover:bg-secondary"}`}
+            >
+              {p}
+            </button>
+          ),
+        )}
         <button
-          onClick={() => onPageChange(page + 1)} disabled={page >= totalPages}
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= totalPages}
           className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-40"
-        >Ďalšia <ChevronRight className="h-3 w-3" /></button>
+        >
+          Ďalšia <ChevronRight className="h-3 w-3" />
+        </button>
       </div>
     </div>
   );
 }
 
 export function ConfirmDialog({
-  open, title, message, warning, confirmLabel = "Vymazať", danger = true, onCancel, onConfirm, busy,
+  open,
+  title,
+  message,
+  warning,
+  confirmLabel = "Vymazať",
+  danger = true,
+  onCancel,
+  onConfirm,
+  busy,
 }: {
-  open: boolean; title: string; message: string; warning?: string;
-  confirmLabel?: string; danger?: boolean;
-  onCancel: () => void; onConfirm: () => void; busy?: boolean;
+  open: boolean;
+  title: string;
+  message: string;
+  warning?: string;
+  confirmLabel?: string;
+  danger?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  busy?: boolean;
 }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onCancel}>
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="w-full max-w-md rounded-xl border border-border bg-card p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-lg font-semibold">{title}</h3>
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>
         {warning && (
@@ -88,11 +141,19 @@ export function ConfirmDialog({
           </div>
         )}
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onCancel} className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary">Zrušiť</button>
           <button
-            onClick={onConfirm} disabled={busy}
+            onClick={onCancel}
+            className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+          >
+            Zrušiť
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={busy}
             className={`rounded-md px-4 py-2 text-sm font-medium ${danger ? "bg-destructive text-destructive-foreground hover:opacity-90" : "bg-primary text-primary-foreground hover:opacity-90"} disabled:opacity-50`}
-          >{busy ? "…" : confirmLabel}</button>
+          >
+            {busy ? "…" : confirmLabel}
+          </button>
         </div>
       </div>
     </div>
@@ -100,29 +161,56 @@ export function ConfirmDialog({
 }
 
 export function BulkBar({
-  count, showDeleted, onDelete, onRestore, onClear,
-}: { count: number; showDeleted: boolean; onDelete: () => void; onRestore: () => void; onClear: () => void }) {
+  count,
+  showDeleted,
+  onDelete,
+  onRestore,
+  onClear,
+}: {
+  count: number;
+  showDeleted: boolean;
+  onDelete: () => void;
+  onRestore: () => void;
+  onClear: () => void;
+}) {
   if (count === 0) return null;
   return (
     <div className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm">
       <span className="font-medium text-primary">Vybraté: {count}</span>
       <div className="flex gap-2">
         {showDeleted ? (
-          <button onClick={onRestore} className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary">
+          <button
+            onClick={onRestore}
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
+          >
             <RotateCcw className="h-3.5 w-3.5" /> Obnoviť
           </button>
         ) : (
-          <button onClick={onDelete} className="inline-flex items-center gap-1 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:opacity-90">
+          <button
+            onClick={onDelete}
+            className="inline-flex items-center gap-1 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:opacity-90"
+          >
             <Trash2 className="h-3.5 w-3.5" /> Vymazať vybraté
           </button>
         )}
-        <button onClick={onClear} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary">Zrušiť výber</button>
+        <button
+          onClick={onClear}
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
+        >
+          Zrušiť výber
+        </button>
       </div>
     </div>
   );
 }
 
-export function DeletedToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+export function DeletedToggle({
+  value,
+  onChange,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
       <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
@@ -201,7 +289,10 @@ export function LogsToolbar({
 
       {/* Selects */}
       {selects.map((s) => (
-        <label key={s.label} className="flex flex-col text-[11px] font-medium text-muted-foreground">
+        <label
+          key={s.label}
+          className="flex flex-col text-[11px] font-medium text-muted-foreground"
+        >
           <span className="mb-1 uppercase tracking-wider">{s.label}</span>
           <select
             value={s.value}

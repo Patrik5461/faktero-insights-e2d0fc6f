@@ -21,20 +21,31 @@ function SettingsPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return;
-      supabase.from("profiles").select("*").eq("id", data.user.id).single().then(({ data }) => setProfile(data));
+      supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", data.user.id)
+        .single()
+        .then(({ data }) => setProfile(data));
     });
   }, []);
   if (!profile) return <PageBody>Načítavam…</PageBody>;
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    const { error } = await supabase.from("profiles").update({ full_name: profile.full_name }).eq("id", profile.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: profile.full_name })
+      .eq("id", profile.id);
     if (error) return toast.error(error.message);
     toast.success("Uložené");
   }
 
   async function saveMode(mode: "invoicing" | "logbook" | "both") {
-    const { error } = await supabase.from("profiles").update({ product_mode: mode }).eq("id", profile.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ product_mode: mode })
+      .eq("id", profile.id);
     if (error) return toast.error(error.message);
     setActiveProduct(mode === "logbook" ? "logbook" : "invoicing");
     setProfile({ ...profile, product_mode: mode });
@@ -46,16 +57,32 @@ function SettingsPage() {
     <>
       <PageHeader title="Nastavenia účtu" description="Vaše osobné údaje." />
       <PageBody>
-        <form onSubmit={save} className="max-w-lg space-y-4 rounded-xl border border-border bg-card p-6">
+        <form
+          onSubmit={save}
+          className="max-w-lg space-y-4 rounded-xl border border-border bg-card p-6"
+        >
           <label className="block">
             <span className="text-sm font-medium">Email</span>
-            <input value={profile.email ?? ""} disabled className="mt-1 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm" />
+            <input
+              value={profile.email ?? ""}
+              disabled
+              className="mt-1 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm"
+            />
           </label>
           <label className="block">
             <span className="text-sm font-medium">Meno a priezvisko</span>
-            <input value={profile.full_name ?? ""} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <input
+              value={profile.full_name ?? ""}
+              onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
           </label>
-          <button type="submit" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Uložiť</button>
+          <button
+            type="submit"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            Uložiť
+          </button>
         </form>
 
         <div className="mt-8 max-w-3xl rounded-xl border border-border bg-card p-6">
@@ -72,7 +99,9 @@ function SettingsPage() {
                   type="button"
                   onClick={() => saveMode(o.value)}
                   className={`rounded-lg border p-4 text-left transition ${
-                    active ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-border hover:border-primary/40 hover:bg-secondary/40"
+                    active
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                      : "border-border hover:border-primary/40 hover:bg-secondary/40"
                   }`}
                 >
                   <div className="text-sm font-semibold">{o.label}</div>

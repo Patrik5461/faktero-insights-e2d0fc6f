@@ -21,7 +21,9 @@ function IntegrationsPage() {
             className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-primary/10 p-2 text-primary"><Satellite className="h-5 w-5" /></div>
+              <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                <Satellite className="h-5 w-5" />
+              </div>
               <div>
                 <div className="font-medium">Commander GPS</div>
                 <div className="text-sm text-muted-foreground">
@@ -36,11 +38,14 @@ function IntegrationsPage() {
             className="group flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-primary/10 p-2 text-primary"><Car className="h-5 w-5" /></div>
+              <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                <Car className="h-5 w-5" />
+              </div>
               <div>
                 <div className="font-medium">Tesla Fleet API</div>
                 <div className="text-sm text-muted-foreground">
-                  Synchronizácia Tesla vozidiel, tachometra a polohy cez oficiálne Tesla Fleet API (OAuth).
+                  Synchronizácia Tesla vozidiel, tachometra a polohy cez oficiálne Tesla Fleet API
+                  (OAuth).
                 </div>
               </div>
             </div>

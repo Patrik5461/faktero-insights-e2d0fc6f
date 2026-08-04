@@ -34,7 +34,7 @@ async function logAudit(
   action: string,
   entityType: string | null,
   entityId: string | null,
-  metadata: Record<string, any> = {}
+  metadata: Record<string, any> = {},
 ) {
   await supabaseAdmin.from("platform_audit_logs").insert({
     admin_user_id: adminUserId,
@@ -67,16 +67,38 @@ export const getAdminOverview = createServerFn({ method: "GET" })
     since.setUTCHours(0, 0, 0, 0);
     const monthStart = since.toISOString();
 
-    const [companies, users, activeCompanies, invoicesMonth, apiMonth, emailsMonth, failedWebhooks] =
-      await Promise.all([
-        supabaseAdmin.from("companies").select("id", { count: "exact", head: true }),
-        supabaseAdmin.from("profiles").select("id", { count: "exact", head: true }),
-        supabaseAdmin.from("companies").select("id", { count: "exact", head: true }).is("suspended_at", null),
-        supabaseAdmin.from("invoices").select("id", { count: "exact", head: true }).gte("created_at", monthStart),
-        supabaseAdmin.from("api_logs").select("id", { count: "exact", head: true }).gte("created_at", monthStart),
-        supabaseAdmin.from("invoice_email_logs").select("id", { count: "exact", head: true }).gte("created_at", monthStart),
-        supabaseAdmin.from("webhook_delivery_logs").select("id", { count: "exact", head: true }).eq("status", "failed"),
-      ]);
+    const [
+      companies,
+      users,
+      activeCompanies,
+      invoicesMonth,
+      apiMonth,
+      emailsMonth,
+      failedWebhooks,
+    ] = await Promise.all([
+      supabaseAdmin.from("companies").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("profiles").select("id", { count: "exact", head: true }),
+      supabaseAdmin
+        .from("companies")
+        .select("id", { count: "exact", head: true })
+        .is("suspended_at", null),
+      supabaseAdmin
+        .from("invoices")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", monthStart),
+      supabaseAdmin
+        .from("api_logs")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", monthStart),
+      supabaseAdmin
+        .from("invoice_email_logs")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", monthStart),
+      supabaseAdmin
+        .from("webhook_delivery_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "failed"),
+    ]);
 
     return {
       totalCompanies: companies.count ?? 0,
@@ -109,7 +131,9 @@ export const listAdminCompanies = createServerFn({ method: "POST" })
     const to = from + data.pageSize - 1;
     let q = supabaseAdmin
       .from("companies")
-      .select("id, name, ico, dic, country, created_at, suspended_at, created_by", { count: "exact" })
+      .select("id, name, ico, dic, country, created_at, suspended_at, created_by", {
+        count: "exact",
+      })
       .order("created_at", { ascending: false })
       .range(from, to);
     if (data.q.trim()) {
@@ -159,10 +183,10 @@ export const listAdminCompanies = createServerFn({ method: "POST" })
         : Promise.resolve({ data: [] as any[] }),
     ]);
     const profileMap = new Map<string, any>(
-      ((profiles as any).data ?? []).map((p: any) => [p.id, p])
+      ((profiles as any).data ?? []).map((p: any) => [p.id, p]),
     );
     const subMap = new Map<string, any>(
-      ((subs as any).data ?? []).map((s: any) => [s.company_id, s])
+      ((subs as any).data ?? []).map((s: any) => [s.company_id, s]),
     );
 
     return {
@@ -286,7 +310,7 @@ export const getAdminCompany = createServerFn({ method: "POST" })
 export const suspendCompany = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { id: string; reason: string }) =>
-    z.object({ id: z.string().uuid(), reason: z.string().min(1).max(500) }).parse(input)
+    z.object({ id: z.string().uuid(), reason: z.string().min(1).max(500) }).parse(input),
   )
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
@@ -364,11 +388,15 @@ export const listAdminSubscriptions = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await getAdmin(context);
     const from = (data.page - 1) * data.pageSize;
     const to = from + data.pageSize - 1;
-    const { data: rows, count, error } = await supabaseAdmin
+    const {
+      data: rows,
+      count,
+      error,
+    } = await supabaseAdmin
       .from("subscriptions")
       .select(
         "id, company_id, plan, status, trial_ends_at, current_period_start, current_period_end, next_billing_at, monthly_price_cents, payment_provider, gopay_payment_id, cancel_at_period_end, companies(name, ico)",
-        { count: "exact" }
+        { count: "exact" },
       )
       .order("created_at", { ascending: false })
       .range(from, to);
@@ -399,16 +427,20 @@ export const listAdminSubscriptions = createServerFn({ method: "POST" })
 export const adminSetCompanyPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({
-      companyId: z.string().uuid(),
-      planSlug: z.enum(["starter", "premium", "enterprise"]),
-    }).parse(input)
+    z
+      .object({
+        companyId: z.string().uuid(),
+        planSlug: z.enum(["starter", "premium", "enterprise"]),
+      })
+      .parse(input),
   )
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const { data: plan } = await supabaseAdmin
-      .from("subscription_plans").select("id, price_monthly_cents")
-      .eq("slug", data.planSlug).single();
+      .from("subscription_plans")
+      .select("id, price_monthly_cents")
+      .eq("slug", data.planSlug)
+      .single();
     const { error } = await supabaseAdmin
       .from("subscriptions")
       .update({
@@ -419,19 +451,24 @@ export const adminSetCompanyPlan = createServerFn({ method: "POST" })
       })
       .eq("company_id", data.companyId);
     if (error) throw error;
-    await logAudit(supabaseAdmin, context.userId, "admin_set_plan", "company", data.companyId, { plan: data.planSlug });
+    await logAudit(supabaseAdmin, context.userId, "admin_set_plan", "company", data.companyId, {
+      plan: data.planSlug,
+    });
     return { ok: true };
   });
 
 export const adminExtendTrial = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ companyId: z.string().uuid(), days: z.number().int().min(1).max(365) }).parse(input)
+    z.object({ companyId: z.string().uuid(), days: z.number().int().min(1).max(365) }).parse(input),
   )
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const { data: sub } = await supabaseAdmin
-      .from("subscriptions").select("trial_ends_at").eq("company_id", data.companyId).maybeSingle();
+      .from("subscriptions")
+      .select("trial_ends_at")
+      .eq("company_id", data.companyId)
+      .maybeSingle();
     const base = sub?.trial_ends_at ? new Date(sub.trial_ends_at) : new Date();
     base.setUTCDate(base.getUTCDate() + data.days);
     const { error } = await supabaseAdmin
@@ -439,7 +476,9 @@ export const adminExtendTrial = createServerFn({ method: "POST" })
       .update({ trial_ends_at: base.toISOString(), status: "trialing" })
       .eq("company_id", data.companyId);
     if (error) throw error;
-    await logAudit(supabaseAdmin, context.userId, "admin_extend_trial", "company", data.companyId, { days: data.days });
+    await logAudit(supabaseAdmin, context.userId, "admin_extend_trial", "company", data.companyId, {
+      days: data.days,
+    });
     return { ok: true, trial_ends_at: base.toISOString() };
   });
 
@@ -453,7 +492,14 @@ export const adminCancelSubscription = createServerFn({ method: "POST" })
       .update({ status: "cancelled", cancel_at_period_end: true })
       .eq("company_id", data.companyId);
     if (error) throw error;
-    await logAudit(supabaseAdmin, context.userId, "admin_cancel_subscription", "company", data.companyId, {});
+    await logAudit(
+      supabaseAdmin,
+      context.userId,
+      "admin_cancel_subscription",
+      "company",
+      data.companyId,
+      {},
+    );
     return { ok: true };
   });
 
@@ -467,7 +513,14 @@ export const adminReactivateSubscription = createServerFn({ method: "POST" })
       .update({ status: "active", cancel_at_period_end: false, billing_suspended: false })
       .eq("company_id", data.companyId);
     if (error) throw error;
-    await logAudit(supabaseAdmin, context.userId, "admin_reactivate_subscription", "company", data.companyId, {});
+    await logAudit(
+      supabaseAdmin,
+      context.userId,
+      "admin_reactivate_subscription",
+      "company",
+      data.companyId,
+      {},
+    );
     return { ok: true };
   });
 
@@ -475,10 +528,12 @@ export const adminReactivateSubscription = createServerFn({ method: "POST" })
 export const adminMarkActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({
-      companyId: z.string().uuid(),
-      days: z.number().int().min(1).max(3650).default(30),
-    }).parse(input)
+    z
+      .object({
+        companyId: z.string().uuid(),
+        days: z.number().int().min(1).max(3650).default(30),
+      })
+      .parse(input),
   )
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
@@ -497,7 +552,9 @@ export const adminMarkActive = createServerFn({ method: "POST" })
       })
       .eq("company_id", data.companyId);
     if (error) throw error;
-    await logAudit(supabaseAdmin, context.userId, "admin_mark_active", "company", data.companyId, { days: data.days });
+    await logAudit(supabaseAdmin, context.userId, "admin_mark_active", "company", data.companyId, {
+      days: data.days,
+    });
     return { ok: true, current_period_end: end.toISOString() };
   });
 
@@ -505,7 +562,7 @@ export const adminMarkActive = createServerFn({ method: "POST" })
 export const adminSuspendBilling = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ companyId: z.string().uuid(), suspend: z.boolean() }).parse(input)
+    z.object({ companyId: z.string().uuid(), suspend: z.boolean() }).parse(input),
   )
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
@@ -520,7 +577,7 @@ export const adminSuspendBilling = createServerFn({ method: "POST" })
       data.suspend ? "admin_suspend_billing" : "admin_unsuspend_billing",
       "company",
       data.companyId,
-      {}
+      {},
     );
     return { ok: true };
   });
@@ -529,10 +586,12 @@ export const adminSuspendBilling = createServerFn({ method: "POST" })
 export const listGopayEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({
-      limit: z.number().int().min(10).max(200).default(50),
-      page: z.number().int().min(1).default(1),
-    }).parse(input)
+    z
+      .object({
+        limit: z.number().int().min(10).max(200).default(50),
+        page: z.number().int().min(1).default(1),
+      })
+      .parse(input),
   )
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
@@ -573,7 +632,12 @@ export const getBillingDiagnostics = createServerFn({ method: "GET" })
 
     function maskUrl(u: string | null): string | null {
       if (!u) return null;
-      try { const x = new URL(u); return `${x.protocol}//${x.host}`; } catch { return u; }
+      try {
+        const x = new URL(u);
+        return `${x.protocol}//${x.host}`;
+      } catch {
+        return u;
+      }
     }
     function maskSecret(s: string | null): string | null {
       if (!s) return null;
@@ -582,8 +646,12 @@ export const getBillingDiagnostics = createServerFn({ method: "GET" })
     }
 
     const warnings: string[] = [];
-    if (!appUrl) warnings.push("APP_PUBLIC_URL nie je nastavené — GoPay return/notify URL používa fallback https://faktero.sk.");
-    if (!webhookSecret) warnings.push("GOPAY_WEBHOOK_SECRET chýba — webhook bude odmietať volania s 401.");
+    if (!appUrl)
+      warnings.push(
+        "APP_PUBLIC_URL nie je nastavené — GoPay return/notify URL používa fallback https://faktero.sk.",
+      );
+    if (!webhookSecret)
+      warnings.push("GOPAY_WEBHOOK_SECRET chýba — webhook bude odmietať volania s 401.");
     if (appUrl && /\.lovable\.app/i.test(appUrl) === false && gopayEnv === "sandbox") {
       // ok
     }
@@ -603,13 +671,20 @@ export const getBillingDiagnostics = createServerFn({ method: "GET" })
 export const adminSyncPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ providerPaymentId: z.string().min(1).max(64) }).parse(input)
+    z.object({ providerPaymentId: z.string().min(1).max(64) }).parse(input),
   )
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const { syncGopayPaymentById } = await import("@/lib/faktero/billing-sync.server");
     const res = await syncGopayPaymentById(data.providerPaymentId);
-    await logAudit(supabaseAdmin, context.userId, "admin_sync_gopay_payment", "payment", data.providerPaymentId, { state: res.state });
+    await logAudit(
+      supabaseAdmin,
+      context.userId,
+      "admin_sync_gopay_payment",
+      "payment",
+      data.providerPaymentId,
+      { state: res.state },
+    );
     return res;
   });
 
@@ -687,12 +762,21 @@ export const getAdminUsage = createServerFn({ method: "GET" })
     since.setUTCHours(0, 0, 0, 0);
     const monthStart = since.toISOString();
 
-    const [invoicesByCompany, apiByCompany, emailsByCompany, webhooksByCompany] = await Promise.all([
-      supabaseAdmin.from("invoices").select("company_id").gte("created_at", monthStart).is("deleted_at", null),
-      supabaseAdmin.from("api_logs").select("company_id").gte("created_at", monthStart),
-      supabaseAdmin.from("invoice_email_logs").select("company_id").gte("created_at", monthStart),
-      supabaseAdmin.from("webhook_delivery_logs").select("company_id").gte("created_at", monthStart),
-    ]);
+    const [invoicesByCompany, apiByCompany, emailsByCompany, webhooksByCompany] = await Promise.all(
+      [
+        supabaseAdmin
+          .from("invoices")
+          .select("company_id")
+          .gte("created_at", monthStart)
+          .is("deleted_at", null),
+        supabaseAdmin.from("api_logs").select("company_id").gte("created_at", monthStart),
+        supabaseAdmin.from("invoice_email_logs").select("company_id").gte("created_at", monthStart),
+        supabaseAdmin
+          .from("webhook_delivery_logs")
+          .select("company_id")
+          .gte("created_at", monthStart),
+      ],
+    );
 
     function group(list: any[]): Map<string, number> {
       const m = new Map<string, number>();
@@ -708,7 +792,9 @@ export const getAdminUsage = createServerFn({ method: "GET" })
     const { data: companies } = ids.size
       ? await supabaseAdmin.from("companies").select("id, name").in("id", Array.from(ids))
       : { data: [] as any[] };
-    const nameMap = new Map<string, string>(((companies as any) ?? []).map((c: any) => [c.id, c.name]));
+    const nameMap = new Map<string, string>(
+      ((companies as any) ?? []).map((c: any) => [c.id, c.name]),
+    );
 
     const rows = Array.from(ids).map((id) => ({
       company_id: id,
@@ -734,7 +820,7 @@ export const listAdminErrors = createServerFn({ method: "POST" })
         source: ErrorSource.default("all"),
         limit: z.number().int().min(10).max(200).default(50),
       })
-      .parse(input)
+      .parse(input),
   )
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
@@ -765,7 +851,7 @@ export const listAdminErrors = createServerFn({ method: "POST" })
           summary: `${x.method} ${x.path}`,
           detail: null,
           status: x.status,
-        })
+        }),
       );
     }
     if (data.source === "all" || data.source === "webhook") {
@@ -783,7 +869,7 @@ export const listAdminErrors = createServerFn({ method: "POST" })
           summary: x.event_type,
           detail: x.error_message,
           status: x.response_status,
-        })
+        }),
       );
     }
     if (data.source === "all" || data.source === "email") {
@@ -801,7 +887,7 @@ export const listAdminErrors = createServerFn({ method: "POST" })
           summary: `to ${x.recipient_email}`,
           detail: x.error_message,
           status: x.status,
-        })
+        }),
       );
     }
     if (data.source === "all" || data.source === "finstat") {
@@ -819,7 +905,7 @@ export const listAdminErrors = createServerFn({ method: "POST" })
           summary: `${x.provider} · IČO ${x.ico}`,
           detail: x.error_message,
           status: x.status,
-        })
+        }),
       );
     }
     if (data.source === "all" || data.source === "efaktura") {
@@ -837,7 +923,7 @@ export const listAdminErrors = createServerFn({ method: "POST" })
           summary: `Doc ${x.document_number ?? "—"}`,
           detail: JSON.stringify(x.validation_errors ?? null),
           status: x.status,
-        })
+        }),
       );
     }
     rows.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
@@ -853,15 +939,21 @@ export const listAuditLogs = createServerFn({ method: "POST" })
         page: z.number().int().min(1).max(1000).default(1),
         pageSize: z.number().int().min(10).max(100).default(50),
       })
-      .parse(input)
+      .parse(input),
   )
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const from = (data.page - 1) * data.pageSize;
     const to = from + data.pageSize - 1;
-    const { data: rows, count, error } = await supabaseAdmin
+    const {
+      data: rows,
+      count,
+      error,
+    } = await supabaseAdmin
       .from("platform_audit_logs")
-      .select("id, admin_user_id, action, entity_type, entity_id, metadata, created_at", { count: "exact" })
+      .select("id, admin_user_id, action, entity_type, entity_id, metadata, created_at", {
+        count: "exact",
+      })
       .order("created_at", { ascending: false })
       .range(from, to);
     if (error) throw error;

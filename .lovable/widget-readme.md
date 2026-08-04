@@ -15,7 +15,7 @@ celkovú sumu, počet po splatnosti) do zdieľaného úložiska a widget ho čí
 ```json
 {
   "unpaid_count": 3,
-  "unpaid_total": 1250.50,
+  "unpaid_total": 1250.5,
   "currency": "EUR",
   "overdue_count": 1
 }
@@ -28,6 +28,7 @@ sieťové volania (a nemusíš riešiť auth v rozšírení).
 ## 2. iOS — WidgetKit (Swift)
 
 V Xcode:
+
 1. **File → New → Target → Widget Extension** (názov `FakteroWidget`)
 2. V hlavnej app a vo widget targete pridaj rovnakú **App Group**
    (Signing & Capabilities → +Capability → App Groups → `group.sk.faktero.app`)
@@ -59,6 +60,7 @@ struct FakteroWidgetView: View {
 ## 3. Android — App Widget Provider (Kotlin)
 
 1. `android/app/src/main/res/xml/faktero_widget_info.xml`:
+
 ```xml
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="180dp"
@@ -73,6 +75,7 @@ struct FakteroWidgetView: View {
    s `TextView` pre počet, sumu, badge "po splatnosti".
 
 3. `android/app/src/main/java/sk/faktero/app/FakteroWidget.kt`:
+
 ```kotlin
 class FakteroWidget : AppWidgetProvider() {
     override fun onUpdate(ctx: Context, mgr: AppWidgetManager, ids: IntArray) {
@@ -93,6 +96,7 @@ class FakteroWidget : AppWidgetProvider() {
 ```
 
 4. V `AndroidManifest.xml`:
+
 ```xml
 <receiver android:name=".FakteroWidget" android:exported="true">
     <intent-filter>
@@ -108,6 +112,7 @@ class FakteroWidget : AppWidgetProvider() {
    `AppWidgetManager.getInstance(ctx).notifyAppWidgetViewDataChanged(...)`.
 
 ## Záver
+
 **Capacitor plugin pre widget neexistuje v stabilnej podobe** — widget musíš
 implementovať natívne. Web/TypeScript časť appky vie len pripraviť dáta;
 zobrazovaciu vrstvu (Swift + Kotlin) píšeš priamo v Xcode / Android Studio.

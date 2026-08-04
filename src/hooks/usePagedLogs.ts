@@ -66,10 +66,7 @@ export function usePagedLogs(opts: PagedLogsOptions) {
   const [loading, setLoading] = useState(true);
   const [nonce, setNonce] = useState(0);
 
-  const filterSignature = useMemo(
-    () => JSON.stringify(filters ?? {}),
-    [filters],
-  );
+  const filterSignature = useMemo(() => JSON.stringify(filters ?? {}), [filters]);
 
   // Reset to page 1 when filters change.
   useEffect(() => {
@@ -101,9 +98,7 @@ export function usePagedLogs(opts: PagedLogsOptions) {
       setLoading(true);
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
-      let q = supabase
-        .from(resource as any)
-        .select(select, { count: "exact" });
+      let q = supabase.from(resource as any).select(select, { count: "exact" });
       if (companyScoped && cid) q = q.eq(companyColumn, cid);
       if (scope?.value) q = q.eq(scope.column, scope.value);
       if (filters) {

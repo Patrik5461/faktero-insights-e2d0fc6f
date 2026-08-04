@@ -12,7 +12,9 @@ import { Landmark } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/transakcie")({
   head: () => ({ meta: [{ title: "Bankové transakcie — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({ account: typeof s.account === "string" ? s.account : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    account: typeof s.account === "string" ? s.account : undefined,
+  }),
   component: TxPage,
 });
 
@@ -31,8 +33,16 @@ function TxPage() {
   const [dateTo, setDateTo] = useState("");
 
   const {
-    rows: txs, total, loading, page, setPage, pageSize, setPageSize,
-    search: q, setSearch: setQ, reload,
+    rows: txs,
+    total,
+    loading,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    search: q,
+    setSearch: setQ,
+    reload,
   } = usePagedLogs({
     resource: "bank_transactions",
     searchColumns: ["counterparty", "variable_symbol", "description", "iban"],
@@ -45,7 +55,8 @@ function TxPage() {
   });
 
   useEffect(() => {
-    const cid = getActiveCompanyId(); if (!cid) return;
+    const cid = getActiveCompanyId();
+    if (!cid) return;
     fetchData({ data: { company_id: cid } }).then((d) => {
       setAccounts(d.accounts);
       if (!selected && d.accounts[0]) setSelected(d.accounts[0].id);
@@ -53,14 +64,18 @@ function TxPage() {
   }, []);
 
   async function onSync() {
-    const cid = getActiveCompanyId(); if (!cid || !selected) return;
+    const cid = getActiveCompanyId();
+    if (!cid || !selected) return;
     setBusy(true);
     try {
       const r = await sync({ data: { company_id: cid, account_id: selected } });
       toast.success(`Synchronizovaných ${r.inserted} nových z ${r.total}`);
       reload();
-    } catch (e: any) { toast.error(e?.message ?? "Chyba"); }
-    finally { setBusy(false); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -69,7 +84,10 @@ function TxPage() {
         title="Bankové transakcie"
         description="Posledných 90 dní zo sandbox prostredia Tatra banky."
         action={
-          <Link to="/bankove-ucty" className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary">
+          <Link
+            to="/bankove-ucty"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+          >
             <ArrowLeft className="h-4 w-4" /> Späť
           </Link>
         }
@@ -79,21 +97,32 @@ function TxPage() {
           search={q}
           onSearchChange={setQ}
           searchPlaceholder="Hľadať protistranu, VS, IBAN alebo popis…"
-          selects={[{
-            label: "Účet",
-            value: selected ?? "",
-            onChange: (v) => setSelected(v || undefined),
-            options: [
-              { value: "", label: "Všetky účty" },
-              ...accounts.map((a) => ({ value: a.id, label: a.account_name ?? a.iban ?? a.id })),
-            ],
-          }]}
-          dateFrom={dateFrom} dateTo={dateTo}
-          onDateFromChange={setDateFrom} onDateToChange={setDateTo}
-          onReset={() => { setQ(""); setDateFrom(""); setDateTo(""); }}
+          selects={[
+            {
+              label: "Účet",
+              value: selected ?? "",
+              onChange: (v) => setSelected(v || undefined),
+              options: [
+                { value: "", label: "Všetky účty" },
+                ...accounts.map((a) => ({ value: a.id, label: a.account_name ?? a.iban ?? a.id })),
+              ],
+            },
+          ]}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onDateFromChange={setDateFrom}
+          onDateToChange={setDateTo}
+          onReset={() => {
+            setQ("");
+            setDateFrom("");
+            setDateTo("");
+          }}
           right={
-            <button onClick={onSync} disabled={!selected || busy}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
+            <button
+              onClick={onSync}
+              disabled={!selected || busy}
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
               <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Synchronizovať
             </button>
           }
@@ -117,25 +146,32 @@ function TxPage() {
                   <td className="px-3 py-2">{t.counterparty ?? "—"}</td>
                   <td className="px-3 py-2 font-mono text-xs">{t.variable_symbol ?? "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{t.description ?? "—"}</td>
-                  <td className={`px-3 py-2 text-right tabular-nums font-medium ${Number(t.amount) < 0 ? "text-destructive" : "text-emerald-700"}`}>
+                  <td
+                    className={`px-3 py-2 text-right tabular-nums font-medium ${Number(t.amount) < 0 ? "text-destructive" : "text-emerald-700"}`}
+                  >
                     {fmtMoney(Number(t.amount), t.currency)}
                   </td>
                 </tr>
               ))}
               {!loading && txs.length === 0 && (
-                <tr><td colSpan={5}>
-                  <EmptyState
-                    icon={Landmark}
-                    title="Žiadne transakcie"
-                    description="Pre vybraté obdobie a filtre nemáme žiadne výsledky."
-                  />
-                </td></tr>
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState
+                      icon={Landmark}
+                      title="Žiadne transakcie"
+                      description="Pre vybraté obdobie a filtre nemáme žiadne výsledky."
+                    />
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
           <ListFooter
-            page={page} pageSize={pageSize} total={total}
-            onPageChange={setPage} onPageSizeChange={setPageSize}
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
           />
         </div>
       </PageBody>

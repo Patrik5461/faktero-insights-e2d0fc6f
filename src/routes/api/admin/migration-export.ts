@@ -14,7 +14,10 @@ export const Route = createFileRoute("/api/admin/migration-export")({
 
         const authHeader = request.headers.get("authorization");
         if (!authHeader?.startsWith("Bearer ")) {
-          return new Response(JSON.stringify({ error: "missing bearer token" }), { status: 401, headers: { "content-type": "application/json" } });
+          return new Response(JSON.stringify({ error: "missing bearer token" }), {
+            status: 401,
+            headers: { "content-type": "application/json" },
+          });
         }
         const token = authHeader.slice(7);
 
@@ -25,16 +28,27 @@ export const Route = createFileRoute("/api/admin/migration-export")({
 
         const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
         if (claimsErr || !claims?.claims?.sub) {
-          return new Response(JSON.stringify({ error: "invalid token" }), { status: 401, headers: { "content-type": "application/json" } });
+          return new Response(JSON.stringify({ error: "invalid token" }), {
+            status: 401,
+            headers: { "content-type": "application/json" },
+          });
         }
         const userId = claims.claims.sub;
 
-        const { data: isAdmin, error: adminErr } = await userClient.rpc("is_platform_admin", { _user_id: userId });
+        const { data: isAdmin, error: adminErr } = await userClient.rpc("is_platform_admin", {
+          _user_id: userId,
+        });
         if (adminErr) {
-          return new Response(JSON.stringify({ error: `admin check failed: ${adminErr.message}` }), { status: 500, headers: { "content-type": "application/json" } });
+          return new Response(
+            JSON.stringify({ error: `admin check failed: ${adminErr.message}` }),
+            { status: 500, headers: { "content-type": "application/json" } },
+          );
         }
         if (!isAdmin) {
-          return new Response(JSON.stringify({ error: "forbidden: platform admin only" }), { status: 403, headers: { "content-type": "application/json" } });
+          return new Response(JSON.stringify({ error: "forbidden: platform admin only" }), {
+            status: 403,
+            headers: { "content-type": "application/json" },
+          });
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -48,7 +62,10 @@ export const Route = createFileRoute("/api/admin/migration-export")({
         while (true) {
           const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
           if (error) {
-            return new Response(JSON.stringify({ error: `listUsers page ${page}: ${error.message}` }), { status: 500, headers: { "content-type": "application/json" } });
+            return new Response(
+              JSON.stringify({ error: `listUsers page ${page}: ${error.message}` }),
+              { status: 500, headers: { "content-type": "application/json" } },
+            );
           }
           if (!data?.users?.length) break;
           for (const u of data.users) {
@@ -74,7 +91,10 @@ export const Route = createFileRoute("/api/admin/migration-export")({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const storage: Record<string, any[]> = {};
 
-        async function listAll(bucket: string, prefix = ""): Promise<Array<{ path: string; size: number | null; mimetype: string | null }>> {
+        async function listAll(
+          bucket: string,
+          prefix = "",
+        ): Promise<Array<{ path: string; size: number | null; mimetype: string | null }>> {
           const out: Array<{ path: string; size: number | null; mimetype: string | null }> = [];
           let offset = 0;
           const limit = 1000;
@@ -107,12 +127,20 @@ export const Route = createFileRoute("/api/admin/migration-export")({
         try {
           for (const bucket of buckets) {
             const objects = await listAll(bucket);
-            const withUrls: Array<{ path: string; size: number | null; mimetype: string | null; signedUrl: string }> = [];
+            const withUrls: Array<{
+              path: string;
+              size: number | null;
+              mimetype: string | null;
+              signedUrl: string;
+            }> = [];
             for (let i = 0; i < objects.length; i += 100) {
               const slice = objects.slice(i, i + 100);
               const { data: signed, error: signErr } = await supabaseAdmin.storage
                 .from(bucket)
-                .createSignedUrls(slice.map((o) => o.path), 60 * 60 * 6);
+                .createSignedUrls(
+                  slice.map((o) => o.path),
+                  60 * 60 * 6,
+                );
               if (signErr) throw new Error(`sign ${bucket}: ${signErr.message}`);
               for (let j = 0; j < slice.length; j += 1) {
                 const s = signed?.[j];
@@ -123,7 +151,10 @@ export const Route = createFileRoute("/api/admin/migration-export")({
             storage[bucket] = withUrls;
           }
         } catch (e) {
-          return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { "content-type": "application/json" } });
+          return new Response(JSON.stringify({ error: (e as Error).message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
         }
 
         return new Response(

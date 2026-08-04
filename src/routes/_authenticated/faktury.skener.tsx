@@ -48,7 +48,10 @@ function ScannerPage() {
       <PageHeader title="Skener dokladov" description="Odfoťte doklad a AI vyplní polia faktúry." />
       <PageBody>
         <div className="mx-auto max-w-xl space-y-4">
-          <button onClick={scan} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-base font-medium text-primary-foreground hover:opacity-90">
+          <button
+            onClick={scan}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 text-base font-medium text-primary-foreground hover:opacity-90"
+          >
             <Camera className="h-5 w-5" /> Odfotiť doklad
           </button>
           {preview && (
@@ -57,16 +60,24 @@ function ScannerPage() {
             </div>
           )}
           {loading && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Spracovávam…</div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Spracovávam…
+            </div>
           )}
           {result && (
             <div className="space-y-2 rounded-xl border border-border bg-card p-4 text-sm">
               <Row label="Dodávateľ" value={result.supplier ?? "—"} />
-              <Row label="Suma" value={result.total ? `${result.total} ${result.currency ?? "EUR"}` : "—"} />
+              <Row
+                label="Suma"
+                value={result.total ? `${result.total} ${result.currency ?? "EUR"}` : "—"}
+              />
               <Row label="DPH" value={result.vat_rate != null ? `${result.vat_rate}%` : "—"} />
               <Row label="Dátum" value={result.date ?? "—"} />
               <Row label="Položiek" value={String(result.items?.length ?? 0)} />
-              <button onClick={createInvoice} className="mt-2 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+              <button
+                onClick={createInvoice}
+                className="mt-2 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
                 Vytvoriť faktúru z údajov
               </button>
             </div>
@@ -78,5 +89,10 @@ function ScannerPage() {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
-  return <div className="flex justify-between"><span className="text-muted-foreground">{label}</span><span className="font-medium">{value}</span></div>;
+  return (
+    <div className="flex justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
+    </div>
+  );
 }

@@ -79,7 +79,9 @@ export async function ensureInvoicePdf(
         logoBytes = new Uint8Array(await blob.arrayBuffer());
         logoMime = blob.type;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   let paymentLinkUrl: string | null = null;
@@ -91,11 +93,17 @@ export async function ensureInvoicePdf(
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (link && link.status !== "cancelled" && (!link.expires_at || new Date(link.expires_at) > new Date())) {
+    if (
+      link &&
+      link.status !== "cancelled" &&
+      (!link.expires_at || new Date(link.expires_at) > new Date())
+    ) {
       const base = (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
       paymentLinkUrl = `${base}/pay/${link.token}`;
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
   const bytes = await generateInvoicePdfBytes({
@@ -110,7 +118,9 @@ export async function ensureInvoicePdf(
   // Drop the stale cached object before writing the fresh one.
   try {
     await supabaseAdmin.storage.from("invoice-pdfs").remove([path]);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   const { error: upErr } = await supabaseAdmin.storage.from("invoice-pdfs").upload(path, bytes, {
     contentType: "application/pdf",

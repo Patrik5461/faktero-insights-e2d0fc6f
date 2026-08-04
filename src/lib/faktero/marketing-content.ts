@@ -60,7 +60,10 @@ export const funkcie: HubContent = {
       summary: "Profesionálne PDF faktúry s QR platbou, IBAN a rozpisom DPH.",
       icon: FileText,
       blocks: [
-        { type: "lead", text: "Vystavte faktúru za 30 sekúnd — s logom, QR kódom a kompletným rozpisom DPH." },
+        {
+          type: "lead",
+          text: "Vystavte faktúru za 30 sekúnd — s logom, QR kódom a kompletným rozpisom DPH.",
+        },
         {
           type: "bullets",
           title: "Čo dostanete",
@@ -75,8 +78,7 @@ export const funkcie: HubContent = {
         {
           type: "section",
           title: "Pre koho je to ideálne",
-          body:
-            "Pre živnostníkov, s.r.o. aj agentúry. Faktero zvládne jednorazové faktúry, mesačné fakturovanie aj komplexné projekty s viacerými položkami a sadzbami DPH.",
+          body: "Pre živnostníkov, s.r.o. aj agentúry. Faktero zvládne jednorazové faktúry, mesačné fakturovanie aj komplexné projekty s viacerými položkami a sadzbami DPH.",
         },
       ],
     },
@@ -86,7 +88,10 @@ export const funkcie: HubContent = {
       summary: "Vystavte ponuku za minútu a premeňte ju na faktúru jedným klikom.",
       icon: Quote,
       blocks: [
-        { type: "lead", text: "Profesionálne cenové ponuky, ktoré sa jedným klikom menia na ostrú faktúru." },
+        {
+          type: "lead",
+          text: "Profesionálne cenové ponuky, ktoré sa jedným klikom menia na ostrú faktúru.",
+        },
         {
           type: "bullets",
           title: "Najdôležitejšie",
@@ -105,7 +110,10 @@ export const funkcie: HubContent = {
       summary: "Mesačné a ročné šablóny, ktoré sa generujú a odosielajú automaticky.",
       icon: Repeat,
       blocks: [
-        { type: "lead", text: "Nastavte šablónu raz a Faktero vystavuje faktúru sám — mesačne, štvrťročne alebo ročne." },
+        {
+          type: "lead",
+          text: "Nastavte šablónu raz a Faktero vystavuje faktúru sám — mesačne, štvrťročne alebo ročne.",
+        },
         {
           type: "bullets",
           items: [
@@ -123,7 +131,10 @@ export const funkcie: HubContent = {
       summary: "XML export priamo do Pohody — bez ručného prepisovania.",
       icon: Download,
       blocks: [
-        { type: "lead", text: "Štruktúrovaný XML export, ktorý účtovník naimportuje do Pohody jedným klikom." },
+        {
+          type: "lead",
+          text: "Štruktúrovaný XML export, ktorý účtovník naimportuje do Pohody jedným klikom.",
+        },
         {
           type: "bullets",
           items: [
@@ -141,7 +152,10 @@ export const funkcie: HubContent = {
       summary: "Prejdite na Faktero bez straty histórie a číselných radov.",
       icon: Upload,
       blocks: [
-        { type: "lead", text: "Migrácia zo SuperFaktúry trvá pár minút — históriu faktúr, odberateľov a číselné rady prenesieme za vás." },
+        {
+          type: "lead",
+          text: "Migrácia zo SuperFaktúry trvá pár minút — históriu faktúr, odberateľov a číselné rady prenesieme za vás.",
+        },
         {
           type: "bullets",
           items: [
@@ -177,7 +191,10 @@ export const funkcie: HubContent = {
       summary: "Príjemky, výdajky, viacero skladov a priame prepojenie s faktúrami.",
       icon: Boxes,
       blocks: [
-        { type: "lead", text: "Evidujte skladové zásoby, pohyby a viacero skladov — priamo prepojené s faktúrami." },
+        {
+          type: "lead",
+          text: "Evidujte skladové zásoby, pohyby a viacero skladov — priamo prepojené s faktúrami.",
+        },
         {
           type: "bullets",
           items: [
@@ -196,7 +213,10 @@ export const funkcie: HubContent = {
       summary: "Jazdy a tankovania z Commander GPS sa sťahujú automaticky do knihy jázd.",
       icon: MapPin,
       blocks: [
-        { type: "lead", text: "Prepojte Faktero s Commander GPS a jazdy aj tankovania sa budú zapisovať samé." },
+        {
+          type: "lead",
+          text: "Prepojte Faktero s Commander GPS a jazdy aj tankovania sa budú zapisovať samé.",
+        },
         {
           type: "bullets",
           items: [
@@ -274,7 +294,10 @@ export const vyvojari: HubContent = {
       summary: "JSON REST API s test / live režimom a idempotenciou cez external_id.",
       icon: Code2,
       blocks: [
-        { type: "lead", text: "Plné REST API pre faktúry, ponuky, odberateľov a opakované faktúry." },
+        {
+          type: "lead",
+          text: "Plné REST API pre faktúry, ponuky, odberateľov a opakované faktúry.",
+        },
         {
           type: "bullets",
           items: [
@@ -287,8 +310,7 @@ export const vyvojari: HubContent = {
         {
           type: "callout",
           title: "Endpoint POST /api/v1/invoices",
-          body:
-            "Vytvorí faktúru, voliteľne odošle PDF e-mailom a vráti URL na stiahnutie.",
+          body: "Vytvorí faktúru, voliteľne odošle PDF e-mailom a vráti URL na stiahnutie.",
         },
       ],
     },
@@ -367,18 +389,19 @@ export const efakturacia: HubContent = {
       summary: "Čo je eFaktúra, koho sa týka a od kedy bude povinná.",
       icon: ShieldCheck,
       blocks: [
-        { type: "lead", text: "eFaktúra je strojovo čitateľný formát faktúry (UBL 2.1 / Peppol BIS 3.0), ktorý od 1. januára 2027 nahradí klasické PDF v B2B a B2G transakciách na Slovensku." },
+        {
+          type: "lead",
+          text: "eFaktúra je strojovo čitateľný formát faktúry (UBL 2.1 / Peppol BIS 3.0), ktorý od 1. januára 2027 nahradí klasické PDF v B2B a B2G transakciách na Slovensku.",
+        },
         {
           type: "section",
           title: "Čo je vlastne eFaktúra?",
-          body:
-            "eFaktúra (elektronická faktúra) nie je PDF poslané emailom ani naskenovaný papier. Je to štruktúrovaný XML dokument podľa európskej normy EN 16931, ktorý dokáže automaticky spracovať účtovný softvér príjemcu — bez prepisovania, bez OCR, bez chýb. Faktúra obsahuje rovnaké informácie ako papierová (dodávateľ, odberateľ, položky, DPH, IBAN), ale v presne definovanej dátovej štruktúre.",
+          body: "eFaktúra (elektronická faktúra) nie je PDF poslané emailom ani naskenovaný papier. Je to štruktúrovaný XML dokument podľa európskej normy EN 16931, ktorý dokáže automaticky spracovať účtovný softvér príjemcu — bez prepisovania, bez OCR, bez chýb. Faktúra obsahuje rovnaké informácie ako papierová (dodávateľ, odberateľ, položky, DPH, IBAN), ale v presne definovanej dátovej štruktúre.",
         },
         {
           type: "section",
           title: "Koho sa povinnosť týka?",
-          body:
-            "Od 1.1.2027 musí každý platiteľ DPH na Slovensku vystavovať a prijímať eFaktúry pre B2B transakcie (firma firme) a B2G (firma štátu). Povinnosť sa vzťahuje na všetkých podnikateľov bez ohľadu na veľkosť — od SZČO až po veľké korporácie. Faktúry pre koncových spotrebiteľov (B2C) ostávajú v pôvodnom režime.",
+          body: "Od 1.1.2027 musí každý platiteľ DPH na Slovensku vystavovať a prijímať eFaktúry pre B2B transakcie (firma firme) a B2G (firma štátu). Povinnosť sa vzťahuje na všetkých podnikateľov bez ohľadu na veľkosť — od SZČO až po veľké korporácie. Faktúry pre koncových spotrebiteľov (B2C) ostávajú v pôvodnom režime.",
         },
         {
           type: "bullets",
@@ -395,20 +418,17 @@ export const efakturacia: HubContent = {
         {
           type: "section",
           title: "Prečo to štát zavádza?",
-          body:
-            "Cieľom je zníženie DPH medzery (VAT gap), boj proti karuselovým podvodom a digitalizácia ekonomiky. EÚ smernica ViDA (VAT in the Digital Age) zavádza povinné eFaktúry naprieč celou Úniou. Slovensko je medzi prvými krajinami, ktoré štandard prijímajú — vďaka tomu budú slovenské firmy pripravené na cezhraničný obchod skôr.",
+          body: "Cieľom je zníženie DPH medzery (VAT gap), boj proti karuselovým podvodom a digitalizácia ekonomiky. EÚ smernica ViDA (VAT in the Digital Age) zavádza povinné eFaktúry naprieč celou Úniou. Slovensko je medzi prvými krajinami, ktoré štandard prijímajú — vďaka tomu budú slovenské firmy pripravené na cezhraničný obchod skôr.",
         },
         {
           type: "section",
           title: "Čo to znamená pre vašu firmu?",
-          body:
-            "Potrebujete softvér, ktorý vie vygenerovať validný XML podľa Peppol BIS 3.0, podpísať ho a odoslať cez akreditovaný Peppol Access Point alebo Digitálneho poštára. Rovnako musíte byť schopní eFaktúry prijímať, automaticky spracovať a archivovať 10 rokov v pôvodnom XML formáte. Excel a ručné PDF skončili.",
+          body: "Potrebujete softvér, ktorý vie vygenerovať validný XML podľa Peppol BIS 3.0, podpísať ho a odoslať cez akreditovaný Peppol Access Point alebo Digitálneho poštára. Rovnako musíte byť schopní eFaktúry prijímať, automaticky spracovať a archivovať 10 rokov v pôvodnom XML formáte. Excel a ručné PDF skončili.",
         },
         {
           type: "callout",
           title: "Faktero je ready včas",
-          body:
-            "Pracujeme na podpore Peppol BIS 3.0 a integrácii s Digitálnym poštárom tak, aby ste boli pripravení mesiace pred legislatívnym termínom. Vaše dáta migrujeme automaticky — nemusíte riešiť nič.",
+          body: "Pracujeme na podpore Peppol BIS 3.0 a integrácii s Digitálnym poštárom tak, aby ste boli pripravení mesiace pred legislatívnym termínom. Vaše dáta migrujeme automaticky — nemusíte riešiť nič.",
         },
       ],
     },
@@ -418,18 +438,19 @@ export const efakturacia: HubContent = {
       summary: "Európska sieť pre doručovanie eFaktúr medzi firmami.",
       icon: Globe2,
       blocks: [
-        { type: "lead", text: "Peppol (Pan-European Public Procurement OnLine) je celoeurópska sieť, cez ktorú si firmy a inštitúcie vymieňajú eFaktúry v štandarde Peppol BIS 3.0 — bezpečne, rýchlo a kompatibilne naprieč hranicami." },
+        {
+          type: "lead",
+          text: "Peppol (Pan-European Public Procurement OnLine) je celoeurópska sieť, cez ktorú si firmy a inštitúcie vymieňajú eFaktúry v štandarde Peppol BIS 3.0 — bezpečne, rýchlo a kompatibilne naprieč hranicami.",
+        },
         {
           type: "section",
           title: "Ako Peppol funguje?",
-          body:
-            "Peppol funguje podobne ako emailová sieť, ale pre štruktúrované obchodné dokumenty. Každá firma má v sieti svoju jedinečnú adresu — Peppol ID (napríklad 9914:SK12345678 pre slovenský IČ DPH). Faktúru odošlete cez svojho Access Point providera, ten ju doručí Access Pointu príjemcu, a ten ju vloží do účtovného systému príjemcu. Celý prenos trvá sekundy a je end-to-end šifrovaný.",
+          body: "Peppol funguje podobne ako emailová sieť, ale pre štruktúrované obchodné dokumenty. Každá firma má v sieti svoju jedinečnú adresu — Peppol ID (napríklad 9914:SK12345678 pre slovenský IČ DPH). Faktúru odošlete cez svojho Access Point providera, ten ju doručí Access Pointu príjemcu, a ten ju vloží do účtovného systému príjemcu. Celý prenos trvá sekundy a je end-to-end šifrovaný.",
         },
         {
           type: "section",
           title: "Štyrhranný model (4-corner model)",
-          body:
-            "Peppol využíva tzv. 4-corner model: odosielateľ (1) → odosielateľov Access Point (2) → príjemcov Access Point (3) → príjemca (4). Firmy si vyberú akreditovaného providera a neriešia technické detaily protokolu. Faktero plánuje vlastný Access Point, takže nebudete odkázaní na tretiu stranu.",
+          body: "Peppol využíva tzv. 4-corner model: odosielateľ (1) → odosielateľov Access Point (2) → príjemcov Access Point (3) → príjemca (4). Firmy si vyberú akreditovaného providera a neriešia technické detaily protokolu. Faktero plánuje vlastný Access Point, takže nebudete odkázaní na tretiu stranu.",
         },
         {
           type: "bullets",
@@ -446,14 +467,12 @@ export const efakturacia: HubContent = {
         {
           type: "section",
           title: "Peppol BIS 3.0 — čo to znamená?",
-          body:
-            "BIS (Business Interoperability Specification) je presná definícia, ako musí XML faktúra vyzerať. Verzia 3.0 vychádza z európskej normy EN 16931 a obsahuje národné rozšírenia (CIUS) pre konkrétne krajiny — Slovensko má vlastné rozšírenie s povinnými poľami pre DIČ, IČ DPH a špecifické sadzby DPH.",
+          body: "BIS (Business Interoperability Specification) je presná definícia, ako musí XML faktúra vyzerať. Verzia 3.0 vychádza z európskej normy EN 16931 a obsahuje národné rozšírenia (CIUS) pre konkrétne krajiny — Slovensko má vlastné rozšírenie s povinnými poľami pre DIČ, IČ DPH a špecifické sadzby DPH.",
         },
         {
           type: "callout",
           title: "Pre koho je Peppol?",
-          body:
-            "Najmä pre firmy, ktoré obchodujú s partnermi v EÚ alebo s veľkými korporáciami a štátnymi inštitúciami. V krajinách ako Belgicko, Nórsko alebo Nemecko je Peppol už štandardom — Slovensko sa pripája v roku 2027.",
+          body: "Najmä pre firmy, ktoré obchodujú s partnermi v EÚ alebo s veľkými korporáciami a štátnymi inštitúciami. V krajinách ako Belgicko, Nórsko alebo Nemecko je Peppol už štandardom — Slovensko sa pripája v roku 2027.",
         },
       ],
     },
@@ -463,18 +482,19 @@ export const efakturacia: HubContent = {
       summary: "Doručovateľ eFaktúr Finančnej správy SR.",
       icon: Mail,
       blocks: [
-        { type: "lead", text: "Digitálny poštár je národný doručovací systém Finančnej správy SR, ktorý zabezpečí výmenu eFaktúr medzi slovenskými firmami — alternatíva k medzinárodnej sieti Peppol pre tuzemské B2B transakcie." },
+        {
+          type: "lead",
+          text: "Digitálny poštár je národný doručovací systém Finančnej správy SR, ktorý zabezpečí výmenu eFaktúr medzi slovenskými firmami — alternatíva k medzinárodnej sieti Peppol pre tuzemské B2B transakcie.",
+        },
         {
           type: "section",
           title: "Čo je Digitálny poštár?",
-          body:
-            "Ide o štátom prevádzkovanú platformu, ktorá funguje ako centrálny hub pre slovenské eFaktúry. Každá vystavená faktúra prechádza cez Digitálneho poštára, ktorý ju validuje, archivuje a doručí príjemcovi. Finančná správa zároveň získava dáta pre svoj real-time monitoring DPH bez potreby samostatného Kontrolného výkazu.",
+          body: "Ide o štátom prevádzkovanú platformu, ktorá funguje ako centrálny hub pre slovenské eFaktúry. Každá vystavená faktúra prechádza cez Digitálneho poštára, ktorý ju validuje, archivuje a doručí príjemcovi. Finančná správa zároveň získava dáta pre svoj real-time monitoring DPH bez potreby samostatného Kontrolného výkazu.",
         },
         {
           type: "section",
           title: "Peppol vs. Digitálny poštár — čo si vybrať?",
-          body:
-            "Pre tuzemské B2B (slovenská firma → slovenská firma) môžete použiť oba kanály. Digitálny poštár je lacnejší a jednoduchší pre menšie firmy, Peppol je nutnosťou pre obchod s EÚ. Faktero podporí oba — vy si jednoducho zvolíte preferenciu a my smerujeme faktúru správnym kanálom automaticky podľa krajiny príjemcu.",
+          body: "Pre tuzemské B2B (slovenská firma → slovenská firma) môžete použiť oba kanály. Digitálny poštár je lacnejší a jednoduchší pre menšie firmy, Peppol je nutnosťou pre obchod s EÚ. Faktero podporí oba — vy si jednoducho zvolíte preferenciu a my smerujeme faktúru správnym kanálom automaticky podľa krajiny príjemcu.",
         },
         {
           type: "bullets",
@@ -491,14 +511,12 @@ export const efakturacia: HubContent = {
         {
           type: "section",
           title: "Kedy bude k dispozícii?",
-          body:
-            "Finančná správa SR plánuje pilotnú prevádzku v priebehu roku 2026 a plné spustenie k 1.1.2027 spolu s povinnosťou eFaktúry. Technické špecifikácie sú postupne zverejňované — Faktero pripraví integráciu hneď, ako budú finálne.",
+          body: "Finančná správa SR plánuje pilotnú prevádzku v priebehu roku 2026 a plné spustenie k 1.1.2027 spolu s povinnosťou eFaktúry. Technické špecifikácie sú postupne zverejňované — Faktero pripraví integráciu hneď, ako budú finálne.",
         },
         {
           type: "callout",
           title: "Faktero pripraví integráciu",
-          body:
-            "Akonáhle Finančná správa zverejní finálne API, integrujeme Digitálneho poštára do Faktera. Vy nebudete musieť riešiť nič — len kliknete na 'Odoslať' a faktúra sa doručí správnym kanálom.",
+          body: "Akonáhle Finančná správa zverejní finálne API, integrujeme Digitálneho poštára do Faktera. Vy nebudete musieť riešiť nič — len kliknete na 'Odoslať' a faktúra sa doručí správnym kanálom.",
         },
       ],
     },
@@ -525,7 +543,10 @@ export const uctovnici: HubContent = {
       summary: "XML export priamo do Pohody.",
       icon: FileSpreadsheet,
       blocks: [
-        { type: "lead", text: "Štandardný XML export, ktorý naimportujete do Pohody bez ručného prepisovania." },
+        {
+          type: "lead",
+          text: "Štandardný XML export, ktorý naimportujete do Pohody bez ručného prepisovania.",
+        },
         {
           type: "bullets",
           items: [
@@ -543,7 +564,10 @@ export const uctovnici: HubContent = {
       summary: "Jedným klikom pripravíte balík faktúr, ponúk a nákladov za zvolený mesiac.",
       icon: Receipt,
       blocks: [
-        { type: "lead", text: "Účtovník dostane podklady v štandardizovanej forme — bez prosby cez e-mail." },
+        {
+          type: "lead",
+          text: "Účtovník dostane podklady v štandardizovanej forme — bez prosby cez e-mail.",
+        },
         {
           type: "bullets",
           items: [
@@ -561,7 +585,10 @@ export const uctovnici: HubContent = {
       summary: "Pripravujeme prepojenia s ďalšími účtovnými softvérmi.",
       icon: Plug,
       blocks: [
-        { type: "lead", text: "Okrem Pohody pracujeme na integráciách s Money S3, Omega a iDoklad." },
+        {
+          type: "lead",
+          text: "Okrem Pohody pracujeme na integráciách s Money S3, Omega a iDoklad.",
+        },
         {
           type: "bullets",
           items: [

@@ -28,10 +28,13 @@ export async function startTracking(): Promise<{ ok: boolean; error?: string }> 
     if (perm.location !== "granted") return { ok: false, error: "Bez povolenia polohy" };
     points = [];
     startedAt = Date.now();
-    watchId = await Geolocation.watchPosition({ enableHighAccuracy: true, timeout: 10000 }, (pos, err) => {
-      if (err || !pos) return;
-      points.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, ts: pos.timestamp });
-    });
+    watchId = await Geolocation.watchPosition(
+      { enableHighAccuracy: true, timeout: 10000 },
+      (pos, err) => {
+        if (err || !pos) return;
+        points.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, ts: pos.timestamp });
+      },
+    );
     return { ok: true };
   } catch (e: any) {
     return { ok: false, error: e?.message ?? "GPS chyba" };
@@ -57,13 +60,21 @@ export async function stopTracking(): Promise<{
   const start = points[0] ?? null;
   const end = points[points.length - 1] ?? null;
   const duration_min = startedAt ? Math.round((Date.now() - startedAt) / 60000) : 0;
-  const result = { distance_km: Math.round(distance * 100) / 100, duration_min, start, end, points: [...points] };
+  const result = {
+    distance_km: Math.round(distance * 100) / 100,
+    duration_min,
+    start,
+    end,
+    points: [...points],
+  };
   points = [];
   startedAt = null;
   return result;
 }
 
-export function isTracking(): boolean { return watchId !== null; }
+export function isTracking(): boolean {
+  return watchId !== null;
+}
 export function getCurrentDistanceKm(): number {
   let d = 0;
   for (let i = 1; i < points.length; i++) d += haversineKm(points[i - 1], points[i]);

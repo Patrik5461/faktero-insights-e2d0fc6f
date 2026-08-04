@@ -31,8 +31,6 @@ export async function initNativePlatform(): Promise<void> {
       registerPushNotifications().catch((e) => console.warn("[native-init] push:", e));
     } catch {}
 
-    
-
     // Splash screen — schovať po načítaní web obsahu
     try {
       const { SplashScreen } = await import("@capacitor/splash-screen");

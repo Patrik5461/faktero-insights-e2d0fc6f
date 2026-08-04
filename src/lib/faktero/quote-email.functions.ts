@@ -10,7 +10,10 @@ const Input = z.object({
 });
 
 function escapeHtml(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]!));
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
 }
 
 function b64(buf: ArrayBuffer | Uint8Array) {
@@ -30,13 +33,20 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) throw new Error("RESEND_API_KEY nie je nakonfigurovaný.");
     const { data: q, error } = await context.supabase
-      .from("quotes").select("*").eq("id", data.quoteId).maybeSingle();
+      .from("quotes")
+      .select("*")
+      .eq("id", data.quoteId)
+      .maybeSingle();
     if (error || !q) throw new Error("Cenová ponuka nenájdená");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { assertCompanyActive } = await import("./active-check.server");
     await assertCompanyActive(q.company_id);
-    const { data: company } = await supabaseAdmin.from("companies").select("*").eq("id", q.company_id).single();
+    const { data: company } = await supabaseAdmin
+      .from("companies")
+      .select("*")
+      .eq("id", q.company_id)
+      .single();
 
     // Ensure PDF
     let pdfPath = q.pdf_url as string | null;
@@ -47,31 +57,53 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
       const [{ data: items }] = await Promise.all([
         supabaseAdmin.from("quote_items").select("*").eq("quote_id", q.id).order("position"),
       ]);
-      let logoBytes: Uint8Array | null = null; let logoMime: string | null = null;
+      let logoBytes: Uint8Array | null = null;
+      let logoMime: string | null = null;
       if (company?.logo_url) {
         try {
-          const { data: blob } = await supabaseAdmin.storage.from("company-logos").download(company.logo_url);
-          if (blob) { logoBytes = new Uint8Array(await blob.arrayBuffer()); logoMime = blob.type; }
+          const { data: blob } = await supabaseAdmin.storage
+            .from("company-logos")
+            .download(company.logo_url);
+          if (blob) {
+            logoBytes = new Uint8Array(await blob.arrayBuffer());
+            logoMime = blob.type;
+          }
         } catch {}
       }
       const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
       const bytes = await generateInvoicePdfBytes({
-        company, invoice: q, items: items ?? [], logoBytes, logoMime,
-        documentLabel: "CENOVÁ PONUKA", numberLabel: `č. ${q.quote_number}`, hidePayment: true,
+        company,
+        invoice: q,
+        items: items ?? [],
+        logoBytes,
+        logoMime,
+        documentLabel: "CENOVÁ PONUKA",
+        numberLabel: `č. ${q.quote_number}`,
+        hidePayment: true,
       });
       pdfPath = `${q.company_id}/quotes/${q.id}.pdf`;
-      const { error: upErr } = await supabaseAdmin.storage.from("invoice-pdfs").upload(pdfPath, bytes, {
-        contentType: "application/pdf", upsert: true,
-      });
+      const { error: upErr } = await supabaseAdmin.storage
+        .from("invoice-pdfs")
+        .upload(pdfPath, bytes, {
+          contentType: "application/pdf",
+          upsert: true,
+        });
       if (upErr) throw new Error(upErr.message);
       await supabaseAdmin.from("quotes").update({ pdf_url: pdfPath }).eq("id", q.id);
     }
-    const { data: blob, error: dlErr } = await supabaseAdmin.storage.from("invoice-pdfs").download(pdfPath);
+    const { data: blob, error: dlErr } = await supabaseAdmin.storage
+      .from("invoice-pdfs")
+      .download(pdfPath);
     if (dlErr || !blob) throw new Error(dlErr?.message ?? "PDF sa nepodarilo načítať.");
     const pdfB64 = b64(await blob.arrayBuffer());
 
-    const subject = (data.subject ?? `Cenová ponuka ${q.quote_number}`).replaceAll("{quote_number}", q.quote_number);
-    const message = (data.message ?? `V prílohe Vám posielame cenovú ponuku ${q.quote_number}.`).replaceAll("{quote_number}", q.quote_number);
+    const subject = (data.subject ?? `Cenová ponuka ${q.quote_number}`).replaceAll(
+      "{quote_number}",
+      q.quote_number,
+    );
+    const message = (
+      data.message ?? `V prílohe Vám posielame cenovú ponuku ${q.quote_number}.`
+    ).replaceAll("{quote_number}", q.quote_number);
     const senderName = company?.email_sender_name || company?.name || "Faktero";
 
     const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
@@ -89,27 +121,41 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
       }),
     });
     const text = await res.text();
-    let json: any = {}; try { json = JSON.parse(text); } catch {}
+    let json: any = {};
+    try {
+      json = JSON.parse(text);
+    } catch {}
     if (!res.ok) {
       const errMsg = json?.message ?? text.slice(0, 500);
       await supabaseAdmin.from("quote_email_logs" as any).insert({
-        company_id: q.company_id, quote_id: q.id,
-        recipient_email: data.recipient_email, subject, message,
-        status: "failed", error_message: errMsg,
+        company_id: q.company_id,
+        quote_id: q.id,
+        recipient_email: data.recipient_email,
+        subject,
+        message,
+        status: "failed",
+        error_message: errMsg,
       });
       throw new Error(`Resend error: ${errMsg}`);
     }
 
     await supabaseAdmin.from("quote_email_logs" as any).insert({
-      company_id: q.company_id, quote_id: q.id,
-      recipient_email: data.recipient_email, subject, message,
-      status: "sent", provider_message_id: json?.id ?? null,
+      company_id: q.company_id,
+      quote_id: q.id,
+      recipient_email: data.recipient_email,
+      subject,
+      message,
+      status: "sent",
+      provider_message_id: json?.id ?? null,
       sent_at: new Date().toISOString(),
     });
 
-    await supabaseAdmin.from("quotes").update({
-      status: q.status === "draft" ? "sent" : q.status,
-      sent_at: new Date().toISOString(),
-    }).eq("id", q.id);
+    await supabaseAdmin
+      .from("quotes")
+      .update({
+        status: q.status === "draft" ? "sent" : q.status,
+        sent_at: new Date().toISOString(),
+      })
+      .eq("id", q.id);
     return { ok: true, message_id: json?.id ?? null };
   });

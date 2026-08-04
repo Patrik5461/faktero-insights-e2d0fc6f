@@ -46,7 +46,8 @@ function asArray<T = any>(v: any): T[] {
 function normalizeDate(v: string): string {
   if (!v) return "";
   const s = v.trim();
-  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
   m = /^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})/.exec(s);
   if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
   return s;
@@ -69,15 +70,16 @@ function num(v: string): string {
 // ---------------------------------------------------------------------------
 function parseMoneyS3(bytes: Uint8Array): CanonicalRow[] {
   const xml = decodeBytes(bytes);
-  const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@", trimValues: true });
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@",
+    trimValues: true,
+  });
   const obj = parser.parse(xml);
   const root = obj?.MoneyData ?? obj?._MoneyData ?? obj?.moneydata ?? obj?.["_MoneyData"] ?? obj;
 
   const list =
-    root?.SeznamFaktVyd?.FaktVyd ??
-    root?.SeznamFaktPri?.FaktPri ??
-    root?.Faktury?.Faktura ??
-    [];
+    root?.SeznamFaktVyd?.FaktVyd ?? root?.SeznamFaktPri?.FaktPri ?? root?.Faktury?.Faktura ?? [];
   const invoices = asArray(list);
   const rows: CanonicalRow[] = [];
 
@@ -137,19 +139,61 @@ function parseMoneyS3(bytes: Uint8Array): CanonicalRow[] {
 // against a synonym list per canonical field.
 // ---------------------------------------------------------------------------
 const CSV_SYNONYMS: Record<FieldKey, string[]> = {
-  invoice_number: ["cislo dokladu", "cislo faktury", "cislo", "doklad", "číslo dokladu", "číslo faktúry", "číslo", "invoice number"],
+  invoice_number: [
+    "cislo dokladu",
+    "cislo faktury",
+    "cislo",
+    "doklad",
+    "číslo dokladu",
+    "číslo faktúry",
+    "číslo",
+    "invoice number",
+  ],
   variable_symbol: ["variabilny symbol", "variabilní symbol", "vs", "var symbol"],
-  issue_date: ["datum vystavenia", "datum vystaveni", "dátum vystavenia", "date issued", "issue date"],
+  issue_date: [
+    "datum vystavenia",
+    "datum vystaveni",
+    "dátum vystavenia",
+    "date issued",
+    "issue date",
+  ],
   due_date: ["datum splatnosti", "dátum splatnosti", "splatnost", "splatnosť", "due date"],
-  delivery_date: ["datum dodania", "dátum dodania", "datum plneni", "delivery date", "dátum dodania tovaru"],
+  delivery_date: [
+    "datum dodania",
+    "dátum dodania",
+    "datum plneni",
+    "delivery date",
+    "dátum dodania tovaru",
+  ],
   status: ["stav", "status", "uhradene", "uhradené"],
   currency: ["mena", "currency"],
   subtotal: ["suma bez dph", "základ dph", "zaklad dph", "celkom bez dph", "cena bez dph", "netto"],
   vat_total: ["dph", "dph spolu", "dan", "daň", "vat"],
-  total: ["celkom s dph", "suma s dph", "celkom", "spolu", "suma celkom", "k uhrade", "k úhrade", "total"],
+  total: [
+    "celkom s dph",
+    "suma s dph",
+    "celkom",
+    "spolu",
+    "suma celkom",
+    "k uhrade",
+    "k úhrade",
+    "total",
+  ],
   notes: ["poznamka", "poznámka", "note"],
   external_id: ["id", "external id", "guid"],
-  customer_name: ["odberatel", "odberateľ", "odberatel - nazov", "odberateľ - názov", "nazov odberatela", "názov odberateľa", "obchodne meno", "obchodné meno", "firma", "customer", "zakaznik"],
+  customer_name: [
+    "odberatel",
+    "odberateľ",
+    "odberatel - nazov",
+    "odberateľ - názov",
+    "nazov odberatela",
+    "názov odberateľa",
+    "obchodne meno",
+    "obchodné meno",
+    "firma",
+    "customer",
+    "zakaznik",
+  ],
   customer_ico: ["ico", "ičo"],
   customer_dic: ["dic", "dič"],
   customer_ic_dph: ["ic dph", "ič dph", "icdph", "vat id"],
@@ -169,7 +213,13 @@ const CSV_SYNONYMS: Record<FieldKey, string[]> = {
 };
 
 function normHeader(s: string): string {
-  return (s ?? "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return (s ?? "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 function detectMapping(headers: string[]): Partial<Record<FieldKey, string>> {
@@ -179,7 +229,10 @@ function detectMapping(headers: string[]): Partial<Record<FieldKey, string>> {
     for (const s of syns) {
       const ns = normHeader(s);
       const hit = normed.find((h) => h.n === ns || h.n.includes(ns));
-      if (hit) { mapping[field] = hit.raw; break; }
+      if (hit) {
+        mapping[field] = hit.raw;
+        break;
+      }
     }
   }
   return mapping;
@@ -195,8 +248,10 @@ function csvToCanonical(text: string): CanonicalRow[] {
     for (const [field, header] of Object.entries(map) as [FieldKey, string][]) {
       const v = r[header];
       if (v == null || v === "") continue;
-      if (field === "issue_date" || field === "due_date" || field === "delivery_date") out[field] = normalizeDate(v);
-      else if (field.match(/subtotal|vat_total|total|item_(quantity|unit_price|vat_rate|total)/)) out[field] = num(v);
+      if (field === "issue_date" || field === "due_date" || field === "delivery_date")
+        out[field] = normalizeDate(v);
+      else if (field.match(/subtotal|vat_total|total|item_(quantity|unit_price|vat_rate|total)/))
+        out[field] = num(v);
       else out[field] = String(v).trim();
     }
     return out;
@@ -209,7 +264,11 @@ function csvToCanonical(text: string): CanonicalRow[] {
 // ---------------------------------------------------------------------------
 function parseKrosXml(bytes: Uint8Array): CanonicalRow[] {
   const xml = decodeBytes(bytes);
-  const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@", trimValues: true });
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@",
+    trimValues: true,
+  });
   const obj = parser.parse(xml);
 
   const invoiceNodes: any[] = [];
@@ -250,7 +309,10 @@ function parseKrosXml(bytes: Uint8Array): CanonicalRow[] {
       customer_zip: pickFirst(addr, "PSC", "Zip"),
       customer_country: pickFirst(addr, "Krajina", "Stat", "Country") || "SK",
     };
-    if (items.length === 0) { rows.push(head); continue; }
+    if (items.length === 0) {
+      rows.push(head);
+      continue;
+    }
     for (const it of items) {
       rows.push({
         ...head,
@@ -270,7 +332,11 @@ function parseKrosXml(bytes: Uint8Array): CanonicalRow[] {
 // ---------------------------------------------------------------------------
 // Dispatcher
 // ---------------------------------------------------------------------------
-export function parseVendorFile(source: VendorSource, fileName: string, bytes: Uint8Array): CanonicalRow[] {
+export function parseVendorFile(
+  source: VendorSource,
+  fileName: string,
+  bytes: Uint8Array,
+): CanonicalRow[] {
   const lower = fileName.toLowerCase();
   const isXml = lower.endsWith(".xml");
   switch (source) {
@@ -290,10 +356,16 @@ export function summarize(rows: CanonicalRow[]) {
   const invoiceNumbers = new Set<string>();
   const customers = new Set<string>();
   let totalValue = 0;
-  const sample: Array<{ invoice_number: string; customer_name: string; total: number; issue_date: string }> = [];
+  const sample: Array<{
+    invoice_number: string;
+    customer_name: string;
+    total: number;
+    issue_date: string;
+  }> = [];
   for (const r of rows) {
     if (r.invoice_number) invoiceNumbers.add(r.invoice_number);
-    if (r.customer_name || r.customer_ico) customers.add((r.customer_ico ?? "") + "|" + (r.customer_name ?? ""));
+    if (r.customer_name || r.customer_ico)
+      customers.add((r.customer_ico ?? "") + "|" + (r.customer_name ?? ""));
     if (r.total && !isNaN(Number(r.total))) totalValue += Number(r.total);
   }
   const seen = new Set<string>();

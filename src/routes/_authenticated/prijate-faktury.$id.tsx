@@ -11,7 +11,11 @@ export const Route = createFileRoute("/_authenticated/prijate-faktury/$id")({
 });
 
 const STATUS_LABEL: Record<string, string> = {
-  draft: "Koncept", received: "Prijaté", booked: "Zaúčtované", paid: "Zaplatené", cancelled: "Stornované",
+  draft: "Koncept",
+  received: "Prijaté",
+  booked: "Zaúčtované",
+  paid: "Zaplatené",
+  cancelled: "Stornované",
 };
 const STATUS_CLASS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -31,14 +35,22 @@ function PurchaseInvoiceDetail() {
   const [row, setRow] = useState<any | null>(null);
 
   async function load() {
-    const { data } = await supabase.from("purchase_invoices").select("*").eq("id", id).maybeSingle();
+    const { data } = await supabase
+      .from("purchase_invoices")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
     setRow(data);
   }
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => {
+    load();
+  }, [id]);
 
   async function setStatus(status: string, extra: Record<string, any> = {}) {
-    const { error } = await supabase.from("purchase_invoices")
-      .update({ status, ...extra }).eq("id", id);
+    const { error } = await supabase
+      .from("purchase_invoices")
+      .update({ status, ...extra })
+      .eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Stav aktualizovaný");
     load();
@@ -52,8 +64,10 @@ function PurchaseInvoiceDetail() {
 
   async function del() {
     if (!confirm("Naozaj vymazať túto prijatú faktúru?")) return;
-    const { error } = await supabase.from("purchase_invoices")
-      .update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    const { error } = await supabase
+      .from("purchase_invoices")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Vymazané");
     navigate({ to: "/prijate-faktury" });
@@ -61,7 +75,8 @@ function PurchaseInvoiceDetail() {
 
   async function downloadPdf() {
     if (!row?.file_path) return toast.error("Bez prílohy");
-    const { data, error } = await supabase.storage.from("purchase-invoices")
+    const { data, error } = await supabase.storage
+      .from("purchase-invoices")
       .createSignedUrl(row.file_path, 60, { download: `${row.invoice_number ?? "faktura"}` });
     if (error || !data) return toast.error(error?.message ?? "Chyba");
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
@@ -76,39 +91,53 @@ function PurchaseInvoiceDetail() {
         description={`Dodávateľ: ${row.supplier_name} · Vystavená ${row.issue_date}`}
         action={
           <div className="flex flex-wrap gap-2">
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASS[row.status] ?? ""}`}>
+            <span
+              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASS[row.status] ?? ""}`}
+            >
               {STATUS_LABEL[row.status] ?? row.status}
             </span>
             {row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
-              <button onClick={() => setStatus("received")}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
+              <button
+                onClick={() => setStatus("received")}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+              >
                 Označiť ako prijaté
               </button>
             )}
             {row.status !== "paid" && row.status !== "cancelled" && (
-              <button onClick={markPaid}
-                className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700">
+              <button
+                onClick={markPaid}
+                className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700"
+              >
                 <CheckCircle2 className="h-4 w-4" /> Označiť ako zaplatené
               </button>
             )}
             {row.status !== "cancelled" && (
-              <button onClick={() => setStatus("cancelled")}
-                className="inline-flex items-center gap-1.5 rounded-md border border-rose-300 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50">
+              <button
+                onClick={() => setStatus("cancelled")}
+                className="inline-flex items-center gap-1.5 rounded-md border border-rose-300 px-3 py-1.5 text-sm text-rose-700 hover:bg-rose-50"
+              >
                 <Ban className="h-4 w-4" /> Storno
               </button>
             )}
             {row.file_path && (
-              <button onClick={downloadPdf}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
+              <button
+                onClick={downloadPdf}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+              >
                 <Download className="h-4 w-4" /> Stiahnuť PDF
               </button>
             )}
-            <button onClick={del}
-              className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10">
+            <button
+              onClick={del}
+              className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive hover:bg-destructive/10"
+            >
               <Trash2 className="h-4 w-4" /> Vymazať
             </button>
-            <Link to="/prijate-faktury"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
+            <Link
+              to="/prijate-faktury"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+            >
               <ArrowLeft className="h-4 w-4" /> Späť
             </Link>
           </div>
@@ -119,10 +148,16 @@ function PurchaseInvoiceDetail() {
           <div className="space-y-6">
             <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
               <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">Dodávateľ</div>
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Dodávateľ
+                </div>
                 <div className="mt-1 font-medium">{row.supplier_name}</div>
-                <div className="mt-2 text-sm">IČO: {row.supplier_ico ?? "—"} · DIČ: {row.supplier_dic ?? "—"}</div>
-                {row.supplier_ic_dph && <div className="text-sm">IČ DPH: {row.supplier_ic_dph}</div>}
+                <div className="mt-2 text-sm">
+                  IČO: {row.supplier_ico ?? "—"} · DIČ: {row.supplier_dic ?? "—"}
+                </div>
+                {row.supplier_ic_dph && (
+                  <div className="text-sm">IČ DPH: {row.supplier_ic_dph}</div>
+                )}
               </div>
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Dátumy</div>

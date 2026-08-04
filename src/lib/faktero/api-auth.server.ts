@@ -13,7 +13,9 @@ export type ApiCtx = {
 
 async function sha256Hex(s: string) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function jsonResp(status: number, body: any) {
@@ -52,15 +54,30 @@ export async function handleApi(
       const text = await request.text();
       if (text) requestBody = JSON.parse(text);
     } catch {
-      return jsonResp(400, { error: { code: "invalid_json", message: "Telo požiadavky musí byť platný JSON." } });
+      return jsonResp(400, {
+        error: { code: "invalid_json", message: "Telo požiadavky musí byť platný JSON." },
+      });
     }
   }
 
   // Bearer auth
   const auth = request.headers.get("authorization") ?? "";
   if (!auth.startsWith("Bearer ")) {
-    const r = jsonResp(401, { error: { code: "missing_api_key", message: "Chýba Bearer API kľúč." } });
-    await logRequest({ company_id: null, api_key_id: null, method, path, status: 401, requestBody, responseBody: null, userAgent, ip, duration: Date.now() - started });
+    const r = jsonResp(401, {
+      error: { code: "missing_api_key", message: "Chýba Bearer API kľúč." },
+    });
+    await logRequest({
+      company_id: null,
+      api_key_id: null,
+      method,
+      path,
+      status: 401,
+      requestBody,
+      responseBody: null,
+      userAgent,
+      ip,
+      duration: Date.now() - started,
+    });
     return r;
   }
   const token = auth.slice(7).trim();
@@ -73,8 +90,21 @@ export async function handleApi(
     .maybeSingle();
 
   if (!keyRow || keyRow.revoked_at) {
-    const r = jsonResp(401, { error: { code: "invalid_api_key", message: "API kľúč je neplatný alebo zneplatnený." } });
-    await logRequest({ company_id: null, api_key_id: null, method, path, status: 401, requestBody, responseBody: null, userAgent, ip, duration: Date.now() - started });
+    const r = jsonResp(401, {
+      error: { code: "invalid_api_key", message: "API kľúč je neplatný alebo zneplatnený." },
+    });
+    await logRequest({
+      company_id: null,
+      api_key_id: null,
+      method,
+      path,
+      status: 401,
+      requestBody,
+      responseBody: null,
+      userAgent,
+      ip,
+      duration: Date.now() - started,
+    });
     return r;
   }
 
@@ -105,7 +135,18 @@ export async function handleApi(
         "x-ratelimit-window": "300",
       },
     });
-    await logRequest({ company_id: keyRow.company_id, api_key_id: keyRow.id, method, path, status: 429, requestBody, responseBody: body, userAgent, ip, duration: Date.now() - started });
+    await logRequest({
+      company_id: keyRow.company_id,
+      api_key_id: keyRow.id,
+      method,
+      path,
+      status: 429,
+      requestBody,
+      responseBody: body,
+      userAgent,
+      ip,
+      duration: Date.now() - started,
+    });
     return r;
   }
 
@@ -116,44 +157,73 @@ export async function handleApi(
       company_id: keyRow.company_id,
       api_key_id: keyRow.id,
       mode: keyRow.mode as "test" | "live",
-      request, requestBody, userAgent, ip,
+      request,
+      requestBody,
+      userAgent,
+      ip,
     });
   } catch (e: any) {
     console.error("[api]", e);
-    result = { status: 500, body: { error: { code: "internal_error", message: e?.message ?? "Interná chyba." } } };
+    result = {
+      status: 500,
+      body: { error: { code: "internal_error", message: e?.message ?? "Interná chyba." } },
+    };
   }
 
   // Fire-and-forget log + last_used_at
-  void supabaseAdmin.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", keyRow.id);
+  void supabaseAdmin
+    .from("api_keys")
+    .update({ last_used_at: new Date().toISOString() })
+    .eq("id", keyRow.id);
   await logRequest({
-    company_id: keyRow.company_id, api_key_id: keyRow.id,
-    method, path, status: result.status,
-    requestBody, responseBody: result.body,
-    userAgent, ip, duration: Date.now() - started,
+    company_id: keyRow.company_id,
+    api_key_id: keyRow.id,
+    method,
+    path,
+    status: result.status,
+    requestBody,
+    responseBody: result.body,
+    userAgent,
+    ip,
+    duration: Date.now() - started,
   });
 
   return jsonResp(result.status, result.body);
 }
 
 async function logRequest(p: {
-  company_id: string | null; api_key_id: string | null;
-  method: string; path: string; status: number;
-  requestBody: any; responseBody: any;
-  userAgent: string | null; ip: string | null; duration: number;
+  company_id: string | null;
+  api_key_id: string | null;
+  method: string;
+  path: string;
+  status: number;
+  requestBody: any;
+  responseBody: any;
+  userAgent: string | null;
+  ip: string | null;
+  duration: number;
 }) {
   try {
     await supabaseAdmin.from("api_logs").insert({
-      company_id: p.company_id, api_key_id: p.api_key_id,
-      method: p.method, path: p.path, status: p.status,
-      request_body: p.requestBody, response_body: p.responseBody,
-      user_agent: p.userAgent, ip: p.ip, duration_ms: p.duration,
+      company_id: p.company_id,
+      api_key_id: p.api_key_id,
+      method: p.method,
+      path: p.path,
+      status: p.status,
+      request_body: p.requestBody,
+      response_body: p.responseBody,
+      user_agent: p.userAgent,
+      ip: p.ip,
+      duration_ms: p.duration,
     });
   } catch (e) {
     console.error("[api-log]", e);
   }
 }
 
-export function ok(body: any, status = 200) { return { status, body }; }
+export function ok(body: any, status = 200) {
+  return { status, body };
+}
 export function err(code: string, message: string, status = 400, extra?: any) {
   return { status, body: { error: { code, message, ...(extra ? { details: extra } : {}) } } };
 }

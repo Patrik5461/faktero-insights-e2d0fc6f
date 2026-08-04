@@ -13,7 +13,11 @@ export const Route = createFileRoute("/admin/audit-log")({
 type Row = Awaited<ReturnType<typeof listAuditLogs>>["rows"][number];
 
 function fmtDateTime(s: string) {
-  try { return new Date(s).toLocaleString("sk-SK"); } catch { return s; }
+  try {
+    return new Date(s).toLocaleString("sk-SK");
+  } catch {
+    return s;
+  }
 }
 
 function AdminAuditLogPage() {
@@ -32,11 +36,19 @@ function AdminAuditLogPage() {
       setError(null);
       try {
         const res = await fetchLogs({ data: { page, pageSize } });
-        if (!cancelled) { setRows(res.rows as Row[]); setTotal(res.total); }
-      } catch (e: any) { if (!cancelled) setError(e?.message ?? "Chyba"); }
-      finally { if (!cancelled) setLoading(false); }
+        if (!cancelled) {
+          setRows(res.rows as Row[]);
+          setTotal(res.total);
+        }
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message ?? "Chyba");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [fetchLogs, page]);
 
   const pages = Math.max(1, Math.ceil(total / pageSize));
@@ -73,26 +85,46 @@ function AdminAuditLogPage() {
                 </thead>
                 <tbody>
                   {loading && rows.length === 0 ? (
-                    <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Načítavam…</td></tr>
-                  ) : rows.length === 0 ? (
-                    <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Žiadne záznamy.</td></tr>
-                  ) : rows.map((r: any) => (
-                    <tr key={r.id} className="border-t border-border align-top hover:bg-muted/30">
-                      <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">{fmtDateTime(r.created_at)}</td>
-                      <td className="px-3 py-2">
-                        <div className="font-medium">{r.admin_name ?? "—"}</div>
-                        <div className="text-xs text-muted-foreground">{r.admin_email ?? "—"}</div>
-                      </td>
-                      <td className="px-3 py-2"><span className="rounded-full bg-secondary px-2 py-0.5 text-xs">{r.action}</span></td>
-                      <td className="px-3 py-2 text-muted-foreground">{r.entity_type ?? "—"}</td>
-                      <td className="px-3 py-2 font-mono text-[10px] text-muted-foreground">{r.entity_id ?? "—"}</td>
-                      <td className="px-3 py-2">
-                        <pre className="max-w-md overflow-x-auto rounded bg-muted/40 p-2 text-[10px] text-muted-foreground">
-{JSON.stringify(r.metadata ?? {}, null, 0)}
-                        </pre>
+                    <tr>
+                      <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                        Načítavam…
                       </td>
                     </tr>
-                  ))}
+                  ) : rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                        Žiadne záznamy.
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map((r: any) => (
+                      <tr key={r.id} className="border-t border-border align-top hover:bg-muted/30">
+                        <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
+                          {fmtDateTime(r.created_at)}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="font-medium">{r.admin_name ?? "—"}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {r.admin_email ?? "—"}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs">
+                            {r.action}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground">{r.entity_type ?? "—"}</td>
+                        <td className="px-3 py-2 font-mono text-[10px] text-muted-foreground">
+                          {r.entity_id ?? "—"}
+                        </td>
+                        <td className="px-3 py-2">
+                          <pre className="max-w-md overflow-x-auto rounded bg-muted/40 p-2 text-[10px] text-muted-foreground">
+                            {JSON.stringify(r.metadata ?? {}, null, 0)}
+                          </pre>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -108,10 +140,24 @@ function AdminAuditLogPage() {
 
         {total > pageSize && (
           <div className="mt-4 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Strana {page} z {pages} · {total} záznamov</span>
+            <span className="text-muted-foreground">
+              Strana {page} z {pages} · {total} záznamov
+            </span>
             <div className="flex gap-2">
-              <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50">← Späť</button>
-              <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50">Ďalej →</button>
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50"
+              >
+                ← Späť
+              </button>
+              <button
+                disabled={page >= pages}
+                onClick={() => setPage((p) => p + 1)}
+                className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50"
+              >
+                Ďalej →
+              </button>
             </div>
           </div>
         )}

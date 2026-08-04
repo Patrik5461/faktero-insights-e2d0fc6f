@@ -5,9 +5,13 @@ import { finstatLookup, finstatAutocomplete } from "./finstat.server";
 const ICO = "12345678";
 const PUB = "pubkey";
 const PRIV = "privkey";
-const expectedHash = createHash("sha256").update(`SomeSalt+${PUB}+${PRIV}++${ICO}+ended`).digest("hex");
+const expectedHash = createHash("sha256")
+  .update(`SomeSalt+${PUB}+${PRIV}++${ICO}+ended`)
+  .digest("hex");
 
-function mockFetch(impl: (url: string) => { status: number; body: string; headers?: Record<string, string> }) {
+function mockFetch(
+  impl: (url: string) => { status: number; body: string; headers?: Record<string, string> },
+) {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input: any) => {
     const url = typeof input === "string" ? input : input.url;
     const r = impl(url);
@@ -74,7 +78,9 @@ describe("finstatLookup", () => {
     const res = await finstatLookup(ICO);
     expect(res.status).toBe("error");
     if (res.status === "error")
-      expect(res.message).toBe("Autorizácia FinStat API zlyhala. Skontrolujte API kľúče alebo spôsob generovania hash.");
+      expect(res.message).toBe(
+        "Autorizácia FinStat API zlyhala. Skontrolujte API kľúče alebo spôsob generovania hash.",
+      );
   });
 
   it("returns not_found on 404", async () => {
@@ -131,7 +137,8 @@ describe("finstatAutocomplete", () => {
     // capture method as well
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input: any, init?: any) => {
       capturedUrl = typeof input === "string" ? input : input.url;
-      capturedMethod = (init?.method ?? (typeof input === "object" ? input.method : "GET")) as string;
+      capturedMethod = (init?.method ??
+        (typeof input === "object" ? input.method : "GET")) as string;
       return new Response(
         JSON.stringify([
           {

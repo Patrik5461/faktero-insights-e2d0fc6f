@@ -12,9 +12,14 @@ const json = (status: number, body: unknown) =>
 async function processJob(jobId: string, storagePath: string, mimeType: string) {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("delivery_parse_jobs").update({ status: "processing" }).eq("id", jobId);
+    await supabaseAdmin
+      .from("delivery_parse_jobs")
+      .update({ status: "processing" })
+      .eq("id", jobId);
 
-    const { data: blob, error: dlErr } = await supabaseAdmin.storage.from("imports").download(storagePath);
+    const { data: blob, error: dlErr } = await supabaseAdmin.storage
+      .from("imports")
+      .download(storagePath);
     if (dlErr || !blob) throw new Error(`download_failed: ${dlErr?.message ?? "unknown"}`);
     const arrayBuf = await blob.arrayBuffer();
     const base64 = Buffer.from(arrayBuf).toString("base64");
@@ -42,8 +47,14 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
     } else {
       const isPdf = mt === "application/pdf";
       const dataUrl = `data:${mt};base64,${base64}`;
-      const userContent: any[] = [{ type: "text", text: "Extrahuj položky z tohto dodacieho listu." }];
-      if (isPdf) userContent.push({ type: "file", file: { filename: "dodaci-list.pdf", file_data: dataUrl } });
+      const userContent: any[] = [
+        { type: "text", text: "Extrahuj položky z tohto dodacieho listu." },
+      ];
+      if (isPdf)
+        userContent.push({
+          type: "file",
+          file: { filename: "dodaci-list.pdf", file_data: dataUrl },
+        });
       else userContent.push({ type: "image_url", image_url: { url: dataUrl } });
       const resp = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -58,7 +69,8 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
           max_tokens: 4000,
         }),
       });
-      if (!resp.ok) throw new Error(`ai_error ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
+      if (!resp.ok)
+        throw new Error(`ai_error ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
       const j = await resp.json();
       content = j.choices?.[0]?.message?.content ?? "[]";
     }
@@ -81,15 +93,26 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
     try {
       parsed = JSON.parse(cleaned);
     } catch (parseErr: any) {
-      console.error("[job] JSON parse failed:", parseErr?.message, "cleaned prefix:", cleaned.slice(0, 200));
+      console.error(
+        "[job] JSON parse failed:",
+        parseErr?.message,
+        "cleaned prefix:",
+        cleaned.slice(0, 200),
+      );
     }
     const rawItems: any[] = Array.isArray(parsed)
       ? parsed
-      : Array.isArray(parsed?.items) ? parsed.items
-      : Array.isArray(parsed?.results) ? parsed.results
-      : Array.isArray(parsed?.products) ? parsed.products
-      : Array.isArray(parsed?.data) ? parsed.data
-      : parsed?.name ? [parsed] : [];
+      : Array.isArray(parsed?.items)
+        ? parsed.items
+        : Array.isArray(parsed?.results)
+          ? parsed.results
+          : Array.isArray(parsed?.products)
+            ? parsed.products
+            : Array.isArray(parsed?.data)
+              ? parsed.data
+              : parsed?.name
+                ? [parsed]
+                : [];
 
     console.log("[job] raw items count:", rawItems.length);
 
@@ -135,13 +158,15 @@ export const Route = createFileRoute("/api/v1/sklad/parse-delivery-note")({
       POST: async ({ request }) => {
         try {
           const auth = request.headers.get("authorization") ?? "";
-          if (!auth.toLowerCase().startsWith("bearer ")) return json(401, { error: "missing_token" });
+          if (!auth.toLowerCase().startsWith("bearer "))
+            return json(401, { error: "missing_token" });
           const token = auth.slice(7).trim();
           if (!token) return json(401, { error: "missing_token" });
 
           const SUPABASE_URL = process.env.SUPABASE_URL;
           const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
-          if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) return json(500, { error: "supabase_not_configured" });
+          if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY)
+            return json(500, { error: "supabase_not_configured" });
 
           const { createClient } = await import("@supabase/supabase-js");
           const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
@@ -153,7 +178,11 @@ export const Route = createFileRoute("/api/v1/sklad/parse-delivery-note")({
           const userId = claimsData.claims.sub as string;
 
           let body: any;
-          try { body = await request.json(); } catch { return json(400, { error: "invalid_json" }); }
+          try {
+            body = await request.json();
+          } catch {
+            return json(400, { error: "invalid_json" });
+          }
           const storage_path = typeof body?.storage_path === "string" ? body.storage_path : "";
           const mime_type = typeof body?.mime_type === "string" ? body.mime_type : "";
           const company_id = typeof body?.company_id === "string" ? body.company_id : "";
@@ -181,7 +210,8 @@ export const Route = createFileRoute("/api/v1/sklad/parse-delivery-note")({
             })
             .select("id")
             .single();
-          if (insErr || !job) return json(500, { error: "job_create_failed", message: insErr?.message });
+          if (insErr || !job)
+            return json(500, { error: "job_create_failed", message: insErr?.message });
 
           // Fire and forget – runs in background on Node/PM2 host.
           void processJob(job.id, storage_path, mime_type);

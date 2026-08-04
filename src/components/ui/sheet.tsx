@@ -54,8 +54,7 @@ interface SheetContentProps
     React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
     VariantProps<typeof sheetVariants> {}
 
-interface SheetContentPropsExtended
-  extends SheetContentProps {
+interface SheetContentPropsExtended extends SheetContentProps {
   showClose?: boolean;
 }
 

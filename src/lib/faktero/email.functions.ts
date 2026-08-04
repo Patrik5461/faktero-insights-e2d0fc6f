@@ -14,7 +14,10 @@ export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => Input.parse(d))
   .handler(async ({ data, context }) => {
     const { data: inv } = await context.supabase
-      .from("invoices").select("id, company_id").eq("id", data.invoiceId).maybeSingle();
+      .from("invoices")
+      .select("id, company_id")
+      .eq("id", data.invoiceId)
+      .maybeSingle();
     if (!inv) throw new Error("Faktúra nenájdená");
     const { assertCompanyActive } = await import("./active-check.server");
     await assertCompanyActive(inv.company_id);
@@ -30,7 +33,13 @@ export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
 
 const TriggerInput = z.object({
   companyId: z.string().uuid(),
-  event: z.enum(["invoice.created","invoice.sent","invoice.paid","invoice.cancelled","customer.created"]),
+  event: z.enum([
+    "invoice.created",
+    "invoice.sent",
+    "invoice.paid",
+    "invoice.cancelled",
+    "customer.created",
+  ]),
   data: z.record(z.string(), z.any()),
 });
 
@@ -40,8 +49,11 @@ export const triggerEventFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     // Verify caller is a member of this company
     const { data: cu } = await context.supabase
-      .from("company_users").select("user_id")
-      .eq("company_id", data.companyId).eq("user_id", context.userId).maybeSingle();
+      .from("company_users")
+      .select("user_id")
+      .eq("company_id", data.companyId)
+      .eq("user_id", context.userId)
+      .maybeSingle();
     if (!cu) throw new Error("Forbidden");
     const { triggerEvent } = await import("./webhook-trigger.server");
     await triggerEvent({ company_id: data.companyId, event: data.event, data: data.data });

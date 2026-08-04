@@ -10,11 +10,11 @@ export const Route = createFileRoute("/api/public/hooks/reminders")({
     handlers: {
       POST: async ({ request }) => {
         const token =
-          request.headers.get("x-faktero-cron-token") ??
-          request.headers.get("x-cron-token");
+          request.headers.get("x-faktero-cron-token") ?? request.headers.get("x-cron-token");
         if (!token || token !== process.env.FAKTERO_CRON_TOKEN) {
           return new Response(JSON.stringify({ error: "unauthorized" }), {
-            status: 401, headers: { "content-type": "application/json" },
+            status: 401,
+            headers: { "content-type": "application/json" },
           });
         }
         try {
@@ -22,16 +22,20 @@ export const Route = createFileRoute("/api/public/hooks/reminders")({
           const r = await runOverdueReminders();
           const sent = r.results.filter((x) => x.ok).length;
           const failed = r.results.filter((x) => !x.ok && !x.skipped).length;
-          return new Response(JSON.stringify({
-            ok: true,
-            checked: r.checked,
-            sent,
-            failed,
-            results: r.results,
-          }), { status: 200, headers: { "content-type": "application/json" } });
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              checked: r.checked,
+              sent,
+              failed,
+              results: r.results,
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
         } catch (e: any) {
           return new Response(JSON.stringify({ error: e?.message ?? "internal" }), {
-            status: 500, headers: { "content-type": "application/json" },
+            status: 500,
+            headers: { "content-type": "application/json" },
           });
         }
       },

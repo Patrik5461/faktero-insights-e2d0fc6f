@@ -11,9 +11,16 @@ export const Route = createFileRoute("/_authenticated/importy/omega")({
       accept=".csv,.xml"
       guide={
         <ol className="ml-4 list-decimal space-y-1">
-          <li>V Omega otvorte <strong>Evidencia → Vydané faktúry</strong> (alebo Kniha odoslaných FA).</li>
-          <li>Zvoľte <strong>Súbor → Export → CSV</strong> (odporúčané) alebo <strong>XML</strong>.</li>
-          <li>Nastavte kódovanie na <strong>Windows-1250</strong> alebo <strong>UTF-8</strong> — obe zvládneme.</li>
+          <li>
+            V Omega otvorte <strong>Evidencia → Vydané faktúry</strong> (alebo Kniha odoslaných FA).
+          </li>
+          <li>
+            Zvoľte <strong>Súbor → Export → CSV</strong> (odporúčané) alebo <strong>XML</strong>.
+          </li>
+          <li>
+            Nastavte kódovanie na <strong>Windows-1250</strong> alebo <strong>UTF-8</strong> — obe
+            zvládneme.
+          </li>
           <li>Súbor nahrajte nižšie.</li>
         </ol>
       }

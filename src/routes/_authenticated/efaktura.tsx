@@ -18,7 +18,8 @@ function EfakturaLayout() {
       <div className="border-b border-border bg-card/30">
         <div className="flex flex-wrap gap-1 px-6 pt-3">
           {TABS.map((t) => {
-            const active = t.to === "/efaktura" ? pathname === "/efaktura" : pathname.startsWith(t.to);
+            const active =
+              t.to === "/efaktura" ? pathname === "/efaktura" : pathname.startsWith(t.to);
             return (
               <Link
                 key={t.to}

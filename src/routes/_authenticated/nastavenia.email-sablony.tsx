@@ -50,7 +50,9 @@ function EmailTemplatesPage() {
 
   useEffect(() => {
     if (!companyId) return;
-    list({ data: { companyId } }).then((r) => setRows(r as Row[])).catch((e) => toast.error(e?.message ?? "Chyba"));
+    list({ data: { companyId } })
+      .then((r) => setRows(r as Row[]))
+      .catch((e) => toast.error(e?.message ?? "Chyba"));
   }, [companyId, list]);
 
   if (!companyId) return <PageBody>Chýba aktívna firma.</PageBody>;
@@ -63,11 +65,21 @@ function EmailTemplatesPage() {
   async function onSave(r: Row) {
     setBusy(r.template_type);
     try {
-      await save({ data: { companyId: companyId!, template_type: r.template_type as any, subject: r.subject, body: r.body } });
+      await save({
+        data: {
+          companyId: companyId!,
+          template_type: r.template_type as any,
+          subject: r.subject,
+          body: r.body,
+        },
+      });
       update(r.template_type, { customized: true });
       toast.success("Šablóna uložená");
-    } catch (e: any) { toast.error(e?.message ?? "Uloženie zlyhalo"); }
-    finally { setBusy(null); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Uloženie zlyhalo");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function onReset(r: Row) {
@@ -75,20 +87,41 @@ function EmailTemplatesPage() {
     setBusy(r.template_type);
     try {
       await reset({ data: { companyId: companyId!, template_type: r.template_type as any } });
-      update(r.template_type, { subject: r.default_subject, body: r.default_body, customized: false });
+      update(r.template_type, {
+        subject: r.default_subject,
+        body: r.default_body,
+        customized: false,
+      });
       toast.success("Obnovené na predvolené");
-    } catch (e: any) { toast.error(e?.message ?? "Reset zlyhal"); }
-    finally { setBusy(null); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Reset zlyhal");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function onTest(r: Row) {
-    if (!testEmail) { toast.error("Zadajte e-mail pre test"); return; }
+    if (!testEmail) {
+      toast.error("Zadajte e-mail pre test");
+      return;
+    }
     setBusy(`${r.template_type}:test`);
     try {
-      await sendTest({ data: { companyId: companyId!, template_type: r.template_type as any, subject: r.subject, body: r.body, recipient_email: testEmail } });
+      await sendTest({
+        data: {
+          companyId: companyId!,
+          template_type: r.template_type as any,
+          subject: r.subject,
+          body: r.body,
+          recipient_email: testEmail,
+        },
+      });
       toast.success(`Testovací email odoslaný na ${testEmail}`);
-    } catch (e: any) { toast.error(e?.message ?? "Odoslanie zlyhalo"); }
-    finally { setBusy(null); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Odoslanie zlyhalo");
+    } finally {
+      setBusy(null);
+    }
   }
 
   return (
@@ -96,7 +129,14 @@ function EmailTemplatesPage() {
       <PageHeader
         title="Email šablóny"
         description="Predmet a text emailov, ktoré Faktero posiela odberateľom."
-        action={<Link to="/firma" className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">Späť na Firmu</Link>}
+        action={
+          <Link
+            to="/firma"
+            className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+          >
+            Späť na Firmu
+          </Link>
+        }
       />
       <PageBody>
         <div className="mb-4 rounded-xl border border-border bg-card p-4">
@@ -104,7 +144,8 @@ function EmailTemplatesPage() {
             <label className="flex-1 min-w-[240px]">
               <span className="text-sm font-medium">E-mail pre testovacie odoslanie</span>
               <input
-                type="email" value={testEmail}
+                type="email"
+                value={testEmail}
                 onChange={(e) => setTestEmail(e.target.value)}
                 placeholder="vas@email.sk"
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -153,7 +194,11 @@ function EmailTemplatesPage() {
                   disabled={busy === r.template_type}
                   className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
-                  {busy === r.template_type ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {busy === r.template_type ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
                   Uložiť
                 </button>
                 <button
@@ -168,7 +213,11 @@ function EmailTemplatesPage() {
                   disabled={busy === `${r.template_type}:test` || !testEmail}
                   className="inline-flex items-center gap-1.5 rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-50"
                 >
-                  {busy === `${r.template_type}:test` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {busy === `${r.template_type}:test` ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                   Odoslať testovací email
                 </button>
               </div>

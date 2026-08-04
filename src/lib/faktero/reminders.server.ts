@@ -9,12 +9,9 @@ const DEFAULT_SUBJECTS: Record<ReminderNumber, string> = {
 };
 
 const DEFAULT_MESSAGES: Record<ReminderNumber, string> = {
-  1:
-    "Dobrý deň,\n\ndovoľujeme si Vás upozorniť, že faktúra {invoice_number} v sume {total} bola splatná dňa {due_date} a k dnešnému dňu evidujeme, že ešte nebola uhradená.\n\nProsíme Vás o jej úhradu v čo najkratšom možnom čase. V prípade, že platba bola už uskutočnená, považujte túto upomienku za bezpredmetnú.\n\nĎakujeme,\n{company_name}",
-  2:
-    "Dobrý deň,\n\ntoto je druhá upomienka k faktúre {invoice_number} v sume {total}, ktorá bola splatná dňa {due_date} a doteraz nebola uhradená.\n\nProsíme o bezodkladnú úhradu, aby sme nemuseli pristúpiť k ďalším krokom.\n\nS pozdravom,\n{company_name}",
-  3:
-    "Dobrý deň,\n\njedná sa o tretiu a poslednú upomienku k faktúre {invoice_number} v sume {total}, splatnej dňa {due_date}.\n\nAk nebude čiastka uhradená v najbližších dňoch, budeme nútení postúpiť pohľadávku na ďalšie vymáhanie.\n\nS pozdravom,\n{company_name}",
+  1: "Dobrý deň,\n\ndovoľujeme si Vás upozorniť, že faktúra {invoice_number} v sume {total} bola splatná dňa {due_date} a k dnešnému dňu evidujeme, že ešte nebola uhradená.\n\nProsíme Vás o jej úhradu v čo najkratšom možnom čase. V prípade, že platba bola už uskutočnená, považujte túto upomienku za bezpredmetnú.\n\nĎakujeme,\n{company_name}",
+  2: "Dobrý deň,\n\ntoto je druhá upomienka k faktúre {invoice_number} v sume {total}, ktorá bola splatná dňa {due_date} a doteraz nebola uhradená.\n\nProsíme o bezodkladnú úhradu, aby sme nemuseli pristúpiť k ďalším krokom.\n\nS pozdravom,\n{company_name}",
+  3: "Dobrý deň,\n\njedná sa o tretiu a poslednú upomienku k faktúre {invoice_number} v sume {total}, splatnej dňa {due_date}.\n\nAk nebude čiastka uhradená v najbližších dňoch, budeme nútení postúpiť pohľadávku na ďalšie vymáhanie.\n\nS pozdravom,\n{company_name}",
 };
 
 export function defaultReminderSubject(n: ReminderNumber) {
@@ -43,7 +40,10 @@ function applyVars(s: string, inv: any, company: any) {
 }
 
 function escapeHtml(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]!));
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
 }
 
 export type BuildReminderInput = {
@@ -54,7 +54,13 @@ export type BuildReminderInput = {
   overrideMessage?: string;
 };
 
-export function buildReminderContent({ invoice, company, reminderNumber, overrideSubject, overrideMessage }: BuildReminderInput) {
+export function buildReminderContent({
+  invoice,
+  company,
+  reminderNumber,
+  overrideSubject,
+  overrideMessage,
+}: BuildReminderInput) {
   const subjectTpl =
     overrideSubject ??
     (company as any)?.[`reminder_subject_${reminderNumber}`] ??
@@ -69,10 +75,14 @@ export function buildReminderContent({ invoice, company, reminderNumber, overrid
 
   const paymentDetails = [
     company?.iban ? `IBAN: ${company.iban}` : null,
-    invoice?.variable_symbol ? `VS: ${invoice.variable_symbol}` : `VS: ${invoice.invoice_number ?? ""}`,
+    invoice?.variable_symbol
+      ? `VS: ${invoice.variable_symbol}`
+      : `VS: ${invoice.invoice_number ?? ""}`,
     `Suma: ${Number(invoice.total ?? 0).toFixed(2)} ${invoice.currency ?? "EUR"}`,
     invoice?.due_date ? `Pôvodná splatnosť: ${invoice.due_date}` : null,
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   const plain = `${message}\n\nPlatobné údaje:\n${paymentDetails}`;
 
@@ -102,16 +112,26 @@ export async function sendReminder(input: SendReminderInput) {
   if (!apiKey) throw new Error("RESEND_API_KEY nie je nakonfigurovaný.");
 
   const { data: invoice } = await supabaseAdmin
-    .from("invoices").select("*").eq("id", input.invoice_id).eq("company_id", input.company_id).maybeSingle();
+    .from("invoices")
+    .select("*")
+    .eq("id", input.invoice_id)
+    .eq("company_id", input.company_id)
+    .maybeSingle();
   if (!invoice) throw new Error("Faktúra nenájdená");
 
   const { data: company } = await supabaseAdmin
-    .from("companies").select("*").eq("id", input.company_id).single();
+    .from("companies")
+    .select("*")
+    .eq("id", input.company_id)
+    .single();
 
   let recipient = input.recipient_email ?? null;
   if (!recipient && invoice.customer_id) {
     const { data: c } = await supabaseAdmin
-      .from("customers").select("email").eq("id", invoice.customer_id).maybeSingle();
+      .from("customers")
+      .select("email")
+      .eq("id", invoice.customer_id)
+      .maybeSingle();
     recipient = c?.email ?? null;
   }
   if (!recipient) throw new Error("Chýba e-mail príjemcu.");
@@ -122,11 +142,17 @@ export async function sendReminder(input: SendReminderInput) {
   try {
     const { getEmailTemplate } = await import("./email-templates.server");
     const tpl = await getEmailTemplate(input.company_id, `reminder_${input.reminderNumber}` as any);
-    if (tpl.fromDb) { dbSubject = tpl.subject; dbBody = tpl.body; }
-  } catch { /* ignore */ }
+    if (tpl.fromDb) {
+      dbSubject = tpl.subject;
+      dbBody = tpl.body;
+    }
+  } catch {
+    /* ignore */
+  }
 
   const built = buildReminderContent({
-    invoice, company,
+    invoice,
+    company,
     reminderNumber: input.reminderNumber,
     overrideSubject: input.overrideSubject ?? dbSubject,
     overrideMessage: input.overrideMessage ?? dbBody,
@@ -153,7 +179,10 @@ export async function sendReminder(input: SendReminderInput) {
       }),
     });
     const txt = await res.text();
-    let json: any = {}; try { json = JSON.parse(txt); } catch {}
+    let json: any = {};
+    try {
+      json = JSON.parse(txt);
+    } catch {}
     if (!res.ok) {
       status = "failed";
       errorMessage = json?.message ?? txt.slice(0, 500);
@@ -187,7 +216,9 @@ export async function runOverdueReminders() {
   const today = new Date().toISOString().slice(0, 10);
   const { data: invoices, error } = await supabaseAdmin
     .from("invoices")
-    .select("id, company_id, invoice_number, due_date, status, paid_at, deleted_at, reminders_enabled, customer_id")
+    .select(
+      "id, company_id, invoice_number, due_date, status, paid_at, deleted_at, reminders_enabled, customer_id",
+    )
     .in("status", ["issued", "sent"])
     .lt("due_date", today)
     .is("paid_at", null)
@@ -203,12 +234,23 @@ export async function runOverdueReminders() {
     .in("id", companyIds);
   const companyMap = new Map((companies ?? []).map((c) => [c.id, c]));
 
-  const results: Array<{ invoice_id: string; reminder_number: number; ok: boolean; error?: string; skipped?: string }> = [];
+  const results: Array<{
+    invoice_id: string;
+    reminder_number: number;
+    ok: boolean;
+    error?: string;
+    skipped?: string;
+  }> = [];
 
   for (const inv of invoices ?? []) {
     const co: any = companyMap.get(inv.company_id);
     if (!co || co.reminders_enabled === false) {
-      results.push({ invoice_id: inv.id, reminder_number: 0, ok: false, skipped: "company_disabled" });
+      results.push({
+        invoice_id: inv.id,
+        reminder_number: 0,
+        ok: false,
+        skipped: "company_disabled",
+      });
       continue;
     }
     const dueDate = new Date(inv.due_date + "T00:00:00Z");
@@ -220,7 +262,10 @@ export async function runOverdueReminders() {
     ];
     let targetNumber: ReminderNumber | null = null;
     for (const [n, d] of thresholds) {
-      if (daysOverdue >= d) { targetNumber = n; break; }
+      if (daysOverdue >= d) {
+        targetNumber = n;
+        break;
+      }
     }
     if (!targetNumber) continue;
 
@@ -241,7 +286,12 @@ export async function runOverdueReminders() {
       });
       results.push({ invoice_id: inv.id, reminder_number: targetNumber, ok: true });
     } catch (e: any) {
-      results.push({ invoice_id: inv.id, reminder_number: targetNumber, ok: false, error: e?.message ?? "unknown" });
+      results.push({
+        invoice_id: inv.id,
+        reminder_number: targetNumber,
+        ok: false,
+        error: e?.message ?? "unknown",
+      });
     }
   }
 

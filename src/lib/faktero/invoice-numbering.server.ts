@@ -28,17 +28,29 @@ export async function nextInvoiceNumberDetailed(
   return { invoice_number: row.invoice_number, sequence_number: Number(row.sequence_number) };
 }
 
-export async function nextInvoiceNumber(company_id: string, issue_date?: string | null): Promise<string> {
+export async function nextInvoiceNumber(
+  company_id: string,
+  issue_date?: string | null,
+): Promise<string> {
   return (await nextInvoiceNumberDetailed(company_id, issue_date)).invoice_number;
 }
 
-export function computeInvoiceTotals(items: { quantity: number; unit_price: number; vat_rate: number }[]) {
-  let subtotal = 0, vat_total = 0;
+export function computeInvoiceTotals(
+  items: { quantity: number; unit_price: number; vat_rate: number }[],
+) {
+  let subtotal = 0,
+    vat_total = 0;
   const enriched = items.map((it) => {
     const line = +(it.quantity * it.unit_price).toFixed(2);
     const vat = +((line * it.vat_rate) / 100).toFixed(2);
-    subtotal += line; vat_total += vat;
+    subtotal += line;
+    vat_total += vat;
     return { subtotal: line, vat_amount: vat, total: +(line + vat).toFixed(2) };
   });
-  return { subtotal: +subtotal.toFixed(2), vat_total: +vat_total.toFixed(2), total: +(subtotal + vat_total).toFixed(2), enriched };
+  return {
+    subtotal: +subtotal.toFixed(2),
+    vat_total: +vat_total.toFixed(2),
+    total: +(subtotal + vat_total).toFixed(2),
+    enriched,
+  };
 }

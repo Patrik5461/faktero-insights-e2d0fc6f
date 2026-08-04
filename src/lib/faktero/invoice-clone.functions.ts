@@ -13,11 +13,17 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
 
     // Load source invoice (RLS scoped to user)
     const { data: src, error: srcErr } = await supabase
-      .from("invoices").select("*").eq("id", data.invoiceId).single();
+      .from("invoices")
+      .select("*")
+      .eq("id", data.invoiceId)
+      .single();
     if (srcErr || !src) throw new Error("Faktúra sa nenašla.");
 
     const { data: srcItems, error: itemsErr } = await supabase
-      .from("invoice_items").select("*").eq("invoice_id", src.id).order("position");
+      .from("invoice_items")
+      .select("*")
+      .eq("invoice_id", src.id)
+      .order("position");
     if (itemsErr) throw new Error(itemsErr.message);
 
     // Compute new dates
@@ -31,7 +37,10 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
 
     // New invoice number (server-only helper, service role)
     const { nextInvoiceNumberDetailed } = await import("./invoice-numbering.server");
-    const { invoice_number: newNumber, sequence_number } = await nextInvoiceNumberDetailed(src.company_id, isoToday);
+    const { invoice_number: newNumber, sequence_number } = await nextInvoiceNumberDetailed(
+      src.company_id,
+      isoToday,
+    );
 
     // Build insert payload — copy everything except id/status/dates/number/lifecycle fields.
     const insertRow: Record<string, any> = {
@@ -71,7 +80,10 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
     };
 
     const { data: created, error: insErr } = await supabase
-      .from("invoices").insert(insertRow).select("id").single();
+      .from("invoices")
+      .insert(insertRow)
+      .select("id")
+      .single();
     if (insErr || !created) throw new Error(insErr?.message ?? "Nepodarilo sa vytvoriť kópiu.");
 
     // Clone items with month-incremented name/description

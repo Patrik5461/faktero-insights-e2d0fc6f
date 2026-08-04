@@ -9,13 +9,23 @@ import { supabase } from "@/integrations/supabase/client";
  * - Na webe (browser) nerobí nič.
  */
 const MARKETING_PREFIXES = [
-  "/", "/cennik", "/funkcie", "/efakturacia", "/blog", "/pomoc", "/pravne",
-  "/uctovnici", "/vyvojari", "/docs",
+  "/",
+  "/cennik",
+  "/funkcie",
+  "/efakturacia",
+  "/blog",
+  "/pomoc",
+  "/pravne",
+  "/uctovnici",
+  "/vyvojari",
+  "/docs",
 ];
 
 function isMarketingPath(p: string): boolean {
   if (p === "/") return true;
-  return MARKETING_PREFIXES.some((prefix) => prefix !== "/" && (p === prefix || p.startsWith(prefix + "/")));
+  return MARKETING_PREFIXES.some(
+    (prefix) => prefix !== "/" && (p === prefix || p.startsWith(prefix + "/")),
+  );
 }
 
 export function NativeRouteGuard() {
@@ -47,7 +57,9 @@ export function NativeRouteGuard() {
         // capacitor not available — noop
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [pathname, router]);
 
   return null;

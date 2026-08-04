@@ -3,12 +3,7 @@
  * both server and client contexts; pass any Supabase client in.
  */
 
-export type SubscriptionStatus =
-  | "trialing"
-  | "active"
-  | "past_due"
-  | "cancelled"
-  | "expired";
+export type SubscriptionStatus = "trialing" | "active" | "past_due" | "cancelled" | "expired";
 
 export type Feature =
   | "api"
@@ -72,7 +67,7 @@ export async function getCompanyPlan(
   const { data: sub } = await supabase
     .from("subscriptions")
     .select(
-      `status, trial_ends_at, current_period_end, plan, is_post_trial_free, subscription_plans(${PLAN_COLS})`
+      `status, trial_ends_at, current_period_end, plan, is_post_trial_free, subscription_plans(${PLAN_COLS})`,
     )
     .eq("company_id", companyId)
     .maybeSingle();
@@ -117,12 +112,19 @@ export async function getCompanyPlan(
 export function hasFeature(info: CompanyPlanInfo | null, feature: Feature): boolean {
   if (!info || !info.is_active) return false;
   switch (feature) {
-    case "api": return info.api_enabled;
-    case "webhooks": return info.webhooks_enabled;
-    case "recurring": return info.recurring_enabled;
-    case "efaktura": return info.efaktura_enabled;
-    case "bank_matching": return info.bank_matching_enabled;
-    case "import": return info.import_enabled;
-    case "audit_log": return info.audit_log_enabled;
+    case "api":
+      return info.api_enabled;
+    case "webhooks":
+      return info.webhooks_enabled;
+    case "recurring":
+      return info.recurring_enabled;
+    case "efaktura":
+      return info.efaktura_enabled;
+    case "bank_matching":
+      return info.bank_matching_enabled;
+    case "import":
+      return info.import_enabled;
+    case "audit_log":
+      return info.audit_log_enabled;
   }
 }

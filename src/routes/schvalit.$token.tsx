@@ -43,7 +43,9 @@ function ApprovalPage() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   async function submit(decision: "approved" | "rejected") {
@@ -51,9 +53,12 @@ function ApprovalPage() {
       setErr("Prosím uveďte dôvod zamietnutia.");
       return;
     }
-    setBusy(true); setErr(null);
+    setBusy(true);
+    setErr(null);
     try {
-      await respond({ data: { token, decision, note: decision === "rejected" ? note.trim() : undefined } });
+      await respond({
+        data: { token, decision, note: decision === "rejected" ? note.trim() : undefined },
+      });
       setDone(decision);
     } catch (e: any) {
       setErr(e?.message ?? "Chyba pri odosielaní odpovede.");
@@ -65,7 +70,9 @@ function ApprovalPage() {
   if (loading) {
     return (
       <div className="grid min-h-screen place-items-center bg-muted/30">
-        <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Načítavam…</div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Načítavam…
+        </div>
       </div>
     );
   }
@@ -90,13 +97,17 @@ function ApprovalPage() {
             <>
               <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
               <h1 className="mt-4 text-lg font-semibold">Ďakujeme, faktúra je schválená</h1>
-              <p className="mt-2 text-sm text-muted-foreground">Dodávateľ dostal upozornenie o schválení.</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Dodávateľ dostal upozornenie o schválení.
+              </p>
             </>
           ) : (
             <>
               <XCircle className="mx-auto h-12 w-12 text-destructive" />
               <h1 className="mt-4 text-lg font-semibold">Faktúra bola zamietnutá</h1>
-              <p className="mt-2 text-sm text-muted-foreground">Váš dôvod bol odoslaný dodávateľovi.</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Váš dôvod bol odoslaný dodávateľovi.
+              </p>
             </>
           )}
         </div>
@@ -122,8 +133,10 @@ function ApprovalPage() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Dodávateľ</div>
               <div className="mt-1 text-base font-semibold">{company?.name ?? "—"}</div>
               <div className="text-sm text-muted-foreground">
-                {company?.street}{company?.street && <br />}
-                {company?.zip} {company?.city}{company?.country ? `, ${company.country}` : ""}
+                {company?.street}
+                {company?.street && <br />}
+                {company?.zip} {company?.city}
+                {company?.country ? `, ${company.country}` : ""}
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
                 IČO: {company?.ico ?? "—"} · DIČ: {company?.dic ?? "—"}
@@ -133,7 +146,9 @@ function ApprovalPage() {
             <div className="text-right">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Faktúra</div>
               <div className="mt-1 text-2xl font-bold tabular-nums">{inv.invoice_number}</div>
-              <div className="text-xs text-muted-foreground">Vystavená {inv.issue_date} · splatná {inv.due_date}</div>
+              <div className="text-xs text-muted-foreground">
+                Vystavená {inv.issue_date} · splatná {inv.due_date}
+              </div>
             </div>
           </div>
 
@@ -155,29 +170,61 @@ function ApprovalPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {items.length === 0 ? (
-                  <tr><td colSpan={5} className="px-3 py-4 text-center text-muted-foreground">Žiadne položky.</td></tr>
-                ) : items.map((it, i) => (
-                  <tr key={i}>
-                    <td className="px-3 py-2">{it.description}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{Number(it.quantity ?? 0)} {it.unit ?? ""}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(it.unit_price ?? 0), inv.currency)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{Number(it.vat_rate ?? 0)}%</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(it.total ?? 0), inv.currency)}</td>
+                  <tr>
+                    <td colSpan={5} className="px-3 py-4 text-center text-muted-foreground">
+                      Žiadne položky.
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  items.map((it, i) => (
+                    <tr key={i}>
+                      <td className="px-3 py-2">{it.description}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {Number(it.quantity ?? 0)} {it.unit ?? ""}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {fmt(Number(it.unit_price ?? 0), inv.currency)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {Number(it.vat_rate ?? 0)}%
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {fmt(Number(it.total ?? 0), inv.currency)}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
               <tfoot className="bg-muted/20">
                 <tr>
-                  <td colSpan={4} className="px-3 py-2 text-right text-xs uppercase tracking-wide text-muted-foreground">Základ</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(inv.subtotal ?? 0), inv.currency)}</td>
+                  <td
+                    colSpan={4}
+                    className="px-3 py-2 text-right text-xs uppercase tracking-wide text-muted-foreground"
+                  >
+                    Základ
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {fmt(Number(inv.subtotal ?? 0), inv.currency)}
+                  </td>
                 </tr>
                 <tr>
-                  <td colSpan={4} className="px-3 py-2 text-right text-xs uppercase tracking-wide text-muted-foreground">DPH</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{fmt(Number(inv.vat_total ?? 0), inv.currency)}</td>
+                  <td
+                    colSpan={4}
+                    className="px-3 py-2 text-right text-xs uppercase tracking-wide text-muted-foreground"
+                  >
+                    DPH
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {fmt(Number(inv.vat_total ?? 0), inv.currency)}
+                  </td>
                 </tr>
                 <tr className="border-t border-border">
-                  <td colSpan={4} className="px-3 py-3 text-right text-sm font-semibold">Celkom na úhradu</td>
-                  <td className="px-3 py-3 text-right text-lg font-bold tabular-nums">{fmt(Number(inv.total ?? 0), inv.currency)}</td>
+                  <td colSpan={4} className="px-3 py-3 text-right text-sm font-semibold">
+                    Celkom na úhradu
+                  </td>
+                  <td className="px-3 py-3 text-right text-lg font-bold tabular-nums">
+                    {fmt(Number(inv.total ?? 0), inv.currency)}
+                  </td>
                 </tr>
               </tfoot>
             </table>
@@ -190,9 +237,14 @@ function ApprovalPage() {
           )}
 
           {alreadyDone ? (
-            <div className={`mt-6 rounded-xl border p-4 text-sm ${inv.approval_status === "approved" ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-destructive/40 bg-destructive/5 text-destructive"}`}>
+            <div
+              className={`mt-6 rounded-xl border p-4 text-sm ${inv.approval_status === "approved" ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-destructive/40 bg-destructive/5 text-destructive"}`}
+            >
               Táto faktúra už bola {inv.approval_status === "approved" ? "schválená" : "zamietnutá"}
-              {inv.approval_responded_at ? ` (${new Date(inv.approval_responded_at).toLocaleString("sk-SK")})` : ""}.
+              {inv.approval_responded_at
+                ? ` (${new Date(inv.approval_responded_at).toLocaleString("sk-SK")})`
+                : ""}
+              .
               {inv.approval_note && (
                 <div className="mt-2 whitespace-pre-wrap">Dôvod: {inv.approval_note}</div>
               )}
@@ -203,7 +255,8 @@ function ApprovalPage() {
                 <div>
                   <label className="block text-sm font-medium">Dôvod zamietnutia</label>
                   <textarea
-                    value={note} onChange={(e) => setNote(e.target.value)}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
                     rows={4}
                     className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                     placeholder="Napíšte prosím dôvod, ktorý bude odoslaný dodávateľovi…"
@@ -215,14 +268,23 @@ function ApprovalPage() {
                       onClick={() => submit("rejected")}
                       className="inline-flex items-center gap-2 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90 disabled:opacity-50"
                     >
-                      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                      {busy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <XCircle className="h-4 w-4" />
+                      )}
                       Potvrdiť zamietnutie
                     </button>
                     <button
                       disabled={busy}
-                      onClick={() => { setRejecting(false); setErr(null); }}
+                      onClick={() => {
+                        setRejecting(false);
+                        setErr(null);
+                      }}
                       className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-50"
-                    >Späť</button>
+                    >
+                      Späť
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -232,7 +294,11 @@ function ApprovalPage() {
                     onClick={() => submit("approved")}
                     className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
                   >
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    {busy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4" />
+                    )}
                     Schvaľujem
                   </button>
                   <button

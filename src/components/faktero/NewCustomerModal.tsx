@@ -18,7 +18,12 @@ type Props = {
 
 export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
   const [saving, setSaving] = useState(false);
-  const [dup, setDup] = useState<null | { id: string; name: string; ico: string | null; email: string | null }>(null);
+  const [dup, setDup] = useState<null | {
+    id: string;
+    name: string;
+    ico: string | null;
+    email: string | null;
+  }>(null);
   const findDup = useServerFn(findCustomerByIcoFn);
   const [f, setF] = useState({
     name: defaultName ?? "",
@@ -36,13 +41,18 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
   useEffect(() => {
     const cid = getActiveCompanyId();
     const ico = f.ico.replace(/\s+/g, "");
-    if (!cid || !/^\d{6,8}$/.test(ico)) { setDup(null); return; }
+    if (!cid || !/^\d{6,8}$/.test(ico)) {
+      setDup(null);
+      return;
+    }
     const h = setTimeout(async () => {
       try {
         const r = await findDup({ data: { ico, companyId: cid } });
         if (r.match) setDup(r.match);
         else setDup(null);
-      } catch { setDup(null); }
+      } catch {
+        setDup(null);
+      }
     }, 500);
     return () => clearTimeout(h);
   }, [f.ico]);
@@ -81,8 +91,14 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
 
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <div className="flex items-center gap-2">
             <UserPlus className="h-4 w-4 text-primary" />
@@ -95,12 +111,15 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
         <div className="space-y-4 p-5">
           {dup && (
             <div className="rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
-              Odberateľ s týmto IČO už existuje: <strong>{dup.name}</strong>. Použite existujúceho odberateľa namiesto vytvárania duplikátu.
+              Odberateľ s týmto IČO už existuje: <strong>{dup.name}</strong>. Použite existujúceho
+              odberateľa namiesto vytvárania duplikátu.
               <button
                 type="button"
                 onClick={() => onCreated(dup)}
                 className="ml-2 underline hover:no-underline"
-              >Použiť existujúceho</button>
+              >
+                Použiť existujúceho
+              </button>
             </div>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
@@ -109,50 +128,130 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
                 autoFocus
                 value={f.name}
                 onChange={(v) => setF((p) => ({ ...p, name: v }))}
-                onPick={(d, { auto }) => setF((p) => mergeCompanyAutofill(p, d, { mode: auto ? "fill-empty" : "overwrite" }))}
+                onPick={(d, { auto }) =>
+                  setF((p) =>
+                    mergeCompanyAutofill(p, d, { mode: auto ? "fill-empty" : "overwrite" }),
+                  )
+                }
                 className={input}
               />
             </Field>
             <Field label="IČO">
               <div className="flex -space-x-px items-start">
-                <input value={f.ico} onChange={(e) => setF({ ...f, ico: e.target.value })} className={`${input} rounded-l-md focus:z-10`} />
+                <input
+                  value={f.ico}
+                  onChange={(e) => setF({ ...f, ico: e.target.value })}
+                  className={`${input} rounded-l-md focus:z-10`}
+                />
                 <IcoLookupButton
                   ico={f.ico}
-                  onResult={(d, { auto }) => setF((prev) => mergeCompanyAutofill(prev, d, { mode: auto ? "fill-empty" : "overwrite" }))}
+                  onResult={(d, { auto }) =>
+                    setF((prev) =>
+                      mergeCompanyAutofill(prev, d, { mode: auto ? "fill-empty" : "overwrite" }),
+                    )
+                  }
                 />
               </div>
             </Field>
-            <Field label="DIČ"><input value={f.dic} onChange={(e) => setF({ ...f, dic: e.target.value })} className={input} /></Field>
-            <Field label="IČ DPH"><input value={f.ic_dph} onChange={(e) => setF({ ...f, ic_dph: e.target.value })} className={input} /></Field>
-            <Field label="Email"><input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} className={input} /></Field>
-            <Field label="Telefón"><input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} className={input} /></Field>
-            <Field label="Ulica" className="sm:col-span-2"><input value={f.street} onChange={(e) => setF({ ...f, street: e.target.value })} className={input} /></Field>
-            <Field label="Mesto"><input value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} className={input} /></Field>
-            <Field label="PSČ"><input value={f.zip} onChange={(e) => setF({ ...f, zip: e.target.value })} className={input} /></Field>
-            <Field label="Krajina"><input value={f.country} onChange={(e) => setF({ ...f, country: e.target.value })} className={input} /></Field>
+            <Field label="DIČ">
+              <input
+                value={f.dic}
+                onChange={(e) => setF({ ...f, dic: e.target.value })}
+                className={input}
+              />
+            </Field>
+            <Field label="IČ DPH">
+              <input
+                value={f.ic_dph}
+                onChange={(e) => setF({ ...f, ic_dph: e.target.value })}
+                className={input}
+              />
+            </Field>
+            <Field label="Email">
+              <input
+                type="email"
+                value={f.email}
+                onChange={(e) => setF({ ...f, email: e.target.value })}
+                className={input}
+              />
+            </Field>
+            <Field label="Telefón">
+              <input
+                value={f.phone}
+                onChange={(e) => setF({ ...f, phone: e.target.value })}
+                className={input}
+              />
+            </Field>
+            <Field label="Ulica" className="sm:col-span-2">
+              <input
+                value={f.street}
+                onChange={(e) => setF({ ...f, street: e.target.value })}
+                className={input}
+              />
+            </Field>
+            <Field label="Mesto">
+              <input
+                value={f.city}
+                onChange={(e) => setF({ ...f, city: e.target.value })}
+                className={input}
+              />
+            </Field>
+            <Field label="PSČ">
+              <input
+                value={f.zip}
+                onChange={(e) => setF({ ...f, zip: e.target.value })}
+                className={input}
+              />
+            </Field>
+            <Field label="Krajina">
+              <input
+                value={f.country}
+                onChange={(e) => setF({ ...f, country: e.target.value })}
+                className={input}
+              />
+            </Field>
           </div>
           <div className="flex justify-end gap-2 border-t border-border pt-4">
-            <button type="button" onClick={onClose} className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">Zrušiť</button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            >
+              Zrušiť
+            </button>
             <button
               type="button"
               onClick={save}
               disabled={saving}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+              {saving ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UserPlus className="h-4 w-4" />
+              )}
               Vytvoriť odberateľa
             </button>
           </div>
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
-const input = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none";
+const input =
+  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none";
 
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+function Field({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={className}>
       <label className="text-xs font-medium text-muted-foreground">{label}</label>

@@ -5,15 +5,31 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/dph")({
   head: () => ({
     meta: [
       { title: "DPH prehľad — Faktero" },
-      { name: "description", content: "Informatívny prehľad DPH na výstupe a vstupe za zvolené obdobie." },
+      {
+        name: "description",
+        content: "Informatívny prehľad DPH na výstupe a vstupe za zvolené obdobie.",
+      },
     ],
   }),
   component: DphPage,
@@ -21,31 +37,60 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/dph")({
 
 type Mode = "month" | "quarter";
 
-const MONTHS = ["Január","Február","Marec","Apríl","Máj","Jún","Júl","August","September","Október","November","December"];
+const MONTHS = [
+  "Január",
+  "Február",
+  "Marec",
+  "Apríl",
+  "Máj",
+  "Jún",
+  "Júl",
+  "August",
+  "September",
+  "Október",
+  "November",
+  "December",
+];
 const RATE_LABELS: Record<string, string> = {
   "23": "23% (základná)",
   "13": "13% (znížená)",
   "5": "5% (znížená)",
   "0": "0% (nulová)",
-  "exempt": "Oslobodené",
-  "pdp": "PDP (reverse charge)",
+  exempt: "Oslobodené",
+  pdp: "PDP (reverse charge)",
 };
-const RATE_ORDER = ["23","13","5","0","exempt","pdp"];
+const RATE_ORDER = ["23", "13", "5", "0", "exempt", "pdp"];
 
-function periodBounds(year: number, mode: Mode, m: number): { from: string; to: string; label: string } {
+function periodBounds(
+  year: number,
+  mode: Mode,
+  m: number,
+): { from: string; to: string; label: string } {
   if (mode === "month") {
     const from = new Date(Date.UTC(year, m, 1));
     const to = new Date(Date.UTC(year, m + 1, 0));
-    return { from: from.toISOString().slice(0,10), to: to.toISOString().slice(0,10), label: `${MONTHS[m]} ${year}` };
+    return {
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+      label: `${MONTHS[m]} ${year}`,
+    };
   }
   const startMonth = m * 3;
   const from = new Date(Date.UTC(year, startMonth, 1));
   const to = new Date(Date.UTC(year, startMonth + 3, 0));
-  return { from: from.toISOString().slice(0,10), to: to.toISOString().slice(0,10), label: `Q${m+1} ${year}` };
+  return {
+    from: from.toISOString().slice(0, 10),
+    to: to.toISOString().slice(0, 10),
+    label: `Q${m + 1} ${year}`,
+  };
 }
 
 function fmt(n: number, currency = "EUR") {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency, minimumFractionDigits: 2 }).format(n || 0);
+  return new Intl.NumberFormat("sk-SK", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+  }).format(n || 0);
 }
 
 type Bucket = { base: number; vat: number; count: number; docs: Set<string> };
@@ -73,24 +118,34 @@ function DphPage() {
     setLoading(true);
     try {
       const [{ data: invs }, { data: purch }] = await Promise.all([
-        supabase.from("invoices")
-          .select("id, invoice_number, issue_date, customer_name, subtotal, vat_total, total, currency, status, reverse_charge, type")
+        supabase
+          .from("invoices")
+          .select(
+            "id, invoice_number, issue_date, customer_name, subtotal, vat_total, total, currency, status, reverse_charge, type",
+          )
           .eq("company_id", cid)
-          .gte("issue_date", period.from).lte("issue_date", period.to)
+          .gte("issue_date", period.from)
+          .lte("issue_date", period.to)
           .is("deleted_at", null)
-          .neq("status", "draft").neq("status", "cancelled")
+          .neq("status", "draft")
+          .neq("status", "cancelled")
           .order("issue_date", { ascending: true }),
-        supabase.from("purchase_invoices")
-          .select("id, invoice_number, issue_date, supplier_name, amount_without_vat, vat_amount, amount_total, currency")
+        supabase
+          .from("purchase_invoices")
+          .select(
+            "id, invoice_number, issue_date, supplier_name, amount_without_vat, vat_amount, amount_total, currency",
+          )
           .eq("company_id", cid)
-          .gte("issue_date", period.from).lte("issue_date", period.to)
+          .gte("issue_date", period.from)
+          .lte("issue_date", period.to)
           .is("deleted_at", null)
           .order("issue_date", { ascending: true }),
       ]);
       const invIds = (invs ?? []).map((i) => i.id);
       let itms: any[] = [];
       if (invIds.length) {
-        const { data: iData } = await supabase.from("invoice_items")
+        const { data: iData } = await supabase
+          .from("invoice_items")
           .select("invoice_id, subtotal, vat_amount, vat_rate")
           .in("invoice_id", invIds);
         itms = iData ?? [];
@@ -103,7 +158,9 @@ function DphPage() {
     }
   }
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [period.from, period.to]);
+  useEffect(() => {
+    load(); /* eslint-disable-next-line */
+  }, [period.from, period.to]);
 
   const output = useMemo(() => {
     const b = emptyBuckets();
@@ -164,14 +221,18 @@ function DphPage() {
     lines.push("DPH NA VÝSTUPE (vystavené faktúry)");
     lines.push("Sadzba;Základ dane;DPH;Počet faktúr");
     for (const r of RATE_ORDER) {
-      lines.push(`${RATE_LABELS[r]};${output[r].base.toFixed(2)};${output[r].vat.toFixed(2)};${output[r].count}`);
+      lines.push(
+        `${RATE_LABELS[r]};${output[r].base.toFixed(2)};${output[r].vat.toFixed(2)};${output[r].count}`,
+      );
     }
     lines.push(`SPOLU;${totalOutputBase.toFixed(2)};${totalOutputVat.toFixed(2)};`);
     lines.push("");
     lines.push("DPH NA VSTUPE (prijaté faktúry)");
     lines.push("Sadzba;Základ dane;DPH;Počet faktúr");
     for (const r of RATE_ORDER) {
-      lines.push(`${RATE_LABELS[r]};${input[r].base.toFixed(2)};${input[r].vat.toFixed(2)};${input[r].count}`);
+      lines.push(
+        `${RATE_LABELS[r]};${input[r].base.toFixed(2)};${input[r].vat.toFixed(2)};${input[r].count}`,
+      );
     }
     lines.push(`SPOLU;${totalInputBase.toFixed(2)};${totalInputVat.toFixed(2)};`);
     lines.push("");
@@ -180,20 +241,27 @@ function DphPage() {
     lines.push("VYSTAVENÉ FAKTÚRY");
     lines.push("Číslo;Dátum;Odberateľ;Základ;DPH;Spolu;PDP");
     for (const i of invoices) {
-      lines.push(`${i.invoice_number};${i.issue_date};${(i.customer_name||"").replace(/;/g,",")};${Number(i.subtotal||0).toFixed(2)};${Number(i.vat_total||0).toFixed(2)};${Number(i.total||0).toFixed(2)};${i.reverse_charge ? "áno":"nie"}`);
+      lines.push(
+        `${i.invoice_number};${i.issue_date};${(i.customer_name || "").replace(/;/g, ",")};${Number(i.subtotal || 0).toFixed(2)};${Number(i.vat_total || 0).toFixed(2)};${Number(i.total || 0).toFixed(2)};${i.reverse_charge ? "áno" : "nie"}`,
+      );
     }
     lines.push("");
     lines.push("PRIJATÉ FAKTÚRY");
     lines.push("Číslo;Dátum;Dodávateľ;Základ;DPH;Spolu");
     for (const p of purchases) {
-      lines.push(`${p.invoice_number};${p.issue_date};${(p.supplier_name||"").replace(/;/g,",")};${Number(p.amount_without_vat||0).toFixed(2)};${Number(p.vat_amount||0).toFixed(2)};${Number(p.amount_total||0).toFixed(2)}`);
+      lines.push(
+        `${p.invoice_number};${p.issue_date};${(p.supplier_name || "").replace(/;/g, ",")};${Number(p.amount_without_vat || 0).toFixed(2)};${Number(p.vat_amount || 0).toFixed(2)};${Number(p.amount_total || 0).toFixed(2)}`,
+      );
     }
     const csv = "\uFEFF" + lines.join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `dph-${period.label.replace(/\s+/g,"_")}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    a.href = url;
+    a.download = `dph-${period.label.replace(/\s+/g, "_")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
@@ -209,23 +277,25 @@ function DphPage() {
 <div class="note"><b>Upozornenie:</b> Toto je informatívny prehľad. Pre podanie DPH priznania použite certifikovaný účtovný softvér alebo kontaktujte účtovníka.</div>
 <h2>DPH na výstupe (vystavené faktúry)</h2>
 <table><thead><tr><th>Sadzba DPH</th><th style="text-align:right">Základ dane</th><th style="text-align:right">Suma DPH</th><th style="text-align:right">Počet faktúr</th></tr></thead>
-<tbody>${RATE_ORDER.map(r=>row(RATE_LABELS[r], output[r])).join("")}
+<tbody>${RATE_ORDER.map((r) => row(RATE_LABELS[r], output[r])).join("")}
 <tr class="tot"><td>SPOLU</td><td style="text-align:right">${fmt(totalOutputBase)}</td><td style="text-align:right">${fmt(totalOutputVat)}</td><td></td></tr></tbody></table>
 <h2>DPH na vstupe (prijaté faktúry)</h2>
 <table><thead><tr><th>Sadzba DPH</th><th style="text-align:right">Základ dane</th><th style="text-align:right">Suma DPH</th><th style="text-align:right">Počet faktúr</th></tr></thead>
-<tbody>${RATE_ORDER.map(r=>row(RATE_LABELS[r], input[r])).join("")}
+<tbody>${RATE_ORDER.map((r) => row(RATE_LABELS[r], input[r])).join("")}
 <tr class="tot"><td>SPOLU</td><td style="text-align:right">${fmt(totalInputBase)}</td><td style="text-align:right">${fmt(totalInputVat)}</td><td></td></tr></tbody></table>
 <h2>Rozdiel (odvod / nadmerný odpočet)</h2>
 <table><tr class="tot"><td>${rozdiel >= 0 ? "Odvod DPH" : "Nadmerný odpočet"}</td><td style="text-align:right">${fmt(Math.abs(rozdiel))}</td></tr></table>
 <h2>Vystavené faktúry (${invoices.length})</h2>
 <table><thead><tr><th>Číslo</th><th>Dátum</th><th>Odberateľ</th><th style="text-align:right">Základ</th><th style="text-align:right">DPH</th><th style="text-align:right">Spolu</th></tr></thead>
-<tbody>${invoices.map(i=>`<tr><td>${i.invoice_number}</td><td>${i.issue_date}</td><td>${i.customer_name||""}${i.reverse_charge?" (PDP)":""}</td><td style="text-align:right">${fmt(Number(i.subtotal||0), i.currency||"EUR")}</td><td style="text-align:right">${fmt(Number(i.vat_total||0), i.currency||"EUR")}</td><td style="text-align:right">${fmt(Number(i.total||0), i.currency||"EUR")}</td></tr>`).join("")}</tbody></table>
+<tbody>${invoices.map((i) => `<tr><td>${i.invoice_number}</td><td>${i.issue_date}</td><td>${i.customer_name || ""}${i.reverse_charge ? " (PDP)" : ""}</td><td style="text-align:right">${fmt(Number(i.subtotal || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(i.vat_total || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(i.total || 0), i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
 <h2>Prijaté faktúry (${purchases.length})</h2>
 <table><thead><tr><th>Číslo</th><th>Dátum</th><th>Dodávateľ</th><th style="text-align:right">Základ</th><th style="text-align:right">DPH</th><th style="text-align:right">Spolu</th></tr></thead>
-<tbody>${purchases.map(p=>`<tr><td>${p.invoice_number}</td><td>${p.issue_date}</td><td>${p.supplier_name||""}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat||0), p.currency||"EUR")}</td><td style="text-align:right">${fmt(Number(p.vat_amount||0), p.currency||"EUR")}</td><td style="text-align:right">${fmt(Number(p.amount_total||0), p.currency||"EUR")}</td></tr>`).join("")}</tbody></table>
+<tbody>${purchases.map((p) => `<tr><td>${p.invoice_number}</td><td>${p.issue_date}</td><td>${p.supplier_name || ""}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.vat_amount || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.amount_total || 0), p.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
 </body></html>`;
-    win.document.open(); win.document.write(html); win.document.close();
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
   }
 
   return (
@@ -235,17 +305,28 @@ function DphPage() {
         <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 flex gap-2 items-start">
           <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
           <div className="text-sm">
-            <b>Upozornenie:</b> Toto je informatívny prehľad. Pre podanie DPH priznania použite certifikovaný účtovný softvér alebo kontaktujte účtovníka.
+            <b>Upozornenie:</b> Toto je informatívny prehľad. Pre podanie DPH priznania použite
+            certifikovaný účtovný softvér alebo kontaktujte účtovníka.
           </div>
         </div>
 
         <Card>
-          <CardHeader><CardTitle>Obdobie</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Obdobie</CardTitle>
+          </CardHeader>
           <CardContent className="flex flex-wrap gap-3 items-end">
             <div className="w-40">
               <label className="text-xs text-muted-foreground">Typ obdobia</label>
-              <Select value={mode} onValueChange={(v) => { setMode(v as Mode); setPeriodIdx(0); }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={mode}
+                onValueChange={(v) => {
+                  setMode(v as Mode);
+                  setPeriodIdx(0);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="month">Mesiac</SelectItem>
                   <SelectItem value="quarter">Kvartál</SelectItem>
@@ -253,23 +334,40 @@ function DphPage() {
               </Select>
             </div>
             <div className="w-40">
-              <label className="text-xs text-muted-foreground">{mode === "month" ? "Mesiac" : "Kvartál"}</label>
+              <label className="text-xs text-muted-foreground">
+                {mode === "month" ? "Mesiac" : "Kvartál"}
+              </label>
               <Select value={String(periodIdx)} onValueChange={(v) => setPeriodIdx(Number(v))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {mode === "month"
-                    ? MONTHS.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)
-                    : [0,1,2,3].map((i) => <SelectItem key={i} value={String(i)}>Q{i+1}</SelectItem>)}
+                    ? MONTHS.map((m, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {m}
+                        </SelectItem>
+                      ))
+                    : [0, 1, 2, 3].map((i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          Q{i + 1}
+                        </SelectItem>
+                      ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="w-32">
               <label className="text-xs text-muted-foreground">Rok</label>
               <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {Array.from({length: 6}, (_, i) => now.getFullYear() - i).map((y) =>
-                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                  {Array.from({ length: 6 }, (_, i) => now.getFullYear() - i).map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -278,24 +376,34 @@ function DphPage() {
               {loading && <Loader2 className="inline h-4 w-4 ml-2 animate-spin" />}
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={exportCsv}><Download className="h-4 w-4 mr-1" />CSV</Button>
-              <Button onClick={exportPdf}><FileText className="h-4 w-4 mr-1" />PDF</Button>
+              <Button variant="outline" onClick={exportCsv}>
+                <Download className="h-4 w-4 mr-1" />
+                CSV
+              </Button>
+              <Button onClick={exportPdf}>
+                <FileText className="h-4 w-4 mr-1" />
+                PDF
+              </Button>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>DPH sumár</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>DPH sumár</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-6">
             <div>
               <h3 className="font-semibold mb-2">DPH na výstupe (vystavené faktúry)</h3>
               <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Sadzba DPH</TableHead>
-                  <TableHead className="text-right">Základ dane</TableHead>
-                  <TableHead className="text-right">Suma DPH</TableHead>
-                  <TableHead className="text-right">Počet faktúr</TableHead>
-                </TableRow></TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Sadzba DPH</TableHead>
+                    <TableHead className="text-right">Základ dane</TableHead>
+                    <TableHead className="text-right">Suma DPH</TableHead>
+                    <TableHead className="text-right">Počet faktúr</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
                   {RATE_ORDER.map((r) => (
                     <TableRow key={r}>
@@ -318,12 +426,14 @@ function DphPage() {
             <div>
               <h3 className="font-semibold mb-2">DPH na vstupe (prijaté faktúry)</h3>
               <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Sadzba DPH</TableHead>
-                  <TableHead className="text-right">Základ dane</TableHead>
-                  <TableHead className="text-right">Suma DPH</TableHead>
-                  <TableHead className="text-right">Počet faktúr</TableHead>
-                </TableRow></TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Sadzba DPH</TableHead>
+                    <TableHead className="text-right">Základ dane</TableHead>
+                    <TableHead className="text-right">Suma DPH</TableHead>
+                    <TableHead className="text-right">Počet faktúr</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
                   {RATE_ORDER.map((r) => (
                     <TableRow key={r}>
@@ -347,7 +457,9 @@ function DphPage() {
               <div className="font-semibold">
                 {rozdiel >= 0 ? "Odvod DPH (na úhradu)" : "Nadmerný odpočet (v prospech)"}
               </div>
-              <div className={`text-2xl font-bold ${rozdiel >= 0 ? "text-red-600" : "text-green-600"}`}>
+              <div
+                className={`text-2xl font-bold ${rozdiel >= 0 ? "text-red-600" : "text-green-600"}`}
+              >
                 {fmt(Math.abs(rozdiel))}
               </div>
             </div>
@@ -355,30 +467,47 @@ function DphPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Vystavené faktúry ({invoices.length})</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Vystavené faktúry ({invoices.length})</CardTitle>
+          </CardHeader>
           <CardContent className="overflow-x-auto">
             <Table>
-              <TableHeader><TableRow>
-                <TableHead>Číslo</TableHead>
-                <TableHead>Dátum</TableHead>
-                <TableHead>Odberateľ</TableHead>
-                <TableHead className="text-right">Základ</TableHead>
-                <TableHead className="text-right">DPH</TableHead>
-                <TableHead className="text-right">Spolu</TableHead>
-              </TableRow></TableHeader>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Číslo</TableHead>
+                  <TableHead>Dátum</TableHead>
+                  <TableHead>Odberateľ</TableHead>
+                  <TableHead className="text-right">Základ</TableHead>
+                  <TableHead className="text-right">DPH</TableHead>
+                  <TableHead className="text-right">Spolu</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
                 {invoices.map((i) => (
                   <TableRow key={i.id}>
                     <TableCell className="font-medium">{i.invoice_number}</TableCell>
                     <TableCell>{i.issue_date}</TableCell>
-                    <TableCell>{i.customer_name}{i.reverse_charge ? " (PDP)" : ""}</TableCell>
-                    <TableCell className="text-right">{fmt(Number(i.subtotal||0), i.currency||"EUR")}</TableCell>
-                    <TableCell className="text-right">{fmt(Number(i.vat_total||0), i.currency||"EUR")}</TableCell>
-                    <TableCell className="text-right">{fmt(Number(i.total||0), i.currency||"EUR")}</TableCell>
+                    <TableCell>
+                      {i.customer_name}
+                      {i.reverse_charge ? " (PDP)" : ""}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {fmt(Number(i.subtotal || 0), i.currency || "EUR")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {fmt(Number(i.vat_total || 0), i.currency || "EUR")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {fmt(Number(i.total || 0), i.currency || "EUR")}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {invoices.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Žiadne faktúry v období</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                      Žiadne faktúry v období
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
@@ -386,30 +515,44 @@ function DphPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Prijaté faktúry ({purchases.length})</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Prijaté faktúry ({purchases.length})</CardTitle>
+          </CardHeader>
           <CardContent className="overflow-x-auto">
             <Table>
-              <TableHeader><TableRow>
-                <TableHead>Číslo</TableHead>
-                <TableHead>Dátum</TableHead>
-                <TableHead>Dodávateľ</TableHead>
-                <TableHead className="text-right">Základ</TableHead>
-                <TableHead className="text-right">DPH</TableHead>
-                <TableHead className="text-right">Spolu</TableHead>
-              </TableRow></TableHeader>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Číslo</TableHead>
+                  <TableHead>Dátum</TableHead>
+                  <TableHead>Dodávateľ</TableHead>
+                  <TableHead className="text-right">Základ</TableHead>
+                  <TableHead className="text-right">DPH</TableHead>
+                  <TableHead className="text-right">Spolu</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
                 {purchases.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.invoice_number}</TableCell>
                     <TableCell>{p.issue_date}</TableCell>
                     <TableCell>{p.supplier_name}</TableCell>
-                    <TableCell className="text-right">{fmt(Number(p.amount_without_vat||0), p.currency||"EUR")}</TableCell>
-                    <TableCell className="text-right">{fmt(Number(p.vat_amount||0), p.currency||"EUR")}</TableCell>
-                    <TableCell className="text-right">{fmt(Number(p.amount_total||0), p.currency||"EUR")}</TableCell>
+                    <TableCell className="text-right">
+                      {fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {fmt(Number(p.vat_amount || 0), p.currency || "EUR")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {fmt(Number(p.amount_total || 0), p.currency || "EUR")}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {purchases.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Žiadne prijaté faktúry v období</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                      Žiadne prijaté faktúry v období
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>

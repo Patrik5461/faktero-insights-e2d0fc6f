@@ -3,16 +3,27 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const DOC_TYPES = ["obchodne-podmienky", "gdpr", "reklamacny-poriadok", "gopay-podmienky", "cookies"] as const;
+const DOC_TYPES = [
+  "obchodne-podmienky",
+  "gdpr",
+  "reklamacny-poriadok",
+  "gopay-podmienky",
+  "cookies",
+] as const;
 
 // user_id zámerne nie je súčasťou vstupu — berie sa z overeného tokenu.
 // Tieto záznamy slúžia ako dôkaz o udelení súhlasu, takže ich nesmie byť
 // možné vytvoriť za iného používateľa.
 const schema = z.object({
-  documents: z.array(z.object({
-    document_type: z.enum(DOC_TYPES),
-    version: z.string().min(1).max(20),
-  })).min(1).max(10),
+  documents: z
+    .array(
+      z.object({
+        document_type: z.enum(DOC_TYPES),
+        version: z.string().min(1).max(20),
+      }),
+    )
+    .min(1)
+    .max(10),
 });
 
 export const recordLegalAcceptance = createServerFn({ method: "POST" })
@@ -24,10 +35,11 @@ export const recordLegalAcceptance = createServerFn({ method: "POST" })
     let ua: string | null = null;
     try {
       const req = getRequest();
-      ip = req.headers.get("cf-connecting-ip")
-        || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-        || req.headers.get("x-real-ip")
-        || null;
+      ip =
+        req.headers.get("cf-connecting-ip") ||
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        req.headers.get("x-real-ip") ||
+        null;
       ua = req.headers.get("user-agent");
     } catch {}
 

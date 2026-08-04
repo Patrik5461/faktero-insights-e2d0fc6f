@@ -21,10 +21,7 @@ export async function geminiVision(
       body: JSON.stringify({
         contents: [
           {
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: mimeType, data: base64 } },
-            ],
+            parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } }],
           },
         ],
       }),

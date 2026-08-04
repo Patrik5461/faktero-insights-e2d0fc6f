@@ -103,7 +103,9 @@ export const getPaymentHistory = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("billing_payments")
-      .select("id, amount_cents, currency, status, provider, provider_payment_id, paid_at, created_at, plan_slug")
+      .select(
+        "id, amount_cents, currency, status, provider, provider_payment_id, paid_at, created_at, plan_slug",
+      )
       .eq("company_id", data.companyId)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -167,7 +169,7 @@ export const createCheckout = createServerFn({ method: "POST" })
         provider: "gopay",
         provider_payment_id: String(payment.id),
       },
-      { onConflict: "provider,provider_payment_id" }
+      { onConflict: "provider,provider_payment_id" },
     );
 
     await supabaseAdmin.from("billing_events").insert({
@@ -193,7 +195,9 @@ export const cancelSubscription = createServerFn({ method: "POST" })
       .eq("company_id", data.companyId);
     if (error) throw error;
     await supabaseAdmin.from("billing_events").insert({
-      company_id: data.companyId, event_type: "subscription_cancel_scheduled", payload: {},
+      company_id: data.companyId,
+      event_type: "subscription_cancel_scheduled",
+      payload: {},
     });
     return { ok: true };
   });
@@ -210,7 +214,9 @@ export const reactivateSubscription = createServerFn({ method: "POST" })
       .eq("company_id", data.companyId);
     if (error) throw error;
     await supabaseAdmin.from("billing_events").insert({
-      company_id: data.companyId, event_type: "subscription_reactivated", payload: {},
+      company_id: data.companyId,
+      event_type: "subscription_reactivated",
+      payload: {},
     });
     return { ok: true };
   });
@@ -232,7 +238,11 @@ export const syncMyLatestPayment = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!latest) return { ok: false, reason: "no_payment" };
     if (!latest.provider_payment_id) {
-      return { ok: false, reason: "missing_payment_id", error: "Posledná platba nemá GoPay ID — skúste znova vytvoriť platbu." };
+      return {
+        ok: false,
+        reason: "missing_payment_id",
+        error: "Posledná platba nemá GoPay ID — skúste znova vytvoriť platbu.",
+      };
     }
     const { syncGopayPaymentById } = await import("@/lib/faktero/billing-sync.server");
     const res = await syncGopayPaymentById(latest.provider_payment_id);

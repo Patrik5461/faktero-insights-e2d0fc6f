@@ -24,11 +24,23 @@ function CompanyManagementPage() {
       .from("company_users")
       .select("role, company:companies(id, name, created_at)")
       .order("created_at", { ascending: true });
-    if (error) { toast.error(error.message); return; }
-    setRows((data ?? []).map((r: any) => ({ role: r.role, id: r.company.id, name: r.company.name, created_at: r.company.created_at })));
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setRows(
+      (data ?? []).map((r: any) => ({
+        role: r.role,
+        id: r.company.id,
+        name: r.company.name,
+        created_at: r.company.created_at,
+      })),
+    );
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   function switchTo(id: string) {
     setActiveCompanyId(id);
@@ -46,7 +58,9 @@ function CompanyManagementPage() {
           <button
             onClick={() => setOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          ><Plus className="h-4 w-4" /> Pridať firmu</button>
+          >
+            <Plus className="h-4 w-4" /> Pridať firmu
+          </button>
         }
       />
       <PageBody>
@@ -62,10 +76,18 @@ function CompanyManagementPage() {
             </thead>
             <tbody>
               {rows === null && (
-                <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">Načítavam…</td></tr>
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                    Načítavam…
+                  </td>
+                </tr>
               )}
               {rows?.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">Žiadne firmy.</td></tr>
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                    Žiadne firmy.
+                  </td>
+                </tr>
               )}
               {rows?.map((r) => (
                 <tr key={r.id} className="border-t border-border">
@@ -81,14 +103,32 @@ function CompanyManagementPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{r.role}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("sk-SK")}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {new Date(r.created_at).toLocaleDateString("sk-SK")}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex gap-2">
                       {r.id !== activeId && (
-                        <button onClick={() => switchTo(r.id)} className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary">Prepnúť</button>
+                        <button
+                          onClick={() => switchTo(r.id)}
+                          className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
+                        >
+                          Prepnúť
+                        </button>
                       )}
-                      <a href="/firma" className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary">Upraviť</a>
-                      <button disabled title="Onedlho" className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground opacity-60">Pozvať</button>
+                      <a
+                        href="/firma"
+                        className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
+                      >
+                        Upraviť
+                      </a>
+                      <button
+                        disabled
+                        title="Onedlho"
+                        className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground opacity-60"
+                      >
+                        Pozvať
+                      </button>
                     </div>
                   </td>
                 </tr>

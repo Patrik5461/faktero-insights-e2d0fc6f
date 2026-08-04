@@ -1,15 +1,16 @@
 import { CheckCircle2, AlertTriangle, FileCode2, Send, Circle } from "lucide-react";
 
-export type EfakturaUiStatus =
-  | "not_created"
-  | "generated"
-  | "validation_failed"
-  | "ready_to_send";
+export type EfakturaUiStatus = "not_created" | "generated" | "validation_failed" | "ready_to_send";
 
-export function deriveEfakturaUiStatus(doc: {
-  status?: string | null;
-  validation_errors?: unknown;
-} | null | undefined): EfakturaUiStatus {
+export function deriveEfakturaUiStatus(
+  doc:
+    | {
+        status?: string | null;
+        validation_errors?: unknown;
+      }
+    | null
+    | undefined,
+): EfakturaUiStatus {
   if (!doc) return "not_created";
   const errs = Array.isArray(doc.validation_errors) ? doc.validation_errors : [];
   if (doc.status === "invalid" || errs.length > 0) return "validation_failed";
@@ -44,7 +45,9 @@ export function EfakturaStatusBadge({ status }: { status: EfakturaUiStatus }) {
   const m = MAP[status];
   const Icon = m.Icon;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${m.cls}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${m.cls}`}
+    >
       <Icon className="h-3.5 w-3.5" /> {m.label}
     </span>
   );

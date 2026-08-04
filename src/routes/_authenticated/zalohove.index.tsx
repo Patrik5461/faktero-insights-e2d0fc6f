@@ -13,10 +13,7 @@ import {
   ConfirmDialog,
   DeletedToggle,
 } from "@/components/faktero/ListControls";
-import {
-  ResponsiveTable,
-  MobileListCard,
-} from "@/components/faktero/ResponsiveTable";
+import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 
 export const Route = createFileRoute("/_authenticated/zalohove/")({
   head: () => ({ meta: [{ title: "Zálohové faktúry — Faktero" }] }),
@@ -31,7 +28,9 @@ function ProformaListPage() {
     pageSizeKey: "invoices-proforma",
   });
 
-  const [settledMap, setSettledMap] = useState<Record<string, { id: string; invoice_number: string }>>({});
+  const [settledMap, setSettledMap] = useState<
+    Record<string, { id: string; invoice_number: string }>
+  >({});
   const [rowDelete, setRowDelete] = useState<any | null>(null);
 
   // Look up which proformas have been settled (referenced by another invoice's advance_invoice_id)

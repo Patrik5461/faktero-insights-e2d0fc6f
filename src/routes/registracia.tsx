@@ -86,9 +86,14 @@ function RegisterPage() {
           <Logo variant="header" className="h-8" />
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">Vytvorte si účet</h1>
-        <p className="mt-1 text-sm text-muted-foreground">2 mesiace zadarmo na pláne Premium. Bez platobnej karty.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          2 mesiace zadarmo na pláne Premium. Bez platobnej karty.
+        </p>
 
-        <button onClick={onGoogle} className="mt-6 w-full rounded-md border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-secondary">
+        <button
+          onClick={onGoogle}
+          className="mt-6 w-full rounded-md border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-secondary"
+        >
           Pokračovať cez Google
         </button>
 
@@ -99,37 +104,84 @@ function RegisterPage() {
         <form onSubmit={onSubmit} className="space-y-3">
           <div>
             <label className="text-sm font-medium">Meno a priezvisko</label>
-            <input value={fullName} onChange={(e) => setFullName(e.target.value)} required className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+            <input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
           </div>
           <div>
             <label className="text-sm font-medium">Email</label>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
           </div>
           <div>
             <label className="text-sm font-medium">Heslo</label>
-            <input type="password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+            <input
+              type="password"
+              minLength={8}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
           </div>
           <div className="space-y-2 pt-2">
             <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} className="mt-1" />
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="mt-1"
+              />
               <span>
-                Súhlasím s <Link to="/pravne/obchodne-podmienky" target="_blank" className="text-primary underline">Obchodnými podmienkami</Link>.
+                Súhlasím s{" "}
+                <Link
+                  to="/pravne/obchodne-podmienky"
+                  target="_blank"
+                  className="text-primary underline"
+                >
+                  Obchodnými podmienkami
+                </Link>
+                .
               </span>
             </label>
             <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" checked={acceptGdpr} onChange={(e) => setAcceptGdpr(e.target.checked)} className="mt-1" />
+              <input
+                type="checkbox"
+                checked={acceptGdpr}
+                onChange={(e) => setAcceptGdpr(e.target.checked)}
+                className="mt-1"
+              />
               <span>
-                Beriem na vedomie <Link to="/pravne/gdpr" target="_blank" className="text-primary underline">Spracúvanie osobných údajov</Link>.
+                Beriem na vedomie{" "}
+                <Link to="/pravne/gdpr" target="_blank" className="text-primary underline">
+                  Spracúvanie osobných údajov
+                </Link>
+                .
               </span>
             </label>
           </div>
-          <button type="submit" disabled={loading || !acceptTerms || !acceptGdpr} className="mt-2 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={loading || !acceptTerms || !acceptGdpr}
+            className="mt-2 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+          >
             {loading ? "Vytváram..." : "Vytvoriť účet"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Už máte účet? <Link to="/prihlasenie" className="font-medium text-primary hover:underline">Prihlásiť sa</Link>
+          Už máte účet?{" "}
+          <Link to="/prihlasenie" className="font-medium text-primary hover:underline">
+            Prihlásiť sa
+          </Link>
         </p>
       </div>
     </div>

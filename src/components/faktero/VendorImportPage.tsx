@@ -2,7 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Upload, Loader2, CheckCircle2, ArrowRight, ArrowLeft, History, AlertTriangle } from "lucide-react";
+import {
+  Upload,
+  Loader2,
+  CheckCircle2,
+  ArrowRight,
+  ArrowLeft,
+  History,
+  AlertTriangle,
+} from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createImportUploadUrl } from "@/lib/faktero/import-superfaktura.functions";
@@ -27,7 +35,11 @@ export function VendorImportPage(props: {
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<any>(null);
   const [result, setResult] = useState<any>(null);
-  const [options, setOptions] = useState({ updateExisting: false, customersOnly: false, invoicesOnly: false });
+  const [options, setOptions] = useState({
+    updateExisting: false,
+    customersOnly: false,
+    invoicesOnly: false,
+  });
 
   async function handleUpload() {
     const cid = getActiveCompanyId();
@@ -36,16 +48,26 @@ export function VendorImportPage(props: {
     if (file.size > 20 * 1024 * 1024) return toast.error("Súbor je príliš veľký (max 20 MB).");
     setBusy(true);
     try {
-      const { signedUrl, path: p } = await createUrl({ data: { companyId: cid, fileName: file.name } });
-      const up = await fetch(signedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
+      const { signedUrl, path: p } = await createUrl({
+        data: { companyId: cid, fileName: file.name },
+      });
+      const up = await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+      });
       if (!up.ok) throw new Error(`Upload zlyhal (${up.status})`);
       setPath(p);
-      const r = await doPreview({ data: { companyId: cid, source: props.source, path: p, fileName: file.name } });
+      const r = await doPreview({
+        data: { companyId: cid, source: props.source, path: p, fileName: file.name },
+      });
       setPreview(r.preview);
       setStep(2);
     } catch (e: any) {
       toast.error(e?.message ?? "Nahranie zlyhalo.");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleRun() {
@@ -54,13 +76,19 @@ export function VendorImportPage(props: {
     if (!confirm("Importom sa vytvoria nové záznamy. Pokračovať?")) return;
     setBusy(true);
     try {
-      const r = await doImport({ data: { companyId: cid, source: props.source, path, fileName: file.name, options } });
+      const r = await doImport({
+        data: { companyId: cid, source: props.source, path, fileName: file.name, options },
+      });
       setResult(r);
       setStep(4);
-      toast.success(`Importovaných ${r.imported_invoices} faktúr a ${r.imported_customers} odberateľov.`);
+      toast.success(
+        `Importovaných ${r.imported_invoices} faktúr a ${r.imported_customers} odberateľov.`,
+      );
     } catch (e: any) {
       toast.error(e?.message ?? "Import zlyhal.");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -69,7 +97,10 @@ export function VendorImportPage(props: {
         title={props.title}
         description={props.description}
         action={
-          <Link to="/importy" className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
+          <Link
+            to="/importy"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+          >
             <History className="h-4 w-4" /> História importov
           </Link>
         }
@@ -86,14 +117,28 @@ export function VendorImportPage(props: {
                 <h2 className="text-base font-semibold">Nahrajte súbor</h2>
                 <label className="mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-6 py-10 text-sm hover:border-primary/50">
                   <Upload className="h-8 w-8 text-primary" />
-                  <span className="font-medium">{file ? file.name : "Vyberte alebo presuňte súbor"}</span>
+                  <span className="font-medium">
+                    {file ? file.name : "Vyberte alebo presuňte súbor"}
+                  </span>
                   <span className="text-xs text-muted-foreground">{props.accept}</span>
-                  <input type="file" accept={props.accept} className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                  <input
+                    type="file"
+                    accept={props.accept}
+                    className="hidden"
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  />
                 </label>
                 <div className="mt-5 flex justify-end">
-                  <button onClick={handleUpload} disabled={!file || busy}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                  <button
+                    onClick={handleUpload}
+                    disabled={!file || busy}
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                  >
+                    {busy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4" />
+                    )}
                     Načítať náhľad
                   </button>
                 </div>
@@ -108,13 +153,21 @@ export function VendorImportPage(props: {
                 <Stat label="Faktúry" value={preview.invoicesCount} />
                 <Stat label="Odberatelia" value={preview.customersCount} />
                 <Stat label="Riadky" value={preview.itemsCount} />
-                <Stat label="Hodnota" value={`${Number(preview.totalValue).toFixed(2)} ${preview.currency}`} />
+                <Stat
+                  label="Hodnota"
+                  value={`${Number(preview.totalValue).toFixed(2)} ${preview.currency}`}
+                />
               </div>
               {preview.sampleInvoices?.length > 0 && (
                 <div className="mt-5 overflow-hidden rounded-lg border border-border">
                   <table className="w-full text-sm">
                     <thead className="bg-secondary/40 text-xs text-muted-foreground">
-                      <tr><th className="px-3 py-2 text-left">Číslo</th><th className="px-3 py-2 text-left">Odberateľ</th><th className="px-3 py-2 text-left">Dátum</th><th className="px-3 py-2 text-right">Suma</th></tr>
+                      <tr>
+                        <th className="px-3 py-2 text-left">Číslo</th>
+                        <th className="px-3 py-2 text-left">Odberateľ</th>
+                        <th className="px-3 py-2 text-left">Dátum</th>
+                        <th className="px-3 py-2 text-right">Suma</th>
+                      </tr>
                     </thead>
                     <tbody>
                       {preview.sampleInvoices.map((s: any, i: number) => (
@@ -122,7 +175,9 @@ export function VendorImportPage(props: {
                           <td className="px-3 py-2">{s.invoice_number}</td>
                           <td className="px-3 py-2">{s.customer_name || "—"}</td>
                           <td className="px-3 py-2">{s.issue_date || "—"}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{Number(s.total).toFixed(2)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">
+                            {Number(s.total).toFixed(2)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -130,10 +185,16 @@ export function VendorImportPage(props: {
                 </div>
               )}
               <div className="mt-5 flex justify-between">
-                <button onClick={() => setStep(1)} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
+                <button
+                  onClick={() => setStep(1)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                >
                   <ArrowLeft className="h-4 w-4" /> Späť
                 </button>
-                <button onClick={() => setStep(3)} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+                <button
+                  onClick={() => setStep(3)}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                >
                   Pokračovať <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
@@ -148,28 +209,50 @@ export function VendorImportPage(props: {
                   <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
                   <div>
                     <p className="font-medium">Upozornenie</p>
-                    <p className="text-muted-foreground">Import zapíše dáta do vašej firmy a nedá sa automaticky vrátiť.</p>
+                    <p className="text-muted-foreground">
+                      Import zapíše dáta do vašej firmy a nedá sa automaticky vrátiť.
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
-                {([
-                  ["updateExisting", "Aktualizovať existujúce faktúry"],
-                  ["customersOnly", "Importovať iba odberateľov"],
-                  ["invoicesOnly", "Importovať iba faktúry"],
-                ] as const).map(([k, label]) => (
-                  <label key={k} className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm">
-                    <input type="checkbox" checked={(options as any)[k]} onChange={(e) => setOptions({ ...options, [k]: e.target.checked })} />
+                {(
+                  [
+                    ["updateExisting", "Aktualizovať existujúce faktúry"],
+                    ["customersOnly", "Importovať iba odberateľov"],
+                    ["invoicesOnly", "Importovať iba faktúry"],
+                  ] as const
+                ).map(([k, label]) => (
+                  <label
+                    key={k}
+                    className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={(options as any)[k]}
+                      onChange={(e) => setOptions({ ...options, [k]: e.target.checked })}
+                    />
                     {label}
                   </label>
                 ))}
               </div>
               <div className="flex justify-between">
-                <button onClick={() => setStep(2)} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
+                <button
+                  onClick={() => setStep(2)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                >
                   <ArrowLeft className="h-4 w-4" /> Späť
                 </button>
-                <button onClick={handleRun} disabled={busy} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                <button
+                  onClick={handleRun}
+                  disabled={busy}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                >
+                  {busy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
                   Potvrdiť a importovať
                 </button>
               </div>
@@ -187,8 +270,18 @@ export function VendorImportPage(props: {
                 <Stat label="Chyby" value={result.failed_rows} />
               </div>
               <div className="mt-6 flex justify-center gap-2">
-                <Link to="/faktury" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Prejsť na faktúry</Link>
-                <Link to="/importy" className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">História importov</Link>
+                <Link
+                  to="/faktury"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                >
+                  Prejsť na faktúry
+                </Link>
+                <Link
+                  to="/importy"
+                  className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+                >
+                  História importov
+                </Link>
               </div>
             </section>
           )}

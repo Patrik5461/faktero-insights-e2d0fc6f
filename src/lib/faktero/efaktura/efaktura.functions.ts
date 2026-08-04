@@ -13,7 +13,10 @@ type EfakturaDocumentRow = Database["public"]["Tables"]["efaktura_documents"]["R
 type EfakturaDeliveryRow = Database["public"]["Tables"]["efaktura_deliveries"]["Row"];
 
 async function assertCompanyMember(supabase: Sb, companyId: string, userId: string) {
-  const { data, error } = await supabase.rpc("is_company_member", { _company_id: companyId, _user_id: userId });
+  const { data, error } = await supabase.rpc("is_company_member", {
+    _company_id: companyId,
+    _user_id: userId,
+  });
   if (error) throw error;
   if (!data) throw new Error("Nemáte prístup k tejto firme.");
 }
@@ -21,44 +24,67 @@ async function assertCompanyMember(supabase: Sb, companyId: string, userId: stri
 export const getEfakturaReadinessFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { companyId: string }) => d)
-  .handler(async ({ data, context }): Promise<ReadinessReport & { profile: EfakturaProfileRow | null }> => {
-    const { supabase, userId } = context;
-    await assertCompanyMember(supabase, data.companyId, userId);
-    const { computeReadiness } = await import("./readiness.server");
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<ReadinessReport & { profile: EfakturaProfileRow | null }> => {
+      const { supabase, userId } = context;
+      await assertCompanyMember(supabase, data.companyId, userId);
+      const { computeReadiness } = await import("./readiness.server");
 
-    const [{ data: company }, { data: profile }, { count: invoiceCount }, { count: validatedCount }, { count: invalidCount }] = await Promise.all([
-      supabase.from("companies").select("*").eq("id", data.companyId).maybeSingle(),
-      supabase.from("efaktura_profiles").select("*").eq("company_id", data.companyId).maybeSingle(),
-      supabase.from("invoices").select("id", { count: "exact", head: true }).eq("company_id", data.companyId),
-      supabase.from("efaktura_documents").select("id", { count: "exact", head: true }).eq("company_id", data.companyId).in("status", ["validated", "generated"]),
-      supabase.from("efaktura_documents").select("id", { count: "exact", head: true }).eq("company_id", data.companyId).eq("status", "invalid"),
-    ]);
-    if (!company) throw new Error("Firma neexistuje alebo k nej nemáte prístup.");
+      const [
+        { data: company },
+        { data: profile },
+        { count: invoiceCount },
+        { count: validatedCount },
+        { count: invalidCount },
+      ] = await Promise.all([
+        supabase.from("companies").select("*").eq("id", data.companyId).maybeSingle(),
+        supabase
+          .from("efaktura_profiles")
+          .select("*")
+          .eq("company_id", data.companyId)
+          .maybeSingle(),
+        supabase
+          .from("invoices")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", data.companyId),
+        supabase
+          .from("efaktura_documents")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", data.companyId)
+          .in("status", ["validated", "generated"]),
+        supabase
+          .from("efaktura_documents")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", data.companyId)
+          .eq("status", "invalid"),
+      ]);
+      if (!company) throw new Error("Firma neexistuje alebo k nej nemáte prístup.");
 
-    const report = computeReadiness({
-      company,
-      profile,
-      stats: {
-        invoiceCount: invoiceCount ?? 0,
-        validatedDocumentCount: validatedCount ?? 0,
-        invalidDocumentCount: invalidCount ?? 0,
-      },
-    });
+      const report = computeReadiness({
+        company,
+        profile,
+        stats: {
+          invoiceCount: invoiceCount ?? 0,
+          validatedDocumentCount: validatedCount ?? 0,
+          invalidDocumentCount: invalidCount ?? 0,
+        },
+      });
 
-    if (profile) {
-      const update: EfakturaProfileUpdate = {
-        readiness_score: report.score,
-        readiness_checked_at: report.checkedAt,
-        readiness_details: report as unknown as Json,
-      };
-      await supabase
-        .from("efaktura_profiles")
-        .update(update)
-        .eq("id", profile.id);
-    }
+      if (profile) {
+        const update: EfakturaProfileUpdate = {
+          readiness_score: report.score,
+          readiness_checked_at: report.checkedAt,
+          readiness_details: report as unknown as Json,
+        };
+        await supabase.from("efaktura_profiles").update(update).eq("id", profile.id);
+      }
 
-    return { ...report, profile: profile ?? null };
-  });
+      return { ...report, profile: profile ?? null };
+    },
+  );
 
 export const upsertEfakturaProfileFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -81,7 +107,8 @@ export const upsertEfakturaProfileFn = createServerFn({ method: "POST" })
     const payload: EfakturaProfileInsert = { company_id: data.companyId };
     if (data.enabled !== undefined) payload.enabled = data.enabled;
     if (data.preferredChannel) payload.preferred_channel = data.preferredChannel;
-    if (data.peppolParticipantId !== undefined) payload.peppol_participant_id = data.peppolParticipantId;
+    if (data.peppolParticipantId !== undefined)
+      payload.peppol_participant_id = data.peppolParticipantId;
     if (data.peppolScheme !== undefined) payload.peppol_scheme = data.peppolScheme;
     if (data.peppolProvider !== undefined) payload.peppol_provider = data.peppolProvider;
     if (data.defaultDocumentFormat) payload.default_document_format = data.defaultDocumentFormat;
@@ -105,12 +132,26 @@ export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
     const { mapToEN16931 } = await import("./en16931.server");
     const { generatePeppolBisXml } = await import("./xml.server");
 
-    const [{ data: company }, { data: profile }, { data: invoice }, { data: items }] = await Promise.all([
-      supabase.from("companies").select("*").eq("id", data.companyId).maybeSingle(),
-      supabase.from("efaktura_profiles").select("*").eq("company_id", data.companyId).maybeSingle(),
-      supabase.from("invoices").select("*").eq("id", data.invoiceId).eq("company_id", data.companyId).maybeSingle(),
-      supabase.from("invoice_items").select("*").eq("invoice_id", data.invoiceId).order("position"),
-    ]);
+    const [{ data: company }, { data: profile }, { data: invoice }, { data: items }] =
+      await Promise.all([
+        supabase.from("companies").select("*").eq("id", data.companyId).maybeSingle(),
+        supabase
+          .from("efaktura_profiles")
+          .select("*")
+          .eq("company_id", data.companyId)
+          .maybeSingle(),
+        supabase
+          .from("invoices")
+          .select("*")
+          .eq("id", data.invoiceId)
+          .eq("company_id", data.companyId)
+          .maybeSingle(),
+        supabase
+          .from("invoice_items")
+          .select("*")
+          .eq("invoice_id", data.invoiceId)
+          .order("position"),
+      ]);
     if (!company) throw new Error("Firma neexistuje.");
     if (!invoice) throw new Error("Faktúra neexistuje.");
 
@@ -120,14 +161,19 @@ export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
     // Extra Faktero-side validation (basic completeness).
     const extra: { code: string; message: string }[] = [];
     if (!company.ico) extra.push({ code: "FK-S-ICO", message: "Dodávateľ nemá vyplnené IČO." });
-    if (!company.street || !company.city) extra.push({ code: "FK-S-ADDR", message: "Dodávateľ nemá kompletnú adresu." });
-    if (!invoice.customer_name) extra.push({ code: "FK-B-NAME", message: "Odberateľ nemá vyplnený názov." });
-    if (!invoice.customer_ico) extra.push({ code: "FK-B-ICO", message: "Odberateľ nemá vyplnené IČO." });
+    if (!company.street || !company.city)
+      extra.push({ code: "FK-S-ADDR", message: "Dodávateľ nemá kompletnú adresu." });
+    if (!invoice.customer_name)
+      extra.push({ code: "FK-B-NAME", message: "Odberateľ nemá vyplnený názov." });
+    if (!invoice.customer_ico)
+      extra.push({ code: "FK-B-ICO", message: "Odberateľ nemá vyplnené IČO." });
     if (!invoice.due_date) extra.push({ code: "FK-DUE", message: "Faktúra nemá splatnosť." });
     if (!invoice.currency) extra.push({ code: "FK-CUR", message: "Faktúra nemá menu." });
-    if (!items || items.length === 0) extra.push({ code: "FK-LINES", message: "Faktúra nemá žiadne položky." });
+    if (!items || items.length === 0)
+      extra.push({ code: "FK-LINES", message: "Faktúra nemá žiadne položky." });
     if (dto.taxSubtotals.length === 0) extra.push({ code: "FK-VAT", message: "Chýba rozpis DPH." });
-    if (Number(invoice.total) <= 0) extra.push({ code: "FK-TOTAL", message: "Celková suma musí byť väčšia ako 0." });
+    if (Number(invoice.total) <= 0)
+      extra.push({ code: "FK-TOTAL", message: "Celková suma musí byť väčšia ako 0." });
 
     const allErrors = [...result.validationErrors, ...extra];
     const valid = allErrors.length === 0;
@@ -163,14 +209,19 @@ export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
       total: invoice.total,
       xml_payload: result.xml,
       payload_hash: result.payloadHash,
-      status: (valid ? "validated" : "invalid") as Database["public"]["Enums"]["efaktura_doc_status"],
+      status: (valid
+        ? "validated"
+        : "invalid") as Database["public"]["Enums"]["efaktura_doc_status"],
       validation_errors: allErrors as unknown as Json,
       generated_at: new Date().toISOString(),
     };
 
     let docId: string;
     if (existing) {
-      const { error } = await supabase.from("efaktura_documents").update(baseRow).eq("id", existing.id);
+      const { error } = await supabase
+        .from("efaktura_documents")
+        .update(baseRow)
+        .eq("id", existing.id);
       if (error) throw error;
       docId = existing.id;
     } else {

@@ -151,7 +151,10 @@ function LoginPage() {
 }
 
 function ProductButton({
-  icon, label, selected, onClick,
+  icon,
+  label,
+  selected,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -168,7 +171,9 @@ function ProductButton({
           : "border-border bg-background text-foreground/80 hover:bg-secondary"
       }`}
     >
-      <span className={`grid h-7 w-7 place-items-center rounded-md ${selected ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground/70"}`}>
+      <span
+        className={`grid h-7 w-7 place-items-center rounded-md ${selected ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground/70"}`}
+      >
         {icon}
       </span>
       <span className="flex-1">{label}</span>
@@ -179,7 +184,9 @@ function ProductButton({
 
 function BiometricLoginButton({ onSuccess }: { onSuccess: () => void }) {
   const [available, setAvailable] = useState(false);
-  useEffect(() => { isBiometricAvailable().then(setAvailable); }, []);
+  useEffect(() => {
+    isBiometricAvailable().then(setAvailable);
+  }, []);
   if (!available) return null;
   async function go() {
     const r = await loginWithBiometric();

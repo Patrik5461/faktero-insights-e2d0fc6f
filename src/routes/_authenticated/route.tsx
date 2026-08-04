@@ -1,11 +1,26 @@
-import { createFileRoute, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppShell, type ProductMode } from "@/components/faktero/AppShell";
-import { getActiveCompanyId, setActiveCompanyId, fetchMyCompanies } from "@/lib/faktero/active-company";
+import {
+  getActiveCompanyId,
+  setActiveCompanyId,
+  fetchMyCompanies,
+} from "@/lib/faktero/active-company";
 import { PlanGateBanner } from "@/components/faktero/PlanGateBanner";
 import { ProductModePicker } from "@/components/faktero/ProductModePicker";
-import { ACTIVE_PRODUCT_EVENT, getActiveProduct, setActiveProduct, type ActiveProduct } from "@/lib/faktero/active-product";
+import {
+  ACTIVE_PRODUCT_EVENT,
+  getActiveProduct,
+  setActiveProduct,
+  type ActiveProduct,
+} from "@/lib/faktero/active-product";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -30,11 +45,14 @@ function AuthedLayout() {
   const [companies, setCompanies] = useState<any[] | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [productMode, setProductMode] = useState<ProductMode | null>(null);
-  const [activeProduct, setActiveProductState] = useState<ActiveProduct | null>(() => getActiveProduct());
+  const [activeProduct, setActiveProductState] = useState<ActiveProduct | null>(() =>
+    getActiveProduct(),
+  );
   const [profileLoaded, setProfileLoaded] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const requestedProduct: ActiveProduct = activeProduct ?? (productMode === "logbook" ? "logbook" : "invoicing");
+  const requestedProduct: ActiveProduct =
+    activeProduct ?? (productMode === "logbook" ? "logbook" : "invoicing");
   const effectiveMode: ProductMode | null = productMode
     ? productMode === "both"
       ? "both"
@@ -42,7 +60,8 @@ function AuthedLayout() {
         ? "both"
         : productMode
     : null;
-  const shellActiveProduct: ActiveProduct = effectiveMode === "logbook" ? "logbook" : requestedProduct;
+  const shellActiveProduct: ActiveProduct =
+    effectiveMode === "logbook" ? "logbook" : requestedProduct;
   const needsUpgrade = !!productMode && effectiveMode === "both" && productMode !== "both";
 
   useEffect(() => {
@@ -60,14 +79,20 @@ function AuthedLayout() {
     let mounted = true;
     supabase.auth.getUser().then(({ data }) => {
       if (!mounted || !data.user) return;
-      supabase.from("profiles").select("product_mode").eq("id", data.user.id).maybeSingle()
+      supabase
+        .from("profiles")
+        .select("product_mode")
+        .eq("id", data.user.id)
+        .maybeSingle()
         .then(({ data: p }) => {
           if (!mounted) return;
           setProductMode((p?.product_mode ?? null) as ProductMode | null);
           setProfileLoaded(true);
         });
     });
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -87,7 +112,9 @@ function AuthedLayout() {
         }
       })
       .catch(console.error);
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [pathname]);
 
   useEffect(() => {
@@ -104,11 +131,17 @@ function AuthedLayout() {
       await supabase.from("profiles").update({ product_mode: "both" }).eq("id", data.user.id);
       if (!cancelled) setProductMode("both");
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [needsUpgrade]);
 
   if (companies === null || !profileLoaded) {
-    return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Načítavam…</div>;
+    return (
+      <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">
+        Načítavam…
+      </div>
+    );
   }
 
   // Onboarding stands alone (no sidebar) when there is no company yet

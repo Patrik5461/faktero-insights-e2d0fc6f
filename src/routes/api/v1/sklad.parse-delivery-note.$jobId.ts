@@ -16,13 +16,15 @@ export const Route = createFileRoute("/api/v1/sklad/parse-delivery-note/$jobId")
       GET: async ({ request, params }) => {
         try {
           const auth = request.headers.get("authorization") ?? "";
-          if (!auth.toLowerCase().startsWith("bearer ")) return json(401, { error: "missing_token" });
+          if (!auth.toLowerCase().startsWith("bearer "))
+            return json(401, { error: "missing_token" });
           const token = auth.slice(7).trim();
           if (!token) return json(401, { error: "missing_token" });
 
           const SUPABASE_URL = process.env.SUPABASE_URL;
           const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
-          if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) return json(500, { error: "supabase_not_configured" });
+          if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY)
+            return json(500, { error: "supabase_not_configured" });
 
           const { createClient } = await import("@supabase/supabase-js");
           const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {

@@ -3,7 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { setActiveCompanyId } from "@/lib/faktero/active-company";
 import { toast } from "sonner";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocomplete";
@@ -16,8 +21,16 @@ type Props = {
 };
 
 const EMPTY = {
-  name: "", ico: "", dic: "", ic_dph: "", email: "", phone: "",
-  street: "", city: "", zip: "", country: "SK",
+  name: "",
+  ico: "",
+  dic: "",
+  ic_dph: "",
+  email: "",
+  phone: "",
+  street: "",
+  city: "",
+  zip: "",
+  country: "SK",
 };
 
 export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
@@ -78,15 +91,28 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!loading) { onOpenChange(o); if (!o) reset(); } }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!loading) {
+          onOpenChange(o);
+          if (!o) reset();
+        }
+      }}
+    >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Pridať firmu</DialogTitle>
-          <DialogDescription>Vytvorte ďalšiu firmu, ku ktorej budete mať prístup ako vlastník.</DialogDescription>
+          <DialogDescription>
+            Vytvorte ďalšiu firmu, ku ktorej budete mať prístup ako vlastník.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           {errorMsg && (
-            <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
               {errorMsg}
             </div>
           )}
@@ -96,7 +122,11 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
               <CompanyNameAutocomplete
                 value={form.name}
                 onChange={(v) => set("name", v)}
-                onPick={(d, { auto }) => setForm((f) => mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }))}
+                onPick={(d, { auto }) =>
+                  setForm((f) =>
+                    mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }),
+                  )
+                }
               />
             </div>
           </label>
@@ -104,10 +134,18 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
             <label className="block">
               <span className="text-sm font-medium">IČO</span>
               <div className="mt-1 flex -space-x-px items-start">
-                <input value={form.ico} onChange={(e) => set("ico", e.target.value)} className="w-full rounded-l-md border border-input bg-background px-3 py-2 text-sm focus:z-10" />
+                <input
+                  value={form.ico}
+                  onChange={(e) => set("ico", e.target.value)}
+                  className="w-full rounded-l-md border border-input bg-background px-3 py-2 text-sm focus:z-10"
+                />
                 <IcoLookupButton
                   ico={form.ico}
-                  onResult={(d, { auto }) => setForm((f) => mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }))}
+                  onResult={(d, { auto }) =>
+                    setForm((f) =>
+                      mergeCompanyAutofill(f, d, { mode: auto ? "fill-empty" : "overwrite" }),
+                    )
+                  }
                 />
               </div>
             </label>
@@ -127,14 +165,23 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
           <DialogFooter>
             <button
               type="button"
-              onClick={() => { if (!loading) { onOpenChange(false); reset(); } }}
+              onClick={() => {
+                if (!loading) {
+                  onOpenChange(false);
+                  reset();
+                }
+              }}
               className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
-            >Zrušiť</button>
+            >
+              Zrušiť
+            </button>
             <button
               type="submit"
               disabled={loading}
               className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
-            >{loading ? "Vytváram…" : "Vytvoriť firmu"}</button>
+            >
+              {loading ? "Vytváram…" : "Vytvoriť firmu"}
+            </button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -142,7 +189,15 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <label className="block">
       <span className="text-sm font-medium">{label}</span>

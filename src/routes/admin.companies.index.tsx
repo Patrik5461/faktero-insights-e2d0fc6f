@@ -125,10 +125,7 @@ function AdminCompaniesPage() {
 
   return (
     <>
-      <AdminPageHeader
-        title="Firmy"
-        description="Všetky účty registrované v Faktero."
-      />
+      <AdminPageHeader title="Firmy" description="Všetky účty registrované v Faktero." />
       <AdminPageBody>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
@@ -208,12 +205,16 @@ function AdminCompaniesPage() {
                             {r.name}
                           </Link>
                         </td>
-                        <td className="px-3 py-2 tabular-nums text-muted-foreground">{r.ico ?? "—"}</td>
+                        <td className="px-3 py-2 tabular-nums text-muted-foreground">
+                          {r.ico ?? "—"}
+                        </td>
                         <td className="px-3 py-2 text-muted-foreground">{r.owner_email ?? "—"}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{r.users_count}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{r.invoices_count}</td>
                         <td className="px-3 py-2 uppercase">{r.plan}</td>
-                        <td className="px-3 py-2"><StatusBadge row={r} /></td>
+                        <td className="px-3 py-2">
+                          <StatusBadge row={r} />
+                        </td>
                         <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.created_at)}</td>
                         <td className="px-3 py-2">
                           <div className="flex items-center justify-end gap-1">

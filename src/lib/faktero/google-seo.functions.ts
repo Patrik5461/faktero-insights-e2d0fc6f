@@ -73,9 +73,7 @@ export const listGa4PropertiesFn = createServerFn({ method: "GET" })
 export const setGoogleSeoProperty = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z
-      .object({ type: z.enum(["gsc", "ga4"]), property_id: z.string().min(1) })
-      .parse(d),
+    z.object({ type: z.enum(["gsc", "ga4"]), property_id: z.string().min(1) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
@@ -96,9 +94,8 @@ export const getGscOverview = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ force: z.boolean().optional() }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { getConnection, gscOverview, getCached, setCached } = await import(
-      "./google-seo.server"
-    );
+    const { getConnection, gscOverview, getCached, setCached } =
+      await import("./google-seo.server");
     const conn = await getConnection("gsc");
     if (!conn?.property_id) return { connected: !!conn, missingProperty: true } as any;
     const key = `gsc:overview:${conn.property_id}`;
@@ -116,9 +113,8 @@ export const getGa4Overview = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ force: z.boolean().optional() }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const { getConnection, ga4Overview, getCached, setCached } = await import(
-      "./google-seo.server"
-    );
+    const { getConnection, ga4Overview, getCached, setCached } =
+      await import("./google-seo.server");
     const conn = await getConnection("ga4");
     if (!conn?.property_id) return { connected: !!conn, missingProperty: true } as any;
     // property_id stored as "properties/12345" or bare number — normalize

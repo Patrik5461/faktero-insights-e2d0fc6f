@@ -116,13 +116,13 @@ Po zmene `.env`: `pm2 restart faktero webhook`.
 Bežia priamo v Supabase Postgres, volajú TanStack public routes cez `net.http_post`
 s hlavičkou `apikey: <SUPABASE_ANON_KEY>`.
 
-| Job | Schedule | Endpoint |
-|---|---|---|
-| `faktero-recurring-daily` | `15 3 * * *` | `/api/public/hooks/recurring-run` |
-| `faktero-reminders-daily` | `30 7 * * *` | `/api/public/hooks/reminders` |
-| `faktero-trial-lifecycle-daily` | `0 6 * * *` | `/api/public/hooks/trial-lifecycle` |
-| `faktero-push-overdue-daily` | `0 8 * * *` | `/api/public/hooks/push-overdue` |
-| `faktero-commander-sync-hourly` | `0 * * * *` | `/api/public/hooks/commander-sync` |
+| Job                             | Schedule     | Endpoint                            |
+| ------------------------------- | ------------ | ----------------------------------- |
+| `faktero-recurring-daily`       | `15 3 * * *` | `/api/public/hooks/recurring-run`   |
+| `faktero-reminders-daily`       | `30 7 * * *` | `/api/public/hooks/reminders`       |
+| `faktero-trial-lifecycle-daily` | `0 6 * * *`  | `/api/public/hooks/trial-lifecycle` |
+| `faktero-push-overdue-daily`    | `0 8 * * *`  | `/api/public/hooks/push-overdue`    |
+| `faktero-commander-sync-hourly` | `0 * * * *`  | `/api/public/hooks/commander-sync`  |
 
 Zobraziť: `SELECT jobname, schedule, active FROM cron.job ORDER BY jobname;`
 História: `SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 50;`

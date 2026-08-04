@@ -16,7 +16,9 @@ export function useIsNative(): boolean {
         // package missing or SSR — keep false
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
   return isNative;
 }
@@ -31,7 +33,9 @@ export function useNativePlatform(): "ios" | "android" | "web" {
         if (!cancelled) setPlatform(Capacitor.getPlatform() as any);
       } catch {}
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
   return platform;
 }

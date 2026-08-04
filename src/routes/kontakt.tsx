@@ -10,7 +10,11 @@ export const Route = createFileRoute("/kontakt")({
   head: () => ({
     meta: [
       { title: "Kontakt — Faktero" },
-      { name: "description", content: "Kontaktujte prevádzkovateľa Faktera — Tobify s. r. o. E-mail, telefón, sídlo a fakturačné údaje." },
+      {
+        name: "description",
+        content:
+          "Kontaktujte prevádzkovateľa Faktera — Tobify s. r. o. E-mail, telefón, sídlo a fakturačné údaje.",
+      },
       { property: "og:title", content: "Kontakt — Faktero" },
       { property: "og:description", content: "Kontaktné údaje prevádzkovateľa Faktera." },
       { property: "og:url", content: "https://faktero.sk/kontakt" },
@@ -40,7 +44,9 @@ function KontaktPage() {
     setBusy(true);
     try {
       const subject = encodeURIComponent(`Kontakt z faktero.sk — ${parsed.data.name}`);
-      const body = encodeURIComponent(`${parsed.data.message}\n\n—\n${parsed.data.name} <${parsed.data.email}>`);
+      const body = encodeURIComponent(
+        `${parsed.data.message}\n\n—\n${parsed.data.name} <${parsed.data.email}>`,
+      );
       window.location.href = `mailto:${LEGAL_COMPANY.email}?subject=${subject}&body=${body}`;
       toast.success("Otvárame váš e-mailový klient…");
     } finally {
@@ -60,35 +66,62 @@ function KontaktPage() {
         <div className="mt-10 grid gap-10 md:grid-cols-2">
           <div className="space-y-6 text-sm">
             <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
-              <h2 className="font-semibold text-base flex items-center gap-2"><Building2 className="h-4 w-4 text-primary"/> Prevádzkovateľ</h2>
+              <h2 className="font-semibold text-base flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-primary" /> Prevádzkovateľ
+              </h2>
               <div className="space-y-1 text-muted-foreground">
                 <div className="text-foreground font-medium">{LEGAL_COMPANY.name}</div>
-                <div className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 shrink-0"/><span>{LEGAL_COMPANY.address}</span></div>
-                <div>IČO: <span className="text-foreground">{LEGAL_COMPANY.ico}</span></div>
-                <div>DIČ: <span className="text-foreground">{LEGAL_COMPANY.dic}</span></div>
-                <div>IČ DPH: <span className="text-foreground">{LEGAL_COMPANY.icDph}</span></div>
-                <div>Štatutár: <span className="text-foreground">{LEGAL_COMPANY.statutar}</span></div>
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>{LEGAL_COMPANY.address}</span>
+                </div>
+                <div>
+                  IČO: <span className="text-foreground">{LEGAL_COMPANY.ico}</span>
+                </div>
+                <div>
+                  DIČ: <span className="text-foreground">{LEGAL_COMPANY.dic}</span>
+                </div>
+                <div>
+                  IČ DPH: <span className="text-foreground">{LEGAL_COMPANY.icDph}</span>
+                </div>
+                <div>
+                  Štatutár: <span className="text-foreground">{LEGAL_COMPANY.statutar}</span>
+                </div>
               </div>
             </div>
 
             <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
               <h2 className="font-semibold text-base">Priamy kontakt</h2>
-              <a href={`mailto:${LEGAL_COMPANY.email}`} className="flex items-center gap-2 hover:text-primary">
-                <Mail className="h-4 w-4"/> {LEGAL_COMPANY.email}
+              <a
+                href={`mailto:${LEGAL_COMPANY.email}`}
+                className="flex items-center gap-2 hover:text-primary"
+              >
+                <Mail className="h-4 w-4" /> {LEGAL_COMPANY.email}
               </a>
-              <a href={`tel:${LEGAL_COMPANY.phone.replace(/\s/g, "")}`} className="flex items-center gap-2 hover:text-primary">
-                <Phone className="h-4 w-4"/> {LEGAL_COMPANY.phone}
+              <a
+                href={`tel:${LEGAL_COMPANY.phone.replace(/\s/g, "")}`}
+                className="flex items-center gap-2 hover:text-primary"
+              >
+                <Phone className="h-4 w-4" /> {LEGAL_COMPANY.phone}
               </a>
               <p className="text-xs text-muted-foreground pt-2">
-                Fakturačné a právne otázky: <a className="underline" href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>
+                Fakturačné a právne otázky:{" "}
+                <a className="underline" href={`mailto:${LEGAL_COMPANY.email}`}>
+                  {LEGAL_COMPANY.email}
+                </a>
               </p>
             </div>
           </div>
 
-          <form onSubmit={submit} className="rounded-2xl border border-border bg-card p-6 space-y-4">
+          <form
+            onSubmit={submit}
+            className="rounded-2xl border border-border bg-card p-6 space-y-4"
+          >
             <h2 className="font-semibold text-base">Napíšte nám</h2>
             <div className="space-y-1.5">
-              <label htmlFor="name" className="text-sm font-medium">Meno</label>
+              <label htmlFor="name" className="text-sm font-medium">
+                Meno
+              </label>
               <input
                 id="name"
                 required
@@ -99,7 +132,9 @@ function KontaktPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium">E-mail</label>
+              <label htmlFor="email" className="text-sm font-medium">
+                E-mail
+              </label>
               <input
                 id="email"
                 type="email"
@@ -111,7 +146,9 @@ function KontaktPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label htmlFor="message" className="text-sm font-medium">Správa</label>
+              <label htmlFor="message" className="text-sm font-medium">
+                Správa
+              </label>
               <textarea
                 id="message"
                 required
@@ -127,11 +164,15 @@ function KontaktPage() {
               disabled={busy}
               className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin"/> : <Mail className="h-4 w-4"/>}
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
               Odoslať správu
             </button>
             <p className="text-xs text-muted-foreground">
-              Odoslaním súhlasíte so spracovaním údajov podľa <a href="/pravne/gdpr" className="underline">GDPR</a>.
+              Odoslaním súhlasíte so spracovaním údajov podľa{" "}
+              <a href="/pravne/gdpr" className="underline">
+                GDPR
+              </a>
+              .
             </p>
           </form>
         </div>

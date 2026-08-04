@@ -8,10 +8,18 @@ export type Frequency = "weekly" | "monthly" | "quarterly" | "yearly";
 export function advanceNextRun(base: string | Date, freq: Frequency): string {
   const d = typeof base === "string" ? new Date(base + "T00:00:00Z") : new Date(base);
   switch (freq) {
-    case "weekly": d.setUTCDate(d.getUTCDate() + 7); break;
-    case "monthly": d.setUTCMonth(d.getUTCMonth() + 1); break;
-    case "quarterly": d.setUTCMonth(d.getUTCMonth() + 3); break;
-    case "yearly": d.setUTCFullYear(d.getUTCFullYear() + 1); break;
+    case "weekly":
+      d.setUTCDate(d.getUTCDate() + 7);
+      break;
+    case "monthly":
+      d.setUTCMonth(d.getUTCMonth() + 1);
+      break;
+    case "quarterly":
+      d.setUTCMonth(d.getUTCMonth() + 3);
+      break;
+    case "yearly":
+      d.setUTCFullYear(d.getUTCFullYear() + 1);
+      break;
   }
   return d.toISOString().slice(0, 10);
 }
@@ -19,45 +27,73 @@ export function advanceNextRun(base: string | Date, freq: Frequency): string {
 /** Generate a single invoice from a recurring template by id. */
 export async function runRecurring(id: string, runType: "manual" | "automatic" = "automatic") {
   const { data: rec, error } = await supabaseAdmin
-    .from("recurring_invoices").select("*").eq("id", id).single();
+    .from("recurring_invoices")
+    .select("*")
+    .eq("id", id)
+    .single();
   if (error || !rec) throw new Error("Recurring not found");
   if (!rec.active) return { skipped: true, reason: "inactive" };
 
   const items = Array.isArray(rec.items) ? rec.items : [];
   if (!items.length) return { skipped: true, reason: "no_items" };
 
-  const logRun = async (status: string, invoice_id: string | null, error_message: string | null) => {
+  const logRun = async (
+    status: string,
+    invoice_id: string | null,
+    error_message: string | null,
+  ) => {
     try {
       await supabaseAdmin.from("recurring_invoice_logs" as any).insert({
         recurring_invoice_id: rec.id,
         company_id: rec.company_id,
-        invoice_id, run_type: runType, status, error_message,
+        invoice_id,
+        run_type: runType,
+        status,
+        error_message,
       });
-    } catch (e) { console.error("[recurring] log error", e); }
+    } catch (e) {
+      console.error("[recurring] log error", e);
+    }
   };
 
   const today = new Date().toISOString().slice(0, 10);
   const dueDays = Number(rec.due_days ?? 14);
   const due = new Date(Date.now() + dueDays * 86400000).toISOString().slice(0, 10);
-  const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(rec.company_id, today);
+  const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
+    rec.company_id,
+    today,
+  );
   const variable_symbol = invoice_number.replace(/\D/g, "");
 
-  const { data: inv, error: insErr } = await supabaseAdmin.from("invoices").insert({
-    company_id: rec.company_id,
-    customer_id: rec.customer_id ?? null,
-    invoice_number, sequence_number, variable_symbol,
-    issue_date: today, due_date: due,
-    currency: rec.currency ?? "EUR",
-    payment_method: rec.payment_method ?? "bank_transfer",
-    customer_name: rec.customer_name, customer_ico: rec.customer_ico,
-    customer_dic: rec.customer_dic, customer_ic_dph: rec.customer_ic_dph,
-    customer_street: rec.customer_street, customer_city: rec.customer_city,
-    customer_zip: rec.customer_zip, customer_country: rec.customer_country ?? "SK",
-    customer_email: rec.customer_email,
-    subtotal: rec.subtotal, vat_total: rec.vat_total, total: rec.total,
-    notes: rec.notes ?? null,
-    status: "issued",
-  }).select().single();
+  const { data: inv, error: insErr } = await supabaseAdmin
+    .from("invoices")
+    .insert({
+      company_id: rec.company_id,
+      customer_id: rec.customer_id ?? null,
+      invoice_number,
+      sequence_number,
+      variable_symbol,
+      issue_date: today,
+      due_date: due,
+      currency: rec.currency ?? "EUR",
+      payment_method: rec.payment_method ?? "bank_transfer",
+      customer_name: rec.customer_name,
+      customer_ico: rec.customer_ico,
+      customer_dic: rec.customer_dic,
+      customer_ic_dph: rec.customer_ic_dph,
+      customer_street: rec.customer_street,
+      customer_city: rec.customer_city,
+      customer_zip: rec.customer_zip,
+      customer_country: rec.customer_country ?? "SK",
+      customer_email: rec.customer_email,
+      subtotal: rec.subtotal,
+      vat_total: rec.vat_total,
+      total: rec.total,
+      notes: rec.notes ?? null,
+      status: "issued",
+    })
+    .select()
+    .single();
   if (insErr || !inv) {
     await logRun("failed", null, insErr?.message ?? "Invoice insert failed");
     throw new Error(insErr?.message ?? "Invoice insert failed");
@@ -67,11 +103,17 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
     const line = +(Number(it.quantity) * Number(it.unit_price)).toFixed(2);
     const vat = +((line * Number(it.vat_rate ?? 23)) / 100).toFixed(2);
     return {
-      invoice_id: inv.id, position: i,
-      name: it.name, description: it.description ?? null,
-      quantity: it.quantity, unit: it.unit ?? "ks",
-      unit_price: it.unit_price, vat_rate: it.vat_rate ?? 23,
-      subtotal: line, vat_amount: vat, total: +(line + vat).toFixed(2),
+      invoice_id: inv.id,
+      position: i,
+      name: it.name,
+      description: it.description ?? null,
+      quantity: it.quantity,
+      unit: it.unit ?? "ks",
+      unit_price: it.unit_price,
+      vat_rate: it.vat_rate ?? 23,
+      subtotal: line,
+      vat_amount: vat,
+      total: +(line + vat).toFixed(2),
     };
   });
   const { error: itErr } = await supabaseAdmin.from("invoice_items").insert(rows);
@@ -101,11 +143,14 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
 
   // Advance schedule
   const newNext = advanceNextRun(rec.next_run, rec.frequency as Frequency);
-  await supabaseAdmin.from("recurring_invoices").update({
-    last_run_at: new Date().toISOString(),
-    last_invoice_id: inv.id,
-    next_run: newNext,
-  }).eq("id", rec.id);
+  await supabaseAdmin
+    .from("recurring_invoices")
+    .update({
+      last_run_at: new Date().toISOString(),
+      last_invoice_id: inv.id,
+      next_run: newNext,
+    })
+    .eq("id", rec.id);
 
   await logRun("success", inv.id, null);
   return { skipped: false, invoice_id: inv.id, next_run: newNext };

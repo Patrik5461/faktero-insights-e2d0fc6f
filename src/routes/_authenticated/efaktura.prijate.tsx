@@ -18,8 +18,8 @@ function ReceivedPage() {
           </div>
           <h2 className="text-lg font-semibold">Zatiaľ tu nič nie je</h2>
           <p className="max-w-md text-sm text-muted-foreground">
-            Prijímanie eFaktúr bude dostupné po napojení na digitálneho poštára alebo Peppol
-            Access Point. Pripravujeme.
+            Prijímanie eFaktúr bude dostupné po napojení na digitálneho poštára alebo Peppol Access
+            Point. Pripravujeme.
           </p>
         </div>
       </PageBody>

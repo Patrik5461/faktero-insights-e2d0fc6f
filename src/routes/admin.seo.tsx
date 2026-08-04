@@ -4,12 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Sparkles, Save, Trash2, Plus } from "lucide-react";
-import {
-  listSeoPages,
-  upsertSeoPage,
-  deleteSeoPage,
-  generateSeoAi,
-} from "@/lib/seo.functions";
+import { listSeoPages, upsertSeoPage, deleteSeoPage, generateSeoAi } from "@/lib/seo.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -141,7 +136,9 @@ function Page() {
                 <Input
                   placeholder="napr. abc123xyz..."
                   value={globalForm.google_verification ?? ""}
-                  onChange={(e) => setGlobalForm({ ...globalForm, google_verification: e.target.value })}
+                  onChange={(e) =>
+                    setGlobalForm({ ...globalForm, google_verification: e.target.value })
+                  }
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">
                   Content atribút meta name="google-site-verification"
@@ -152,12 +149,17 @@ function Page() {
                 <Input
                   placeholder="G-XXXXXXXXXX"
                   value={globalForm.ga_measurement_id ?? ""}
-                  onChange={(e) => setGlobalForm({ ...globalForm, ga_measurement_id: e.target.value })}
+                  onChange={(e) =>
+                    setGlobalForm({ ...globalForm, ga_measurement_id: e.target.value })
+                  }
                 />
               </div>
             </div>
             <div className="mt-4">
-              <Button onClick={() => save.mutate({ ...globalForm, path: "_global" })} disabled={save.isPending}>
+              <Button
+                onClick={() => save.mutate({ ...globalForm, path: "_global" })}
+                disabled={save.isPending}
+              >
                 <Save className="h-4 w-4 mr-2" /> Uložiť globálne
               </Button>
             </div>
@@ -249,10 +251,27 @@ function Page() {
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-border">
-                  <Field label="OG title" value={form.og_title ?? ""} onChange={(v) => setForm({ ...form, og_title: v })} />
-                  <Field label="OG description" value={form.og_description ?? ""} onChange={(v) => setForm({ ...form, og_description: v })} textarea />
-                  <Field label="OG image URL" value={form.og_image ?? ""} onChange={(v) => setForm({ ...form, og_image: v })} />
-                  <Field label="Canonical URL" value={form.canonical ?? ""} onChange={(v) => setForm({ ...form, canonical: v })} />
+                  <Field
+                    label="OG title"
+                    value={form.og_title ?? ""}
+                    onChange={(v) => setForm({ ...form, og_title: v })}
+                  />
+                  <Field
+                    label="OG description"
+                    value={form.og_description ?? ""}
+                    onChange={(v) => setForm({ ...form, og_description: v })}
+                    textarea
+                  />
+                  <Field
+                    label="OG image URL"
+                    value={form.og_image ?? ""}
+                    onChange={(v) => setForm({ ...form, og_image: v })}
+                  />
+                  <Field
+                    label="Canonical URL"
+                    value={form.canonical ?? ""}
+                    onChange={(v) => setForm({ ...form, canonical: v })}
+                  />
                   <div>
                     <Label>Robots</Label>
                     <select
@@ -274,7 +293,12 @@ function Page() {
                       min="0"
                       max="1"
                       value={form.priority ?? ""}
-                      onChange={(e) => setForm({ ...form, priority: e.target.value === "" ? null : Number(e.target.value) })}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          priority: e.target.value === "" ? null : Number(e.target.value),
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -297,7 +321,9 @@ function Page() {
 
                 {/* OG Preview */}
                 <div className="pt-4 border-t border-border">
-                  <div className="text-sm font-semibold mb-2">Náhľad zdieľania (Facebook / LinkedIn)</div>
+                  <div className="text-sm font-semibold mb-2">
+                    Náhľad zdieľania (Facebook / LinkedIn)
+                  </div>
                   <div className="max-w-lg rounded-lg overflow-hidden border border-border bg-background">
                     {form.og_image ? (
                       <img
@@ -329,11 +355,25 @@ function Page() {
           <section className="rounded-xl border border-border bg-card p-4 sm:p-6 text-sm space-y-2">
             <div className="font-semibold">Automaticky generované</div>
             <div>
-              <a href="/sitemap.xml" target="_blank" rel="noreferrer" className="text-primary hover:underline">/sitemap.xml</a>
+              <a
+                href="/sitemap.xml"
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary hover:underline"
+              >
+                /sitemap.xml
+              </a>
               {" — "}všetky verejné stránky s priority a lastmod.
             </div>
             <div>
-              <a href="/robots.txt" target="_blank" rel="noreferrer" className="text-primary hover:underline">/robots.txt</a>
+              <a
+                href="/robots.txt"
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary hover:underline"
+              >
+                /robots.txt
+              </a>
               {" — "}Allow: /, Disallow: /admin/, /api/, /diagnostika.
             </div>
           </section>
@@ -361,7 +401,9 @@ function Field({
       <div className="flex items-center justify-between">
         <Label>{label}</Label>
         {max && (
-          <span className={`text-[11px] ${value.length > max ? "text-destructive" : "text-muted-foreground"}`}>
+          <span
+            className={`text-[11px] ${value.length > max ? "text-destructive" : "text-muted-foreground"}`}
+          >
             {value.length}/{max}
           </span>
         )}

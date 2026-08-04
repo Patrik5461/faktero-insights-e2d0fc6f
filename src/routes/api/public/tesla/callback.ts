@@ -18,8 +18,10 @@ export const Route = createFileRoute("/api/public/tesla/callback")({
           const { encryptSecret } = await import("@/lib/faktero/payment-crypto.server");
 
           const { data: conn } = await supabaseAdmin
-            .from("tesla_connections").select("id, company_id")
-            .eq("id", state).maybeSingle();
+            .from("tesla_connections")
+            .select("id, company_id")
+            .eq("id", state)
+            .maybeSingle();
           if (!conn) return redirect(`${back}?error=invalid_state`);
 
           const tokens = await exchangeTeslaCode(code);
@@ -28,23 +30,32 @@ export const Route = createFileRoute("/api/public/tesla/callback")({
             if (tokens.id_token) {
               const part = tokens.id_token.split(".")[1];
               if (part) {
-                const padded = part + "=".repeat((4 - part.length % 4) % 4);
-                const json = JSON.parse(Buffer.from(padded.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+                const padded = part + "=".repeat((4 - (part.length % 4)) % 4);
+                const json = JSON.parse(
+                  Buffer.from(padded.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString(
+                    "utf8",
+                  ),
+                );
                 email = json?.email ?? null;
               }
             }
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
 
           const expiresAt = new Date(Date.now() + (tokens.expires_in ?? 3600) * 1000).toISOString();
-          await supabaseAdmin.from("tesla_connections").update({
-            encrypted_access_token: encryptSecret(tokens.access_token),
-            encrypted_refresh_token: encryptSecret(tokens.refresh_token),
-            token_expires_at: expiresAt,
-            tesla_account_email: email,
-            sync_status: "connected",
-            error_message: null,
-            enabled: true,
-          }).eq("id", conn.id);
+          await supabaseAdmin
+            .from("tesla_connections")
+            .update({
+              encrypted_access_token: encryptSecret(tokens.access_token),
+              encrypted_refresh_token: encryptSecret(tokens.refresh_token),
+              token_expires_at: expiresAt,
+              tesla_account_email: email,
+              sync_status: "connected",
+              error_message: null,
+              enabled: true,
+            })
+            .eq("id", conn.id);
 
           return redirect(`${back}?connected=1`);
         } catch (e: any) {

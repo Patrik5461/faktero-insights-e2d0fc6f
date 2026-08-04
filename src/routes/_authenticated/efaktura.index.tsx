@@ -48,7 +48,12 @@ function EFakturaPage() {
     const id = getActiveCompanyId();
     setCompanyId(id);
     if (!id) return;
-    supabase.from("companies").select("*").eq("id", id).maybeSingle().then(({ data }) => setCompany(data));
+    supabase
+      .from("companies")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle()
+      .then(({ data }) => setCompany(data));
   }, []);
 
   const readinessFn = useServerFn(getEfakturaReadinessFn);
@@ -61,16 +66,20 @@ function EFakturaPage() {
 
   const checklist = useMemo(() => {
     const has = (v: any) => typeof v === "string" && v.trim().length > 0;
-    const hasCompanyDetails = !!company && has(company.name) && (has(company.street) || has(company.city));
+    const hasCompanyDetails =
+      !!company && has(company.name) && (has(company.street) || has(company.city));
     return [
-      { label: "Firemné údaje vyplnené", status: hasCompanyDetails ? "done" : "missing" as Status },
-      { label: "IČO vyplnené", status: has(company?.ico) ? "done" : "missing" as Status },
-      { label: "DIČ vyplnené", status: has(company?.dic) ? "done" : "missing" as Status },
+      {
+        label: "Firemné údaje vyplnené",
+        status: hasCompanyDetails ? "done" : ("missing" as Status),
+      },
+      { label: "IČO vyplnené", status: has(company?.ico) ? "done" : ("missing" as Status) },
+      { label: "DIČ vyplnené", status: has(company?.dic) ? "done" : ("missing" as Status) },
       {
         label: "IČ DPH vyplnené, ak je firma platiteľ DPH",
-        status: has(company?.ic_dph) ? "done" : "missing" as Status,
+        status: has(company?.ic_dph) ? "done" : ("missing" as Status),
       },
-      { label: "IBAN vyplnený", status: has(company?.iban) ? "done" : "missing" as Status },
+      { label: "IBAN vyplnený", status: has(company?.iban) ? "done" : ("missing" as Status) },
       { label: "Peppol ID pripravené", status: "soon" as Status },
       { label: "eFaktúra režim aktivovaný", status: "soon" as Status },
     ];
@@ -115,24 +124,32 @@ function EFakturaPage() {
                 </p>
               </div>
               <div className="text-right">
-                <div className="text-4xl font-semibold text-primary">{readinessQuery.data.score}%</div>
+                <div className="text-4xl font-semibold text-primary">
+                  {readinessQuery.data.score}%
+                </div>
                 <div className="text-xs text-muted-foreground">EN 16931 + Peppol BIS 3.0</div>
               </div>
             </div>
             <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full bg-primary transition-all" style={{ width: `${readinessQuery.data.score}%` }} />
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${readinessQuery.data.score}%` }}
+              />
             </div>
             {readinessQuery.data.blockers.length > 0 && (
               <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-destructive">
-                  <AlertTriangle className="h-4 w-4" /> Blokujúce nedostatky ({readinessQuery.data.blockers.length})
+                  <AlertTriangle className="h-4 w-4" /> Blokujúce nedostatky (
+                  {readinessQuery.data.blockers.length})
                 </div>
                 <ul className="mt-2 space-y-1 text-sm">
                   {readinessQuery.data.blockers.map((b) => (
                     <li key={b.key} className="flex items-center justify-between">
                       <span>{b.label}</span>
                       {b.fixUrl && (
-                        <Link to={b.fixUrl} className="text-xs text-primary hover:underline">Opraviť →</Link>
+                        <Link to={b.fixUrl} className="text-xs text-primary hover:underline">
+                          Opraviť →
+                        </Link>
                       )}
                     </li>
                   ))}
@@ -146,7 +163,10 @@ function EFakturaPage() {
                   {readinessQuery.data.missing
                     .filter((m) => m.severity === "warning")
                     .map((m) => (
-                      <li key={m.key}>• {m.label}{m.hint ? ` — ${m.hint}` : ""}</li>
+                      <li key={m.key}>
+                        • {m.label}
+                        {m.hint ? ` — ${m.hint}` : ""}
+                      </li>
                     ))}
                 </ul>
               </div>
@@ -164,8 +184,8 @@ function EFakturaPage() {
             <div>
               <h2 className="text-lg font-semibold">Čo je eFaktúra?</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                eFaktúra nie je PDF ani sken faktúry. Ide o štruktúrovaný XML formát,
-                ktorému rozumejú účtovné a podnikové systémy.
+                eFaktúra nie je PDF ani sken faktúry. Ide o štruktúrovaný XML formát, ktorému
+                rozumejú účtovné a podnikové systémy.
               </p>
             </div>
           </div>
@@ -224,7 +244,8 @@ function EFakturaPage() {
             <div className="flex-1">
               <h2 className="font-semibold">Chcem dostávať novinky k eFaktúre</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Pošleme vám e-mail, keď bude eFaktúra v Faktero k dispozícii a pri každom dôležitom kroku.
+                Pošleme vám e-mail, keď bude eFaktúra v Faktero k dispozícii a pri každom dôležitom
+                kroku.
               </p>
               <form onSubmit={onSignup} className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <input

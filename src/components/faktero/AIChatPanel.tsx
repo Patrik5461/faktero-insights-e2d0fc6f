@@ -5,12 +5,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+import { Sparkles, Send, Plus, Trash2, Copy, Check, Loader2, X } from "lucide-react";
 import {
-  Sparkles, Send, Plus, Trash2, Copy, Check, Loader2, X,
-} from "lucide-react";
-import {
-  listConversationsFn, createConversationFn, deleteConversationFn,
-  getMessagesFn, sendChatFn,
+  listConversationsFn,
+  createConversationFn,
+  deleteConversationFn,
+  getMessagesFn,
+  sendChatFn,
 } from "@/lib/faktero/ai-assistant.functions";
 
 const SUGGESTED_PROMPTS = [
@@ -45,7 +46,8 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
 
   const messages = useQuery({
     queryKey: ["ai-msgs", activeId],
-    queryFn: () => activeId ? messagesFn({ data: { conversationId: activeId } }) : Promise.resolve([]),
+    queryFn: () =>
+      activeId ? messagesFn({ data: { conversationId: activeId } }) : Promise.resolve([]),
     enabled: !!activeId,
   });
 
@@ -117,7 +119,10 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
             <Plus className="h-3.5 w-3.5" /> Nová
           </button>
           {onClose && (
-            <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-secondary">
+            <button
+              onClick={onClose}
+              className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-secondary"
+            >
               <X className="h-4 w-4" />
             </button>
           )}
@@ -129,13 +134,21 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
         <aside className="hidden w-56 shrink-0 flex-col overflow-y-auto border-r border-border bg-card/40 lg:flex">
           <div className="p-2">
             {(conversations.data ?? []).map((c: any) => (
-              <div key={c.id}
+              <div
+                key={c.id}
                 className={`group flex items-center gap-1 rounded-md px-2 py-1.5 text-xs ${
                   activeId === c.id ? "bg-primary/10 text-primary" : "hover:bg-secondary"
-                }`}>
-                <button onClick={() => setActiveId(c.id)} className="flex-1 truncate text-left">{c.title}</button>
-                <button onClick={() => { if (confirm("Vymazať konverzáciu?")) delConv.mutate(c.id); }}
-                  className="opacity-0 transition group-hover:opacity-100 text-muted-foreground hover:text-destructive">
+                }`}
+              >
+                <button onClick={() => setActiveId(c.id)} className="flex-1 truncate text-left">
+                  {c.title}
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirm("Vymazať konverzáciu?")) delConv.mutate(c.id);
+                  }}
+                  className="opacity-0 transition group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                >
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
@@ -153,7 +166,9 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
               <EmptyState onPick={send} />
             ) : (
               <div className="mx-auto flex max-w-2xl flex-col gap-4">
-                {msgs.map((m: any) => <MessageBubble key={m.id} role={m.role} content={m.content} />)}
+                {msgs.map((m: any) => (
+                  <MessageBubble key={m.id} role={m.role} content={m.content} />
+                ))}
                 {sendMut.isPending && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" /> Faktero AI premýšľa…
@@ -164,22 +179,33 @@ export function AIChatPanel({ companyId, onClose }: { companyId: string; onClose
           </div>
 
           {/* Input */}
-          <form onSubmit={(e) => { e.preventDefault(); send(input); }}
-            className="border-t border-border bg-background/60 p-3">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              send(input);
+            }}
+            className="border-t border-border bg-background/60 p-3"
+          >
             <div className="mx-auto flex max-w-2xl items-end gap-2">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); }
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send(input);
+                  }
                 }}
                 placeholder="Napíšte správu pre Faktero AI…"
                 rows={1}
                 autoFocus
                 className="min-h-[44px] max-h-32 flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
-              <button type="submit" disabled={!input.trim() || sendMut.isPending}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
+              <button
+                type="submit"
+                disabled={!input.trim() || sendMut.isPending}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
                 <Send className="h-4 w-4" />
               </button>
             </div>
@@ -202,8 +228,11 @@ function EmptyState({ onPick }: { onPick: (s: string) => void }) {
       </p>
       <div className="mt-4 grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
         {SUGGESTED_PROMPTS.map((s) => (
-          <button key={s} onClick={() => onPick(s)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-left text-xs hover:border-primary/40 hover:bg-primary/5">
+          <button
+            key={s}
+            onClick={() => onPick(s)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-left text-xs hover:border-primary/40 hover:bg-primary/5"
+          >
             {s}
           </button>
         ))}
@@ -223,9 +252,11 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
           <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
         </div>
       )}
-      <div className={`group max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${
-        isUser ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"
-      }`}>
+      <div
+        className={`group max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${
+          isUser ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"
+        }`}
+      >
         {isUser ? (
           <p className="whitespace-pre-wrap">{content}</p>
         ) : (
@@ -234,12 +265,23 @@ function MessageBubble({ role, content }: { role: string; content: string }) {
           </div>
         )}
         {!isUser && (
-          <button onClick={async () => {
-            await navigator.clipboard.writeText(content);
-            setCopied(true); setTimeout(() => setCopied(false), 1500);
-          }}
-            className="mt-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground opacity-0 transition group-hover:opacity-100 hover:text-foreground">
-            {copied ? <><Check className="h-3 w-3" /> Skopírované</> : <><Copy className="h-3 w-3" /> Kopírovať</>}
+          <button
+            onClick={async () => {
+              await navigator.clipboard.writeText(content);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            }}
+            className="mt-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground opacity-0 transition group-hover:opacity-100 hover:text-foreground"
+          >
+            {copied ? (
+              <>
+                <Check className="h-3 w-3" /> Skopírované
+              </>
+            ) : (
+              <>
+                <Copy className="h-3 w-3" /> Kopírovať
+              </>
+            )}
           </button>
         )}
       </div>

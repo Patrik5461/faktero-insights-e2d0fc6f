@@ -8,10 +8,14 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 export const requestInvoiceApproval = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => z.object({
-    invoiceId: z.string().uuid(),
-    recipientEmail: z.string().email(),
-  }).parse(data))
+  .inputValidator((data) =>
+    z
+      .object({
+        invoiceId: z.string().uuid(),
+        recipientEmail: z.string().email(),
+      })
+      .parse(data),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     void userId;
@@ -29,19 +33,28 @@ export const requestInvoiceApproval = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { sendApprovalRequestEmail } = await import("./invoice-approval.server");
 
-    const token = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/-/g, "");
+    const token = (
+      globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    ).replace(/-/g, "");
     const nowIso = new Date().toISOString();
 
-    const { error: upErr } = await supabaseAdmin.from("invoices").update({
-      approval_token: token,
-      approval_status: "pending",
-      approval_requested_at: nowIso,
-      approval_responded_at: null,
-      approval_note: null,
-    }).eq("id", inv.id);
+    const { error: upErr } = await supabaseAdmin
+      .from("invoices")
+      .update({
+        approval_token: token,
+        approval_status: "pending",
+        approval_requested_at: nowIso,
+        approval_responded_at: null,
+        approval_note: null,
+      })
+      .eq("id", inv.id);
     if (upErr) throw new Error(upErr.message);
 
-    const { data: company } = await supabaseAdmin.from("companies").select("*").eq("id", inv.company_id).maybeSingle();
+    const { data: company } = await supabaseAdmin
+      .from("companies")
+      .select("*")
+      .eq("id", inv.company_id)
+      .maybeSingle();
 
     await sendApprovalRequestEmail({
       invoice: inv,
@@ -71,11 +84,15 @@ export const getApprovalInvoice = createServerFn({ method: "GET" })
  * On approve: draft -> issued. Sends result email to supplier.
  */
 export const respondToApproval = createServerFn({ method: "POST" })
-  .inputValidator((data) => z.object({
-    token: z.string().min(10).max(200),
-    decision: z.enum(["approved", "rejected"]),
-    note: z.string().max(2000).optional(),
-  }).parse(data))
+  .inputValidator((data) =>
+    z
+      .object({
+        token: z.string().min(10).max(200),
+        decision: z.enum(["approved", "rejected"]),
+        note: z.string().max(2000).optional(),
+      })
+      .parse(data),
+  )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { sendApprovalResultEmail } = await import("./invoice-approval.server");
@@ -111,12 +128,16 @@ export const respondToApproval = createServerFn({ method: "POST" })
 
     // Notify supplier
     const { data: company } = await supabaseAdmin
-      .from("companies").select("*").eq("id", inv.company_id).maybeSingle();
+      .from("companies")
+      .select("*")
+      .eq("id", inv.company_id)
+      .maybeSingle();
     const supplierEmail = company?.email ?? null;
     if (supplierEmail) {
       try {
         await sendApprovalResultEmail({
-          invoice: inv, company,
+          invoice: inv,
+          company,
           approved: data.decision === "approved",
           note: data.note ?? null,
           supplierEmail,

@@ -15,7 +15,9 @@ function esc(s: any): string {
     .replaceAll("'", "&apos;");
 }
 
-function fixed2(n: any) { return Number(n ?? 0).toFixed(2); }
+function fixed2(n: any) {
+  return Number(n ?? 0).toFixed(2);
+}
 
 /**
  * Build a Pohoda XML data pack (Stormware) containing N invoice entries.
@@ -31,28 +33,31 @@ export function buildPohodaInvoiceXml(opts: {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const dataPackId = `FAKTERO_${stamp}`;
 
-  const entries = invoices.map(({ invoice, items }, idx) => {
-    const isCreditNote = invoice.type === "credit_note";
-    const invoiceType = isCreditNote ? "issuedCreditNotice" : "issuedInvoice";
-    // Pohoda rateVAT enum: "none" = 0 %, "third" = super-znížená (5 %),
-    // "low" = znížená (19 %; historicky 10 %), "high" = základná (23 %; historicky 20 %).
-    const rateVatCode = (r: number) => {
-      const n = Number(r);
-      if (n === 0) return "none";
-      if (n === 5) return "third";
-      if (n === 19 || n === 10) return "low";
-      return "high"; // 23, 20 alebo iné → základná
-    };
-    const bucket = (code: "none" | "third" | "low" | "high") =>
-      items.filter((it) => rateVatCode(Number(it.vat_rate)) === code);
-    const sum0 = bucket("none");
-    const sumThird = bucket("third");
-    const sumLow = bucket("low");
-    const sumHigh = bucket("high");
-    const sumBase = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.subtotal ?? 0), 0);
-    const sumVat = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.vat_amount ?? 0), 0);
+  const entries = invoices
+    .map(({ invoice, items }, idx) => {
+      const isCreditNote = invoice.type === "credit_note";
+      const invoiceType = isCreditNote ? "issuedCreditNotice" : "issuedInvoice";
+      // Pohoda rateVAT enum: "none" = 0 %, "third" = super-znížená (5 %),
+      // "low" = znížená (19 %; historicky 10 %), "high" = základná (23 %; historicky 20 %).
+      const rateVatCode = (r: number) => {
+        const n = Number(r);
+        if (n === 0) return "none";
+        if (n === 5) return "third";
+        if (n === 19 || n === 10) return "low";
+        return "high"; // 23, 20 alebo iné → základná
+      };
+      const bucket = (code: "none" | "third" | "low" | "high") =>
+        items.filter((it) => rateVatCode(Number(it.vat_rate)) === code);
+      const sum0 = bucket("none");
+      const sumThird = bucket("third");
+      const sumLow = bucket("low");
+      const sumHigh = bucket("high");
+      const sumBase = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.subtotal ?? 0), 0);
+      const sumVat = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.vat_amount ?? 0), 0);
 
-    const itemRows = items.map((it) => `
+      const itemRows = items
+        .map(
+          (it) => `
         <inv:invoiceItem>
           <inv:text>${esc(it.name)}</inv:text>
           <inv:quantity>${Number(it.quantity ?? 0)}</inv:quantity>
@@ -64,9 +69,11 @@ export function buildPohodaInvoiceXml(opts: {
             <typ:priceVAT>${fixed2(it.vat_amount)}</typ:priceVAT>
             <typ:priceSum>${fixed2(it.total)}</typ:priceSum>
           </inv:homeCurrency>
-        </inv:invoiceItem>`).join("");
+        </inv:invoiceItem>`,
+        )
+        .join("");
 
-    return `
+      return `
   <dat:dataPackItem id="INV${idx + 1}" version="2.0">
     <inv:invoice version="2.0">
       <inv:invoiceHeader>
@@ -109,7 +116,8 @@ export function buildPohodaInvoiceXml(opts: {
       </inv:invoiceSummary>
     </inv:invoice>
   </dat:dataPackItem>`;
-  }).join("");
+    })
+    .join("");
 
   return `<?xml version="1.0" encoding="utf-8"?>
 <dat:dataPack id="${dataPackId}" ico="${ico}" application="Faktero" version="2.0" note="Export z Faktero"
@@ -124,7 +132,11 @@ export type ExportFormat = "pohoda_xml";
 export interface ExportStrategy {
   format: ExportFormat;
   target_system: "pohoda";
-  build(input: { company: CompanyRow; invoices: { invoice: InvoiceRow; items: ItemRow[] }[] }): { content: string; fileName: string; mime: string };
+  build(input: { company: CompanyRow; invoices: { invoice: InvoiceRow; items: ItemRow[] }[] }): {
+    content: string;
+    fileName: string;
+    mime: string;
+  };
 }
 
 export const POHODA_XML: ExportStrategy = {

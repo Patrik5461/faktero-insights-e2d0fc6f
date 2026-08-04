@@ -3,8 +3,10 @@
  * faktero_enforce_write triggers into friendly Slovak messages.
  */
 const KIND_LABEL: Record<string, string> = {
-  invoice: "Nemôžete vytvoriť faktúru — predplatné je neaktívne alebo ste dosiahli mesačný limit. Aktivujte vyšší plán v sekcii Predplatné.",
-  customer: "Nemôžete pridať odberateľa — predplatné je neaktívne. Aktivujte plán v sekcii Predplatné.",
+  invoice:
+    "Nemôžete vytvoriť faktúru — predplatné je neaktívne alebo ste dosiahli mesačný limit. Aktivujte vyšší plán v sekcii Predplatné.",
+  customer:
+    "Nemôžete pridať odberateľa — predplatné je neaktívne. Aktivujte plán v sekcii Predplatné.",
   quote: "Nemôžete vytvoriť ponuku — predplatné je neaktívne. Aktivujte plán v sekcii Predplatné.",
   recurring: "Opakované faktúry nie sú dostupné na vašom pláne. Prejdite na Business alebo vyšší.",
   api_key: "API kľúče nie sú dostupné na vašom pláne. Prejdite na Business alebo vyšší.",

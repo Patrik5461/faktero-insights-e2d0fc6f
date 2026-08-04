@@ -137,11 +137,7 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
     key: "imports",
     name: "Importy",
     summary: "Migrácia dát z iných fakturačných systémov.",
-    features: [
-      "Import zo SuperFaktúry",
-      "Automatická detekcia Excel / CSV",
-      "Mapovanie polí",
-    ],
+    features: ["Import zo SuperFaktúry", "Automatická detekcia Excel / CSV", "Mapovanie polí"],
     routes: ["/importy"],
   },
   {
@@ -168,7 +164,9 @@ export function getProductCapabilitiesMarkdown(): string {
     lines.push("");
   }
   lines.push("## Zatiaľ NIE JE dostupné vo Faktere");
-  lines.push("Ak sa používateľ pýta na čokoľvek z tohto zoznamu, odpovedz presne: \"Zatiaľ nie je dostupné vo Faktere.\" Nepredstieraj, že funkcia existuje, neuvádzaj plán alebo dátum, ak ho nevieš s istotou.");
+  lines.push(
+    'Ak sa používateľ pýta na čokoľvek z tohto zoznamu, odpovedz presne: "Zatiaľ nie je dostupné vo Faktere." Nepredstieraj, že funkcia existuje, neuvádzaj plán alebo dátum, ak ho nevieš s istotou.',
+  );
   for (const f of NOT_YET_SUPPORTED) lines.push(`- ${f}`);
   lines.push("");
   return lines.join("\n");

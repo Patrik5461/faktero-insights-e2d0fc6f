@@ -100,27 +100,37 @@ function AdminUsersPage() {
                 </thead>
                 <tbody>
                   {loading && rows.length === 0 ? (
-                    <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Načítavam…</td></tr>
-                  ) : rows.length === 0 ? (
-                    <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Žiadni používatelia.</td></tr>
-                  ) : rows.map((r: any) => (
-                    <tr key={r.id} className="border-t border-border hover:bg-muted/30">
-                      <td className="px-3 py-2 font-medium">{r.email ?? "—"}</td>
-                      <td className="px-3 py-2">{r.full_name ?? "—"}</td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {r.companies?.length
-                          ? r.companies.map((m: any) => m.name).join(", ")
-                          : "—"}
+                    <tr>
+                      <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                        Načítavam…
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {r.companies?.length
-                          ? Array.from(new Set(r.companies.map((m: any) => m.role))).join(", ")
-                          : "—"}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.created_at)}</td>
-                      <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.updated_at)}</td>
                     </tr>
-                  ))}
+                  ) : rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                        Žiadni používatelia.
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map((r: any) => (
+                      <tr key={r.id} className="border-t border-border hover:bg-muted/30">
+                        <td className="px-3 py-2 font-medium">{r.email ?? "—"}</td>
+                        <td className="px-3 py-2">{r.full_name ?? "—"}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {r.companies?.length
+                            ? r.companies.map((m: any) => m.name).join(", ")
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {r.companies?.length
+                            ? Array.from(new Set(r.companies.map((m: any) => m.role))).join(", ")
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.created_at)}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.updated_at)}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -140,15 +150,27 @@ function AdminUsersPage() {
               Strana {page} z {pages} · {total} používateľov
             </span>
             <div className="flex gap-2">
-              <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50">← Späť</button>
-              <button disabled={page >= pages} onClick={() => setPage((p) => p + 1)} className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50">Ďalej →</button>
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50"
+              >
+                ← Späť
+              </button>
+              <button
+                disabled={page >= pages}
+                onClick={() => setPage((p) => p + 1)}
+                className="rounded-md border border-border px-3 py-1.5 disabled:opacity-50"
+              >
+                Ďalej →
+              </button>
             </div>
           </div>
         )}
 
         <p className="mt-6 text-xs text-muted-foreground">
-          Posledné prihlásenie nie je dostupné v `profiles`; zobrazujeme registráciu
-          a poslednú aktualizáciu profilu.
+          Posledné prihlásenie nie je dostupné v `profiles`; zobrazujeme registráciu a poslednú
+          aktualizáciu profilu.
         </p>
       </AdminPageBody>
     </>

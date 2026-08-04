@@ -30,7 +30,12 @@ async function deliverOne(opts: {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 10_000);
   try {
-    const res = await fetch(opts.url, { method: "POST", headers, body: opts.body, signal: ctrl.signal });
+    const res = await fetch(opts.url, {
+      method: "POST",
+      headers,
+      body: opts.body,
+      signal: ctrl.signal,
+    });
     const text = await res.text().catch(() => "");
     return { status: res.status, body: text.slice(0, 2000), ok: res.ok };
   } finally {
@@ -110,10 +115,17 @@ export async function triggerEvent(opts: {
           lastStatus = r.status;
           lastBody = r.body;
           if (r.ok) {
-            await supabaseAdmin.from("webhook_delivery_logs").update({
-              status: "success", response_status: r.status, response_body: r.body,
-              attempt_count: i + 1, error_message: null, duration_ms: lastDuration,
-            }).eq("id", logRow!.id);
+            await supabaseAdmin
+              .from("webhook_delivery_logs")
+              .update({
+                status: "success",
+                response_status: r.status,
+                response_body: r.body,
+                attempt_count: i + 1,
+                error_message: null,
+                duration_ms: lastDuration,
+              })
+              .eq("id", logRow!.id);
             return;
           }
         } catch (e: any) {
@@ -121,10 +133,17 @@ export async function triggerEvent(opts: {
           lastErr = e?.message ?? "fetch_failed";
         }
       }
-      await supabaseAdmin.from("webhook_delivery_logs").update({
-        status: "failed", response_status: lastStatus, response_body: lastBody,
-        attempt_count: RETRY_DELAYS_MS.length, error_message: lastErr, duration_ms: lastDuration,
-      }).eq("id", logRow!.id);
+      await supabaseAdmin
+        .from("webhook_delivery_logs")
+        .update({
+          status: "failed",
+          response_status: lastStatus,
+          response_body: lastBody,
+          attempt_count: RETRY_DELAYS_MS.length,
+          error_message: lastErr,
+          duration_ms: lastDuration,
+        })
+        .eq("id", logRow!.id);
     });
 
   // Fire-and-forget but don't lose errors silently

@@ -8,23 +8,31 @@ export const Route = createFileRoute("/api/public/hooks/recurring-run")({
         const expectedCron = process.env.FAKTERO_CRON_TOKEN;
         const ok = expectedCron && cronToken && cronToken === expectedCron;
         if (!ok) {
-          return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { "content-type": "application/json" } });
+          return new Response(JSON.stringify({ error: "unauthorized" }), {
+            status: 401,
+            headers: { "content-type": "application/json" },
+          });
         }
         try {
           const { runAllDueRecurring } = await import("@/lib/faktero/recurring.server");
           const r = await runAllDueRecurring();
-          const created = r.results.filter(x => x.ok && x.invoice_id).map(x => x.invoice_id);
-          const errors = r.results.filter(x => !x.ok).map(x => ({ id: x.id, error: x.error }));
-          return new Response(JSON.stringify({
-            processed: r.processed,
-            created: created.length,
-            failed: errors.length,
-            created_invoice_ids: created,
-            errors,
-          }),
-            { status: 200, headers: { "content-type": "application/json" } });
+          const created = r.results.filter((x) => x.ok && x.invoice_id).map((x) => x.invoice_id);
+          const errors = r.results.filter((x) => !x.ok).map((x) => ({ id: x.id, error: x.error }));
+          return new Response(
+            JSON.stringify({
+              processed: r.processed,
+              created: created.length,
+              failed: errors.length,
+              created_invoice_ids: created,
+              errors,
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
         } catch (e: any) {
-          return new Response(JSON.stringify({ error: e?.message ?? "internal" }), { status: 500, headers: { "content-type": "application/json" } });
+          return new Response(JSON.stringify({ error: e?.message ?? "internal" }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
         }
       },
     },

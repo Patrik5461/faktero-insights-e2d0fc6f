@@ -12,7 +12,10 @@ export function useStockPermissions() {
 
   useEffect(() => {
     const cid = getActiveCompanyId();
-    if (!cid) { setLoading(false); return; }
+    if (!cid) {
+      setLoading(false);
+      return;
+    }
     fetchRole({ data: { company_id: cid } })
       .then((r) => setRole((r?.role ?? null) as StockRole))
       .finally(() => setLoading(false));

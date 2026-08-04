@@ -356,9 +356,7 @@ const SANDBOX_PARTICIPANTS = new Set([
 ]);
 
 export async function lookupParticipant(peppolId: string): Promise<ParticipantLookup> {
-  const [scheme, identifier] = peppolId.includes(":")
-    ? peppolId.split(":", 2)
-    : ["0245", peppolId];
+  const [scheme, identifier] = peppolId.includes(":") ? peppolId.split(":", 2) : ["0245", peppolId];
   const full = `${scheme}:${identifier}`;
   const { env } = getConfig();
 
@@ -383,13 +381,18 @@ export async function lookupParticipant(peppolId: string): Promise<ParticipantLo
       exists: true,
       peppolId: full,
       supportedDocuments: ["peppol_bis_3"],
-      raw: { simulated: true, note: "Sandbox Peppol lookup simulated — real SMP lookup runs in production." },
+      raw: {
+        simulated: true,
+        note: "Sandbox Peppol lookup simulated — real SMP lookup runs in production.",
+      },
     };
   }
 
   // 3) Last resort: real SMP path lookup (works in production).
   try {
-    const res = await epostakFetch<any>(`/api/v1/peppol/participants/${encodeURIComponent(scheme)}/${encodeURIComponent(identifier)}`);
+    const res = await epostakFetch<any>(
+      `/api/v1/peppol/participants/${encodeURIComponent(scheme)}/${encodeURIComponent(identifier)}`,
+    );
     return {
       exists: true,
       peppolId: full,
@@ -397,12 +400,11 @@ export async function lookupParticipant(peppolId: string): Promise<ParticipantLo
       raw: res,
     };
   } catch (e: any) {
-    if (e?.status === 404 || e?.status === 400) return { exists: false, peppolId: full, raw: e.response };
+    if (e?.status === 404 || e?.status === 400)
+      return { exists: false, peppolId: full, raw: e.response };
     throw e;
   }
 }
-
-
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

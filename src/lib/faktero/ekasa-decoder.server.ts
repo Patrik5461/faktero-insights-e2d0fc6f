@@ -125,8 +125,10 @@ function parseEkasaXml(xml: string): EkasaDecoded {
     dph: parseNumber(pick(xml, "TotalVat") ?? pick(xml, "DPH")),
     mena: pick(xml, "Currency") ?? pick(xml, "Mena") ?? "EUR",
     datum,
-    cisloDokladu: pick(xml, "ReceiptNumber") ?? pick(xml, "CisloDokladu") ?? pick(xml, "InvoiceNumber"),
-    kodPokladnice: pick(xml, "CashRegisterCode") ?? pick(xml, "KodPokladnice") ?? pick(xml, "OrpCode"),
+    cisloDokladu:
+      pick(xml, "ReceiptNumber") ?? pick(xml, "CisloDokladu") ?? pick(xml, "InvoiceNumber"),
+    kodPokladnice:
+      pick(xml, "CashRegisterCode") ?? pick(xml, "KodPokladnice") ?? pick(xml, "OrpCode"),
     ocpId: pick(xml, "Okp") ?? pick(xml, "OkpCode") ?? pick(xml, "VerificationCode"),
     polozky: items,
     raw_xml: xml.length < 20000 ? xml : xml.slice(0, 20000),
@@ -144,7 +146,8 @@ export async function decodeEkasaQr(qrContent: string): Promise<EkasaDecoded | n
   }
   try {
     const xml = await lzmaDecompress(bytes);
-    if (!xml || (!xml.includes("<") && !xml.includes("Receipt") && !xml.includes("PosCheck"))) return null;
+    if (!xml || (!xml.includes("<") && !xml.includes("Receipt") && !xml.includes("PosCheck")))
+      return null;
     return parseEkasaXml(xml);
   } catch {
     return null;
@@ -181,7 +184,9 @@ export async function processEkasaQr(qrContent: string): Promise<EkasaResult> {
       try {
         const v = await verifyEkasaOnline(decoded.cisloDokladu, decoded.kodPokladnice);
         overeny = v.overeny;
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     return { ok: true, source: "lzma", overeny, data: decoded };
   }
@@ -193,7 +198,9 @@ export async function processEkasaQr(qrContent: string): Promise<EkasaResult> {
     const v = await verifyEkasaOnline(cislo, kod);
     if (v.overeny) {
       return {
-        ok: true, source: "online", overeny: true,
+        ok: true,
+        source: "online",
+        overeny: true,
         data: { cisloDokladu: cislo, kodPokladnice: kod, polozky: [] },
       };
     }

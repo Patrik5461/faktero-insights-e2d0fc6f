@@ -53,12 +53,7 @@ export function FloatingAIButton() {
 
   return (
     <div className="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
-      {open && (
-        <CompactChat
-          companyId={companyId}
-          onClose={() => setOpen(false)}
-        />
-      )}
+      {open && <CompactChat companyId={companyId} onClose={() => setOpen(false)} />}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -73,13 +68,7 @@ export function FloatingAIButton() {
   );
 }
 
-function CompactChat({
-  companyId,
-  onClose,
-}: {
-  companyId: string | null;
-  onClose: () => void;
-}) {
+function CompactChat({ companyId, onClose }: { companyId: string | null; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -239,10 +228,7 @@ function ChatBody({ companyId }: { companyId: string }) {
         )}
 
         {msgs.map((m) => (
-          <div
-            key={m.id}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+          <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                 m.role === "user"

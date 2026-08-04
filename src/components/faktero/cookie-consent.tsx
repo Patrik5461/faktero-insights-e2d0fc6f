@@ -5,7 +5,14 @@ import { useEffect, useState } from "react";
 import { Cookie, X, Settings2, ShieldCheck, BarChart3, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { useServerFn } from "@tanstack/react-start";
 import { recordLegalAcceptance } from "@/lib/legal.functions";
@@ -81,7 +88,12 @@ export function CookieConsentBanner() {
   };
 
   const acceptAll = async () => {
-    const next = { ...defaultConsent, analytics: true, marketing: true, acceptedAt: new Date().toISOString() };
+    const next = {
+      ...defaultConsent,
+      analytics: true,
+      marketing: true,
+      acceptedAt: new Date().toISOString(),
+    };
     setPending(true);
     saveConsent(next);
     setConsent(next);
@@ -125,14 +137,16 @@ export function CookieConsentBanner() {
             </div>
             <div className="space-y-1">
               <p className="text-sm text-card-foreground">
-                Používame cookies na zabezpečenie prevádzky a anonymnú analýzu. Viac informácií nájdete v{" "}
+                Používame cookies na zabezpečenie prevádzky a anonymnú analýzu. Viac informácií
+                nájdete v{" "}
                 <Link to="/pravne/cookies" className="underline hover:text-primary">
                   pravidlách používania cookies
                 </Link>
                 .
               </p>
               <p className="text-xs text-muted-foreground">
-                Nevyhnutné cookies sú povolené vždy. Analytické a marketingové cookies si môžete nastaviť.
+                Nevyhnutné cookies sú povolené vždy. Analytické a marketingové cookies si môžete
+                nastaviť.
               </p>
             </div>
           </div>
@@ -148,19 +162,10 @@ export function CookieConsentBanner() {
               <Settings2 className="h-4 w-4" />
               Nastaviť
             </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={acceptNecessaryOnly}
-              disabled={pending}
-            >
+            <Button variant="secondary" size="sm" onClick={acceptNecessaryOnly} disabled={pending}>
               Iba nevyhnutné
             </Button>
-            <Button
-              size="sm"
-              onClick={acceptAll}
-              disabled={pending}
-            >
+            <Button size="sm" onClick={acceptAll} disabled={pending}>
               Prijať všetko
             </Button>
           </div>
@@ -200,7 +205,8 @@ function CookieSettingsSheet({
             Nastavenia cookies
           </SheetTitle>
           <SheetDescription>
-            Vyberte, ktoré kategórie cookies môžeme používať. Nevyhnutné cookies sú povinné pre prevádzku aplikácie.
+            Vyberte, ktoré kategórie cookies môžeme používať. Nevyhnutné cookies sú povinné pre
+            prevádzku aplikácie.
           </SheetDescription>
         </SheetHeader>
 

@@ -38,13 +38,23 @@ function Method({ m }: { m: "GET" | "POST" | "PUT" | "DELETE" }) {
     DELETE: "bg-destructive/15 text-destructive",
   };
   return (
-    <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-mono font-bold ${cls[m]}`}>
+    <span
+      className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-mono font-bold ${cls[m]}`}
+    >
       {m}
     </span>
   );
 }
 
-function Endpoint({ method, path, desc }: { method: "GET" | "POST" | "PUT" | "DELETE"; path: string; desc: string }) {
+function Endpoint({
+  method,
+  path,
+  desc,
+}: {
+  method: "GET" | "POST" | "PUT" | "DELETE";
+  path: string;
+  desc: string;
+}) {
   return (
     <li className="flex flex-wrap items-baseline gap-3 py-1.5">
       <Method m={method} />
@@ -107,7 +117,9 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
           className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
         >
           {SECTIONS.map((s) => (
-            <option key={s.id} value={s.id}>{s.label}</option>
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
           ))}
         </select>
       </div>
@@ -141,8 +153,8 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
           <h1 className="text-3xl font-bold tracking-tight">Faktero API dokumentácia</h1>
           <p className="mt-3 text-base text-muted-foreground">
             Faktero REST API umožňuje plne automatizovať fakturáciu — vytvárať odberateľov,
-            vystavovať faktúry, sťahovať PDF, posielať e-maily a prijímať webhooky o
-            udalostiach. Všetky odpovede sú v JSON formáte (UTF-8).
+            vystavovať faktúry, sťahovať PDF, posielať e-maily a prijímať webhooky o udalostiach.
+            Všetky odpovede sú v JSON formáte (UTF-8).
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-border bg-card p-4">
@@ -159,8 +171,9 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
         <section id="autentifikacia" className="scroll-mt-20">
           <h2 className="text-2xl font-semibold">2. Autentifikácia</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Každú požiadavku autentifikujte hlavičkou <code className="font-mono">Authorization</code> s
-            Bearer API kľúčom. Kľúče sú viazané na konkrétnu firmu a oprávnenia.
+            Každú požiadavku autentifikujte hlavičkou{" "}
+            <code className="font-mono">Authorization</code> s Bearer API kľúčom. Kľúče sú viazané
+            na konkrétnu firmu a oprávnenia.
           </p>
           <div className="mt-4">
             <CodeBlock
@@ -169,8 +182,8 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
             />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Kľúč nikdy nezdieľajte ani neukladajte do verejných repozitárov. Stratený kľúč
-            okamžite revokujte v sekcii API kľúče.
+            Kľúč nikdy nezdieľajte ani neukladajte do verejných repozitárov. Stratený kľúč okamžite
+            revokujte v sekcii API kľúče.
           </p>
         </section>
 
@@ -181,13 +194,12 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
           </p>
           <ul className="mt-3 space-y-2 text-sm">
             <li>
-              <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_test_…</code>{" "}
-              — testovací režim. Faktúry sa neodosielajú reálne, e-maily idú do sandboxu.
+              <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_test_…</code> —
+              testovací režim. Faktúry sa neodosielajú reálne, e-maily idú do sandboxu.
             </li>
             <li>
-              <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_live_…</code>{" "}
-              — produkčný režim. Akcie sú reálne a fakturačné údaje sa zapisujú do ostrých
-              dokumentov.
+              <code className="font-mono rounded bg-secondary px-1.5 py-0.5">fk_live_…</code> —
+              produkčný režim. Akcie sú reálne a fakturačné údaje sa zapisujú do ostrých dokumentov.
             </li>
           </ul>
         </section>
@@ -230,7 +242,11 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
             <Endpoint method="PUT" path="/api/v1/invoices/{id}" desc="Úprava (len drafty)" />
             <Endpoint method="GET" path="/api/v1/invoices/{id}/pdf" desc="Signed URL na PDF" />
             <Endpoint method="POST" path="/api/v1/invoices/{id}/send" desc="Odoslanie e-mailom" />
-            <Endpoint method="POST" path="/api/v1/invoices/{id}/mark-paid" desc="Označenie ako uhradené" />
+            <Endpoint
+              method="POST"
+              path="/api/v1/invoices/{id}/mark-paid"
+              desc="Označenie ako uhradené"
+            />
             <Endpoint method="POST" path="/api/v1/invoices/{id}/cancel" desc="Storno faktúry" />
           </ul>
         </section>
@@ -242,7 +258,11 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
             <Endpoint method="GET" path="/api/v1/quotes" desc="Zoznam ponúk" />
             <Endpoint method="GET" path="/api/v1/quotes/{id}" desc="Detail ponuky" />
             <Endpoint method="PUT" path="/api/v1/quotes/{id}" desc="Úprava ponuky" />
-            <Endpoint method="POST" path="/api/v1/quotes/{id}/convert" desc="Konverzia na faktúru" />
+            <Endpoint
+              method="POST"
+              path="/api/v1/quotes/{id}/convert"
+              desc="Konverzia na faktúru"
+            />
           </ul>
         </section>
 
@@ -261,15 +281,17 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
           <div className="mt-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-sm text-muted-foreground">
             Modul Náklady je v príprave. Endpointy{" "}
             <code className="font-mono">/api/v1/expenses</code> budú dostupné v ďalšej verzii API.
-            <div className="mt-2 inline-block rounded-full bg-muted px-2 py-0.5 text-xs">Pripravujeme</div>
+            <div className="mt-2 inline-block rounded-full bg-muted px-2 py-0.5 text-xs">
+              Pripravujeme
+            </div>
           </div>
         </section>
 
         <section id="webhooks" className="scroll-mt-20">
           <h2 className="text-2xl font-semibold">10. Webhooky</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Webhooky vás v reálnom čase informujú o udalostiach vo Faktero. Endpoint nastavíte
-            v sekcii Webhooky vo vašom účte, kde získate aj signing secret.
+            Webhooky vás v reálnom čase informujú o udalostiach vo Faktero. Endpoint nastavíte v
+            sekcii Webhooky vo vašom účte, kde získate aj signing secret.
           </p>
           <h3 className="mt-5 font-semibold">Udalosti</h3>
           <ul className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
@@ -283,7 +305,10 @@ export function ApiDocsContent({ loggedIn = false }: { loggedIn?: boolean }) {
               "quote.sent",
               "quote.converted",
             ].map((e) => (
-              <li key={e} className="rounded border border-border bg-card px-3 py-1.5 font-mono text-xs">
+              <li
+                key={e}
+                className="rounded border border-border bg-card px-3 py-1.5 font-mono text-xs"
+              >
                 {e}
               </li>
             ))}
@@ -316,8 +341,8 @@ function verifyFaktero(rawBody, signatureHeader, secret) {
           <h3 className="mt-6 font-semibold">Opakovanie pri zlyhaní</h3>
           <p className="mt-2 text-sm text-muted-foreground">
             Ak váš endpoint nevráti 2xx do 10 sekúnd, Faktero pokus zopakuje s exponenciálnym
-            odstupom (1 min, 5 min, 30 min, 2 h, 12 h) — celkovo max. 5 pokusov. Všetky pokusy a
-            ich stavy nájdete v sekcii Webhooky → Logy.
+            odstupom (1 min, 5 min, 30 min, 2 h, 12 h) — celkovo max. 5 pokusov. Všetky pokusy a ich
+            stavy nájdete v sekcii Webhooky → Logy.
           </p>
         </section>
 
@@ -449,7 +474,10 @@ http_response_code(200);`}
           <div className="mt-3 overflow-hidden rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-                <tr><th className="p-3">Kód</th><th className="p-3">Význam</th></tr>
+                <tr>
+                  <th className="p-3">Kód</th>
+                  <th className="p-3">Význam</th>
+                </tr>
               </thead>
               <tbody className="divide-y divide-border bg-card">
                 {[
@@ -476,8 +504,8 @@ http_response_code(200);`}
         <section id="rate-limits" className="scroll-mt-20">
           <h2 className="text-2xl font-semibold">13. Rate limity</h2>
           <div className="mt-3 rounded-lg border border-dashed border-border bg-card/50 p-6 text-sm text-muted-foreground">
-            Rate limiting bude doplnený pred verejným spustením API. Pre stable použitie
-            v produkcii odporúčame implementovať exponenciálny backoff pri 429 odpovediach.
+            Rate limiting bude doplnený pred verejným spustením API. Pre stable použitie v produkcii
+            odporúčame implementovať exponenciálny backoff pri 429 odpovediach.
           </div>
         </section>
 

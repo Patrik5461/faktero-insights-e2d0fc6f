@@ -1,11 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { LegalShell, LEGAL_VERSION, LEGAL_UPDATED, LEGAL_COMPANY } from "@/components/faktero/LegalShell";
+import {
+  LegalShell,
+  LEGAL_VERSION,
+  LEGAL_UPDATED,
+  LEGAL_COMPANY,
+} from "@/components/faktero/LegalShell";
 
 export const Route = createFileRoute("/pravne/obchodne-podmienky")({
   head: () => ({
     meta: [
       { title: "Obchodné podmienky — Faktero" },
-      { name: "description", content: "Obchodné podmienky služby Faktero — fakturačného a účtovného nástroja pre podnikateľov." },
+      {
+        name: "description",
+        content:
+          "Obchodné podmienky služby Faktero — fakturačného a účtovného nástroja pre podnikateľov.",
+      },
       { property: "og:title", content: "Obchodné podmienky — Faktero" },
       { property: "og:description", content: "Obchodné podmienky používania služby Faktero." },
       { property: "og:url", content: "https://faktero.sk/pravne/obchodne-podmienky" },
@@ -20,27 +29,37 @@ function Page() {
     <LegalShell title="Obchodné podmienky" updated={LEGAL_UPDATED} version={LEGAL_VERSION}>
       <h2>1. Prevádzkovateľ služby</h2>
       <p>
-        Prevádzkovateľom služby Faktero (ďalej len „<strong>Služba</strong>“) je spoločnosť <strong>{LEGAL_COMPANY.name}</strong>,
-        so sídlom {LEGAL_COMPANY.address}, IČO: {LEGAL_COMPANY.ico}, DIČ: {LEGAL_COMPANY.dic}, IČ DPH: {LEGAL_COMPANY.icDph},
-        zapísaná v Obchodnom registri Slovenskej republiky (ďalej len „<strong>Prevádzkovateľ</strong>“).
+        Prevádzkovateľom služby Faktero (ďalej len „<strong>Služba</strong>“) je spoločnosť{" "}
+        <strong>{LEGAL_COMPANY.name}</strong>, so sídlom {LEGAL_COMPANY.address}, IČO:{" "}
+        {LEGAL_COMPANY.ico}, DIČ: {LEGAL_COMPANY.dic}, IČ DPH: {LEGAL_COMPANY.icDph}, zapísaná v
+        Obchodnom registri Slovenskej republiky (ďalej len „<strong>Prevádzkovateľ</strong>“).
       </p>
-      <p>Kontakt: {LEGAL_COMPANY.email}, {LEGAL_COMPANY.phone}, {LEGAL_COMPANY.web}.</p>
+      <p>
+        Kontakt: {LEGAL_COMPANY.email}, {LEGAL_COMPANY.phone}, {LEGAL_COMPANY.web}.
+      </p>
 
       <h2>2. Definícia služby Faktero</h2>
       <p>
-        Faktero je online aplikácia (Software-as-a-Service) na vystavovanie faktúr, evidenciu odberateľov, sklad,
-        eFaktúru, pripojenie bankových účtov a online platby cez tretie strany. Služba je dostupná na doméne
-        faktero.sk a v subdoménach Prevádzkovateľa.
+        Faktero je online aplikácia (Software-as-a-Service) na vystavovanie faktúr, evidenciu
+        odberateľov, sklad, eFaktúru, pripojenie bankových účtov a online platby cez tretie strany.
+        Služba je dostupná na doméne faktero.sk a v subdoménach Prevádzkovateľa.
       </p>
-      <p><strong>Služba Faktero je určená predovšetkým pre podnikateľov, živnostníkov a právnické osoby.</strong></p>
+      <p>
+        <strong>
+          Služba Faktero je určená predovšetkým pre podnikateľov, živnostníkov a právnické osoby.
+        </strong>
+      </p>
 
       <h2>3. Registrácia účtu</h2>
       <p>
-        Používateľ je oprávnený vytvoriť si účet prostredníctvom registračného formulára alebo prihlásením cez
-        poskytovateľa identity (Google). Pri registrácii je povinný uviesť pravdivé údaje a chrániť svoje
-        prihlasovacie údaje pred zneužitím.
+        Používateľ je oprávnený vytvoriť si účet prostredníctvom registračného formulára alebo
+        prihlásením cez poskytovateľa identity (Google). Pri registrácii je povinný uviesť pravdivé
+        údaje a chrániť svoje prihlasovacie údaje pred zneužitím.
       </p>
-      <p>Pri registrácii používateľ potvrdzuje súhlas s týmito Obchodnými podmienkami a berie na vedomie spracúvanie osobných údajov v zmysle dokumentu GDPR.</p>
+      <p>
+        Pri registrácii používateľ potvrdzuje súhlas s týmito Obchodnými podmienkami a berie na
+        vedomie spracúvanie osobných údajov v zmysle dokumentu GDPR.
+      </p>
 
       <h2>4. Predplatné, ceny a fakturácia</h2>
       <p>
@@ -48,110 +67,131 @@ function Page() {
         <a href="/cennik"> faktero.sk/cennik</a>. Aktuálne ceny platených plánov (bez DPH):
       </p>
       <ul>
-        <li><strong>Starter — 9,00 € / mesiac</strong> bez DPH (s DPH 23 %: 11,07 € / mesiac).</li>
-        <li><strong>Premium — 19,00 € / mesiac</strong> bez DPH (s DPH 23 %: 23,37 € / mesiac).</li>
-        <li><strong>Enterprise</strong> — cena stanovená individuálne podľa rozsahu.</li>
+        <li>
+          <strong>Starter — 9,00 € / mesiac</strong> bez DPH (s DPH 23 %: 11,07 € / mesiac).
+        </li>
+        <li>
+          <strong>Premium — 19,00 € / mesiac</strong> bez DPH (s DPH 23 %: 23,37 € / mesiac).
+        </li>
+        <li>
+          <strong>Enterprise</strong> — cena stanovená individuálne podľa rozsahu.
+        </li>
       </ul>
       <p>
-        Prevádzkovateľ je platcom DPH; na všetky ceny sa uplatňuje platná sadzba DPH v Slovenskej republike
-        (aktuálne <strong>23 %</strong>). Fakturácia prebieha mesačne, po každej úspešnej platbe je používateľovi
-        vystavený daňový doklad dostupný v aplikácii.
+        Prevádzkovateľ je platcom DPH; na všetky ceny sa uplatňuje platná sadzba DPH v Slovenskej
+        republike (aktuálne <strong>23 %</strong>). Fakturácia prebieha mesačne, po každej úspešnej
+        platbe je používateľovi vystavený daňový doklad dostupný v aplikácii.
       </p>
 
       <h2>5. Spôsob platby</h2>
       <p>
         Platby predplatného sú realizované prostredníctvom platobnej brány <strong>GoPay</strong>
-        (prevádzkovateľ GoPay s.r.o., ČR). Podporované sú platby platobnou kartou (Visa, Mastercard) a okamžitý
-        bankový prevod. Údaje platobnej karty používateľa <strong>Faktero nevidí ani neuchováva</strong> —
-        spracúva ich výhradne GoPay v súlade s PCI DSS a 3-D Secure.
+        (prevádzkovateľ GoPay s.r.o., ČR). Podporované sú platby platobnou kartou (Visa, Mastercard)
+        a okamžitý bankový prevod. Údaje platobnej karty používateľa{" "}
+        <strong>Faktero nevidí ani neuchováva</strong> — spracúva ich výhradne GoPay v súlade s PCI
+        DSS a 3-D Secure.
       </p>
 
       <h2>6. Skúšobná verzia</h2>
       <p>
-        Prevádzkovateľ poskytuje novým používateľom bezplatnú skúšobnú verziu (aktuálne 2 mesiace). Počas trvania
-        skúšky nie je vyžadované zadanie platobných údajov. Po uplynutí skúšky je potrebné aktivovať platený plán,
-        inak bude prístup do aplikácie obmedzený.
+        Prevádzkovateľ poskytuje novým používateľom bezplatnú skúšobnú verziu (aktuálne 2 mesiace).
+        Počas trvania skúšky nie je vyžadované zadanie platobných údajov. Po uplynutí skúšky je
+        potrebné aktivovať platený plán, inak bude prístup do aplikácie obmedzený.
       </p>
-
 
       <h2>7. Automatické obnovenie predplatného</h2>
       <p>
-        <strong>Predplatné sa po skončení fakturačného obdobia automaticky obnovuje, pokiaľ ho používateľ nezruší.</strong>
-        Pri aktivácii platby kartou alebo opakovanej platby cez GoPay používateľ udeľuje súhlas s opakovaným
-        strhávaním poplatku zodpovedajúceho zvolenému plánu. O nadchádzajúcom obnovení a jeho výške je používateľ
-        informovaný e-mailom.
+        <strong>
+          Predplatné sa po skončení fakturačného obdobia automaticky obnovuje, pokiaľ ho používateľ
+          nezruší.
+        </strong>
+        Pri aktivácii platby kartou alebo opakovanej platby cez GoPay používateľ udeľuje súhlas s
+        opakovaným strhávaním poplatku zodpovedajúceho zvolenému plánu. O nadchádzajúcom obnovení a
+        jeho výške je používateľ informovaný e-mailom.
       </p>
 
       <h2>8. Odstúpenie od zmluvy (spotrebiteľ)</h2>
       <p>
-        Ak je používateľ spotrebiteľom v zmysle zákona č. 108/2024 Z. z., má právo odstúpiť od zmluvy do
-        <strong> 14 dní</strong> od jej uzavretia (aktivácie plateného plánu) bez uvedenia dôvodu. Odstúpenie
-        zašle e-mailom na <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>. Ak používateľ pri
-        aktivácii výslovne požiadal o okamžité začatie poskytovania digitálnej služby ešte pred uplynutím 14-dňovej
-        lehoty a bol poučený o strate práva na odstúpenie, právo na odstúpenie sa nevzťahuje na už poskytnutú časť
-        Služby. Pre podnikateľov (B2B) sa zákonné právo na odstúpenie neuplatňuje.
+        Ak je používateľ spotrebiteľom v zmysle zákona č. 108/2024 Z. z., má právo odstúpiť od
+        zmluvy do
+        <strong> 14 dní</strong> od jej uzavretia (aktivácie plateného plánu) bez uvedenia dôvodu.
+        Odstúpenie zašle e-mailom na{" "}
+        <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>. Ak používateľ pri
+        aktivácii výslovne požiadal o okamžité začatie poskytovania digitálnej služby ešte pred
+        uplynutím 14-dňovej lehoty a bol poučený o strate práva na odstúpenie, právo na odstúpenie
+        sa nevzťahuje na už poskytnutú časť Služby. Pre podnikateľov (B2B) sa zákonné právo na
+        odstúpenie neuplatňuje.
       </p>
 
       <h2>9. Zrušenie predplatného</h2>
       <p>
-        Používateľ môže predplatné kedykoľvek zrušiť v sekcii <em>Nastavenia → Predplatné</em>. Zrušenie sa prejaví
-        na konci aktuálneho fakturačného obdobia; už uhradený poplatok za bežiace obdobie sa <strong>nevracia</strong>
-        (zostatok obdobia nie je refundovaný), s výnimkou prípadov vyžadovaných platnými právnymi predpismi
-        (napr. odstúpenie podľa čl. 8).
+        Používateľ môže predplatné kedykoľvek zrušiť v sekcii <em>Nastavenia → Predplatné</em>.
+        Zrušenie sa prejaví na konci aktuálneho fakturačného obdobia; už uhradený poplatok za
+        bežiace obdobie sa <strong>nevracia</strong>
+        (zostatok obdobia nie je refundovaný), s výnimkou prípadov vyžadovaných platnými právnymi
+        predpismi (napr. odstúpenie podľa čl. 8).
       </p>
 
       <h2>10. Reklamačný postup</h2>
       <p>
         Reklamáciu poskytovanej Služby môže používateľ uplatniť e-mailom na
-        <a href={`mailto:${LEGAL_COMPANY.email}`}> {LEGAL_COMPANY.email}</a> alebo písomne na adresu sídla Prevádzkovateľa
-        ({LEGAL_COMPANY.address}). Reklamácia bude vybavená bez zbytočného odkladu, najneskôr do <strong>30 dní</strong>
-        od doručenia. Podrobnosti upravuje samostatný <a href="/pravne/reklamacny-poriadok">Reklamačný poriadok</a>.
+        <a href={`mailto:${LEGAL_COMPANY.email}`}> {LEGAL_COMPANY.email}</a> alebo písomne na adresu
+        sídla Prevádzkovateľa ({LEGAL_COMPANY.address}). Reklamácia bude vybavená bez zbytočného
+        odkladu, najneskôr do <strong>30 dní</strong>
+        od doručenia. Podrobnosti upravuje samostatný{" "}
+        <a href="/pravne/reklamacny-poriadok">Reklamačný poriadok</a>.
       </p>
-
 
       <h2>11. Dostupnosť služby</h2>
       <p>
-        Prevádzkovateľ vyvíja primerané úsilie na zabezpečenie nepretržitej dostupnosti Služby. Negarantuje však
-        100 % dostupnosť a vyhradzuje si právo na plánované odstávky z dôvodu údržby, aktualizácií alebo bezpečnostných
-        zásahov. O plánovaných odstávkach informuje vopred, ak je to možné.
+        Prevádzkovateľ vyvíja primerané úsilie na zabezpečenie nepretržitej dostupnosti Služby.
+        Negarantuje však 100 % dostupnosť a vyhradzuje si právo na plánované odstávky z dôvodu
+        údržby, aktualizácií alebo bezpečnostných zásahov. O plánovaných odstávkach informuje
+        vopred, ak je to možné.
       </p>
 
       <h2>12. Obmedzenie zodpovednosti</h2>
       <p>
-        Prevádzkovateľ nezodpovedá za škody spôsobené nesprávnym používaním Služby, výpadkami tretích strán
-        (Supabase, GoPay, Resend, bankové API), ani za stratu údajov spôsobenú konaním používateľa. Celková
-        zodpovednosť Prevádzkovateľa je obmedzená do výšky poplatkov zaplatených používateľom za posledných 12 mesiacov.
+        Prevádzkovateľ nezodpovedá za škody spôsobené nesprávnym používaním Služby, výpadkami
+        tretích strán (Supabase, GoPay, Resend, bankové API), ani za stratu údajov spôsobenú konaním
+        používateľa. Celková zodpovednosť Prevádzkovateľa je obmedzená do výšky poplatkov
+        zaplatených používateľom za posledných 12 mesiacov.
       </p>
 
       <h2>13. Ochrana údajov</h2>
       <p>
-        Spracúvanie osobných údajov sa riadi samostatným dokumentom <em>GDPR — Ochrana osobných údajov</em>.
-        Údaje vystavených faktúr a obchodných partnerov používateľa sú považované za údaje vlastnené firmou používateľa.
+        Spracúvanie osobných údajov sa riadi samostatným dokumentom{" "}
+        <em>GDPR — Ochrana osobných údajov</em>. Údaje vystavených faktúr a obchodných partnerov
+        používateľa sú považované za údaje vlastnené firmou používateľa.
       </p>
 
       <h2>14. Duševné vlastníctvo</h2>
       <p>
-        Všetky práva k softvéru, dizajnu, ochrannej známke a obsahu aplikácie Faktero patria Prevádzkovateľovi.
-        Používateľ získava nevýhradnú, neprenosnú licenciu na používanie Služby počas trvania predplatného.
+        Všetky práva k softvéru, dizajnu, ochrannej známke a obsahu aplikácie Faktero patria
+        Prevádzkovateľovi. Používateľ získava nevýhradnú, neprenosnú licenciu na používanie Služby
+        počas trvania predplatného.
       </p>
 
       <h2>15. Ukončenie účtu</h2>
       <p>
-        Používateľ môže svoj účet kedykoľvek zrušiť. Prevádzkovateľ je oprávnený obmedziť alebo zrušiť účet pri
-        porušení týchto podmienok, neuhradení poplatkov alebo zneužití Služby. Po zrušení účtu sú údaje uchované
-        po dobu vyžadovanú zákonom a následne vymazané.
+        Používateľ môže svoj účet kedykoľvek zrušiť. Prevádzkovateľ je oprávnený obmedziť alebo
+        zrušiť účet pri porušení týchto podmienok, neuhradení poplatkov alebo zneužití Služby. Po
+        zrušení účtu sú údaje uchované po dobu vyžadovanú zákonom a následne vymazané.
       </p>
 
       <h2>16. Záverečné ustanovenia</h2>
       <p>
-        Tieto podmienky sa riadia právnym poriadkom Slovenskej republiky. Spory sa riešia pred príslušnými súdmi SR.
-        Prevádzkovateľ je oprávnený podmienky meniť; o zmenách informuje používateľa e-mailom alebo v aplikácii
-        minimálne 14 dní vopred.
+        Tieto podmienky sa riadia právnym poriadkom Slovenskej republiky. Spory sa riešia pred
+        príslušnými súdmi SR. Prevádzkovateľ je oprávnený podmienky meniť; o zmenách informuje
+        používateľa e-mailom alebo v aplikácii minimálne 14 dní vopred.
       </p>
 
-
       <h2>Podpora</h2>
-      <p>E-mail: <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a><br/>Telefón: {LEGAL_COMPANY.phone}</p>
+      <p>
+        E-mail: <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>
+        <br />
+        Telefón: {LEGAL_COMPANY.phone}
+      </p>
     </LegalShell>
   );
 }

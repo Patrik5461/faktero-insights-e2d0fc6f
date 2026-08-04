@@ -90,19 +90,17 @@ async function writeCache(
   const entry: MemoEntry = { at: Date.now(), status, data, raw };
   memo.set(ico, entry);
   try {
-    await supabaseAdmin
-      .from("company_cache")
-      .upsert(
-        {
-          ico,
-          region,
-          status,
-          data: data as unknown as never,
-          raw: raw as unknown as never,
-          fetched_at: new Date().toISOString(),
-        },
-        { onConflict: "ico,region" },
-      );
+    await supabaseAdmin.from("company_cache").upsert(
+      {
+        ico,
+        region,
+        status,
+        data: data as unknown as never,
+        raw: raw as unknown as never,
+        fetched_at: new Date().toISOString(),
+      },
+      { onConflict: "ico,region" },
+    );
   } catch (e) {
     console.warn("[company-cache] write failed", e);
   }
@@ -110,16 +108,15 @@ async function writeCache(
 
 /** Debug helper: drop cache for a single IČO (memo + DB). */
 export async function clearCompanyCache(icoInput: string): Promise<void> {
-  const ico = String(icoInput ?? "").replace(/\s+/g, "").trim();
+  const ico = String(icoInput ?? "")
+    .replace(/\s+/g, "")
+    .trim();
   if (!ico) return;
   const padded = ico.padStart(8, "0");
   memo.delete(ico);
   memo.delete(padded);
   try {
-    await supabaseAdmin
-      .from("company_cache")
-      .delete()
-      .in("ico", [ico, padded]);
+    await supabaseAdmin.from("company_cache").delete().in("ico", [ico, padded]);
   } catch (e) {
     console.warn("[company-cache] clear failed", e);
   }
@@ -128,12 +125,24 @@ export async function clearCompanyCache(icoInput: string): Promise<void> {
 export async function lookupCompany(icoInput: string): Promise<RegistryLookupResult> {
   const ico = (icoInput ?? "").replace(/\s+/g, "").trim();
   if (!/^\d{6,8}$/.test(ico)) {
-    return { status: "error", provider: "finstat", message: "invalid_ico", raw: null, cached: false };
+    return {
+      status: "error",
+      provider: "finstat",
+      message: "invalid_ico",
+      raw: null,
+      cached: false,
+    };
   }
   const padded = ico.padStart(8, "0");
 
   if (!isFinstatConfigured()) {
-    return { status: "error", provider: "finstat", message: "FinStat API nie je nakonfigurované.", raw: null, cached: false };
+    return {
+      status: "error",
+      provider: "finstat",
+      message: "FinStat API nie je nakonfigurované.",
+      raw: null,
+      cached: false,
+    };
   }
 
   const hit = await readCache(padded);
@@ -151,9 +160,16 @@ export async function lookupCompany(icoInput: string): Promise<RegistryLookupRes
   let region: "sk" | "cz" = "sk";
   if (value.status !== "ok") {
     const cz = await finstatLookup(padded, "cz");
-    if (cz.status === "ok") { value = cz; region = "cz"; }
-    else if (value.status === "not_found" && cz.status === "not_found") { value = cz; region = "cz"; }
-    else if (value.status === "error" && cz.status !== "error") { value = cz; region = "cz"; }
+    if (cz.status === "ok") {
+      value = cz;
+      region = "cz";
+    } else if (value.status === "not_found" && cz.status === "not_found") {
+      value = cz;
+      region = "cz";
+    } else if (value.status === "error" && cz.status !== "error") {
+      value = cz;
+      region = "cz";
+    }
   }
 
   if (value.status === "ok") {
@@ -164,7 +180,13 @@ export async function lookupCompany(icoInput: string): Promise<RegistryLookupRes
     await writeCache(padded, region, "not_found", null, value.raw);
     return { status: "not_found", provider: "finstat", raw: value.raw, cached: false };
   }
-  return { status: "error", provider: "finstat", message: value.message, raw: value.raw, cached: false };
+  return {
+    status: "error",
+    provider: "finstat",
+    message: value.message,
+    raw: value.raw,
+    cached: false,
+  };
 }
 
 export type RegistrySearchResult =
@@ -182,20 +204,27 @@ export async function searchCompaniesByName(queryInput: string): Promise<Registr
   if (hit && Date.now() - hit.at < NAME_CACHE_TTL_MS) {
     return { status: "ok", provider: "finstat", data: hit.value, cached: true };
   }
-  const [sk, cz] = await Promise.all([
-    finstatAutocomplete(q, "sk"),
-    finstatAutocomplete(q, "cz"),
-  ]);
+  const [sk, cz] = await Promise.all([finstatAutocomplete(q, "sk"), finstatAutocomplete(q, "cz")]);
   if (sk.status !== "ok" && cz.status !== "ok") {
-    return { status: "error", provider: "finstat", message: sk.status === "error" ? sk.message : cz.message };
+    return {
+      status: "error",
+      provider: "finstat",
+      message: sk.status === "error" ? sk.message : cz.message,
+    };
   }
   const merged: FinstatSuggestion[] = [];
   const seen = new Set<string>();
-  for (const r of (sk.status === "ok" ? sk.data : [])) {
-    if (r.ico && !seen.has(r.ico)) { seen.add(r.ico); merged.push(r); }
+  for (const r of sk.status === "ok" ? sk.data : []) {
+    if (r.ico && !seen.has(r.ico)) {
+      seen.add(r.ico);
+      merged.push(r);
+    }
   }
-  for (const r of (cz.status === "ok" ? cz.data : [])) {
-    if (r.ico && !seen.has(r.ico)) { seen.add(r.ico); merged.push(r); }
+  for (const r of cz.status === "ok" ? cz.data : []) {
+    if (r.ico && !seen.has(r.ico)) {
+      seen.add(r.ico);
+      merged.push(r);
+    }
   }
   const data = merged.slice(0, 10);
   nameCache.set(key, { at: Date.now(), value: data });

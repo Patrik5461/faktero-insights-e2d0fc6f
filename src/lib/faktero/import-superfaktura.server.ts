@@ -18,18 +18,30 @@ export function parseCsv(text: string): Record<string, string>[] {
     const c = text[i];
     if (inQuotes) {
       if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else inQuotes = false;
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else inQuotes = false;
       } else field += c;
     } else {
       if (c === '"') inQuotes = true;
-      else if (c === sep) { cur.push(field); field = ""; }
-      else if (c === "\n") { cur.push(field); rows.push(cur); cur = []; field = ""; }
-      else if (c === "\r") { /* skip */ }
-      else field += c;
+      else if (c === sep) {
+        cur.push(field);
+        field = "";
+      } else if (c === "\n") {
+        cur.push(field);
+        rows.push(cur);
+        cur = [];
+        field = "";
+      } else if (c === "\r") {
+        /* skip */
+      } else field += c;
     }
   }
-  if (field.length || cur.length) { cur.push(field); rows.push(cur); }
+  if (field.length || cur.length) {
+    cur.push(field);
+    rows.push(cur);
+  }
   if (rows.length === 0) return [];
   const headers = rows[0].map((h) => h.trim());
   const out: Record<string, string>[] = [];
@@ -37,7 +49,9 @@ export function parseCsv(text: string): Record<string, string>[] {
     const row = rows[r];
     if (row.length === 1 && row[0].trim() === "") continue;
     const rec: Record<string, string> = {};
-    headers.forEach((h, i) => { rec[h] = (row[i] ?? "").trim(); });
+    headers.forEach((h, i) => {
+      rec[h] = (row[i] ?? "").trim();
+    });
     out.push(rec);
   }
   return out;
@@ -65,7 +79,10 @@ export type ParsedTable = {
   headers: string[];
 };
 
-export async function extractTables(fileBytes: Uint8Array, fileName: string): Promise<ParsedTable[]> {
+export async function extractTables(
+  fileBytes: Uint8Array,
+  fileName: string,
+): Promise<ParsedTable[]> {
   const lower = fileName.toLowerCase();
   if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
     return parseXlsx(fileBytes, fileName);
@@ -78,10 +95,12 @@ export async function extractTables(fileBytes: Uint8Array, fileName: string): Pr
       if (l.endsWith("/") || l.startsWith("__macosx/")) continue;
       if (l.endsWith(".csv")) {
         const rows = parseCsv(strFromU8(bytes));
-        if (rows.length) tables.push({ name: path, format: "csv", rows, headers: Object.keys(rows[0]) });
+        if (rows.length)
+          tables.push({ name: path, format: "csv", rows, headers: Object.keys(rows[0]) });
       } else if (l.endsWith(".xml")) {
         const rows = parseXmlRows(strFromU8(bytes));
-        if (rows.length) tables.push({ name: path, format: "xml", rows, headers: Object.keys(rows[0]) });
+        if (rows.length)
+          tables.push({ name: path, format: "xml", rows, headers: Object.keys(rows[0]) });
       } else if (l.endsWith(".xlsx") || l.endsWith(".xls")) {
         tables.push(...parseXlsx(bytes, path));
       }
@@ -90,11 +109,15 @@ export async function extractTables(fileBytes: Uint8Array, fileName: string): Pr
   }
   if (lower.endsWith(".xml")) {
     const rows = parseXmlRows(new TextDecoder().decode(fileBytes));
-    return rows.length ? [{ name: fileName, format: "xml", rows, headers: Object.keys(rows[0]) }] : [];
+    return rows.length
+      ? [{ name: fileName, format: "xml", rows, headers: Object.keys(rows[0]) }]
+      : [];
   }
   // default: CSV (covers .csv, .txt, no-ext)
   const rows = parseCsv(new TextDecoder().decode(fileBytes));
-  return rows.length ? [{ name: fileName, format: "csv", rows, headers: Object.keys(rows[0]) }] : [];
+  return rows.length
+    ? [{ name: fileName, format: "csv", rows, headers: Object.keys(rows[0]) }]
+    : [];
 }
 
 // =========================================================
@@ -113,16 +136,23 @@ function parseXlsx(bytes: Uint8Array, fileName: string): ParsedTable[] {
     const ws = wb.Sheets[sheetName];
     if (!ws) continue;
     const matrix = XLSX.utils.sheet_to_json<unknown[]>(ws, {
-      header: 1, blankrows: false, defval: "", raw: false,
+      header: 1,
+      blankrows: false,
+      defval: "",
+      raw: false,
     }) as unknown[][];
     if (!matrix.length) continue;
 
     // Pick the row with the most non-empty cells from the first 10 rows as header.
     const scan = Math.min(matrix.length, 10);
-    let headerIdx = 0, headerScore = -1;
+    let headerIdx = 0,
+      headerScore = -1;
     for (let i = 0; i < scan; i++) {
       const score = (matrix[i] ?? []).filter((c) => String(c ?? "").trim() !== "").length;
-      if (score > headerScore) { headerScore = score; headerIdx = i; }
+      if (score > headerScore) {
+        headerScore = score;
+        headerIdx = i;
+      }
     }
     if (headerScore <= 0) continue;
 
@@ -157,7 +187,11 @@ function parseXlsx(bytes: Uint8Array, fileName: string): ParsedTable[] {
 }
 
 function parseXmlRows(xml: string): Record<string, string>[] {
-  const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@", textNodeName: "#text" });
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@",
+    textNodeName: "#text",
+  });
   const obj = parser.parse(xml);
   // Find first array of records (heuristic for SF XML exports).
   const found = findRowsArray(obj);
@@ -178,7 +212,10 @@ function findRowsArray(node: any): any[] | null {
 function flattenRow(node: any, prefix = ""): Record<string, string> {
   const out: Record<string, string> = {};
   if (node == null) return out;
-  if (typeof node !== "object") { out[prefix || "value"] = String(node); return out; }
+  if (typeof node !== "object") {
+    out[prefix || "value"] = String(node);
+    return out;
+  }
   for (const [k, v] of Object.entries(node)) {
     const key = prefix ? `${prefix}.${k}` : k;
     if (v == null) out[key] = "";
@@ -192,11 +229,35 @@ function flattenRow(node: any, prefix = ""): Record<string, string> {
 // Heuristic mapping suggestion
 // =========================================================
 export type FieldKey =
-  | "invoice_number" | "variable_symbol" | "issue_date" | "due_date" | "delivery_date"
-  | "status" | "currency" | "subtotal" | "vat_total" | "total" | "notes" | "external_id"
-  | "customer_name" | "customer_ico" | "customer_dic" | "customer_ic_dph"
-  | "customer_email" | "customer_phone" | "customer_street" | "customer_city" | "customer_zip" | "customer_country"
-  | "item_name" | "item_description" | "item_quantity" | "item_unit" | "item_unit_price" | "item_vat_rate" | "item_total";
+  | "invoice_number"
+  | "variable_symbol"
+  | "issue_date"
+  | "due_date"
+  | "delivery_date"
+  | "status"
+  | "currency"
+  | "subtotal"
+  | "vat_total"
+  | "total"
+  | "notes"
+  | "external_id"
+  | "customer_name"
+  | "customer_ico"
+  | "customer_dic"
+  | "customer_ic_dph"
+  | "customer_email"
+  | "customer_phone"
+  | "customer_street"
+  | "customer_city"
+  | "customer_zip"
+  | "customer_country"
+  | "item_name"
+  | "item_description"
+  | "item_quantity"
+  | "item_unit"
+  | "item_unit_price"
+  | "item_vat_rate"
+  | "item_total";
 
 const HEURISTICS: Record<FieldKey, RegExp[]> = {
   invoice_number: [/^(invoice_)?number$/i, /\bfakt(u|ú)ra\b/i, /^cislo/i, /\bnumber\b/i],
@@ -253,19 +314,54 @@ function normKey(s: string): string {
 }
 
 const SYNONYMS: Record<FieldKey, string[]> = {
-  invoice_number: ["cislo faktury", "cislo", "faktura", "doklad", "invoice number", "invoice no", "number", "cislo dokladu"],
+  invoice_number: [
+    "cislo faktury",
+    "cislo",
+    "faktura",
+    "doklad",
+    "invoice number",
+    "invoice no",
+    "number",
+    "cislo dokladu",
+  ],
   variable_symbol: ["variabilny symbol", "vs", "var symbol", "variable symbol"],
-  issue_date: ["datum vystavenia", "vystavene", "datum vystavenia faktury", "issue date", "date issued", "datum"],
+  issue_date: [
+    "datum vystavenia",
+    "vystavene",
+    "datum vystavenia faktury",
+    "issue date",
+    "date issued",
+    "datum",
+  ],
   due_date: ["datum splatnosti", "splatnost", "due date", "splatne do"],
   delivery_date: ["datum dodania", "dodanie", "tax date", "datum dodania tovaru"],
   status: ["stav", "status", "uhradene", "zaplatene", "stav uhrady"],
   currency: ["mena", "currency"],
   subtotal: ["zaklad dane", "bez dph", "subtotal", "netto", "suma bez dph", "cena bez dph"],
   vat_total: ["dph spolu", "vat", "dph", "vat total", "dan"],
-  total: ["celkom", "suma", "spolu", "total", "cena spolu", "suma s dph", "spolu s dph", "k uhrade"],
+  total: [
+    "celkom",
+    "suma",
+    "spolu",
+    "total",
+    "cena spolu",
+    "suma s dph",
+    "spolu s dph",
+    "k uhrade",
+  ],
   notes: ["poznamka", "note", "popis faktury"],
   external_id: ["id", "external id", "povodne id"],
-  customer_name: ["odberatel", "zakaznik", "firma", "nazov odberatela", "customer", "client", "obchodne meno", "nazov firmy", "name"],
+  customer_name: [
+    "odberatel",
+    "zakaznik",
+    "firma",
+    "nazov odberatela",
+    "customer",
+    "client",
+    "obchodne meno",
+    "nazov firmy",
+    "name",
+  ],
   customer_ico: ["ico", "company id"],
   customer_dic: ["dic", "tax id"],
   customer_ic_dph: ["ic dph", "vat id", "vat"],
@@ -292,7 +388,9 @@ function fuzzyScore(a: string, b: string): number {
   const ta = new Set(a.split(" "));
   const tb = new Set(b.split(" "));
   let hit = 0;
-  ta.forEach((t) => { if (tb.has(t)) hit++; });
+  ta.forEach((t) => {
+    if (tb.has(t)) hit++;
+  });
   const union = new Set([...ta, ...tb]).size;
   return union ? hit / union : 0;
 }
@@ -310,17 +408,32 @@ function sampleValues(rows: Record<string, string>[], header: string, n = 20): s
 function valueLooksLike(values: string[]): Set<FieldKey> {
   const tags = new Set<FieldKey>();
   if (!values.length) return tags;
-  const isDate = values.filter((v) => /^\d{1,4}[.\/-]\d{1,2}[.\/-]\d{1,4}/.test(v)).length / values.length;
+  const isDate =
+    values.filter((v) => /^\d{1,4}[.\/-]\d{1,2}[.\/-]\d{1,4}/.test(v)).length / values.length;
   const isEmail = values.filter((v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)).length / values.length;
-  const isIco = values.filter((v) => /^\d{6,10}$/.test(v.replace(/\s/g, ""))).length / values.length;
-  const isIcDph = values.filter((v) => /^(SK|CZ)\d{8,12}$/i.test(v.replace(/\s/g, ""))).length / values.length;
-  const isMoney = values.filter((v) => /^-?\d[\d\s.,]*$/.test(v) && /[.,]\d{2}\b/.test(v)).length / values.length;
-  const isNumber = values.filter((v) => /^-?\d+([.,]\d+)?$/.test(v.replace(/\s/g, ""))).length / values.length;
-  if (isDate > 0.6) { tags.add("issue_date"); tags.add("due_date"); tags.add("delivery_date"); }
+  const isIco =
+    values.filter((v) => /^\d{6,10}$/.test(v.replace(/\s/g, ""))).length / values.length;
+  const isIcDph =
+    values.filter((v) => /^(SK|CZ)\d{8,12}$/i.test(v.replace(/\s/g, ""))).length / values.length;
+  const isMoney =
+    values.filter((v) => /^-?\d[\d\s.,]*$/.test(v) && /[.,]\d{2}\b/.test(v)).length / values.length;
+  const isNumber =
+    values.filter((v) => /^-?\d+([.,]\d+)?$/.test(v.replace(/\s/g, ""))).length / values.length;
+  if (isDate > 0.6) {
+    tags.add("issue_date");
+    tags.add("due_date");
+    tags.add("delivery_date");
+  }
   if (isEmail > 0.6) tags.add("customer_email");
   if (isIcDph > 0.5) tags.add("customer_ic_dph");
   if (isIco > 0.6) tags.add("customer_ico");
-  if (isMoney > 0.5) { tags.add("total"); tags.add("subtotal"); tags.add("vat_total"); tags.add("item_total"); tags.add("item_unit_price"); }
+  if (isMoney > 0.5) {
+    tags.add("total");
+    tags.add("subtotal");
+    tags.add("vat_total");
+    tags.add("item_total");
+    tags.add("item_unit_price");
+  }
   if (isNumber > 0.6) tags.add("item_quantity");
   return tags;
 }
@@ -335,12 +448,16 @@ export type DetectionResult = {
 };
 
 // Fields considered "required" for a good import.
-const CORE_FIELDS: FieldKey[] = [
-  "invoice_number", "issue_date", "total", "customer_name",
-];
+const CORE_FIELDS: FieldKey[] = ["invoice_number", "issue_date", "total", "customer_name"];
 const NICE_FIELDS: FieldKey[] = [
-  "due_date", "variable_symbol", "currency", "subtotal", "vat_total",
-  "customer_ico", "customer_email", "status",
+  "due_date",
+  "variable_symbol",
+  "currency",
+  "subtotal",
+  "vat_total",
+  "customer_ico",
+  "customer_email",
+  "status",
 ];
 
 export function detectMapping(headers: string[], rows: Record<string, string>[]): DetectionResult {
@@ -375,20 +492,28 @@ export function detectMapping(headers: string[], rows: Record<string, string>[])
     if (!prev) used.set(entry.header, field);
     else {
       const prevScore = perField[prev]?.score ?? 0;
-      if (entry.score > prevScore) { delete perField[prev]; used.set(entry.header, field); }
-      else delete perField[field];
+      if (entry.score > prevScore) {
+        delete perField[prev];
+        used.set(entry.header, field);
+      } else delete perField[field];
     }
   }
 
   const mapping: Partial<Record<FieldKey, string>> = {};
-  for (const [f, v] of Object.entries(perField) as [FieldKey, { header: string; score: number }][]) {
+  for (const [f, v] of Object.entries(perField) as [
+    FieldKey,
+    { header: string; score: number },
+  ][]) {
     mapping[f] = v.header;
   }
 
   // Confidence: weighted on core (70%) + nice (30%)
   const coreHits = CORE_FIELDS.filter((f) => perField[f]).length;
   const niceHits = NICE_FIELDS.filter((f) => perField[f]).length;
-  const confidence = Math.min(1, (coreHits / CORE_FIELDS.length) * 0.7 + (niceHits / NICE_FIELDS.length) * 0.3);
+  const confidence = Math.min(
+    1,
+    (coreHits / CORE_FIELDS.length) * 0.7 + (niceHits / NICE_FIELDS.length) * 0.3,
+  );
   const confidenceLabel: DetectionResult["confidenceLabel"] =
     confidence >= 0.75 ? "high" : confidence >= 0.45 ? "medium" : "low";
 
@@ -396,7 +521,9 @@ export function detectMapping(headers: string[], rows: Record<string, string>[])
   const all = normHeaders.map((h) => h.norm).join(" | ");
   const detectedSource: DetectionResult["detectedSource"] =
     /superfaktura|sf id|sf cislo|invoice number/.test(all) ||
-    (perField.invoice_number && perField.customer_name && perField.total ? "superfaktura" : "generic") as any;
+    ((perField.invoice_number && perField.customer_name && perField.total
+      ? "superfaktura"
+      : "generic") as any);
 
   return {
     mapping,
@@ -416,13 +543,19 @@ function num(v: string | undefined): number {
   const n = parseFloat(v.replace(/\s/g, "").replace(",", "."));
   return isNaN(n) ? 0 : n;
 }
-function pick(row: Record<string, string>, mapping: Partial<Record<FieldKey, string>>, key: FieldKey): string {
-  const h = mapping[key]; return h ? (row[h] ?? "").trim() : "";
+function pick(
+  row: Record<string, string>,
+  mapping: Partial<Record<FieldKey, string>>,
+  key: FieldKey,
+): string {
+  const h = mapping[key];
+  return h ? (row[h] ?? "").trim() : "";
 }
 function normDate(v: string): string | null {
   if (!v) return null;
   // Accept DD.MM.YYYY, YYYY-MM-DD, DD/MM/YYYY
-  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
   m = /^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})/.exec(v);
   if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
   return null;
@@ -436,14 +569,27 @@ export type ImportPreview = {
   dateTo: string | null;
   totalValue: number;
   currency: string;
-  sampleInvoices: Array<{ invoice_number: string; customer_name: string; total: number; issue_date: string | null }>;
+  sampleInvoices: Array<{
+    invoice_number: string;
+    customer_name: string;
+    total: number;
+    issue_date: string | null;
+  }>;
 };
 
-export function buildPreview(rows: Record<string, string>[], mapping: Partial<Record<FieldKey, string>>): ImportPreview {
-  const invoicesByNumber = new Map<string, { total: number; issue_date: string | null; customer_name: string; currency: string }>();
+export function buildPreview(
+  rows: Record<string, string>[],
+  mapping: Partial<Record<FieldKey, string>>,
+): ImportPreview {
+  const invoicesByNumber = new Map<
+    string,
+    { total: number; issue_date: string | null; customer_name: string; currency: string }
+  >();
   const customerKeys = new Set<string>();
   let items = 0;
-  let dateFrom: string | null = null, dateTo: string | null = null, totalValue = 0;
+  let dateFrom: string | null = null,
+    dateTo: string | null = null,
+    totalValue = 0;
   let currency = "EUR";
   for (const row of rows) {
     const invNo = pick(row, mapping, "invoice_number");
@@ -455,7 +601,12 @@ export function buildPreview(rows: Record<string, string>[], mapping: Partial<Re
     if (cust || ico) customerKeys.add((ico || "").toLowerCase() + "|" + cust.toLowerCase());
     items++;
     if (invNo && !invoicesByNumber.has(invNo)) {
-      invoicesByNumber.set(invNo, { total, issue_date: issue, customer_name: cust, currency: curr });
+      invoicesByNumber.set(invNo, {
+        total,
+        issue_date: issue,
+        customer_name: cust,
+        currency: curr,
+      });
       totalValue += total;
       currency = curr;
       if (issue) {
@@ -464,14 +615,22 @@ export function buildPreview(rows: Record<string, string>[], mapping: Partial<Re
       }
     }
   }
-  const sample = Array.from(invoicesByNumber.entries()).slice(0, 5).map(([invoice_number, v]) => ({
-    invoice_number, customer_name: v.customer_name, total: v.total, issue_date: v.issue_date,
-  }));
+  const sample = Array.from(invoicesByNumber.entries())
+    .slice(0, 5)
+    .map(([invoice_number, v]) => ({
+      invoice_number,
+      customer_name: v.customer_name,
+      total: v.total,
+      issue_date: v.issue_date,
+    }));
   return {
     invoicesCount: invoicesByNumber.size,
     customersCount: customerKeys.size,
     itemsCount: items,
-    dateFrom, dateTo, totalValue, currency,
+    dateFrom,
+    dateTo,
+    totalValue,
+    currency,
     sampleInvoices: sample,
   };
 }
@@ -504,13 +663,22 @@ export async function runImport(args: {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { jobId, companyId, rows, mapping, options } = args;
 
-  const result: ImportResult = { imported_customers: 0, imported_invoices: 0, failed_rows: 0, duplicates: 0 };
+  const result: ImportResult = {
+    imported_customers: 0,
+    imported_invoices: 0,
+    failed_rows: 0,
+    duplicates: 0,
+  };
 
   // Pre-fetch existing customers + invoices for dup detection
   const { data: existingCustomers } = await supabaseAdmin
-    .from("customers").select("id, name, ico, email").eq("company_id", companyId);
+    .from("customers")
+    .select("id, name, ico, email")
+    .eq("company_id", companyId);
   const { data: existingInvoices } = await supabaseAdmin
-    .from("invoices").select("id, invoice_number, original_external_id").eq("company_id", companyId);
+    .from("invoices")
+    .select("id, invoice_number, original_external_id")
+    .eq("company_id", companyId);
 
   const custByIco = new Map<string, string>();
   const custByEmail = new Map<string, string>();
@@ -546,47 +714,76 @@ export async function runImport(args: {
       const custName = pick(head, mapping, "customer_name");
       const custIco = pick(head, mapping, "customer_ico");
       const custEmail = pick(head, mapping, "customer_email");
-      const lookupKey = custIco ? custByIco.get(custIco.toLowerCase())
-        : custEmail ? custByEmail.get(custEmail.toLowerCase())
-        : custName ? custByName.get(custName.toLowerCase()) : undefined;
+      const lookupKey = custIco
+        ? custByIco.get(custIco.toLowerCase())
+        : custEmail
+          ? custByEmail.get(custEmail.toLowerCase())
+          : custName
+            ? custByName.get(custName.toLowerCase())
+            : undefined;
       if (lookupKey) {
         customerId = lookupKey;
       } else if (custName || custIco) {
-        const { data: ins, error } = await supabaseAdmin.from("customers").insert({
-          company_id: companyId,
-          name: custName || custIco || "Neznámy odberateľ",
-          ico: custIco || null,
-          dic: pick(head, mapping, "customer_dic") || null,
-          ic_dph: pick(head, mapping, "customer_ic_dph") || null,
-          email: custEmail || null,
-          phone: pick(head, mapping, "customer_phone") || null,
-          street: pick(head, mapping, "customer_street") || null,
-          city: pick(head, mapping, "customer_city") || null,
-          zip: pick(head, mapping, "customer_zip") || null,
-          country: pick(head, mapping, "customer_country") || "SK",
-        }).select("id").single();
+        const { data: ins, error } = await supabaseAdmin
+          .from("customers")
+          .insert({
+            company_id: companyId,
+            name: custName || custIco || "Neznámy odberateľ",
+            ico: custIco || null,
+            dic: pick(head, mapping, "customer_dic") || null,
+            ic_dph: pick(head, mapping, "customer_ic_dph") || null,
+            email: custEmail || null,
+            phone: pick(head, mapping, "customer_phone") || null,
+            street: pick(head, mapping, "customer_street") || null,
+            city: pick(head, mapping, "customer_city") || null,
+            zip: pick(head, mapping, "customer_zip") || null,
+            country: pick(head, mapping, "customer_country") || "SK",
+          })
+          .select("id")
+          .single();
         if (error) throw new Error(`Odberateľ: ${error.message}`);
         customerId = ins!.id;
         result.imported_customers++;
         if (custIco) custByIco.set(custIco.toLowerCase(), customerId);
         if (custEmail) custByEmail.set(custEmail.toLowerCase(), customerId);
         if (custName) custByName.set(custName.toLowerCase(), customerId);
-        await logRow(supabaseAdmin, jobId, companyId, rowNum, "customer", "success", `Vytvorený odberateľ ${custName || custIco}`, head);
+        await logRow(
+          supabaseAdmin,
+          jobId,
+          companyId,
+          rowNum,
+          "customer",
+          "success",
+          `Vytvorený odberateľ ${custName || custIco}`,
+          head,
+        );
       }
 
       if (options.customersOnly) continue;
 
       // ===== Invoice =====
       const externalId = pick(head, mapping, "external_id");
-      const existingId = invByNumber.get(invNo) || (externalId ? invByExternal.get(externalId) : undefined);
+      const existingId =
+        invByNumber.get(invNo) || (externalId ? invByExternal.get(externalId) : undefined);
       if (existingId && !options.updateExisting) {
         result.duplicates++;
-        await logRow(supabaseAdmin, jobId, companyId, rowNum, "invoice", "duplicate", `Faktúra ${invNo} už existuje — preskočená`, head);
+        await logRow(
+          supabaseAdmin,
+          jobId,
+          companyId,
+          rowNum,
+          "invoice",
+          "duplicate",
+          `Faktúra ${invNo} už existuje — preskočená`,
+          head,
+        );
         continue;
       }
 
       // Build items: prefer per-row item mapping; else synthesize a single line from totals
-      const items = group.map((r) => buildItem(r, mapping)).filter((it) => it.quantity > 0 || it.unit_price > 0 || it.total > 0);
+      const items = group
+        .map((r) => buildItem(r, mapping))
+        .filter((it) => it.quantity > 0 || it.unit_price > 0 || it.total > 0);
       let subtotal = num(pick(head, mapping, "subtotal"));
       let vatTotal = num(pick(head, mapping, "vat_total"));
       let total = num(pick(head, mapping, "total"));
@@ -594,11 +791,13 @@ export async function runImport(args: {
         items.push({
           name: `Položky faktúry ${invNo}`,
           description: null,
-          quantity: 1, unit: "ks",
+          quantity: 1,
+          unit: "ks",
           unit_price: subtotal || total || 0,
-          vat_rate: total > 0 && subtotal > 0 ? Math.round(((total - subtotal) / subtotal) * 100) : 23,
+          vat_rate:
+            total > 0 && subtotal > 0 ? Math.round(((total - subtotal) / subtotal) * 100) : 23,
           subtotal: subtotal || total || 0,
-          vat_amount: vatTotal || (total - subtotal) || 0,
+          vat_amount: vatTotal || total - subtotal || 0,
           total: total || subtotal || 0,
         });
       }
@@ -606,13 +805,16 @@ export async function runImport(args: {
       if (vatTotal === 0) vatTotal = items.reduce((s, i) => s + i.vat_amount, 0);
       if (total === 0) total = items.reduce((s, i) => s + i.total, 0);
 
-      const issueDate = normDate(pick(head, mapping, "issue_date")) || new Date().toISOString().slice(0, 10);
+      const issueDate =
+        normDate(pick(head, mapping, "issue_date")) || new Date().toISOString().slice(0, 10);
       const dueDate = normDate(pick(head, mapping, "due_date")) || issueDate;
       const deliveryDate = normDate(pick(head, mapping, "delivery_date"));
       const status = (pick(head, mapping, "status") || "issued").toLowerCase();
       const ALLOWED = ["draft", "issued", "sent", "paid", "cancelled", "overdue"] as const;
       type InvStatus = (typeof ALLOWED)[number];
-      const knownStatus: InvStatus = (ALLOWED as readonly string[]).includes(status) ? (status as InvStatus) : "issued";
+      const knownStatus: InvStatus = (ALLOWED as readonly string[]).includes(status)
+        ? (status as InvStatus)
+        : "issued";
 
       const payload = {
         company_id: companyId,
@@ -633,7 +835,9 @@ export async function runImport(args: {
         delivery_date: deliveryDate,
         currency: pick(head, mapping, "currency") || "EUR",
         status: knownStatus,
-        subtotal, vat_total: vatTotal, total,
+        subtotal,
+        vat_total: vatTotal,
+        total,
         notes: pick(head, mapping, "notes") || null,
         import_source: "SuperFaktúra",
         imported_at: new Date().toISOString(),
@@ -647,7 +851,11 @@ export async function runImport(args: {
         await supabaseAdmin.from("invoice_items").delete().eq("invoice_id", existingId);
         invoiceId = existingId;
       } else {
-        const { data: ins, error } = await supabaseAdmin.from("invoices").insert(payload).select("id").single();
+        const { data: ins, error } = await supabaseAdmin
+          .from("invoices")
+          .insert(payload)
+          .select("id")
+          .single();
         if (error) throw new Error(`Faktúra: ${error.message}`);
         invoiceId = ins!.id;
       }
@@ -672,10 +880,28 @@ export async function runImport(args: {
 
       result.imported_invoices++;
       invByNumber.set(invNo, invoiceId);
-      await logRow(supabaseAdmin, jobId, companyId, rowNum, "invoice", "success", `Faktúra ${invNo} importovaná`, head);
+      await logRow(
+        supabaseAdmin,
+        jobId,
+        companyId,
+        rowNum,
+        "invoice",
+        "success",
+        `Faktúra ${invNo} importovaná`,
+        head,
+      );
     } catch (e: any) {
       result.failed_rows++;
-      await logRow(supabaseAdmin, jobId, companyId, rowNum, "invoice", "error", String(e?.message ?? e), group[0]);
+      await logRow(
+        supabaseAdmin,
+        jobId,
+        companyId,
+        rowNum,
+        "invoice",
+        "error",
+        String(e?.message ?? e),
+        group[0],
+      );
     }
   }
 
@@ -702,11 +928,27 @@ function buildItem(row: Record<string, string>, mapping: Partial<Record<FieldKey
   };
 }
 
-async function logRow(admin: any, jobId: string, companyId: string, rowNumber: number, entity: string, status: string, message: string, raw: any) {
+async function logRow(
+  admin: any,
+  jobId: string,
+  companyId: string,
+  rowNumber: number,
+  entity: string,
+  status: string,
+  message: string,
+  raw: any,
+) {
   try {
     await admin.from("import_logs").insert({
-      import_job_id: jobId, company_id: companyId, row_number: rowNumber,
-      entity_type: entity, status, message, raw_data: raw,
+      import_job_id: jobId,
+      company_id: companyId,
+      row_number: rowNumber,
+      entity_type: entity,
+      status,
+      message,
+      raw_data: raw,
     });
-  } catch { /* ignore log failures */ }
+  } catch {
+    /* ignore log failures */
+  }
 }

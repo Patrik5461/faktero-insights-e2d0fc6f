@@ -52,7 +52,10 @@ function Page() {
       <section className="rounded-xl border border-border bg-card">
         <div className="border-b border-border p-4 flex items-center justify-between">
           <h2 className="font-medium">Verzie dokumentov</h2>
-          <span className="text-xs text-muted-foreground">Úpravy textu prebehnú v zdrojových komponentoch + novom zázname v <code>legal_document_versions</code>.</span>
+          <span className="text-xs text-muted-foreground">
+            Úpravy textu prebehnú v zdrojových komponentoch + novom zázname v{" "}
+            <code>legal_document_versions</code>.
+          </span>
         </div>
         <div className="divide-y divide-border">
           {DOCS.map((d) => {
@@ -64,10 +67,14 @@ function Page() {
                   <div className="font-medium">{d.label}</div>
                   <div className="text-xs text-muted-foreground">
                     Aktuálna verzia: {current?.version ?? "—"}
-                    {current?.published_at ? ` · ${new Date(current.published_at).toLocaleDateString("sk-SK")}` : ""}
+                    {current?.published_at
+                      ? ` · ${new Date(current.published_at).toLocaleDateString("sk-SK")}`
+                      : ""}
                   </div>
                 </div>
-                <Link to={d.to} target="_blank" className="text-sm text-primary hover:underline">Otvoriť ↗</Link>
+                <Link to={d.to} target="_blank" className="text-sm text-primary hover:underline">
+                  Otvoriť ↗
+                </Link>
               </div>
             );
           })}
@@ -92,7 +99,9 @@ function Page() {
             <tbody className="divide-y divide-border">
               {(acceptances ?? []).map((a, i) => (
                 <tr key={i}>
-                  <td className="px-4 py-2 whitespace-nowrap">{new Date(a.accepted_at).toLocaleString("sk-SK")}</td>
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    {new Date(a.accepted_at).toLocaleString("sk-SK")}
+                  </td>
                   <td className="px-4 py-2 font-mono text-xs">{a.user_id.slice(0, 8)}…</td>
                   <td className="px-4 py-2">{a.document_type}</td>
                   <td className="px-4 py-2">{a.version}</td>
@@ -100,7 +109,11 @@ function Page() {
                 </tr>
               ))}
               {!acceptances?.length && (
-                <tr><td className="px-4 py-6 text-center text-muted-foreground" colSpan={5}>Žiadne záznamy.</td></tr>
+                <tr>
+                  <td className="px-4 py-6 text-center text-muted-foreground" colSpan={5}>
+                    Žiadne záznamy.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

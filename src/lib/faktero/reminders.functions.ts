@@ -15,7 +15,10 @@ export const sendReminderFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => SendInput.parse(d))
   .handler(async ({ data, context }) => {
     const { data: inv } = await context.supabase
-      .from("invoices").select("id, company_id").eq("id", data.invoiceId).maybeSingle();
+      .from("invoices")
+      .select("id, company_id")
+      .eq("id", data.invoiceId)
+      .maybeSingle();
     if (!inv) throw new Error("Faktúra nenájdená");
     const { sendReminder } = await import("./reminders.server");
     return sendReminder({
@@ -39,19 +42,29 @@ export const previewReminderFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => PreviewInput.parse(d))
   .handler(async ({ data, context }) => {
     const { data: inv } = await context.supabase
-      .from("invoices").select("*").eq("id", data.invoiceId).maybeSingle();
+      .from("invoices")
+      .select("*")
+      .eq("id", data.invoiceId)
+      .maybeSingle();
     if (!inv) throw new Error("Faktúra nenájdená");
     const { data: company } = await context.supabase
-      .from("companies").select("*").eq("id", inv.company_id).maybeSingle();
+      .from("companies")
+      .select("*")
+      .eq("id", inv.company_id)
+      .maybeSingle();
     let recipient = "";
     if (inv.customer_id) {
       const { data: c } = await context.supabase
-        .from("customers").select("email").eq("id", inv.customer_id).maybeSingle();
+        .from("customers")
+        .select("email")
+        .eq("id", inv.customer_id)
+        .maybeSingle();
       recipient = c?.email ?? "";
     }
     const { buildReminderContent } = await import("./reminders.server");
     const built = buildReminderContent({
-      invoice: inv, company,
+      invoice: inv,
+      company,
       reminderNumber: data.reminderNumber as 1 | 2 | 3,
     });
     return {

@@ -11,8 +11,13 @@ export const Route = createFileRoute("/_authenticated/importy/kros")({
       accept=".xml,.csv"
       guide={
         <ol className="ml-4 list-decimal space-y-1">
-          <li>V KROS Alfa/Omega otvorte <strong>Vydané faktúry</strong>.</li>
-          <li>Zvoľte <strong>Export → XML</strong> (odporúčané pre kompletné dáta) alebo <strong>CSV</strong>.</li>
+          <li>
+            V KROS Alfa/Omega otvorte <strong>Vydané faktúry</strong>.
+          </li>
+          <li>
+            Zvoľte <strong>Export → XML</strong> (odporúčané pre kompletné dáta) alebo{" "}
+            <strong>CSV</strong>.
+          </li>
           <li>Nastavte rozsah období a potvrďte.</li>
           <li>Súbor nahrajte nižšie — automaticky rozpoznáme štruktúru.</li>
         </ol>

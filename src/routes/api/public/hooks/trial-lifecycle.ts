@@ -12,8 +12,7 @@ export const Route = createFileRoute("/api/public/hooks/trial-lifecycle")({
     handlers: {
       POST: async ({ request }) => {
         const token =
-          request.headers.get("x-faktero-cron-token") ??
-          request.headers.get("x-cron-token");
+          request.headers.get("x-faktero-cron-token") ?? request.headers.get("x-cron-token");
         if (!token || token !== process.env.FAKTERO_CRON_TOKEN) {
           return new Response(JSON.stringify({ error: "unauthorized" }), {
             status: 401,
@@ -22,36 +21,31 @@ export const Route = createFileRoute("/api/public/hooks/trial-lifecycle")({
         }
 
         try {
-          const { supabaseAdmin } = await import(
-            "@/integrations/supabase/client.server"
-          );
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
           // 1) Send 3-day reminder emails
           const in3 = new Date(Date.now() + 3 * 86_400_000).toISOString();
           const in4 = new Date(Date.now() + 4 * 86_400_000).toISOString();
           const { data: expiring } = await supabaseAdmin
             .from("subscriptions")
-            .select(
-              "company_id, trial_ends_at, trial_reminder_sent_at, companies(name, email)"
-            )
+            .select("company_id, trial_ends_at, trial_reminder_sent_at, companies(name, email)")
             .eq("status", "trialing")
             .is("trial_reminder_sent_at", null)
             .gte("trial_ends_at", in3)
             .lt("trial_ends_at", in4);
 
           const apiKey = process.env.RESEND_API_KEY;
-          const fromEmail =
-            process.env.RESEND_FROM_EMAIL ?? "noreply@faktero.sk";
-          const appUrl = (
-            process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk"
-          ).replace(/\/+$/, "");
+          const fromEmail = process.env.RESEND_FROM_EMAIL ?? "noreply@faktero.sk";
+          const appUrl = (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(
+            /\/+$/,
+            "",
+          );
           let sent = 0;
           let failed = 0;
 
           for (const row of expiring ?? []) {
             const to = (row as any).companies?.email as string | undefined;
-            const companyName =
-              (row as any).companies?.name ?? "Váš účet vo Faktere";
+            const companyName = (row as any).companies?.name ?? "Váš účet vo Faktere";
             if (!to || !apiKey) {
               await supabaseAdmin
                 .from("subscriptions")
@@ -95,7 +89,7 @@ export const Route = createFileRoute("/api/public/hooks/trial-lifecycle")({
 
           // 2) Downgrade expired trials to Starter
           const { data: downgraded, error: downErr } = await supabaseAdmin.rpc(
-            "faktero_process_trial_expiry"
+            "faktero_process_trial_expiry",
           );
           if (downErr) throw downErr;
 
@@ -109,16 +103,13 @@ export const Route = createFileRoute("/api/public/hooks/trial-lifecycle")({
             {
               status: 200,
               headers: { "content-type": "application/json" },
-            }
+            },
           );
         } catch (e: any) {
-          return new Response(
-            JSON.stringify({ error: e?.message ?? "internal" }),
-            {
-              status: 500,
-              headers: { "content-type": "application/json" },
-            }
-          );
+          return new Response(JSON.stringify({ error: e?.message ?? "internal" }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
         }
       },
     },

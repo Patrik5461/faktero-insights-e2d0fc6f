@@ -91,17 +91,23 @@ describe("tatrabanka.server", () => {
 
     it("400 invalid_grant: throws with status + body", async () => {
       mockFetch(() => ({ status: 400, body: JSON.stringify({ error: "invalid_grant" }) }));
-      await expect(exchangeCodeForToken("bad", REDIRECT)).rejects.toThrow(/token_exchange_failed: 400.*invalid_grant/);
+      await expect(exchangeCodeForToken("bad", REDIRECT)).rejects.toThrow(
+        /token_exchange_failed: 400.*invalid_grant/,
+      );
     });
 
     it("401 invalid_client: throws", async () => {
       mockFetch(() => ({ status: 401, body: "Unauthorized" }));
-      await expect(exchangeCodeForToken("x", REDIRECT)).rejects.toThrow(/token_exchange_failed: 401/);
+      await expect(exchangeCodeForToken("x", REDIRECT)).rejects.toThrow(
+        /token_exchange_failed: 401/,
+      );
     });
 
     it("500 server error: throws", async () => {
       mockFetch(() => ({ status: 500, body: "boom" }));
-      await expect(exchangeCodeForToken("x", REDIRECT)).rejects.toThrow(/token_exchange_failed: 500/);
+      await expect(exchangeCodeForToken("x", REDIRECT)).rejects.toThrow(
+        /token_exchange_failed: 500/,
+      );
     });
 
     it("nonsense response (200 + non-JSON): throws JSON parse error", async () => {
@@ -127,7 +133,10 @@ describe("tatrabanka.server", () => {
                 name: "Bežný",
                 currency: "EUR",
                 balances: [
-                  { balanceType: "closingBooked", balanceAmount: { amount: "123.45", currency: "EUR" } },
+                  {
+                    balanceType: "closingBooked",
+                    balanceAmount: { amount: "123.45", currency: "EUR" },
+                  },
                 ],
               },
             ],
@@ -192,7 +201,9 @@ describe("tatrabanka.server", () => {
         };
       });
       const txs = await fetchTransactions("AT", "acc-1", "C1", 30);
-      expect(capturedUrl).toMatch(/\/accounts\/acc-1\/transactions\?bookingStatus=booked&dateFrom=\d{4}-\d{2}-\d{2}&dateTo=\d{4}-\d{2}-\d{2}/);
+      expect(capturedUrl).toMatch(
+        /\/accounts\/acc-1\/transactions\?bookingStatus=booked&dateFrom=\d{4}-\d{2}-\d{2}&dateTo=\d{4}-\d{2}-\d{2}/,
+      );
       expect(txs).toHaveLength(1);
       expect(txs[0]).toMatchObject({
         transaction_reference: "T1",
@@ -207,7 +218,9 @@ describe("tatrabanka.server", () => {
     it("400/401/500: throws tb_api_error", async () => {
       for (const status of [400, 401, 500]) {
         mockFetch(() => ({ status, body: `e${status}` }));
-        await expect(fetchTransactions("AT", "acc-1")).rejects.toThrow(new RegExp(`tb_api_error: ${status}`));
+        await expect(fetchTransactions("AT", "acc-1")).rejects.toThrow(
+          new RegExp(`tb_api_error: ${status}`),
+        );
         vi.restoreAllMocks();
       }
     });
@@ -232,16 +245,27 @@ describe("tatrabanka.server", () => {
     ];
 
     it("matches by variable symbol first", () => {
-      expect(suggestMatch({ amount: 1, variable_symbol: "999", description: null }, invoices)).toBe("i-vs");
+      expect(suggestMatch({ amount: 1, variable_symbol: "999", description: null }, invoices)).toBe(
+        "i-vs",
+      );
     });
     it("matches by invoice number in description", () => {
-      expect(suggestMatch({ amount: 1, variable_symbol: null, description: "Faktúra 2026042" }, invoices)).toBe("i-num");
+      expect(
+        suggestMatch(
+          { amount: 1, variable_symbol: null, description: "Faktúra 2026042" },
+          invoices,
+        ),
+      ).toBe("i-num");
     });
     it("matches by amount as last resort", () => {
-      expect(suggestMatch({ amount: 123.45, variable_symbol: null, description: null }, invoices)).toBe("i-amt");
+      expect(
+        suggestMatch({ amount: 123.45, variable_symbol: null, description: null }, invoices),
+      ).toBe("i-amt");
     });
     it("returns null when nothing matches", () => {
-      expect(suggestMatch({ amount: 0.01, variable_symbol: "nope", description: "x" }, invoices)).toBeNull();
+      expect(
+        suggestMatch({ amount: 0.01, variable_symbol: "nope", description: "x" }, invoices),
+      ).toBeNull();
     });
   });
 });

@@ -11,11 +11,7 @@
  * Only the parsing scaffold is implemented; matching to a supplier-invoices
  * module is a future step.
  */
-import type {
-  EfakturaChannel,
-  EfakturaDocFormat,
-  EfakturaReceivedStatus,
-} from "./types";
+import type { EfakturaChannel, EfakturaDocFormat, EfakturaReceivedStatus } from "./types";
 
 export type IncomingDocumentInput = {
   companyId: string;
@@ -45,7 +41,7 @@ export type ParsedEfaktura = {
  * we ship inbound support; the pipeline contract stays the same.
  */
 export function parseEfakturaEnvelope(xml: string): ParsedEfaktura {
-  const errors: ParsedEfaktura[ "errors" ] = [];
+  const errors: ParsedEfaktura["errors"] = [];
   const pick = (re: RegExp): string | undefined => {
     const m = xml.match(re);
     return m?.[1]?.trim();
@@ -62,8 +58,12 @@ export function parseEfakturaEnvelope(xml: string): ParsedEfaktura {
   const currency = pick(/<cbc:DocumentCurrencyCode>([^<]+)<\/cbc:DocumentCurrencyCode>/);
   const total = num(pick(/<cbc:PayableAmount[^>]*>([^<]+)<\/cbc:PayableAmount>/));
   const vatTotal = num(pick(/<cbc:TaxAmount[^>]*>([^<]+)<\/cbc:TaxAmount>/));
-  const senderName = pick(/<cac:AccountingSupplierParty>[\s\S]*?<cbc:RegistrationName>([^<]+)<\/cbc:RegistrationName>/);
-  const senderVatId = pick(/<cac:AccountingSupplierParty>[\s\S]*?<cac:PartyTaxScheme>[\s\S]*?<cbc:CompanyID>([^<]+)<\/cbc:CompanyID>/);
+  const senderName = pick(
+    /<cac:AccountingSupplierParty>[\s\S]*?<cbc:RegistrationName>([^<]+)<\/cbc:RegistrationName>/,
+  );
+  const senderVatId = pick(
+    /<cac:AccountingSupplierParty>[\s\S]*?<cac:PartyTaxScheme>[\s\S]*?<cbc:CompanyID>([^<]+)<\/cbc:CompanyID>/,
+  );
 
   if (!documentNumber) errors.push({ code: "PARSE_NO_ID", message: "Missing invoice number" });
   if (!issueDate) errors.push({ code: "PARSE_NO_DATE", message: "Missing issue date" });

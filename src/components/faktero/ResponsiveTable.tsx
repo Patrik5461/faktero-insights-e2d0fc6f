@@ -47,9 +47,8 @@ export function ResponsiveTable<T>({
             {emptyText}
           </div>
         )}
-        {!loading && items.map((it, i) => (
-          <div key={(it as any)?.id ?? i}>{mobileCard(it, i)}</div>
-        ))}
+        {!loading &&
+          items.map((it, i) => <div key={(it as any)?.id ?? i}>{mobileCard(it, i)}</div>)}
       </div>
     </div>
   );

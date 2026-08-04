@@ -38,10 +38,13 @@ Vráť VÝHRADNE JSON (žiadny markdown, žiadne backticky):
           model,
           messages: [
             { role: "system", content: prompt },
-            { role: "user", content: [
-              { type: "text", text: "Extrahuj údaje z tohto bločka/faktúry." },
-              { type: "image_url", image_url: { url: data.image_data_url } },
-            ] },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: "Extrahuj údaje z tohto bločka/faktúry." },
+                { type: "image_url", image_url: { url: data.image_data_url } },
+              ],
+            },
           ],
           response_format: { type: "json_object" },
         }),
@@ -53,5 +56,9 @@ Vráť VÝHRADNE JSON (žiadny markdown, žiadne backticky):
       const json: any = await res.json();
       content = json?.choices?.[0]?.message?.content ?? "{}";
     }
-    try { return JSON.parse(content); } catch { return {}; }
+    try {
+      return JSON.parse(content);
+    } catch {
+      return {};
+    }
   });

@@ -4,7 +4,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 function randomToken(): string {
   const bytes = new Uint8Array(24);
   crypto.getRandomValues(bytes);
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 type InviteRole = "admin" | "accountant" | "employee";
@@ -16,8 +18,10 @@ export const createInvitationFn = createServerFn({ method: "POST" })
     const email = data.email.trim().toLowerCase();
     if (!email || !email.includes("@")) throw new Error("Neplatný email");
 
-    const { data: admin } = await context.supabase
-      .rpc("is_company_admin", { _company_id: data.company_id, _user_id: context.userId });
+    const { data: admin } = await context.supabase.rpc("is_company_admin", {
+      _company_id: data.company_id,
+      _user_id: context.userId,
+    });
     if (!admin) throw new Error("Nemáte oprávnenie pozývať používateľov");
 
     const token = randomToken();

@@ -15,14 +15,21 @@ export function downloadCsv(filename: string, headers: string[], rows: ExportRow
   triggerDownload(blob, filename.endsWith(".csv") ? filename : `${filename}.csv`);
 }
 
-export async function downloadXlsx(filename: string, headers: string[], rows: ExportRow[], sheetName = "Export") {
+export async function downloadXlsx(
+  filename: string,
+  headers: string[],
+  rows: ExportRow[],
+  sheetName = "Export",
+) {
   const XLSX = await import("xlsx");
   const aoa: any[][] = [headers, ...rows.map((r) => headers.map((h) => (r as any)[h] ?? ""))];
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
   const out = XLSX.write(wb, { type: "array", bookType: "xlsx" });
-  const blob = new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const blob = new Blob([out], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
   triggerDownload(blob, filename.endsWith(".xlsx") ? filename : `${filename}.xlsx`);
 }
 

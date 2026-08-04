@@ -21,7 +21,10 @@ function fmt(n: number): string {
   return (Math.round(n * 100) / 100).toFixed(2);
 }
 
-function partyXml(party: EN16931Party, role: "AccountingSupplierParty" | "AccountingCustomerParty"): string {
+function partyXml(
+  party: EN16931Party,
+  role: "AccountingSupplierParty" | "AccountingCustomerParty",
+): string {
   const endpoint =
     party.endpointId && party.endpointScheme
       ? `      <cbc:EndpointID schemeID="${esc(party.endpointScheme)}">${esc(party.endpointId)}</cbc:EndpointID>`
@@ -98,7 +101,7 @@ ${l.description ? `      <cbc:Description>${esc(l.description)}</cbc:Description
     <cac:Price>
       <cbc:PriceAmount currencyID="${esc(inv.currency)}">${fmt(l.unitPrice)}</cbc:PriceAmount>
     </cac:Price>
-  </cac:InvoiceLine>`
+  </cac:InvoiceLine>`,
     )
     .join("\n");
 
@@ -114,7 +117,7 @@ ${inv.taxSubtotals
         <cbc:Percent>${t.vatPercent}</cbc:Percent>
 ${t.exemptionReason ? `        <cbc:TaxExemptionReason>${esc(t.exemptionReason)}</cbc:TaxExemptionReason>\n` : ""}        <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
       </cac:TaxCategory>
-    </cac:TaxSubtotal>`
+    </cac:TaxSubtotal>`,
   )
   .join("\n")}
   </cac:TaxTotal>`;
@@ -122,9 +125,13 @@ ${t.exemptionReason ? `        <cbc:TaxExemptionReason>${esc(t.exemptionReason)}
   const paymentXml = inv.paymentMeans
     ? `  <cac:PaymentMeans>
     <cbc:PaymentMeansCode>${esc(inv.paymentMeans.code)}</cbc:PaymentMeansCode>
-${inv.paymentMeans.reference ? `    <cbc:PaymentID>${esc(inv.paymentMeans.reference)}</cbc:PaymentID>\n` : ""}${inv.paymentMeans.iban ? `    <cac:PayeeFinancialAccount>
+${inv.paymentMeans.reference ? `    <cbc:PaymentID>${esc(inv.paymentMeans.reference)}</cbc:PaymentID>\n` : ""}${
+        inv.paymentMeans.iban
+          ? `    <cac:PayeeFinancialAccount>
       <cbc:ID>${esc(inv.paymentMeans.iban)}</cbc:ID>
-${inv.paymentMeans.accountName ? `      <cbc:Name>${esc(inv.paymentMeans.accountName)}</cbc:Name>\n` : ""}${inv.paymentMeans.bic ? `      <cac:FinancialInstitutionBranch><cbc:ID>${esc(inv.paymentMeans.bic)}</cbc:ID></cac:FinancialInstitutionBranch>\n` : ""}    </cac:PayeeFinancialAccount>\n` : ""}  </cac:PaymentMeans>`
+${inv.paymentMeans.accountName ? `      <cbc:Name>${esc(inv.paymentMeans.accountName)}</cbc:Name>\n` : ""}${inv.paymentMeans.bic ? `      <cac:FinancialInstitutionBranch><cbc:ID>${esc(inv.paymentMeans.bic)}</cbc:ID></cac:FinancialInstitutionBranch>\n` : ""}    </cac:PayeeFinancialAccount>\n`
+          : ""
+      }  </cac:PaymentMeans>`
     : "";
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

@@ -1,9 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, FileText, Camera, Car, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
-import {
-  Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 type Tab = { to: string; label: string; icon: any; match: string[] };
 
@@ -40,7 +38,11 @@ export function MobileBottomNav() {
   return (
     <>
       {/* Spacer aby obsah nebol pod fixed barom */}
-      <div aria-hidden className="h-20 shrink-0" style={{ paddingBottom: "env(safe-area-inset-bottom)" }} />
+      <div
+        aria-hidden
+        className="h-20 shrink-0"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      />
 
       <nav
         className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur"
@@ -52,10 +54,7 @@ export function MobileBottomNav() {
           <TabButton tab={TABS[1]} active={isActive(TABS[1].match)} />
 
           {/* Centrálny FAB — Skenovať doklad */}
-          <Link
-            to="/doklady/novy"
-            className="flex flex-col items-center justify-end gap-0.5 pb-1"
-          >
+          <Link to="/doklady/novy" className="flex flex-col items-center justify-end gap-0.5 pb-1">
             <span className="grid h-14 w-14 -translate-y-3 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background">
               <Camera className="h-6 w-6" />
             </span>

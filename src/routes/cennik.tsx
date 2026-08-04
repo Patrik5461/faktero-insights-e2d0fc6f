@@ -87,10 +87,22 @@ const LOGBOOK_PLANS = [
 ];
 
 const FAQ = [
-  { q: "Koľko stojí odoslanie eFaktúry?", a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero. Žiadne skryté poplatky za odoslanú faktúru." },
-  { q: "Je naozaj 2 Mesiace zdarma bez karty?", a: "Áno. Začnete bez platobnej karty a po skúšobnej dobe sa rozhodnete, či si vyberiete platený plán." },
-  { q: "Môžem kedykoľvek zmeniť plán?", a: "Áno, plán meníte v sekcii Predplatné. Rozdiel doúčtujeme alikvótne." },
-  { q: "Môžem mať fakturáciu aj knihu jázd súčasne?", a: "Áno — sú to dva samostatné produkty, ale viete ich kombinovať v jednom účte." },
+  {
+    q: "Koľko stojí odoslanie eFaktúry?",
+    a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero. Žiadne skryté poplatky za odoslanú faktúru.",
+  },
+  {
+    q: "Je naozaj 2 Mesiace zdarma bez karty?",
+    a: "Áno. Začnete bez platobnej karty a po skúšobnej dobe sa rozhodnete, či si vyberiete platený plán.",
+  },
+  {
+    q: "Môžem kedykoľvek zmeniť plán?",
+    a: "Áno, plán meníte v sekcii Predplatné. Rozdiel doúčtujeme alikvótne.",
+  },
+  {
+    q: "Môžem mať fakturáciu aj knihu jázd súčasne?",
+    a: "Áno — sú to dva samostatné produkty, ale viete ich kombinovať v jednom účte.",
+  },
   { q: "Sú platby bezpečné?", a: "Áno, platby spracúva GoPay. Faktero nevidí údaje vašej karty." },
 ];
 
@@ -98,15 +110,23 @@ export const Route = createFileRoute("/cennik")({
   head: () => ({
     meta: [
       { title: "Cenník — Faktero" },
-      { name: "description", content: "Fakturačný systém od 9 €/mes a Kniha jázd od 5 €/mes. 2 Mesiace zdarma bez karty." },
+      {
+        name: "description",
+        content:
+          "Fakturačný systém od 9 €/mes a Kniha jázd od 5 €/mes. 2 Mesiace zdarma bez karty.",
+      },
       { property: "og:title", content: "Cenník Faktero" },
-      { property: "og:description", content: "Dva samostatné produkty: Fakturačný systém a Kniha jázd. Vyberte si jeden alebo oba." },
+      {
+        property: "og:description",
+        content:
+          "Dva samostatné produkty: Fakturačný systém a Kniha jázd. Vyberte si jeden alebo oba.",
+      },
     ],
   }),
   component: CennikPage,
 });
 
-function PlanCard({ p }: { p: typeof INVOICING_PLANS[number] }) {
+function PlanCard({ p }: { p: (typeof INVOICING_PLANS)[number] }) {
   return (
     <div
       className={`rounded-2xl border p-6 ${
@@ -148,7 +168,9 @@ function PlanCard({ p }: { p: typeof INVOICING_PLANS[number] }) {
       <Link
         to="/registracia"
         className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold ${
-          p.featured ? "bg-primary text-primary-foreground hover:opacity-90" : "border border-border bg-background hover:bg-secondary"
+          p.featured
+            ? "bg-primary text-primary-foreground hover:opacity-90"
+            : "border border-border bg-background hover:bg-secondary"
         }`}
       >
         Vyskúšať zdarma <ArrowRight className="h-4 w-4" />
@@ -163,9 +185,12 @@ function CennikPage() {
       <section className="border-b border-border/60 bg-gradient-to-b from-primary/5 to-transparent">
         <div className="mx-auto max-w-6xl px-6 py-16 text-center">
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">Cenník</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">Dva produkty. Jeden účet.</h1>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">
+            Dva produkty. Jeden účet.
+          </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Vyberte si Fakturačný systém, Knihu jázd alebo oboje. 2 Mesiace zdarma bez platobnej karty.
+            Vyberte si Fakturačný systém, Knihu jázd alebo oboje. 2 Mesiace zdarma bez platobnej
+            karty.
           </p>
         </div>
       </section>
@@ -180,12 +205,15 @@ function CennikPage() {
                 Opakované platby — automatické obnovovanie
               </div>
               <p className="max-w-2xl text-base leading-relaxed text-amber-950 md:text-lg">
-                Predplatné Faktero sa automaticky obnovuje každý mesiac. Platba je strhnutá z vašej platobnej karty cez bezpečnú bránu GoPay (Visa / Mastercard / 3D Secure).
+                Predplatné Faktero sa automaticky obnovuje každý mesiac. Platba je strhnutá z vašej
+                platobnej karty cez bezpečnú bránu GoPay (Visa / Mastercard / 3D Secure).
               </p>
               <ul className="space-y-2 text-sm text-amber-900/80">
                 <li className="flex items-start gap-2">
                   <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-                  <span>Zrušiť môžete kedykoľvek — bez poplatkov, okamžite v nastaveniach vášho účtu</span>
+                  <span>
+                    Zrušiť môžete kedykoľvek — bez poplatkov, okamžite v nastaveniach vášho účtu
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Mail className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
@@ -207,14 +235,22 @@ function CennikPage() {
             </div>
             <div className="flex flex-col items-start gap-3 md:items-end md:pt-8">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-md bg-[#1A4DB5] px-3 py-1.5 text-xs font-bold text-white">GoPay</span>
-                <span className="rounded-md bg-[#1A1F71] px-3 py-1.5 text-xs font-bold text-white">VISA</span>
-                <span className="rounded-md bg-[#EB001B] px-3 py-1.5 text-xs font-bold text-white">Mastercard</span>
+                <span className="rounded-md bg-[#1A4DB5] px-3 py-1.5 text-xs font-bold text-white">
+                  GoPay
+                </span>
+                <span className="rounded-md bg-[#1A1F71] px-3 py-1.5 text-xs font-bold text-white">
+                  VISA
+                </span>
+                <span className="rounded-md bg-[#EB001B] px-3 py-1.5 text-xs font-bold text-white">
+                  Mastercard
+                </span>
                 <span className="inline-flex items-center gap-1 rounded-md bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground border border-border">
                   <ShieldCheck className="h-3.5 w-3.5" /> 3D Secure
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">Bezpečné platby cez certifikovanú platobnú bránu.</p>
+              <p className="text-xs text-muted-foreground">
+                Bezpečné platby cez certifikovanú platobnú bránu.
+              </p>
             </div>
           </div>
         </div>
@@ -227,11 +263,15 @@ function CennikPage() {
           </span>
           <div>
             <h2 className="text-2xl font-bold">Fakturačný systém</h2>
-            <p className="text-sm text-muted-foreground">Faktúry, eFaktúra, API, bankové párovanie, sklad.</p>
+            <p className="text-sm text-muted-foreground">
+              Faktúry, eFaktúra, API, bankové párovanie, sklad.
+            </p>
           </div>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {INVOICING_PLANS.map((p) => <PlanCard key={p.name} p={p} />)}
+          {INVOICING_PLANS.map((p) => (
+            <PlanCard key={p.name} p={p} />
+          ))}
         </div>
       </section>
 
@@ -242,11 +282,15 @@ function CennikPage() {
           </span>
           <div>
             <h2 className="text-2xl font-bold">Kniha jázd</h2>
-            <p className="text-sm text-muted-foreground">Jazdy, vozidlá, Commander GPS a Tesla Fleet API.</p>
+            <p className="text-sm text-muted-foreground">
+              Jazdy, vozidlá, Commander GPS a Tesla Fleet API.
+            </p>
           </div>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
-          {LOGBOOK_PLANS.map((p) => <PlanCard key={p.name} p={p} />)}
+          {LOGBOOK_PLANS.map((p) => (
+            <PlanCard key={p.name} p={p} />
+          ))}
         </div>
       </section>
 
@@ -261,12 +305,29 @@ function CennikPage() {
           ))}
         </dl>
         <div className="mt-8 rounded-xl border border-border bg-card p-5 text-xs text-muted-foreground space-y-1">
-          <p><strong className="text-foreground">Ceny a DPH:</strong> Všetky ceny sú uvedené bez DPH. Platná sadzba DPH v SR je 23 %. Predplatné sa účtuje mesačne a automaticky sa obnovuje, kým ho nezrušíte v sekcii Predplatné.</p>
-          <p><strong className="text-foreground">Platba:</strong> Bezpečne cez GoPay — platobnou kartou (Visa, Mastercard) alebo okamžitým bankovým prevodom. Údaje karty spracúva výhradne GoPay.</p>
-          <p>Podrobnosti: <a href="/pravne/obchodne-podmienky" className="underline">Obchodné podmienky</a> · <a href="/pravne/gopay-podmienky" className="underline">GoPay podmienky</a>.</p>
+          <p>
+            <strong className="text-foreground">Ceny a DPH:</strong> Všetky ceny sú uvedené bez DPH.
+            Platná sadzba DPH v SR je 23 %. Predplatné sa účtuje mesačne a automaticky sa obnovuje,
+            kým ho nezrušíte v sekcii Predplatné.
+          </p>
+          <p>
+            <strong className="text-foreground">Platba:</strong> Bezpečne cez GoPay — platobnou
+            kartou (Visa, Mastercard) alebo okamžitým bankovým prevodom. Údaje karty spracúva
+            výhradne GoPay.
+          </p>
+          <p>
+            Podrobnosti:{" "}
+            <a href="/pravne/obchodne-podmienky" className="underline">
+              Obchodné podmienky
+            </a>{" "}
+            ·{" "}
+            <a href="/pravne/gopay-podmienky" className="underline">
+              GoPay podmienky
+            </a>
+            .
+          </p>
         </div>
       </section>
-
     </MarketingShell>
   );
 }

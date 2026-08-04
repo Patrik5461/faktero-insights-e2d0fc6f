@@ -7,8 +7,13 @@ export function formatDuration(seconds: number | null | undefined): string {
   return `${m} min`;
 }
 
-export function formatSpeed(distanceKm: number | null | undefined, durationSeconds: number | null | undefined, stored?: number | null): string {
-  if (stored != null && Number.isFinite(Number(stored)) && Number(stored) > 0) return `${Number(stored).toFixed(0)} km/h`;
+export function formatSpeed(
+  distanceKm: number | null | undefined,
+  durationSeconds: number | null | undefined,
+  stored?: number | null,
+): string {
+  if (stored != null && Number.isFinite(Number(stored)) && Number(stored) > 0)
+    return `${Number(stored).toFixed(0)} km/h`;
   const d = Number(distanceKm);
   const sec = Number(durationSeconds);
   if (!Number.isFinite(d) || !Number.isFinite(sec) || sec <= 0) return "—";

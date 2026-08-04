@@ -53,8 +53,6 @@ type InvoiceRow = {
   reverse_charge_type?: string | null;
 };
 
-
-
 type InvoiceItemRow = {
   id: string;
   position: number;
@@ -101,11 +99,14 @@ function mapDocType(type: string): EN16931Invoice["documentType"] {
 }
 
 /** Map invoice + rate to EN 16931 category code (UNCL5305). */
-function mapVatCategory(rate: number, invoice?: Pick<InvoiceRow, "reverse_charge" | "reverse_charge_type">): EN16931Line["vatCategory"] {
+function mapVatCategory(
+  rate: number,
+  invoice?: Pick<InvoiceRow, "reverse_charge" | "reverse_charge_type">,
+): EN16931Line["vatCategory"] {
   if (invoice?.reverse_charge) {
-    if (invoice.reverse_charge_type === "eu_b2b") return "K";   // VAT exempt for EEA intra-community supply
-    if (invoice.reverse_charge_type === "export") return "G";   // Free export item, tax not charged
-    return "AE";                                                 // Reverse charge (domestic §69)
+    if (invoice.reverse_charge_type === "eu_b2b") return "K"; // VAT exempt for EEA intra-community supply
+    if (invoice.reverse_charge_type === "export") return "G"; // Free export item, tax not charged
+    return "AE"; // Reverse charge (domestic §69)
   }
   if (rate === 0) return "Z";
   return "S";
@@ -118,7 +119,6 @@ function reverseChargeReason(invoice: Pick<InvoiceRow, "reverse_charge_type">): 
     return "Export outside EU — VAT exempt (§47 zákona o DPH)";
   return "Reverse charge — domestic supply (§69 ods. 12 zákona o DPH)";
 }
-
 
 function buildSellerParty(company: CompanyRow, profile?: ProfileRow | null): EN16931Party {
   return {
@@ -204,7 +204,6 @@ function buildTaxSubtotals(items: InvoiceItemRow[], invoice: InvoiceRow): EN1693
       taxAmount: Math.round(g.taxAmount * 100) / 100,
     }))
     .sort((a, b) => a.vatPercent - b.vatPercent);
-
 }
 
 export function mapToEN16931(args: {
@@ -251,6 +250,9 @@ export function mapToEN16931(args: {
       taxAmount: invoice.reverse_charge ? 0 : Number(invoice.vat_total),
       payableAmount: Number(invoice.total),
     },
-    note: [invoice.reverse_charge ? reverseChargeReason(invoice) : null, invoice.notes || null].filter(Boolean).join(" | ") || undefined,
+    note:
+      [invoice.reverse_charge ? reverseChargeReason(invoice) : null, invoice.notes || null]
+        .filter(Boolean)
+        .join(" | ") || undefined,
   };
 }

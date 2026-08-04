@@ -72,9 +72,7 @@ export async function syncGopayPaymentById(paymentId: string) {
 
   if (isPaid) {
     try {
-      const { issueSubscriptionInvoiceForPayment } = await import(
-        "./subscription-invoice.server"
-      );
+      const { issueSubscriptionInvoiceForPayment } = await import("./subscription-invoice.server");
       await issueSubscriptionInvoiceForPayment(existing.id);
     } catch (e: any) {
       await supabaseAdmin.from("billing_events").insert({

@@ -64,7 +64,9 @@ export class CommanderRateLimitError extends Error {
   }
 }
 export class CommanderAuthError extends Error {
-  constructor(msg = "unauthorized") { super(msg); }
+  constructor(msg = "unauthorized") {
+    super(msg);
+  }
 }
 
 function authHeader(username: string, password: string): string {
@@ -91,17 +93,19 @@ async function call<T>(
   opts: { retryOn429?: boolean } = {},
 ): Promise<T> {
   const url = new URL(BASE + path);
-  if (query) for (const [k, v] of Object.entries(query)) {
-    if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
-  }
+  if (query)
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
+    }
 
-  const doFetch = async () => fetch(url.toString(), {
-    method: "GET",
-    headers: {
-      "Authorization": authHeader(username, password),
-      "Accept": "application/json",
-    },
-  });
+  const doFetch = async () =>
+    fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        Authorization: authHeader(username, password),
+        Accept: "application/json",
+      },
+    });
 
   let res = await doFetch();
 
@@ -114,8 +118,9 @@ async function call<T>(
   }
 
   if (res.status === 429) {
-    const retryAfter = parseRetryAfter(res.headers.get("Retry-After"))
-      ?? parseRetryAfter(res.headers.get("X-RateLimit-Reset"));
+    const retryAfter =
+      parseRetryAfter(res.headers.get("Retry-After")) ??
+      parseRetryAfter(res.headers.get("X-RateLimit-Reset"));
     if (opts.retryOn429 !== false && retryAfter !== undefined && retryAfter <= 30) {
       await sleep((retryAfter + 1) * 1000);
       res = await doFetch();
@@ -130,11 +135,17 @@ async function call<T>(
     console.error(`[commander] GET ${url.toString()} -> ${res.status} ${text.slice(0, 500)}`);
     throw new Error(`Commander API ${res.status}: ${text.slice(0, 300)}`);
   }
-  console.log(`[commander] GET ${url.toString()} -> ${res.status} (remaining=${res.headers.get("X-RateLimit-Remaining") ?? "?"})`);
+  console.log(
+    `[commander] GET ${url.toString()} -> ${res.status} (remaining=${res.headers.get("X-RateLimit-Remaining") ?? "?"})`,
+  );
   const ct = res.headers.get("content-type") ?? "";
   if (!ct.includes("json")) {
     const text = await res.text();
-    try { return JSON.parse(text) as T; } catch { return text as unknown as T; }
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return text as unknown as T;
+    }
   }
   return (await res.json()) as T;
 }
@@ -146,7 +157,10 @@ export async function commanderTest(username: string, password: string): Promise
 }
 
 /** Per docs: call MAX 1x/day. Caller is responsible for caching the result. */
-export async function commanderListVehicles(username: string, password: string): Promise<CommanderVehicle[]> {
+export async function commanderListVehicles(
+  username: string,
+  password: string,
+): Promise<CommanderVehicle[]> {
   const data = await call<any>("/vehicles", username, password);
   if (Array.isArray(data)) return data;
   if (data?.vehicles && Array.isArray(data.vehicles)) return data.vehicles;
@@ -154,7 +168,11 @@ export async function commanderListVehicles(username: string, password: string):
   return [];
 }
 
-export async function commanderGetVehicle(username: string, password: string, vehicleId: string | number) {
+export async function commanderGetVehicle(
+  username: string,
+  password: string,
+  vehicleId: string | number,
+) {
   return call<any>(`/vehicles/${encodeURIComponent(String(vehicleId))}`, username, password);
 }
 
@@ -180,9 +198,7 @@ export async function commanderListRides(
       datetimeEnd: toEpoch,
       page,
     });
-    const arr: CommanderRide[] = Array.isArray(data)
-      ? data
-      : (data?.rides ?? data?.data ?? []);
+    const arr: CommanderRide[] = Array.isArray(data) ? data : (data?.rides ?? data?.data ?? []);
     const tp = Number(data?.totalPages ?? data?.total_pages);
     if (Number.isFinite(tp) && tp > 0) totalPages = tp;
     if (!arr.length) break;
@@ -216,9 +232,7 @@ export async function commanderListAllRides(
       page,
       limit,
     });
-    const arr: CommanderRide[] = Array.isArray(data)
-      ? data
-      : (data?.rides ?? data?.data ?? []);
+    const arr: CommanderRide[] = Array.isArray(data) ? data : (data?.rides ?? data?.data ?? []);
     const tp = Number(data?.totalPages ?? data?.total_pages);
     if (Number.isFinite(tp) && tp > 0) totalPages = tp;
     if (!arr.length) break;
@@ -233,7 +247,11 @@ export async function commanderLastPositions(username: string, password: string)
   return (data?.positions ?? data?.data ?? data ?? []) as any[];
 }
 
-export async function commanderListDrivers(username: string, password: string, opts: { page?: number; limit?: number } = {}) {
+export async function commanderListDrivers(
+  username: string,
+  password: string,
+  opts: { page?: number; limit?: number } = {},
+) {
   const data = await call<any>("/drivers", username, password, {
     page: opts.page ?? 1,
     limit: Math.max(1, Math.min(200, opts.limit ?? 200)),
@@ -256,8 +274,16 @@ export async function commanderListContracts(username: string, password: string)
   return (data?.contracts ?? []) as any[];
 }
 
-export async function commanderCurrentTacho(username: string, password: string, vehicleId: string | number) {
-  const data = await call<any>(`/current-tacho/${encodeURIComponent(String(vehicleId))}`, username, password);
+export async function commanderCurrentTacho(
+  username: string,
+  password: string,
+  vehicleId: string | number,
+) {
+  const data = await call<any>(
+    `/current-tacho/${encodeURIComponent(String(vehicleId))}`,
+    username,
+    password,
+  );
   return data?.currentTacho ?? data;
 }
 
@@ -287,7 +313,8 @@ export function pickRideId(r: CommanderRide): string | null {
 
 export function pickLocation(addr?: string, lat?: number, lng?: number): string | null {
   if (addr && addr.trim()) return addr.trim();
-  if (typeof lat === "number" && typeof lng === "number") return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  if (typeof lat === "number" && typeof lng === "number")
+    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
   return null;
 }
 
@@ -331,56 +358,141 @@ export function getRideId(r: any): string | null {
 }
 
 export function getRideVehicleId(r: any): string | null {
-  const v = firstDefined(r, ["vehicleId", "vehicle_id", "vehicle.id", "carId", "objectId", "vehicle.vehicleId"]);
+  const v = firstDefined(r, [
+    "vehicleId",
+    "vehicle_id",
+    "vehicle.id",
+    "carId",
+    "objectId",
+    "vehicle.vehicleId",
+  ]);
   return v == null ? null : String(v);
 }
 
 export function getRideStartDate(r: any): unknown {
   return firstDefined(r, [
-    "startTime", "datetimeStart", "dateTimeStart", "startDateTime", "startedAt",
-    "dateFrom", "from", "begin", "timestamp",
-    "start.datetime", "start.time", "start.date", "start.timestamp", "start.dateTime",
+    "startTime",
+    "datetimeStart",
+    "dateTimeStart",
+    "startDateTime",
+    "startedAt",
+    "dateFrom",
+    "from",
+    "begin",
+    "timestamp",
+    "start.datetime",
+    "start.time",
+    "start.date",
+    "start.timestamp",
+    "start.dateTime",
   ]);
 }
 
 export function getRideEndDate(r: any): unknown {
   return firstDefined(r, [
-    "stopTime", "datetimeEnd", "dateTimeEnd", "endDateTime", "endTime", "endedAt",
-    "dateTo", "to", "finish", "endTimestamp",
-    "end.datetime", "end.time", "end.date", "end.timestamp", "end.dateTime",
+    "stopTime",
+    "datetimeEnd",
+    "dateTimeEnd",
+    "endDateTime",
+    "endTime",
+    "endedAt",
+    "dateTo",
+    "to",
+    "finish",
+    "endTimestamp",
+    "end.datetime",
+    "end.time",
+    "end.date",
+    "end.timestamp",
+    "end.dateTime",
   ]);
 }
 
 export function getRideDistance(r: any): number | null {
-  const v = firstDefined(r, ["distance", "distanceKm", "distance_km", "length", "km", "routeLength", "totalDistance"]);
+  const v = firstDefined(r, [
+    "distance",
+    "distanceKm",
+    "distance_km",
+    "length",
+    "km",
+    "routeLength",
+    "totalDistance",
+  ]);
   return toNumber(v);
 }
 
 export function getRideStartOdometer(r: any): number | null {
-  const v = firstDefined(r, ["odometerStart", "startTacho", "startOdometer", "start_odometer", "start.tacho", "start.odometer"]);
+  const v = firstDefined(r, [
+    "odometerStart",
+    "startTacho",
+    "startOdometer",
+    "start_odometer",
+    "start.tacho",
+    "start.odometer",
+  ]);
   return toNumber(v);
 }
 
 export function getRideEndOdometer(r: any): number | null {
-  const v = firstDefined(r, ["odometerStop", "endTacho", "endOdometer", "end_odometer", "stopOdometer", "end.tacho", "end.odometer"]);
+  const v = firstDefined(r, [
+    "odometerStop",
+    "endTacho",
+    "endOdometer",
+    "end_odometer",
+    "stopOdometer",
+    "end.tacho",
+    "end.odometer",
+  ]);
   return toNumber(v);
 }
 
 export function getRideStartLocation(r: any): string | null {
-  const addr = firstDefined(r, ["startAddress", "start_address", "start.address", "startLocation", "start.location", "fromAddress", "origin"]);
+  const addr = firstDefined(r, [
+    "startAddress",
+    "start_address",
+    "start.address",
+    "startLocation",
+    "start.location",
+    "fromAddress",
+    "origin",
+  ]);
   if (addr) return String(addr).trim();
   // PRIVAT_RIDE has lat/lon = null per docs — toNumber returns null and we skip.
-  const lat = toNumber(firstDefined(r, ["latStart", "startLatitude", "start.latitude", "start.lat", "startLat"]));
-  const lng = toNumber(firstDefined(r, ["lonStart", "startLongitude", "start.longitude", "start.lng", "startLng", "startLon"]));
+  const lat = toNumber(
+    firstDefined(r, ["latStart", "startLatitude", "start.latitude", "start.lat", "startLat"]),
+  );
+  const lng = toNumber(
+    firstDefined(r, [
+      "lonStart",
+      "startLongitude",
+      "start.longitude",
+      "start.lng",
+      "startLng",
+      "startLon",
+    ]),
+  );
   if (lat != null && lng != null) return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
   return null;
 }
 
 export function getRideEndLocation(r: any): string | null {
-  const addr = firstDefined(r, ["stopAddress", "endAddress", "end_address", "end.address", "endLocation", "end.location", "toAddress", "destination"]);
+  const addr = firstDefined(r, [
+    "stopAddress",
+    "endAddress",
+    "end_address",
+    "end.address",
+    "endLocation",
+    "end.location",
+    "toAddress",
+    "destination",
+  ]);
   if (addr) return String(addr).trim();
-  const lat = toNumber(firstDefined(r, ["latStop", "endLatitude", "end.latitude", "end.lat", "endLat"]));
-  const lng = toNumber(firstDefined(r, ["lonStop", "endLongitude", "end.longitude", "end.lng", "endLng", "endLon"]));
+  const lat = toNumber(
+    firstDefined(r, ["latStop", "endLatitude", "end.latitude", "end.lat", "endLat"]),
+  );
+  const lng = toNumber(
+    firstDefined(r, ["lonStop", "endLongitude", "end.longitude", "end.lng", "endLng", "endLon"]),
+  );
   if (lat != null && lng != null) return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
   return null;
 }
@@ -391,6 +503,13 @@ export function getRideType(r: any): string | undefined {
 }
 
 export function getRideDriver(r: any): string | null {
-  const v = firstDefined(r, ["driverName", "driver_name", "driver.name", "driver", "userName", "user.name"]);
+  const v = firstDefined(r, [
+    "driverName",
+    "driver_name",
+    "driver.name",
+    "driver",
+    "userName",
+    "user.name",
+  ]);
   return v == null ? null : String(v);
 }

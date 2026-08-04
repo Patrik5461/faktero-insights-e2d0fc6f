@@ -89,7 +89,9 @@ export const deleteExpenseFn = createServerFn({ method: "POST" })
 
 export const listExpensesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { company_id: string; month?: string | null; status?: string | null }) => data)
+  .inputValidator(
+    (data: { company_id: string; month?: string | null; status?: string | null }) => data,
+  )
   .handler(async ({ data, context }) => {
     let q = context.supabase
       .from("expense_documents")
@@ -132,10 +134,16 @@ export const parseQrFn = createServerFn({ method: "POST" })
     const { processEkasaQr, isEkasaQr } = await import("./ekasa-decoder.server");
 
     const out: {
-      supplier_ico?: string; supplier_ic_dph?: string;
-      total_amount?: number; vat_amount?: number; vat_rate?: number;
-      issue_date?: string; document_number?: string; cash_register?: string;
-      currency?: string; items?: Array<{ name: string; quantity: number; unit_price: number; vat_rate: number }>;
+      supplier_ico?: string;
+      supplier_ic_dph?: string;
+      total_amount?: number;
+      vat_amount?: number;
+      vat_rate?: number;
+      issue_date?: string;
+      document_number?: string;
+      cash_register?: string;
+      currency?: string;
+      items?: Array<{ name: string; quantity: number; unit_price: number; vat_rate: number }>;
     } = {};
 
     let source: "lzma" | "online" | "heuristic" = "heuristic";
@@ -157,7 +165,10 @@ export const parseQrFn = createServerFn({ method: "POST" })
         if (d.mena) out.currency = d.mena;
         if (d.polozky?.length) {
           out.items = d.polozky.map((p) => ({
-            name: p.name, quantity: p.quantity, unit_price: p.unit_price, vat_rate: p.vat_rate,
+            name: p.name,
+            quantity: p.quantity,
+            unit_price: p.unit_price,
+            vat_rate: p.vat_rate,
           }));
         }
         return { raw, parsed: out, source, overeny };
@@ -170,7 +181,8 @@ export const parseQrFn = createServerFn({ method: "POST" })
     const amountMatch = raw.match(/(\d+[.,]\d{2})\s*(?:eur|€)?/i);
     if (amountMatch) out.total_amount = Number(amountMatch[1].replace(",", "."));
     const dateMatch = raw.match(/(20\d{2})[-./](\d{1,2})[-./](\d{1,2})/);
-    if (dateMatch) out.issue_date = `${dateMatch[1]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[3].padStart(2, "0")}`;
+    if (dateMatch)
+      out.issue_date = `${dateMatch[1]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[3].padStart(2, "0")}`;
     const numMatch = raw.match(/(?:cislo|number|ocp|receipt)[=:/]?\s*([A-Za-z0-9-]{3,})/i);
     if (numMatch) out.document_number = numMatch[1];
     return { raw, parsed: out, source, overeny };
@@ -179,7 +191,14 @@ export const parseQrFn = createServerFn({ method: "POST" })
 // Export vybraných dokladov ako ZIP (CSV súhrn + priložené súbory)
 export const exportExpensesZipFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { company_id: string; ids?: string[]; month?: string | null; mark_exported?: boolean }) => data)
+  .inputValidator(
+    (data: {
+      company_id: string;
+      ids?: string[];
+      month?: string | null;
+      mark_exported?: boolean;
+    }) => data,
+  )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     let q = supabase.from("expense_documents").select("*").eq("company_id", data.company_id);
@@ -201,21 +220,47 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
 
     // CSV súhrn
     const header = [
-      "id","datum","dodavatel","ico","ic_dph","cislo_dokladu",
-      "suma_bez_dph","dph","suma_celkom","dph_sadzba","mena","kategoria","poznamka","subor",
+      "id",
+      "datum",
+      "dodavatel",
+      "ico",
+      "ic_dph",
+      "cislo_dokladu",
+      "suma_bez_dph",
+      "dph",
+      "suma_celkom",
+      "dph_sadzba",
+      "mena",
+      "kategoria",
+      "poznamka",
+      "subor",
     ].join(";");
     const escape = (v: unknown) => {
       const s = v == null ? "" : String(v);
-      return /[;"\n\r]/.test(s) ? `"${s.replaceAll('"','""')}"` : s;
+      return /[;"\n\r]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
     };
     const lines = [header];
     for (const r of rows) {
-      lines.push([
-        r.id, r.issue_date ?? "", r.supplier_name ?? "", r.supplier_ico ?? "", r.supplier_ic_dph ?? "",
-        r.document_number ?? "", r.net_amount ?? "", r.vat_amount ?? "", r.total_amount ?? "",
-        r.vat_rate ?? "", r.currency ?? "EUR", r.category ?? "", r.note ?? "",
-        r.file_path ? r.file_path.split("/").pop() : "",
-      ].map(escape).join(";"));
+      lines.push(
+        [
+          r.id,
+          r.issue_date ?? "",
+          r.supplier_name ?? "",
+          r.supplier_ico ?? "",
+          r.supplier_ic_dph ?? "",
+          r.document_number ?? "",
+          r.net_amount ?? "",
+          r.vat_amount ?? "",
+          r.total_amount ?? "",
+          r.vat_rate ?? "",
+          r.currency ?? "EUR",
+          r.category ?? "",
+          r.note ?? "",
+          r.file_path ? r.file_path.split("/").pop() : "",
+        ]
+          .map(escape)
+          .join(";"),
+      );
     }
     zip.file("doklady.csv", "\uFEFF" + lines.join("\n"));
 
@@ -226,7 +271,8 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       const { data: file } = await supabase.storage.from("expense-receipts").download(r.file_path);
       if (!file) continue;
       const ext = (r.file_path.split(".").pop() || "bin").toLowerCase();
-      const namePart = [r.issue_date ?? "no-date", r.supplier_name ?? "doklad", r.id.slice(0, 8)].join("_")
+      const namePart = [r.issue_date ?? "no-date", r.supplier_name ?? "doklad", r.id.slice(0, 8)]
+        .join("_")
         .replace(/[^a-zA-Z0-9-_ěščřžýáíéúůĎŇŤŠČŘŽÝÁÍÉÚŮ.]+/g, "-");
       files.file(`${namePart}.${ext}`, await file.arrayBuffer());
     }
@@ -237,7 +283,10 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       await supabase
         .from("expense_documents")
         .update({ status: "exported", exported_at: new Date().toISOString() })
-        .in("id", rows.map((r) => r.id));
+        .in(
+          "id",
+          rows.map((r) => r.id),
+        );
     }
 
     return {

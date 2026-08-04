@@ -42,32 +42,49 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
   if (!apiKey) throw new Error("RESEND_API_KEY nie je nakonfigurovaný.");
 
   const { data: invoice, error } = await supabaseAdmin
-    .from("invoices").select("*").eq("id", input.invoice_id).eq("company_id", input.company_id).maybeSingle();
+    .from("invoices")
+    .select("*")
+    .eq("id", input.invoice_id)
+    .eq("company_id", input.company_id)
+    .maybeSingle();
   if (error || !invoice) throw new Error("Faktúra nenájdená");
   if (invoice.status === "cancelled") throw new Error("Stornovanú faktúru nemožno odoslať.");
 
   const { data: company } = await supabaseAdmin
-    .from("companies").select("*").eq("id", input.company_id).single();
+    .from("companies")
+    .select("*")
+    .eq("id", input.company_id)
+    .single();
 
   // Look up active payment link (used both for PDF embed and email CTA)
   let paymentLinkUrl: string | null = null;
   try {
-    const { data: link } = await supabaseAdmin.from("invoice_payment_links")
+    const { data: link } = await supabaseAdmin
+      .from("invoice_payment_links")
       .select("token, status, expires_at")
       .eq("invoice_id", invoice.id)
       .order("created_at", { ascending: false })
-      .limit(1).maybeSingle();
-    if (link && link.status !== "cancelled" && (!link.expires_at || new Date(link.expires_at) > new Date())) {
+      .limit(1)
+      .maybeSingle();
+    if (
+      link &&
+      link.status !== "cancelled" &&
+      (!link.expires_at || new Date(link.expires_at) > new Date())
+    ) {
       const base = (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
       paymentLinkUrl = `${base}/pay/${link.token}`;
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   // Ensure a fresh PDF exists (regenerates when the cached copy is stale)
   const { ensureInvoicePdf } = await import("./invoice-pdf.server");
   const { path: pdfPath } = await ensureInvoicePdf(invoice.id);
 
-  const { data: pdfBlob, error: dlErr } = await supabaseAdmin.storage.from("invoice-pdfs").download(pdfPath);
+  const { data: pdfBlob, error: dlErr } = await supabaseAdmin.storage
+    .from("invoice-pdfs")
+    .download(pdfPath);
   if (dlErr || !pdfBlob) throw new Error(dlErr?.message ?? "PDF sa nepodarilo načítať.");
   const pdfB64 = arrayBufferToBase64(await pdfBlob.arrayBuffer());
 
@@ -76,11 +93,21 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
   try {
     const { getEmailTemplate } = await import("./email-templates.server");
     const tpl = await getEmailTemplate(input.company_id, "invoice_send");
-    if (tpl.fromDb) { tplSubject = tpl.subject; tplBody = tpl.body; }
-  } catch { /* ignore */ }
+    if (tpl.fromDb) {
+      tplSubject = tpl.subject;
+      tplBody = tpl.body;
+    }
+  } catch {
+    /* ignore */
+  }
 
-  const subject = (input.subject ?? tplSubject ?? company?.email_default_subject ?? "Faktúra {invoice_number}");
-  const message = (input.message ?? tplBody ?? company?.email_default_message ?? "V prílohe posielame faktúru {invoice_number}.");
+  const subject =
+    input.subject ?? tplSubject ?? company?.email_default_subject ?? "Faktúra {invoice_number}";
+  const message =
+    input.message ??
+    tplBody ??
+    company?.email_default_message ??
+    "V prílohe posielame faktúru {invoice_number}.";
   const finalSubject = applyVars(subject, invoice, company);
   const finalMessage = applyVars(message, invoice, company);
 
@@ -110,11 +137,18 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
   const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
   const from = `${senderName} <${fromEmail}>`;
 
-  const { data: log } = await supabaseAdmin.from("invoice_email_logs").insert({
-    company_id: input.company_id, invoice_id: invoice.id,
-    recipient_email: input.recipient_email, subject: finalSubject, message: finalPlain,
-    status: "pending",
-  }).select("id").single();
+  const { data: log } = await supabaseAdmin
+    .from("invoice_email_logs")
+    .insert({
+      company_id: input.company_id,
+      invoice_id: invoice.id,
+      recipient_email: input.recipient_email,
+      subject: finalSubject,
+      message: finalPlain,
+      status: "pending",
+    })
+    .select("id")
+    .single();
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -132,41 +166,71 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
     });
     const text = await res.text();
     let json: any = {};
-    try { json = JSON.parse(text); } catch {}
+    try {
+      json = JSON.parse(text);
+    } catch {}
     if (!res.ok) {
       const errMsg = json?.message ?? text.slice(0, 500);
-      await supabaseAdmin.from("invoice_email_logs").update({
-        status: "failed", error_message: errMsg,
-      }).eq("id", log!.id);
+      await supabaseAdmin
+        .from("invoice_email_logs")
+        .update({
+          status: "failed",
+          error_message: errMsg,
+        })
+        .eq("id", log!.id);
       throw new Error(`Resend error: ${errMsg}`);
     }
-    await supabaseAdmin.from("invoice_email_logs").update({
-      status: "sent", provider_message_id: json?.id ?? null, sent_at: new Date().toISOString(),
-    }).eq("id", log!.id);
+    await supabaseAdmin
+      .from("invoice_email_logs")
+      .update({
+        status: "sent",
+        provider_message_id: json?.id ?? null,
+        sent_at: new Date().toISOString(),
+      })
+      .eq("id", log!.id);
 
     // Update invoice as sent
-    const { data: updated } = await supabaseAdmin.from("invoices").update({
-      status: invoice.status === "draft" || invoice.status === "issued" ? "sent" : invoice.status,
-      sent_at: new Date().toISOString(),
-    }).eq("id", invoice.id).select().single();
+    const { data: updated } = await supabaseAdmin
+      .from("invoices")
+      .update({
+        status: invoice.status === "draft" || invoice.status === "issued" ? "sent" : invoice.status,
+        sent_at: new Date().toISOString(),
+      })
+      .eq("id", invoice.id)
+      .select()
+      .single();
 
     // Webhook: invoice.sent
     const { triggerEvent, invoicePayload } = await import("./webhook-trigger.server");
-    await triggerEvent({ company_id: input.company_id, event: "invoice.sent", data: invoicePayload(updated ?? invoice) });
+    await triggerEvent({
+      company_id: input.company_id,
+      event: "invoice.sent",
+      data: invoicePayload(updated ?? invoice),
+    });
 
     return { ok: true, message_id: json?.id ?? null, log_id: log!.id };
   } catch (e: any) {
-    await supabaseAdmin.from("invoice_email_logs").update({
-      status: "failed", error_message: e?.message ?? "unknown",
-    }).eq("id", log!.id);
+    await supabaseAdmin
+      .from("invoice_email_logs")
+      .update({
+        status: "failed",
+        error_message: e?.message ?? "unknown",
+      })
+      .eq("id", log!.id);
     throw e;
   }
 }
 
 function escapeHtml(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]!));
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
 }
 
 function escapeAttr(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]!));
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
 }

@@ -1,16 +1,42 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { Logo } from "@/components/faktero/Logo";
 import {
-  LayoutDashboard, FileText, Users, Package, FileSpreadsheet, FileCheck2,
-  KeyRound, Settings, ChevronDown, Plus, Search, HelpCircle, LogOut,
-  Building2, CreditCard, User, Menu, X, Sparkles, Landmark, Shield, Warehouse, Car, ArrowRightLeft, Bell,
+  LayoutDashboard,
+  FileText,
+  Users,
+  Package,
+  FileSpreadsheet,
+  FileCheck2,
+  KeyRound,
+  Settings,
+  ChevronDown,
+  Plus,
+  Search,
+  HelpCircle,
+  LogOut,
+  Building2,
+  CreditCard,
+  User,
+  Menu,
+  X,
+  Sparkles,
+  Landmark,
+  Shield,
+  Warehouse,
+  Car,
+  ArrowRightLeft,
+  Bell,
 } from "lucide-react";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, type ReactNode } from "react";
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
-  DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CreateCompanyDialog } from "@/components/faktero/CreateCompanyDialog";
@@ -35,7 +61,9 @@ type NavGroup = {
 const NAV: NavGroup[] = [
   { key: "prehlad", label: "Prehľad", icon: LayoutDashboard, match: ["/dashboard"], children: [] },
   {
-    key: "fakturacia", label: "Fakturácia", icon: FileText,
+    key: "fakturacia",
+    label: "Fakturácia",
+    icon: FileText,
     match: ["/faktury", "/ponuky", "/opakovane", "/prijate-faktury", "/zalohove"],
     children: [
       { to: "/faktury", label: "Faktúry" },
@@ -49,7 +77,9 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "kontakty", label: "Kontakty", icon: Users,
+    key: "kontakty",
+    label: "Kontakty",
+    icon: Users,
     match: ["/odberatelia"],
     children: [
       { to: "/odberatelia", label: "Odberatelia" },
@@ -57,7 +87,9 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "produkty", label: "Produkty", icon: Package,
+    key: "produkty",
+    label: "Produkty",
+    icon: Package,
     match: ["/produkty"],
     children: [
       { to: "/produkty", label: "Produkty a služby" },
@@ -65,7 +97,9 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "sklad", label: "Sklad", icon: Warehouse,
+    key: "sklad",
+    label: "Sklad",
+    icon: Warehouse,
     match: ["/sklad"],
     children: [
       { to: "/sklad", label: "Prehľad" },
@@ -75,12 +109,16 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "logbook-prehlad", label: "Prehľad", icon: LayoutDashboard,
+    key: "logbook-prehlad",
+    label: "Prehľad",
+    icon: LayoutDashboard,
     match: ["/jazdy/prehlad"],
     children: [],
   },
   {
-    key: "jazdy", label: "Jazdy", icon: Car,
+    key: "jazdy",
+    label: "Jazdy",
+    icon: Car,
     match: ["/jazdy", "/jazdy/nova", "/jazdy/export"],
     exact: true,
     children: [
@@ -90,14 +128,16 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "vozidla", label: "Vozidlá", icon: Car,
+    key: "vozidla",
+    label: "Vozidlá",
+    icon: Car,
     match: ["/jazdy/vozidla"],
-    children: [
-      { to: "/jazdy/vozidla", label: "Vozidlá a tankovanie" },
-    ],
+    children: [{ to: "/jazdy/vozidla", label: "Vozidlá a tankovanie" }],
   },
   {
-    key: "integracie", label: "Integrácie", icon: ArrowRightLeft,
+    key: "integracie",
+    label: "Integrácie",
+    icon: ArrowRightLeft,
     match: ["/jazdy/integracie"],
     children: [
       { to: "/jazdy/integracie", label: "Prehľad integrácií" },
@@ -106,7 +146,9 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "doklady", label: "Doklady", icon: FileText,
+    key: "doklady",
+    label: "Doklady",
+    icon: FileText,
     match: ["/doklady"],
     children: [
       { to: "/doklady", label: "Prehľad dokladov" },
@@ -114,7 +156,9 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "uctovnictvo", label: "Účtovníctvo", icon: FileSpreadsheet,
+    key: "uctovnictvo",
+    label: "Účtovníctvo",
+    icon: FileSpreadsheet,
     match: ["/exporty", "/importy", "/uctovnictvo"],
     children: [
       { to: "/uctovnictvo/dph", label: "DPH prehľad" },
@@ -130,7 +174,9 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "efaktura", label: "eFaktúra", icon: FileCheck2,
+    key: "efaktura",
+    label: "eFaktúra",
+    icon: FileCheck2,
     match: ["/efaktura"],
     children: [
       { to: "/efaktura", label: "Prehľad eFaktúry" },
@@ -140,7 +186,9 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "banka", label: "Bankové účty", icon: Landmark,
+    key: "banka",
+    label: "Bankové účty",
+    icon: Landmark,
     match: ["/bankove-ucty"],
     children: [
       { to: "/bankove-ucty", label: "Prehľad účtov" },
@@ -149,7 +197,9 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "api", label: "API", icon: KeyRound,
+    key: "api",
+    label: "API",
+    icon: KeyRound,
     match: ["/api-kluce", "/api-dokumentacia", "/api-playground", "/webhooky", "/webhooky-logy"],
     children: [
       { to: "/api-kluce", label: "API kľúče" },
@@ -160,7 +210,9 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "nastavenia", label: "Nastavenia", icon: Settings,
+    key: "nastavenia",
+    label: "Nastavenia",
+    icon: Settings,
     match: ["/firma", "/firmy", "/predplatne", "/nastavenia", "/diagnostika"],
     children: [
       { to: "/firma", label: "Firma" },
@@ -187,8 +239,19 @@ function isPathActive(pathname: string, group: Pick<NavGroup, "match" | "exact">
 
 export type ProductMode = "invoicing" | "logbook" | "both";
 
-const INVOICING_KEYS = new Set(["prehlad","fakturacia","kontakty","produkty","sklad","doklady","uctovnictvo","efaktura","banka","api"]);
-const LOGBOOK_KEYS = new Set(["logbook-prehlad","jazdy","vozidla","integracie"]);
+const INVOICING_KEYS = new Set([
+  "prehlad",
+  "fakturacia",
+  "kontakty",
+  "produkty",
+  "sklad",
+  "doklady",
+  "uctovnictvo",
+  "efaktura",
+  "banka",
+  "api",
+]);
+const LOGBOOK_KEYS = new Set(["logbook-prehlad", "jazdy", "vozidla", "integracie"]);
 
 /**
  * Resolve the *view* to render based on access (productMode) and the user's
@@ -207,7 +270,10 @@ function filterNav(view: ActiveProduct): NavGroup[] {
 }
 
 export function AppShell({
-  companies, activeId, onChangeCompany, children,
+  companies,
+  activeId,
+  onChangeCompany,
+  children,
   productMode = "both",
   activeProduct = "invoicing",
 }: {
@@ -239,7 +305,9 @@ export function AppShell({
     setTimeout(() => window.location.reload(), 0);
   }
 
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     let cancelled = false;
@@ -257,7 +325,9 @@ export function AppShell({
         if (!cancelled) setAdminRole(null);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const activeGroup = nav.find((g) => isPathActive(pathname, g));
@@ -299,20 +369,31 @@ export function AppShell({
           {/* Mobile menu trigger */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
-              <button className="grid h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-secondary lg:hidden" aria-label="Menu">
+              <button
+                className="grid h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-secondary lg:hidden"
+                aria-label="Menu"
+              >
                 <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="w-80 overflow-y-auto p-0">
-              <MobileNav pathname={pathname} active={active} companies={companies}
+              <MobileNav
+                pathname={pathname}
+                active={active}
+                companies={companies}
                 nav={nav}
                 homePath={homePath}
                 view={view}
                 canSwitch={canSwitch}
                 onSwitchProduct={switchProduct}
-                onChangeCompany={onChangeCompany} onSignOut={signOut}
-                onAddCompany={() => { setMobileOpen(false); setCreateOpen(true); }}
-                onClose={() => setMobileOpen(false)} />
+                onChangeCompany={onChangeCompany}
+                onSignOut={signOut}
+                onAddCompany={() => {
+                  setMobileOpen(false);
+                  setCreateOpen(true);
+                }}
+                onClose={() => setMobileOpen(false)}
+              />
             </SheetContent>
           </Sheet>
 
@@ -329,7 +410,9 @@ export function AppShell({
           {active && (
             <DropdownMenu>
               <DropdownMenuTrigger className="hidden min-w-0 items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-sm hover:bg-secondary md:inline-flex">
-                <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br ${avatarGradient(active.name)} text-[11px] font-semibold text-white shadow-sm`}>
+                <span
+                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br ${avatarGradient(active.name)} text-[11px] font-semibold text-white shadow-sm`}
+                >
                   {(active.name?.[0] ?? "F").toUpperCase()}
                 </span>
                 <span className="max-w-[180px] truncate font-medium">{active.name}</span>
@@ -338,8 +421,14 @@ export function AppShell({
               <DropdownMenuContent align="start" className="w-64">
                 <DropdownMenuLabel>Firmy</DropdownMenuLabel>
                 {companies.map((c) => (
-                  <DropdownMenuItem key={c.id} onClick={() => onChangeCompany(c.id)} className={c.id === activeId ? "font-semibold" : ""}>
-                    <span className={`mr-2 grid h-5 w-5 shrink-0 place-items-center rounded bg-gradient-to-br ${avatarGradient(c.name)} text-[10px] font-semibold text-white`}>
+                  <DropdownMenuItem
+                    key={c.id}
+                    onClick={() => onChangeCompany(c.id)}
+                    className={c.id === activeId ? "font-semibold" : ""}
+                  >
+                    <span
+                      className={`mr-2 grid h-5 w-5 shrink-0 place-items-center rounded bg-gradient-to-br ${avatarGradient(c.name)} text-[10px] font-semibold text-white`}
+                    >
                       {(c.name?.[0] ?? "F").toUpperCase()}
                     </span>
                     <span className="truncate">{c.name}</span>
@@ -348,7 +437,10 @@ export function AppShell({
                 ))}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onSelect={(e) => { e.preventDefault(); setCreateOpen(true); }}
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setCreateOpen(true);
+                  }}
                 >
                   <Plus className="mr-2 h-3.5 w-3.5" /> Pridať firmu
                 </DropdownMenuItem>
@@ -403,7 +495,9 @@ export function AppShell({
                     <Sparkles className="h-3 w-3" /> Rýchle vytvorenie
                   </DropdownMenuLabel>
                   {QUICK_CREATE.map((c) => (
-                    <DropdownMenuItem key={c.to} asChild><Link to={c.to as any}>{c.label}</Link></DropdownMenuItem>
+                    <DropdownMenuItem key={c.to} asChild>
+                      <Link to={c.to as any}>{c.label}</Link>
+                    </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -425,10 +519,26 @@ export function AppShell({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Účet</DropdownMenuLabel>
-                <DropdownMenuItem asChild><Link to={"/nastavenia" as any}><User className="mr-2 h-3.5 w-3.5" /> Profil</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link to="/firma"><Building2 className="mr-2 h-3.5 w-3.5" /> Firma</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link to="/predplatne"><CreditCard className="mr-2 h-3.5 w-3.5" /> Predplatné</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild><Link to={"/api-dokumentacia" as any}><HelpCircle className="mr-2 h-3.5 w-3.5" /> Pomoc</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={"/nastavenia" as any}>
+                    <User className="mr-2 h-3.5 w-3.5" /> Profil
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/firma">
+                    <Building2 className="mr-2 h-3.5 w-3.5" /> Firma
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/predplatne">
+                    <CreditCard className="mr-2 h-3.5 w-3.5" /> Predplatné
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={"/api-dokumentacia" as any}>
+                    <HelpCircle className="mr-2 h-3.5 w-3.5" /> Pomoc
+                  </Link>
+                </DropdownMenuItem>
                 {adminRole && (
                   <>
                     <DropdownMenuSeparator />
@@ -440,7 +550,9 @@ export function AppShell({
                   </>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut}><LogOut className="mr-2 h-3.5 w-3.5" /> Odhlásiť</DropdownMenuItem>
+                <DropdownMenuItem onClick={signOut}>
+                  <LogOut className="mr-2 h-3.5 w-3.5" /> Odhlásiť
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -490,10 +602,15 @@ export function AppShell({
                 const base = c.to.split("?")[0];
                 const isActive = pathname === base;
                 return (
-                  <Link key={c.to + c.label} to={c.to as any}
+                  <Link
+                    key={c.to + c.label}
+                    to={c.to as any}
                     className={`relative shrink-0 px-3 py-1.5 text-xs font-medium transition-colors after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full ${
-                      isActive ? "text-primary after:bg-primary" : "text-muted-foreground hover:text-foreground after:bg-transparent"
-                    }`}>
+                      isActive
+                        ? "text-primary after:bg-primary"
+                        : "text-muted-foreground hover:text-foreground after:bg-transparent"
+                    }`}
+                  >
                     {c.label}
                   </Link>
                 );
@@ -502,7 +619,6 @@ export function AppShell({
           </div>
         )}
       </header>
-
 
       <main className="flex min-w-0 flex-1 flex-col">{children}</main>
       <CreateCompanyDialog open={createOpen} onOpenChange={setCreateOpen} />
@@ -514,14 +630,26 @@ export function AppShell({
 
 function NativeShellExtras() {
   const isNative = useIsNative();
-  useEffect(() => { initNativePlatform(); }, []);
+  useEffect(() => {
+    initNativePlatform();
+  }, []);
   if (!isNative) return null;
   return <MobileBottomNav />;
 }
 
 function MobileNav({
-  pathname, active, companies, nav, homePath, view, canSwitch, onSwitchProduct,
-  onChangeCompany, onSignOut, onAddCompany, onClose,
+  pathname,
+  active,
+  companies,
+  nav,
+  homePath,
+  view,
+  canSwitch,
+  onSwitchProduct,
+  onChangeCompany,
+  onSignOut,
+  onAddCompany,
+  onClose,
 }: {
   pathname: string;
   active: Company | undefined;
@@ -540,15 +668,25 @@ function MobileNav({
     <div className="flex h-full flex-col">
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
         <Link to={homePath as any} onClick={onClose} className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary font-bold text-primary-foreground">F</span>
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary font-bold text-primary-foreground">
+            F
+          </span>
           <span className="font-semibold">Faktero</span>
         </Link>
-        <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-md hover:bg-secondary"><X className="h-4 w-4" /></button>
+        <button
+          onClick={onClose}
+          className="grid h-8 w-8 place-items-center rounded-md hover:bg-secondary"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
       {canSwitch && (
         <button
           type="button"
-          onClick={() => { onClose(); onSwitchProduct(); }}
+          onClick={() => {
+            onClose();
+            onSwitchProduct();
+          }}
           className="flex items-center justify-center gap-1.5 border-b border-border bg-secondary/40 px-4 py-2 text-xs font-medium text-foreground/80 hover:bg-secondary"
         >
           <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
@@ -558,13 +696,23 @@ function MobileNav({
       {active && (
         <div className="border-b border-border px-4 py-3">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Firma</div>
-          <select value={active.id} onChange={(e) => onChangeCompany(e.target.value)}
-            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm">
-            {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          <select
+            value={active.id}
+            onChange={(e) => onChangeCompany(e.target.value)}
+            className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+          >
+            {companies.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
           </select>
           <button
             type="button"
-            onClick={(e) => { e.preventDefault(); onAddCompany(); }}
+            onClick={(e) => {
+              e.preventDefault();
+              onAddCompany();
+            }}
             className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border px-2 py-1.5 text-sm hover:bg-secondary"
           >
             <Plus className="h-3.5 w-3.5" /> Pridať firmu
@@ -574,27 +722,41 @@ function MobileNav({
       <nav className="flex-1 overflow-y-auto px-2 py-3">
         {nav.map((g) => (
           <div key={g.key} className="mb-3">
-            <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{g.label}</div>
+            <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {g.label}
+            </div>
             {g.children.length === 0 ? (
-              <Link to={g.match[0]} onClick={onClose}
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${pathname === g.match[0] ? "bg-primary/10 text-primary" : "hover:bg-secondary"}`}>
+              <Link
+                to={g.match[0]}
+                onClick={onClose}
+                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${pathname === g.match[0] ? "bg-primary/10 text-primary" : "hover:bg-secondary"}`}
+              >
                 <g.icon className="h-4 w-4" /> {g.label}
               </Link>
-            ) : g.children.map((c) => {
-              const base = c.to.split("?")[0];
-              const isActive = pathname === base;
-              return (
-                <Link key={c.to + c.label} to={c.to as any} onClick={onClose}
-                  className={`block rounded-md px-3 py-2 text-sm ${isActive ? "bg-primary/10 text-primary" : "hover:bg-secondary"}`}>
-                  {c.label}
-                </Link>
-              );
-            })}
+            ) : (
+              g.children.map((c) => {
+                const base = c.to.split("?")[0];
+                const isActive = pathname === base;
+                return (
+                  <Link
+                    key={c.to + c.label}
+                    to={c.to as any}
+                    onClick={onClose}
+                    className={`block rounded-md px-3 py-2 text-sm ${isActive ? "bg-primary/10 text-primary" : "hover:bg-secondary"}`}
+                  >
+                    {c.label}
+                  </Link>
+                );
+              })
+            )}
           </div>
         ))}
       </nav>
       <div className="border-t border-border p-3">
-        <button onClick={onSignOut} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary">
+        <button
+          onClick={onSignOut}
+          className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-secondary"
+        >
           <LogOut className="h-4 w-4" /> Odhlásiť
         </button>
       </div>
@@ -602,7 +764,15 @@ function MobileNav({
   );
 }
 
-export function PageHeader({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
+export function PageHeader({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-3 border-b border-border bg-card/40 px-4 py-4 sm:px-6 sm:py-6 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-4 lg:px-8">
       <div className="min-w-0">

@@ -65,7 +65,9 @@ async function handle(request: Request): Promise<Response> {
         event_type: "gopay_webhook_rate_limited",
         payload: { ip, limit: RL_MAX, window_ms: RL_WINDOW_MS },
       });
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return new Response("rate limited", {
       status: 429,
       headers: { "Retry-After": "60" },
@@ -86,7 +88,9 @@ async function handle(request: Request): Promise<Response> {
         const params = new URLSearchParams(text);
         paymentId = params.get("id");
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
   if (!paymentId) {
     return new Response("missing id", { status: 400 });
@@ -97,35 +101,38 @@ async function handle(request: Request): Promise<Response> {
   // Never 500 on a real GoPay notification just because the secret is unset.
   const expected = process.env.GOPAY_WEBHOOK_SECRET;
   const provided =
-    url.searchParams.get("secret") ??
-    request.headers.get("x-faktero-gopay-secret") ??
-    "";
+    url.searchParams.get("secret") ?? request.headers.get("x-faktero-gopay-secret") ?? "";
   if (expected && provided && !timingSafeEqualStr(provided, expected)) {
     return new Response("unauthorized", { status: 401 });
   }
   if (!expected) {
-    console.warn("[gopay-webhook] GOPAY_WEBHOOK_SECRET not configured — accepting notification without secret verification");
+    console.warn(
+      "[gopay-webhook] GOPAY_WEBHOOK_SECRET not configured — accepting notification without secret verification",
+    );
   }
 
   // 3. Acknowledge to GoPay immediately, process asynchronously.
   // GoPay retries on non-2xx, so we must always return 200 for a valid id.
   const pid = paymentId;
-  Promise.resolve().then(() => processGopayPayment(pid)).catch(async (e) => {
-    try {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      await supabaseAdmin.from("billing_events").insert({
-        company_id: null,
-        event_type: "gopay_webhook_async_error",
-        payload: { id: pid, error: String(e?.message ?? e) },
-      });
-    } catch { /* ignore */ }
-  });
+  Promise.resolve()
+    .then(() => processGopayPayment(pid))
+    .catch(async (e) => {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        await supabaseAdmin.from("billing_events").insert({
+          company_id: null,
+          event_type: "gopay_webhook_async_error",
+          payload: { id: pid, error: String(e?.message ?? e) },
+        });
+      } catch {
+        /* ignore */
+      }
+    });
   return new Response("ok", { status: 200 });
 }
 
 async function processGopayPayment(paymentId: string): Promise<void> {
   try {
-
     const { gopayGetPayment } = await import("@/lib/faktero/gopay.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -201,9 +208,8 @@ async function processGopayPayment(paymentId: string): Promise<void> {
     // Idempotentné podľa billing_payment_id.
     if (isPaid) {
       try {
-        const { issueSubscriptionInvoiceForPayment } = await import(
-          "@/lib/faktero/subscription-invoice.server"
-        );
+        const { issueSubscriptionInvoiceForPayment } =
+          await import("@/lib/faktero/subscription-invoice.server");
         await issueSubscriptionInvoiceForPayment(existing.id);
       } catch (e: any) {
         await supabaseAdmin.from("billing_events").insert({
@@ -223,7 +229,9 @@ async function processGopayPayment(paymentId: string): Promise<void> {
         event_type: "gopay_webhook_error",
         payload: { error: String(e?.message ?? e) },
       });
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return;
   }
 }

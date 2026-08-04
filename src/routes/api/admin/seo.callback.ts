@@ -18,9 +18,8 @@ export const Route = createFileRoute("/api/admin/seo/callback")({
         if (!code || !state) return html("<h1>Chýba code alebo state</h1>", 400);
 
         try {
-          const { verifyState, exchangeCodeForToken, saveConnection } = await import(
-            "@/lib/faktero/google-seo.server"
-          );
+          const { verifyState, exchangeCodeForToken, saveConnection } =
+            await import("@/lib/faktero/google-seo.server");
           const { type } = verifyState(state);
           const token = await exchangeCodeForToken(code);
           await saveConnection({ type, token });
@@ -57,7 +56,8 @@ function html(body: string, status = 200): Response {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!),
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
   );
 }

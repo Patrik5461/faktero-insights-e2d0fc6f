@@ -5,11 +5,7 @@ import { toast } from "sonner";
 import { ArrowLeft, PauseCircle, PlayCircle, UserCog } from "lucide-react";
 import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 import { ResponsiveDialog } from "@/components/faktero/ResponsiveDialog";
-import {
-  getAdminCompany,
-  suspendCompany,
-  reactivateCompany,
-} from "@/lib/faktero/admin.functions";
+import { getAdminCompany, suspendCompany, reactivateCompany } from "@/lib/faktero/admin.functions";
 
 export const Route = createFileRoute("/admin/companies/$id")({
   head: () => ({ meta: [{ title: "Admin · Detail firmy — Faktero" }] }),
@@ -195,7 +191,10 @@ function AdminCompanyDetailPage() {
               <Field label="Mena" value={c.default_currency} />
               <Field label="E-mail" value={c.email} />
               <Field label="Telefón" value={c.phone} />
-              <Field label="Adresa" value={[c.street, c.zip, c.city].filter(Boolean).join(", ") || "—"} />
+              <Field
+                label="Adresa"
+                value={[c.street, c.zip, c.city].filter(Boolean).join(", ") || "—"}
+              />
               <Field label="IBAN (maskovaný)" value={c.iban} />
               <Field label="Vytvorená" value={fmtDateTime(c.created_at)} />
             </div>
@@ -245,7 +244,10 @@ function AdminCompanyDetailPage() {
                 <Field label="Plán" value={data.subscription.plan} />
                 <Field label="Stav" value={data.subscription.status} />
                 <Field label="Trial do" value={fmtDateTime(data.subscription.trial_ends_at)} />
-                <Field label="Ďalšia fakturácia" value={fmtDateTime(data.subscription.next_billing_at)} />
+                <Field
+                  label="Ďalšia fakturácia"
+                  value={fmtDateTime(data.subscription.next_billing_at)}
+                />
                 <Field
                   label="Mesačná cena"
                   value={
@@ -267,8 +269,8 @@ function AdminCompanyDetailPage() {
         </div>
 
         <p className="mt-6 text-xs text-muted-foreground">
-          Citlivé údaje (IBAN, GoPay ID, API kľúče, bankové tokeny, webhook secrets, FinStat
-          kľúče) sú maskované a nezobrazujú sa v plnej forme.
+          Citlivé údaje (IBAN, GoPay ID, API kľúče, bankové tokeny, webhook secrets, FinStat kľúče)
+          sú maskované a nezobrazujú sa v plnej forme.
         </p>
 
         <ResponsiveDialog

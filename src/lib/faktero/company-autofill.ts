@@ -23,7 +23,10 @@ export function mergeCompanyAutofill<T extends AutofillTarget>(
   opts: { mode: "overwrite" | "fill-empty" },
 ): T {
   const fillEmpty = opts.mode === "fill-empty";
-  const take = <K extends keyof AutofillTarget>(key: K, value: AutofillTarget[K]): AutofillTarget[K] => {
+  const take = <K extends keyof AutofillTarget>(
+    key: K,
+    value: AutofillTarget[K],
+  ): AutofillTarget[K] => {
     const current = (prev as any)[key];
     const isEmpty = current === null || current === undefined || String(current).trim() === "";
     if (fillEmpty && !isEmpty) return current;

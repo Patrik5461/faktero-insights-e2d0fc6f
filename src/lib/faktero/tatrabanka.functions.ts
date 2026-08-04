@@ -7,8 +7,11 @@ const CompanyInput = z.object({ company_id: z.string().uuid() });
 
 async function assertMember(supabase: any, userId: string, companyId: string) {
   const { data } = await supabase
-    .from("company_users").select("user_id, role")
-    .eq("company_id", companyId).eq("user_id", userId).maybeSingle();
+    .from("company_users")
+    .select("user_id, role")
+    .eq("company_id", companyId)
+    .eq("user_id", userId)
+    .maybeSingle();
   if (!data) throw new Error("Forbidden");
   return data.role as string;
 }
@@ -40,7 +43,9 @@ export const listBankData = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false });
     const { data: accounts } = await context.supabase
       .from("bank_accounts")
-      .select("id, bank_connection_id, iban, account_name, currency, balance, last_synced_at, external_account_id")
+      .select(
+        "id, bank_connection_id, iban, account_name, currency, balance, last_synced_at, external_account_id",
+      )
       .eq("company_id", data.company_id)
       .order("created_at", { ascending: true });
     return { connections: connections ?? [], accounts: accounts ?? [] };
@@ -53,13 +58,15 @@ export const startBankConnect = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const role = await assertMember(context.supabase, context.userId, data.company_id);
     if (!["owner", "admin"].includes(role)) throw new Error("Forbidden");
-    const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri } = await import("./tatrabanka.server");
+    const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri } =
+      await import("./tatrabanka.server");
     if (!isTatraConfigured()) throw new Error("not_configured");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn, error } = await supabaseAdmin
       .from("bank_connections")
       .insert({ company_id: data.company_id, provider: "tatrabanka", status: "pending" })
-      .select("id").single();
+      .select("id")
+      .single();
     if (error || !conn) throw new Error(error?.message ?? "insert_failed");
     const redirectUri = getRedirectUri(origin());
     const url = buildAuthorizeUrl({ state: conn.id, redirectUri });
@@ -70,7 +77,8 @@ export const startBankConnect = createServerFn({ method: "POST" })
 export const previewTatraAuthorizeUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
-    const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri } = await import("./tatrabanka.server");
+    const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri } =
+      await import("./tatrabanka.server");
     const configured = isTatraConfigured();
     const org = origin();
     const redirectUri = getRedirectUri(org);
@@ -92,31 +100,51 @@ export const syncBankAccounts = createServerFn({ method: "POST" })
     await assertMember(context.supabase, context.userId, data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: conn } = await supabaseAdmin
-      .from("bank_connections").select("*")
-      .eq("id", data.connection_id).eq("company_id", data.company_id).maybeSingle();
-    if (!conn || conn.status !== "connected" || !conn.access_token) throw new Error("not_connected");
+      .from("bank_connections")
+      .select("*")
+      .eq("id", data.connection_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!conn || conn.status !== "connected" || !conn.access_token)
+      throw new Error("not_connected");
     const { fetchAccounts } = await import("./tatrabanka.server");
     // TB Premium API: consent is granted via OAuth access_token; no separate consent flow.
     const list = await fetchAccounts(conn.access_token, conn.consent_id ?? null);
     for (const a of list) {
       const { data: existing } = await supabaseAdmin
-        .from("bank_accounts").select("id")
-        .eq("bank_connection_id", conn.id).eq("external_account_id", a.external_account_id).maybeSingle();
+        .from("bank_accounts")
+        .select("id")
+        .eq("bank_connection_id", conn.id)
+        .eq("external_account_id", a.external_account_id)
+        .maybeSingle();
       if (existing) {
-        await supabaseAdmin.from("bank_accounts").update({
-          iban: a.iban, account_name: a.account_name, currency: a.currency,
-          balance: a.balance, last_synced_at: new Date().toISOString(),
-        }).eq("id", existing.id);
+        await supabaseAdmin
+          .from("bank_accounts")
+          .update({
+            iban: a.iban,
+            account_name: a.account_name,
+            currency: a.currency,
+            balance: a.balance,
+            last_synced_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
       } else {
         await supabaseAdmin.from("bank_accounts").insert({
-          company_id: data.company_id, bank_connection_id: conn.id,
-          external_account_id: a.external_account_id, iban: a.iban,
-          account_name: a.account_name, currency: a.currency, balance: a.balance,
+          company_id: data.company_id,
+          bank_connection_id: conn.id,
+          external_account_id: a.external_account_id,
+          iban: a.iban,
+          account_name: a.account_name,
+          currency: a.currency,
+          balance: a.balance,
           last_synced_at: new Date().toISOString(),
         });
       }
     }
-    await supabaseAdmin.from("bank_connections").update({ last_synced_at: new Date().toISOString() }).eq("id", conn.id);
+    await supabaseAdmin
+      .from("bank_connections")
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq("id", conn.id);
     return { ok: true, count: list.length };
   });
 
@@ -130,31 +158,50 @@ export const syncBankTransactions = createServerFn({ method: "POST" })
     await assertMember(context.supabase, context.userId, data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: acc } = await supabaseAdmin
-      .from("bank_accounts").select("*, bank_connections(*)")
-      .eq("id", data.account_id).eq("company_id", data.company_id).maybeSingle();
+      .from("bank_accounts")
+      .select("*, bank_connections(*)")
+      .eq("id", data.account_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
     if (!acc) throw new Error("not_found");
     const conn: any = (acc as any).bank_connections;
     if (!conn?.access_token) throw new Error("not_connected");
     const { fetchTransactions } = await import("./tatrabanka.server");
-    const txs = await fetchTransactions(conn.access_token, acc.external_account_id ?? acc.iban ?? "", conn.consent_id, 90);
+    const txs = await fetchTransactions(
+      conn.access_token,
+      acc.external_account_id ?? acc.iban ?? "",
+      conn.consent_id,
+      90,
+    );
     let inserted = 0;
     for (const t of txs) {
       const ref = t.transaction_reference;
       if (ref) {
         const { data: ex } = await supabaseAdmin
-          .from("bank_transactions").select("id")
-          .eq("bank_account_id", acc.id).eq("transaction_reference", ref).maybeSingle();
+          .from("bank_transactions")
+          .select("id")
+          .eq("bank_account_id", acc.id)
+          .eq("transaction_reference", ref)
+          .maybeSingle();
         if (ex) continue;
       }
       const { error } = await supabaseAdmin.from("bank_transactions").insert({
-        company_id: data.company_id, bank_account_id: acc.id,
-        booking_date: t.booking_date, amount: t.amount, currency: t.currency,
-        variable_symbol: t.variable_symbol, counterparty: t.counterparty,
-        description: t.description, transaction_reference: ref,
+        company_id: data.company_id,
+        bank_account_id: acc.id,
+        booking_date: t.booking_date,
+        amount: t.amount,
+        currency: t.currency,
+        variable_symbol: t.variable_symbol,
+        counterparty: t.counterparty,
+        description: t.description,
+        transaction_reference: ref,
       });
       if (!error) inserted++;
     }
-    await supabaseAdmin.from("bank_accounts").update({ last_synced_at: new Date().toISOString() }).eq("id", acc.id);
+    await supabaseAdmin
+      .from("bank_accounts")
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq("id", acc.id);
     return { ok: true, inserted, total: txs.length };
   });
 
@@ -166,8 +213,11 @@ export const disconnectBank = createServerFn({ method: "POST" })
     const role = await assertMember(context.supabase, context.userId, data.company_id);
     if (!["owner", "admin"].includes(role)) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("bank_connections").delete()
-      .eq("id", data.connection_id).eq("company_id", data.company_id);
+    await supabaseAdmin
+      .from("bank_connections")
+      .delete()
+      .eq("id", data.connection_id)
+      .eq("company_id", data.company_id);
     return { ok: true };
   });
 
@@ -182,8 +232,11 @@ export const listBankTransactions = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => ListTxInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertMember(context.supabase, context.userId, data.company_id);
-    let q = context.supabase.from("bank_transactions")
-      .select("id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, description, transaction_reference, matched_invoice_id")
+    let q = context.supabase
+      .from("bank_transactions")
+      .select(
+        "id, bank_account_id, booking_date, amount, currency, variable_symbol, counterparty, description, transaction_reference, matched_invoice_id",
+      )
       .eq("company_id", data.company_id)
       .order("booking_date", { ascending: false })
       .limit(data.limit);

@@ -135,7 +135,9 @@ export async function finstatAutocomplete(
     json: "true",
   }).toString()}`;
 
-  console.log(`[finstat-ac] → region=${region} query=${JSON.stringify(q)} url=${FINSTAT_BASE[region]}/autocomplete?query=${encodeURIComponent(q)}&apikey=${maskSecret(apiKey)}&hash=${hash.slice(0, 8)}…&json=true`);
+  console.log(
+    `[finstat-ac] → region=${region} query=${JSON.stringify(q)} url=${FINSTAT_BASE[region]}/autocomplete?query=${encodeURIComponent(q)}&apikey=${maskSecret(apiKey)}&hash=${hash.slice(0, 8)}…&json=true`,
+  );
 
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 8_000);
@@ -154,7 +156,9 @@ export async function finstatAutocomplete(
   clearTimeout(t);
 
   const text = await res.text();
-  console.log(`[finstat-ac] ← region=${region} status=${res.status} ct="${res.headers.get("content-type") ?? ""}" bytes=${text.length} preview=${JSON.stringify(text.slice(0, 300))}`);
+  console.log(
+    `[finstat-ac] ← region=${region} status=${res.status} ct="${res.headers.get("content-type") ?? ""}" bytes=${text.length} preview=${JSON.stringify(text.slice(0, 300))}`,
+  );
 
   if (!res.ok) {
     if (res.status === 402 || res.status === 403) {
@@ -167,31 +171,43 @@ export async function finstatAutocomplete(
   const ct = (res.headers.get("content-type") ?? "").toLowerCase();
   let parsed: unknown = null;
   if (ct.includes("json") || text.trim().startsWith("[") || text.trim().startsWith("{")) {
-    try { parsed = JSON.parse(text); } catch { /* fall through */ }
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      /* fall through */
+    }
   }
   if (!parsed && (ct.includes("xml") || text.trim().startsWith("<"))) {
     parsed = parseAutocompleteXml(text);
   }
   if (!parsed) {
-    console.warn(`[finstat-ac] invalid_response region=${region} ct="${ct}" preview=${JSON.stringify(text.slice(0, 200))}`);
+    console.warn(
+      `[finstat-ac] invalid_response region=${region} ct="${ct}" preview=${JSON.stringify(text.slice(0, 200))}`,
+    );
     return { status: "error", message: "invalid_response" };
   }
 
   const rows: unknown[] = Array.isArray(parsed)
     ? parsed
-    : Array.isArray((parsed as { Results?: unknown[] }).Results) ? (parsed as { Results: unknown[] }).Results
-    : Array.isArray((parsed as { results?: unknown[] }).results) ? (parsed as { results: unknown[] }).results
-    : Array.isArray((parsed as { SuggestResult?: unknown[] }).SuggestResult) ? (parsed as { SuggestResult: unknown[] }).SuggestResult
-    : [];
+    : Array.isArray((parsed as { Results?: unknown[] }).Results)
+      ? (parsed as { Results: unknown[] }).Results
+      : Array.isArray((parsed as { results?: unknown[] }).results)
+        ? (parsed as { results: unknown[] }).results
+        : Array.isArray((parsed as { SuggestResult?: unknown[] }).SuggestResult)
+          ? (parsed as { SuggestResult: unknown[] }).SuggestResult
+          : [];
 
-  console.log(`[finstat-ac] parsed region=${region} rowKeys=${!Array.isArray(parsed) && parsed && typeof parsed === "object" ? Object.keys(parsed as object).join(",") : "(array)"} rows=${rows.length} firstRow=${JSON.stringify(rows[0] ?? null).slice(0, 300)}`);
+  console.log(
+    `[finstat-ac] parsed region=${region} rowKeys=${!Array.isArray(parsed) && parsed && typeof parsed === "object" ? Object.keys(parsed as object).join(",") : "(array)"} rows=${rows.length} firstRow=${JSON.stringify(rows[0] ?? null).slice(0, 300)}`,
+  );
 
   const data: FinstatSuggestion[] = rows
     .map((r) => {
       const idx = buildIndex(r);
       const street = pickFrom(idx, "Street", "StreetName");
       const houseNum = pickFrom(idx, "StreetNumber", "HouseNumber");
-      const fullStreet = [street, houseNum].filter(Boolean).join(" ").trim() || pickFrom(idx, "Address");
+      const fullStreet =
+        [street, houseNum].filter(Boolean).join(" ").trim() || pickFrom(idx, "Address");
       return {
         ico: String(pickFrom(idx, "Ico", "ICO", "Id") ?? "").trim(),
         name: String(pickFrom(idx, "Name", "CompanyName", "FullName", "Value") ?? "").trim(),
@@ -296,7 +312,8 @@ export async function finstatLookup(
     }
     return {
       status: "error",
-      message: "Autorizácia FinStat API zlyhala. Skontrolujte API kľúče alebo spôsob generovania hash.",
+      message:
+        "Autorizácia FinStat API zlyhala. Skontrolujte API kľúče alebo spôsob generovania hash.",
       raw: text,
       diagnostics: isDev() ? diagnostics : undefined,
     };
@@ -308,7 +325,11 @@ export async function finstatLookup(
   const ct = (res.headers.get("content-type") ?? "").toLowerCase();
   let parsed: unknown = null;
   if (ct.includes("json") || text.trim().startsWith("{")) {
-    try { parsed = JSON.parse(text); } catch { /* fall through */ }
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      /* fall through */
+    }
   }
   if (!parsed && (ct.includes("xml") || text.trim().startsWith("<"))) {
     parsed = parseFinstatXml(text);
@@ -342,8 +363,10 @@ function parseFinstatXml(xml: string): Record<string, string> | null {
 
 function decodeEntities(s: string): string {
   return s
-    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
     .replace(/&amp;/g, "&");
 }
 
@@ -504,7 +527,18 @@ function normalize(d: unknown, ico: string, region: FinstatRegion = "sk"): Norma
   const fullStreet = [street, houseNum].filter(Boolean).join(" ").trim() || null;
   const zipRaw = pickFrom(idx, "Zip", "ZipCode", "PostalCode", "Psc");
   const zip = zipRaw ? zipRaw.replace(/\s+/g, "").replace(/(\d{3})(\d{2})/, "$1 $2") : null;
-  const icDph = pickFrom(idx, "IcDph", "IcDPH", "IcDPh", "ICDPH", "Icdph", "VatId", "VATId", "VATNumber", "VatNumber");
+  const icDph = pickFrom(
+    idx,
+    "IcDph",
+    "IcDPH",
+    "IcDPh",
+    "ICDPH",
+    "Icdph",
+    "VatId",
+    "VATId",
+    "VATNumber",
+    "VatNumber",
+  );
   return {
     ico,
     name: pickFrom(idx, "Name", "CompanyName", "FullName", "obchodneMeno") ?? "",
@@ -515,8 +549,19 @@ function normalize(d: unknown, ico: string, region: FinstatRegion = "sk"): Norma
     zip,
     country: pickFrom(idx, "Country", "CountryCode") ?? (region === "cz" ? "CZ" : "SK"),
     legalForm: pickFrom(idx, "LegalFormText", "LegalForm", "legalForm"),
-    registrationNumber: pickFrom(idx, "RegistrationNumberText", "RegistrationNumber", "registrationNumber"),
-    registrationDate: pickFrom(idx, "RegistrationDate", "Created", "IncorporationDate", "EstablishedOn"),
+    registrationNumber: pickFrom(
+      idx,
+      "RegistrationNumberText",
+      "RegistrationNumber",
+      "registrationNumber",
+    ),
+    registrationDate: pickFrom(
+      idx,
+      "RegistrationDate",
+      "Created",
+      "IncorporationDate",
+      "EstablishedOn",
+    ),
     vatStatus: computeVatStatus(idx, icDph),
     financials: mapFinancials(idx),
     riskIndicators: mapRiskIndicators(idx),

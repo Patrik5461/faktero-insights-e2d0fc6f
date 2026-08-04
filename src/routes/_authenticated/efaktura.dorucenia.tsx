@@ -43,14 +43,23 @@ function DeliveriesPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {q.isLoading && (
-                <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Načítavam…</td></tr>
+                <tr>
+                  <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                    Načítavam…
+                  </td>
+                </tr>
               )}
               {q.data && q.data.length === 0 && (
                 <tr>
                   <td colSpan={6} className="p-12 text-center">
                     <div className="mx-auto flex max-w-md flex-col items-center gap-3 text-muted-foreground">
-                      <div className="rounded-full bg-muted p-3"><Send className="h-6 w-6" /></div>
-                      <p className="text-sm">Zatiaľ neboli odoslané žiadne eFaktúry. Doručenia sa zobrazia po napojení Peppol prepravy.</p>
+                      <div className="rounded-full bg-muted p-3">
+                        <Send className="h-6 w-6" />
+                      </div>
+                      <p className="text-sm">
+                        Zatiaľ neboli odoslané žiadne eFaktúry. Doručenia sa zobrazia po napojení
+                        Peppol prepravy.
+                      </p>
                     </div>
                   </td>
                 </tr>
@@ -58,10 +67,16 @@ function DeliveriesPage() {
               {q.data?.map((d) => (
                 <tr key={d.id}>
                   <td className="p-3 text-xs uppercase">{d.channel}</td>
-                  <td className="p-3">{d.recipient_participant_id ?? d.recipient_endpoint ?? "—"}</td>
-                  <td className="p-3"><span className="rounded-full bg-muted px-2 py-0.5 text-xs">{d.status}</span></td>
+                  <td className="p-3">
+                    {d.recipient_participant_id ?? d.recipient_endpoint ?? "—"}
+                  </td>
+                  <td className="p-3">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{d.status}</span>
+                  </td>
                   <td className="p-3">{d.attempt_count}</td>
-                  <td className="p-3 text-xs text-muted-foreground">{d.sent_at ? new Date(d.sent_at).toLocaleString("sk-SK") : "—"}</td>
+                  <td className="p-3 text-xs text-muted-foreground">
+                    {d.sent_at ? new Date(d.sent_at).toLocaleString("sk-SK") : "—"}
+                  </td>
                   <td className="p-3 text-xs text-destructive">{d.error_message ?? "—"}</td>
                 </tr>
               ))}

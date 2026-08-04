@@ -85,29 +85,109 @@ const trustMetrics = [
 ] as const;
 
 const features = [
-  { icon: FileText, title: "Faktúry a PDF", text: "Profesionálne PDF s logom, QR platbou, IBAN a rozpisom DPH. Odošlite jedným klikom." },
-  { icon: Quote, title: "Cenové ponuky", text: "Vystavte ponuku za minútu a jedným klikom ju premeňte na ostrú faktúru." },
-  { icon: Repeat, title: "Opakované faktúry", text: "Mesačné a ročné šablóny — generujú a odosielajú sa automaticky bez vašej účasti." },
-  { icon: Code2, title: "API a webhooky", text: "REST API s test / live režimom, idempotencia cez external_id a real-time webhooky." },
-  { icon: CreditCard, title: "GoPay platby", text: "Online platby kartou a tlačidlami priamo z faktúry. Stav sa páruje cez webhook." },
-  { icon: Landmark, title: "Bankové párovanie", text: "Automatické párovanie platieb s faktúrami. Prepojenie s Tatra bankou, ČSOB, SLSP, VÚB a ďalšími bankami." },
-  { icon: Receipt, title: "Prijaté faktúry", text: "Evidujte výdavky a prijaté faktúry. Aging záväzkov, DPH na vstupe, export pre účtovníka." },
-  { icon: BellRing, title: "Upomienky", text: "Automatické upomienky po splatnosti. 3 úrovne, vlastné texty, prehľad odoslaných upomienok." },
-  { icon: BadgeCheck, title: "Schvaľovanie zákazníkom", text: "Zákazník schváli faktúru jedným kliknutím cez email. Bez registrácie, okamžite." },
-  { icon: Send, title: "Email šablóny", text: "Vlastné texty emailov pre faktúry, upomienky aj schvaľovanie. Slovenčina aj angličtina." },
-  { icon: Blocks, title: "Hromadné akcie", text: "Označte, odošlite alebo exportujte desiatky faktúr naraz. Ušetrite hodiny manuálnej práce." },
-  { icon: Download, title: "Pohoda export", text: "XML export priamo do Pohody. Účtovník dostáva podklady stlačením jediného tlačidla." },
-  { icon: Upload, title: "SuperFaktúra import", text: "Prejdite na Faktero bez straty histórie faktúr, odberateľov a číselných radov." },
-  { icon: ShieldCheck, title: "eFaktúra 2027", text: "Štruktúrované XML, Peppol and Digitálny poštár. Sme pripravení, aby ste nemuseli vy." },
-  { icon: Boxes, title: "Skladové hospodárstvo", text: "Príjemky, výdajky, viacero skladov a prepojenie skladových položiek priamo s faktúrami." },
-  { icon: MapPin, title: "Kniha jázd + Commander GPS", text: "Prepojenie na Commander GPS — jazdy a tankovania sa sťahujú automaticky do knihy jázd." },
+  {
+    icon: FileText,
+    title: "Faktúry a PDF",
+    text: "Profesionálne PDF s logom, QR platbou, IBAN a rozpisom DPH. Odošlite jedným klikom.",
+  },
+  {
+    icon: Quote,
+    title: "Cenové ponuky",
+    text: "Vystavte ponuku za minútu a jedným klikom ju premeňte na ostrú faktúru.",
+  },
+  {
+    icon: Repeat,
+    title: "Opakované faktúry",
+    text: "Mesačné a ročné šablóny — generujú a odosielajú sa automaticky bez vašej účasti.",
+  },
+  {
+    icon: Code2,
+    title: "API a webhooky",
+    text: "REST API s test / live režimom, idempotencia cez external_id a real-time webhooky.",
+  },
+  {
+    icon: CreditCard,
+    title: "GoPay platby",
+    text: "Online platby kartou a tlačidlami priamo z faktúry. Stav sa páruje cez webhook.",
+  },
+  {
+    icon: Landmark,
+    title: "Bankové párovanie",
+    text: "Automatické párovanie platieb s faktúrami. Prepojenie s Tatra bankou, ČSOB, SLSP, VÚB a ďalšími bankami.",
+  },
+  {
+    icon: Receipt,
+    title: "Prijaté faktúry",
+    text: "Evidujte výdavky a prijaté faktúry. Aging záväzkov, DPH na vstupe, export pre účtovníka.",
+  },
+  {
+    icon: BellRing,
+    title: "Upomienky",
+    text: "Automatické upomienky po splatnosti. 3 úrovne, vlastné texty, prehľad odoslaných upomienok.",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Schvaľovanie zákazníkom",
+    text: "Zákazník schváli faktúru jedným kliknutím cez email. Bez registrácie, okamžite.",
+  },
+  {
+    icon: Send,
+    title: "Email šablóny",
+    text: "Vlastné texty emailov pre faktúry, upomienky aj schvaľovanie. Slovenčina aj angličtina.",
+  },
+  {
+    icon: Blocks,
+    title: "Hromadné akcie",
+    text: "Označte, odošlite alebo exportujte desiatky faktúr naraz. Ušetrite hodiny manuálnej práce.",
+  },
+  {
+    icon: Download,
+    title: "Pohoda export",
+    text: "XML export priamo do Pohody. Účtovník dostáva podklady stlačením jediného tlačidla.",
+  },
+  {
+    icon: Upload,
+    title: "SuperFaktúra import",
+    text: "Prejdite na Faktero bez straty histórie faktúr, odberateľov a číselných radov.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "eFaktúra 2027",
+    text: "Štruktúrované XML, Peppol and Digitálny poštár. Sme pripravení, aby ste nemuseli vy.",
+  },
+  {
+    icon: Boxes,
+    title: "Skladové hospodárstvo",
+    text: "Príjemky, výdajky, viacero skladov a prepojenie skladových položiek priamo s faktúrami.",
+  },
+  {
+    icon: MapPin,
+    title: "Kniha jázd + Commander GPS",
+    text: "Prepojenie na Commander GPS — jazdy a tankovania sa sťahujú automaticky do knihy jázd.",
+  },
 ] as const;
 
 const accounting = [
-  { icon: FileSpreadsheet, title: "Pohoda XML export", text: "Štruktúrovaný XML export kompatibilný s Pohodou — bez ručného prepisovania." },
-  { icon: Receipt, title: "Mesačné podklady", text: "Jedným klikom pripravíte balík faktúr, ponúk a nákladov za zvolený mesiac." },
-  { icon: Upload, title: "Import faktúr", text: "Hromadný import faktúr a odberateľov zo SuperFaktúry, CSV alebo XML." },
-  { icon: TrendingUp, title: "Prehľady DPH", text: "Sumáre DPH s rozpadom po sadzbách a obdobiach, pripravené pre kontrolný výkaz." },
+  {
+    icon: FileSpreadsheet,
+    title: "Pohoda XML export",
+    text: "Štruktúrovaný XML export kompatibilný s Pohodou — bez ručného prepisovania.",
+  },
+  {
+    icon: Receipt,
+    title: "Mesačné podklady",
+    text: "Jedným klikom pripravíte balík faktúr, ponúk a nákladov za zvolený mesiac.",
+  },
+  {
+    icon: Upload,
+    title: "Import faktúr",
+    text: "Hromadný import faktúr a odberateľov zo SuperFaktúry, CSV alebo XML.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Prehľady DPH",
+    text: "Sumáre DPH s rozpadom po sadzbách a obdobiach, pripravené pre kontrolný výkaz.",
+  },
 ] as const;
 
 const plans = [
@@ -116,7 +196,13 @@ const plans = [
     price: "9 €",
     period: "/ mesiac",
     tagline: "Pre živnostníkov, ktorí vystavia pár faktúr mesačne.",
-    features: ["1 firma", "Neobmedzene faktúr a ponúk", "PDF s QR platbou", "Pohoda export", "E-mail podpora"],
+    features: [
+      "1 firma",
+      "Neobmedzene faktúr a ponúk",
+      "PDF s QR platbou",
+      "Pohoda export",
+      "E-mail podpora",
+    ],
     cta: "Vyskúšať zdarma",
     featured: false,
   },
@@ -125,7 +211,13 @@ const plans = [
     price: "24 €",
     period: "/ mesiac",
     tagline: "Pre s.r.o. a tímy. API, webhooky a opakované faktúry.",
-    features: ["5 firiem", "Opakované faktúry", "REST API + webhooky", "Test / live režim", "Prioritná podpora"],
+    features: [
+      "5 firiem",
+      "Opakované faktúry",
+      "REST API + webhooky",
+      "Test / live režim",
+      "Prioritná podpora",
+    ],
     cta: "Vyskúšať zdarma",
     featured: true,
   },
@@ -134,7 +226,13 @@ const plans = [
     price: "Na mieru",
     period: "",
     tagline: "Pre firmy s vlastnou integráciou a vyšším objemom.",
-    features: ["Neobmedzene firiem", "SLA a dedikovaná podpora", "SSO a audit logy", "Konzultácie pri integrácii", "Vlastné podmienky"],
+    features: [
+      "Neobmedzene firiem",
+      "SLA a dedikovaná podpora",
+      "SSO a audit logy",
+      "Konzultácie pri integrácii",
+      "Vlastné podmienky",
+    ],
     cta: "Kontaktovať",
     featured: false,
   },
@@ -219,7 +317,8 @@ function Hero() {
                 eFaktúra 2027 — zadarmo v každom pláne
               </div>
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Private Beta · Prijímame prvých testerov
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Private Beta · Prijímame
+                prvých testerov
               </div>
             </div>
             <h1 className="text-[2.5rem] font-semibold leading-[1.02] tracking-[-0.03em] text-foreground sm:text-5xl md:text-6xl lg:text-[4.25rem]">
@@ -231,8 +330,8 @@ function Hero() {
               </span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Vystavujte faktúry, posielajte PDF, automatizujte procesy cez API a pripravte firmu
-              na povinnú <span className="font-medium text-foreground">eFaktúru</span>.
+              Vystavujte faktúry, posielajte PDF, automatizujte procesy cez API a pripravte firmu na
+              povinnú <span className="font-medium text-foreground">eFaktúru</span>.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <Link
@@ -284,9 +383,7 @@ function DashboardMockup() {
         className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] opacity-70 blur-3xl"
         style={{ background: "var(--brand-gradient)" }}
       />
-      <div
-        className="relative rounded-[1.5rem] border border-border/70 bg-card/95 p-2 shadow-[var(--shadow-elegant)] backdrop-blur"
-      >
+      <div className="relative rounded-[1.5rem] border border-border/70 bg-card/95 p-2 shadow-[var(--shadow-elegant)] backdrop-blur">
         {/* Window chrome */}
         <div className="flex items-center gap-2 px-3 py-2">
           <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
@@ -372,7 +469,9 @@ function DashboardMockup() {
           </div>
           <div className="min-w-0">
             <div className="truncate text-[11px] font-semibold">FA2026-0042</div>
-            <div className="truncate text-[10px] text-muted-foreground">Acme s.r.o. · 1 698,60 €</div>
+            <div className="truncate text-[10px] text-muted-foreground">
+              Acme s.r.o. · 1 698,60 €
+            </div>
           </div>
           <span className="ml-auto rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:text-emerald-400">
             Uhradená
@@ -534,10 +633,7 @@ function TrustRow() {
       <div className="mx-auto max-w-7xl px-6 py-8 md:py-10">
         <div className="grid grid-cols-2 items-center gap-x-4 gap-y-8 sm:grid-cols-3 lg:flex lg:justify-between">
           {trustMetrics.map(({ label, icon: Icon }) => (
-            <div
-              key={label}
-              className="group flex items-center justify-start gap-3"
-            >
+            <div key={label} className="group flex items-center justify-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 <Icon className="h-5 w-5" />
               </div>
@@ -614,8 +710,8 @@ function ApiSection() {
               REST API, ktoré <span className="text-primary">vyzerá ako u veľkých</span>.
             </h2>
             <p className="mt-5 w-full max-w-lg break-words text-sidebar-foreground/70">
-              Vystavujte faktúry priamo z vášho e-shopu, CRM alebo ERP. Predvídateľné JSON
-              odpovede, idempotencia, webhooky a oddelený test / live režim.
+              Vystavujte faktúry priamo z vášho e-shopu, CRM alebo ERP. Predvídateľné JSON odpovede,
+              idempotencia, webhooky a oddelený test / live režim.
             </p>
             <ul className="mt-8 grid gap-3 text-sm sm:grid-cols-2">
               {[
@@ -672,7 +768,9 @@ function CodeCard() {
           <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-destructive/70" />
           <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-accent/80" />
           <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-primary/80" />
-          <span className="ml-3 truncate text-xs font-medium text-white/60">POST /api/v1/invoices</span>
+          <span className="ml-3 truncate text-xs font-medium text-white/60">
+            POST /api/v1/invoices
+          </span>
           <span className="ml-auto shrink-0 rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-medium text-white/70">
             201 Created · 142 ms
           </span>
@@ -756,8 +854,9 @@ function EFakturaSection() {
               eFaktúra <span className="text-primary">zadarmo</span> v každom pláne
             </h2>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Faktero automaticky odošle každú faktúru cez Peppol sieť. Žiadna extra
-              registrácia, žiadne skryté poplatky — <span className="font-semibold text-foreground">eFaktúra je zahrnutá v cene</span>.
+              Faktero automaticky odošle každú faktúru cez Peppol sieť. Žiadna extra registrácia,
+              žiadne skryté poplatky —{" "}
+              <span className="font-semibold text-foreground">eFaktúra je zahrnutá v cene</span>.
             </p>
             <ul className="mt-8 space-y-3 text-sm">
               {[
@@ -960,9 +1059,7 @@ function PricingSection() {
               </ul>
               <Link
                 to="/registracia"
-                onClick={() =>
-                  track("pricing_click", { plan: p.name, featured: p.featured })
-                }
+                onClick={() => track("pricing_click", { plan: p.name, featured: p.featured })}
                 className={[
                   "mt-8 inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold",
                   p.featured
@@ -988,7 +1085,12 @@ function PricingSection() {
 /* -------------------------------------------------------------------------- */
 
 function ComparisonSection() {
-  const rows: Array<{ label: string; faktero: boolean | string; sf: boolean | string; manual: boolean | string }> = [
+  const rows: Array<{
+    label: string;
+    faktero: boolean | string;
+    sf: boolean | string;
+    manual: boolean | string;
+  }> = [
     { label: "REST API", faktero: true, sf: "Obmedzene", manual: false },
     { label: "Webhooky", faktero: true, sf: "Obmedzene", manual: false },
     { label: "eFaktúra 2027 pripravenosť", faktero: true, sf: "Plánované", manual: false },
@@ -1041,10 +1143,7 @@ function ComparisonSection() {
               </thead>
               <tbody>
                 {rows.map((r, i) => (
-                  <tr
-                    key={r.label}
-                    className={i % 2 === 0 ? "bg-card" : "bg-background/40"}
-                  >
+                  <tr key={r.label} className={i % 2 === 0 ? "bg-card" : "bg-background/40"}>
                     <td className="px-6 py-4 font-medium text-foreground">{r.label}</td>
                     <td className="px-6 py-4 text-center">{cell(r.faktero)}</td>
                     <td className="px-6 py-4 text-center">{cell(r.sf)}</td>
@@ -1056,7 +1155,8 @@ function ComparisonSection() {
           </div>
         </div>
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Údaje k {new Date().toLocaleDateString("sk-SK", { month: "long", year: "numeric" })}. Funkcie konkurencie sa môžu meniť.
+          Údaje k {new Date().toLocaleDateString("sk-SK", { month: "long", year: "numeric" })}.
+          Funkcie konkurencie sa môžu meniť.
         </p>
       </div>
     </section>
@@ -1065,10 +1165,26 @@ function ComparisonSection() {
 
 function MobileAppSection() {
   const items = [
-    { icon: ScanLine, title: "Skenovanie dokladov s AI OCR", text: "Odfotíte doklad — AI vyplní sumu, DPH, dodávateľa aj dátum." },
-    { icon: MapPin, title: "GPS tracking jázd", text: "Automatický záznam trás pre knihu jázd priamo z mobilu." },
-    { icon: BellRing, title: "Push notifikácie", text: "Okamžite viete, keď vám prišla platba alebo je faktúra po splatnosti." },
-    { icon: Wifi, title: "Offline režim", text: "Fakturujte aj bez signálu — po pripojení sa všetko synchronizuje." },
+    {
+      icon: ScanLine,
+      title: "Skenovanie dokladov s AI OCR",
+      text: "Odfotíte doklad — AI vyplní sumu, DPH, dodávateľa aj dátum.",
+    },
+    {
+      icon: MapPin,
+      title: "GPS tracking jázd",
+      text: "Automatický záznam trás pre knihu jázd priamo z mobilu.",
+    },
+    {
+      icon: BellRing,
+      title: "Push notifikácie",
+      text: "Okamžite viete, keď vám prišla platba alebo je faktúra po splatnosti.",
+    },
+    {
+      icon: Wifi,
+      title: "Offline režim",
+      text: "Fakturujte aj bez signálu — po pripojení sa všetko synchronizuje.",
+    },
   ];
   return (
     <section id="mobil" className="border-y border-border/60 bg-card/40">
@@ -1079,7 +1195,8 @@ function MobileAppSection() {
               <Smartphone className="h-3 w-3" /> iOS & Android (pripravujeme)
             </div>
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl whitespace-pre-line">
-              Faktero v mobile{"\n"}<span className="text-primary">fakturujte kdekoľvek</span>
+              Faktero v mobile{"\n"}
+              <span className="text-primary">fakturujte kdekoľvek</span>
             </h2>
             <p className="mt-5 max-w-lg text-muted-foreground">
               iOS a Android appka s offline režimom, skenovaním dokladov a GPS knihou jázd.
@@ -1102,7 +1219,9 @@ function MobileAppSection() {
                 className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold text-muted-foreground opacity-70"
               >
                 <Smartphone className="h-4 w-4" /> App Store
-                <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">Čoskoro</span>
+                <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                  Čoskoro
+                </span>
               </button>
               <button
                 type="button"
@@ -1110,7 +1229,9 @@ function MobileAppSection() {
                 className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold text-muted-foreground opacity-70"
               >
                 <Smartphone className="h-4 w-4" /> Google Play
-                <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">Čoskoro</span>
+                <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                  Čoskoro
+                </span>
               </button>
             </div>
           </div>
@@ -1124,7 +1245,9 @@ function MobileAppSection() {
               <div className="mx-auto mb-3 h-1.5 w-16 rounded-full bg-foreground/20" />
               <div className="space-y-3">
                 <div className="rounded-xl border border-border bg-card p-3">
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Dnes</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Dnes
+                  </div>
                   <div className="mt-1 text-sm font-semibold">3 nové platby · +2 340 €</div>
                 </div>
                 <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.08] p-3">
@@ -1132,14 +1255,18 @@ function MobileAppSection() {
                     <ScanLine className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                     <div className="text-sm font-semibold">Doklad naskenovaný</div>
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">Shell · 62,40 € · DPH 23 %</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Shell · 62,40 € · DPH 23 %
+                  </div>
                 </div>
                 <div className="rounded-xl border border-border bg-card p-3">
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-primary" />
                     <div className="text-sm font-semibold">Kniha jázd</div>
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">BA → TT · 68 km · automaticky</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    BA → TT · 68 km · automaticky
+                  </div>
                 </div>
                 <div className="rounded-xl border border-border bg-card p-3">
                   <div className="flex items-center gap-2">
@@ -1271,19 +1398,54 @@ function SiteFooter() {
       </div>
       <div className="border-t border-border/60">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-5 py-5 text-xs text-muted-foreground sm:items-center sm:px-6 sm:py-6 md:flex-row">
-          <div className="order-2 md:order-1">© 2026 Tobify s. r. o. — Športová 707/43, 919 26 Zavar · IČO: 56607016 · DIČ: 2122358579 · info@faktero.sk</div>
+          <div className="order-2 md:order-1">
+            © 2026 Tobify s. r. o. — Športová 707/43, 919 26 Zavar · IČO: 56607016 · DIČ: 2122358579
+            · info@faktero.sk
+          </div>
           <div className="order-1 flex flex-wrap items-center gap-x-4 gap-y-2 md:order-2 md:gap-x-5">
-            <a href="/pravne/obchodne-podmienky" className="hover:text-foreground">Obchodné podmienky</a>
-            <a href="/pravne/gdpr" className="hover:text-foreground">GDPR</a>
-            <a href="/pravne/tesla-podmienky" className="hover:text-foreground">Tesla Fleet API</a>
-            <a href="/kontakt" className="hover:text-foreground">Kontakt</a>
+            <a href="/pravne/obchodne-podmienky" className="hover:text-foreground">
+              Obchodné podmienky
+            </a>
+            <a href="/pravne/gdpr" className="hover:text-foreground">
+              GDPR
+            </a>
+            <a href="/pravne/tesla-podmienky" className="hover:text-foreground">
+              Tesla Fleet API
+            </a>
+            <a href="/kontakt" className="hover:text-foreground">
+              Kontakt
+            </a>
           </div>
         </div>
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-5 pb-6 sm:px-6" aria-label="Podporované spôsoby platby">
+        <div
+          className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-5 pb-6 sm:px-6"
+          aria-label="Podporované spôsoby platby"
+        >
           <span className="text-xs text-muted-foreground">Platby zabezpečuje:</span>
-          <img src="https://cdn.gopay.com/img/logo/gopay_logo.svg" alt="GoPay" width={64} height={20} loading="lazy" className="h-5 w-auto" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" width={40} height={16} loading="lazy" className="h-4 w-auto" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={28} height={20} loading="lazy" className="h-5 w-auto" />
+          <img
+            src="https://cdn.gopay.com/img/logo/gopay_logo.svg"
+            alt="GoPay"
+            width={64}
+            height={20}
+            loading="lazy"
+            className="h-5 w-auto"
+          />
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"
+            alt="Visa"
+            width={40}
+            height={16}
+            loading="lazy"
+            className="h-4 w-auto"
+          />
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
+            alt="Mastercard"
+            width={28}
+            height={20}
+            loading="lazy"
+            className="h-5 w-auto"
+          />
         </div>
       </div>
     </footer>
@@ -1311,9 +1473,7 @@ function SectionHeader({
       <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
         {title}
       </h2>
-      <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
-        {subtitle}
-      </p>
+      <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">{subtitle}</p>
     </div>
   );
 }
@@ -1330,10 +1490,30 @@ void Wallet;
 
 function ScreenshotShowcase() {
   const shots = [
-    { key: "dashboard", title: "Prehľad firmy", desc: "Cashflow, neuhradené faktúry a stav eFaktúry na jednom mieste.", node: <ShotDashboard /> },
-    { key: "list", title: "Zoznam faktúr", desc: "Rýchle filtre, stavy a hromadné akcie pre desiatky faktúr mesačne.", node: <ShotInvoiceList /> },
-    { key: "detail", title: "Detail faktúry", desc: "PDF, QR platba, GoPay link a história udalostí v jednom okne.", node: <ShotInvoiceDetail /> },
-    { key: "efaktura", title: "eFaktúra readiness", desc: "Pripravenosť na povinný XML formát 1.1.2027.", node: <ShotEfaktura /> },
+    {
+      key: "dashboard",
+      title: "Prehľad firmy",
+      desc: "Cashflow, neuhradené faktúry a stav eFaktúry na jednom mieste.",
+      node: <ShotDashboard />,
+    },
+    {
+      key: "list",
+      title: "Zoznam faktúr",
+      desc: "Rýchle filtre, stavy a hromadné akcie pre desiatky faktúr mesačne.",
+      node: <ShotInvoiceList />,
+    },
+    {
+      key: "detail",
+      title: "Detail faktúry",
+      desc: "PDF, QR platba, GoPay link a história udalostí v jednom okne.",
+      node: <ShotInvoiceDetail />,
+    },
+    {
+      key: "efaktura",
+      title: "eFaktúra readiness",
+      desc: "Pripravenosť na povinný XML formát 1.1.2027.",
+      node: <ShotEfaktura />,
+    },
   ];
   const [active, setActive] = useState(shots[0].key);
   const current = shots.find((s) => s.key === active) ?? shots[0];
@@ -1433,27 +1613,48 @@ function ShotInvoiceList() {
   const rows = [
     { n: "FA2026-0042", c: "Acme s.r.o.", s: "Uhradená", sum: "1 698,60 €", color: "emerald" },
     { n: "FA2026-0041", c: "Beta s.r.o.", s: "Odoslaná", sum: "920,00 €", color: "primary" },
-    { n: "FA2026-0040", c: "Gamma s.r.o.", s: "Po splatnosti", sum: "612,00 €", color: "destructive" },
+    {
+      n: "FA2026-0040",
+      c: "Gamma s.r.o.",
+      s: "Po splatnosti",
+      sum: "612,00 €",
+      color: "destructive",
+    },
     { n: "FA2026-0039", c: "Delta s.r.o.", s: "Koncept", sum: "240,00 €", color: "muted" },
     { n: "FA2026-0038", c: "Epsilon s.r.o.", s: "Uhradená", sum: "3 600,00 €", color: "emerald" },
   ];
   return (
     <div className="overflow-hidden rounded-lg border border-border">
       <div className="grid grid-cols-[1.2fr_2fr_1fr_1fr] gap-3 border-b border-border bg-secondary/40 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        <span>Číslo</span><span>Odberateľ</span><span>Stav</span><span className="text-right">Suma</span>
+        <span>Číslo</span>
+        <span>Odberateľ</span>
+        <span>Stav</span>
+        <span className="text-right">Suma</span>
       </div>
       {rows.map((r, i) => (
-        <div key={r.n} className={"grid grid-cols-[1.2fr_2fr_1fr_1fr] gap-3 px-3 py-2.5 text-xs " + (i % 2 ? "bg-background" : "bg-card")}>
+        <div
+          key={r.n}
+          className={
+            "grid grid-cols-[1.2fr_2fr_1fr_1fr] gap-3 px-3 py-2.5 text-xs " +
+            (i % 2 ? "bg-background" : "bg-card")
+          }
+        >
           <span className="font-mono font-semibold">{r.n}</span>
           <span className="truncate text-foreground">{r.c}</span>
           <span>
-            <span className={[
-              "rounded-full px-2 py-0.5 text-[10px] font-semibold",
-              r.color === "emerald" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-              r.color === "primary" && "bg-primary/15 text-primary",
-              r.color === "destructive" && "bg-destructive/15 text-destructive",
-              r.color === "muted" && "bg-secondary text-muted-foreground",
-            ].filter(Boolean).join(" ")}>{r.s}</span>
+            <span
+              className={[
+                "rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                r.color === "emerald" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+                r.color === "primary" && "bg-primary/15 text-primary",
+                r.color === "destructive" && "bg-destructive/15 text-destructive",
+                r.color === "muted" && "bg-secondary text-muted-foreground",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              {r.s}
+            </span>
           </span>
           <span className="text-right font-semibold tabular-nums">{r.sum}</span>
         </div>
@@ -1468,21 +1669,46 @@ function ShotInvoiceDetail() {
       <div className="rounded-lg border border-border bg-card p-4 text-xs">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Faktúra</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Faktúra
+            </div>
             <div className="text-base font-bold">FA2026-0042</div>
           </div>
-          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">Uhradená</span>
+          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+            Uhradená
+          </span>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-          <div><div className="text-muted-foreground">Dodávateľ</div><div className="font-semibold">Faktero s.r.o.</div></div>
-          <div><div className="text-muted-foreground">Odberateľ</div><div className="font-semibold">Acme s.r.o.</div></div>
-          <div><div className="text-muted-foreground">Splatnosť</div><div className="font-semibold">14. jún 2026</div></div>
-          <div><div className="text-muted-foreground">IBAN</div><div className="font-mono">SK12 1100…</div></div>
+          <div>
+            <div className="text-muted-foreground">Dodávateľ</div>
+            <div className="font-semibold">Faktero s.r.o.</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Odberateľ</div>
+            <div className="font-semibold">Acme s.r.o.</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Splatnosť</div>
+            <div className="font-semibold">14. jún 2026</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">IBAN</div>
+            <div className="font-mono">SK12 1100…</div>
+          </div>
         </div>
         <div className="mt-3 border-t border-border pt-2 text-[11px]">
-          <div className="flex justify-between py-1"><span>Web design</span><span className="tabular-nums">1 200,00 €</span></div>
-          <div className="flex justify-between py-1"><span>Hosting 12 m</span><span className="tabular-nums">180,00 €</span></div>
-          <div className="flex justify-between border-t border-border pt-1 font-bold"><span>Spolu s DPH</span><span className="tabular-nums">1 698,60 €</span></div>
+          <div className="flex justify-between py-1">
+            <span>Web design</span>
+            <span className="tabular-nums">1 200,00 €</span>
+          </div>
+          <div className="flex justify-between py-1">
+            <span>Hosting 12 m</span>
+            <span className="tabular-nums">180,00 €</span>
+          </div>
+          <div className="flex justify-between border-t border-border pt-1 font-bold">
+            <span>Spolu s DPH</span>
+            <span className="tabular-nums">1 698,60 €</span>
+          </div>
         </div>
       </div>
       <div className="space-y-3">
@@ -1526,8 +1752,15 @@ function ShotEfaktura() {
           ["XML schéma UBL 2.1", true],
           ["Peppol identifikátor", false],
         ].map(([l, ok]) => (
-          <div key={String(l)} className="flex items-center gap-2 rounded-lg border border-border bg-card p-2.5">
-            {ok ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <X className="h-4 w-4 text-muted-foreground" />}
+          <div
+            key={String(l)}
+            className="flex items-center gap-2 rounded-lg border border-border bg-card p-2.5"
+          >
+            {ok ? (
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            ) : (
+              <X className="h-4 w-4 text-muted-foreground" />
+            )}
             <span>{l}</span>
           </div>
         ))}
@@ -1542,9 +1775,24 @@ function ShotEfaktura() {
 
 function HowItWorks() {
   const steps = [
-    { icon: Building, n: "01", title: "Vytvorte firmu", text: "Načítajte údaje z IČO. Faktero predvyplní názov, adresu a DPH." },
-    { icon: FileText, n: "02", title: "Vystavte faktúru", text: "Doplňte položky, vyberte odberateľa a odošlite PDF e-mailom." },
-    { icon: Wallet, n: "03", title: "Získajte zaplatené", text: "Klient zaplatí cez GoPay alebo QR platbu. Stav sa zaznamená automaticky." },
+    {
+      icon: Building,
+      n: "01",
+      title: "Vytvorte firmu",
+      text: "Načítajte údaje z IČO. Faktero predvyplní názov, adresu a DPH.",
+    },
+    {
+      icon: FileText,
+      n: "02",
+      title: "Vystavte faktúru",
+      text: "Doplňte položky, vyberte odberateľa a odošlite PDF e-mailom.",
+    },
+    {
+      icon: Wallet,
+      n: "03",
+      title: "Získajte zaplatené",
+      text: "Klient zaplatí cez GoPay alebo QR platbu. Stav sa zaznamená automaticky.",
+    },
   ];
   return (
     <section id="ako-to-funguje" className="border-y border-border/60 bg-card/30">
@@ -1557,7 +1805,10 @@ function HowItWorks() {
         <div className="relative mt-14 grid gap-6 md:grid-cols-3">
           <div className="pointer-events-none absolute left-0 right-0 top-8 hidden h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent md:block" />
           {steps.map((s) => (
-            <div key={s.n} className="relative rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]">
+            <div
+              key={s.n}
+              className="relative rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)]"
+            >
               <div className="flex items-center justify-between">
                 <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/12 text-primary">
                   <s.icon className="h-5 w-5" />
@@ -1625,13 +1876,14 @@ function FounderStory() {
           <Rocket className="h-3 w-3" /> Prečo vzniklo Faktero
         </div>
         <h2 className="mt-5 text-3xl font-semibold tracking-tight md:text-4xl">
-          Existujúce nástroje na fakturáciu sú <span className="text-primary">zastarané</span>, zbytočne zložité a nepripravené na to, čo príde.
+          Existujúce nástroje na fakturáciu sú <span className="text-primary">zastarané</span>,
+          zbytočne zložité a nepripravené na to, čo príde.
         </h2>
         <p className="mt-5 text-base leading-relaxed text-muted-foreground">
-          Faktero som postavil pre seba — pre podnikateľov, ktorí chcú fakturovať
-          rýchlo, automatizovať cez API a byť pripravení na povinnú eFaktúru 2027 skôr,
-          ako začne tlačiť termín. Žiadne pop-upy, žiadne staré rozhrania, žiadne
-          prekvapenia na faktúre na konci mesiaca.
+          Faktero som postavil pre seba — pre podnikateľov, ktorí chcú fakturovať rýchlo,
+          automatizovať cez API a byť pripravení na povinnú eFaktúru 2027 skôr, ako začne tlačiť
+          termín. Žiadne pop-upy, žiadne staré rozhrania, žiadne prekvapenia na faktúre na konci
+          mesiaca.
         </p>
         <p className="mt-4 text-sm text-muted-foreground">— zakladateľ Faktero</p>
       </div>
@@ -1645,13 +1897,34 @@ function FounderStory() {
 
 function FaqSection() {
   const faqs = [
-    { q: "Ako funguje skúšobná verzia?", a: "Po registrácii dostávate 2 Mesiace zdarma s prístupom ku všetkým funkciám zvoleného plánu. Po skončení skúšky si vyberiete plán alebo môžete účet nechať bez aktivácie." },
-    { q: "Potrebujem platobnú kartu?", a: "Nie. Skúšobná verzia neviaže žiadnu platobnú kartu. Platobné údaje zadávate až pri aktivácii plateného plánu cez GoPay." },
-    { q: "Môžem prejsť zo SuperFaktúry?", a: "Áno. Faktero podporuje hromadný import faktúr, odberateľov a číselných radov zo SuperFaktúry, CSV alebo XML — bez straty histórie." },
-    { q: "Máte API?", a: "Áno. REST API s test / live režimom, Bearer autentifikáciou, idempotenciou cez external_id a real-time webhookmi. Dostupné v pláne Business a Enterprise." },
-    { q: "Budete podporovať eFaktúru?", a: "Áno. Pripravujeme štruktúrované XML (UBL 2.1), Peppol identifikátor a integráciu s Digitálnym poštárom tak, aby ste boli pripravení na 1.1.2027." },
-    { q: "Koľko stojí odoslanie eFaktúry?", a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero. Žiadne skryté poplatky za odoslanú faktúru." },
-    { q: "Je možné exportovať do Pohody?", a: "Áno. XML export priamo do Pohody dostávate v každom pláne — účtovník dostane podklady jedným klikom." },
+    {
+      q: "Ako funguje skúšobná verzia?",
+      a: "Po registrácii dostávate 2 Mesiace zdarma s prístupom ku všetkým funkciám zvoleného plánu. Po skončení skúšky si vyberiete plán alebo môžete účet nechať bez aktivácie.",
+    },
+    {
+      q: "Potrebujem platobnú kartu?",
+      a: "Nie. Skúšobná verzia neviaže žiadnu platobnú kartu. Platobné údaje zadávate až pri aktivácii plateného plánu cez GoPay.",
+    },
+    {
+      q: "Môžem prejsť zo SuperFaktúry?",
+      a: "Áno. Faktero podporuje hromadný import faktúr, odberateľov a číselných radov zo SuperFaktúry, CSV alebo XML — bez straty histórie.",
+    },
+    {
+      q: "Máte API?",
+      a: "Áno. REST API s test / live režimom, Bearer autentifikáciou, idempotenciou cez external_id a real-time webhookmi. Dostupné v pláne Business a Enterprise.",
+    },
+    {
+      q: "Budete podporovať eFaktúru?",
+      a: "Áno. Pripravujeme štruktúrované XML (UBL 2.1), Peppol identifikátor a integráciu s Digitálnym poštárom tak, aby ste boli pripravení na 1.1.2027.",
+    },
+    {
+      q: "Koľko stojí odoslanie eFaktúry?",
+      a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero. Žiadne skryté poplatky za odoslanú faktúru.",
+    },
+    {
+      q: "Je možné exportovať do Pohody?",
+      a: "Áno. XML export priamo do Pohody dostávate v každom pláne — účtovník dostane podklady jedným klikom.",
+    },
   ];
   return (
     <section id="faq" className="relative">

@@ -11,7 +11,9 @@
 import { createHash, createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
 function deriveKey(base: string): Buffer {
-  return createHash("sha256").update("faktero:payment-secrets:v1:" + base).digest();
+  return createHash("sha256")
+    .update("faktero:payment-secrets:v1:" + base)
+    .digest();
 }
 
 function candidateKeys(): Buffer[] {
@@ -30,7 +32,9 @@ export function hasPaymentSecretsKey(): boolean {
 
 export class DecryptError extends Error {
   code = "FAKTERO_DECRYPT_ERROR" as const;
-  constructor(message = "Uložené prihlasovacie údaje nie je možné dešifrovať. Zadajte ich prosím znova.") {
+  constructor(
+    message = "Uložené prihlasovacie údaje nie je možné dešifrovať. Zadajte ich prosím znova.",
+  ) {
     super(message);
     this.name = "DecryptError";
   }
@@ -61,8 +65,11 @@ export function encryptSecret(plain: string): string {
 
 export function decryptSecret(b64: string): string {
   let buf: Buffer;
-  try { buf = Buffer.from(b64, "base64"); }
-  catch { throw new DecryptError(); }
+  try {
+    buf = Buffer.from(b64, "base64");
+  } catch {
+    throw new DecryptError();
+  }
   if (buf.length < 29) throw new DecryptError();
   const iv = buf.subarray(0, 12);
   const tag = buf.subarray(12, 28);
@@ -81,7 +88,12 @@ export function decryptSecret(b64: string): string {
 
 export function canDecryptSecret(b64: string | null | undefined): boolean {
   if (!b64) return false;
-  try { decryptSecret(b64); return true; } catch { return false; }
+  try {
+    decryptSecret(b64);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function maskSecret(s: string | null | undefined): string | null {

@@ -2,11 +2,23 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Upload, Loader2, CheckCircle2, AlertTriangle, ArrowRight, ArrowLeft, History, Sparkles, Sliders } from "lucide-react";
+import {
+  Upload,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+  ArrowLeft,
+  History,
+  Sparkles,
+  Sliders,
+} from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
-  createImportUploadUrl, previewImport, executeImport,
+  createImportUploadUrl,
+  previewImport,
+  executeImport,
 } from "@/lib/faktero/import-superfaktura.functions";
 
 export const Route = createFileRoute("/_authenticated/importy/superfaktura")({
@@ -75,8 +87,14 @@ function ImportPage() {
     if (file.size > 20 * 1024 * 1024) return toast.error("Súbor je príliš veľký (max 20 MB).");
     setBusy(true);
     try {
-      const { signedUrl, path: p } = await createUrl({ data: { companyId: cid, fileName: file.name } });
-      const uploadRes = await fetch(signedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
+      const { signedUrl, path: p } = await createUrl({
+        data: { companyId: cid, fileName: file.name },
+      });
+      const uploadRes = await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+      });
       if (!uploadRes.ok) throw new Error(`Upload zlyhal (${uploadRes.status})`);
       setPath(p);
       const r = await doPreview({ data: { companyId: cid, path: p, fileName: file.name } });
@@ -87,7 +105,9 @@ function ImportPage() {
       setStep(2);
     } catch (e: any) {
       toast.error(e?.message ?? "Upload zlyhal.");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function recomputePreview() {
@@ -97,7 +117,9 @@ function ImportPage() {
     try {
       const r = await doPreview({ data: { companyId: cid, path, fileName: file.name, mapping } });
       setPreview(r.preview);
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleRunImport() {
@@ -106,13 +128,19 @@ function ImportPage() {
     if (!confirm("Importom sa vytvoria nové záznamy vo vašej firme. Pokračovať?")) return;
     setBusy(true);
     try {
-      const r = await doImport({ data: { companyId: cid, path, fileName: file.name, mapping, options } });
+      const r = await doImport({
+        data: { companyId: cid, path, fileName: file.name, mapping, options },
+      });
       setResult(r);
       setStep(5);
-      toast.success(`Importovaných ${r.imported_invoices} faktúr a ${r.imported_customers} odberateľov.`);
+      toast.success(
+        `Importovaných ${r.imported_invoices} faktúr a ${r.imported_customers} odberateľov.`,
+      );
     } catch (e: any) {
       toast.error(e?.message ?? "Import zlyhal.");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -121,7 +149,10 @@ function ImportPage() {
         title="Import zo SuperFaktúry"
         description="Nahrajte Excel/CSV a Faktero automaticky rozpozná stĺpce. Manuálne mapovanie je len ako záloha."
         action={
-          <Link to="/importy" className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary">
+          <Link
+            to="/importy"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+          >
             <History className="h-4 w-4" /> História importov
           </Link>
         }
@@ -133,18 +164,33 @@ function ImportPage() {
           {step === 1 && (
             <section className="rounded-2xl border border-border bg-card p-6">
               <h2 className="text-base font-semibold">1. Nahrajte export súbor</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Podporujeme Excel (.xlsx), CSV, XML alebo ZIP zo SuperFaktúry. Maximálne 20 MB.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Podporujeme Excel (.xlsx), CSV, XML alebo ZIP zo SuperFaktúry. Maximálne 20 MB.
+              </p>
               <label className="mt-5 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-6 py-12 text-sm hover:border-primary/50">
                 <Upload className="h-8 w-8 text-primary" />
-                <span className="font-medium">{file ? file.name : "Vyberte alebo presuňte súbor"}</span>
+                <span className="font-medium">
+                  {file ? file.name : "Vyberte alebo presuňte súbor"}
+                </span>
                 <span className="text-xs text-muted-foreground">.xlsx · .csv · .xml · .zip</span>
-                <input type="file" accept=".xlsx,.xls,.csv,.xml,.zip,text/csv,application/xml,application/zip,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-                  className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv,.xml,.zip,text/csv,application/xml,application/zip,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  className="hidden"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
               </label>
               <div className="mt-5 flex justify-end">
-                <button onClick={handleUpload} disabled={!file || busy}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                <button
+                  onClick={handleUpload}
+                  disabled={!file || busy}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                >
+                  {busy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowRight className="h-4 w-4" />
+                  )}
                   Načítať a pokračovať
                 </button>
               </div>
@@ -157,29 +203,45 @@ function ImportPage() {
                 <div>
                   <h2 className="text-base font-semibold">2. Automatická detekcia</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {detection?.detectedSource === "superfaktura" ? "Rozpoznaný export SuperFaktúry." : "Rozpoznaný všeobecný export."}
-                    {" "}Detekovaných polí: {detection?.detectedColumns?.length ?? 0}.
+                    {detection?.detectedSource === "superfaktura"
+                      ? "Rozpoznaný export SuperFaktúry."
+                      : "Rozpoznaný všeobecný export."}{" "}
+                    Detekovaných polí: {detection?.detectedColumns?.length ?? 0}.
                   </p>
                 </div>
-                {detection && <ConfidenceBadge label={detection.confidenceLabel} value={detection.confidence} />}
+                {detection && (
+                  <ConfidenceBadge label={detection.confidenceLabel} value={detection.confidence} />
+                )}
               </div>
               <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <Stat label="Faktúry" value={preview.invoicesCount} />
                 <Stat label="Odberatelia" value={preview.customersCount} />
                 <Stat label="Riadky" value={preview.itemsCount} />
-                <Stat label="Celková hodnota" value={`${preview.totalValue.toFixed(2)} ${preview.currency}`} />
+                <Stat
+                  label="Celková hodnota"
+                  value={`${preview.totalValue.toFixed(2)} ${preview.currency}`}
+                />
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
                 Obdobie: {preview.dateFrom ?? "—"} až {preview.dateTo ?? "—"}
               </div>
               {detection?.perField && (
                 <div className="mt-4 rounded-lg border border-border bg-background p-3">
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Detekované stĺpce</div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Detekované stĺpce
+                  </div>
                   <div className="grid gap-1 sm:grid-cols-2">
                     {Object.entries(detection.perField).map(([f, v]: any) => (
-                      <div key={f} className="flex items-center justify-between rounded border border-border/50 bg-secondary/30 px-2 py-1 text-xs">
-                        <span className="text-muted-foreground">{FIELDS.find((x) => x.key === f)?.label ?? f}</span>
-                        <span className="font-medium">{v.header} · {Math.round(v.score * 100)}%</span>
+                      <div
+                        key={f}
+                        className="flex items-center justify-between rounded border border-border/50 bg-secondary/30 px-2 py-1 text-xs"
+                      >
+                        <span className="text-muted-foreground">
+                          {FIELDS.find((x) => x.key === f)?.label ?? f}
+                        </span>
+                        <span className="font-medium">
+                          {v.header} · {Math.round(v.score * 100)}%
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -189,7 +251,12 @@ function ImportPage() {
                 <div className="mt-5 overflow-hidden rounded-lg border border-border">
                   <table className="w-full text-sm">
                     <thead className="bg-secondary/40 text-xs text-muted-foreground">
-                      <tr><th className="px-3 py-2 text-left">Číslo</th><th className="px-3 py-2 text-left">Odberateľ</th><th className="px-3 py-2 text-left">Dátum</th><th className="px-3 py-2 text-right">Suma</th></tr>
+                      <tr>
+                        <th className="px-3 py-2 text-left">Číslo</th>
+                        <th className="px-3 py-2 text-left">Odberateľ</th>
+                        <th className="px-3 py-2 text-left">Dátum</th>
+                        <th className="px-3 py-2 text-right">Suma</th>
+                      </tr>
                     </thead>
                     <tbody>
                       {preview.sampleInvoices.map((s: any, i: number) => (
@@ -197,7 +264,9 @@ function ImportPage() {
                           <td className="px-3 py-2">{s.invoice_number}</td>
                           <td className="px-3 py-2">{s.customer_name || "—"}</td>
                           <td className="px-3 py-2">{s.issue_date ?? "—"}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{Number(s.total).toFixed(2)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums">
+                            {Number(s.total).toFixed(2)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -205,25 +274,37 @@ function ImportPage() {
                 </div>
               )}
               <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
-                <button onClick={() => setStep(1)} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
+                <button
+                  onClick={() => setStep(1)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                >
                   <ArrowLeft className="h-4 w-4" /> Späť
                 </button>
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => setStep(3)} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
+                  <button
+                    onClick={() => setStep(3)}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                  >
                     <Sliders className="h-4 w-4" /> Upraviť mapovanie
                   </button>
                   <button
                     onClick={() => setStep(4)}
                     disabled={detection?.confidenceLabel === "low"}
                     className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                    title={detection?.confidenceLabel === "low" ? "Nízka zhoda — upravte mapovanie najprv" : undefined}
+                    title={
+                      detection?.confidenceLabel === "low"
+                        ? "Nízka zhoda — upravte mapovanie najprv"
+                        : undefined
+                    }
                   >
                     <Sparkles className="h-4 w-4" /> Importovať automaticky
                   </button>
                 </div>
               </div>
               {detection?.confidenceLabel === "low" && (
-                <p className="mt-3 text-xs text-amber-600">Nízka zhoda detekcie. Skontrolujte a doplňte mapovanie pred importom.</p>
+                <p className="mt-3 text-xs text-amber-600">
+                  Nízka zhoda detekcie. Skontrolujte a doplňte mapovanie pred importom.
+                </p>
               )}
             </section>
           )}
@@ -231,25 +312,46 @@ function ImportPage() {
           {step === 3 && (
             <section className="rounded-2xl border border-border bg-card p-6">
               <h2 className="text-base font-semibold">3. Mapovanie polí</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Spárujte stĺpce z vášho súboru s poľami Faktera. Nevyplnené sa preskočia.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Spárujte stĺpce z vášho súboru s poľami Faktera. Nevyplnené sa preskočia.
+              </p>
               {(["Faktúra", "Odberateľ", "Položka"] as const).map((group) => (
                 <div key={group} className="mt-5">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group}</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {group}
+                  </h3>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2">
                     {FIELDS.filter((f) => f.group === group).map((f) => (
-                      <div key={f.key} className="grid grid-cols-2 items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5">
+                      <div
+                        key={f.key}
+                        className="grid grid-cols-2 items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5"
+                      >
                         <label className="text-sm">{f.label}</label>
-                        <select value={mapping[f.key] ?? ""} onChange={(e) => setMapping({ ...mapping, [f.key]: e.target.value })}
-                          className="rounded-md border border-input bg-background px-2 py-1 text-sm">
+                        <select
+                          value={mapping[f.key] ?? ""}
+                          onChange={(e) => setMapping({ ...mapping, [f.key]: e.target.value })}
+                          className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+                        >
                           <option value="">— ignorovať —</option>
-                          {headers.map((h) => <option key={h} value={h}>{h}</option>)}
+                          {headers.map((h) => (
+                            <option key={h} value={h}>
+                              {h}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     ))}
                   </div>
                 </div>
               ))}
-              <Footer onBack={() => setStep(2)} onNext={async () => { await recomputePreview(); setStep(4); }} nextLabel="Validovať" />
+              <Footer
+                onBack={() => setStep(2)}
+                onNext={async () => {
+                  await recomputePreview();
+                  setStep(4);
+                }}
+                nextLabel="Validovať"
+              />
             </section>
           )}
 
@@ -257,17 +359,27 @@ function ImportPage() {
             <section className="rounded-2xl border border-border bg-card p-6 space-y-5">
               <h2 className="text-base font-semibold">4. Validácia a možnosti</h2>
               <div className="grid gap-3 sm:grid-cols-3">
-                <ValidationCard kind="ok" label="Faktúry pripravené" value={preview.invoicesCount} />
+                <ValidationCard
+                  kind="ok"
+                  label="Faktúry pripravené"
+                  value={preview.invoicesCount}
+                />
                 <ValidationCard kind="ok" label="Odberatelia" value={preview.customersCount} />
-                <ValidationCard kind="warn" label="Riadky bez čísla faktúry"
-                  value={!mapping.invoice_number ? preview.itemsCount : 0} />
+                <ValidationCard
+                  kind="warn"
+                  label="Riadky bez čísla faktúry"
+                  value={!mapping.invoice_number ? preview.itemsCount : 0}
+                />
               </div>
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
                   <div>
                     <p className="font-medium">Upozornenie</p>
-                    <p className="text-muted-foreground">Import zapíše dáta do vašej firmy. Operácia sa nedá automaticky vrátiť. Skontrolujte mapovanie pred potvrdením.</p>
+                    <p className="text-muted-foreground">
+                      Import zapíše dáta do vašej firmy. Operácia sa nedá automaticky vrátiť.
+                      Skontrolujte mapovanie pred potvrdením.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -279,13 +391,25 @@ function ImportPage() {
                   ["generatePdfs", "Vygenerovať PDF po importe"],
                   ["triggerWebhooks", "Spustiť webhooky po importe"],
                 ].map(([k, label]) => (
-                  <label key={k} className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm">
-                    <input type="checkbox" checked={(options as any)[k]} onChange={(e) => setOptions({ ...options, [k]: e.target.checked })} />
+                  <label
+                    key={k}
+                    className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={(options as any)[k]}
+                      onChange={(e) => setOptions({ ...options, [k]: e.target.checked })}
+                    />
                     {label}
                   </label>
                 ))}
               </div>
-              <Footer onBack={() => setStep(3)} onNext={handleRunImport} nextLabel={busy ? "Importujem…" : "Potvrdiť a importovať"} disabled={busy} />
+              <Footer
+                onBack={() => setStep(3)}
+                onNext={handleRunImport}
+                nextLabel={busy ? "Importujem…" : "Potvrdiť a importovať"}
+                disabled={busy}
+              />
             </section>
           )}
 
@@ -300,8 +424,18 @@ function ImportPage() {
                 <Stat label="Chyby" value={result.failed_rows} />
               </div>
               <div className="mt-6 flex justify-center gap-2">
-                <Link to="/faktury" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Prejsť na faktúry</Link>
-                <Link to="/importy" className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">História importov</Link>
+                <Link
+                  to="/faktury"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                >
+                  Prejsť na faktúry
+                </Link>
+                <Link
+                  to="/importy"
+                  className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+                >
+                  História importov
+                </Link>
               </div>
             </section>
           )}
@@ -316,12 +450,24 @@ function Stepper({ step }: { step: number }) {
   return (
     <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-4">
       {labels.map((l, i) => {
-        const n = i + 1, active = step === n, done = step > n;
+        const n = i + 1,
+          active = step === n,
+          done = step > n;
         return (
           <div key={l} className="flex flex-1 items-center gap-2">
-            <div className={`grid h-7 w-7 place-items-center rounded-full text-xs font-semibold ${done ? "bg-primary text-primary-foreground" : active ? "bg-primary/10 text-primary ring-2 ring-primary/30" : "bg-secondary text-muted-foreground"}`}>{n}</div>
-            <span className={`text-sm ${active ? "font-medium" : "text-muted-foreground"}`}>{l}</span>
-            {i < labels.length - 1 && <div className={`mx-2 hidden h-px flex-1 sm:block ${done ? "bg-primary" : "bg-border"}`} />}
+            <div
+              className={`grid h-7 w-7 place-items-center rounded-full text-xs font-semibold ${done ? "bg-primary text-primary-foreground" : active ? "bg-primary/10 text-primary ring-2 ring-primary/30" : "bg-secondary text-muted-foreground"}`}
+            >
+              {n}
+            </div>
+            <span className={`text-sm ${active ? "font-medium" : "text-muted-foreground"}`}>
+              {l}
+            </span>
+            {i < labels.length - 1 && (
+              <div
+                className={`mx-2 hidden h-px flex-1 sm:block ${done ? "bg-primary" : "bg-border"}`}
+              />
+            )}
           </div>
         );
       })}
@@ -346,14 +492,29 @@ function ConfidenceBadge({ label, value }: { label: "high" | "medium" | "low"; v
   } as const;
   const v = map[label] ?? map.medium;
   return (
-    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${v.cls}`}>
+    <div
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${v.cls}`}
+    >
       <Sparkles className="h-3.5 w-3.5" /> {v.text} · {Math.round((value ?? 0) * 100)}%
     </div>
   );
 }
 
-function ValidationCard({ kind, label, value }: { kind: "ok" | "warn" | "err"; label: string; value: any }) {
-  const color = kind === "ok" ? "border-primary/30 bg-primary/5 text-primary" : kind === "warn" ? "border-amber-500/30 bg-amber-500/5 text-amber-700" : "border-destructive/30 bg-destructive/5 text-destructive";
+function ValidationCard({
+  kind,
+  label,
+  value,
+}: {
+  kind: "ok" | "warn" | "err";
+  label: string;
+  value: any;
+}) {
+  const color =
+    kind === "ok"
+      ? "border-primary/30 bg-primary/5 text-primary"
+      : kind === "warn"
+        ? "border-amber-500/30 bg-amber-500/5 text-amber-700"
+        : "border-destructive/30 bg-destructive/5 text-destructive";
   return (
     <div className={`rounded-lg border p-3 ${color}`}>
       <div className="text-xs">{label}</div>
@@ -362,14 +523,30 @@ function ValidationCard({ kind, label, value }: { kind: "ok" | "warn" | "err"; l
   );
 }
 
-function Footer({ onBack, onNext, nextLabel = "Pokračovať", disabled }: { onBack: () => void; onNext: () => void; nextLabel?: string; disabled?: boolean }) {
+function Footer({
+  onBack,
+  onNext,
+  nextLabel = "Pokračovať",
+  disabled,
+}: {
+  onBack: () => void;
+  onNext: () => void;
+  nextLabel?: string;
+  disabled?: boolean;
+}) {
   return (
     <div className="mt-5 flex justify-between">
-      <button onClick={onBack} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
+      <button
+        onClick={onBack}
+        className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+      >
         <ArrowLeft className="h-4 w-4" /> Späť
       </button>
-      <button onClick={onNext} disabled={disabled}
-        className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+      <button
+        onClick={onNext}
+        disabled={disabled}
+        className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+      >
         {nextLabel} <ArrowRight className="h-4 w-4" />
       </button>
     </div>

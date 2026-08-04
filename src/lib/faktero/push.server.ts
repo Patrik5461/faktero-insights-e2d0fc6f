@@ -71,7 +71,11 @@ async function getAccessToken(): Promise<string> {
   };
   const unsigned = `${base64UrlEncode(JSON.stringify(header))}.${base64UrlEncode(JSON.stringify(claim))}`;
   const key = await importPrivateKey(sa.private_key);
-  const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(unsigned));
+  const sig = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    key,
+    new TextEncoder().encode(unsigned),
+  );
   const jwt = `${unsigned}.${base64UrlEncode(sig)}`;
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
@@ -85,7 +89,12 @@ async function getAccessToken(): Promise<string> {
   return cachedToken.value;
 }
 
-async function sendToToken(token: string, title: string, body: string, data?: Record<string, string>) {
+async function sendToToken(
+  token: string,
+  title: string,
+  body: string,
+  data?: Record<string, string>,
+) {
   const projectId = process.env.FCM_PROJECT_ID;
   if (!projectId) throw new Error("FCM_PROJECT_ID not set");
   const accessToken = await getAccessToken();

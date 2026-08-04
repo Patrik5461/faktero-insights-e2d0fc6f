@@ -6,7 +6,7 @@ export default defineConfig({
   },
   vite: {
     preview: {
-      allowedHosts: ['faktero.sk', 'www.faktero.sk'],
+      allowedHosts: ["faktero.sk", "www.faktero.sk"],
     },
   },
 });

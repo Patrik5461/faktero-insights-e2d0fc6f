@@ -1,6 +1,7 @@
 # App Store + Play Store Submission Checklist
 
 ## Spoločné (oboje stores)
+
 - [ ] Verzia v `package.json`, `ios/App/App.xcodeproj` (CFBundleShortVersionString) a `android/app/build.gradle` (versionName/versionCode) je zladená
 - [ ] `bun run build:mobile` (NITRO_PRESET=static) prešiel bez chýb
 - [ ] `capacitor.config.ts` má **zakomentovaný `server.url`** (inak Apple zamietne)
@@ -15,6 +16,7 @@
 ## iOS — Apple App Store
 
 ### Apple Developer Account
+
 - [ ] Apple Developer Program aktívny ($99/rok)
 - [ ] App ID `sk.faktero.app` vytvorené (Certificates, IDs & Profiles)
 - [ ] Capabilities zapnuté: **Push Notifications**, **Sign in with Apple** (ak používaš)
@@ -24,6 +26,7 @@
 - [ ] **Provisioning Profile** (App Store distribution) stiahnutý
 
 ### Xcode projekt
+
 - [ ] Signing & Capabilities → Team vybraný, Bundle ID `sk.faktero.app`
 - [ ] Capabilities: Push Notifications + Background Modes → Remote notifications
 - [ ] `Info.plist` obsahuje:
@@ -36,6 +39,7 @@
 - [ ] Product → Archive → Distribute App → App Store Connect
 
 ### App Store Connect
+
 - [ ] App záznam vytvorený (Bundle ID, primary language SK)
 - [ ] Category: **Business**, Subcategory: **Finance**
 - [ ] Age rating: **4+**
@@ -58,6 +62,7 @@
 ## Android — Google Play Store
 
 ### Firebase + Service Account
+
 - [ ] Firebase projekt vytvorený
 - [ ] Android app pridaná v Firebase Console (package `sk.faktero.app`)
 - [ ] `google-services.json` stiahnutý → uložiť do `android/app/`
@@ -68,6 +73,7 @@
 - [ ] APNs Auth Key (.p8) z Apple uploadnutý do Firebase Console → Cloud Messaging → Apple app configuration (pre iOS push cez FCM)
 
 ### Android Studio projekt
+
 - [ ] `android/app/build.gradle`:
   - `applicationId "sk.faktero.app"`
   - `compileSdkVersion 34`, `targetSdkVersion 34`, `minSdkVersion 24`
@@ -86,6 +92,7 @@
 - [ ] `./gradlew bundleRelease` → `android/app/build/outputs/bundle/release/app-release.aab`
 
 ### Google Play Console
+
 - [ ] Vývojársky účet aktívny ($25 one-time)
 - [ ] Aplikácia vytvorená (Slovak ako default language)
 - [ ] **Internal testing** track:
@@ -112,6 +119,7 @@
 ---
 
 ## Po publishovaní
+
 - [ ] Otestovať deep linking: `faktero://faktury/<id>` na oboch platformách
 - [ ] Push notifikácia príde do 30s po `invoice.paid` evente
 - [ ] Cron `push-overdue` beží každé ráno o 8:00 (skontrolovať `cron.job_run_details`)

@@ -49,7 +49,9 @@ function SentPage() {
     try {
       const r = await regen({ data: { companyId: companyId!, invoiceId } });
       toast[r.valid ? "success" : "error"](
-        r.valid ? "XML znovu validované — bez chýb." : `Validácia zlyhala (${r.validationErrors.length} chýb).`,
+        r.valid
+          ? "XML znovu validované — bez chýb."
+          : `Validácia zlyhala (${r.validationErrors.length} chýb).`,
       );
       q.refetch();
     } catch (e) {
@@ -59,7 +61,10 @@ function SentPage() {
 
   return (
     <>
-      <PageHeader title="Odoslané eFaktúry" description="XML dokumenty vygenerované z vašich faktúr." />
+      <PageHeader
+        title="Odoslané eFaktúry"
+        description="XML dokumenty vygenerované z vašich faktúr."
+      />
       <PageBody>
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
@@ -76,20 +81,34 @@ function SentPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {q.isLoading && (
-                <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Načítavam…</td></tr>
+                <tr>
+                  <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                    Načítavam…
+                  </td>
+                </tr>
               )}
               {q.data && q.data.length === 0 && (
-                <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Zatiaľ žiadne vygenerované eFaktúry.</td></tr>
+                <tr>
+                  <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                    Zatiaľ žiadne vygenerované eFaktúry.
+                  </td>
+                </tr>
               )}
               {q.data?.map((row: any) => {
                 const errs = Array.isArray(row.validation_errors) ? row.validation_errors : [];
                 const ui = deriveEfakturaUiStatus(row);
                 return (
                   <tr key={row.id}>
-                    <td className="p-3 font-medium">{row.document_number ?? row.invoices?.invoice_number ?? "—"}</td>
+                    <td className="p-3 font-medium">
+                      {row.document_number ?? row.invoices?.invoice_number ?? "—"}
+                    </td>
                     <td className="p-3">{row.invoices?.customer_name ?? "—"}</td>
-                    <td className="p-3 text-xs uppercase text-muted-foreground">{row.invoices?.type ?? "regular"}</td>
-                    <td className="p-3"><EfakturaStatusBadge status={ui} /></td>
+                    <td className="p-3 text-xs uppercase text-muted-foreground">
+                      {row.invoices?.type ?? "regular"}
+                    </td>
+                    <td className="p-3">
+                      <EfakturaStatusBadge status={ui} />
+                    </td>
                     <td className="p-3">
                       {errs.length === 0 ? (
                         <span className="text-xs text-primary">OK</span>
@@ -104,7 +123,9 @@ function SentPage() {
                       {openErrors === row.id && (
                         <ul className="mt-2 space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs">
                           {errs.map((e: any, i: number) => (
-                            <li key={i}><span className="font-mono">{e.code}</span> — {e.message}</li>
+                            <li key={i}>
+                              <span className="font-mono">{e.code}</span> — {e.message}
+                            </li>
                           ))}
                         </ul>
                       )}

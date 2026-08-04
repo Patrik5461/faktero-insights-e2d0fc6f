@@ -34,28 +34,46 @@ function TripsPage() {
   const { vehicle_id } = Route.useSearch();
   const navigate = useNavigate({ from: "/jazdy" });
   const [rows, setRows] = useState<Trip[]>([]);
-  const [vehicleList, setVehicleList] = useState<Array<{ id: string; name: string; license_plate: string | null }>>([]);
+  const [vehicleList, setVehicleList] = useState<
+    Array<{ id: string; name: string; license_plate: string | null }>
+  >([]);
   const [loading, setLoading] = useState(true);
 
   async function load() {
     const cid = getActiveCompanyId();
-    if (!cid) { setLoading(false); return; }
+    if (!cid) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    let q = supabase.from("trips").select("*").eq("company_id", cid).order("trip_date", { ascending: false }).limit(500);
+    let q = supabase
+      .from("trips")
+      .select("*")
+      .eq("company_id", cid)
+      .order("trip_date", { ascending: false })
+      .limit(500);
     if (vehicle_id) q = q.eq("vehicle_id", vehicle_id);
     const [{ data: t }, { data: v }] = await Promise.all([
       q,
-      supabase.from("vehicles").select("id, name, license_plate").eq("company_id", cid).order("name"),
+      supabase
+        .from("vehicles")
+        .select("id, name, license_plate")
+        .eq("company_id", cid)
+        .order("name"),
     ]);
     setRows((t ?? []) as any);
     setVehicleList((v ?? []) as any);
     setLoading(false);
   }
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [vehicle_id]);
+  useEffect(() => {
+    load(); /* eslint-disable-next-line */
+  }, [vehicle_id]);
 
   const vehicles = useMemo(() => {
     const m: Record<string, { name: string; license_plate: string | null }> = {};
-    vehicleList.forEach((x) => { m[x.id] = { name: x.name, license_plate: x.license_plate }; });
+    vehicleList.forEach((x) => {
+      m[x.id] = { name: x.name, license_plate: x.license_plate };
+    });
     return m;
   }, [vehicleList]);
 
@@ -73,7 +91,10 @@ function TripsPage() {
         title="Kniha jázd"
         description="Záznamy služobných ciest s automatickým výpočtom km."
         action={
-          <Link to="/jazdy/nova" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+          <Link
+            to="/jazdy/nova"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
             <Plus className="h-4 w-4" /> Nová jazda
           </Link>
         }
@@ -92,7 +113,8 @@ function TripsPage() {
             <option value="">Všetky vozidlá</option>
             {vehicleList.map((v) => (
               <option key={v.id} value={v.id}>
-                {v.name}{v.license_plate ? ` — ${v.license_plate}` : ""}
+                {v.name}
+                {v.license_plate ? ` — ${v.license_plate}` : ""}
               </option>
             ))}
           </select>
@@ -103,7 +125,10 @@ function TripsPage() {
           <div className="rounded-xl border border-border bg-card p-10 text-center">
             <Car className="mx-auto h-10 w-10 text-muted-foreground" />
             <div className="mt-3 text-sm text-muted-foreground">Zatiaľ žiadne jazdy.</div>
-            <Link to="/jazdy/nova" className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+            <Link
+              to="/jazdy/nova"
+              className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+            >
               <Plus className="h-4 w-4" /> Pridať prvú jazdu
             </Link>
           </div>
@@ -131,17 +156,35 @@ function TripsPage() {
                   {rows.map((r) => (
                     <tr key={r.id} className="hover:bg-muted/30">
                       <td className="p-3 whitespace-nowrap">{r.trip_date}</td>
-                      <td className="p-3">{vehicles[r.vehicle_id]?.name ?? "—"} <span className="text-xs text-muted-foreground">{vehicles[r.vehicle_id]?.license_plate}</span></td>
+                      <td className="p-3">
+                        {vehicles[r.vehicle_id]?.name ?? "—"}{" "}
+                        <span className="text-xs text-muted-foreground">
+                          {vehicles[r.vehicle_id]?.license_plate}
+                        </span>
+                      </td>
                       <td className="p-3">{r.driver_name ?? "—"}</td>
                       <td className="p-3">{r.start_location ?? "—"}</td>
                       <td className="p-3">{r.end_location ?? "—"}</td>
-                      <td className="p-3 text-right tabular-nums font-medium">{Number(r.distance_km).toFixed(1)}</td>
-                      <td className="p-3 text-right tabular-nums">{formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td>
-                      <td className="p-3 text-right tabular-nums">{formatDuration(r.duration_seconds)}</td>
+                      <td className="p-3 text-right tabular-nums font-medium">
+                        {Number(r.distance_km).toFixed(1)}
+                      </td>
+                      <td className="p-3 text-right tabular-nums">
+                        {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
+                      </td>
+                      <td className="p-3 text-right tabular-nums">
+                        {formatDuration(r.duration_seconds)}
+                      </td>
                       <td className="p-3">{r.purpose ?? "—"}</td>
-                      <td className="p-3 text-xs text-muted-foreground">{sourceLabel(r.external_source)}</td>
+                      <td className="p-3 text-xs text-muted-foreground">
+                        {sourceLabel(r.external_source)}
+                      </td>
                       <td className="p-3 text-right">
-                        <button onClick={() => del(r.id)} className="rounded p-1.5 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
+                        <button
+                          onClick={() => del(r.id)}
+                          className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -155,17 +198,30 @@ function TripsPage() {
                 <div key={r.id} className="rounded-xl border border-border bg-card p-3 shadow-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold">{r.trip_date} · {vehicles[r.vehicle_id]?.name ?? "—"}</div>
-                      <div className="mt-0.5 text-xs text-muted-foreground truncate">{r.start_location ?? "—"} → {r.end_location ?? "—"}</div>
+                      <div className="text-sm font-semibold">
+                        {r.trip_date} · {vehicles[r.vehicle_id]?.name ?? "—"}
+                      </div>
+                      <div className="mt-0.5 text-xs text-muted-foreground truncate">
+                        {r.start_location ?? "—"} → {r.end_location ?? "—"}
+                      </div>
                       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                         <span>Trvanie: {formatDuration(r.duration_seconds)}</span>
-                        <span>Ø {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</span>
+                        <span>
+                          Ø {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
+                        </span>
                         {r.purpose && <span>{r.purpose}</span>}
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
-                      <div className="text-sm font-bold tabular-nums">{Number(r.distance_km).toFixed(1)} km</div>
-                      <button onClick={() => del(r.id)} className="mt-1 rounded p-1 text-destructive"><Trash2 className="h-4 w-4" /></button>
+                      <div className="text-sm font-bold tabular-nums">
+                        {Number(r.distance_km).toFixed(1)} km
+                      </div>
+                      <button
+                        onClick={() => del(r.id)}
+                        className="mt-1 rounded p-1 text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 </div>

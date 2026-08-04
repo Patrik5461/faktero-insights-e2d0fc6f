@@ -15,16 +15,25 @@ const listIntegrationsAdmin = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: admin } = await supabaseAdmin.from("platform_admins").select("user_id").eq("user_id", userId).maybeSingle();
+    const { data: admin } = await supabaseAdmin
+      .from("platform_admins")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
     if (!admin) throw new Error("Forbidden");
     const { data: conns } = await supabaseAdmin
       .from("commander_connections")
-      .select("company_id, enabled, auto_sync_daily, username, last_sync_at, sync_status, error_message, companies:company_id(name)")
+      .select(
+        "company_id, enabled, auto_sync_daily, username, last_sync_at, sync_status, error_message, companies:company_id(name)",
+      )
       .order("last_sync_at", { ascending: false, nullsFirst: false });
     const { data: links } = await supabaseAdmin
-      .from("commander_vehicle_links").select("company_id");
+      .from("commander_vehicle_links")
+      .select("company_id");
     const counts = new Map<string, number>();
-    (links ?? []).forEach((l: any) => counts.set(l.company_id, (counts.get(l.company_id) ?? 0) + 1));
+    (links ?? []).forEach((l: any) =>
+      counts.set(l.company_id, (counts.get(l.company_id) ?? 0) + 1),
+    );
     // Last daily sync per company (most recent)
     const { data: dailyLogs } = await supabaseAdmin
       .from("commander_sync_logs")
@@ -58,11 +67,15 @@ const listIntegrationsAdmin = createServerFn({ method: "POST" })
 async function loadTeslaRows(supabaseAdmin: any) {
   const { data: tConns } = await supabaseAdmin
     .from("tesla_connections")
-    .select("company_id, enabled, tesla_account_email, last_sync_at, sync_status, error_message, companies:company_id(name)")
+    .select(
+      "company_id, enabled, tesla_account_email, last_sync_at, sync_status, error_message, companies:company_id(name)",
+    )
     .order("last_sync_at", { ascending: false, nullsFirst: false });
   const { data: tLinks } = await supabaseAdmin.from("tesla_vehicle_links").select("company_id");
   const tCounts = new Map<string, number>();
-  (tLinks ?? []).forEach((l: any) => tCounts.set(l.company_id, (tCounts.get(l.company_id) ?? 0) + 1));
+  (tLinks ?? []).forEach((l: any) =>
+    tCounts.set(l.company_id, (tCounts.get(l.company_id) ?? 0) + 1),
+  );
   return (tConns ?? []).map((r: any) => ({
     companyId: r.company_id,
     companyName: r.companies?.name ?? "(neznáma)",
@@ -85,15 +98,26 @@ function AdminIntegrations() {
   const [teslaRows, setTeslaRows] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const fn = useServerFn(listIntegrationsAdmin);
-  useEffect(() => { fn().then((r: any) => { setRows(r.rows); setTeslaRows(r.tesla ?? []); }).catch((e) => setErr(e.message)); }, []);
+  useEffect(() => {
+    fn()
+      .then((r: any) => {
+        setRows(r.rows);
+        setTeslaRows(r.tesla ?? []);
+      })
+      .catch((e) => setErr(e.message));
+  }, []);
   return (
     <AdminShell>
       <div className="p-6 space-y-4">
         <header>
           <h1 className="text-2xl font-semibold">Integrácie</h1>
-          <p className="text-sm text-muted-foreground">Prehľad pripojených externých služieb po firmách.</p>
+          <p className="text-sm text-muted-foreground">
+            Prehľad pripojených externých služieb po firmách.
+          </p>
         </header>
-        {err && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{err}</div>}
+        {err && (
+          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{err}</div>
+        )}
         <section className="rounded-xl border border-border bg-card">
           <div className="border-b border-border px-4 py-3 font-medium">Commander GPS</div>
           <div className="overflow-x-auto">
@@ -114,21 +138,31 @@ function AdminIntegrations() {
               </thead>
               <tbody>
                 {rows.length === 0 ? (
-                  <tr><td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">Žiadne pripojenia.</td></tr>
-                ) : rows.map((r) => (
-                  <tr key={r.companyId} className="border-t border-border">
-                    <td className="px-4 py-2">{r.companyName}</td>
-                    <td className="px-4 py-2">{r.enabled ? "Áno" : "Nie"}</td>
-                    <td className="px-4 py-2">{r.autoSync ? "Áno" : "Nie"}</td>
-                    <td className="px-4 py-2 font-mono">{r.username}</td>
-                    <td className="px-4 py-2">{r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString("sk-SK") : "—"}</td>
-                    <td className="px-4 py-2">{r.lastDailyAt ? new Date(r.lastDailyAt).toLocaleString("sk-SK") : "—"}</td>
-                    <td className="px-4 py-2">{r.lastDailyImported ?? "—"}</td>
-                    <td className="px-4 py-2">{r.status ?? "—"}</td>
-                    <td className="px-4 py-2">{r.linkedVehicles}</td>
-                    <td className="px-4 py-2 text-destructive">{r.error ?? ""}</td>
+                  <tr>
+                    <td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">
+                      Žiadne pripojenia.
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  rows.map((r) => (
+                    <tr key={r.companyId} className="border-t border-border">
+                      <td className="px-4 py-2">{r.companyName}</td>
+                      <td className="px-4 py-2">{r.enabled ? "Áno" : "Nie"}</td>
+                      <td className="px-4 py-2">{r.autoSync ? "Áno" : "Nie"}</td>
+                      <td className="px-4 py-2 font-mono">{r.username}</td>
+                      <td className="px-4 py-2">
+                        {r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString("sk-SK") : "—"}
+                      </td>
+                      <td className="px-4 py-2">
+                        {r.lastDailyAt ? new Date(r.lastDailyAt).toLocaleString("sk-SK") : "—"}
+                      </td>
+                      <td className="px-4 py-2">{r.lastDailyImported ?? "—"}</td>
+                      <td className="px-4 py-2">{r.status ?? "—"}</td>
+                      <td className="px-4 py-2">{r.linkedVehicles}</td>
+                      <td className="px-4 py-2 text-destructive">{r.error ?? ""}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -150,18 +184,26 @@ function AdminIntegrations() {
               </thead>
               <tbody>
                 {teslaRows.length === 0 ? (
-                  <tr><td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">Žiadne Tesla pripojenia.</td></tr>
-                ) : teslaRows.map((r) => (
-                  <tr key={r.companyId} className="border-t border-border">
-                    <td className="px-4 py-2">{r.companyName}</td>
-                    <td className="px-4 py-2">{r.enabled ? "Áno" : "Nie"}</td>
-                    <td className="px-4 py-2 font-mono text-xs">{r.email}</td>
-                    <td className="px-4 py-2">{r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString("sk-SK") : "—"}</td>
-                    <td className="px-4 py-2">{r.status ?? "—"}</td>
-                    <td className="px-4 py-2">{r.linkedVehicles}</td>
-                    <td className="px-4 py-2 text-destructive">{r.error ?? ""}</td>
+                  <tr>
+                    <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
+                      Žiadne Tesla pripojenia.
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  teslaRows.map((r) => (
+                    <tr key={r.companyId} className="border-t border-border">
+                      <td className="px-4 py-2">{r.companyName}</td>
+                      <td className="px-4 py-2">{r.enabled ? "Áno" : "Nie"}</td>
+                      <td className="px-4 py-2 font-mono text-xs">{r.email}</td>
+                      <td className="px-4 py-2">
+                        {r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString("sk-SK") : "—"}
+                      </td>
+                      <td className="px-4 py-2">{r.status ?? "—"}</td>
+                      <td className="px-4 py-2">{r.linkedVehicles}</td>
+                      <td className="px-4 py-2 text-destructive">{r.error ?? ""}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

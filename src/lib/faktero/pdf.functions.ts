@@ -10,7 +10,10 @@ export const generateInvoicePdf = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     // RLS check: the caller must be able to see the invoice.
     const { data: invoice, error } = await context.supabase
-      .from("invoices").select("id").eq("id", data.invoiceId).maybeSingle();
+      .from("invoices")
+      .select("id")
+      .eq("id", data.invoiceId)
+      .maybeSingle();
     if (error || !invoice) throw new Error("Faktúra nenájdená");
 
     const { ensureInvoicePdf, signInvoicePdf } = await import("./invoice-pdf.server");
@@ -23,7 +26,10 @@ export const getInvoicePdfSignedUrl = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => input.parse(d))
   .handler(async ({ data, context }) => {
     const { data: invoice, error } = await context.supabase
-      .from("invoices").select("id").eq("id", data.invoiceId).maybeSingle();
+      .from("invoices")
+      .select("id")
+      .eq("id", data.invoiceId)
+      .maybeSingle();
     if (error || !invoice) throw new Error("Faktúra nenájdená");
 
     const { ensureInvoicePdf, signInvoicePdf } = await import("./invoice-pdf.server");

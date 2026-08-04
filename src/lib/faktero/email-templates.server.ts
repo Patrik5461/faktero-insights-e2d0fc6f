@@ -28,40 +28,30 @@ export const AVAILABLE_VARIABLES = [
 export const DEFAULT_TEMPLATES: Record<TemplateType, { subject: string; body: string }> = {
   invoice_send: {
     subject: "Faktúra {{invoice_number}}",
-    body:
-      "Dobrý deň,\n\nv prílohe Vám posielame faktúru {{invoice_number}} na sumu {{total}} so splatnosťou {{due_date}}.\n\nPlatobné údaje:\nIBAN: {{iban}}\nVariabilný symbol: {{variable_symbol}}\n\nS pozdravom,\n{{company_name}}",
+    body: "Dobrý deň,\n\nv prílohe Vám posielame faktúru {{invoice_number}} na sumu {{total}} so splatnosťou {{due_date}}.\n\nPlatobné údaje:\nIBAN: {{iban}}\nVariabilný symbol: {{variable_symbol}}\n\nS pozdravom,\n{{company_name}}",
   },
   reminder_1: {
     subject: "Upomienka: Faktúra {{invoice_number}} je po splatnosti",
-    body:
-      "Dobrý deň,\n\ndovoľujeme si Vás upozorniť, že faktúra {{invoice_number}} v sume {{total}} bola splatná dňa {{due_date}} a k dnešnému dňu evidujeme, že ešte nebola uhradená.\n\nProsíme Vás o jej úhradu v čo najkratšom možnom čase. V prípade, že platba bola už uskutočnená, považujte túto upomienku za bezpredmetnú.\n\nĎakujeme,\n{{company_name}}",
+    body: "Dobrý deň,\n\ndovoľujeme si Vás upozorniť, že faktúra {{invoice_number}} v sume {{total}} bola splatná dňa {{due_date}} a k dnešnému dňu evidujeme, že ešte nebola uhradená.\n\nProsíme Vás o jej úhradu v čo najkratšom možnom čase. V prípade, že platba bola už uskutočnená, považujte túto upomienku za bezpredmetnú.\n\nĎakujeme,\n{{company_name}}",
   },
   reminder_2: {
     subject: "2. upomienka: Faktúra {{invoice_number}} je po splatnosti",
-    body:
-      "Dobrý deň,\n\ntoto je druhá upomienka k faktúre {{invoice_number}} v sume {{total}}, ktorá bola splatná dňa {{due_date}} a doteraz nebola uhradená.\n\nProsíme o bezodkladnú úhradu, aby sme nemuseli pristúpiť k ďalším krokom.\n\nS pozdravom,\n{{company_name}}",
+    body: "Dobrý deň,\n\ntoto je druhá upomienka k faktúre {{invoice_number}} v sume {{total}}, ktorá bola splatná dňa {{due_date}} a doteraz nebola uhradená.\n\nProsíme o bezodkladnú úhradu, aby sme nemuseli pristúpiť k ďalším krokom.\n\nS pozdravom,\n{{company_name}}",
   },
   reminder_3: {
     subject: "3. upomienka: Faktúra {{invoice_number}} je po splatnosti",
-    body:
-      "Dobrý deň,\n\njedná sa o tretiu a poslednú upomienku k faktúre {{invoice_number}} v sume {{total}}, splatnej dňa {{due_date}}.\n\nAk nebude čiastka uhradená v najbližších dňoch, budeme nútení postúpiť pohľadávku na ďalšie vymáhanie.\n\nS pozdravom,\n{{company_name}}",
+    body: "Dobrý deň,\n\njedná sa o tretiu a poslednú upomienku k faktúre {{invoice_number}} v sume {{total}}, splatnej dňa {{due_date}}.\n\nAk nebude čiastka uhradená v najbližších dňoch, budeme nútení postúpiť pohľadávku na ďalšie vymáhanie.\n\nS pozdravom,\n{{company_name}}",
   },
   approval_request: {
     subject: "Žiadosť o schválenie faktúry {{invoice_number}}",
-    body:
-      "Dobrý deň,\n\ndodávateľ {{company_name}} Vás žiada o schválenie faktúry {{invoice_number}} v sume {{total}}.\n\nFaktúru si môžete pozrieť a schváliť alebo zamietnuť cez odkaz v tomto emaile.\n\nS pozdravom,\n{{company_name}}",
+    body: "Dobrý deň,\n\ndodávateľ {{company_name}} Vás žiada o schválenie faktúry {{invoice_number}} v sume {{total}}.\n\nFaktúru si môžete pozrieť a schváliť alebo zamietnuť cez odkaz v tomto emaile.\n\nS pozdravom,\n{{company_name}}",
   },
 };
 
-export function applyTemplateVars(
-  s: string,
-  ctx: { invoice?: any; company?: any },
-): string {
+export function applyTemplateVars(s: string, ctx: { invoice?: any; company?: any }): string {
   const inv = ctx.invoice ?? {};
   const co = ctx.company ?? {};
-  const total = inv.total != null
-    ? `${Number(inv.total).toFixed(2)} ${inv.currency ?? "EUR"}`
-    : "";
+  const total = inv.total != null ? `${Number(inv.total).toFixed(2)} ${inv.currency ?? "EUR"}` : "";
   const map: Record<string, string> = {
     "{{invoice_number}}": inv.invoice_number ?? "",
     "{{total}}": total,

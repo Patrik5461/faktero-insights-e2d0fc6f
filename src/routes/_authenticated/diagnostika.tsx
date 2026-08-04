@@ -40,7 +40,9 @@ function DiagnostikaPage() {
       setTbErr(e?.message ?? "Chyba");
     }
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Načítavam…</div>;
   if (err) return <div className="p-6 text-sm text-destructive">{err}</div>;
@@ -52,11 +54,19 @@ function DiagnostikaPage() {
 
   return (
     <>
-      <PageHeader title="Diagnostika" description="Stav automatického spúšťania opakovaných faktúr" />
+      <PageHeader
+        title="Diagnostika"
+        description="Stav automatického spúšťania opakovaných faktúr"
+      />
       <PageBody>
         <div className="mb-4 flex items-center justify-between">
-          <Link to="/opakovane" className="text-sm text-primary hover:underline">← Opakované faktúry</Link>
-          <button onClick={load} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted/60">
+          <Link to="/opakovane" className="text-sm text-primary hover:underline">
+            ← Opakované faktúry
+          </Link>
+          <button
+            onClick={load}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted/60"
+          >
             <RefreshCw className="h-3.5 w-3.5" /> Obnoviť
           </button>
         </div>
@@ -101,10 +111,18 @@ function DiagnostikaPage() {
                 {runs.map((r, i) => (
                   <li key={i} className="flex items-center justify-between py-2">
                     <div className="min-w-0">
-                      <div className="font-medium">{new Date(r.start_time).toLocaleString("sk-SK")}</div>
-                      <div className="truncate text-xs text-muted-foreground">{r.return_message ?? "—"}</div>
+                      <div className="font-medium">
+                        {new Date(r.start_time).toLocaleString("sk-SK")}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {r.return_message ?? "—"}
+                      </div>
                     </div>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${r.status === "succeeded" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}>{r.status}</span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${r.status === "succeeded" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}
+                    >
+                      {r.status}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -123,9 +141,15 @@ function DiagnostikaPage() {
                         {new Date(l.created_at).toLocaleString("sk-SK")}
                         <span className="ml-2 text-xs text-muted-foreground">({l.run_type})</span>
                       </div>
-                      {l.error_message && <div className="truncate text-xs text-destructive">{l.error_message}</div>}
+                      {l.error_message && (
+                        <div className="truncate text-xs text-destructive">{l.error_message}</div>
+                      )}
                     </div>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${l.status === "success" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}>{l.status}</span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${l.status === "success" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}
+                    >
+                      {l.status}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -139,20 +163,28 @@ function DiagnostikaPage() {
             {!tb && !tbErr && <div className="text-sm text-muted-foreground">Načítavam…</div>}
             {tb && (
               <div className="space-y-3 text-sm">
-                <Row k="Konfigurované" v={tb.configured ? "Áno" : "Nie (chýba TB_CLIENT_ID/SECRET)"} />
+                <Row
+                  k="Konfigurované"
+                  v={tb.configured ? "Áno" : "Nie (chýba TB_CLIENT_ID/SECRET)"}
+                />
                 <Row k="Prostredie (TB_ENV)" v={tb.env} />
                 <Row k="Scope" v={tb.scope} />
                 <Row k="Origin" v={tb.origin} />
                 <Row k="redirect_uri" v={tb.redirect_uri} />
                 <div>
-                  <div className="mb-1 text-xs text-muted-foreground">authorize_url (state je preview placeholder)</div>
+                  <div className="mb-1 text-xs text-muted-foreground">
+                    authorize_url (state je preview placeholder)
+                  </div>
                   <div className="flex items-start gap-2">
                     <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-all rounded-md border border-border bg-muted/40 p-2 text-xs">
-{tb.authorize_url ?? "—"}
+                      {tb.authorize_url ?? "—"}
                     </pre>
                     {tb.authorize_url && (
                       <button
-                        onClick={() => { navigator.clipboard.writeText(tb.authorize_url); toast.success("Skopírované"); }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(tb.authorize_url);
+                          toast.success("Skopírované");
+                        }}
                         className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-border px-2 text-xs hover:bg-muted/60"
                       >
                         <Copy className="h-3 w-3" /> Kopírovať
@@ -169,7 +201,15 @@ function DiagnostikaPage() {
   );
 }
 
-function Card({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) {
+function Card({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon: any;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-medium">

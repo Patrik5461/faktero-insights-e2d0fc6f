@@ -2,12 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { normalizePaymentMethod } from "@/lib/faktero/payment-method";
 
-const Patch = z.object({
-  notes: z.string().max(5000).nullable().optional(),
-  due_date: z.string().optional(),
-  variable_symbol: z.string().max(40).nullable().optional(),
-  payment_method: z.string().max(40).optional(),
-}).strict();
+const Patch = z
+  .object({
+    notes: z.string().max(5000).nullable().optional(),
+    due_date: z.string().optional(),
+    variable_symbol: z.string().max(40).nullable().optional(),
+    payment_method: z.string().max(40).optional(),
+  })
+  .strict();
 
 export const Route = createFileRoute("/api/v1/invoices/$id")({
   server: {
@@ -15,7 +17,12 @@ export const Route = createFileRoute("/api/v1/invoices/$id")({
       GET: async ({ request, params }) => {
         const { handleApi, ok, err } = await import("@/lib/faktero/api-auth.server");
         return handleApi(request, async (ctx) => {
-          const { data, error } = await ctx.supabase.from("invoices").select("*, items:invoice_items(*)").eq("id", params.id).eq("company_id", ctx.company_id).maybeSingle();
+          const { data, error } = await ctx.supabase
+            .from("invoices")
+            .select("*, items:invoice_items(*)")
+            .eq("id", params.id)
+            .eq("company_id", ctx.company_id)
+            .maybeSingle();
           if (error) return err("db_error", error.message, 500);
           if (!data) return err("not_found", "Faktúra nenájdená.", 404);
           return ok(data);
@@ -25,10 +32,18 @@ export const Route = createFileRoute("/api/v1/invoices/$id")({
         const { handleApi, ok, err } = await import("@/lib/faktero/api-auth.server");
         return handleApi(request, async (ctx) => {
           const parsed = Patch.safeParse(ctx.requestBody);
-          if (!parsed.success) return err("validation_error", "Neplatné dáta.", 400, parsed.error.flatten());
+          if (!parsed.success)
+            return err("validation_error", "Neplatné dáta.", 400, parsed.error.flatten());
           const patch = { ...parsed.data };
-          if (patch.payment_method !== undefined) patch.payment_method = normalizePaymentMethod(patch.payment_method);
-          const { data, error } = await ctx.supabase.from("invoices").update(patch).eq("id", params.id).eq("company_id", ctx.company_id).select().maybeSingle();
+          if (patch.payment_method !== undefined)
+            patch.payment_method = normalizePaymentMethod(patch.payment_method);
+          const { data, error } = await ctx.supabase
+            .from("invoices")
+            .update(patch)
+            .eq("id", params.id)
+            .eq("company_id", ctx.company_id)
+            .select()
+            .maybeSingle();
           if (error) return err("db_error", error.message, 500);
           if (!data) return err("not_found", "Faktúra nenájdená.", 404);
           return ok(data);

@@ -14,11 +14,20 @@ const Input = z.object({
 export const Route = createFileRoute("/api/v1/fuel-records")({
   server: {
     handlers: {
-      OPTIONS: async ({ request }) => (await import("@/lib/faktero/api-auth.server")).handleApi(request, async () => ({ status: 204, body: {} })),
+      OPTIONS: async ({ request }) =>
+        (await import("@/lib/faktero/api-auth.server")).handleApi(request, async () => ({
+          status: 204,
+          body: {},
+        })),
       GET: async ({ request }) => {
         const { handleApi, ok, err } = await import("@/lib/faktero/api-auth.server");
         return handleApi(request, async (ctx) => {
-          const { data, error } = await ctx.supabase.from("fuel_records").select("*").eq("company_id", ctx.company_id).order("fuel_date", { ascending: false }).limit(200);
+          const { data, error } = await ctx.supabase
+            .from("fuel_records")
+            .select("*")
+            .eq("company_id", ctx.company_id)
+            .order("fuel_date", { ascending: false })
+            .limit(200);
           if (error) return err("db_error", error.message, 500);
           return ok({ data });
         });
@@ -27,12 +36,24 @@ export const Route = createFileRoute("/api/v1/fuel-records")({
         const { handleApi, ok, err } = await import("@/lib/faktero/api-auth.server");
         return handleApi(request, async (ctx) => {
           const parsed = Input.safeParse(ctx.requestBody);
-          if (!parsed.success) return err("validation_error", "Neplatné dáta tankovania.", 400, parsed.error.flatten());
+          if (!parsed.success)
+            return err(
+              "validation_error",
+              "Neplatné dáta tankovania.",
+              400,
+              parsed.error.flatten(),
+            );
           const d = parsed.data;
           const total = d.total_amount ?? d.liters * d.price_per_liter;
-          const { data, error } = await ctx.supabase.from("fuel_records").insert({
-            ...d, total_amount: total, company_id: ctx.company_id,
-          }).select().single();
+          const { data, error } = await ctx.supabase
+            .from("fuel_records")
+            .insert({
+              ...d,
+              total_amount: total,
+              company_id: ctx.company_id,
+            })
+            .select()
+            .single();
           if (error) return err("db_error", error.message, 500);
           return ok(data, 201);
         });

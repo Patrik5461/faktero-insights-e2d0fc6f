@@ -12,7 +12,11 @@ export const Route = createFileRoute("/_authenticated/sklad/presuny")({
   component: TransfersListPage,
 });
 
-const STATUS_LABEL: Record<string, string> = { draft: "Koncept", completed: "Dokončený", cancelled: "Zrušený" };
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Koncept",
+  completed: "Dokončený",
+  cancelled: "Zrušený",
+};
 const STATUS_STYLE: Record<string, string> = {
   draft: "bg-amber-100 text-amber-800",
   completed: "bg-emerald-100 text-emerald-800",
@@ -37,9 +41,13 @@ function TransfersListPage() {
         supabase.from("companies").select("id, name"),
       ]);
       const wm: Record<string, string> = {};
-      (whRes.data ?? []).forEach((w: any) => { wm[w.id] = w.name; });
+      (whRes.data ?? []).forEach((w: any) => {
+        wm[w.id] = w.name;
+      });
       const cm: Record<string, string> = {};
-      (coRes.data ?? []).forEach((c: any) => { cm[c.id] = c.name; });
+      (coRes.data ?? []).forEach((c: any) => {
+        cm[c.id] = c.name;
+      });
       setWarehouses(wm);
       setCompanies(cm);
       setRows(list ?? []);
@@ -66,7 +74,11 @@ function TransfersListPage() {
           <div className="rounded-md border p-6 text-sm text-muted-foreground">Načítavam…</div>
         ) : rows.length === 0 ? (
           <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">
-            Zatiaľ nemáte žiadne presuny. <Link className="text-primary underline" to="/sklad/presuny/nova">Vytvorte prvý</Link>.
+            Zatiaľ nemáte žiadne presuny.{" "}
+            <Link className="text-primary underline" to="/sklad/presuny/nova">
+              Vytvorte prvý
+            </Link>
+            .
           </div>
         ) : (
           <div className="overflow-x-auto rounded-md border">
@@ -91,17 +103,25 @@ function TransfersListPage() {
                         <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
                         {r.target_company_id
                           ? `${companies[r.target_company_id] ?? "Iná firma"}${r.warehouse_to_id ? ` · ${warehouses[r.warehouse_to_id] ?? ""}` : ""}`
-                          : warehouses[r.warehouse_to_id] ?? "—"}
+                          : (warehouses[r.warehouse_to_id] ?? "—")}
                       </span>
                     </td>
                     <td className="px-3 py-2">
-                      <span className={`inline-block rounded px-2 py-0.5 text-xs ${STATUS_STYLE[r.status] ?? ""}`}>
+                      <span
+                        className={`inline-block rounded px-2 py-0.5 text-xs ${STATUS_STYLE[r.status] ?? ""}`}
+                      >
                         {STATUS_LABEL[r.status] ?? r.status}
                       </span>
                     </td>
-                    <td className="px-3 py-2 max-w-[240px] truncate text-muted-foreground">{r.note ?? ""}</td>
+                    <td className="px-3 py-2 max-w-[240px] truncate text-muted-foreground">
+                      {r.note ?? ""}
+                    </td>
                     <td className="px-3 py-2 text-right">
-                      <Link to="/sklad/presuny/$id" params={{ id: r.id }} className="text-primary hover:underline">
+                      <Link
+                        to="/sklad/presuny/$id"
+                        params={{ id: r.id }}
+                        className="text-primary hover:underline"
+                      >
                         Detail
                       </Link>
                     </td>

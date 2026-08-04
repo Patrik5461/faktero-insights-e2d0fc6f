@@ -144,14 +144,14 @@ function ConnectionCard({
 
       {conn && !conn.property_id && (
         <div>
-          <div className="text-xs font-medium mb-1">Vyberte {type === "gsc" ? "web" : "property"}:</div>
+          <div className="text-xs font-medium mb-1">
+            Vyberte {type === "gsc" ? "web" : "property"}:
+          </div>
           {listQuery.isLoading && (
             <div className="text-xs text-muted-foreground">Načítavam zoznam...</div>
           )}
           {listQuery.error && (
-            <div className="text-xs text-destructive">
-              {(listQuery.error as any).message}
-            </div>
+            <div className="text-xs text-destructive">{(listQuery.error as any).message}</div>
           )}
           <div className="space-y-1">
             {(listQuery.data as any[])?.map((item: any) => {
@@ -268,14 +268,8 @@ function Ga4Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <Stat label="Aktívni používatelia" value={d.totals?.activeUsers ?? 0} />
         <Stat label="Relácie" value={d.totals?.sessions ?? 0} />
-        <Stat
-          label="Bounce rate"
-          value={`${((d.totals?.bounceRate ?? 0) * 100).toFixed(1)}%`}
-        />
-        <Stat
-          label="Priem. dĺžka"
-          value={`${Math.round(d.totals?.avgDuration ?? 0)}s`}
-        />
+        <Stat label="Bounce rate" value={`${((d.totals?.bounceRate ?? 0) * 100).toFixed(1)}%`} />
+        <Stat label="Priem. dĺžka" value={`${Math.round(d.totals?.avgDuration ?? 0)}s`} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -325,7 +319,13 @@ function Table({
 }: {
   title: string;
   rows: any[];
-  columns: Array<{ key: string; label: string; flex?: number; truncate?: boolean; format?: (v: any) => any }>;
+  columns: Array<{
+    key: string;
+    label: string;
+    flex?: number;
+    truncate?: boolean;
+    format?: (v: any) => any;
+  }>;
   rowAction?: (row: any) => React.ReactNode;
 }) {
   return (
@@ -334,9 +334,7 @@ function Table({
         {title}
       </div>
       <div className="divide-y divide-border">
-        {rows.length === 0 && (
-          <div className="p-3 text-xs text-muted-foreground">Žiadne dáta</div>
-        )}
+        {rows.length === 0 && <div className="p-3 text-xs text-muted-foreground">Žiadne dáta</div>}
         {rows.map((row: any, i) => (
           <div key={i} className="flex items-center gap-2 px-3 py-2 text-xs">
             {columns.map((c) => (
@@ -345,7 +343,7 @@ function Table({
                 className={`${c.flex === 2 ? "flex-[2]" : "flex-1"} ${c.truncate ? "truncate" : ""}`}
                 title={c.truncate ? String(row[c.key] ?? "") : undefined}
               >
-                {c.format ? c.format(row[c.key]) : row[c.key] ?? "—"}
+                {c.format ? c.format(row[c.key]) : (row[c.key] ?? "—")}
               </div>
             ))}
             {rowAction && <div>{rowAction(row)}</div>}

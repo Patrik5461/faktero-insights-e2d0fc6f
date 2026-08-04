@@ -17,11 +17,19 @@ type Job = {
 const KEY = "faktero.offline.queue.v1";
 
 function load(): Job[] {
-  try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(KEY) ?? "[]");
+  } catch {
+    return [];
+  }
 }
-function save(q: Job[]) { localStorage.setItem(KEY, JSON.stringify(q)); }
+function save(q: Job[]) {
+  localStorage.setItem(KEY, JSON.stringify(q));
+}
 
-export function queueLength(): number { return load().length; }
+export function queueLength(): number {
+  return load().length;
+}
 
 export async function isOnline(): Promise<boolean> {
   try {
@@ -35,7 +43,10 @@ export async function isOnline(): Promise<boolean> {
   return typeof navigator === "undefined" ? true : navigator.onLine;
 }
 
-export async function queueOrPost(url: string, init: RequestInit & { body?: string }): Promise<Response> {
+export async function queueOrPost(
+  url: string,
+  init: RequestInit & { body?: string },
+): Promise<Response> {
   const online = await isOnline();
   if (online) {
     try {
@@ -65,7 +76,8 @@ export async function queueOrPost(url: string, init: RequestInit & { body?: stri
 export async function flushQueue(): Promise<{ sent: number; failed: number }> {
   const q = load();
   if (q.length === 0) return { sent: 0, failed: 0 };
-  let sent = 0, failed = 0;
+  let sent = 0,
+    failed = 0;
   const remaining: Job[] = [];
   for (const job of q) {
     try {
@@ -74,9 +86,14 @@ export async function flushQueue(): Promise<{ sent: number; failed: number }> {
         headers: job.headers,
         body: job.body,
       });
-      if (res.ok) sent++; else { failed++; remaining.push(job); }
+      if (res.ok) sent++;
+      else {
+        failed++;
+        remaining.push(job);
+      }
     } catch {
-      failed++; remaining.push(job);
+      failed++;
+      remaining.push(job);
     }
   }
   save(remaining);
@@ -85,7 +102,9 @@ export async function flushQueue(): Promise<{ sent: number; failed: number }> {
 
 export function initOfflineSync() {
   if (typeof window === "undefined") return;
-  window.addEventListener("online", () => { flushQueue().catch(() => {}); });
+  window.addEventListener("online", () => {
+    flushQueue().catch(() => {});
+  });
   (async () => {
     try {
       const { Capacitor } = await import("@capacitor/core");

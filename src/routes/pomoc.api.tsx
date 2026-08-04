@@ -5,7 +5,10 @@ export const Route = createFileRoute("/pomoc/api")({
   head: () => ({
     meta: [
       { title: "Pomoc — API — Faktero" },
-      { name: "description", content: "Ako používať Faktero API: kľúče, test/live režim, vytvorenie faktúry, webhooky." },
+      {
+        name: "description",
+        content: "Ako používať Faktero API: kľúče, test/live režim, vytvorenie faktúry, webhooky.",
+      },
       { property: "og:title", content: "Pomoc — API — Faktero" },
       { property: "og:description", content: "Návod pre vývojárov na prácu s Faktero API." },
       { property: "og:url", content: "https://faktero.sk/pomoc/api" },
@@ -21,8 +24,13 @@ const sections: HelpSection[] = [
     title: "Čo je Faktero API",
     body: (
       <>
-        <p>Faktero API je REST rozhranie, ktoré umožňuje vašej aplikácii vytvárať faktúry, spravovať odberateľov a počúvať na udalosti cez webhooky.</p>
-        <p>Všetky endpointy bežia pod <code>https://www.faktero.sk/api/v1</code> a používajú JSON.</p>
+        <p>
+          Faktero API je REST rozhranie, ktoré umožňuje vašej aplikácii vytvárať faktúry, spravovať
+          odberateľov a počúvať na udalosti cez webhooky.
+        </p>
+        <p>
+          Všetky endpointy bežia pod <code>https://www.faktero.sk/api/v1</code> a používajú JSON.
+        </p>
       </>
     ),
   },
@@ -32,11 +40,20 @@ const sections: HelpSection[] = [
     body: (
       <>
         <ol>
-          <li>Otvorte <Link to="/nastavenia">Nastavenia</Link> → <strong>API kľúče</strong>.</li>
-          <li>Kliknite na <strong>Vytvoriť nový kľúč</strong> a pomenujte ho (napr. „Eshop produkcia").</li>
-          <li>Kľúč sa zobrazí <em>iba raz</em> — uložte ho na bezpečnom mieste.</li>
+          <li>
+            Otvorte <Link to="/nastavenia">Nastavenia</Link> → <strong>API kľúče</strong>.
+          </li>
+          <li>
+            Kliknite na <strong>Vytvoriť nový kľúč</strong> a pomenujte ho (napr. „Eshop
+            produkcia").
+          </li>
+          <li>
+            Kľúč sa zobrazí <em>iba raz</em> — uložte ho na bezpečnom mieste.
+          </li>
         </ol>
-        <p>Kľúč posielajte v hlavičke <code>Authorization: Bearer fkt_…</code>.</p>
+        <p>
+          Kľúč posielajte v hlavičke <code>Authorization: Bearer fkt_…</code>.
+        </p>
       </>
     ),
   },
@@ -47,10 +64,18 @@ const sections: HelpSection[] = [
       <>
         <p>Pri vytváraní kľúča vyberáte režim:</p>
         <ul>
-          <li><strong>Test (sandbox)</strong> — faktúry sa nezarátavajú do limitu a nemajú právne účinky.</li>
-          <li><strong>Live (produkcia)</strong> — reálne faktúry, ktoré sa rátajú do mesačného limitu plánu.</li>
+          <li>
+            <strong>Test (sandbox)</strong> — faktúry sa nezarátavajú do limitu a nemajú právne
+            účinky.
+          </li>
+          <li>
+            <strong>Live (produkcia)</strong> — reálne faktúry, ktoré sa rátajú do mesačného limitu
+            plánu.
+          </li>
         </ul>
-        <p>Test kľúče majú prefix <code>fkt_test_</code>, live kľúče <code>fkt_live_</code>.</p>
+        <p>
+          Test kľúče majú prefix <code>fkt_test_</code>, live kľúče <code>fkt_live_</code>.
+        </p>
       </>
     ),
   },
@@ -61,7 +86,7 @@ const sections: HelpSection[] = [
       <>
         <p>Príklad cURL volania:</p>
         <pre className="rounded-md border border-border bg-muted p-3 text-xs overflow-x-auto">
-{`curl -X POST https://www.faktero.sk/api/v1/invoices \\
+          {`curl -X POST https://www.faktero.sk/api/v1/invoices \\
   -H "Authorization: Bearer fkt_live_…" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -72,7 +97,9 @@ const sections: HelpSection[] = [
     "due_date": "2026-07-01"
   }'`}
         </pre>
-        <p>Odpoveď obsahuje <code>id</code>, <code>invoice_number</code> a URL na PDF.</p>
+        <p>
+          Odpoveď obsahuje <code>id</code>, <code>invoice_number</code> a URL na PDF.
+        </p>
       </>
     ),
   },
@@ -83,12 +110,23 @@ const sections: HelpSection[] = [
       <>
         <p>Webhooky pošlú HTTP POST na vašu URL, keď nastane udalosť:</p>
         <ul>
-          <li><code>invoice.created</code></li>
-          <li><code>invoice.sent</code></li>
-          <li><code>invoice.paid</code></li>
-          <li><code>invoice.cancelled</code></li>
+          <li>
+            <code>invoice.created</code>
+          </li>
+          <li>
+            <code>invoice.sent</code>
+          </li>
+          <li>
+            <code>invoice.paid</code>
+          </li>
+          <li>
+            <code>invoice.cancelled</code>
+          </li>
         </ul>
-        <p>Každý webhook je podpísaný hlavičkou <code>X-Faktero-Signature</code> (HMAC SHA-256 z tela správy a tajného kľúča webhooku). Vždy podpis overte pred spracovaním.</p>
+        <p>
+          Každý webhook je podpísaný hlavičkou <code>X-Faktero-Signature</code> (HMAC SHA-256 z tela
+          správy a tajného kľúča webhooku). Vždy podpis overte pred spracovaním.
+        </p>
       </>
     ),
   },

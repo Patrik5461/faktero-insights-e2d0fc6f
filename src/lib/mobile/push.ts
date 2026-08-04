@@ -4,7 +4,11 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 
-export async function registerPushNotifications(): Promise<{ ok: boolean; token?: string; error?: string }> {
+export async function registerPushNotifications(): Promise<{
+  ok: boolean;
+  token?: string;
+  error?: string;
+}> {
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return { ok: false, error: "not native" };

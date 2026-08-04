@@ -25,7 +25,9 @@ export async function scanQrCode(): Promise<QrScanResult> {
   const BD = (globalThis as any).BarcodeDetector;
   if (!BD) return null;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+    });
     const video = document.createElement("video");
     video.srcObject = stream;
     await video.play();

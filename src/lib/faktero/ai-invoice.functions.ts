@@ -1,7 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-type AiItem = { name: string; quantity: number; unit: string; unit_price: number; vat_rate: number };
+type AiItem = {
+  name: string;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  vat_rate: number;
+};
 type AiResult = {
   customer_hint?: string;
   items: AiItem[];
@@ -37,24 +43,31 @@ Ak cena je s DPH, odhadni jednotkovú cenu bez DPH. Štandardná DPH je 23%.`;
     });
     if (!res.ok) {
       const text = await res.text();
-      if (res.status === 429) throw new Error("Prekročený limit požiadaviek na AI. Skúste o chvíľu znova.");
+      if (res.status === 429)
+        throw new Error("Prekročený limit požiadaviek na AI. Skúste o chvíľu znova.");
       if (res.status === 401) throw new Error("OpenAI API kľúč je neplatný.");
       throw new Error(`OpenAI: ${res.status} ${text.slice(0, 200)}`);
     }
     const json: any = await res.json();
     const content = json?.choices?.[0]?.message?.content ?? "{}";
     let parsed: any;
-    try { parsed = JSON.parse(content); } catch { parsed = {}; }
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      parsed = {};
+    }
     return {
       customer_hint: parsed.customer_hint ?? undefined,
       currency: parsed.currency ?? "EUR",
       notes: parsed.notes ?? undefined,
-      items: Array.isArray(parsed.items) ? parsed.items.map((it: any) => ({
-        name: String(it.name ?? ""),
-        quantity: Number(it.quantity ?? 1),
-        unit: String(it.unit ?? "ks"),
-        unit_price: Number(it.unit_price ?? 0),
-        vat_rate: Number(it.vat_rate ?? 23),
-      })) : [],
+      items: Array.isArray(parsed.items)
+        ? parsed.items.map((it: any) => ({
+            name: String(it.name ?? ""),
+            quantity: Number(it.quantity ?? 1),
+            unit: String(it.unit ?? "ks"),
+            unit_price: Number(it.unit_price ?? 0),
+            vat_rate: Number(it.vat_rate ?? 23),
+          }))
+        : [],
     };
   });

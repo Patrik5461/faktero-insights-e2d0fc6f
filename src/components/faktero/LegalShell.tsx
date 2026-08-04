@@ -33,7 +33,10 @@ export function LegalShell({
                 key={l.to}
                 to={l.to}
                 className="block rounded-md px-3 py-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                activeProps={{ className: "block rounded-md px-3 py-2 bg-emerald-50 text-emerald-900 font-medium" }}
+                activeProps={{
+                  className:
+                    "block rounded-md px-3 py-2 bg-emerald-50 text-emerald-900 font-medium",
+                }}
               >
                 {l.label}
               </Link>

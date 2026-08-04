@@ -49,12 +49,17 @@ export function CompanyNameAutocomplete({
     successTimerRef.current = setTimeout(() => setSuccess(null), 3000);
   }
 
-  useEffect(() => () => {
-    if (successTimerRef.current) clearTimeout(successTimerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
-    cfg().then((r) => setEnabled(!!r?.enabled)).catch(() => setEnabled(false));
+    cfg()
+      .then((r) => setEnabled(!!r?.enabled))
+      .catch(() => setEnabled(false));
   }, []);
 
   // Debounced name search
@@ -160,7 +165,10 @@ export function CompanyNameAutocomplete({
           if (items.length || error || loading) setOpen(true);
         }}
         placeholder={placeholder}
-        className={className ?? "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"}
+        className={
+          className ??
+          "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        }
         autoComplete="off"
       />
       {enabled && open && (value ?? "").trim().length >= 3 && (
@@ -177,24 +185,28 @@ export function CompanyNameAutocomplete({
           {!loading && !error && items.length === 0 && (
             <div className="px-3 py-2 text-xs text-muted-foreground">Firma nebola nájdená.</div>
           )}
-          {!loading && items.map((s) => (
-            <button
-              key={`${s.ico}-${s.name}`}
-              type="button"
-              onClick={() => pick(s)}
-              disabled={picking === s.ico}
-              className="flex w-full items-start gap-2 border-b border-border/60 px-3 py-2 text-left text-xs last:border-b-0 hover:bg-secondary disabled:opacity-50"
-            >
-              <Search className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-medium text-foreground">{s.name}</div>
-                <div className="truncate text-[11px] text-muted-foreground">
-                  IČO {s.ico}{s.city ? ` · ${s.city}` : ""}
+          {!loading &&
+            items.map((s) => (
+              <button
+                key={`${s.ico}-${s.name}`}
+                type="button"
+                onClick={() => pick(s)}
+                disabled={picking === s.ico}
+                className="flex w-full items-start gap-2 border-b border-border/60 px-3 py-2 text-left text-xs last:border-b-0 hover:bg-secondary disabled:opacity-50"
+              >
+                <Search className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium text-foreground">{s.name}</div>
+                  <div className="truncate text-[11px] text-muted-foreground">
+                    IČO {s.ico}
+                    {s.city ? ` · ${s.city}` : ""}
+                  </div>
                 </div>
-              </div>
-              {picking === s.ico && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-            </button>
-          ))}
+                {picking === s.ico && (
+                  <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                )}
+              </button>
+            ))}
         </div>
       )}
       {enabled && success && (

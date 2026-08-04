@@ -11,10 +11,18 @@ export const Route = createFileRoute("/_authenticated/importy/idoklad")({
       accept=".csv"
       guide={
         <ol className="ml-4 list-decimal space-y-1">
-          <li>Prihláste sa do iDoklad a otvorte <strong>Faktúry → Vydané faktúry</strong>.</li>
-          <li>Kliknite na <strong>Export → CSV</strong> a zvoľte obdobie.</li>
-          <li>Stiahnutý súbor <code>.csv</code> nahrajte nižšie.</li>
-          <li>Alternatívne môžete exportovať aj odberateľov cez <strong>Kontakty → Export</strong>.</li>
+          <li>
+            Prihláste sa do iDoklad a otvorte <strong>Faktúry → Vydané faktúry</strong>.
+          </li>
+          <li>
+            Kliknite na <strong>Export → CSV</strong> a zvoľte obdobie.
+          </li>
+          <li>
+            Stiahnutý súbor <code>.csv</code> nahrajte nižšie.
+          </li>
+          <li>
+            Alternatívne môžete exportovať aj odberateľov cez <strong>Kontakty → Export</strong>.
+          </li>
         </ol>
       }
     />

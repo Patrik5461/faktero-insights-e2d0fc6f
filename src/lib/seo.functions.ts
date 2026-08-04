@@ -18,11 +18,9 @@ const PageInput = z.object({
 });
 
 function publicClient() {
-  return createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
 }
 
 // Public read (used by sitemap, robots, __root head)
@@ -43,7 +41,10 @@ export const listSeoPages = createServerFn({ method: "GET" })
       .eq("user_id", context.userId)
       .maybeSingle();
     if (!admin) throw new Error("Forbidden");
-    const { data, error } = await context.supabase.from("seo_pages" as any).select("*").order("path");
+    const { data, error } = await context.supabase
+      .from("seo_pages" as any)
+      .select("*")
+      .order("path");
     if (error) throw error;
     return (data ?? []) as any[];
   });
@@ -78,7 +79,10 @@ export const deleteSeoPage = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!admin) throw new Error("Forbidden");
     if (data.path === "_global") throw new Error("Cannot delete global settings");
-    const { error } = await context.supabase.from("seo_pages" as any).delete().eq("path", data.path);
+    const { error } = await context.supabase
+      .from("seo_pages" as any)
+      .delete()
+      .eq("path", data.path);
     if (error) throw error;
     return { ok: true };
   });
@@ -87,10 +91,12 @@ export const deleteSeoPage = createServerFn({ method: "POST" })
 export const generateSeoAi = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({
-      path: z.string(),
-      hint: z.string().optional(),
-    }).parse(data),
+    z
+      .object({
+        path: z.string(),
+        hint: z.string().optional(),
+      })
+      .parse(data),
   )
   .handler(async ({ data, context }) => {
     const { data: admin } = await context.supabase
@@ -124,7 +130,10 @@ Požiadavky:
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "Si SEO expert pre slovenský trh. Vraciaš iba čistý JSON bez markdownu." },
+          {
+            role: "system",
+            content: "Si SEO expert pre slovenský trh. Vraciaš iba čistý JSON bez markdownu.",
+          },
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },

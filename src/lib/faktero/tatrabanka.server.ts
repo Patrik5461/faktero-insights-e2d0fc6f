@@ -15,8 +15,12 @@ function tbBase(): string {
     ? "https://api.tatrabanka.sk"
     : "https://api.tatrabanka.sk/sandbox";
 }
-function authBase(): string { return `${tbBase()}/auth/oauth/v2`; }
-function apiBase(): string { return `${tbBase()}/api/v1`; }
+function authBase(): string {
+  return `${tbBase()}/auth/oauth/v2`;
+}
+function apiBase(): string {
+  return `${tbBase()}/api/v1`;
+}
 
 export function isTatraConfigured(): boolean {
   return !!process.env.TB_CLIENT_ID && !!process.env.TB_CLIENT_SECRET;
@@ -66,7 +70,10 @@ function basicAuth(): string {
   return "Basic " + Buffer.from(`${id}:${secret}`).toString("base64");
 }
 
-export async function exchangeCodeForToken(code: string, redirectUri?: string): Promise<TokenResponse> {
+export async function exchangeCodeForToken(
+  code: string,
+  redirectUri?: string,
+): Promise<TokenResponse> {
   // ALWAYS use the canonical redirect_uri from env — must match buildAuthorizeUrl()
   // exactly (byte-for-byte), otherwise TB returns 400 invalid_redirect_uri.
   const canonical = getRedirectUri(redirectUri);
@@ -122,7 +129,9 @@ async function apiGet(path: string, accessToken: string, _consentId?: string | n
   const res = await fetch(url, { headers });
   const txt = await res.text();
   if (!res.ok) {
-    console.error(`[tatrabanka] ${res.status} ${res.statusText} for ${url} — body: ${txt.slice(0, 300)}`);
+    console.error(
+      `[tatrabanka] ${res.status} ${res.statusText} for ${url} — body: ${txt.slice(0, 300)}`,
+    );
     throw new Error(`tb_api_error: ${res.status} ${url} ${txt.slice(0, 500)}`);
   }
   return JSON.parse(txt);
@@ -136,12 +145,16 @@ export type TbAccount = {
   balance: number;
 };
 
-export async function fetchAccounts(accessToken: string, consentId?: string | null): Promise<TbAccount[]> {
+export async function fetchAccounts(
+  accessToken: string,
+  consentId?: string | null,
+): Promise<TbAccount[]> {
   const json = await apiGet("/accounts", accessToken, consentId);
   const accounts: any[] = json.accounts ?? json.Accounts ?? [];
   return accounts.map((a: any) => {
     const balances: any[] = a.balances ?? [];
-    const closing = balances.find((b) => /closing|interim|expected/i.test(b.balanceType ?? "")) ?? balances[0];
+    const closing =
+      balances.find((b) => /closing|interim|expected/i.test(b.balanceType ?? "")) ?? balances[0];
     const amt = closing?.balanceAmount?.amount ?? closing?.amount ?? 0;
     return {
       external_account_id: a.resourceId ?? a.accountId ?? a.id ?? a.iban,
@@ -187,8 +200,7 @@ export async function fetchTransactions(
       t.remittanceInformationStructured?.variableSymbol ??
       t.variableSymbol ??
       extractVS(t.remittanceInformationUnstructured ?? "");
-    const counter =
-      t.creditorName ?? t.debtorName ?? t.counterPartyName ?? null;
+    const counter = t.creditorName ?? t.debtorName ?? t.counterPartyName ?? null;
     return {
       transaction_reference: t.transactionId ?? t.entryReference ?? null,
       booking_date: (t.bookingDate ?? t.valueDate ?? toStr).slice(0, 10),
@@ -213,10 +225,17 @@ function extractVS(text: string): string | null {
  */
 export function suggestMatch(
   tx: { amount: number; variable_symbol: string | null; description: string | null },
-  invoices: Array<{ id: string; invoice_number: string; total: number; variable_symbol?: string | null }>,
+  invoices: Array<{
+    id: string;
+    invoice_number: string;
+    total: number;
+    variable_symbol?: string | null;
+  }>,
 ): string | null {
   if (tx.variable_symbol) {
-    const byVs = invoices.find((i) => i.variable_symbol && i.variable_symbol === tx.variable_symbol);
+    const byVs = invoices.find(
+      (i) => i.variable_symbol && i.variable_symbol === tx.variable_symbol,
+    );
     if (byVs) return byVs.id;
   }
   const desc = tx.description ?? "";

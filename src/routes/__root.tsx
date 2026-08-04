@@ -94,17 +94,40 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     const ga = loaderData?.gaMeasurementId;
     const meta: any[] = [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
+      },
       { title: "Faktero — Moderná fakturácia pre SK a CZ firmy" },
-      { name: "description", content: "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API." },
+      {
+        name: "description",
+        content:
+          "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API.",
+      },
       { property: "og:title", content: "Faktero — Moderná fakturácia pre SK a CZ firmy" },
-      { property: "og:description", content: "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API." },
+      {
+        property: "og:description",
+        content:
+          "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Faktero — Moderná fakturácia pre SK a CZ firmy" },
-      { name: "twitter:description", content: "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/4f322507-0af1-495b-95a6-9961c2422916" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/4f322507-0af1-495b-95a6-9961c2422916" },
+      {
+        name: "twitter:description",
+        content:
+          "Faktero je API-first fakturačná platforma pre slovenské a české firmy. Vystavujte faktúry manuálne alebo cez API.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/4f322507-0af1-495b-95a6-9961c2422916",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/4f322507-0af1-495b-95a6-9961c2422916",
+      },
     ];
     if (gv) meta.push({ name: "google-site-verification", content: gv });
 

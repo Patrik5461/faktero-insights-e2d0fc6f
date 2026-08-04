@@ -19,7 +19,11 @@ function PrijemPage() {
           <ScanLine className="h-4 w-4" /> 📷 Naskenovať dodací list
         </Link>
       </div>
-      <MovementForm type="prijem" title="Príjem na sklad" onDone={() => nav({ to: "/sklad/pohyby" })} />
+      <MovementForm
+        type="prijem"
+        title="Príjem na sklad"
+        onDone={() => nav({ to: "/sklad/pohyby" })}
+      />
     </>
   );
 }

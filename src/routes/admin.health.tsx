@@ -13,9 +13,21 @@ export const Route = createFileRoute("/admin/health")({
 type Data = Awaited<ReturnType<typeof getSystemHealth>>;
 
 const STATUS_META: Record<string, { icon: any; cls: string; label: string }> = {
-  ok: { icon: CheckCircle2, cls: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30", label: "OK" },
-  warn: { icon: AlertTriangle, cls: "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30", label: "WARN" },
-  fail: { icon: XCircle, cls: "text-destructive bg-destructive/10 border-destructive/30", label: "FAIL" },
+  ok: {
+    icon: CheckCircle2,
+    cls: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
+    label: "OK",
+  },
+  warn: {
+    icon: AlertTriangle,
+    cls: "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30",
+    label: "WARN",
+  },
+  fail: {
+    icon: XCircle,
+    cls: "text-destructive bg-destructive/10 border-destructive/30",
+    label: "FAIL",
+  },
   info: { icon: Info, cls: "text-muted-foreground bg-muted border-border", label: "INFO" },
 };
 
@@ -38,13 +50,30 @@ function AdminHealthPage() {
     }
   }, [fetchHealth]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const groups: { title: string; prefix: (k: string) => boolean }[] = [
-    { title: "Infraštruktúra", prefix: (k) => ["db", "auth_admin", "storage", "service_role_any"].includes(k) },
-    { title: "Core secrets", prefix: (k) => /^(SUPABASE_|FAKTERO_|APP_PUBLIC_URL|PAYMENT_SECRETS_KEY|COMMANDER_)/.test(k) },
+    {
+      title: "Infraštruktúra",
+      prefix: (k) => ["db", "auth_admin", "storage", "service_role_any"].includes(k),
+    },
+    {
+      title: "Core secrets",
+      prefix: (k) => /^(SUPABASE_|FAKTERO_|APP_PUBLIC_URL|PAYMENT_SECRETS_KEY|COMMANDER_)/.test(k),
+    },
     { title: "Integrácie", prefix: (k) => k.startsWith("int_") },
-    { title: "Prevádzka (24h)", prefix: (k) => k.endsWith("_24h") || k === "cron" || k === "errors_24h" || k === "efa_pending" || k === "efa_profiles" || k === "efa_status" },
+    {
+      title: "Prevádzka (24h)",
+      prefix: (k) =>
+        k.endsWith("_24h") ||
+        k === "cron" ||
+        k === "errors_24h" ||
+        k === "efa_pending" ||
+        k === "efa_profiles" ||
+        k === "efa_status",
+    },
   ];
 
   return (
@@ -58,7 +87,11 @@ function AdminHealthPage() {
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-accent disabled:opacity-50"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
             Obnoviť
           </button>
         }
@@ -94,7 +127,9 @@ function AdminHealthPage() {
               if (!items.length) return null;
               return (
                 <section key={g.title}>
-                  <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{g.title}</h2>
+                  <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    {g.title}
+                  </h2>
                   <div className="overflow-hidden rounded-lg border border-border bg-card">
                     <table className="w-full text-sm">
                       <tbody>
@@ -109,7 +144,11 @@ function AdminHealthPage() {
                               <td className="py-2.5 pr-3 font-medium">{c.label}</td>
                               <td className="py-2.5 pr-3 text-muted-foreground">{c.message}</td>
                               <td className="py-2.5 pr-3 text-right">
-                                <span className={`inline-flex rounded px-2 py-0.5 text-[10px] font-bold ${M.cls}`}>{M.label}</span>
+                                <span
+                                  className={`inline-flex rounded px-2 py-0.5 text-[10px] font-bold ${M.cls}`}
+                                >
+                                  {M.label}
+                                </span>
                               </td>
                             </tr>
                           );
@@ -125,7 +164,8 @@ function AdminHealthPage() {
 
         {data && (
           <p className="mt-6 text-xs text-muted-foreground">
-            Vygenerované: {new Date(data.summary.generated_at).toLocaleString("sk-SK")} · {data.summary.duration_ms} ms
+            Vygenerované: {new Date(data.summary.generated_at).toLocaleString("sk-SK")} ·{" "}
+            {data.summary.duration_ms} ms
           </p>
         )}
       </AdminPageBody>

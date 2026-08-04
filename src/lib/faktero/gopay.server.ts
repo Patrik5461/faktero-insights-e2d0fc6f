@@ -56,16 +56,28 @@ export async function loadPlatformGopayConfig(): Promise<Config> {
 
   if (dbCfg) {
     source = "db";
-    if (dbCfg.env) env = (dbCfg.env.toLowerCase() as GoPayEnv);
+    if (dbCfg.env) env = dbCfg.env.toLowerCase() as GoPayEnv;
     if (dbCfg.goid) goid = dbCfg.goid;
     if (dbCfg.client_id_enc) {
-      try { clientId = decryptSecret(dbCfg.client_id_enc); } catch { source = "mixed"; }
+      try {
+        clientId = decryptSecret(dbCfg.client_id_enc);
+      } catch {
+        source = "mixed";
+      }
     }
     if (dbCfg.client_secret_enc) {
-      try { clientSecret = decryptSecret(dbCfg.client_secret_enc); } catch { source = "mixed"; }
+      try {
+        clientSecret = decryptSecret(dbCfg.client_secret_enc);
+      } catch {
+        source = "mixed";
+      }
     }
     if (dbCfg.webhook_secret_enc) {
-      try { webhookSecret = decryptSecret(dbCfg.webhook_secret_enc); } catch { /* keep env */ }
+      try {
+        webhookSecret = decryptSecret(dbCfg.webhook_secret_enc);
+      } catch {
+        /* keep env */
+      }
     }
   }
 

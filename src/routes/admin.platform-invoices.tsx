@@ -39,7 +39,9 @@ function PlatformInvoicesAdmin() {
     setErr(null);
     const { data, error } = await supabase
       .from("platform_invoices")
-      .select("id, invoice_number, company_id, total_cents, currency, issue_date, provider_payment_id, public_token, buyer_snapshot, companies(name)")
+      .select(
+        "id, invoice_number, company_id, total_cents, currency, issue_date, provider_payment_id, public_token, buyer_snapshot, companies(name)",
+      )
       .order("issue_date", { ascending: false })
       .limit(500);
     if (error) setErr(error.message);
@@ -47,7 +49,9 @@ function PlatformInvoicesAdmin() {
     setLoading(false);
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
@@ -68,7 +72,10 @@ function PlatformInvoicesAdmin() {
     setBusyId(row.id);
     const { error } = await supabase.from("platform_invoices").delete().eq("id", row.id);
     setBusyId(null);
-    if (error) { alert("Chyba: " + error.message); return; }
+    if (error) {
+      alert("Chyba: " + error.message);
+      return;
+    }
     setRows((prev) => prev.filter((r) => r.id !== row.id));
   }
 
@@ -82,8 +89,8 @@ function PlatformInvoicesAdmin() {
         <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-100">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
-            <b>Pozor:</b> mazanie dokladov je určené výhradne na testovacie účely.
-            V produkcii by daňové doklady nemali byť mazané — porušuje to zákonné povinnosti archivácie.
+            <b>Pozor:</b> mazanie dokladov je určené výhradne na testovacie účely. V produkcii by
+            daňové doklady nemali byť mazané — porušuje to zákonné povinnosti archivácie.
           </div>
         </div>
 
@@ -107,7 +114,10 @@ function PlatformInvoicesAdmin() {
             />
           </label>
           <button
-            onClick={() => { setMonth(""); setCompanyFilter(""); }}
+            onClick={() => {
+              setMonth("");
+              setCompanyFilter("");
+            }}
             className="rounded-md border border-border bg-secondary px-3 py-1.5 text-xs"
           >
             Zrušiť filtre
@@ -137,39 +147,54 @@ function PlatformInvoicesAdmin() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Načítavam…</td></tr>
-              )}
-              {!loading && filtered.length === 0 && (
-                <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">Žiadne doklady.</td></tr>
-              )}
-              {!loading && filtered.map((r) => (
-                <tr key={r.id} className="border-t border-border/60">
-                  <td className="px-3 py-2 font-mono text-xs">{r.invoice_number}</td>
-                  <td className="px-3 py-2">{r.companies?.name ?? r.buyer_snapshot?.name ?? "—"}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">{fmtEur(r.total_cents, r.currency)}</td>
-                  <td className="px-3 py-2">{r.issue_date}</td>
-                  <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{r.provider_payment_id ?? "—"}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link
-                        to="/danovy-doklad/$token"
-                        params={{ token: r.public_token }}
-                        target="_blank"
-                        className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-2 py-1 text-xs hover:bg-secondary/80"
-                      >
-                        <ExternalLink className="h-3 w-3" /> Doklad
-                      </Link>
-                      <button
-                        onClick={() => del(r)}
-                        disabled={busyId === r.id}
-                        className="inline-flex items-center gap-1 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1 text-xs text-destructive hover:bg-destructive/20 disabled:opacity-50"
-                      >
-                        <Trash2 className="h-3 w-3" /> {busyId === r.id ? "Mažem…" : "Vymazať"}
-                      </button>
-                    </div>
+                <tr>
+                  <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                    Načítavam…
                   </td>
                 </tr>
-              ))}
+              )}
+              {!loading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                    Žiadne doklady.
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                filtered.map((r) => (
+                  <tr key={r.id} className="border-t border-border/60">
+                    <td className="px-3 py-2 font-mono text-xs">{r.invoice_number}</td>
+                    <td className="px-3 py-2">
+                      {r.companies?.name ?? r.buyer_snapshot?.name ?? "—"}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {fmtEur(r.total_cents, r.currency)}
+                    </td>
+                    <td className="px-3 py-2">{r.issue_date}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
+                      {r.provider_payment_id ?? "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          to="/danovy-doklad/$token"
+                          params={{ token: r.public_token }}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 rounded-md border border-border bg-secondary px-2 py-1 text-xs hover:bg-secondary/80"
+                        >
+                          <ExternalLink className="h-3 w-3" /> Doklad
+                        </Link>
+                        <button
+                          onClick={() => del(r)}
+                          disabled={busyId === r.id}
+                          className="inline-flex items-center gap-1 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1 text-xs text-destructive hover:bg-destructive/20 disabled:opacity-50"
+                        >
+                          <Trash2 className="h-3 w-3" /> {busyId === r.id ? "Mažem…" : "Vymazať"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

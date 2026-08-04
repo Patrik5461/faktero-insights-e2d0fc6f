@@ -15,11 +15,7 @@
  * Today only a `noopProvider` is registered so wiring is exercised end-to-end
  * without any external calls.
  */
-import type {
-  EfakturaChannel,
-  EfakturaDeliveryStatus,
-  EfakturaDocFormat,
-} from "./types";
+import type { EfakturaChannel, EfakturaDeliveryStatus, EfakturaDocFormat } from "./types";
 
 export type DeliveryRequest = {
   documentId: string;

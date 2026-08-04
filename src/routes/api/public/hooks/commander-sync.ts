@@ -28,19 +28,22 @@ export const Route = createFileRoute("/api/public/hooks/commander-sync")({
         const expected = process.env.COMMANDER_SYNC_SECRET;
         if (!expected || !provided || provided !== expected) {
           return new Response(JSON.stringify({ error: "unauthorized" }), {
-            status: 401, headers: { "content-type": "application/json" },
+            status: 401,
+            headers: { "content-type": "application/json" },
           });
         }
         try {
           const { runCommanderDailySync } = await import("@/lib/faktero/commander-cron.server");
           const r = await runCommanderDailySync();
           return new Response(JSON.stringify(r), {
-            status: 200, headers: { "content-type": "application/json" },
+            status: 200,
+            headers: { "content-type": "application/json" },
           });
         } catch (e: any) {
           console.error("[commander-sync] fatal", e);
           return new Response(JSON.stringify({ error: e?.message ?? "internal" }), {
-            status: 500, headers: { "content-type": "application/json" },
+            status: 500,
+            headers: { "content-type": "application/json" },
           });
         }
       },

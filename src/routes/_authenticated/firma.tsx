@@ -18,7 +18,12 @@ function CompanyPage() {
   useEffect(() => {
     const id = getActiveCompanyId();
     if (!id) return;
-    supabase.from("companies").select("*").eq("id", id).single().then(({ data }) => setC(data));
+    supabase
+      .from("companies")
+      .select("*")
+      .eq("id", id)
+      .single()
+      .then(({ data }) => setC(data));
   }, []);
   if (!c) return <PageBody>Načítavam…</PageBody>;
 
@@ -35,24 +40,43 @@ function CompanyPage() {
     <>
       <PageHeader title="Firma" description="Údaje, ktoré sa zobrazia na faktúrach." />
       <PageBody>
-        <form onSubmit={save} className="grid gap-4 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
+        <form
+          onSubmit={save}
+          className="grid gap-4 rounded-xl border border-border bg-card p-6 sm:grid-cols-2"
+        >
           <label className="block sm:col-span-2">
             <span className="text-sm font-medium">Názov *</span>
             <div className="mt-1">
               <CompanyNameAutocomplete
                 value={c.name ?? ""}
                 onChange={f("name")}
-                onPick={(d, { auto }) => setC((prev: any) => mergeCompanyAutofill(prev ?? {}, d, { mode: auto ? "fill-empty" : "overwrite" }))}
+                onPick={(d, { auto }) =>
+                  setC((prev: any) =>
+                    mergeCompanyAutofill(prev ?? {}, d, {
+                      mode: auto ? "fill-empty" : "overwrite",
+                    }),
+                  )
+                }
               />
             </div>
           </label>
           <label className="block">
             <span className="text-sm font-medium">IČO</span>
             <div className="mt-1 flex -space-x-px items-start">
-              <input value={c.ico ?? ""} onChange={(e) => f("ico")(e.target.value)} className="w-full rounded-l-md border border-input bg-background px-3 py-2 text-sm focus:z-10" />
+              <input
+                value={c.ico ?? ""}
+                onChange={(e) => f("ico")(e.target.value)}
+                className="w-full rounded-l-md border border-input bg-background px-3 py-2 text-sm focus:z-10"
+              />
               <IcoLookupButton
                 ico={c.ico ?? ""}
-                onResult={(d, { auto }) => setC((prev: any) => mergeCompanyAutofill(prev ?? {}, d, { mode: auto ? "fill-empty" : "overwrite" }))}
+                onResult={(d, { auto }) =>
+                  setC((prev: any) =>
+                    mergeCompanyAutofill(prev ?? {}, d, {
+                      mode: auto ? "fill-empty" : "overwrite",
+                    }),
+                  )
+                }
               />
             </div>
           </label>
@@ -69,15 +93,21 @@ function CompanyPage() {
           <In label="SWIFT/BIC" value={c.swift ?? ""} onChange={f("swift")} />
           <In label="Mena" value={c.default_currency ?? "EUR"} onChange={f("default_currency")} />
           <div>
-            <In label="Formát čísla faktúry" value={c.invoice_number_format ?? ""} onChange={f("invoice_number_format")} />
+            <In
+              label="Formát čísla faktúry"
+              value={c.invoice_number_format ?? ""}
+              onChange={f("invoice_number_format")}
+            />
             <NumberingPreview companyId={c.id} format={c.invoice_number_format ?? ""} />
             <p className="mt-1 text-xs text-muted-foreground">
-              Tokeny: {"{YYYY}"} rok, {"{YY}"} rok 2-cif., {"{MM}"} mesiac, {"{NN}"}–{"{NNNN}"} poradie (počet N = počet číslic).
-              Ak formát obsahuje {"{MM}"}, poradie sa resetuje mesačne, inak ročne.
+              Tokeny: {"{YYYY}"} rok, {"{YY}"} rok 2-cif., {"{MM}"} mesiac, {"{NN}"}–{"{NNNN}"}{" "}
+              poradie (počet N = počet číslic). Ak formát obsahuje {"{MM}"}, poradie sa resetuje
+              mesačne, inak ročne.
             </p>
             <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-              Pozor: zmena šablóny uprostred roka rozdelí číselný rad — nové faktúry budú číslované podľa novej šablóny,
-              staré zostanú nezmenené. Ak by nové číslo kolidovalo s existujúcim, poradie sa automaticky posunie na najbližšie voľné.
+              Pozor: zmena šablóny uprostred roka rozdelí číselný rad — nové faktúry budú číslované
+              podľa novej šablóny, staré zostanú nezmenené. Ak by nové číslo kolidovalo s
+              existujúcim, poradie sa automaticky posunie na najbližšie voľné.
             </p>
           </div>
 
@@ -97,31 +127,67 @@ function CompanyPage() {
           </label>
           <label className="sm:col-span-2 block">
             <span className="text-sm font-medium">Pätička faktúry</span>
-            <textarea rows={3} value={c.invoice_footer ?? ""} onChange={(e) => setC({ ...c, invoice_footer: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            <textarea
+              rows={3}
+              value={c.invoice_footer ?? ""}
+              onChange={(e) => setC({ ...c, invoice_footer: e.target.value })}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
           </label>
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">E-mail</h3>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              E-mail
+            </h3>
           </div>
-          <In label="Meno odosielateľa" value={c.email_sender_name ?? ""} onChange={f("email_sender_name")} />
-          <In label="Odpovedať na (Reply-To)" value={c.email_reply_to ?? ""} onChange={f("email_reply_to")} />
-          <In full label="Predvolený predmet e-mailu" value={c.email_default_subject ?? ""} onChange={f("email_default_subject")} />
+          <In
+            label="Meno odosielateľa"
+            value={c.email_sender_name ?? ""}
+            onChange={f("email_sender_name")}
+          />
+          <In
+            label="Odpovedať na (Reply-To)"
+            value={c.email_reply_to ?? ""}
+            onChange={f("email_reply_to")}
+          />
+          <In
+            full
+            label="Predvolený predmet e-mailu"
+            value={c.email_default_subject ?? ""}
+            onChange={f("email_default_subject")}
+          />
           <label className="sm:col-span-2 block">
             <span className="text-sm font-medium">Predvolená správa e-mailu</span>
-            <textarea rows={5} value={c.email_default_message ?? ""} onChange={(e) => setC({ ...c, email_default_message: e.target.value })} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-            <span className="mt-1 block text-xs text-muted-foreground">Premenné: {"{invoice_number}"}, {"{due_date}"}, {"{total}"}, {"{company_name}"}</span>
+            <textarea
+              rows={5}
+              value={c.email_default_message ?? ""}
+              onChange={(e) => setC({ ...c, email_default_message: e.target.value })}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Premenné: {"{invoice_number}"}, {"{due_date}"}, {"{total}"}, {"{company_name}"}
+            </span>
           </label>
           <div className="sm:col-span-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="font-medium">Email šablóny</div>
-                <div className="text-xs text-muted-foreground">Editor pre odoslanie faktúry, upomienky a žiadosti o schválenie.</div>
+                <div className="text-xs text-muted-foreground">
+                  Editor pre odoslanie faktúry, upomienky a žiadosti o schválenie.
+                </div>
               </div>
-              <Link to="/nastavenia/email-sablony" className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90">Otvoriť editor</Link>
+              <Link
+                to="/nastavenia/email-sablony"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+              >
+                Otvoriť editor
+              </Link>
             </div>
           </div>
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Automatické upomienky po splatnosti</h3>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Automatické upomienky po splatnosti
+            </h3>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -133,25 +199,39 @@ function CompanyPage() {
           </div>
           <label className="block">
             <span className="text-sm font-medium">Dní po splatnosti — 1. upomienka</span>
-            <input type="number" min={1} value={c.reminder_days_1 ?? 3}
+            <input
+              type="number"
+              min={1}
+              value={c.reminder_days_1 ?? 3}
               onChange={(e) => setC({ ...c, reminder_days_1: Number(e.target.value) })}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
           </label>
           <label className="block">
             <span className="text-sm font-medium">Dní po splatnosti — 2. upomienka</span>
-            <input type="number" min={1} value={c.reminder_days_2 ?? 7}
+            <input
+              type="number"
+              min={1}
+              value={c.reminder_days_2 ?? 7}
               onChange={(e) => setC({ ...c, reminder_days_2: Number(e.target.value) })}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
           </label>
           <label className="block">
             <span className="text-sm font-medium">Dní po splatnosti — 3. upomienka</span>
-            <input type="number" min={1} value={c.reminder_days_3 ?? 14}
+            <input
+              type="number"
+              min={1}
+              value={c.reminder_days_3 ?? 14}
               onChange={(e) => setC({ ...c, reminder_days_3: Number(e.target.value) })}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
           </label>
           {[1, 2, 3].map((n) => (
             <div key={n} className="sm:col-span-2 grid gap-2 rounded-md border border-border p-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{n}. upomienka — e-mail</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {n}. upomienka — e-mail
+              </div>
               <input
                 placeholder={`Predmet (napr. Upomienka: Faktúra {invoice_number})`}
                 value={c[`reminder_subject_${n}`] ?? ""}
@@ -169,9 +249,13 @@ function CompanyPage() {
           ))}
 
           <div className="sm:col-span-2 flex justify-end">
-            <button type="submit" className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Uložiť zmeny</button>
+            <button
+              type="submit"
+              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              Uložiť zmeny
+            </button>
           </div>
-
         </form>
 
         <TeamSection companyId={c.id} />
@@ -195,7 +279,9 @@ function TeamSection({ companyId }: { companyId: string }) {
       console.error(e);
     }
   }
-  useEffect(() => { load(); }, [companyId]);
+  useEffect(() => {
+    load();
+  }, [companyId]);
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
@@ -223,26 +309,39 @@ function TeamSection({ companyId }: { companyId: string }) {
   return (
     <div className="mt-8 rounded-xl border border-border bg-card p-6">
       <h2 className="text-lg font-semibold">Používatelia a pozvánky</h2>
-      <p className="mt-1 text-sm text-muted-foreground">Pozvite kolegu alebo účtovníka na e-mail. Prijatie pozvánky ich pripojí k tejto firme.</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Pozvite kolegu alebo účtovníka na e-mail. Prijatie pozvánky ich pripojí k tejto firme.
+      </p>
 
       <form onSubmit={invite} className="mt-4 flex flex-wrap items-end gap-3">
         <label className="block">
           <span className="text-sm font-medium">Email</span>
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="kolega@firma.sk"
-            className="mt-1 w-64 rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            className="mt-1 w-64 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          />
         </label>
         <label className="block">
           <span className="text-sm font-medium">Rola</span>
-          <select value={role} onChange={(e) => setRole(e.target.value as any)}
-            className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as any)}
+            className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
             <option value="employee">Používateľ</option>
             <option value="accountant">Účtovník (read-only)</option>
             <option value="admin">Administrátor</option>
           </select>
         </label>
-        <button type="submit" disabled={busy}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+        <button
+          type="submit"
+          disabled={busy}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+        >
           {busy ? "Odosielam…" : "Pozvať používateľa"}
         </button>
       </form>
@@ -251,7 +350,13 @@ function TeamSection({ companyId }: { companyId: string }) {
         <div className="mt-6 overflow-hidden rounded-md border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr><th className="p-3">Email</th><th className="p-3">Rola</th><th className="p-3">Stav</th><th className="p-3">Vytvorené</th><th className="p-3"></th></tr>
+              <tr>
+                <th className="p-3">Email</th>
+                <th className="p-3">Rola</th>
+                <th className="p-3">Stav</th>
+                <th className="p-3">Vytvorené</th>
+                <th className="p-3"></th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {invs.map((r) => {
@@ -262,10 +367,17 @@ function TeamSection({ companyId }: { companyId: string }) {
                     <td className="p-3">{r.email}</td>
                     <td className="p-3">{r.role}</td>
                     <td className="p-3">{status}</td>
-                    <td className="p-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("sk-SK")}</td>
+                    <td className="p-3 text-muted-foreground">
+                      {new Date(r.created_at).toLocaleDateString("sk-SK")}
+                    </td>
                     <td className="p-3 text-right">
                       {!r.accepted_at && (
-                        <button onClick={() => revoke(r.id)} className="text-xs text-rose-600 hover:underline">Zrušiť</button>
+                        <button
+                          onClick={() => revoke(r.id)}
+                          className="text-xs text-rose-600 hover:underline"
+                        >
+                          Zrušiť
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -279,11 +391,25 @@ function TeamSection({ companyId }: { companyId: string }) {
   );
 }
 
-function In({ label, value, onChange, full }: { label: string; value: string; onChange: (v: string) => void; full?: boolean }) {
+function In({
+  label,
+  value,
+  onChange,
+  full,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  full?: boolean;
+}) {
   return (
     <label className={`block ${full ? "sm:col-span-2" : ""}`}>
       <span className="text-sm font-medium">{label}</span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+      />
     </label>
   );
 }
@@ -310,12 +436,19 @@ function NumberingPreview({ companyId, format }: { companyId: string; format: st
 
     (async () => {
       const [periodRes, allRes] = await Promise.all([
-        supabase.from("invoices").select("sequence_number").eq("company_id", companyId)
-          .gte("issue_date", start).lt("issue_date", end),
+        supabase
+          .from("invoices")
+          .select("sequence_number")
+          .eq("company_id", companyId)
+          .gte("issue_date", start)
+          .lt("issue_date", end),
         supabase.from("invoices").select("invoice_number").eq("company_id", companyId),
       ]);
       if (cancelled) return;
-      const maxSeq = (periodRes.data ?? []).reduce((m: number, r: any) => Math.max(m, Number(r.sequence_number ?? 0)), 0);
+      const maxSeq = (periodRes.data ?? []).reduce(
+        (m: number, r: any) => Math.max(m, Number(r.sequence_number ?? 0)),
+        0,
+      );
       const taken = new Set((allRes.data ?? []).map((r: any) => r.invoice_number));
       let seq = maxSeq + 1;
       let num = "";
@@ -331,7 +464,9 @@ function NumberingPreview({ companyId, format }: { companyId: string; format: st
       setPreview(num);
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [companyId, format]);
 
   return (

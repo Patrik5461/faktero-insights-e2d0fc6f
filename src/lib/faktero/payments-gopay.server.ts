@@ -13,12 +13,13 @@ export type MerchantCreds = {
 };
 
 function baseUrl(sandbox: boolean) {
-  return sandbox
-    ? "https://gw.sandbox.gopay.com/api"
-    : "https://gate.gopay.cz/api";
+  return sandbox ? "https://gw.sandbox.gopay.com/api" : "https://gate.gopay.cz/api";
 }
 
-async function getToken(creds: MerchantCreds, scope: "payment-create" | "payment-all" = "payment-all") {
+async function getToken(
+  creds: MerchantCreds,
+  scope: "payment-create" | "payment-all" = "payment-all",
+) {
   const basic = Buffer.from(`${creds.clientId}:${creds.clientSecret}`).toString("base64");
   const body = new URLSearchParams({ grant_type: "client_credentials", scope });
   const res = await fetch(`${baseUrl(creds.sandbox)}/oauth2/token`, {
@@ -61,7 +62,10 @@ export type MerchantPayment = {
   gw_url?: string;
 };
 
-export async function merchantCreatePayment(creds: MerchantCreds, input: MerchantCreatePaymentInput): Promise<MerchantPayment> {
+export async function merchantCreatePayment(
+  creds: MerchantCreds,
+  input: MerchantCreatePaymentInput,
+): Promise<MerchantPayment> {
   const token = await getToken(creds, "payment-create");
   const body = {
     payer: {
@@ -93,7 +97,10 @@ export async function merchantCreatePayment(creds: MerchantCreds, input: Merchan
   return (await res.json()) as MerchantPayment;
 }
 
-export async function merchantGetPayment(creds: MerchantCreds, id: string | number): Promise<MerchantPayment> {
+export async function merchantGetPayment(
+  creds: MerchantCreds,
+  id: string | number,
+): Promise<MerchantPayment> {
   const token = await getToken(creds, "payment-all");
   const res = await fetch(`${baseUrl(creds.sandbox)}/payments/payment/${id}`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },

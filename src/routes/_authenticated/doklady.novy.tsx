@@ -8,7 +8,10 @@ import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode } from "@/lib/mobile/qr-scanner";
 import { aiParseReceiptFn } from "@/lib/faktero/ai-receipt.functions";
 import {
-  createExpenseFn, updateExpenseFn, parseQrFn, getExpenseFileUrlFn,
+  createExpenseFn,
+  updateExpenseFn,
+  parseQrFn,
+  getExpenseFileUrlFn,
 } from "@/lib/faktero/expenses.functions";
 import { Camera, Loader2, QrCode, Save, Upload as UploadIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -20,17 +23,33 @@ export const Route = createFileRoute("/_authenticated/doklady/novy")({
 });
 
 type Form = {
-  supplier_name: string; supplier_ico: string; supplier_ic_dph: string;
-  document_number: string; issue_date: string;
-  total_amount: string; vat_amount: string; net_amount: string; vat_rate: string;
-  currency: string; category: string; note: string;
+  supplier_name: string;
+  supplier_ico: string;
+  supplier_ic_dph: string;
+  document_number: string;
+  issue_date: string;
+  total_amount: string;
+  vat_amount: string;
+  net_amount: string;
+  vat_rate: string;
+  currency: string;
+  category: string;
+  note: string;
 };
 
 const EMPTY: Form = {
-  supplier_name: "", supplier_ico: "", supplier_ic_dph: "",
-  document_number: "", issue_date: new Date().toISOString().slice(0, 10),
-  total_amount: "", vat_amount: "", net_amount: "", vat_rate: "23",
-  currency: "EUR", category: "", note: "",
+  supplier_name: "",
+  supplier_ico: "",
+  supplier_ic_dph: "",
+  document_number: "",
+  issue_date: new Date().toISOString().slice(0, 10),
+  total_amount: "",
+  vat_amount: "",
+  net_amount: "",
+  vat_rate: "23",
+  currency: "EUR",
+  category: "",
+  note: "",
 };
 
 function NovyDokladPage() {
@@ -43,10 +62,17 @@ function NovyDokladPage() {
   const urlFn = useServerFn(getExpenseFileUrlFn);
   const [form, setForm] = useState<Form>(EMPTY);
   const [preview, setPreview] = useState<string | null>(null);
-  const [uploadedFile, setUploadedFile] = useState<{ path: string; mime: string; size: number } | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<{
+    path: string;
+    mime: string;
+    size: number;
+  } | null>(null);
   const [source, setSource] = useState<"photo" | "qr" | "upload" | "web">("photo");
   const [qrRaw, setQrRaw] = useState<string | null>(null);
-  const [ekasaBadge, setEkasaBadge] = useState<null | { source: "lzma" | "online" | "heuristic"; overeny: boolean }>(null);
+  const [ekasaBadge, setEkasaBadge] = useState<null | {
+    source: "lzma" | "online" | "heuristic";
+    overeny: boolean;
+  }>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -57,37 +83,64 @@ function NovyDokladPage() {
   useEffect(() => {
     if (!search.id) return;
     (async () => {
-      const { data } = await supabase.from("expense_documents").select("*").eq("id", search.id).maybeSingle();
+      const { data } = await supabase
+        .from("expense_documents")
+        .select("*")
+        .eq("id", search.id)
+        .maybeSingle();
       if (!data) return;
       setForm({
-        supplier_name: data.supplier_name ?? "", supplier_ico: data.supplier_ico ?? "",
-        supplier_ic_dph: data.supplier_ic_dph ?? "", document_number: data.document_number ?? "",
+        supplier_name: data.supplier_name ?? "",
+        supplier_ico: data.supplier_ico ?? "",
+        supplier_ic_dph: data.supplier_ic_dph ?? "",
+        document_number: data.document_number ?? "",
         issue_date: data.issue_date ?? "",
-        total_amount: data.total_amount?.toString() ?? "", vat_amount: data.vat_amount?.toString() ?? "",
-        net_amount: data.net_amount?.toString() ?? "", vat_rate: data.vat_rate?.toString() ?? "23",
-        currency: data.currency ?? "EUR", category: data.category ?? "", note: data.note ?? "",
+        total_amount: data.total_amount?.toString() ?? "",
+        vat_amount: data.vat_amount?.toString() ?? "",
+        net_amount: data.net_amount?.toString() ?? "",
+        vat_rate: data.vat_rate?.toString() ?? "23",
+        currency: data.currency ?? "EUR",
+        category: data.category ?? "",
+        note: data.note ?? "",
       });
       setSource(data.source as "photo" | "qr" | "upload" | "web");
       setQrRaw(data.qr_raw);
       if (data.file_path) {
-        setUploadedFile({ path: data.file_path, mime: data.file_mime ?? "", size: data.file_size ?? 0 });
-        try { const { url } = await urlFn({ data: { file_path: data.file_path } }); setPreview(url); } catch {}
+        setUploadedFile({
+          path: data.file_path,
+          mime: data.file_mime ?? "",
+          size: data.file_size ?? 0,
+        });
+        try {
+          const { url } = await urlFn({ data: { file_path: data.file_path } });
+          setPreview(url);
+        } catch {}
       }
     })();
     // eslint-disable-next-line
   }, [search.id]);
 
-  function updateForm<K extends keyof Form>(k: K, v: Form[K]) { setForm((f) => ({ ...f, [k]: v })); }
+  function updateForm<K extends keyof Form>(k: K, v: Form[K]) {
+    setForm((f) => ({ ...f, [k]: v }));
+  }
 
-  async function uploadToStorage(dataUrl: string, mime: string): Promise<{ path: string; size: number } | null> {
+  async function uploadToStorage(
+    dataUrl: string,
+    mime: string,
+  ): Promise<{ path: string; size: number } | null> {
     if (!cid) return null;
     const bin = atob(dataUrl.split(",")[1] || "");
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     const ext = mime.split("/")[1] || "jpg";
     const path = `${cid}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("expense-receipts").upload(path, bytes, { contentType: mime });
-    if (error) { toast.error(error.message); return null; }
+    const { error } = await supabase.storage
+      .from("expense-receipts")
+      .upload(path, bytes, { contentType: mime });
+    if (error) {
+      toast.error(error.message);
+      return null;
+    }
     return { path, size: bytes.length };
   }
 
@@ -102,13 +155,19 @@ function NovyDokladPage() {
       if (stored) setUploadedFile({ path: stored.path, mime: cap.mimeType, size: stored.size });
       const parsed = await parseAi({ data: { image_data_url: cap.dataUrl } });
       applyAiResult(parsed);
-    } catch (e: any) { toast.error(e?.message ?? "AI spracovanie zlyhalo"); }
-    finally { setLoading(false); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "AI spracovanie zlyhalo");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleScanQr() {
     const res = await scanQrCode();
-    if (!res) { toast.error("QR skener nedostupný alebo zrušený. Použite foto."); return; }
+    if (!res) {
+      toast.error("QR skener nedostupný alebo zrušený. Použite foto.");
+      return;
+    }
     setSource("qr");
     setQrRaw(res.raw);
     setLoading(true);
@@ -124,8 +183,11 @@ function NovyDokladPage() {
       setEkasaBadge({ source: src ?? "heuristic", overeny: !!overeny });
       if (src === "lzma" || src === "online") toast.success("eKasa QR dekódovaný");
       else toast.success("QR kód načítaný");
-    } catch (e: any) { toast.error(e?.message ?? "QR sa nepodarilo spracovať"); }
-    finally { setLoading(false); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "QR sa nepodarilo spracovať");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleFile(file: File) {
@@ -145,8 +207,11 @@ function NovyDokladPage() {
         const parsed = await parseAi({ data: { image_data_url: dataUrl } });
         applyAiResult(parsed);
       }
-    } catch (e: any) { toast.error(e?.message ?? "Nahratie zlyhalo"); }
-    finally { setLoading(false); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nahratie zlyhalo");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function applyAiResult(parsed: any) {
@@ -167,7 +232,10 @@ function NovyDokladPage() {
   }
 
   async function handleSave() {
-    if (!cid) { toast.error("Vyberte firmu"); return; }
+    if (!cid) {
+      toast.error("Vyberte firmu");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -195,44 +263,74 @@ function NovyDokladPage() {
       else await createFn({ data: payload });
       toast.success("Doklad uložený");
       navigate({ to: "/doklady" });
-    } catch (e: any) { toast.error(e?.message ?? "Uloženie zlyhalo"); }
-    finally { setSaving(false); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Uloženie zlyhalo");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <>
-      <PageHeader title={search.id ? "Upraviť doklad" : "Nový doklad"} description="Naskenujte, odfoťte alebo nahrajte bloček — AI predvyplní polia." />
+      <PageHeader
+        title={search.id ? "Upraviť doklad" : "Nový doklad"}
+        description="Naskenujte, odfoťte alebo nahrajte bloček — AI predvyplní polia."
+      />
       <PageBody>
         <div className="mx-auto max-w-3xl space-y-5">
           {!search.id && (
             <div className="grid gap-3 sm:grid-cols-3">
-              <button onClick={handleScanPhoto} disabled={loading}
-                className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+              <button
+                onClick={handleScanPhoto}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
                 <Camera className="h-5 w-5" /> Odfotiť
               </button>
-              <button onClick={handleScanQr} disabled={loading}
-                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-4 text-sm font-medium hover:bg-secondary disabled:opacity-50">
+              <button
+                onClick={handleScanQr}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-4 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+              >
                 <QrCode className="h-5 w-5" /> QR kód
               </button>
-              <button onClick={() => inputRef.current?.click()} disabled={loading}
-                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-4 text-sm font-medium hover:bg-secondary disabled:opacity-50">
+              <button
+                onClick={() => inputRef.current?.click()}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-4 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+              >
                 <UploadIcon className="h-5 w-5" /> Nahrať súbor
               </button>
-              <input ref={inputRef} type="file" accept="image/*,application/pdf" className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFile(f);
+                }}
+              />
             </div>
           )}
 
           {!search.id && (
             <div
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
               onDragLeave={() => setDragOver(false)}
               onDrop={(e) => {
-                e.preventDefault(); setDragOver(false);
-                const f = e.dataTransfer.files?.[0]; if (f) handleFile(f);
+                e.preventDefault();
+                setDragOver(false);
+                const f = e.dataTransfer.files?.[0];
+                if (f) handleFile(f);
               }}
               className={`rounded-2xl border-2 border-dashed p-8 text-center text-sm transition ${
-                dragOver ? "border-primary bg-primary/5" : "border-border bg-card/50 text-muted-foreground"
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-card/50 text-muted-foreground"
               }`}
             >
               Presuňte sem fotku alebo PDF dokladu (drag &amp; drop).
@@ -287,27 +385,89 @@ function NovyDokladPage() {
           <div className="rounded-2xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold">Údaje dokladu</h3>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Dodávateľ" value={form.supplier_name} onChange={(v) => updateForm("supplier_name", v)} />
-              <Field label="IČO" value={form.supplier_ico} onChange={(v) => updateForm("supplier_ico", v)} />
-              <Field label="IČ DPH" value={form.supplier_ic_dph} onChange={(v) => updateForm("supplier_ic_dph", v)} />
-              <Field label="Číslo dokladu" value={form.document_number} onChange={(v) => updateForm("document_number", v)} />
-              <Field label="Dátum vystavenia" type="date" value={form.issue_date} onChange={(v) => updateForm("issue_date", v)} />
-              <Field label="Kategória" value={form.category} onChange={(v) => updateForm("category", v)} placeholder="napr. pohonné hmoty" />
-              <Field label="Suma bez DPH" type="number" value={form.net_amount} onChange={(v) => updateForm("net_amount", v)} />
-              <Field label="DPH" type="number" value={form.vat_amount} onChange={(v) => updateForm("vat_amount", v)} />
-              <Field label="Celkom" type="number" value={form.total_amount} onChange={(v) => updateForm("total_amount", v)} />
-              <Field label="Sadzba DPH %" type="number" value={form.vat_rate} onChange={(v) => updateForm("vat_rate", v)} />
-              <Field label="Mena" value={form.currency} onChange={(v) => updateForm("currency", v)} />
+              <Field
+                label="Dodávateľ"
+                value={form.supplier_name}
+                onChange={(v) => updateForm("supplier_name", v)}
+              />
+              <Field
+                label="IČO"
+                value={form.supplier_ico}
+                onChange={(v) => updateForm("supplier_ico", v)}
+              />
+              <Field
+                label="IČ DPH"
+                value={form.supplier_ic_dph}
+                onChange={(v) => updateForm("supplier_ic_dph", v)}
+              />
+              <Field
+                label="Číslo dokladu"
+                value={form.document_number}
+                onChange={(v) => updateForm("document_number", v)}
+              />
+              <Field
+                label="Dátum vystavenia"
+                type="date"
+                value={form.issue_date}
+                onChange={(v) => updateForm("issue_date", v)}
+              />
+              <Field
+                label="Kategória"
+                value={form.category}
+                onChange={(v) => updateForm("category", v)}
+                placeholder="napr. pohonné hmoty"
+              />
+              <Field
+                label="Suma bez DPH"
+                type="number"
+                value={form.net_amount}
+                onChange={(v) => updateForm("net_amount", v)}
+              />
+              <Field
+                label="DPH"
+                type="number"
+                value={form.vat_amount}
+                onChange={(v) => updateForm("vat_amount", v)}
+              />
+              <Field
+                label="Celkom"
+                type="number"
+                value={form.total_amount}
+                onChange={(v) => updateForm("total_amount", v)}
+              />
+              <Field
+                label="Sadzba DPH %"
+                type="number"
+                value={form.vat_rate}
+                onChange={(v) => updateForm("vat_rate", v)}
+              />
+              <Field
+                label="Mena"
+                value={form.currency}
+                onChange={(v) => updateForm("currency", v)}
+              />
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-xs text-muted-foreground">Poznámka</label>
-                <textarea value={form.note} onChange={(e) => updateForm("note", e.target.value)}
-                  rows={2} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+                <textarea
+                  value={form.note}
+                  onChange={(e) => updateForm("note", e.target.value)}
+                  rows={2}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                />
               </div>
             </div>
             <div className="mt-5 flex justify-end gap-2">
-              <button onClick={() => navigate({ to: "/doklady" })} className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary">Zrušiť</button>
-              <button onClick={handleSave} disabled={saving}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+              <button
+                onClick={() => navigate({ to: "/doklady" })}
+                className="rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+              >
+                Zrušiť
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
                 <Save className="h-4 w-4" /> Uložiť doklad
               </button>
             </div>
@@ -319,13 +479,28 @@ function NovyDokladPage() {
 }
 
 function Field({
-  label, value, onChange, type = "text", placeholder,
-}: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+}) {
   return (
     <div>
       <label className="mb-1 block text-xs text-muted-foreground">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" />
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+      />
     </div>
   );
 }

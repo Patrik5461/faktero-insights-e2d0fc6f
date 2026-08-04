@@ -6,7 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Check, CreditCard, Crown, ShieldCheck, Zap, Loader2, Info, FileText, Car } from "lucide-react";
+import {
+  Check,
+  CreditCard,
+  Crown,
+  ShieldCheck,
+  Zap,
+  Loader2,
+  Info,
+  FileText,
+  Car,
+} from "lucide-react";
 import { getActiveCompanyId, fetchMyCompanies } from "@/lib/faktero/active-company";
 import {
   listPlans,
@@ -72,7 +82,11 @@ function fmtEur(cents: number | null | undefined) {
 }
 function fmtDate(s: string | null | undefined) {
   if (!s) return "—";
-  try { return new Date(s).toLocaleDateString("sk-SK"); } catch { return "—"; }
+  try {
+    return new Date(s).toLocaleDateString("sk-SK");
+  } catch {
+    return "—";
+  }
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -130,7 +144,9 @@ function PredplatnePage() {
       if (mode === "logbook") setTab("logbook");
       else if (mode === "invoicing") setTab("invoicing");
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -164,7 +180,9 @@ function PredplatnePage() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [fetchBilling, fetchPlans, fetchHistory]);
 
   async function refresh() {
@@ -201,7 +219,9 @@ function PredplatnePage() {
       await cancelFn({ data: { companyId } });
       toast.success("Predplatné bude zrušené na konci obdobia");
       await refresh();
-    } catch (e: any) { toast.error(e?.message ?? "Chyba"); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    }
   }
   async function doReactivate() {
     if (!companyId) return;
@@ -209,7 +229,9 @@ function PredplatnePage() {
       await reactivateFn({ data: { companyId } });
       toast.success("Predplatné obnovené");
       await refresh();
-    } catch (e: any) { toast.error(e?.message ?? "Chyba"); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    }
   }
   const [syncing, setSyncing] = useState(false);
   async function doSync() {
@@ -218,7 +240,8 @@ function PredplatnePage() {
     try {
       const r: any = await syncFn({ data: { companyId } });
       if (r?.reason === "no_payment") toast.info("Žiadna platba na synchronizáciu.");
-      else if (r?.reason === "missing_payment_id") toast.error(r.error ?? "Posledná platba nemá GoPay ID.");
+      else if (r?.reason === "missing_payment_id")
+        toast.error(r.error ?? "Posledná platba nemá GoPay ID.");
       else toast.success(`Stav platby: ${r?.state ?? "—"}`);
       await refresh();
       queryClient.invalidateQueries({ queryKey: ["plan-gate-billing"] });
@@ -258,9 +281,7 @@ function PredplatnePage() {
     <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Predplatné</h1>
-        <p className="text-sm text-muted-foreground">
-          Spravujte plán a fakturáciu vašej firmy.
-        </p>
+        <p className="text-sm text-muted-foreground">Spravujte plán a fakturáciu vašej firmy.</p>
       </header>
 
       {/* Current plan card */}
@@ -277,7 +298,9 @@ function PredplatnePage() {
           </div>
           <div className="text-right">
             <div className="text-2xl font-semibold">
-              {plan?.plan_slug === "enterprise" ? "—" : fmtEur(planPriceFromSlug(plans, plan?.plan_slug))}
+              {plan?.plan_slug === "enterprise"
+                ? "—"
+                : fmtEur(planPriceFromSlug(plans, plan?.plan_slug))}
             </div>
             <div className="text-xs text-muted-foreground">/ mesiac</div>
           </div>
@@ -286,8 +309,7 @@ function PredplatnePage() {
           {plan?.is_trialing && plan.trial_days_left != null && (
             <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm">
               <strong>Skúšobná verzia končí</strong> o {plan.trial_days_left}{" "}
-              {plDni(plan.trial_days_left)} ·{" "}
-              {fmtDate(plan.trial_ends_at)}
+              {plDni(plan.trial_days_left)} · {fmtDate(plan.trial_ends_at)}
             </div>
           )}
           {!plan?.is_active && (
@@ -300,7 +322,8 @@ function PredplatnePage() {
             <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-900 dark:text-blue-100">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
               <p>
-                Predplatné sa automaticky obnovuje každý mesiac. Platba je spracovaná cez GoPay (Visa/Mastercard). Zrušiť môžete kedykoľvek kliknutím na „Zrušiť predplatné“.
+                Predplatné sa automaticky obnovuje každý mesiac. Platba je spracovaná cez GoPay
+                (Visa/Mastercard). Zrušiť môžete kedykoľvek kliknutím na „Zrušiť predplatné“.
               </p>
             </div>
           )}
@@ -441,16 +464,39 @@ function PredplatnePage() {
       </Card>
 
       <div className="rounded-xl border border-border bg-card p-4 text-xs text-muted-foreground space-y-1.5">
-        <p><strong className="text-foreground">Ceny a DPH:</strong> Uvedené ceny sú bez DPH. Prevádzkovateľ je platca DPH; k cene sa uplatňuje sadzba <strong>23 %</strong> (Starter 9 € → 11,07 € s DPH; Premium 19 € → 23,37 € s DPH).</p>
-        <p><strong className="text-foreground">Automatické obnovenie:</strong> Predplatné sa po skončení obdobia automaticky obnovuje, kým ho nezrušíte. Zrušiť môžete kedykoľvek — prístup ostáva do konca zaplateného obdobia.</p>
-        <p><strong className="text-foreground">Platba:</strong> Bezpečne cez GoPay (Visa, Mastercard, 3-D Secure, bankový prevod). Údaje karty spracúva výhradne GoPay.</p>
-        <p>Kliknutím na „Aktivovať plán“ potvrdzujete súhlas s <a href="/pravne/obchodne-podmienky" target="_blank" rel="noopener" className="underline">Obchodnými podmienkami</a> a <a href="/pravne/gopay-podmienky" target="_blank" rel="noopener" className="underline">GoPay podmienkami</a>.</p>
+        <p>
+          <strong className="text-foreground">Ceny a DPH:</strong> Uvedené ceny sú bez DPH.
+          Prevádzkovateľ je platca DPH; k cene sa uplatňuje sadzba <strong>23 %</strong> (Starter 9
+          € → 11,07 € s DPH; Premium 19 € → 23,37 € s DPH).
+        </p>
+        <p>
+          <strong className="text-foreground">Automatické obnovenie:</strong> Predplatné sa po
+          skončení obdobia automaticky obnovuje, kým ho nezrušíte. Zrušiť môžete kedykoľvek —
+          prístup ostáva do konca zaplateného obdobia.
+        </p>
+        <p>
+          <strong className="text-foreground">Platba:</strong> Bezpečne cez GoPay (Visa, Mastercard,
+          3-D Secure, bankový prevod). Údaje karty spracúva výhradne GoPay.
+        </p>
+        <p>
+          Kliknutím na „Aktivovať plán“ potvrdzujete súhlas s{" "}
+          <a href="/pravne/obchodne-podmienky" target="_blank" rel="noopener" className="underline">
+            Obchodnými podmienkami
+          </a>{" "}
+          a{" "}
+          <a href="/pravne/gopay-podmienky" target="_blank" rel="noopener" className="underline">
+            GoPay podmienkami
+          </a>
+          .
+        </p>
       </div>
 
       <p className="pt-2 text-center text-xs text-muted-foreground">
-        Platby spracováva GoPay. <Link to={"/" as any} className="underline">Späť na úvod</Link>
+        Platby spracováva GoPay.{" "}
+        <Link to={"/" as any} className="underline">
+          Späť na úvod
+        </Link>
       </p>
-
     </div>
   );
 }
@@ -459,7 +505,17 @@ function planPriceFromSlug(plans: any[], slug: string | undefined) {
   return plans.find((p) => p.slug === slug)?.price_monthly_cents ?? null;
 }
 
-function UsageRow({ label, used, limit, pct }: { label: string; used: number; limit: number | null; pct: number }) {
+function UsageRow({
+  label,
+  used,
+  limit,
+  pct,
+}: {
+  label: string;
+  used: number;
+  limit: number | null;
+  pct: number;
+}) {
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between text-sm">
@@ -491,7 +547,11 @@ function FeaturePill({ enabled, label }: { enabled: boolean | undefined; label: 
 }
 
 function PlanCard({
-  p, current, loading, disabled, onSelect,
+  p,
+  current,
+  loading,
+  disabled,
+  onSelect,
 }: {
   p: any;
   current: boolean;
@@ -499,10 +559,16 @@ function PlanCard({
   disabled: boolean;
   onSelect: () => void;
 }) {
-  const icon = p.slug === "premium" ? <Crown className="h-4 w-4" />
-    : p.slug === "enterprise" ? <ShieldCheck className="h-4 w-4" />
-    : p.slug === "starter" ? <Zap className="h-4 w-4" />
-    : <CreditCard className="h-4 w-4" />;
+  const icon =
+    p.slug === "premium" ? (
+      <Crown className="h-4 w-4" />
+    ) : p.slug === "enterprise" ? (
+      <ShieldCheck className="h-4 w-4" />
+    ) : p.slug === "starter" ? (
+      <Zap className="h-4 w-4" />
+    ) : (
+      <CreditCard className="h-4 w-4" />
+    );
 
   const features: string[] = [];
   if (p.invoice_limit == null) features.push("Neobmedzené faktúry");
@@ -556,10 +622,15 @@ function PlanCard({
           disabled={disabled || current}
           onClick={onSelect}
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" />
-            : current ? "Aktuálny plán"
-            : p.slug === "enterprise" ? "Kontaktovať obchod"
-            : "Aktivovať plán"}
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : current ? (
+            "Aktuálny plán"
+          ) : p.slug === "enterprise" ? (
+            "Kontaktovať obchod"
+          ) : (
+            "Aktivovať plán"
+          )}
         </Button>
       </CardContent>
     </Card>
@@ -572,8 +643,8 @@ function LogbookPlans({ isAdminLike }: { isAdminLike: boolean }) {
       <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
         <p>
-          Predplatné pre <strong>Knihu jázd</strong> je zatiaľ dostupné na
-          vyžiadanie. Napíšte nám a aktivujeme vám vybraný plán.
+          Predplatné pre <strong>Knihu jázd</strong> je zatiaľ dostupné na vyžiadanie. Napíšte nám a
+          aktivujeme vám vybraný plán.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">

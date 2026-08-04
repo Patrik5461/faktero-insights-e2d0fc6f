@@ -1,7 +1,11 @@
 // Thin wrapper over the FinStat registry that also writes a row to
 // company_lookup_logs for each call (mapped fields + raw response).
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { lookupCompany, isRegistryConfigured, type NormalizedCompany } from "./company-registry.server";
+import {
+  lookupCompany,
+  isRegistryConfigured,
+  type NormalizedCompany,
+} from "./company-registry.server";
 
 export type LookupResult =
   | { status: "ok"; data: NormalizedCompany; provider: "finstat"; cached: boolean }
@@ -43,7 +47,9 @@ export async function lookupCompanyByIco(
     }
   }
 
-  if (res.status === "ok") return { status: "ok", data: res.data, provider: "finstat", cached: res.cached };
-  if (res.status === "not_found") return { status: "not_found", provider: "finstat", cached: res.cached };
+  if (res.status === "ok")
+    return { status: "ok", data: res.data, provider: "finstat", cached: res.cached };
+  if (res.status === "not_found")
+    return { status: "not_found", provider: "finstat", cached: res.cached };
   return { status: "error", message: res.message, provider: "finstat" };
 }

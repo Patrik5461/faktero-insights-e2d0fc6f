@@ -20,8 +20,7 @@ export const TOBIFY_SELLER = {
   country: "Slovenská republika",
   email: "info@faktero.sk",
   web: "https://www.faktero.sk",
-  registration:
-    "Obchodný register Okresného súdu Trnava, oddiel: Sro, dátum vzniku: 31. 10. 2024",
+  registration: "Obchodný register Okresného súdu Trnava, oddiel: Sro, dátum vzniku: 31. 10. 2024",
 } as const;
 
 function centsFromGrossInclVat(gross: number, vatRate = 23) {
@@ -39,9 +38,17 @@ function publicBaseUrl(): string {
 }
 
 function escapeHtml(s: string) {
-  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[c]!));
+  return String(s ?? "").replace(
+    /[&<>"']/g,
+    (c) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[c]!,
+  );
 }
 
 /**
@@ -53,7 +60,9 @@ export async function issueSubscriptionInvoiceForPayment(billingPaymentId: strin
   // 1. Načítať platbu
   const { data: bp, error: bpErr } = await supabaseAdmin
     .from("billing_payments")
-    .select("id, company_id, plan_slug, amount_cents, currency, status, provider, provider_payment_id, paid_at")
+    .select(
+      "id, company_id, plan_slug, amount_cents, currency, status, provider, provider_payment_id, paid_at",
+    )
     .eq("id", billingPaymentId)
     .maybeSingle();
   if (bpErr) throw bpErr;
@@ -90,7 +99,7 @@ export async function issueSubscriptionInvoiceForPayment(billingPaymentId: strin
 
   // 5. Sekvenčné číslo
   const { data: numRow, error: numErr } = await supabaseAdmin.rpc(
-    "next_platform_invoice_number" as any
+    "next_platform_invoice_number" as any,
   );
   if (numErr) throw numErr;
   const invoice_number = String(numRow);
@@ -233,14 +242,22 @@ async function sendActivationEmail(input: {
   });
   const bodyText = await res.text();
   let json: any = {};
-  try { json = JSON.parse(bodyText); } catch { /* ignore */ }
+  try {
+    json = JSON.parse(bodyText);
+  } catch {
+    /* ignore */
+  }
   if (!res.ok) {
     throw new Error(`Resend error: ${json?.message ?? bodyText.slice(0, 300)}`);
   }
   await supabaseAdmin.from("billing_events").insert({
     company_id: input.company_id,
     event_type: "activation_email_sent",
-    payload: { recipient, message_id: json?.id ?? null, invoice_number: input.invoiceNumber } as any,
+    payload: {
+      recipient,
+      message_id: json?.id ?? null,
+      invoice_number: input.invoiceNumber,
+    } as any,
   });
   return { sent: true as const, message_id: json?.id ?? null };
 }

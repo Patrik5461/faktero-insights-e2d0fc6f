@@ -30,10 +30,6 @@ export function Logo({ variant = "header", className }: LogoProps) {
 
   // Header variant — compact wordmark
   return (
-    <img
-      src={logoFull.url}
-      alt="Faktero"
-      className={cn("h-8 w-auto object-contain", className)}
-    />
+    <img src={logoFull.url} alt="Faktero" className={cn("h-8 w-auto object-contain", className)} />
   );
 }

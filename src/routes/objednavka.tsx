@@ -3,7 +3,17 @@ import { useEffect, useState } from "react";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Crown, Zap, ArrowRight, RefreshCw, CreditCard, Info, ShieldCheck, Lock } from "lucide-react";
+import {
+  Check,
+  Crown,
+  Zap,
+  ArrowRight,
+  RefreshCw,
+  CreditCard,
+  Info,
+  ShieldCheck,
+  Lock,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { LEGAL_COMPANY } from "@/components/faktero/LegalShell";
 
@@ -11,9 +21,17 @@ export const Route = createFileRoute("/objednavka")({
   head: () => ({
     meta: [
       { title: "Objednávka — Faktero" },
-      { name: "description", content: "Aktivujte si predplatné Faktero. Starter 9 €/mes alebo Premium 19 €/mes. Bezpečná platba cez GoPay." },
+      {
+        name: "description",
+        content:
+          "Aktivujte si predplatné Faktero. Starter 9 €/mes alebo Premium 19 €/mes. Bezpečná platba cez GoPay.",
+      },
       { property: "og:title", content: "Objednávka Faktero" },
-      { property: "og:description", content: "Aktivujte si predplatné Faktero. Starter 9 €/mes alebo Premium 19 €/mes. Bezpečná platba cez GoPay." },
+      {
+        property: "og:description",
+        content:
+          "Aktivujte si predplatné Faktero. Starter 9 €/mes alebo Premium 19 €/mes. Bezpečná platba cez GoPay.",
+      },
     ],
   }),
   component: ObjednavkaPage,
@@ -278,7 +296,11 @@ function ObjednavkaPage() {
         </div>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Máte otázky? <Link to="/kontakt" className="underline">Kontaktujte nás</Link>.
+          Máte otázky?{" "}
+          <Link to="/kontakt" className="underline">
+            Kontaktujte nás
+          </Link>
+          .
         </p>
       </section>
     </MarketingShell>

@@ -7,15 +7,12 @@ const AUTH_BASE = "https://auth.tesla.com/oauth2/v3";
 // EU Fleet API host (Slovakia/Europe accounts). Change to NA host for US accounts.
 export const FLEET_API_BASE = "https://fleet-api.prod.eu.vn.cloud.tesla.com";
 
-export const TESLA_SCOPES = [
-  "openid",
-  "offline_access",
-  "vehicle_device_data",
-  "vehicle_location",
-];
+export const TESLA_SCOPES = ["openid", "offline_access", "vehicle_device_data", "vehicle_location"];
 
 export class TeslaAuthError extends Error {
-  constructor(msg = "unauthorized") { super(msg); }
+  constructor(msg = "unauthorized") {
+    super(msg);
+  }
 }
 
 function clientCreds() {
@@ -23,7 +20,9 @@ function clientCreds() {
   const secret = process.env.TESLA_CLIENT_SECRET;
   const redirect = process.env.TESLA_REDIRECT_URI;
   if (!id || !secret || !redirect) {
-    throw new Error("Tesla integrácia nie je nakonfigurovaná. Chýbajú TESLA_CLIENT_ID / TESLA_CLIENT_SECRET / TESLA_REDIRECT_URI.");
+    throw new Error(
+      "Tesla integrácia nie je nakonfigurovaná. Chýbajú TESLA_CLIENT_ID / TESLA_CLIENT_SECRET / TESLA_REDIRECT_URI.",
+    );
   }
   return { id, secret, redirect };
 }

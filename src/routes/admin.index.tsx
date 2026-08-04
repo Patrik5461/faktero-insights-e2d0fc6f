@@ -49,15 +49,11 @@ function UsageBar({
           <Icon className="h-4 w-4" />
           {label}
         </span>
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {pct.toFixed(1)}%
-        </span>
+        <span className="text-xs tabular-nums text-muted-foreground">{pct.toFixed(1)}%</span>
       </div>
       <div className="mt-2 text-lg font-semibold tabular-nums">
         {formatBytes(used)}{" "}
-        <span className="text-sm font-normal text-muted-foreground">
-          / {formatBytes(limit)}
-        </span>
+        <span className="text-sm font-normal text-muted-foreground">/ {formatBytes(limit)}</span>
       </div>
       <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
         <div className={`h-full ${tone} transition-all`} style={{ width: `${pct}%` }} />
@@ -144,8 +140,7 @@ function AdminOverviewPage() {
     };
   }, [fetchOverview, fetchUsage]);
 
-  const suspendedCount =
-    data ? data.totalCompanies - data.activeCompanies : null;
+  const suspendedCount = data ? data.totalCompanies - data.activeCompanies : null;
 
   return (
     <>
@@ -162,42 +157,23 @@ function AdminOverviewPage() {
         {loading && !data ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-24 animate-pulse rounded-xl border border-border bg-card"
-              />
+              <div key={i} className="h-24 animate-pulse rounded-xl border border-border bg-card" />
             ))}
           </div>
         ) : data ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard icon={Building2} label="Firmy" value={data.totalCompanies} />
             <StatCard icon={Users} label="Používatelia" value={data.totalUsers} />
-            <StatCard
-              icon={CheckCircle2}
-              label="Aktívne firmy"
-              value={data.activeCompanies}
-            />
+            <StatCard icon={CheckCircle2} label="Aktívne firmy" value={data.activeCompanies} />
             <StatCard
               icon={PauseCircle}
               label="Pozastavené"
               value={suspendedCount ?? 0}
               tone={suspendedCount && suspendedCount > 0 ? "warn" : "muted"}
             />
-            <StatCard
-              icon={FileText}
-              label="Faktúry / mesiac"
-              value={data.invoicesMonth}
-            />
-            <StatCard
-              icon={Activity}
-              label="API volania / mesiac"
-              value={data.apiMonth}
-            />
-            <StatCard
-              icon={Mail}
-              label="E-maily / mesiac"
-              value={data.emailsMonth}
-            />
+            <StatCard icon={FileText} label="Faktúry / mesiac" value={data.invoicesMonth} />
+            <StatCard icon={Activity} label="API volania / mesiac" value={data.apiMonth} />
+            <StatCard icon={Mail} label="E-maily / mesiac" value={data.emailsMonth} />
             <StatCard
               icon={AlertTriangle}
               label="Zlyhané webhooky"
@@ -248,9 +224,7 @@ function AdminOverviewPage() {
                 <div className="space-y-2">
                   {usage.db.tables.slice(0, 5).map((t) => {
                     const pct =
-                      usage.db.used_bytes > 0
-                        ? (t.size_bytes / usage.db.used_bytes) * 100
-                        : 0;
+                      usage.db.used_bytes > 0 ? (t.size_bytes / usage.db.used_bytes) * 100 : 0;
                     return (
                       <div key={t.table} className="text-sm">
                         <div className="flex items-center justify-between">
@@ -269,9 +243,7 @@ function AdminOverviewPage() {
                     );
                   })}
                   {usage.db.tables.length === 0 && (
-                    <div className="text-sm text-muted-foreground">
-                      Dáta nedostupné.
-                    </div>
+                    <div className="text-sm text-muted-foreground">Dáta nedostupné.</div>
                   )}
                 </div>
               </div>
@@ -287,9 +259,7 @@ function AdminOverviewPage() {
                       key={k}
                       className="flex items-center justify-between rounded-md bg-muted/40 px-2 py-1.5"
                     >
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {k}
-                      </span>
+                      <span className="font-mono text-xs text-muted-foreground">{k}</span>
                       <span className="font-semibold tabular-nums">
                         {v.toLocaleString("sk-SK")}
                       </span>

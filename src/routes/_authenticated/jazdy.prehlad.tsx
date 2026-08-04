@@ -26,13 +26,30 @@ function OverviewPage() {
     if (!cid) return;
     const from = `${year}-01-01`;
     const to = `${year + 1}-01-01`;
-    let tQ = supabase.from("trips").select("*").eq("company_id", cid).gte("trip_date", from).lt("trip_date", to);
-    let fQ = supabase.from("fuel_records").select("*").eq("company_id", cid).gte("fuel_date", from).lt("fuel_date", to);
-    if (vehicle_id) { tQ = tQ.eq("vehicle_id", vehicle_id); fQ = fQ.eq("vehicle_id", vehicle_id); }
+    let tQ = supabase
+      .from("trips")
+      .select("*")
+      .eq("company_id", cid)
+      .gte("trip_date", from)
+      .lt("trip_date", to);
+    let fQ = supabase
+      .from("fuel_records")
+      .select("*")
+      .eq("company_id", cid)
+      .gte("fuel_date", from)
+      .lt("fuel_date", to);
+    if (vehicle_id) {
+      tQ = tQ.eq("vehicle_id", vehicle_id);
+      fQ = fQ.eq("vehicle_id", vehicle_id);
+    }
     Promise.all([
       tQ,
       fQ,
-      supabase.from("vehicles").select("id, name, license_plate").eq("company_id", cid).order("name"),
+      supabase
+        .from("vehicles")
+        .select("id, name, license_plate")
+        .eq("company_id", cid)
+        .order("name"),
     ]).then(([t, f, v]) => {
       setTrips(t.data ?? []);
       setFuel(f.data ?? []);
@@ -42,7 +59,9 @@ function OverviewPage() {
 
   const vehicleMap = useMemo(() => {
     const m: any = {};
-    vehicles.forEach((v) => { m[v.id] = v; });
+    vehicles.forEach((v) => {
+      m[v.id] = v;
+    });
     return m;
   }, [vehicles]);
 
@@ -57,11 +76,13 @@ function OverviewPage() {
   // Avg speed across trips that have duration
   const withDur = trips.filter((t) => Number(t.duration_seconds) > 0);
   const avgSpeed = withDur.length
-    ? (withDur.reduce((a, t) => a + Number(t.distance_km), 0) /
-       (withDur.reduce((a, t) => a + Number(t.duration_seconds), 0) / 3600))
+    ? withDur.reduce((a, t) => a + Number(t.distance_km), 0) /
+      (withDur.reduce((a, t) => a + Number(t.duration_seconds), 0) / 3600)
     : 0;
   // Business vs private (purpose containing "súkrom" = private)
-  const privKm = trips.filter((t) => /súkrom/i.test(String(t.purpose ?? ""))).reduce((a, t) => a + Number(t.distance_km), 0);
+  const privKm = trips
+    .filter((t) => /súkrom/i.test(String(t.purpose ?? "")))
+    .reduce((a, t) => a + Number(t.distance_km), 0);
   const bizKm = kmYear - privKm;
   const tripCount = trips.length;
 
@@ -71,12 +92,14 @@ function OverviewPage() {
     trips.forEach((t) => {
       const k = t.vehicle_id;
       m[k] = m[k] ?? { trips: 0, km: 0, cost: 0, liters: 0 };
-      m[k].trips += 1; m[k].km += Number(t.distance_km);
+      m[k].trips += 1;
+      m[k].km += Number(t.distance_km);
     });
     fuel.forEach((f) => {
       const k = f.vehicle_id;
       m[k] = m[k] ?? { trips: 0, km: 0, cost: 0, liters: 0 };
-      m[k].cost += Number(f.total_amount); m[k].liters += Number(f.liters);
+      m[k].cost += Number(f.total_amount);
+      m[k].liters += Number(f.liters);
     });
     return m;
   }, [trips, fuel]);
@@ -88,29 +111,60 @@ function OverviewPage() {
       const k = String(i).padStart(2, "0");
       m[k] = { km: 0, trips: 0, cost: 0, liters: 0 };
     }
-    trips.forEach((t) => { const k = t.trip_date.slice(5, 7); if (m[k]) { m[k].km += Number(t.distance_km); m[k].trips += 1; } });
-    fuel.forEach((f) => { const k = f.fuel_date.slice(5, 7); if (m[k]) { m[k].cost += Number(f.total_amount); m[k].liters += Number(f.liters); } });
+    trips.forEach((t) => {
+      const k = t.trip_date.slice(5, 7);
+      if (m[k]) {
+        m[k].km += Number(t.distance_km);
+        m[k].trips += 1;
+      }
+    });
+    fuel.forEach((f) => {
+      const k = f.fuel_date.slice(5, 7);
+      if (m[k]) {
+        m[k].cost += Number(f.total_amount);
+        m[k].liters += Number(f.liters);
+      }
+    });
     return m;
   }, [trips, fuel]);
 
   return (
     <>
-      <PageHeader title="Prehľad a reporty"
+      <PageHeader
+        title="Prehľad a reporty"
         description="Mesačné a ročné súhrny jázd, spotreby a nákladov."
         action={
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={vehicle_id ?? ""}
-              onChange={(e) => navigate({ search: (prev: any) => ({ ...prev, vehicle_id: e.target.value || undefined }) })}
+              onChange={(e) =>
+                navigate({
+                  search: (prev: any) => ({ ...prev, vehicle_id: e.target.value || undefined }),
+                })
+              }
               className="rounded-md border border-border bg-card px-3 py-2 text-sm"
             >
               <option value="">Všetky vozidlá</option>
               {vehicles.map((v) => (
-                <option key={v.id} value={v.id}>{v.name}{v.license_plate ? ` — ${v.license_plate}` : ""}</option>
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                  {v.license_plate ? ` — ${v.license_plate}` : ""}
+                </option>
               ))}
             </select>
-            <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="rounded-md border border-border bg-card px-3 py-2 text-sm">
-              {[0, 1, 2].map((d) => { const y = new Date().getFullYear() - d; return <option key={y} value={y}>{y}</option>; })}
+            <select
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              className="rounded-md border border-border bg-card px-3 py-2 text-sm"
+            >
+              {[0, 1, 2].map((d) => {
+                const y = new Date().getFullYear() - d;
+                return (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                );
+              })}
             </select>
           </div>
         }
@@ -119,7 +173,11 @@ function OverviewPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Stat icon={RouteIcon} label={`Celkové km ${year}`} value={`${kmYear.toFixed(1)} km`} />
           <Stat icon={Car} label="Počet jázd" value={`${tripCount}`} />
-          <Stat icon={Gauge} label="Priemerná rýchlosť" value={avgSpeed > 0 ? `${avgSpeed.toFixed(0)} km/h` : "—"} />
+          <Stat
+            icon={Gauge}
+            label="Priemerná rýchlosť"
+            value={avgSpeed > 0 ? `${avgSpeed.toFixed(0)} km/h` : "—"}
+          />
           <Stat icon={RouteIcon} label="Km tento mesiac" value={`${kmMonth.toFixed(1)} km`} />
           <Stat icon={Briefcase} label="Služobné km" value={`${bizKm.toFixed(1)} km`} />
           <Stat icon={User} label="Súkromné km" value={`${privKm.toFixed(1)} km`} />
@@ -127,16 +185,26 @@ function OverviewPage() {
           <Stat icon={Wallet} label={`Náklady PHM ${year}`} value={`${fuelCost.toFixed(2)} €`} />
         </div>
 
-        <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">Mesačný report {year}</h2>
+        <h2 className="mt-8 mb-3 text-sm font-semibold uppercase tracking-wide">
+          Mesačný report {year}
+        </h2>
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr><th className="p-3">Mesiac</th><th className="p-3 text-right">Jazdy</th><th className="p-3 text-right">Km</th><th className="p-3 text-right">PHM (l)</th><th className="p-3 text-right">Náklady (€)</th></tr>
+              <tr>
+                <th className="p-3">Mesiac</th>
+                <th className="p-3 text-right">Jazdy</th>
+                <th className="p-3 text-right">Km</th>
+                <th className="p-3 text-right">PHM (l)</th>
+                <th className="p-3 text-right">Náklady (€)</th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {Object.entries(byMonth).map(([m, v]) => (
                 <tr key={m}>
-                  <td className="p-3">{m}/{year}</td>
+                  <td className="p-3">
+                    {m}/{year}
+                  </td>
                   <td className="p-3 text-right tabular-nums">{v.trips}</td>
                   <td className="p-3 text-right tabular-nums">{v.km.toFixed(1)}</td>
                   <td className="p-3 text-right tabular-nums">{v.liters.toFixed(1)}</td>
@@ -151,19 +219,36 @@ function OverviewPage() {
         <div className="overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <tr><th className="p-3">Vozidlo</th><th className="p-3 text-right">Jazdy</th><th className="p-3 text-right">Km</th><th className="p-3 text-right">PHM (l)</th><th className="p-3 text-right">Náklady (€)</th></tr>
+              <tr>
+                <th className="p-3">Vozidlo</th>
+                <th className="p-3 text-right">Jazdy</th>
+                <th className="p-3 text-right">Km</th>
+                <th className="p-3 text-right">PHM (l)</th>
+                <th className="p-3 text-right">Náklady (€)</th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {Object.entries(byVehicle).map(([id, v]) => (
                 <tr key={id}>
-                  <td className="p-3">{vehicleMap[id]?.name ?? "—"} <span className="text-xs text-muted-foreground">{vehicleMap[id]?.license_plate}</span></td>
+                  <td className="p-3">
+                    {vehicleMap[id]?.name ?? "—"}{" "}
+                    <span className="text-xs text-muted-foreground">
+                      {vehicleMap[id]?.license_plate}
+                    </span>
+                  </td>
                   <td className="p-3 text-right tabular-nums">{v.trips}</td>
                   <td className="p-3 text-right tabular-nums">{v.km.toFixed(1)}</td>
                   <td className="p-3 text-right tabular-nums">{v.liters.toFixed(1)}</td>
                   <td className="p-3 text-right tabular-nums">{v.cost.toFixed(2)}</td>
                 </tr>
               ))}
-              {Object.keys(byVehicle).length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Žiadne dáta.</td></tr>}
+              {Object.keys(byVehicle).length === 0 && (
+                <tr>
+                  <td colSpan={5} className="p-6 text-center text-muted-foreground">
+                    Žiadne dáta.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

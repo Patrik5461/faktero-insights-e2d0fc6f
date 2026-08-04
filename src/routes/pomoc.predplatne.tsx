@@ -5,7 +5,10 @@ export const Route = createFileRoute("/pomoc/predplatne")({
   head: () => ({
     meta: [
       { title: "Pomoc — Predplatné — Faktero" },
-      { name: "description", content: "Trial, obnovovanie, GoPay platba, zmena plánu a zrušenie predplatného Faktero." },
+      {
+        name: "description",
+        content: "Trial, obnovovanie, GoPay platba, zmena plánu a zrušenie predplatného Faktero.",
+      },
       { property: "og:title", content: "Pomoc — Predplatné — Faktero" },
       { property: "og:description", content: "Ako funguje predplatné a fakturácia Faktera." },
       { property: "og:url", content: "https://faktero.sk/pomoc/predplatne" },
@@ -21,8 +24,13 @@ const sections: HelpSection[] = [
     title: "Skúšobné obdobie (trial)",
     body: (
       <>
-        <p>Po registrácii dostáva každá firma <strong>2 mesiace zadarmo na pláne Premium</strong> (60 dní). Počas trialu môžete využívať všetky funkcie bez obmedzenia.</p>
-        <p>Trial sa <strong>nepredlžuje automaticky</strong> a nepýtame si platobné údaje vopred.</p>
+        <p>
+          Po registrácii dostáva každá firma <strong>2 mesiace zadarmo na pláne Premium</strong> (60
+          dní). Počas trialu môžete využívať všetky funkcie bez obmedzenia.
+        </p>
+        <p>
+          Trial sa <strong>nepredlžuje automaticky</strong> a nepýtame si platobné údaje vopred.
+        </p>
       </>
     ),
   },
@@ -31,7 +39,10 @@ const sections: HelpSection[] = [
     title: "Automatické obnovovanie",
     body: (
       <>
-        <p>Po aktivácii plateného plánu sa predplatné obnovuje <strong>každý mesiac</strong> v deň aktivácie. Karta sa strhne automaticky cez GoPay.</p>
+        <p>
+          Po aktivácii plateného plánu sa predplatné obnovuje <strong>každý mesiac</strong> v deň
+          aktivácie. Karta sa strhne automaticky cez GoPay.
+        </p>
         <p>3 dni pred obnovou vám pošleme pripomienku emailom.</p>
       </>
     ),
@@ -41,8 +52,14 @@ const sections: HelpSection[] = [
     title: "GoPay platba predplatného",
     body: (
       <>
-        <p>Predplatné Faktera platíte cez <strong>GoPay opakovanú platbu</strong>. Po prvej úspešnej platbe sa kartové údaje uložia priamo u GoPay (Faktero ich nikdy nevidí).</p>
-        <p>Daňový doklad za predplatné nájdete v sekcii <Link to="/nastavenia/predplatne">Nastavenia → Predplatné</Link>.</p>
+        <p>
+          Predplatné Faktera platíte cez <strong>GoPay opakovanú platbu</strong>. Po prvej úspešnej
+          platbe sa kartové údaje uložia priamo u GoPay (Faktero ich nikdy nevidí).
+        </p>
+        <p>
+          Daňový doklad za predplatné nájdete v sekcii{" "}
+          <Link to="/nastavenia/predplatne">Nastavenia → Predplatné</Link>.
+        </p>
       </>
     ),
   },
@@ -51,10 +68,17 @@ const sections: HelpSection[] = [
     title: "Zmena plánu",
     body: (
       <>
-        <p>Plán môžete kedykoľvek zmeniť v <Link to="/nastavenia/predplatne">Nastaveniach predplatného</Link>.</p>
+        <p>
+          Plán môžete kedykoľvek zmeniť v{" "}
+          <Link to="/nastavenia/predplatne">Nastaveniach predplatného</Link>.
+        </p>
         <ul>
-          <li><strong>Upgrade</strong> sa aktivuje okamžite, rozdiel sa pripočíta pomerne.</li>
-          <li><strong>Downgrade</strong> sa aktivuje od ďalšieho fakturačného obdobia.</li>
+          <li>
+            <strong>Upgrade</strong> sa aktivuje okamžite, rozdiel sa pripočíta pomerne.
+          </li>
+          <li>
+            <strong>Downgrade</strong> sa aktivuje od ďalšieho fakturačného obdobia.
+          </li>
         </ul>
       </>
     ),
@@ -64,8 +88,13 @@ const sections: HelpSection[] = [
     title: "Zrušenie predplatného",
     body: (
       <>
-        <p>V Nastaveniach predplatného kliknite na <strong>Zrušiť predplatné</strong>. Zostáva vám aktívne do konca už zaplateného obdobia, potom prejde do <em>read-only</em> režimu.</p>
-        <p>Vaše dáta sa <strong>neodstránia</strong> — kedykoľvek sa môžete vrátiť a obnoviť plán.</p>
+        <p>
+          V Nastaveniach predplatného kliknite na <strong>Zrušiť predplatné</strong>. Zostáva vám
+          aktívne do konca už zaplateného obdobia, potom prejde do <em>read-only</em> režimu.
+        </p>
+        <p>
+          Vaše dáta sa <strong>neodstránia</strong> — kedykoľvek sa môžete vrátiť a obnoviť plán.
+        </p>
       </>
     ),
   },
@@ -76,10 +105,18 @@ const sections: HelpSection[] = [
       <>
         <p>Ak si nevyberiete platený plán do uplynutia 60 dní:</p>
         <ul>
-          <li>Účet <strong>automaticky prejde na plán Starter</strong> — aplikácia zostáva plne funkčná.</li>
-          <li>Prémiové funkcie (API, webhooky, import zo SuperFaktúry, audit log) sa vypnú, kým si nezvolíte Premium.</li>
+          <li>
+            Účet <strong>automaticky prejde na plán Starter</strong> — aplikácia zostáva plne
+            funkčná.
+          </li>
+          <li>
+            Prémiové funkcie (API, webhooky, import zo SuperFaktúry, audit log) sa vypnú, kým si
+            nezvolíte Premium.
+          </li>
           <li>3 dni pred koncom trialu vám pošleme pripomienku emailom.</li>
-          <li>Kedykoľvek si môžete aktivovať vyšší plán a všetko pokračuje tam, kde ste skončili.</li>
+          <li>
+            Kedykoľvek si môžete aktivovať vyšší plán a všetko pokračuje tam, kde ste skončili.
+          </li>
         </ul>
       </>
     ),

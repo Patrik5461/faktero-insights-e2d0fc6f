@@ -35,7 +35,8 @@ export const getSupabaseUsage = createServerFn({ method: "GET" })
 
     // ── DB size + tables ────────────────────────────────────────────
     let dbSizeBytes = 0;
-    let tables: Array<{ schema: string; table: string; size_bytes: number; size_pretty: string }> = [];
+    let tables: Array<{ schema: string; table: string; size_bytes: number; size_pretty: string }> =
+      [];
     try {
       const { data, error } = await supabaseAdmin.rpc("admin_db_usage_stats" as any);
       if (error) throw error;
@@ -84,9 +85,7 @@ export const getSupabaseUsage = createServerFn({ method: "GET" })
     await Promise.all(
       ROW_COUNT_TABLES.map(async (t) => {
         try {
-          const { count } = await supabaseAdmin
-            .from(t)
-            .select("*", { count: "exact", head: true });
+          const { count } = await supabaseAdmin.from(t).select("*", { count: "exact", head: true });
           rowCounts[t] = count ?? 0;
         } catch {
           rowCounts[t] = 0;

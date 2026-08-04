@@ -12,10 +12,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const exportMigrationBundle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin, error: adminErr } = await context.supabase.rpc(
-      "is_platform_admin",
-      { _user_id: context.userId },
-    );
+    const { data: isAdmin, error: adminErr } = await context.supabase.rpc("is_platform_admin", {
+      _user_id: context.userId,
+    });
     if (adminErr) throw new Error(`admin check failed: ${adminErr.message}`);
     if (!isAdmin) throw new Error("Forbidden: platform admin only");
 
@@ -55,7 +54,10 @@ export const exportMigrationBundle = createServerFn({ method: "POST" })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const storage: Record<string, any[]> = {};
 
-    async function listAll(bucket: string, prefix = ""): Promise<Array<{ path: string; size: number | null; mimetype: string | null }>> {
+    async function listAll(
+      bucket: string,
+      prefix = "",
+    ): Promise<Array<{ path: string; size: number | null; mimetype: string | null }>> {
       const out: Array<{ path: string; size: number | null; mimetype: string | null }> = [];
       let offset = 0;
       const limit = 1000;
@@ -88,13 +90,21 @@ export const exportMigrationBundle = createServerFn({ method: "POST" })
 
     for (const bucket of buckets) {
       const objects = await listAll(bucket);
-      const withUrls: Array<{ path: string; size: number | null; mimetype: string | null; signedUrl: string }> = [];
+      const withUrls: Array<{
+        path: string;
+        size: number | null;
+        mimetype: string | null;
+        signedUrl: string;
+      }> = [];
       // Sign in batches of 100
       for (let i = 0; i < objects.length; i += 100) {
         const slice = objects.slice(i, i + 100);
         const { data: signed, error: signErr } = await supabaseAdmin.storage
           .from(bucket)
-          .createSignedUrls(slice.map((o) => o.path), 60 * 60 * 6); // 6 hours
+          .createSignedUrls(
+            slice.map((o) => o.path),
+            60 * 60 * 6,
+          ); // 6 hours
         if (signErr) throw new Error(`sign ${bucket}: ${signErr.message}`);
         for (let j = 0; j < slice.length; j += 1) {
           const s = signed?.[j];

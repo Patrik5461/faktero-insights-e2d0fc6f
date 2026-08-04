@@ -17,7 +17,11 @@ export const Route = createFileRoute("/sitemap.xml")({
         );
 
         const { data } = await supabase.from("seo_pages" as any).select("path,priority,updated_at");
-        const rows = (data ?? []) as Array<{ path: string; priority: number | null; updated_at: string }>;
+        const rows = (data ?? []) as Array<{
+          path: string;
+          priority: number | null;
+          updated_at: string;
+        }>;
 
         // Ensure default set present
         const defaults = [
@@ -47,7 +51,10 @@ export const Route = createFileRoute("/sitemap.xml")({
         }
 
         const urls = Array.from(map.entries())
-          .filter(([p]) => !EXCLUDED_EXACT.includes(p) && !EXCLUDED_PREFIXES.some((pref) => p.startsWith(pref)))
+          .filter(
+            ([p]) =>
+              !EXCLUDED_EXACT.includes(p) && !EXCLUDED_PREFIXES.some((pref) => p.startsWith(pref)),
+          )
           .map(([path, meta]) => {
             const parts = [
               `    <loc>${BASE_URL}${path}</loc>`,

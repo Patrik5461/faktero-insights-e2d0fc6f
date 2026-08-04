@@ -23,10 +23,7 @@ function requireEnv(name: string): string {
 }
 
 export function getRedirectUri(): string {
-  return (
-    process.env.GOOGLE_SEO_REDIRECT_URI ??
-    "https://www.faktero.sk/api/admin/seo/callback"
-  );
+  return process.env.GOOGLE_SEO_REDIRECT_URI ?? "https://www.faktero.sk/api/admin/seo/callback";
 }
 
 // -------- State signing (CSRF + carries type) --------
@@ -107,7 +104,8 @@ export async function exchangeCodeForToken(code: string): Promise<GoogleTokenRes
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-  if (!resp.ok) throw new Error(`Google token exchange failed: ${resp.status} ${await resp.text()}`);
+  if (!resp.ok)
+    throw new Error(`Google token exchange failed: ${resp.status} ${await resp.text()}`);
   return (await resp.json()) as GoogleTokenResponse;
 }
 
@@ -169,7 +167,8 @@ export async function saveConnection(params: {
       .eq("id", (existing as any).id);
     if (error) throw error;
   } else {
-    if (!row.refresh_token_enc) throw new Error("Missing refresh_token from Google (re-consent required)");
+    if (!row.refresh_token_enc)
+      throw new Error("Missing refresh_token from Google (re-consent required)");
     const { error } = await supabase.from("google_seo_connections" as any).insert(row);
     if (error) throw error;
   }
@@ -232,7 +231,10 @@ export async function setCached(key: string, value: unknown, ttlSeconds = 3600):
 
 export async function invalidateCache(prefix: string): Promise<void> {
   const supabase = await admin();
-  await supabase.from("seo_cache" as any).delete().like("cache_key", `${prefix}%`);
+  await supabase
+    .from("seo_cache" as any)
+    .delete()
+    .like("cache_key", `${prefix}%`);
 }
 
 // -------- Google Search Console API --------

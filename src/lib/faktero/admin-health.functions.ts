@@ -31,9 +31,7 @@ function envCheck(key: string, required = true, placeholderHint = false): Check 
   const raw = process.env[key];
   const present = !!raw && raw.trim().length > 0;
   const looksPlaceholder =
-    present &&
-    placeholderHint &&
-    (/^[.…]+$/.test(raw!.trim()) || raw!.trim().length < 8);
+    present && placeholderHint && (/^[.…]+$/.test(raw!.trim()) || raw!.trim().length < 8);
   if (!present) {
     return {
       key,
@@ -67,7 +65,12 @@ export const getSystemHealth = createServerFn({ method: "GET" })
         .select("id", { count: "exact", head: true });
       const ms = Date.now() - dbStart;
       if (error) {
-        checks.push({ key: "db", label: "Databáza (Supabase)", status: "fail", message: error.message });
+        checks.push({
+          key: "db",
+          label: "Databáza (Supabase)",
+          status: "fail",
+          message: error.message,
+        });
       } else {
         checks.push({
           key: "db",
@@ -78,7 +81,12 @@ export const getSystemHealth = createServerFn({ method: "GET" })
         });
       }
     } catch (e: any) {
-      checks.push({ key: "db", label: "Databáza (Supabase)", status: "fail", message: e?.message ?? "Chyba pripojenia" });
+      checks.push({
+        key: "db",
+        label: "Databáza (Supabase)",
+        status: "fail",
+        message: e?.message ?? "Chyba pripojenia",
+      });
     }
 
     // ── 2. Auth admin API ────────────────────────────────────────────────
@@ -91,7 +99,12 @@ export const getSystemHealth = createServerFn({ method: "GET" })
         message: error ? error.message : `Dostupné (${data?.users?.length ?? 0} test)`,
       });
     } catch (e: any) {
-      checks.push({ key: "auth_admin", label: "Supabase Auth Admin API", status: "fail", message: e?.message ?? "Nedostupné" });
+      checks.push({
+        key: "auth_admin",
+        label: "Supabase Auth Admin API",
+        status: "fail",
+        message: e?.message ?? "Nedostupné",
+      });
     }
 
     // ── 3. Core secrets ──────────────────────────────────────────────────
@@ -113,7 +126,8 @@ export const getSystemHealth = createServerFn({ method: "GET" })
         key: "service_role_any",
         label: "Service role key",
         status: "fail",
-        message: "Žiadny service role key nie je nastavený (SUPABASE_SERVICE_ROLE_KEY ani FAKTERO_…)",
+        message:
+          "Žiadny service role key nie je nastavený (SUPABASE_SERVICE_ROLE_KEY ani FAKTERO_…)",
       });
     }
 
@@ -139,7 +153,11 @@ export const getSystemHealth = createServerFn({ method: "GET" })
         key: `int_${i.key}`,
         label: i.label,
         status: !present ? "warn" : placeholder ? "warn" : "ok",
-        message: !present ? "Nenastavené" : placeholder ? "Placeholder hodnota — funkcia nebude fungovať" : "Nastavené",
+        message: !present
+          ? "Nenastavené"
+          : placeholder
+            ? "Placeholder hodnota — funkcia nebude fungovať"
+            : "Nastavené",
       });
     }
 
@@ -154,7 +172,12 @@ export const getSystemHealth = createServerFn({ method: "GET" })
         meta: { buckets: (buckets ?? []).map((b: any) => b.name) },
       });
     } catch (e: any) {
-      checks.push({ key: "storage", label: "Supabase Storage", status: "warn", message: e?.message ?? "Nedostupné" });
+      checks.push({
+        key: "storage",
+        label: "Supabase Storage",
+        status: "warn",
+        message: e?.message ?? "Nedostupné",
+      });
     }
 
     // ── 6. Recent errors (last 24h) ──────────────────────────────────────
@@ -187,7 +210,8 @@ export const getSystemHealth = createServerFn({ method: "GET" })
       checks.push({
         key: "webhooks_failed_24h",
         label: "Zlyhané webhooky (24h)",
-        status: (webhookFail.count ?? 0) === 0 ? "ok" : (webhookFail.count ?? 0) > 20 ? "fail" : "warn",
+        status:
+          (webhookFail.count ?? 0) === 0 ? "ok" : (webhookFail.count ?? 0) > 20 ? "fail" : "warn",
         message: `${webhookFail.count ?? 0} záznamov`,
         meta: { count: webhookFail.count ?? 0 },
       });
@@ -199,7 +223,12 @@ export const getSystemHealth = createServerFn({ method: "GET" })
         meta: { count: emailFail.count ?? 0 },
       });
     } catch (e: any) {
-      checks.push({ key: "errors_24h", label: "Posledné chyby", status: "warn", message: e?.message ?? "Nedostupné" });
+      checks.push({
+        key: "errors_24h",
+        label: "Posledné chyby",
+        status: "warn",
+        message: e?.message ?? "Nedostupné",
+      });
     }
 
     // ── 7. Recurring invoices cron ───────────────────────────────────────
@@ -211,7 +240,12 @@ export const getSystemHealth = createServerFn({ method: "GET" })
         .limit(1)
         .maybeSingle();
       if (!lastRun) {
-        checks.push({ key: "cron", label: "Recurring cron", status: "info", message: "Zatiaľ žiadny beh" });
+        checks.push({
+          key: "cron",
+          label: "Recurring cron",
+          status: "info",
+          message: "Zatiaľ žiadny beh",
+        });
       } else {
         const ageH = (Date.now() - new Date((lastRun as any).created_at).getTime()) / 3600000;
         checks.push({
@@ -222,41 +256,47 @@ export const getSystemHealth = createServerFn({ method: "GET" })
         });
       }
     } catch {
-      checks.push({ key: "cron", label: "Recurring cron", status: "info", message: "Tabuľka behu nedostupná" });
+      checks.push({
+        key: "cron",
+        label: "Recurring cron",
+        status: "info",
+        message: "Tabuľka behu nedostupná",
+      });
     }
 
     // ── 8. eFaktúra status ───────────────────────────────────────────────
     try {
-      const [profiles, docs24, sent24, failed24, rejected24, pending, received24] = await Promise.all([
-        supabaseAdmin.from("efaktura_profiles").select("id", { count: "exact", head: true }),
-        supabaseAdmin
-          .from("efaktura_documents")
-          .select("id", { count: "exact", head: true })
-          .gte("created_at", since24h),
-        supabaseAdmin
-          .from("efaktura_deliveries")
-          .select("id", { count: "exact", head: true })
-          .in("status", ["sent", "accepted", "delivered"])
-          .gte("created_at", since24h),
-        supabaseAdmin
-          .from("efaktura_deliveries")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "failed")
-          .gte("created_at", since24h),
-        supabaseAdmin
-          .from("efaktura_deliveries")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "rejected")
-          .gte("created_at", since24h),
-        supabaseAdmin
-          .from("efaktura_deliveries")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "pending"),
-        supabaseAdmin
-          .from("efaktura_received_documents")
-          .select("id", { count: "exact", head: true })
-          .gte("created_at", since24h),
-      ]);
+      const [profiles, docs24, sent24, failed24, rejected24, pending, received24] =
+        await Promise.all([
+          supabaseAdmin.from("efaktura_profiles").select("id", { count: "exact", head: true }),
+          supabaseAdmin
+            .from("efaktura_documents")
+            .select("id", { count: "exact", head: true })
+            .gte("created_at", since24h),
+          supabaseAdmin
+            .from("efaktura_deliveries")
+            .select("id", { count: "exact", head: true })
+            .in("status", ["sent", "accepted", "delivered"])
+            .gte("created_at", since24h),
+          supabaseAdmin
+            .from("efaktura_deliveries")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "failed")
+            .gte("created_at", since24h),
+          supabaseAdmin
+            .from("efaktura_deliveries")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "rejected")
+            .gte("created_at", since24h),
+          supabaseAdmin
+            .from("efaktura_deliveries")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "pending"),
+          supabaseAdmin
+            .from("efaktura_received_documents")
+            .select("id", { count: "exact", head: true })
+            .gte("created_at", since24h),
+        ]);
 
       checks.push({
         key: "efa_profiles",
@@ -301,7 +341,12 @@ export const getSystemHealth = createServerFn({ method: "GET" })
         message: `${received24.count ?? 0} dokladov`,
       });
     } catch (e: any) {
-      checks.push({ key: "efa_status", label: "eFaktúra status", status: "warn", message: e?.message ?? "Nedostupné" });
+      checks.push({
+        key: "efa_status",
+        label: "eFaktúra status",
+        status: "warn",
+        message: e?.message ?? "Nedostupné",
+      });
     }
 
     // ── Summary ──────────────────────────────────────────────────────────

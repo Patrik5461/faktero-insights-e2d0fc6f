@@ -19,12 +19,16 @@ export async function nextQuoteNumber(company_id: string): Promise<string> {
   return `${prefix}${String(next).padStart(4, "0")}`;
 }
 
-export function computeQuoteTotals(items: { quantity: number; unit_price: number; vat_rate: number }[]) {
-  let subtotal = 0, vat_total = 0;
+export function computeQuoteTotals(
+  items: { quantity: number; unit_price: number; vat_rate: number }[],
+) {
+  let subtotal = 0,
+    vat_total = 0;
   const enriched = items.map((it) => {
     const line = +(Number(it.quantity) * Number(it.unit_price)).toFixed(2);
     const vat = +((line * Number(it.vat_rate)) / 100).toFixed(2);
-    subtotal += line; vat_total += vat;
+    subtotal += line;
+    vat_total += vat;
     return { subtotal: line, vat_amount: vat, total: +(line + vat).toFixed(2) };
   });
   return {

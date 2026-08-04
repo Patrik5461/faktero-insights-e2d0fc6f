@@ -36,22 +36,51 @@ type Ctx = {
 async function buildCompanyContext(supabase: any, companyId: string): Promise<Ctx> {
   const today = new Date().toISOString().slice(0, 10);
 
-  const [companyRes, overdueRes, draftsRes, unsentRes, customersRes, webhookRes, recurringRes] = await Promise.all([
-    supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
-    supabase.from("invoices").select("id,number,total,customer_name,due_date,status,issue_date")
-      .eq("company_id", companyId).in("status", ["sent", "overdue", "issued"]).lt("due_date", today).is("deleted_at", null).limit(50),
-    supabase.from("invoices").select("id", { count: "exact", head: true })
-      .eq("company_id", companyId).eq("status", "draft").is("deleted_at", null),
-    supabase.from("invoices").select("id", { count: "exact", head: true })
-      .eq("company_id", companyId).eq("status", "issued").is("deleted_at", null),
-    supabase.from("invoices").select("customer_name,total,status")
-      .eq("company_id", companyId).in("status", ["sent", "overdue", "issued"]).is("deleted_at", null).limit(500),
-    supabase.from("webhook_delivery_logs").select("id", { count: "exact", head: true })
-      .eq("company_id", companyId).gte("status_code", 400).gte("created_at", new Date(Date.now() - 30 * 86400000).toISOString()),
-    supabase.from("recurring_invoices").select("id,name,next_run_at,customer_name")
-      .eq("company_id", companyId).eq("active", true).is("deleted_at", null)
-      .lte("next_run_at", new Date(Date.now() + 14 * 86400000).toISOString()).limit(20),
-  ]);
+  const [companyRes, overdueRes, draftsRes, unsentRes, customersRes, webhookRes, recurringRes] =
+    await Promise.all([
+      supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
+      supabase
+        .from("invoices")
+        .select("id,number,total,customer_name,due_date,status,issue_date")
+        .eq("company_id", companyId)
+        .in("status", ["sent", "overdue", "issued"])
+        .lt("due_date", today)
+        .is("deleted_at", null)
+        .limit(50),
+      supabase
+        .from("invoices")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .eq("status", "draft")
+        .is("deleted_at", null),
+      supabase
+        .from("invoices")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .eq("status", "issued")
+        .is("deleted_at", null),
+      supabase
+        .from("invoices")
+        .select("customer_name,total,status")
+        .eq("company_id", companyId)
+        .in("status", ["sent", "overdue", "issued"])
+        .is("deleted_at", null)
+        .limit(500),
+      supabase
+        .from("webhook_delivery_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", companyId)
+        .gte("status_code", 400)
+        .gte("created_at", new Date(Date.now() - 30 * 86400000).toISOString()),
+      supabase
+        .from("recurring_invoices")
+        .select("id,name,next_run_at,customer_name")
+        .eq("company_id", companyId)
+        .eq("active", true)
+        .is("deleted_at", null)
+        .lte("next_run_at", new Date(Date.now() + 14 * 86400000).toISOString())
+        .limit(20),
+    ]);
 
   const company = companyRes.data;
   const overdue = overdueRes.data ?? [];
@@ -60,7 +89,9 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
     if (!r.customer_name) return;
     debtorMap.set(r.customer_name, (debtorMap.get(r.customer_name) ?? 0) + Number(r.total ?? 0));
   });
-  const topDebtors = [...debtorMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5)
+  const topDebtors = [...debtorMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
     .map(([name, total]) => ({ name, total }));
 
   const missingCompanyFields: string[] = [];
@@ -73,12 +104,22 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
   }
 
   return {
-    company: company ? {
-      name: company.name, ico: company.ico, dic: company.dic, ic_dph: company.ic_dph,
-      city: company.city, country: company.country, iban: company.iban,
-    } : null,
+    company: company
+      ? {
+          name: company.name,
+          ico: company.ico,
+          dic: company.dic,
+          ic_dph: company.ic_dph,
+          city: company.city,
+          country: company.country,
+          iban: company.iban,
+        }
+      : null,
     overdueInvoices: overdue.map((i: any) => ({
-      number: i.number, total: i.total, customer: i.customer_name, due_date: i.due_date,
+      number: i.number,
+      total: i.total,
+      customer: i.customer_name,
+      due_date: i.due_date,
     })),
     unpaidTotal: overdue.reduce((s: number, i: any) => s + Number(i.total ?? 0), 0),
     topDebtors,
@@ -86,7 +127,9 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
     unsentInvoices: unsentRes.count ?? 0,
     failedWebhooks: webhookRes.count ?? 0,
     recurringDueSoon: (recurringRes.data ?? []).map((r: any) => ({
-      name: r.name, customer: r.customer_name, next_run_at: r.next_run_at,
+      name: r.name,
+      customer: r.customer_name,
+      next_run_at: r.next_run_at,
     })),
     missingCompanyFields,
   };
@@ -112,7 +155,11 @@ export const createConversationFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("ai_conversations")
-      .insert({ company_id: data.companyId, user_id: context.userId, title: data.title || "Nová konverzácia" })
+      .insert({
+        company_id: data.companyId,
+        user_id: context.userId,
+        title: data.title || "Nová konverzácia",
+      })
       .select("id,title,created_at,updated_at")
       .single();
     if (error) throw new Error(error.message);
@@ -150,7 +197,9 @@ export const sendChatFn = createServerFn({ method: "POST" })
 
     // Insert user message
     await context.supabase.from("ai_messages").insert({
-      conversation_id: data.conversationId, role: "user", content: data.content,
+      conversation_id: data.conversationId,
+      role: "user",
+      content: data.content,
     });
 
     // Build context
@@ -181,7 +230,8 @@ ${JSON.stringify(ctx, null, 2)}`;
       body: JSON.stringify({ model, messages }),
     });
 
-    if (res.status === 429) throw new Error("Prekročený limit požiadaviek na AI. Skúste o chvíľu znova.");
+    if (res.status === 429)
+      throw new Error("Prekročený limit požiadaviek na AI. Skúste o chvíľu znova.");
     if (res.status === 401) throw new Error("OpenAI API kľúč je neplatný.");
     if (!res.ok) {
       const t = await res.text();
@@ -190,9 +240,15 @@ ${JSON.stringify(ctx, null, 2)}`;
     const json: any = await res.json();
     const reply = json?.choices?.[0]?.message?.content ?? "Bez odpovede.";
 
-    const { data: stored } = await context.supabase.from("ai_messages").insert({
-      conversation_id: data.conversationId, role: "assistant", content: reply,
-    }).select("id,role,content,created_at").single();
+    const { data: stored } = await context.supabase
+      .from("ai_messages")
+      .insert({
+        conversation_id: data.conversationId,
+        role: "assistant",
+        content: reply,
+      })
+      .select("id,role,content,created_at")
+      .single();
 
     // Update conversation title if first exchange
     const { count } = await context.supabase
@@ -201,11 +257,13 @@ ${JSON.stringify(ctx, null, 2)}`;
       .eq("conversation_id", data.conversationId);
     if ((count ?? 0) <= 2) {
       const title = data.content.slice(0, 60);
-      await context.supabase.from("ai_conversations")
+      await context.supabase
+        .from("ai_conversations")
         .update({ title, updated_at: new Date().toISOString() })
         .eq("id", data.conversationId);
     } else {
-      await context.supabase.from("ai_conversations")
+      await context.supabase
+        .from("ai_conversations")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", data.conversationId);
     }

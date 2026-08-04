@@ -32,8 +32,11 @@ export function PlanGateBanner({ companyId }: { companyId: string | null }) {
   if (!plan.is_active) {
     return (
       <Banner tone="destructive" icon={<AlertTriangle className="h-4 w-4" />}>
-        <strong>Predplatné je neaktívne.</strong> Aplikácia je v režime len na čítanie — môžete prezerať a sťahovať PDF, no nemôžete vytvárať nové záznamy.{" "}
-        <Link to="/predplatne" className="underline">Aktivovať plán</Link>
+        <strong>Predplatné je neaktívne.</strong> Aplikácia je v režime len na čítanie — môžete
+        prezerať a sťahovať PDF, no nemôžete vytvárať nové záznamy.{" "}
+        <Link to="/predplatne" className="underline">
+          Aktivovať plán
+        </Link>
       </Banner>
     );
   }
@@ -42,8 +45,11 @@ export function PlanGateBanner({ companyId }: { companyId: string | null }) {
   if ((plan as any).is_post_trial_free) {
     return (
       <Banner tone="warning" icon={<Clock className="h-4 w-4" />}>
-        <strong>Váš 2-mesačný trial skončil.</strong> Účet pokračuje na bezplatnom pláne Starter. Pre plný prístup k Premium funkciám si aktivujte plán.{" "}
-        <Link to="/predplatne" className="underline">Vybrať plán</Link>
+        <strong>Váš 2-mesačný trial skončil.</strong> Účet pokračuje na bezplatnom pláne Starter.
+        Pre plný prístup k Premium funkciám si aktivujte plán.{" "}
+        <Link to="/predplatne" className="underline">
+          Vybrať plán
+        </Link>
       </Banner>
     );
   }
@@ -52,8 +58,11 @@ export function PlanGateBanner({ companyId }: { companyId: string | null }) {
   if (plan.is_trialing && plan.trial_days_left != null && plan.trial_days_left <= 3) {
     return (
       <Banner tone="warning" icon={<Clock className="h-4 w-4" />}>
-        <strong>Skúšobná verzia končí</strong> o {plan.trial_days_left} {plDni(plan.trial_days_left)}.{" "}
-        <Link to="/predplatne" className="underline">Aktivovať plán</Link>
+        <strong>Skúšobná verzia končí</strong> o {plan.trial_days_left}{" "}
+        {plDni(plan.trial_days_left)}.{" "}
+        <Link to="/predplatne" className="underline">
+          Aktivovať plán
+        </Link>
       </Banner>
     );
   }
@@ -61,21 +70,34 @@ export function PlanGateBanner({ companyId }: { companyId: string | null }) {
   // 3. Invoice limit reached
   const used = billing?.usage?.invoices_this_month ?? 0;
   const limit = plan.invoice_limit;
-  if (limit != null && used >= limit && (pathname.startsWith("/faktury") || pathname.startsWith("/dashboard"))) {
+  if (
+    limit != null &&
+    used >= limit &&
+    (pathname.startsWith("/faktury") || pathname.startsWith("/dashboard"))
+  ) {
     return (
       <Banner tone="destructive" icon={<AlertTriangle className="h-4 w-4" />}>
         <strong>Limit faktúr dosiahnutý</strong> ({used}/{limit} tento mesiac).{" "}
-        <Link to="/predplatne" className="underline">Prejsť na vyšší plán</Link>
+        <Link to="/predplatne" className="underline">
+          Prejsť na vyšší plán
+        </Link>
       </Banner>
     );
   }
 
   // 4. Feature not on plan
-  if ((pathname.startsWith("/api-kluce") || pathname.startsWith("/api-dokumentacia") || pathname.startsWith("/api-playground")) && !plan.api_enabled) {
+  if (
+    (pathname.startsWith("/api-kluce") ||
+      pathname.startsWith("/api-dokumentacia") ||
+      pathname.startsWith("/api-playground")) &&
+    !plan.api_enabled
+  ) {
     return (
       <Banner tone="warning" icon={<Zap className="h-4 w-4" />}>
         <strong>API nie je dostupné na pláne {plan.plan_name}.</strong>{" "}
-        <Link to="/predplatne" className="underline">Prejsť na Business alebo vyšší</Link>
+        <Link to="/predplatne" className="underline">
+          Prejsť na Business alebo vyšší
+        </Link>
       </Banner>
     );
   }
@@ -83,7 +105,9 @@ export function PlanGateBanner({ companyId }: { companyId: string | null }) {
     return (
       <Banner tone="warning" icon={<Zap className="h-4 w-4" />}>
         <strong>Webhooky nie sú dostupné na pláne {plan.plan_name}.</strong>{" "}
-        <Link to="/predplatne" className="underline">Prejsť na vyšší plán</Link>
+        <Link to="/predplatne" className="underline">
+          Prejsť na vyšší plán
+        </Link>
       </Banner>
     );
   }
@@ -91,7 +115,9 @@ export function PlanGateBanner({ companyId }: { companyId: string | null }) {
     return (
       <Banner tone="warning" icon={<Zap className="h-4 w-4" />}>
         <strong>Opakované faktúry nie sú dostupné na pláne {plan.plan_name}.</strong>{" "}
-        <Link to="/predplatne" className="underline">Prejsť na vyšší plán</Link>
+        <Link to="/predplatne" className="underline">
+          Prejsť na vyšší plán
+        </Link>
       </Banner>
     );
   }
