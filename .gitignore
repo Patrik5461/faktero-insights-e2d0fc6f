@@ -16,6 +16,12 @@ dist-ssr
 .nitro
 *.local
 
+# Secrets — nikdy necommitovať. Master kópia je na VM v ~/faktero-secrets.env,
+# .env sa z nej generuje pri deployi.
+.env
+.env.*
+!.env.example
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
