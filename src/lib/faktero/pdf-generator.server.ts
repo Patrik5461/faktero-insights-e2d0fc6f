@@ -116,7 +116,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
 
   // Logo
   let headerLogoBottom = y;
-  if (input.logoBytes && input.logoMime) {
+  if (input.logoBytes && input.logoMime && (company as any).invoice_show_logo !== false) {
     try {
       const img = input.logoMime.includes("png")
         ? await doc.embedPng(input.logoBytes)
