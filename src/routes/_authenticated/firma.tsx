@@ -183,6 +183,22 @@ function CompanyPage() {
               </Link>
             </div>
           </div>
+          <div className="sm:col-span-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="font-medium">Vzhľad faktúry</div>
+                <div className="text-xs text-muted-foreground">
+                  Logo, farba akcentu a pätička na PDF faktúrach.
+                </div>
+              </div>
+              <Link
+                to="/nastavenia/vzhlad-faktury"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+              >
+                Otvoriť editor
+              </Link>
+            </div>
+          </div>
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
