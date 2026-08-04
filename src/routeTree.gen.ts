@@ -129,6 +129,7 @@ import { Route as AuthenticatedPonukyNovaRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPonukyIdRouteImport } from './routes/_authenticated/ponuky.$id'
 import { Route as AuthenticatedOpakovaneNovaRouteImport } from './routes/_authenticated/opakovane.nova'
 import { Route as AuthenticatedOpakovaneIdRouteImport } from './routes/_authenticated/opakovane.$id'
+import { Route as AuthenticatedNastaveniaVzhladFakturyRouteImport } from './routes/_authenticated/nastavenia.vzhlad-faktury'
 import { Route as AuthenticatedNastaveniaOnlinePlatbyRouteImport } from './routes/_authenticated/nastavenia.online-platby'
 import { Route as AuthenticatedNastaveniaEmailSablonyRouteImport } from './routes/_authenticated/nastavenia.email-sablony'
 import { Route as AuthenticatedJazdyVozidlaRouteImport } from './routes/_authenticated/jazdy.vozidla'
@@ -821,6 +822,12 @@ const AuthenticatedOpakovaneIdRoute =
     path: '/opakovane/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedNastaveniaVzhladFakturyRoute =
+  AuthenticatedNastaveniaVzhladFakturyRouteImport.update({
+    id: '/vzhlad-faktury',
+    path: '/vzhlad-faktury',
+    getParentRoute: () => AuthenticatedNastaveniaRoute,
+  } as any)
 const AuthenticatedNastaveniaOnlinePlatbyRoute =
   AuthenticatedNastaveniaOnlinePlatbyRouteImport.update({
     id: '/online-platby',
@@ -1258,6 +1265,7 @@ export interface FileRoutesByFullPath {
   '/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
   '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  '/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
@@ -1431,6 +1439,7 @@ export interface FileRoutesByTo {
   '/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
   '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  '/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
@@ -1614,6 +1623,7 @@ export interface FileRoutesById {
   '/_authenticated/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
   '/_authenticated/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/_authenticated/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  '/_authenticated/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/_authenticated/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/_authenticated/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/_authenticated/ponuky/$id': typeof AuthenticatedPonukyIdRoute
@@ -1797,6 +1807,7 @@ export interface FileRouteTypes {
     | '/jazdy/vozidla'
     | '/nastavenia/email-sablony'
     | '/nastavenia/online-platby'
+    | '/nastavenia/vzhlad-faktury'
     | '/opakovane/$id'
     | '/opakovane/nova'
     | '/ponuky/$id'
@@ -1970,6 +1981,7 @@ export interface FileRouteTypes {
     | '/jazdy/vozidla'
     | '/nastavenia/email-sablony'
     | '/nastavenia/online-platby'
+    | '/nastavenia/vzhlad-faktury'
     | '/opakovane/$id'
     | '/opakovane/nova'
     | '/ponuky/$id'
@@ -2152,6 +2164,7 @@ export interface FileRouteTypes {
     | '/_authenticated/jazdy/vozidla'
     | '/_authenticated/nastavenia/email-sablony'
     | '/_authenticated/nastavenia/online-platby'
+    | '/_authenticated/nastavenia/vzhlad-faktury'
     | '/_authenticated/opakovane/$id'
     | '/_authenticated/opakovane/nova'
     | '/_authenticated/ponuky/$id'
@@ -3146,6 +3159,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOpakovaneIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/nastavenia/vzhlad-faktury': {
+      id: '/_authenticated/nastavenia/vzhlad-faktury'
+      path: '/vzhlad-faktury'
+      fullPath: '/nastavenia/vzhlad-faktury'
+      preLoaderRoute: typeof AuthenticatedNastaveniaVzhladFakturyRouteImport
+      parentRoute: typeof AuthenticatedNastaveniaRoute
+    }
     '/_authenticated/nastavenia/online-platby': {
       id: '/_authenticated/nastavenia/online-platby'
       path: '/online-platby'
@@ -3591,6 +3611,7 @@ const AuthenticatedEfakturaRouteWithChildren =
 interface AuthenticatedNastaveniaRouteChildren {
   AuthenticatedNastaveniaEmailSablonyRoute: typeof AuthenticatedNastaveniaEmailSablonyRoute
   AuthenticatedNastaveniaOnlinePlatbyRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  AuthenticatedNastaveniaVzhladFakturyRoute: typeof AuthenticatedNastaveniaVzhladFakturyRoute
 }
 
 const AuthenticatedNastaveniaRouteChildren: AuthenticatedNastaveniaRouteChildren =
@@ -3599,6 +3620,8 @@ const AuthenticatedNastaveniaRouteChildren: AuthenticatedNastaveniaRouteChildren
       AuthenticatedNastaveniaEmailSablonyRoute,
     AuthenticatedNastaveniaOnlinePlatbyRoute:
       AuthenticatedNastaveniaOnlinePlatbyRoute,
+    AuthenticatedNastaveniaVzhladFakturyRoute:
+      AuthenticatedNastaveniaVzhladFakturyRoute,
   }
 
 const AuthenticatedNastaveniaRouteWithChildren =
@@ -4134,13 +4157,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -216,9 +216,12 @@ const NAV: NavGroup[] = [
     match: ["/firma", "/firmy", "/predplatne", "/nastavenia", "/diagnostika"],
     children: [
       { to: "/firma", label: "Firma" },
+      { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry" },
+      { to: "/nastavenia/email-sablony", label: "Email šablóny" },
       { to: "/firmy", label: "Správa firiem" },
       { to: "/predplatne", label: "Predplatné" },
       { to: "/nastavenia/online-platby", label: "Online platby" },
+
       { to: "/nastavenia", label: "Nastavenia systému" },
       { to: "/diagnostika", label: "Diagnostika" },
     ],
