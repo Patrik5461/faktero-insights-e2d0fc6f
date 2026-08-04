@@ -50,7 +50,7 @@ function InvoiceAppearancePage() {
     supabase
       .from("companies")
       .select("*")
-      .eq("id", companyId)
+      .eq("id", companyId!)
       .single()
       .then(({ data }) => setC(data));
   }, [companyId]);
@@ -92,7 +92,7 @@ function InvoiceAppearancePage() {
     const { error: upErr } = await supabase
       .from("companies")
       .update({ logo_url: path })
-      .eq("id", companyId);
+      .eq("id", companyId!);
     setUploading(false);
     if (upErr) return toast.error(upErr.message);
     if (old && old !== path) await supabase.storage.from("company-logos").remove([old]);
@@ -105,7 +105,7 @@ function InvoiceAppearancePage() {
     const { error } = await supabase
       .from("companies")
       .update({ logo_url: null })
-      .eq("id", companyId);
+      .eq("id", companyId!);
     if (error) return toast.error(error.message);
     if (old) await supabase.storage.from("company-logos").remove([old]);
     setC({ ...c, logo_url: null });
@@ -121,7 +121,7 @@ function InvoiceAppearancePage() {
         invoice_show_logo: c.invoice_show_logo ?? true,
         invoice_footer: c.invoice_footer ?? null,
       } as any)
-      .eq("id", companyId);
+      .eq("id", companyId!);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Uložené — nové PDF sa vygenerujú s týmto vzhľadom.");
