@@ -72,7 +72,6 @@ import { Route as AuthenticatedProduktyRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedPredplatneRouteImport } from './routes/_authenticated/predplatne'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedOdberateliaRouteImport } from './routes/_authenticated/odberatelia'
-import { Route as AuthenticatedNastaveniaRouteImport } from './routes/_authenticated/nastavenia'
 import { Route as AuthenticatedFirmyRouteImport } from './routes/_authenticated/firmy'
 import { Route as AuthenticatedFirmaRouteImport } from './routes/_authenticated/firma'
 import { Route as AuthenticatedExportyRouteImport } from './routes/_authenticated/exporty'
@@ -89,6 +88,7 @@ import { Route as AuthenticatedSkladIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPrijateFakturyIndexRouteImport } from './routes/_authenticated/prijate-faktury.index'
 import { Route as AuthenticatedPonukyIndexRouteImport } from './routes/_authenticated/ponuky.index'
 import { Route as AuthenticatedOpakovaneIndexRouteImport } from './routes/_authenticated/opakovane.index'
+import { Route as AuthenticatedNastaveniaIndexRouteImport } from './routes/_authenticated/nastavenia.index'
 import { Route as AuthenticatedJazdyIndexRouteImport } from './routes/_authenticated/jazdy.index'
 import { Route as AuthenticatedImportyIndexRouteImport } from './routes/_authenticated/importy.index'
 import { Route as AuthenticatedFakturyIndexRouteImport } from './routes/_authenticated/faktury.index'
@@ -508,11 +508,6 @@ const AuthenticatedOdberateliaRoute =
     path: '/odberatelia',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedNastaveniaRoute = AuthenticatedNastaveniaRouteImport.update({
-  id: '/nastavenia',
-  path: '/nastavenia',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedFirmyRoute = AuthenticatedFirmyRouteImport.update({
   id: '/firmy',
   path: '/firmy',
@@ -598,6 +593,12 @@ const AuthenticatedOpakovaneIndexRoute =
   AuthenticatedOpakovaneIndexRouteImport.update({
     id: '/opakovane/',
     path: '/opakovane/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedNastaveniaIndexRoute =
+  AuthenticatedNastaveniaIndexRouteImport.update({
+    id: '/nastavenia/',
+    path: '/nastavenia/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedJazdyIndexRoute = AuthenticatedJazdyIndexRouteImport.update({
@@ -824,21 +825,21 @@ const AuthenticatedOpakovaneIdRoute =
   } as any)
 const AuthenticatedNastaveniaVzhladFakturyRoute =
   AuthenticatedNastaveniaVzhladFakturyRouteImport.update({
-    id: '/vzhlad-faktury',
-    path: '/vzhlad-faktury',
-    getParentRoute: () => AuthenticatedNastaveniaRoute,
+    id: '/nastavenia/vzhlad-faktury',
+    path: '/nastavenia/vzhlad-faktury',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedNastaveniaOnlinePlatbyRoute =
   AuthenticatedNastaveniaOnlinePlatbyRouteImport.update({
-    id: '/online-platby',
-    path: '/online-platby',
-    getParentRoute: () => AuthenticatedNastaveniaRoute,
+    id: '/nastavenia/online-platby',
+    path: '/nastavenia/online-platby',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedNastaveniaEmailSablonyRoute =
   AuthenticatedNastaveniaEmailSablonyRouteImport.update({
-    id: '/email-sablony',
-    path: '/email-sablony',
-    getParentRoute: () => AuthenticatedNastaveniaRoute,
+    id: '/nastavenia/email-sablony',
+    path: '/nastavenia/email-sablony',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedJazdyVozidlaRoute =
   AuthenticatedJazdyVozidlaRouteImport.update({
@@ -1195,7 +1196,6 @@ export interface FileRoutesByFullPath {
   '/exporty': typeof AuthenticatedExportyRoute
   '/firma': typeof AuthenticatedFirmaRoute
   '/firmy': typeof AuthenticatedFirmyRoute
-  '/nastavenia': typeof AuthenticatedNastaveniaRouteWithChildren
   '/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/predplatne': typeof AuthenticatedPredplatneRoute
@@ -1306,6 +1306,7 @@ export interface FileRoutesByFullPath {
   '/faktury/': typeof AuthenticatedFakturyIndexRoute
   '/importy/': typeof AuthenticatedImportyIndexRoute
   '/jazdy/': typeof AuthenticatedJazdyIndexRoute
+  '/nastavenia/': typeof AuthenticatedNastaveniaIndexRoute
   '/opakovane/': typeof AuthenticatedOpakovaneIndexRoute
   '/ponuky/': typeof AuthenticatedPonukyIndexRoute
   '/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
@@ -1371,7 +1372,6 @@ export interface FileRoutesByTo {
   '/exporty': typeof AuthenticatedExportyRoute
   '/firma': typeof AuthenticatedFirmaRoute
   '/firmy': typeof AuthenticatedFirmyRoute
-  '/nastavenia': typeof AuthenticatedNastaveniaRouteWithChildren
   '/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/predplatne': typeof AuthenticatedPredplatneRoute
@@ -1480,6 +1480,7 @@ export interface FileRoutesByTo {
   '/faktury': typeof AuthenticatedFakturyIndexRoute
   '/importy': typeof AuthenticatedImportyIndexRoute
   '/jazdy': typeof AuthenticatedJazdyIndexRoute
+  '/nastavenia': typeof AuthenticatedNastaveniaIndexRoute
   '/opakovane': typeof AuthenticatedOpakovaneIndexRoute
   '/ponuky': typeof AuthenticatedPonukyIndexRoute
   '/prijate-faktury': typeof AuthenticatedPrijateFakturyIndexRoute
@@ -1553,7 +1554,6 @@ export interface FileRoutesById {
   '/_authenticated/exporty': typeof AuthenticatedExportyRoute
   '/_authenticated/firma': typeof AuthenticatedFirmaRoute
   '/_authenticated/firmy': typeof AuthenticatedFirmyRoute
-  '/_authenticated/nastavenia': typeof AuthenticatedNastaveniaRouteWithChildren
   '/_authenticated/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/predplatne': typeof AuthenticatedPredplatneRoute
@@ -1664,6 +1664,7 @@ export interface FileRoutesById {
   '/_authenticated/faktury/': typeof AuthenticatedFakturyIndexRoute
   '/_authenticated/importy/': typeof AuthenticatedImportyIndexRoute
   '/_authenticated/jazdy/': typeof AuthenticatedJazdyIndexRoute
+  '/_authenticated/nastavenia/': typeof AuthenticatedNastaveniaIndexRoute
   '/_authenticated/opakovane/': typeof AuthenticatedOpakovaneIndexRoute
   '/_authenticated/ponuky/': typeof AuthenticatedPonukyIndexRoute
   '/_authenticated/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
@@ -1737,7 +1738,6 @@ export interface FileRouteTypes {
     | '/exporty'
     | '/firma'
     | '/firmy'
-    | '/nastavenia'
     | '/odberatelia'
     | '/onboarding'
     | '/predplatne'
@@ -1848,6 +1848,7 @@ export interface FileRouteTypes {
     | '/faktury/'
     | '/importy/'
     | '/jazdy/'
+    | '/nastavenia/'
     | '/opakovane/'
     | '/ponuky/'
     | '/prijate-faktury/'
@@ -1913,7 +1914,6 @@ export interface FileRouteTypes {
     | '/exporty'
     | '/firma'
     | '/firmy'
-    | '/nastavenia'
     | '/odberatelia'
     | '/onboarding'
     | '/predplatne'
@@ -2022,6 +2022,7 @@ export interface FileRouteTypes {
     | '/faktury'
     | '/importy'
     | '/jazdy'
+    | '/nastavenia'
     | '/opakovane'
     | '/ponuky'
     | '/prijate-faktury'
@@ -2094,7 +2095,6 @@ export interface FileRouteTypes {
     | '/_authenticated/exporty'
     | '/_authenticated/firma'
     | '/_authenticated/firmy'
-    | '/_authenticated/nastavenia'
     | '/_authenticated/odberatelia'
     | '/_authenticated/onboarding'
     | '/_authenticated/predplatne'
@@ -2205,6 +2205,7 @@ export interface FileRouteTypes {
     | '/_authenticated/faktury/'
     | '/_authenticated/importy/'
     | '/_authenticated/jazdy/'
+    | '/_authenticated/nastavenia/'
     | '/_authenticated/opakovane/'
     | '/_authenticated/ponuky/'
     | '/_authenticated/prijate-faktury/'
@@ -2760,13 +2761,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOdberateliaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/nastavenia': {
-      id: '/_authenticated/nastavenia'
-      path: '/nastavenia'
-      fullPath: '/nastavenia'
-      preLoaderRoute: typeof AuthenticatedNastaveniaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/firmy': {
       id: '/_authenticated/firmy'
       path: '/firmy'
@@ -2877,6 +2871,13 @@ declare module '@tanstack/react-router' {
       path: '/opakovane'
       fullPath: '/opakovane/'
       preLoaderRoute: typeof AuthenticatedOpakovaneIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nastavenia/': {
+      id: '/_authenticated/nastavenia/'
+      path: '/nastavenia'
+      fullPath: '/nastavenia/'
+      preLoaderRoute: typeof AuthenticatedNastaveniaIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/jazdy/': {
@@ -3161,24 +3162,24 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/nastavenia/vzhlad-faktury': {
       id: '/_authenticated/nastavenia/vzhlad-faktury'
-      path: '/vzhlad-faktury'
+      path: '/nastavenia/vzhlad-faktury'
       fullPath: '/nastavenia/vzhlad-faktury'
       preLoaderRoute: typeof AuthenticatedNastaveniaVzhladFakturyRouteImport
-      parentRoute: typeof AuthenticatedNastaveniaRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/nastavenia/online-platby': {
       id: '/_authenticated/nastavenia/online-platby'
-      path: '/online-platby'
+      path: '/nastavenia/online-platby'
       fullPath: '/nastavenia/online-platby'
       preLoaderRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRouteImport
-      parentRoute: typeof AuthenticatedNastaveniaRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/nastavenia/email-sablony': {
       id: '/_authenticated/nastavenia/email-sablony'
-      path: '/email-sablony'
+      path: '/nastavenia/email-sablony'
       fullPath: '/nastavenia/email-sablony'
       preLoaderRoute: typeof AuthenticatedNastaveniaEmailSablonyRouteImport
-      parentRoute: typeof AuthenticatedNastaveniaRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/jazdy/vozidla': {
       id: '/_authenticated/jazdy/vozidla'
@@ -3608,27 +3609,6 @@ const AuthenticatedEfakturaRouteWithChildren =
     AuthenticatedEfakturaRouteChildren,
   )
 
-interface AuthenticatedNastaveniaRouteChildren {
-  AuthenticatedNastaveniaEmailSablonyRoute: typeof AuthenticatedNastaveniaEmailSablonyRoute
-  AuthenticatedNastaveniaOnlinePlatbyRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRoute
-  AuthenticatedNastaveniaVzhladFakturyRoute: typeof AuthenticatedNastaveniaVzhladFakturyRoute
-}
-
-const AuthenticatedNastaveniaRouteChildren: AuthenticatedNastaveniaRouteChildren =
-  {
-    AuthenticatedNastaveniaEmailSablonyRoute:
-      AuthenticatedNastaveniaEmailSablonyRoute,
-    AuthenticatedNastaveniaOnlinePlatbyRoute:
-      AuthenticatedNastaveniaOnlinePlatbyRoute,
-    AuthenticatedNastaveniaVzhladFakturyRoute:
-      AuthenticatedNastaveniaVzhladFakturyRoute,
-  }
-
-const AuthenticatedNastaveniaRouteWithChildren =
-  AuthenticatedNastaveniaRoute._addFileChildren(
-    AuthenticatedNastaveniaRouteChildren,
-  )
-
 interface AuthenticatedSkladPohybyRouteChildren {
   AuthenticatedSkladPohybyIdRoute: typeof AuthenticatedSkladPohybyIdRoute
 }
@@ -3772,7 +3752,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedExportyRoute: typeof AuthenticatedExportyRoute
   AuthenticatedFirmaRoute: typeof AuthenticatedFirmaRoute
   AuthenticatedFirmyRoute: typeof AuthenticatedFirmyRoute
-  AuthenticatedNastaveniaRoute: typeof AuthenticatedNastaveniaRouteWithChildren
   AuthenticatedOdberateliaRoute: typeof AuthenticatedOdberateliaRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedPredplatneRoute: typeof AuthenticatedPredplatneRoute
@@ -3798,6 +3777,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedJazdyNovaRoute: typeof AuthenticatedJazdyNovaRoute
   AuthenticatedJazdyPrehladRoute: typeof AuthenticatedJazdyPrehladRoute
   AuthenticatedJazdyVozidlaRoute: typeof AuthenticatedJazdyVozidlaRoute
+  AuthenticatedNastaveniaEmailSablonyRoute: typeof AuthenticatedNastaveniaEmailSablonyRoute
+  AuthenticatedNastaveniaOnlinePlatbyRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  AuthenticatedNastaveniaVzhladFakturyRoute: typeof AuthenticatedNastaveniaVzhladFakturyRoute
   AuthenticatedOpakovaneIdRoute: typeof AuthenticatedOpakovaneIdRoute
   AuthenticatedOpakovaneNovaRoute: typeof AuthenticatedOpakovaneNovaRoute
   AuthenticatedPonukyIdRoute: typeof AuthenticatedPonukyIdRoute
@@ -3810,6 +3792,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFakturyIndexRoute: typeof AuthenticatedFakturyIndexRoute
   AuthenticatedImportyIndexRoute: typeof AuthenticatedImportyIndexRoute
   AuthenticatedJazdyIndexRoute: typeof AuthenticatedJazdyIndexRoute
+  AuthenticatedNastaveniaIndexRoute: typeof AuthenticatedNastaveniaIndexRoute
   AuthenticatedOpakovaneIndexRoute: typeof AuthenticatedOpakovaneIndexRoute
   AuthenticatedPonukyIndexRoute: typeof AuthenticatedPonukyIndexRoute
   AuthenticatedPrijateFakturyIndexRoute: typeof AuthenticatedPrijateFakturyIndexRoute
@@ -3827,7 +3810,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedExportyRoute: AuthenticatedExportyRoute,
   AuthenticatedFirmaRoute: AuthenticatedFirmaRoute,
   AuthenticatedFirmyRoute: AuthenticatedFirmyRoute,
-  AuthenticatedNastaveniaRoute: AuthenticatedNastaveniaRouteWithChildren,
   AuthenticatedOdberateliaRoute: AuthenticatedOdberateliaRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedPredplatneRoute: AuthenticatedPredplatneRoute,
@@ -3855,6 +3837,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedJazdyNovaRoute: AuthenticatedJazdyNovaRoute,
   AuthenticatedJazdyPrehladRoute: AuthenticatedJazdyPrehladRoute,
   AuthenticatedJazdyVozidlaRoute: AuthenticatedJazdyVozidlaRoute,
+  AuthenticatedNastaveniaEmailSablonyRoute:
+    AuthenticatedNastaveniaEmailSablonyRoute,
+  AuthenticatedNastaveniaOnlinePlatbyRoute:
+    AuthenticatedNastaveniaOnlinePlatbyRoute,
+  AuthenticatedNastaveniaVzhladFakturyRoute:
+    AuthenticatedNastaveniaVzhladFakturyRoute,
   AuthenticatedOpakovaneIdRoute: AuthenticatedOpakovaneIdRoute,
   AuthenticatedOpakovaneNovaRoute: AuthenticatedOpakovaneNovaRoute,
   AuthenticatedPonukyIdRoute: AuthenticatedPonukyIdRoute,
@@ -3867,6 +3855,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFakturyIndexRoute: AuthenticatedFakturyIndexRoute,
   AuthenticatedImportyIndexRoute: AuthenticatedImportyIndexRoute,
   AuthenticatedJazdyIndexRoute: AuthenticatedJazdyIndexRoute,
+  AuthenticatedNastaveniaIndexRoute: AuthenticatedNastaveniaIndexRoute,
   AuthenticatedOpakovaneIndexRoute: AuthenticatedOpakovaneIndexRoute,
   AuthenticatedPonukyIndexRoute: AuthenticatedPonukyIndexRoute,
   AuthenticatedPrijateFakturyIndexRoute: AuthenticatedPrijateFakturyIndexRoute,
