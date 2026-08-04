@@ -269,7 +269,8 @@ function resolveView(productMode: ProductMode, activeProduct: ActiveProduct): Ac
 
 function filterNav(view: ActiveProduct): NavGroup[] {
   const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
-  return NAV.filter((g) => allowed.has(g.key));
+  // "nastavenia" je spoločné pre oba produkty
+  return NAV.filter((g) => allowed.has(g.key) || g.key === "nastavenia");
 }
 
 export function AppShell({
