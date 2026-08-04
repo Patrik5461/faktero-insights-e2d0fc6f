@@ -73,7 +73,7 @@ export function CookieConsentBanner() {
         { document_type: "cookies", version: LEGAL_VERSION },
       ];
 
-      await recordAcceptance({ data: { user_id: user.id, documents } });
+      await recordAcceptance({ data: { documents } });
       saveConsent({ ...consent, recorded: true });
     } catch (err) {
       console.error("[CookieConsent] failed to record acceptance", err);

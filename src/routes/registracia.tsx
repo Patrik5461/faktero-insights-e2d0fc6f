@@ -26,11 +26,10 @@ function RegisterPage() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptGdpr, setAcceptGdpr] = useState(false);
 
-  async function persistAcceptances(userId: string) {
+  async function persistAcceptances() {
     try {
       await recordLegalAcceptance({
         data: {
-          user_id: userId,
           documents: [
             { document_type: "obchodne-podmienky", version: LEGAL_VERSION },
             { document_type: "gdpr", version: LEGAL_VERSION },
@@ -60,7 +59,7 @@ function RegisterPage() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    if (data.user?.id) await persistAcceptances(data.user.id);
+    if (data.user?.id) await persistAcceptances();
     toast.success("Účet vytvorený. Pokračujte do nastavenia firmy.");
     navigate({ to: "/onboarding" });
   }
