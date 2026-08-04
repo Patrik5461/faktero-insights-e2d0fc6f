@@ -1,3 +1,9 @@
+# POZOR: autoritatívny správca balíkov projektu je npm (package-lock.json).
+# Deploy aj build bežia cez `npm install` / `npm run build`, bun na VM nie je
+# nainštalovaný a bun.lock bol odstránený, lebo pinoval zraniteľný xlsx@0.18.5.
+# Nastavenia nižšie sa uplatnia len ak niekto lokálne inštaluje cez bun —
+# potom si najprv vygeneruje vlastný bun.lock z aktuálneho package.json.
+
 [install]
 # 24h supply-chain guard: skip package versions published less than a day ago.
 minimumReleaseAge = 86400
