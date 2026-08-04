@@ -15,6 +15,21 @@ function b64ToBytes(b64: string): Uint8Array {
 const ROBOTO_REGULAR_BYTES = b64ToBytes(RobotoRegularBase64);
 const ROBOTO_BOLD_BYTES = b64ToBytes(RobotoBoldBase64);
 
+/** "#0F7A4D" | "0F7A4D" -> pdf-lib rgb(); null on invalid input. */
+function hexToRgb(hex?: string | null) {
+  if (!hex) return null;
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+}
+
+function darken(c: ReturnType<typeof rgb>, amount = 0.25) {
+  const k = 1 - amount;
+  return rgb(c.red * k, c.green * k, c.blue * k);
+}
+
+
 export type InvoicePdfInput = {
   company: any;
   invoice: any;
