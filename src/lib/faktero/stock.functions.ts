@@ -364,14 +364,12 @@ export const getStockDashboard = createServerFn({ method: "POST" })
       total_items: (items ?? []).length,
       total_value: totalValue,
       below_min_count: belowMin.length,
-      below_min_items: belowMin
-        .slice(0, 10)
-        .map((it) => ({
-          id: it.id,
-          sku: it.sku,
-          min: Number(it.min_stock),
-          current: levelMap.get(it.id) ?? 0,
-        })),
+      below_min_items: belowMin.slice(0, 10).map((it) => ({
+        id: it.id,
+        sku: it.sku,
+        min: Number(it.min_stock),
+        current: levelMap.get(it.id) ?? 0,
+      })),
       recent_movements: movements ?? [],
     };
   });

@@ -9,7 +9,7 @@ import { formatDuration, formatSpeed, sourceLabel } from "@/lib/faktero/trip-for
 
 export const Route = createFileRoute("/_authenticated/jazdy/")({
   head: () => ({ meta: [{ title: "Kniha jázd — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { vehicle_id?: string } => ({
     vehicle_id: typeof s.vehicle_id === "string" && s.vehicle_id ? s.vehicle_id : undefined,
   }),
   component: TripsPage,
@@ -32,7 +32,7 @@ type Trip = {
 
 function TripsPage() {
   const { vehicle_id } = Route.useSearch();
-  const navigate = useNavigate({ from: "/jazdy" });
+  const navigate = useNavigate({ from: "/jazdy/" });
   const [rows, setRows] = useState<Trip[]>([]);
   const [vehicleList, setVehicleList] = useState<
     Array<{ id: string; name: string; license_plate: string | null }>

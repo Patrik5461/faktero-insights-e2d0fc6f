@@ -7,7 +7,7 @@ import { Car, Route as RouteIcon, Fuel, Wallet, Gauge, Briefcase, User } from "l
 
 export const Route = createFileRoute("/_authenticated/jazdy/prehlad")({
   head: () => ({ meta: [{ title: "Prehľad jázd — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { vehicle_id?: string } => ({
     vehicle_id: typeof s.vehicle_id === "string" && s.vehicle_id ? s.vehicle_id : undefined,
   }),
   component: OverviewPage,

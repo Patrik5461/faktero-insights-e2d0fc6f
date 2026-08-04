@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sklad/pohyby")({
   head: () => ({ meta: [{ title: "Skladové pohyby — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { stock_item_id?: string } => ({
     stock_item_id: typeof s.stock_item_id === "string" ? s.stock_item_id : undefined,
   }),
   component: MovementsPage,

@@ -536,7 +536,8 @@ http_response_code(200);`}
                   <UserPlus className="h-4 w-4" /> Vytvoriť účet zdarma
                 </Link>
                 <Link
-                  to="/vyvojari/playground"
+                  to="/vyvojari/$slug"
+                  params={{ slug: "playground" }}
                   className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-secondary"
                 >
                   <PlayCircle className="h-4 w-4" /> API Playground

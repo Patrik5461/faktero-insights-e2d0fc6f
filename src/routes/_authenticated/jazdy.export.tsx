@@ -9,7 +9,7 @@ import { formatDuration, formatSpeed, sourceLabel } from "@/lib/faktero/trip-for
 
 export const Route = createFileRoute("/_authenticated/jazdy/export")({
   head: () => ({ meta: [{ title: "Export jázd — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { vehicle_id?: string } => ({
     vehicle_id: typeof s.vehicle_id === "string" && s.vehicle_id ? s.vehicle_id : undefined,
   }),
   component: ExportPage,

@@ -57,8 +57,7 @@ const sections: HelpSection[] = [
           platbe sa kartové údaje uložia priamo u GoPay (Faktero ich nikdy nevidí).
         </p>
         <p>
-          Daňový doklad za predplatné nájdete v sekcii{" "}
-          <Link to="/nastavenia/predplatne">Nastavenia → Predplatné</Link>.
+          Daňový doklad za predplatné nájdete v sekcii <Link to="/predplatne">Predplatné</Link>.
         </p>
       </>
     ),
@@ -69,8 +68,7 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Plán môžete kedykoľvek zmeniť v{" "}
-          <Link to="/nastavenia/predplatne">Nastaveniach predplatného</Link>.
+          Plán môžete kedykoľvek zmeniť v sekcii <Link to="/predplatne">Predplatné</Link>.
         </p>
         <ul>
           <li>

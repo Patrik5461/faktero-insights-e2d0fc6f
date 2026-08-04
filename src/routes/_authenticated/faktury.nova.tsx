@@ -37,7 +37,7 @@ import { DEFAULT_VAT_RATE, SK_VAT_RATES } from "@/lib/faktero/vat-rates";
 
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { type?: "proforma" | "credit_note" } => ({
     type: (s.type === "proforma" || s.type === "credit_note" ? s.type : undefined) as
       | "proforma"
       | "credit_note"

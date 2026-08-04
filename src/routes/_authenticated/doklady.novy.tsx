@@ -18,7 +18,9 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: () => ({ meta: [{ title: "Nový doklad — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({ id: (s.id as string) || undefined }),
+  validateSearch: (s: Record<string, unknown>): { id?: string } => ({
+    id: (s.id as string) || undefined,
+  }),
   component: NovyDokladPage,
 });
 
@@ -81,12 +83,13 @@ function NovyDokladPage() {
 
   // Načíta existujúci doklad (editácia)
   useEffect(() => {
-    if (!search.id) return;
+    const id = search.id;
+    if (!id) return;
     (async () => {
       const { data } = await supabase
         .from("expense_documents")
         .select("*")
-        .eq("id", search.id)
+        .eq("id", id)
         .maybeSingle();
       if (!data) return;
       setForm({

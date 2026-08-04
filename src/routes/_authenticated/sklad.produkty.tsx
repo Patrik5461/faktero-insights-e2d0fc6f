@@ -25,7 +25,7 @@ import { StockSettingsDialog } from "@/components/faktero/StockSettingsDialog";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty")({
   head: () => ({ meta: [{ title: "Skladové položky — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { filter?: "low_stock" } => ({
     filter: s.filter === "low_stock" ? ("low_stock" as const) : undefined,
   }),
   component: StockItemsPage,

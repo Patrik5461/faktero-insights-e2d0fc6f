@@ -12,7 +12,7 @@ import { Landmark } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/transakcie")({
   head: () => ({ meta: [{ title: "Bankové transakcie — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { account?: string } => ({
     account: typeof s.account === "string" ? s.account : undefined,
   }),
   component: TxPage,
