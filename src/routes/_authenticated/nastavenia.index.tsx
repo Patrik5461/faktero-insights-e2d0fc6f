@@ -5,7 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { setActiveProduct } from "@/lib/faktero/active-product";
 
-export const Route = createFileRoute("/_authenticated/nastavenia")({
+export const Route = createFileRoute("/_authenticated/nastavenia/")({
   head: () => ({ meta: [{ title: "Nastavenia — Faktero" }] }),
   component: SettingsPage,
 });
