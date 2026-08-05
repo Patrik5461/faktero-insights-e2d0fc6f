@@ -58,7 +58,9 @@ export async function registerPushNotifications(): Promise<{
         try {
           const path = (action.notification.data as any)?.path;
           if (path && typeof window !== "undefined") window.location.assign(path);
-        } catch {}
+        } catch {
+          // poškodená data.path v notifikácii nesmie zhodiť handler
+        }
       });
 
       PushNotifications.register().catch((e) => finish({ ok: false, error: e?.message }));
@@ -77,5 +79,10 @@ export async function unregisterPush(): Promise<void> {
         .update({ push_token: null, push_platform: null } as any)
         .eq("id", u.user.id);
     }
-  } catch {}
+  } catch (e) {
+    console.warn(
+      "[push] odhlásenie tokenu zlyhalo — zariadenie môže ďalej dostávať notifikácie",
+      e,
+    );
+  }
 }

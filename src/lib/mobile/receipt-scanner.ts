@@ -21,7 +21,9 @@ export async function captureReceipt(): Promise<ReceiptCapture | null> {
       if (!photo.dataUrl) return null;
       return { dataUrl: photo.dataUrl, mimeType: `image/${photo.format || "jpeg"}` };
     }
-  } catch {}
+  } catch {
+    // natívna kamera nie je dostupná — nižšie nasleduje webový fallback
+  }
   // Web fallback — file input
   return new Promise((resolve) => {
     const input = document.createElement("input");

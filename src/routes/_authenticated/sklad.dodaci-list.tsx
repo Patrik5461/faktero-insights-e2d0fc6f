@@ -105,11 +105,6 @@ function DeliveryNoteScanPage() {
     setScanError(null);
     setScanSuccess(false);
     setScanStep(0);
-    console.log("[dodaci-list] handleFile start:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    });
     const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
     if (!allowed.includes(file.type)) return toast.error("Podporujeme JPG, PNG, WebP alebo PDF.");
 
@@ -134,11 +129,9 @@ function DeliveryNoteScanPage() {
     let processedMime = file.type;
     if (isImage && file.size > 2 * 1024 * 1024) {
       try {
-        console.log("[dodaci-list] resizing image before upload…");
         const resized = await resizeImage(file, 1920, 1080, 0.85);
         processed = resized;
         processedMime = "image/jpeg";
-        console.log("[dodaci-list] resized:", { originalSize: file.size, newSize: resized.size });
       } catch (e) {
         console.warn("[dodaci-list] resize failed, using original:", e);
       }
@@ -150,7 +143,6 @@ function DeliveryNoteScanPage() {
       r.onerror = () => rej(new Error("Nepodarilo sa načítať súbor"));
       r.readAsDataURL(processed);
     });
-    console.log("[dodaci-list] dataUrl length:", dataUrl.length);
     setFileMeta({ name: file.name, mime: processedMime, dataUrl });
     setRows([]);
     setStoragePath(null);
@@ -176,7 +168,6 @@ function DeliveryNoteScanPage() {
       }
       uploadedPath = path;
       setStoragePath(path);
-      console.log("[dodaci-list] uploaded to storage:", path);
     } catch (e: any) {
       console.error("[dodaci-list] storage upload exception:", e);
       toast.error(`Nahrávanie zlyhalo: ${e?.message ?? "neznáma chyba"}`);
@@ -209,7 +200,6 @@ function DeliveryNoteScanPage() {
       }
       const { job_id } = await postRes.json();
       if (!job_id) throw new Error("Chýba job_id");
-      console.log("[dodaci-list] job created:", job_id);
 
       // Poll every 2s, up to 5 minutes.
       const started = Date.now();
@@ -246,7 +236,6 @@ function DeliveryNoteScanPage() {
 
       if (cancelledRef.current || signal.aborted) return;
 
-      console.log("[dodaci-list] parse done, items:", finalItems.length);
       setSupplier(finalSupplier ?? "");
       setDeliveryNumber(finalDelivery ?? "");
       setRows(
@@ -263,7 +252,6 @@ function DeliveryNoteScanPage() {
       setParsing(false);
     } catch (e: any) {
       if (e?.name === "AbortError" || cancelledRef.current) {
-        console.log("[dodaci-list] scan aborted by user");
         setParsing(false);
         setScanSuccess(false);
         return;

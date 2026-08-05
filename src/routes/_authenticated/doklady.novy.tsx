@@ -117,7 +117,9 @@ function NovyDokladPage() {
         try {
           const { url } = await urlFn({ data: { file_path: data.file_path } });
           setPreview(url);
-        } catch {}
+        } catch {
+          // náhľad je nadštandard — doklad sa dá otvoriť aj bez neho
+        }
       }
     })();
     // eslint-disable-next-line

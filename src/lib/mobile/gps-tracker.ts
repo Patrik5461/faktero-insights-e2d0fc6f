@@ -53,7 +53,9 @@ export async function stopTracking(): Promise<{
       const { Geolocation } = await import("@capacitor/geolocation");
       await Geolocation.clearWatch({ id: watchId });
     }
-  } catch {}
+  } catch {
+    // watch už mohol byť zrušený systémom — cieľom je len uvoľniť ho
+  }
   watchId = null;
   let distance = 0;
   for (let i = 1; i < points.length; i++) distance += haversineKm(points[i - 1], points[i]);

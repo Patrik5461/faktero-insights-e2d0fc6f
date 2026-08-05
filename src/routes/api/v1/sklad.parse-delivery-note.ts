@@ -75,8 +75,9 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
       content = j.choices?.[0]?.message?.content ?? "[]";
     }
 
-    console.log("[job] ai raw response (first 300):", (content || "").slice(0, 300));
-    console.log("[job] ai raw response length:", (content || "").length);
+    const { debugLog } = await import("@/lib/faktero/debug.server");
+    debugLog("parse", "ai raw response (first 300):", (content || "").slice(0, 300));
+    debugLog("parse", "ai raw response length:", (content || "").length);
 
     // Strip markdown code fences that Gemini often wraps JSON in
     let cleaned = (content || "").trim();
@@ -93,12 +94,8 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
     try {
       parsed = JSON.parse(cleaned);
     } catch (parseErr: any) {
-      console.error(
-        "[job] JSON parse failed:",
-        parseErr?.message,
-        "cleaned prefix:",
-        cleaned.slice(0, 200),
-      );
+      console.error("[job] JSON parse failed:", parseErr?.message);
+      debugLog("parse", "cleaned prefix:", cleaned.slice(0, 200));
     }
     const rawItems: any[] = Array.isArray(parsed)
       ? parsed
@@ -114,7 +111,7 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
                 ? [parsed]
                 : [];
 
-    console.log("[job] raw items count:", rawItems.length);
+    debugLog("parse", "raw items count:", rawItems.length);
 
     const items = rawItems
       .map((r) => ({
@@ -127,7 +124,7 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
       }))
       .filter((r) => r.name.length > 0 && r.quantity > 0);
 
-    console.log("[job] parsed items count:", items.length);
+    debugLog("parse", "parsed items count:", items.length);
 
     const result = {
       items,
@@ -138,7 +135,11 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
       .from("delivery_parse_jobs")
       .update({ status: "done", result })
       .eq("id", jobId);
-    console.log("[job] db update result:", updErr?.message ?? "ok", { jobId, items: items.length });
+    if (updErr) {
+      console.error("[job] db update failed:", updErr.message, { jobId });
+    } else {
+      debugLog("parse", "db update ok", { jobId, items: items.length });
+    }
   } catch (e: any) {
     console.error("[parse-delivery-note] job failed", { jobId, error: e?.message ?? String(e) });
     try {
@@ -147,7 +148,14 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
         .from("delivery_parse_jobs")
         .update({ status: "error", error_message: e?.message ?? String(e) })
         .eq("id", jobId);
-    } catch {}
+    } catch (markErr) {
+      // Ak sa job nepodarí označiť ako chybný, klient ho bude pollovať až do
+      // 5-minútového timeoutu — bez tohto logu by sa to nedalo dohľadať.
+      console.error("[parse-delivery-note] nepodarilo sa označiť job ako chybný", {
+        jobId,
+        error: (markErr as any)?.message ?? String(markErr),
+      });
+    }
   }
 }
 

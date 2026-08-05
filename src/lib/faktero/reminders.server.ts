@@ -182,7 +182,9 @@ export async function sendReminder(input: SendReminderInput) {
     let json: any = {};
     try {
       json = JSON.parse(txt);
-    } catch {}
+    } catch {
+      // Resend pri chybe niekedy vráti HTML/prázdno — nižšie sa použije surový text
+    }
     if (!res.ok) {
       status = "failed";
       errorMessage = json?.message ?? txt.slice(0, 500);

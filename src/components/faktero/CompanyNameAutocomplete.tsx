@@ -85,7 +85,6 @@ export function CompanyNameAutocomplete({
       setError(null);
       try {
         const res = await search({ data: { query: q } });
-        console.log("[CompanyNameAutocomplete] search response", res);
         if (res.status === "ok") {
           setItems(res.data);
           setError(null);

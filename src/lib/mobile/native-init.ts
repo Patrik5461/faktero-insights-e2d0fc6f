@@ -7,7 +7,9 @@ export async function initNativePlatform(): Promise<void> {
   try {
     const { initOfflineSync } = await import("./offline-queue");
     initOfflineSync();
-  } catch {}
+  } catch {
+    // offline queue je best-effort — bez nej appka funguje online
+  }
 
   try {
     const { Capacitor } = await import("@capacitor/core");
@@ -29,7 +31,9 @@ export async function initNativePlatform(): Promise<void> {
     try {
       const { registerPushNotifications } = await import("./push");
       registerPushNotifications().catch((e) => console.warn("[native-init] push:", e));
-    } catch {}
+    } catch {
+      // push moduly nie sú vo webovom builde; chyby registrácie loguje sám modul
+    }
 
     // Splash screen — schovať po načítaní web obsahu
     try {
@@ -49,7 +53,9 @@ export async function initNativePlatform(): Promise<void> {
           if (typeof window !== "undefined") {
             window.location.assign(path + url.search);
           }
-        } catch {}
+        } catch {
+          // poškodený deep link nesmie zhodiť handler — používateľ zostane tam, kde je
+        }
       });
     } catch (e) {
       console.warn("[native-init] App deep links:", e);

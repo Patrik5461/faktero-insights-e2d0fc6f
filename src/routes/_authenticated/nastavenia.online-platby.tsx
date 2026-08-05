@@ -170,7 +170,9 @@ function OnlinePaymentsPage() {
       setNewNotifyUrl(r.notifyUrl);
       try {
         await navigator.clipboard.writeText(r.notifyUrl);
-      } catch {}
+      } catch {
+        // clipboard bez HTTPS/gesta zlyhá — URL je aj tak zobrazená na stránke
+      }
       toast.success("Webhook secret pregenerovaný a notification URL skopírovaná.");
       await refresh(companyId);
     } catch (e: any) {

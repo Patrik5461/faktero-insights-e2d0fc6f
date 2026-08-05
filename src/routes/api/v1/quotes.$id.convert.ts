@@ -99,7 +99,9 @@ export const Route = createFileRoute("/api/v1/quotes/$id/convert")({
               event: "invoice.created",
               data: invoicePayload(inv),
             });
-          } catch {}
+          } catch (e) {
+            console.warn("[webhook] invoice.created trigger zlyhal", e);
+          }
           return ok(inv, 201);
         });
       },

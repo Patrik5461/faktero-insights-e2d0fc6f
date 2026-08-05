@@ -384,7 +384,9 @@ function InvoiceDetail() {
             },
           },
         });
-      } catch {}
+      } catch (e) {
+        console.warn("[webhook] invoice.* trigger zlyhal", e);
+      }
     }
     load();
   }

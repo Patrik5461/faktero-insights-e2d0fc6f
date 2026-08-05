@@ -45,7 +45,9 @@ function saveConsent(consent: CookieConsent) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(consent));
-  } catch {}
+  } catch {
+    // localStorage môže byť zakázané (privátny režim, blokovač) — súhlas potom platí len pre túto reláciu
+  }
 }
 
 const defaultConsent: CookieConsent = {

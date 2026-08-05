@@ -31,7 +31,9 @@ export function useNativePlatform(): "ios" | "android" | "web" {
       try {
         const { Capacitor } = await import("@capacitor/core");
         if (!cancelled) setPlatform(Capacitor.getPlatform() as any);
-      } catch {}
+      } catch {
+        // @capacitor/core nie je vo webovom builde — zostáva default platforma
+      }
     })();
     return () => {
       cancelled = true;

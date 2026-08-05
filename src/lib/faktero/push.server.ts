@@ -126,8 +126,34 @@ async function sendToToken(
   return { ok: true };
 }
 
+export function isPushConfigured() {
+  return Boolean(process.env.FCM_PROJECT_ID && process.env.FCM_SERVICE_ACCOUNT_JSON);
+}
+
+/**
+ * Odošle notifikáciu na hotový zoznam FCM tokenov.
+ *
+ * Určené pre dávkové odosielanie (cron hooky), kde sa príjemcovia vyhľadajú
+ * jedným dotazom pre všetky firmy naraz namiesto dotazu na každú správu.
+ */
+export async function sendPushToTokens(
+  tokens: string[],
+  input: Omit<SendInput, "user_id" | "company_id">,
+) {
+  if (tokens.length === 0) return { ok: true, sent: 0, total: 0 };
+  const results = await Promise.all(
+    tokens.map((t) =>
+      sendToToken(t, input.title, input.body, input.data).catch((e) => ({
+        ok: false,
+        error: e?.message,
+      })),
+    ),
+  );
+  return { ok: true, sent: results.filter((r) => r.ok).length, total: tokens.length };
+}
+
 export async function sendPush(input: SendInput) {
-  if (!process.env.FCM_PROJECT_ID || !process.env.FCM_SERVICE_ACCOUNT_JSON) {
+  if (!isPushConfigured()) {
     return { ok: false, skipped: true, reason: "FCM not configured" };
   }
 
@@ -153,14 +179,8 @@ export async function sendPush(input: SendInput) {
   const { data: targets } = await query;
   if (!targets || targets.length === 0) return { ok: true, sent: 0 };
 
-  const results = await Promise.all(
-    targets.map((t: any) =>
-      sendToToken(t.push_token, input.title, input.body, input.data).catch((e) => ({
-        ok: false,
-        error: e?.message,
-      })),
-    ),
+  return sendPushToTokens(
+    targets.map((t: any) => t.push_token as string),
+    { title: input.title, body: input.body, data: input.data },
   );
-  const sent = results.filter((r) => r.ok).length;
-  return { ok: true, sent, total: targets.length };
 }

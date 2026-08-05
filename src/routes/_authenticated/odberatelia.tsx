@@ -83,7 +83,9 @@ function CustomersPage() {
             },
           },
         });
-      } catch {}
+      } catch (e) {
+        console.warn("[webhook] customer.created trigger zlyhal", e);
+      }
     }
     toast.success("Uložené");
     setEditing(null);

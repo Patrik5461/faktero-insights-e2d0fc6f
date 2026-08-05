@@ -5,7 +5,6 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Plus, FileText, Archive, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import JSZip from "jszip";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: () => ({ meta: [{ title: "Prijaté faktúry — Faktero" }] }),
@@ -113,6 +112,7 @@ function PurchaseInvoicesPage() {
     if (!items.length) return;
     setZipBusy(true);
     try {
+      const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
       let ok = 0,
         fail = 0;

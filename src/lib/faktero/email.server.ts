@@ -168,7 +168,9 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
     let json: any = {};
     try {
       json = JSON.parse(text);
-    } catch {}
+    } catch {
+      // Resend pri chybe niekedy vráti HTML/prázdno — nižšie sa použije surový text
+    }
     if (!res.ok) {
       const errMsg = json?.message ?? text.slice(0, 500);
       await supabaseAdmin

@@ -173,7 +173,9 @@ function Playground() {
       let pretty = text;
       try {
         pretty = JSON.stringify(JSON.parse(text), null, 2);
-      } catch {}
+      } catch {
+        // odpoveď nemusí byť JSON — vtedy sa zobrazí surový text
+      }
       setResponse({ status: res.status, body: pretty });
       reloadLogs();
     } catch (e: any) {

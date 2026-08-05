@@ -59,10 +59,14 @@ export async function disableBiometric(): Promise<void> {
       Preferences: null as any,
     }));
     if (Preferences) await Preferences.remove({ key: STORAGE_KEY });
-  } catch {}
+  } catch {
+    // @capacitor/preferences nie je vo webovom builde
+  }
   try {
     localStorage.removeItem(STORAGE_KEY);
-  } catch {}
+  } catch {
+    // localStorage môže byť zakázané — kľúč tam potom ani nie je
+  }
 }
 
 export async function loginWithBiometric(): Promise<{ ok: boolean; error?: string }> {

@@ -68,7 +68,9 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
             logoBytes = new Uint8Array(await blob.arrayBuffer());
             logoMime = blob.type;
           }
-        } catch {}
+        } catch {
+          // logo je voliteľné — cenová ponuka sa vygeneruje aj bez neho
+        }
       }
       const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
       const bytes = await generateInvoicePdfBytes({
@@ -124,7 +126,9 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
     let json: any = {};
     try {
       json = JSON.parse(text);
-    } catch {}
+    } catch {
+      // Resend pri chybe niekedy vráti HTML/prázdno — nižšie sa použije surový text
+    }
     if (!res.ok) {
       const errMsg = json?.message ?? text.slice(0, 500);
       await supabaseAdmin.from("quote_email_logs" as any).insert({

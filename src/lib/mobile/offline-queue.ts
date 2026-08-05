@@ -39,7 +39,9 @@ export async function isOnline(): Promise<boolean> {
       const s = await Network.getStatus();
       return s.connected;
     }
-  } catch {}
+  } catch {
+    // @capacitor/network nie je vo webovom builde — nižšie sa použije navigator.onLine
+  }
   return typeof navigator === "undefined" ? true : navigator.onLine;
 }
 
@@ -114,6 +116,8 @@ export function initOfflineSync() {
           if (s.connected) flushQueue().catch(() => {});
         });
       }
-    } catch {}
+    } catch {
+      // bez Network pluginu sa queue vyprázdni až pri ďalšej akcii používateľa
+    }
   })();
 }

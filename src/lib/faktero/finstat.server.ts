@@ -1,5 +1,7 @@
 import { createHash } from "crypto";
 
+import { debugLog } from "./debug.server";
+
 /**
  * FinStat Premium API client (server-only).
  *
@@ -135,8 +137,9 @@ export async function finstatAutocomplete(
     json: "true",
   }).toString()}`;
 
-  console.log(
-    `[finstat-ac] → region=${region} query=${JSON.stringify(q)} url=${FINSTAT_BASE[region]}/autocomplete?query=${encodeURIComponent(q)}&apikey=${maskSecret(apiKey)}&hash=${hash.slice(0, 8)}…&json=true`,
+  debugLog(
+    "finstat",
+    `→ region=${region} query=${JSON.stringify(q)} url=${FINSTAT_BASE[region]}/autocomplete?query=${encodeURIComponent(q)}&apikey=${maskSecret(apiKey)}&hash=${hash.slice(0, 8)}…&json=true`,
   );
 
   const ctrl = new AbortController();
@@ -156,8 +159,9 @@ export async function finstatAutocomplete(
   clearTimeout(t);
 
   const text = await res.text();
-  console.log(
-    `[finstat-ac] ← region=${region} status=${res.status} ct="${res.headers.get("content-type") ?? ""}" bytes=${text.length} preview=${JSON.stringify(text.slice(0, 300))}`,
+  debugLog(
+    "finstat",
+    `← region=${region} status=${res.status} ct="${res.headers.get("content-type") ?? ""}" bytes=${text.length} preview=${JSON.stringify(text.slice(0, 300))}`,
   );
 
   if (!res.ok) {
@@ -197,8 +201,9 @@ export async function finstatAutocomplete(
           ? (parsed as { SuggestResult: unknown[] }).SuggestResult
           : [];
 
-  console.log(
-    `[finstat-ac] parsed region=${region} rowKeys=${!Array.isArray(parsed) && parsed && typeof parsed === "object" ? Object.keys(parsed as object).join(",") : "(array)"} rows=${rows.length} firstRow=${JSON.stringify(rows[0] ?? null).slice(0, 300)}`,
+  debugLog(
+    "finstat",
+    `parsed region=${region} rowKeys=${!Array.isArray(parsed) && parsed && typeof parsed === "object" ? Object.keys(parsed as object).join(",") : "(array)"} rows=${rows.length} firstRow=${JSON.stringify(rows[0] ?? null).slice(0, 300)}`,
   );
 
   const data: FinstatSuggestion[] = rows
@@ -218,7 +223,7 @@ export async function finstatAutocomplete(
     .filter((r) => r.ico && r.name)
     .slice(0, 10);
 
-  console.log(`[finstat-ac] result region=${region} suggestions=${data.length}`);
+  debugLog("finstat", `result region=${region} suggestions=${data.length}`);
   return { status: "ok", data };
 }
 

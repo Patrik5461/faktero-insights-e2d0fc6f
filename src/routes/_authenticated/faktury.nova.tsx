@@ -416,7 +416,9 @@ function NewInvoice() {
             },
           },
         });
-      } catch {}
+      } catch (e) {
+        console.warn("[webhook] invoice.created trigger zlyhal", e);
+      }
 
       toast.success("Faktúra vytvorená");
       navigate({ to: "/faktury/$id", params: { id: inv.id } });

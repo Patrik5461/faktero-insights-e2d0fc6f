@@ -71,7 +71,9 @@ function RegisterPage() {
     }
     try {
       sessionStorage.setItem("faktero_legal_pending", LEGAL_VERSION);
-    } catch {}
+    } catch {
+      // sessionStorage môže byť zakázané — súhlas sa potom zapíše až po prihlásení
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: window.location.origin + "/onboarding" },

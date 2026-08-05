@@ -34,7 +34,6 @@ import {
 } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { supabase } from "@/integrations/supabase/client";
-import JSZip from "jszip";
 
 type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
 
@@ -306,6 +305,7 @@ function InvoicesPage() {
     const ids = list.selectedIds;
     setBusy(true);
     setProgress({ current: 0, total: ids.length });
+    const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
     let ok = 0,
       fail = 0;

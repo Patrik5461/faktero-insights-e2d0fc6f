@@ -129,7 +129,9 @@ export const getRecurringDiagnostics = createServerFn({ method: "GET" })
       const { data: status } = await (supabaseAdmin as any).rpc("faktero_recurring_cron_status");
       cron_job = (status as any)?.job ?? null;
       last_runs = (status as any)?.runs ?? [];
-    } catch {}
+    } catch {
+      // RPC existuje len keď je pg_cron nainštalovaný — diagnostika sa zobrazí prázdna
+    }
 
     const [recentLogs, failed7d] = await Promise.all([
       supabaseAdmin

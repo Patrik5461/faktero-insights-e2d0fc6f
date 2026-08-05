@@ -41,7 +41,9 @@ export const recordLegalAcceptance = createServerFn({ method: "POST" })
         req.headers.get("x-real-ip") ||
         null;
       ua = req.headers.get("user-agent");
-    } catch {}
+    } catch {
+      // IP a user-agent sú voliteľné metadáta — bez nich sa súhlas uloží tiež
+    }
 
     const rows = data.documents.map((d) => ({
       user_id: context.userId,

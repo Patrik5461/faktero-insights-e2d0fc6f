@@ -38,7 +38,9 @@ export function NativeRouteGuard() {
       try {
         const { initNativePlatform } = await import("@/lib/mobile/native-init");
         await initNativePlatform();
-      } catch {}
+      } catch {
+        // natívne pluginy neexistujú na webe — appka musí bežať ďalej aj bez nich
+      }
     })();
   }, []);
 
