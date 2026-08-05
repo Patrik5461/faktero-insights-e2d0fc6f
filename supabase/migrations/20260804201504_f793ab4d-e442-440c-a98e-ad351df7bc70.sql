@@ -1,0 +1,3 @@
+ALTER TABLE public.companies
+  ADD COLUMN IF NOT EXISTS invoice_accent_color TEXT NOT NULL DEFAULT '#0F7A4D',
+  ADD COLUMN IF NOT EXISTS invoice_show_logo BOOLEAN NOT NULL DEFAULT true;

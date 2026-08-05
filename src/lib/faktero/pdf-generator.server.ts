@@ -15,6 +15,21 @@ function b64ToBytes(b64: string): Uint8Array {
 const ROBOTO_REGULAR_BYTES = b64ToBytes(RobotoRegularBase64);
 const ROBOTO_BOLD_BYTES = b64ToBytes(RobotoBoldBase64);
 
+/** "#0F7A4D" | "0F7A4D" -> pdf-lib rgb(); null on invalid input. */
+function hexToRgb(hex?: string | null) {
+  if (!hex) return null;
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+}
+
+function darken(c: ReturnType<typeof rgb>, amount = 0.25) {
+  const k = 1 - amount;
+  return rgb(c.red * k, c.green * k, c.blue * k);
+}
+
+
 export type InvoicePdfInput = {
   company: any;
   invoice: any;
@@ -80,9 +95,11 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   const margin = 44;
   const innerW = width - margin * 2;
 
-  // Palette — premium emerald accent, neutral surfaces
-  const primary = rgb(0.071, 0.451, 0.318); // emerald 700
-  const primaryDark = rgb(0.043, 0.337, 0.243);
+  // Palette — accent color is configurable per company (Vzhľad faktúry)
+  const accent = hexToRgb((company as any).invoice_accent_color) ?? rgb(0.071, 0.451, 0.318);
+  const primary = accent;
+  const primaryDark = darken(accent, 0.25);
+
   const ink = rgb(0.067, 0.094, 0.118);
   const sub = rgb(0.31, 0.36, 0.42);
   const muted = rgb(0.49, 0.54, 0.6);
@@ -99,7 +116,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
 
   // Logo
   let headerLogoBottom = y;
-  if (input.logoBytes && input.logoMime) {
+  if (input.logoBytes && input.logoMime && (company as any).invoice_show_logo !== false) {
     try {
       const img = input.logoMime.includes("png")
         ? await doc.embedPng(input.logoBytes)

@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   FileText,
   Users,
-  Package,
   FileSpreadsheet,
   FileCheck2,
   KeyRound,
@@ -87,23 +86,14 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "produkty",
-    label: "Produkty",
-    icon: Package,
-    match: ["/produkty"],
-    children: [
-      { to: "/produkty", label: "Produkty a služby" },
-      { to: "/produkty?new=1", label: "Nový produkt" },
-    ],
-  },
-  {
     key: "sklad",
     label: "Sklad",
     icon: Warehouse,
-    match: ["/sklad"],
+    match: ["/sklad", "/produkty"],
     children: [
       { to: "/sklad", label: "Prehľad" },
-      { to: "/sklad/produkty", label: "Položky" },
+      { to: "/produkty", label: "Produkty a služby" },
+      { to: "/sklad/produkty", label: "Skladové položky" },
       { to: "/sklad/pohyby", label: "Pohyby" },
       { to: "/sklad/inventura", label: "Inventúra" },
     ],
@@ -216,9 +206,12 @@ const NAV: NavGroup[] = [
     match: ["/firma", "/firmy", "/predplatne", "/nastavenia", "/diagnostika"],
     children: [
       { to: "/firma", label: "Firma" },
+      { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry" },
+      { to: "/nastavenia/email-sablony", label: "Email šablóny" },
       { to: "/firmy", label: "Správa firiem" },
       { to: "/predplatne", label: "Predplatné" },
       { to: "/nastavenia/online-platby", label: "Online platby" },
+
       { to: "/nastavenia", label: "Nastavenia systému" },
       { to: "/diagnostika", label: "Diagnostika" },
     ],
@@ -243,7 +236,6 @@ const INVOICING_KEYS = new Set([
   "prehlad",
   "fakturacia",
   "kontakty",
-  "produkty",
   "sklad",
   "doklady",
   "uctovnictvo",
@@ -266,7 +258,8 @@ function resolveView(productMode: ProductMode, activeProduct: ActiveProduct): Ac
 
 function filterNav(view: ActiveProduct): NavGroup[] {
   const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
-  return NAV.filter((g) => allowed.has(g.key));
+  // "nastavenia" je spoločné pre oba produkty
+  return NAV.filter((g) => allowed.has(g.key) || g.key === "nastavenia");
 }
 
 export function AppShell({

@@ -657,8 +657,10 @@ export type Database = {
           ic_dph: string | null
           ico: string | null
           id: string
+          invoice_accent_color: string
           invoice_footer: string | null
           invoice_number_format: string
+          invoice_show_logo: boolean
           logo_url: string | null
           name: string
           online_payments_enabled: boolean
@@ -698,8 +700,10 @@ export type Database = {
           ic_dph?: string | null
           ico?: string | null
           id?: string
+          invoice_accent_color?: string
           invoice_footer?: string | null
           invoice_number_format?: string
+          invoice_show_logo?: boolean
           logo_url?: string | null
           name: string
           online_payments_enabled?: boolean
@@ -739,8 +743,10 @@ export type Database = {
           ic_dph?: string | null
           ico?: string | null
           id?: string
+          invoice_accent_color?: string
           invoice_footer?: string | null
           invoice_number_format?: string
+          invoice_show_logo?: boolean
           logo_url?: string | null
           name?: string
           online_payments_enabled?: boolean
