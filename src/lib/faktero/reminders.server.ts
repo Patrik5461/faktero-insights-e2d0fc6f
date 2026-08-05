@@ -1,6 +1,10 @@
+import { runInBatches, selectByIds } from "./batch.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type ReminderNumber = 1 | 2 | 3;
+
+/** Koľko upomienok naraz. Resend má rate limit, tisíc naraz by ho prekročilo. */
+const REMINDER_SEND_CONCURRENCY = 5;
 
 const DEFAULT_SUBJECTS: Record<ReminderNumber, string> = {
   1: "Upomienka: Faktúra {invoice_number} je po splatnosti",
@@ -244,6 +248,9 @@ export async function runOverdueReminders() {
     skipped?: string;
   }> = [];
 
+  // Krok 1 — rozhodnutie, ktorá upomienka je na rade. Čistý výpočet, bez DB.
+  const candidates: Array<{ invoice: (typeof invoices)[number]; reminderNumber: ReminderNumber }> =
+    [];
   for (const inv of invoices ?? []) {
     const co: any = companyMap.get(inv.company_id);
     if (!co || co.reminders_enabled === false) {
@@ -270,32 +277,48 @@ export async function runOverdueReminders() {
       }
     }
     if (!targetNumber) continue;
+    candidates.push({ invoice: inv, reminderNumber: targetNumber });
+  }
 
-    const { count } = await supabaseAdmin
-      .from("invoice_reminders")
-      .select("id", { count: "exact", head: true })
-      .eq("invoice_id", inv.id)
-      .eq("reminder_number", targetNumber)
-      .eq("status", "sent");
-    if ((count ?? 0) > 0) continue;
+  // Krok 2 — hromadný dotaz na už odoslané upomienky namiesto COUNT na každú
+  // faktúru. Stránkovaný zámerne: ak by odpoveď orezal limit PostgRESTu,
+  // chýbajúci riadok znamená odoslanie tej istej upomienky druhýkrát.
+  const alreadySent = new Set<string>();
+  const sentRows = await selectByIds<{ invoice_id: string; reminder_number: number }>(
+    candidates.map((c) => c.invoice.id),
+    (part, from, to) =>
+      supabaseAdmin
+        .from("invoice_reminders")
+        .select("invoice_id, reminder_number")
+        .in("invoice_id", part)
+        .eq("status", "sent")
+        .range(from, to),
+  );
+  for (const r of sentRows) alreadySent.add(`${r.invoice_id}:${r.reminder_number}`);
 
+  const toSend = candidates.filter((c) => !alreadySent.has(`${c.invoice.id}:${c.reminderNumber}`));
+
+  // Krok 3 — odoslanie po dávkach. Každý sendReminder je e-mail cez Resend,
+  // takže sa nesmie spustiť tisíc naraz, ale ani jeden po druhom.
+  const sendResults = await runInBatches(toSend, REMINDER_SEND_CONCURRENCY, async (c) => {
     try {
       await sendReminder({
-        company_id: inv.company_id,
-        invoice_id: inv.id,
-        reminderNumber: targetNumber,
+        company_id: c.invoice.company_id,
+        invoice_id: c.invoice.id,
+        reminderNumber: c.reminderNumber,
         triggeredBy: "auto",
       });
-      results.push({ invoice_id: inv.id, reminder_number: targetNumber, ok: true });
+      return { invoice_id: c.invoice.id, reminder_number: c.reminderNumber, ok: true };
     } catch (e: any) {
-      results.push({
-        invoice_id: inv.id,
-        reminder_number: targetNumber,
+      return {
+        invoice_id: c.invoice.id,
+        reminder_number: c.reminderNumber,
         ok: false,
         error: e?.message ?? "unknown",
-      });
+      };
     }
-  }
+  });
+  results.push(...sendResults);
 
   return { checked: invoices?.length ?? 0, results };
 }

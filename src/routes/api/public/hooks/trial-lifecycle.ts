@@ -44,15 +44,25 @@ export const Route = createFileRoute("/api/public/hooks/trial-lifecycle")({
           let sent = 0;
           let failed = 0;
 
-          for (const row of expiring ?? []) {
+          const { runInBatches } = await import("@/lib/faktero/batch.server");
+          const escapeHtml = (s: string) =>
+            String(s).replace(
+              /[&<>"']/g,
+              (ch) =>
+                ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]!,
+            );
+
+          // Pôvodne sekvenčne: e-mail + DB update na každý riadok, jeden po druhom.
+          // Po 5 naraz — Resend má rate limit, takže neobmedzený Promise.all nie.
+          await runInBatches(expiring ?? [], 5, async (row) => {
             const to = (row as any).companies?.email as string | undefined;
-            const companyName = (row as any).companies?.name ?? "Váš účet vo Faktere";
+            const companyName = escapeHtml((row as any).companies?.name ?? "Váš účet vo Faktere");
             if (!to || !apiKey) {
               await supabaseAdmin
                 .from("subscriptions")
                 .update({ trial_reminder_sent_at: new Date().toISOString() })
                 .eq("company_id", row.company_id);
-              continue;
+              return;
             }
             const html = `
               <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#0f172a">
@@ -83,10 +93,16 @@ export const Route = createFileRoute("/api/public/hooks/trial-lifecycle")({
                 .from("subscriptions")
                 .update({ trial_reminder_sent_at: new Date().toISOString() })
                 .eq("company_id", row.company_id);
-            } catch {
+            } catch (e: any) {
+              // Bez tohto logu sa o neodoslanom upozornení na koniec trialu
+              // nedozvie nikto — v odpovedi hooku je len počet.
+              console.error("[trial-lifecycle] upozornenie neodoslané", {
+                company_id: row.company_id,
+                error: e?.message ?? String(e),
+              });
               failed += 1;
             }
-          }
+          });
 
           // 2) Downgrade expired trials to Starter
           const { data: downgraded, error: downErr } = await supabaseAdmin.rpc(
