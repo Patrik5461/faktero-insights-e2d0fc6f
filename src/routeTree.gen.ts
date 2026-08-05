@@ -9,255 +9,194 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VyvojariRouteImport } from './routes/vyvojari'
-import { Route as UctovniciRouteImport } from './routes/uctovnici'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
-import { Route as RegistraciaRouteImport } from './routes/registracia'
-import { Route as PrihlasenieRouteImport } from './routes/prihlasenie'
-import { Route as PridatPouzivatelaRouteImport } from './routes/pridat-pouzivatela'
-import { Route as ObjednavkaRouteImport } from './routes/objednavka'
-import { Route as KontaktRouteImport } from './routes/kontakt'
-import { Route as FunkcieRouteImport } from './routes/funkcie'
-import { Route as EfakturaciaRouteImport } from './routes/efakturacia'
-import { Route as CennikRouteImport } from './routes/cennik'
-import { Route as BlogRouteImport } from './routes/blog'
-import { Route as AktivovatRouteImport } from './routes/aktivovat'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as VyvojariIndexRouteImport } from './routes/vyvojari.index'
-import { Route as UctovniciIndexRouteImport } from './routes/uctovnici.index'
-import { Route as PravneIndexRouteImport } from './routes/pravne.index'
-import { Route as PomocIndexRouteImport } from './routes/pomoc.index'
-import { Route as FunkcieIndexRouteImport } from './routes/funkcie.index'
-import { Route as EfakturaciaIndexRouteImport } from './routes/efakturacia.index'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as VyvojariSlugRouteImport } from './routes/vyvojari.$slug'
-import { Route as UctovniciSlugRouteImport } from './routes/uctovnici.$slug'
-import { Route as SchvalitTokenRouteImport } from './routes/schvalit.$token'
-import { Route as PravneTeslaPodmienkyRouteImport } from './routes/pravne.tesla-podmienky'
-import { Route as PravneReklamacnyPoriadokRouteImport } from './routes/pravne.reklamacny-poriadok'
-import { Route as PravneOpakovanePlatbyRouteImport } from './routes/pravne.opakovane-platby'
-import { Route as PravneObchodnePodmienkyRouteImport } from './routes/pravne.obchodne-podmienky'
-import { Route as PravneGopayPodmienkyRouteImport } from './routes/pravne.gopay-podmienky'
-import { Route as PravneGdprRouteImport } from './routes/pravne.gdpr'
-import { Route as PravneCookiesRouteImport } from './routes/pravne.cookies'
-import { Route as PomocSkladRouteImport } from './routes/pomoc.sklad'
-import { Route as PomocPredplatneRouteImport } from './routes/pomoc.predplatne'
-import { Route as PomocFakturyRouteImport } from './routes/pomoc.faktury'
-import { Route as PomocEfakturaRouteImport } from './routes/pomoc.efaktura'
-import { Route as PomocApiRouteImport } from './routes/pomoc.api'
-import { Route as PayTokenRouteImport } from './routes/pay.$token'
-import { Route as FunkcieSlugRouteImport } from './routes/funkcie.$slug'
-import { Route as EfakturaciaSlugRouteImport } from './routes/efakturacia.$slug'
-import { Route as DocsApiRouteImport } from './routes/docs.api'
-import { Route as DanovyDokladTokenRouteImport } from './routes/danovy-doklad.$token'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminUsageRouteImport } from './routes/admin.usage'
-import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
-import { Route as AdminSeoRouteImport } from './routes/admin.seo'
-import { Route as AdminPlatformInvoicesRouteImport } from './routes/admin.platform-invoices'
-import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.payment-providers'
-import { Route as AdminLegalRouteImport } from './routes/admin.legal'
-import { Route as AdminIntegrationsRouteImport } from './routes/admin.integrations'
-import { Route as AdminHealthRouteImport } from './routes/admin.health'
-import { Route as AdminGopayRouteImport } from './routes/admin.gopay'
-import { Route as AdminErrorsRouteImport } from './routes/admin.errors'
-import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
-import { Route as AuthenticatedWebhookyLogyRouteImport } from './routes/_authenticated/webhooky-logy'
-import { Route as AuthenticatedWebhookyRouteImport } from './routes/_authenticated/webhooky'
-import { Route as AuthenticatedSkladRouteImport } from './routes/_authenticated/sklad'
-import { Route as AuthenticatedProduktyRouteImport } from './routes/_authenticated/produkty'
-import { Route as AuthenticatedPredplatneRouteImport } from './routes/_authenticated/predplatne'
-import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
-import { Route as AuthenticatedOdberateliaRouteImport } from './routes/_authenticated/odberatelia'
-import { Route as AuthenticatedNastaveniaRouteImport } from './routes/_authenticated/nastavenia'
-import { Route as AuthenticatedFirmyRouteImport } from './routes/_authenticated/firmy'
-import { Route as AuthenticatedFirmaRouteImport } from './routes/_authenticated/firma'
-import { Route as AuthenticatedExportyRouteImport } from './routes/_authenticated/exporty'
-import { Route as AuthenticatedEfakturaRouteImport } from './routes/_authenticated/efaktura'
-import { Route as AuthenticatedDiagnostikaRouteImport } from './routes/_authenticated/diagnostika'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedApiPlaygroundRouteImport } from './routes/_authenticated/api-playground'
-import { Route as AuthenticatedApiKluceRouteImport } from './routes/_authenticated/api-kluce'
-import { Route as AuthenticatedApiDokumentaciaRouteImport } from './routes/_authenticated/api-dokumentacia'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AktivovatRouteImport } from './routes/aktivovat'
+import { Route as BlogRouteImport } from './routes/blog'
+import { Route as CennikRouteImport } from './routes/cennik'
+import { Route as EfakturaciaRouteImport } from './routes/efakturacia'
+import { Route as FunkcieRouteImport } from './routes/funkcie'
+import { Route as KontaktRouteImport } from './routes/kontakt'
+import { Route as ObjednavkaRouteImport } from './routes/objednavka'
+import { Route as PridatPouzivatelaRouteImport } from './routes/pridat-pouzivatela'
+import { Route as PrihlasenieRouteImport } from './routes/prihlasenie'
+import { Route as RegistraciaRouteImport } from './routes/registracia'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as UctovniciRouteImport } from './routes/uctovnici'
+import { Route as VyvojariRouteImport } from './routes/vyvojari'
 import { Route as AuthenticatedAiAsistentRouteImport } from './routes/_authenticated/ai-asistent'
-import { Route as AdminCompaniesIndexRouteImport } from './routes/admin.companies.index'
-import { Route as AuthenticatedZalohoveIndexRouteImport } from './routes/_authenticated/zalohove.index'
-import { Route as AuthenticatedSkladIndexRouteImport } from './routes/_authenticated/sklad.index'
-import { Route as AuthenticatedPrijateFakturyIndexRouteImport } from './routes/_authenticated/prijate-faktury.index'
-import { Route as AuthenticatedPonukyIndexRouteImport } from './routes/_authenticated/ponuky.index'
-import { Route as AuthenticatedOpakovaneIndexRouteImport } from './routes/_authenticated/opakovane.index'
-import { Route as AuthenticatedJazdyIndexRouteImport } from './routes/_authenticated/jazdy.index'
-import { Route as AuthenticatedImportyIndexRouteImport } from './routes/_authenticated/importy.index'
-import { Route as AuthenticatedFakturyIndexRouteImport } from './routes/_authenticated/faktury.index'
-import { Route as AuthenticatedEfakturaIndexRouteImport } from './routes/_authenticated/efaktura.index'
-import { Route as AuthenticatedDokladyIndexRouteImport } from './routes/_authenticated/doklady.index'
+import { Route as AuthenticatedApiDokumentaciaRouteImport } from './routes/_authenticated/api-dokumentacia'
+import { Route as AuthenticatedApiKluceRouteImport } from './routes/_authenticated/api-kluce'
+import { Route as AuthenticatedApiPlaygroundRouteImport } from './routes/_authenticated/api-playground'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDiagnostikaRouteImport } from './routes/_authenticated/diagnostika'
+import { Route as AuthenticatedEfakturaRouteImport } from './routes/_authenticated/efaktura'
+import { Route as AuthenticatedExportyRouteImport } from './routes/_authenticated/exporty'
+import { Route as AuthenticatedFirmaRouteImport } from './routes/_authenticated/firma'
+import { Route as AuthenticatedFirmyRouteImport } from './routes/_authenticated/firmy'
+import { Route as AuthenticatedNastaveniaRouteImport } from './routes/_authenticated/nastavenia'
+import { Route as AuthenticatedOdberateliaRouteImport } from './routes/_authenticated/odberatelia'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedPredplatneRouteImport } from './routes/_authenticated/predplatne'
+import { Route as AuthenticatedProduktyRouteImport } from './routes/_authenticated/produkty'
+import { Route as AuthenticatedSkladRouteImport } from './routes/_authenticated/sklad'
+import { Route as AuthenticatedWebhookyRouteImport } from './routes/_authenticated/webhooky'
+import { Route as AuthenticatedWebhookyLogyRouteImport } from './routes/_authenticated/webhooky-logy'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
+import { Route as AdminErrorsRouteImport } from './routes/admin.errors'
+import { Route as AdminGopayRouteImport } from './routes/admin.gopay'
+import { Route as AdminHealthRouteImport } from './routes/admin.health'
+import { Route as AdminIntegrationsRouteImport } from './routes/admin.integrations'
+import { Route as AdminLegalRouteImport } from './routes/admin.legal'
+import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.payment-providers'
+import { Route as AdminPlatformInvoicesRouteImport } from './routes/admin.platform-invoices'
+import { Route as AdminSeoRouteImport } from './routes/admin.seo'
+import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
+import { Route as AdminUsageRouteImport } from './routes/admin.usage'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as DanovyDokladTokenRouteImport } from './routes/danovy-doklad.$token'
+import { Route as DocsApiRouteImport } from './routes/docs.api'
+import { Route as EfakturaciaIndexRouteImport } from './routes/efakturacia.index'
+import { Route as EfakturaciaSlugRouteImport } from './routes/efakturacia.$slug'
+import { Route as FunkcieIndexRouteImport } from './routes/funkcie.index'
+import { Route as FunkcieSlugRouteImport } from './routes/funkcie.$slug'
+import { Route as PayTokenRouteImport } from './routes/pay.$token'
+import { Route as PomocIndexRouteImport } from './routes/pomoc.index'
+import { Route as PomocApiRouteImport } from './routes/pomoc.api'
+import { Route as PomocEfakturaRouteImport } from './routes/pomoc.efaktura'
+import { Route as PomocFakturyRouteImport } from './routes/pomoc.faktury'
+import { Route as PomocPredplatneRouteImport } from './routes/pomoc.predplatne'
+import { Route as PomocSkladRouteImport } from './routes/pomoc.sklad'
+import { Route as PravneIndexRouteImport } from './routes/pravne.index'
+import { Route as PravneCookiesRouteImport } from './routes/pravne.cookies'
+import { Route as PravneGdprRouteImport } from './routes/pravne.gdpr'
+import { Route as PravneGopayPodmienkyRouteImport } from './routes/pravne.gopay-podmienky'
+import { Route as PravneObchodnePodmienkyRouteImport } from './routes/pravne.obchodne-podmienky'
+import { Route as PravneOpakovanePlatbyRouteImport } from './routes/pravne.opakovane-platby'
+import { Route as PravneReklamacnyPoriadokRouteImport } from './routes/pravne.reklamacny-poriadok'
+import { Route as PravneTeslaPodmienkyRouteImport } from './routes/pravne.tesla-podmienky'
+import { Route as SchvalitTokenRouteImport } from './routes/schvalit.$token'
+import { Route as UctovniciIndexRouteImport } from './routes/uctovnici.index'
+import { Route as UctovniciSlugRouteImport } from './routes/uctovnici.$slug'
+import { Route as VyvojariIndexRouteImport } from './routes/vyvojari.index'
+import { Route as VyvojariSlugRouteImport } from './routes/vyvojari.$slug'
 import { Route as AuthenticatedBankoveUctyIndexRouteImport } from './routes/_authenticated/bankove-ucty.index'
-import { Route as PomocOnlinePlatbyGopayRouteImport } from './routes/pomoc.online-platby.gopay'
-import { Route as DocsOnlinePlatbyGopayRouteImport } from './routes/docs.online-platby.gopay'
-import { Route as ApiWebhooksGopayRouteImport } from './routes/api/webhooks/gopay'
-import { Route as ApiV1WarehousesRouteImport } from './routes/api/v1/warehouses'
-import { Route as ApiV1VehiclesRouteImport } from './routes/api/v1/vehicles'
-import { Route as ApiV1TripsRouteImport } from './routes/api/v1/trips'
-import { Route as ApiV1RecurringInvoicesRouteImport } from './routes/api/v1/recurring-invoices'
-import { Route as ApiV1QuotesRouteImport } from './routes/api/v1/quotes'
-import { Route as ApiV1InvoicesRouteImport } from './routes/api/v1/invoices'
-import { Route as ApiV1FuelRecordsRouteImport } from './routes/api/v1/fuel-records'
-import { Route as ApiV1CustomersRouteImport } from './routes/api/v1/customers'
-import { Route as ApiPublicSupportChatRouteImport } from './routes/api/public/support-chat'
-import { Route as ApiAdminMigrationExportRouteImport } from './routes/api/admin/migration-export'
-import { Route as AdminCompaniesIdRouteImport } from './routes/admin.companies.$id'
-import { Route as AuthenticatedUctovnictvoDphRouteImport } from './routes/_authenticated/uctovnictvo.dph'
-import { Route as AuthenticatedSkladVydajRouteImport } from './routes/_authenticated/sklad.vydaj'
-import { Route as AuthenticatedSkladProduktyRouteImport } from './routes/_authenticated/sklad.produkty'
-import { Route as AuthenticatedSkladPrijemRouteImport } from './routes/_authenticated/sklad.prijem'
-import { Route as AuthenticatedSkladPresunyRouteImport } from './routes/_authenticated/sklad.presuny'
-import { Route as AuthenticatedSkladPohybyRouteImport } from './routes/_authenticated/sklad.pohyby'
-import { Route as AuthenticatedSkladNastaveniaRouteImport } from './routes/_authenticated/sklad.nastavenia'
-import { Route as AuthenticatedSkladMinimumRouteImport } from './routes/_authenticated/sklad.minimum'
-import { Route as AuthenticatedSkladKategorieRouteImport } from './routes/_authenticated/sklad.kategorie'
-import { Route as AuthenticatedSkladInventuraRouteImport } from './routes/_authenticated/sklad.inventura'
-import { Route as AuthenticatedSkladImportRouteImport } from './routes/_authenticated/sklad.import'
-import { Route as AuthenticatedSkladHodnotaRouteImport } from './routes/_authenticated/sklad.hodnota'
-import { Route as AuthenticatedSkladDodacieListyRouteImport } from './routes/_authenticated/sklad.dodacie-listy'
-import { Route as AuthenticatedSkladDodaciListRouteImport } from './routes/_authenticated/sklad.dodaci-list'
-import { Route as AuthenticatedPrijateFakturyNovaRouteImport } from './routes/_authenticated/prijate-faktury.nova'
-import { Route as AuthenticatedPrijateFakturyIdRouteImport } from './routes/_authenticated/prijate-faktury.$id'
-import { Route as AuthenticatedPonukyNovaRouteImport } from './routes/_authenticated/ponuky.nova'
-import { Route as AuthenticatedPonukyIdRouteImport } from './routes/_authenticated/ponuky.$id'
-import { Route as AuthenticatedOpakovaneNovaRouteImport } from './routes/_authenticated/opakovane.nova'
-import { Route as AuthenticatedOpakovaneIdRouteImport } from './routes/_authenticated/opakovane.$id'
-import { Route as AuthenticatedNastaveniaOnlinePlatbyRouteImport } from './routes/_authenticated/nastavenia.online-platby'
-import { Route as AuthenticatedNastaveniaEmailSablonyRouteImport } from './routes/_authenticated/nastavenia.email-sablony'
-import { Route as AuthenticatedJazdyVozidlaRouteImport } from './routes/_authenticated/jazdy.vozidla'
-import { Route as AuthenticatedJazdyPrehladRouteImport } from './routes/_authenticated/jazdy.prehlad'
-import { Route as AuthenticatedJazdyNovaRouteImport } from './routes/_authenticated/jazdy.nova'
-import { Route as AuthenticatedJazdyIntegracieRouteImport } from './routes/_authenticated/jazdy.integracie'
-import { Route as AuthenticatedJazdyGpsRouteImport } from './routes/_authenticated/jazdy.gps'
-import { Route as AuthenticatedJazdyExportRouteImport } from './routes/_authenticated/jazdy.export'
-import { Route as AuthenticatedImportySuperfakturaRouteImport } from './routes/_authenticated/importy.superfaktura'
-import { Route as AuthenticatedImportyOmegaRouteImport } from './routes/_authenticated/importy.omega'
-import { Route as AuthenticatedImportyMoneyS3RouteImport } from './routes/_authenticated/importy.money-s3'
-import { Route as AuthenticatedImportyKrosRouteImport } from './routes/_authenticated/importy.kros'
-import { Route as AuthenticatedImportyIdokladRouteImport } from './routes/_authenticated/importy.idoklad'
-import { Route as AuthenticatedFakturySkenerRouteImport } from './routes/_authenticated/faktury.skener'
-import { Route as AuthenticatedFakturyRychlaRouteImport } from './routes/_authenticated/faktury.rychla'
-import { Route as AuthenticatedFakturyNovaRouteImport } from './routes/_authenticated/faktury.nova'
-import { Route as AuthenticatedFakturyIdRouteImport } from './routes/_authenticated/faktury.$id'
-import { Route as AuthenticatedEfakturaPrijateRouteImport } from './routes/_authenticated/efaktura.prijate'
-import { Route as AuthenticatedEfakturaOdoslaneRouteImport } from './routes/_authenticated/efaktura.odoslane'
-import { Route as AuthenticatedEfakturaDoruceniaRouteImport } from './routes/_authenticated/efaktura.dorucenia'
-import { Route as AuthenticatedDokladyNovyRouteImport } from './routes/_authenticated/doklady.novy'
-import { Route as AuthenticatedBankoveUctyTransakcieRouteImport } from './routes/_authenticated/bankove-ucty.transakcie'
 import { Route as AuthenticatedBankoveUctyPripojitRouteImport } from './routes/_authenticated/bankove-ucty.pripojit'
-import { Route as AuthenticatedJazdyIntegracieIndexRouteImport } from './routes/_authenticated/jazdy.integracie.index'
-import { Route as ApiV1StockValuationRouteImport } from './routes/api/v1/stock.valuation'
-import { Route as ApiV1StockMovementsRouteImport } from './routes/api/v1/stock.movements'
-import { Route as ApiV1StockLowStockRouteImport } from './routes/api/v1/stock.low-stock'
-import { Route as ApiV1StockLevelsRouteImport } from './routes/api/v1/stock.levels'
-import { Route as ApiV1StockItemsRouteImport } from './routes/api/v1/stock.items'
-import { Route as ApiV1SkladParseDeliveryNoteRouteImport } from './routes/api/v1/sklad.parse-delivery-note'
-import { Route as ApiV1RecurringInvoicesIdRouteImport } from './routes/api/v1/recurring-invoices.$id'
-import { Route as ApiV1QuotesIdRouteImport } from './routes/api/v1/quotes.$id'
-import { Route as ApiV1InvoicesIdRouteImport } from './routes/api/v1/invoices.$id'
-import { Route as ApiV1CustomersIdRouteImport } from './routes/api/v1/customers.$id'
-import { Route as ApiPublicWebhooksGopayMerchantRouteImport } from './routes/api/public/webhooks/gopay-merchant'
-import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/tesla/callback'
-import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/public/tatrabanka/callback'
-import { Route as ApiPublicHooksTrialLifecycleRouteImport } from './routes/api/public/hooks/trial-lifecycle'
-import { Route as ApiPublicHooksStockAlertsRouteImport } from './routes/api/public/hooks/stock-alerts'
-import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public/hooks/reminders'
-import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/public/hooks/recurring-run'
-import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
-import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
-import { Route as ApiAdminSeoCallbackRouteImport } from './routes/api/admin/seo.callback'
-import { Route as AuthenticatedSkladProduktyIdRouteImport } from './routes/_authenticated/sklad.produkty.$id'
-import { Route as AuthenticatedSkladPresunyNovaRouteImport } from './routes/_authenticated/sklad.presuny.nova'
-import { Route as AuthenticatedSkladPresunyIdRouteImport } from './routes/_authenticated/sklad.presuny.$id'
-import { Route as AuthenticatedSkladPohybyIdRouteImport } from './routes/_authenticated/sklad.pohyby.$id'
-import { Route as AuthenticatedJazdyIntegracieTeslaRouteImport } from './routes/_authenticated/jazdy.integracie.tesla'
-import { Route as AuthenticatedJazdyIntegracieCommanderRouteImport } from './routes/_authenticated/jazdy.integracie.commander'
+import { Route as AuthenticatedBankoveUctyTransakcieRouteImport } from './routes/_authenticated/bankove-ucty.transakcie'
+import { Route as AuthenticatedDokladyIndexRouteImport } from './routes/_authenticated/doklady.index'
+import { Route as AuthenticatedDokladyNovyRouteImport } from './routes/_authenticated/doklady.novy'
+import { Route as AuthenticatedEfakturaIndexRouteImport } from './routes/_authenticated/efaktura.index'
+import { Route as AuthenticatedEfakturaDoruceniaRouteImport } from './routes/_authenticated/efaktura.dorucenia'
+import { Route as AuthenticatedEfakturaOdoslaneRouteImport } from './routes/_authenticated/efaktura.odoslane'
+import { Route as AuthenticatedEfakturaPrijateRouteImport } from './routes/_authenticated/efaktura.prijate'
+import { Route as AuthenticatedFakturyIndexRouteImport } from './routes/_authenticated/faktury.index'
+import { Route as AuthenticatedFakturyIdRouteImport } from './routes/_authenticated/faktury.$id'
+import { Route as AuthenticatedFakturyNovaRouteImport } from './routes/_authenticated/faktury.nova'
+import { Route as AuthenticatedFakturyRychlaRouteImport } from './routes/_authenticated/faktury.rychla'
+import { Route as AuthenticatedFakturySkenerRouteImport } from './routes/_authenticated/faktury.skener'
+import { Route as AuthenticatedImportyIndexRouteImport } from './routes/_authenticated/importy.index'
+import { Route as AuthenticatedImportyIdokladRouteImport } from './routes/_authenticated/importy.idoklad'
+import { Route as AuthenticatedImportyKrosRouteImport } from './routes/_authenticated/importy.kros'
+import { Route as AuthenticatedImportyMoneyS3RouteImport } from './routes/_authenticated/importy.money-s3'
+import { Route as AuthenticatedImportyOmegaRouteImport } from './routes/_authenticated/importy.omega'
+import { Route as AuthenticatedImportySuperfakturaRouteImport } from './routes/_authenticated/importy.superfaktura'
+import { Route as AuthenticatedJazdyIndexRouteImport } from './routes/_authenticated/jazdy.index'
+import { Route as AuthenticatedJazdyExportRouteImport } from './routes/_authenticated/jazdy.export'
+import { Route as AuthenticatedJazdyGpsRouteImport } from './routes/_authenticated/jazdy.gps'
+import { Route as AuthenticatedJazdyIntegracieRouteImport } from './routes/_authenticated/jazdy.integracie'
+import { Route as AuthenticatedJazdyNovaRouteImport } from './routes/_authenticated/jazdy.nova'
+import { Route as AuthenticatedJazdyPrehladRouteImport } from './routes/_authenticated/jazdy.prehlad'
+import { Route as AuthenticatedJazdyVozidlaRouteImport } from './routes/_authenticated/jazdy.vozidla'
+import { Route as AuthenticatedNastaveniaEmailSablonyRouteImport } from './routes/_authenticated/nastavenia.email-sablony'
+import { Route as AuthenticatedNastaveniaOnlinePlatbyRouteImport } from './routes/_authenticated/nastavenia.online-platby'
+import { Route as AuthenticatedOpakovaneIndexRouteImport } from './routes/_authenticated/opakovane.index'
+import { Route as AuthenticatedOpakovaneIdRouteImport } from './routes/_authenticated/opakovane.$id'
+import { Route as AuthenticatedOpakovaneNovaRouteImport } from './routes/_authenticated/opakovane.nova'
+import { Route as AuthenticatedPonukyIndexRouteImport } from './routes/_authenticated/ponuky.index'
+import { Route as AuthenticatedPonukyIdRouteImport } from './routes/_authenticated/ponuky.$id'
+import { Route as AuthenticatedPonukyNovaRouteImport } from './routes/_authenticated/ponuky.nova'
+import { Route as AuthenticatedPrijateFakturyIndexRouteImport } from './routes/_authenticated/prijate-faktury.index'
+import { Route as AuthenticatedPrijateFakturyIdRouteImport } from './routes/_authenticated/prijate-faktury.$id'
+import { Route as AuthenticatedPrijateFakturyNovaRouteImport } from './routes/_authenticated/prijate-faktury.nova'
+import { Route as AuthenticatedSkladIndexRouteImport } from './routes/_authenticated/sklad.index'
+import { Route as AuthenticatedSkladDodaciListRouteImport } from './routes/_authenticated/sklad.dodaci-list'
+import { Route as AuthenticatedSkladDodacieListyRouteImport } from './routes/_authenticated/sklad.dodacie-listy'
+import { Route as AuthenticatedSkladHodnotaRouteImport } from './routes/_authenticated/sklad.hodnota'
+import { Route as AuthenticatedSkladImportRouteImport } from './routes/_authenticated/sklad.import'
+import { Route as AuthenticatedSkladInventuraRouteImport } from './routes/_authenticated/sklad.inventura'
+import { Route as AuthenticatedSkladKategorieRouteImport } from './routes/_authenticated/sklad.kategorie'
+import { Route as AuthenticatedSkladMinimumRouteImport } from './routes/_authenticated/sklad.minimum'
+import { Route as AuthenticatedSkladNastaveniaRouteImport } from './routes/_authenticated/sklad.nastavenia'
+import { Route as AuthenticatedSkladPohybyRouteImport } from './routes/_authenticated/sklad.pohyby'
+import { Route as AuthenticatedSkladPresunyRouteImport } from './routes/_authenticated/sklad.presuny'
+import { Route as AuthenticatedSkladPrijemRouteImport } from './routes/_authenticated/sklad.prijem'
+import { Route as AuthenticatedSkladProduktyRouteImport } from './routes/_authenticated/sklad.produkty'
+import { Route as AuthenticatedSkladVydajRouteImport } from './routes/_authenticated/sklad.vydaj'
+import { Route as AuthenticatedUctovnictvoDphRouteImport } from './routes/_authenticated/uctovnictvo.dph'
+import { Route as AuthenticatedZalohoveIndexRouteImport } from './routes/_authenticated/zalohove.index'
+import { Route as AdminCompaniesIndexRouteImport } from './routes/admin.companies.index'
+import { Route as AdminCompaniesIdRouteImport } from './routes/admin.companies.$id'
+import { Route as ApiAdminMigrationExportRouteImport } from './routes/api/admin/migration-export'
+import { Route as ApiPublicSupportChatRouteImport } from './routes/api/public/support-chat'
+import { Route as ApiV1CustomersRouteImport } from './routes/api/v1/customers'
+import { Route as ApiV1FuelRecordsRouteImport } from './routes/api/v1/fuel-records'
+import { Route as ApiV1InvoicesRouteImport } from './routes/api/v1/invoices'
+import { Route as ApiV1QuotesRouteImport } from './routes/api/v1/quotes'
+import { Route as ApiV1RecurringInvoicesRouteImport } from './routes/api/v1/recurring-invoices'
+import { Route as ApiV1TripsRouteImport } from './routes/api/v1/trips'
+import { Route as ApiV1VehiclesRouteImport } from './routes/api/v1/vehicles'
+import { Route as ApiV1WarehousesRouteImport } from './routes/api/v1/warehouses'
+import { Route as ApiWebhooksGopayRouteImport } from './routes/api/webhooks/gopay'
+import { Route as DocsOnlinePlatbyGopayRouteImport } from './routes/docs.online-platby.gopay'
+import { Route as PomocOnlinePlatbyGopayRouteImport } from './routes/pomoc.online-platby.gopay'
 import { Route as AuthenticatedFakturyIdUpravitRouteImport } from './routes/_authenticated/faktury.$id.upravit'
-import { Route as ApiV1StockMovementsIdRouteImport } from './routes/api/v1/stock.movements.$id'
-import { Route as ApiV1StockItemsIdRouteImport } from './routes/api/v1/stock.items.$id'
-import { Route as ApiV1SkladParseDeliveryNoteJobIdRouteImport } from './routes/api/v1/sklad.parse-delivery-note.$jobId'
-import { Route as ApiV1QuotesIdConvertRouteImport } from './routes/api/v1/quotes.$id.convert'
-import { Route as ApiV1InvoicesIdSendRouteImport } from './routes/api/v1/invoices.$id.send'
-import { Route as ApiV1InvoicesIdPdfRouteImport } from './routes/api/v1/invoices.$id.pdf'
-import { Route as ApiV1InvoicesIdMarkPaidRouteImport } from './routes/api/v1/invoices.$id.mark-paid'
-import { Route as ApiV1InvoicesIdCancelRouteImport } from './routes/api/v1/invoices.$id.cancel'
+import { Route as AuthenticatedJazdyIntegracieIndexRouteImport } from './routes/_authenticated/jazdy.integracie.index'
+import { Route as AuthenticatedJazdyIntegracieCommanderRouteImport } from './routes/_authenticated/jazdy.integracie.commander'
+import { Route as AuthenticatedJazdyIntegracieTeslaRouteImport } from './routes/_authenticated/jazdy.integracie.tesla'
+import { Route as AuthenticatedSkladPohybyIdRouteImport } from './routes/_authenticated/sklad.pohyby.$id'
+import { Route as AuthenticatedSkladPresunyIdRouteImport } from './routes/_authenticated/sklad.presuny.$id'
+import { Route as AuthenticatedSkladPresunyNovaRouteImport } from './routes/_authenticated/sklad.presuny.nova'
+import { Route as AuthenticatedSkladProduktyIdRouteImport } from './routes/_authenticated/sklad.produkty.$id'
+import { Route as ApiAdminSeoCallbackRouteImport } from './routes/api/admin/seo.callback'
+import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
+import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
+import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/public/hooks/recurring-run'
+import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public/hooks/reminders'
+import { Route as ApiPublicHooksStockAlertsRouteImport } from './routes/api/public/hooks/stock-alerts'
+import { Route as ApiPublicHooksTrialLifecycleRouteImport } from './routes/api/public/hooks/trial-lifecycle'
+import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/public/tatrabanka/callback'
+import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/tesla/callback'
+import { Route as ApiPublicWebhooksGopayMerchantRouteImport } from './routes/api/public/webhooks/gopay-merchant'
+import { Route as ApiV1CustomersIdRouteImport } from './routes/api/v1/customers.$id'
+import { Route as ApiV1InvoicesIdRouteImport } from './routes/api/v1/invoices.$id'
+import { Route as ApiV1QuotesIdRouteImport } from './routes/api/v1/quotes.$id'
+import { Route as ApiV1RecurringInvoicesIdRouteImport } from './routes/api/v1/recurring-invoices.$id'
+import { Route as ApiV1SkladParseDeliveryNoteRouteImport } from './routes/api/v1/sklad.parse-delivery-note'
+import { Route as ApiV1StockItemsRouteImport } from './routes/api/v1/stock.items'
+import { Route as ApiV1StockLevelsRouteImport } from './routes/api/v1/stock.levels'
+import { Route as ApiV1StockLowStockRouteImport } from './routes/api/v1/stock.low-stock'
+import { Route as ApiV1StockMovementsRouteImport } from './routes/api/v1/stock.movements'
+import { Route as ApiV1StockValuationRouteImport } from './routes/api/v1/stock.valuation'
 import { Route as AuthenticatedSkladProduktyIdUpravitRouteImport } from './routes/_authenticated/sklad.produkty.$id.upravit'
+import { Route as ApiV1InvoicesIdCancelRouteImport } from './routes/api/v1/invoices.$id.cancel'
+import { Route as ApiV1InvoicesIdMarkPaidRouteImport } from './routes/api/v1/invoices.$id.mark-paid'
+import { Route as ApiV1InvoicesIdPdfRouteImport } from './routes/api/v1/invoices.$id.pdf'
+import { Route as ApiV1InvoicesIdSendRouteImport } from './routes/api/v1/invoices.$id.send'
+import { Route as ApiV1QuotesIdConvertRouteImport } from './routes/api/v1/quotes.$id.convert'
+import { Route as ApiV1SkladParseDeliveryNoteJobIdRouteImport } from './routes/api/v1/sklad.parse-delivery-note.$jobId'
+import { Route as ApiV1StockItemsIdRouteImport } from './routes/api/v1/stock.items.$id'
+import { Route as ApiV1StockMovementsIdRouteImport } from './routes/api/v1/stock.movements.$id'
 
-const VyvojariRoute = VyvojariRouteImport.update({
-  id: '/vyvojari',
-  path: '/vyvojari',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UctovniciRoute = UctovniciRouteImport.update({
-  id: '/uctovnici',
-  path: '/uctovnici',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
-  id: '/robots.txt',
-  path: '/robots.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegistraciaRoute = RegistraciaRouteImport.update({
-  id: '/registracia',
-  path: '/registracia',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrihlasenieRoute = PrihlasenieRouteImport.update({
-  id: '/prihlasenie',
-  path: '/prihlasenie',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PridatPouzivatelaRoute = PridatPouzivatelaRouteImport.update({
-  id: '/pridat-pouzivatela',
-  path: '/pridat-pouzivatela',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ObjednavkaRoute = ObjednavkaRouteImport.update({
-  id: '/objednavka',
-  path: '/objednavka',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const KontaktRoute = KontaktRouteImport.update({
-  id: '/kontakt',
-  path: '/kontakt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FunkcieRoute = FunkcieRouteImport.update({
-  id: '/funkcie',
-  path: '/funkcie',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EfakturaciaRoute = EfakturaciaRouteImport.update({
-  id: '/efakturacia',
-  path: '/efakturacia',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CennikRoute = CennikRouteImport.update({
-  id: '/cennik',
-  path: '/cennik',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogRoute = BlogRouteImport.update({
-  id: '/blog',
-  path: '/blog',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AktivovatRoute = AktivovatRouteImport.update({
-  id: '/aktivovat',
-  path: '/aktivovat',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -265,293 +204,79 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const AktivovatRoute = AktivovatRouteImport.update({
+  id: '/aktivovat',
+  path: '/aktivovat',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const BlogRoute = BlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
   getParentRoute: () => rootRouteImport,
 } as any)
-const VyvojariIndexRoute = VyvojariIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => VyvojariRoute,
-} as any)
-const UctovniciIndexRoute = UctovniciIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => UctovniciRoute,
-} as any)
-const PravneIndexRoute = PravneIndexRouteImport.update({
-  id: '/pravne/',
-  path: '/pravne/',
+const CennikRoute = CennikRouteImport.update({
+  id: '/cennik',
+  path: '/cennik',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PomocIndexRoute = PomocIndexRouteImport.update({
-  id: '/pomoc/',
-  path: '/pomoc/',
+const EfakturaciaRoute = EfakturaciaRouteImport.update({
+  id: '/efakturacia',
+  path: '/efakturacia',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FunkcieIndexRoute = FunkcieIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => FunkcieRoute,
-} as any)
-const EfakturaciaIndexRoute = EfakturaciaIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => EfakturaciaRoute,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const VyvojariSlugRoute = VyvojariSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => VyvojariRoute,
-} as any)
-const UctovniciSlugRoute = UctovniciSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => UctovniciRoute,
-} as any)
-const SchvalitTokenRoute = SchvalitTokenRouteImport.update({
-  id: '/schvalit/$token',
-  path: '/schvalit/$token',
+const FunkcieRoute = FunkcieRouteImport.update({
+  id: '/funkcie',
+  path: '/funkcie',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PravneTeslaPodmienkyRoute = PravneTeslaPodmienkyRouteImport.update({
-  id: '/pravne/tesla-podmienky',
-  path: '/pravne/tesla-podmienky',
+const KontaktRoute = KontaktRouteImport.update({
+  id: '/kontakt',
+  path: '/kontakt',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PravneReklamacnyPoriadokRoute =
-  PravneReklamacnyPoriadokRouteImport.update({
-    id: '/pravne/reklamacny-poriadok',
-    path: '/pravne/reklamacny-poriadok',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const PravneOpakovanePlatbyRoute = PravneOpakovanePlatbyRouteImport.update({
-  id: '/pravne/opakovane-platby',
-  path: '/pravne/opakovane-platby',
+const ObjednavkaRoute = ObjednavkaRouteImport.update({
+  id: '/objednavka',
+  path: '/objednavka',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PravneObchodnePodmienkyRoute = PravneObchodnePodmienkyRouteImport.update({
-  id: '/pravne/obchodne-podmienky',
-  path: '/pravne/obchodne-podmienky',
+const PridatPouzivatelaRoute = PridatPouzivatelaRouteImport.update({
+  id: '/pridat-pouzivatela',
+  path: '/pridat-pouzivatela',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PravneGopayPodmienkyRoute = PravneGopayPodmienkyRouteImport.update({
-  id: '/pravne/gopay-podmienky',
-  path: '/pravne/gopay-podmienky',
+const PrihlasenieRoute = PrihlasenieRouteImport.update({
+  id: '/prihlasenie',
+  path: '/prihlasenie',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PravneGdprRoute = PravneGdprRouteImport.update({
-  id: '/pravne/gdpr',
-  path: '/pravne/gdpr',
+const RegistraciaRoute = RegistraciaRouteImport.update({
+  id: '/registracia',
+  path: '/registracia',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PravneCookiesRoute = PravneCookiesRouteImport.update({
-  id: '/pravne/cookies',
-  path: '/pravne/cookies',
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PomocSkladRoute = PomocSkladRouteImport.update({
-  id: '/pomoc/sklad',
-  path: '/pomoc/sklad',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PomocPredplatneRoute = PomocPredplatneRouteImport.update({
-  id: '/pomoc/predplatne',
-  path: '/pomoc/predplatne',
+const UctovniciRoute = UctovniciRouteImport.update({
+  id: '/uctovnici',
+  path: '/uctovnici',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PomocFakturyRoute = PomocFakturyRouteImport.update({
-  id: '/pomoc/faktury',
-  path: '/pomoc/faktury',
+const VyvojariRoute = VyvojariRouteImport.update({
+  id: '/vyvojari',
+  path: '/vyvojari',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PomocEfakturaRoute = PomocEfakturaRouteImport.update({
-  id: '/pomoc/efaktura',
-  path: '/pomoc/efaktura',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PomocApiRoute = PomocApiRouteImport.update({
-  id: '/pomoc/api',
-  path: '/pomoc/api',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PayTokenRoute = PayTokenRouteImport.update({
-  id: '/pay/$token',
-  path: '/pay/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FunkcieSlugRoute = FunkcieSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => FunkcieRoute,
-} as any)
-const EfakturaciaSlugRoute = EfakturaciaSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => EfakturaciaRoute,
-} as any)
-const DocsApiRoute = DocsApiRouteImport.update({
-  id: '/docs/api',
-  path: '/docs/api',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DanovyDokladTokenRoute = DanovyDokladTokenRouteImport.update({
-  id: '/danovy-doklad/$token',
-  path: '/danovy-doklad/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminUsageRoute = AdminUsageRouteImport.update({
-  id: '/usage',
-  path: '/usage',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
-  id: '/subscriptions',
-  path: '/subscriptions',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSeoRoute = AdminSeoRouteImport.update({
-  id: '/seo',
-  path: '/seo',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPlatformInvoicesRoute = AdminPlatformInvoicesRouteImport.update({
-  id: '/platform-invoices',
-  path: '/platform-invoices',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPaymentProvidersRoute = AdminPaymentProvidersRouteImport.update({
-  id: '/payment-providers',
-  path: '/payment-providers',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLegalRoute = AdminLegalRouteImport.update({
-  id: '/legal',
-  path: '/legal',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminIntegrationsRoute = AdminIntegrationsRouteImport.update({
-  id: '/integrations',
-  path: '/integrations',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminHealthRoute = AdminHealthRouteImport.update({
-  id: '/health',
-  path: '/health',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminGopayRoute = AdminGopayRouteImport.update({
-  id: '/gopay',
-  path: '/gopay',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminErrorsRoute = AdminErrorsRouteImport.update({
-  id: '/errors',
-  path: '/errors',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAuditLogRoute = AdminAuditLogRouteImport.update({
-  id: '/audit-log',
-  path: '/audit-log',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AuthenticatedWebhookyLogyRoute =
-  AuthenticatedWebhookyLogyRouteImport.update({
-    id: '/webhooky-logy',
-    path: '/webhooky-logy',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedWebhookyRoute = AuthenticatedWebhookyRouteImport.update({
-  id: '/webhooky',
-  path: '/webhooky',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedSkladRoute = AuthenticatedSkladRouteImport.update({
-  id: '/sklad',
-  path: '/sklad',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedProduktyRoute = AuthenticatedProduktyRouteImport.update({
-  id: '/produkty',
-  path: '/produkty',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedPredplatneRoute = AuthenticatedPredplatneRouteImport.update({
-  id: '/predplatne',
-  path: '/predplatne',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedOdberateliaRoute =
-  AuthenticatedOdberateliaRouteImport.update({
-    id: '/odberatelia',
-    path: '/odberatelia',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedNastaveniaRoute = AuthenticatedNastaveniaRouteImport.update({
-  id: '/nastavenia',
-  path: '/nastavenia',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedFirmyRoute = AuthenticatedFirmyRouteImport.update({
-  id: '/firmy',
-  path: '/firmy',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedFirmaRoute = AuthenticatedFirmaRouteImport.update({
-  id: '/firma',
-  path: '/firma',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedExportyRoute = AuthenticatedExportyRouteImport.update({
-  id: '/exporty',
-  path: '/exporty',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedEfakturaRoute = AuthenticatedEfakturaRouteImport.update({
-  id: '/efaktura',
-  path: '/efaktura',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedDiagnostikaRoute =
-  AuthenticatedDiagnostikaRouteImport.update({
-    id: '/diagnostika',
-    path: '/diagnostika',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedApiPlaygroundRoute =
-  AuthenticatedApiPlaygroundRouteImport.update({
-    id: '/api-playground',
-    path: '/api-playground',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedApiKluceRoute = AuthenticatedApiKluceRouteImport.update({
-  id: '/api-kluce',
-  path: '/api-kluce',
+const AuthenticatedAiAsistentRoute = AuthenticatedAiAsistentRouteImport.update({
+  id: '/ai-asistent',
+  path: '/ai-asistent',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedApiDokumentaciaRoute =
@@ -560,394 +285,290 @@ const AuthenticatedApiDokumentaciaRoute =
     path: '/api-dokumentacia',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAiAsistentRoute = AuthenticatedAiAsistentRouteImport.update({
-  id: '/ai-asistent',
-  path: '/ai-asistent',
+const AuthenticatedApiKluceRoute = AuthenticatedApiKluceRouteImport.update({
+  id: '/api-kluce',
+  path: '/api-kluce',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AdminCompaniesIndexRoute = AdminCompaniesIndexRouteImport.update({
-  id: '/companies/',
-  path: '/companies/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AuthenticatedZalohoveIndexRoute =
-  AuthenticatedZalohoveIndexRouteImport.update({
-    id: '/zalohove/',
-    path: '/zalohove/',
+const AuthenticatedApiPlaygroundRoute =
+  AuthenticatedApiPlaygroundRouteImport.update({
+    id: '/api-playground',
+    path: '/api-playground',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedSkladIndexRoute = AuthenticatedSkladIndexRouteImport.update({
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDiagnostikaRoute =
+  AuthenticatedDiagnostikaRouteImport.update({
+    id: '/diagnostika',
+    path: '/diagnostika',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEfakturaRoute = AuthenticatedEfakturaRouteImport.update({
+  id: '/efaktura',
+  path: '/efaktura',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedExportyRoute = AuthenticatedExportyRouteImport.update({
+  id: '/exporty',
+  path: '/exporty',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFirmaRoute = AuthenticatedFirmaRouteImport.update({
+  id: '/firma',
+  path: '/firma',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFirmyRoute = AuthenticatedFirmyRouteImport.update({
+  id: '/firmy',
+  path: '/firmy',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedNastaveniaRoute = AuthenticatedNastaveniaRouteImport.update({
+  id: '/nastavenia',
+  path: '/nastavenia',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOdberateliaRoute =
+  AuthenticatedOdberateliaRouteImport.update({
+    id: '/odberatelia',
+    path: '/odberatelia',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPredplatneRoute = AuthenticatedPredplatneRouteImport.update({
+  id: '/predplatne',
+  path: '/predplatne',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProduktyRoute = AuthenticatedProduktyRouteImport.update({
+  id: '/produkty',
+  path: '/produkty',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSkladRoute = AuthenticatedSkladRouteImport.update({
+  id: '/sklad',
+  path: '/sklad',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWebhookyRoute = AuthenticatedWebhookyRouteImport.update({
+  id: '/webhooky',
+  path: '/webhooky',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWebhookyLogyRoute =
+  AuthenticatedWebhookyLogyRouteImport.update({
+    id: '/webhooky-logy',
+    path: '/webhooky-logy',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthenticatedSkladRoute,
+  getParentRoute: () => AdminRoute,
 } as any)
-const AuthenticatedPrijateFakturyIndexRoute =
-  AuthenticatedPrijateFakturyIndexRouteImport.update({
-    id: '/prijate-faktury/',
-    path: '/prijate-faktury/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPonukyIndexRoute =
-  AuthenticatedPonukyIndexRouteImport.update({
-    id: '/ponuky/',
-    path: '/ponuky/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedOpakovaneIndexRoute =
-  AuthenticatedOpakovaneIndexRouteImport.update({
-    id: '/opakovane/',
-    path: '/opakovane/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedJazdyIndexRoute = AuthenticatedJazdyIndexRouteImport.update({
-  id: '/jazdy/',
-  path: '/jazdy/',
-  getParentRoute: () => AuthenticatedRouteRoute,
+const AdminAuditLogRoute = AdminAuditLogRouteImport.update({
+  id: '/audit-log',
+  path: '/audit-log',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AuthenticatedImportyIndexRoute =
-  AuthenticatedImportyIndexRouteImport.update({
-    id: '/importy/',
-    path: '/importy/',
-    getParentRoute: () => AuthenticatedRouteRoute,
+const AdminErrorsRoute = AdminErrorsRouteImport.update({
+  id: '/errors',
+  path: '/errors',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGopayRoute = AdminGopayRouteImport.update({
+  id: '/gopay',
+  path: '/gopay',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminHealthRoute = AdminHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminIntegrationsRoute = AdminIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLegalRoute = AdminLegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPaymentProvidersRoute = AdminPaymentProvidersRouteImport.update({
+  id: '/payment-providers',
+  path: '/payment-providers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPlatformInvoicesRoute = AdminPlatformInvoicesRouteImport.update({
+  id: '/platform-invoices',
+  path: '/platform-invoices',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSeoRoute = AdminSeoRouteImport.update({
+  id: '/seo',
+  path: '/seo',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsageRoute = AdminUsageRouteImport.update({
+  id: '/usage',
+  path: '/usage',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const DanovyDokladTokenRoute = DanovyDokladTokenRouteImport.update({
+  id: '/danovy-doklad/$token',
+  path: '/danovy-doklad/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsApiRoute = DocsApiRouteImport.update({
+  id: '/docs/api',
+  path: '/docs/api',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EfakturaciaIndexRoute = EfakturaciaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EfakturaciaRoute,
+} as any)
+const EfakturaciaSlugRoute = EfakturaciaSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => EfakturaciaRoute,
+} as any)
+const FunkcieIndexRoute = FunkcieIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FunkcieRoute,
+} as any)
+const FunkcieSlugRoute = FunkcieSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => FunkcieRoute,
+} as any)
+const PayTokenRoute = PayTokenRouteImport.update({
+  id: '/pay/$token',
+  path: '/pay/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocIndexRoute = PomocIndexRouteImport.update({
+  id: '/pomoc/',
+  path: '/pomoc/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocApiRoute = PomocApiRouteImport.update({
+  id: '/pomoc/api',
+  path: '/pomoc/api',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocEfakturaRoute = PomocEfakturaRouteImport.update({
+  id: '/pomoc/efaktura',
+  path: '/pomoc/efaktura',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocFakturyRoute = PomocFakturyRouteImport.update({
+  id: '/pomoc/faktury',
+  path: '/pomoc/faktury',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocPredplatneRoute = PomocPredplatneRouteImport.update({
+  id: '/pomoc/predplatne',
+  path: '/pomoc/predplatne',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocSkladRoute = PomocSkladRouteImport.update({
+  id: '/pomoc/sklad',
+  path: '/pomoc/sklad',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PravneIndexRoute = PravneIndexRouteImport.update({
+  id: '/pravne/',
+  path: '/pravne/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PravneCookiesRoute = PravneCookiesRouteImport.update({
+  id: '/pravne/cookies',
+  path: '/pravne/cookies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PravneGdprRoute = PravneGdprRouteImport.update({
+  id: '/pravne/gdpr',
+  path: '/pravne/gdpr',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PravneGopayPodmienkyRoute = PravneGopayPodmienkyRouteImport.update({
+  id: '/pravne/gopay-podmienky',
+  path: '/pravne/gopay-podmienky',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PravneObchodnePodmienkyRoute = PravneObchodnePodmienkyRouteImport.update({
+  id: '/pravne/obchodne-podmienky',
+  path: '/pravne/obchodne-podmienky',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PravneOpakovanePlatbyRoute = PravneOpakovanePlatbyRouteImport.update({
+  id: '/pravne/opakovane-platby',
+  path: '/pravne/opakovane-platby',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PravneReklamacnyPoriadokRoute =
+  PravneReklamacnyPoriadokRouteImport.update({
+    id: '/pravne/reklamacny-poriadok',
+    path: '/pravne/reklamacny-poriadok',
+    getParentRoute: () => rootRouteImport,
   } as any)
-const AuthenticatedFakturyIndexRoute =
-  AuthenticatedFakturyIndexRouteImport.update({
-    id: '/faktury/',
-    path: '/faktury/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedEfakturaIndexRoute =
-  AuthenticatedEfakturaIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedEfakturaRoute,
-  } as any)
-const AuthenticatedDokladyIndexRoute =
-  AuthenticatedDokladyIndexRouteImport.update({
-    id: '/doklady/',
-    path: '/doklady/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
+const PravneTeslaPodmienkyRoute = PravneTeslaPodmienkyRouteImport.update({
+  id: '/pravne/tesla-podmienky',
+  path: '/pravne/tesla-podmienky',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SchvalitTokenRoute = SchvalitTokenRouteImport.update({
+  id: '/schvalit/$token',
+  path: '/schvalit/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UctovniciIndexRoute = UctovniciIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => UctovniciRoute,
+} as any)
+const UctovniciSlugRoute = UctovniciSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => UctovniciRoute,
+} as any)
+const VyvojariIndexRoute = VyvojariIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => VyvojariRoute,
+} as any)
+const VyvojariSlugRoute = VyvojariSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => VyvojariRoute,
+} as any)
 const AuthenticatedBankoveUctyIndexRoute =
   AuthenticatedBankoveUctyIndexRouteImport.update({
     id: '/bankove-ucty/',
     path: '/bankove-ucty/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const PomocOnlinePlatbyGopayRoute = PomocOnlinePlatbyGopayRouteImport.update({
-  id: '/pomoc/online-platby/gopay',
-  path: '/pomoc/online-platby/gopay',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsOnlinePlatbyGopayRoute = DocsOnlinePlatbyGopayRouteImport.update({
-  id: '/docs/online-platby/gopay',
-  path: '/docs/online-platby/gopay',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiWebhooksGopayRoute = ApiWebhooksGopayRouteImport.update({
-  id: '/api/webhooks/gopay',
-  path: '/api/webhooks/gopay',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1WarehousesRoute = ApiV1WarehousesRouteImport.update({
-  id: '/api/v1/warehouses',
-  path: '/api/v1/warehouses',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1VehiclesRoute = ApiV1VehiclesRouteImport.update({
-  id: '/api/v1/vehicles',
-  path: '/api/v1/vehicles',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1TripsRoute = ApiV1TripsRouteImport.update({
-  id: '/api/v1/trips',
-  path: '/api/v1/trips',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1RecurringInvoicesRoute = ApiV1RecurringInvoicesRouteImport.update({
-  id: '/api/v1/recurring-invoices',
-  path: '/api/v1/recurring-invoices',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1QuotesRoute = ApiV1QuotesRouteImport.update({
-  id: '/api/v1/quotes',
-  path: '/api/v1/quotes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1InvoicesRoute = ApiV1InvoicesRouteImport.update({
-  id: '/api/v1/invoices',
-  path: '/api/v1/invoices',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1FuelRecordsRoute = ApiV1FuelRecordsRouteImport.update({
-  id: '/api/v1/fuel-records',
-  path: '/api/v1/fuel-records',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1CustomersRoute = ApiV1CustomersRouteImport.update({
-  id: '/api/v1/customers',
-  path: '/api/v1/customers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicSupportChatRoute = ApiPublicSupportChatRouteImport.update({
-  id: '/api/public/support-chat',
-  path: '/api/public/support-chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAdminMigrationExportRoute = ApiAdminMigrationExportRouteImport.update({
-  id: '/api/admin/migration-export',
-  path: '/api/admin/migration-export',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminCompaniesIdRoute = AdminCompaniesIdRouteImport.update({
-  id: '/companies/$id',
-  path: '/companies/$id',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AuthenticatedUctovnictvoDphRoute =
-  AuthenticatedUctovnictvoDphRouteImport.update({
-    id: '/uctovnictvo/dph',
-    path: '/uctovnictvo/dph',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedSkladVydajRoute = AuthenticatedSkladVydajRouteImport.update({
-  id: '/vydaj',
-  path: '/vydaj',
-  getParentRoute: () => AuthenticatedSkladRoute,
-} as any)
-const AuthenticatedSkladProduktyRoute =
-  AuthenticatedSkladProduktyRouteImport.update({
-    id: '/produkty',
-    path: '/produkty',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedSkladPrijemRoute =
-  AuthenticatedSkladPrijemRouteImport.update({
-    id: '/prijem',
-    path: '/prijem',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedSkladPresunyRoute =
-  AuthenticatedSkladPresunyRouteImport.update({
-    id: '/presuny',
-    path: '/presuny',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedSkladPohybyRoute =
-  AuthenticatedSkladPohybyRouteImport.update({
-    id: '/pohyby',
-    path: '/pohyby',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedSkladNastaveniaRoute =
-  AuthenticatedSkladNastaveniaRouteImport.update({
-    id: '/nastavenia',
-    path: '/nastavenia',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedSkladMinimumRoute =
-  AuthenticatedSkladMinimumRouteImport.update({
-    id: '/minimum',
-    path: '/minimum',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedSkladKategorieRoute =
-  AuthenticatedSkladKategorieRouteImport.update({
-    id: '/kategorie',
-    path: '/kategorie',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedSkladInventuraRoute =
-  AuthenticatedSkladInventuraRouteImport.update({
-    id: '/inventura',
-    path: '/inventura',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedSkladImportRoute =
-  AuthenticatedSkladImportRouteImport.update({
-    id: '/import',
-    path: '/import',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedSkladHodnotaRoute =
-  AuthenticatedSkladHodnotaRouteImport.update({
-    id: '/hodnota',
-    path: '/hodnota',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedSkladDodacieListyRoute =
-  AuthenticatedSkladDodacieListyRouteImport.update({
-    id: '/dodacie-listy',
-    path: '/dodacie-listy',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedSkladDodaciListRoute =
-  AuthenticatedSkladDodaciListRouteImport.update({
-    id: '/dodaci-list',
-    path: '/dodaci-list',
-    getParentRoute: () => AuthenticatedSkladRoute,
-  } as any)
-const AuthenticatedPrijateFakturyNovaRoute =
-  AuthenticatedPrijateFakturyNovaRouteImport.update({
-    id: '/prijate-faktury/nova',
-    path: '/prijate-faktury/nova',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPrijateFakturyIdRoute =
-  AuthenticatedPrijateFakturyIdRouteImport.update({
-    id: '/prijate-faktury/$id',
-    path: '/prijate-faktury/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPonukyNovaRoute = AuthenticatedPonukyNovaRouteImport.update({
-  id: '/ponuky/nova',
-  path: '/ponuky/nova',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedPonukyIdRoute = AuthenticatedPonukyIdRouteImport.update({
-  id: '/ponuky/$id',
-  path: '/ponuky/$id',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedOpakovaneNovaRoute =
-  AuthenticatedOpakovaneNovaRouteImport.update({
-    id: '/opakovane/nova',
-    path: '/opakovane/nova',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedOpakovaneIdRoute =
-  AuthenticatedOpakovaneIdRouteImport.update({
-    id: '/opakovane/$id',
-    path: '/opakovane/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedNastaveniaOnlinePlatbyRoute =
-  AuthenticatedNastaveniaOnlinePlatbyRouteImport.update({
-    id: '/online-platby',
-    path: '/online-platby',
-    getParentRoute: () => AuthenticatedNastaveniaRoute,
-  } as any)
-const AuthenticatedNastaveniaEmailSablonyRoute =
-  AuthenticatedNastaveniaEmailSablonyRouteImport.update({
-    id: '/email-sablony',
-    path: '/email-sablony',
-    getParentRoute: () => AuthenticatedNastaveniaRoute,
-  } as any)
-const AuthenticatedJazdyVozidlaRoute =
-  AuthenticatedJazdyVozidlaRouteImport.update({
-    id: '/jazdy/vozidla',
-    path: '/jazdy/vozidla',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedJazdyPrehladRoute =
-  AuthenticatedJazdyPrehladRouteImport.update({
-    id: '/jazdy/prehlad',
-    path: '/jazdy/prehlad',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedJazdyNovaRoute = AuthenticatedJazdyNovaRouteImport.update({
-  id: '/jazdy/nova',
-  path: '/jazdy/nova',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedJazdyIntegracieRoute =
-  AuthenticatedJazdyIntegracieRouteImport.update({
-    id: '/jazdy/integracie',
-    path: '/jazdy/integracie',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedJazdyGpsRoute = AuthenticatedJazdyGpsRouteImport.update({
-  id: '/jazdy/gps',
-  path: '/jazdy/gps',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedJazdyExportRoute =
-  AuthenticatedJazdyExportRouteImport.update({
-    id: '/jazdy/export',
-    path: '/jazdy/export',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedImportySuperfakturaRoute =
-  AuthenticatedImportySuperfakturaRouteImport.update({
-    id: '/importy/superfaktura',
-    path: '/importy/superfaktura',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedImportyOmegaRoute =
-  AuthenticatedImportyOmegaRouteImport.update({
-    id: '/importy/omega',
-    path: '/importy/omega',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedImportyMoneyS3Route =
-  AuthenticatedImportyMoneyS3RouteImport.update({
-    id: '/importy/money-s3',
-    path: '/importy/money-s3',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedImportyKrosRoute =
-  AuthenticatedImportyKrosRouteImport.update({
-    id: '/importy/kros',
-    path: '/importy/kros',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedImportyIdokladRoute =
-  AuthenticatedImportyIdokladRouteImport.update({
-    id: '/importy/idoklad',
-    path: '/importy/idoklad',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedFakturySkenerRoute =
-  AuthenticatedFakturySkenerRouteImport.update({
-    id: '/faktury/skener',
-    path: '/faktury/skener',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedFakturyRychlaRoute =
-  AuthenticatedFakturyRychlaRouteImport.update({
-    id: '/faktury/rychla',
-    path: '/faktury/rychla',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedFakturyNovaRoute =
-  AuthenticatedFakturyNovaRouteImport.update({
-    id: '/faktury/nova',
-    path: '/faktury/nova',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedFakturyIdRoute = AuthenticatedFakturyIdRouteImport.update({
-  id: '/faktury/$id',
-  path: '/faktury/$id',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedEfakturaPrijateRoute =
-  AuthenticatedEfakturaPrijateRouteImport.update({
-    id: '/prijate',
-    path: '/prijate',
-    getParentRoute: () => AuthenticatedEfakturaRoute,
-  } as any)
-const AuthenticatedEfakturaOdoslaneRoute =
-  AuthenticatedEfakturaOdoslaneRouteImport.update({
-    id: '/odoslane',
-    path: '/odoslane',
-    getParentRoute: () => AuthenticatedEfakturaRoute,
-  } as any)
-const AuthenticatedEfakturaDoruceniaRoute =
-  AuthenticatedEfakturaDoruceniaRouteImport.update({
-    id: '/dorucenia',
-    path: '/dorucenia',
-    getParentRoute: () => AuthenticatedEfakturaRoute,
-  } as any)
-const AuthenticatedDokladyNovyRoute =
-  AuthenticatedDokladyNovyRouteImport.update({
-    id: '/doklady/novy',
-    path: '/doklady/novy',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedBankoveUctyTransakcieRoute =
-  AuthenticatedBankoveUctyTransakcieRouteImport.update({
-    id: '/bankove-ucty/transakcie',
-    path: '/bankove-ucty/transakcie',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedBankoveUctyPripojitRoute =
@@ -956,149 +577,395 @@ const AuthenticatedBankoveUctyPripojitRoute =
     path: '/bankove-ucty/pripojit',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBankoveUctyTransakcieRoute =
+  AuthenticatedBankoveUctyTransakcieRouteImport.update({
+    id: '/bankove-ucty/transakcie',
+    path: '/bankove-ucty/transakcie',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDokladyIndexRoute =
+  AuthenticatedDokladyIndexRouteImport.update({
+    id: '/doklady/',
+    path: '/doklady/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDokladyNovyRoute =
+  AuthenticatedDokladyNovyRouteImport.update({
+    id: '/doklady/novy',
+    path: '/doklady/novy',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEfakturaIndexRoute =
+  AuthenticatedEfakturaIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedEfakturaRoute,
+  } as any)
+const AuthenticatedEfakturaDoruceniaRoute =
+  AuthenticatedEfakturaDoruceniaRouteImport.update({
+    id: '/dorucenia',
+    path: '/dorucenia',
+    getParentRoute: () => AuthenticatedEfakturaRoute,
+  } as any)
+const AuthenticatedEfakturaOdoslaneRoute =
+  AuthenticatedEfakturaOdoslaneRouteImport.update({
+    id: '/odoslane',
+    path: '/odoslane',
+    getParentRoute: () => AuthenticatedEfakturaRoute,
+  } as any)
+const AuthenticatedEfakturaPrijateRoute =
+  AuthenticatedEfakturaPrijateRouteImport.update({
+    id: '/prijate',
+    path: '/prijate',
+    getParentRoute: () => AuthenticatedEfakturaRoute,
+  } as any)
+const AuthenticatedFakturyIndexRoute =
+  AuthenticatedFakturyIndexRouteImport.update({
+    id: '/faktury/',
+    path: '/faktury/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFakturyIdRoute = AuthenticatedFakturyIdRouteImport.update({
+  id: '/faktury/$id',
+  path: '/faktury/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFakturyNovaRoute =
+  AuthenticatedFakturyNovaRouteImport.update({
+    id: '/faktury/nova',
+    path: '/faktury/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFakturyRychlaRoute =
+  AuthenticatedFakturyRychlaRouteImport.update({
+    id: '/faktury/rychla',
+    path: '/faktury/rychla',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFakturySkenerRoute =
+  AuthenticatedFakturySkenerRouteImport.update({
+    id: '/faktury/skener',
+    path: '/faktury/skener',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImportyIndexRoute =
+  AuthenticatedImportyIndexRouteImport.update({
+    id: '/importy/',
+    path: '/importy/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImportyIdokladRoute =
+  AuthenticatedImportyIdokladRouteImport.update({
+    id: '/importy/idoklad',
+    path: '/importy/idoklad',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImportyKrosRoute =
+  AuthenticatedImportyKrosRouteImport.update({
+    id: '/importy/kros',
+    path: '/importy/kros',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImportyMoneyS3Route =
+  AuthenticatedImportyMoneyS3RouteImport.update({
+    id: '/importy/money-s3',
+    path: '/importy/money-s3',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImportyOmegaRoute =
+  AuthenticatedImportyOmegaRouteImport.update({
+    id: '/importy/omega',
+    path: '/importy/omega',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImportySuperfakturaRoute =
+  AuthenticatedImportySuperfakturaRouteImport.update({
+    id: '/importy/superfaktura',
+    path: '/importy/superfaktura',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedJazdyIndexRoute = AuthenticatedJazdyIndexRouteImport.update({
+  id: '/jazdy/',
+  path: '/jazdy/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedJazdyExportRoute =
+  AuthenticatedJazdyExportRouteImport.update({
+    id: '/jazdy/export',
+    path: '/jazdy/export',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedJazdyGpsRoute = AuthenticatedJazdyGpsRouteImport.update({
+  id: '/jazdy/gps',
+  path: '/jazdy/gps',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedJazdyIntegracieRoute =
+  AuthenticatedJazdyIntegracieRouteImport.update({
+    id: '/jazdy/integracie',
+    path: '/jazdy/integracie',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedJazdyNovaRoute = AuthenticatedJazdyNovaRouteImport.update({
+  id: '/jazdy/nova',
+  path: '/jazdy/nova',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedJazdyPrehladRoute =
+  AuthenticatedJazdyPrehladRouteImport.update({
+    id: '/jazdy/prehlad',
+    path: '/jazdy/prehlad',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedJazdyVozidlaRoute =
+  AuthenticatedJazdyVozidlaRouteImport.update({
+    id: '/jazdy/vozidla',
+    path: '/jazdy/vozidla',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedNastaveniaEmailSablonyRoute =
+  AuthenticatedNastaveniaEmailSablonyRouteImport.update({
+    id: '/email-sablony',
+    path: '/email-sablony',
+    getParentRoute: () => AuthenticatedNastaveniaRoute,
+  } as any)
+const AuthenticatedNastaveniaOnlinePlatbyRoute =
+  AuthenticatedNastaveniaOnlinePlatbyRouteImport.update({
+    id: '/online-platby',
+    path: '/online-platby',
+    getParentRoute: () => AuthenticatedNastaveniaRoute,
+  } as any)
+const AuthenticatedOpakovaneIndexRoute =
+  AuthenticatedOpakovaneIndexRouteImport.update({
+    id: '/opakovane/',
+    path: '/opakovane/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOpakovaneIdRoute =
+  AuthenticatedOpakovaneIdRouteImport.update({
+    id: '/opakovane/$id',
+    path: '/opakovane/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOpakovaneNovaRoute =
+  AuthenticatedOpakovaneNovaRouteImport.update({
+    id: '/opakovane/nova',
+    path: '/opakovane/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPonukyIndexRoute =
+  AuthenticatedPonukyIndexRouteImport.update({
+    id: '/ponuky/',
+    path: '/ponuky/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPonukyIdRoute = AuthenticatedPonukyIdRouteImport.update({
+  id: '/ponuky/$id',
+  path: '/ponuky/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPonukyNovaRoute = AuthenticatedPonukyNovaRouteImport.update({
+  id: '/ponuky/nova',
+  path: '/ponuky/nova',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPrijateFakturyIndexRoute =
+  AuthenticatedPrijateFakturyIndexRouteImport.update({
+    id: '/prijate-faktury/',
+    path: '/prijate-faktury/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPrijateFakturyIdRoute =
+  AuthenticatedPrijateFakturyIdRouteImport.update({
+    id: '/prijate-faktury/$id',
+    path: '/prijate-faktury/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPrijateFakturyNovaRoute =
+  AuthenticatedPrijateFakturyNovaRouteImport.update({
+    id: '/prijate-faktury/nova',
+    path: '/prijate-faktury/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSkladIndexRoute = AuthenticatedSkladIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedSkladRoute,
+} as any)
+const AuthenticatedSkladDodaciListRoute =
+  AuthenticatedSkladDodaciListRouteImport.update({
+    id: '/dodaci-list',
+    path: '/dodaci-list',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladDodacieListyRoute =
+  AuthenticatedSkladDodacieListyRouteImport.update({
+    id: '/dodacie-listy',
+    path: '/dodacie-listy',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladHodnotaRoute =
+  AuthenticatedSkladHodnotaRouteImport.update({
+    id: '/hodnota',
+    path: '/hodnota',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladImportRoute =
+  AuthenticatedSkladImportRouteImport.update({
+    id: '/import',
+    path: '/import',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladInventuraRoute =
+  AuthenticatedSkladInventuraRouteImport.update({
+    id: '/inventura',
+    path: '/inventura',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladKategorieRoute =
+  AuthenticatedSkladKategorieRouteImport.update({
+    id: '/kategorie',
+    path: '/kategorie',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladMinimumRoute =
+  AuthenticatedSkladMinimumRouteImport.update({
+    id: '/minimum',
+    path: '/minimum',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladNastaveniaRoute =
+  AuthenticatedSkladNastaveniaRouteImport.update({
+    id: '/nastavenia',
+    path: '/nastavenia',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladPohybyRoute =
+  AuthenticatedSkladPohybyRouteImport.update({
+    id: '/pohyby',
+    path: '/pohyby',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladPresunyRoute =
+  AuthenticatedSkladPresunyRouteImport.update({
+    id: '/presuny',
+    path: '/presuny',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladPrijemRoute =
+  AuthenticatedSkladPrijemRouteImport.update({
+    id: '/prijem',
+    path: '/prijem',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladProduktyRoute =
+  AuthenticatedSkladProduktyRouteImport.update({
+    id: '/produkty',
+    path: '/produkty',
+    getParentRoute: () => AuthenticatedSkladRoute,
+  } as any)
+const AuthenticatedSkladVydajRoute = AuthenticatedSkladVydajRouteImport.update({
+  id: '/vydaj',
+  path: '/vydaj',
+  getParentRoute: () => AuthenticatedSkladRoute,
+} as any)
+const AuthenticatedUctovnictvoDphRoute =
+  AuthenticatedUctovnictvoDphRouteImport.update({
+    id: '/uctovnictvo/dph',
+    path: '/uctovnictvo/dph',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedZalohoveIndexRoute =
+  AuthenticatedZalohoveIndexRouteImport.update({
+    id: '/zalohove/',
+    path: '/zalohove/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AdminCompaniesIndexRoute = AdminCompaniesIndexRouteImport.update({
+  id: '/companies/',
+  path: '/companies/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCompaniesIdRoute = AdminCompaniesIdRouteImport.update({
+  id: '/companies/$id',
+  path: '/companies/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
+const ApiAdminMigrationExportRoute = ApiAdminMigrationExportRouteImport.update({
+  id: '/api/admin/migration-export',
+  path: '/api/admin/migration-export',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSupportChatRoute = ApiPublicSupportChatRouteImport.update({
+  id: '/api/public/support-chat',
+  path: '/api/public/support-chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1CustomersRoute = ApiV1CustomersRouteImport.update({
+  id: '/api/v1/customers',
+  path: '/api/v1/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1FuelRecordsRoute = ApiV1FuelRecordsRouteImport.update({
+  id: '/api/v1/fuel-records',
+  path: '/api/v1/fuel-records',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1InvoicesRoute = ApiV1InvoicesRouteImport.update({
+  id: '/api/v1/invoices',
+  path: '/api/v1/invoices',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1QuotesRoute = ApiV1QuotesRouteImport.update({
+  id: '/api/v1/quotes',
+  path: '/api/v1/quotes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1RecurringInvoicesRoute = ApiV1RecurringInvoicesRouteImport.update({
+  id: '/api/v1/recurring-invoices',
+  path: '/api/v1/recurring-invoices',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1TripsRoute = ApiV1TripsRouteImport.update({
+  id: '/api/v1/trips',
+  path: '/api/v1/trips',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1VehiclesRoute = ApiV1VehiclesRouteImport.update({
+  id: '/api/v1/vehicles',
+  path: '/api/v1/vehicles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1WarehousesRoute = ApiV1WarehousesRouteImport.update({
+  id: '/api/v1/warehouses',
+  path: '/api/v1/warehouses',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWebhooksGopayRoute = ApiWebhooksGopayRouteImport.update({
+  id: '/api/webhooks/gopay',
+  path: '/api/webhooks/gopay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsOnlinePlatbyGopayRoute = DocsOnlinePlatbyGopayRouteImport.update({
+  id: '/docs/online-platby/gopay',
+  path: '/docs/online-platby/gopay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocOnlinePlatbyGopayRoute = PomocOnlinePlatbyGopayRouteImport.update({
+  id: '/pomoc/online-platby/gopay',
+  path: '/pomoc/online-platby/gopay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedFakturyIdUpravitRoute =
+  AuthenticatedFakturyIdUpravitRouteImport.update({
+    id: '/upravit',
+    path: '/upravit',
+    getParentRoute: () => AuthenticatedFakturyIdRoute,
+  } as any)
 const AuthenticatedJazdyIntegracieIndexRoute =
   AuthenticatedJazdyIntegracieIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => AuthenticatedJazdyIntegracieRoute,
-  } as any)
-const ApiV1StockValuationRoute = ApiV1StockValuationRouteImport.update({
-  id: '/api/v1/stock/valuation',
-  path: '/api/v1/stock/valuation',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1StockMovementsRoute = ApiV1StockMovementsRouteImport.update({
-  id: '/api/v1/stock/movements',
-  path: '/api/v1/stock/movements',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1StockLowStockRoute = ApiV1StockLowStockRouteImport.update({
-  id: '/api/v1/stock/low-stock',
-  path: '/api/v1/stock/low-stock',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1StockLevelsRoute = ApiV1StockLevelsRouteImport.update({
-  id: '/api/v1/stock/levels',
-  path: '/api/v1/stock/levels',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1StockItemsRoute = ApiV1StockItemsRouteImport.update({
-  id: '/api/v1/stock/items',
-  path: '/api/v1/stock/items',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiV1SkladParseDeliveryNoteRoute =
-  ApiV1SkladParseDeliveryNoteRouteImport.update({
-    id: '/api/v1/sklad/parse-delivery-note',
-    path: '/api/v1/sklad/parse-delivery-note',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiV1RecurringInvoicesIdRoute =
-  ApiV1RecurringInvoicesIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => ApiV1RecurringInvoicesRoute,
-  } as any)
-const ApiV1QuotesIdRoute = ApiV1QuotesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiV1QuotesRoute,
-} as any)
-const ApiV1InvoicesIdRoute = ApiV1InvoicesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiV1InvoicesRoute,
-} as any)
-const ApiV1CustomersIdRoute = ApiV1CustomersIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiV1CustomersRoute,
-} as any)
-const ApiPublicWebhooksGopayMerchantRoute =
-  ApiPublicWebhooksGopayMerchantRouteImport.update({
-    id: '/api/public/webhooks/gopay-merchant',
-    path: '/api/public/webhooks/gopay-merchant',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicTeslaCallbackRoute = ApiPublicTeslaCallbackRouteImport.update({
-  id: '/api/public/tesla/callback',
-  path: '/api/public/tesla/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicTatrabankaCallbackRoute =
-  ApiPublicTatrabankaCallbackRouteImport.update({
-    id: '/api/public/tatrabanka/callback',
-    path: '/api/public/tatrabanka/callback',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksTrialLifecycleRoute =
-  ApiPublicHooksTrialLifecycleRouteImport.update({
-    id: '/api/public/hooks/trial-lifecycle',
-    path: '/api/public/hooks/trial-lifecycle',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksStockAlertsRoute =
-  ApiPublicHooksStockAlertsRouteImport.update({
-    id: '/api/public/hooks/stock-alerts',
-    path: '/api/public/hooks/stock-alerts',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksRemindersRoute = ApiPublicHooksRemindersRouteImport.update({
-  id: '/api/public/hooks/reminders',
-  path: '/api/public/hooks/reminders',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicHooksRecurringRunRoute =
-  ApiPublicHooksRecurringRunRouteImport.update({
-    id: '/api/public/hooks/recurring-run',
-    path: '/api/public/hooks/recurring-run',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksPushOverdueRoute =
-  ApiPublicHooksPushOverdueRouteImport.update({
-    id: '/api/public/hooks/push-overdue',
-    path: '/api/public/hooks/push-overdue',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksCommanderSyncRoute =
-  ApiPublicHooksCommanderSyncRouteImport.update({
-    id: '/api/public/hooks/commander-sync',
-    path: '/api/public/hooks/commander-sync',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiAdminSeoCallbackRoute = ApiAdminSeoCallbackRouteImport.update({
-  id: '/api/admin/seo/callback',
-  path: '/api/admin/seo/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedSkladProduktyIdRoute =
-  AuthenticatedSkladProduktyIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedSkladProduktyRoute,
-  } as any)
-const AuthenticatedSkladPresunyNovaRoute =
-  AuthenticatedSkladPresunyNovaRouteImport.update({
-    id: '/nova',
-    path: '/nova',
-    getParentRoute: () => AuthenticatedSkladPresunyRoute,
-  } as any)
-const AuthenticatedSkladPresunyIdRoute =
-  AuthenticatedSkladPresunyIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedSkladPresunyRoute,
-  } as any)
-const AuthenticatedSkladPohybyIdRoute =
-  AuthenticatedSkladPohybyIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedSkladPohybyRoute,
-  } as any)
-const AuthenticatedJazdyIntegracieTeslaRoute =
-  AuthenticatedJazdyIntegracieTeslaRouteImport.update({
-    id: '/tesla',
-    path: '/tesla',
     getParentRoute: () => AuthenticatedJazdyIntegracieRoute,
   } as any)
 const AuthenticatedJazdyIntegracieCommanderRoute =
@@ -1107,52 +974,144 @@ const AuthenticatedJazdyIntegracieCommanderRoute =
     path: '/commander',
     getParentRoute: () => AuthenticatedJazdyIntegracieRoute,
   } as any)
-const AuthenticatedFakturyIdUpravitRoute =
-  AuthenticatedFakturyIdUpravitRouteImport.update({
-    id: '/upravit',
-    path: '/upravit',
-    getParentRoute: () => AuthenticatedFakturyIdRoute,
+const AuthenticatedJazdyIntegracieTeslaRoute =
+  AuthenticatedJazdyIntegracieTeslaRouteImport.update({
+    id: '/tesla',
+    path: '/tesla',
+    getParentRoute: () => AuthenticatedJazdyIntegracieRoute,
   } as any)
-const ApiV1StockMovementsIdRoute = ApiV1StockMovementsIdRouteImport.update({
+const AuthenticatedSkladPohybyIdRoute =
+  AuthenticatedSkladPohybyIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedSkladPohybyRoute,
+  } as any)
+const AuthenticatedSkladPresunyIdRoute =
+  AuthenticatedSkladPresunyIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedSkladPresunyRoute,
+  } as any)
+const AuthenticatedSkladPresunyNovaRoute =
+  AuthenticatedSkladPresunyNovaRouteImport.update({
+    id: '/nova',
+    path: '/nova',
+    getParentRoute: () => AuthenticatedSkladPresunyRoute,
+  } as any)
+const AuthenticatedSkladProduktyIdRoute =
+  AuthenticatedSkladProduktyIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedSkladProduktyRoute,
+  } as any)
+const ApiAdminSeoCallbackRoute = ApiAdminSeoCallbackRouteImport.update({
+  id: '/api/admin/seo/callback',
+  path: '/api/admin/seo/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksCommanderSyncRoute =
+  ApiPublicHooksCommanderSyncRouteImport.update({
+    id: '/api/public/hooks/commander-sync',
+    path: '/api/public/hooks/commander-sync',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksPushOverdueRoute =
+  ApiPublicHooksPushOverdueRouteImport.update({
+    id: '/api/public/hooks/push-overdue',
+    path: '/api/public/hooks/push-overdue',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksRecurringRunRoute =
+  ApiPublicHooksRecurringRunRouteImport.update({
+    id: '/api/public/hooks/recurring-run',
+    path: '/api/public/hooks/recurring-run',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksRemindersRoute = ApiPublicHooksRemindersRouteImport.update({
+  id: '/api/public/hooks/reminders',
+  path: '/api/public/hooks/reminders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksStockAlertsRoute =
+  ApiPublicHooksStockAlertsRouteImport.update({
+    id: '/api/public/hooks/stock-alerts',
+    path: '/api/public/hooks/stock-alerts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksTrialLifecycleRoute =
+  ApiPublicHooksTrialLifecycleRouteImport.update({
+    id: '/api/public/hooks/trial-lifecycle',
+    path: '/api/public/hooks/trial-lifecycle',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicTatrabankaCallbackRoute =
+  ApiPublicTatrabankaCallbackRouteImport.update({
+    id: '/api/public/tatrabanka/callback',
+    path: '/api/public/tatrabanka/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicTeslaCallbackRoute = ApiPublicTeslaCallbackRouteImport.update({
+  id: '/api/public/tesla/callback',
+  path: '/api/public/tesla/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicWebhooksGopayMerchantRoute =
+  ApiPublicWebhooksGopayMerchantRouteImport.update({
+    id: '/api/public/webhooks/gopay-merchant',
+    path: '/api/public/webhooks/gopay-merchant',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1CustomersIdRoute = ApiV1CustomersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
-  getParentRoute: () => ApiV1StockMovementsRoute,
+  getParentRoute: () => ApiV1CustomersRoute,
 } as any)
-const ApiV1StockItemsIdRoute = ApiV1StockItemsIdRouteImport.update({
+const ApiV1InvoicesIdRoute = ApiV1InvoicesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
-  getParentRoute: () => ApiV1StockItemsRoute,
+  getParentRoute: () => ApiV1InvoicesRoute,
 } as any)
-const ApiV1SkladParseDeliveryNoteJobIdRoute =
-  ApiV1SkladParseDeliveryNoteJobIdRouteImport.update({
-    id: '/$jobId',
-    path: '/$jobId',
-    getParentRoute: () => ApiV1SkladParseDeliveryNoteRoute,
+const ApiV1QuotesIdRoute = ApiV1QuotesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiV1QuotesRoute,
+} as any)
+const ApiV1RecurringInvoicesIdRoute =
+  ApiV1RecurringInvoicesIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiV1RecurringInvoicesRoute,
   } as any)
-const ApiV1QuotesIdConvertRoute = ApiV1QuotesIdConvertRouteImport.update({
-  id: '/convert',
-  path: '/convert',
-  getParentRoute: () => ApiV1QuotesIdRoute,
+const ApiV1SkladParseDeliveryNoteRoute =
+  ApiV1SkladParseDeliveryNoteRouteImport.update({
+    id: '/api/v1/sklad/parse-delivery-note',
+    path: '/api/v1/sklad/parse-delivery-note',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiV1StockItemsRoute = ApiV1StockItemsRouteImport.update({
+  id: '/api/v1/stock/items',
+  path: '/api/v1/stock/items',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const ApiV1InvoicesIdSendRoute = ApiV1InvoicesIdSendRouteImport.update({
-  id: '/send',
-  path: '/send',
-  getParentRoute: () => ApiV1InvoicesIdRoute,
+const ApiV1StockLevelsRoute = ApiV1StockLevelsRouteImport.update({
+  id: '/api/v1/stock/levels',
+  path: '/api/v1/stock/levels',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const ApiV1InvoicesIdPdfRoute = ApiV1InvoicesIdPdfRouteImport.update({
-  id: '/pdf',
-  path: '/pdf',
-  getParentRoute: () => ApiV1InvoicesIdRoute,
+const ApiV1StockLowStockRoute = ApiV1StockLowStockRouteImport.update({
+  id: '/api/v1/stock/low-stock',
+  path: '/api/v1/stock/low-stock',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const ApiV1InvoicesIdMarkPaidRoute = ApiV1InvoicesIdMarkPaidRouteImport.update({
-  id: '/mark-paid',
-  path: '/mark-paid',
-  getParentRoute: () => ApiV1InvoicesIdRoute,
+const ApiV1StockMovementsRoute = ApiV1StockMovementsRouteImport.update({
+  id: '/api/v1/stock/movements',
+  path: '/api/v1/stock/movements',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const ApiV1InvoicesIdCancelRoute = ApiV1InvoicesIdCancelRouteImport.update({
-  id: '/cancel',
-  path: '/cancel',
-  getParentRoute: () => ApiV1InvoicesIdRoute,
+const ApiV1StockValuationRoute = ApiV1StockValuationRouteImport.update({
+  id: '/api/v1/stock/valuation',
+  path: '/api/v1/stock/valuation',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSkladProduktyIdUpravitRoute =
   AuthenticatedSkladProduktyIdUpravitRouteImport.update({
@@ -1160,6 +1119,47 @@ const AuthenticatedSkladProduktyIdUpravitRoute =
     path: '/upravit',
     getParentRoute: () => AuthenticatedSkladProduktyIdRoute,
   } as any)
+const ApiV1InvoicesIdCancelRoute = ApiV1InvoicesIdCancelRouteImport.update({
+  id: '/cancel',
+  path: '/cancel',
+  getParentRoute: () => ApiV1InvoicesIdRoute,
+} as any)
+const ApiV1InvoicesIdMarkPaidRoute = ApiV1InvoicesIdMarkPaidRouteImport.update({
+  id: '/mark-paid',
+  path: '/mark-paid',
+  getParentRoute: () => ApiV1InvoicesIdRoute,
+} as any)
+const ApiV1InvoicesIdPdfRoute = ApiV1InvoicesIdPdfRouteImport.update({
+  id: '/pdf',
+  path: '/pdf',
+  getParentRoute: () => ApiV1InvoicesIdRoute,
+} as any)
+const ApiV1InvoicesIdSendRoute = ApiV1InvoicesIdSendRouteImport.update({
+  id: '/send',
+  path: '/send',
+  getParentRoute: () => ApiV1InvoicesIdRoute,
+} as any)
+const ApiV1QuotesIdConvertRoute = ApiV1QuotesIdConvertRouteImport.update({
+  id: '/convert',
+  path: '/convert',
+  getParentRoute: () => ApiV1QuotesIdRoute,
+} as any)
+const ApiV1SkladParseDeliveryNoteJobIdRoute =
+  ApiV1SkladParseDeliveryNoteJobIdRouteImport.update({
+    id: '/$jobId',
+    path: '/$jobId',
+    getParentRoute: () => ApiV1SkladParseDeliveryNoteRoute,
+  } as any)
+const ApiV1StockItemsIdRoute = ApiV1StockItemsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiV1StockItemsRoute,
+} as any)
+const ApiV1StockMovementsIdRoute = ApiV1StockMovementsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiV1StockMovementsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -2306,109 +2306,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/vyvojari': {
-      id: '/vyvojari'
-      path: '/vyvojari'
-      fullPath: '/vyvojari'
-      preLoaderRoute: typeof VyvojariRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/uctovnici': {
-      id: '/uctovnici'
-      path: '/uctovnici'
-      fullPath: '/uctovnici'
-      preLoaderRoute: typeof UctovniciRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/robots.txt': {
-      id: '/robots.txt'
-      path: '/robots.txt'
-      fullPath: '/robots.txt'
-      preLoaderRoute: typeof RobotsDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/registracia': {
-      id: '/registracia'
-      path: '/registracia'
-      fullPath: '/registracia'
-      preLoaderRoute: typeof RegistraciaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/prihlasenie': {
-      id: '/prihlasenie'
-      path: '/prihlasenie'
-      fullPath: '/prihlasenie'
-      preLoaderRoute: typeof PrihlasenieRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pridat-pouzivatela': {
-      id: '/pridat-pouzivatela'
-      path: '/pridat-pouzivatela'
-      fullPath: '/pridat-pouzivatela'
-      preLoaderRoute: typeof PridatPouzivatelaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/objednavka': {
-      id: '/objednavka'
-      path: '/objednavka'
-      fullPath: '/objednavka'
-      preLoaderRoute: typeof ObjednavkaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/kontakt': {
-      id: '/kontakt'
-      path: '/kontakt'
-      fullPath: '/kontakt'
-      preLoaderRoute: typeof KontaktRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/funkcie': {
-      id: '/funkcie'
-      path: '/funkcie'
-      fullPath: '/funkcie'
-      preLoaderRoute: typeof FunkcieRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/efakturacia': {
-      id: '/efakturacia'
-      path: '/efakturacia'
-      fullPath: '/efakturacia'
-      preLoaderRoute: typeof EfakturaciaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cennik': {
-      id: '/cennik'
-      path: '/cennik'
-      fullPath: '/cennik'
-      preLoaderRoute: typeof CennikRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog': {
-      id: '/blog'
-      path: '/blog'
-      fullPath: '/blog'
-      preLoaderRoute: typeof BlogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/aktivovat': {
-      id: '/aktivovat'
-      path: '/aktivovat'
-      fullPath: '/aktivovat'
-      preLoaderRoute: typeof AktivovatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -2418,396 +2320,116 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/vyvojari/': {
-      id: '/vyvojari/'
-      path: '/'
-      fullPath: '/vyvojari/'
-      preLoaderRoute: typeof VyvojariIndexRouteImport
-      parentRoute: typeof VyvojariRoute
-    }
-    '/uctovnici/': {
-      id: '/uctovnici/'
-      path: '/'
-      fullPath: '/uctovnici/'
-      preLoaderRoute: typeof UctovniciIndexRouteImport
-      parentRoute: typeof UctovniciRoute
-    }
-    '/pravne/': {
-      id: '/pravne/'
-      path: '/pravne'
-      fullPath: '/pravne/'
-      preLoaderRoute: typeof PravneIndexRouteImport
+    '/aktivovat': {
+      id: '/aktivovat'
+      path: '/aktivovat'
+      fullPath: '/aktivovat'
+      preLoaderRoute: typeof AktivovatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pomoc/': {
-      id: '/pomoc/'
-      path: '/pomoc'
-      fullPath: '/pomoc/'
-      preLoaderRoute: typeof PomocIndexRouteImport
+    '/blog': {
+      id: '/blog'
+      path: '/blog'
+      fullPath: '/blog'
+      preLoaderRoute: typeof BlogRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/funkcie/': {
-      id: '/funkcie/'
-      path: '/'
-      fullPath: '/funkcie/'
-      preLoaderRoute: typeof FunkcieIndexRouteImport
-      parentRoute: typeof FunkcieRoute
-    }
-    '/efakturacia/': {
-      id: '/efakturacia/'
-      path: '/'
-      fullPath: '/efakturacia/'
-      preLoaderRoute: typeof EfakturaciaIndexRouteImport
-      parentRoute: typeof EfakturaciaRoute
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/vyvojari/$slug': {
-      id: '/vyvojari/$slug'
-      path: '/$slug'
-      fullPath: '/vyvojari/$slug'
-      preLoaderRoute: typeof VyvojariSlugRouteImport
-      parentRoute: typeof VyvojariRoute
-    }
-    '/uctovnici/$slug': {
-      id: '/uctovnici/$slug'
-      path: '/$slug'
-      fullPath: '/uctovnici/$slug'
-      preLoaderRoute: typeof UctovniciSlugRouteImport
-      parentRoute: typeof UctovniciRoute
-    }
-    '/schvalit/$token': {
-      id: '/schvalit/$token'
-      path: '/schvalit/$token'
-      fullPath: '/schvalit/$token'
-      preLoaderRoute: typeof SchvalitTokenRouteImport
+    '/cennik': {
+      id: '/cennik'
+      path: '/cennik'
+      fullPath: '/cennik'
+      preLoaderRoute: typeof CennikRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pravne/tesla-podmienky': {
-      id: '/pravne/tesla-podmienky'
-      path: '/pravne/tesla-podmienky'
-      fullPath: '/pravne/tesla-podmienky'
-      preLoaderRoute: typeof PravneTeslaPodmienkyRouteImport
+    '/efakturacia': {
+      id: '/efakturacia'
+      path: '/efakturacia'
+      fullPath: '/efakturacia'
+      preLoaderRoute: typeof EfakturaciaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pravne/reklamacny-poriadok': {
-      id: '/pravne/reklamacny-poriadok'
-      path: '/pravne/reklamacny-poriadok'
-      fullPath: '/pravne/reklamacny-poriadok'
-      preLoaderRoute: typeof PravneReklamacnyPoriadokRouteImport
+    '/funkcie': {
+      id: '/funkcie'
+      path: '/funkcie'
+      fullPath: '/funkcie'
+      preLoaderRoute: typeof FunkcieRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pravne/opakovane-platby': {
-      id: '/pravne/opakovane-platby'
-      path: '/pravne/opakovane-platby'
-      fullPath: '/pravne/opakovane-platby'
-      preLoaderRoute: typeof PravneOpakovanePlatbyRouteImport
+    '/kontakt': {
+      id: '/kontakt'
+      path: '/kontakt'
+      fullPath: '/kontakt'
+      preLoaderRoute: typeof KontaktRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pravne/obchodne-podmienky': {
-      id: '/pravne/obchodne-podmienky'
-      path: '/pravne/obchodne-podmienky'
-      fullPath: '/pravne/obchodne-podmienky'
-      preLoaderRoute: typeof PravneObchodnePodmienkyRouteImport
+    '/objednavka': {
+      id: '/objednavka'
+      path: '/objednavka'
+      fullPath: '/objednavka'
+      preLoaderRoute: typeof ObjednavkaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pravne/gopay-podmienky': {
-      id: '/pravne/gopay-podmienky'
-      path: '/pravne/gopay-podmienky'
-      fullPath: '/pravne/gopay-podmienky'
-      preLoaderRoute: typeof PravneGopayPodmienkyRouteImport
+    '/pridat-pouzivatela': {
+      id: '/pridat-pouzivatela'
+      path: '/pridat-pouzivatela'
+      fullPath: '/pridat-pouzivatela'
+      preLoaderRoute: typeof PridatPouzivatelaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pravne/gdpr': {
-      id: '/pravne/gdpr'
-      path: '/pravne/gdpr'
-      fullPath: '/pravne/gdpr'
-      preLoaderRoute: typeof PravneGdprRouteImport
+    '/prihlasenie': {
+      id: '/prihlasenie'
+      path: '/prihlasenie'
+      fullPath: '/prihlasenie'
+      preLoaderRoute: typeof PrihlasenieRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pravne/cookies': {
-      id: '/pravne/cookies'
-      path: '/pravne/cookies'
-      fullPath: '/pravne/cookies'
-      preLoaderRoute: typeof PravneCookiesRouteImport
+    '/registracia': {
+      id: '/registracia'
+      path: '/registracia'
+      fullPath: '/registracia'
+      preLoaderRoute: typeof RegistraciaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pomoc/sklad': {
-      id: '/pomoc/sklad'
-      path: '/pomoc/sklad'
-      fullPath: '/pomoc/sklad'
-      preLoaderRoute: typeof PomocSkladRouteImport
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pomoc/predplatne': {
-      id: '/pomoc/predplatne'
-      path: '/pomoc/predplatne'
-      fullPath: '/pomoc/predplatne'
-      preLoaderRoute: typeof PomocPredplatneRouteImport
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pomoc/faktury': {
-      id: '/pomoc/faktury'
-      path: '/pomoc/faktury'
-      fullPath: '/pomoc/faktury'
-      preLoaderRoute: typeof PomocFakturyRouteImport
+    '/uctovnici': {
+      id: '/uctovnici'
+      path: '/uctovnici'
+      fullPath: '/uctovnici'
+      preLoaderRoute: typeof UctovniciRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pomoc/efaktura': {
-      id: '/pomoc/efaktura'
-      path: '/pomoc/efaktura'
-      fullPath: '/pomoc/efaktura'
-      preLoaderRoute: typeof PomocEfakturaRouteImport
+    '/vyvojari': {
+      id: '/vyvojari'
+      path: '/vyvojari'
+      fullPath: '/vyvojari'
+      preLoaderRoute: typeof VyvojariRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pomoc/api': {
-      id: '/pomoc/api'
-      path: '/pomoc/api'
-      fullPath: '/pomoc/api'
-      preLoaderRoute: typeof PomocApiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pay/$token': {
-      id: '/pay/$token'
-      path: '/pay/$token'
-      fullPath: '/pay/$token'
-      preLoaderRoute: typeof PayTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/funkcie/$slug': {
-      id: '/funkcie/$slug'
-      path: '/$slug'
-      fullPath: '/funkcie/$slug'
-      preLoaderRoute: typeof FunkcieSlugRouteImport
-      parentRoute: typeof FunkcieRoute
-    }
-    '/efakturacia/$slug': {
-      id: '/efakturacia/$slug'
-      path: '/$slug'
-      fullPath: '/efakturacia/$slug'
-      preLoaderRoute: typeof EfakturaciaSlugRouteImport
-      parentRoute: typeof EfakturaciaRoute
-    }
-    '/docs/api': {
-      id: '/docs/api'
-      path: '/docs/api'
-      fullPath: '/docs/api'
-      preLoaderRoute: typeof DocsApiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/danovy-doklad/$token': {
-      id: '/danovy-doklad/$token'
-      path: '/danovy-doklad/$token'
-      fullPath: '/danovy-doklad/$token'
-      preLoaderRoute: typeof DanovyDokladTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/usage': {
-      id: '/admin/usage'
-      path: '/usage'
-      fullPath: '/admin/usage'
-      preLoaderRoute: typeof AdminUsageRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/subscriptions': {
-      id: '/admin/subscriptions'
-      path: '/subscriptions'
-      fullPath: '/admin/subscriptions'
-      preLoaderRoute: typeof AdminSubscriptionsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/seo': {
-      id: '/admin/seo'
-      path: '/seo'
-      fullPath: '/admin/seo'
-      preLoaderRoute: typeof AdminSeoRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/platform-invoices': {
-      id: '/admin/platform-invoices'
-      path: '/platform-invoices'
-      fullPath: '/admin/platform-invoices'
-      preLoaderRoute: typeof AdminPlatformInvoicesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/payment-providers': {
-      id: '/admin/payment-providers'
-      path: '/payment-providers'
-      fullPath: '/admin/payment-providers'
-      preLoaderRoute: typeof AdminPaymentProvidersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/legal': {
-      id: '/admin/legal'
-      path: '/legal'
-      fullPath: '/admin/legal'
-      preLoaderRoute: typeof AdminLegalRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/integrations': {
-      id: '/admin/integrations'
-      path: '/integrations'
-      fullPath: '/admin/integrations'
-      preLoaderRoute: typeof AdminIntegrationsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/health': {
-      id: '/admin/health'
-      path: '/health'
-      fullPath: '/admin/health'
-      preLoaderRoute: typeof AdminHealthRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/gopay': {
-      id: '/admin/gopay'
-      path: '/gopay'
-      fullPath: '/admin/gopay'
-      preLoaderRoute: typeof AdminGopayRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/errors': {
-      id: '/admin/errors'
-      path: '/errors'
-      fullPath: '/admin/errors'
-      preLoaderRoute: typeof AdminErrorsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/audit-log': {
-      id: '/admin/audit-log'
-      path: '/audit-log'
-      fullPath: '/admin/audit-log'
-      preLoaderRoute: typeof AdminAuditLogRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_authenticated/webhooky-logy': {
-      id: '/_authenticated/webhooky-logy'
-      path: '/webhooky-logy'
-      fullPath: '/webhooky-logy'
-      preLoaderRoute: typeof AuthenticatedWebhookyLogyRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/webhooky': {
-      id: '/_authenticated/webhooky'
-      path: '/webhooky'
-      fullPath: '/webhooky'
-      preLoaderRoute: typeof AuthenticatedWebhookyRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/sklad': {
-      id: '/_authenticated/sklad'
-      path: '/sklad'
-      fullPath: '/sklad'
-      preLoaderRoute: typeof AuthenticatedSkladRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/produkty': {
-      id: '/_authenticated/produkty'
-      path: '/produkty'
-      fullPath: '/produkty'
-      preLoaderRoute: typeof AuthenticatedProduktyRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/predplatne': {
-      id: '/_authenticated/predplatne'
-      path: '/predplatne'
-      fullPath: '/predplatne'
-      preLoaderRoute: typeof AuthenticatedPredplatneRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/onboarding': {
-      id: '/_authenticated/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/odberatelia': {
-      id: '/_authenticated/odberatelia'
-      path: '/odberatelia'
-      fullPath: '/odberatelia'
-      preLoaderRoute: typeof AuthenticatedOdberateliaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/nastavenia': {
-      id: '/_authenticated/nastavenia'
-      path: '/nastavenia'
-      fullPath: '/nastavenia'
-      preLoaderRoute: typeof AuthenticatedNastaveniaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/firmy': {
-      id: '/_authenticated/firmy'
-      path: '/firmy'
-      fullPath: '/firmy'
-      preLoaderRoute: typeof AuthenticatedFirmyRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/firma': {
-      id: '/_authenticated/firma'
-      path: '/firma'
-      fullPath: '/firma'
-      preLoaderRoute: typeof AuthenticatedFirmaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/exporty': {
-      id: '/_authenticated/exporty'
-      path: '/exporty'
-      fullPath: '/exporty'
-      preLoaderRoute: typeof AuthenticatedExportyRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/efaktura': {
-      id: '/_authenticated/efaktura'
-      path: '/efaktura'
-      fullPath: '/efaktura'
-      preLoaderRoute: typeof AuthenticatedEfakturaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/diagnostika': {
-      id: '/_authenticated/diagnostika'
-      path: '/diagnostika'
-      fullPath: '/diagnostika'
-      preLoaderRoute: typeof AuthenticatedDiagnostikaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/api-playground': {
-      id: '/_authenticated/api-playground'
-      path: '/api-playground'
-      fullPath: '/api-playground'
-      preLoaderRoute: typeof AuthenticatedApiPlaygroundRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/api-kluce': {
-      id: '/_authenticated/api-kluce'
-      path: '/api-kluce'
-      fullPath: '/api-kluce'
-      preLoaderRoute: typeof AuthenticatedApiKluceRouteImport
+    '/_authenticated/ai-asistent': {
+      id: '/_authenticated/ai-asistent'
+      path: '/ai-asistent'
+      fullPath: '/ai-asistent'
+      preLoaderRoute: typeof AuthenticatedAiAsistentRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/api-dokumentacia': {
@@ -2817,487 +2439,396 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApiDokumentaciaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/ai-asistent': {
-      id: '/_authenticated/ai-asistent'
-      path: '/ai-asistent'
-      fullPath: '/ai-asistent'
-      preLoaderRoute: typeof AuthenticatedAiAsistentRouteImport
+    '/_authenticated/api-kluce': {
+      id: '/_authenticated/api-kluce'
+      path: '/api-kluce'
+      fullPath: '/api-kluce'
+      preLoaderRoute: typeof AuthenticatedApiKluceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/admin/companies/': {
-      id: '/admin/companies/'
-      path: '/companies'
-      fullPath: '/admin/companies/'
-      preLoaderRoute: typeof AdminCompaniesIndexRouteImport
+    '/_authenticated/api-playground': {
+      id: '/_authenticated/api-playground'
+      path: '/api-playground'
+      fullPath: '/api-playground'
+      preLoaderRoute: typeof AuthenticatedApiPlaygroundRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/diagnostika': {
+      id: '/_authenticated/diagnostika'
+      path: '/diagnostika'
+      fullPath: '/diagnostika'
+      preLoaderRoute: typeof AuthenticatedDiagnostikaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/efaktura': {
+      id: '/_authenticated/efaktura'
+      path: '/efaktura'
+      fullPath: '/efaktura'
+      preLoaderRoute: typeof AuthenticatedEfakturaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/exporty': {
+      id: '/_authenticated/exporty'
+      path: '/exporty'
+      fullPath: '/exporty'
+      preLoaderRoute: typeof AuthenticatedExportyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/firma': {
+      id: '/_authenticated/firma'
+      path: '/firma'
+      fullPath: '/firma'
+      preLoaderRoute: typeof AuthenticatedFirmaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/firmy': {
+      id: '/_authenticated/firmy'
+      path: '/firmy'
+      fullPath: '/firmy'
+      preLoaderRoute: typeof AuthenticatedFirmyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nastavenia': {
+      id: '/_authenticated/nastavenia'
+      path: '/nastavenia'
+      fullPath: '/nastavenia'
+      preLoaderRoute: typeof AuthenticatedNastaveniaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/odberatelia': {
+      id: '/_authenticated/odberatelia'
+      path: '/odberatelia'
+      fullPath: '/odberatelia'
+      preLoaderRoute: typeof AuthenticatedOdberateliaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/predplatne': {
+      id: '/_authenticated/predplatne'
+      path: '/predplatne'
+      fullPath: '/predplatne'
+      preLoaderRoute: typeof AuthenticatedPredplatneRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/produkty': {
+      id: '/_authenticated/produkty'
+      path: '/produkty'
+      fullPath: '/produkty'
+      preLoaderRoute: typeof AuthenticatedProduktyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sklad': {
+      id: '/_authenticated/sklad'
+      path: '/sklad'
+      fullPath: '/sklad'
+      preLoaderRoute: typeof AuthenticatedSkladRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/webhooky': {
+      id: '/_authenticated/webhooky'
+      path: '/webhooky'
+      fullPath: '/webhooky'
+      preLoaderRoute: typeof AuthenticatedWebhookyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/webhooky-logy': {
+      id: '/_authenticated/webhooky-logy'
+      path: '/webhooky-logy'
+      fullPath: '/webhooky-logy'
+      preLoaderRoute: typeof AuthenticatedWebhookyLogyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_authenticated/zalohove/': {
-      id: '/_authenticated/zalohove/'
-      path: '/zalohove'
-      fullPath: '/zalohove/'
-      preLoaderRoute: typeof AuthenticatedZalohoveIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/admin/audit-log': {
+      id: '/admin/audit-log'
+      path: '/audit-log'
+      fullPath: '/admin/audit-log'
+      preLoaderRoute: typeof AdminAuditLogRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/_authenticated/sklad/': {
-      id: '/_authenticated/sklad/'
+    '/admin/errors': {
+      id: '/admin/errors'
+      path: '/errors'
+      fullPath: '/admin/errors'
+      preLoaderRoute: typeof AdminErrorsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/gopay': {
+      id: '/admin/gopay'
+      path: '/gopay'
+      fullPath: '/admin/gopay'
+      preLoaderRoute: typeof AdminGopayRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/health': {
+      id: '/admin/health'
+      path: '/health'
+      fullPath: '/admin/health'
+      preLoaderRoute: typeof AdminHealthRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/integrations': {
+      id: '/admin/integrations'
+      path: '/integrations'
+      fullPath: '/admin/integrations'
+      preLoaderRoute: typeof AdminIntegrationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/legal': {
+      id: '/admin/legal'
+      path: '/legal'
+      fullPath: '/admin/legal'
+      preLoaderRoute: typeof AdminLegalRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/payment-providers': {
+      id: '/admin/payment-providers'
+      path: '/payment-providers'
+      fullPath: '/admin/payment-providers'
+      preLoaderRoute: typeof AdminPaymentProvidersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/platform-invoices': {
+      id: '/admin/platform-invoices'
+      path: '/platform-invoices'
+      fullPath: '/admin/platform-invoices'
+      preLoaderRoute: typeof AdminPlatformInvoicesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/seo': {
+      id: '/admin/seo'
+      path: '/seo'
+      fullPath: '/admin/seo'
+      preLoaderRoute: typeof AdminSeoRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/subscriptions': {
+      id: '/admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AdminSubscriptionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/usage': {
+      id: '/admin/usage'
+      path: '/usage'
+      fullPath: '/admin/usage'
+      preLoaderRoute: typeof AdminUsageRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/danovy-doklad/$token': {
+      id: '/danovy-doklad/$token'
+      path: '/danovy-doklad/$token'
+      fullPath: '/danovy-doklad/$token'
+      preLoaderRoute: typeof DanovyDokladTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/api': {
+      id: '/docs/api'
+      path: '/docs/api'
+      fullPath: '/docs/api'
+      preLoaderRoute: typeof DocsApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/efakturacia/': {
+      id: '/efakturacia/'
       path: '/'
-      fullPath: '/sklad/'
-      preLoaderRoute: typeof AuthenticatedSkladIndexRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
+      fullPath: '/efakturacia/'
+      preLoaderRoute: typeof EfakturaciaIndexRouteImport
+      parentRoute: typeof EfakturaciaRoute
     }
-    '/_authenticated/prijate-faktury/': {
-      id: '/_authenticated/prijate-faktury/'
-      path: '/prijate-faktury'
-      fullPath: '/prijate-faktury/'
-      preLoaderRoute: typeof AuthenticatedPrijateFakturyIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/efakturacia/$slug': {
+      id: '/efakturacia/$slug'
+      path: '/$slug'
+      fullPath: '/efakturacia/$slug'
+      preLoaderRoute: typeof EfakturaciaSlugRouteImport
+      parentRoute: typeof EfakturaciaRoute
     }
-    '/_authenticated/ponuky/': {
-      id: '/_authenticated/ponuky/'
-      path: '/ponuky'
-      fullPath: '/ponuky/'
-      preLoaderRoute: typeof AuthenticatedPonukyIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/opakovane/': {
-      id: '/_authenticated/opakovane/'
-      path: '/opakovane'
-      fullPath: '/opakovane/'
-      preLoaderRoute: typeof AuthenticatedOpakovaneIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/jazdy/': {
-      id: '/_authenticated/jazdy/'
-      path: '/jazdy'
-      fullPath: '/jazdy/'
-      preLoaderRoute: typeof AuthenticatedJazdyIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/importy/': {
-      id: '/_authenticated/importy/'
-      path: '/importy'
-      fullPath: '/importy/'
-      preLoaderRoute: typeof AuthenticatedImportyIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/faktury/': {
-      id: '/_authenticated/faktury/'
-      path: '/faktury'
-      fullPath: '/faktury/'
-      preLoaderRoute: typeof AuthenticatedFakturyIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/efaktura/': {
-      id: '/_authenticated/efaktura/'
+    '/funkcie/': {
+      id: '/funkcie/'
       path: '/'
-      fullPath: '/efaktura/'
-      preLoaderRoute: typeof AuthenticatedEfakturaIndexRouteImport
-      parentRoute: typeof AuthenticatedEfakturaRoute
+      fullPath: '/funkcie/'
+      preLoaderRoute: typeof FunkcieIndexRouteImport
+      parentRoute: typeof FunkcieRoute
     }
-    '/_authenticated/doklady/': {
-      id: '/_authenticated/doklady/'
-      path: '/doklady'
-      fullPath: '/doklady/'
-      preLoaderRoute: typeof AuthenticatedDokladyIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/funkcie/$slug': {
+      id: '/funkcie/$slug'
+      path: '/$slug'
+      fullPath: '/funkcie/$slug'
+      preLoaderRoute: typeof FunkcieSlugRouteImport
+      parentRoute: typeof FunkcieRoute
+    }
+    '/pay/$token': {
+      id: '/pay/$token'
+      path: '/pay/$token'
+      fullPath: '/pay/$token'
+      preLoaderRoute: typeof PayTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/': {
+      id: '/pomoc/'
+      path: '/pomoc'
+      fullPath: '/pomoc/'
+      preLoaderRoute: typeof PomocIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/api': {
+      id: '/pomoc/api'
+      path: '/pomoc/api'
+      fullPath: '/pomoc/api'
+      preLoaderRoute: typeof PomocApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/efaktura': {
+      id: '/pomoc/efaktura'
+      path: '/pomoc/efaktura'
+      fullPath: '/pomoc/efaktura'
+      preLoaderRoute: typeof PomocEfakturaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/faktury': {
+      id: '/pomoc/faktury'
+      path: '/pomoc/faktury'
+      fullPath: '/pomoc/faktury'
+      preLoaderRoute: typeof PomocFakturyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/predplatne': {
+      id: '/pomoc/predplatne'
+      path: '/pomoc/predplatne'
+      fullPath: '/pomoc/predplatne'
+      preLoaderRoute: typeof PomocPredplatneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/sklad': {
+      id: '/pomoc/sklad'
+      path: '/pomoc/sklad'
+      fullPath: '/pomoc/sklad'
+      preLoaderRoute: typeof PomocSkladRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pravne/': {
+      id: '/pravne/'
+      path: '/pravne'
+      fullPath: '/pravne/'
+      preLoaderRoute: typeof PravneIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pravne/cookies': {
+      id: '/pravne/cookies'
+      path: '/pravne/cookies'
+      fullPath: '/pravne/cookies'
+      preLoaderRoute: typeof PravneCookiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pravne/gdpr': {
+      id: '/pravne/gdpr'
+      path: '/pravne/gdpr'
+      fullPath: '/pravne/gdpr'
+      preLoaderRoute: typeof PravneGdprRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pravne/gopay-podmienky': {
+      id: '/pravne/gopay-podmienky'
+      path: '/pravne/gopay-podmienky'
+      fullPath: '/pravne/gopay-podmienky'
+      preLoaderRoute: typeof PravneGopayPodmienkyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pravne/obchodne-podmienky': {
+      id: '/pravne/obchodne-podmienky'
+      path: '/pravne/obchodne-podmienky'
+      fullPath: '/pravne/obchodne-podmienky'
+      preLoaderRoute: typeof PravneObchodnePodmienkyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pravne/opakovane-platby': {
+      id: '/pravne/opakovane-platby'
+      path: '/pravne/opakovane-platby'
+      fullPath: '/pravne/opakovane-platby'
+      preLoaderRoute: typeof PravneOpakovanePlatbyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pravne/reklamacny-poriadok': {
+      id: '/pravne/reklamacny-poriadok'
+      path: '/pravne/reklamacny-poriadok'
+      fullPath: '/pravne/reklamacny-poriadok'
+      preLoaderRoute: typeof PravneReklamacnyPoriadokRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pravne/tesla-podmienky': {
+      id: '/pravne/tesla-podmienky'
+      path: '/pravne/tesla-podmienky'
+      fullPath: '/pravne/tesla-podmienky'
+      preLoaderRoute: typeof PravneTeslaPodmienkyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/schvalit/$token': {
+      id: '/schvalit/$token'
+      path: '/schvalit/$token'
+      fullPath: '/schvalit/$token'
+      preLoaderRoute: typeof SchvalitTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/uctovnici/': {
+      id: '/uctovnici/'
+      path: '/'
+      fullPath: '/uctovnici/'
+      preLoaderRoute: typeof UctovniciIndexRouteImport
+      parentRoute: typeof UctovniciRoute
+    }
+    '/uctovnici/$slug': {
+      id: '/uctovnici/$slug'
+      path: '/$slug'
+      fullPath: '/uctovnici/$slug'
+      preLoaderRoute: typeof UctovniciSlugRouteImport
+      parentRoute: typeof UctovniciRoute
+    }
+    '/vyvojari/': {
+      id: '/vyvojari/'
+      path: '/'
+      fullPath: '/vyvojari/'
+      preLoaderRoute: typeof VyvojariIndexRouteImport
+      parentRoute: typeof VyvojariRoute
+    }
+    '/vyvojari/$slug': {
+      id: '/vyvojari/$slug'
+      path: '/$slug'
+      fullPath: '/vyvojari/$slug'
+      preLoaderRoute: typeof VyvojariSlugRouteImport
+      parentRoute: typeof VyvojariRoute
     }
     '/_authenticated/bankove-ucty/': {
       id: '/_authenticated/bankove-ucty/'
       path: '/bankove-ucty'
       fullPath: '/bankove-ucty/'
       preLoaderRoute: typeof AuthenticatedBankoveUctyIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/pomoc/online-platby/gopay': {
-      id: '/pomoc/online-platby/gopay'
-      path: '/pomoc/online-platby/gopay'
-      fullPath: '/pomoc/online-platby/gopay'
-      preLoaderRoute: typeof PomocOnlinePlatbyGopayRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs/online-platby/gopay': {
-      id: '/docs/online-platby/gopay'
-      path: '/docs/online-platby/gopay'
-      fullPath: '/docs/online-platby/gopay'
-      preLoaderRoute: typeof DocsOnlinePlatbyGopayRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/webhooks/gopay': {
-      id: '/api/webhooks/gopay'
-      path: '/api/webhooks/gopay'
-      fullPath: '/api/webhooks/gopay'
-      preLoaderRoute: typeof ApiWebhooksGopayRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/warehouses': {
-      id: '/api/v1/warehouses'
-      path: '/api/v1/warehouses'
-      fullPath: '/api/v1/warehouses'
-      preLoaderRoute: typeof ApiV1WarehousesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/vehicles': {
-      id: '/api/v1/vehicles'
-      path: '/api/v1/vehicles'
-      fullPath: '/api/v1/vehicles'
-      preLoaderRoute: typeof ApiV1VehiclesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/trips': {
-      id: '/api/v1/trips'
-      path: '/api/v1/trips'
-      fullPath: '/api/v1/trips'
-      preLoaderRoute: typeof ApiV1TripsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/recurring-invoices': {
-      id: '/api/v1/recurring-invoices'
-      path: '/api/v1/recurring-invoices'
-      fullPath: '/api/v1/recurring-invoices'
-      preLoaderRoute: typeof ApiV1RecurringInvoicesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/quotes': {
-      id: '/api/v1/quotes'
-      path: '/api/v1/quotes'
-      fullPath: '/api/v1/quotes'
-      preLoaderRoute: typeof ApiV1QuotesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/invoices': {
-      id: '/api/v1/invoices'
-      path: '/api/v1/invoices'
-      fullPath: '/api/v1/invoices'
-      preLoaderRoute: typeof ApiV1InvoicesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/fuel-records': {
-      id: '/api/v1/fuel-records'
-      path: '/api/v1/fuel-records'
-      fullPath: '/api/v1/fuel-records'
-      preLoaderRoute: typeof ApiV1FuelRecordsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/customers': {
-      id: '/api/v1/customers'
-      path: '/api/v1/customers'
-      fullPath: '/api/v1/customers'
-      preLoaderRoute: typeof ApiV1CustomersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/support-chat': {
-      id: '/api/public/support-chat'
-      path: '/api/public/support-chat'
-      fullPath: '/api/public/support-chat'
-      preLoaderRoute: typeof ApiPublicSupportChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/admin/migration-export': {
-      id: '/api/admin/migration-export'
-      path: '/api/admin/migration-export'
-      fullPath: '/api/admin/migration-export'
-      preLoaderRoute: typeof ApiAdminMigrationExportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/companies/$id': {
-      id: '/admin/companies/$id'
-      path: '/companies/$id'
-      fullPath: '/admin/companies/$id'
-      preLoaderRoute: typeof AdminCompaniesIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/_authenticated/uctovnictvo/dph': {
-      id: '/_authenticated/uctovnictvo/dph'
-      path: '/uctovnictvo/dph'
-      fullPath: '/uctovnictvo/dph'
-      preLoaderRoute: typeof AuthenticatedUctovnictvoDphRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/sklad/vydaj': {
-      id: '/_authenticated/sklad/vydaj'
-      path: '/vydaj'
-      fullPath: '/sklad/vydaj'
-      preLoaderRoute: typeof AuthenticatedSkladVydajRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/produkty': {
-      id: '/_authenticated/sklad/produkty'
-      path: '/produkty'
-      fullPath: '/sklad/produkty'
-      preLoaderRoute: typeof AuthenticatedSkladProduktyRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/prijem': {
-      id: '/_authenticated/sklad/prijem'
-      path: '/prijem'
-      fullPath: '/sklad/prijem'
-      preLoaderRoute: typeof AuthenticatedSkladPrijemRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/presuny': {
-      id: '/_authenticated/sklad/presuny'
-      path: '/presuny'
-      fullPath: '/sklad/presuny'
-      preLoaderRoute: typeof AuthenticatedSkladPresunyRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/pohyby': {
-      id: '/_authenticated/sklad/pohyby'
-      path: '/pohyby'
-      fullPath: '/sklad/pohyby'
-      preLoaderRoute: typeof AuthenticatedSkladPohybyRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/nastavenia': {
-      id: '/_authenticated/sklad/nastavenia'
-      path: '/nastavenia'
-      fullPath: '/sklad/nastavenia'
-      preLoaderRoute: typeof AuthenticatedSkladNastaveniaRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/minimum': {
-      id: '/_authenticated/sklad/minimum'
-      path: '/minimum'
-      fullPath: '/sklad/minimum'
-      preLoaderRoute: typeof AuthenticatedSkladMinimumRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/kategorie': {
-      id: '/_authenticated/sklad/kategorie'
-      path: '/kategorie'
-      fullPath: '/sklad/kategorie'
-      preLoaderRoute: typeof AuthenticatedSkladKategorieRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/inventura': {
-      id: '/_authenticated/sklad/inventura'
-      path: '/inventura'
-      fullPath: '/sklad/inventura'
-      preLoaderRoute: typeof AuthenticatedSkladInventuraRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/import': {
-      id: '/_authenticated/sklad/import'
-      path: '/import'
-      fullPath: '/sklad/import'
-      preLoaderRoute: typeof AuthenticatedSkladImportRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/hodnota': {
-      id: '/_authenticated/sklad/hodnota'
-      path: '/hodnota'
-      fullPath: '/sklad/hodnota'
-      preLoaderRoute: typeof AuthenticatedSkladHodnotaRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/dodacie-listy': {
-      id: '/_authenticated/sklad/dodacie-listy'
-      path: '/dodacie-listy'
-      fullPath: '/sklad/dodacie-listy'
-      preLoaderRoute: typeof AuthenticatedSkladDodacieListyRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/sklad/dodaci-list': {
-      id: '/_authenticated/sklad/dodaci-list'
-      path: '/dodaci-list'
-      fullPath: '/sklad/dodaci-list'
-      preLoaderRoute: typeof AuthenticatedSkladDodaciListRouteImport
-      parentRoute: typeof AuthenticatedSkladRoute
-    }
-    '/_authenticated/prijate-faktury/nova': {
-      id: '/_authenticated/prijate-faktury/nova'
-      path: '/prijate-faktury/nova'
-      fullPath: '/prijate-faktury/nova'
-      preLoaderRoute: typeof AuthenticatedPrijateFakturyNovaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/prijate-faktury/$id': {
-      id: '/_authenticated/prijate-faktury/$id'
-      path: '/prijate-faktury/$id'
-      fullPath: '/prijate-faktury/$id'
-      preLoaderRoute: typeof AuthenticatedPrijateFakturyIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ponuky/nova': {
-      id: '/_authenticated/ponuky/nova'
-      path: '/ponuky/nova'
-      fullPath: '/ponuky/nova'
-      preLoaderRoute: typeof AuthenticatedPonukyNovaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/ponuky/$id': {
-      id: '/_authenticated/ponuky/$id'
-      path: '/ponuky/$id'
-      fullPath: '/ponuky/$id'
-      preLoaderRoute: typeof AuthenticatedPonukyIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/opakovane/nova': {
-      id: '/_authenticated/opakovane/nova'
-      path: '/opakovane/nova'
-      fullPath: '/opakovane/nova'
-      preLoaderRoute: typeof AuthenticatedOpakovaneNovaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/opakovane/$id': {
-      id: '/_authenticated/opakovane/$id'
-      path: '/opakovane/$id'
-      fullPath: '/opakovane/$id'
-      preLoaderRoute: typeof AuthenticatedOpakovaneIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/nastavenia/online-platby': {
-      id: '/_authenticated/nastavenia/online-platby'
-      path: '/online-platby'
-      fullPath: '/nastavenia/online-platby'
-      preLoaderRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRouteImport
-      parentRoute: typeof AuthenticatedNastaveniaRoute
-    }
-    '/_authenticated/nastavenia/email-sablony': {
-      id: '/_authenticated/nastavenia/email-sablony'
-      path: '/email-sablony'
-      fullPath: '/nastavenia/email-sablony'
-      preLoaderRoute: typeof AuthenticatedNastaveniaEmailSablonyRouteImport
-      parentRoute: typeof AuthenticatedNastaveniaRoute
-    }
-    '/_authenticated/jazdy/vozidla': {
-      id: '/_authenticated/jazdy/vozidla'
-      path: '/jazdy/vozidla'
-      fullPath: '/jazdy/vozidla'
-      preLoaderRoute: typeof AuthenticatedJazdyVozidlaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/jazdy/prehlad': {
-      id: '/_authenticated/jazdy/prehlad'
-      path: '/jazdy/prehlad'
-      fullPath: '/jazdy/prehlad'
-      preLoaderRoute: typeof AuthenticatedJazdyPrehladRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/jazdy/nova': {
-      id: '/_authenticated/jazdy/nova'
-      path: '/jazdy/nova'
-      fullPath: '/jazdy/nova'
-      preLoaderRoute: typeof AuthenticatedJazdyNovaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/jazdy/integracie': {
-      id: '/_authenticated/jazdy/integracie'
-      path: '/jazdy/integracie'
-      fullPath: '/jazdy/integracie'
-      preLoaderRoute: typeof AuthenticatedJazdyIntegracieRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/jazdy/gps': {
-      id: '/_authenticated/jazdy/gps'
-      path: '/jazdy/gps'
-      fullPath: '/jazdy/gps'
-      preLoaderRoute: typeof AuthenticatedJazdyGpsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/jazdy/export': {
-      id: '/_authenticated/jazdy/export'
-      path: '/jazdy/export'
-      fullPath: '/jazdy/export'
-      preLoaderRoute: typeof AuthenticatedJazdyExportRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/importy/superfaktura': {
-      id: '/_authenticated/importy/superfaktura'
-      path: '/importy/superfaktura'
-      fullPath: '/importy/superfaktura'
-      preLoaderRoute: typeof AuthenticatedImportySuperfakturaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/importy/omega': {
-      id: '/_authenticated/importy/omega'
-      path: '/importy/omega'
-      fullPath: '/importy/omega'
-      preLoaderRoute: typeof AuthenticatedImportyOmegaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/importy/money-s3': {
-      id: '/_authenticated/importy/money-s3'
-      path: '/importy/money-s3'
-      fullPath: '/importy/money-s3'
-      preLoaderRoute: typeof AuthenticatedImportyMoneyS3RouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/importy/kros': {
-      id: '/_authenticated/importy/kros'
-      path: '/importy/kros'
-      fullPath: '/importy/kros'
-      preLoaderRoute: typeof AuthenticatedImportyKrosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/importy/idoklad': {
-      id: '/_authenticated/importy/idoklad'
-      path: '/importy/idoklad'
-      fullPath: '/importy/idoklad'
-      preLoaderRoute: typeof AuthenticatedImportyIdokladRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/faktury/skener': {
-      id: '/_authenticated/faktury/skener'
-      path: '/faktury/skener'
-      fullPath: '/faktury/skener'
-      preLoaderRoute: typeof AuthenticatedFakturySkenerRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/faktury/rychla': {
-      id: '/_authenticated/faktury/rychla'
-      path: '/faktury/rychla'
-      fullPath: '/faktury/rychla'
-      preLoaderRoute: typeof AuthenticatedFakturyRychlaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/faktury/nova': {
-      id: '/_authenticated/faktury/nova'
-      path: '/faktury/nova'
-      fullPath: '/faktury/nova'
-      preLoaderRoute: typeof AuthenticatedFakturyNovaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/faktury/$id': {
-      id: '/_authenticated/faktury/$id'
-      path: '/faktury/$id'
-      fullPath: '/faktury/$id'
-      preLoaderRoute: typeof AuthenticatedFakturyIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/efaktura/prijate': {
-      id: '/_authenticated/efaktura/prijate'
-      path: '/prijate'
-      fullPath: '/efaktura/prijate'
-      preLoaderRoute: typeof AuthenticatedEfakturaPrijateRouteImport
-      parentRoute: typeof AuthenticatedEfakturaRoute
-    }
-    '/_authenticated/efaktura/odoslane': {
-      id: '/_authenticated/efaktura/odoslane'
-      path: '/odoslane'
-      fullPath: '/efaktura/odoslane'
-      preLoaderRoute: typeof AuthenticatedEfakturaOdoslaneRouteImport
-      parentRoute: typeof AuthenticatedEfakturaRoute
-    }
-    '/_authenticated/efaktura/dorucenia': {
-      id: '/_authenticated/efaktura/dorucenia'
-      path: '/dorucenia'
-      fullPath: '/efaktura/dorucenia'
-      preLoaderRoute: typeof AuthenticatedEfakturaDoruceniaRouteImport
-      parentRoute: typeof AuthenticatedEfakturaRoute
-    }
-    '/_authenticated/doklady/novy': {
-      id: '/_authenticated/doklady/novy'
-      path: '/doklady/novy'
-      fullPath: '/doklady/novy'
-      preLoaderRoute: typeof AuthenticatedDokladyNovyRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/bankove-ucty/transakcie': {
-      id: '/_authenticated/bankove-ucty/transakcie'
-      path: '/bankove-ucty/transakcie'
-      fullPath: '/bankove-ucty/transakcie'
-      preLoaderRoute: typeof AuthenticatedBankoveUctyTransakcieRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/bankove-ucty/pripojit': {
@@ -3307,186 +2838,487 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBankoveUctyPripojitRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/bankove-ucty/transakcie': {
+      id: '/_authenticated/bankove-ucty/transakcie'
+      path: '/bankove-ucty/transakcie'
+      fullPath: '/bankove-ucty/transakcie'
+      preLoaderRoute: typeof AuthenticatedBankoveUctyTransakcieRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/doklady/': {
+      id: '/_authenticated/doklady/'
+      path: '/doklady'
+      fullPath: '/doklady/'
+      preLoaderRoute: typeof AuthenticatedDokladyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/doklady/novy': {
+      id: '/_authenticated/doklady/novy'
+      path: '/doklady/novy'
+      fullPath: '/doklady/novy'
+      preLoaderRoute: typeof AuthenticatedDokladyNovyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/efaktura/': {
+      id: '/_authenticated/efaktura/'
+      path: '/'
+      fullPath: '/efaktura/'
+      preLoaderRoute: typeof AuthenticatedEfakturaIndexRouteImport
+      parentRoute: typeof AuthenticatedEfakturaRoute
+    }
+    '/_authenticated/efaktura/dorucenia': {
+      id: '/_authenticated/efaktura/dorucenia'
+      path: '/dorucenia'
+      fullPath: '/efaktura/dorucenia'
+      preLoaderRoute: typeof AuthenticatedEfakturaDoruceniaRouteImport
+      parentRoute: typeof AuthenticatedEfakturaRoute
+    }
+    '/_authenticated/efaktura/odoslane': {
+      id: '/_authenticated/efaktura/odoslane'
+      path: '/odoslane'
+      fullPath: '/efaktura/odoslane'
+      preLoaderRoute: typeof AuthenticatedEfakturaOdoslaneRouteImport
+      parentRoute: typeof AuthenticatedEfakturaRoute
+    }
+    '/_authenticated/efaktura/prijate': {
+      id: '/_authenticated/efaktura/prijate'
+      path: '/prijate'
+      fullPath: '/efaktura/prijate'
+      preLoaderRoute: typeof AuthenticatedEfakturaPrijateRouteImport
+      parentRoute: typeof AuthenticatedEfakturaRoute
+    }
+    '/_authenticated/faktury/': {
+      id: '/_authenticated/faktury/'
+      path: '/faktury'
+      fullPath: '/faktury/'
+      preLoaderRoute: typeof AuthenticatedFakturyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/faktury/$id': {
+      id: '/_authenticated/faktury/$id'
+      path: '/faktury/$id'
+      fullPath: '/faktury/$id'
+      preLoaderRoute: typeof AuthenticatedFakturyIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/faktury/nova': {
+      id: '/_authenticated/faktury/nova'
+      path: '/faktury/nova'
+      fullPath: '/faktury/nova'
+      preLoaderRoute: typeof AuthenticatedFakturyNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/faktury/rychla': {
+      id: '/_authenticated/faktury/rychla'
+      path: '/faktury/rychla'
+      fullPath: '/faktury/rychla'
+      preLoaderRoute: typeof AuthenticatedFakturyRychlaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/faktury/skener': {
+      id: '/_authenticated/faktury/skener'
+      path: '/faktury/skener'
+      fullPath: '/faktury/skener'
+      preLoaderRoute: typeof AuthenticatedFakturySkenerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/importy/': {
+      id: '/_authenticated/importy/'
+      path: '/importy'
+      fullPath: '/importy/'
+      preLoaderRoute: typeof AuthenticatedImportyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/importy/idoklad': {
+      id: '/_authenticated/importy/idoklad'
+      path: '/importy/idoklad'
+      fullPath: '/importy/idoklad'
+      preLoaderRoute: typeof AuthenticatedImportyIdokladRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/importy/kros': {
+      id: '/_authenticated/importy/kros'
+      path: '/importy/kros'
+      fullPath: '/importy/kros'
+      preLoaderRoute: typeof AuthenticatedImportyKrosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/importy/money-s3': {
+      id: '/_authenticated/importy/money-s3'
+      path: '/importy/money-s3'
+      fullPath: '/importy/money-s3'
+      preLoaderRoute: typeof AuthenticatedImportyMoneyS3RouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/importy/omega': {
+      id: '/_authenticated/importy/omega'
+      path: '/importy/omega'
+      fullPath: '/importy/omega'
+      preLoaderRoute: typeof AuthenticatedImportyOmegaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/importy/superfaktura': {
+      id: '/_authenticated/importy/superfaktura'
+      path: '/importy/superfaktura'
+      fullPath: '/importy/superfaktura'
+      preLoaderRoute: typeof AuthenticatedImportySuperfakturaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jazdy/': {
+      id: '/_authenticated/jazdy/'
+      path: '/jazdy'
+      fullPath: '/jazdy/'
+      preLoaderRoute: typeof AuthenticatedJazdyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jazdy/export': {
+      id: '/_authenticated/jazdy/export'
+      path: '/jazdy/export'
+      fullPath: '/jazdy/export'
+      preLoaderRoute: typeof AuthenticatedJazdyExportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jazdy/gps': {
+      id: '/_authenticated/jazdy/gps'
+      path: '/jazdy/gps'
+      fullPath: '/jazdy/gps'
+      preLoaderRoute: typeof AuthenticatedJazdyGpsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jazdy/integracie': {
+      id: '/_authenticated/jazdy/integracie'
+      path: '/jazdy/integracie'
+      fullPath: '/jazdy/integracie'
+      preLoaderRoute: typeof AuthenticatedJazdyIntegracieRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jazdy/nova': {
+      id: '/_authenticated/jazdy/nova'
+      path: '/jazdy/nova'
+      fullPath: '/jazdy/nova'
+      preLoaderRoute: typeof AuthenticatedJazdyNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jazdy/prehlad': {
+      id: '/_authenticated/jazdy/prehlad'
+      path: '/jazdy/prehlad'
+      fullPath: '/jazdy/prehlad'
+      preLoaderRoute: typeof AuthenticatedJazdyPrehladRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/jazdy/vozidla': {
+      id: '/_authenticated/jazdy/vozidla'
+      path: '/jazdy/vozidla'
+      fullPath: '/jazdy/vozidla'
+      preLoaderRoute: typeof AuthenticatedJazdyVozidlaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nastavenia/email-sablony': {
+      id: '/_authenticated/nastavenia/email-sablony'
+      path: '/email-sablony'
+      fullPath: '/nastavenia/email-sablony'
+      preLoaderRoute: typeof AuthenticatedNastaveniaEmailSablonyRouteImport
+      parentRoute: typeof AuthenticatedNastaveniaRoute
+    }
+    '/_authenticated/nastavenia/online-platby': {
+      id: '/_authenticated/nastavenia/online-platby'
+      path: '/online-platby'
+      fullPath: '/nastavenia/online-platby'
+      preLoaderRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRouteImport
+      parentRoute: typeof AuthenticatedNastaveniaRoute
+    }
+    '/_authenticated/opakovane/': {
+      id: '/_authenticated/opakovane/'
+      path: '/opakovane'
+      fullPath: '/opakovane/'
+      preLoaderRoute: typeof AuthenticatedOpakovaneIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/opakovane/$id': {
+      id: '/_authenticated/opakovane/$id'
+      path: '/opakovane/$id'
+      fullPath: '/opakovane/$id'
+      preLoaderRoute: typeof AuthenticatedOpakovaneIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/opakovane/nova': {
+      id: '/_authenticated/opakovane/nova'
+      path: '/opakovane/nova'
+      fullPath: '/opakovane/nova'
+      preLoaderRoute: typeof AuthenticatedOpakovaneNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ponuky/': {
+      id: '/_authenticated/ponuky/'
+      path: '/ponuky'
+      fullPath: '/ponuky/'
+      preLoaderRoute: typeof AuthenticatedPonukyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ponuky/$id': {
+      id: '/_authenticated/ponuky/$id'
+      path: '/ponuky/$id'
+      fullPath: '/ponuky/$id'
+      preLoaderRoute: typeof AuthenticatedPonukyIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ponuky/nova': {
+      id: '/_authenticated/ponuky/nova'
+      path: '/ponuky/nova'
+      fullPath: '/ponuky/nova'
+      preLoaderRoute: typeof AuthenticatedPonukyNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/prijate-faktury/': {
+      id: '/_authenticated/prijate-faktury/'
+      path: '/prijate-faktury'
+      fullPath: '/prijate-faktury/'
+      preLoaderRoute: typeof AuthenticatedPrijateFakturyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/prijate-faktury/$id': {
+      id: '/_authenticated/prijate-faktury/$id'
+      path: '/prijate-faktury/$id'
+      fullPath: '/prijate-faktury/$id'
+      preLoaderRoute: typeof AuthenticatedPrijateFakturyIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/prijate-faktury/nova': {
+      id: '/_authenticated/prijate-faktury/nova'
+      path: '/prijate-faktury/nova'
+      fullPath: '/prijate-faktury/nova'
+      preLoaderRoute: typeof AuthenticatedPrijateFakturyNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/sklad/': {
+      id: '/_authenticated/sklad/'
+      path: '/'
+      fullPath: '/sklad/'
+      preLoaderRoute: typeof AuthenticatedSkladIndexRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/dodaci-list': {
+      id: '/_authenticated/sklad/dodaci-list'
+      path: '/dodaci-list'
+      fullPath: '/sklad/dodaci-list'
+      preLoaderRoute: typeof AuthenticatedSkladDodaciListRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/dodacie-listy': {
+      id: '/_authenticated/sklad/dodacie-listy'
+      path: '/dodacie-listy'
+      fullPath: '/sklad/dodacie-listy'
+      preLoaderRoute: typeof AuthenticatedSkladDodacieListyRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/hodnota': {
+      id: '/_authenticated/sklad/hodnota'
+      path: '/hodnota'
+      fullPath: '/sklad/hodnota'
+      preLoaderRoute: typeof AuthenticatedSkladHodnotaRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/import': {
+      id: '/_authenticated/sklad/import'
+      path: '/import'
+      fullPath: '/sklad/import'
+      preLoaderRoute: typeof AuthenticatedSkladImportRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/inventura': {
+      id: '/_authenticated/sklad/inventura'
+      path: '/inventura'
+      fullPath: '/sklad/inventura'
+      preLoaderRoute: typeof AuthenticatedSkladInventuraRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/kategorie': {
+      id: '/_authenticated/sklad/kategorie'
+      path: '/kategorie'
+      fullPath: '/sklad/kategorie'
+      preLoaderRoute: typeof AuthenticatedSkladKategorieRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/minimum': {
+      id: '/_authenticated/sklad/minimum'
+      path: '/minimum'
+      fullPath: '/sklad/minimum'
+      preLoaderRoute: typeof AuthenticatedSkladMinimumRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/nastavenia': {
+      id: '/_authenticated/sklad/nastavenia'
+      path: '/nastavenia'
+      fullPath: '/sklad/nastavenia'
+      preLoaderRoute: typeof AuthenticatedSkladNastaveniaRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/pohyby': {
+      id: '/_authenticated/sklad/pohyby'
+      path: '/pohyby'
+      fullPath: '/sklad/pohyby'
+      preLoaderRoute: typeof AuthenticatedSkladPohybyRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/presuny': {
+      id: '/_authenticated/sklad/presuny'
+      path: '/presuny'
+      fullPath: '/sklad/presuny'
+      preLoaderRoute: typeof AuthenticatedSkladPresunyRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/prijem': {
+      id: '/_authenticated/sklad/prijem'
+      path: '/prijem'
+      fullPath: '/sklad/prijem'
+      preLoaderRoute: typeof AuthenticatedSkladPrijemRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/produkty': {
+      id: '/_authenticated/sklad/produkty'
+      path: '/produkty'
+      fullPath: '/sklad/produkty'
+      preLoaderRoute: typeof AuthenticatedSkladProduktyRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/sklad/vydaj': {
+      id: '/_authenticated/sklad/vydaj'
+      path: '/vydaj'
+      fullPath: '/sklad/vydaj'
+      preLoaderRoute: typeof AuthenticatedSkladVydajRouteImport
+      parentRoute: typeof AuthenticatedSkladRoute
+    }
+    '/_authenticated/uctovnictvo/dph': {
+      id: '/_authenticated/uctovnictvo/dph'
+      path: '/uctovnictvo/dph'
+      fullPath: '/uctovnictvo/dph'
+      preLoaderRoute: typeof AuthenticatedUctovnictvoDphRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/zalohove/': {
+      id: '/_authenticated/zalohove/'
+      path: '/zalohove'
+      fullPath: '/zalohove/'
+      preLoaderRoute: typeof AuthenticatedZalohoveIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/admin/companies/': {
+      id: '/admin/companies/'
+      path: '/companies'
+      fullPath: '/admin/companies/'
+      preLoaderRoute: typeof AdminCompaniesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/companies/$id': {
+      id: '/admin/companies/$id'
+      path: '/companies/$id'
+      fullPath: '/admin/companies/$id'
+      preLoaderRoute: typeof AdminCompaniesIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/api/admin/migration-export': {
+      id: '/api/admin/migration-export'
+      path: '/api/admin/migration-export'
+      fullPath: '/api/admin/migration-export'
+      preLoaderRoute: typeof ApiAdminMigrationExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/support-chat': {
+      id: '/api/public/support-chat'
+      path: '/api/public/support-chat'
+      fullPath: '/api/public/support-chat'
+      preLoaderRoute: typeof ApiPublicSupportChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/customers': {
+      id: '/api/v1/customers'
+      path: '/api/v1/customers'
+      fullPath: '/api/v1/customers'
+      preLoaderRoute: typeof ApiV1CustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/fuel-records': {
+      id: '/api/v1/fuel-records'
+      path: '/api/v1/fuel-records'
+      fullPath: '/api/v1/fuel-records'
+      preLoaderRoute: typeof ApiV1FuelRecordsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/invoices': {
+      id: '/api/v1/invoices'
+      path: '/api/v1/invoices'
+      fullPath: '/api/v1/invoices'
+      preLoaderRoute: typeof ApiV1InvoicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/quotes': {
+      id: '/api/v1/quotes'
+      path: '/api/v1/quotes'
+      fullPath: '/api/v1/quotes'
+      preLoaderRoute: typeof ApiV1QuotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/recurring-invoices': {
+      id: '/api/v1/recurring-invoices'
+      path: '/api/v1/recurring-invoices'
+      fullPath: '/api/v1/recurring-invoices'
+      preLoaderRoute: typeof ApiV1RecurringInvoicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/trips': {
+      id: '/api/v1/trips'
+      path: '/api/v1/trips'
+      fullPath: '/api/v1/trips'
+      preLoaderRoute: typeof ApiV1TripsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/vehicles': {
+      id: '/api/v1/vehicles'
+      path: '/api/v1/vehicles'
+      fullPath: '/api/v1/vehicles'
+      preLoaderRoute: typeof ApiV1VehiclesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/warehouses': {
+      id: '/api/v1/warehouses'
+      path: '/api/v1/warehouses'
+      fullPath: '/api/v1/warehouses'
+      preLoaderRoute: typeof ApiV1WarehousesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/webhooks/gopay': {
+      id: '/api/webhooks/gopay'
+      path: '/api/webhooks/gopay'
+      fullPath: '/api/webhooks/gopay'
+      preLoaderRoute: typeof ApiWebhooksGopayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/online-platby/gopay': {
+      id: '/docs/online-platby/gopay'
+      path: '/docs/online-platby/gopay'
+      fullPath: '/docs/online-platby/gopay'
+      preLoaderRoute: typeof DocsOnlinePlatbyGopayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/online-platby/gopay': {
+      id: '/pomoc/online-platby/gopay'
+      path: '/pomoc/online-platby/gopay'
+      fullPath: '/pomoc/online-platby/gopay'
+      preLoaderRoute: typeof PomocOnlinePlatbyGopayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/faktury/$id/upravit': {
+      id: '/_authenticated/faktury/$id/upravit'
+      path: '/upravit'
+      fullPath: '/faktury/$id/upravit'
+      preLoaderRoute: typeof AuthenticatedFakturyIdUpravitRouteImport
+      parentRoute: typeof AuthenticatedFakturyIdRoute
+    }
     '/_authenticated/jazdy/integracie/': {
       id: '/_authenticated/jazdy/integracie/'
       path: '/'
       fullPath: '/jazdy/integracie/'
       preLoaderRoute: typeof AuthenticatedJazdyIntegracieIndexRouteImport
-      parentRoute: typeof AuthenticatedJazdyIntegracieRoute
-    }
-    '/api/v1/stock/valuation': {
-      id: '/api/v1/stock/valuation'
-      path: '/api/v1/stock/valuation'
-      fullPath: '/api/v1/stock/valuation'
-      preLoaderRoute: typeof ApiV1StockValuationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/stock/movements': {
-      id: '/api/v1/stock/movements'
-      path: '/api/v1/stock/movements'
-      fullPath: '/api/v1/stock/movements'
-      preLoaderRoute: typeof ApiV1StockMovementsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/stock/low-stock': {
-      id: '/api/v1/stock/low-stock'
-      path: '/api/v1/stock/low-stock'
-      fullPath: '/api/v1/stock/low-stock'
-      preLoaderRoute: typeof ApiV1StockLowStockRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/stock/levels': {
-      id: '/api/v1/stock/levels'
-      path: '/api/v1/stock/levels'
-      fullPath: '/api/v1/stock/levels'
-      preLoaderRoute: typeof ApiV1StockLevelsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/stock/items': {
-      id: '/api/v1/stock/items'
-      path: '/api/v1/stock/items'
-      fullPath: '/api/v1/stock/items'
-      preLoaderRoute: typeof ApiV1StockItemsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/sklad/parse-delivery-note': {
-      id: '/api/v1/sklad/parse-delivery-note'
-      path: '/api/v1/sklad/parse-delivery-note'
-      fullPath: '/api/v1/sklad/parse-delivery-note'
-      preLoaderRoute: typeof ApiV1SkladParseDeliveryNoteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/v1/recurring-invoices/$id': {
-      id: '/api/v1/recurring-invoices/$id'
-      path: '/$id'
-      fullPath: '/api/v1/recurring-invoices/$id'
-      preLoaderRoute: typeof ApiV1RecurringInvoicesIdRouteImport
-      parentRoute: typeof ApiV1RecurringInvoicesRoute
-    }
-    '/api/v1/quotes/$id': {
-      id: '/api/v1/quotes/$id'
-      path: '/$id'
-      fullPath: '/api/v1/quotes/$id'
-      preLoaderRoute: typeof ApiV1QuotesIdRouteImport
-      parentRoute: typeof ApiV1QuotesRoute
-    }
-    '/api/v1/invoices/$id': {
-      id: '/api/v1/invoices/$id'
-      path: '/$id'
-      fullPath: '/api/v1/invoices/$id'
-      preLoaderRoute: typeof ApiV1InvoicesIdRouteImport
-      parentRoute: typeof ApiV1InvoicesRoute
-    }
-    '/api/v1/customers/$id': {
-      id: '/api/v1/customers/$id'
-      path: '/$id'
-      fullPath: '/api/v1/customers/$id'
-      preLoaderRoute: typeof ApiV1CustomersIdRouteImport
-      parentRoute: typeof ApiV1CustomersRoute
-    }
-    '/api/public/webhooks/gopay-merchant': {
-      id: '/api/public/webhooks/gopay-merchant'
-      path: '/api/public/webhooks/gopay-merchant'
-      fullPath: '/api/public/webhooks/gopay-merchant'
-      preLoaderRoute: typeof ApiPublicWebhooksGopayMerchantRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/tesla/callback': {
-      id: '/api/public/tesla/callback'
-      path: '/api/public/tesla/callback'
-      fullPath: '/api/public/tesla/callback'
-      preLoaderRoute: typeof ApiPublicTeslaCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/tatrabanka/callback': {
-      id: '/api/public/tatrabanka/callback'
-      path: '/api/public/tatrabanka/callback'
-      fullPath: '/api/public/tatrabanka/callback'
-      preLoaderRoute: typeof ApiPublicTatrabankaCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/trial-lifecycle': {
-      id: '/api/public/hooks/trial-lifecycle'
-      path: '/api/public/hooks/trial-lifecycle'
-      fullPath: '/api/public/hooks/trial-lifecycle'
-      preLoaderRoute: typeof ApiPublicHooksTrialLifecycleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/stock-alerts': {
-      id: '/api/public/hooks/stock-alerts'
-      path: '/api/public/hooks/stock-alerts'
-      fullPath: '/api/public/hooks/stock-alerts'
-      preLoaderRoute: typeof ApiPublicHooksStockAlertsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/reminders': {
-      id: '/api/public/hooks/reminders'
-      path: '/api/public/hooks/reminders'
-      fullPath: '/api/public/hooks/reminders'
-      preLoaderRoute: typeof ApiPublicHooksRemindersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/recurring-run': {
-      id: '/api/public/hooks/recurring-run'
-      path: '/api/public/hooks/recurring-run'
-      fullPath: '/api/public/hooks/recurring-run'
-      preLoaderRoute: typeof ApiPublicHooksRecurringRunRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/push-overdue': {
-      id: '/api/public/hooks/push-overdue'
-      path: '/api/public/hooks/push-overdue'
-      fullPath: '/api/public/hooks/push-overdue'
-      preLoaderRoute: typeof ApiPublicHooksPushOverdueRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/commander-sync': {
-      id: '/api/public/hooks/commander-sync'
-      path: '/api/public/hooks/commander-sync'
-      fullPath: '/api/public/hooks/commander-sync'
-      preLoaderRoute: typeof ApiPublicHooksCommanderSyncRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/admin/seo/callback': {
-      id: '/api/admin/seo/callback'
-      path: '/api/admin/seo/callback'
-      fullPath: '/api/admin/seo/callback'
-      preLoaderRoute: typeof ApiAdminSeoCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/sklad/produkty/$id': {
-      id: '/_authenticated/sklad/produkty/$id'
-      path: '/$id'
-      fullPath: '/sklad/produkty/$id'
-      preLoaderRoute: typeof AuthenticatedSkladProduktyIdRouteImport
-      parentRoute: typeof AuthenticatedSkladProduktyRoute
-    }
-    '/_authenticated/sklad/presuny/nova': {
-      id: '/_authenticated/sklad/presuny/nova'
-      path: '/nova'
-      fullPath: '/sklad/presuny/nova'
-      preLoaderRoute: typeof AuthenticatedSkladPresunyNovaRouteImport
-      parentRoute: typeof AuthenticatedSkladPresunyRoute
-    }
-    '/_authenticated/sklad/presuny/$id': {
-      id: '/_authenticated/sklad/presuny/$id'
-      path: '/$id'
-      fullPath: '/sklad/presuny/$id'
-      preLoaderRoute: typeof AuthenticatedSkladPresunyIdRouteImport
-      parentRoute: typeof AuthenticatedSkladPresunyRoute
-    }
-    '/_authenticated/sklad/pohyby/$id': {
-      id: '/_authenticated/sklad/pohyby/$id'
-      path: '/$id'
-      fullPath: '/sklad/pohyby/$id'
-      preLoaderRoute: typeof AuthenticatedSkladPohybyIdRouteImport
-      parentRoute: typeof AuthenticatedSkladPohybyRoute
-    }
-    '/_authenticated/jazdy/integracie/tesla': {
-      id: '/_authenticated/jazdy/integracie/tesla'
-      path: '/tesla'
-      fullPath: '/jazdy/integracie/tesla'
-      preLoaderRoute: typeof AuthenticatedJazdyIntegracieTeslaRouteImport
       parentRoute: typeof AuthenticatedJazdyIntegracieRoute
     }
     '/_authenticated/jazdy/integracie/commander': {
@@ -3496,53 +3328,193 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedJazdyIntegracieCommanderRouteImport
       parentRoute: typeof AuthenticatedJazdyIntegracieRoute
     }
-    '/_authenticated/faktury/$id/upravit': {
-      id: '/_authenticated/faktury/$id/upravit'
+    '/_authenticated/jazdy/integracie/tesla': {
+      id: '/_authenticated/jazdy/integracie/tesla'
+      path: '/tesla'
+      fullPath: '/jazdy/integracie/tesla'
+      preLoaderRoute: typeof AuthenticatedJazdyIntegracieTeslaRouteImport
+      parentRoute: typeof AuthenticatedJazdyIntegracieRoute
+    }
+    '/_authenticated/sklad/pohyby/$id': {
+      id: '/_authenticated/sklad/pohyby/$id'
+      path: '/$id'
+      fullPath: '/sklad/pohyby/$id'
+      preLoaderRoute: typeof AuthenticatedSkladPohybyIdRouteImport
+      parentRoute: typeof AuthenticatedSkladPohybyRoute
+    }
+    '/_authenticated/sklad/presuny/$id': {
+      id: '/_authenticated/sklad/presuny/$id'
+      path: '/$id'
+      fullPath: '/sklad/presuny/$id'
+      preLoaderRoute: typeof AuthenticatedSkladPresunyIdRouteImport
+      parentRoute: typeof AuthenticatedSkladPresunyRoute
+    }
+    '/_authenticated/sklad/presuny/nova': {
+      id: '/_authenticated/sklad/presuny/nova'
+      path: '/nova'
+      fullPath: '/sklad/presuny/nova'
+      preLoaderRoute: typeof AuthenticatedSkladPresunyNovaRouteImport
+      parentRoute: typeof AuthenticatedSkladPresunyRoute
+    }
+    '/_authenticated/sklad/produkty/$id': {
+      id: '/_authenticated/sklad/produkty/$id'
+      path: '/$id'
+      fullPath: '/sklad/produkty/$id'
+      preLoaderRoute: typeof AuthenticatedSkladProduktyIdRouteImport
+      parentRoute: typeof AuthenticatedSkladProduktyRoute
+    }
+    '/api/admin/seo/callback': {
+      id: '/api/admin/seo/callback'
+      path: '/api/admin/seo/callback'
+      fullPath: '/api/admin/seo/callback'
+      preLoaderRoute: typeof ApiAdminSeoCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/commander-sync': {
+      id: '/api/public/hooks/commander-sync'
+      path: '/api/public/hooks/commander-sync'
+      fullPath: '/api/public/hooks/commander-sync'
+      preLoaderRoute: typeof ApiPublicHooksCommanderSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/push-overdue': {
+      id: '/api/public/hooks/push-overdue'
+      path: '/api/public/hooks/push-overdue'
+      fullPath: '/api/public/hooks/push-overdue'
+      preLoaderRoute: typeof ApiPublicHooksPushOverdueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/recurring-run': {
+      id: '/api/public/hooks/recurring-run'
+      path: '/api/public/hooks/recurring-run'
+      fullPath: '/api/public/hooks/recurring-run'
+      preLoaderRoute: typeof ApiPublicHooksRecurringRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/reminders': {
+      id: '/api/public/hooks/reminders'
+      path: '/api/public/hooks/reminders'
+      fullPath: '/api/public/hooks/reminders'
+      preLoaderRoute: typeof ApiPublicHooksRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/stock-alerts': {
+      id: '/api/public/hooks/stock-alerts'
+      path: '/api/public/hooks/stock-alerts'
+      fullPath: '/api/public/hooks/stock-alerts'
+      preLoaderRoute: typeof ApiPublicHooksStockAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/trial-lifecycle': {
+      id: '/api/public/hooks/trial-lifecycle'
+      path: '/api/public/hooks/trial-lifecycle'
+      fullPath: '/api/public/hooks/trial-lifecycle'
+      preLoaderRoute: typeof ApiPublicHooksTrialLifecycleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/tatrabanka/callback': {
+      id: '/api/public/tatrabanka/callback'
+      path: '/api/public/tatrabanka/callback'
+      fullPath: '/api/public/tatrabanka/callback'
+      preLoaderRoute: typeof ApiPublicTatrabankaCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/tesla/callback': {
+      id: '/api/public/tesla/callback'
+      path: '/api/public/tesla/callback'
+      fullPath: '/api/public/tesla/callback'
+      preLoaderRoute: typeof ApiPublicTeslaCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/webhooks/gopay-merchant': {
+      id: '/api/public/webhooks/gopay-merchant'
+      path: '/api/public/webhooks/gopay-merchant'
+      fullPath: '/api/public/webhooks/gopay-merchant'
+      preLoaderRoute: typeof ApiPublicWebhooksGopayMerchantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/customers/$id': {
+      id: '/api/v1/customers/$id'
+      path: '/$id'
+      fullPath: '/api/v1/customers/$id'
+      preLoaderRoute: typeof ApiV1CustomersIdRouteImport
+      parentRoute: typeof ApiV1CustomersRoute
+    }
+    '/api/v1/invoices/$id': {
+      id: '/api/v1/invoices/$id'
+      path: '/$id'
+      fullPath: '/api/v1/invoices/$id'
+      preLoaderRoute: typeof ApiV1InvoicesIdRouteImport
+      parentRoute: typeof ApiV1InvoicesRoute
+    }
+    '/api/v1/quotes/$id': {
+      id: '/api/v1/quotes/$id'
+      path: '/$id'
+      fullPath: '/api/v1/quotes/$id'
+      preLoaderRoute: typeof ApiV1QuotesIdRouteImport
+      parentRoute: typeof ApiV1QuotesRoute
+    }
+    '/api/v1/recurring-invoices/$id': {
+      id: '/api/v1/recurring-invoices/$id'
+      path: '/$id'
+      fullPath: '/api/v1/recurring-invoices/$id'
+      preLoaderRoute: typeof ApiV1RecurringInvoicesIdRouteImport
+      parentRoute: typeof ApiV1RecurringInvoicesRoute
+    }
+    '/api/v1/sklad/parse-delivery-note': {
+      id: '/api/v1/sklad/parse-delivery-note'
+      path: '/api/v1/sklad/parse-delivery-note'
+      fullPath: '/api/v1/sklad/parse-delivery-note'
+      preLoaderRoute: typeof ApiV1SkladParseDeliveryNoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/stock/items': {
+      id: '/api/v1/stock/items'
+      path: '/api/v1/stock/items'
+      fullPath: '/api/v1/stock/items'
+      preLoaderRoute: typeof ApiV1StockItemsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/stock/levels': {
+      id: '/api/v1/stock/levels'
+      path: '/api/v1/stock/levels'
+      fullPath: '/api/v1/stock/levels'
+      preLoaderRoute: typeof ApiV1StockLevelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/stock/low-stock': {
+      id: '/api/v1/stock/low-stock'
+      path: '/api/v1/stock/low-stock'
+      fullPath: '/api/v1/stock/low-stock'
+      preLoaderRoute: typeof ApiV1StockLowStockRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/stock/movements': {
+      id: '/api/v1/stock/movements'
+      path: '/api/v1/stock/movements'
+      fullPath: '/api/v1/stock/movements'
+      preLoaderRoute: typeof ApiV1StockMovementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/stock/valuation': {
+      id: '/api/v1/stock/valuation'
+      path: '/api/v1/stock/valuation'
+      fullPath: '/api/v1/stock/valuation'
+      preLoaderRoute: typeof ApiV1StockValuationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/sklad/produkty/$id/upravit': {
+      id: '/_authenticated/sklad/produkty/$id/upravit'
       path: '/upravit'
-      fullPath: '/faktury/$id/upravit'
-      preLoaderRoute: typeof AuthenticatedFakturyIdUpravitRouteImport
-      parentRoute: typeof AuthenticatedFakturyIdRoute
+      fullPath: '/sklad/produkty/$id/upravit'
+      preLoaderRoute: typeof AuthenticatedSkladProduktyIdUpravitRouteImport
+      parentRoute: typeof AuthenticatedSkladProduktyIdRoute
     }
-    '/api/v1/stock/movements/$id': {
-      id: '/api/v1/stock/movements/$id'
-      path: '/$id'
-      fullPath: '/api/v1/stock/movements/$id'
-      preLoaderRoute: typeof ApiV1StockMovementsIdRouteImport
-      parentRoute: typeof ApiV1StockMovementsRoute
-    }
-    '/api/v1/stock/items/$id': {
-      id: '/api/v1/stock/items/$id'
-      path: '/$id'
-      fullPath: '/api/v1/stock/items/$id'
-      preLoaderRoute: typeof ApiV1StockItemsIdRouteImport
-      parentRoute: typeof ApiV1StockItemsRoute
-    }
-    '/api/v1/sklad/parse-delivery-note/$jobId': {
-      id: '/api/v1/sklad/parse-delivery-note/$jobId'
-      path: '/$jobId'
-      fullPath: '/api/v1/sklad/parse-delivery-note/$jobId'
-      preLoaderRoute: typeof ApiV1SkladParseDeliveryNoteJobIdRouteImport
-      parentRoute: typeof ApiV1SkladParseDeliveryNoteRoute
-    }
-    '/api/v1/quotes/$id/convert': {
-      id: '/api/v1/quotes/$id/convert'
-      path: '/convert'
-      fullPath: '/api/v1/quotes/$id/convert'
-      preLoaderRoute: typeof ApiV1QuotesIdConvertRouteImport
-      parentRoute: typeof ApiV1QuotesIdRoute
-    }
-    '/api/v1/invoices/$id/send': {
-      id: '/api/v1/invoices/$id/send'
-      path: '/send'
-      fullPath: '/api/v1/invoices/$id/send'
-      preLoaderRoute: typeof ApiV1InvoicesIdSendRouteImport
-      parentRoute: typeof ApiV1InvoicesIdRoute
-    }
-    '/api/v1/invoices/$id/pdf': {
-      id: '/api/v1/invoices/$id/pdf'
-      path: '/pdf'
-      fullPath: '/api/v1/invoices/$id/pdf'
-      preLoaderRoute: typeof ApiV1InvoicesIdPdfRouteImport
+    '/api/v1/invoices/$id/cancel': {
+      id: '/api/v1/invoices/$id/cancel'
+      path: '/cancel'
+      fullPath: '/api/v1/invoices/$id/cancel'
+      preLoaderRoute: typeof ApiV1InvoicesIdCancelRouteImport
       parentRoute: typeof ApiV1InvoicesIdRoute
     }
     '/api/v1/invoices/$id/mark-paid': {
@@ -3552,19 +3524,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiV1InvoicesIdMarkPaidRouteImport
       parentRoute: typeof ApiV1InvoicesIdRoute
     }
-    '/api/v1/invoices/$id/cancel': {
-      id: '/api/v1/invoices/$id/cancel'
-      path: '/cancel'
-      fullPath: '/api/v1/invoices/$id/cancel'
-      preLoaderRoute: typeof ApiV1InvoicesIdCancelRouteImport
+    '/api/v1/invoices/$id/pdf': {
+      id: '/api/v1/invoices/$id/pdf'
+      path: '/pdf'
+      fullPath: '/api/v1/invoices/$id/pdf'
+      preLoaderRoute: typeof ApiV1InvoicesIdPdfRouteImport
       parentRoute: typeof ApiV1InvoicesIdRoute
     }
-    '/_authenticated/sklad/produkty/$id/upravit': {
-      id: '/_authenticated/sklad/produkty/$id/upravit'
-      path: '/upravit'
-      fullPath: '/sklad/produkty/$id/upravit'
-      preLoaderRoute: typeof AuthenticatedSkladProduktyIdUpravitRouteImport
-      parentRoute: typeof AuthenticatedSkladProduktyIdRoute
+    '/api/v1/invoices/$id/send': {
+      id: '/api/v1/invoices/$id/send'
+      path: '/send'
+      fullPath: '/api/v1/invoices/$id/send'
+      preLoaderRoute: typeof ApiV1InvoicesIdSendRouteImport
+      parentRoute: typeof ApiV1InvoicesIdRoute
+    }
+    '/api/v1/quotes/$id/convert': {
+      id: '/api/v1/quotes/$id/convert'
+      path: '/convert'
+      fullPath: '/api/v1/quotes/$id/convert'
+      preLoaderRoute: typeof ApiV1QuotesIdConvertRouteImport
+      parentRoute: typeof ApiV1QuotesIdRoute
+    }
+    '/api/v1/sklad/parse-delivery-note/$jobId': {
+      id: '/api/v1/sklad/parse-delivery-note/$jobId'
+      path: '/$jobId'
+      fullPath: '/api/v1/sklad/parse-delivery-note/$jobId'
+      preLoaderRoute: typeof ApiV1SkladParseDeliveryNoteJobIdRouteImport
+      parentRoute: typeof ApiV1SkladParseDeliveryNoteRoute
+    }
+    '/api/v1/stock/items/$id': {
+      id: '/api/v1/stock/items/$id'
+      path: '/$id'
+      fullPath: '/api/v1/stock/items/$id'
+      preLoaderRoute: typeof ApiV1StockItemsIdRouteImport
+      parentRoute: typeof ApiV1StockItemsRoute
+    }
+    '/api/v1/stock/movements/$id': {
+      id: '/api/v1/stock/movements/$id'
+      path: '/$id'
+      fullPath: '/api/v1/stock/movements/$id'
+      preLoaderRoute: typeof ApiV1StockMovementsIdRouteImport
+      parentRoute: typeof ApiV1StockMovementsRoute
     }
   }
 }
