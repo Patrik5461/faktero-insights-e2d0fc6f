@@ -37,7 +37,13 @@ const getPlatformInvoice = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/danovy-doklad/$token")({
   ssr: true,
-  loader: ({ params }) => getPlatformInvoice({ data: { token: params.token } }),
+  loader: ({ params }) => {
+    // Token mimo povolenej dĺžky vyhodí zod priamo v inputValidator, čo skončí
+    // ako 500. Z pohľadu návštevníka je nezmyselný token to isté ako neexistujúci
+    // doklad — nech teda dostane stránku „Doklad nenájdený", nie chybu servera.
+    if (!Input.safeParse({ token: params.token }).success) throw notFound();
+    return getPlatformInvoice({ data: { token: params.token } });
+  },
   head: ({ loaderData }) => ({
     meta: [
       { title: `Daňový doklad ${loaderData?.invoice_number ?? ""} — Faktero` },
