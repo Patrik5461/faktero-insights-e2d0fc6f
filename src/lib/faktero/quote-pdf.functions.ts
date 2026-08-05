@@ -6,7 +6,7 @@ const input = z.object({ quoteId: z.string().uuid() });
 
 export const generateQuotePdf = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => input.parse(d))
+  .validator((d: unknown) => input.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: quote, error } = await supabase
@@ -74,7 +74,7 @@ export const generateQuotePdf = createServerFn({ method: "POST" })
 
 export const getQuotePdfSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => input.parse(d))
+  .validator((d: unknown) => input.parse(d))
   .handler(async ({ data, context }) => {
     const { data: quote, error } = await context.supabase
       .from("quotes")

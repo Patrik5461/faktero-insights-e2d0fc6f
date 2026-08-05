@@ -8,7 +8,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 export const requestInvoiceApproval = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         invoiceId: z.string().uuid(),
@@ -72,7 +72,7 @@ export const requestInvoiceApproval = createServerFn({ method: "POST" })
  * Public (no auth): fetch invoice by approval token for the public /schvalit page.
  */
 export const getApprovalInvoice = createServerFn({ method: "GET" })
-  .inputValidator((data) => z.object({ token: z.string().min(10).max(200) }).parse(data))
+  .validator((data) => z.object({ token: z.string().min(10).max(200) }).parse(data))
   .handler(async ({ data }) => {
     const { getInvoiceForApproval } = await import("./invoice-approval.server");
     const result = await getInvoiceForApproval(data.token);
@@ -86,7 +86,7 @@ export const getApprovalInvoice = createServerFn({ method: "GET" })
  * On approve: draft -> issued. Sends result email to supplier.
  */
 export const respondToApproval = createServerFn({ method: "POST" })
-  .inputValidator((data) =>
+  .validator((data) =>
     z
       .object({
         token: z.string().min(10).max(200),

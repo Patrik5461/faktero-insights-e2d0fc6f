@@ -33,7 +33,7 @@ export const getGoogleSeoStatus = createServerFn({ method: "GET" })
 
 export const getGoogleSeoAuthUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ type: z.enum(["gsc", "ga4"]) }).parse(d))
+  .validator((d: unknown) => z.object({ type: z.enum(["gsc", "ga4"]) }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { buildAuthorizeUrl } = await import("./google-seo.server");
@@ -42,7 +42,7 @@ export const getGoogleSeoAuthUrl = createServerFn({ method: "POST" })
 
 export const disconnectGoogleSeo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ type: z.enum(["gsc", "ga4"]) }).parse(d))
+  .validator((d: unknown) => z.object({ type: z.enum(["gsc", "ga4"]) }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -72,7 +72,7 @@ export const listGa4PropertiesFn = createServerFn({ method: "GET" })
 
 export const setGoogleSeoProperty = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ type: z.enum(["gsc", "ga4"]), property_id: z.string().min(1) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -91,7 +91,7 @@ export const setGoogleSeoProperty = createServerFn({ method: "POST" })
 
 export const getGscOverview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ force: z.boolean().optional() }).parse(d ?? {}))
+  .validator((d: unknown) => z.object({ force: z.boolean().optional() }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { getConnection, gscOverview, getCached, setCached } =
@@ -110,7 +110,7 @@ export const getGscOverview = createServerFn({ method: "POST" })
 
 export const getGa4Overview = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ force: z.boolean().optional() }).parse(d ?? {}))
+  .validator((d: unknown) => z.object({ force: z.boolean().optional() }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { getConnection, ga4Overview, getCached, setCached } =
@@ -131,7 +131,7 @@ export const getGa4Overview = createServerFn({ method: "POST" })
 
 export const requestIndexingFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ url: z.string().url() }).parse(d))
+  .validator((d: unknown) => z.object({ url: z.string().url() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { requestIndexing } = await import("./google-seo.server");

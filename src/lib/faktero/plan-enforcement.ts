@@ -6,13 +6,7 @@
 export type SubscriptionStatus = "trialing" | "active" | "past_due" | "cancelled" | "expired";
 
 export type Feature =
-  | "api"
-  | "webhooks"
-  | "recurring"
-  | "efaktura"
-  | "bank_matching"
-  | "import"
-  | "audit_log";
+  "api" | "webhooks" | "recurring" | "efaktura" | "bank_matching" | "import" | "audit_log";
 
 export type CompanyPlanInfo = {
   plan_slug: string;

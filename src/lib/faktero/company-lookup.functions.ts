@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const lookupCompanyByIcoFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { ico: string }) => {
+  .validator((input: { ico: string }) => {
     if (!input || typeof input.ico !== "string") throw new Error("invalid_input");
     return { ico: input.ico };
   })
@@ -19,7 +19,7 @@ export const companyLookupConfiguredFn = createServerFn({ method: "GET" }).handl
 
 export const searchCompaniesByNameFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { query: string }) => {
+  .validator((input: { query: string }) => {
     if (!input || typeof input.query !== "string") throw new Error("invalid_input");
     const q = input.query.trim();
     if (q.length > 100) throw new Error("query_too_long");
@@ -33,7 +33,7 @@ export const searchCompaniesByNameFn = createServerFn({ method: "POST" })
 
 export const findCustomerByIcoFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { ico: string; companyId: string }) => {
+  .validator((input: { ico: string; companyId: string }) => {
     if (!input || typeof input.ico !== "string" || typeof input.companyId !== "string") {
       throw new Error("invalid_input");
     }

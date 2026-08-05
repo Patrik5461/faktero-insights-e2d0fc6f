@@ -23,7 +23,7 @@ async function assertCompanyMember(supabase: Sb, companyId: string, userId: stri
 
 export const getEfakturaReadinessFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(
     async ({
       data,
@@ -88,7 +88,7 @@ export const getEfakturaReadinessFn = createServerFn({ method: "POST" })
 
 export const upsertEfakturaProfileFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (d: {
       companyId: string;
       enabled?: boolean;
@@ -125,7 +125,7 @@ export const upsertEfakturaProfileFn = createServerFn({ method: "POST" })
 
 export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string; invoiceId: string }) => d)
+  .validator((d: { companyId: string; invoiceId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertCompanyMember(supabase, data.companyId, userId);
@@ -239,7 +239,7 @@ export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
 
 export const getEfakturaXmlUrlFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string; invoiceId: string }) => d)
+  .validator((d: { companyId: string; invoiceId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertCompanyMember(supabase, data.companyId, userId);
@@ -253,7 +253,7 @@ export const getEfakturaXmlUrlFn = createServerFn({ method: "POST" })
 
 export const getInvoiceEfakturaDocFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string; invoiceId: string }) => d)
+  .validator((d: { companyId: string; invoiceId: string }) => d)
   .handler(async ({ data, context }): Promise<EfakturaDocumentRow | null> => {
     const { supabase, userId } = context;
     await assertCompanyMember(supabase, data.companyId, userId);
@@ -268,7 +268,7 @@ export const getInvoiceEfakturaDocFn = createServerFn({ method: "POST" })
 
 export const listEfakturaDocumentsFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertCompanyMember(supabase, data.companyId, userId);
@@ -284,7 +284,7 @@ export const listEfakturaDocumentsFn = createServerFn({ method: "POST" })
 
 export const listEfakturaDeliveriesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }): Promise<EfakturaDeliveryRow[]> => {
     const { supabase, userId } = context;
     await assertCompanyMember(supabase, data.companyId, userId);

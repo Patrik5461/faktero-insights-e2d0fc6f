@@ -17,7 +17,7 @@ async function assertMember(supabase: any, userId: string, companyId: string) {
 /** Run a recurring template now (manual trigger). Returns invoice_id. */
 export const runRecurringNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => IdInput.parse(d))
+  .validator((d: unknown) => IdInput.parse(d))
   .handler(async ({ data, context }) => {
     const { data: rec, error } = await context.supabase
       .from("recurring_invoices")
@@ -33,7 +33,7 @@ export const runRecurringNow = createServerFn({ method: "POST" })
 const ToggleInput = z.object({ id: z.string().uuid(), active: z.boolean() });
 export const toggleRecurring = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ToggleInput.parse(d))
+  .validator((d: unknown) => ToggleInput.parse(d))
   .handler(async ({ data, context }) => {
     const { data: rec } = await context.supabase
       .from("recurring_invoices")

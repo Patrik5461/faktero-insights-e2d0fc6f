@@ -40,7 +40,7 @@ async function logSync(
 
 export const getTeslaStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -107,7 +107,7 @@ export const getTeslaStatus = createServerFn({ method: "POST" })
 
 export const startTeslaOAuth = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -139,7 +139,7 @@ export const startTeslaOAuth = createServerFn({ method: "POST" })
 
 export const disconnectTesla = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -181,7 +181,7 @@ async function loadValidAccessToken(companyId: string): Promise<string> {
 
 export const syncTeslaVehicles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -287,9 +287,7 @@ export const syncTeslaVehicles = createServerFn({ method: "POST" })
 
 export const linkTeslaVehicle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (d: { companyId: string; linkId: string; faktero_vehicle_id: string | null }) => d,
-  )
+  .validator((d: { companyId: string; linkId: string; faktero_vehicle_id: string | null }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -304,7 +302,7 @@ export const linkTeslaVehicle = createServerFn({ method: "POST" })
 
 export const syncTeslaSnapshots = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

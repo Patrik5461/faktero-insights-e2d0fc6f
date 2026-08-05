@@ -112,8 +112,7 @@ export type FinstatSuggestion = {
 };
 
 export type FinstatAutocompleteResult =
-  | { status: "ok"; data: FinstatSuggestion[] }
-  | { status: "error"; message: string };
+  { status: "ok"; data: FinstatSuggestion[] } | { status: "error"; message: string };
 
 export async function finstatAutocomplete(
   query: string,

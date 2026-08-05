@@ -5,9 +5,7 @@ export type ExportFormat = "pohoda_xml";
 
 export const exportInvoicesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (input: { companyId: string; invoiceIds: string[]; format: ExportFormat }) => input,
-  )
+  .validator((input: { companyId: string; invoiceIds: string[]; format: ExportFormat }) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { EXPORT_STRATEGIES } = await import("./export.server");
@@ -90,7 +88,7 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
 
 export const getExportContentFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { jobId: string }) => input)
+  .validator((input: { jobId: string }) => input)
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("export_jobs")

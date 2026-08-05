@@ -21,7 +21,7 @@ type InviteRole = "admin" | "accountant" | "employee";
 
 export const createInvitationFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { company_id: string; email: string; role: InviteRole }) => d)
+  .validator((d: { company_id: string; email: string; role: InviteRole }) => d)
   .handler(async ({ data, context }) => {
     const email = data.email.trim().toLowerCase();
     if (!email || !email.includes("@")) throw new Error("Neplatný email");
@@ -80,7 +80,7 @@ export const createInvitationFn = createServerFn({ method: "POST" })
   });
 
 export const getInvitationByTokenFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => tokenSchema.parse(d))
+  .validator((d: unknown) => tokenSchema.parse(d))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: inv } = await supabaseAdmin
@@ -102,7 +102,7 @@ export const getInvitationByTokenFn = createServerFn({ method: "POST" })
 
 export const acceptInvitationFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => tokenSchema.parse(d))
+  .validator((d: unknown) => tokenSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: inv } = await supabaseAdmin
@@ -132,7 +132,7 @@ export const acceptInvitationFn = createServerFn({ method: "POST" })
 
 export const listInvitationsFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { company_id: string }) => d)
+  .validator((d: { company_id: string }) => d)
   .handler(async ({ data, context }) => {
     const { data: rows } = await context.supabase
       .from("company_invitations")
@@ -145,7 +145,7 @@ export const listInvitationsFn = createServerFn({ method: "POST" })
 
 export const revokeInvitationFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) => d)
+  .validator((d: { id: string }) => d)
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("company_invitations").delete().eq("id", data.id);
     if (error) throw error;

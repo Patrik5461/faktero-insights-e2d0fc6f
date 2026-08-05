@@ -32,7 +32,7 @@ const ImportInput = z.object({
 
 export const importDeliveryNoteFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ImportInput.parse(d))
+  .validator((d: unknown) => ImportInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const cid = data.company_id;
@@ -203,7 +203,7 @@ export const importDeliveryNoteFn = createServerFn({ method: "POST" })
  */
 export const listDeliveryNoteImportsFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         company_id: z.string().uuid(),
@@ -229,7 +229,7 @@ export const listDeliveryNoteImportsFn = createServerFn({ method: "POST" })
  */
 export const getDeliveryNoteSignedUrlFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ storage_path: z.string().min(1) }).parse(d))
+  .validator((d: unknown) => z.object({ storage_path: z.string().min(1) }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: signed, error } = await supabase.storage

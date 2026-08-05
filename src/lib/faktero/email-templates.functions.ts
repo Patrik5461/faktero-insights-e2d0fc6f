@@ -13,7 +13,7 @@ const TypeSchema = z.enum(TEMPLATE_TYPES);
 
 export const listEmailTemplatesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ companyId: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ companyId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { DEFAULT_TEMPLATES, TEMPLATE_LABELS } = await import("./email-templates.server");
     const { data: rows } = await context.supabase
@@ -39,7 +39,7 @@ export const listEmailTemplatesFn = createServerFn({ method: "POST" })
 
 export const saveEmailTemplateFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         companyId: z.string().uuid(),
@@ -65,7 +65,7 @@ export const saveEmailTemplateFn = createServerFn({ method: "POST" })
 
 export const resetEmailTemplateFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         companyId: z.string().uuid(),
@@ -85,7 +85,7 @@ export const resetEmailTemplateFn = createServerFn({ method: "POST" })
 
 export const sendTestEmailTemplateFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         companyId: z.string().uuid(),

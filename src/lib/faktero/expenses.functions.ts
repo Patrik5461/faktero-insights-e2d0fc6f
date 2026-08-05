@@ -50,7 +50,7 @@ const inputSchema = z.object({
 
 export const createExpenseFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: ExpenseInput) => inputSchema.parse(data))
+  .validator((data: ExpenseInput) => inputSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: row, error } = await supabase
@@ -64,7 +64,7 @@ export const createExpenseFn = createServerFn({ method: "POST" })
 
 export const updateExpenseFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string; patch: Partial<ExpenseInput> }) => data)
+  .validator((data: { id: string; patch: Partial<ExpenseInput> }) => data)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: row, error } = await supabase
@@ -79,7 +79,7 @@ export const updateExpenseFn = createServerFn({ method: "POST" })
 
 export const deleteExpenseFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string }) => data)
+  .validator((data: { id: string }) => data)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { error } = await context.supabase.from("expense_documents").delete().eq("id", data.id);
@@ -89,9 +89,7 @@ export const deleteExpenseFn = createServerFn({ method: "POST" })
 
 export const listExpensesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (data: { company_id: string; month?: string | null; status?: string | null }) => data,
-  )
+  .validator((data: { company_id: string; month?: string | null; status?: string | null }) => data)
   .handler(async ({ data, context }) => {
     let q = context.supabase
       .from("expense_documents")
@@ -116,7 +114,7 @@ export const listExpensesFn = createServerFn({ method: "POST" })
 
 export const getExpenseFileUrlFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { file_path: string }) => data)
+  .validator((data: { file_path: string }) => data)
   .handler(async ({ data, context }) => {
     const { data: signed, error } = await context.supabase.storage
       .from("expense-receipts")
@@ -128,7 +126,7 @@ export const getExpenseFileUrlFn = createServerFn({ method: "POST" })
 // Slovak eKasa QR — plné LZMA dekódovanie + fallback online overenie.
 export const parseQrFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { raw: string }) => data)
+  .validator((data: { raw: string }) => data)
   .handler(async ({ data }) => {
     const raw = data.raw || "";
     const { processEkasaQr, isEkasaQr } = await import("./ekasa-decoder.server");
@@ -191,7 +189,7 @@ export const parseQrFn = createServerFn({ method: "POST" })
 // Export vybraných dokladov ako ZIP (CSV súhrn + priložené súbory)
 export const exportExpensesZipFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
+  .validator(
     (data: {
       company_id: string;
       ids?: string[];

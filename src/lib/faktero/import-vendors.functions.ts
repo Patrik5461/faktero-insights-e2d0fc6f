@@ -31,7 +31,7 @@ async function assertMember(ctx: any, companyId: string) {
 
 export const previewVendorImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => PreviewInput.parse(d))
+  .validator((d: unknown) => PreviewInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertMember(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -47,7 +47,7 @@ export const previewVendorImport = createServerFn({ method: "POST" })
 
 export const executeVendorImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ExecuteInput.parse(d))
+  .validator((d: unknown) => ExecuteInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertMember(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

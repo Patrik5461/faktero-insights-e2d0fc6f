@@ -57,7 +57,7 @@ export const listPlans = createServerFn({ method: "GET" }).handler(async () => {
 // ── Current billing snapshot ────────────────────────────────────────────
 export const getMyBilling = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => CompanyInput.parse(input))
+  .validator((input) => CompanyInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     // Membership check via RLS happens automatically; explicit guard for clarity.
@@ -98,7 +98,7 @@ export const getMyBilling = createServerFn({ method: "POST" })
 // ── Payment history ─────────────────────────────────────────────────────
 export const getPaymentHistory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => CompanyInput.parse(input))
+  .validator((input) => CompanyInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: rows, error } = await supabase
@@ -116,7 +116,7 @@ export const getPaymentHistory = createServerFn({ method: "POST" })
 // ── Create GoPay checkout ───────────────────────────────────────────────
 export const createCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => CheckoutInput.parse(input))
+  .validator((input) => CheckoutInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertCompanyAdmin(supabaseAdmin, data.companyId, context.userId);
@@ -185,7 +185,7 @@ export const createCheckout = createServerFn({ method: "POST" })
 // ── Cancel / reactivate (period-end) ────────────────────────────────────
 export const cancelSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => CompanyInput.parse(input))
+  .validator((input) => CompanyInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertCompanyAdmin(supabaseAdmin, data.companyId, context.userId);
@@ -204,7 +204,7 @@ export const cancelSubscription = createServerFn({ method: "POST" })
 
 export const reactivateSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => CompanyInput.parse(input))
+  .validator((input) => CompanyInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertCompanyAdmin(supabaseAdmin, data.companyId, context.userId);
@@ -224,7 +224,7 @@ export const reactivateSubscription = createServerFn({ method: "POST" })
 // ── Sync latest GoPay payment status ────────────────────────────────────
 export const syncMyLatestPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => CompanyInput.parse(input))
+  .validator((input) => CompanyInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertCompanyAdmin(supabaseAdmin, data.companyId, context.userId);

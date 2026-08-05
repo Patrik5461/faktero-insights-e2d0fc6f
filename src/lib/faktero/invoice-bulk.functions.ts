@@ -8,7 +8,7 @@ const MarkPaidInput = z.object({
 
 export const bulkMarkPaidFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => MarkPaidInput.parse(d))
+  .validator((d: unknown) => MarkPaidInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: rows, error: selErr } = await supabase

@@ -132,7 +132,7 @@ const SaveSchema = z.object({
 
 export const savePlatformGopaySettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => SaveSchema.parse(d))
+  .validator((d: unknown) => SaveSchema.parse(d))
   .handler(async ({ data, context }) => {
     const supabaseAdmin = await assertAdmin(context.userId);
     const { encryptSecret } = await import("@/lib/faktero/payment-crypto.server");

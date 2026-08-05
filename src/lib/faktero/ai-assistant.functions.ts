@@ -137,7 +137,7 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
 
 export const listConversationsFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("ai_conversations")
@@ -151,7 +151,7 @@ export const listConversationsFn = createServerFn({ method: "POST" })
 
 export const createConversationFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string; title?: string }) => d)
+  .validator((d: { companyId: string; title?: string }) => d)
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("ai_conversations")
@@ -168,7 +168,7 @@ export const createConversationFn = createServerFn({ method: "POST" })
 
 export const deleteConversationFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id: string }) => d)
+  .validator((d: { id: string }) => d)
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("ai_conversations").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -177,7 +177,7 @@ export const deleteConversationFn = createServerFn({ method: "POST" })
 
 export const getMessagesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { conversationId: string }) => d)
+  .validator((d: { conversationId: string }) => d)
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("ai_messages")
@@ -190,7 +190,7 @@ export const getMessagesFn = createServerFn({ method: "POST" })
 
 export const sendChatFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { conversationId: string; companyId: string; content: string }) => d)
+  .validator((d: { conversationId: string; companyId: string; content: string }) => d)
   .handler(async ({ data, context }) => {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("AI funkcie momentálne nedostupné");
@@ -273,7 +273,7 @@ ${JSON.stringify(ctx, null, 2)}`;
 
 export const getRecommendationsFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const ctx = await buildCompanyContext(context.supabase, data.companyId);
     return {

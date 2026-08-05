@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 /** Public view of a provider config (NO secret values). */
 export const getMyPaymentProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: row } = await supabase
@@ -36,7 +36,7 @@ const SaveSchema = z.object({
 
 export const savePaymentProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => SaveSchema.parse(d))
+  .validator((d: unknown) => SaveSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("is_company_admin", {
@@ -90,7 +90,7 @@ export const savePaymentProvider = createServerFn({ method: "POST" })
 
 export const testPaymentProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("is_company_admin", {
@@ -144,7 +144,7 @@ export const testPaymentProvider = createServerFn({ method: "POST" })
 
 export const disconnectPaymentProvider = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("is_company_admin", {
@@ -174,7 +174,7 @@ export const disconnectPaymentProvider = createServerFn({ method: "POST" })
 
 export const setOnlinePaymentsEnabled = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string; enabled: boolean }) => d)
+  .validator((d: { companyId: string; enabled: boolean }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("is_company_admin", {
@@ -202,7 +202,7 @@ export const setOnlinePaymentsEnabled = createServerFn({ method: "POST" })
 /** Rotate the per-merchant webhook secret. Admin only. Returns the new secret + notify URL. */
 export const rotateWebhookSecret = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("is_company_admin", {
@@ -239,7 +239,7 @@ export const rotateWebhookSecret = createServerFn({ method: "POST" })
 /** Lightweight diagnostics for the online-payments settings page. */
 export const getPaymentDiagnostics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: isMember } = await supabase.rpc("is_company_member", {
@@ -283,7 +283,7 @@ export const getPaymentDiagnostics = createServerFn({ method: "POST" })
 /** Manually re-sync an invoice's payment status with GoPay using the company's credentials. */
 export const syncInvoicePayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string; invoiceId: string }) => d)
+  .validator((d: { companyId: string; invoiceId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: isMember } = await supabase.rpc("is_company_member", {
@@ -392,7 +392,7 @@ export const syncInvoicePayment = createServerFn({ method: "POST" })
 /** Create payment link (token only — actual GoPay payment is created when customer opens it). */
 export const createInvoicePaymentLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string; invoiceId: string }) => d)
+  .validator((d: { companyId: string; invoiceId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: inv, error } = await supabase
@@ -457,7 +457,7 @@ export const createInvoicePaymentLink = createServerFn({ method: "POST" })
 
 /** Public — read minimal info for /pay/$token page. No auth. */
 export const getPaymentLinkPublic = createServerFn({ method: "POST" })
-  .inputValidator((d: { token: string }) => d)
+  .validator((d: { token: string }) => d)
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: link } = await supabaseAdmin
@@ -499,7 +499,7 @@ export const getPaymentLinkPublic = createServerFn({ method: "POST" })
 
 /** Public — actually create the GoPay payment for the token and return gw_url. */
 export const startPaymentPublic = createServerFn({ method: "POST" })
-  .inputValidator((d: { token: string; payerEmail?: string }) => d)
+  .validator((d: { token: string; payerEmail?: string }) => d)
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { decryptSecret } = await import("./payment-crypto.server");

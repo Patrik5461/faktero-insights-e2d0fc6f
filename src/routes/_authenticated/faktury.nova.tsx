@@ -39,9 +39,7 @@ export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
   validateSearch: (s: Record<string, unknown>): { type?: "proforma" | "credit_note" } => ({
     type: (s.type === "proforma" || s.type === "credit_note" ? s.type : undefined) as
-      | "proforma"
-      | "credit_note"
-      | undefined,
+      "proforma" | "credit_note" | undefined,
   }),
   component: NewInvoice,
 });

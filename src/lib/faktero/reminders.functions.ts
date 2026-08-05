@@ -12,7 +12,7 @@ const SendInput = z.object({
 
 export const sendReminderFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => SendInput.parse(d))
+  .validator((d: unknown) => SendInput.parse(d))
   .handler(async ({ data, context }) => {
     const { data: inv } = await context.supabase
       .from("invoices")
@@ -39,7 +39,7 @@ const PreviewInput = z.object({
 
 export const previewReminderFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => PreviewInput.parse(d))
+  .validator((d: unknown) => PreviewInput.parse(d))
   .handler(async ({ data, context }) => {
     const { data: inv } = await context.supabase
       .from("invoices")

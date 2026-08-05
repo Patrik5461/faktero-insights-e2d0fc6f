@@ -5,7 +5,7 @@ import { z } from "zod";
 // --- 1. Issue a signed upload URL the browser can PUT to. ---
 export const createImportUploadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         companyId: z.string().uuid(),
@@ -32,7 +32,7 @@ export const createImportUploadUrl = createServerFn({ method: "POST" })
 // --- 2. After upload, parse + preview. Creates an import_job in 'uploaded' state. ---
 export const previewImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         companyId: z.string().uuid(),
@@ -87,7 +87,7 @@ export const previewImport = createServerFn({ method: "POST" })
 // --- 3. Execute the import. ---
 export const executeImport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         companyId: z.string().uuid(),
@@ -178,7 +178,7 @@ export const executeImport = createServerFn({ method: "POST" })
 // --- 4. Download original uploaded file as signed URL ---
 export const getImportFileUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ jobId: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ jobId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("import_jobs")

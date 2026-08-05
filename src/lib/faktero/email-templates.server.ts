@@ -1,11 +1,7 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type TemplateType =
-  | "invoice_send"
-  | "reminder_1"
-  | "reminder_2"
-  | "reminder_3"
-  | "approval_request";
+  "invoice_send" | "reminder_1" | "reminder_2" | "reminder_3" | "approval_request";
 
 export const TEMPLATE_LABELS: Record<TemplateType, string> = {
   invoice_send: "Odoslanie faktúry",

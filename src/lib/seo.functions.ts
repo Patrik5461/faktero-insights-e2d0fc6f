@@ -52,7 +52,7 @@ export const listSeoPages = createServerFn({ method: "GET" })
 // Admin: upsert page
 export const upsertSeoPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => PageInput.parse(data))
+  .validator((data: unknown) => PageInput.parse(data))
   .handler(async ({ data, context }) => {
     const { data: admin } = await context.supabase
       .from("platform_admins")
@@ -70,7 +70,7 @@ export const upsertSeoPage = createServerFn({ method: "POST" })
 // Admin: delete
 export const deleteSeoPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ path: z.string() }).parse(data))
+  .validator((data: unknown) => z.object({ path: z.string() }).parse(data))
   .handler(async ({ data, context }) => {
     const { data: admin } = await context.supabase
       .from("platform_admins")
@@ -90,7 +90,7 @@ export const deleteSeoPage = createServerFn({ method: "POST" })
 // Admin: AI generate title + description
 export const generateSeoAi = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         path: z.string(),

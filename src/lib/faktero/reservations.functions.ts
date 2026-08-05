@@ -13,7 +13,7 @@ const CreateManual = z.object({
 
 export const createManualReservation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CreateManual.parse(d))
+  .validator((d: unknown) => CreateManual.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: row, error } = await (supabase as any)
@@ -39,7 +39,7 @@ export const createManualReservation = createServerFn({ method: "POST" })
 const CancelInput = z.object({ company_id: z.string().uuid(), id: z.string().uuid() });
 export const cancelReservation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CancelInput.parse(d))
+  .validator((d: unknown) => CancelInput.parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await (context.supabase as any)
       .from("stock_reservations")
@@ -53,7 +53,7 @@ export const cancelReservation = createServerFn({ method: "POST" })
 const ListForItem = z.object({ company_id: z.string().uuid(), stock_item_id: z.string().uuid() });
 export const listReservationsForItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ListForItem.parse(d))
+  .validator((d: unknown) => ListForItem.parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await (context.supabase as any)
       .from("stock_reservations")
@@ -72,7 +72,7 @@ export const listReservationsForItem = createServerFn({ method: "POST" })
 const QuoteReserve = z.object({ company_id: z.string().uuid(), quote_id: z.string().uuid() });
 export const createReservationsFromQuote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => QuoteReserve.parse(d))
+  .validator((d: unknown) => QuoteReserve.parse(d))
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
     // Load quote items (name / product_id) and match to stock_items by product_id or by name/SKU.
@@ -163,7 +163,7 @@ const AvailabilityInput = z.object({
 });
 export const getItemAvailability = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => AvailabilityInput.parse(d))
+  .validator((d: unknown) => AvailabilityInput.parse(d))
   .handler(async ({ data, context }) => {
     const sb = context.supabase as any;
     const [{ data: lvls }, { data: res }] = await Promise.all([

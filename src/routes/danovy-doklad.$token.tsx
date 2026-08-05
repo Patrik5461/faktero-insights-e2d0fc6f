@@ -20,7 +20,7 @@ const TOBIFY = {
 };
 
 const getPlatformInvoice = createServerFn({ method: "POST" })
-  .inputValidator((i) => Input.parse(i))
+  .validator((i) => Input.parse(i))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
@@ -38,7 +38,7 @@ const getPlatformInvoice = createServerFn({ method: "POST" })
 export const Route = createFileRoute("/danovy-doklad/$token")({
   ssr: true,
   loader: ({ params }) => {
-    // Token mimo povolenej dĺžky vyhodí zod priamo v inputValidator, čo skončí
+    // Token mimo povolenej dĺžky vyhodí zod priamo vo validátore, čo skončí
     // ako 500. Z pohľadu návštevníka je nezmyselný token to isté ako neexistujúci
     // doklad — nech teda dostane stránku „Doklad nenájdený", nie chybu servera.
     if (!Input.safeParse({ token: params.token }).success) throw notFound();

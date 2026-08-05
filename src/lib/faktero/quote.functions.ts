@@ -10,7 +10,7 @@ const Input = z.object({ quoteId: z.string().uuid() });
  */
 export const convertQuoteToInvoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => Input.parse(d))
+  .validator((d: unknown) => Input.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
 
@@ -116,7 +116,7 @@ export const convertQuoteToInvoice = createServerFn({ method: "POST" })
 /** Duplicate a quote (new draft, new number, copies items). */
 export const duplicateQuote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => Input.parse(d))
+  .validator((d: unknown) => Input.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: q, error } = await supabase

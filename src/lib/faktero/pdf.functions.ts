@@ -6,7 +6,7 @@ const input = z.object({ invoiceId: z.string().uuid() });
 
 export const generateInvoicePdf = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => input.parse(d))
+  .validator((d: unknown) => input.parse(d))
   .handler(async ({ data, context }) => {
     // RLS check: the caller must be able to see the invoice.
     const { data: invoice, error } = await context.supabase
@@ -23,7 +23,7 @@ export const generateInvoicePdf = createServerFn({ method: "POST" })
 
 export const getInvoicePdfSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => input.parse(d))
+  .validator((d: unknown) => input.parse(d))
   .handler(async ({ data, context }) => {
     const { data: invoice, error } = await context.supabase
       .from("invoices")

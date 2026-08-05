@@ -18,7 +18,7 @@ async function assertAdmin(ctx: any, companyId: string) {
 
 export const getCommanderStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -78,7 +78,7 @@ const SaveSchema = z.object({
 
 export const saveCommanderConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => SaveSchema.parse(d))
+  .validator((d: unknown) => SaveSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -114,7 +114,7 @@ export const saveCommanderConnection = createServerFn({ method: "POST" })
 
 export const disconnectCommander = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -164,7 +164,7 @@ const DECRYPT_MSG =
 
 export const testCommander = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string; username?: string; password?: string }) => d)
+  .validator((d: { companyId: string; username?: string; password?: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { commanderTest, CommanderAuthError, CommanderRateLimitError } =
@@ -203,7 +203,7 @@ export const testCommander = createServerFn({ method: "POST" })
 
 export const syncCommanderVehicles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { companyId: string }) => d)
+  .validator((d: { companyId: string }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -321,9 +321,7 @@ export const syncCommanderVehicles = createServerFn({ method: "POST" })
 
 export const linkCommanderVehicle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (d: { companyId: string; linkId: string; faktero_vehicle_id: string | null }) => d,
-  )
+  .validator((d: { companyId: string; linkId: string; faktero_vehicle_id: string | null }) => d)
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -437,7 +435,7 @@ function finiteNumber(value: unknown, fallback: number): number {
 
 export const syncCommanderRides = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => SyncRidesSchema.parse(d))
+  .validator((d: unknown) => SyncRidesSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

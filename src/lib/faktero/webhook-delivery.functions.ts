@@ -7,7 +7,7 @@ const IdInput = z.object({ id: z.string().uuid() });
 /** Retry a single webhook delivery. Creates a new log row to preserve history. */
 export const retryWebhookDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => IdInput.parse(d))
+  .validator((d: unknown) => IdInput.parse(d))
   .handler(async ({ data, context }) => {
     // Use the user-scoped client so RLS verifies access to this log row.
     const { data: log, error } = await context.supabase

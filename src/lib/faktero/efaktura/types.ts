@@ -6,20 +6,10 @@ export type EfakturaChannel = "peppol" | "digitalny_postar" | "email" | "manual"
 export type EfakturaDocFormat = "ubl_2_1" | "peppol_bis_3" | "cii_d16b";
 export type EfakturaDocStatus = "draft" | "generated" | "validated" | "invalid" | "archived";
 export type EfakturaDeliveryStatus =
-  | "pending"
-  | "sent"
-  | "accepted"
-  | "delivered"
-  | "failed"
-  | "rejected";
+  "pending" | "sent" | "accepted" | "delivered" | "failed" | "rejected";
 
 export type EfakturaReceivedStatus =
-  | "received"
-  | "parsed"
-  | "matched"
-  | "accepted"
-  | "rejected"
-  | "archived";
+  "received" | "parsed" | "matched" | "accepted" | "rejected" | "archived";
 
 export type ReadinessCheckSeverity = "blocker" | "warning" | "info";
 

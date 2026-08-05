@@ -17,7 +17,7 @@ type AiResult = {
 
 export const aiParseInvoiceFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { prompt: string }) => input)
+  .validator((input: { prompt: string }) => input)
   .handler(async ({ data }): Promise<AiResult> => {
     // Self-hosted: používame priamo OpenAI API. Žiadna závislosť na Lovable infraštruktúre.
     const apiKey = process.env.OPENAI_API_KEY;

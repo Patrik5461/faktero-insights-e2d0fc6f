@@ -124,7 +124,7 @@ const ListInput = z.object({
 
 export const listAdminCompanies = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => ListInput.parse(input))
+  .validator((input) => ListInput.parse(input))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const from = (data.page - 1) * data.pageSize;
@@ -215,7 +215,7 @@ export const listAdminCompanies = createServerFn({ method: "POST" })
 
 export const getAdminCompany = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const { data: c, error } = await supabaseAdmin
@@ -309,7 +309,7 @@ export const getAdminCompany = createServerFn({ method: "POST" })
 
 export const suspendCompany = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string; reason: string }) =>
+  .validator((input: { id: string; reason: string }) =>
     z.object({ id: z.string().uuid(), reason: z.string().min(1).max(500) }).parse(input),
   )
   .handler(async ({ context, data }) => {
@@ -327,7 +327,7 @@ export const suspendCompany = createServerFn({ method: "POST" })
 
 export const reactivateCompany = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const { error } = await supabaseAdmin
@@ -342,7 +342,7 @@ export const reactivateCompany = createServerFn({ method: "POST" })
 // ── Users ───────────────────────────────────────────────────────────────
 export const listAdminUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => ListInput.parse(input))
+  .validator((input) => ListInput.parse(input))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const from = (data.page - 1) * data.pageSize;
@@ -383,7 +383,7 @@ export const listAdminUsers = createServerFn({ method: "POST" })
 // ── Subscriptions ───────────────────────────────────────────────────────
 export const listAdminSubscriptions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => ListInput.parse(input))
+  .validator((input) => ListInput.parse(input))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const from = (data.page - 1) * data.pageSize;
@@ -426,7 +426,7 @@ export const listAdminSubscriptions = createServerFn({ method: "POST" })
 // Admin actions on subscriptions
 export const adminSetCompanyPlan = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         companyId: z.string().uuid(),
@@ -459,7 +459,7 @@ export const adminSetCompanyPlan = createServerFn({ method: "POST" })
 
 export const adminExtendTrial = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z.object({ companyId: z.string().uuid(), days: z.number().int().min(1).max(365) }).parse(input),
   )
   .handler(async ({ context, data }) => {
@@ -484,7 +484,7 @@ export const adminExtendTrial = createServerFn({ method: "POST" })
 
 export const adminCancelSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ companyId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ companyId: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const { error } = await supabaseAdmin
@@ -505,7 +505,7 @@ export const adminCancelSubscription = createServerFn({ method: "POST" })
 
 export const adminReactivateSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ companyId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ companyId: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const { error } = await supabaseAdmin
@@ -527,7 +527,7 @@ export const adminReactivateSubscription = createServerFn({ method: "POST" })
 // ── Mark subscription active manually (admin override) ──────────────────
 export const adminMarkActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         companyId: z.string().uuid(),
@@ -561,7 +561,7 @@ export const adminMarkActive = createServerFn({ method: "POST" })
 // ── Suspend billing (no writes allowed; read-only mode) ─────────────────
 export const adminSuspendBilling = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z.object({ companyId: z.string().uuid(), suspend: z.boolean() }).parse(input),
   )
   .handler(async ({ context, data }) => {
@@ -585,7 +585,7 @@ export const adminSuspendBilling = createServerFn({ method: "POST" })
 // ── GoPay diagnostics ───────────────────────────────────────────────────
 export const listGopayEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         limit: z.number().int().min(10).max(200).default(50),
@@ -670,9 +670,7 @@ export const getBillingDiagnostics = createServerFn({ method: "GET" })
 
 export const adminSyncPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z.object({ providerPaymentId: z.string().min(1).max(64) }).parse(input),
-  )
+  .validator((input) => z.object({ providerPaymentId: z.string().min(1).max(64) }).parse(input))
   .handler(async ({ context, data }) => {
     const { supabaseAdmin } = await getAdmin(context);
     const { syncGopayPaymentById } = await import("@/lib/faktero/billing-sync.server");
@@ -814,7 +812,7 @@ export const getAdminUsage = createServerFn({ method: "GET" })
 const ErrorSource = z.enum(["all", "api", "webhook", "email", "finstat", "efaktura"]);
 export const listAdminErrors = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         source: ErrorSource.default("all"),
@@ -933,7 +931,7 @@ export const listAdminErrors = createServerFn({ method: "POST" })
 // ── Audit log ───────────────────────────────────────────────────────────
 export const listAuditLogs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
+  .validator((input) =>
     z
       .object({
         page: z.number().int().min(1).max(1000).default(1),

@@ -11,7 +11,7 @@ const Input = z.object({
 
 export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => Input.parse(d))
+  .validator((d: unknown) => Input.parse(d))
   .handler(async ({ data, context }) => {
     const { data: inv } = await context.supabase
       .from("invoices")
@@ -45,7 +45,7 @@ const TriggerInput = z.object({
 
 export const triggerEventFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => TriggerInput.parse(d))
+  .validator((d: unknown) => TriggerInput.parse(d))
   .handler(async ({ data, context }) => {
     // Verify caller is a member of this company
     const { data: cu } = await context.supabase

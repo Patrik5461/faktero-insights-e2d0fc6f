@@ -49,7 +49,7 @@ async function ensureDefaultWarehouse(supabase: any, companyId: string, debug: a
 
 export const getStockDebugSnapshot = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CompanyScoped.parse(d))
+  .validator((d: unknown) => CompanyScoped.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const [warehouses, stockItems, movements] = await Promise.all([
@@ -97,7 +97,7 @@ const CreateStockProductInput = z.object({
 
 export const createStockProductDebug = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CreateStockProductInput.parse(d))
+  .validator((d: unknown) => CreateStockProductInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const debug: any = {
@@ -239,7 +239,7 @@ const CreateStockMovementInput = z.object({
 
 export const createStockMovementDebug = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CreateStockMovementInput.parse(d))
+  .validator((d: unknown) => CreateStockMovementInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const debug: any = {
@@ -317,7 +317,7 @@ const RecomputeInput = z.object({
 });
 export const recomputeStockAvgCost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => RecomputeInput.parse(d))
+  .validator((d: unknown) => RecomputeInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: result, error } = await supabase.rpc("recompute_stock_avg_cost", {
@@ -330,7 +330,7 @@ export const recomputeStockAvgCost = createServerFn({ method: "POST" })
 // Stats for the sklad dashboard
 export const getStockDashboard = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CompanyScoped.parse(d))
+  .validator((d: unknown) => CompanyScoped.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const [{ data: items }, { data: levels }, { data: movements }] = await Promise.all([
@@ -381,7 +381,7 @@ const CompleteInput = z.object({
 });
 export const completeInventory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CompleteInput.parse(d))
+  .validator((d: unknown) => CompleteInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: count, error: cErr } = await supabase
@@ -439,7 +439,7 @@ const StartInput = z.object({
 });
 export const startInventory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => StartInput.parse(d))
+  .validator((d: unknown) => StartInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: existingOpen } = await supabase
@@ -488,7 +488,7 @@ const LinkInput = z.object({
 });
 export const ensureStockItemForProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => LinkInput.parse(d))
+  .validator((d: unknown) => LinkInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: existing } = await supabase
@@ -530,7 +530,7 @@ const TrackInput = z.object({
 });
 export const setProductStockTracking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => TrackInput.parse(d))
+  .validator((d: unknown) => TrackInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: existing } = await supabase
@@ -581,7 +581,7 @@ const ProductDetailInput = z.object({
 });
 export const getProductStockDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ProductDetailInput.parse(d))
+  .validator((d: unknown) => ProductDetailInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: product } = await supabase
@@ -677,7 +677,7 @@ const MovementDetailInput = z.object({
 });
 export const getMovementDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => MovementDetailInput.parse(d))
+  .validator((d: unknown) => MovementDetailInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: m } = await supabase
@@ -727,7 +727,7 @@ export const getMovementDetail = createServerFn({ method: "POST" })
 
 export const getStockValuation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CompanyScoped.parse(d))
+  .validator((d: unknown) => CompanyScoped.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const [{ data: items }, { data: levels }, { data: warehouses }, { data: products }] =
@@ -816,7 +816,7 @@ export const getStockValuation = createServerFn({ method: "POST" })
 
 export const getLowStockReport = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CompanyScoped.parse(d))
+  .validator((d: unknown) => CompanyScoped.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const [{ data: items }, { data: levels }, { data: warehouses }, { data: products }] =
@@ -890,7 +890,7 @@ const ImportInput = z.object({
 });
 export const importStockCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ImportInput.parse(d))
+  .validator((d: unknown) => ImportInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const cid = data.company_id;
@@ -1091,7 +1091,7 @@ const AuditInput = z.object({
 });
 export const logStockAudit = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => AuditInput.parse(d))
+  .validator((d: unknown) => AuditInput.parse(d))
   .handler(async ({ data, context }) => {
     await context.supabase.from("stock_audit_logs").insert({
       company_id: data.company_id,
@@ -1107,7 +1107,7 @@ export const logStockAudit = createServerFn({ method: "POST" })
 const RoleInput = z.object({ company_id: z.string().uuid() });
 export const getMyStockRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => RoleInput.parse(d))
+  .validator((d: unknown) => RoleInput.parse(d))
   .handler(async ({ data, context }) => {
     const { data: row } = await context.supabase
       .from("company_users")
@@ -1121,7 +1121,7 @@ export const getMyStockRole = createServerFn({ method: "POST" })
 
 export const listStockCategories = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CompanyScoped.parse(d))
+  .validator((d: unknown) => CompanyScoped.parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows } = await context.supabase
       .from("stock_categories")
@@ -1139,7 +1139,7 @@ const CreateCategoryInput = z.object({
 });
 export const createStockCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CreateCategoryInput.parse(d))
+  .validator((d: unknown) => CreateCategoryInput.parse(d))
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("stock_categories")
@@ -1161,7 +1161,7 @@ const DeleteCategoryInput = z.object({
 });
 export const deleteStockCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => DeleteCategoryInput.parse(d))
+  .validator((d: unknown) => DeleteCategoryInput.parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("stock_categories")
@@ -1174,7 +1174,7 @@ export const deleteStockCategory = createServerFn({ method: "POST" })
 
 export const listSuppliers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CompanyScoped.parse(d))
+  .validator((d: unknown) => CompanyScoped.parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows } = await context.supabase
       .from("customers")
@@ -1209,7 +1209,7 @@ const UpdateStockProductInput = z.object({
 });
 export const updateStockProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => UpdateStockProductInput.parse(d))
+  .validator((d: unknown) => UpdateStockProductInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
 
@@ -1274,7 +1274,7 @@ const PhotoUrlInput = z.object({
 });
 export const getProductPhotoSignedUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => PhotoUrlInput.parse(d))
+  .validator((d: unknown) => PhotoUrlInput.parse(d))
   .handler(async ({ data, context }) => {
     if (!data.storage_path.startsWith(`${data.company_id}/`)) {
       throw new Error("Neplatná cesta k fotke.");
@@ -1305,7 +1305,7 @@ const CreateTransferInput = z.object({
 
 export const listUserCompaniesForTransfer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ exclude_company_id: z.string().uuid().optional() }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -1323,7 +1323,7 @@ export const listUserCompaniesForTransfer = createServerFn({ method: "POST" })
 
 export const listWarehousesForCompany = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: whs, error } = await context.supabase
       .from("warehouses")
@@ -1337,7 +1337,7 @@ export const listWarehousesForCompany = createServerFn({ method: "POST" })
 
 export const listTransfers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: rows, error } = await context.supabase
       .from("stock_transfers")
@@ -1353,7 +1353,7 @@ export const listTransfers = createServerFn({ method: "POST" })
 
 export const getTransferDetail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: transfer, error } = await supabase
@@ -1468,7 +1468,7 @@ async function matchOrCreateTargetStockItem(
 
 export const previewTransferMatching = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         source_company_id: z.string().uuid(),
@@ -1521,7 +1521,7 @@ export const previewTransferMatching = createServerFn({ method: "POST" })
 
 export const createTransfer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CreateTransferInput.parse(d))
+  .validator((d: unknown) => CreateTransferInput.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     if (!data.warehouse_to_id && !data.target_company_id) {
@@ -1557,7 +1557,7 @@ export const createTransfer = createServerFn({ method: "POST" })
 
 export const completeTransfer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: transfer, error } = await supabase
@@ -1657,7 +1657,7 @@ export const completeTransfer = createServerFn({ method: "POST" })
 
 export const cancelTransfer = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("stock_transfers")
@@ -1678,7 +1678,7 @@ const UpdateCategoryInput = z.object({
 });
 export const updateStockCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => UpdateCategoryInput.parse(d))
+  .validator((d: unknown) => UpdateCategoryInput.parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("stock_categories")
@@ -1691,7 +1691,7 @@ export const updateStockCategory = createServerFn({ method: "POST" })
 
 export const listCategoriesWithCounts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CompanyScoped.parse(d))
+  .validator((d: unknown) => CompanyScoped.parse(d))
   .handler(async ({ data, context }) => {
     const [{ data: cats }, { data: items }] = await Promise.all([
       context.supabase
@@ -1720,7 +1720,7 @@ const BarcodeLookupInput = z.object({
 });
 export const lookupStockItemByCode = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => BarcodeLookupInput.parse(d))
+  .validator((d: unknown) => BarcodeLookupInput.parse(d))
   .handler(async ({ data, context }) => {
     const code = data.code.trim();
     // Try barcode then SKU on stock_items

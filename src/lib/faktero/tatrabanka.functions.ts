@@ -33,7 +33,7 @@ function origin(): string {
 /** List bank connections for a company (NO tokens returned). */
 export const listBankData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CompanyInput.parse(d))
+  .validator((d: unknown) => CompanyInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertMember(context.supabase, context.userId, data.company_id);
     const { data: connections } = await context.supabase
@@ -54,7 +54,7 @@ export const listBankData = createServerFn({ method: "POST" })
 /** Start OAuth connect: create pending connection, return authorize URL. */
 export const startBankConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => CompanyInput.parse(d))
+  .validator((d: unknown) => CompanyInput.parse(d))
   .handler(async ({ data, context }) => {
     const role = await assertMember(context.supabase, context.userId, data.company_id);
     if (!["owner", "admin"].includes(role)) throw new Error("Forbidden");
@@ -95,7 +95,7 @@ const ConnInput = z.object({ company_id: z.string().uuid(), connection_id: z.str
 /** Sync accounts list from TB for a connection. */
 export const syncBankAccounts = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ConnInput.parse(d))
+  .validator((d: unknown) => ConnInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertMember(context.supabase, context.userId, data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -153,7 +153,7 @@ const AccountInput = z.object({ company_id: z.string().uuid(), account_id: z.str
 /** Sync transactions for an account (last 90 days). */
 export const syncBankTransactions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => AccountInput.parse(d))
+  .validator((d: unknown) => AccountInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertMember(context.supabase, context.userId, data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -208,7 +208,7 @@ export const syncBankTransactions = createServerFn({ method: "POST" })
 /** Disconnect: delete connection (cascades accounts + transactions). */
 export const disconnectBank = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ConnInput.parse(d))
+  .validator((d: unknown) => ConnInput.parse(d))
   .handler(async ({ data, context }) => {
     const role = await assertMember(context.supabase, context.userId, data.company_id);
     if (!["owner", "admin"].includes(role)) throw new Error("Forbidden");
@@ -229,7 +229,7 @@ const ListTxInput = z.object({
 });
 export const listBankTransactions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => ListTxInput.parse(d))
+  .validator((d: unknown) => ListTxInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertMember(context.supabase, context.userId, data.company_id);
     let q = context.supabase

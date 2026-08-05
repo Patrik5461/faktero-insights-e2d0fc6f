@@ -7,7 +7,7 @@ const Schema = z.object({ invoiceId: z.string().uuid() });
 
 export const cloneInvoiceFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => Schema.parse(d))
+  .validator((d: unknown) => Schema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 

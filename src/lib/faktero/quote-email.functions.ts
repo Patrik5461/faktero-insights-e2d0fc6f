@@ -28,7 +28,7 @@ function b64(buf: ArrayBuffer | Uint8Array) {
 
 export const sendQuoteEmailFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => Input.parse(d))
+  .validator((d: unknown) => Input.parse(d))
   .handler(async ({ data, context }) => {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) throw new Error("RESEND_API_KEY nie je nakonfigurovaný.");

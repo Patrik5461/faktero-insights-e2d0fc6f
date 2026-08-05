@@ -12,7 +12,7 @@ type ReceiptResult = {
 
 export const aiParseReceiptFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { image_data_url: string }) => input)
+  .validator((input: { image_data_url: string }) => input)
   .handler(async ({ data }): Promise<ReceiptResult> => {
     const geminiKey = process.env.GEMINI_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
