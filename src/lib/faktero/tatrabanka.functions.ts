@@ -284,6 +284,22 @@ export const disconnectBank = createServerFn({ method: "POST" })
     const role = await assertMember(context.supabase, context.userId, data.company_id);
     if (!["owner", "admin"].includes(role)) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: conn } = await supabaseAdmin
+      .from("bank_connections")
+      .select("consent_id")
+      .eq("id", data.connection_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    // Súhlas treba zrušiť aj v banke, inak tam ostane platný. Keď to zlyhá,
+    // odpojenie aj tak dokončíme — používateľ o prístup prísť chce.
+    if (conn?.consent_id) {
+      try {
+        const { revokeConsent } = await import("./tatrabanka.server");
+        await revokeConsent(conn.consent_id);
+      } catch (e) {
+        console.error("[tatrabanka] zrušenie súhlasu v banke zlyhalo", e);
+      }
+    }
     await supabaseAdmin
       .from("bank_connections")
       .delete()

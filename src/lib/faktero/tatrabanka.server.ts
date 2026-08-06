@@ -193,7 +193,8 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
 async function apiGet(path: string, accessToken: string, _consentId?: string | null) {
   // TB Premium API grants consent implicitly via the OAuth access_token.
   // Do NOT send Consent-ID — it's a PSD2 XS2A header and returns 404 here.
-  const url = `${apiBase()}${path}`;
+  // `path` môže byť aj absolútna URL (odkaz na ďalšiu stranu z _links.next).
+  const url = path.startsWith("http") ? path : `${apiBase()}${path}`;
   const requestId = crypto.randomUUID();
   const headers: Record<string, string> = {
     Authorization: `Bearer ${accessToken}`,
@@ -212,6 +213,27 @@ async function apiGet(path: string, accessToken: string, _consentId?: string | n
   return JSON.parse(txt);
 }
 
+/**
+ * Zruší súhlas na strane banky. Volá sa pri odpojení účtu — bez toho zostáva
+ * súhlas v TB naďalej platný, aj keď ho v aplikácii už nemáme.
+ * Autorizuje sa servisným (client_credentials) tokenom, nie tokenom používateľa.
+ */
+export async function revokeConsent(consentId: string): Promise<void> {
+  const token = await getClientCredentialsToken();
+  const res = await fetch(`${apiBase()}/v1/consents/${encodeURIComponent(consentId)}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "X-Request-ID": crypto.randomUUID(),
+    },
+  });
+  // 204 = zrušené. 404 znamená, že už neexistuje — pre nás rovnako dobré.
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`tb_consent_revoke_failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  }
+}
+
 export type TbAccount = {
   external_account_id: string;
   iban: string | null;
@@ -224,7 +246,8 @@ export async function fetchAccounts(
   accessToken: string,
   consentId?: string | null,
 ): Promise<TbAccount[]> {
-  const json = await apiGet("/v3/accounts", accessToken, consentId);
+  // withBalance=true — bez neho nie je zaručené, že TB zostatky vôbec pošle.
+  const json = await apiGet("/v3/accounts?withBalance=true", accessToken, consentId);
   const accounts: any[] = json.accounts ?? json.Accounts ?? [];
   return accounts.map((a: any) => {
     const balances: any[] = a.balances ?? [];
@@ -259,20 +282,33 @@ export async function fetchTransactions(
   consentId?: string | null,
   daysBack = 90,
 ): Promise<TbTransaction[]> {
-  const dateTo = new Date();
   const dateFrom = new Date();
   dateFrom.setDate(dateFrom.getDate() - daysBack);
   const fromStr = dateFrom.toISOString().slice(0, 10);
-  const toStr = dateTo.toISOString().slice(0, 10);
-  // Transactions sú v5 (účty v3) a stránkujú sa cez page/pageSize.
-  // bookingStatus tu nie je — to je PSD2 XS2A parameter.
-  const json = await apiGet(
-    `/v5/accounts/${encodeURIComponent(externalAccountId)}/transactions?dateFrom=${fromStr}&dateTo=${toStr}&page=1&pageSize=200`,
-    accessToken,
-    consentId,
+
+  // Transakcie sú v5 (účty v3). `dateTo` sa pri dopyte na aktuálne transakcie
+  // podľa dokumentácie nevypĺňa. `page` funguje len pre účty mimo TB, preto ho
+  // neposielame — stránkuje sa nasledovaním odkazu _links.next, ktorý si už
+  // správnu formu (page alebo entryReferenceFrom) nesie sám.
+  let next: string | null =
+    `/v5/accounts/${encodeURIComponent(externalAccountId)}/transactions?dateFrom=${fromStr}&pageSize=200`;
+
+  const booked: any[] = [];
+  // Poistka proti nekonečnej slučke, keby banka vracala next donekonečna.
+  for (let page = 0; next && page < 25; page++) {
+    const json = await apiGet(next, accessToken, consentId);
+    const batch: any[] = json.transactions?.booked ?? json.booked ?? json.transactions ?? [];
+    booked.push(...batch);
+    const href = json._links?.next?.href;
+    next = href && batch.length > 0 ? String(href).replace(/&&/g, "&").replace(/['"]+$/, "") : null;
+  }
+  // Nezaúčtované transakcie sa v čase ešte menia (aj ich id), takže by sme si
+  // nimi zaniesli duplicity. Berieme len BOOKED; ak stav nepríde, berieme tiež.
+  const settled = booked.filter(
+    (t: any) => !t.transactionState || /booked/i.test(t.transactionState),
   );
-  const booked: any[] = json.transactions?.booked ?? json.booked ?? json.transactions ?? [];
-  return booked.map((t: any) => {
+
+  return settled.map((t: any) => {
     const amt = Number(t.transactionAmount?.amount ?? t.amount ?? 0);
     const cur = t.transactionAmount?.currency ?? t.currency ?? "EUR";
     const vs =
@@ -282,7 +318,7 @@ export async function fetchTransactions(
     const counter = t.creditorName ?? t.debtorName ?? t.counterPartyName ?? null;
     return {
       transaction_reference: t.transactionId ?? t.entryReference ?? null,
-      booking_date: (t.bookingDate ?? t.valueDate ?? toStr).slice(0, 10),
+      booking_date: (t.bookingDate ?? t.valueDate ?? new Date().toISOString()).slice(0, 10),
       amount: amt,
       currency: cur,
       variable_symbol: vs ? String(vs) : null,

@@ -31,6 +31,9 @@ describe("tatrabanka.server", () => {
   beforeEach(() => {
     process.env.TB_CLIENT_ID = CID;
     process.env.TB_CLIENT_SECRET = SEC;
+    // Testy overujú tvar sandbox URL — nesmú závisieť od TB_ENV v .env,
+    // ktoré je na serveri prepnuté na produkciu.
+    process.env.TB_ENV = "sandbox";
     // Force canonical redirect_uri to match REDIRECT so both authorize + token
     // exchange use identical value (TB rejects any mismatch with 400).
     process.env.APP_PUBLIC_URL = "https://app.example.com";
@@ -255,8 +258,10 @@ describe("tatrabanka.server", () => {
         };
       });
       const txs = await fetchTransactions("AT", "acc-1", "C1", 30);
+      // dateTo sa pri dopyte na aktuálne transakcie neposiela a page tiež nie
+      // (funguje len pre účty mimo TB) — stránkuje sa cez _links.next.
       expect(capturedUrl).toMatch(
-        /\/v5\/accounts\/acc-1\/transactions\?dateFrom=\d{4}-\d{2}-\d{2}&dateTo=\d{4}-\d{2}-\d{2}&page=1&pageSize=200/,
+        /\/v5\/accounts\/acc-1\/transactions\?dateFrom=\d{4}-\d{2}-\d{2}&pageSize=200$/,
       );
       expect(txs).toHaveLength(1);
       expect(txs[0]).toMatchObject({
@@ -267,6 +272,59 @@ describe("tatrabanka.server", () => {
         counterparty: "ACME",
         variable_symbol: "12345",
       });
+    });
+
+    it("sleduje _links.next a pozbiera vsetky strany", async () => {
+      const urls: string[] = [];
+      mockFetch((url) => {
+        urls.push(url);
+        const isFirst = urls.length === 1;
+        return {
+          status: 200,
+          body: JSON.stringify({
+            transactions: [
+              {
+                transactionId: isFirst ? "T1" : "T2",
+                transactionState: "BOOKED",
+                bookingDate: "2026-06-01",
+                transactionAmount: { amount: "10.00", currency: "EUR" },
+              },
+            ],
+            // Druhá strana už ďalší odkaz nemá → stránkovanie končí.
+            ...(isFirst
+              ? { _links: { next: { href: "https://api.tatrabanka.sk/premium/sandbox/v5/acc/next?page=2" } } }
+              : {}),
+          }),
+        };
+      });
+      const txs = await fetchTransactions("AT", "acc-1");
+      expect(urls).toHaveLength(2);
+      expect(urls[1]).toBe("https://api.tatrabanka.sk/premium/sandbox/v5/acc/next?page=2");
+      expect(txs.map((t) => t.transaction_reference)).toEqual(["T1", "T2"]);
+    });
+
+    it("preskoci nezauctovane transakcie", async () => {
+      mockFetch(() => ({
+        status: 200,
+        body: JSON.stringify({
+          transactions: [
+            {
+              transactionId: "B1",
+              transactionState: "BOOKED",
+              bookingDate: "2026-06-01",
+              transactionAmount: { amount: "5.00", currency: "EUR" },
+            },
+            {
+              transactionId: "P1",
+              transactionState: "PENDING",
+              bookingDate: "2026-06-02",
+              transactionAmount: { amount: "7.00", currency: "EUR" },
+            },
+          ],
+        }),
+      }));
+      const txs = await fetchTransactions("AT", "acc-1");
+      expect(txs.map((t) => t.transaction_reference)).toEqual(["B1"]);
     });
 
     it("400/401/500: throws tb_api_error", async () => {
