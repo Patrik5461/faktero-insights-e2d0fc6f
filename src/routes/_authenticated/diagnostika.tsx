@@ -24,13 +24,22 @@ function DiagnostikaPage() {
   async function load() {
     setLoading(true);
     setErr(null);
+    let platformAdmin = false;
     try {
       const r = await fetchDiag();
       setData(r);
+      platformAdmin = r?.is_platform_admin === true;
     } catch (e: any) {
       setErr(e?.message ?? "Chyba pri načítaní");
     } finally {
       setLoading(false);
+    }
+    // Stav cronu a TB konfigurácia sú údaje platformy, nie firmy — bežnému
+    // ownerovi ich server nevydá, tak ich ani nepýtame.
+    if (!platformAdmin) {
+      setTb(null);
+      setTbErr(null);
+      return;
     }
     try {
       const t = await fetchTb();
@@ -47,6 +56,7 @@ function DiagnostikaPage() {
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Načítavam…</div>;
   if (err) return <div className="p-6 text-sm text-destructive">{err}</div>;
 
+  const isPlatformAdmin = data?.is_platform_admin === true;
   const cron = data?.cron ?? {};
   const runs: any[] = data?.last_runs ?? [];
   const logs: any[] = data?.recent_logs ?? [];
@@ -71,30 +81,34 @@ function DiagnostikaPage() {
           </button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card title="Cron stav" icon={Activity}>
-            {cron.configured ? (
-              <>
-                <Row k="Job" v={cron.jobname} />
-                <Row k="Plán" v={cron.schedule ?? "—"} />
-                <Row k="Aktívny" v={cron.active ? "Áno" : "Nie"} />
-              </>
-            ) : (
-              <div className="text-sm text-destructive">Cron nie je nakonfigurovaný.</div>
-            )}
-          </Card>
+        <div className={`grid gap-4 ${isPlatformAdmin ? "md:grid-cols-3" : "md:grid-cols-1"}`}>
+          {isPlatformAdmin && (
+            <Card title="Cron stav" icon={Activity}>
+              {cron.configured ? (
+                <>
+                  <Row k="Job" v={cron.jobname} />
+                  <Row k="Plán" v={cron.schedule ?? "—"} />
+                  <Row k="Aktívny" v={cron.active ? "Áno" : "Nie"} />
+                </>
+              ) : (
+                <div className="text-sm text-destructive">Cron nie je nakonfigurovaný.</div>
+              )}
+            </Card>
+          )}
 
-          <Card title="Posledné spustenie" icon={Clock}>
-            {lastRun ? (
-              <>
-                <Row k="Čas" v={new Date(lastRun.start_time).toLocaleString("sk-SK")} />
-                <Row k="Stav" v={lastRun.status} />
-                <Row k="Správa" v={lastRun.return_message ?? "—"} />
-              </>
-            ) : (
-              <div className="text-sm text-muted-foreground">Zatiaľ žiadne spustenie.</div>
-            )}
-          </Card>
+          {isPlatformAdmin && (
+            <Card title="Posledné spustenie" icon={Clock}>
+              {lastRun ? (
+                <>
+                  <Row k="Čas" v={new Date(lastRun.start_time).toLocaleString("sk-SK")} />
+                  <Row k="Stav" v={lastRun.status} />
+                  <Row k="Správa" v={lastRun.return_message ?? "—"} />
+                </>
+              ) : (
+                <div className="text-sm text-muted-foreground">Zatiaľ žiadne spustenie.</div>
+              )}
+            </Card>
+          )}
 
           <Card title="Chyby (7 dní)" icon={AlertTriangle}>
             <div className="text-3xl font-semibold tabular-nums">{data?.failed_7d ?? 0}</div>
@@ -102,32 +116,34 @@ function DiagnostikaPage() {
           </Card>
         </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <Card title="Posledné cron behy" icon={Activity}>
-            {runs.length === 0 ? (
-              <div className="text-sm text-muted-foreground">Žiadne záznamy.</div>
-            ) : (
-              <ul className="divide-y divide-border text-sm">
-                {runs.map((r, i) => (
-                  <li key={i} className="flex items-center justify-between py-2">
-                    <div className="min-w-0">
-                      <div className="font-medium">
-                        {new Date(r.start_time).toLocaleString("sk-SK")}
+        <div className={`mt-6 grid gap-4 ${isPlatformAdmin ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
+          {isPlatformAdmin && (
+            <Card title="Posledné cron behy" icon={Activity}>
+              {runs.length === 0 ? (
+                <div className="text-sm text-muted-foreground">Žiadne záznamy.</div>
+              ) : (
+                <ul className="divide-y divide-border text-sm">
+                  {runs.map((r, i) => (
+                    <li key={i} className="flex items-center justify-between py-2">
+                      <div className="min-w-0">
+                        <div className="font-medium">
+                          {new Date(r.start_time).toLocaleString("sk-SK")}
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {r.return_message ?? "—"}
+                        </div>
                       </div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {r.return_message ?? "—"}
-                      </div>
-                    </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${r.status === "succeeded" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}
-                    >
-                      {r.status}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${r.status === "succeeded" ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"}`}
+                      >
+                        {r.status}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          )}
 
           <Card title="Posledné generovania" icon={CheckCircle2}>
             {logs.length === 0 ? (
@@ -157,6 +173,7 @@ function DiagnostikaPage() {
           </Card>
         </div>
 
+        {isPlatformAdmin && (
         <div className="mt-6">
           <Card title="Tatra banka — OAuth authorize URL" icon={Link2}>
             {tbErr && <div className="text-sm text-destructive">{tbErr}</div>}
@@ -196,6 +213,7 @@ function DiagnostikaPage() {
             )}
           </Card>
         </div>
+        )}
       </PageBody>
     </>
   );

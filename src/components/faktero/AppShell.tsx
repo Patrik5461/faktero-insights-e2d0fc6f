@@ -47,7 +47,9 @@ import { initNativePlatform } from "@/lib/mobile/native-init";
 
 type Company = { id: string; name: string; logo_url?: string | null; role: string };
 
-type NavChild = { to: string; label: string };
+/** `companyAdminOnly`: skryté pre bežných členov firmy — server tie dáta owner/adminovi
+ *  vydá a členovi nie, takže položka by im aj tak skončila chybou. */
+type NavChild = { to: string; label: string; companyAdminOnly?: boolean };
 type NavGroup = {
   key: string;
   label: string;
@@ -213,7 +215,7 @@ const NAV: NavGroup[] = [
       { to: "/nastavenia/online-platby", label: "Online platby" },
 
       { to: "/nastavenia", label: "Nastavenia systému" },
-      { to: "/diagnostika", label: "Diagnostika" },
+      { to: "/diagnostika", label: "Diagnostika", companyAdminOnly: true },
     ],
   },
 ];
@@ -256,10 +258,14 @@ function resolveView(productMode: ProductMode, activeProduct: ActiveProduct): Ac
   return activeProduct;
 }
 
-function filterNav(view: ActiveProduct): NavGroup[] {
+function filterNav(view: ActiveProduct, isCompanyAdmin: boolean): NavGroup[] {
   const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
   // "nastavenia" je spoločné pre oba produkty
-  return NAV.filter((g) => allowed.has(g.key) || g.key === "nastavenia");
+  return NAV.filter((g) => allowed.has(g.key) || g.key === "nastavenia").map((g) =>
+    isCompanyAdmin
+      ? g
+      : { ...g, children: g.children.filter((c) => !c.companyAdminOnly) },
+  );
 }
 
 export function AppShell({
@@ -286,7 +292,8 @@ export function AppShell({
   const [adminRole, setAdminRole] = useState<string | null>(null);
 
   const view = resolveView(productMode, activeProduct);
-  const nav = filterNav(view);
+  const isCompanyAdmin = active?.role === "owner" || active?.role === "admin";
+  const nav = filterNav(view, isCompanyAdmin);
   const homePath = landingPathFor(view);
   const canSwitch = productMode === "both";
 

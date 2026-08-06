@@ -106,7 +106,13 @@ export const getRecurringWidgetStats = createServerFn({ method: "GET" })
     };
   });
 
-/** Admin diagnostics: cron status, last execution, recent failures. */
+/**
+ * Diagnostics for recurring invoices.
+ *
+ * Two tiers: `recent_logs` / `failed_7d` are the caller's own company data and go
+ * to any owner/admin. The pg_cron status is platform-wide state read through the
+ * service role, so it is withheld unless the caller is a platform admin.
+ */
 export const getRecurringDiagnostics = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -121,16 +127,22 @@ export const getRecurringDiagnostics = createServerFn({ method: "GET" })
     if (!adminCompanies.length) throw new Error("Forbidden");
     const companyIds = adminCompanies.map((m: any) => m.company_id);
 
+    const { data: isPlatformAdmin } = await context.supabase.rpc("is_platform_admin", {
+      _user_id: context.userId,
+    });
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let cron_job: any = null;
     let last_runs: any[] = [];
-    try {
-      const { data: status } = await (supabaseAdmin as any).rpc("faktero_recurring_cron_status");
-      cron_job = (status as any)?.job ?? null;
-      last_runs = (status as any)?.runs ?? [];
-    } catch {
-      // RPC existuje len keď je pg_cron nainštalovaný — diagnostika sa zobrazí prázdna
+    if (isPlatformAdmin) {
+      try {
+        const { data: status } = await (supabaseAdmin as any).rpc("faktero_recurring_cron_status");
+        cron_job = (status as any)?.job ?? null;
+        last_runs = (status as any)?.runs ?? [];
+      } catch {
+        // RPC existuje len keď je pg_cron nainštalovaný — diagnostika sa zobrazí prázdna
+      }
     }
 
     const [recentLogs, failed7d] = await Promise.all([
@@ -151,12 +163,17 @@ export const getRecurringDiagnostics = createServerFn({ method: "GET" })
     ]);
 
     return {
-      cron: {
-        configured: !!cron_job,
-        jobname: cron_job?.jobname ?? "faktero-recurring-daily",
-        schedule: cron_job?.schedule ?? null,
-        active: cron_job?.active ?? null,
-      },
+      is_platform_admin: !!isPlatformAdmin,
+      // `null` (nie prázdny objekt) hovorí UI, že stav cronu nedostalo z nedostatku
+      // oprávnení — nie že cron nie je nakonfigurovaný.
+      cron: isPlatformAdmin
+        ? {
+            configured: !!cron_job,
+            jobname: cron_job?.jobname ?? "faktero-recurring-daily",
+            schedule: cron_job?.schedule ?? null,
+            active: cron_job?.active ?? null,
+          }
+        : null,
       last_runs,
       failed_7d: failed7d.count ?? 0,
       recent_logs: recentLogs.data ?? [],

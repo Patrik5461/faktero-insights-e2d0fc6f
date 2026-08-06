@@ -76,7 +76,14 @@ export const startBankConnect = createServerFn({ method: "POST" })
 /** Diagnostic preview: build the authorize URL without touching the DB. */
 export const previewTatraAuthorizeUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
+  .handler(async ({ context }) => {
+    // authorize_url nesie TB_CLIENT_ID a redirect_uri celej platformy — to nie je
+    // údaj firmy, preto len platform admin.
+    const { data: isPlatformAdmin } = await context.supabase.rpc("is_platform_admin", {
+      _user_id: context.userId,
+    });
+    if (!isPlatformAdmin) throw new Error("Forbidden: platform admin only");
+
     const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri } =
       await import("./tatrabanka.server");
     const configured = isTatraConfigured();
