@@ -1,26 +1,42 @@
+import { createHash } from "node:crypto";
+
 /**
- * Tatra banka Premium API — Accounts v3.2.1 (sandbox)
- * Read-only integration. OAuth2 confidential client flow.
+ * Tatra banka Premium API — Accounts v3.2.1
+ * Read-only integration. OAuth2 confidential client + PKCE.
+ *
+ * Flow (overené priamo proti TB 2026-08-06):
+ *   1. client_credentials token so scope=PREMIUM_AIS
+ *   2. POST /v3/consents s tým tokenom → consentId
+ *   3. redirect používateľa na /auth/oauth/v2/authorize so scope=PREMIUM_AIS:<consentId> + PKCE
+ *   4. authorization_code + code_verifier → používateľský access_token
+ *   5. GET /v3/accounts, GET /v5/accounts/<id>/transactions
+ *
+ * Pozor: base MUSÍ obsahovať /premium/. Cesta api.tatrabanka.sk/auth/oauth/v2
+ * je PSD2 gateway — vyžaduje mTLS a Premium klienta nepozná.
  */
 
-// Tatra banka Premium API / Open Banking AISP
-// TB_ENV=sandbox (default) → https://api.tatrabanka.sk/sandbox/...
-// TB_ENV=production        → https://api.tatrabanka.sk/...
-//   authorize: <base>/auth/oauth/v2/authorize
-//   token:     <base>/auth/oauth/v2/token
-//   api base:  <base>/api/v1
+// TB_ENV=sandbox (default) → https://api.tatrabanka.sk/premium/sandbox
+// TB_ENV=production        → https://api.tatrabanka.sk/premium/production
 function tbBase(): string {
   const env = (process.env.TB_ENV ?? "sandbox").toLowerCase();
   return env === "production" || env === "prod"
-    ? "https://api.tatrabanka.sk"
-    : "https://api.tatrabanka.sk/sandbox";
+    ? "https://api.tatrabanka.sk/premium/production"
+    : "https://api.tatrabanka.sk/premium/sandbox";
 }
 function authBase(): string {
   return `${tbBase()}/auth/oauth/v2`;
 }
+// Verzia je súčasťou cesty zdroja (/v3/accounts, /v5/.../transactions),
+// nie spoločným prefixom — preto tu žiadne /api/v1.
 function apiBase(): string {
-  return `${tbBase()}/api/v1`;
+  return tbBase();
 }
+
+// AIS scope je pevný reťazec, NIE TB_SCOPE z env. TB má klientovi registrované
+// PREMIUM_AIS, PREMIUM_PIS aj PREMIUM_PIS_CANC, ale authorize prijme naraz len
+// jeden a pri AIS ho chce v tvare "PREMIUM_AIS:<consentId>" — čokoľvek iné
+// (vrátane holého "PREMIUM_AIS") padne na invalid_scope.
+const AIS_SCOPE = "PREMIUM_AIS";
 
 export function isTatraConfigured(): boolean {
   return !!process.env.TB_CLIENT_ID && !!process.env.TB_CLIENT_SECRET;
@@ -43,16 +59,72 @@ export function getRedirectUri(origin?: string): string {
   return `${base}/api/public/tatrabanka/callback`;
 }
 
-export function buildAuthorizeUrl(opts: { state: string; redirectUri: string }): string {
+/** PKCE pár. Verifier si musí volajúci odložiť — spotrebuje sa až pri výmene kódu. */
+export function createPkcePair(): { verifier: string; challenge: string } {
+  const verifier = base64Url(crypto.getRandomValues(new Uint8Array(32)));
+  const digest = createHash("sha256").update(verifier).digest();
+  return { verifier, challenge: base64Url(digest) };
+}
+
+function base64Url(buf: Uint8Array | Buffer): string {
+  return Buffer.from(buf).toString("base64url");
+}
+
+/**
+ * Servisný token (grant_type=client_credentials). Neslúži na čítanie dát —
+ * /v3/accounts ho odmietne s TOKEN_INVALID — iba na správu consentov.
+ */
+export async function getClientCredentialsToken(): Promise<string> {
+  const res = await fetch(`${authBase()}/token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: basicAuth(),
+      Accept: "application/json",
+    },
+    body: new URLSearchParams({ grant_type: "client_credentials", scope: AIS_SCOPE }),
+  });
+  const txt = await res.text();
+  if (!res.ok) throw new Error(`tb_client_credentials_failed: ${res.status} ${txt.slice(0, 300)}`);
+  return JSON.parse(txt).access_token as string;
+}
+
+/** Založí nový consent a vráti jeho id. Consent ide do scope authorize URL. */
+export async function createConsent(): Promise<string> {
+  const token = await getClientCredentialsToken();
+  const res = await fetch(`${apiBase()}/v3/consents`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-Request-ID": crypto.randomUUID(),
+    },
+    body: "{}",
+  });
+  const txt = await res.text();
+  if (!res.ok) throw new Error(`tb_consent_failed: ${res.status} ${txt.slice(0, 300)}`);
+  const consentId = JSON.parse(txt).consentId;
+  if (!consentId) throw new Error(`tb_consent_missing_id: ${txt.slice(0, 200)}`);
+  return consentId as string;
+}
+
+export function buildAuthorizeUrl(opts: {
+  state: string;
+  redirectUri: string;
+  consentId: string;
+  codeChallenge: string;
+}): string {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: process.env.TB_CLIENT_ID!,
     redirect_uri: opts.redirectUri,
     state: opts.state,
+    // Bez consentId vráti TB invalid_scope, bez PKCE invalid_request.
+    scope: `${AIS_SCOPE}:${opts.consentId}`,
+    code_challenge: opts.codeChallenge,
+    code_challenge_method: "S256",
   });
-  // Scope is required by TB — default to "AISP" when TB_SCOPE env is missing/empty.
-  const scope = process.env.TB_SCOPE?.trim() || "AISP";
-  params.set("scope", scope);
   return `${authBase()}/authorize?${params.toString()}`;
 }
 
@@ -73,6 +145,7 @@ function basicAuth(): string {
 export async function exchangeCodeForToken(
   code: string,
   redirectUri?: string,
+  codeVerifier?: string,
 ): Promise<TokenResponse> {
   // ALWAYS use the canonical redirect_uri from env — must match buildAuthorizeUrl()
   // exactly (byte-for-byte), otherwise TB returns 400 invalid_redirect_uri.
@@ -82,6 +155,8 @@ export async function exchangeCodeForToken(
     code,
     redirect_uri: canonical,
   });
+  // PKCE: authorize prebehol s code_challenge, token teda musí niesť verifier.
+  if (codeVerifier) body.set("code_verifier", codeVerifier);
   const res = await fetch(`${authBase()}/token`, {
     method: "POST",
     headers: {
@@ -149,18 +224,20 @@ export async function fetchAccounts(
   accessToken: string,
   consentId?: string | null,
 ): Promise<TbAccount[]> {
-  const json = await apiGet("/accounts", accessToken, consentId);
+  const json = await apiGet("/v3/accounts", accessToken, consentId);
   const accounts: any[] = json.accounts ?? json.Accounts ?? [];
   return accounts.map((a: any) => {
     const balances: any[] = a.balances ?? [];
     const closing =
       balances.find((b) => /closing|interim|expected/i.test(b.balanceType ?? "")) ?? balances[0];
     const amt = closing?.balanceAmount?.amount ?? closing?.amount ?? 0;
+    // Accounts v3 nesie IBAN a menu v accountReference, nie na koreni objektu.
+    const ref = a.accountReference ?? {};
     return {
-      external_account_id: a.resourceId ?? a.accountId ?? a.id ?? a.iban,
-      iban: a.iban ?? null,
-      account_name: a.name ?? a.product ?? a.ownerName ?? null,
-      currency: a.currency ?? closing?.balanceAmount?.currency ?? "EUR",
+      external_account_id: a.accountId ?? a.resourceId ?? a.id ?? ref.iban ?? a.iban,
+      iban: ref.iban ?? a.iban ?? null,
+      account_name: a.displayName ?? a.name ?? a.product ?? a.ownerName ?? null,
+      currency: ref.currency ?? a.currency ?? closing?.balanceAmount?.currency ?? "EUR",
       balance: Number(amt) || 0,
     };
   });
@@ -187,8 +264,10 @@ export async function fetchTransactions(
   dateFrom.setDate(dateFrom.getDate() - daysBack);
   const fromStr = dateFrom.toISOString().slice(0, 10);
   const toStr = dateTo.toISOString().slice(0, 10);
+  // Transactions sú v5 (účty v3) a stránkujú sa cez page/pageSize.
+  // bookingStatus tu nie je — to je PSD2 XS2A parameter.
   const json = await apiGet(
-    `/accounts/${encodeURIComponent(externalAccountId)}/transactions?bookingStatus=booked&dateFrom=${fromStr}&dateTo=${toStr}`,
+    `/v5/accounts/${encodeURIComponent(externalAccountId)}/transactions?dateFrom=${fromStr}&dateTo=${toStr}&page=1&pageSize=200`,
     accessToken,
     consentId,
   );

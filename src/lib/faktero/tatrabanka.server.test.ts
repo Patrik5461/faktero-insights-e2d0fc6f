@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createHash } from "node:crypto";
 import {
   buildAuthorizeUrl,
+  createPkcePair,
   exchangeCodeForToken,
   fetchAccounts,
   fetchTransactions,
@@ -46,13 +48,38 @@ describe("tatrabanka.server", () => {
     });
 
     it("buildAuthorizeUrl includes required OAuth params", () => {
-      const url = buildAuthorizeUrl({ state: "conn-1", redirectUri: REDIRECT });
+      const url = buildAuthorizeUrl({
+        state: "conn-1",
+        redirectUri: REDIRECT,
+        consentId: "CONS-1",
+        codeChallenge: "CH-1",
+      });
       const u = new URL(url);
       expect(u.searchParams.get("response_type")).toBe("code");
       expect(u.searchParams.get("client_id")).toBe(CID);
       expect(u.searchParams.get("redirect_uri")).toBe(REDIRECT);
-      expect(u.searchParams.get("scope")).toBe("AISP");
+      // TB odmietne holé PREMIUM_AIS aj chýbajúce PKCE
+      expect(u.searchParams.get("scope")).toBe("PREMIUM_AIS:CONS-1");
+      expect(u.searchParams.get("code_challenge")).toBe("CH-1");
+      expect(u.searchParams.get("code_challenge_method")).toBe("S256");
       expect(u.searchParams.get("state")).toBe("conn-1");
+    });
+
+    it("authorize URL ide na Premium base, nie na PSD2 gateway", () => {
+      const url = buildAuthorizeUrl({
+        state: "s",
+        redirectUri: REDIRECT,
+        consentId: "c",
+        codeChallenge: "ch",
+      });
+      expect(url).toContain("https://api.tatrabanka.sk/premium/sandbox/auth/oauth/v2/authorize");
+    });
+
+    it("createPkcePair vyrobi S256 dvojicu", () => {
+      const { verifier, challenge } = createPkcePair();
+      expect(verifier).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      const expected = createHash("sha256").update(verifier).digest("base64url");
+      expect(challenge).toBe(expected);
     });
   });
 
@@ -75,7 +102,7 @@ describe("tatrabanka.server", () => {
         };
       });
 
-      const tok = await exchangeCodeForToken("abc", REDIRECT);
+      const tok = await exchangeCodeForToken("abc", REDIRECT, "VERIFIER-1");
       expect(tok.access_token).toBe("AT");
       expect(tok.refresh_token).toBe("RT");
       expect(tok.consent_id).toBe("C1");
@@ -87,6 +114,7 @@ describe("tatrabanka.server", () => {
       expect(body).toContain("grant_type=authorization_code");
       expect(body).toContain("code=abc");
       expect(body).toContain(`redirect_uri=${encodeURIComponent(REDIRECT)}`);
+      expect(body).toContain("code_verifier=VERIFIER-1");
     });
 
     it("400 invalid_grant: throws with status + body", async () => {
@@ -144,7 +172,7 @@ describe("tatrabanka.server", () => {
         };
       });
       const list = await fetchAccounts("AT", "C1");
-      expect(capturedUrl).toContain("/accounts");
+      expect(capturedUrl).toContain("/premium/sandbox/v3/accounts");
       expect(capturedInit.headers.Authorization).toBe("Bearer AT");
       expect(capturedInit.headers["X-Request-ID"]).toMatch(/^[0-9a-f-]{36}$/);
       expect(capturedInit.headers["Consent-ID"]).toBeUndefined();
@@ -169,6 +197,32 @@ describe("tatrabanka.server", () => {
     it("nonsense response: throws JSON parse error", async () => {
       mockFetch(() => ({ status: 200, body: "not-json" }));
       await expect(fetchAccounts("AT")).rejects.toThrow();
+    });
+
+    it("Accounts v3: berie iban a menu z accountReference", async () => {
+      mockFetch(() => ({
+        status: 200,
+        body: JSON.stringify({
+          accounts: [
+            {
+              accountId: "ACC-9",
+              accountReference: { iban: "SK9999", currency: "EUR" },
+              displayName: "Firemný účet",
+              balances: [
+                { balanceType: "closingBooked", balanceAmount: { amount: "10.50", currency: "EUR" } },
+              ],
+            },
+          ],
+        }),
+      }));
+      const list = await fetchAccounts("AT");
+      expect(list[0]).toMatchObject({
+        external_account_id: "ACC-9",
+        iban: "SK9999",
+        account_name: "Firemný účet",
+        currency: "EUR",
+        balance: 10.5,
+      });
     });
 
     it("empty accounts list: returns []", async () => {
@@ -202,7 +256,7 @@ describe("tatrabanka.server", () => {
       });
       const txs = await fetchTransactions("AT", "acc-1", "C1", 30);
       expect(capturedUrl).toMatch(
-        /\/accounts\/acc-1\/transactions\?bookingStatus=booked&dateFrom=\d{4}-\d{2}-\d{2}&dateTo=\d{4}-\d{2}-\d{2}/,
+        /\/v5\/accounts\/acc-1\/transactions\?dateFrom=\d{4}-\d{2}-\d{2}&dateTo=\d{4}-\d{2}-\d{2}&page=1&pageSize=200/,
       );
       expect(txs).toHaveLength(1);
       expect(txs[0]).toMatchObject({

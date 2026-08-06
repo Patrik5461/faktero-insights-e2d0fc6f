@@ -58,18 +58,34 @@ export const startBankConnect = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const role = await assertMember(context.supabase, context.userId, data.company_id);
     if (!["owner", "admin"].includes(role)) throw new Error("Forbidden");
-    const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri } =
+    const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri, createConsent, createPkcePair } =
       await import("./tatrabanka.server");
     if (!isTatraConfigured()) throw new Error("not_configured");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // TB chce consent ešte pred presmerovaním — jeho id ide do scope authorize URL.
+    const consentId = await createConsent();
+    const { verifier, challenge } = createPkcePair();
     const { data: conn, error } = await supabaseAdmin
       .from("bank_connections")
-      .insert({ company_id: data.company_id, provider: "tatrabanka", status: "pending" })
+      .insert({
+        company_id: data.company_id,
+        provider: "tatrabanka",
+        status: "pending",
+        consent_id: consentId,
+        // code_verifier sa spotrebuje až v callbacku; bank_connections naň nemá
+        // stĺpec, takže žije v metadata a po výmene kódu sa maže.
+        metadata: { pkce_code_verifier: verifier },
+      })
       .select("id")
       .single();
     if (error || !conn) throw new Error(error?.message ?? "insert_failed");
     const redirectUri = getRedirectUri(origin());
-    const url = buildAuthorizeUrl({ state: conn.id, redirectUri });
+    const url = buildAuthorizeUrl({
+      state: conn.id,
+      redirectUri,
+      consentId,
+      codeChallenge: challenge,
+    });
     return { authorize_url: url };
   });
 
@@ -89,10 +105,16 @@ export const previewTatraAuthorizeUrl = createServerFn({ method: "POST" })
     const configured = isTatraConfigured();
     const org = origin();
     const redirectUri = getRedirectUri(org);
+    // Náhľad nezakladá consent — ukazuje tvar URL so zástupným id.
     const authorize_url = configured
-      ? buildAuthorizeUrl({ state: "preview-state-0000", redirectUri })
+      ? buildAuthorizeUrl({
+          state: "preview-state-0000",
+          redirectUri,
+          consentId: "preview-consent-0000",
+          codeChallenge: "preview-challenge-0000",
+        })
       : null;
-    const scope = (process.env.TB_SCOPE ?? "AISP").trim();
+    const scope = "PREMIUM_AIS:<consentId>";
     const env = (process.env.TB_ENV ?? "sandbox").toLowerCase();
     return { configured, env, origin: org, redirect_uri: redirectUri, scope, authorize_url };
   });

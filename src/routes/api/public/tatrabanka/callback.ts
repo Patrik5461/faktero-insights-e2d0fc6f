@@ -18,28 +18,35 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           const { data: conn } = await supabaseAdmin
             .from("bank_connections")
-            .select("id, company_id, status")
+            .select("id, company_id, status, consent_id, metadata")
             .eq("id", state)
             .maybeSingle();
           if (!conn) return redirect(`${back}?error=invalid_state`);
-          const tokens = await exchangeCodeForToken(code, getRedirectUri(origin));
+          // PKCE verifier odložený pri štarte flowu — bez neho TB kód nevymení.
+          const verifier = (conn.metadata as any)?.pkce_code_verifier as string | undefined;
+          if (!verifier) return redirect(`${back}?error=missing_code_verifier`);
+          const tokens = await exchangeCodeForToken(code, getRedirectUri(origin), verifier);
           const expiresAt = new Date(Date.now() + (tokens.expires_in ?? 3600) * 1000).toISOString();
-          // TB Premium API: consent is implicit in the OAuth access_token.
-          // No separate /consents call — that endpoint doesn't exist here.
           await supabaseAdmin
             .from("bank_connections")
             .update({
               access_token: tokens.access_token,
               refresh_token: tokens.refresh_token ?? null,
               token_expires_at: expiresAt,
-              consent_id: tokens.consent_id ?? null,
+              // consent_id vznikol pred redirectom; token ho už nevracia.
+              consent_id: tokens.consent_id ?? conn.consent_id ?? null,
               status: "connected",
+              // verifier je jednorazový — nenechávaj ho v DB
+              metadata: { ...((conn.metadata as any) ?? {}), pkce_code_verifier: null },
             })
             .eq("id", conn.id);
           // Best-effort initial accounts sync
           try {
             const { fetchAccounts } = await import("@/lib/faktero/tatrabanka.server");
-            const accounts = await fetchAccounts(tokens.access_token, tokens.consent_id ?? null);
+            const accounts = await fetchAccounts(
+              tokens.access_token,
+              tokens.consent_id ?? conn.consent_id ?? null,
+            );
             for (const a of accounts) {
               await supabaseAdmin.from("bank_accounts").insert({
                 company_id: conn.company_id,
