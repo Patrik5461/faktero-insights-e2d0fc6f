@@ -163,6 +163,7 @@ import { Route as AuthenticatedSkladPresunyNovaRouteImport } from './routes/_aut
 import { Route as AuthenticatedSkladProduktyIdRouteImport } from './routes/_authenticated/sklad.produkty.$id'
 import { Route as ApiAdminSeoCallbackRouteImport } from './routes/api/admin/seo.callback'
 import { Route as ApiBankoveUctyTatrabankaWebhookRouteImport } from './routes/api/bankove-ucty/tatrabanka/webhook'
+import { Route as ApiPublicHooksBankSyncRouteImport } from './routes/api/public/hooks/bank-sync'
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
 import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
 import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/public/hooks/recurring-run'
@@ -1025,6 +1026,11 @@ const ApiBankoveUctyTatrabankaWebhookRoute =
     path: '/api/bankove-ucty/tatrabanka/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksBankSyncRoute = ApiPublicHooksBankSyncRouteImport.update({
+  id: '/api/public/hooks/bank-sync',
+  path: '/api/public/hooks/bank-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksCommanderSyncRoute =
   ApiPublicHooksCommanderSyncRouteImport.update({
     id: '/api/public/hooks/commander-sync',
@@ -1336,6 +1342,7 @@ export interface FileRoutesByFullPath {
   '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
@@ -1512,6 +1519,7 @@ export interface FileRoutesByTo {
   '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
@@ -1698,6 +1706,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
@@ -1884,6 +1893,7 @@ export interface FileRouteTypes {
     | '/sklad/produkty/$id'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
@@ -2060,6 +2070,7 @@ export interface FileRouteTypes {
     | '/sklad/produkty/$id'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
@@ -2245,6 +2256,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/produkty/$id'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
@@ -2328,6 +2340,7 @@ export interface RootRouteChildren {
   PomocOnlinePlatbyGopayRoute: typeof PomocOnlinePlatbyGopayRoute
   ApiAdminSeoCallbackRoute: typeof ApiAdminSeoCallbackRoute
   ApiBankoveUctyTatrabankaWebhookRoute: typeof ApiBankoveUctyTatrabankaWebhookRoute
+  ApiPublicHooksBankSyncRoute: typeof ApiPublicHooksBankSyncRoute
   ApiPublicHooksCommanderSyncRoute: typeof ApiPublicHooksCommanderSyncRoute
   ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
   ApiPublicHooksRecurringRunRoute: typeof ApiPublicHooksRecurringRunRoute
@@ -3426,6 +3439,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBankoveUctyTatrabankaWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/bank-sync': {
+      id: '/api/public/hooks/bank-sync'
+      path: '/api/public/hooks/bank-sync'
+      fullPath: '/api/public/hooks/bank-sync'
+      preLoaderRoute: typeof ApiPublicHooksBankSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/commander-sync': {
       id: '/api/public/hooks/commander-sync'
       path: '/api/public/hooks/commander-sync'
@@ -4169,6 +4189,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocOnlinePlatbyGopayRoute: PomocOnlinePlatbyGopayRoute,
   ApiAdminSeoCallbackRoute: ApiAdminSeoCallbackRoute,
   ApiBankoveUctyTatrabankaWebhookRoute: ApiBankoveUctyTatrabankaWebhookRoute,
+  ApiPublicHooksBankSyncRoute: ApiPublicHooksBankSyncRoute,
   ApiPublicHooksCommanderSyncRoute: ApiPublicHooksCommanderSyncRoute,
   ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,
   ApiPublicHooksRecurringRunRoute: ApiPublicHooksRecurringRunRoute,
