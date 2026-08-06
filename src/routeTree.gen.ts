@@ -162,6 +162,7 @@ import { Route as AuthenticatedSkladPresunyIdRouteImport } from './routes/_authe
 import { Route as AuthenticatedSkladPresunyNovaRouteImport } from './routes/_authenticated/sklad.presuny.nova'
 import { Route as AuthenticatedSkladProduktyIdRouteImport } from './routes/_authenticated/sklad.produkty.$id'
 import { Route as ApiAdminSeoCallbackRouteImport } from './routes/api/admin/seo.callback'
+import { Route as ApiBankoveUctyTatrabankaWebhookRouteImport } from './routes/api/bankove-ucty/tatrabanka/webhook'
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
 import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
 import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/public/hooks/recurring-run'
@@ -169,6 +170,7 @@ import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public
 import { Route as ApiPublicHooksStockAlertsRouteImport } from './routes/api/public/hooks/stock-alerts'
 import { Route as ApiPublicHooksTrialLifecycleRouteImport } from './routes/api/public/hooks/trial-lifecycle'
 import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/public/tatrabanka/callback'
+import { Route as ApiPublicTatrabankaWebhookRouteImport } from './routes/api/public/tatrabanka/webhook'
 import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/tesla/callback'
 import { Route as ApiPublicWebhooksGopayMerchantRouteImport } from './routes/api/public/webhooks/gopay-merchant'
 import { Route as ApiV1CustomersIdRouteImport } from './routes/api/v1/customers.$id'
@@ -1017,6 +1019,12 @@ const ApiAdminSeoCallbackRoute = ApiAdminSeoCallbackRouteImport.update({
   path: '/api/admin/seo/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBankoveUctyTatrabankaWebhookRoute =
+  ApiBankoveUctyTatrabankaWebhookRouteImport.update({
+    id: '/api/bankove-ucty/tatrabanka/webhook',
+    path: '/api/bankove-ucty/tatrabanka/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksCommanderSyncRoute =
   ApiPublicHooksCommanderSyncRouteImport.update({
     id: '/api/public/hooks/commander-sync',
@@ -1056,6 +1064,12 @@ const ApiPublicTatrabankaCallbackRoute =
   ApiPublicTatrabankaCallbackRouteImport.update({
     id: '/api/public/tatrabanka/callback',
     path: '/api/public/tatrabanka/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicTatrabankaWebhookRoute =
+  ApiPublicTatrabankaWebhookRouteImport.update({
+    id: '/api/public/tatrabanka/webhook',
+    path: '/api/public/tatrabanka/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicTeslaCallbackRoute = ApiPublicTeslaCallbackRouteImport.update({
@@ -1321,6 +1335,7 @@ export interface FileRoutesByFullPath {
   '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
+  '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
@@ -1328,6 +1343,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
+  '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
@@ -1495,6 +1511,7 @@ export interface FileRoutesByTo {
   '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
+  '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
@@ -1502,6 +1519,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
+  '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
@@ -1679,6 +1697,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/_authenticated/sklad/produkty/$id': typeof AuthenticatedSkladProduktyIdRouteWithChildren
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
+  '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
@@ -1686,6 +1705,7 @@ export interface FileRoutesById {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
+  '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
@@ -1863,6 +1883,7 @@ export interface FileRouteTypes {
     | '/sklad/presuny/nova'
     | '/sklad/produkty/$id'
     | '/api/admin/seo/callback'
+    | '/api/bankove-ucty/tatrabanka/webhook'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
@@ -1870,6 +1891,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/tatrabanka/callback'
+    | '/api/public/tatrabanka/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
     | '/api/v1/customers/$id'
@@ -2037,6 +2059,7 @@ export interface FileRouteTypes {
     | '/sklad/presuny/nova'
     | '/sklad/produkty/$id'
     | '/api/admin/seo/callback'
+    | '/api/bankove-ucty/tatrabanka/webhook'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
@@ -2044,6 +2067,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/tatrabanka/callback'
+    | '/api/public/tatrabanka/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
     | '/api/v1/customers/$id'
@@ -2220,6 +2244,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/presuny/nova'
     | '/_authenticated/sklad/produkty/$id'
     | '/api/admin/seo/callback'
+    | '/api/bankove-ucty/tatrabanka/webhook'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
@@ -2227,6 +2252,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/tatrabanka/callback'
+    | '/api/public/tatrabanka/webhook'
     | '/api/public/tesla/callback'
     | '/api/public/webhooks/gopay-merchant'
     | '/api/v1/customers/$id'
@@ -2301,6 +2327,7 @@ export interface RootRouteChildren {
   DocsOnlinePlatbyGopayRoute: typeof DocsOnlinePlatbyGopayRoute
   PomocOnlinePlatbyGopayRoute: typeof PomocOnlinePlatbyGopayRoute
   ApiAdminSeoCallbackRoute: typeof ApiAdminSeoCallbackRoute
+  ApiBankoveUctyTatrabankaWebhookRoute: typeof ApiBankoveUctyTatrabankaWebhookRoute
   ApiPublicHooksCommanderSyncRoute: typeof ApiPublicHooksCommanderSyncRoute
   ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
   ApiPublicHooksRecurringRunRoute: typeof ApiPublicHooksRecurringRunRoute
@@ -2308,6 +2335,7 @@ export interface RootRouteChildren {
   ApiPublicHooksStockAlertsRoute: typeof ApiPublicHooksStockAlertsRoute
   ApiPublicHooksTrialLifecycleRoute: typeof ApiPublicHooksTrialLifecycleRoute
   ApiPublicTatrabankaCallbackRoute: typeof ApiPublicTatrabankaCallbackRoute
+  ApiPublicTatrabankaWebhookRoute: typeof ApiPublicTatrabankaWebhookRoute
   ApiPublicTeslaCallbackRoute: typeof ApiPublicTeslaCallbackRoute
   ApiPublicWebhooksGopayMerchantRoute: typeof ApiPublicWebhooksGopayMerchantRoute
   ApiV1SkladParseDeliveryNoteRoute: typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
@@ -3391,6 +3419,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminSeoCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/bankove-ucty/tatrabanka/webhook': {
+      id: '/api/bankove-ucty/tatrabanka/webhook'
+      path: '/api/bankove-ucty/tatrabanka/webhook'
+      fullPath: '/api/bankove-ucty/tatrabanka/webhook'
+      preLoaderRoute: typeof ApiBankoveUctyTatrabankaWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/commander-sync': {
       id: '/api/public/hooks/commander-sync'
       path: '/api/public/hooks/commander-sync'
@@ -3438,6 +3473,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/tatrabanka/callback'
       fullPath: '/api/public/tatrabanka/callback'
       preLoaderRoute: typeof ApiPublicTatrabankaCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/tatrabanka/webhook': {
+      id: '/api/public/tatrabanka/webhook'
+      path: '/api/public/tatrabanka/webhook'
+      fullPath: '/api/public/tatrabanka/webhook'
+      preLoaderRoute: typeof ApiPublicTatrabankaWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/tesla/callback': {
@@ -4126,6 +4168,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsOnlinePlatbyGopayRoute: DocsOnlinePlatbyGopayRoute,
   PomocOnlinePlatbyGopayRoute: PomocOnlinePlatbyGopayRoute,
   ApiAdminSeoCallbackRoute: ApiAdminSeoCallbackRoute,
+  ApiBankoveUctyTatrabankaWebhookRoute: ApiBankoveUctyTatrabankaWebhookRoute,
   ApiPublicHooksCommanderSyncRoute: ApiPublicHooksCommanderSyncRoute,
   ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,
   ApiPublicHooksRecurringRunRoute: ApiPublicHooksRecurringRunRoute,
@@ -4133,6 +4176,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksStockAlertsRoute: ApiPublicHooksStockAlertsRoute,
   ApiPublicHooksTrialLifecycleRoute: ApiPublicHooksTrialLifecycleRoute,
   ApiPublicTatrabankaCallbackRoute: ApiPublicTatrabankaCallbackRoute,
+  ApiPublicTatrabankaWebhookRoute: ApiPublicTatrabankaWebhookRoute,
   ApiPublicTeslaCallbackRoute: ApiPublicTeslaCallbackRoute,
   ApiPublicWebhooksGopayMerchantRoute: ApiPublicWebhooksGopayMerchantRoute,
   ApiV1SkladParseDeliveryNoteRoute:

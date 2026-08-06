@@ -406,6 +406,51 @@ export type Database = {
           },
         ]
       }
+      bank_webhook_events: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          headers: Json | null
+          id: string
+          method: string
+          path: string
+          payload: Json | null
+          processed: boolean
+          processed_at: string | null
+          provider: string
+          raw_body: string | null
+          source_ip: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          headers?: Json | null
+          id?: string
+          method: string
+          path: string
+          payload?: Json | null
+          processed?: boolean
+          processed_at?: string | null
+          provider?: string
+          raw_body?: string | null
+          source_ip?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          headers?: Json | null
+          id?: string
+          method?: string
+          path?: string
+          payload?: Json | null
+          processed?: boolean
+          processed_at?: string | null
+          provider?: string
+          raw_body?: string | null
+          source_ip?: string | null
+        }
+        Relationships: []
+      }
       billing_events: {
         Row: {
           company_id: string | null
