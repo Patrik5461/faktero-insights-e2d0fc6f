@@ -136,6 +136,32 @@ export const syncBankAccounts = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!conn || conn.status !== "connected" || !conn.access_token)
       throw new Error("not_connected");
+
+    // Účty mimo TB banka obnovuje sama 4× denne. Keď synchronizáciu spustí
+    // človek, pošleme aj žiadosť o obnovu — má pri sebe PSU údaje, ktoré API
+    // vyžaduje. Beží asynchrónne, takže sa prejaví až o chvíľu.
+    const meta = (conn.metadata as any) ?? {};
+    const lastRefresh = meta.last_refresh_at ? Date.parse(meta.last_refresh_at) : 0;
+    let refreshRequested = false;
+    if (Date.now() - lastRefresh > 30_000) {
+      try {
+        const { refreshExternalBanks } = await import("./tatrabanka.server");
+        const fwd = getRequestHeader("x-forwarded-for") ?? "";
+        const taskId = await refreshExternalBanks(conn.access_token, {
+          ip: fwd.split(",")[0]?.trim() || null,
+          userAgent: getRequestHeader("user-agent") ?? null,
+          deviceOs: getRequestHeader("sec-ch-ua-platform")?.replace(/"/g, "") ?? null,
+        });
+        refreshRequested = !!taskId;
+        await supabaseAdmin
+          .from("bank_connections")
+          .update({ metadata: { ...meta, last_refresh_at: new Date().toISOString() } })
+          .eq("id", conn.id);
+      } catch (e) {
+        console.error("[tatrabanka] refresh preskočený", e);
+      }
+    }
+
     const { fetchAccounts } = await import("./tatrabanka.server");
     // TB Premium API: consent is granted via OAuth access_token; no separate consent flow.
     const list = await fetchAccounts(conn.access_token, conn.consent_id ?? null);
@@ -174,7 +200,7 @@ export const syncBankAccounts = createServerFn({ method: "POST" })
       .from("bank_connections")
       .update({ last_synced_at: new Date().toISOString() })
       .eq("id", conn.id);
-    return { ok: true, count: list.length };
+    return { ok: true, count: list.length, refresh_requested: refreshRequested };
   });
 
 const AccountInput = z.object({ company_id: z.string().uuid(), account_id: z.string().uuid() });

@@ -85,6 +85,7 @@ import { Route as VyvojariSlugRouteImport } from './routes/vyvojari.$slug'
 import { Route as AuthenticatedBankoveUctyIndexRouteImport } from './routes/_authenticated/bankove-ucty.index'
 import { Route as AuthenticatedBankoveUctyPripojitRouteImport } from './routes/_authenticated/bankove-ucty.pripojit'
 import { Route as AuthenticatedBankoveUctyTransakcieRouteImport } from './routes/_authenticated/bankove-ucty.transakcie'
+import { Route as AuthenticatedBankoveUctyVypisyRouteImport } from './routes/_authenticated/bankove-ucty.vypisy'
 import { Route as AuthenticatedDokladyIndexRouteImport } from './routes/_authenticated/doklady.index'
 import { Route as AuthenticatedDokladyNovyRouteImport } from './routes/_authenticated/doklady.novy'
 import { Route as AuthenticatedEfakturaIndexRouteImport } from './routes/_authenticated/efaktura.index'
@@ -581,6 +582,12 @@ const AuthenticatedBankoveUctyTransakcieRoute =
   AuthenticatedBankoveUctyTransakcieRouteImport.update({
     id: '/bankove-ucty/transakcie',
     path: '/bankove-ucty/transakcie',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBankoveUctyVypisyRoute =
+  AuthenticatedBankoveUctyVypisyRouteImport.update({
+    id: '/bankove-ucty/vypisy',
+    path: '/bankove-ucty/vypisy',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDokladyIndexRoute =
@@ -1271,6 +1278,7 @@ export interface FileRoutesByFullPath {
   '/vyvojari/': typeof VyvojariIndexRoute
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
+  '/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
   '/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
@@ -1450,6 +1458,7 @@ export interface FileRoutesByTo {
   '/vyvojari': typeof VyvojariIndexRoute
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
+  '/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
   '/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
@@ -1637,6 +1646,7 @@ export interface FileRoutesById {
   '/vyvojari/': typeof VyvojariIndexRoute
   '/_authenticated/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/_authenticated/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
+  '/_authenticated/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
   '/_authenticated/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/_authenticated/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/_authenticated/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
@@ -1825,6 +1835,7 @@ export interface FileRouteTypes {
     | '/vyvojari/'
     | '/bankove-ucty/pripojit'
     | '/bankove-ucty/transakcie'
+    | '/bankove-ucty/vypisy'
     | '/doklady/novy'
     | '/efaktura/dorucenia'
     | '/efaktura/odoslane'
@@ -2004,6 +2015,7 @@ export interface FileRouteTypes {
     | '/vyvojari'
     | '/bankove-ucty/pripojit'
     | '/bankove-ucty/transakcie'
+    | '/bankove-ucty/vypisy'
     | '/doklady/novy'
     | '/efaktura/dorucenia'
     | '/efaktura/odoslane'
@@ -2190,6 +2202,7 @@ export interface FileRouteTypes {
     | '/vyvojari/'
     | '/_authenticated/bankove-ucty/pripojit'
     | '/_authenticated/bankove-ucty/transakcie'
+    | '/_authenticated/bankove-ucty/vypisy'
     | '/_authenticated/doklady/novy'
     | '/_authenticated/efaktura/dorucenia'
     | '/_authenticated/efaktura/odoslane'
@@ -2905,6 +2918,13 @@ declare module '@tanstack/react-router' {
       path: '/bankove-ucty/transakcie'
       fullPath: '/bankove-ucty/transakcie'
       preLoaderRoute: typeof AuthenticatedBankoveUctyTransakcieRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/bankove-ucty/vypisy': {
+      id: '/_authenticated/bankove-ucty/vypisy'
+      path: '/bankove-ucty/vypisy'
+      fullPath: '/bankove-ucty/vypisy'
+      preLoaderRoute: typeof AuthenticatedBankoveUctyVypisyRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/doklady/': {
@@ -3844,6 +3864,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedWebhookyLogyRoute: typeof AuthenticatedWebhookyLogyRoute
   AuthenticatedBankoveUctyPripojitRoute: typeof AuthenticatedBankoveUctyPripojitRoute
   AuthenticatedBankoveUctyTransakcieRoute: typeof AuthenticatedBankoveUctyTransakcieRoute
+  AuthenticatedBankoveUctyVypisyRoute: typeof AuthenticatedBankoveUctyVypisyRoute
   AuthenticatedDokladyNovyRoute: typeof AuthenticatedDokladyNovyRoute
   AuthenticatedFakturyIdRoute: typeof AuthenticatedFakturyIdRouteWithChildren
   AuthenticatedFakturyNovaRoute: typeof AuthenticatedFakturyNovaRoute
@@ -3903,6 +3924,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBankoveUctyPripojitRoute: AuthenticatedBankoveUctyPripojitRoute,
   AuthenticatedBankoveUctyTransakcieRoute:
     AuthenticatedBankoveUctyTransakcieRoute,
+  AuthenticatedBankoveUctyVypisyRoute: AuthenticatedBankoveUctyVypisyRoute,
   AuthenticatedDokladyNovyRoute: AuthenticatedDokladyNovyRoute,
   AuthenticatedFakturyIdRoute: AuthenticatedFakturyIdRouteWithChildren,
   AuthenticatedFakturyNovaRoute: AuthenticatedFakturyNovaRoute,

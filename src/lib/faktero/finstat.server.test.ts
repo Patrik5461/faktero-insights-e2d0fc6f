@@ -24,6 +24,9 @@ function mockFetch(
 
 describe("finstatLookup", () => {
   beforeEach(() => {
+    // FINSTAT_API_KEY má v kóde prednosť pred FINSTAT_PUBLIC_KEY. Na serveri je
+    // v .env skutočný kľúč, ktorý by sa do testov prepašoval a rozbil ich.
+    delete process.env.FINSTAT_API_KEY;
     process.env.FINSTAT_PUBLIC_KEY = PUB;
     process.env.FINSTAT_PRIVATE_KEY = PRIV;
     delete process.env.FINSTAT_STATION_ID;
@@ -99,6 +102,9 @@ describe("finstatLookup", () => {
 
 describe("finstatAutocomplete", () => {
   beforeEach(() => {
+    // FINSTAT_API_KEY má v kóde prednosť pred FINSTAT_PUBLIC_KEY. Na serveri je
+    // v .env skutočný kľúč, ktorý by sa do testov prepašoval a rozbil ich.
+    delete process.env.FINSTAT_API_KEY;
     process.env.FINSTAT_PUBLIC_KEY = PUB;
     process.env.FINSTAT_PRIVATE_KEY = PRIV;
   });

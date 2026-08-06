@@ -185,6 +185,7 @@ const NAV: NavGroup[] = [
     children: [
       { to: "/bankove-ucty", label: "Prehľad účtov" },
       { to: "/bankove-ucty/transakcie", label: "Transakcie" },
+      { to: "/bankove-ucty/vypisy", label: "Výpisy" },
       { to: "/bankove-ucty/pripojit", label: "Pripojiť banku" },
     ],
   },

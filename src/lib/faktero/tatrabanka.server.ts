@@ -89,7 +89,14 @@ export async function getClientCredentialsToken(): Promise<string> {
   return JSON.parse(txt).access_token as string;
 }
 
-/** Založí nový consent a vráti jeho id. Consent ide do scope authorize URL. */
+/**
+ * Založí nový consent a vráti jeho id. Consent ide do scope authorize URL.
+ *
+ * combinedServiceIndicator sa dá nastaviť LEN pri vzniku súhlasu a TB ho
+ * odporúča zapnúť, ak sa plánujú platby z účtov v iných bankách. Doplniť ho
+ * neskôr by znamenalo, že každý zákazník musí súhlas udeliť odznova, preto ho
+ * dávame rovno — PREMIUM_PIS máme od banky zaregistrované.
+ */
 export async function createConsent(): Promise<string> {
   const token = await getClientCredentialsToken();
   const res = await fetch(`${apiBase()}/v3/consents`, {
@@ -100,7 +107,7 @@ export async function createConsent(): Promise<string> {
       Accept: "application/json",
       "X-Request-ID": crypto.randomUUID(),
     },
-    body: "{}",
+    body: JSON.stringify({ combinedServiceIndicator: true }),
   });
   const txt = await res.text();
   if (!res.ok) throw new Error(`tb_consent_failed: ${res.status} ${txt.slice(0, 300)}`);
@@ -231,6 +238,42 @@ export async function revokeConsent(consentId: string): Promise<void> {
   // 204 = zrušené. 404 znamená, že už neexistuje — pre nás rovnako dobré.
   if (!res.ok && res.status !== 404) {
     throw new Error(`tb_consent_revoke_failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  }
+}
+
+/**
+ * Vynúti obnovu dát pre účty vedené mimo TB. Účty v TB sú vždy aktuálne, ostatné
+ * banka obnovuje sama 4× denne (7-9, 13-15, 17-19, 22-24).
+ *
+ * Beží asynchrónne — vráti taskId a dáta doraz o chvíľu, takže hneď nasledujúce
+ * čítanie ešte môže vrátiť staré hodnoty. Volať najviac raz za 30 s, častejšie
+ * požiadavky banka ignoruje. PSU-IP-Address je povinná, user agent a OS sú
+ * povinné pre VÚB, ČSOB a RBSK — preto to má zmysel len pri akcii používateľa.
+ */
+export async function refreshExternalBanks(
+  accessToken: string,
+  psu: { ip?: string | null; userAgent?: string | null; deviceOs?: string | null },
+): Promise<string | null> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    Accept: "application/json",
+    "X-Request-ID": crypto.randomUUID(),
+  };
+  if (psu.ip) headers["PSU-IP-Address"] = psu.ip;
+  if (psu.userAgent) headers["PSU-User-Agent"] = psu.userAgent;
+  if (psu.deviceOs) headers["PSU-Device-OS"] = psu.deviceOs;
+
+  const res = await fetch(`${apiBase()}/v3/refresh`, { method: "PUT", headers });
+  const txt = await res.text();
+  if (!res.ok) {
+    // Obnova je len vylepšenie — keď zlyhá, synchronizácia musí bežať ďalej.
+    console.error(`[tatrabanka] refresh zlyhal: ${res.status} ${txt.slice(0, 200)}`);
+    return null;
+  }
+  try {
+    return JSON.parse(txt).taskId ?? null;
+  } catch {
+    return null;
   }
 }
 
