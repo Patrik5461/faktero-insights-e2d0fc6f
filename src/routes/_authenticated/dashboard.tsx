@@ -153,6 +153,7 @@ function Dashboard() {
               "id, invoice_number, customer_name, customer_id, total, subtotal, vat_total, currency, status, issue_date, due_date, paid_at, created_at",
             )
             .eq("company_id", companyId)
+            .is("deleted_at", null)
             .gte("issue_date", yearAgoISO)
             .order("created_at", { ascending: false }),
           supabase
@@ -164,7 +165,7 @@ function Dashboard() {
           supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
           supabase
             .from("api_logs")
-            .select("id, status_code, created_at, endpoint")
+            .select("id, status, created_at, path")
             .eq("company_id", companyId)
             .gte("created_at", new Date(Date.now() - 31 * 86400000).toISOString())
             .order("created_at", { ascending: false })
@@ -181,7 +182,7 @@ function Dashboard() {
             .eq("active", true),
           supabase
             .from("webhook_delivery_logs")
-            .select("id, event_type, status_code, created_at")
+            .select("id, event_type, response_status, created_at")
             .eq("company_id", companyId)
             .order("created_at", { ascending: false })
             .limit(10),
@@ -1217,7 +1218,7 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
       icon: Webhook,
       tone: "bg-cyan-500/15 text-cyan-500",
       title: `Webhook ${w.event_type ?? "delivered"}`,
-      subtitle: `Status ${w.status_code ?? "—"}`,
+      subtitle: `Status ${w.response_status ?? "—"}`,
       time: fmtTime(w.created_at),
       at: new Date(w.created_at).getTime(),
     });
@@ -1227,8 +1228,8 @@ function buildActivity(invoices: any[], customers: any[], deliveries: any[], api
     items.push({
       icon: KeyRound,
       tone: "bg-amber-500/15 text-amber-500",
-      title: `API ${l.endpoint ?? "request"}`,
-      subtitle: `Status ${l.status_code ?? "—"}`,
+      title: `API ${l.path ?? "request"}`,
+      subtitle: `Status ${l.status ?? "—"}`,
       time: fmtTime(l.created_at),
       at: new Date(l.created_at).getTime(),
     });
@@ -1243,7 +1244,7 @@ function computeApiStats(logs: any[]) {
   const today = logs.filter((l) => new Date(l.created_at) >= todayStart).length;
   const month = logs.length;
   const success = logs.filter(
-    (l) => Number(l.status_code) >= 200 && Number(l.status_code) < 400,
+    (l) => Number(l.status) >= 200 && Number(l.status) < 400,
   ).length;
   const successRate = month > 0 ? (success / month) * 100 : 100;
   return { today, month, successRate };

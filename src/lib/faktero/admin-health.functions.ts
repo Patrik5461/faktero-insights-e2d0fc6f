@@ -188,7 +188,7 @@ export const getSystemHealth = createServerFn({ method: "GET" })
           .from("api_logs")
           .select("id", { count: "exact", head: true })
           .gte("created_at", since24h)
-          .gte("status_code", 500),
+          .gte("status", 500),
         supabaseAdmin
           .from("webhook_delivery_logs")
           .select("id", { count: "exact", head: true })

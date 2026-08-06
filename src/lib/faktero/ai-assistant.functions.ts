@@ -70,7 +70,7 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
         .from("webhook_delivery_logs")
         .select("id", { count: "exact", head: true })
         .eq("company_id", companyId)
-        .gte("status_code", 400)
+        .gte("response_status", 400)
         .gte("created_at", new Date(Date.now() - 30 * 86400000).toISOString()),
       supabase
         .from("recurring_invoices")
