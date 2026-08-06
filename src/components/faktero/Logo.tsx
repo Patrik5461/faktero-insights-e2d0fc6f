@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
-import logoFull from "@/assets/faktero-logo-full.png.asset.json";
-import logoIcon from "@/assets/faktero-icon.png.asset.json";
+
+const logoFull = "/faktero-logo-full.png";
+const logoIcon = "/faktero-icon.png";
 
 type LogoProps = {
   variant?: "header" | "full" | "icon";
@@ -11,7 +12,7 @@ export function Logo({ variant = "header", className }: LogoProps) {
   if (variant === "icon") {
     return (
       <img
-        src={logoIcon.url}
+        src={logoIcon}
         alt="Faktero"
         className={cn("h-8 w-8 object-contain", className)}
         loading="lazy"
@@ -22,7 +23,7 @@ export function Logo({ variant = "header", className }: LogoProps) {
   if (variant === "full") {
     return (
       <div className={cn("flex flex-col gap-1", className)}>
-        <img src={logoFull.url} alt="Faktero" className="h-10 w-auto object-contain" />
+        <img src={logoFull} alt="Faktero" className="h-10 w-auto object-contain" />
         <span className="text-xs text-muted-foreground">API-first fakturácia</span>
       </div>
     );
@@ -30,6 +31,6 @@ export function Logo({ variant = "header", className }: LogoProps) {
 
   // Header variant — compact wordmark
   return (
-    <img src={logoFull.url} alt="Faktero" className={cn("h-8 w-auto object-contain", className)} />
+    <img src={logoFull} alt="Faktero" className={cn("h-8 w-auto object-contain", className)} />
   );
 }
