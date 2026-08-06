@@ -94,7 +94,7 @@ function Page() {
 
       <h2>6. Skúšobná verzia</h2>
       <p>
-        Prevádzkovateľ poskytuje novým používateľom bezplatnú skúšobnú verziu (aktuálne 2 mesiace).
+        Prevádzkovateľ poskytuje novým používateľom bezplatnú skúšobnú verziu (aktuálne 30 dní).
         Počas trvania skúšky nie je vyžadované zadanie platobných údajov. Po uplynutí skúšky je
         potrebné aktivovať platený plán, inak bude prístup do aplikácie obmedzený.
       </p>

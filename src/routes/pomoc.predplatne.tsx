@@ -25,8 +25,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Po registrácii dostáva každá firma <strong>2 mesiace zadarmo na pláne Premium</strong> (60
-          dní). Počas trialu môžete využívať všetky funkcie bez obmedzenia.
+          Po registrácii dostáva každá firma <strong>30 dní zadarmo na pláne Premium</strong>. Počas
+          trialu môžete využívať všetky funkcie bez obmedzenia.
         </p>
         <p>
           Trial sa <strong>nepredlžuje automaticky</strong> a nepýtame si platobné údaje vopred.
@@ -101,7 +101,7 @@ const sections: HelpSection[] = [
     title: "Čo sa stane po skončení trialu",
     body: (
       <>
-        <p>Ak si nevyberiete platený plán do uplynutia 60 dní:</p>
+        <p>Ak si nevyberiete platený plán do uplynutia 30 dní:</p>
         <ul>
           <li>
             Účet <strong>automaticky prejde na plán Starter</strong> — aplikácia zostáva plne

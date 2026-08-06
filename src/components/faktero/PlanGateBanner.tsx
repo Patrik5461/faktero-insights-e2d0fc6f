@@ -45,8 +45,8 @@ export function PlanGateBanner({ companyId }: { companyId: string | null }) {
   if ((plan as any).is_post_trial_free) {
     return (
       <Banner tone="warning" icon={<Clock className="h-4 w-4" />}>
-        <strong>Váš 2-mesačný trial skončil.</strong> Účet pokračuje na bezplatnom pláne Starter.
-        Pre plný prístup k Premium funkciám si aktivujte plán.{" "}
+        <strong>Vaša 30-dňová skúšobná verzia skončila.</strong> Účet pokračuje na bezplatnom pláne
+        Starter. Pre plný prístup k Premium funkciám si aktivujte plán.{" "}
         <Link to="/predplatne" className="underline">
           Vybrať plán
         </Link>

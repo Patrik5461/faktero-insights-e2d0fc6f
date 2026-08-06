@@ -24,7 +24,7 @@ export function HubPage({ hub }: { hub: HubContent }) {
               to="/registracia"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
             >
-              Vyskúšať 2 Mesiace zdarma <ArrowRight className="h-4 w-4" />
+              Vyskúšať 30 dní zdarma <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/cennik"

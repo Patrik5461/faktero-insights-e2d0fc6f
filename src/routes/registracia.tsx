@@ -89,7 +89,7 @@ function RegisterPage() {
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight">Vytvorte si účet</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          2 mesiace zadarmo na pláne Premium. Bez platobnej karty.
+          30 dní zadarmo na pláne Premium. Bez platobnej karty.
         </p>
 
         <button

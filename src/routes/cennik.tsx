@@ -92,7 +92,7 @@ const FAQ = [
     a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero. Žiadne skryté poplatky za odoslanú faktúru.",
   },
   {
-    q: "Je naozaj 2 Mesiace zdarma bez karty?",
+    q: "Je naozaj 30 dní zdarma bez karty?",
     a: "Áno. Začnete bez platobnej karty a po skúšobnej dobe sa rozhodnete, či si vyberiete platený plán.",
   },
   {
@@ -112,8 +112,7 @@ export const Route = createFileRoute("/cennik")({
       { title: "Cenník — Faktero" },
       {
         name: "description",
-        content:
-          "Fakturačný systém od 9 €/mes a Kniha jázd od 5 €/mes. 2 Mesiace zdarma bez karty.",
+        content: "Fakturačný systém od 9 €/mes a Kniha jázd od 5 €/mes. 30 dní zdarma bez karty.",
       },
       { property: "og:title", content: "Cenník Faktero" },
       {
@@ -189,8 +188,7 @@ function CennikPage() {
             Dva produkty. Jeden účet.
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Vyberte si Fakturačný systém, Knihu jázd alebo oboje. 2 Mesiace zdarma bez platobnej
-            karty.
+            Vyberte si Fakturačný systém, Knihu jázd alebo oboje. 30 dní zdarma bez platobnej karty.
           </p>
         </div>
       </section>
