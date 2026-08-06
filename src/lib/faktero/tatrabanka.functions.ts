@@ -234,6 +234,48 @@ export const syncBankTransactions = createServerFn({ method: "POST" })
     return { ok: true, inserted, total: txs.length };
   });
 
+/** Zoznam mesačných výpisov firmy (bez súborov — tie sa sťahujú cez podpísaný odkaz). */
+export const listBankStatements = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => CompanyInput.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertMember(context.supabase, context.userId, data.company_id);
+    const { data: rows } = await context.supabase
+      .from("bank_statements")
+      .select(
+        "id, bank_account_id, period_start, period_end, export_type, status, file_size, error, created_at",
+      )
+      .eq("company_id", data.company_id)
+      .order("period_start", { ascending: false });
+    return { statements: rows ?? [] };
+  });
+
+const StatementInput = z.object({
+  company_id: z.string().uuid(),
+  statement_id: z.string().uuid(),
+});
+
+/** Podpísaný odkaz na stiahnutie výpisu. Platnosť 5 minút, bucket je privátny. */
+export const getBankStatementUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => StatementInput.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertMember(context.supabase, context.userId, data.company_id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("bank_statements")
+      .select("storage_path, status, company_id")
+      .eq("id", data.statement_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!row || row.status !== "ready" || !row.storage_path) throw new Error("not_ready");
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from("bank-statements")
+      .createSignedUrl(row.storage_path, 300);
+    if (error || !signed) throw new Error(error?.message ?? "sign_failed");
+    return { url: signed.signedUrl };
+  });
+
 /** Disconnect: delete connection (cascades accounts + transactions). */
 export const disconnectBank = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

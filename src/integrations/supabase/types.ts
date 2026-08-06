@@ -339,6 +339,72 @@ export type Database = {
           },
         ]
       }
+      bank_statements: {
+        Row: {
+          bank_account_id: string
+          company_id: string
+          created_at: string
+          error: string | null
+          export_type: string
+          file_size: number | null
+          id: string
+          period_end: string
+          period_start: string
+          statement_id: string | null
+          status: string
+          storage_path: string | null
+          task_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          bank_account_id: string
+          company_id: string
+          created_at?: string
+          error?: string | null
+          export_type: string
+          file_size?: number | null
+          id?: string
+          period_end: string
+          period_start: string
+          statement_id?: string | null
+          status?: string
+          storage_path?: string | null
+          task_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bank_account_id?: string
+          company_id?: string
+          created_at?: string
+          error?: string | null
+          export_type?: string
+          file_size?: number | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          statement_id?: string | null
+          status?: string
+          storage_path?: string | null
+          task_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_statements_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_statements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bank_transactions: {
         Row: {
           amount: number
