@@ -4832,6 +4832,13 @@ export type Database = {
       }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       next_platform_invoice_number: { Args: never; Returns: string }
+      prune_operational_logs: {
+        Args: never
+        Returns: {
+          rows_affected: number
+          table_name: string
+        }[]
+      }
       recompute_stock_avg_cost: {
         Args: { _stock_item_id: string }
         Returns: Json
