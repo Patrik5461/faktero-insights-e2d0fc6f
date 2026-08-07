@@ -165,6 +165,7 @@ import { Route as AuthenticatedSkladProduktyIdRouteImport } from './routes/_auth
 import { Route as ApiAdminSeoCallbackRouteImport } from './routes/api/admin/seo.callback'
 import { Route as ApiBankoveUctyTatrabankaWebhookRouteImport } from './routes/api/bankove-ucty/tatrabanka/webhook'
 import { Route as ApiPublicHooksBankStatementsRouteImport } from './routes/api/public/hooks/bank-statements'
+import { Route as ApiPublicHooksBankStatementsRestoreRouteImport } from './routes/api/public/hooks/bank-statements-restore'
 import { Route as ApiPublicHooksBankSyncRouteImport } from './routes/api/public/hooks/bank-sync'
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
 import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
@@ -1040,6 +1041,12 @@ const ApiPublicHooksBankStatementsRoute =
     path: '/api/public/hooks/bank-statements',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksBankStatementsRestoreRoute =
+  ApiPublicHooksBankStatementsRestoreRouteImport.update({
+    id: '/api/public/hooks/bank-statements-restore',
+    path: '/api/public/hooks/bank-statements-restore',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksBankSyncRoute = ApiPublicHooksBankSyncRouteImport.update({
   id: '/api/public/hooks/bank-sync',
   path: '/api/public/hooks/bank-sync',
@@ -1358,6 +1365,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
+  '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -1537,6 +1545,7 @@ export interface FileRoutesByTo {
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
+  '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -1726,6 +1735,7 @@ export interface FileRoutesById {
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
+  '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -1915,6 +1925,7 @@ export interface FileRouteTypes {
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
     | '/api/public/hooks/bank-statements'
+    | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
@@ -2094,6 +2105,7 @@ export interface FileRouteTypes {
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
     | '/api/public/hooks/bank-statements'
+    | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
@@ -2282,6 +2294,7 @@ export interface FileRouteTypes {
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
     | '/api/public/hooks/bank-statements'
+    | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/push-overdue'
@@ -2367,6 +2380,7 @@ export interface RootRouteChildren {
   ApiAdminSeoCallbackRoute: typeof ApiAdminSeoCallbackRoute
   ApiBankoveUctyTatrabankaWebhookRoute: typeof ApiBankoveUctyTatrabankaWebhookRoute
   ApiPublicHooksBankStatementsRoute: typeof ApiPublicHooksBankStatementsRoute
+  ApiPublicHooksBankStatementsRestoreRoute: typeof ApiPublicHooksBankStatementsRestoreRoute
   ApiPublicHooksBankSyncRoute: typeof ApiPublicHooksBankSyncRoute
   ApiPublicHooksCommanderSyncRoute: typeof ApiPublicHooksCommanderSyncRoute
   ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
@@ -3480,6 +3494,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksBankStatementsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/bank-statements-restore': {
+      id: '/api/public/hooks/bank-statements-restore'
+      path: '/api/public/hooks/bank-statements-restore'
+      fullPath: '/api/public/hooks/bank-statements-restore'
+      preLoaderRoute: typeof ApiPublicHooksBankStatementsRestoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/bank-sync': {
       id: '/api/public/hooks/bank-sync'
       path: '/api/public/hooks/bank-sync'
@@ -4233,6 +4254,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminSeoCallbackRoute: ApiAdminSeoCallbackRoute,
   ApiBankoveUctyTatrabankaWebhookRoute: ApiBankoveUctyTatrabankaWebhookRoute,
   ApiPublicHooksBankStatementsRoute: ApiPublicHooksBankStatementsRoute,
+  ApiPublicHooksBankStatementsRestoreRoute:
+    ApiPublicHooksBankStatementsRestoreRoute,
   ApiPublicHooksBankSyncRoute: ApiPublicHooksBankSyncRoute,
   ApiPublicHooksCommanderSyncRoute: ApiPublicHooksCommanderSyncRoute,
   ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,
