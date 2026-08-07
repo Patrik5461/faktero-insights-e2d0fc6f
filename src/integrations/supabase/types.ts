@@ -3073,6 +3073,7 @@ export type Database = {
           amount_total: number
           amount_without_vat: number
           company_id: string
+          constant_symbol: string | null
           created_at: string
           created_by: string | null
           currency: string
@@ -3089,22 +3090,22 @@ export type Database = {
           payment_method: string | null
           pdf_url: string | null
           received_date: string
+          specific_symbol: string | null
           status: string
           supplier_dic: string | null
+          supplier_iban: string | null
           supplier_ic_dph: string | null
           supplier_ico: string | null
-          constant_symbol: string | null
-          specific_symbol: string | null
-          supplier_iban: string | null
-          variable_symbol: string | null
           supplier_name: string
           updated_at: string
+          variable_symbol: string | null
           vat_amount: number
         }
         Insert: {
           amount_total?: number
           amount_without_vat?: number
           company_id: string
+          constant_symbol?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -3121,22 +3122,22 @@ export type Database = {
           payment_method?: string | null
           pdf_url?: string | null
           received_date?: string
+          specific_symbol?: string | null
           status?: string
           supplier_dic?: string | null
+          supplier_iban?: string | null
           supplier_ic_dph?: string | null
           supplier_ico?: string | null
-          constant_symbol?: string | null
-          specific_symbol?: string | null
-          supplier_iban?: string | null
-          variable_symbol?: string | null
           supplier_name: string
           updated_at?: string
+          variable_symbol?: string | null
           vat_amount?: number
         }
         Update: {
           amount_total?: number
           amount_without_vat?: number
           company_id?: string
+          constant_symbol?: string | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -3153,16 +3154,15 @@ export type Database = {
           payment_method?: string | null
           pdf_url?: string | null
           received_date?: string
+          specific_symbol?: string | null
           status?: string
           supplier_dic?: string | null
+          supplier_iban?: string | null
           supplier_ic_dph?: string | null
           supplier_ico?: string | null
-          constant_symbol?: string | null
-          specific_symbol?: string | null
-          supplier_iban?: string | null
-          variable_symbol?: string | null
           supplier_name?: string
           updated_at?: string
+          variable_symbol?: string | null
           vat_amount?: number
         }
         Relationships: [

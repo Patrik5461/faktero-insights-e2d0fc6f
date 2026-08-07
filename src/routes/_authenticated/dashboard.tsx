@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { useServerFn } from "@tanstack/react-start";
@@ -305,6 +305,13 @@ function Dashboard() {
 
   const countdown = useCountdown(new Date("2027-01-01T00:00:00"));
 
+  const isEmpty = !loading && allInvoices.length === 0;
+  const hasPaidInvoice = useMemo(
+    () => allInvoices.some((i) => i.status === "paid"),
+    [allInvoices],
+  );
+
+
   return (
     <>
       <PageHeader
@@ -320,62 +327,36 @@ function Dashboard() {
         }
       />
       <PageBody>
-        {/* TOP KPI ROW — 5 cards, debtors highlighted */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-          <KpiCard
-            icon={TrendingUp}
-            label="Obrat tento mesiac"
-            value={fmt(metrics.monthRevenue)}
-            trend={metrics.monthRevenueDelta}
-            sublabel={`vs. min. mesiac ${fmt(metrics.prevMonthRevenue)}`}
-          />
-          <KpiCard
-            icon={Clock}
-            label="Neuhradené faktúry"
-            value={fmt(metrics.unpaidAmount)}
-            sublabel={`${metrics.unpaidCount} faktúr`}
-          />
-          <KpiCard
-            icon={AlertTriangle}
-            label="Po splatnosti"
-            value={fmt(metrics.overdueAmount)}
-            sublabel={`${metrics.overdueCount} faktúr`}
-            tone="destructive"
-          />
-          <KpiCard
-            icon={Wallet}
-            label="Cashflow"
-            value={fmt(metrics.cashflow)}
-            trend={metrics.cashflowDelta}
-            sublabel="zaplatené – po splatnosti (30 dní)"
-          />
-          <HighlightKpi
-            label="Dlžia mi zákazníci"
-            value={fmt(metrics.receivables)}
-            sublabel={`${metrics.debtorCount} odberateľov · ${fmt(metrics.overdueAmount)} po splatnosti`}
-          />
-        </div>
+        {isEmpty ? (
+          <EmptyDashboard />
+        ) : (
+          <>
+            {/* Overview stat strip */}
+            <StatStrip metrics={metrics} loading={loading} />
 
-        {/* CRM: Aging + DSO + Forecast */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <AgingPanel
-            title="Aging pohľadávok"
-            icon={HandCoins}
-            buckets={agingReceivables}
-            loading={loading}
-          />
-          <AgingPanel
-            title="Aging záväzkov"
-            icon={TrendingDown}
-            buckets={agingPayables}
-            loading={loading}
-          />
-        </div>
+            {/* CRM: Aging + DSO + Forecast */}
+            <div className="mt-8 grid gap-6 lg:grid-cols-2">
+              <AgingPanel
+                title="Aging pohľadávok"
+                icon={HandCoins}
+                buckets={agingReceivables}
+                loading={loading}
+              />
+              <AgingPanel
+                title="Aging záväzkov"
+                icon={TrendingDown}
+                buckets={agingPayables}
+                loading={loading}
+              />
+            </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
-          <DsoCard dso={dso} loading={loading} />
-          <ForecastPanel rows={forecast} loading={loading} className="lg:col-span-2" />
-        </div>
+            <div className="mt-6 grid gap-6 lg:grid-cols-3">
+              <DsoCard dso={dso} loading={loading} hasPaid={hasPaidInvoice} />
+              <ForecastPanel rows={forecast} loading={loading} className="lg:col-span-2" />
+            </div>
+          </>
+        )}
+
 
         <div className="mt-6">
           <BankWidget />
@@ -859,77 +840,117 @@ function QuickAction({
   );
 }
 
-function KpiCard({
-  icon: Icon,
+function Delta({ pct }: { pct: number | null }) {
+  if (pct === null || !isFinite(pct) || Math.abs(pct) < 0.05) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  const up = pct > 0;
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-xs font-medium tabular-nums ${
+        up ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+      }`}
+    >
+      {up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {Math.abs(pct).toFixed(1)} %
+    </span>
+  );
+}
+
+function Segment({
   label,
   value,
-  sublabel,
-  trend,
+  meta,
   tone,
+  className,
 }: {
-  icon: any;
   label: string;
   value: string;
-  sublabel?: string;
-  trend?: number;
-  tone?: "destructive";
+  meta?: ReactNode;
+  tone?: "destructive" | "primary";
+  className?: string;
 }) {
-  const trendUp = (trend ?? 0) >= 0;
+  const valueTone =
+    tone === "destructive" ? "text-destructive" : tone === "primary" ? "text-primary" : "";
   return (
-    <div className="group rounded-2xl border border-border/60 bg-card p-6 transition hover:shadow-md">
-      <div className="flex items-center justify-between">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-        <Icon
-          className={`h-4 w-4 ${tone === "destructive" ? "text-destructive" : "text-muted-foreground"}`}
-        />
-      </div>
-      <div
-        className={`mt-2 text-2xl font-bold tabular-nums ${tone === "destructive" ? "text-destructive" : ""}`}
-      >
-        {value}
-      </div>
-      {typeof trend === "number" && (
-        <div
-          className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${trendUp ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
-        >
-          {trendUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-          {Math.abs(trend).toFixed(1)}%
-        </div>
-      )}
-      {sublabel && <div className="mt-1 text-xs text-muted-foreground">{sublabel}</div>}
+    <div className={`min-w-0 px-5 py-4 ${className ?? ""}`}>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className={`mt-1 text-2xl font-semibold tabular-nums ${valueTone}`}>{value}</div>
+      <div className="mt-1 min-h-4 text-xs text-muted-foreground">{meta}</div>
     </div>
   );
 }
 
-function HighlightKpi({
-  label,
-  value,
-  sublabel,
-}: {
-  label: string;
-  value: string;
-  sublabel?: string;
-}) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary/20 via-primary/10 to-card p-5 shadow-lg shadow-primary/10 sm:col-span-2 xl:col-span-1">
-      <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/30 blur-3xl" />
-      <div className="relative">
-        <div className="flex items-center gap-2">
-          <HandCoins className="h-4 w-4 text-primary" />
-          <div className="text-xs font-semibold uppercase tracking-wide text-primary">{label}</div>
-        </div>
-        <div className="mt-2 text-3xl font-extrabold tabular-nums text-foreground">{value}</div>
-        {sublabel && <div className="mt-1 text-xs text-muted-foreground">{sublabel}</div>}
-        <Link
-          to="/faktury"
-          className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-        >
-          Zobraziť pohľadávky <ArrowUpRight className="h-3 w-3" />
-        </Link>
+function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="grid divide-y divide-border/60 rounded-xl border border-border/60 bg-card sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="space-y-2 px-5 py-4">
+            <div className="h-3 w-24 animate-pulse rounded bg-muted/60" />
+            <div className="h-7 w-32 animate-pulse rounded bg-muted/60" />
+            <div className="h-3 w-20 animate-pulse rounded bg-muted/60" />
+          </div>
+        ))}
       </div>
+    );
+  }
+
+  const revenueDelta =
+    metrics.prevMonthRevenue > 0 ? (metrics.monthRevenueDelta as number) : null;
+
+  return (
+    <div className="grid divide-y divide-border/60 rounded-xl border border-border/60 bg-card sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
+      <Segment
+        label="Obrat tento mesiac"
+        value={fmt(metrics.monthRevenue)}
+        meta={<Delta pct={revenueDelta} />}
+      />
+      <Segment
+        label="Neuhradené"
+        value={fmt(metrics.unpaidAmount)}
+        meta={`${metrics.unpaidCount} faktúr`}
+      />
+      <Segment
+        label="Po splatnosti"
+        value={fmt(metrics.overdueAmount)}
+        tone={metrics.overdueAmount > 0 ? "destructive" : undefined}
+        meta={`${metrics.overdueCount} faktúr · ${metrics.debtorCount} odberateľov`}
+      />
+      <Segment
+        label="Dlžia mi zákazníci"
+        value={fmt(metrics.receivables)}
+        tone="primary"
+        meta={
+          <Link to="/faktury" className="inline-flex items-center gap-1 text-primary hover:underline">
+            Zobraziť pohľadávky <ArrowUpRight className="h-3 w-3" />
+          </Link>
+        }
+      />
     </div>
   );
 }
+
+function EmptyDashboard() {
+  return (
+    <div className="rounded-xl border border-border/60 bg-card px-6 py-16 text-center">
+      <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10">
+        <HandCoins className="h-5 w-5 text-primary" />
+      </div>
+      <h2 className="mt-4 text-base font-semibold">Zatiaľ tu nie sú žiadne dáta</h2>
+      <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+        Vystavte prvú faktúru a prehľad sa naplní obratom, pohľadávkami a cash flow predikciou.
+      </p>
+      <Link
+        to="/faktury/nova"
+        className="mt-5 inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
+      >
+        Vytvoriť faktúru
+      </Link>
+    </div>
+  );
+}
+
 
 function Panel({
   title,
@@ -1433,9 +1454,11 @@ function AgingPanel({
 function DsoCard({
   dso,
   loading,
+  hasPaid,
 }: {
   dso: { days: number; receivables: number; revenue365: number };
   loading: boolean;
+  hasPaid?: boolean;
 }) {
   const tone =
     dso.days < 30
@@ -1454,14 +1477,15 @@ function DsoCard({
       ) : (
         <>
           <div className={`text-4xl font-bold tabular-nums ${tone}`}>{dso.days.toFixed(1)}</div>
-          <div className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
-            Priemerná doba inkasa (dní)
-          </div>
-          <div
-            className={`mt-3 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tone} bg-muted/40`}
-          >
-            {badge}
-          </div>
+          <div className="mt-1 text-xs text-muted-foreground">Priemerná doba inkasa (dní)</div>
+          {hasPaid && (
+            <div
+              className={`mt-3 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tone} bg-muted/40`}
+            >
+              {badge}
+            </div>
+          )}
+
           <div className="mt-4 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
             <div className="flex justify-between">
               <span>Pohľadávky</span>
