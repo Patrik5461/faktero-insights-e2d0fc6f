@@ -1454,9 +1454,11 @@ function AgingPanel({
 function DsoCard({
   dso,
   loading,
+  hasPaid,
 }: {
   dso: { days: number; receivables: number; revenue365: number };
   loading: boolean;
+  hasPaid?: boolean;
 }) {
   const tone =
     dso.days < 30
@@ -1475,14 +1477,15 @@ function DsoCard({
       ) : (
         <>
           <div className={`text-4xl font-bold tabular-nums ${tone}`}>{dso.days.toFixed(1)}</div>
-          <div className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
-            Priemerná doba inkasa (dní)
-          </div>
-          <div
-            className={`mt-3 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tone} bg-muted/40`}
-          >
-            {badge}
-          </div>
+          <div className="mt-1 text-xs text-muted-foreground">Priemerná doba inkasa (dní)</div>
+          {hasPaid && (
+            <div
+              className={`mt-3 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tone} bg-muted/40`}
+            >
+              {badge}
+            </div>
+          )}
+
           <div className="mt-4 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
             <div className="flex justify-between">
               <span>Pohľadávky</span>
