@@ -9,6 +9,9 @@ import {
   KeyRound,
   Settings,
   ChevronDown,
+  ChevronsUpDown,
+  Bell,
+
   Plus,
   Search,
   HelpCircle,
