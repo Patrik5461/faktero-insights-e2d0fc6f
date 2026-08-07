@@ -17,7 +17,7 @@ describe("parseStatementObjectName", () => {
 
   it("výpis bez prípony -faktero je od banky", () => {
     const r = parseStatementObjectName("2026-07.pdf");
-    expect(r?.source).toBe("tatrabanka");
+    expect(r?.source).toBe("bank");
     expect(r?.exportType).toBe("PDF");
   });
 

@@ -65,11 +65,27 @@ function TxPage() {
 
   async function onSync() {
     const cid = getActiveCompanyId();
-    if (!cid || !selected) return;
+    if (!cid) return;
+    // Pri voľbe „Všetky účty" nie je vybratý žiadny účet — vtedy sa
+    // synchronizujú všetky, inak by tlačidlo nespravilo vôbec nič.
+    const ids = selected ? [selected] : accounts.map((a) => a.id);
+    if (ids.length === 0) return;
     setBusy(true);
     try {
-      const r = await sync({ data: { company_id: cid, account_id: selected } });
-      toast.success(`Synchronizovaných ${r.inserted} nových z ${r.total}`);
+      let inserted = 0;
+      let total = 0;
+      const chyby: string[] = [];
+      for (const id of ids) {
+        try {
+          const r = await sync({ data: { company_id: cid, account_id: id } });
+          inserted += r.inserted;
+          total += r.total;
+        } catch (e: any) {
+          chyby.push(accounts.find((a) => a.id === id)?.iban ?? id);
+        }
+      }
+      if (chyby.length) toast.error(`Nepodarilo sa načítať: ${chyby.join(", ")}`);
+      else toast.success(`Synchronizovaných ${inserted} nových z ${total}`);
       reload();
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba");
@@ -82,7 +98,7 @@ function TxPage() {
     <>
       <PageHeader
         title="Bankové transakcie"
-        description="Posledných 90 dní zo sandbox prostredia Tatra banky."
+        description="Posledných 90 dní z Tatra banky."
         action={
           <Link
             to="/bankove-ucty"
@@ -120,7 +136,7 @@ function TxPage() {
           right={
             <button
               onClick={onSync}
-              disabled={!selected || busy}
+              disabled={accounts.length === 0 || busy}
               className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Synchronizovať

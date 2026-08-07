@@ -30,6 +30,24 @@ function origin(): string {
   return `https://${host}`;
 }
 
+/**
+ * Verejná IP používateľa pre PSU hlavičky banky. Server beží za nginxom, takže
+ * skutočnú adresu vieme len z proxy hlavičky — loopback (127.0.0.1) banke
+ * posielať nemá zmysel, tvárili by sme sa, že platbu inicioval server.
+ */
+function clientIp(): string | null {
+  const candidates = [
+    getRequestHeader("x-forwarded-for")?.split(",")[0],
+    getRequestHeader("x-real-ip"),
+    getRequestHeader("cf-connecting-ip"),
+  ];
+  for (const c of candidates) {
+    const ip = c?.trim();
+    if (ip && !/^(127\.|::1$|localhost$)/.test(ip)) return ip;
+  }
+  return null;
+}
+
 /** List bank connections for a company (NO tokens returned). */
 export const listBankData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -203,12 +221,19 @@ export const syncBankAccounts = createServerFn({ method: "POST" })
     if (Date.now() - lastRefresh > 30_000) {
       try {
         const { refreshExternalBanks } = await import("./tatrabanka.server");
-        const fwd = getRequestHeader("x-forwarded-for") ?? "";
-        const taskId = await refreshExternalBanks(conn.access_token, {
-          ip: fwd.split(",")[0]?.trim() || null,
-          userAgent: getRequestHeader("user-agent") ?? null,
-          deviceOs: getRequestHeader("sec-ch-ua-platform")?.replace(/"/g, "") ?? null,
-        });
+        // Bez PSU-IP-Address odmietne banka obnovu s 400, takže ju bez známej
+        // adresy klienta ani neposielame. Adresa príde len cez proxy hlavičku —
+        // keď ju nginx nedopĺňa, obnova sa ticho preskočí a účty sa načítajú
+        // z toho, čo banka obnovila sama (4× denne).
+        const ip = clientIp();
+        const taskId = ip
+          ? await refreshExternalBanks(conn.access_token, {
+              ip,
+              userAgent: getRequestHeader("user-agent") ?? null,
+              deviceOs: getRequestHeader("sec-ch-ua-platform")?.replace(/"/g, "") ?? null,
+            })
+          : null;
+        if (!ip) console.warn("[tatrabanka] obnova externých bánk preskočená — chýba IP klienta");
         refreshRequested = !!taskId;
         await supabaseAdmin
           .from("bank_connections")

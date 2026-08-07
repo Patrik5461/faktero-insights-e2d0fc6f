@@ -197,27 +197,44 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
   return JSON.parse(txt);
 }
 
+/**
+ * TB vracia na čítacích endpointoch občas 500 INTERNAL_ERROR aj vtedy, keď je
+ * súhlas platný — overené na produkcii 2026-08-07, kde sa /v3/accounts striedavo
+ * podarilo a nepodarilo pri nezmenenom tokene. Ten istý dotaz o chvíľu prejde,
+ * takže dočasné chyby banky opakujeme, namiesto toho, aby ich videl používateľ.
+ */
+const RETRY_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+const RETRY_DELAYS_MS = [700, 2000, 5000];
+
 async function apiGet(path: string, accessToken: string, _consentId?: string | null) {
   // TB Premium API grants consent implicitly via the OAuth access_token.
   // Do NOT send Consent-ID — it's a PSD2 XS2A header and returns 404 here.
   // `path` môže byť aj absolútna URL (odkaz na ďalšiu stranu z _links.next).
   const url = path.startsWith("http") ? path : `${apiBase()}${path}`;
-  const requestId = crypto.randomUUID();
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-    Accept: "application/json",
-    "X-Request-ID": requestId,
-  };
-  console.log(`[tatrabanka] GET ${url} (X-Request-ID=${requestId})`);
-  const res = await fetch(url, { headers });
-  const txt = await res.text();
-  if (!res.ok) {
+
+  for (let attempt = 0; ; attempt++) {
+    // Nový X-Request-ID pri každom pokuse — banka ho berie ako identifikátor
+    // požiadavky, opakovanie s tým istým by mohla vyhodnotiť ako duplicitu.
+    const requestId = crypto.randomUUID();
+    console.log(`[tatrabanka] GET ${url} (X-Request-ID=${requestId})`);
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        "X-Request-ID": requestId,
+      },
+    });
+    const txt = await res.text();
+    if (res.ok) return JSON.parse(txt);
+
+    const retriable = RETRY_STATUSES.has(res.status) && attempt < RETRY_DELAYS_MS.length;
     console.error(
-      `[tatrabanka] ${res.status} ${res.statusText} for ${url} — body: ${txt.slice(0, 300)}`,
+      `[tatrabanka] ${res.status} ${res.statusText} for ${url} — body: ${txt.slice(0, 300)}` +
+        (retriable ? ` (pokus ${attempt + 1}, skúšam znova)` : ""),
     );
-    throw new Error(`tb_api_error: ${res.status} ${url} ${txt.slice(0, 500)}`);
+    if (!retriable) throw new Error(`tb_api_error: ${res.status} ${url} ${txt.slice(0, 500)}`);
+    await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
   }
-  return JSON.parse(txt);
 }
 
 /**

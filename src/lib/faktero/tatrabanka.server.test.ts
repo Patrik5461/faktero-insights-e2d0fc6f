@@ -189,12 +189,44 @@ describe("tatrabanka.server", () => {
       });
     });
 
-    it("400/401/500: throws tb_api_error with status", async () => {
-      for (const status of [400, 401, 500]) {
+    it("400/401: throws tb_api_error with status", async () => {
+      for (const status of [400, 401]) {
         mockFetch(() => ({ status, body: `err-${status}` }));
         await expect(fetchAccounts("AT")).rejects.toThrow(new RegExp(`tb_api_error: ${status}`));
         vi.restoreAllMocks();
       }
+    });
+
+    // TB občas vráti 500 aj na platný súhlas — pozri komentár pri RETRY_STATUSES.
+    it("500 raz: zopakuje sa a vráti účty", async () => {
+      let calls = 0;
+      mockFetch(() => {
+        calls++;
+        return calls === 1
+          ? { status: 500, body: '{"errorCode":"INTERNAL_ERROR"}' }
+          : { status: 200, body: JSON.stringify({ accounts: [{ resourceId: "acc-1" }] }) };
+      });
+      vi.useFakeTimers();
+      const p = fetchAccounts("AT");
+      await vi.advanceTimersByTimeAsync(1000);
+      const list = await p;
+      vi.useRealTimers();
+      expect(calls).toBe(2);
+      expect(list).toHaveLength(1);
+    });
+
+    it("500 stále dokola: po pokusoch vyhodí tb_api_error", async () => {
+      let calls = 0;
+      mockFetch(() => {
+        calls++;
+        return { status: 500, body: "err-500" };
+      });
+      vi.useFakeTimers();
+      const p = expect(fetchAccounts("AT")).rejects.toThrow(/tb_api_error: 500/);
+      await vi.advanceTimersByTimeAsync(30_000);
+      await p;
+      vi.useRealTimers();
+      expect(calls).toBe(4);
     });
 
     it("nonsense response: throws JSON parse error", async () => {
@@ -327,8 +359,8 @@ describe("tatrabanka.server", () => {
       expect(txs.map((t) => t.transaction_reference)).toEqual(["B1"]);
     });
 
-    it("400/401/500: throws tb_api_error", async () => {
-      for (const status of [400, 401, 500]) {
+    it("400/401: throws tb_api_error", async () => {
+      for (const status of [400, 401]) {
         mockFetch(() => ({ status, body: `e${status}` }));
         await expect(fetchTransactions("AT", "acc-1")).rejects.toThrow(
           new RegExp(`tb_api_error: ${status}`),

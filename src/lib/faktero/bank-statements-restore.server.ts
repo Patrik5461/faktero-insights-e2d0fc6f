@@ -18,7 +18,7 @@ export type ParsedObjectName = {
   periodStart: string;
   periodEnd: string;
   exportType: "PDF" | "XML";
-  source: "faktero" | "tatrabanka";
+  source: "faktero" | "bank";
 };
 
 /** Posledný deň mesiaca. Deň 0 nasledujúceho mesiaca je posledný deň tohto. */
@@ -39,7 +39,7 @@ export function parseStatementObjectName(fileName: string): ParsedObjectName | n
     periodStart: `${y}-${mo}-01`,
     periodEnd: lastDayOfMonth(year, month),
     exportType: ext.toLowerCase() === "pdf" ? "PDF" : "XML",
-    source: faktero ? "faktero" : "tatrabanka",
+    source: faktero ? "faktero" : "bank",
   };
 }
 
