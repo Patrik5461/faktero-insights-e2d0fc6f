@@ -2,6 +2,9 @@
  * Cron: mesačné bankové výpisy (PDF + XML) pre všetky pripojené účty.
  * Volaný cez pg_cron s hlavičkou `x-faktero-cron-token: <FAKTERO_CRON_TOKEN>`.
  *
+ * Beh má dva kroky: najprv sa výpisy vypýtajú od Tatra banky a čo pre ne
+ * banka nevydá (účty vedené v inej banke), to si zostavíme sami z transakcií.
+ *
  * Voliteľné telo: {"period_start":"2026-07-01","period_end":"2026-07-31"}
  * — bez neho sa berie predchádzajúci celý kalendárny mesiac.
  */
@@ -34,7 +37,11 @@ export const Route = createFileRoute("/api/public/hooks/bank-statements")({
           }
           const { runMonthlyStatements } = await import("@/lib/faktero/bank-statements.server");
           const r = await runMonthlyStatements(period);
-          return new Response(JSON.stringify({ ok: true, ...r }), {
+          // Čo banka nevydala (účty vedené inde), dogenerujeme z vlastných dát.
+          const { generateOwnStatements } =
+            await import("@/lib/faktero/bank-statements-own.server");
+          const own = await generateOwnStatements(r.period);
+          return new Response(JSON.stringify({ ok: true, ...r, own }), {
             status: 200,
             headers: { "content-type": "application/json" },
           });

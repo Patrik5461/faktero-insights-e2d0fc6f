@@ -269,7 +269,7 @@ export const listBankStatements = createServerFn({ method: "POST" })
     const { data: rows } = await context.supabase
       .from("bank_statements")
       .select(
-        "id, bank_account_id, period_start, period_end, export_type, status, file_size, error, created_at",
+        "id, bank_account_id, period_start, period_end, export_type, status, source, file_size, error, created_at",
       )
       .eq("company_id", data.company_id)
       .order("period_start", { ascending: false });

@@ -9,7 +9,16 @@ import {
   getBankStatementUrl,
 } from "@/lib/faktero/tatrabanka.functions";
 import { toast } from "sonner";
-import { FileText, FileCode2, ArrowLeft, Download, Info, Clock, AlertCircle } from "lucide-react";
+import {
+  FileText,
+  FileCode2,
+  ArrowLeft,
+  Download,
+  Info,
+  Clock,
+  AlertCircle,
+  Sparkles,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/vypisy")({
   head: () => ({ meta: [{ title: "Bankové výpisy — Faktero" }] }),
@@ -82,7 +91,9 @@ function BankStatementsPage() {
       // Odkaz je podpísaný a platí 5 minút — otvárame ho v novom okne.
       window.open(url, "_blank", "noopener");
     } catch (e: any) {
-      toast.error(e?.message === "not_ready" ? "Výpis ešte nie je pripravený" : "Stiahnutie zlyhalo");
+      toast.error(
+        e?.message === "not_ready" ? "Výpis ešte nie je pripravený" : "Stiahnutie zlyhalo",
+      );
     } finally {
       setBusy(null);
     }
@@ -100,16 +111,23 @@ function BankStatementsPage() {
   }
   const zoradeneObdobia = [...obdobia.keys()].sort().reverse();
 
-  // Účty, pre ktoré TB výpisy nevydáva (vedené v inej banke).
-  const nepodporovane = accounts.filter((a) =>
-    statements.some((s) => s.bank_account_id === a.id && s.status === "unsupported"),
-  );
+  // Účty, kde výpis nevydala banka a ani my sme ho nedokázali zostaviť —
+  // spravidla preto, že nemáme transakcie za celé obdobie.
+  const nepodporovane = accounts
+    .filter((a) => statements.some((s) => s.bank_account_id === a.id && s.status === "unsupported"))
+    .map((a) => ({
+      ...a,
+      dovod: statements.find((s) => s.bank_account_id === a.id && s.status === "unsupported")
+        ?.error,
+    }));
+
+  const maVlastne = statements.some((s) => s.source === "faktero" && s.status === "ready");
 
   return (
     <>
       <PageHeader
         title="Bankové výpisy"
-        description="Mesačné výpisy z Tatra banky v PDF a XML. Sťahujú sa automaticky."
+        description="Mesačné výpisy v PDF a XML. Sťahujú sa automaticky; pre účty vedené v inej banke ich zostaví Faktero."
         action={
           <Link
             to="/bankove-ucty"
@@ -146,13 +164,24 @@ function BankStatementsPage() {
               <div className="mt-3 space-y-2">
                 {riadky.map(([ucetId, formaty]) => {
                   const ucet = uctyPodlaId.get(ucetId);
+                  const vlastny = Object.values(formaty).some((s: any) => s.source === "faktero");
                   return (
                     <div
                       key={ucetId}
                       className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium">{ucet?.account_name ?? "Účet"}</div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{ucet?.account_name ?? "Účet"}</span>
+                          {vlastny && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                              title="Banka pre tento účet výpis nevydáva, zostavilo ho Faktero z načítaných transakcií."
+                            >
+                              <Sparkles className="h-3 w-3" /> Zostavené Fakterom
+                            </span>
+                          )}
+                        </div>
                         <div className="font-mono text-xs text-muted-foreground">
                           {ucet?.iban ?? "—"}
                         </div>
@@ -208,18 +237,42 @@ function BankStatementsPage() {
           );
         })}
 
+        {maVlastne && (
+          <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+            <div className="flex gap-2">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+              <div className="text-sm text-amber-900">
+                <p className="font-medium">Výpisy označené „Zostavené Fakterom“</p>
+                <p className="mt-1">
+                  Pre účty vedené v inej banke Tatra banka výpis nevydáva, preto ho zostavíme z
+                  transakcií, ktoré sme z účtu načítali. Formát je rovnaký ako od banky — PDF na
+                  čítanie a XML (camt.053) na import do účtovníctva. Nejde však o doklad vydaný
+                  bankou a nemusí obsahovať položky, ktoré banka do prehľadu transakcií neposiela
+                  (napríklad niektoré poplatky).
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {nepodporovane.length > 0 && (
-          <div className="mt-8 rounded-xl border border-border bg-muted/30 p-4">
+          <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4">
             <div className="flex gap-2">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <div className="text-sm text-muted-foreground">
                 <p>
-                  Pre tieto účty Tatra banka výpisy nevydáva, pretože sú vedené v inej banke.
-                  Zostatky a transakcie sa načítavajú normálne.
+                  Pre tieto účty zatiaľ výpis nemáme — banka ho nevydáva a nemáme ani dosť
+                  transakcií na to, aby sme ho zostavili sami. Zostatky a transakcie sa načítavajú
+                  normálne.
                 </p>
-                <ul className="mt-2 space-y-0.5 font-mono text-xs">
+                <ul className="mt-2 space-y-0.5 text-xs">
                   {nepodporovane.map((a) => (
-                    <li key={a.id}>{a.iban ?? a.account_name}</li>
+                    <li key={a.id}>
+                      <span className="font-mono">{a.iban ?? a.account_name}</span>
+                      {a.dovod && !a.dovod.includes("PRODUCT_UNKNOWN") && (
+                        <span className="ml-2">— {a.dovod}</span>
+                      )}
+                    </li>
                   ))}
                 </ul>
               </div>

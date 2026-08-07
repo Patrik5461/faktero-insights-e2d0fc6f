@@ -350,6 +350,7 @@ export type Database = {
           id: string
           period_end: string
           period_start: string
+          source: string
           statement_id: string | null
           status: string
           storage_path: string | null
@@ -366,6 +367,7 @@ export type Database = {
           id?: string
           period_end: string
           period_start: string
+          source?: string
           statement_id?: string | null
           status?: string
           storage_path?: string | null
@@ -382,6 +384,7 @@ export type Database = {
           id?: string
           period_end?: string
           period_start?: string
+          source?: string
           statement_id?: string | null
           status?: string
           storage_path?: string | null
