@@ -69,6 +69,10 @@ const LOGBOOK_PLANS = [
 
 export const Route = createFileRoute("/_authenticated/predplatne")({
   head: () => ({ meta: [{ title: "Predplatné — Faktero" }] }),
+  /** `?plan=` nesie voľbu z objednávkovej stránky — zvýrazníme ten plán. */
+  validateSearch: (s: Record<string, unknown>): { plan?: string } => ({
+    plan: typeof s.plan === "string" && s.plan ? s.plan : undefined,
+  }),
   errorComponent: ({ error }) => (
     <div className="p-6 text-sm text-destructive">Chyba: {error.message}</div>
   ),
@@ -125,6 +129,15 @@ function PredplatnePage() {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
+
+  // Príchod z objednávky s vybraným plánom. Kartu zvýrazníme a zrolujeme na ňu;
+  // platbu nespúšťame sami, potvrdiť ju musí používateľ kliknutím.
+  const { plan: wantedPlan } = Route.useSearch();
+  useEffect(() => {
+    if (!wantedPlan) return;
+    const el = document.getElementById(`plan-${wantedPlan}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [wantedPlan]);
 
   // Load user's product_mode from profile
   useEffect(() => {
@@ -405,6 +418,7 @@ function PredplatnePage() {
                 key={p.slug}
                 p={p}
                 current={p.slug === plan?.plan_slug}
+                wanted={p.slug === wantedPlan}
                 loading={busySlug === p.slug}
                 disabled={!isAdminLike || busySlug !== null}
                 onSelect={() => selectPlan(p.slug)}
@@ -549,12 +563,15 @@ function FeaturePill({ enabled, label }: { enabled: boolean | undefined; label: 
 function PlanCard({
   p,
   current,
+  wanted,
   loading,
   disabled,
   onSelect,
 }: {
   p: any;
   current: boolean;
+  /** Plán vybraný na objednávkovej stránke — zvýraznený, aby ho bolo hneď vidieť. */
+  wanted?: boolean;
   loading: boolean;
   disabled: boolean;
   onSelect: () => void;
@@ -583,10 +600,24 @@ function PlanCard({
   if (p.priority_support) features.push("Prioritná podpora");
 
   return (
-    <Card className={current ? "border-primary ring-1 ring-primary/30" : ""}>
+    <Card
+      id={`plan-${p.slug}`}
+      className={
+        current
+          ? "border-primary ring-1 ring-primary/30"
+          : wanted
+            ? "border-primary ring-2 ring-primary/40"
+            : ""
+      }
+    >
       <CardHeader>
         <div className="flex items-center gap-2 text-sm font-medium">
           {icon} {p.name}
+          {wanted && !current && (
+            <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
+              Vami vybraný
+            </span>
+          )}
         </div>
         <div className="pt-2">
           {p.price_monthly_cents == null ? (

@@ -118,7 +118,8 @@ function ObjednavkaPage() {
     if (session?.user) {
       navigate({ to: "/predplatne", search: { plan: selectedSlug } });
     } else {
-      navigate({ to: "/registracia", search: { plan: selectedSlug, redirect: "/predplatne" } });
+      // Kam ísť po registrácii rieši onboarding — bez firmy sa platiť nedá.
+      navigate({ to: "/registracia", search: { plan: selectedSlug } });
     }
   }
 

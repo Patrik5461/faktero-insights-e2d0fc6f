@@ -14,11 +14,29 @@ export const Route = createFileRoute("/registracia")({
       { name: "description", content: "Vytvorte si účet vo Faktere zdarma." },
     ],
   }),
+  /** `?plan=` prichádza z objednávky — voľbu si prenesieme až za nastavenie firmy. */
+  validateSearch: (s: Record<string, unknown>): { plan?: string } => ({
+    plan: typeof s.plan === "string" && s.plan ? s.plan : undefined,
+  }),
   component: RegisterPage,
 });
 
+/** Kľúč, pod ktorým prežije vybraný plán prihlásenie cez Google aj onboarding. */
+export const PLAN_PENDING_KEY = "faktero_plan_pending";
+
 function RegisterPage() {
   const navigate = useNavigate();
+  const { plan } = Route.useSearch();
+
+  /** Voľbu plánu si odložíme rovnako ako súhlasy — prežije presmerovanie z Googlu. */
+  function stashPlan() {
+    if (!plan) return;
+    try {
+      sessionStorage.setItem(PLAN_PENDING_KEY, plan);
+    } catch {
+      // sessionStorage môže byť zakázané — používateľ si plán vyberie znova
+    }
+  }
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,6 +78,7 @@ function RegisterPage() {
     setLoading(false);
     if (error) return toast.error(error.message);
     if (data.user?.id) await persistAcceptances();
+    stashPlan();
     toast.success("Účet vytvorený. Pokračujte do nastavenia firmy.");
     navigate({ to: "/onboarding" });
   }
@@ -74,6 +93,7 @@ function RegisterPage() {
     } catch {
       // sessionStorage môže byť zakázané — súhlas sa potom zapíše až po prihlásení
     }
+    stashPlan();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: window.location.origin + "/onboarding" },

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocomplete";
 import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
+import { PLAN_PENDING_KEY } from "@/routes/registracia";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({ meta: [{ title: "Nastavenie firmy — Faktero" }] }),
@@ -68,8 +69,19 @@ function Onboarding() {
       }
       setActiveCompanyId(companyId as string);
       toast.success("Firma vytvorená");
+      // Keď používateľ prišiel z objednávky s vybraným plánom, dokončíme, čo začal —
+      // firmu už má, takže platba má kam patriť.
+      let pendingPlan: string | null = null;
+      try {
+        pendingPlan = sessionStorage.getItem(PLAN_PENDING_KEY);
+        if (pendingPlan) sessionStorage.removeItem(PLAN_PENDING_KEY);
+      } catch {
+        // sessionStorage môže byť zakázané — pokračujeme na nástenku
+      }
       // Hard reload so the authed layout re-reads memberships fresh.
-      window.location.assign("/dashboard");
+      window.location.assign(
+        pendingPlan ? `/predplatne?plan=${encodeURIComponent(pendingPlan)}` : "/dashboard",
+      );
     } catch (err: any) {
       const msg = err?.message ?? "Nepodarilo sa vytvoriť firmu.";
       setErrorMsg(msg);
