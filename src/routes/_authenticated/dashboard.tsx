@@ -326,7 +326,7 @@ function Dashboard() {
           </div>
         }
       />
-      <PageBody className="[font-variant-numeric:tabular-nums]">
+      <PageBody>
         {isEmpty ? (
           <EmptyDashboard />
         ) : (
