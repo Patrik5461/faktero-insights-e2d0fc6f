@@ -15,6 +15,7 @@ import {
   Mail,
   CalendarPlus,
   Archive,
+  X,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
@@ -37,15 +38,32 @@ import { supabase } from "@/integrations/supabase/client";
 
 type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
 
+/** Filtre, na ktoré vedú položky v menu (Dobropisy, Koncepty). */
+type InvoiceSearch = { type?: "credit"; status?: "draft" };
+
 export const Route = createFileRoute("/_authenticated/faktury/")({
   head: () => ({ meta: [{ title: "Faktúry — Faktero" }] }),
+  validateSearch: (s: Record<string, unknown>): InvoiceSearch => ({
+    type: s.type === "credit" ? "credit" : undefined,
+    status: s.status === "draft" ? "draft" : undefined,
+  }),
   component: InvoicesPage,
 });
 
 function InvoicesPage() {
+  const { type, status } = Route.useSearch();
+  // V databáze je dobropis `credit_note`; v adrese je kratšie `credit`.
+  const equals = useMemo(
+    () => ({
+      ...(type === "credit" ? { type: "credit_note" } : {}),
+      ...(status === "draft" ? { status: "draft" } : {}),
+    }),
+    [type, status],
+  );
   const list = usePagedList({
     resource: "invoices",
     searchColumns: ["invoice_number", "customer_name", "customer_ico"],
+    equals: Object.keys(equals).length ? equals : undefined,
   });
   const [busy, setBusy] = useState(false);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
@@ -376,10 +394,25 @@ function InvoicesPage() {
   return (
     <>
       <PageHeader
-        title="Faktúry"
-        description="Všetky vystavené faktúry, koncepty aj stornované."
+        title={type === "credit" ? "Dobropisy" : status === "draft" ? "Koncepty" : "Faktúry"}
+        description={
+          type === "credit"
+            ? "Vystavené dobropisy."
+            : status === "draft"
+              ? "Rozpracované faktúry, ktoré ešte neboli vystavené."
+              : "Všetky vystavené faktúry, koncepty aj stornované."
+        }
         action={
           <div className="flex flex-wrap gap-2">
+            {(type || status) && (
+              <Link
+                to="/faktury"
+                search={{} as any}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+              >
+                <X className="h-4 w-4" /> Zrušiť filter
+              </Link>
+            )}
             {list.selectedIds.length > 0 && !list.showDeleted && (
               <button
                 onClick={bulkExport}

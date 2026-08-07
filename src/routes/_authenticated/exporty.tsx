@@ -10,6 +10,11 @@ import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight } from "luc
 
 export const Route = createFileRoute("/_authenticated/exporty")({
   head: () => ({ meta: [{ title: "Účtovné exporty — Faktero" }] }),
+  /** História je sekcia tejto istej stránky; `?tab=history` na ňu zroluje. */
+  validateSearch: (s: Record<string, unknown>): { tab?: "history"; provider?: string } => ({
+    tab: s.tab === "history" ? "history" : undefined,
+    provider: typeof s.provider === "string" ? s.provider : undefined,
+  }),
   component: ExportsPage,
 });
 
@@ -36,6 +41,12 @@ function ExportsPage() {
   const [busy, setBusy] = useState(false);
   const exportFn = useServerFn(exportInvoicesFn);
   const getContent = useServerFn(getExportContentFn);
+
+  const { tab } = Route.useSearch();
+  useEffect(() => {
+    if (tab !== "history") return;
+    document.getElementById("historia-exportov")?.scrollIntoView({ behavior: "smooth" });
+  }, [tab]);
 
   async function load() {
     const cid = getActiveCompanyId();
@@ -204,7 +215,7 @@ function ExportsPage() {
             </div>
 
             {/* History */}
-            <div className="rounded-2xl border border-border bg-card p-5">
+            <div id="historia-exportov" className="rounded-2xl border border-border bg-card p-5">
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">
                 História exportov
               </h3>

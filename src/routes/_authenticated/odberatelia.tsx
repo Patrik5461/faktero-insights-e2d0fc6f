@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -22,6 +22,10 @@ import {
 
 export const Route = createFileRoute("/_authenticated/odberatelia")({
   head: () => ({ meta: [{ title: "Odberatelia — Faktero" }] }),
+  /** `?new=1` z menu („Nový odberateľ“) rovno otvorí formulár. */
+  validateSearch: (s: Record<string, unknown>): { new?: "1" } => ({
+    new: s.new === "1" || s.new === 1 ? "1" : undefined,
+  }),
   component: CustomersPage,
 });
 
@@ -52,6 +56,16 @@ function CustomersPage() {
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
   const triggerEvt = useServerFn(triggerEventFn);
+
+  // Príchod z menu cez `?new=1`. Parameter hneď odstránime, aby sa formulár
+  // po zavretí neotvoril znova pri obnovení stránky alebo návrate späť.
+  const { new: openNew } = Route.useSearch();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!openNew) return;
+    setEditing(EMPTY);
+    navigate({ to: "/odberatelia", search: {} as any, replace: true });
+  }, [openNew, navigate]);
 
   async function save(c: Customer) {
     const cid = getActiveCompanyId();

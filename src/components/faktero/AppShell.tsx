@@ -49,7 +49,13 @@ type Company = { id: string; name: string; logo_url?: string | null; role: strin
 
 /** `companyAdminOnly`: skryté pre bežných členov firmy — server tie dáta owner/adminovi
  *  vydá a členovi nie, takže položka by im aj tak skončila chybou. */
-type NavChild = { to: string; label: string; companyAdminOnly?: boolean };
+type NavChild = {
+  to: string;
+  /** Parametre adresy. Musia ísť zvlášť — router ich z reťazca v `to` neprečíta. */
+  search?: Record<string, string>;
+  label: string;
+  companyAdminOnly?: boolean;
+};
 type NavGroup = {
   key: string;
   label: string;
@@ -72,9 +78,9 @@ const NAV: NavGroup[] = [
       { to: "/zalohove", label: "Zálohové faktúry" },
       { to: "/ponuky", label: "Cenové ponuky" },
       { to: "/opakovane", label: "Opakované faktúry" },
-      { to: "/faktury?type=credit", label: "Dobropisy" },
+      { to: "/faktury", search: { type: "credit" }, label: "Dobropisy" },
       { to: "/prijate-faktury", label: "Prijaté faktúry" },
-      { to: "/faktury?status=draft", label: "Koncepty" },
+      { to: "/faktury", search: { status: "draft" }, label: "Koncepty" },
     ],
   },
   {
@@ -84,7 +90,7 @@ const NAV: NavGroup[] = [
     match: ["/odberatelia"],
     children: [
       { to: "/odberatelia", label: "Odberatelia" },
-      { to: "/odberatelia?new=1", label: "Nový odberateľ" },
+      { to: "/odberatelia", search: { new: "1" }, label: "Nový odberateľ" },
     ],
   },
   {
@@ -155,8 +161,8 @@ const NAV: NavGroup[] = [
     children: [
       { to: "/uctovnictvo/dph", label: "DPH prehľad" },
       { to: "/exporty", label: "Účtovné exporty" },
-      { to: "/exporty?provider=pohoda", label: "Pohoda export" },
-      { to: "/exporty?tab=history", label: "História exportov" },
+      { to: "/exporty", search: { provider: "pohoda" }, label: "Pohoda export" },
+      { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
       { to: "/importy/superfaktura", label: "Import zo SuperFaktúry" },
       { to: "/importy/money-s3", label: "Import z Money S3" },
       { to: "/importy/omega", label: "Import z Omega" },
@@ -221,11 +227,32 @@ const NAV: NavGroup[] = [
   },
 ];
 
+/**
+ * Ktorá položka podmenu je práve otvorená. Rozhoduje aj podľa parametrov,
+ * inak by na `/faktury?status=draft` svietili Faktúry aj Koncepty naraz.
+ * Vracia kľúč položky, nie index — kľúče sú rovnaké ako pri vykresľovaní.
+ */
+function activeChildKey(
+  children: NavChild[],
+  pathname: string,
+  search: Record<string, unknown>,
+): string | null {
+  const hit = children.find(
+    (c) =>
+      c.to === pathname &&
+      c.search &&
+      Object.entries(c.search).every(([k, v]) => String(search[k] ?? "") === v),
+  );
+  if (hit) return hit.to + hit.label;
+  const plain = children.find((c) => c.to === pathname && !c.search);
+  return plain ? plain.to + plain.label : null;
+}
+
 const QUICK_CREATE = [
   { to: "/faktury/nova", label: "Nová faktúra" },
   { to: "/ponuky/nova", label: "Nová cenová ponuka" },
-  { to: "/odberatelia?new=1", label: "Nový odberateľ" },
-  { to: "/produkty?new=1", label: "Nový produkt" },
+  { to: "/odberatelia", search: { new: "1" }, label: "Nový odberateľ" },
+  { to: "/produkty", search: { new: "1" }, label: "Nový produkt" },
   { to: "/opakovane/nova", label: "Nová opakovaná faktúra" },
 ];
 
@@ -263,9 +290,7 @@ function filterNav(view: ActiveProduct, isCompanyAdmin: boolean): NavGroup[] {
   const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
   // "nastavenia" je spoločné pre oba produkty
   return NAV.filter((g) => allowed.has(g.key) || g.key === "nastavenia").map((g) =>
-    isCompanyAdmin
-      ? g
-      : { ...g, children: g.children.filter((c) => !c.companyAdminOnly) },
+    isCompanyAdmin ? g : { ...g, children: g.children.filter((c) => !c.companyAdminOnly) },
   );
 }
 
@@ -285,6 +310,7 @@ export function AppShell({
   activeProduct?: ActiveProduct;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const navigate = useNavigate();
   const active = companies.find((c) => c.id === activeId) ?? companies[0];
   const [search, setSearch] = useState("");
@@ -332,6 +358,7 @@ export function AppShell({
   }, []);
 
   const activeGroup = nav.find((g) => isPathActive(pathname, g));
+  const activeKey = activeGroup ? activeChildKey(activeGroup.children, pathname, locSearch) : null;
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -585,7 +612,9 @@ export function AppShell({
                   <DropdownMenuContent align="start" className="w-56">
                     {g.children.map((c) => (
                       <DropdownMenuItem key={c.to + c.label} asChild>
-                        <Link to={c.to as any}>{c.label}</Link>
+                        <Link to={c.to as any} search={c.search as any}>
+                          {c.label}
+                        </Link>
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuContent>
@@ -600,12 +629,12 @@ export function AppShell({
           <div className="border-t border-border bg-background/60">
             <div className="flex h-11 items-center gap-1 overflow-x-auto px-4 lg:px-6">
               {activeGroup.children.map((c) => {
-                const base = c.to.split("?")[0];
-                const isActive = pathname === base;
+                const isActive = activeKey === c.to + c.label;
                 return (
                   <Link
                     key={c.to + c.label}
                     to={c.to as any}
+                    search={c.search as any}
                     className={`relative shrink-0 px-3 py-1.5 text-xs font-medium transition-colors after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full ${
                       isActive
                         ? "text-primary after:bg-primary"
@@ -665,6 +694,7 @@ function MobileNav({
   onAddCompany: () => void;
   onClose: () => void;
 }) {
+  const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
@@ -736,12 +766,12 @@ function MobileNav({
               </Link>
             ) : (
               g.children.map((c) => {
-                const base = c.to.split("?")[0];
-                const isActive = pathname === base;
+                const isActive = activeChildKey(g.children, pathname, locSearch) === c.to + c.label;
                 return (
                   <Link
                     key={c.to + c.label}
                     to={c.to as any}
+                    search={c.search as any}
                     onClick={onClose}
                     className={`block rounded-md px-3 py-2 text-sm ${isActive ? "bg-primary/10 text-primary" : "hover:bg-secondary"}`}
                   >

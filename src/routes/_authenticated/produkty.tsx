@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -19,6 +19,10 @@ import { setProductStockTracking } from "@/lib/faktero/stock.functions";
 
 export const Route = createFileRoute("/_authenticated/produkty")({
   head: () => ({ meta: [{ title: "Produkty a služby — Faktero" }] }),
+  /** `?new=1` z menu („Nový produkt“) rovno otvorí formulár. */
+  validateSearch: (s: Record<string, unknown>): { new?: "1" } => ({
+    new: s.new === "1" || s.new === 1 ? "1" : undefined,
+  }),
   component: ProductsPage,
 });
 
@@ -48,6 +52,16 @@ function ProductsPage() {
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
   const trackFn = useServerFn(setProductStockTracking);
+
+  // Príchod z menu cez `?new=1`. Parameter hneď odstránime, aby sa formulár
+  // po zavretí neotvoril znova pri obnovení stránky alebo návrate späť.
+  const { new: openNew } = Route.useSearch();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!openNew) return;
+    setEditing(EMPTY);
+    navigate({ to: "/produkty", search: {} as any, replace: true });
+  }, [openNew, navigate]);
 
   // When opening editor for an existing product, load its current stock-tracking flag.
   useEffect(() => {
