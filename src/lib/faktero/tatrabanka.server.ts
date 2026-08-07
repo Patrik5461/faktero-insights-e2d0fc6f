@@ -343,7 +343,12 @@ export async function fetchTransactions(
     const batch: any[] = json.transactions?.booked ?? json.booked ?? json.transactions ?? [];
     booked.push(...batch);
     const href = json._links?.next?.href;
-    next = href && batch.length > 0 ? String(href).replace(/&&/g, "&").replace(/['"]+$/, "") : null;
+    next =
+      href && batch.length > 0
+        ? String(href)
+            .replace(/&&/g, "&")
+            .replace(/['"]+$/, "")
+        : null;
   }
   // Nezaúčtované transakcie sa v čase ešte menia (aj ich id), takže by sme si
   // nimi zaniesli duplicity. Berieme len BOOKED; ak stav nepríde, berieme tiež.
@@ -402,4 +407,59 @@ export function suggestMatch(
   const byAmt = invoices.find((i) => Math.abs(Number(i.total) - tx.amount) < 0.005);
   if (byAmt) return byAmt.id;
   return null;
+}
+
+/**
+ * Zapíše účty z banky k pripojeniu bez toho, aby vznikli duplikáty.
+ *
+ * Páruje sa **podľa IBAN**, nie podľa `external_account_id`: identita účtu je
+ * IBAN, kým `accountId` je viazané na súhlas a po jeho obnove sa môže zmeniť.
+ * Keby sa páralo podľa neho, po obnove súhlasu by vznikli druhé kópie účtov
+ * a transakcie aj výpisy by ostali visieť na tých starých.
+ */
+export async function upsertBankAccounts(
+  companyId: string,
+  connectionId: string,
+  accounts: Array<{
+    external_account_id: string;
+    iban: string | null;
+    account_name: string | null;
+    currency: string;
+    balance: number;
+  }>,
+): Promise<{ updated: number; inserted: number }> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: known } = await supabaseAdmin
+    .from("bank_accounts")
+    .select("id, iban, external_account_id")
+    .eq("bank_connection_id", connectionId);
+
+  let updated = 0;
+  let inserted = 0;
+  for (const a of accounts) {
+    const match =
+      (a.iban && known?.find((k: any) => k.iban && k.iban === a.iban)) ||
+      known?.find((k: any) => k.external_account_id === a.external_account_id);
+    const values = {
+      external_account_id: a.external_account_id,
+      iban: a.iban,
+      account_name: a.account_name,
+      currency: a.currency,
+      balance: a.balance,
+      last_synced_at: new Date().toISOString(),
+    };
+    if (match) {
+      await supabaseAdmin
+        .from("bank_accounts")
+        .update(values)
+        .eq("id", (match as any).id);
+      updated++;
+    } else {
+      await supabaseAdmin
+        .from("bank_accounts")
+        .insert({ company_id: companyId, bank_connection_id: connectionId, ...values });
+      inserted++;
+    }
+  }
+  return { updated, inserted };
 }

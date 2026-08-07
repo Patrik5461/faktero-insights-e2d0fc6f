@@ -89,6 +89,63 @@ export const startBankConnect = createServerFn({ method: "POST" })
     return { authorize_url: url };
   });
 
+/**
+ * Obnoví súhlas na existujúcom pripojení — bez odpojenia a bez straty dát.
+ *
+ * Odpojenie banky maže účty a s nimi kaskádovo aj transakcie a výpisy, takže
+ * „odpoj a pripoj znova“ nie je cesta. Tu vznikne nový súhlas, používateľ ho
+ * potvrdí v banke a v callbacku sa len prepíšu tokeny; účty sa spárujú podľa
+ * IBAN, takže história ostane visieť na tých istých riadkoch.
+ *
+ * Nový súhlas nesie `combinedServiceIndicator`, ktorý staršie súhlasy nemali —
+ * bez neho banka odmietne platbu z účtu vedeného v inej banke.
+ */
+export const renewBankConsent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => ConnInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const role = await assertMember(context.supabase, context.userId, data.company_id);
+    if (!["owner", "admin"].includes(role)) throw new Error("Forbidden");
+    const { isTatraConfigured, buildAuthorizeUrl, getRedirectUri, createConsent, createPkcePair } =
+      await import("./tatrabanka.server");
+    if (!isTatraConfigured()) throw new Error("not_configured");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: conn } = await supabaseAdmin
+      .from("bank_connections")
+      .select("id, consent_id, metadata")
+      .eq("id", data.connection_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!conn) throw new Error("not_found");
+
+    const consentId = await createConsent();
+    const { verifier, challenge } = createPkcePair();
+    // Starý súhlas necháme platiť, kým používateľ nový nepotvrdí — keď to
+    // vzdá na polceste, čítanie účtov mu funguje ďalej.
+    const { error } = await supabaseAdmin
+      .from("bank_connections")
+      .update({
+        metadata: {
+          ...((conn.metadata as any) ?? {}),
+          pkce_code_verifier: verifier,
+          pending_consent_id: consentId,
+          previous_consent_id: conn.consent_id ?? null,
+        },
+      })
+      .eq("id", conn.id);
+    if (error) throw new Error(error.message);
+
+    return {
+      authorize_url: buildAuthorizeUrl({
+        state: conn.id,
+        redirectUri: getRedirectUri(origin()),
+        consentId,
+        codeChallenge: challenge,
+      }),
+    };
+  });
+
 /** Diagnostic preview: build the authorize URL without touching the DB. */
 export const previewTatraAuthorizeUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -162,40 +219,10 @@ export const syncBankAccounts = createServerFn({ method: "POST" })
       }
     }
 
-    const { fetchAccounts } = await import("./tatrabanka.server");
+    const { fetchAccounts, upsertBankAccounts } = await import("./tatrabanka.server");
     // TB Premium API: consent is granted via OAuth access_token; no separate consent flow.
     const list = await fetchAccounts(conn.access_token, conn.consent_id ?? null);
-    for (const a of list) {
-      const { data: existing } = await supabaseAdmin
-        .from("bank_accounts")
-        .select("id")
-        .eq("bank_connection_id", conn.id)
-        .eq("external_account_id", a.external_account_id)
-        .maybeSingle();
-      if (existing) {
-        await supabaseAdmin
-          .from("bank_accounts")
-          .update({
-            iban: a.iban,
-            account_name: a.account_name,
-            currency: a.currency,
-            balance: a.balance,
-            last_synced_at: new Date().toISOString(),
-          })
-          .eq("id", existing.id);
-      } else {
-        await supabaseAdmin.from("bank_accounts").insert({
-          company_id: data.company_id,
-          bank_connection_id: conn.id,
-          external_account_id: a.external_account_id,
-          iban: a.iban,
-          account_name: a.account_name,
-          currency: a.currency,
-          balance: a.balance,
-          last_synced_at: new Date().toISOString(),
-        });
-      }
-    }
+    await upsertBankAccounts(data.company_id, conn.id, list);
     await supabaseAdmin
       .from("bank_connections")
       .update({ last_synced_at: new Date().toISOString() })

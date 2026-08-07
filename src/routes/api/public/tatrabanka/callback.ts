@@ -27,6 +27,11 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
           if (!verifier) return redirect(`${back}?error=missing_code_verifier`);
           const tokens = await exchangeCodeForToken(code, getRedirectUri(origin), verifier);
           const expiresAt = new Date(Date.now() + (tokens.expires_in ?? 3600) * 1000).toISOString();
+          const meta = (conn.metadata as any) ?? {};
+          // Pri obnove súhlasu je nový consent odložený v metadata; pri prvom
+          // pripojení je rovno na pripojení.
+          const newConsentId =
+            tokens.consent_id ?? meta.pending_consent_id ?? conn.consent_id ?? null;
           await supabaseAdmin
             .from("bank_connections")
             .update({
@@ -34,31 +39,31 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
               refresh_token: tokens.refresh_token ?? null,
               token_expires_at: expiresAt,
               // consent_id vznikol pred redirectom; token ho už nevracia.
-              consent_id: tokens.consent_id ?? conn.consent_id ?? null,
+              consent_id: newConsentId,
               status: "connected",
-              // verifier je jednorazový — nenechávaj ho v DB
-              metadata: { ...((conn.metadata as any) ?? {}), pkce_code_verifier: null },
+              // verifier aj odložený consent sú jednorazové — nenechávaj ich v DB
+              metadata: { ...meta, pkce_code_verifier: null, pending_consent_id: null },
             })
             .eq("id", conn.id);
+
+          // Starý súhlas po úspešnej obnove v banke zrušíme, nech tam nevisí.
+          const oldConsent = meta.previous_consent_id as string | undefined;
+          if (oldConsent && oldConsent !== newConsentId) {
+            try {
+              const { revokeConsent } = await import("@/lib/faktero/tatrabanka.server");
+              await revokeConsent(oldConsent);
+            } catch (e) {
+              console.warn("[tatrabanka] starý súhlas sa nepodarilo zrušiť", e);
+            }
+          }
           // Best-effort initial accounts sync
           try {
-            const { fetchAccounts } = await import("@/lib/faktero/tatrabanka.server");
-            const accounts = await fetchAccounts(
-              tokens.access_token,
-              tokens.consent_id ?? conn.consent_id ?? null,
-            );
-            for (const a of accounts) {
-              await supabaseAdmin.from("bank_accounts").insert({
-                company_id: conn.company_id,
-                bank_connection_id: conn.id,
-                external_account_id: a.external_account_id,
-                iban: a.iban,
-                account_name: a.account_name,
-                currency: a.currency,
-                balance: a.balance,
-                last_synced_at: new Date().toISOString(),
-              });
-            }
+            const { fetchAccounts, upsertBankAccounts } =
+              await import("@/lib/faktero/tatrabanka.server");
+            const accounts = await fetchAccounts(tokens.access_token, newConsentId);
+            // Párovanie podľa IBAN — pri obnove súhlasu tie isté účty už existujú
+            // a visia na nich transakcie aj výpisy.
+            await upsertBankAccounts(conn.company_id, conn.id, accounts);
           } catch (e) {
             console.error("[tatrabanka] initial accounts sync failed", e);
           }

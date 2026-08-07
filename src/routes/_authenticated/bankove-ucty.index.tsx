@@ -3,7 +3,12 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { listBankData, syncBankAccounts, disconnectBank } from "@/lib/faktero/tatrabanka.functions";
+import {
+  listBankData,
+  syncBankAccounts,
+  disconnectBank,
+  renewBankConsent,
+} from "@/lib/faktero/tatrabanka.functions";
 import { toast } from "sonner";
 import {
   Building2,
@@ -13,6 +18,7 @@ import {
   ArrowRight,
   CheckCircle2,
   AlertCircle,
+  ShieldCheck,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/")({
@@ -28,6 +34,7 @@ function BankAccountsPage() {
   const list = useServerFn(listBankData);
   const syncAcc = useServerFn(syncBankAccounts);
   const disconnect = useServerFn(disconnectBank);
+  const renew = useServerFn(renewBankConsent);
   const [data, setData] = useState<{ connections: any[]; accounts: any[] } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -60,6 +67,19 @@ function BankAccountsPage() {
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba synchronizácie");
     } finally {
+      setBusy(null);
+    }
+  }
+
+  async function onRenew(connId: string) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setBusy(connId);
+    try {
+      const { authorize_url } = await renew({ data: { company_id: cid, connection_id: connId } });
+      window.location.href = authorize_url;
+    } catch (e: any) {
+      toast.error(e?.message ?? "Obnovu súhlasu sa nepodarilo spustiť");
       setBusy(null);
     }
   }
@@ -159,6 +179,14 @@ function BankAccountsPage() {
                 >
                   <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
                   Načítať účty
+                </button>
+                <button
+                  onClick={() => onRenew(c.id)}
+                  disabled={busy === c.id}
+                  title="Prihlásite sa znova do banky. Účty, transakcie ani výpisy sa nezmažú."
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" /> Obnoviť súhlas
                 </button>
                 <button
                   onClick={() => onDisconnect(c.id)}
