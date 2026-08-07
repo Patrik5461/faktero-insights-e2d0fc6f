@@ -24,7 +24,6 @@ import {
   Warehouse,
   Car,
   ArrowRightLeft,
-  Bell,
 } from "lucide-react";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,7 +70,14 @@ const NAV: NavGroup[] = [
     key: "fakturacia",
     label: "Fakturácia",
     icon: FileText,
-    match: ["/faktury", "/ponuky", "/opakovane", "/prijate-faktury", "/zalohove"],
+    match: [
+      "/faktury",
+      "/ponuky",
+      "/opakovane",
+      "/prijate-faktury",
+      "/zalohove",
+      "/faktury/skener",
+    ],
     children: [
       { to: "/faktury", label: "Faktúry" },
       { to: "/faktury/nova", label: "Nová faktúra" },
@@ -81,6 +87,9 @@ const NAV: NavGroup[] = [
       { to: "/faktury", search: { type: "credit" }, label: "Dobropisy" },
       { to: "/prijate-faktury", label: "Prijaté faktúry" },
       { to: "/faktury", search: { status: "draft" }, label: "Koncepty" },
+      // Skener existoval, ale neviedla naň žiadna cesta — dal sa otvoriť len
+      // ručne napísanou adresou.
+      { to: "/faktury/skener", label: "Skener dokladov" },
     ],
   },
   {
@@ -160,8 +169,9 @@ const NAV: NavGroup[] = [
     match: ["/exporty", "/importy", "/uctovnictvo"],
     children: [
       { to: "/uctovnictvo/dph", label: "DPH prehľad" },
+      // "Pohoda export" tu bol zvlášť, ale viedol na tú istú stránku a robil to
+      // isté — iný formát než pohoda_xml zatiaľ neexistuje.
       { to: "/exporty", label: "Účtovné exporty" },
-      { to: "/exporty", search: { provider: "pohoda" }, label: "Pohoda export" },
       { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
       { to: "/importy/superfaktura", label: "Import zo SuperFaktúry" },
       { to: "/importy/money-s3", label: "Import z Money S3" },
@@ -531,14 +541,9 @@ export function AppShell({
               </DropdownMenu>
             )}
 
-            {/* Notifications */}
-            <button
-              type="button"
-              aria-label="Notifikácie"
-              className="relative hidden h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground md:grid"
-            >
-              <Bell className="h-4 w-4" />
-            </button>
+            {/* Zvonček notifikácií tu bol, ale nemal čo zobraziť — žiadne
+                notifikácie zatiaľ nevznikajú. Radšej preč, než tlačidlo,
+                po ktorom sa nič nestane. Vráti sa aj s obsahom. */}
 
             {/* Profile avatar */}
             <DropdownMenu>

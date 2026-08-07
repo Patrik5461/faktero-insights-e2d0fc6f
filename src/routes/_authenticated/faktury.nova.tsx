@@ -37,9 +37,28 @@ import { DEFAULT_VAT_RATE, SK_VAT_RATES } from "@/lib/faktero/vat-rates";
 
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>): { type?: "proforma" | "credit_note" } => ({
+  /**
+   * `supplier_hint` a `total_hint` posiela skener dokladov. Bez nich by sa po
+   * naskenovaní otvoril prázdny formulár a celé ťaženie by vyšlo nazmar.
+   */
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): {
+    type?: "proforma" | "credit_note";
+    supplier_hint?: string;
+    total_hint?: string;
+  } => ({
     type: (s.type === "proforma" || s.type === "credit_note" ? s.type : undefined) as
       "proforma" | "credit_note" | undefined,
+    supplier_hint:
+      typeof s.supplier_hint === "string" && s.supplier_hint.trim() ? s.supplier_hint : undefined,
+    // Router si číselný parameter sám prevedie na number, takže "42.50" sem
+    // nepríde ako reťazec — kontrola na typ string by sumu ticho zahodila.
+    total_hint:
+      (typeof s.total_hint === "string" || typeof s.total_hint === "number") &&
+      Number.isFinite(Number(s.total_hint))
+        ? String(s.total_hint)
+        : undefined,
   }),
   component: NewInvoice,
 });
@@ -108,7 +127,19 @@ function NewInvoice() {
     advance_amount: 0,
     notes: "",
   });
-  const [items, setItems] = useState<Item[]>([{ ...EMPTY_ITEM }]);
+  const [items, setItems] = useState<Item[]>(() => {
+    // Predvyplnenie zo skenera dokladov. Suma ide ako jedna položka za 1 ks —
+    // rozpis položiek z dokladu nemáme, len celkovú sumu.
+    const total = Number(search.total_hint);
+    if (!search.supplier_hint && !Number.isFinite(total)) return [{ ...EMPTY_ITEM }];
+    return [
+      {
+        ...EMPTY_ITEM,
+        name: search.supplier_hint ? `Doklad — ${search.supplier_hint}` : "Naskenovaný doklad",
+        unit_price: Number.isFinite(total) ? total : 0,
+      },
+    ];
+  });
   const [pickerOpen, setPickerOpen] = useState<null | "copy" | "advance">(null);
 
   const CURRENCIES: { code: string; symbol: string; flag: string; name: string }[] = [

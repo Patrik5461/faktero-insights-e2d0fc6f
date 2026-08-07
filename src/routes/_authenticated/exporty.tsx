@@ -11,9 +11,8 @@ import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight } from "luc
 export const Route = createFileRoute("/_authenticated/exporty")({
   head: () => ({ meta: [{ title: "Účtovné exporty — Faktero" }] }),
   /** História je sekcia tejto istej stránky; `?tab=history` na ňu zroluje. */
-  validateSearch: (s: Record<string, unknown>): { tab?: "history"; provider?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { tab?: "history" } => ({
     tab: s.tab === "history" ? "history" : undefined,
-    provider: typeof s.provider === "string" ? s.provider : undefined,
   }),
   component: ExportsPage,
 });
