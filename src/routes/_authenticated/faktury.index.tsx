@@ -38,20 +38,21 @@ import { supabase } from "@/integrations/supabase/client";
 
 type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
 
-/** Filtre, na ktoré vedú položky v menu (Dobropisy, Koncepty). */
-type InvoiceSearch = { type?: "credit"; status?: "draft" };
+/** Filtre z menu (Dobropisy, Koncepty) a `q` z vyhľadávania v hlavičke. */
+type InvoiceSearch = { type?: "credit"; status?: "draft"; q?: string };
 
 export const Route = createFileRoute("/_authenticated/faktury/")({
   head: () => ({ meta: [{ title: "Faktúry — Faktero" }] }),
   validateSearch: (s: Record<string, unknown>): InvoiceSearch => ({
     type: s.type === "credit" ? "credit" : undefined,
     status: s.status === "draft" ? "draft" : undefined,
+    q: typeof s.q === "string" && s.q.trim() ? s.q : undefined,
   }),
   component: InvoicesPage,
 });
 
 function InvoicesPage() {
-  const { type, status } = Route.useSearch();
+  const { type, status, q } = Route.useSearch();
   // V databáze je dobropis `credit_note`; v adrese je kratšie `credit`.
   const equals = useMemo(
     () => ({
@@ -65,6 +66,12 @@ function InvoicesPage() {
     searchColumns: ["invoice_number", "customer_name", "customer_ico"],
     equals: Object.keys(equals).length ? equals : undefined,
   });
+  // Hľadanie z hlavičky príde ako `?q=`. Prepíšeme ním hľadacie pole zoznamu,
+  // aby bolo vidieť, čo sa hľadá, a dalo sa to odtiaľ upraviť.
+  const setListSearch = list.setSearch;
+  useEffect(() => {
+    if (q) setListSearch(q);
+  }, [q, setListSearch]);
   const [busy, setBusy] = useState(false);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
@@ -396,18 +403,21 @@ function InvoicesPage() {
       <PageHeader
         title={type === "credit" ? "Dobropisy" : status === "draft" ? "Koncepty" : "Faktúry"}
         description={
-          type === "credit"
-            ? "Vystavené dobropisy."
-            : status === "draft"
-              ? "Rozpracované faktúry, ktoré ešte neboli vystavené."
-              : "Všetky vystavené faktúry, koncepty aj stornované."
+          q
+            ? `Výsledky hľadania „${q}“.`
+            : type === "credit"
+              ? "Vystavené dobropisy."
+              : status === "draft"
+                ? "Rozpracované faktúry, ktoré ešte neboli vystavené."
+                : "Všetky vystavené faktúry, koncepty aj stornované."
         }
         action={
           <div className="flex flex-wrap gap-2">
-            {(type || status) && (
+            {(type || status || q) && (
               <Link
                 to="/faktury"
                 search={{} as any}
+                onClick={() => list.setSearch("")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
               >
                 <X className="h-4 w-4" /> Zrušiť filter
