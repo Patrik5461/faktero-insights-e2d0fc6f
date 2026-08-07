@@ -319,63 +319,37 @@ function Dashboard() {
           </div>
         }
       />
-      <PageBody>
-        {/* TOP KPI ROW — 5 cards, debtors highlighted */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-          <KpiCard
-            icon={TrendingUp}
-            label="Obrat tento mesiac"
-            value={fmt(metrics.monthRevenue)}
-            trend={metrics.monthRevenueDelta}
-            sublabel={`vs. min. mesiac ${fmt(metrics.prevMonthRevenue)}`}
-          />
-          <KpiCard
-            icon={Clock}
-            label="Neuhradené faktúry"
-            value={fmt(metrics.unpaidAmount)}
-            sublabel={`${metrics.unpaidCount} faktúr`}
-          />
-          <KpiCard
-            icon={AlertTriangle}
-            label="Po splatnosti"
-            value={fmt(metrics.overdueAmount)}
-            sublabel={`${metrics.overdueCount} faktúr`}
-            tone="destructive"
-          />
-          <KpiCard
-            icon={Wallet}
-            label="Cashflow"
-            value={fmt(metrics.cashflow)}
-            trend={metrics.cashflowDelta}
-            sublabel="zaplatené – po splatnosti (30 dní)"
-          />
-          <HighlightKpi
-            label="Dlžia mi zákazníci"
-            value={fmt(metrics.receivables)}
-            sublabel={`${metrics.debtorCount} odberateľov · ${fmt(metrics.overdueAmount)} po splatnosti`}
-          />
-        </div>
+      <PageBody className="[font-variant-numeric:tabular-nums]">
+        {isEmpty ? (
+          <EmptyDashboard />
+        ) : (
+          <>
+            {/* Overview stat strip */}
+            <StatStrip metrics={metrics} loading={loading} />
 
-        {/* CRM: Aging + DSO + Forecast */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <AgingPanel
-            title="Aging pohľadávok"
-            icon={HandCoins}
-            buckets={agingReceivables}
-            loading={loading}
-          />
-          <AgingPanel
-            title="Aging záväzkov"
-            icon={TrendingDown}
-            buckets={agingPayables}
-            loading={loading}
-          />
-        </div>
+            {/* CRM: Aging + DSO + Forecast */}
+            <div className="mt-8 grid gap-6 lg:grid-cols-2">
+              <AgingPanel
+                title="Aging pohľadávok"
+                icon={HandCoins}
+                buckets={agingReceivables}
+                loading={loading}
+              />
+              <AgingPanel
+                title="Aging záväzkov"
+                icon={TrendingDown}
+                buckets={agingPayables}
+                loading={loading}
+              />
+            </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
-          <DsoCard dso={dso} loading={loading} />
-          <ForecastPanel rows={forecast} loading={loading} className="lg:col-span-2" />
-        </div>
+            <div className="mt-6 grid gap-6 lg:grid-cols-3">
+              <DsoCard dso={dso} loading={loading} hasPaid={hasPaidInvoice} />
+              <ForecastPanel rows={forecast} loading={loading} className="lg:col-span-2" />
+            </div>
+          </>
+        )}
+
 
         <div className="mt-6">
           <BankWidget />
