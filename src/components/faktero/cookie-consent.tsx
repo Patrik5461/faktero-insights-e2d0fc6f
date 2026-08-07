@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Cookie, X, Settings2, ShieldCheck, BarChart3, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -65,11 +65,36 @@ export function CookieConsentBanner() {
   const [pending, setPending] = useState(false);
   const recordAcceptance = useServerFn(recordLegalAcceptance);
 
+  const bannerRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     setMounted(true);
     const stored = getStoredConsent();
     setConsent(stored);
   }, []);
+
+  /**
+   * Lišta visí na `position: fixed`, takže sama nezaberá miesto a prekrýva to,
+   * čo je naspodku stránky. Na mobile zakrývala prihlasovacie tlačidlo — človek
+   * naň klikal a nič sa nedialo. Kým je lišta na obrazovke, odsadíme o jej
+   * výšku spodok stránky.
+   */
+  useEffect(() => {
+    const el = bannerRef.current;
+    if (!mounted || consent || !el) return;
+    const uprav = () => {
+      document.body.style.paddingBottom = `${el.offsetHeight}px`;
+    };
+    uprav();
+    const ro = new ResizeObserver(uprav);
+    ro.observe(el);
+    window.addEventListener("resize", uprav);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", uprav);
+      document.body.style.paddingBottom = "";
+    };
+  }, [mounted, consent]);
 
   const recordToBackend = async (consent: CookieConsent) => {
     if (consent.recorded) return;
@@ -130,6 +155,7 @@ export function CookieConsentBanner() {
         role="dialog"
         aria-live="polite"
         aria-label="Cookies súhlas"
+        ref={bannerRef}
         className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80"
       >
         <div className="mx-auto flex max-w-7xl flex-col items-start gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
@@ -153,7 +179,9 @@ export function CookieConsentBanner() {
             </div>
           </div>
 
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {/* Tlačidlá vedľa seba aj na mobile — na stĺpec pod sebou zaberali na
+              malých telefónoch vyše polovicu obrazovky. */}
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
             <Button
               variant="outline"
               size="sm"
