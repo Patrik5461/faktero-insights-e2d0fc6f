@@ -450,6 +450,47 @@ export function AppShell({
           {/* Hairline divider */}
           <div className="hidden h-5 w-px bg-black/[0.08] md:block dark:bg-white/[0.12]" />
 
+          {/* Product segmented control — separate axis from company switcher */}
+          {canSwitch && (
+            <div
+              role="tablist"
+              aria-label="Produkt"
+              className="hidden h-7 shrink-0 items-center gap-0.5 rounded-full bg-muted/60 p-[2px] md:inline-flex"
+            >
+              {(
+                [
+                  { key: "invoicing" as ActiveProduct, label: "Fakturácia", Icon: FileText },
+                  { key: "logbook" as ActiveProduct, label: "Kniha jázd", Icon: Car },
+                ] satisfies { key: ActiveProduct; label: string; Icon: typeof FileText }[]
+              ).map(({ key, label, Icon }) => {
+                const isActive = view === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    aria-label={label}
+                    title={label}
+                    onClick={() => {
+                      if (!isActive) switchProduct();
+                    }}
+                    className={`flex items-center rounded-full px-[11px] py-[4px] text-[12px] leading-none transition ${
+                      isActive
+                        ? "bg-background font-medium text-foreground shadow-sm"
+                        : "bg-transparent text-muted-foreground hover:bg-background/50"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5 min-[900px]:hidden" />
+                    <span className="hidden min-[900px]:inline">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+
+
           {/* Company switcher — pill */}
           {active && (
             <DropdownMenu>
