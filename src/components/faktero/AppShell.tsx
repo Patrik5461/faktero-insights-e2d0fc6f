@@ -9,7 +9,6 @@ import {
   Settings,
   ChevronDown,
   ChevronsUpDown,
-  Bell,
 
   Plus,
   Search,
@@ -528,13 +527,9 @@ export function AppShell({
 
           {/* Right cluster */}
           <div className="ml-auto flex items-center gap-1.5">
-            <button
-              type="button"
-              aria-label="Notifikácie"
-              className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-secondary"
-            >
-              <Bell className="h-4 w-4" />
-            </button>
+            {/* Zvonček notifikácií tu nie je zámerne — notifikácie zatiaľ
+                nemáme a tlačidlo, ktoré po kliknutí nič neurobí, je horšie
+                než žiadne. */}
 
             {/* Quick create — the only filled element */}
             {view !== "logbook" && (
