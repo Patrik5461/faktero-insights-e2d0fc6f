@@ -111,6 +111,7 @@ const NAV: NavGroup[] = [
       { to: "/sklad", label: "Prehľad" },
       { to: "/produkty", label: "Produkty a služby" },
       { to: "/sklad/produkty", label: "Skladové položky" },
+      { to: "/sklad/kategorie", label: "Kategórie" },
       { to: "/sklad/pohyby", label: "Pohyby" },
       { to: "/sklad/inventura", label: "Inventúra" },
     ],
@@ -219,6 +220,15 @@ const NAV: NavGroup[] = [
     ],
   },
   {
+    // Plávajúce tlačidlo otvára len malý chat — celá stránka bola dostupná
+    // iba ručne napísanou adresou.
+    key: "ai",
+    label: "Faktero AI",
+    icon: Sparkles,
+    match: ["/ai-asistent"],
+    children: [],
+  },
+  {
     key: "nastavenia",
     label: "Nastavenia",
     icon: Settings,
@@ -282,6 +292,9 @@ const INVOICING_KEYS = new Set([
   "efaktura",
   "banka",
   "api",
+  // Stránka AI je obsahovo o faktúrach a odberateľoch. V knihe jázd ostáva
+  // dostupná cez plávajúce tlačidlo.
+  "ai",
 ]);
 const LOGBOOK_KEYS = new Set(["logbook-prehlad", "jazdy", "vozidla", "integracie"]);
 

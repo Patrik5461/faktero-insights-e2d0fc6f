@@ -32,6 +32,7 @@ import {
 } from "@/lib/faktero/ai-assistant.functions";
 
 export const Route = createFileRoute("/_authenticated/ai-asistent")({
+  head: () => ({ meta: [{ title: "Faktero AI — Faktero" }] }),
   component: AiAssistantPage,
 });
 
