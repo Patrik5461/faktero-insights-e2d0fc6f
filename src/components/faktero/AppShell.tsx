@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
