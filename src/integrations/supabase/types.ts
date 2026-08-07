@@ -2996,6 +2996,10 @@ export type Database = {
           supplier_dic: string | null
           supplier_ic_dph: string | null
           supplier_ico: string | null
+          constant_symbol: string | null
+          specific_symbol: string | null
+          supplier_iban: string | null
+          variable_symbol: string | null
           supplier_name: string
           updated_at: string
           vat_amount: number
@@ -3024,6 +3028,10 @@ export type Database = {
           supplier_dic?: string | null
           supplier_ic_dph?: string | null
           supplier_ico?: string | null
+          constant_symbol?: string | null
+          specific_symbol?: string | null
+          supplier_iban?: string | null
+          variable_symbol?: string | null
           supplier_name: string
           updated_at?: string
           vat_amount?: number
@@ -3052,6 +3060,10 @@ export type Database = {
           supplier_dic?: string | null
           supplier_ic_dph?: string | null
           supplier_ico?: string | null
+          constant_symbol?: string | null
+          specific_symbol?: string | null
+          supplier_iban?: string | null
+          variable_symbol?: string | null
           supplier_name?: string
           updated_at?: string
           vat_amount?: number

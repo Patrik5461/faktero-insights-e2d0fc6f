@@ -28,6 +28,8 @@ function NewPurchaseInvoicePage() {
     supplier_ico: "",
     supplier_dic: "",
     supplier_ic_dph: "",
+    supplier_iban: "",
+    variable_symbol: "",
     invoice_number: "",
     issue_date: today(),
     received_date: today(),
@@ -91,6 +93,9 @@ function NewPurchaseInvoicePage() {
         supplier_ico: form.supplier_ico.trim() || null,
         supplier_dic: form.supplier_dic.trim() || null,
         supplier_ic_dph: form.supplier_ic_dph.trim() || null,
+        // IBAN bez medzier, aby sa dal rovno použiť v platobnom príkaze.
+        supplier_iban: form.supplier_iban.replace(/\s+/g, "").toUpperCase() || null,
+        variable_symbol: form.variable_symbol.trim() || null,
         invoice_number: form.invoice_number.trim(),
         issue_date: form.issue_date,
         received_date: form.received_date,
@@ -178,6 +183,22 @@ function NewPurchaseInvoicePage() {
                 <input
                   value={form.supplier_ic_dph}
                   onChange={(e) => set("supplier_ic_dph", e.target.value)}
+                  className="input"
+                />
+              </Field>
+              <Field label="IBAN dodávateľa">
+                <input
+                  value={form.supplier_iban}
+                  onChange={(e) => set("supplier_iban", e.target.value)}
+                  placeholder="SK00 0000 0000 0000 0000 0000"
+                  className="input font-mono"
+                />
+              </Field>
+              <Field label="Variabilný symbol">
+                <input
+                  value={form.variable_symbol}
+                  onChange={(e) => set("variable_symbol", e.target.value)}
+                  placeholder={form.invoice_number || "napr. 20260112"}
                   className="input"
                 />
               </Field>

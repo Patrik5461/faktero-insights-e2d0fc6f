@@ -158,6 +158,12 @@ function PurchaseInvoiceDetail() {
                 {row.supplier_ic_dph && (
                   <div className="text-sm">IČ DPH: {row.supplier_ic_dph}</div>
                 )}
+                {row.supplier_iban && (
+                  <div className="mt-2 font-mono text-sm">{row.supplier_iban}</div>
+                )}
+                {row.variable_symbol && (
+                  <div className="text-sm text-muted-foreground">VS: {row.variable_symbol}</div>
+                )}
               </div>
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Dátumy</div>
