@@ -380,14 +380,20 @@ export function AppShell({
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
       {/* Top header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        {/* Row 1 — identity, context, actions */}
-        <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
+      <header
+        className={`sticky top-0 z-40 transition-[background-color,box-shadow,backdrop-filter] ${
+          scrolled
+            ? "border-b border-black/[0.06] bg-card/75 backdrop-blur-[8px] dark:border-white/[0.08]"
+            : "border-b border-transparent bg-card"
+        }`}
+      >
+        {/* Row 1 — identity, context, actions (48px) */}
+        <div className="flex h-12 items-center gap-2.5 px-4">
           {/* Mobile menu trigger */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <button
-                className="grid h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-secondary lg:hidden"
+                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-secondary lg:hidden"
                 aria-label="Menu"
               >
                 <Menu className="h-5 w-5" />
@@ -416,24 +422,24 @@ export function AppShell({
 
           {/* Logo */}
           <Link to={homePath as any} className="flex shrink-0 items-center" aria-label="Faktero">
-            <Logo variant="icon" className="sm:hidden" />
-            <Logo className="hidden h-8 sm:block" />
+            <Logo variant="icon" className="h-7 w-7 sm:hidden" />
+            <Logo className="hidden h-7 sm:block" />
           </Link>
 
-          {/* Divider */}
-          <div className="hidden h-6 w-px bg-border md:block" />
+          {/* Hairline divider */}
+          <div className="hidden h-5 w-px bg-black/[0.08] md:block dark:bg-white/[0.12]" />
 
-          {/* Company switcher with colored avatar */}
+          {/* Company switcher — pill */}
           {active && (
             <DropdownMenu>
-              <DropdownMenuTrigger className="hidden min-w-0 items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5 text-sm hover:bg-secondary md:inline-flex">
+              <DropdownMenuTrigger className="hidden min-w-0 items-center gap-1.5 rounded-full border-[0.5px] border-border bg-background py-1 pl-1 pr-2 text-[12px] text-foreground hover:bg-secondary/60 md:inline-flex">
                 <span
-                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br ${avatarGradient(active.name)} text-[11px] font-semibold text-white shadow-sm`}
+                  className={`grid h-[17px] w-[17px] shrink-0 place-items-center rounded-full bg-gradient-to-br ${avatarGradient(active.name)} text-[9px] font-semibold text-white`}
                 >
                   {(active.name?.[0] ?? "F").toUpperCase()}
                 </span>
-                <span className="max-w-[180px] truncate font-medium">{active.name}</span>
-                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="max-w-[160px] truncate font-medium">{active.name}</span>
+                <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64">
                 <DropdownMenuLabel>Firmy</DropdownMenuLabel>
@@ -461,75 +467,80 @@ export function AppShell({
                 >
                   <Plus className="mr-2 h-3.5 w-3.5" /> Pridať firmu
                 </DropdownMenuItem>
+                {canSwitch && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs text-muted-foreground">
+                      Produkt
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem onClick={switchProduct}>
+                      <ArrowRightLeft className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                      {view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
 
-          {/* Search — expanded */}
-          {view !== "logbook" && (
-            <form onSubmit={submitSearch} className="hidden flex-1 md:block">
-              <div className="relative mx-auto max-w-2xl">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          {/* Search — pill, max 400px */}
+          {view !== "logbook" ? (
+            <form onSubmit={submitSearch} className="hidden min-w-0 flex-1 md:block">
+              <div className="relative max-w-[400px]">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  ref={searchRef}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Vyhľadať faktúru, odberateľa, ponuku, produkt…"
-                  className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Hľadať"
+                  className="h-8 w-full rounded-full bg-muted/60 pl-8 pr-12 text-[12.5px] placeholder:text-muted-foreground focus:bg-muted focus:outline-none"
                 />
+                <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground">
+                  ⌘K
+                </kbd>
               </div>
             </form>
+          ) : (
+            <div className="flex-1" />
           )}
-          {view === "logbook" && <div className="flex-1" />}
 
           {/* Right cluster */}
-          <div className="flex items-center gap-1.5">
-            {/* Product switcher — ghost */}
-            {canSwitch && (
-              <button
-                type="button"
-                onClick={switchProduct}
-                title={view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
-                className="hidden h-9 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-foreground/70 hover:bg-secondary hover:text-foreground sm:inline-flex"
-              >
-                <ArrowRightLeft className="h-3.5 w-3.5" />
-                <span className="hidden lg:inline">
-                  {view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
-                </span>
-                <span className="lg:hidden">
-                  {view === "invoicing" ? "Kniha jázd" : "Fakturácia"}
-                </span>
-              </button>
-            )}
+          <div className="ml-auto flex items-center gap-1.5">
+            <button
+              type="button"
+              aria-label="Notifikácie"
+              className="grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-secondary"
+            >
+              <Bell className="h-4 w-4" />
+            </button>
 
-            {/* Quick create — the only filled button */}
+            {/* Quick create — the only filled element */}
             {view !== "logbook" && (
               <DropdownMenu>
-                <DropdownMenuTrigger className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90">
-                  <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Vytvoriť</span>
+                <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-[12px] font-medium text-primary-foreground hover:opacity-90">
+                  <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Vytvoriť</span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="flex items-center gap-1.5 text-xs">
                     <Sparkles className="h-3 w-3" /> Rýchle vytvorenie
                   </DropdownMenuLabel>
                   {QUICK_CREATE.map((c) => (
-                    <DropdownMenuItem key={c.to} asChild>
-                      <Link to={c.to as any}>{c.label}</Link>
+                    <DropdownMenuItem key={c.to + c.label} asChild>
+                      <Link to={c.to as any} search={c.search as any}>
+                        {c.label}
+                      </Link>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
 
-            {/* Zvonček notifikácií tu bol, ale nemal čo zobraziť — žiadne
-                notifikácie zatiaľ nevznikajú. Radšej preč, než tlačidlo,
-                po ktorom sa nič nestane. Vráti sa aj s obsahom. */}
-
             {/* Profile avatar */}
             <DropdownMenu>
-              <DropdownMenuTrigger className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-sm font-semibold text-primary ring-1 ring-border hover:ring-primary/40">
+              <DropdownMenuTrigger className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-[12px] font-semibold text-primary ring-1 ring-border hover:ring-primary/40">
                 {(active?.name?.[0] ?? "U").toUpperCase()}
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuLabel>Účet</DropdownMenuLabel>
                 <DropdownMenuItem asChild>
                   <Link to={"/nastavenia" as any}>
@@ -537,29 +548,40 @@ export function AppShell({
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/firma">
-                    <Building2 className="mr-2 h-3.5 w-3.5" /> Firma
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
                   <Link to="/predplatne">
                     <CreditCard className="mr-2 h-3.5 w-3.5" /> Predplatné
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Settings className="h-3 w-3" /> Nastavenia
+                </DropdownMenuLabel>
+                {ACCOUNT_SETTINGS_LINKS.map((c) => (
+                  <DropdownMenuItem key={c.to + c.label} asChild>
+                    <Link to={c.to as any}>{c.label}</Link>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <KeyRound className="h-3 w-3" /> API
+                </DropdownMenuLabel>
+                {ACCOUNT_API_LINKS.map((c) => (
+                  <DropdownMenuItem key={c.to + c.label} asChild>
+                    <Link to={c.to as any}>{c.label}</Link>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to={"/api-dokumentacia" as any}>
+                  <Link to={"/pomoc" as any}>
                     <HelpCircle className="mr-2 h-3.5 w-3.5" /> Pomoc
                   </Link>
                 </DropdownMenuItem>
                 {adminRole && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link to={"/admin" as any}>
-                        <Shield className="mr-2 h-3.5 w-3.5 text-primary" /> Platform Admin
-                      </Link>
-                    </DropdownMenuItem>
-                  </>
+                  <DropdownMenuItem asChild>
+                    <Link to={"/admin" as any}>
+                      <Shield className="mr-2 h-3.5 w-3.5 text-primary" /> Platform Admin
+                    </Link>
+                  </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut}>
@@ -570,15 +592,15 @@ export function AppShell({
           </div>
         </div>
 
-        {/* Row 2 — primary navigation (own subtle strip) */}
-        <div className="hidden border-t border-border bg-muted/30 lg:block">
-          <nav className="flex h-11 items-center gap-1 overflow-x-auto px-4 lg:px-6">
+        {/* Row 2 — primary navigation (36px) */}
+        <div className="hidden lg:block">
+          <nav className="flex h-9 items-center gap-1 overflow-x-auto px-3 pb-2">
             {nav.map((g) => {
               const isActive = isPathActive(pathname, g);
-              const base = `relative inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-sm font-medium transition-colors after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full after:transition-colors ${
+              const base = `inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-[5px] text-[12.5px] transition-colors ${
                 isActive
-                  ? "text-primary after:bg-primary"
-                  : "text-foreground/70 hover:text-foreground after:bg-transparent"
+                  ? "bg-primary/10 font-medium text-primary"
+                  : "text-muted-foreground hover:bg-muted/70"
               }`;
               if (g.children.length === 0) {
                 return (
@@ -589,50 +611,35 @@ export function AppShell({
               }
               return (
                 <DropdownMenu key={g.key}>
-                  <DropdownMenuTrigger className={base}>
+                  <DropdownMenuTrigger
+                    className={`${base} ${g.key === "viac" ? "ml-auto" : ""}`}
+                  >
                     {g.label}
-                    <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                    <ChevronDown className="h-3 w-3 opacity-60" />
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    {g.children.map((c) => (
-                      <DropdownMenuItem key={c.to + c.label} asChild>
-                        <Link to={c.to as any} search={c.search as any}>
-                          {c.label}
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
+                  <DropdownMenuContent align={g.key === "viac" ? "end" : "start"} className="w-56">
+                    {g.children.map((c) => {
+                      const isChildActive = activeKey === c.to + c.label && activeGroup?.key === g.key;
+                      return (
+                        <DropdownMenuItem key={c.to + c.label} asChild>
+                          <Link
+                            to={c.to as any}
+                            search={c.search as any}
+                            className={isChildActive ? "font-medium text-primary" : ""}
+                          >
+                            {c.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
                   </DropdownMenuContent>
                 </DropdownMenu>
               );
             })}
           </nav>
         </div>
-
-        {/* Secondary nav (active group children) */}
-        {activeGroup && activeGroup.children.length > 0 && (
-          <div className="border-t border-border bg-background/60">
-            <div className="flex h-11 items-center gap-1 overflow-x-auto px-4 lg:px-6">
-              {activeGroup.children.map((c) => {
-                const isActive = activeKey === c.to + c.label;
-                return (
-                  <Link
-                    key={c.to + c.label}
-                    to={c.to as any}
-                    search={c.search as any}
-                    className={`relative shrink-0 px-3 py-1.5 text-xs font-medium transition-colors after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:rounded-full ${
-                      isActive
-                        ? "text-primary after:bg-primary"
-                        : "text-muted-foreground hover:text-foreground after:bg-transparent"
-                    }`}
-                  >
-                    {c.label}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </header>
+
 
       <main className="flex min-w-0 flex-1 flex-col">{children}</main>
       <CreateCompanyDialog open={createOpen} onOpenChange={setCreateOpen} />
