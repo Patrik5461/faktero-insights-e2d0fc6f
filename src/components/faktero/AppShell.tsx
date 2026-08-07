@@ -488,18 +488,6 @@ export function AppShell({
                 >
                   <Plus className="mr-2 h-3.5 w-3.5" /> Pridať firmu
                 </DropdownMenuItem>
-                {canSwitch && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel className="text-xs text-muted-foreground">
-                      Produkt
-                    </DropdownMenuLabel>
-                    <DropdownMenuItem onClick={switchProduct}>
-                      <ArrowRightLeft className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
-                      {view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
-                    </DropdownMenuItem>
-                  </>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
