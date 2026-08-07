@@ -39,6 +39,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CreateCompanyDialog } from "@/components/faktero/CreateCompanyDialog";
 import { FloatingAIButton } from "@/components/faktero/FloatingAIButton";
+import { NotificationBell } from "@/components/faktero/NotificationBell";
 import { getMyAdminRole } from "@/lib/faktero/admin.functions";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { useIsNative } from "@/hooks/useIsNative";
@@ -556,9 +557,7 @@ export function AppShell({
 
           {/* Right cluster */}
           <div className="ml-auto flex items-center gap-1.5">
-            {/* Zvonček notifikácií tu nie je zámerne — notifikácie zatiaľ
-                nemáme a tlačidlo, ktoré po kliknutí nič neurobí, je horšie
-                než žiadne. */}
+            <NotificationBell />
 
             {/* Quick create — the only filled element */}
             {view !== "logbook" && (
