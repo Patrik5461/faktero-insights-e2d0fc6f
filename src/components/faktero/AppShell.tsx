@@ -87,9 +87,21 @@ const NAV: NavGroup[] = [
       { to: "/faktury", search: { type: "credit" }, label: "Dobropisy" },
       { to: "/prijate-faktury", label: "Prijaté faktúry" },
       { to: "/faktury", search: { status: "draft" }, label: "Koncepty" },
-      // Skener existoval, ale neviedla naň žiadna cesta — dal sa otvoriť len
-      // ručne napísanou adresou.
       { to: "/faktury/skener", label: "Skener dokladov" },
+    ],
+  },
+  {
+    key: "doklady",
+    label: "Doklady",
+    icon: FileText,
+    match: ["/doklady", "/efaktura"],
+    children: [
+      { to: "/doklady", label: "Prehľad dokladov" },
+      { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
+      { to: "/efaktura", label: "Prehľad eFaktúry" },
+      { to: "/efaktura/odoslane", label: "Odoslané eFaktúry" },
+      { to: "/efaktura/prijate", label: "Prijaté eFaktúry" },
+      { to: "/efaktura/dorucenia", label: "Doručenia eFaktúr" },
     ],
   },
   {
@@ -114,6 +126,27 @@ const NAV: NavGroup[] = [
       { to: "/sklad/kategorie", label: "Kategórie" },
       { to: "/sklad/pohyby", label: "Pohyby" },
       { to: "/sklad/inventura", label: "Inventúra" },
+    ],
+  },
+  {
+    key: "uctovnictvo",
+    label: "Účtovníctvo",
+    icon: FileSpreadsheet,
+    match: ["/exporty", "/importy", "/uctovnictvo", "/bankove-ucty"],
+    children: [
+      { to: "/uctovnictvo/dph", label: "DPH prehľad" },
+      { to: "/exporty", label: "Účtovné exporty" },
+      { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
+      { to: "/bankove-ucty", label: "Bankové účty" },
+      { to: "/bankove-ucty/transakcie", label: "Bankové transakcie" },
+      { to: "/bankove-ucty/vypisy", label: "Bankové výpisy" },
+      { to: "/bankove-ucty/pripojit", label: "Pripojiť banku" },
+      { to: "/importy/superfaktura", label: "Import zo SuperFaktúry" },
+      { to: "/importy/money-s3", label: "Import z Money S3" },
+      { to: "/importy/omega", label: "Import z Omega" },
+      { to: "/importy/idoklad", label: "Import z iDoklad" },
+      { to: "/importy/kros", label: "Import z KROS" },
+      { to: "/importy", label: "História importov" },
     ],
   },
   {
@@ -154,98 +187,36 @@ const NAV: NavGroup[] = [
     ],
   },
   {
-    key: "doklady",
-    label: "Doklady",
-    icon: FileText,
-    match: ["/doklady"],
+    key: "viac",
+    label: "Viac",
+    icon: Menu,
+    match: ["/ai-asistent", "/firmy", "/predplatne", "/diagnostika"],
     children: [
-      { to: "/doklady", label: "Prehľad dokladov" },
-      { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
-    ],
-  },
-  {
-    key: "uctovnictvo",
-    label: "Účtovníctvo",
-    icon: FileSpreadsheet,
-    match: ["/exporty", "/importy", "/uctovnictvo"],
-    children: [
-      { to: "/uctovnictvo/dph", label: "DPH prehľad" },
-      // "Pohoda export" tu bol zvlášť, ale viedol na tú istú stránku a robil to
-      // isté — iný formát než pohoda_xml zatiaľ neexistuje.
-      { to: "/exporty", label: "Účtovné exporty" },
-      { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
-      { to: "/importy/superfaktura", label: "Import zo SuperFaktúry" },
-      { to: "/importy/money-s3", label: "Import z Money S3" },
-      { to: "/importy/omega", label: "Import z Omega" },
-      { to: "/importy/idoklad", label: "Import z iDoklad" },
-      { to: "/importy/kros", label: "Import z KROS" },
-      { to: "/importy", label: "História importov" },
-    ],
-  },
-  {
-    key: "efaktura",
-    label: "eFaktúra",
-    icon: FileCheck2,
-    match: ["/efaktura"],
-    children: [
-      { to: "/efaktura", label: "Prehľad eFaktúry" },
-      { to: "/efaktura/odoslane", label: "Odoslané eFaktúry" },
-      { to: "/efaktura/prijate", label: "Prijaté eFaktúry" },
-      { to: "/efaktura/dorucenia", label: "Doručenia" },
-    ],
-  },
-  {
-    key: "banka",
-    label: "Bankové účty",
-    icon: Landmark,
-    match: ["/bankove-ucty"],
-    children: [
-      { to: "/bankove-ucty", label: "Prehľad účtov" },
-      { to: "/bankove-ucty/transakcie", label: "Transakcie" },
-      { to: "/bankove-ucty/vypisy", label: "Výpisy" },
-      { to: "/bankove-ucty/pripojit", label: "Pripojiť banku" },
-    ],
-  },
-  {
-    key: "api",
-    label: "API",
-    icon: KeyRound,
-    match: ["/api-kluce", "/api-dokumentacia", "/api-playground", "/webhooky", "/webhooky-logy"],
-    children: [
-      { to: "/api-kluce", label: "API kľúče" },
-      { to: "/api-dokumentacia", label: "API dokumentácia" },
-      { to: "/api-playground", label: "API playground" },
-      { to: "/webhooky", label: "Webhooky" },
-      { to: "/webhooky-logy", label: "Webhook delivery logy" },
-    ],
-  },
-  {
-    // Plávajúce tlačidlo otvára len malý chat — celá stránka bola dostupná
-    // iba ručne napísanou adresou.
-    key: "ai",
-    label: "Faktero AI",
-    icon: Sparkles,
-    match: ["/ai-asistent"],
-    children: [],
-  },
-  {
-    key: "nastavenia",
-    label: "Nastavenia",
-    icon: Settings,
-    match: ["/firma", "/firmy", "/predplatne", "/nastavenia", "/diagnostika"],
-    children: [
-      { to: "/firma", label: "Firma" },
-      { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry" },
-      { to: "/nastavenia/email-sablony", label: "Email šablóny" },
+      { to: "/ai-asistent", label: "Faktero AI" },
       { to: "/firmy", label: "Správa firiem" },
       { to: "/predplatne", label: "Predplatné" },
-      { to: "/nastavenia/online-platby", label: "Online platby" },
-
-      { to: "/nastavenia", label: "Nastavenia systému" },
       { to: "/diagnostika", label: "Diagnostika", companyAdminOnly: true },
     ],
   },
 ];
+
+/** API a Nastavenia sa presunuli z hlavnej lišty do menu pod avatarom. */
+const ACCOUNT_API_LINKS: NavChild[] = [
+  { to: "/api-kluce", label: "API kľúče" },
+  { to: "/api-dokumentacia", label: "API dokumentácia" },
+  { to: "/api-playground", label: "API playground" },
+  { to: "/webhooky", label: "Webhooky" },
+  { to: "/webhooky-logy", label: "Webhook delivery logy" },
+];
+
+const ACCOUNT_SETTINGS_LINKS: NavChild[] = [
+  { to: "/firma", label: "Firma" },
+  { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry" },
+  { to: "/nastavenia/email-sablony", label: "Email šablóny" },
+  { to: "/nastavenia/online-platby", label: "Online platby" },
+  { to: "/nastavenia", label: "Nastavenia systému" },
+];
+
 
 /**
  * Ktorá položka podmenu je práve otvorená. Rozhoduje aj podľa parametrov,
