@@ -256,16 +256,10 @@ export type ProductMode = "invoicing" | "logbook" | "both";
 const INVOICING_KEYS = new Set([
   "prehlad",
   "fakturacia",
+  "doklady",
   "kontakty",
   "sklad",
-  "doklady",
   "uctovnictvo",
-  "efaktura",
-  "banka",
-  "api",
-  // Stránka AI je obsahovo o faktúrach a odberateľoch. V knihe jázd ostáva
-  // dostupná cez plávajúce tlačidlo.
-  "ai",
 ]);
 const LOGBOOK_KEYS = new Set(["logbook-prehlad", "jazdy", "vozidla", "integracie"]);
 
@@ -282,11 +276,12 @@ function resolveView(productMode: ProductMode, activeProduct: ActiveProduct): Ac
 
 function filterNav(view: ActiveProduct, isCompanyAdmin: boolean): NavGroup[] {
   const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
-  // "nastavenia" je spoločné pre oba produkty
-  return NAV.filter((g) => allowed.has(g.key) || g.key === "nastavenia").map((g) =>
+  // "viac" je spoločné pre oba produkty a vždy ide na koniec lišty
+  return NAV.filter((g) => allowed.has(g.key) || g.key === "viac").map((g) =>
     isCompanyAdmin ? g : { ...g, children: g.children.filter((c) => !c.companyAdminOnly) },
   );
 }
+
 
 export function AppShell({
   companies,
