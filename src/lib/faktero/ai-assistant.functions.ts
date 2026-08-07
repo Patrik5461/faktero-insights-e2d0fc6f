@@ -41,7 +41,7 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
       supabase.from("companies").select("*").eq("id", companyId).maybeSingle(),
       supabase
         .from("invoices")
-        .select("id,number,total,customer_name,due_date,status,issue_date")
+        .select("id,invoice_number,total,customer_name,due_date,status,issue_date")
         .eq("company_id", companyId)
         .in("status", ["sent", "overdue", "issued"])
         .lt("due_date", today)
@@ -116,7 +116,7 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
         }
       : null,
     overdueInvoices: overdue.map((i: any) => ({
-      number: i.number,
+      number: i.invoice_number,
       total: i.total,
       customer: i.customer_name,
       due_date: i.due_date,
