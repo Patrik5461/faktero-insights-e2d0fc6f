@@ -1,9 +1,47 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { listBankData } from "@/lib/faktero/tatrabanka.functions";
+import {
+  payPurchaseInvoice,
+  listPayments,
+  refreshPaymentStatus,
+} from "@/lib/faktero/tatrabanka-payments.functions";
 import { toast } from "sonner";
-import { ArrowLeft, Download, CheckCircle2, Ban, Trash2, Wallet } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  CheckCircle2,
+  Ban,
+  Trash2,
+  Wallet,
+  Landmark,
+  RefreshCw,
+} from "lucide-react";
+
+const PAYMENT_STATUS_TEXT: Record<string, string> = {
+  ACTC: "Pripravená na podpis",
+  ACSP: "Banka spracováva",
+  ACSC: "Zaplatená",
+  ACCC: "Zaplatená",
+  PDNG: "Čaká na dátum splatnosti",
+  RJCT: "Zamietnutá bankou",
+  CANC: "Zrušená",
+};
+
+/** Chyby zo servera sú kódy — používateľovi treba povedať, čo s tým. */
+const PAY_ERRORS: Record<string, string> = {
+  missing_supplier_iban: "Faktúra nemá IBAN dodávateľa. Doplňte ho a skúste znova.",
+  invalid_supplier_iban: "IBAN dodávateľa nemá platný tvar.",
+  invoice_already_paid: "Faktúra je už označená ako zaplatená.",
+  payment_already_in_progress: "Platba tejto faktúry už prebieha.",
+  unsupported_currency: "Cez banku sa dajú platiť len faktúry v eurách.",
+  not_configured: "Napojenie na banku nie je nastavené.",
+  Forbidden: "Na platby potrebujete rolu vlastníka alebo správcu.",
+};
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/$id")({
   head: () => ({ meta: [{ title: "Detail prijatej faktúry — Faktero" }] }),
@@ -33,6 +71,14 @@ function PurchaseInvoiceDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [row, setRow] = useState<any | null>(null);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [debtorAccountId, setDebtorAccountId] = useState<string>("");
+  const [paying, setPaying] = useState(false);
+  const bankData = useServerFn(listBankData);
+  const payInvoice = useServerFn(payPurchaseInvoice);
+  const loadPayments = useServerFn(listPayments);
+  const refreshPayment = useServerFn(refreshPaymentStatus);
 
   async function load() {
     const { data } = await supabase
@@ -45,6 +91,75 @@ function PurchaseInvoiceDetail() {
   useEffect(() => {
     load();
   }, [id]);
+
+  async function loadBankStuff() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    try {
+      const [b, p] = await Promise.all([
+        bankData({ data: { company_id: cid } }),
+        loadPayments({ data: { company_id: cid, invoice_id: id } }),
+      ]);
+      setAccounts(b.accounts ?? []);
+      setPayments(p ?? []);
+    } catch {
+      // Banka nemusí byť pripojená — vtedy sa platobná časť jednoducho neponúkne.
+    }
+  }
+  useEffect(() => {
+    loadBankStuff();
+  }, [id]);
+
+  // Návrat z banky po podpise. Callback už platbu odoslal, tu len povieme ako dopadla.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const stav = url.searchParams.get("platba");
+    const chyba = url.searchParams.get("platba_chyba");
+    if (stav) {
+      const text = PAYMENT_STATUS_TEXT[stav] ?? stav;
+      if (stav === "RJCT") toast.error(`Platba zamietnutá bankou`);
+      else toast.success(`Platba odoslaná do banky — ${text}`);
+    }
+    if (chyba) toast.error(`Platba zlyhala: ${chyba}`);
+    if (stav || chyba) {
+      window.history.replaceState({}, "", url.pathname);
+      load();
+      loadBankStuff();
+    }
+  }, []);
+
+  async function payViaBank() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setPaying(true);
+    try {
+      const { authorize_url } = await payInvoice({
+        data: {
+          company_id: cid,
+          invoice_id: id,
+          debtor_account_id: debtorAccountId || undefined,
+        },
+      });
+      // Z účtu sa zatiaľ nič nestrhlo — platbu vykoná až podpis v banke.
+      window.location.href = authorize_url;
+    } catch (e: any) {
+      toast.error(PAY_ERRORS[e?.message] ?? e?.message ?? "Platbu sa nepodarilo založiť");
+      setPaying(false);
+    }
+  }
+
+  async function onRefreshPayment(rowId: string) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    try {
+      const r = await refreshPayment({ data: { company_id: cid, payment_row_id: rowId } });
+      toast.success(PAYMENT_STATUS_TEXT[r.transaction_status] ?? r.transaction_status);
+      load();
+      loadBankStuff();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Stav sa nepodarilo načítať");
+    }
+  }
 
   async function setStatus(status: string, extra: Record<string, any> = {}) {
     const { error } = await supabase
@@ -200,6 +315,113 @@ function PurchaseInvoiceDetail() {
               <div>Splatnosť: {row.due_date}</div>
               {row.payment_date && <div>Uhradené: {row.payment_date}</div>}
             </div>
+
+            {accounts.length > 0 && row.status !== "cancelled" && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-emerald-800">
+                  <Landmark className="h-3.5 w-3.5" /> Zaplatiť cez banku
+                </div>
+
+                {!row.supplier_iban ? (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Faktúra nemá IBAN dodávateľa — bez neho sa príkaz nedá zadať.
+                  </p>
+                ) : row.status === "paid" ? (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Faktúra je označená ako zaplatená.
+                  </p>
+                ) : (
+                  <>
+                    <div className="mt-3 space-y-1 text-sm">
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground">Príjemca</span>
+                        <span className="text-right">{row.supplier_name}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground">IBAN</span>
+                        <span className="font-mono text-xs">{row.supplier_iban}</span>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground">Suma</span>
+                        <span className="font-semibold tabular-nums">
+                          {fmt(Number(row.amount_total), row.currency)}
+                        </span>
+                      </div>
+                      {row.variable_symbol && (
+                        <div className="flex justify-between gap-2">
+                          <span className="text-muted-foreground">VS</span>
+                          <span className="tabular-nums">{row.variable_symbol}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <label className="mt-3 block text-xs text-muted-foreground">
+                      Z účtu
+                      <select
+                        value={debtorAccountId}
+                        onChange={(e) => setDebtorAccountId(e.target.value)}
+                        className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+                      >
+                        <option value="">Vyberiem v banke</option>
+                        {accounts.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.account_name ?? a.iban}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <button
+                      onClick={payViaBank}
+                      disabled={paying}
+                      className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      <Landmark className="h-4 w-4" />
+                      {paying ? "Pripravujem…" : "Zaplatiť cez banku"}
+                    </button>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Presmerujeme vás do Tatra banky na podpis. Z účtu sa nič nestrhne, kým
+                      platbu nepodpíšete.
+                    </p>
+                  </>
+                )}
+
+                {payments.length > 0 && (
+                  <div className="mt-4 border-t border-emerald-200 pt-3">
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      História platieb
+                    </div>
+                    <ul className="mt-2 space-y-2">
+                      {payments.map((p) => (
+                        <li key={p.id} className="flex items-start justify-between gap-2 text-sm">
+                          <div className="min-w-0">
+                            <div className="font-medium">
+                              {PAYMENT_STATUS_TEXT[p.transaction_status] ??
+                                p.transaction_status ??
+                                p.status}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(p.created_at).toLocaleString("sk-SK")} ·{" "}
+                              {fmt(Number(p.amount), p.currency)}
+                            </div>
+                            {p.error_message && (
+                              <div className="text-xs text-rose-700">{p.error_message}</div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => onRefreshPayment(p.id)}
+                            title="Načítať aktuálny stav z banky"
+                            className="rounded-md border border-border bg-background p-1.5 hover:bg-secondary"
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </aside>
         </div>
       </PageBody>

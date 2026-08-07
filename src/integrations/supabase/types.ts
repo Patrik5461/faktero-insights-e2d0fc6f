@@ -339,6 +339,103 @@ export type Database = {
           },
         ]
       }
+      bank_payments: {
+        Row: {
+          amount: number
+          authorization_id: string | null
+          bank_connection_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          creditor_iban: string
+          creditor_name: string
+          currency: string
+          debtor_iban: string | null
+          end_to_end_id: string | null
+          error_message: string | null
+          id: string
+          metadata: Json
+          payment_id: string | null
+          purchase_invoice_id: string | null
+          remittance_info: string | null
+          requested_execution_date: string | null
+          sca_status: string | null
+          status: string
+          transaction_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          authorization_id?: string | null
+          bank_connection_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          creditor_iban: string
+          creditor_name: string
+          currency?: string
+          debtor_iban?: string | null
+          end_to_end_id?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          payment_id?: string | null
+          purchase_invoice_id?: string | null
+          remittance_info?: string | null
+          requested_execution_date?: string | null
+          sca_status?: string | null
+          status?: string
+          transaction_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          authorization_id?: string | null
+          bank_connection_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          creditor_iban?: string
+          creditor_name?: string
+          currency?: string
+          debtor_iban?: string | null
+          end_to_end_id?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          payment_id?: string | null
+          purchase_invoice_id?: string | null
+          remittance_info?: string | null
+          requested_execution_date?: string | null
+          sca_status?: string | null
+          status?: string
+          transaction_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_payments_bank_connection_id_fkey"
+            columns: ["bank_connection_id"]
+            isOneToOne: false
+            referencedRelation: "bank_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_payments_purchase_invoice_id_fkey"
+            columns: ["purchase_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bank_statements: {
         Row: {
           bank_account_id: string

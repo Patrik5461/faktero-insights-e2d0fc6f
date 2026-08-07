@@ -17,13 +17,13 @@ import { createHash } from "node:crypto";
 
 // TB_ENV=sandbox (default) → https://api.tatrabanka.sk/premium/sandbox
 // TB_ENV=production        → https://api.tatrabanka.sk/premium/production
-function tbBase(): string {
+export function tbBase(): string {
   const env = (process.env.TB_ENV ?? "sandbox").toLowerCase();
   return env === "production" || env === "prod"
     ? "https://api.tatrabanka.sk/premium/production"
     : "https://api.tatrabanka.sk/premium/sandbox";
 }
-function authBase(): string {
+export function authBase(): string {
   return `${tbBase()}/auth/oauth/v2`;
 }
 // Verzia je súčasťou cesty zdroja (/v3/accounts, /v5/.../transactions),
@@ -143,7 +143,7 @@ export type TokenResponse = {
   consent_id?: string;
 };
 
-function basicAuth(): string {
+export function basicAuth(): string {
   const id = process.env.TB_CLIENT_ID!;
   const secret = process.env.TB_CLIENT_SECRET!;
   return "Basic " + Buffer.from(`${id}:${secret}`).toString("base64");
