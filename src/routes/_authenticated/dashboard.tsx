@@ -305,6 +305,13 @@ function Dashboard() {
 
   const countdown = useCountdown(new Date("2027-01-01T00:00:00"));
 
+  const isEmpty = !loading && allInvoices.length === 0;
+  const hasPaidInvoice = useMemo(
+    () => allInvoices.some((i) => i.status === "paid"),
+    [allInvoices],
+  );
+
+
   return (
     <>
       <PageHeader
