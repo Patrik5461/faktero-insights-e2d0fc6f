@@ -13,13 +13,13 @@ import {
 } from "@/lib/faktero/stock.functions";
 import { useStockPermissions } from "@/hooks/useStockPermissions";
 import { ArrowLeft, Save, Upload, X } from "lucide-react";
+import { vatRateOptions } from "@/lib/faktero/vat-rates";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/upravit")({
   head: () => ({ meta: [{ title: "Upraviť skladovú kartu — Faktero" }] }),
   component: EditStockProduct,
 });
 
-const VAT_RATES = [23, 19, 13, 5, 0];
 const UNITS = ["ks", "bal", "kg", "g", "l", "ml", "m", "cm", "m²", "m³", "h", "deň"];
 
 function EditStockProduct() {
@@ -350,7 +350,7 @@ function EditStockProduct() {
                   onChange={(e) => set("vat_rate", Number(e.target.value))}
                   className="input"
                 >
-                  {VAT_RATES.map((r) => (
+                  {vatRateOptions(form.vat_rate).map((r) => (
                     <option key={r} value={r}>
                       {r}%
                     </option>

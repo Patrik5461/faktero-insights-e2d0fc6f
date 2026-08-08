@@ -21,6 +21,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
+import {
+  najblizsiaSadzba,
+  vatBucketKey,
+  vatBucketLabel,
+  vatBucketOrder,
+} from "@/lib/faktero/vat-rates";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/dph")({
   head: () => ({
@@ -51,15 +57,6 @@ const MONTHS = [
   "November",
   "December",
 ];
-const RATE_LABELS: Record<string, string> = {
-  "23": "23% (základná)",
-  "13": "13% (znížená)",
-  "5": "5% (znížená)",
-  "0": "0% (nulová)",
-  exempt: "Oslobodené",
-  pdp: "PDP (reverse charge)",
-};
-const RATE_ORDER = ["23", "13", "5", "0", "exempt", "pdp"];
 
 function periodBounds(
   year: number,
@@ -94,10 +91,33 @@ function fmt(n: number, currency = "EUR") {
 }
 
 type Bucket = { base: number; vat: number; count: number; docs: Set<string> };
+
+/**
+ * Riadky prehľadu nie sú pevný zoznam — vznikajú z toho, čo je v dátach. Vďaka
+ * tomu sa objaví aj riadok pre historickú sadzbu (20 % / 10 %) na opravnom
+ * doklade k plneniu spred 2025, namiesto toho, aby taká suma spadla medzi
+ * oslobodené plnenia.
+ */
 function emptyBuckets(): Record<string, Bucket> {
   const b: Record<string, Bucket> = {};
-  for (const r of RATE_ORDER) b[r] = { base: 0, vat: 0, count: 0, docs: new Set() };
+  for (const r of ["exempt", "pdp"]) b[r] = { base: 0, vat: 0, count: 0, docs: new Set() };
   return b;
+}
+
+function bucket(b: Record<string, Bucket>, key: string): Bucket {
+  b[key] ??= { base: 0, vat: 0, count: 0, docs: new Set() };
+  return b[key];
+}
+
+const PRAZDNY_RIADOK: Bucket = { base: 0, vat: 0, count: 0, docs: new Set() };
+
+/** Riadok pre zobrazenie — sadzba sa môže vyskytnúť len na vstupe alebo len na výstupe. */
+function riadok(b: Record<string, Bucket>, key: string): Bucket {
+  return b[key] ?? PRAZDNY_RIADOK;
+}
+
+function sucet(b: Record<string, Bucket>, pole: "base" | "vat"): number {
+  return Object.values(b).reduce((s, r) => s + r[pole], 0);
 }
 
 function DphPage() {
@@ -168,18 +188,13 @@ function DphPage() {
     for (const it of items) {
       const inv = invById.get(it.invoice_id);
       if (!inv) continue;
-      let key: string;
-      if (inv.reverse_charge) key = "pdp";
-      else if (Number(it.vat_rate) === 23) key = "23";
-      else if (Number(it.vat_rate) === 13) key = "13";
-      else if (Number(it.vat_rate) === 5) key = "5";
-      else if (Number(it.vat_rate) === 0) key = "0";
-      else key = "exempt";
-      b[key].base += Number(it.subtotal || 0);
-      b[key].vat += Number(it.vat_amount || 0);
-      b[key].docs.add(it.invoice_id);
+      const key = inv.reverse_charge ? "pdp" : vatBucketKey(it.vat_rate);
+      const riadok = bucket(b, key);
+      riadok.base += Number(it.subtotal || 0);
+      riadok.vat += Number(it.vat_amount || 0);
+      riadok.docs.add(it.invoice_id);
     }
-    for (const r of RATE_ORDER) b[r].count = b[r].docs.size;
+    for (const r of Object.keys(b)) b[r].count = b[r].docs.size;
     return b;
   }, [invoices, items]);
 
@@ -188,29 +203,36 @@ function DphPage() {
     for (const p of purchases) {
       const base = Number(p.amount_without_vat || 0);
       const vat = Number(p.vat_amount || 0);
+      // Prijaté faktúry nemajú sadzbu uloženú, dopočíta sa z pomeru dane
+      // k základu. Zaokrúhlenie na centy vie dať napr. 22,97 % namiesto 23 %,
+      // preto sa hodnota prilepí k najbližšej platnej sadzbe (do 0,5 p. b.).
       let key = "exempt";
       if (base > 0 && vat > 0) {
-        const rate = Math.round((vat / base) * 100);
-        if (rate === 23) key = "23";
-        else if (rate === 13) key = "13";
-        else if (rate === 5) key = "5";
-        else if (rate === 0) key = "0";
-        else key = "exempt";
+        key = vatBucketKey(najblizsiaSadzba((vat / base) * 100));
       } else if (vat === 0 && base > 0) {
         key = "0";
       }
-      b[key].base += base;
-      b[key].vat += vat;
-      b[key].docs.add(p.id);
+      const riadok = bucket(b, key);
+      riadok.base += base;
+      riadok.vat += vat;
+      riadok.docs.add(p.id);
     }
-    for (const r of RATE_ORDER) b[r].count = b[r].docs.size;
+    for (const r of Object.keys(b)) b[r].count = b[r].docs.size;
     return b;
   }, [purchases]);
 
-  const totalOutputBase = RATE_ORDER.reduce((s, r) => s + output[r].base, 0);
-  const totalOutputVat = RATE_ORDER.reduce((s, r) => s + output[r].vat, 0);
-  const totalInputBase = RATE_ORDER.reduce((s, r) => s + input[r].base, 0);
-  const totalInputVat = RATE_ORDER.reduce((s, r) => s + input[r].vat, 0);
+  // Spoločné poradie riadkov pre obe tabuľky, nech sa dajú porovnávať vedľa seba.
+  const rateOrder = useMemo(
+    () => vatBucketOrder([...Object.keys(output), ...Object.keys(input)]),
+    [output, input],
+  );
+
+  // Súčty idú cez všetky vedierka, nie cez poradie zobrazenia — inak by sadzba,
+  // na ktorú sa zabudlo, tíško vypadla zo súčtu a priznanie by nesedelo.
+  const totalOutputBase = sucet(output, "base");
+  const totalOutputVat = sucet(output, "vat");
+  const totalInputBase = sucet(input, "base");
+  const totalInputVat = sucet(input, "vat");
   const rozdiel = totalOutputVat - totalInputVat;
 
   function exportCsv() {
@@ -220,19 +242,17 @@ function DphPage() {
     lines.push("");
     lines.push("DPH NA VÝSTUPE (vystavené faktúry)");
     lines.push("Sadzba;Základ dane;DPH;Počet faktúr");
-    for (const r of RATE_ORDER) {
-      lines.push(
-        `${RATE_LABELS[r]};${output[r].base.toFixed(2)};${output[r].vat.toFixed(2)};${output[r].count}`,
-      );
+    for (const r of rateOrder) {
+      const v = riadok(output, r);
+      lines.push(`${vatBucketLabel(r)};${v.base.toFixed(2)};${v.vat.toFixed(2)};${v.count}`);
     }
     lines.push(`SPOLU;${totalOutputBase.toFixed(2)};${totalOutputVat.toFixed(2)};`);
     lines.push("");
     lines.push("DPH NA VSTUPE (prijaté faktúry)");
     lines.push("Sadzba;Základ dane;DPH;Počet faktúr");
-    for (const r of RATE_ORDER) {
-      lines.push(
-        `${RATE_LABELS[r]};${input[r].base.toFixed(2)};${input[r].vat.toFixed(2)};${input[r].count}`,
-      );
+    for (const r of rateOrder) {
+      const v = riadok(input, r);
+      lines.push(`${vatBucketLabel(r)};${v.base.toFixed(2)};${v.vat.toFixed(2)};${v.count}`);
     }
     lines.push(`SPOLU;${totalInputBase.toFixed(2)};${totalInputVat.toFixed(2)};`);
     lines.push("");
@@ -277,11 +297,11 @@ function DphPage() {
 <div class="note"><b>Upozornenie:</b> Toto je informatívny prehľad. Pre podanie DPH priznania použite certifikovaný účtovný softvér alebo kontaktujte účtovníka.</div>
 <h2>DPH na výstupe (vystavené faktúry)</h2>
 <table><thead><tr><th>Sadzba DPH</th><th style="text-align:right">Základ dane</th><th style="text-align:right">Suma DPH</th><th style="text-align:right">Počet faktúr</th></tr></thead>
-<tbody>${RATE_ORDER.map((r) => row(RATE_LABELS[r], output[r])).join("")}
+<tbody>${rateOrder.map((r) => row(vatBucketLabel(r), riadok(output, r))).join("")}
 <tr class="tot"><td>SPOLU</td><td style="text-align:right">${fmt(totalOutputBase)}</td><td style="text-align:right">${fmt(totalOutputVat)}</td><td></td></tr></tbody></table>
 <h2>DPH na vstupe (prijaté faktúry)</h2>
 <table><thead><tr><th>Sadzba DPH</th><th style="text-align:right">Základ dane</th><th style="text-align:right">Suma DPH</th><th style="text-align:right">Počet faktúr</th></tr></thead>
-<tbody>${RATE_ORDER.map((r) => row(RATE_LABELS[r], input[r])).join("")}
+<tbody>${rateOrder.map((r) => row(vatBucketLabel(r), riadok(input, r))).join("")}
 <tr class="tot"><td>SPOLU</td><td style="text-align:right">${fmt(totalInputBase)}</td><td style="text-align:right">${fmt(totalInputVat)}</td><td></td></tr></tbody></table>
 <h2>Rozdiel (odvod / nadmerný odpočet)</h2>
 <table><tr class="tot"><td>${rozdiel >= 0 ? "Odvod DPH" : "Nadmerný odpočet"}</td><td style="text-align:right">${fmt(Math.abs(rozdiel))}</td></tr></table>
@@ -405,12 +425,12 @@ function DphPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {RATE_ORDER.map((r) => (
+                  {rateOrder.map((r) => (
                     <TableRow key={r}>
-                      <TableCell>{RATE_LABELS[r]}</TableCell>
-                      <TableCell className="text-right">{fmt(output[r].base)}</TableCell>
-                      <TableCell className="text-right">{fmt(output[r].vat)}</TableCell>
-                      <TableCell className="text-right">{output[r].count}</TableCell>
+                      <TableCell>{vatBucketLabel(r)}</TableCell>
+                      <TableCell className="text-right">{fmt(riadok(output, r).base)}</TableCell>
+                      <TableCell className="text-right">{fmt(riadok(output, r).vat)}</TableCell>
+                      <TableCell className="text-right">{riadok(output, r).count}</TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="font-bold bg-muted/40">
@@ -435,12 +455,12 @@ function DphPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {RATE_ORDER.map((r) => (
+                  {rateOrder.map((r) => (
                     <TableRow key={r}>
-                      <TableCell>{RATE_LABELS[r]}</TableCell>
-                      <TableCell className="text-right">{fmt(input[r].base)}</TableCell>
-                      <TableCell className="text-right">{fmt(input[r].vat)}</TableCell>
-                      <TableCell className="text-right">{input[r].count}</TableCell>
+                      <TableCell>{vatBucketLabel(r)}</TableCell>
+                      <TableCell className="text-right">{fmt(riadok(input, r).base)}</TableCell>
+                      <TableCell className="text-right">{fmt(riadok(input, r).vat)}</TableCell>
+                      <TableCell className="text-right">{riadok(input, r).count}</TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="font-bold bg-muted/40">
