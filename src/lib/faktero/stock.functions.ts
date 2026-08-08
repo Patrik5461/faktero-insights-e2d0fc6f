@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { navrhniObjednavky } from "./stock-doobjednanie";
+import { objednaneNaCeste } from "./objednavky-dodavatel";
 
 const CompanyScoped = z.object({ company_id: z.string().uuid() });
 
@@ -911,6 +912,33 @@ export const getLowStockReport = createServerFn({ method: "POST" })
       ),
     );
 
+    // Tovar objednaný u dodávateľa a ešte neprijatý. Bez neho by návrh pýtal
+    // znovu to, čo je už na ceste.
+    const { data: otvoreneObjednavky } = await supabase
+      .from("purchase_orders")
+      .select("id, status")
+      .eq("company_id", data.company_id)
+      .in("status", ["sent", "partially_received"]);
+    let naCeste = new Map<string, number>();
+    if (otvoreneObjednavky?.length) {
+      const { data: poItems } = await supabase
+        .from("purchase_order_items")
+        .select("stock_item_id, quantity, received_quantity, purchase_order_id")
+        .in(
+          "purchase_order_id",
+          otvoreneObjednavky.map((o) => o.id),
+        );
+      const stavPodlaId = new Map(otvoreneObjednavky.map((o) => [o.id, o.status] as const));
+      naCeste = objednaneNaCeste(
+        (poItems ?? []).map((it) => ({
+          stock_item_id: it.stock_item_id,
+          quantity: Number(it.quantity ?? 0),
+          received_quantity: Number(it.received_quantity ?? 0),
+          stav: (stavPodlaId.get(it.purchase_order_id) ?? "sent") as any,
+        })),
+      );
+    }
+
     const navrhy = navrhniObjednavky(
       (items ?? []).map((it) => ({
         stock_item_id: it.id,
@@ -919,6 +947,7 @@ export const getLowStockReport = createServerFn({ method: "POST" })
         unit: it.unit,
         on_hand: totalByItem.get(it.id) ?? 0,
         reserved: rezervovaneByItem.get(it.id) ?? 0,
+        incoming: naCeste.get(it.id) ?? 0,
         min_stock: Number(it.min_stock ?? 0),
         optimal_stock: Number(it.optimal_stock ?? 0),
       })),
@@ -933,6 +962,7 @@ export const getLowStockReport = createServerFn({ method: "POST" })
       name: n.nazov,
       current: n.on_hand,
       reserved: n.reserved,
+      incoming: n.incoming,
       available: n.available,
       min: n.min_stock,
       optimal: n.optimal_stock,

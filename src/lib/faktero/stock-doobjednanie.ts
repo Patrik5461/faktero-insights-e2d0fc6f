@@ -7,13 +7,10 @@
  * zásoba je hneď po dodávke znovu na hranici a hlási sa ako nedostatková —
  * objednáva sa tak neustále po malých dávkach.
  *
- * Do výpočtu vstupuje **disponibilné** množstvo, teda stav znížený o rezervácie.
- * Fyzicky plný sklad, ktorého obsah je celý rezervovaný, treba objednať rovnako
- * ako prázdny.
- *
- * Pohoda počíta aj s množstvom už objednaným u dodávateľa. Faktero objednávky
- * u dodávateľov zatiaľ nevedie, takže tá časť tu chýba — keď pribudnú, stačí
- * ich odpočítať od potrebného množstva na jednom mieste nižšie.
+ * Do výpočtu vstupuje **disponibilné** množstvo: stav znížený o rezervácie a
+ * zvýšený o to, čo je už objednané u dodávateľa a ešte neprišlo. Fyzicky plný
+ * sklad, ktorého obsah je celý rezervovaný, treba objednať rovnako ako prázdny;
+ * naopak prázdny sklad s odoslanou objednávkou objednávať netreba.
  */
 
 export type ZasobaNaDoobjednanie = {
@@ -23,12 +20,14 @@ export type ZasobaNaDoobjednanie = {
   unit: string | null;
   on_hand: number;
   reserved: number;
+  /** Objednané u dodávateľa a ešte neprijaté. */
+  incoming: number;
   min_stock: number;
   optimal_stock: number;
 };
 
 export type NavrhObjednavky = ZasobaNaDoobjednanie & {
-  /** Stav znížený o rezervácie. */
+  /** Stav znížený o rezervácie a zvýšený o objednané. */
   available: number;
   /** Koľko treba objednať, aby sa dosiahol cieľový stav. */
   objednat: number;
@@ -53,7 +52,7 @@ export function cielovyStav(minStock: unknown, optimalStock: unknown): number {
 }
 
 export function navrhniObjednavku(z: ZasobaNaDoobjednanie): NavrhObjednavky | null {
-  const available = cislo(z.on_hand) - cislo(z.reserved);
+  const available = cislo(z.on_hand) - cislo(z.reserved) + cislo(z.incoming);
   const min = Math.max(0, cislo(z.min_stock));
   const ciel = cielovyStav(z.min_stock, z.optimal_stock);
 

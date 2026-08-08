@@ -9,7 +9,7 @@ import { ReservationsPanel } from "@/components/faktero/ReservationsPanel";
 import { ArrowLeft, Download, FileText, Package, Pencil, Warehouse, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/sklad/produkty/$id")({
+export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/")({
   head: () => ({ meta: [{ title: "Skladová karta — Faktero" }] }),
   component: ProductStockDetail,
 });

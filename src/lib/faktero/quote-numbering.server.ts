@@ -1,22 +1,18 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { dalsieCisloDokladu } from "./cislovanie";
 
 export async function nextQuoteNumber(company_id: string): Promise<string> {
-  const year = new Date().getFullYear();
-  const prefix = `Q${year}`;
+  const prefix = `Q${new Date().getFullYear()}`;
   const { data: rows } = await supabaseAdmin
     .from("quotes")
     .select("quote_number")
     .eq("company_id", company_id)
     .like("quote_number", `${prefix}%`)
-    .order("quote_number", { ascending: false })
-    .limit(1);
-
-  let next = 1;
-  if (rows && rows[0]) {
-    const m = String(rows[0].quote_number).match(/(\d+)$/);
-    if (m) next = parseInt(m[1], 10) + 1;
-  }
-  return `${prefix}${String(next).padStart(4, "0")}`;
+    .limit(5000);
+  return dalsieCisloDokladu(
+    prefix,
+    (rows ?? []).map((r) => r.quote_number),
+  );
 }
 
 export function computeQuoteTotals(

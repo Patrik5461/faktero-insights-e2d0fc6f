@@ -31,7 +31,17 @@ function LowStockPage() {
     <>
       <PageHeader
         title="Pod minimálnym stavom"
-        description="Produkty, ktoré dosiahli alebo klesli pod minimum. Stĺpec Objednať dopĺňa zásobu na optimum; rezervovaný tovar sa počíta ako chýbajúci."
+        description="Stĺpec Objednať dopĺňa zásobu na optimum. Rezervovaný tovar sa počíta ako chýbajúci, tovar objednaný u dodávateľa naopak ako už zabezpečený."
+        action={
+          rows.length > 0 ? (
+            <Link
+              to="/sklad/objednavky/nova"
+              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> Objednať u dodávateľa
+            </Link>
+          ) : undefined
+        }
       />
       <PageBody>
         {loading ? (
@@ -49,6 +59,7 @@ function LowStockPage() {
                   <th className="p-3">SKU</th>
                   <th className="p-3 text-right">Stav</th>
                   <th className="p-3 text-right">Rezervované</th>
+                  <th className="p-3 text-right">Na ceste</th>
                   <th className="p-3 text-right">Minimum</th>
                   <th className="p-3 text-right">Optimum</th>
                   <th className="p-3 text-right">Objednať</th>
@@ -79,6 +90,9 @@ function LowStockPage() {
                     </td>
                     <td className="p-3 text-right tabular-nums text-muted-foreground">
                       {r.reserved > 0 ? r.reserved.toFixed(2) : "—"}
+                    </td>
+                    <td className="p-3 text-right tabular-nums text-muted-foreground">
+                      {r.incoming > 0 ? r.incoming.toFixed(2) : "—"}
                     </td>
                     <td className="p-3 text-right tabular-nums">{r.min.toFixed(2)}</td>
                     <td className="p-3 text-right tabular-nums text-muted-foreground">

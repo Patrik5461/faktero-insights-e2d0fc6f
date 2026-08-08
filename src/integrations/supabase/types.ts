@@ -3207,6 +3207,135 @@ export type Database = {
           },
         ]
       }
+      purchase_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          purchase_order_id: string
+          quantity: number
+          received_quantity: number
+          stock_item_id: string | null
+          unit: string | null
+          unit_price: number
+          vat_rate: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          purchase_order_id: string
+          quantity: number
+          received_quantity?: number
+          stock_item_id?: string | null
+          unit?: string | null
+          unit_price?: number
+          vat_rate?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          purchase_order_id?: string
+          quantity?: number
+          received_quantity?: number
+          stock_item_id?: string | null
+          unit?: string | null
+          unit_price?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          expected_date: string | null
+          id: string
+          note: string | null
+          order_date: string
+          order_number: string
+          received_at: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["purchase_order_status"]
+          supplier_id: string | null
+          supplier_name: string | null
+          updated_at: string
+          warehouse_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          expected_date?: string | null
+          id?: string
+          note?: string | null
+          order_date?: string
+          order_number: string
+          received_at?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["purchase_order_status"]
+          supplier_id?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+          warehouse_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          expected_date?: string | null
+          id?: string
+          note?: string | null
+          order_date?: string
+          order_number?: string
+          received_at?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["purchase_order_status"]
+          supplier_id?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quote_email_logs: {
         Row: {
           company_id: string
@@ -5129,6 +5258,12 @@ export type Database = {
         | "rejected"
         | "archived"
       inventory_count_status: "open" | "completed" | "cancelled"
+      purchase_order_status:
+        | "draft"
+        | "sent"
+        | "partially_received"
+        | "received"
+        | "cancelled"
       invoice_status:
         | "draft"
         | "issued"
@@ -5315,6 +5450,13 @@ export const Constants = {
         "archived",
       ],
       inventory_count_status: ["open", "completed", "cancelled"],
+      purchase_order_status: [
+        "draft",
+        "sent",
+        "partially_received",
+        "received",
+        "cancelled",
+      ],
       invoice_status: [
         "draft",
         "issued",

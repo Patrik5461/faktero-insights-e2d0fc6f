@@ -23,7 +23,7 @@ import {
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
 import { StockSettingsDialog } from "@/components/faktero/StockSettingsDialog";
 
-export const Route = createFileRoute("/_authenticated/sklad/produkty")({
+export const Route = createFileRoute("/_authenticated/sklad/produkty/")({
   head: () => ({ meta: [{ title: "Skladové položky — Faktero" }] }),
   validateSearch: (s: Record<string, unknown>): { filter?: "low_stock" } => ({
     filter: s.filter === "low_stock" ? ("low_stock" as const) : undefined,

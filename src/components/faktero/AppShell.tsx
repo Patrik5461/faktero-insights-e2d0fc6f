@@ -126,6 +126,8 @@ const NAV: NavGroup[] = [
       { to: "/sklad/produkty", label: "Skladové položky" },
       { to: "/sklad/kategorie", label: "Kategórie" },
       { to: "/sklad/pohyby", label: "Pohyby" },
+      { to: "/sklad/objednavky", label: "Objednávky u dodávateľov" },
+      { to: "/sklad/minimum", label: "Pod minimom" },
       { to: "/sklad/inventura", label: "Inventúra" },
     ],
   },

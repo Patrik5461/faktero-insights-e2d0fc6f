@@ -53,7 +53,7 @@ import { paymentMethodLabel } from "@/lib/faktero/payment-method";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 import { sendReminderFn, previewReminderFn } from "@/lib/faktero/reminders.functions";
 
-export const Route = createFileRoute("/_authenticated/faktury/$id")({
+export const Route = createFileRoute("/_authenticated/faktury/$id/")({
   head: () => ({ meta: [{ title: "Detail faktúry — Faktero" }] }),
   component: InvoiceDetail,
 });

@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { ArrowRightLeft, Plus } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/sklad/presuny")({
+export const Route = createFileRoute("/_authenticated/sklad/presuny/")({
   head: () => ({ meta: [{ title: "Presuny — Faktero" }] }),
   component: TransfersListPage,
 });

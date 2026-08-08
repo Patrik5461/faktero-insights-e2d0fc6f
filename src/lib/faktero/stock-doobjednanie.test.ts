@@ -8,6 +8,7 @@ const ZAKLAD = {
   unit: "ks",
   on_hand: 0,
   reserved: 0,
+  incoming: 0,
   min_stock: 10,
   optimal_stock: 40,
 };
@@ -66,6 +67,18 @@ describe("navrhniObjednavku", () => {
   it("plný sklad, ktorý je celý rezervovaný, treba objednať ako prázdny", () => {
     const n = navrhniObjednavku({ ...ZAKLAD, on_hand: 100, reserved: 100 })!;
     expect(n.objednat).toBe(40);
+  });
+
+  // Toto je dôvod, prečo objednávky u dodávateľov vôbec pribudli: bez nich
+  // návrh opakovane pýtal tovar, ktorý už bol na ceste.
+  it("tovar objednaný u dodávateľa sa neobjednáva druhýkrát", () => {
+    expect(navrhniObjednavku({ ...ZAKLAD, on_hand: 2, incoming: 40 })).toBeNull();
+  });
+
+  it("čiastočne pokrytá objednávka doobjedná len zvyšok", () => {
+    const n = navrhniObjednavku({ ...ZAKLAD, on_hand: 2, incoming: 5 })!;
+    expect(n.available).toBe(7);
+    expect(n.objednat).toBe(33);
   });
 
   it("bez nastavenej hranice sa zásoba nehlási vôbec", () => {
