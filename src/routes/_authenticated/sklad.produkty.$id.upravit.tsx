@@ -53,6 +53,7 @@ function EditStockProduct() {
     sale_price: 0,
     purchase_price: 0,
     min_stock: 0,
+    optimal_stock: 0,
     track_stock: true,
     category_id: "" as string,
     supplier_id: "" as string,
@@ -91,6 +92,7 @@ function EditStockProduct() {
           sale_price: Number(si?.sale_price ?? p?.unit_price ?? 0),
           purchase_price: Number(si?.purchase_price ?? 0),
           min_stock: Number(si?.min_stock ?? 0),
+          optimal_stock: Number(si?.optimal_stock ?? 0),
           track_stock: si?.track_stock ?? true,
           category_id: si?.category_id ?? "",
           supplier_id: si?.supplier_id ?? "",
@@ -440,6 +442,22 @@ function EditStockProduct() {
                   onChange={(e) => set("min_stock", Number(e.target.value))}
                   className="input"
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Pod touto hranicou sa zásoba hlási ako nedostatková.
+                </p>
+              </Field>
+              <Field label="Optimálna zásoba">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.optimal_stock}
+                  onChange={(e) => set("optimal_stock", Number(e.target.value))}
+                  className="input"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Stav, na ktorý sa doobjednáva. Keď je 0, dopĺňa sa len po minimum.
+                </p>
               </Field>
               <Field label="Lokácia (regál/pozícia)">
                 <input

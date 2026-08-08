@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { navrhniObjednavky } from "./stock-doobjednanie";
 
 const CompanyScoped = z.object({ company_id: z.string().uuid() });
 
@@ -107,6 +108,7 @@ const CreateStockProductInput = z.object({
   vat_rate: z.coerce.number().min(0).max(100).default(23),
   track_stock: z.boolean().default(true),
   min_stock: z.coerce.number().nonnegative().default(0),
+  optimal_stock: z.coerce.number().nonnegative().default(0),
   initial_quantity: z.coerce.number().nonnegative().default(0),
   warehouse_id: z.string().uuid().optional().nullable(),
 });
@@ -171,6 +173,7 @@ export const createStockProductDebug = createServerFn({ method: "POST" })
         unit: data.unit || "ks",
         track_stock: data.track_stock,
         min_stock: data.min_stock,
+        optimal_stock: data.optimal_stock,
       })
       .select("id, product_id, sku")
       .single();
@@ -352,7 +355,9 @@ export const getStockDashboard = createServerFn({ method: "POST" })
     const [{ data: items }, { data: levels }, { data: movements }] = await Promise.all([
       supabase
         .from("stock_items")
-        .select("id, sku, min_stock, track_stock, sale_price, purchase_price")
+        .select(
+          "id, sku, min_stock, optimal_stock, track_stock, sale_price, purchase_price, avg_purchase_price",
+        )
         .eq("company_id", data.company_id),
       supabase
         .from("stock_levels")
@@ -369,8 +374,14 @@ export const getStockDashboard = createServerFn({ method: "POST" })
     (levels ?? []).forEach((l) =>
       levelMap.set(l.stock_item_id, (levelMap.get(l.stock_item_id) ?? 0) + Number(l.quantity)),
     );
+    // Sklad sa oceňuje priemernou obstarávacou cenou, nie poslednou nákupnou —
+    // posledná cena hovorí o jednej dodávke, nie o tom, čo na sklade leží.
+    // Pri zásobe, ktorá ešte nemá vypočítaný priemer, sa použije nákupná cena.
     const totalValue = (items ?? []).reduce(
-      (sum, it) => sum + (levelMap.get(it.id) ?? 0) * Number(it.purchase_price ?? 0),
+      (sum, it) =>
+        sum +
+        (levelMap.get(it.id) ?? 0) *
+          (Number(it.avg_purchase_price ?? 0) || Number(it.purchase_price ?? 0)),
       0,
     );
     const belowMin = (items ?? []).filter(
@@ -412,25 +423,48 @@ export const completeInventory = createServerFn({ method: "POST" })
       .from("inventory_count_items")
       .select("*")
       .eq("inventory_count_id", data.inventory_count_id);
+
+    // Rozdiel sa oceňuje váženou nákupnou cenou zásoby (tak to robí Pohoda).
+    // Bez ocenenia by manko malo nulovú hodnotu a z inventúry by sa nedalo
+    // zistiť, o koľko peňazí firma prišla.
+    const ids = [...new Set((items ?? []).map((it) => it.stock_item_id))];
+    const cenaZasoby = new Map<string, number>();
+    if (ids.length) {
+      const { data: zasoby } = await supabase
+        .from("stock_items")
+        .select("id, avg_purchase_price, purchase_price")
+        .in("id", ids);
+      (zasoby ?? []).forEach((z) =>
+        cenaZasoby.set(z.id, Number(z.avg_purchase_price ?? 0) || Number(z.purchase_price ?? 0)),
+      );
+    }
+
     let adjustments = 0;
+    let hodnotaManka = 0;
+    let hodnotaPrebytku = 0;
     for (const it of items ?? []) {
       if (it.counted_quantity == null) continue;
       const diff = Number(it.counted_quantity) - Number(it.expected_quantity);
       if (Math.abs(diff) < 1e-9) continue;
+      const cena = cenaZasoby.get(it.stock_item_id) ?? 0;
+      const hodnota = diff * cena;
       await supabase.from("stock_movements").insert({
         company_id: data.company_id,
         warehouse_id: count.warehouse_id,
         stock_item_id: it.stock_item_id,
         type: "inventura",
         quantity: diff,
-        unit_price: 0,
-        total_value: 0,
+        unit_price: cena,
+        unit_cost: cena,
+        total_value: hodnota,
         reference_type: "inventory_count",
         reference_id: count.id,
-        note: `Inventúra ${count.id.slice(0, 8)}`,
+        note: `Inventúra ${count.id.slice(0, 8)} — ${diff > 0 ? "prebytok" : "manko"}`,
         created_by: userId,
       });
       await supabase.from("inventory_count_items").update({ difference: diff }).eq("id", it.id);
+      if (diff > 0) hodnotaPrebytku += hodnota;
+      else hodnotaManka += Math.abs(hodnota);
       adjustments++;
     }
     await supabase
@@ -443,9 +477,16 @@ export const completeInventory = createServerFn({ method: "POST" })
       action: "inventory_complete",
       entity_type: "inventory_count",
       entity_id: count.id,
-      metadata: { adjustments },
+      metadata: { adjustments, manko: hodnotaManka, prebytok: hodnotaPrebytku },
     });
-    return { ok: true, adjustments };
+    // Pohoda oddeľuje prebytky a manká do dvoch dokladov; tu ostáva jeden pohyb
+    // na položku, ale hodnoty sa vracajú oddelene, nech je vidieť oboje.
+    return {
+      ok: true,
+      adjustments,
+      manko: Math.round(hodnotaManka * 100) / 100,
+      prebytok: Math.round(hodnotaPrebytku * 100) / 100,
+    };
   });
 
 // Start an inventory: create the count + snapshot expected quantities
@@ -839,12 +880,12 @@ export const getLowStockReport = createServerFn({ method: "POST" })
       await Promise.all([
         supabase
           .from("stock_items")
-          .select("id, sku, product_id, min_stock, track_stock, unit")
+          .select("id, sku, product_id, min_stock, optimal_stock, track_stock, unit")
           .eq("company_id", data.company_id)
           .eq("track_stock", true),
         supabase
           .from("stock_levels")
-          .select("warehouse_id, stock_item_id, quantity")
+          .select("warehouse_id, stock_item_id, quantity, reserved_quantity")
           .eq("company_id", data.company_id),
         supabase.from("warehouses").select("id, name").eq("company_id", data.company_id),
         supabase
@@ -862,30 +903,52 @@ export const getLowStockReport = createServerFn({ method: "POST" })
         (totalByItem.get(l.stock_item_id) ?? 0) + Number(l.quantity),
       ),
     );
-    const rows: any[] = [];
-    for (const it of items ?? []) {
-      const totalQty = totalByItem.get(it.id) ?? 0;
-      if (totalQty <= Number(it.min_stock ?? 0)) {
-        rows.push({
-          stock_item_id: it.id,
-          product_id: it.product_id,
-          sku: it.sku,
-          unit: it.unit,
-          name: (it.product_id ? productMap.get(it.product_id)?.name : null) ?? it.sku ?? "—",
-          current: totalQty,
-          min: Number(it.min_stock ?? 0),
-          shortage: Math.max(0, Number(it.min_stock ?? 0) - totalQty),
-          per_warehouse: (levels ?? [])
-            .filter((l) => l.stock_item_id === it.id)
-            .map((l) => ({
-              warehouse_id: l.warehouse_id,
-              warehouse_name: whMap.get(l.warehouse_id)?.name ?? "—",
-              quantity: Number(l.quantity),
-            })),
-        });
-      }
-    }
-    return { rows: rows.sort((a, b) => b.shortage - a.shortage) };
+    const rezervovaneByItem = new Map<string, number>();
+    (levels ?? []).forEach((l) =>
+      rezervovaneByItem.set(
+        l.stock_item_id,
+        (rezervovaneByItem.get(l.stock_item_id) ?? 0) + Number(l.reserved_quantity ?? 0),
+      ),
+    );
+
+    const navrhy = navrhniObjednavky(
+      (items ?? []).map((it) => ({
+        stock_item_id: it.id,
+        sku: it.sku,
+        nazov: (it.product_id ? productMap.get(it.product_id)?.name : null) ?? it.sku ?? "—",
+        unit: it.unit,
+        on_hand: totalByItem.get(it.id) ?? 0,
+        reserved: rezervovaneByItem.get(it.id) ?? 0,
+        min_stock: Number(it.min_stock ?? 0),
+        optimal_stock: Number(it.optimal_stock ?? 0),
+      })),
+    );
+
+    const productById = new Map((items ?? []).map((it) => [it.id, it.product_id] as const));
+    const rows = navrhy.map((n) => ({
+      stock_item_id: n.stock_item_id,
+      product_id: productById.get(n.stock_item_id) ?? null,
+      sku: n.sku,
+      unit: n.unit,
+      name: n.nazov,
+      current: n.on_hand,
+      reserved: n.reserved,
+      available: n.available,
+      min: n.min_stock,
+      optimal: n.optimal_stock,
+      target: n.cielovy_stav,
+      /** Koľko objednať, aby zásoba dosiahla cieľový stav. */
+      order_qty: n.objednat,
+      shortage: Math.max(0, n.min_stock - n.available),
+      per_warehouse: (levels ?? [])
+        .filter((l) => l.stock_item_id === n.stock_item_id)
+        .map((l) => ({
+          warehouse_id: l.warehouse_id,
+          warehouse_name: whMap.get(l.warehouse_id)?.name ?? "—",
+          quantity: Number(l.quantity),
+        })),
+    }));
+    return { rows };
   });
 
 const ImportRow = z.object({
@@ -1216,6 +1279,7 @@ const UpdateStockProductInput = z.object({
   sale_price: z.coerce.number().nonnegative().default(0),
   purchase_price: z.coerce.number().nonnegative().default(0),
   min_stock: z.coerce.number().nonnegative().default(0),
+  optimal_stock: z.coerce.number().nonnegative().default(0),
   track_stock: z.boolean().default(true),
   category_id: z.string().uuid().nullable().optional(),
   supplier_id: z.string().uuid().nullable().optional(),
@@ -1261,6 +1325,7 @@ export const updateStockProduct = createServerFn({ method: "POST" })
       vat_rate: data.vat_rate,
       unit: data.unit,
       min_stock: data.min_stock,
+      optimal_stock: data.optimal_stock,
       track_stock: data.track_stock,
       category_id: data.category_id ?? null,
       supplier_id: data.supplier_id ?? null,

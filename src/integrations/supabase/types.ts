@@ -3797,6 +3797,7 @@ export type Database = {
           last_purchase_price: number | null
           location: string | null
           min_stock: number
+          optimal_stock: number
           name_en: string | null
           photo_url: string | null
           product_id: string | null
@@ -3821,6 +3822,7 @@ export type Database = {
           last_purchase_price?: number | null
           location?: string | null
           min_stock?: number
+          optimal_stock?: number
           name_en?: string | null
           photo_url?: string | null
           product_id?: string | null
@@ -3845,6 +3847,7 @@ export type Database = {
           last_purchase_price?: number | null
           location?: string | null
           min_stock?: number
+          optimal_stock?: number
           name_en?: string | null
           photo_url?: string | null
           product_id?: string | null

@@ -31,7 +31,7 @@ function LowStockPage() {
     <>
       <PageHeader
         title="Pod minimálnym stavom"
-        description="Produkty, ktoré dosiahli alebo klesli pod minimum."
+        description="Produkty, ktoré dosiahli alebo klesli pod minimum. Stĺpec Objednať dopĺňa zásobu na optimum; rezervovaný tovar sa počíta ako chýbajúci."
       />
       <PageBody>
         {loading ? (
@@ -48,8 +48,10 @@ function LowStockPage() {
                   <th className="p-3">Produkt</th>
                   <th className="p-3">SKU</th>
                   <th className="p-3 text-right">Stav</th>
+                  <th className="p-3 text-right">Rezervované</th>
                   <th className="p-3 text-right">Minimum</th>
-                  <th className="p-3 text-right">Chýba</th>
+                  <th className="p-3 text-right">Optimum</th>
+                  <th className="p-3 text-right">Objednať</th>
                   <th className="p-3">Sklady</th>
                   <th></th>
                 </tr>
@@ -75,9 +77,15 @@ function LowStockPage() {
                       <AlertTriangle className="mr-1 inline h-3 w-3" />
                       {r.current.toFixed(2)}
                     </td>
+                    <td className="p-3 text-right tabular-nums text-muted-foreground">
+                      {r.reserved > 0 ? r.reserved.toFixed(2) : "—"}
+                    </td>
                     <td className="p-3 text-right tabular-nums">{r.min.toFixed(2)}</td>
-                    <td className="p-3 text-right tabular-nums font-medium">
-                      {r.shortage.toFixed(2)}
+                    <td className="p-3 text-right tabular-nums text-muted-foreground">
+                      {r.optimal > 0 ? r.optimal.toFixed(2) : "—"}
+                    </td>
+                    <td className="p-3 text-right tabular-nums font-semibold">
+                      {r.order_qty.toFixed(2)} {r.unit ?? ""}
                     </td>
                     <td className="p-3 text-xs text-muted-foreground">
                       {r.per_warehouse
