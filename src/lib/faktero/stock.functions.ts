@@ -4,6 +4,22 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const CompanyScoped = z.object({ company_id: z.string().uuid() });
 
+/**
+ * Overí, že používateľ je členom firmy. Väčšina funkcií v tomto súbore siaha na
+ * dáta cez klienta viazaného na RLS, takže si členstvo vynúti databáza sama.
+ * Medzifiremný presun je výnimka — zápis na strane cieľovej firmy ide zámerne
+ * cez `supabaseAdmin`, čím RLS obchádza, takže členstvo treba overiť tu.
+ */
+async function assertMember(supabase: any, userId: string, companyId: string) {
+  const { data } = await supabase
+    .from("company_users")
+    .select("user_id")
+    .eq("company_id", companyId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!data) throw new Error("Do cieľovej firmy nemáte prístup.");
+}
+
 const MovementType = z.enum(["prijem", "vydaj", "oprava", "inventura", "faktura", "dobropis"]);
 
 function serializeDbError(error: any) {
@@ -1530,6 +1546,22 @@ export const createTransfer = createServerFn({ method: "POST" })
     if (data.target_company_id && data.target_company_id === data.company_id) {
       throw new Error("Cieľová firma sa nemôže rovnať zdrojovej.");
     }
+    // Rozbaľovačka v UI ponúka len firmy používateľa, ale server sa na to
+    // spoliehať nesmie — funkcia sa dá zavolať priamo s ľubovoľným UUID.
+    if (data.target_company_id) {
+      await assertMember(supabase, userId, data.target_company_id);
+    }
+    // Cieľový sklad musí patriť cieľovej firme. Bez tejto kontroly by sa dal
+    // príjem zaúčtovať do skladu úplne tretej firmy.
+    if (data.warehouse_to_id) {
+      const { data: wh } = await supabase
+        .from("warehouses")
+        .select("id")
+        .eq("id", data.warehouse_to_id)
+        .eq("company_id", data.target_company_id ?? data.company_id)
+        .maybeSingle();
+      if (!wh) throw new Error("Cieľový sklad nepatrí cieľovej firme.");
+    }
     const { data: transfer, error } = await supabase
       .from("stock_transfers")
       .insert({
@@ -1578,6 +1610,11 @@ export const completeTransfer = createServerFn({ method: "POST" })
     const targetCompanyId = transfer.target_company_id ?? transfer.company_id;
     const targetWarehouseId = transfer.warehouse_to_id;
     if (!targetWarehouseId) throw new Error("Chýba cieľový sklad.");
+    // Znovu, nielen pri vytváraní: presun je uložený a dokončiť ho môže niekto
+    // iný alebo neskôr, keď už členstvo v cieľovej firme nemusí platiť.
+    if (targetCompanyId !== transfer.company_id) {
+      await assertMember(supabase, userId, targetCompanyId);
+    }
 
     // Load source items
     const sourceIds = items.map((i: any) => i.source_stock_item_id);

@@ -36,10 +36,45 @@ PRAVIDLÁ:
 - Pri otázkach o cenách smeruj na /cennik.
 - Pri záujme o vyskúšanie smeruj na /registracia.`;
 
+/**
+ * Jednoduchý strop na IP. Endpoint je zámerne verejný (chat na marketingovom
+ * webe), takže bez neho vie ktokoľvek volať platený model donekonečna a míňať
+ * cudzie kredity. Appka beží ako jeden proces pod pm2, takže pamäť stačí —
+ * pri viacerých inštanciách to bude treba presunúť do databázy.
+ */
+const OKNO_MS = 60_000;
+const MAX_ZA_OKNO = 8;
+const historia = new Map<string, number[]>();
+
+function prekrocenyLimit(ip: string): boolean {
+  const teraz = Date.now();
+  const nedavne = (historia.get(ip) ?? []).filter((t) => teraz - t < OKNO_MS);
+  nedavne.push(teraz);
+  historia.set(ip, nedavne);
+  // Mapa by inak rástla donekonečna — staré IP adresy priebežne vyhadzujeme.
+  if (historia.size > 5000) {
+    for (const [k, v] of historia) {
+      if (v.every((t) => teraz - t >= OKNO_MS)) historia.delete(k);
+    }
+  }
+  return nedavne.length > MAX_ZA_OKNO;
+}
+
 export const Route = createFileRoute("/api/public/support-chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const ip =
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          request.headers.get("x-real-ip") ||
+          "neznama";
+        if (prekrocenyLimit(ip)) {
+          return new Response(JSON.stringify({ error: "rate_limited" }), {
+            status: 429,
+            headers: { "Content-Type": "application/json", "Retry-After": "60" },
+          });
+        }
+
         let parsed;
         try {
           parsed = Body.parse(await request.json());
