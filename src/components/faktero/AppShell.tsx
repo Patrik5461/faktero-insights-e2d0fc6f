@@ -148,6 +148,7 @@ const NAV: NavGroup[] = [
     icon: FileSpreadsheet,
     match: ["/exporty", "/importy", "/uctovnictvo", "/bankove-ucty"],
     children: [
+      { to: "/pokladna", label: "Pokladňa" },
       { to: "/uctovnictvo/dph", label: "DPH prehľad" },
       { to: "/uctovnictvo/uzavierka", label: "Uzávierka" },
       { to: "/exporty", label: "Účtovné exporty" },

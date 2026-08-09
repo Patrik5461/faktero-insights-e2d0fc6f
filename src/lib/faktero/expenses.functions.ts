@@ -16,6 +16,7 @@ export type ExpenseInput = {
   net_amount?: number | null;
   vat_rate?: number | null;
   currency?: string;
+  payment_method?: "hotovost" | "karta" | "prevod";
   category?: string | null;
   note?: string | null;
   file_path?: string | null;
@@ -39,6 +40,8 @@ const inputSchema = z.object({
   net_amount: z.number().nullable().optional(),
   vat_rate: z.number().nullable().optional(),
   currency: z.string().optional(),
+  // Rozhoduje, či doklad uberie z pokladne — karta ani prevod hotovosť neberú.
+  payment_method: z.enum(["hotovost", "karta", "prevod"]).optional(),
   category: z.string().nullable().optional(),
   note: z.string().nullable().optional(),
   file_path: z.string().nullable().optional(),

@@ -38,6 +38,7 @@ import { Route as AuthenticatedFirmaRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedFirmyRouteImport } from './routes/_authenticated/firmy'
 import { Route as AuthenticatedOdberateliaRouteImport } from './routes/_authenticated/odberatelia'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as AuthenticatedPokladnaRouteImport } from './routes/_authenticated/pokladna'
 import { Route as AuthenticatedPredplatneRouteImport } from './routes/_authenticated/predplatne'
 import { Route as AuthenticatedProduktyRouteImport } from './routes/_authenticated/produkty'
 import { Route as AuthenticatedSkladRouteImport } from './routes/_authenticated/sklad'
@@ -350,6 +351,11 @@ const AuthenticatedOdberateliaRoute =
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPokladnaRoute = AuthenticatedPokladnaRouteImport.update({
+  id: '/pokladna',
+  path: '/pokladna',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPredplatneRoute = AuthenticatedPredplatneRouteImport.update({
@@ -1288,6 +1294,7 @@ export interface FileRoutesByFullPath {
   '/firmy': typeof AuthenticatedFirmyRoute
   '/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/pokladna': typeof AuthenticatedPokladnaRoute
   '/predplatne': typeof AuthenticatedPredplatneRoute
   '/produkty': typeof AuthenticatedProduktyRoute
   '/sklad': typeof AuthenticatedSkladRouteWithChildren
@@ -1477,6 +1484,7 @@ export interface FileRoutesByTo {
   '/firmy': typeof AuthenticatedFirmyRoute
   '/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/pokladna': typeof AuthenticatedPokladnaRoute
   '/predplatne': typeof AuthenticatedPredplatneRoute
   '/produkty': typeof AuthenticatedProduktyRoute
   '/webhooky': typeof AuthenticatedWebhookyRoute
@@ -1672,6 +1680,7 @@ export interface FileRoutesById {
   '/_authenticated/firmy': typeof AuthenticatedFirmyRoute
   '/_authenticated/odberatelia': typeof AuthenticatedOdberateliaRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/_authenticated/pokladna': typeof AuthenticatedPokladnaRoute
   '/_authenticated/predplatne': typeof AuthenticatedPredplatneRoute
   '/_authenticated/produkty': typeof AuthenticatedProduktyRoute
   '/_authenticated/sklad': typeof AuthenticatedSkladRouteWithChildren
@@ -1869,6 +1878,7 @@ export interface FileRouteTypes {
     | '/firmy'
     | '/odberatelia'
     | '/onboarding'
+    | '/pokladna'
     | '/predplatne'
     | '/produkty'
     | '/sklad'
@@ -2058,6 +2068,7 @@ export interface FileRouteTypes {
     | '/firmy'
     | '/odberatelia'
     | '/onboarding'
+    | '/pokladna'
     | '/predplatne'
     | '/produkty'
     | '/webhooky'
@@ -2252,6 +2263,7 @@ export interface FileRouteTypes {
     | '/_authenticated/firmy'
     | '/_authenticated/odberatelia'
     | '/_authenticated/onboarding'
+    | '/_authenticated/pokladna'
     | '/_authenticated/predplatne'
     | '/_authenticated/produkty'
     | '/_authenticated/sklad'
@@ -2694,6 +2706,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pokladna': {
+      id: '/_authenticated/pokladna'
+      path: '/pokladna'
+      fullPath: '/pokladna'
+      preLoaderRoute: typeof AuthenticatedPokladnaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/predplatne': {
@@ -3963,6 +3982,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFirmyRoute: typeof AuthenticatedFirmyRoute
   AuthenticatedOdberateliaRoute: typeof AuthenticatedOdberateliaRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedPokladnaRoute: typeof AuthenticatedPokladnaRoute
   AuthenticatedPredplatneRoute: typeof AuthenticatedPredplatneRoute
   AuthenticatedProduktyRoute: typeof AuthenticatedProduktyRoute
   AuthenticatedSkladRoute: typeof AuthenticatedSkladRouteWithChildren
@@ -4027,6 +4047,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFirmyRoute: AuthenticatedFirmyRoute,
   AuthenticatedOdberateliaRoute: AuthenticatedOdberateliaRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedPokladnaRoute: AuthenticatedPokladnaRoute,
   AuthenticatedPredplatneRoute: AuthenticatedPredplatneRoute,
   AuthenticatedProduktyRoute: AuthenticatedProduktyRoute,
   AuthenticatedSkladRoute: AuthenticatedSkladRouteWithChildren,

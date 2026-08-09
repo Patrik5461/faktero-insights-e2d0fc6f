@@ -712,6 +712,59 @@ export type Database = {
           },
         ]
       }
+      cash_entries: {
+        Row: {
+          amount: number
+          category: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string
+          entry_date: string
+          entry_number: string
+          id: string
+          note: string | null
+          type: Database["public"]["Enums"]["cash_entry_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          entry_date?: string
+          entry_number: string
+          id?: string
+          note?: string | null
+          type: Database["public"]["Enums"]["cash_entry_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          entry_date?: string
+          entry_number?: string
+          id?: string
+          note?: string | null
+          type?: Database["public"]["Enums"]["cash_entry_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commander_connections: {
         Row: {
           auto_sync_daily: boolean
@@ -1735,6 +1788,7 @@ export type Database = {
           issue_date: string | null
           net_amount: number | null
           note: string | null
+          payment_method: string
           qr_raw: string | null
           source: string
           status: string
@@ -1763,6 +1817,7 @@ export type Database = {
           issue_date?: string | null
           net_amount?: number | null
           note?: string | null
+          payment_method?: string
           qr_raw?: string | null
           source?: string
           status?: string
@@ -1791,6 +1846,7 @@ export type Database = {
           issue_date?: string | null
           net_amount?: number | null
           note?: string | null
+          payment_method?: string
           qr_raw?: string | null
           source?: string
           status?: string
@@ -5329,6 +5385,7 @@ export type Database = {
     }
     Enums: {
       accounting_system: "pohoda" | "omega" | "money" | "alfa_plus" | "other"
+      cash_entry_type: "prijem" | "vydaj"
       api_key_mode: "test" | "live"
       company_role: "owner" | "admin" | "accountant" | "employee"
       efaktura_channel: "peppol" | "digitalny_postar" | "email" | "manual"

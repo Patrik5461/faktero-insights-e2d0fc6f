@@ -3,50 +3,27 @@
  *
  * Formát QR:
  *   - QR môže obsahovať priamo base64 payload alebo URL s payloadom
- *     v ceste, napr. `https://ekasa.financnasprava.sk/mdu/qr/<base64>`.
+ *     v ceste či vo fragmente.
  *   - Payload je LZMA1 (raw) komprimovaný XML dokument `<Receipt>...</Receipt>`
- *     alebo `<PosCheck>...</PosCheck>` obsahujúci pokladničný doklad.
+ *     alebo `<PosCheck>...</PosCheck>`.
  *
- * Poznámka: Finančná správa nemá verejné REST API. Overenie sa robí
- * cez `https://opd.financnasprava.sk` (HTML formulár). Implementujeme
- * best-effort fetch a rozpoznanie "doklad je evidovaný" v HTML odpovedi.
+ * Čítanie polí (dátum, sumy, položky) je v `./ekasa` — tam je aj sada testov.
+ * Tu ostáva len to, čo potrebuje LZMA a sieť.
  */
+import {
+  isEkasaQr,
+  kandidatiPayloadu,
+  parseEkasaXml,
+  type EkasaDecoded,
+  type EkasaItem,
+} from "./ekasa";
 
-export type EkasaItem = {
-  name: string;
-  quantity: number;
-  unit_price: number;
-  vat_rate: number;
-  total: number;
-};
-
-export type EkasaDecoded = {
-  ico?: string;
-  dic?: string;
-  ic_dph?: string;
-  suma?: number;
-  dph?: number;
-  mena?: string;
-  datum?: string; // YYYY-MM-DD
-  cisloDokladu?: string;
-  kodPokladnice?: string;
-  ocpId?: string; // OKP alebo overovací kód
-  polozky: EkasaItem[];
-  raw_xml?: string;
-};
+export { isEkasaQr, parseEkasaXml };
+export type { EkasaDecoded, EkasaItem };
 
 export type EkasaResult =
   | { ok: true; source: "lzma" | "online"; overeny: boolean; data: EkasaDecoded }
   | { ok: false; error: string; raw?: string };
-
-/** Vytiahne base64 payload z QR obsahu (URL alebo raw string). */
-function extractPayload(qr: string): string {
-  const trimmed = qr.trim();
-  // URL s payloadom v ceste alebo hash (napr. /#/opd/<b64>)
-  const urlMatch = trimmed.match(/[?&#/]([A-Za-z0-9+/=_-]{40,})$/);
-  if (trimmed.startsWith("http") && urlMatch) return urlMatch[1];
-  return trimmed;
-}
 
 /** Base64 (aj URL-safe) → Uint8Array */
 function base64ToBytes(b64: string): Uint8Array {
@@ -78,85 +55,44 @@ async function lzmaDecompress(bytes: Uint8Array): Promise<string> {
   });
 }
 
-/** Najjednoduchší XML parser - vyťahuje polia bez závislostí. */
-function pick(xml: string, tag: string): string | undefined {
-  const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i");
-  const m = xml.match(re);
-  return m?.[1]?.trim();
-}
-
-function parseNumber(s?: string): number | undefined {
-  if (!s) return undefined;
-  const n = Number(s.replace(",", ".").replace(/\s/g, ""));
-  return Number.isFinite(n) ? n : undefined;
-}
-
-function parseEkasaXml(xml: string): EkasaDecoded {
-  const items: EkasaItem[] = [];
-  const itemRe = /<(?:Item|Polozka)[^>]*>([\s\S]*?)<\/(?:Item|Polozka)>/gi;
-  let m;
-  while ((m = itemRe.exec(xml)) !== null) {
-    const chunk = m[1];
-    items.push({
-      name: pick(chunk, "Name") ?? pick(chunk, "Nazov") ?? "",
-      quantity: parseNumber(pick(chunk, "Quantity") ?? pick(chunk, "Mnozstvo")) ?? 1,
-      unit_price: parseNumber(pick(chunk, "UnitPrice") ?? pick(chunk, "JednotkovaCena")) ?? 0,
-      vat_rate: parseNumber(pick(chunk, "VatRate") ?? pick(chunk, "SadzbaDPH")) ?? 0,
-      total: parseNumber(pick(chunk, "Price") ?? pick(chunk, "Suma")) ?? 0,
-    });
-  }
-
-  const dateRaw = pick(xml, "IssueDate") ?? pick(xml, "Datum") ?? pick(xml, "CreateDate");
-  let datum: string | undefined;
-  if (dateRaw) {
-    const d = new Date(dateRaw);
-    if (!isNaN(d.getTime())) datum = d.toISOString().slice(0, 10);
-    else {
-      const md = dateRaw.match(/(\d{4})[-./](\d{2})[-./](\d{2})/);
-      if (md) datum = `${md[1]}-${md[2]}-${md[3]}`;
+/**
+ * LZMA dekódovanie eKasa QR → dekódovaný doklad.
+ *
+ * Kandidátov na payload je viac (URL-safe verzus base64 s lomkami), tak sa
+ * skúšajú po jednom — na nezmysle LZMA zlyhá okamžite.
+ */
+export async function decodeEkasaQr(qrContent: string): Promise<EkasaDecoded | null> {
+  for (const payload of kandidatiPayloadu(qrContent)) {
+    let bytes: Uint8Array;
+    try {
+      bytes = base64ToBytes(payload);
+    } catch {
+      continue;
+    }
+    try {
+      const xml = await lzmaDecompress(bytes);
+      if (!xml) continue;
+      if (!xml.includes("<") && !xml.includes("Receipt") && !xml.includes("PosCheck")) continue;
+      return parseEkasaXml(xml);
+    } catch {
+      continue;
     }
   }
-
-  return {
-    ico: pick(xml, "Ico") ?? pick(xml, "ICO"),
-    dic: pick(xml, "Dic") ?? pick(xml, "DIC"),
-    ic_dph: pick(xml, "IcDph") ?? pick(xml, "IC_DPH") ?? pick(xml, "VatId"),
-    suma: parseNumber(pick(xml, "TotalPrice") ?? pick(xml, "SumaCelkom") ?? pick(xml, "Amount")),
-    dph: parseNumber(pick(xml, "TotalVat") ?? pick(xml, "DPH")),
-    mena: pick(xml, "Currency") ?? pick(xml, "Mena") ?? "EUR",
-    datum,
-    cisloDokladu:
-      pick(xml, "ReceiptNumber") ?? pick(xml, "CisloDokladu") ?? pick(xml, "InvoiceNumber"),
-    kodPokladnice:
-      pick(xml, "CashRegisterCode") ?? pick(xml, "KodPokladnice") ?? pick(xml, "OrpCode"),
-    ocpId: pick(xml, "Okp") ?? pick(xml, "OkpCode") ?? pick(xml, "VerificationCode"),
-    polozky: items,
-    raw_xml: xml.length < 20000 ? xml : xml.slice(0, 20000),
-  };
-}
-
-/** LZMA dekódovanie eKasa QR → dekódovaný doklad. */
-export async function decodeEkasaQr(qrContent: string): Promise<EkasaDecoded | null> {
-  const payload = extractPayload(qrContent);
-  let bytes: Uint8Array;
-  try {
-    bytes = base64ToBytes(payload);
-  } catch {
-    return null;
-  }
-  try {
-    const xml = await lzmaDecompress(bytes);
-    if (!xml || (!xml.includes("<") && !xml.includes("Receipt") && !xml.includes("PosCheck")))
-      return null;
-    return parseEkasaXml(xml);
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 /**
- * Overenie na Finančnej správe (HTML endpoint).
- * FS nemá verejné API — best-effort, môže sa v čase meniť.
+ * Pokus o overenie dokladu na Finančnej správe.
+ *
+ * FS nemá verejné API, doklad sa dá pozrieť len v ich webovej aplikácii, kde
+ * identifikátory sedia **vo fragmente adresy** (`…/#/opd/<kód>/<číslo>`).
+ * Fragment sa na server nikdy neposiela, takže odpoveď je vždy tá istá prázdna
+ * schránka aplikácie. Pôvodná verzia v nej hľadala slová „evidovaný"
+ * a „platný" — tie sa v schránke pokojne vyskytnúť môžu, a doklad by sa tak
+ * označil za overený bez toho, aby ho ktokoľvek overil.
+ *
+ * Preto sa za overenie považuje len odpoveď, ktorá naozaj obsahuje číslo
+ * hľadaného dokladu. Dovtedy je to poctivé „neoverené".
  */
 export async function verifyEkasaOnline(
   cisloDokladu: string,
@@ -166,8 +102,9 @@ export async function verifyEkasaOnline(
     const url = `https://opd.financnasprava.sk/#/opd/${encodeURIComponent(kodPokladnice)}/${encodeURIComponent(cisloDokladu)}`;
     const res = await fetch(url, { headers: { Accept: "text/html" } });
     const html = await res.text();
-    const overeny = /evidovan[ýá]/i.test(html) || /platn[ýá]/i.test(html);
-    return { overeny, data: { status: res.status } };
+    const najdenyDoklad = html.includes(cisloDokladu) && html.includes(kodPokladnice);
+    const overeny = najdenyDoklad && (/evidovan[ýá]/i.test(html) || /platn[ýá]/i.test(html));
+    return { overeny, data: { status: res.status, doklad_v_odpovedi: najdenyDoklad } };
   } catch {
     return { overeny: false, data: {} };
   }
@@ -175,46 +112,33 @@ export async function verifyEkasaOnline(
 
 /** Hlavná funkcia — dekóduj + (voliteľne) over online. */
 export async function processEkasaQr(qrContent: string): Promise<EkasaResult> {
-  // 1) LZMA dekódovanie
   const decoded = await decodeEkasaQr(qrContent);
   if (decoded && (decoded.cisloDokladu || decoded.suma || decoded.ico)) {
-    // 2) Ak máme identifikátory, skúsime online overenie (nepovinné, non-fatal)
     let overeny = false;
     if (decoded.cisloDokladu && decoded.kodPokladnice) {
       try {
         const v = await verifyEkasaOnline(decoded.cisloDokladu, decoded.kodPokladnice);
         overeny = v.overeny;
       } catch {
-        /* ignore */
+        /* overenie je nepovinné, doklad sa uloží aj bez neho */
       }
     }
     return { ok: true, source: "lzma", overeny, data: decoded };
   }
 
-  // 3) Ak LZMA zlyhá, ale QR má štruktúru s URL, skús vytiahnuť ID z URL a overiť online
+  // Keď sa payload dekódovať nedá, z URL sa dajú aspoň prečítať identifikátory
+  // dokladu. Doklad sa uloží ako neoverený — overiť ho zvonku nevieme.
   const urlMatch = qrContent.match(/opd\/([A-Za-z0-9-]+)\/([A-Za-z0-9-]+)/i);
   if (urlMatch) {
     const [, kod, cislo] = urlMatch;
     const v = await verifyEkasaOnline(cislo, kod);
-    if (v.overeny) {
-      return {
-        ok: true,
-        source: "online",
-        overeny: true,
-        data: { cisloDokladu: cislo, kodPokladnice: kod, polozky: [] },
-      };
-    }
+    return {
+      ok: true,
+      source: "online",
+      overeny: v.overeny,
+      data: { cisloDokladu: cislo, kodPokladnice: kod, polozky: [] },
+    };
   }
 
   return { ok: false, error: "Nepodarilo sa dekódovať QR kód", raw: qrContent };
-}
-
-/** Rozpozná, či QR patrí eKasa (Finančná správa SR). */
-export function isEkasaQr(qr: string): boolean {
-  const t = qr.trim();
-  if (/financnasprava\.sk/i.test(t)) return true;
-  if (/opd\/[A-Za-z0-9]+\/[A-Za-z0-9]+/i.test(t)) return true;
-  // Base64-like payload aspoň 80 znakov (typická dĺžka LZMA payloadu)
-  if (/^[A-Za-z0-9+/=_-]{80,}$/.test(t)) return true;
-  return false;
 }
