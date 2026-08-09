@@ -3,13 +3,18 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { listSuppliers, listWarehousesForCompany, getLowStockReport } from "@/lib/faktero/stock.functions";
+import {
+  listSuppliers,
+  listWarehousesForCompany,
+  getLowStockReport,
+} from "@/lib/faktero/stock.functions";
 import {
   createPurchaseOrder,
   listStockItemsForOrder,
 } from "@/lib/faktero/purchase-orders.functions";
 import { suctyObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { vatRateOptions } from "@/lib/faktero/vat-rates";
+import { JobPicker } from "@/components/faktero/JobPicker";
 import { ArrowLeft, Plus, Sparkles, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/nova")({
@@ -57,6 +62,7 @@ function NewPurchaseOrder() {
   const [supplierId, setSupplierId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
   const [expectedDate, setExpectedDate] = useState("");
+  const [jobId, setJobId] = useState("");
   const [note, setNote] = useState("");
   const [items, setItems] = useState<Riadok[]>([{ ...PRAZDNY }]);
 
@@ -142,6 +148,7 @@ function NewPurchaseOrder() {
           company_id: cid,
           supplier_id: supplierId || null,
           warehouse_id: warehouseId || null,
+          job_id: jobId || null,
           expected_date: expectedDate || null,
           note: note || null,
           items: platne,
@@ -225,6 +232,9 @@ function NewPurchaseOrder() {
                 placeholder="napr. dodať na stavbu"
               />
             </label>
+            {/* Zákazka je tu informatívna: naskladnenie ešte nie je náklad,
+                ten vznikne až výdajom tovaru na stavbu. */}
+            <JobPicker value={jobId} onChange={setJobId} label="Zákazka" />
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { JobPicker } from "@/components/faktero/JobPicker";
+import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/jazdy/nova")({
@@ -28,6 +29,8 @@ function NewTripPage() {
     note: "",
   });
   const [saving, setSaving] = useState(false);
+  // Doplnená cena sa smie prepísať ďalším vozidlom, ručne zadaná nikdy.
+  const [cenaDoplnena, setCenaDoplnena] = useState(false);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -43,6 +46,33 @@ function NewTripPage() {
         if (data?.[0]) setForm((p) => ({ ...p, vehicle_id: data[0].id }));
       });
   }, []);
+
+  /**
+   * Cena PHM z posledného tankovania. Bez nej ostane jazda bez nákladu a vo
+   * vyhodnotení zákazky vyjde doprava nula, hoci sa jazdilo.
+   */
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid || !form.vehicle_id) return;
+    let zrusene = false;
+    poslednaCenaPaliva(cid, form.vehicle_id).then((cena) => {
+      if (zrusene || cena == null) return;
+      setForm((p) => {
+        if (p.fuel_price && !cenaDoplnena) return p;
+        return { ...p, fuel_price: String(cena) };
+      });
+      setCenaDoplnena(true);
+    });
+    return () => {
+      zrusene = true;
+    };
+    // `cenaDoplnena` sa zámerne nesleduje — inak by sa efekt spustil znova
+    // hneď po tom, čo ho sám nastaví.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.vehicle_id]);
+
+  const vozidloBezSpotreby =
+    !!form.vehicle_id && !vehicles.find((v) => v.id === form.vehicle_id)?.consumption_l_100km;
 
   const start = Number(form.start_odometer || 0);
   const end = Number(form.end_odometer || 0);
@@ -171,9 +201,29 @@ function NewTripPage() {
                 type="number"
                 step="0.001"
                 value={form.fuel_price}
-                onChange={(e) => setForm({ ...form, fuel_price: e.target.value })}
+                onChange={(e) => {
+                  setCenaDoplnena(false);
+                  setForm({ ...form, fuel_price: e.target.value });
+                }}
                 className="input"
               />
+              <span className="mt-1 block text-xs text-muted-foreground">
+                {cenaDoplnena
+                  ? "Doplnené z posledného tankovania."
+                  : "Bez ceny nemá jazda náklad a vo vyhodnotení zákazky vyjde doprava nula."}
+              </span>
+            </Field>
+            {/* Spotreba vozidla je druhá polovica výpočtu. Bez nej sa do jazdy
+                neuloží počet litrov a náklad vyjde nula aj s cenou paliva. */}
+            <Field label="">
+              {vozidloBezSpotreby && (
+                <div className="rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-200">
+                  Vozidlo nemá zadanú spotrebu, takže jazda nebude mať náklad.{" "}
+                  <a href="/jazdy/vozidla" className="underline">
+                    Doplniť spotrebu
+                  </a>
+                </div>
+              )}
             </Field>
             <Field label="Vzdialenosť (auto)">
               <div className="input bg-muted/40 tabular-nums">

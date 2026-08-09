@@ -45,9 +45,12 @@ async function dalsieCislo(supabase: any, companyId: string): Promise<string> {
 }
 
 /**
- * Podklady na vyhodnotenie pre zadané zákazky naraz. Robí sa to štyrmi
- * dopytmi pre celý zoznam, nie štyrmi na každú zákazku — pri dvadsiatich
- * zákazkách je to rozdiel medzi štyrmi a osemdesiatimi dopytmi.
+ * Podklady na vyhodnotenie pre zadané zákazky naraz. Robí sa to piatimi
+ * dopytmi pre celý zoznam, nie piatimi na každú zákazku — pri dvadsiatich
+ * zákazkách je to rozdiel medzi piatimi a stovkou dopytov.
+ *
+ * Objednávky u dodávateľov sa načítavajú len na zobrazenie. Objednaný tovar
+ * ešte nie je náklad zákazky — ten vznikne až jeho výdajom zo skladu.
  */
 async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: string[]) {
   const prazdne = {
@@ -55,10 +58,11 @@ async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: s
     prijate: new Map<string, any[]>(),
     pohyby: new Map<string, any[]>(),
     jazdy: new Map<string, any[]>(),
+    objednavky: new Map<string, any[]>(),
   };
   if (!jobIds.length) return prazdne;
 
-  const [faktury, prijate, pohyby, jazdy] = await Promise.all([
+  const [faktury, prijate, pohyby, jazdy, objednavky] = await Promise.all([
     supabase
       .from("invoices")
       .select("id, job_id, invoice_number, type, status, issue_date, subtotal, total, deleted_at")
@@ -83,6 +87,11 @@ async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: s
       )
       .eq("company_id", companyId)
       .in("job_id", jobIds),
+    supabase
+      .from("purchase_orders")
+      .select("id, job_id, order_number, supplier_name, order_date, expected_date, status")
+      .eq("company_id", companyId)
+      .in("job_id", jobIds),
   ]);
 
   const zoskup = (rows: any[] | null) => {
@@ -100,6 +109,7 @@ async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: s
     prijate: zoskup(prijate.data),
     pohyby: zoskup(pohyby.data),
     jazdy: zoskup(jazdy.data),
+    objednavky: zoskup(objednavky.data),
   };
 }
 
@@ -183,6 +193,7 @@ export const getJob = createServerFn({ method: "POST" })
       prijate_faktury: (podklady.prijate.get(job.id) ?? []).filter((f: any) => !f.deleted_at),
       pohyby: pohyby.map((p: any) => ({ ...p, nazov: menaKariet.get(p.stock_item_id) ?? "—" })),
       jazdy: podklady.jazdy.get(job.id) ?? [],
+      objednavky: podklady.objednavky.get(job.id) ?? [],
     };
   });
 

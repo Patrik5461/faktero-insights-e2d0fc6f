@@ -66,7 +66,8 @@ function PurchaseOrderDetail() {
 
   useEffect(() => {
     nacitaj();
-    if (cid) fetchWarehouses({ data: { company_id: cid } }).then((w: any) => setWarehouses(w ?? []));
+    if (cid)
+      fetchWarehouses({ data: { company_id: cid } }).then((w: any) => setWarehouses(w ?? []));
   }, [nacitaj, cid, fetchWarehouses]);
 
   async function akcia(fn: () => Promise<any>, hlaska?: string) {
@@ -148,6 +149,18 @@ function PurchaseOrderDetail() {
               <div className="text-xs text-muted-foreground">Spolu</div>
               <div className="font-semibold">{suma(data.total, o.currency)}</div>
             </div>
+            {data.job && (
+              <div className="sm:col-span-4">
+                <div className="text-xs text-muted-foreground">Zákazka</div>
+                <Link
+                  to="/zakazky/$id"
+                  params={{ id: data.job.id }}
+                  className="text-primary hover:underline"
+                >
+                  {data.job.job_number} — {data.job.name}
+                </Link>
+              </div>
+            )}
             {o.note && (
               <div className="sm:col-span-4">
                 <div className="text-xs text-muted-foreground">Poznámka</div>
@@ -191,7 +204,12 @@ function PurchaseOrderDetail() {
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => akcia(() => doCancel({ data: { company_id: cid!, id } }), "Objednávka je zrušená.")}
+                onClick={() =>
+                  akcia(
+                    () => doCancel({ data: { company_id: cid!, id } }),
+                    "Objednávka je zrušená.",
+                  )
+                }
                 className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-50"
               >
                 <X className="h-4 w-4" /> Zrušiť objednávku

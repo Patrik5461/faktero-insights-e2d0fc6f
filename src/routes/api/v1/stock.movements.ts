@@ -8,6 +8,7 @@ const Input = z.object({
   quantity: z.number().refine((v) => v !== 0, "Množstvo nemôže byť 0"),
   unit_price: z.number().nonnegative().optional().default(0),
   note: z.string().max(500).optional().nullable(),
+  job_id: z.string().uuid().optional().nullable(),
 });
 
 export const Route = createFileRoute("/api/v1/stock/movements")({
@@ -72,6 +73,7 @@ export const Route = createFileRoute("/api/v1/stock/movements")({
               unit_price: d.unit_price ?? 0,
               total_value: Math.abs(d.quantity) * (d.unit_price ?? 0),
               note: d.note ?? null,
+              job_id: d.job_id ?? null,
             })
             .select()
             .single();

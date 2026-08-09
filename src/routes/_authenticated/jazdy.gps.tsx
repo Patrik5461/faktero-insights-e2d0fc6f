@@ -9,6 +9,8 @@ import {
   getCurrentDistanceKm,
 } from "@/lib/mobile/gps-tracker";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { JobPicker } from "@/components/faktero/JobPicker";
+import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { Play, Square } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +26,9 @@ function GpsTripPage() {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [vehicleId, setVehicleId] = useState("");
   const [purpose, setPurpose] = useState("");
+  const [jobId, setJobId] = useState("");
+  // Cena z posledného tankovania; bez nej by GPS jazda nemala náklad.
+  const [fuelPrice, setFuelPrice] = useState<number | null>(null);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -39,6 +44,18 @@ function GpsTripPage() {
         if (data?.[0]) setVehicleId(data[0].id);
       });
   }, []);
+
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid || !vehicleId) return;
+    let zrusene = false;
+    poslednaCenaPaliva(cid, vehicleId).then((c) => {
+      if (!zrusene) setFuelPrice(c);
+    });
+    return () => {
+      zrusene = true;
+    };
+  }, [vehicleId]);
 
   useEffect(() => {
     if (!tracking) return;
@@ -74,6 +91,8 @@ function GpsTripPage() {
         end_odometer: result.distance_km,
         distance_km: result.distance_km,
         fuel_consumption: consumption,
+        fuel_price: fuelPrice,
+        job_id: jobId || null,
         note: `GPS: ${result.duration_min} min, ${result.points.length} bodov`,
       })
       .select()
@@ -112,6 +131,12 @@ function GpsTripPage() {
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </label>
+            <JobPicker value={jobId} onChange={setJobId} disabled={tracking} />
+            {fuelPrice != null && (
+              <div className="text-xs text-muted-foreground">
+                Cena PHM {fuelPrice.toFixed(3)} €/l z posledného tankovania.
+              </div>
+            )}
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6 text-center">

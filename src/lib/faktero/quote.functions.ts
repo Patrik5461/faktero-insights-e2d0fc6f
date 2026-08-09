@@ -65,6 +65,9 @@ export const convertQuoteToInvoice = createServerFn({ method: "POST" })
         vat_total: quote.vat_total,
         total: quote.total,
         notes: quote.notes ?? null,
+        // Zákazka prechádza z ponuky na faktúru. Keby ju bolo treba vyberať
+        // znova, vypadla by práve pri doklade, ktorý nesie výnos.
+        job_id: quote.job_id ?? null,
         status: "issued",
       })
       .select()

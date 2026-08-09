@@ -11,6 +11,8 @@ const Input = z.object({
   start_odometer: z.number().min(0).max(10000000),
   end_odometer: z.number().min(0).max(10000000),
   fuel_price: z.number().min(0).max(100).optional().nullable(),
+  // Zákazku overuje databázový trigger — musí patriť tej istej firme a byť otvorená.
+  job_id: z.string().uuid().optional().nullable(),
   note: z.string().max(2000).optional().nullable(),
 });
 

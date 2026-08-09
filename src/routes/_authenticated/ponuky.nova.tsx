@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { createReservationsFromQuote } from "@/lib/faktero/reservations.functions";
 import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
+import { JobPicker } from "@/components/faktero/JobPicker";
 
 export const Route = createFileRoute("/_authenticated/ponuky/nova")({
   head: () => ({ meta: [{ title: "Nová cenová ponuka — Faktero" }] }),
@@ -33,6 +34,7 @@ function NewQuote() {
     valid_until: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
     currency: "EUR",
     notes: "",
+    job_id: "",
   });
   const [items, setItems] = useState<Item[]>([{ ...EMPTY }]);
   const [newCustOpen, setNewCustOpen] = useState(false);
@@ -105,6 +107,7 @@ function NewQuote() {
         total: Number(totals.total.toFixed(2)),
         reserve_stock: reserveStock,
         notes: form.notes,
+        job_id: form.job_id || null,
       })
       .select()
       .single();
@@ -265,6 +268,13 @@ function NewQuote() {
               </div>
             </div>
           </div>
+          <JobPicker
+            className="rounded-xl border border-border bg-card p-5"
+            value={form.job_id}
+            onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
+            customerId={form.customer_id || null}
+            label="Zákazka (prenesie sa na faktúru pri premene ponuky)"
+          />
           <label className="block rounded-xl border border-border bg-card p-5">
             <span className="text-sm font-medium">Poznámka</span>
             <textarea

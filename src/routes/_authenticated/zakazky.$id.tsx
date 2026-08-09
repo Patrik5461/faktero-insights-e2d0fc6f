@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { deleteJob, getJob, setJobStatus, updateJob } from "@/lib/faktero/jobs.functions";
 import { STAV_ZAKAZKY_POPIS, nakladZJazdy, type StavZakazky } from "@/lib/faktero/zakazky";
+import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { ArrowLeft, Lock, Unlock, Pencil, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/zakazky/$id")({
@@ -356,7 +357,14 @@ function JobDetail() {
           <Karta
             titulok="Doprava"
             hodnota={suma(v.naklad_doprava)}
-            poznamka="Z jázd priradených zákazke"
+            poznamka={
+              // Bez spotreby vozidla alebo ceny paliva sa jazda uloží bez
+              // nákladu. Nula pri načítaných jazdách je vtedy chýbajúci údaj,
+              // nie skutočnosť — a je lepšie to povedať rovno.
+              v.naklad_doprava === 0 && data.jazdy.length > 0
+                ? "Jazdy nemajú spotrebu vozidla alebo cenu PHM"
+                : "Z jázd priradených zákazke"
+            }
           />
         </div>
 
@@ -455,6 +463,27 @@ function JobDetail() {
         />
 
         <Zoznam
+          titulok="Objednávky u dodávateľov"
+          prazdne="Pre zákazku nie je objednané nič."
+          poznamka="Objednaný tovar sa do nákladov nepočíta — náklad vznikne až jeho výdajom zo skladu."
+          hlavicka={["Číslo", "Dodávateľ", "Objednané", "Očakávané", "Stav"]}
+          riadky={(data.objednavky ?? []).map((o: any) => [
+            <Link
+              key={o.id}
+              to="/sklad/objednavky/$id"
+              params={{ id: o.id }}
+              className="text-primary hover:underline"
+            >
+              {o.order_number}
+            </Link>,
+            o.supplier_name ?? "—",
+            o.order_date,
+            o.expected_date ?? "—",
+            STAV_POPIS[o.status as StavObjednavky] ?? o.status,
+          ])}
+        />
+
+        <Zoznam
           titulok="Jazdy"
           prazdne="K zákazke nie je priradená žiadna jazda."
           hlavicka={["Dátum", "Trasa", "Km", "Náklad"]}
@@ -497,17 +526,20 @@ function Zoznam({
   prazdne,
   hlavicka,
   riadky,
+  poznamka,
 }: {
   titulok: string;
   prazdne: string;
   hlavicka: string[];
   riadky: React.ReactNode[][];
+  poznamka?: string;
 }) {
   return (
     <div className="mt-6">
       <div className="mb-2 text-sm font-medium">
         {titulok} <span className="text-muted-foreground">({riadky.length})</span>
       </div>
+      {poznamka && <div className="mb-2 text-xs text-muted-foreground">{poznamka}</div>}
       {riadky.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
           {prazdne}

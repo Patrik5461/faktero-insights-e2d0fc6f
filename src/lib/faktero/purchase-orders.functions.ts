@@ -55,9 +55,7 @@ export const listPurchaseOrders = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
     CompanyScoped.extend({
-      status: z
-        .enum(["draft", "sent", "partially_received", "received", "cancelled"])
-        .optional(),
+      status: z.enum(["draft", "sent", "partially_received", "received", "cancelled"]).optional(),
       only_open: z.boolean().optional(),
     }).parse(d),
   )
@@ -129,11 +127,7 @@ export const getPurchaseOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => CompanyScoped.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { order, items } = await nacitajObjednavku(
-      context.supabase,
-      data.company_id,
-      data.id,
-    );
+    const { order, items } = await nacitajObjednavku(context.supabase, data.company_id, data.id);
     const { data: warehouse } = order.warehouse_id
       ? await context.supabase
           .from("warehouses")
@@ -141,10 +135,18 @@ export const getPurchaseOrder = createServerFn({ method: "POST" })
           .eq("id", order.warehouse_id)
           .maybeSingle()
       : { data: null };
+    const { data: job } = order.job_id
+      ? await context.supabase
+          .from("jobs")
+          .select("id, job_number, name")
+          .eq("id", order.job_id)
+          .maybeSingle()
+      : { data: null };
     return {
       order,
       items: items.map((it: any) => ({ ...it, zostava: zostavaPrijat(it) })),
       warehouse,
+      job,
       ...suctyObjednavky(items),
     };
   });
@@ -165,6 +167,7 @@ export const createPurchaseOrder = createServerFn({ method: "POST" })
       supplier_id: z.string().uuid().nullable().optional(),
       supplier_name: z.string().trim().max(255).nullable().optional(),
       warehouse_id: z.string().uuid().nullable().optional(),
+      job_id: z.string().uuid().nullable().optional(),
       expected_date: z.string().date().nullable().optional(),
       note: z.string().trim().max(2000).nullable().optional(),
       items: z.array(PolozkaVstup).min(1),
@@ -205,6 +208,7 @@ export const createPurchaseOrder = createServerFn({ method: "POST" })
         supplier_id: data.supplier_id ?? null,
         supplier_name: supplierName,
         warehouse_id: data.warehouse_id ?? null,
+        job_id: data.job_id ?? null,
         expected_date: data.expected_date ?? null,
         note: data.note ?? null,
         status: "draft",
@@ -266,10 +270,7 @@ export const deletePurchaseOrder = createServerFn({ method: "POST" })
     if (order.status !== "draft") {
       throw new Error("Zmazať možno len rozpracovanú objednávku. Odoslanú zrušte.");
     }
-    const { error } = await context.supabase
-      .from("purchase_orders")
-      .delete()
-      .eq("id", order.id);
+    const { error } = await context.supabase.from("purchase_orders").delete().eq("id", order.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -278,6 +279,11 @@ export const deletePurchaseOrder = createServerFn({ method: "POST" })
  * Príjem tovaru z objednávky. Vytvorí skladový pohyb typu `prijem` s cenou
  * z objednávky — tým sa objednaná cena premietne do váženej nákupnej ceny
  * zásoby, o ktorú sa opiera ocenenie celého skladu.
+ *
+ * Zákazka z objednávky sa na tento pohyb **zámerne neprenáša**. Príjem na
+ * zákazku znamená vrátenie materiálu a náklad by znížil, kým naskladnenie
+ * nákladom vôbec nie je — ten vznikne až výdajom na stavbu. Objednávka
+ * so zákazkou je informácia „toto je pre ňu na ceste", nič viac.
  */
 export const receivePurchaseOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

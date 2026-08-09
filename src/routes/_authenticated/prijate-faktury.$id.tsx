@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listBankData } from "@/lib/faktero/tatrabanka.functions";
+import { JobPicker } from "@/components/faktero/JobPicker";
 import {
   payPurchaseInvoice,
   listPayments,
@@ -171,6 +172,16 @@ function PurchaseInvoiceDetail() {
     load();
   }
 
+  async function nastavZakazku(jobId: string) {
+    const { error } = await supabase
+      .from("purchase_invoices")
+      .update({ job_id: jobId || null })
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(jobId ? "Zákazka priradená" : "Zákazka odobraná");
+    load();
+  }
+
   async function markPaid() {
     const d = prompt("Dátum úhrady (YYYY-MM-DD)", new Date().toISOString().slice(0, 10));
     if (!d) return;
@@ -307,6 +318,16 @@ function PurchaseInvoiceDetail() {
                 {fmt(Number(row.amount_total), row.currency)}
               </div>
             </div>
+
+            {/* Zákazku sa oplatí dať dodatočne aj na starší nákup — vtedy sa
+                náklad prejaví vo vyhodnotení hneď po uložení. */}
+            <div className="rounded-xl border border-border bg-card p-5">
+              <JobPicker
+                value={row.job_id ?? ""}
+                onChange={(v) => nastavZakazku(v)}
+                label="Zákazka"
+              />
+            </div>
             <div className="rounded-xl border border-border bg-card p-5 text-sm">
               <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
                 <Wallet className="h-3.5 w-3.5" /> Platba
@@ -380,8 +401,8 @@ function PurchaseInvoiceDetail() {
                       {paying ? "Pripravujem…" : "Zaplatiť cez banku"}
                     </button>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Presmerujeme vás do Tatra banky na podpis. Z účtu sa nič nestrhne, kým
-                      platbu nepodpíšete.
+                      Presmerujeme vás do Tatra banky na podpis. Z účtu sa nič nestrhne, kým platbu
+                      nepodpíšete.
                     </p>
                   </>
                 )}

@@ -33,6 +33,7 @@ const InvoiceInput = z.object({
   currency: z.string().length(3).optional().default("EUR"),
   payment_method: z.string().max(40).optional().default("bank_transfer"),
   notes: z.string().max(5000).optional().nullable(),
+  job_id: z.string().uuid().optional().nullable(),
   items: z.array(Item).min(1).max(200),
 });
 
@@ -141,6 +142,7 @@ export const Route = createFileRoute("/api/v1/invoices")({
               total: totals.total,
               notes: d.notes ?? null,
               external_id: d.external_id ?? null,
+              job_id: d.job_id ?? null,
               status: "issued",
             })
             .select()

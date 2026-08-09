@@ -67,6 +67,7 @@ function InvoiceDetail() {
   const [stockMoves, setStockMoves] = useState<any[]>([]);
   const [warehouseNames, setWarehouseNames] = useState<Record<string, string>>({});
   const [stockSkus, setStockSkus] = useState<Record<string, string>>({});
+  const [zakazka, setZakazka] = useState<any>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
@@ -203,6 +204,16 @@ function InvoiceDetail() {
   async function load() {
     const { data } = await supabase.from("invoices").select("*").eq("id", id).single();
     setInv(data);
+    if (data?.job_id) {
+      const { data: job } = await supabase
+        .from("jobs")
+        .select("id, job_number, name")
+        .eq("id", data.job_id)
+        .maybeSingle();
+      setZakazka(job);
+    } else {
+      setZakazka(null);
+    }
     if (data) {
       const [{ data: its }, { data: comp }] = await Promise.all([
         supabase.from("invoice_items").select("*").eq("invoice_id", id).order("position"),
@@ -838,6 +849,18 @@ function InvoiceDetail() {
           </div>
 
           <aside className="space-y-4">
+            {zakazka && (
+              <div className="rounded-xl border border-border bg-card p-5">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Zákazka</div>
+                <Link
+                  to="/zakazky/$id"
+                  params={{ id: zakazka.id }}
+                  className="mt-1 block text-sm text-primary hover:underline"
+                >
+                  {zakazka.job_number} — {zakazka.name}
+                </Link>
+              </div>
+            )}
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Sumár</div>
               <div className="mt-3 space-y-1 text-sm">
