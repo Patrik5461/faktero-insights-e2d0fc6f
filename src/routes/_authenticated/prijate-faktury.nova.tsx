@@ -224,6 +224,7 @@ function NewPurchaseInvoicePage() {
               <Field label="Dátum vystavenia">
                 <input
                   type="date"
+                  required
                   value={form.issue_date}
                   onChange={(e) => set("issue_date", e.target.value)}
                   className="input"
@@ -232,6 +233,7 @@ function NewPurchaseInvoicePage() {
               <Field label="Dátum prijatia">
                 <input
                   type="date"
+                  required
                   value={form.received_date}
                   onChange={(e) => set("received_date", e.target.value)}
                   className="input"
@@ -240,6 +242,7 @@ function NewPurchaseInvoicePage() {
               <Field label="Dátum splatnosti">
                 <input
                   type="date"
+                  required
                   value={form.due_date}
                   onChange={(e) => set("due_date", e.target.value)}
                   className="input"

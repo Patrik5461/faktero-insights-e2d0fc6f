@@ -5,6 +5,38 @@ import { z } from "zod";
 const Input = z.object({ quoteId: z.string().uuid() });
 
 /**
+ * Ďalšie číslo cenovej ponuky pre formulár.
+ *
+ * Formulár si číslo predtým rátal sám ako „počet ponúk v roku + 1". To dáva
+ * duplicitu hneď v dvoch bežných situáciách: keď ponuka vznikne cez API
+ * (tá číslovala maximom) a keď sa ponuke nastaví dátum vystavenia z minulého
+ * roka — vtedy sa do počtu nezaráta a ďalšia ponuka dostane rovnaké číslo.
+ * `quotes` má UNIQUE (company_id, quote_number), takže z toho je chyba pri
+ * ukladaní. Číslo sa preto počíta z maxima, rovnako ako všade inde.
+ */
+export const nextQuoteNumberFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { dalsieCisloDokladu } = await import("./cislovanie");
+    const prefix = `Q${new Date().getFullYear()}`;
+    // Ide to cez klienta prihláseného používateľa, takže cudziu firmu
+    // odfiltruje RLS — `supabaseAdmin` tu netreba.
+    const { data: rows } = await context.supabase
+      .from("quotes")
+      .select("quote_number")
+      .eq("company_id", data.company_id)
+      .like("quote_number", `${prefix}%`)
+      .limit(5000);
+    return {
+      quote_number: dalsieCisloDokladu(
+        prefix,
+        (rows ?? []).map((r) => r.quote_number),
+      ),
+    };
+  });
+
+/**
  * Convert a quote into a regular invoice. Copies header, customer snapshot,
  * items and totals. Marks the quote as `converted` and links it.
  */

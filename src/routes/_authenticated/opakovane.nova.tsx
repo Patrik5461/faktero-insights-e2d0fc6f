@@ -175,6 +175,7 @@ function NewRecurring() {
               <span className="text-sm font-medium">Ďalší beh</span>
               <input
                 type="date"
+                required
                 value={form.next_run}
                 onChange={(e) => setForm({ ...form, next_run: e.target.value })}
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"

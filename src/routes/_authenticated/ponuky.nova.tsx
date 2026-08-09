@@ -7,6 +7,7 @@ import { Trash2, Plus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { createReservationsFromQuote } from "@/lib/faktero/reservations.functions";
+import { nextQuoteNumberFn } from "@/lib/faktero/quote.functions";
 import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
 import { JobPicker } from "@/components/faktero/JobPicker";
 
@@ -40,6 +41,7 @@ function NewQuote() {
   const [newCustOpen, setNewCustOpen] = useState(false);
   const [reserveStock, setReserveStock] = useState(false);
   const reserveFn = useServerFn(createReservationsFromQuote);
+  const dalsieCislo = useServerFn(nextQuoteNumberFn);
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -66,23 +68,13 @@ function NewQuote() {
     setItems((arr) => arr.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
   }
 
-  async function genNumber(cid: string) {
-    const yr = new Date().getFullYear();
-    const { count } = await supabase
-      .from("quotes")
-      .select("id", { count: "exact", head: true })
-      .eq("company_id", cid)
-      .gte("issue_date", `${yr}-01-01`);
-    return `Q${yr}${String((count ?? 0) + 1).padStart(4, "0")}`;
-  }
-
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const cid = getActiveCompanyId();
     if (!cid) return;
     const cust = customers.find((c) => c.id === form.customer_id);
     if (!cust) return toast.error("Vyberte odberateľa");
-    const quote_number = await genNumber(cid);
+    const { quote_number } = await dalsieCislo({ data: { company_id: cid } });
     const { data: q, error } = await supabase
       .from("quotes")
       .insert({
@@ -184,12 +176,14 @@ function NewQuote() {
             <In
               label="Dátum vystavenia"
               type="date"
+              required
               value={form.issue_date}
               onChange={(v) => setForm({ ...form, issue_date: v })}
             />
             <In
               label="Platnosť do"
               type="date"
+              required
               value={form.valid_until}
               onChange={(v) => setForm({ ...form, valid_until: v })}
             />
@@ -328,17 +322,20 @@ function In({
   value,
   onChange,
   type = "text",
+  required,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
+  required?: boolean;
 }) {
   return (
     <label className="block">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <input
         type={type}
+        required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"

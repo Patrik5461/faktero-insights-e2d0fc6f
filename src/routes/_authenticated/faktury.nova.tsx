@@ -376,7 +376,10 @@ function NewInvoice() {
           advance_amount: form.advance_amount ? Number(form.advance_amount) : null,
           job_id: form.job_id || null,
           issue_date: form.issue_date,
-          delivery_date: form.delivery_date,
+          // Dátum dodania je nepovinný a dátumové pole sa dá vyprázdniť.
+          // Prázdny reťazec Postgres odmietne s „invalid input syntax for
+          // type date" a faktúra sa neuloží.
+          delivery_date: form.delivery_date || null,
           due_date: form.due_date,
           currency: form.currency,
           payment_method: form.payment_method,
@@ -513,6 +516,7 @@ function NewInvoice() {
                 </label>
                 <input
                   type="date"
+                  required
                   value={form.issue_date}
                   onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -532,6 +536,7 @@ function NewInvoice() {
                 <div className="mt-1 flex gap-2">
                   <input
                     type="date"
+                    required
                     value={form.due_date}
                     onChange={(e) => setForm({ ...form, due_date: e.target.value })}
                     className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"

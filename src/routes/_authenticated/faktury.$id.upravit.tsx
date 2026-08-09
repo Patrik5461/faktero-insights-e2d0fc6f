@@ -233,6 +233,7 @@ function EditInvoice() {
               <Lbl label="Dátum vystavenia">
                 <input
                   type="date"
+                  required
                   value={form.issue_date}
                   onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
                   className={inputCls}
@@ -241,6 +242,7 @@ function EditInvoice() {
               <Lbl label="Splatnosť">
                 <input
                   type="date"
+                  required
                   value={form.due_date}
                   onChange={(e) => setForm({ ...form, due_date: e.target.value })}
                   className={inputCls}
