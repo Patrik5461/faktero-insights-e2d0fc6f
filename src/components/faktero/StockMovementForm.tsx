@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createStockMovementDebug } from "@/lib/faktero/stock.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { JobPicker } from "@/components/faktero/JobPicker";
 import { toast } from "sonner";
 
 type MovementType = "prijem" | "vydaj" | "oprava";
@@ -32,6 +33,7 @@ export function MovementForm({
   const [price, setPrice] = useState("0");
   const [sideCosts, setSideCosts] = useState("0");
   const [note, setNote] = useState("");
+  const [jobId, setJobId] = useState("");
   const [busy, setBusy] = useState(false);
   const [debug, setDebug] = useState<any>(null);
   const [availability, setAvailability] = useState<{
@@ -131,6 +133,7 @@ export function MovementForm({
           unit_price: unitPrice,
           side_costs_total: type === "prijem" ? Number(sideCosts) || 0 : 0,
           note: note || null,
+          job_id: jobId || null,
         },
       });
       console.info("[sklad-debug:movement:client-result]", result);
@@ -304,6 +307,10 @@ export function MovementForm({
                 </div>
               </>
             )}
+            {/* Výdaj na zákazku je hlavný zdroj jej materiálových nákladov,
+                príjem pripnutý na zákazku znamená vrátenie nespotrebovaného
+                materiálu a náklad naopak zníži. */}
+            <JobPicker value={jobId} onChange={setJobId} />
             <label className="block">
               <span className="text-sm font-medium">Poznámka</span>
               <input

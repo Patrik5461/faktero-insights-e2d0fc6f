@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Trash2, Plus, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_VAT_RATE, vatRateOptions } from "@/lib/faktero/vat-rates";
+import { JobPicker } from "@/components/faktero/JobPicker";
 
 export const Route = createFileRoute("/_authenticated/faktury/$id/upravit")({
   head: () => ({ meta: [{ title: "Upraviť faktúru — Faktero" }] }),
@@ -52,6 +53,7 @@ function EditInvoice() {
     variable_symbol: "",
     currency: "EUR",
     payment_method: "bank_transfer",
+    job_id: "",
     notes: "",
   });
 
@@ -79,6 +81,7 @@ function EditInvoice() {
         variable_symbol: i.variable_symbol ?? "",
         currency: i.currency ?? "EUR",
         payment_method: i.payment_method ?? "bank_transfer",
+        job_id: i.job_id ?? "",
         notes: i.notes ?? "",
       });
       setItems(
@@ -159,6 +162,7 @@ function EditInvoice() {
           variable_symbol: form.variable_symbol,
           currency: form.currency,
           payment_method: form.payment_method,
+          job_id: form.job_id || null,
           notes: form.notes,
           subtotal: Number(totals.subtotal.toFixed(2)),
           vat_total: Number(totals.vat_total.toFixed(2)),
@@ -274,6 +278,13 @@ function EditInvoice() {
                   ))}
                 </select>
               </Lbl>
+              <JobPicker
+                className="sm:col-span-2"
+                value={form.job_id}
+                onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
+                customerId={inv?.customer_id ?? null}
+                companyId={inv?.company_id ?? null}
+              />
             </div>
           </section>
 

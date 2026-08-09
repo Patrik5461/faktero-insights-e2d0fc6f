@@ -1220,6 +1220,7 @@ export type Database = {
           contact_person: string | null
           country: string | null
           created_at: string
+          default_job_id: string | null
           deleted_at: string | null
           dic: string | null
           email: string | null
@@ -1240,6 +1241,7 @@ export type Database = {
           contact_person?: string | null
           country?: string | null
           created_at?: string
+          default_job_id?: string | null
           deleted_at?: string | null
           dic?: string | null
           email?: string | null
@@ -1260,6 +1262,7 @@ export type Database = {
           contact_person?: string | null
           country?: string | null
           created_at?: string
+          default_job_id?: string | null
           deleted_at?: string | null
           dic?: string | null
           email?: string | null
@@ -2546,6 +2549,7 @@ export type Database = {
           imported_at: string | null
           invoice_number: string
           issue_date: string
+          job_id: string | null
           notes: string | null
           order_number: string | null
           original_external_id: string | null
@@ -2603,6 +2607,7 @@ export type Database = {
           imported_at?: string | null
           invoice_number: string
           issue_date?: string
+          job_id?: string | null
           notes?: string | null
           order_number?: string | null
           original_external_id?: string | null
@@ -2660,6 +2665,7 @@ export type Database = {
           imported_at?: string | null
           invoice_number?: string
           issue_date?: string
+          job_id?: string | null
           notes?: string | null
           order_number?: string | null
           original_external_id?: string | null
@@ -2699,6 +2705,78 @@ export type Database = {
           },
           {
             foreignKeyName: "invoices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          closed_at: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          customer_name: string | null
+          end_date: string | null
+          id: string
+          job_number: string
+          name: string
+          note: string | null
+          planned_cost: number | null
+          planned_revenue: number | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          end_date?: string | null
+          id?: string
+          job_number: string
+          name: string
+          note?: string | null
+          planned_cost?: number | null
+          planned_revenue?: number | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          end_date?: string | null
+          id?: string
+          job_number?: string
+          name?: string
+          note?: string | null
+          planned_cost?: number | null
+          planned_revenue?: number | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
@@ -3117,6 +3195,7 @@ export type Database = {
           id: string
           invoice_number: string
           issue_date: string
+          job_id: string | null
           note: string | null
           payment_date: string | null
           payment_method: string | null
@@ -3149,6 +3228,7 @@ export type Database = {
           id?: string
           invoice_number: string
           issue_date: string
+          job_id?: string | null
           note?: string | null
           payment_date?: string | null
           payment_method?: string | null
@@ -3181,6 +3261,7 @@ export type Database = {
           id?: string
           invoice_number?: string
           issue_date?: string
+          job_id?: string | null
           note?: string | null
           payment_date?: string | null
           payment_method?: string | null
@@ -3272,6 +3353,7 @@ export type Database = {
           currency: string
           expected_date: string | null
           id: string
+          job_id: string | null
           note: string | null
           order_date: string
           order_number: string
@@ -3290,6 +3372,7 @@ export type Database = {
           currency?: string
           expected_date?: string | null
           id?: string
+          job_id?: string | null
           note?: string | null
           order_date?: string
           order_number: string
@@ -3308,6 +3391,7 @@ export type Database = {
           currency?: string
           expected_date?: string | null
           id?: string
+          job_id?: string | null
           note?: string | null
           order_date?: string
           order_number?: string
@@ -3481,6 +3565,7 @@ export type Database = {
           external_id: string | null
           id: string
           issue_date: string
+          job_id: string | null
           notes: string | null
           pdf_url: string | null
           quote_number: string
@@ -3514,6 +3599,7 @@ export type Database = {
           external_id?: string | null
           id?: string
           issue_date?: string
+          job_id?: string | null
           notes?: string | null
           pdf_url?: string | null
           quote_number: string
@@ -3547,6 +3633,7 @@ export type Database = {
           external_id?: string | null
           id?: string
           issue_date?: string
+          job_id?: string | null
           notes?: string | null
           pdf_url?: string | null
           quote_number?: string
@@ -4085,6 +4172,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          job_id: string | null
           note: string | null
           quantity: number
           reference_id: string | null
@@ -4106,6 +4194,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          job_id?: string | null
           note?: string | null
           quantity: number
           reference_id?: string | null
@@ -4127,6 +4216,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          job_id?: string | null
           note?: string | null
           quantity?: number
           reference_id?: string | null
@@ -4784,6 +4874,7 @@ export type Database = {
           fuel_price: number | null
           id: string
           imported_at: string | null
+          job_id: string | null
           note: string | null
           purpose: string | null
           raw_provider_data: Json | null
@@ -4811,6 +4902,7 @@ export type Database = {
           fuel_price?: number | null
           id?: string
           imported_at?: string | null
+          job_id?: string | null
           note?: string | null
           purpose?: string | null
           raw_provider_data?: Json | null
@@ -4838,6 +4930,7 @@ export type Database = {
           fuel_price?: number | null
           id?: string
           imported_at?: string | null
+          job_id?: string | null
           note?: string | null
           purpose?: string | null
           raw_provider_data?: Json | null
@@ -5258,6 +5351,7 @@ export type Database = {
         | "rejected"
         | "archived"
       inventory_count_status: "open" | "completed" | "cancelled"
+      job_status: "active" | "closed" | "cancelled"
       purchase_order_status:
         | "draft"
         | "sent"

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { JobPicker } from "@/components/faktero/JobPicker";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/jazdy/nova")({
@@ -23,6 +24,7 @@ function NewTripPage() {
     start_odometer: "",
     end_odometer: "",
     fuel_price: "",
+    job_id: "",
     note: "",
   });
   const [saving, setSaving] = useState(false);
@@ -70,6 +72,7 @@ function NewTripPage() {
       distance_km: distance,
       fuel_price: form.fuel_price ? Number(form.fuel_price) : null,
       fuel_consumption: consumption,
+      job_id: form.job_id || null,
       note: form.note || null,
     });
     setSaving(false);
@@ -177,6 +180,11 @@ function NewTripPage() {
                 {Number.isFinite(distance) ? distance.toFixed(1) : "—"} km
               </div>
             </Field>
+            <JobPicker
+              className="sm:col-span-2"
+              value={form.job_id}
+              onChange={(v) => setForm((p) => ({ ...p, job_id: v }))}
+            />
             <label className="sm:col-span-2 block">
               <span className="text-sm font-medium">Poznámka</span>
               <textarea

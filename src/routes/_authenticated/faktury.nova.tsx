@@ -33,6 +33,7 @@ import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocom
 import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { findCustomerByIcoFn } from "@/lib/faktero/company-lookup.functions";
 import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombobox";
+import { JobPicker } from "@/components/faktero/JobPicker";
 import { DEFAULT_VAT_RATE, SK_VAT_RATES } from "@/lib/faktero/vat-rates";
 
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
@@ -125,6 +126,7 @@ function NewInvoice() {
     reverse_charge_type: "" as "" | "domestic_69" | "eu_b2b" | "export",
     advance_invoice_id: "" as string | "",
     advance_amount: 0,
+    job_id: "",
     notes: "",
   });
   const [items, setItems] = useState<Item[]>(() => {
@@ -372,6 +374,7 @@ function NewInvoice() {
             : null,
           advance_invoice_id: form.advance_invoice_id || null,
           advance_amount: form.advance_amount ? Number(form.advance_amount) : null,
+          job_id: form.job_id || null,
           issue_date: form.issue_date,
           delivery_date: form.delivery_date,
           due_date: form.due_date,
@@ -679,6 +682,12 @@ function NewInvoice() {
                   <option value="electronic">Elektronicky</option>
                 </select>
               </div>
+              <JobPicker
+                className="sm:col-span-2"
+                value={form.job_id}
+                onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
+                customerId={form.customer_id || null}
+              />
               <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-muted-foreground">
                   Spôsob zaokrúhľovania

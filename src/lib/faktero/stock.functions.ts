@@ -255,6 +255,9 @@ const CreateStockMovementInput = z.object({
   note: z.string().max(500).optional().nullable(),
   source_document_type: z.string().max(40).optional().nullable(),
   source_document_id: z.string().uuid().optional().nullable(),
+  // Že zákazka patrí tej istej firme a je otvorená, stráži trigger
+  // `jobs_guard_assignment` v databáze.
+  job_id: z.string().uuid().optional().nullable(),
 });
 
 export const createStockMovementDebug = createServerFn({ method: "POST" })
@@ -311,6 +314,7 @@ export const createStockMovementDebug = createServerFn({ method: "POST" })
         data.source_document_type ??
         (data.type === "prijem" ? "receipt_note" : data.type === "vydaj" ? "issue_note" : "manual"),
       source_document_id: data.source_document_id ?? null,
+      job_id: data.job_id ?? null,
     };
     debug.insert_payload = payload;
     const { data: movement, error } = await supabase

@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { ArrowLeft, Upload, Search, Loader2 } from "lucide-react";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
+import { JobPicker } from "@/components/faktero/JobPicker";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/nova")({
   head: () => ({ meta: [{ title: "Nová prijatá faktúra — Faktero" }] }),
@@ -40,6 +41,7 @@ function NewPurchaseInvoicePage() {
     currency: "EUR",
     payment_method: "prevod",
     note: "",
+    job_id: "",
     status: "received" as "draft" | "received" | "booked" | "paid" | "cancelled",
   });
   const [file, setFile] = useState<File | null>(null);
@@ -106,6 +108,7 @@ function NewPurchaseInvoicePage() {
         currency: form.currency,
         payment_method: form.payment_method || null,
         note: form.note || null,
+        job_id: form.job_id || null,
         status: form.status,
         file_path,
         file_mime,
@@ -331,6 +334,11 @@ function NewPurchaseInvoicePage() {
                 />
               </label>
             </Field>
+            <JobPicker
+              value={form.job_id}
+              onChange={(v) => set("job_id", v)}
+              label="Zákazka (náklad sa započíta do jej vyhodnotenia)"
+            />
             <Field label="Poznámka">
               <textarea
                 rows={3}

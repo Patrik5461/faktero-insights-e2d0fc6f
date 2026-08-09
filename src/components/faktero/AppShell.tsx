@@ -24,6 +24,7 @@ import {
   Warehouse,
   Car,
   ArrowRightLeft,
+  HardHat,
 } from "lucide-react";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,6 +114,16 @@ const NAV: NavGroup[] = [
     children: [
       { to: "/odberatelia", label: "Odberatelia" },
       { to: "/odberatelia", search: { new: "1" }, label: "Nový odberateľ" },
+    ],
+  },
+  {
+    key: "zakazky",
+    label: "Zákazky",
+    icon: HardHat,
+    match: ["/zakazky"],
+    children: [
+      { to: "/zakazky", label: "Prehľad zákaziek" },
+      { to: "/zakazky/nova", label: "Nová zákazka" },
     ],
   },
   {

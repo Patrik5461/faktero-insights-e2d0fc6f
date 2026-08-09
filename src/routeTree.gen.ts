@@ -134,6 +134,9 @@ import { Route as AuthenticatedSkladNastaveniaRouteImport } from './routes/_auth
 import { Route as AuthenticatedSkladPrijemRouteImport } from './routes/_authenticated/sklad.prijem'
 import { Route as AuthenticatedSkladVydajRouteImport } from './routes/_authenticated/sklad.vydaj'
 import { Route as AuthenticatedUctovnictvoDphRouteImport } from './routes/_authenticated/uctovnictvo.dph'
+import { Route as AuthenticatedZakazkyIndexRouteImport } from './routes/_authenticated/zakazky.index'
+import { Route as AuthenticatedZakazkyIdRouteImport } from './routes/_authenticated/zakazky.$id'
+import { Route as AuthenticatedZakazkyNovaRouteImport } from './routes/_authenticated/zakazky.nova'
 import { Route as AuthenticatedZalohoveIndexRouteImport } from './routes/_authenticated/zalohove.index'
 import { Route as AdminCompaniesIndexRouteImport } from './routes/admin.companies.index'
 import { Route as AdminCompaniesIdRouteImport } from './routes/admin.companies.$id'
@@ -875,6 +878,23 @@ const AuthenticatedUctovnictvoDphRoute =
     path: '/uctovnictvo/dph',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedZakazkyIndexRoute =
+  AuthenticatedZakazkyIndexRouteImport.update({
+    id: '/zakazky/',
+    path: '/zakazky/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedZakazkyIdRoute = AuthenticatedZakazkyIdRouteImport.update({
+  id: '/zakazky/$id',
+  path: '/zakazky/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedZakazkyNovaRoute =
+  AuthenticatedZakazkyNovaRouteImport.update({
+    id: '/zakazky/nova',
+    path: '/zakazky/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedZalohoveIndexRoute =
   AuthenticatedZalohoveIndexRouteImport.update({
     id: '/zalohove/',
@@ -1346,6 +1366,8 @@ export interface FileRoutesByFullPath {
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
+  '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
@@ -1371,6 +1393,7 @@ export interface FileRoutesByFullPath {
   '/ponuky/': typeof AuthenticatedPonukyIndexRoute
   '/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
   '/sklad/': typeof AuthenticatedSkladIndexRoute
+  '/zakazky/': typeof AuthenticatedZakazkyIndexRoute
   '/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
@@ -1529,6 +1552,8 @@ export interface FileRoutesByTo {
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
+  '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
@@ -1554,6 +1579,7 @@ export interface FileRoutesByTo {
   '/ponuky': typeof AuthenticatedPonukyIndexRoute
   '/prijate-faktury': typeof AuthenticatedPrijateFakturyIndexRoute
   '/sklad': typeof AuthenticatedSkladIndexRoute
+  '/zakazky': typeof AuthenticatedZakazkyIndexRoute
   '/zalohove': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies': typeof AdminCompaniesIndexRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
@@ -1722,6 +1748,8 @@ export interface FileRoutesById {
   '/_authenticated/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/_authenticated/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/_authenticated/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/_authenticated/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
+  '/_authenticated/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
@@ -1747,6 +1775,7 @@ export interface FileRoutesById {
   '/_authenticated/ponuky/': typeof AuthenticatedPonukyIndexRoute
   '/_authenticated/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
   '/_authenticated/sklad/': typeof AuthenticatedSkladIndexRoute
+  '/_authenticated/zakazky/': typeof AuthenticatedZakazkyIndexRoute
   '/_authenticated/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
   '/_authenticated/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
@@ -1915,6 +1944,8 @@ export interface FileRouteTypes {
     | '/sklad/prijem'
     | '/sklad/vydaj'
     | '/uctovnictvo/dph'
+    | '/zakazky/$id'
+    | '/zakazky/nova'
     | '/admin/companies/$id'
     | '/api/admin/migration-export'
     | '/api/public/support-chat'
@@ -1940,6 +1971,7 @@ export interface FileRouteTypes {
     | '/ponuky/'
     | '/prijate-faktury/'
     | '/sklad/'
+    | '/zakazky/'
     | '/zalohove/'
     | '/admin/companies/'
     | '/faktury/$id/upravit'
@@ -2098,6 +2130,8 @@ export interface FileRouteTypes {
     | '/sklad/prijem'
     | '/sklad/vydaj'
     | '/uctovnictvo/dph'
+    | '/zakazky/$id'
+    | '/zakazky/nova'
     | '/admin/companies/$id'
     | '/api/admin/migration-export'
     | '/api/public/support-chat'
@@ -2123,6 +2157,7 @@ export interface FileRouteTypes {
     | '/ponuky'
     | '/prijate-faktury'
     | '/sklad'
+    | '/zakazky'
     | '/zalohove'
     | '/admin/companies'
     | '/faktury/$id/upravit'
@@ -2290,6 +2325,8 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/prijem'
     | '/_authenticated/sklad/vydaj'
     | '/_authenticated/uctovnictvo/dph'
+    | '/_authenticated/zakazky/$id'
+    | '/_authenticated/zakazky/nova'
     | '/admin/companies/$id'
     | '/api/admin/migration-export'
     | '/api/public/support-chat'
@@ -2315,6 +2352,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ponuky/'
     | '/_authenticated/prijate-faktury/'
     | '/_authenticated/sklad/'
+    | '/_authenticated/zakazky/'
     | '/_authenticated/zalohove/'
     | '/admin/companies/'
     | '/_authenticated/faktury/$id/upravit'
@@ -3317,6 +3355,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUctovnictvoDphRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/zakazky/': {
+      id: '/_authenticated/zakazky/'
+      path: '/zakazky'
+      fullPath: '/zakazky/'
+      preLoaderRoute: typeof AuthenticatedZakazkyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/zakazky/$id': {
+      id: '/_authenticated/zakazky/$id'
+      path: '/zakazky/$id'
+      fullPath: '/zakazky/$id'
+      preLoaderRoute: typeof AuthenticatedZakazkyIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/zakazky/nova': {
+      id: '/_authenticated/zakazky/nova'
+      path: '/zakazky/nova'
+      fullPath: '/zakazky/nova'
+      preLoaderRoute: typeof AuthenticatedZakazkyNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/zalohove/': {
       id: '/_authenticated/zalohove/'
       path: '/zalohove'
@@ -3917,6 +3976,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPrijateFakturyIdRoute: typeof AuthenticatedPrijateFakturyIdRoute
   AuthenticatedPrijateFakturyNovaRoute: typeof AuthenticatedPrijateFakturyNovaRoute
   AuthenticatedUctovnictvoDphRoute: typeof AuthenticatedUctovnictvoDphRoute
+  AuthenticatedZakazkyIdRoute: typeof AuthenticatedZakazkyIdRoute
+  AuthenticatedZakazkyNovaRoute: typeof AuthenticatedZakazkyNovaRoute
   AuthenticatedBankoveUctyIndexRoute: typeof AuthenticatedBankoveUctyIndexRoute
   AuthenticatedDokladyIndexRoute: typeof AuthenticatedDokladyIndexRoute
   AuthenticatedFakturyIndexRoute: typeof AuthenticatedFakturyIndexRoute
@@ -3926,6 +3987,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOpakovaneIndexRoute: typeof AuthenticatedOpakovaneIndexRoute
   AuthenticatedPonukyIndexRoute: typeof AuthenticatedPonukyIndexRoute
   AuthenticatedPrijateFakturyIndexRoute: typeof AuthenticatedPrijateFakturyIndexRoute
+  AuthenticatedZakazkyIndexRoute: typeof AuthenticatedZakazkyIndexRoute
   AuthenticatedZalohoveIndexRoute: typeof AuthenticatedZalohoveIndexRoute
   AuthenticatedFakturyIdUpravitRoute: typeof AuthenticatedFakturyIdUpravitRoute
   AuthenticatedFakturyIdIndexRoute: typeof AuthenticatedFakturyIdIndexRoute
@@ -3982,6 +4044,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPrijateFakturyIdRoute: AuthenticatedPrijateFakturyIdRoute,
   AuthenticatedPrijateFakturyNovaRoute: AuthenticatedPrijateFakturyNovaRoute,
   AuthenticatedUctovnictvoDphRoute: AuthenticatedUctovnictvoDphRoute,
+  AuthenticatedZakazkyIdRoute: AuthenticatedZakazkyIdRoute,
+  AuthenticatedZakazkyNovaRoute: AuthenticatedZakazkyNovaRoute,
   AuthenticatedBankoveUctyIndexRoute: AuthenticatedBankoveUctyIndexRoute,
   AuthenticatedDokladyIndexRoute: AuthenticatedDokladyIndexRoute,
   AuthenticatedFakturyIndexRoute: AuthenticatedFakturyIndexRoute,
@@ -3991,6 +4055,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOpakovaneIndexRoute: AuthenticatedOpakovaneIndexRoute,
   AuthenticatedPonukyIndexRoute: AuthenticatedPonukyIndexRoute,
   AuthenticatedPrijateFakturyIndexRoute: AuthenticatedPrijateFakturyIndexRoute,
+  AuthenticatedZakazkyIndexRoute: AuthenticatedZakazkyIndexRoute,
   AuthenticatedZalohoveIndexRoute: AuthenticatedZalohoveIndexRoute,
   AuthenticatedFakturyIdUpravitRoute: AuthenticatedFakturyIdUpravitRoute,
   AuthenticatedFakturyIdIndexRoute: AuthenticatedFakturyIdIndexRoute,

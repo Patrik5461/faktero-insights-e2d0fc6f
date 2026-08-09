@@ -11,6 +11,7 @@ import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocomplete";
 import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { findCustomerByIcoFn } from "@/lib/faktero/company-lookup.functions";
+import { JobPicker } from "@/components/faktero/JobPicker";
 import { usePagedList } from "@/hooks/usePagedList";
 import {
   Pagination,
@@ -43,6 +44,8 @@ type Customer = {
   phone?: string;
   contact_person?: string;
   notes?: string;
+  /** Doplní sa do nového dokladu tohto odberateľa. */
+  default_job_id?: string | null;
 };
 
 const EMPTY: Customer = { name: "", country: "SK" };
@@ -388,6 +391,14 @@ function CustomerDialog({
           <In label="Krajina" value={c.country ?? "SK"} onChange={(v) => f("country", v)} />
           <In label="Email" type="email" value={c.email ?? ""} onChange={(v) => f("email", v)} />
           <In label="Telefón" value={c.phone ?? ""} onChange={(v) => f("phone", v)} />
+          <JobPicker
+            className="sm:col-span-2"
+            label="Predvolená zákazka"
+            value={c.default_job_id ?? ""}
+            // Prázdny výber musí ísť do databázy ako NULL — prázdny reťazec
+            // nie je platné UUID a uloženie by padlo.
+            onChange={(v) => f("default_job_id", v || null)}
+          />
           <label className="sm:col-span-2 block">
             <span className="text-sm font-medium">Poznámky</span>
             <textarea
