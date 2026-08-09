@@ -157,7 +157,10 @@ function EditInvoice() {
         .from("invoices")
         .update({
           issue_date: form.issue_date,
-          delivery_date: form.delivery_date,
+          // Prázdne pole je v HTML formulári "", nie null. Postgres na to
+          // odpovie „invalid input syntax for type date" a faktúra bez dátumu
+          // dodania sa nedala uložiť vôbec.
+          delivery_date: form.delivery_date || null,
           due_date: form.due_date,
           variable_symbol: form.variable_symbol,
           currency: form.currency,

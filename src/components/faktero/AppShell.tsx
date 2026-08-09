@@ -149,6 +149,7 @@ const NAV: NavGroup[] = [
     match: ["/exporty", "/importy", "/uctovnictvo", "/bankove-ucty"],
     children: [
       { to: "/uctovnictvo/dph", label: "DPH prehľad" },
+      { to: "/uctovnictvo/uzavierka", label: "Uzávierka" },
       { to: "/exporty", label: "Účtovné exporty" },
       { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
       { to: "/bankove-ucty", label: "Bankové účty" },

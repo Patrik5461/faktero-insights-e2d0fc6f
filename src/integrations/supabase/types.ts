@@ -872,6 +872,7 @@ export type Database = {
           invoice_footer: string | null
           invoice_number_format: string
           invoice_show_logo: boolean
+          locked_until: string | null
           logo_url: string | null
           name: string
           online_payments_enabled: boolean
@@ -915,6 +916,7 @@ export type Database = {
           invoice_footer?: string | null
           invoice_number_format?: string
           invoice_show_logo?: boolean
+          locked_until?: string | null
           logo_url?: string | null
           name: string
           online_payments_enabled?: boolean
@@ -958,6 +960,7 @@ export type Database = {
           invoice_footer?: string | null
           invoice_number_format?: string
           invoice_show_logo?: boolean
+          locked_until?: string | null
           logo_url?: string | null
           name?: string
           online_payments_enabled?: boolean

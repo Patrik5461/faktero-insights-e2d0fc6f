@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -328,6 +328,16 @@ function DphPage() {
             <b>Upozornenie:</b> Toto je informatívny prehľad. Pre podanie DPH priznania použite
             certifikovaný účtovný softvér alebo kontaktujte účtovníka.
           </div>
+        </div>
+
+        {/* Po podaní priznania sa oplatí obdobie zamknúť — inak neskoršia
+            oprava staršej faktúry ticho zmení číslo, ktoré je už odovzdané. */}
+        <div className="text-sm text-muted-foreground">
+          Máte priznanie podané?{" "}
+          <Link to="/uctovnictvo/uzavierka" className="text-primary hover:underline">
+            Uzamknite obdobie
+          </Link>
+          , aby sa doklady v ňom už nedali zmeniť.
         </div>
 
         <Card>
