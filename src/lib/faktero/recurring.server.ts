@@ -1,28 +1,10 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { nextInvoiceNumberDetailed } from "./invoice-numbering.server";
 import { triggerEvent, invoicePayload } from "./webhook-trigger.server";
+import { advanceNextRun, type Frequency } from "./opakovane";
 
-export type Frequency = "weekly" | "monthly" | "quarterly" | "yearly";
-
-/** Calculate the next run date from a base date for a given frequency. */
-export function advanceNextRun(base: string | Date, freq: Frequency): string {
-  const d = typeof base === "string" ? new Date(base + "T00:00:00Z") : new Date(base);
-  switch (freq) {
-    case "weekly":
-      d.setUTCDate(d.getUTCDate() + 7);
-      break;
-    case "monthly":
-      d.setUTCMonth(d.getUTCMonth() + 1);
-      break;
-    case "quarterly":
-      d.setUTCMonth(d.getUTCMonth() + 3);
-      break;
-    case "yearly":
-      d.setUTCFullYear(d.getUTCFullYear() + 1);
-      break;
-  }
-  return d.toISOString().slice(0, 10);
-}
+export { advanceNextRun };
+export type { Frequency };
 
 /** Generate a single invoice from a recurring template by id. */
 export async function runRecurring(id: string, runType: "manual" | "automatic" = "automatic") {
@@ -33,6 +15,9 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
     .single();
   if (error || !rec) throw new Error("Recurring not found");
   if (!rec.active) return { skipped: true, reason: "inactive" };
+  // Mazanie je mäkké. Bez tejto kontroly by zmazaná šablóna fakturovala ďalej
+  // donekonečna a nebolo by ju ako zastaviť inak než deaktivovaním.
+  if (rec.deleted_at) return { skipped: true, reason: "deleted" };
 
   const items = Array.isArray(rec.items) ? rec.items : [];
   if (!items.length) return { skipped: true, reason: "no_items" };
@@ -163,6 +148,7 @@ export async function runAllDueRecurring() {
     .from("recurring_invoices")
     .select("id")
     .eq("active", true)
+    .is("deleted_at", null)
     .lte("next_run", today);
   const results: { id: string; ok: boolean; error?: string; invoice_id?: string }[] = [];
   for (const r of due ?? []) {

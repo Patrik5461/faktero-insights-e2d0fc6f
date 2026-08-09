@@ -4,9 +4,14 @@ export const Route = createFileRoute("/api/public/hooks/recurring-run")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const cronToken = request.headers.get("x-faktero-cron-token");
-        const expectedCron = process.env.FAKTERO_CRON_TOKEN;
-        const ok = expectedCron && cronToken && cronToken === expectedCron;
+        // Ako ostatné cron hooky: porovnanie v konštantnom čase. Priame `===`
+        // skončí pri prvom rozdielnom znaku a čas odpovede tak prezrádza,
+        // koľko znakov predpony útočník uhádol.
+        const { isValidCronToken } = await import("@/lib/faktero/cron-auth.server");
+        const ok = isValidCronToken(
+          request.headers.get("x-faktero-cron-token"),
+          process.env.FAKTERO_CRON_TOKEN,
+        );
         if (!ok) {
           return new Response(JSON.stringify({ error: "unauthorized" }), {
             status: 401,
