@@ -137,6 +137,7 @@ export const executeVendorImport = createServerFn({ method: "POST" })
         rows: importRows,
         mapping,
         options: data.options,
+        source: sourceLabels[data.source] ?? data.source,
       });
       await supabaseAdmin
         .from("import_jobs")

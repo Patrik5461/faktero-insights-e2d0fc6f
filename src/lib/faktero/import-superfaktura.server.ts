@@ -874,9 +874,13 @@ export async function runImport(args: {
   rows: Record<string, string>[];
   mapping: Partial<Record<FieldKey, string>>;
   options: ImportOptions;
+  /** Odkiaľ dáta prišli. Zapíše sa na faktúru, aby bolo neskôr vidieť pôvod. */
+  source?: string;
 }): Promise<ImportResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { jobId, companyId, rows, mapping, options } = args;
+  // Pôvod sa písal natvrdo ako „SuperFaktúra" aj pri importe z iDokladu.
+  const zdroj = args.source ?? "SuperFaktúra";
 
   const result: ImportResult = {
     imported_customers: 0,
@@ -1055,7 +1059,7 @@ export async function runImport(args: {
         vat_total: vatTotal,
         total,
         notes: pick(head, mapping, "notes") || null,
-        import_source: "SuperFaktúra",
+        import_source: zdroj,
         imported_at: new Date().toISOString(),
         original_external_id: externalId || null,
       };
