@@ -7,21 +7,23 @@ export const Route = createFileRoute("/_authenticated/importy/money-s3")({
     <VendorImportPage
       source="money-s3"
       title="Import z Money S3"
-      description="Naimportujte faktúry, odberateľov a produkty z XML exportu Stormware Money S3."
+      description="Naimportujte faktúry a odberateľov z XML exportu Money S3 (Seyfor)."
       accept=".xml"
       guide={
         <ol className="ml-4 list-decimal space-y-1">
           <li>
-            V Money S3 otvorte agendu <strong>Fakturácia → Vydané faktúry</strong>.
+            V Money S3 otvorte agendu <strong>Faktúry vydané</strong>.
           </li>
           <li>
-            V menu vyberte <strong>Súbor → Exportovať dáta → XML (MoneyData)</strong>.
+            Spustite <strong>XML prenosy → Export</strong> a vyberte typ dokladu{" "}
+            <em>Faktúry vydané</em>.
           </li>
           <li>
-            Zvoľte obdobie a potvrďte export do súboru <code>.xml</code>.
+            Zvoľte obdobie a potvrďte export do súboru <code>.xml</code> (dátový balík{" "}
+            <code>MoneyData</code>).
           </li>
           <li>
-            Súbor nahrajte nižšie. Podporujeme aj <em>Prijaté faktúry</em>.
+            Súbor nahrajte nižšie. Rovnako sa dajú naimportovať aj <em>Faktúry prijaté</em>.
           </li>
         </ol>
       }

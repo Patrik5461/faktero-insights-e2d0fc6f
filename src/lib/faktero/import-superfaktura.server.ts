@@ -426,6 +426,8 @@ const SYNONYMS: Record<FieldKey, string[]> = {
   currency: ["mena", "currency", "invoice currency", "localcurrencycode"],
   subtotal: [
     "zaklad dane",
+    "zaklad dph",
+    "celkom bez dph",
     "bez dph",
     "subtotal",
     "netto",
@@ -445,6 +447,8 @@ const SYNONYMS: Record<FieldKey, string[]> = {
     "suma s dph",
     "spolu s dph",
     "k uhrade",
+    "suma celkom",
+    "celkom s dph",
     "taxinclusiveamount",
   ],
   notes: ["poznamka", "note", "popis faktury", "comment", "header comment"],
@@ -471,16 +475,31 @@ const SYNONYMS: Record<FieldKey, string[]> = {
   customer_street: ["ulica", "street", "adresa", "address", "streetname", "client data address"],
   customer_city: ["mesto", "city", "cityname", "client data city"],
   customer_zip: ["psc", "zip", "postal", "postalzone", "client data zip"],
-  // „stat" je príliš krátke a chytalo sa na „status".
-  customer_country: ["krajina", "country", "identificationcode", "client data country"],
+  // „stat" sa cez podreťazec chytalo na „status"; po zmene porovnávania
+  // (podreťazec až od piatich znakov) je bezpečné a slovenské exporty ho
+  // používajú bežne.
+  customer_country: ["krajina", "stat", "country", "identificationcode", "client data country"],
   item_name: ["polozka", "nazov polozky", "item name", "item", "item description", "description"],
   item_description: ["popis", "popis polozky", "item note"],
   item_quantity: ["mnozstvo", "quantity", "qty", "pocet", "invoicedquantity"],
   item_unit: ["mj", "jednotka", "unit", "unitcode"],
-  item_unit_price: ["cena", "cena za mj", "unit price", "cena jednotkova", "unitprice"],
+  item_unit_price: [
+    "cena",
+    "cena za mj",
+    "unit price",
+    "cena jednotkova",
+    "jednotkova cena",
+    "unitprice",
+  ],
   // „dph %" sa po očistení zmení na „dph" a chytilo sa na stĺpec „ic dph".
   item_vat_rate: ["sadzba dph", "vat rate", "sadzba", "tax", "percent"],
-  item_total: ["polozka spolu", "item total", "cena spolu polozka", "lineextensionamount"],
+  item_total: [
+    "polozka spolu",
+    "item total",
+    "cena spolu polozka",
+    "cena celkom",
+    "lineextensionamount",
+  ],
 };
 
 /**

@@ -3,7 +3,7 @@
 // can reuse the existing `runImport` pipeline with an identity mapping.
 import { XMLParser } from "fast-xml-parser";
 import type { FieldKey } from "./import-superfaktura.server";
-import { parseCsv } from "./import-superfaktura.server";
+import { parseCsv, detectMapping as detectMappingSpolocne } from "./import-superfaktura.server";
 
 export type VendorSource = "money-s3" | "omega" | "idoklad" | "kros";
 export type CanonicalRow = Partial<Record<FieldKey, string>>;
@@ -68,65 +68,146 @@ function num(v: string): string {
 //     </SeznamPolozek></FaktVyd> …</SeznamFaktVyd></MoneyData>
 // We tolerate variants: `_MoneyData`, mixed casing, additional wrappers.
 // ---------------------------------------------------------------------------
+/** Vnorená hodnota — `hlbka(o, "Tel", "Cislo")`. `pickFirst` vnorené uzly preskakuje. */
+function hlbka(o: any, ...cesta: string[]): string {
+  let cur = o;
+  for (const k of cesta) {
+    if (cur == null || typeof cur !== "object") return "";
+    const kluc = Object.keys(cur).find((x) => x.toLowerCase() === k.toLowerCase());
+    if (kluc == null) return "";
+    cur = cur[kluc];
+    if (Array.isArray(cur)) cur = cur[0];
+  }
+  return cur == null || typeof cur === "object" ? "" : String(cur).trim();
+}
+
+/**
+ * Money S3 nedáva jednu sumu bez DPH, ale rozpis po sadzbách:
+ * `SouhrnDPH/Zaklad0`, `Zaklad5`, `Zaklad22`… a k nim `DPH5`, `DPH22`…
+ * Základ dane je ich súčet.
+ */
+function souhrn(uzol: any, predpona: "Zaklad" | "DPH"): string {
+  if (!uzol || typeof uzol !== "object") return "";
+  let spolu = 0;
+  let naslo = false;
+  for (const [k, v] of Object.entries(uzol)) {
+    if (typeof v === "object" || v == null) continue;
+    // `Zaklad_MJ` je cena za mernú jednotku, nie súčtová položka.
+    if (!k.toLowerCase().startsWith(predpona.toLowerCase()) || k.includes("_")) continue;
+    if (predpona === "Zaklad" && k.toLowerCase().startsWith("zakladdph")) continue;
+    const n = Number(String(v).replace(/\s/g, "").replace(",", "."));
+    if (Number.isFinite(n)) {
+      spolu += n;
+      naslo = true;
+    }
+  }
+  return naslo ? String(Math.round((spolu + Number.EPSILON) * 100) / 100) : "";
+}
+
+/**
+ * Money S3 (Seyfor). Štruktúra podľa oficiálnych vzorových súborov:
+ * `MoneyData/SeznamFaktVyd/FaktVyd`, odberateľ v `DodOdb`, dátumy `Vystaveno`,
+ * `Splatno`, `PlnenoDPH`, sumy v `SouhrnDPH` a `Celkem`.
+ *
+ * Pri faktúre v cudzej mene sú v `Celkem` domáce koruny a skutočné sumy v
+ * `Valuty`. Brať `Celkem` s menou z `Valuty` by faktúru nafúklo kurzom.
+ */
 function parseMoneyS3(bytes: Uint8Array): CanonicalRow[] {
   const xml = decodeBytes(bytes);
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "@",
     trimValues: true,
+    // Bez tohto sa IČO `01572377` prevedie na číslo a stratí vedúcu nulu.
+    parseTagValue: false,
+    parseAttributeValue: false,
   });
   const obj = parser.parse(xml);
-  const root = obj?.MoneyData ?? obj?._MoneyData ?? obj?.moneydata ?? obj?.["_MoneyData"] ?? obj;
+  const root = obj?.MoneyData ?? obj?.moneydata ?? obj;
 
-  const list =
-    root?.SeznamFaktVyd?.FaktVyd ?? root?.SeznamFaktPri?.FaktPri ?? root?.Faktury?.Faktura ?? [];
-  const invoices = asArray(list);
+  const invoices = [
+    ...asArray(root?.SeznamFaktVyd?.FaktVyd),
+    ...asArray(root?.SeznamFaktPrij?.FaktPrij),
+    ...asArray(root?.Faktury?.Faktura),
+  ];
   const rows: CanonicalRow[] = [];
 
   for (const inv of invoices) {
-    const firma = inv.Firma ?? inv.Odberatel ?? inv.Partner ?? {};
-    const adresa = firma.Adresa ?? firma;
-    const invNo = pickFirst(inv, "Doklad", "Cislo", "CisloDokladu", "Number");
-    const items = asArray(inv.SeznamPolozek?.Polozka ?? inv.Polozky?.Polozka ?? inv.Item);
+    // Odberateľ je `DodOdb`; `MojeFirma` je vlastná firma a do importu nepatrí.
+    const partner = inv.DodOdb ?? inv.KonecPrij ?? inv.Firma ?? inv.Odberatel ?? {};
+    const adresa = partner.Adresa ?? partner.ObchAdresa ?? partner.FaktAdresa ?? partner;
+
+    const valuty = inv.Valuty;
+    const cudziaMena = pickFirst(valuty?.Mena ?? {}, "Kod");
+    const suctyUzol = cudziaMena ? (valuty?.SouhrnDPH ?? inv.SouhrnDPH) : inv.SouhrnDPH;
+    const celkom = cudziaMena
+      ? pickFirst(valuty, "Celkem") || pickFirst(inv, "Celkem")
+      : pickFirst(inv, "Celkem");
 
     const head: CanonicalRow = {
-      invoice_number: invNo,
-      variable_symbol: pickFirst(inv, "VarSym", "VariabilniSymbol"),
-      issue_date: normalizeDate(pickFirst(inv, "DatVyst", "DatumVystaveni")),
-      due_date: normalizeDate(pickFirst(inv, "DatSplat", "DatumSplatnosti")),
-      delivery_date: normalizeDate(pickFirst(inv, "DatPln", "DatumPlneni", "DatumDodani")),
-      currency: pickFirst(inv, "Mena", "Currency") || "EUR",
-      subtotal: num(pickFirst(inv, "KcBezDph", "CelkemBezDph", "ZakladDph")),
-      vat_total: num(pickFirst(inv, "KcDph", "Dph")),
-      total: num(pickFirst(inv, "Kc", "Celkem", "KcCelkem", "Total")),
-      notes: pickFirst(inv, "TextPredKonc", "Poznamka", "TextPred"),
-      external_id: pickFirst(inv, "ID", "GUID"),
-      customer_name: pickFirst(firma, "ObchNazev", "Nazev", "Name"),
-      customer_ico: pickFirst(firma, "ICO", "IC"),
-      customer_dic: pickFirst(firma, "DIC"),
-      customer_ic_dph: pickFirst(firma, "ICDPH", "IcDph"),
-      customer_email: pickFirst(firma, "Email"),
-      customer_phone: pickFirst(firma, "Tel", "Telefon", "Phone"),
+      invoice_number: pickFirst(inv, "Doklad", "Cislo", "CisloDokladu", "Number"),
+      variable_symbol: pickFirst(inv, "VarSymbol", "VarSym", "VariabilniSymbol"),
+      issue_date: normalizeDate(pickFirst(inv, "Vystaveno", "DatVyst", "DatumVystaveni")),
+      due_date: normalizeDate(pickFirst(inv, "Splatno", "DatSplat", "DatumSplatnosti")),
+      delivery_date: normalizeDate(
+        pickFirst(inv, "PlnenoDPH", "DatSkPoh", "DatPln", "DatumPlneni", "DatumDodani"),
+      ),
+      currency: cudziaMena || hlbka(inv, "MojeFirma", "MenaKod") || "EUR",
+      subtotal: num(souhrn(suctyUzol, "Zaklad")),
+      vat_total: num(souhrn(suctyUzol, "DPH")),
+      total: num(celkom),
+      notes: pickFirst(inv, "Popis", "TextPredKonc", "Poznamka", "TextPred"),
+      external_id: pickFirst(inv, "GUID", "ID"),
+      customer_name: pickFirst(partner, "ObchNazev", "FaktNazev", "Nazev", "Name"),
+      customer_ico: pickFirst(partner, "ICO", "IC"),
+      // Money S3 vedie len `DIC` v tvare `CZ12345678` — to je zároveň IČ DPH.
+      customer_dic: pickFirst(partner, "DIC").replace(/^[A-Z]{2}/i, ""),
+      customer_ic_dph: pickFirst(partner, "ICDPH", "IcDph") || pickFirst(partner, "DIC"),
+      customer_email: pickFirst(partner, "EMail", "Email"),
+      customer_phone: hlbka(partner, "Tel", "Cislo") || pickFirst(partner, "Tel", "Telefon"),
       customer_street: pickFirst(adresa, "Ulice", "Ulica", "Street"),
-      customer_city: pickFirst(adresa, "Mesto", "City"),
+      // V Money S3 sa mesto volá `Misto`.
+      customer_city: pickFirst(adresa, "Misto", "Mesto", "City"),
       customer_zip: pickFirst(adresa, "PSC", "Zip"),
-      customer_country: pickFirst(adresa, "Stat", "Country") || "SK",
+      // Kód krajiny je len v `ObchAdresa`/`FaktAdresa`; `Adresa` má celý názov.
+      customer_country:
+        pickFirst(adresa, "KodStatu") ||
+        pickFirst(partner.ObchAdresa ?? {}, "KodStatu") ||
+        pickFirst(partner.FaktAdresa ?? {}, "KodStatu") ||
+        pickFirst(adresa, "Stat", "Country") ||
+        "SK",
     };
 
+    const items = asArray(inv.SeznamPolozek?.Polozka ?? inv.Polozky?.Polozka ?? inv.Item);
     if (items.length === 0) {
       rows.push(head);
       continue;
     }
     for (const it of items) {
+      const suctyPol = cudziaMena ? (it.SouhrnDPH?.Valuty ?? it.SouhrnDPH) : it.SouhrnDPH;
+      const zaklad = pickFirst(suctyPol ?? {}, "Zaklad");
+      const dan = pickFirst(suctyPol ?? {}, "DPH");
+      const spolu =
+        zaklad || dan
+          ? String(
+              Math.round(
+                (Number(num(zaklad) || 0) + Number(num(dan) || 0) + Number.EPSILON) * 100,
+              ) / 100,
+            )
+          : "";
       rows.push({
         ...head,
-        item_name: pickFirst(it, "Nazev", "Popis", "Name"),
-        item_description: pickFirst(it, "Popis", "Description"),
-        item_quantity: num(pickFirst(it, "PocetMj", "Mnozstvo", "Quantity")),
-        item_unit: pickFirst(it, "Jednotka", "MJ", "Unit") || "ks",
-        item_unit_price: num(pickFirst(it, "Cena", "CenaMj", "UnitPrice")),
-        item_vat_rate: num(pickFirst(it, "SazbaDph", "DphSaz", "VatRate")),
-        item_total: num(pickFirst(it, "CenaCelkem", "Celkem", "Total")),
+        item_name: pickFirst(it, "Popis", "Nazev", "Name"),
+        item_quantity: num(pickFirst(it, "PocetMJ", "PocetMj", "Mnozstvo", "Quantity")),
+        item_unit:
+          hlbka(it, "SklPolozka", "KmKarta", "MJ") || pickFirst(it, "Jednotka", "MJ", "Unit") || "ks",
+        item_unit_price: num(
+          cudziaMena
+            ? pickFirst(it, "Valuty") || pickFirst(it, "Cena")
+            : pickFirst(it, "Cena", "CenaMj", "UnitPrice"),
+        ),
+        item_vat_rate: num(pickFirst(it, "SazbaDPH", "SazbaDph", "DphSaz", "VatRate")),
+        item_total: spolu,
       });
     }
   }
@@ -138,111 +219,19 @@ function parseMoneyS3(bytes: Uint8Array): CanonicalRow[] {
 // Each vendor has slightly different column names; we match case-insensitively
 // against a synonym list per canonical field.
 // ---------------------------------------------------------------------------
-const CSV_SYNONYMS: Record<FieldKey, string[]> = {
-  invoice_number: [
-    "cislo dokladu",
-    "cislo faktury",
-    "cislo",
-    "doklad",
-    "číslo dokladu",
-    "číslo faktúry",
-    "číslo",
-    "invoice number",
-  ],
-  variable_symbol: ["variabilny symbol", "variabilní symbol", "vs", "var symbol"],
-  issue_date: [
-    "datum vystavenia",
-    "datum vystaveni",
-    "dátum vystavenia",
-    "date issued",
-    "issue date",
-  ],
-  due_date: ["datum splatnosti", "dátum splatnosti", "splatnost", "splatnosť", "due date"],
-  delivery_date: [
-    "datum dodania",
-    "dátum dodania",
-    "datum plneni",
-    "delivery date",
-    "dátum dodania tovaru",
-  ],
-  status: ["stav", "status", "uhradene", "uhradené"],
-  currency: ["mena", "currency"],
-  subtotal: ["suma bez dph", "základ dph", "zaklad dph", "celkom bez dph", "cena bez dph", "netto"],
-  vat_total: ["dph", "dph spolu", "dan", "daň", "vat"],
-  total: [
-    "celkom s dph",
-    "suma s dph",
-    "celkom",
-    "spolu",
-    "suma celkom",
-    "k uhrade",
-    "k úhrade",
-    "total",
-  ],
-  notes: ["poznamka", "poznámka", "note"],
-  external_id: ["id", "external id", "guid"],
-  customer_name: [
-    "odberatel",
-    "odberateľ",
-    "odberatel - nazov",
-    "odberateľ - názov",
-    "nazov odberatela",
-    "názov odberateľa",
-    "obchodne meno",
-    "obchodné meno",
-    "firma",
-    "customer",
-    "zakaznik",
-  ],
-  customer_ico: ["ico", "ičo"],
-  customer_dic: ["dic", "dič"],
-  customer_ic_dph: ["ic dph", "ič dph", "icdph", "vat id"],
-  customer_email: ["email", "e-mail"],
-  customer_phone: ["telefon", "telefón", "phone"],
-  customer_street: ["ulica", "adresa", "street"],
-  customer_city: ["mesto", "city"],
-  customer_zip: ["psc", "psč", "zip"],
-  customer_country: ["stat", "štát", "krajina", "country"],
-  item_name: ["polozka", "položka", "nazov polozky", "názov položky", "item name", "produkt"],
-  item_description: ["popis", "description"],
-  item_quantity: ["mnozstvo", "množstvo", "pocet", "počet", "quantity"],
-  item_unit: ["mj", "jednotka", "unit"],
-  item_unit_price: ["cena za mj", "cena jedn", "jednotkova cena", "jednotková cena", "unit price"],
-  item_vat_rate: ["sadzba dph", "% dph", "vat rate"],
-  item_total: ["cena celkom", "polozka spolu", "položka spolu", "item total"],
-};
-
-function normHeader(s: string): string {
-  return (s ?? "")
-    .toString()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
-function detectMapping(headers: string[]): Partial<Record<FieldKey, string>> {
-  const mapping: Partial<Record<FieldKey, string>> = {};
-  const normed = headers.map((h) => ({ raw: h, n: normHeader(h) }));
-  for (const [field, syns] of Object.entries(CSV_SYNONYMS) as [FieldKey, string[]][]) {
-    for (const s of syns) {
-      const ns = normHeader(s);
-      const hit = normed.find((h) => h.n === ns || h.n.includes(ns));
-      if (hit) {
-        mapping[field] = hit.raw;
-        break;
-      }
-    }
-  }
-  return mapping;
-}
-
+/*
+ * Rozpoznanie stĺpcov CSV používa **ten istý detektor ako import zo
+ * SuperFaktúry**. Tento súbor mal vlastný, jednoduchší: hľadal synonymum ako
+ * podreťazec v hlavičke a nemal riešenie konfliktov, takže „dph" sa chytilo na
+ * stĺpec „IČ DPH", „id" na „Identifikačné číslo" a jeden stĺpec mohol skončiť
+ * v dvoch poliach naraz. Dva detektory znamenali aj to, že oprava jedného sa
+ * druhého netýkala.
+ */
 function csvToCanonical(text: string): CanonicalRow[] {
   const rows = parseCsv(text);
   if (rows.length === 0) return [];
   const headers = Object.keys(rows[0]);
-  const map = detectMapping(headers);
+  const map = detectMappingSpolocne(headers, rows).mapping;
   return rows.map((r) => {
     const out: CanonicalRow = {};
     for (const [field, header] of Object.entries(map) as [FieldKey, string][]) {
@@ -268,6 +257,10 @@ function parseKrosXml(bytes: Uint8Array): CanonicalRow[] {
     ignoreAttributes: false,
     attributeNamePrefix: "@",
     trimValues: true,
+    // Bez tohto stráca IČO vedúce nuly (00151653 → 151653).
+    parseTagValue: false,
+    parseAttributeValue: false,
+    removeNSPrefix: true,
   });
   const obj = parser.parse(xml);
 
@@ -362,12 +355,22 @@ export function summarize(rows: CanonicalRow[]) {
     total: number;
     issue_date: string;
   }> = [];
+  /*
+   * Celková suma sa počíta **raz na faktúru**, nie za každý riadok. Riadok je
+   * položka a hlavičkové `total` sa na nich opakuje — faktúra s tromi
+   * položkami sa predtým do náhľadu započítala trikrát.
+   */
+  let mena = "";
   for (const r of rows) {
-    if (r.invoice_number) invoiceNumbers.add(r.invoice_number);
+    if (r.invoice_number && !invoiceNumbers.has(r.invoice_number)) {
+      invoiceNumbers.add(r.invoice_number);
+      if (r.total && !isNaN(Number(r.total))) totalValue += Number(r.total);
+    }
     if (r.customer_name || r.customer_ico)
       customers.add((r.customer_ico ?? "") + "|" + (r.customer_name ?? ""));
-    if (r.total && !isNaN(Number(r.total))) totalValue += Number(r.total);
+    if (!mena && r.currency) mena = r.currency;
   }
+  totalValue = Math.round((totalValue + Number.EPSILON) * 100) / 100;
   const seen = new Set<string>();
   for (const r of rows) {
     if (!r.invoice_number || seen.has(r.invoice_number)) continue;
@@ -385,7 +388,7 @@ export function summarize(rows: CanonicalRow[]) {
     customersCount: customers.size,
     itemsCount: rows.length,
     totalValue,
-    currency: "EUR",
+    currency: mena || "EUR",
     sampleInvoices: sample,
   };
 }

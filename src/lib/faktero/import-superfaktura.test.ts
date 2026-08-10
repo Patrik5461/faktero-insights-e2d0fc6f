@@ -242,3 +242,35 @@ describe("čísla ako text", () => {
     expect(t.rows[0].customer_zip).toBe("11810");
   });
 });
+
+describe("slovenské hlavičky", () => {
+  // „Štát" musí ísť do krajiny a „Stav" do stavu — nesmú si sadnúť navzájom.
+  it("Štát a Stav sa nezamenia", () => {
+    const hlavicky = ["Stav", "Štát", "Číslo faktúry", "Odberateľ", "Celkom s DPH"];
+    const riadky = [
+      {
+        Stav: "Uhradená",
+        "Štát": "SK",
+        "Číslo faktúry": "2025001",
+        "Odberateľ": "ACME s.r.o.",
+        "Celkom s DPH": "123,00",
+      },
+    ];
+    const m = detectMapping(hlavicky, riadky).mapping;
+    expect(m.customer_country).toBe("Štát");
+    expect(m.status).toBe("Stav");
+    expect(m.invoice_number).toBe("Číslo faktúry");
+    expect(m.customer_name).toBe("Odberateľ");
+    expect(m.total).toBe("Celkom s DPH");
+  });
+
+  // „IČ DPH" sa nesmie chytiť na stĺpec s daňou a naopak.
+  it("DPH ako suma a IČ DPH sa nezamenia", () => {
+    const hlavicky = ["DPH", "IČ DPH", "Celkom bez DPH"];
+    const riadky = [{ DPH: "23,00", "IČ DPH": "SK2020304050", "Celkom bez DPH": "100,00" }];
+    const m = detectMapping(hlavicky, riadky).mapping;
+    expect(m.vat_total).toBe("DPH");
+    expect(m.customer_ic_dph).toBe("IČ DPH");
+    expect(m.subtotal).toBe("Celkom bez DPH");
+  });
+});
