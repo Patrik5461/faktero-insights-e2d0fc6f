@@ -1,6 +1,7 @@
 import { unzipSync, strFromU8 } from "fflate";
 import { XMLParser } from "fast-xml-parser";
 import * as XLSX from "xlsx";
+import { isdocNaRiadky, jeIsdoc } from "./isdoc";
 
 // =========================================================
 // Lightweight CSV parser (semicolon / comma autodetect, RFC4180-ish)
@@ -79,6 +80,28 @@ export type ParsedTable = {
   headers: string[];
 };
 
+/**
+ * Zlúči tabuľky s rovnakou sadou stĺpcov do jednej. V archíve zo SuperFaktúry
+ * má každá faktúra vlastný súbor, ale všetky rovnakú štruktúru.
+ */
+function zluc(tables: ParsedTable[]): ParsedTable[] {
+  if (tables.length <= 1) return tables;
+  const skupiny = new Map<string, { tabulka: ParsedTable; suborov: number }>();
+  for (const t of tables) {
+    const kluc = t.format + "|" + [...t.headers].sort().join(",");
+    const s = skupiny.get(kluc);
+    if (s) {
+      s.tabulka.rows.push(...t.rows);
+      s.suborov++;
+    } else {
+      skupiny.set(kluc, { tabulka: { ...t, rows: [...t.rows] }, suborov: 1 });
+    }
+  }
+  return [...skupiny.values()].map(({ tabulka, suborov }) =>
+    suborov > 1 ? { ...tabulka, name: `${suborov} súborov z archívu` } : tabulka,
+  );
+}
+
 export async function extractTables(
   fileBytes: Uint8Array,
   fileName: string,
@@ -97,7 +120,10 @@ export async function extractTables(
         const rows = parseCsv(strFromU8(bytes));
         if (rows.length)
           tables.push({ name: path, format: "csv", rows, headers: Object.keys(rows[0]) });
-      } else if (l.endsWith(".xml")) {
+        // Export zo SuperFaktúry je ZIP so súbormi `.isdoc` — jedna faktúra na
+        // súbor. Bez tejto vetvy sa celý archív preskočil a import skončil
+        // hláškou, že súbor neobsahuje žiadne dáta.
+      } else if (l.endsWith(".xml") || l.endsWith(".isdoc")) {
         const rows = parseXmlRows(strFromU8(bytes));
         if (rows.length)
           tables.push({ name: path, format: "xml", rows, headers: Object.keys(rows[0]) });
@@ -105,16 +131,23 @@ export async function extractTables(
         tables.push(...parseXlsx(bytes, path));
       }
     }
-    return tables;
+    // Faktúry z archívu patria do jednej tabuľky, inak by sa každá riešila ako
+    // samostatný import s vlastným mapovaním stĺpcov.
+    return zluc(tables);
   }
-  if (lower.endsWith(".xml")) {
-    const rows = parseXmlRows(new TextDecoder().decode(fileBytes));
+  const text = new TextDecoder().decode(fileBytes);
+
+  // Rozhoduje obsah, nie prípona — ISDOC prichádza aj ako `.xml`, aj bez
+  // prípony. Čítať ho ako CSV znamenalo rozsekať XML na stovky nezmyselných
+  // riadkov s hlavičkou `<?xml version=...?>`.
+  if (lower.endsWith(".xml") || lower.endsWith(".isdoc") || jeIsdoc(text)) {
+    const rows = parseXmlRows(text);
     return rows.length
       ? [{ name: fileName, format: "xml", rows, headers: Object.keys(rows[0]) }]
       : [];
   }
   // default: CSV (covers .csv, .txt, no-ext)
-  const rows = parseCsv(new TextDecoder().decode(fileBytes));
+  const rows = parseCsv(text);
   return rows.length
     ? [{ name: fileName, format: "csv", rows, headers: Object.keys(rows[0]) }]
     : [];
@@ -191,12 +224,37 @@ function parseXmlRows(xml: string): Record<string, string>[] {
     ignoreAttributes: false,
     attributeNamePrefix: "@",
     textNodeName: "#text",
+    // ISDOC beží v mennom priestore; bez tohto by sa uzly volali `isdoc:Invoice`
+    // a nenašlo by sa nič.
+    removeNSPrefix: true,
   });
   const obj = parser.parse(xml);
-  // Find first array of records (heuristic for SF XML exports).
+
+  // ISDOC je jedna faktúra na dokument so zanorenou hlavičkou. Hľadanie „prvého
+  // poľa záznamov" by v ňom našlo položky faktúry a hlavičku zahodilo.
+  if (jeIsdoc(xml)) return isdocNaRiadky(obj);
+
   const found = findRowsArray(obj);
-  if (!found) return [];
-  return found.map((r) => flattenRow(r));
+  if (found) return found.map((r) => flattenRow(r));
+
+  // Dokument s jedinou faktúrou (nie pole) — sploští sa ako jeden riadok.
+  const jediny = findSingleRecord(obj);
+  return jediny ? [flattenRow(jediny)] : [];
+}
+
+/**
+ * Najvnútornejší uzol, ktorý ešte vyzerá ako záznam — má aspoň tri vlastné
+ * hodnoty. Bez toho by export s jedinou faktúrou skončil ako prázdny import.
+ */
+function findSingleRecord(node: any): any | null {
+  if (!node || typeof node !== "object" || Array.isArray(node)) return null;
+  const vlastne = Object.values(node).filter((v) => v == null || typeof v !== "object").length;
+  if (vlastne >= 3) return node;
+  for (const v of Object.values(node)) {
+    const n = findSingleRecord(v);
+    if (n) return n;
+  }
+  return null;
 }
 
 function findRowsArray(node: any): any[] | null {
@@ -313,6 +371,16 @@ function normKey(s: string): string {
     .trim();
 }
 
+/**
+ * Názvy stĺpcov, ktoré vieme rozpoznať. Okrem slovenských nadpisov z ručne
+ * pripravených tabuliek obsahujú aj **skutočné názvy polí zo SuperFaktúry**
+ * (jej API aj ISDOC export) — bez nich sa strojový export nedal rozpoznať a
+ * používateľ musel mapovať všetkých tridsať stĺpcov ručne.
+ *
+ * Pozor na krátke a viacvýznamové slová. `vat` je v exporte SuperFaktúry
+ * **suma DPH**, nie IČ DPH, a `status` nie je `stat` (krajina). Kým tu boli,
+ * import tíško priradil sumu DPH ako IČ DPH odberateľa.
+ */
 const SYNONYMS: Record<FieldKey, string[]> = {
   invoice_number: [
     "cislo faktury",
@@ -323,8 +391,11 @@ const SYNONYMS: Record<FieldKey, string[]> = {
     "invoice no",
     "number",
     "cislo dokladu",
+    // SuperFaktúra
+    "invoice no formatted",
+    "sequence id",
   ],
-  variable_symbol: ["variabilny symbol", "vs", "var symbol", "variable symbol"],
+  variable_symbol: ["variabilny symbol", "vs", "var symbol", "variable symbol", "variable"],
   issue_date: [
     "datum vystavenia",
     "vystavene",
@@ -332,13 +403,34 @@ const SYNONYMS: Record<FieldKey, string[]> = {
     "issue date",
     "date issued",
     "datum",
+    // SuperFaktúra: `created` je dátum vystavenia dokladu
+    "created",
+    "issuedate",
   ],
-  due_date: ["datum splatnosti", "splatnost", "due date", "splatne do"],
-  delivery_date: ["datum dodania", "dodanie", "tax date", "datum dodania tovaru"],
-  status: ["stav", "status", "uhradene", "zaplatene", "stav uhrady"],
-  currency: ["mena", "currency"],
-  subtotal: ["zaklad dane", "bez dph", "subtotal", "netto", "suma bez dph", "cena bez dph"],
-  vat_total: ["dph spolu", "vat", "dph", "vat total", "dan"],
+  due_date: ["datum splatnosti", "splatnost", "due date", "splatne do", "due", "paymentduedate"],
+  delivery_date: [
+    "datum dodania",
+    "dodanie",
+    "tax date",
+    "datum dodania tovaru",
+    "delivery",
+    "taxdate",
+    "taxpointdate",
+  ],
+  status: ["stav", "status", "uhradene", "zaplatene", "stav uhrady", "paid"],
+  currency: ["mena", "currency", "invoice currency", "localcurrencycode"],
+  subtotal: [
+    "zaklad dane",
+    "bez dph",
+    "subtotal",
+    "netto",
+    "suma bez dph",
+    "cena bez dph",
+    // SuperFaktúra: `amount` je suma bez DPH
+    "amount",
+    "taxexclusiveamount",
+  ],
+  vat_total: ["dph spolu", "vat", "dph", "vat total", "dan", "taxamount"],
   total: [
     "celkom",
     "suma",
@@ -348,9 +440,10 @@ const SYNONYMS: Record<FieldKey, string[]> = {
     "suma s dph",
     "spolu s dph",
     "k uhrade",
+    "taxinclusiveamount",
   ],
-  notes: ["poznamka", "note", "popis faktury"],
-  external_id: ["id", "external id", "povodne id"],
+  notes: ["poznamka", "note", "popis faktury", "comment", "header comment"],
+  external_id: ["external id", "povodne id", "uuid", "import id"],
   customer_name: [
     "odberatel",
     "zakaznik",
@@ -361,37 +454,62 @@ const SYNONYMS: Record<FieldKey, string[]> = {
     "obchodne meno",
     "nazov firmy",
     "name",
+    "client data name",
+    "partyname name",
   ],
-  customer_ico: ["ico", "company id"],
-  customer_dic: ["dic", "tax id"],
-  customer_ic_dph: ["ic dph", "vat id", "vat"],
-  customer_email: ["email", "e mail", "mail"],
-  customer_phone: ["telefon", "phone", "tel"],
-  customer_street: ["ulica", "street", "adresa"],
-  customer_city: ["mesto", "city"],
-  customer_zip: ["psc", "zip", "postal"],
-  customer_country: ["krajina", "country", "stat"],
-  item_name: ["polozka", "nazov polozky", "item name", "item"],
-  item_description: ["popis", "description", "popis polozky"],
-  item_quantity: ["mnozstvo", "quantity", "qty", "pocet"],
-  item_unit: ["mj", "jednotka", "unit"],
-  item_unit_price: ["cena", "cena za mj", "unit price", "cena jednotkova"],
-  item_vat_rate: ["sadzba dph", "vat rate", "dph %"],
-  item_total: ["polozka spolu", "item total", "cena spolu polozka"],
+  customer_ico: ["ico", "company id", "client data ico"],
+  customer_dic: ["dic", "tax id", "client data dic"],
+  // „vat" tu byť nesmie — v exporte je to suma DPH.
+  customer_ic_dph: ["ic dph", "vat id", "vat number", "icdph", "client data ic dph", "companyid"],
+  customer_email: ["email", "e mail", "mail", "electronicmail", "client data email"],
+  customer_phone: ["telefon", "phone", "tel", "telephone", "client data phone"],
+  customer_street: ["ulica", "street", "adresa", "address", "streetname", "client data address"],
+  customer_city: ["mesto", "city", "cityname", "client data city"],
+  customer_zip: ["psc", "zip", "postal", "postalzone", "client data zip"],
+  // „stat" je príliš krátke a chytalo sa na „status".
+  customer_country: ["krajina", "country", "identificationcode", "client data country"],
+  item_name: ["polozka", "nazov polozky", "item name", "item", "item description", "description"],
+  item_description: ["popis", "popis polozky", "item note"],
+  item_quantity: ["mnozstvo", "quantity", "qty", "pocet", "invoicedquantity"],
+  item_unit: ["mj", "jednotka", "unit", "unitcode"],
+  item_unit_price: ["cena", "cena za mj", "unit price", "cena jednotkova", "unitprice"],
+  item_vat_rate: ["sadzba dph", "vat rate", "dph %", "tax", "percent"],
+  item_total: ["polozka spolu", "item total", "cena spolu polozka", "lineextensionamount"],
 };
 
+/**
+ * Zhoda názvu stĺpca so synonymom.
+ *
+ * Podreťazec sa uznáva len pri dostatočne dlhom slove. Kratšie porovnanie
+ * spôsobovalo tiché nezmysly: „stat" (krajina) sa chytilo na stĺpec „status" a
+ * import zapísal stav faktúry ako krajinu odberateľa.
+ */
 function fuzzyScore(a: string, b: string): number {
   if (!a || !b) return 0;
   if (a === b) return 1;
-  if (a.includes(b) || b.includes(a)) return 0.85;
-  // token overlap
-  const ta = new Set(a.split(" "));
-  const tb = new Set(b.split(" "));
+
+  const ta = a.split(" ").filter(Boolean);
+  const tb = b.split(" ").filter(Boolean);
+  const sa = new Set(ta);
+  const sb = new Set(tb);
+
+  // Celé slová jedného sú obsiahnuté v druhom — „cislo" v „cislo faktury".
+  if (ta.length && tb.length) {
+    if (ta.every((t) => sb.has(t)) || tb.every((t) => sa.has(t))) return 0.85;
+  }
+
+  // Podreťazec bez medzier („invoiceno" vs „invoice no") až od piatich znakov.
+  const bezMedzier = (x: string) => x.replace(/ /g, "");
+  const A = bezMedzier(a);
+  const B = bezMedzier(b);
+  if (B.length >= 5 && A.includes(B)) return 0.8;
+  if (A.length >= 5 && B.includes(A)) return 0.8;
+
   let hit = 0;
-  ta.forEach((t) => {
-    if (tb.has(t)) hit++;
+  sa.forEach((t) => {
+    if (sb.has(t)) hit++;
   });
-  const union = new Set([...ta, ...tb]).size;
+  const union = new Set([...sa, ...sb]).size;
   return union ? hit / union : 0;
 }
 
@@ -473,9 +591,12 @@ export function detectMapping(headers: string[], rows: Record<string, string>[])
     for (const { raw, norm } of normHeaders) {
       let s = 0;
       for (const syn of syns) s = Math.max(s, fuzzyScore(norm, syn));
-      // bonus if sample values match expected type for this field
+      // Bonus, keď hodnoty v stĺpci vyzerajú na daný typ (dátum, suma, e-mail).
+      // Nikdy nesmie dorovnať presnú zhodu mena — inak stĺpec „vat_total"
+      // (čiastočná zhoda + bonus) predbehne stĺpec „total" len preto, že je
+      // v tabuľke skôr, a do celkovej sumy sa zapíše DPH.
       const tags = valueTagsByHeader.get(raw);
-      if (tags?.has(field)) s = Math.min(1, s + 0.15);
+      if (tags?.has(field) && s < 1) s = Math.min(0.95, s + 0.15);
       // legacy regex fallback
       if (s < 0.5 && HEURISTICS[field].some((p) => p.test(raw))) s = Math.max(s, 0.55);
       if (s > (best?.score ?? 0)) best = { header: raw, score: s };
@@ -483,20 +604,34 @@ export function detectMapping(headers: string[], rows: Record<string, string>[])
     if (best && best.score >= 0.5) perField[field] = best;
   }
 
-  // Resolve conflicts (same header picked for multiple fields): keep highest-scoring assignment
+  /*
+   * Keď si ten istý stĺpec vypýtalo viac polí, vyhráva to s vyšším skóre.
+   *
+   * Poradie musí byť **bez opakovania**. Kým sa zoznam skladal ako
+   * `[...CORE, ...NICE, ...všetky]`, kľúčové polia v ňom boli dvakrát — a pri
+   * druhom prechode narazili samy na seba, skóre nebolo vyššie a pole sa
+   * zmazalo. Dôsledok: číslo faktúry, dátum vystavenia, suma ani odberateľ sa
+   * **nikdy** nerozpoznali automaticky a používateľ musel mapovať všetko ručne.
+   */
+  const poradie: FieldKey[] = [];
+  for (const f of [...CORE_FIELDS, ...NICE_FIELDS, ...(Object.keys(SYNONYMS) as FieldKey[])]) {
+    if (!poradie.includes(f)) poradie.push(f);
+  }
+
   const used = new Map<string, FieldKey>();
-  for (const field of [...CORE_FIELDS, ...NICE_FIELDS, ...(Object.keys(SYNONYMS) as FieldKey[])]) {
+  for (const field of poradie) {
     const entry = perField[field];
     if (!entry) continue;
     const prev = used.get(entry.header);
-    if (!prev) used.set(entry.header, field);
-    else {
-      const prevScore = perField[prev]?.score ?? 0;
-      if (entry.score > prevScore) {
-        delete perField[prev];
-        used.set(entry.header, field);
-      } else delete perField[field];
+    if (!prev || prev === field) {
+      used.set(entry.header, field);
+      continue;
     }
+    const prevScore = perField[prev]?.score ?? 0;
+    if (entry.score > prevScore) {
+      delete perField[prev];
+      used.set(entry.header, field);
+    } else delete perField[field];
   }
 
   const mapping: Partial<Record<FieldKey, string>> = {};
@@ -551,6 +686,23 @@ function pick(
   const h = mapping[key];
   return h ? (row[h] ?? "").trim() : "";
 }
+/**
+ * Celková suma dokladu. SuperFaktúra pole „spolu" nemá — vyváža `amount`
+ * (bez DPH) a `vat` (daň) zvlášť, takže bez dopočtu by sa faktúry importovali
+ * v cene bez DPH.
+ */
+function sumaSDph(
+  row: Record<string, string>,
+  mapping: Partial<Record<FieldKey, string>>,
+): number {
+  const total = num(pick(row, mapping, "total"));
+  if (total) return total;
+  const zaklad = num(pick(row, mapping, "subtotal"));
+  const dan = num(pick(row, mapping, "vat_total"));
+  if (zaklad || dan) return Math.round((zaklad + dan + Number.EPSILON) * 100) / 100;
+  return 0;
+}
+
 function normDate(v: string): string | null {
   if (!v) return null;
   // Accept DD.MM.YYYY, YYYY-MM-DD, DD/MM/YYYY
@@ -593,7 +745,7 @@ export function buildPreview(
   let currency = "EUR";
   for (const row of rows) {
     const invNo = pick(row, mapping, "invoice_number");
-    const total = num(pick(row, mapping, "total")) || num(pick(row, mapping, "item_total"));
+    const total = sumaSDph(row, mapping) || num(pick(row, mapping, "item_total"));
     const cust = pick(row, mapping, "customer_name");
     const ico = pick(row, mapping, "customer_ico");
     const issue = normDate(pick(row, mapping, "issue_date"));
@@ -786,7 +938,7 @@ export async function runImport(args: {
         .filter((it) => it.quantity > 0 || it.unit_price > 0 || it.total > 0);
       let subtotal = num(pick(head, mapping, "subtotal"));
       let vatTotal = num(pick(head, mapping, "vat_total"));
-      let total = num(pick(head, mapping, "total"));
+      let total = sumaSDph(head, mapping);
       if (items.length === 0) {
         items.push({
           name: `Položky faktúry ${invNo}`,

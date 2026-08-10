@@ -56,6 +56,40 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "superfaktura",
+    title: "Import zo SuperFaktúry krok za krokom",
+    body: (
+      <>
+        <ol>
+          <li>
+            Vo SuperFaktúre otvorte <strong>Nástroje → Export agendy</strong>.
+          </li>
+          <li>Vyberte obdobie a stiahnite export.</li>
+          <li>
+            Dostanete <strong>ZIP</strong>, v ktorom je každá faktúra ako samostatný súbor{" "}
+            <code>.isdoc</code>. Nahrajte ho do{" "}
+            <Link to="/importy/superfaktura">Import zo SuperFaktúry</Link> celý — rozbaľovať ho
+            netreba.
+          </li>
+          <li>
+            Faktero stĺpce rozpozná samo a ukáže náhľad: koľko faktúr, odberateľov a položiek sa
+            naimportuje a za akú sumu. Skontrolujte ho a potvrďte.
+          </li>
+        </ol>
+        <p>
+          Prijímame aj samotný <code>.isdoc</code>, Excel, CSV a XML. Ak by rozpoznanie niektorý
+          stĺpec netrafilo, dá sa priradiť ručne — ale pri exporte zo SuperFaktúry by to nemalo byť
+          treba.
+        </p>
+        <p>
+          <strong>Čo sa prenesie:</strong> číslo faktúry a variabilný symbol, dátumy vystavenia,
+          dodania a splatnosti, mena, sumy bez DPH aj s DPH, poznámka, odberateľ s IČO, DIČ, IČ DPH
+          a adresou, a všetky položky s množstvom, mernou jednotkou, cenou a sadzbou DPH.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "sklad",
     title: "Import a export skladu",
     body: (

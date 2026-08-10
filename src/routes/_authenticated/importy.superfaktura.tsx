@@ -147,7 +147,7 @@ function ImportPage() {
     <>
       <PageHeader
         title="Import zo SuperFaktúry"
-        description="Nahrajte Excel/CSV a Faktero automaticky rozpozná stĺpce. Manuálne mapovanie je len ako záloha."
+        description="Nahrajte ZIP z Export agendy alebo Excel/CSV. Faktero rozpozná stĺpce samo, ručné mapovanie je len záloha."
         action={
           <Link
             to="/importy"
@@ -165,17 +165,29 @@ function ImportPage() {
             <section className="rounded-2xl border border-border bg-card p-6">
               <h2 className="text-base font-semibold">1. Nahrajte export súbor</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Podporujeme Excel (.xlsx), CSV, XML alebo ZIP zo SuperFaktúry. Maximálne 20 MB.
+                Podporujeme ZIP a súbory .isdoc z <strong>Export agendy</strong> vo SuperFaktúre,
+                ďalej Excel (.xlsx), CSV a XML. Maximálne 20 MB.
               </p>
+              <div className="mt-3 rounded-lg border border-border bg-secondary/30 p-3 text-xs text-muted-foreground">
+                <p className="font-medium text-foreground">Kde export nájdete</p>
+                <p className="mt-1">
+                  Vo SuperFaktúre otvorte <strong>Nástroje → Export agendy</strong>, vyberte
+                  obdobie a stiahnite export. Dostanete ZIP, v ktorom je každá faktúra ako
+                  samostatný súbor <code>.isdoc</code> — nahrajte ho sem celý, rozbaľovať ho
+                  netreba.
+                </p>
+              </div>
               <label className="mt-5 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-6 py-12 text-sm hover:border-primary/50">
                 <Upload className="h-8 w-8 text-primary" />
                 <span className="font-medium">
                   {file ? file.name : "Vyberte alebo presuňte súbor"}
                 </span>
-                <span className="text-xs text-muted-foreground">.xlsx · .csv · .xml · .zip</span>
+                <span className="text-xs text-muted-foreground">
+                  .zip · .isdoc · .xlsx · .csv · .xml
+                </span>
                 <input
                   type="file"
-                  accept=".xlsx,.xls,.csv,.xml,.zip,text/csv,application/xml,application/zip,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  accept=".zip,.isdoc,.xlsx,.xls,.csv,.xml,text/csv,application/xml,application/zip,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                   className="hidden"
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 />
