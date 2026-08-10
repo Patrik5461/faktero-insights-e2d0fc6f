@@ -58,12 +58,21 @@ function QuoteDetail() {
   const getPdf = useServerFn(getQuotePdfSignedUrl);
   const convert = useServerFn(convertQuoteToInvoice);
   const naObjednavku = useServerFn(createSalesOrderFromQuote);
+  const [nenajdena, setNenajdena] = useState(false);
   const dup = useServerFn(duplicateQuote);
   const send = useServerFn(sendQuoteEmailFn);
 
   async function load() {
-    const { data: quote } = await supabase.from("quotes").select("*").eq("id", id).single();
+    // Ponuka sa načítava v rámci aktívnej firmy. Bez toho sa dala otvoriť
+    // ponuka inej firmy používateľa a stránka ukazovala jej hlavičku, kým
+    // tlačidlá pracovali s aktívnou firmou — akcia potom spadla na
+    // „Ponuka sa nenašla" bez toho, aby bolo vidieť prečo.
+    const cid = getActiveCompanyId();
+    let q = supabase.from("quotes").select("*").eq("id", id);
+    if (cid) q = q.eq("company_id", cid);
+    const { data: quote } = await q.maybeSingle();
     setQ(quote);
+    setNenajdena(!quote);
     if (quote) {
       const [{ data: its }, { data: comp }] = await Promise.all([
         supabase.from("quote_items").select("*").eq("quote_id", id).order("position"),
@@ -164,6 +173,18 @@ function QuoteDetail() {
     }
   }
 
+  if (!q && nenajdena)
+    return (
+      <PageBody>
+        <div className="rounded-xl border border-border bg-card p-6 text-sm">
+          Táto ponuka v aktívnej firme neexistuje. Ak patrí inej vašej firme, prepnite sa na ňu
+          hore v lište.{" "}
+          <Link to="/ponuky" className="text-primary underline">
+            Späť na ponuky
+          </Link>
+        </div>
+      </PageBody>
+    );
   if (!q) return <PageBody>Načítavam…</PageBody>;
 
   const converted = q.status === "converted";
