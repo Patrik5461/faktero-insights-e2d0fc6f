@@ -327,7 +327,7 @@ export const zrusParovanie = createServerFn({ method: "POST" })
 
     const { data: inv } = await supabaseAdmin
       .from("invoices")
-      .select("id, total, status, due_date")
+      .select("id, total, status")
       .eq("id", invoiceId)
       .maybeSingle();
     if (inv) {
@@ -337,10 +337,11 @@ export const zrusParovanie = createServerFn({ method: "POST" })
         .eq("invoice_id", inv.id);
       const spolu = (zvysne ?? []).reduce((s, p: any) => s + cislo(p.amount), 0);
       if (spolu < cislo(inv.total) - 0.005 && inv.status === "paid") {
-        const poSplatnosti = inv.due_date && new Date(inv.due_date) < new Date();
+        // Späť na „vystavená" — stav „po splatnosti" sa nikde inde v aplikácii
+        // nezapisuje, počíta sa z dátumu splatnosti až pri zobrazení.
         await supabaseAdmin
           .from("invoices")
-          .update({ status: poSplatnosti ? "overdue" : "issued", paid_at: null })
+          .update({ status: "issued", paid_at: null })
           .eq("id", inv.id);
       }
     }
