@@ -141,6 +141,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           legalName: "Tobify s. r. o.",
           url: "https://www.faktero.sk",
           email: "info@faktero.sk",
+          telephone: "+421902101967",
           address: {
             "@type": "PostalAddress",
             streetAddress: "Športová 707/43",

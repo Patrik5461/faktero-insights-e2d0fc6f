@@ -318,3 +318,81 @@ describe("stavDokladu", () => {
     expect(stavDokladu("čokoľvek iné")).toBe("issued");
   });
 });
+
+describe("prehľad faktúr zo SuperFaktúry", () => {
+  /*
+   * Skutočné hlavičky z exportu, ktorý používateľ nahral. Prehľad faktúr nemá
+   * rozpis položiek — má len súhrnné stĺpce „Položky" (zlepenec názvov) a
+   * „Počet položiek" (počet, nie množstvo).
+   */
+  const HLAVICKY = [
+    "Číslo dokladu", "VS", "Odberateľ", "Odberateľ IČO", "Odberateľ DIČ", "Odberateľ IČ DPH",
+    "Odberateľ adresa", "Krajina odberateľa", "Odberateľ email", "Odberateľ telefón",
+    "Dátum vystavenia", "Dátum splatnosti", "Dátum dodania", "Mena", "Suma", "Stav", "Poznámka",
+    "Položky", "Počet položiek", "Názov / Popis",
+  ];
+  const RIADKY = [
+    {
+      "Číslo dokladu": "2026039", VS: "2026000048", "Odberateľ": "Ana Bobáňová",
+      "Odberateľ IČO": "", "Odberateľ DIČ": "", "Odberateľ IČ DPH": "SK2020304050",
+      "Odberateľ adresa": "Hlavná 1", "Krajina odberateľa": "SK",
+      "Odberateľ email": "a@b.sk", "Odberateľ telefón": "0900123456",
+      "Dátum vystavenia": "10.08.2026", "Dátum splatnosti": "24.08.2026",
+      "Dátum dodania": "10.08.2026", Mena: "EUR", Suma: "70,00", Stav: "Uhradená",
+      "Poznámka": "", "Položky": "Apple AirPods Pro , DPD , Dobierkou ,",
+      "Počet položiek": "3", "Názov / Popis": "Predaj tovaru",
+    },
+  ];
+
+  const m = detectMapping(HLAVICKY, RIADKY).mapping;
+
+  /*
+   * Toto je chyba, ktorú používateľ videl na naimportovaných faktúrach: suma
+   * DPH sa brala zo stĺpca „Odberateľ IČ DPH". Obe polia majú v názve „dph",
+   * skóre vyšlo rovnaké a vyhralo dôležitejšie pole dokladu.
+   */
+  it("IČ DPH odberateľa sa nezapíše ako suma DPH", () => {
+    expect(m.customer_ic_dph).toBe("Odberateľ IČ DPH");
+    expect(m.vat_total).toBeUndefined();
+  });
+
+  it("stĺpce odberateľa idú do polí odberateľa", () => {
+    expect(m.customer_name).toBe("Odberateľ");
+    expect(m.customer_ico).toBe("Odberateľ IČO");
+    expect(m.customer_dic).toBe("Odberateľ DIČ");
+    expect(m.customer_email).toBe("Odberateľ email");
+    expect(m.customer_phone).toBe("Odberateľ telefón");
+    expect(m.customer_street).toBe("Odberateľ adresa");
+  });
+
+  /*
+   * „Počet položiek" je počet, nie množstvo, a „Položky" je zlepenec názvov.
+   * Namapované na položku vyrobili riadok s množstvom 3, cenou 0 a názvom
+   * „tovar, doprava, dobierka" — presne to používateľ videl vo faktúrach.
+   */
+  it("súhrnné stĺpce sa nepovažujú za položku", () => {
+    expect(m.item_quantity).toBeUndefined();
+    expect(m.item_name).toBeUndefined();
+    expect(Object.values(m)).not.toContain("Položky");
+    expect(Object.values(m)).not.toContain("Počet položiek");
+  });
+
+  it("hlavička dokladu je celá", () => {
+    expect(m.invoice_number).toBe("Číslo dokladu");
+    expect(m.variable_symbol).toBe("VS");
+    expect(m.issue_date).toBe("Dátum vystavenia");
+    expect(m.due_date).toBe("Dátum splatnosti");
+    expect(m.delivery_date).toBe("Dátum dodania");
+    expect(m.total).toBe("Suma");
+    expect(m.currency).toBe("Mena");
+    expect(m.status).toBe("Stav");
+  });
+
+  it("náhľad ukáže faktúru so správnou sumou", () => {
+    const p = buildPreview(RIADKY, m);
+    expect(p.invoicesCount).toBe(1);
+    expect(p.totalValue).toBeCloseTo(70, 2);
+    expect(p.sampleInvoices[0].customer_name).toBe("Ana Bobáňová");
+    expect(p.sampleInvoices[0].issue_date).toBe("2026-08-10");
+  });
+});

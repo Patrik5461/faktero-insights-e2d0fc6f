@@ -603,6 +603,32 @@ const NICE_FIELDS: FieldKey[] = [
   "status",
 ];
 
+/**
+ * Stĺpec, ktorý pomenúva odberateľa, patrí výhradne poliam odberateľa.
+ *
+ * Bez tohto pravidla si „Odberateľ IČ DPH" vzalo pole **suma DPH** — obe majú
+ * v názve „dph", skóre bolo rovnaké a vyhralo dôležitejšie pole. Do faktúry sa
+ * tak namiesto dane zapísalo IČ DPH odberateľa.
+ */
+function patriOdberatelovi(norm: string): boolean {
+  return /\b(odberatel|zakaznik|klient|partner|customer|client|dodavatel)\b/.test(norm);
+}
+
+/**
+ * Súhrnné stĺpce z prehľadu faktúr. Nie sú to údaje o položke:
+ * „Počet položiek" je počet, nie množstvo, a „Položky" je zlepenec názvov
+ * všetkých položiek. Namapované na položku vyrobia riadok s množstvom 3,
+ * cenou 0 a názvom „tovar, doprava, dobierka".
+ */
+function jeSuhrnnyStlpec(norm: string): boolean {
+  return (
+    /^pocet /.test(norm) ||
+    norm === "polozky" ||
+    norm === "pocet poloziek" ||
+    norm === "polozky faktury"
+  );
+}
+
 export function detectMapping(headers: string[], rows: Record<string, string>[]): DetectionResult {
   const normHeaders = headers.map((h) => ({ raw: h, norm: normKey(h) }));
   const perField: DetectionResult["perField"] = {};
@@ -635,6 +661,12 @@ export function detectMapping(headers: string[], rows: Record<string, string>[])
       if (tags?.has(field) && s < 1) s = Math.min(0.95, s + 0.15);
       // legacy regex fallback
       if (s < 0.5 && HEURISTICS[field].some((p) => p.test(raw))) s = Math.max(s, 0.55);
+
+      // Stĺpec odberateľa nesmie skončiť v poli dokladu a naopak.
+      if (patriOdberatelovi(norm) && !field.startsWith("customer_")) continue;
+      // Súhrnné stĺpce nikdy nepopisujú jednu položku.
+      if (jeSuhrnnyStlpec(norm) && field.startsWith("item_")) continue;
+
       if (s >= 0.5) navrhy.push({ field, header: raw, score: s, priorita: priorita(field) });
     }
   }
@@ -1008,7 +1040,8 @@ export async function runImport(args: {
       let total = sumaSDph(head, mapping);
       if (items.length === 0) {
         items.push({
-          name: `Položky faktúry ${invNo}`,
+          // Súbor nemal rozpis položiek — faktúra príde ako jeden riadok.
+          name: pick(head, mapping, "item_description") || `Položky faktúry ${invNo}`,
           description: null,
           quantity: 1,
           unit: "ks",
