@@ -21,6 +21,7 @@ const MORE_LINKS: { to: string; label: string }[] = [
   { to: "/produkty", label: "Produkty" },
   { to: "/zakazky", label: "Zákazky" },
   { to: "/sklad", label: "Sklad" },
+  { to: "/ceny", label: "Cenník a zľavy" },
   { to: "/pokladna", label: "Pokladňa" },
   { to: "/uctovnictvo/uzavierka", label: "Uzávierka" },
   { to: "/efaktura", label: "eFaktúra" },

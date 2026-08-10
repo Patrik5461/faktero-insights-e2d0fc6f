@@ -46,6 +46,10 @@ type Customer = {
   notes?: string;
   /** Doplní sa do nového dokladu tohto odberateľa. */
   default_job_id?: string | null;
+  /** Cenová skupina — jej zľava a dohodnuté ceny sa premietnu do dokladu. */
+  price_group_id?: string | null;
+  /** Individuálna zľava v %. Prebíja zľavu cenovej skupiny, nesčítava sa s ňou. */
+  discount_percent?: number | string | null;
 };
 
 const EMPTY: Customer = { name: "", country: "SK" };
@@ -73,7 +77,15 @@ function CustomersPage() {
   async function save(c: Customer) {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    const payload = { ...c, company_id: cid };
+    // Zľava príde z políčka ako reťazec; číselný stĺpec ho neprijme a prázdne
+    // pole musí ísť ako NULL, nie ako "".
+    const zlava =
+      c.discount_percent === "" || c.discount_percent == null ? null : Number(c.discount_percent);
+    const payload = {
+      ...c,
+      company_id: cid,
+      discount_percent: Number.isFinite(zlava as number) ? (zlava as number) : null,
+    };
     if (c.id) {
       const { error } = await supabase.from("customers").update(payload).eq("id", c.id);
       if (error) return toast.error(error.message);
@@ -300,6 +312,22 @@ function CustomerDialog({
   const [c, setC] = useState<Customer>(initial);
   const [dup, setDup] = useState<null | { id: string; name: string }>(null);
   const findDup = useServerFn(findCustomerByIcoFn);
+
+  // Výber cenovej skupiny sa zobrazí až vtedy, keď firma nejakú má — inak by
+  // vo formulári visel prázdny zoznam.
+  const [skupiny, setSkupiny] = useState<any[]>([]);
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    supabase
+      .from("price_groups")
+      .select("id, name, discount_percent")
+      .eq("company_id", cid)
+      .is("deleted_at", null)
+      .order("name")
+      .then(({ data }) => setSkupiny(data ?? []));
+  }, []);
+
   function f<K extends keyof Customer>(k: K, v: any) {
     setC((p) => ({ ...p, [k]: v }));
   }
@@ -399,6 +427,41 @@ function CustomerDialog({
             // nie je platné UUID a uloženie by padlo.
             onChange={(v) => f("default_job_id", v || null)}
           />
+          {skupiny.length > 0 && (
+            <label className="block">
+              <span className="text-sm font-medium">Cenová skupina</span>
+              <select
+                value={c.price_group_id ?? ""}
+                onChange={(e) => f("price_group_id", e.target.value || null)}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">— bez skupiny —</option>
+                {skupiny.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                    {Number(s.discount_percent) > 0 ? ` (−${Number(s.discount_percent)} %)` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label className="block">
+            <span className="text-sm font-medium">Individuálna zľava (%)</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              value={c.discount_percent ?? ""}
+              // Prázdne pole musí ísť ako NULL, nie ako "" — číselný stĺpec
+              // prázdny reťazec neprijme.
+              onChange={(e) => f("discount_percent", e.target.value === "" ? null : e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Prebíja zľavu cenovej skupiny. Dohodnutá cena v cenníku prebíja obe.
+            </span>
+          </label>
           <label className="sm:col-span-2 block">
             <span className="text-sm font-medium">Poznámky</span>
             <textarea

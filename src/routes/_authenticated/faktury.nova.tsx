@@ -3,6 +3,8 @@ import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { getPriceContext } from "@/lib/faktero/ceny.functions";
+import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import {
   Trash2,
@@ -77,6 +79,12 @@ type Item = {
   _track_stock?: boolean;
   _available?: number;
   _sku?: string | null;
+  /** Prečo je cena taká, aká je — „Zľava odberateľa 10 %". */
+  _dovod?: string;
+  /** Základná cena z katalógu, aby sa dala ukázať preškrtnutá. */
+  _zakladna?: number;
+  /** Cenu prepísal používateľ ručne — cenník ju už prepisovať nesmie. */
+  _cena_rucne?: boolean;
 };
 const EMPTY_ITEM: Item = {
   name: "",
@@ -143,6 +151,61 @@ function NewInvoice() {
     ];
   });
   const [pickerOpen, setPickerOpen] = useState<null | "copy" | "advance">(null);
+
+  /**
+   * Podklady cenníka pre tohto odberateľa a tento dátum. Načítajú sa raz na
+   * doklad; cenu každého riadku počíta formulár sám cez `cenaZPodkladov`.
+   */
+  const [podklady, setPodklady] = useState<(Podklady & { maCennik: boolean }) | null>(null);
+  const nacitajCennik = useServerFn(getPriceContext);
+  // Pri prvom načítaní sa ceny už zadaných riadkov neprepisujú — mohli prísť
+  // z kópie faktúry alebo zo skenera a prepísať ich by bola tichá zmena sumy.
+  const cennikPrvyRaz = useRef(true);
+
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid || !form.issue_date) return;
+    let zrusene = false;
+    nacitajCennik({
+      data: { company_id: cid, customer_id: form.customer_id || null, datum: form.issue_date },
+    })
+      .then((p: any) => {
+        if (!zrusene) setPodklady(p);
+      })
+      .catch(() => {
+        if (!zrusene) setPodklady(null);
+      });
+    return () => {
+      zrusene = true;
+    };
+  }, [form.customer_id, form.issue_date, nacitajCennik]);
+
+  // Po zmene odberateľa sa prepočítajú riadky, do ktorých používateľ nesiahol.
+  useEffect(() => {
+    if (!podklady) return;
+    if (cennikPrvyRaz.current) {
+      cennikPrvyRaz.current = false;
+      return;
+    }
+    setItems((arr) =>
+      arr.map((it) => {
+        if (!it.product_id || it._cena_rucne) return it;
+        const produkt = products.find((p) => p.id === it.product_id);
+        if (!produkt) return it;
+        const r = cenaZPodkladov(
+          podklady,
+          { id: it.product_id, unit_price: produkt.unit_price },
+          Number(it.quantity) || 0,
+        );
+        return {
+          ...it,
+          unit_price: r.cena,
+          _dovod: r.zdroj === "zakladna" ? undefined : r.dovod,
+          _zakladna: r.zdroj === "zakladna" ? undefined : r.zakladna,
+        };
+      }),
+    );
+  }, [podklady, products]);
 
   const CURRENCIES: { code: string; symbol: string; flag: string; name: string }[] = [
     { code: "EUR", symbol: "€", flag: "🇪🇺", name: "Euro" },
@@ -269,8 +332,35 @@ function NewInvoice() {
     return { subtotal: sub, vat_total: vat, total, advance, payable };
   }, [items, form.rounding_mode, form.advance_amount, form.reverse_charge]);
 
+  /**
+   * Cena z riadku sa počíta z podkladov cenníka, nie na serveri — množstevná
+   * cena závisí od množstva na riadku a to server v čase načítania nepozná.
+   * Riadok, do ktorého používateľ zasiahol, sa už neprepisuje.
+   */
+  function cenaRiadku(it: Item, mnozstvo: number): Partial<Item> {
+    if (!podklady || !it.product_id || it._cena_rucne) return {};
+    const produkt = products.find((p) => p.id === it.product_id);
+    if (!produkt) return {};
+    const r = cenaZPodkladov(podklady, { id: it.product_id, unit_price: produkt.unit_price }, mnozstvo);
+    return {
+      unit_price: r.cena,
+      _dovod: r.zdroj === "zakladna" ? undefined : r.dovod,
+      _zakladna: r.zdroj === "zakladna" ? undefined : r.zakladna,
+    };
+  }
+
   function setItem(idx: number, patch: Partial<Item>) {
-    setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+    setItems((arr) =>
+      arr.map((it, i) => {
+        if (i !== idx) return it;
+        const novy = { ...it, ...patch };
+        // Zmena množstva môže preklopiť riadok do inej množstevnej ceny.
+        if (patch.quantity !== undefined && patch.unit_price === undefined) {
+          return { ...novy, ...cenaRiadku(novy, Number(patch.quantity) || 0) };
+        }
+        return novy;
+      }),
+    );
   }
 
   async function generateNumber(companyId: string, issueDate: string) {
@@ -781,12 +871,19 @@ function NewInvoice() {
                     const next = [...arr];
                     const last = next[next.length - 1];
                     const meta = stockByProduct[p.id];
+                    const zCennika = podklady
+                      ? cenaZPodkladov(podklady, { id: p.id, unit_price: p.unit_price }, 1)
+                      : null;
                     const newItem: Item = {
                       name: p.name,
                       description: p.description ?? "",
                       quantity: 1,
                       unit: p.unit ?? "ks",
-                      unit_price: Number(p.unit_price ?? 0),
+                      unit_price: zCennika ? zCennika.cena : Number(p.unit_price ?? 0),
+                      _dovod:
+                        zCennika && zCennika.zdroj !== "zakladna" ? zCennika.dovod : undefined,
+                      _zakladna:
+                        zCennika && zCennika.zdroj !== "zakladna" ? zCennika.zakladna : undefined,
                       vat_rate: Number(p.vat_rate ?? DEFAULT_VAT_RATE),
                       product_id: p.id,
                       stock_item_id: meta?.stock_item_id ?? null,
@@ -846,10 +943,20 @@ function NewInvoice() {
                       <td className="py-2 pl-3">
                         <CellNum
                           value={it.unit_price}
-                          onChange={(v) => setItem(idx, { unit_price: v })}
+                          onChange={(v) => setItem(idx, { unit_price: v, _cena_rucne: true })}
                           w="w-24"
                           align="right"
                         />
+                        {it._dovod && (
+                          <div className="pr-2 text-right text-[10px] leading-tight text-emerald-600">
+                            {it._zakladna != null && it._zakladna !== it.unit_price && (
+                              <span className="mr-1 text-muted-foreground line-through">
+                                {it._zakladna.toFixed(2)} €
+                              </span>
+                            )}
+                            {it._dovod}
+                          </div>
+                        )}
                       </td>
                       <td className="py-2 pl-3">
                         {form.reverse_charge ? (
@@ -915,7 +1022,7 @@ function NewInvoice() {
                     />
                     <CellNum
                       value={it.unit_price}
-                      onChange={(v) => setItem(idx, { unit_price: v })}
+                      onChange={(v) => setItem(idx, { unit_price: v, _cena_rucne: true })}
                     />
                     {form.reverse_charge ? (
                       <span className="inline-flex items-center justify-center rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900">

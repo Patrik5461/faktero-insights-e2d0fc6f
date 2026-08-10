@@ -87,6 +87,8 @@ import { Route as AuthenticatedBankoveUctyIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedBankoveUctyPripojitRouteImport } from './routes/_authenticated/bankove-ucty.pripojit'
 import { Route as AuthenticatedBankoveUctyTransakcieRouteImport } from './routes/_authenticated/bankove-ucty.transakcie'
 import { Route as AuthenticatedBankoveUctyVypisyRouteImport } from './routes/_authenticated/bankove-ucty.vypisy'
+import { Route as AuthenticatedCenyIndexRouteImport } from './routes/_authenticated/ceny.index'
+import { Route as AuthenticatedCenyAkcieRouteImport } from './routes/_authenticated/ceny.akcie'
 import { Route as AuthenticatedDokladyIndexRouteImport } from './routes/_authenticated/doklady.index'
 import { Route as AuthenticatedDokladyNovyRouteImport } from './routes/_authenticated/doklady.novy'
 import { Route as AuthenticatedEfakturaIndexRouteImport } from './routes/_authenticated/efaktura.index'
@@ -604,6 +606,16 @@ const AuthenticatedBankoveUctyVypisyRoute =
     path: '/bankove-ucty/vypisy',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCenyIndexRoute = AuthenticatedCenyIndexRouteImport.update({
+  id: '/ceny/',
+  path: '/ceny/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCenyAkcieRoute = AuthenticatedCenyAkcieRouteImport.update({
+  id: '/ceny/akcie',
+  path: '/ceny/akcie',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDokladyIndexRoute =
   AuthenticatedDokladyIndexRouteImport.update({
     id: '/doklady/',
@@ -1342,6 +1354,7 @@ export interface FileRoutesByFullPath {
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
   '/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
+  '/ceny/akcie': typeof AuthenticatedCenyAkcieRoute
   '/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
@@ -1398,6 +1411,7 @@ export interface FileRoutesByFullPath {
   '/docs/online-platby/gopay': typeof DocsOnlinePlatbyGopayRoute
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/bankove-ucty/': typeof AuthenticatedBankoveUctyIndexRoute
+  '/ceny/': typeof AuthenticatedCenyIndexRoute
   '/doklady/': typeof AuthenticatedDokladyIndexRoute
   '/efaktura/': typeof AuthenticatedEfakturaIndexRoute
   '/faktury/': typeof AuthenticatedFakturyIndexRoute
@@ -1531,6 +1545,7 @@ export interface FileRoutesByTo {
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
   '/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
+  '/ceny/akcie': typeof AuthenticatedCenyAkcieRoute
   '/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
@@ -1586,6 +1601,7 @@ export interface FileRoutesByTo {
   '/docs/online-platby/gopay': typeof DocsOnlinePlatbyGopayRoute
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/bankove-ucty': typeof AuthenticatedBankoveUctyIndexRoute
+  '/ceny': typeof AuthenticatedCenyIndexRoute
   '/doklady': typeof AuthenticatedDokladyIndexRoute
   '/efaktura': typeof AuthenticatedEfakturaIndexRoute
   '/faktury': typeof AuthenticatedFakturyIndexRoute
@@ -1728,6 +1744,7 @@ export interface FileRoutesById {
   '/_authenticated/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/_authenticated/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
   '/_authenticated/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
+  '/_authenticated/ceny/akcie': typeof AuthenticatedCenyAkcieRoute
   '/_authenticated/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/_authenticated/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/_authenticated/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
@@ -1784,6 +1801,7 @@ export interface FileRoutesById {
   '/docs/online-platby/gopay': typeof DocsOnlinePlatbyGopayRoute
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/_authenticated/bankove-ucty/': typeof AuthenticatedBankoveUctyIndexRoute
+  '/_authenticated/ceny/': typeof AuthenticatedCenyIndexRoute
   '/_authenticated/doklady/': typeof AuthenticatedDokladyIndexRoute
   '/_authenticated/efaktura/': typeof AuthenticatedEfakturaIndexRoute
   '/_authenticated/faktury/': typeof AuthenticatedFakturyIndexRoute
@@ -1926,6 +1944,7 @@ export interface FileRouteTypes {
     | '/bankove-ucty/pripojit'
     | '/bankove-ucty/transakcie'
     | '/bankove-ucty/vypisy'
+    | '/ceny/akcie'
     | '/doklady/novy'
     | '/efaktura/dorucenia'
     | '/efaktura/odoslane'
@@ -1982,6 +2001,7 @@ export interface FileRouteTypes {
     | '/docs/online-platby/gopay'
     | '/pomoc/online-platby/gopay'
     | '/bankove-ucty/'
+    | '/ceny/'
     | '/doklady/'
     | '/efaktura/'
     | '/faktury/'
@@ -2115,6 +2135,7 @@ export interface FileRouteTypes {
     | '/bankove-ucty/pripojit'
     | '/bankove-ucty/transakcie'
     | '/bankove-ucty/vypisy'
+    | '/ceny/akcie'
     | '/doklady/novy'
     | '/efaktura/dorucenia'
     | '/efaktura/odoslane'
@@ -2170,6 +2191,7 @@ export interface FileRouteTypes {
     | '/docs/online-platby/gopay'
     | '/pomoc/online-platby/gopay'
     | '/bankove-ucty'
+    | '/ceny'
     | '/doklady'
     | '/efaktura'
     | '/faktury'
@@ -2311,6 +2333,7 @@ export interface FileRouteTypes {
     | '/_authenticated/bankove-ucty/pripojit'
     | '/_authenticated/bankove-ucty/transakcie'
     | '/_authenticated/bankove-ucty/vypisy'
+    | '/_authenticated/ceny/akcie'
     | '/_authenticated/doklady/novy'
     | '/_authenticated/efaktura/dorucenia'
     | '/_authenticated/efaktura/odoslane'
@@ -2367,6 +2390,7 @@ export interface FileRouteTypes {
     | '/docs/online-platby/gopay'
     | '/pomoc/online-platby/gopay'
     | '/_authenticated/bankove-ucty/'
+    | '/_authenticated/ceny/'
     | '/_authenticated/doklady/'
     | '/_authenticated/efaktura/'
     | '/_authenticated/faktury/'
@@ -3049,6 +3073,20 @@ declare module '@tanstack/react-router' {
       path: '/bankove-ucty/vypisy'
       fullPath: '/bankove-ucty/vypisy'
       preLoaderRoute: typeof AuthenticatedBankoveUctyVypisyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ceny/': {
+      id: '/_authenticated/ceny/'
+      path: '/ceny'
+      fullPath: '/ceny/'
+      preLoaderRoute: typeof AuthenticatedCenyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ceny/akcie': {
+      id: '/_authenticated/ceny/akcie'
+      path: '/ceny/akcie'
+      fullPath: '/ceny/akcie'
+      preLoaderRoute: typeof AuthenticatedCenyAkcieRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/doklady/': {
@@ -3991,6 +4029,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBankoveUctyPripojitRoute: typeof AuthenticatedBankoveUctyPripojitRoute
   AuthenticatedBankoveUctyTransakcieRoute: typeof AuthenticatedBankoveUctyTransakcieRoute
   AuthenticatedBankoveUctyVypisyRoute: typeof AuthenticatedBankoveUctyVypisyRoute
+  AuthenticatedCenyAkcieRoute: typeof AuthenticatedCenyAkcieRoute
   AuthenticatedDokladyNovyRoute: typeof AuthenticatedDokladyNovyRoute
   AuthenticatedFakturyNovaRoute: typeof AuthenticatedFakturyNovaRoute
   AuthenticatedFakturyRychlaRoute: typeof AuthenticatedFakturyRychlaRoute
@@ -4020,6 +4059,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedZakazkyIdRoute: typeof AuthenticatedZakazkyIdRoute
   AuthenticatedZakazkyNovaRoute: typeof AuthenticatedZakazkyNovaRoute
   AuthenticatedBankoveUctyIndexRoute: typeof AuthenticatedBankoveUctyIndexRoute
+  AuthenticatedCenyIndexRoute: typeof AuthenticatedCenyIndexRoute
   AuthenticatedDokladyIndexRoute: typeof AuthenticatedDokladyIndexRoute
   AuthenticatedFakturyIndexRoute: typeof AuthenticatedFakturyIndexRoute
   AuthenticatedImportyIndexRoute: typeof AuthenticatedImportyIndexRoute
@@ -4057,6 +4097,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBankoveUctyTransakcieRoute:
     AuthenticatedBankoveUctyTransakcieRoute,
   AuthenticatedBankoveUctyVypisyRoute: AuthenticatedBankoveUctyVypisyRoute,
+  AuthenticatedCenyAkcieRoute: AuthenticatedCenyAkcieRoute,
   AuthenticatedDokladyNovyRoute: AuthenticatedDokladyNovyRoute,
   AuthenticatedFakturyNovaRoute: AuthenticatedFakturyNovaRoute,
   AuthenticatedFakturyRychlaRoute: AuthenticatedFakturyRychlaRoute,
@@ -4091,6 +4132,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedZakazkyIdRoute: AuthenticatedZakazkyIdRoute,
   AuthenticatedZakazkyNovaRoute: AuthenticatedZakazkyNovaRoute,
   AuthenticatedBankoveUctyIndexRoute: AuthenticatedBankoveUctyIndexRoute,
+  AuthenticatedCenyIndexRoute: AuthenticatedCenyIndexRoute,
   AuthenticatedDokladyIndexRoute: AuthenticatedDokladyIndexRoute,
   AuthenticatedFakturyIndexRoute: AuthenticatedFakturyIndexRoute,
   AuthenticatedImportyIndexRoute: AuthenticatedImportyIndexRoute,

@@ -1279,6 +1279,7 @@ export type Database = {
           default_job_id: string | null
           deleted_at: string | null
           dic: string | null
+          discount_percent: number | null
           email: string | null
           external_id: string | null
           ic_dph: string | null
@@ -1287,6 +1288,7 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          price_group_id: string | null
           street: string | null
           updated_at: string
           zip: string | null
@@ -1300,6 +1302,7 @@ export type Database = {
           default_job_id?: string | null
           deleted_at?: string | null
           dic?: string | null
+          discount_percent?: number | null
           email?: string | null
           external_id?: string | null
           ic_dph?: string | null
@@ -1308,6 +1311,7 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          price_group_id?: string | null
           street?: string | null
           updated_at?: string
           zip?: string | null
@@ -1321,6 +1325,7 @@ export type Database = {
           default_job_id?: string | null
           deleted_at?: string | null
           dic?: string | null
+          discount_percent?: number | null
           email?: string | null
           external_id?: string | null
           ic_dph?: string | null
@@ -1329,6 +1334,7 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          price_group_id?: string | null
           street?: string | null
           updated_at?: string
           zip?: string | null
@@ -1339,6 +1345,20 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_default_job_id_fkey"
+            columns: ["default_job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_price_group_id_fkey"
+            columns: ["price_group_id"]
+            isOneToOne: false
+            referencedRelation: "price_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -2769,6 +2789,13 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoices_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       jobs: {
@@ -3145,6 +3172,217 @@ export type Database = {
         }
         Relationships: []
       }
+      price_action_products: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          price_action_id: string
+          product_id: string
+          unit_price: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          price_action_id: string
+          product_id: string
+          unit_price?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          price_action_id?: string
+          product_id?: string
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_action_products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_action_products_price_action_id_fkey"
+            columns: ["price_action_id"]
+            isOneToOne: false
+            referencedRelation: "price_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_action_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_actions: {
+        Row: {
+          active: boolean
+          applies_to_all: boolean
+          company_id: string
+          created_at: string
+          deleted_at: string | null
+          discount_percent: number
+          id: string
+          name: string
+          note: string | null
+          updated_at: string
+          valid_from: string
+          valid_to: string | null
+        }
+        Insert: {
+          active?: boolean
+          applies_to_all?: boolean
+          company_id: string
+          created_at?: string
+          deleted_at?: string | null
+          discount_percent?: number
+          id?: string
+          name: string
+          note?: string | null
+          updated_at?: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Update: {
+          active?: boolean
+          applies_to_all?: boolean
+          company_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          discount_percent?: number
+          id?: string
+          name?: string
+          note?: string | null
+          updated_at?: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_actions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_groups: {
+        Row: {
+          company_id: string
+          created_at: string
+          deleted_at: string | null
+          discount_percent: number
+          id: string
+          name: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          deleted_at?: string | null
+          discount_percent?: number
+          id?: string
+          name: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          discount_percent?: number
+          id?: string
+          name?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_groups_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_prices: {
+        Row: {
+          company_id: string
+          created_at: string
+          customer_id: string | null
+          id: string
+          min_quantity: number
+          note: string | null
+          price_group_id: string | null
+          product_id: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          min_quantity?: number
+          note?: string | null
+          price_group_id?: string | null
+          product_id: string
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          min_quantity?: number
+          note?: string | null
+          price_group_id?: string | null
+          product_id?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_prices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_prices_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_prices_price_group_id_fkey"
+            columns: ["price_group_id"]
+            isOneToOne: false
+            referencedRelation: "price_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           active: boolean
@@ -3345,6 +3583,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "purchase_invoices_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       purchase_order_items: {
@@ -3400,6 +3645,13 @@ export type Database = {
             columns: ["stock_item_id"]
             isOneToOne: false
             referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items_with_availability"
             referencedColumns: ["id"]
           },
         ]
@@ -3468,6 +3720,20 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
           {
@@ -3725,6 +3991,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -4072,8 +4345,8 @@ export type Database = {
           last_purchase_price: number | null
           location: string | null
           min_stock: number
-          optimal_stock: number
           name_en: string | null
+          optimal_stock: number
           photo_url: string | null
           product_id: string | null
           purchase_price: number
@@ -4097,8 +4370,8 @@ export type Database = {
           last_purchase_price?: number | null
           location?: string | null
           min_stock?: number
-          optimal_stock?: number
           name_en?: string | null
+          optimal_stock?: number
           photo_url?: string | null
           product_id?: string | null
           purchase_price?: number
@@ -4122,8 +4395,8 @@ export type Database = {
           last_purchase_price?: number | null
           location?: string | null
           min_stock?: number
-          optimal_stock?: number
           name_en?: string | null
+          optimal_stock?: number
           photo_url?: string | null
           product_id?: string | null
           purchase_price?: number
@@ -4298,6 +4571,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
           {
@@ -5009,6 +5289,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "trips_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "trips_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
@@ -5385,8 +5672,8 @@ export type Database = {
     }
     Enums: {
       accounting_system: "pohoda" | "omega" | "money" | "alfa_plus" | "other"
-      cash_entry_type: "prijem" | "vydaj"
       api_key_mode: "test" | "live"
+      cash_entry_type: "prijem" | "vydaj"
       company_role: "owner" | "admin" | "accountant" | "employee"
       efaktura_channel: "peppol" | "digitalny_postar" | "email" | "manual"
       efaktura_delivery_status:
@@ -5411,13 +5698,6 @@ export type Database = {
         | "rejected"
         | "archived"
       inventory_count_status: "open" | "completed" | "cancelled"
-      job_status: "active" | "closed" | "cancelled"
-      purchase_order_status:
-        | "draft"
-        | "sent"
-        | "partially_received"
-        | "received"
-        | "cancelled"
       invoice_status:
         | "draft"
         | "issued"
@@ -5426,6 +5706,13 @@ export type Database = {
         | "overdue"
         | "cancelled"
       invoice_type: "regular" | "proforma" | "credit_note"
+      job_status: "active" | "closed" | "cancelled"
+      purchase_order_status:
+        | "draft"
+        | "sent"
+        | "partially_received"
+        | "received"
+        | "cancelled"
       quote_status:
         | "draft"
         | "sent"
@@ -5577,6 +5864,7 @@ export const Constants = {
     Enums: {
       accounting_system: ["pohoda", "omega", "money", "alfa_plus", "other"],
       api_key_mode: ["test", "live"],
+      cash_entry_type: ["prijem", "vydaj"],
       company_role: ["owner", "admin", "accountant", "employee"],
       efaktura_channel: ["peppol", "digitalny_postar", "email", "manual"],
       efaktura_delivery_status: [
@@ -5604,13 +5892,6 @@ export const Constants = {
         "archived",
       ],
       inventory_count_status: ["open", "completed", "cancelled"],
-      purchase_order_status: [
-        "draft",
-        "sent",
-        "partially_received",
-        "received",
-        "cancelled",
-      ],
       invoice_status: [
         "draft",
         "issued",
@@ -5620,6 +5901,14 @@ export const Constants = {
         "cancelled",
       ],
       invoice_type: ["regular", "proforma", "credit_note"],
+      job_status: ["active", "closed", "cancelled"],
+      purchase_order_status: [
+        "draft",
+        "sent",
+        "partially_received",
+        "received",
+        "cancelled",
+      ],
       quote_status: [
         "draft",
         "sent",
