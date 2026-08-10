@@ -15,6 +15,7 @@ import {
   Mail,
   CalendarPlus,
   Archive,
+  Landmark,
   X,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
@@ -105,6 +106,30 @@ function InvoicesPage() {
 
   const [bulkAction, setBulkAction] = useState<BulkAction>(null);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
+
+  /*
+   * Tlačidlo na párovanie má zmysel len firme, ktorá má pripojenú banku, a
+   * číslo pri ňom hovorí, koľko príchodzích platieb ešte nie je priradených —
+   * bez toho by používateľ nemal ako vedieť, že je čo párovať.
+   */
+  const [maBanku, setMaBanku] = useState(false);
+  const [cakaNaParovanie, setCakaNaParovanie] = useState(0);
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    supabase
+      .from("bank_accounts")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", cid)
+      .then(({ count }) => setMaBanku((count ?? 0) > 0));
+    supabase
+      .from("bank_transactions")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", cid)
+      .is("matched_invoice_id", null)
+      .gt("amount", 0)
+      .then(({ count }) => setCakaNaParovanie(count ?? 0));
+  }, []);
 
   useEffect(() => {
     const ids = list.rows.map((r: any) => r.id);
@@ -491,6 +516,19 @@ function InvoicesPage() {
                 )}
                 Export {list.selectedIds.length} do Pohody XML
               </button>
+            )}
+            {maBanku && (
+              <Link
+                to="/faktury/parovanie"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+              >
+                <Landmark className="h-4 w-4" /> Spárovať platby
+                {cakaNaParovanie > 0 && (
+                  <span className="rounded-full bg-emerald-600 px-1.5 text-xs font-medium text-white">
+                    {cakaNaParovanie}
+                  </span>
+                )}
+              </Link>
             )}
             <Link
               to="/exporty"

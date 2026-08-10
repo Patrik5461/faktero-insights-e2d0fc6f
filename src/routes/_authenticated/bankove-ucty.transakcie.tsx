@@ -5,7 +5,9 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listBankData, syncBankTransactions } from "@/lib/faktero/tatrabanka.functions";
 import { toast } from "sonner";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw, Link2, Unlink } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { zrusParovanie } from "@/lib/faktero/parovanie.functions";
 import { usePagedLogs } from "@/hooks/usePagedLogs";
 import { EmptyState, ListFooter, LogsToolbar } from "@/components/faktero/ListControls";
 import { Landmark } from "lucide-react";
@@ -26,6 +28,7 @@ function TxPage() {
   const search = Route.useSearch();
   const fetchData = useServerFn(listBankData);
   const sync = useServerFn(syncBankTransactions);
+  const zrus = useServerFn(zrusParovanie);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [selected, setSelected] = useState<string | undefined>(search.account);
   const [busy, setBusy] = useState(false);
@@ -62,6 +65,32 @@ function TxPage() {
       if (!selected && d.accounts[0]) setSelected(d.accounts[0].id);
     });
   }, []);
+
+  /* K spárovaným pohybom dotiahneme číslo faktúry — samotné id nikomu nič nepovie. */
+  const [faktury, setFaktury] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const ids = txs.map((t: any) => t.matched_invoice_id).filter(Boolean);
+    if (ids.length === 0) return setFaktury({});
+    supabase
+      .from("invoices")
+      .select("id, invoice_number")
+      .in("id", ids)
+      .then(({ data }) =>
+        setFaktury(Object.fromEntries((data ?? []).map((f: any) => [f.id, f.invoice_number]))),
+      );
+  }, [txs]);
+
+  async function odparuj(id: string) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    try {
+      await zrus({ data: { companyId: cid, transactionId: id } });
+      toast.success("Párovanie zrušené, faktúra je znovu otvorená.");
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa zrušiť párovanie.");
+    }
+  }
 
   async function onSync() {
     const cid = getActiveCompanyId();
@@ -134,13 +163,21 @@ function TxPage() {
             setDateTo("");
           }}
           right={
-            <button
-              onClick={onSync}
-              disabled={accounts.length === 0 || busy}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Synchronizovať
-            </button>
+            <div className="flex gap-2">
+              <Link
+                to="/faktury/parovanie"
+                className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+              >
+                <Link2 className="h-4 w-4" /> Spárovať s faktúrami
+              </Link>
+              <button
+                onClick={onSync}
+                disabled={accounts.length === 0 || busy}
+                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Synchronizovať
+              </button>
+            </div>
           }
         />
 
@@ -152,6 +189,7 @@ function TxPage() {
                 <th className="px-3 py-2">Protistrana</th>
                 <th className="px-3 py-2">VS</th>
                 <th className="px-3 py-2">Popis</th>
+                <th className="px-3 py-2">Faktúra</th>
                 <th className="px-3 py-2 text-right">Suma</th>
               </tr>
             </thead>
@@ -162,6 +200,30 @@ function TxPage() {
                   <td className="px-3 py-2">{t.counterparty ?? "—"}</td>
                   <td className="px-3 py-2 font-mono text-xs">{t.variable_symbol ?? "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{t.description ?? "—"}</td>
+                  <td className="px-3 py-2">
+                    {t.matched_invoice_id ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Link
+                          to="/faktury/$id"
+                          params={{ id: t.matched_invoice_id }}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {faktury[t.matched_invoice_id] ?? "faktúra"}
+                        </Link>
+                        <button
+                          onClick={() => odparuj(t.id)}
+                          title="Zrušiť párovanie a vrátiť faktúru medzi otvorené"
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Unlink className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ) : Number(t.amount) > 0 ? (
+                      <span className="text-xs text-muted-foreground">nespárované</span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td
                     className={`px-3 py-2 text-right tabular-nums font-medium ${Number(t.amount) < 0 ? "text-destructive" : "text-emerald-700"}`}
                   >
@@ -171,7 +233,7 @@ function TxPage() {
               ))}
               {!loading && txs.length === 0 && (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={6}>
                     <EmptyState
                       icon={Landmark}
                       title="Žiadne transakcie"

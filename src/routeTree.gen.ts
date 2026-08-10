@@ -111,6 +111,7 @@ import { Route as AuthenticatedEfakturaOdoslaneRouteImport } from './routes/_aut
 import { Route as AuthenticatedEfakturaPrijateRouteImport } from './routes/_authenticated/efaktura.prijate'
 import { Route as AuthenticatedFakturyIndexRouteImport } from './routes/_authenticated/faktury.index'
 import { Route as AuthenticatedFakturyNovaRouteImport } from './routes/_authenticated/faktury.nova'
+import { Route as AuthenticatedFakturyParovanieRouteImport } from './routes/_authenticated/faktury.parovanie'
 import { Route as AuthenticatedFakturyRychlaRouteImport } from './routes/_authenticated/faktury.rychla'
 import { Route as AuthenticatedFakturySkenerRouteImport } from './routes/_authenticated/faktury.skener'
 import { Route as AuthenticatedImportyIndexRouteImport } from './routes/_authenticated/importy.index'
@@ -752,6 +753,12 @@ const AuthenticatedFakturyNovaRoute =
   AuthenticatedFakturyNovaRouteImport.update({
     id: '/faktury/nova',
     path: '/faktury/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFakturyParovanieRoute =
+  AuthenticatedFakturyParovanieRouteImport.update({
+    id: '/faktury/parovanie',
+    path: '/faktury/parovanie',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedFakturyRychlaRoute =
@@ -1493,6 +1500,7 @@ export interface FileRoutesByFullPath {
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
   '/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
   '/faktury/nova': typeof AuthenticatedFakturyNovaRoute
+  '/faktury/parovanie': typeof AuthenticatedFakturyParovanieRoute
   '/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
@@ -1703,6 +1711,7 @@ export interface FileRoutesByTo {
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
   '/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
   '/faktury/nova': typeof AuthenticatedFakturyNovaRoute
+  '/faktury/parovanie': typeof AuthenticatedFakturyParovanieRoute
   '/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
@@ -1921,6 +1930,7 @@ export interface FileRoutesById {
   '/_authenticated/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
   '/_authenticated/efaktura/prijate': typeof AuthenticatedEfakturaPrijateRoute
   '/_authenticated/faktury/nova': typeof AuthenticatedFakturyNovaRoute
+  '/_authenticated/faktury/parovanie': typeof AuthenticatedFakturyParovanieRoute
   '/_authenticated/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/_authenticated/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/_authenticated/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
@@ -2140,6 +2150,7 @@ export interface FileRouteTypes {
     | '/efaktura/odoslane'
     | '/efaktura/prijate'
     | '/faktury/nova'
+    | '/faktury/parovanie'
     | '/faktury/rychla'
     | '/faktury/skener'
     | '/importy/idoklad'
@@ -2350,6 +2361,7 @@ export interface FileRouteTypes {
     | '/efaktura/odoslane'
     | '/efaktura/prijate'
     | '/faktury/nova'
+    | '/faktury/parovanie'
     | '/faktury/rychla'
     | '/faktury/skener'
     | '/importy/idoklad'
@@ -2567,6 +2579,7 @@ export interface FileRouteTypes {
     | '/_authenticated/efaktura/odoslane'
     | '/_authenticated/efaktura/prijate'
     | '/_authenticated/faktury/nova'
+    | '/_authenticated/faktury/parovanie'
     | '/_authenticated/faktury/rychla'
     | '/_authenticated/faktury/skener'
     | '/_authenticated/importy/idoklad'
@@ -3491,6 +3504,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFakturyNovaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/faktury/parovanie': {
+      id: '/_authenticated/faktury/parovanie'
+      path: '/faktury/parovanie'
+      fullPath: '/faktury/parovanie'
+      preLoaderRoute: typeof AuthenticatedFakturyParovanieRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/faktury/rychla': {
       id: '/_authenticated/faktury/rychla'
       path: '/faktury/rychla'
@@ -4413,6 +4433,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCenyAkcieRoute: typeof AuthenticatedCenyAkcieRoute
   AuthenticatedDokladyNovyRoute: typeof AuthenticatedDokladyNovyRoute
   AuthenticatedFakturyNovaRoute: typeof AuthenticatedFakturyNovaRoute
+  AuthenticatedFakturyParovanieRoute: typeof AuthenticatedFakturyParovanieRoute
   AuthenticatedFakturyRychlaRoute: typeof AuthenticatedFakturyRychlaRoute
   AuthenticatedFakturySkenerRoute: typeof AuthenticatedFakturySkenerRoute
   AuthenticatedImportyIdokladRoute: typeof AuthenticatedImportyIdokladRoute
@@ -4485,6 +4506,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCenyAkcieRoute: AuthenticatedCenyAkcieRoute,
   AuthenticatedDokladyNovyRoute: AuthenticatedDokladyNovyRoute,
   AuthenticatedFakturyNovaRoute: AuthenticatedFakturyNovaRoute,
+  AuthenticatedFakturyParovanieRoute: AuthenticatedFakturyParovanieRoute,
   AuthenticatedFakturyRychlaRoute: AuthenticatedFakturyRychlaRoute,
   AuthenticatedFakturySkenerRoute: AuthenticatedFakturySkenerRoute,
   AuthenticatedImportyIdokladRoute: AuthenticatedImportyIdokladRoute,

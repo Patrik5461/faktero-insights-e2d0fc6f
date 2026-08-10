@@ -109,15 +109,16 @@ async function handle(request: Request): Promise<Response> {
             paid_at: new Date().toISOString(),
           })
           .eq("id", inv.id);
+        // `payments` má `paid_at` a nemá `currency` ani `payment_date` — s nimi
+        // zápis ticho padal a v prehľadoch po platbe nezostala stopa.
         await supabaseAdmin.from("payments").insert({
           company_id: cid,
           invoice_id: inv.id,
           amount: link.amount_cents / 100,
-          currency: link.currency,
-          payment_date: new Date().toISOString().slice(0, 10),
+          paid_at: new Date().toISOString().slice(0, 10),
           method: "gopay",
           note: `GoPay payment ${payment.id}`,
-        } as any);
+        });
         await supabaseAdmin.from("platform_audit_logs").insert({
           admin_user_id: link.created_by ?? "00000000-0000-0000-0000-000000000000",
           action: "invoice_paid_via_gopay",

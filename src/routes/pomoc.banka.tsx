@@ -56,12 +56,34 @@ const sections: HelpSection[] = [
       <>
         <p>
           <Link to="/bankove-ucty/transakcie">Bankové transakcie</Link> ukazujú pohyby na účte.
-          Faktero navrhne, ku ktorej faktúre pohyb patrí; potvrdením sa faktúra označí za uhradenú s
-          dátumom pohybu.
+          Párovanie sa spúšťa tlačidlom <strong>Spárovať platby</strong> v prehľade faktúr (alebo
+          <strong> Spárovať s faktúrami</strong> nad transakciami). Nerobí sa samo od seba — úhrada
+          mení stav faktúry, a to nemá prebehnúť bez toho, aby o tom niekto vedel.
+        </p>
+        <p>Faktero rozdeľuje nájdené dvojice na dve kôpky:</p>
+        <ul>
+          <li>
+            <strong>Isté</strong> — sedí variabilný symbol aj suma do haliera a žiadna iná faktúra
+            neprichádza do úvahy. Tie sa dajú zapísať naraz tlačidlom „Spárovať isté".
+          </li>
+          <li>
+            <strong>Na rozhodnutie</strong> — čiastočná platba, chýbajúci variabilný symbol, alebo
+            rovnako dobre sedia dve faktúry. Pri každej dvojici je napísané, prečo ju Faktero
+            ponúka, a rozhodujete vy.
+          </li>
+        </ul>
+        <p>
+          Čiastočná úhrada nechá faktúru otvorenú so zvyškom — ďalšia platba sa napáruje na to, čo
+          ostalo. Za uhradenú sa faktúra označí, až keď je pokrytá celá.
         </p>
         <p>
-          Párovanie podľa variabilného symbolu funguje spoľahlivo len vtedy, keď ho odberateľ uvedie.
-          Preto Faktero predvypĺňa variabilný symbol z čísla faktúry.
+          Párovanie sa dá vrátiť: v zozname transakcií je pri spárovanom pohybe krížik, ktorý úhradu
+          zmaže a faktúru vráti medzi otvorené.
+        </p>
+        <p>
+          Odchádzajúce platby sa nepárujú — tie patria k prijatým faktúram, nie k vystaveným.
+          Párovanie podľa variabilného symbolu funguje spoľahlivo len vtedy, keď ho odberateľ uvedie;
+          preto Faktero predvypĺňa variabilný symbol z čísla faktúry.
         </p>
         <p>
           Úhrada sa dá zapísať aj do <Link to="/pomoc/uzavierka">uzamknutého obdobia</Link> — platby
