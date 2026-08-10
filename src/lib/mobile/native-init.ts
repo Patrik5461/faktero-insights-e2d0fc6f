@@ -20,7 +20,7 @@ export async function initNativePlatform(): Promise<void> {
       const { StatusBar, Style } = await import("@capacitor/status-bar");
       await StatusBar.setStyle({ style: Style.Dark });
       if (Capacitor.getPlatform() === "android") {
-        await StatusBar.setBackgroundColor({ color: "#10b981" });
+        await StatusBar.setBackgroundColor({ color: "#007e46" });
       }
       await StatusBar.setOverlaysWebView({ overlay: false });
     } catch (e) {

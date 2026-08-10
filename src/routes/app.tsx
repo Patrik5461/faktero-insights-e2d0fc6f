@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   Building2,
   Camera,
+  Menu,
   Check,
   FileText,
   Files,
@@ -27,6 +28,7 @@ import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { PrijateDoklady, datum } from "@/components/faktero/mobil/PrijateDoklady";
+import { MobilPanel } from "@/components/faktero/mobil/MobilPanel";
 import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
 import {
   HlavneTlacidlo,
@@ -65,6 +67,8 @@ function MobilnaApka() {
   const [firmy, setFirmy] = useState<Firma[]>([]);
   const [firma, setFirma] = useState<Firma | null>(null);
   const [zachyt, setZachyt] = useState<Zachyt>("blocek");
+  const [email, setEmail] = useState<string | null>(null);
+  const [panel, setPanel] = useState(false);
 
   /** Kto je prihlásený a za akú firmu — to isté sa rieši pri štarte aj po prihlásení. */
   async function zisti() {
@@ -73,6 +77,7 @@ function MobilnaApka() {
       setKrok("prihlasenie");
       return;
     }
+    setEmail(data.session.user?.email ?? null);
     try {
       const zoznam = (await fetchMyCompanies()) as Firma[];
       setFirmy(zoznam);
@@ -152,17 +157,28 @@ function MobilnaApka() {
     );
 
   return (
-    <Domov
-      firma={firma}
-      viacFiriem={firmy.length > 1}
-      onZmenitFirmu={() => setKrok("firma")}
-      onZachyt={(d) => {
-        setZachyt(d);
-        setKrok("zachyt");
-      }}
-      onDoklady={() => setKrok("doklady")}
-      onOdhlasit={odhlas}
-    />
+    <>
+      <Domov
+        firma={firma}
+        viacFiriem={firmy.length > 1}
+        onZachyt={(d) => {
+          setZachyt(d);
+          setKrok("zachyt");
+        }}
+        onDoklady={() => setKrok("doklady")}
+        onPanel={() => setPanel(true)}
+      />
+      <MobilPanel
+        otvoreny={panel}
+        onZavri={() => setPanel(false)}
+        email={email}
+        firma={firma}
+        viacFiriem={firmy.length > 1}
+        onZmenitFirmu={() => setKrok("firma")}
+        onDoklady={() => setKrok("doklady")}
+        onOdhlasit={odhlas}
+      />
+    </>
   );
 }
 
@@ -302,18 +318,47 @@ function VyberFirmy({
 function Domov({
   firma,
   viacFiriem,
-  onZmenitFirmu,
   onZachyt,
   onDoklady,
-  onOdhlasit,
+  onPanel,
 }: {
   firma: Firma | null;
   viacFiriem: boolean;
-  onZmenitFirmu: () => void;
   onZachyt: (d: Zachyt) => void;
   onDoklady: () => void;
-  onOdhlasit: () => void;
+  onPanel: () => void;
 }) {
+  /*
+   * Panel sa otvára aj potiahnutím od ľavého okraja. Na ostatných obrazovkách
+   * to isté gesto znamená „späť" — tu späť nie je kam, tak je voľné.
+   */
+  useEffect(() => {
+    let x0: number | null = null;
+    const dole = (e: TouchEvent) => {
+      const t = e.touches[0];
+      x0 = t && t.clientX <= 28 ? t.clientX : null;
+    };
+    const pohyb = (e: TouchEvent) => {
+      if (x0 == null) return;
+      const t = e.touches[0];
+      if (t && t.clientX - x0 > 60) {
+        x0 = null;
+        onPanel();
+      }
+    };
+    const hore = () => {
+      x0 = null;
+    };
+    window.addEventListener("touchstart", dole, { passive: true });
+    window.addEventListener("touchmove", pohyb, { passive: true });
+    window.addEventListener("touchend", hore, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", dole);
+      window.removeEventListener("touchmove", pohyb);
+      window.removeEventListener("touchend", hore);
+    };
+  }, [onPanel]);
+
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background">
       {/*
@@ -329,21 +374,21 @@ function Domov({
         }}
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <button
+            onClick={onPanel}
+            aria-label="Nastavenia"
+            className="-ml-2 rounded-full bg-white/15 p-2 active:bg-white/25"
+          >
+            <Menu className="h-[18px] w-[18px]" />
+          </button>
+          <div className="min-w-0 flex-1 text-right">
             <p className="text-[13px] font-medium text-primary-foreground/80">Faktero</p>
             <h1 className="mt-0.5 text-[22px] font-semibold leading-tight">Skenovanie dokladov</h1>
           </div>
-          <button
-            onClick={onOdhlasit}
-            aria-label="Odhlásiť sa"
-            className="rounded-full bg-white/15 p-2 active:bg-white/25"
-          >
-            <LogOut className="h-[18px] w-[18px]" />
-          </button>
         </div>
 
         <button
-          onClick={viacFiriem ? onZmenitFirmu : undefined}
+          onClick={viacFiriem ? onPanel : undefined}
           className={`mt-4 flex w-full items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5 text-left ${
             viacFiriem ? "active:bg-white/25" : "cursor-default"
           }`}
@@ -389,7 +434,6 @@ function Domov({
         </div>
       </main>
 
-      {/* Firma je v hlavičke — opakovať ju dole by bola len vata. */}
       <div style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }} />
     </div>
   );

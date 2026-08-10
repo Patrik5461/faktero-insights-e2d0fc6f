@@ -53,6 +53,26 @@ export async function enableBiometric(): Promise<{ ok: boolean; error?: string }
   }
 }
 
+/** Je rýchle prihlásenie zapnuté? Prepínač v nastaveniach musí vedieť, čo ukázať. */
+export async function isBiometricEnabled(): Promise<boolean> {
+  try {
+    const { Preferences } = await import("@capacitor/preferences").catch(() => ({
+      Preferences: null as any,
+    }));
+    if (Preferences) {
+      const { value } = await Preferences.get({ key: STORAGE_KEY });
+      if (value) return true;
+    }
+  } catch {
+    // @capacitor/preferences nie je vo webovom builde
+  }
+  try {
+    return !!localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return false;
+  }
+}
+
 export async function disableBiometric(): Promise<void> {
   try {
     const { Preferences } = await import("@capacitor/preferences").catch(() => ({
