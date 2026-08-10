@@ -80,17 +80,19 @@ describe("Pohoda XML export", () => {
     expect(Number(suhrn.priceHighVAT)).toBe(23);
     expect(Number(suhrn.priceLow)).toBe(50);
     expect(Number(suhrn.priceLowVAT)).toBe(9.5);
-    expect(Number(suhrn.priceThird)).toBe(20);
-    expect(Number(suhrn.priceThirdVAT)).toBe(1);
+    // Schéma Pohody (type.xsd) pozná `price3`, nie `priceThird` — s tým
+    // druhým by doklad neprešiel kontrolou a sadzba 5 % by vypadla.
+    expect(Number(suhrn.price3)).toBe(20);
+    expect(Number(suhrn.price3VAT)).toBe(1);
     expect(Number(suhrn.priceNone)).toBe(5);
 
     const zaklad = polozky.reduce((s, p) => s + p.subtotal, 0);
     const dan = polozky.reduce((s, p) => s + p.vat_amount, 0);
     expect(
-      Number(suhrn.priceHigh) + Number(suhrn.priceLow) + Number(suhrn.priceThird) + Number(suhrn.priceNone),
+      Number(suhrn.priceHigh) + Number(suhrn.priceLow) + Number(suhrn.price3) + Number(suhrn.priceNone),
     ).toBe(zaklad);
     expect(
-      Number(suhrn.priceHighVAT) + Number(suhrn.priceLowVAT) + Number(suhrn.priceThirdVAT),
+      Number(suhrn.priceHighVAT) + Number(suhrn.priceLowVAT) + Number(suhrn.price3VAT),
     ).toBe(dan);
   });
 

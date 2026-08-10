@@ -37,8 +37,9 @@ export function buildPohodaInvoiceXml(opts: {
     .map(({ invoice, items }, idx) => {
       const isCreditNote = invoice.type === "credit_note";
       const invoiceType = isCreditNote ? "issuedCreditNotice" : "issuedInvoice";
-      // Pohoda rateVAT enum: "none" = 0 %, "third" = super-znížená (5 %),
-      // "low" = znížená (19 %; historicky 10 %), "high" = základná (23 %; historicky 20 %).
+      // Pohoda `typ:vatRateType` pozná hodnoty none | high | low | third |
+      // historyHigh: "none" = 0 %, "third" = druhá znížená (5 %), "low" =
+      // znížená (19 %), "high" = základná (23 %).
       const rateVatCode = (r: number) => {
         const n = Number(r);
         if (n === 0) return "none";
@@ -105,8 +106,8 @@ export function buildPohodaInvoiceXml(opts: {
       <inv:invoiceSummary>
         <inv:homeCurrency>
           <typ:priceNone>${fixed2(sumBase(sum0))}</typ:priceNone>
-          <typ:priceThird>${fixed2(sumBase(sumThird))}</typ:priceThird>
-          <typ:priceThirdVAT>${fixed2(sumVat(sumThird))}</typ:priceThirdVAT>
+          <typ:price3>${fixed2(sumBase(sumThird))}</typ:price3>
+          <typ:price3VAT>${fixed2(sumVat(sumThird))}</typ:price3VAT>
           <typ:priceLow>${fixed2(sumBase(sumLow))}</typ:priceLow>
           <typ:priceLowVAT>${fixed2(sumVat(sumLow))}</typ:priceLowVAT>
           <typ:priceHigh>${fixed2(sumBase(sumHigh))}</typ:priceHigh>

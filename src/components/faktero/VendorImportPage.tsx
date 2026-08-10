@@ -16,7 +16,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createImportUploadUrl } from "@/lib/faktero/import-superfaktura.functions";
 import { previewVendorImport, executeVendorImport } from "@/lib/faktero/import-vendors.functions";
 
-export type VendorId = "money-s3" | "omega" | "idoklad" | "kros";
+export type VendorId = "money-s3" | "omega" | "idoklad" | "kros" | "pohoda";
 
 export function VendorImportPage(props: {
   source: VendorId;

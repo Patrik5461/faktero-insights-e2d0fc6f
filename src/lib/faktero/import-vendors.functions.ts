@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const VendorEnum = z.enum(["money-s3", "omega", "idoklad", "kros"]);
+const VendorEnum = z.enum(["money-s3", "omega", "idoklad", "kros", "pohoda"]);
 
 const PreviewInput = z.object({
   companyId: z.string().uuid(),
@@ -110,6 +110,7 @@ export const executeVendorImport = createServerFn({ method: "POST" })
       omega: "Omega",
       idoklad: "iDoklad",
       kros: "KROS",
+      pohoda: "Pohoda",
     };
 
     const { data: job, error: jobErr } = await supabaseAdmin

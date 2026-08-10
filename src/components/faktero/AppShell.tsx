@@ -164,6 +164,7 @@ const NAV: NavGroup[] = [
       { to: "/bankove-ucty/vypisy", label: "Bankové výpisy" },
       { to: "/bankove-ucty/pripojit", label: "Pripojiť banku" },
       { to: "/importy/superfaktura", label: "Import zo SuperFaktúry" },
+      { to: "/importy/pohoda", label: "Import z Pohody a mPohody" },
       { to: "/importy/money-s3", label: "Import z Money S3" },
       { to: "/importy/omega", label: "Import z Omega" },
       { to: "/importy/idoklad", label: "Import z iDoklad" },

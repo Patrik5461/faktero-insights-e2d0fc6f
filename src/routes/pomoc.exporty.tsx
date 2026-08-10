@@ -111,6 +111,16 @@ const sections: HelpSection[] = [
             UTF-8, dátumy v tvare <code>04.03.2025</code> aj <code>2025-03-04</code> a desatinnú
             čiarku.
           </li>
+          <li>
+            <strong>Pohoda</strong> — XML z <em>Súbor → Dátová komunikácia → XML import/export</em>,
+            alebo export do ISDOC. Prečítame aj súbor, ktorý Pohoda vydá pri exporte
+            (<code>responsePack</code>), nielen ten importný.
+          </li>
+          <li>
+            <strong>mPohoda</strong> — nie je to ten istý formát ako Pohoda. mPohoda je cloudová
+            aplikácia a dáta vydáva cez svoje rozhranie ako <strong>JSON</strong>. Nahrajte ho na
+            tú istú stránku, formát rozpoznáme sami.
+          </li>
         </ul>
         <p>
           Vo všetkých prípadoch Faktero stĺpce rozpozná samo a pred zápisom ukáže náhľad: koľko
@@ -150,9 +160,14 @@ const sections: HelpSection[] = [
           položiek, odberateľa, dobropisov a súčtov rozpísaných po sadzbách DPH.
         </p>
         <p>
-          Export pre <strong>Omegu, Money S3 a Alfa Plus</strong> zatiaľ nemáme; na stránke exportov
-          sú označené ako pripravované. Do tých systémov sa dá zatiaľ dostať cez univerzálne CSV
-          alebo cez <Link to="/pomoc/api">API</Link>.
+          Ďalej vieme vyviezť do <strong>KROS Omegy</strong> (textový súbor R00/R01/R02 v kódovaní
+          Windows-1250) — <strong>ten istý súbor číta aj ALFA plus</strong>, jej import sa volá
+          „Import faktúr z Omegy". A do <strong>Money S3</strong> ako dátový balík{" "}
+          <code>MoneyData</code>.
+        </p>
+        <p>
+          Formát si vyberiete v <Link to="/exporty">Účtovných exportoch</Link> nad zoznamom faktúr.
+          Každý export sa uloží do histórie, takže sa dá stiahnuť znova.
         </p>
       </>
     ),

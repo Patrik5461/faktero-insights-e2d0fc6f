@@ -4,8 +4,10 @@
 import { XMLParser } from "fast-xml-parser";
 import type { FieldKey } from "./import-superfaktura.server";
 import { parseCsv, detectMapping as detectMappingSpolocne } from "./import-superfaktura.server";
+import { jeMPohodaJson, jePohodaXml, mpohodaNaRiadky, pohodaNaRiadky } from "./pohoda";
+import { isdocNaRiadky, jeIsdoc } from "./isdoc";
 
-export type VendorSource = "money-s3" | "omega" | "idoklad" | "kros";
+export type VendorSource = "money-s3" | "omega" | "idoklad" | "kros" | "pohoda";
 export type CanonicalRow = Partial<Record<FieldKey, string>>;
 
 // Windows-1250 → UTF-8 (Slovak accounting exports frequently use CP1250).
@@ -322,6 +324,38 @@ function parseKrosXml(bytes: Uint8Array): CanonicalRow[] {
   return rows;
 }
 
+/**
+ * Pohoda a mPohoda. Nie sú to rovnaké formáty — Pohoda vyváža XML (`dataPack`
+ * alebo `responsePack`, prípadne ISDOC), mPohoda ako cloudová aplikácia vydáva
+ * JSON cez svoje rozhranie. Jedna stránka importu, formát sa rozpozná z obsahu.
+ */
+function parsePohoda(bytes: Uint8Array): CanonicalRow[] {
+  const obsah = decodeBytes(bytes);
+
+  if (jeMPohodaJson(obsah)) {
+    try {
+      return mpohodaNaRiadky(JSON.parse(obsah)) as CanonicalRow[];
+    } catch {
+      return [];
+    }
+  }
+
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@",
+    trimValues: true,
+    removeNSPrefix: true,
+    // Bez tohto stráca IČO vedúce nuly.
+    parseTagValue: false,
+    parseAttributeValue: false,
+  });
+
+  // Pohoda vie faktúru vyviezť aj do ISDOC.
+  if (jeIsdoc(obsah)) return isdocNaRiadky(parser.parse(obsah)) as CanonicalRow[];
+  if (jePohodaXml(obsah)) return pohodaNaRiadky(parser.parse(obsah)) as CanonicalRow[];
+  return [];
+}
+
 // ---------------------------------------------------------------------------
 // Dispatcher
 // ---------------------------------------------------------------------------
@@ -333,6 +367,8 @@ export function parseVendorFile(
   const lower = fileName.toLowerCase();
   const isXml = lower.endsWith(".xml");
   switch (source) {
+    case "pohoda":
+      return parsePohoda(bytes);
     case "money-s3":
       return parseMoneyS3(bytes);
     case "kros":
