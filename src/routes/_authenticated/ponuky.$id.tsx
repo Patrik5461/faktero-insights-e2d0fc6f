@@ -5,7 +5,9 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { useServerFn } from "@tanstack/react-start";
 import { generateQuotePdf, getQuotePdfSignedUrl } from "@/lib/faktero/quote-pdf.functions";
 import { convertQuoteToInvoice, duplicateQuote } from "@/lib/faktero/quote.functions";
+import { createSalesOrderFromQuote } from "@/lib/faktero/sales-orders.functions";
 import { sendQuoteEmailFn } from "@/lib/faktero/quote-email.functions";
+import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   Download,
   FileText,
@@ -14,6 +16,7 @@ import {
   Copy,
   ArrowRightLeft,
   CheckCircle2,
+  ClipboardList,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -54,6 +57,7 @@ function QuoteDetail() {
   const genPdf = useServerFn(generateQuotePdf);
   const getPdf = useServerFn(getQuotePdfSignedUrl);
   const convert = useServerFn(convertQuoteToInvoice);
+  const naObjednavku = useServerFn(createSalesOrderFromQuote);
   const dup = useServerFn(duplicateQuote);
   const send = useServerFn(sendQuoteEmailFn);
 
@@ -214,6 +218,26 @@ function QuoteDetail() {
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
               <Copy className="h-4 w-4" /> Duplikovať
+            </button>
+            <button
+              onClick={async () => {
+                const cid = getActiveCompanyId();
+                if (!cid) return;
+                if (!confirm("Vytvoriť z ponuky prijatú objednávku?")) return;
+                setBusy("obj");
+                try {
+                  const r: any = await naObjednavku({ data: { company_id: cid, quote_id: id } });
+                  navigate({ to: "/objednavky/$id", params: { id: r.id } });
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Objednávku sa nepodarilo vytvoriť");
+                } finally {
+                  setBusy(null);
+                }
+              }}
+              disabled={busy === "obj"}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              <ClipboardList className="h-4 w-4" /> Vytvoriť objednávku
             </button>
             <button
               onClick={handleConvert}

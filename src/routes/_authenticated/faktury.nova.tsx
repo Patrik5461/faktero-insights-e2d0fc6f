@@ -4,6 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
+import {
+  getSalesOrderForInvoice,
+  markSalesOrderInvoiced,
+} from "@/lib/faktero/sales-orders.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import {
@@ -50,7 +54,10 @@ export const Route = createFileRoute("/_authenticated/faktury/nova")({
     type?: "proforma" | "credit_note";
     supplier_hint?: string;
     total_hint?: string;
+    /** Faktúra vystavovaná z prijatej objednávky. */
+    sales_order?: string;
   } => ({
+    sales_order: typeof s.sales_order === "string" && s.sales_order ? s.sales_order : undefined,
     type: (s.type === "proforma" || s.type === "credit_note" ? s.type : undefined) as
       "proforma" | "credit_note" | undefined,
     supplier_hint:
@@ -157,6 +164,51 @@ function NewInvoice() {
    * doklad; cenu každého riadku počíta formulár sám cez `cenaZPodkladov`.
    */
   const [podklady, setPodklady] = useState<(Podklady & { maCennik: boolean }) | null>(null);
+
+  /**
+   * Faktúra z prijatej objednávky. Prenesú sa len množstvá, ktoré ešte
+   * zostávajú vybaviť — inak by sa pri druhej faktúre z tej istej objednávky
+   * vyfakturovalo druhýkrát to isté.
+   */
+  const nacitajObjednavku = useServerFn(getSalesOrderForInvoice);
+  const oznacVyfakturovane = useServerFn(markSalesOrderInvoiced);
+  const [objednavka, setObjednavka] = useState<any>(null);
+
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid || !search.sales_order) return;
+    nacitajObjednavku({ data: { company_id: cid, id: search.sales_order } })
+      .then((o: any) => {
+        setObjednavka(o);
+        if (!o.polozky?.length) {
+          toast.error("Objednávka je už celá vyfakturovaná.");
+          return;
+        }
+        setForm((f) => ({
+          ...f,
+          customer_id: o.customer_id ?? f.customer_id,
+          order_number: o.customer_order_number ?? o.order_number ?? f.order_number,
+          job_id: o.job_id ?? f.job_id,
+          currency: o.currency ?? f.currency,
+        }));
+        setItems(
+          o.polozky.map((p: any) => ({
+            ...EMPTY_ITEM,
+            name: p.name,
+            description: p.description ?? "",
+            quantity: Number(p.quantity),
+            unit: p.unit ?? "ks",
+            unit_price: Number(p.unit_price),
+            vat_rate: Number(p.vat_rate),
+            product_id: p.product_id ?? null,
+            stock_item_id: p.stock_item_id ?? null,
+            // Ceny dohodnuté v objednávke sa cenníkom neprepisujú.
+            _cena_rucne: true,
+          })),
+        );
+      })
+      .catch((e: any) => toast.error(e?.message ?? "Objednávku sa nepodarilo načítať"));
+  }, [search.sales_order, nacitajObjednavku]);
   const nacitajCennik = useServerFn(getPriceContext);
   // Pri prvom načítaní sa ceny už zadaných riadkov neprepisujú — mohli prísť
   // z kópie faktúry alebo zo skenera a prepísať ich by bola tichá zmena sumy.
@@ -543,6 +595,31 @@ function NewInvoice() {
         });
       } catch (e) {
         console.warn("[webhook] invoice.created trigger zlyhal", e);
+      }
+
+      // Vybavenie objednávky sa posúva až tu — keď faktúra naozaj existuje.
+      if (search.sales_order) {
+        try {
+          await oznacVyfakturovane({
+            data: {
+              company_id: cid,
+              id: search.sales_order,
+              invoice_id: inv.id,
+              polozky: items
+                .filter((it) => it.name?.trim())
+                .map((it) => ({
+                  name: it.name.trim(),
+                  product_id: it.product_id ?? null,
+                  quantity: Number(it.quantity) || 0,
+                })),
+            },
+          });
+        } catch (e: any) {
+          toast.error(
+            "Faktúra vznikla, ale objednávku sa nepodarilo označiť za vybavenú: " +
+              (e?.message ?? ""),
+          );
+        }
       }
 
       toast.success("Faktúra vytvorená");

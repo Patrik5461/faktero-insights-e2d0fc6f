@@ -19,6 +19,7 @@ const MORE_LINKS: { to: string; label: string }[] = [
   { to: "/jazdy/gps", label: "GPS jazda" },
   { to: "/odberatelia", label: "Odberatelia" },
   { to: "/produkty", label: "Produkty" },
+  { to: "/objednavky", label: "Prijaté objednávky" },
   { to: "/zakazky", label: "Zákazky" },
   { to: "/sklad", label: "Sklad" },
   { to: "/ceny", label: "Cenník a zľavy" },

@@ -2640,6 +2640,7 @@ export type Database = {
           reverse_charge: boolean
           reverse_charge_type: string | null
           rounding_mode: string | null
+          sales_order_id: string | null
           sent_at: string | null
           sequence_number: number | null
           specific_symbol: string | null
@@ -2698,6 +2699,7 @@ export type Database = {
           reverse_charge?: boolean
           reverse_charge_type?: string | null
           rounding_mode?: string | null
+          sales_order_id?: string | null
           sent_at?: string | null
           sequence_number?: number | null
           specific_symbol?: string | null
@@ -2756,6 +2758,7 @@ export type Database = {
           reverse_charge?: boolean
           reverse_charge_type?: string | null
           rounding_mode?: string | null
+          sales_order_id?: string | null
           sent_at?: string | null
           sequence_number?: number | null
           specific_symbol?: string | null
@@ -2794,6 +2797,13 @@ export type Database = {
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -4174,6 +4184,193 @@ export type Database = {
             columns: ["last_invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_order_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          invoiced_quantity: number
+          name: string
+          position: number
+          product_id: string | null
+          quantity: number
+          sales_order_id: string
+          stock_item_id: string | null
+          unit: string
+          unit_price: number
+          vat_rate: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          invoiced_quantity?: number
+          name: string
+          position?: number
+          product_id?: string | null
+          quantity: number
+          sales_order_id: string
+          stock_item_id?: string | null
+          unit?: string
+          unit_price?: number
+          vat_rate?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          invoiced_quantity?: number
+          name?: string
+          position?: number
+          product_id?: string | null
+          quantity?: number
+          sales_order_id?: string
+          stock_item_id?: string | null
+          unit?: string
+          unit_price?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items_with_availability"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_orders: {
+        Row: {
+          company_id: string
+          confirmed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          customer_email: string | null
+          customer_ico: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_order_number: string | null
+          deleted_at: string | null
+          id: string
+          job_id: string | null
+          note: string | null
+          order_date: string
+          order_number: string
+          quote_id: string | null
+          requested_date: string | null
+          reserve_stock: boolean
+          status: Database["public"]["Enums"]["sales_order_status"]
+          subtotal: number
+          total: number
+          updated_at: string
+          vat_total: number
+        }
+        Insert: {
+          company_id: string
+          confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_email?: string | null
+          customer_ico?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_order_number?: string | null
+          deleted_at?: string | null
+          id?: string
+          job_id?: string | null
+          note?: string | null
+          order_date?: string
+          order_number: string
+          quote_id?: string | null
+          requested_date?: string | null
+          reserve_stock?: boolean
+          status?: Database["public"]["Enums"]["sales_order_status"]
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          vat_total?: number
+        }
+        Update: {
+          company_id?: string
+          confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          customer_email?: string | null
+          customer_ico?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          customer_order_number?: string | null
+          deleted_at?: string | null
+          id?: string
+          job_id?: string | null
+          note?: string | null
+          order_date?: string
+          order_number?: string
+          quote_id?: string | null
+          requested_date?: string | null
+          reserve_stock?: boolean
+          status?: Database["public"]["Enums"]["sales_order_status"]
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          vat_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
         ]
@@ -5721,6 +5918,12 @@ export type Database = {
         | "expired"
         | "converted"
       recurring_frequency: "weekly" | "monthly" | "quarterly" | "yearly"
+      sales_order_status:
+        | "draft"
+        | "confirmed"
+        | "partially_invoiced"
+        | "completed"
+        | "cancelled"
       stock_movement_type:
         | "prijem"
         | "vydaj"
@@ -5918,6 +6121,13 @@ export const Constants = {
         "converted",
       ],
       recurring_frequency: ["weekly", "monthly", "quarterly", "yearly"],
+      sales_order_status: [
+        "draft",
+        "confirmed",
+        "partially_invoiced",
+        "completed",
+        "cancelled",
+      ],
       stock_movement_type: [
         "prijem",
         "vydaj",
