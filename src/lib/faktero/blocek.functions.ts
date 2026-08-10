@@ -124,9 +124,11 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
         };
         // Keď z QR vypadlo niečo použiteľné, netreba už otravovať OCR.
         if (zQr.total != null || zQr.items.length > 0) return zQr;
-        poznamka = zQr.poznamka;
+        // Inak sa ide na fotku — a poznámka to musí povedať tak, aby si
+        // neodporovala s hlavičkou „odhadnuté z fotky".
+        poznamka = "Doklad sa vo Finančnej správe nenašiel, údaje sú prečítané z fotky.";
       } else {
-        poznamka = "QR kód sa nepodarilo prečítať.";
+        poznamka = "QR kód sa nepodarilo prečítať, údaje sú prečítané z fotky.";
       }
     }
 

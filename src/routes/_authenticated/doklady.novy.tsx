@@ -17,11 +17,36 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: () => ({ meta: [{ title: "Nový doklad — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>): { id?: string } => ({
-    id: (s.id as string) || undefined,
-  }),
+  // Okrem úpravy existujúceho dokladu sem chodí aj prenos zo skenera —
+  // bez týchto polí by sa prečítaný doklad cestou stratil.
+  validateSearch: (s: Record<string, unknown>): DokladSearch => {
+    const t = (k: string) => (typeof s[k] === "string" && s[k] ? (s[k] as string) : undefined);
+    return {
+      id: t("id"),
+      supplier: t("supplier"),
+      ico: t("ico"),
+      ic_dph: t("ic_dph"),
+      total: t("total"),
+      vat: t("vat"),
+      vat_rate: t("vat_rate"),
+      date: t("date"),
+      number: t("number"),
+    };
+  },
   component: NovyDokladPage,
 });
+
+type DokladSearch = {
+  id?: string;
+  supplier?: string;
+  ico?: string;
+  ic_dph?: string;
+  total?: string;
+  vat?: string;
+  vat_rate?: string;
+  date?: string;
+  number?: string;
+};
 
 type Form = {
   supplier_name: string;
@@ -130,6 +155,29 @@ function NovyDokladPage() {
   function updateForm<K extends keyof Form>(k: K, v: Form[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
+
+  /* Doklad prenesený zo skenera — predvyplní sa raz, pri otvorení stránky. */
+  useEffect(() => {
+    if (search.id) return;
+    const spolu = Number(search.total);
+    const dph = Number(search.vat);
+    setForm((f) => ({
+      ...f,
+      supplier_name: search.supplier ?? f.supplier_name,
+      supplier_ico: search.ico ?? f.supplier_ico,
+      supplier_ic_dph: search.ic_dph ?? f.supplier_ic_dph,
+      document_number: search.number ?? f.document_number,
+      issue_date: search.date ?? f.issue_date,
+      vat_rate: search.vat_rate ?? f.vat_rate,
+      total_amount: Number.isFinite(spolu) && search.total ? String(spolu) : f.total_amount,
+      vat_amount: Number.isFinite(dph) && search.vat ? dph.toFixed(2) : f.vat_amount,
+      net_amount:
+        Number.isFinite(spolu) && Number.isFinite(dph) && search.total && search.vat
+          ? (spolu - dph).toFixed(2)
+          : f.net_amount,
+    }));
+    // eslint-disable-next-line
+  }, []);
 
   async function uploadToStorage(
     dataUrl: string,

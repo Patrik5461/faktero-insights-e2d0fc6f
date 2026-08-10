@@ -108,16 +108,25 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Bloček z registračnej pokladnice má QR kód s údajmi o doklade. V{" "}
-          <Link to="/doklady/novy">Doklady → Nový doklad</Link> stačí bloček odfotiť — Faktero z kódu
-          prečíta dátum, sumu, sadzby DPH aj identifikáciu predajcu a predvyplní doklad.
+          Každý bloček z eKasy má QR kód a v ňom identifikátor dokladu. Faktero ten identifikátor
+          prečíta a doklad si vypýta priamo z Finančnej správy — teda z toho istého miesta, kde si
+          doklad overuje aj ich vlastná aplikácia „Overenie pokladničného dokladu". Späť príde
+          predajca, IČO, dátum, sumy, sadzby DPH <strong>aj jednotlivé položky</strong>, presne tak,
+          ako ich predajca odoslal. Nič sa nehádá z fotky.
         </p>
-        <p>Prečítané údaje si vždy skontrolujte, hlavne dátum a sumu.</p>
         <p>
-          <strong>Overenie na Finančnej správe je nespoľahlivé z princípu</strong> — FS nemá verejné
-          rozhranie a identifikátory dokladu má vo svojej webovej aplikácii tak, že sa na server ani
-          neposielajú. Faktero preto radšej napíše „neoverené", než by doklad označilo za overený bez
-          skutočného overenia.
+          Stačí bločok odfotiť v <Link to="/faktury/skener">Skeneri dokladov</Link> alebo v{" "}
+          <Link to="/doklady/novy">Doklady → Nový doklad</Link>; QR kód sa hľadá aj na fotke, takže
+          netreba mieriť zvlášť naň. Odfoťte doklad celý.
+        </p>
+        <p>
+          <strong>Keď QR kód nie je alebo sa nedá prečítať</strong> — pokrčený bloček, vyblednutá
+          termopáska, zahraničný doklad — údaje sa prečítajú z fotky. To je odhad, nie úradný údaj, a
+          Faktero to pri doklade aj napíše. Vtedy si skontrolujte hlavne dátum a sumu.
+        </p>
+        <p>
+          Doklad sa vo Finančnej správe nemusí nájsť ani vtedy, keď ho predajca ešte neodoslal —
+          pokladnica v režime offline ho posiela až dodatočne. Skúste to o pár hodín neskôr.
         </p>
       </>
     ),

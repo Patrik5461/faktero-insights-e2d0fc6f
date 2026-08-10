@@ -68,8 +68,10 @@ function ScannerPage() {
     const s = new URLSearchParams();
     if (result.supplier) s.set("supplier", result.supplier);
     if (result.supplier_ico) s.set("ico", result.supplier_ico);
+    if (result.supplier_ic_dph) s.set("ic_dph", result.supplier_ic_dph);
     if (result.total != null) s.set("total", String(result.total));
     if (result.vat_amount != null) s.set("vat", String(result.vat_amount));
+    if (result.vat_rate != null) s.set("vat_rate", String(result.vat_rate));
     if (result.date) s.set("date", result.date);
     if (result.document_number) s.set("number", result.document_number);
     navigate({ to: "/doklady/novy", search: Object.fromEntries(s) as any });
