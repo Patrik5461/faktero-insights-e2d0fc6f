@@ -605,13 +605,20 @@ function InvoiceDetail() {
               {inv.pdf_url ? <Download className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
               {pdfBusy ? "…" : inv.pdf_url ? "Stiahnuť PDF" : "Vygenerovať PDF"}
             </button>
-            {inv.status === "draft" && (
+            {/*
+              Upraviť sa dá aj vystavená a odoslaná faktúra — formulár to vždy
+              vedel, chýbalo len tlačidlo, takže sa k oprave nedalo dostať.
+              Uhradenú a stornovanú faktúru formulár odmieta, preto tam
+              tlačidlo nie je.
+            */}
+            {inv.status !== "paid" && inv.status !== "cancelled" && (
               <Link
                 to="/faktury/$id/upravit"
                 params={{ id }}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
               >
-                <Pencil className="h-4 w-4" /> Upraviť
+                <Pencil className="h-4 w-4" />
+                {inv.status === "draft" ? "Upraviť" : "Opraviť faktúru"}
               </Link>
             )}
 

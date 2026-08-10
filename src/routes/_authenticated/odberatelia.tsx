@@ -62,6 +62,19 @@ function CustomersPage() {
   const [editing, setEditing] = useState<Customer | null>(null);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
+  const [bulkHardDelete, setBulkHardDelete] = useState(false);
+  async function confirmBulkHardDelete() {
+    const pocet = list.selectedIds.length;
+    try {
+      await list.hardDelete(list.selectedIds);
+      toast.success(`Natrvalo vymazaných: ${pocet}`);
+      list.clearSelection();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    } finally {
+      setBulkHardDelete(false);
+    }
+  }
   const triggerEvt = useServerFn(triggerEventFn);
 
   // Príchod z menu cez `?new=1`. Parameter hneď odstránime, aby sa formulár
@@ -172,6 +185,7 @@ function CustomersPage() {
           </div>
         </div>
         <BulkBar
+          onHardDelete={() => setBulkHardDelete(true)}
           count={list.selectedIds.length}
           showDeleted={list.showDeleted}
           onDelete={() => setBulkDelete(true)}
@@ -295,6 +309,14 @@ function CustomersPage() {
         message="Vybraní odberatelia budú skrytí z rozhrania."
         onCancel={() => setBulkDelete(false)}
         onConfirm={confirmBulk}
+      />
+      <ConfirmDialog
+        open={bulkHardDelete}
+        title={`Natrvalo vymazať ${list.selectedIds.length} odberateľov?`}
+        message="Odberatelia sa odstránia natrvalo. Faktúry ostanú — nesú si vlastný odpis údajov."
+        confirmLabel="Vymazať natrvalo"
+        onCancel={() => setBulkHardDelete(false)}
+        onConfirm={confirmBulkHardDelete}
       />
     </>
   );

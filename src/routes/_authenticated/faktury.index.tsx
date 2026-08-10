@@ -203,6 +203,19 @@ function InvoicesPage() {
       setBulkDelete(false);
     }
   }
+  const [bulkHardDelete, setBulkHardDelete] = useState(false);
+  async function confirmBulkHardDelete() {
+    const pocet = list.selectedIds.length;
+    try {
+      await list.hardDelete(list.selectedIds);
+      toast.success(`Natrvalo vymazaných ${pocet} faktúr`);
+      list.clearSelection();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    } finally {
+      setBulkHardDelete(false);
+    }
+  }
   async function bulkRestoreNow() {
     try {
       await list.restore(list.selectedIds);
@@ -507,6 +520,7 @@ function InvoicesPage() {
           </div>
         </div>
         <BulkBar
+          onHardDelete={() => setBulkHardDelete(true)}
           count={list.selectedIds.length}
           showDeleted={list.showDeleted}
           onDelete={() => setBulkDelete(true)}
@@ -790,6 +804,15 @@ function InvoicesPage() {
         }
         onCancel={() => setBulkDelete(false)}
         onConfirm={confirmBulkDelete}
+      />
+      <ConfirmDialog
+        open={bulkHardDelete}
+        title={`Natrvalo vymazať ${list.selectedIds.length} faktúr?`}
+        message="Faktúry sa odstránia aj s položkami, upomienkami a záznamami o odoslaní. Toto sa už nedá vrátiť."
+        warning="Ak máte doklady odovzdané účtovníčke, radšej ich nechajte v koši."
+        confirmLabel="Vymazať natrvalo"
+        onCancel={() => setBulkHardDelete(false)}
+        onConfirm={confirmBulkHardDelete}
       />
       <ConfirmDialog
         open={!!bulkAction}

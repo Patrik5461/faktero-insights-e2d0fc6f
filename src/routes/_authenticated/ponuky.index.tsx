@@ -44,6 +44,19 @@ function QuotesPage() {
   });
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
+  const [bulkHardDelete, setBulkHardDelete] = useState(false);
+  async function confirmBulkHardDelete() {
+    const pocet = list.selectedIds.length;
+    try {
+      await list.hardDelete(list.selectedIds);
+      toast.success(`Natrvalo vymazaných: ${pocet}`);
+      list.clearSelection();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    } finally {
+      setBulkHardDelete(false);
+    }
+  }
 
   async function confirmRow() {
     if (!rowDelete) return;
@@ -95,6 +108,7 @@ function QuotesPage() {
           </div>
         </div>
         <BulkBar
+          onHardDelete={() => setBulkHardDelete(true)}
           count={list.selectedIds.length}
           showDeleted={list.showDeleted}
           onDelete={() => setBulkDelete(true)}
@@ -244,6 +258,14 @@ function QuotesPage() {
         message="Vybraté ponuky budú skryté z rozhrania."
         onCancel={() => setBulkDelete(false)}
         onConfirm={confirmBulk}
+      />
+      <ConfirmDialog
+        open={bulkHardDelete}
+        title={`Natrvalo vymazať ${list.selectedIds.length} ponúk?`}
+        message="Ponuky sa odstránia aj s položkami. Toto sa už nedá vrátiť."
+        confirmLabel="Vymazať natrvalo"
+        onCancel={() => setBulkHardDelete(false)}
+        onConfirm={confirmBulkHardDelete}
       />
     </>
   );

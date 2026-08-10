@@ -173,12 +173,15 @@ export function BulkBar({
   showDeleted,
   onDelete,
   onRestore,
+  onHardDelete,
   onClear,
 }: {
   count: number;
   showDeleted: boolean;
   onDelete: () => void;
   onRestore: () => void;
+  /** Nenávratné zmazanie z koša. Bez neho sa tlačidlo nezobrazí. */
+  onHardDelete?: () => void;
   onClear: () => void;
 }) {
   if (count === 0) return null;
@@ -187,12 +190,22 @@ export function BulkBar({
       <span className="font-medium text-primary">Vybraté: {count}</span>
       <div className="flex gap-2">
         {showDeleted ? (
-          <button
-            onClick={onRestore}
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
-          >
-            <RotateCcw className="h-3.5 w-3.5" /> Obnoviť
-          </button>
+          <>
+            <button
+              onClick={onRestore}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> Obnoviť
+            </button>
+            {onHardDelete && (
+              <button
+                onClick={onHardDelete}
+                className="inline-flex items-center gap-1 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground hover:opacity-90"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Vymazať natrvalo
+              </button>
+            )}
+          </>
         ) : (
           <button
             onClick={onDelete}

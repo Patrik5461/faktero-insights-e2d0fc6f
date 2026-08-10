@@ -171,6 +171,26 @@ export function usePagedList({
     if (error) throw error;
     reload();
   }
+  /**
+   * Nenávratné zmazanie z koša. Položky dokladu, upomienky a e-mailové záznamy
+   * odídu s ním (cudzie kľúče majú kaskádu), väzby z bankových transakcií a
+   * exportov sa uvoľnia.
+   */
+  async function hardDelete(ids: string[]) {
+    if (!ids.length) return;
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    const { error } = await supabase
+      .from(resource as any)
+      .delete()
+      .in("id", ids)
+      .eq("company_id", cid)
+      // Poistka: natrvalo sa maže len to, čo už je v koši.
+      .not("deleted_at", "is", null);
+    if (error) throw error;
+    reload();
+  }
+
   async function restore(ids: string[]) {
     if (!ids.length) return;
     const cid = getActiveCompanyId();
@@ -206,6 +226,7 @@ export function usePagedList({
     clearSelection,
     reload,
     softDelete,
+    hardDelete,
     restore,
   };
 }

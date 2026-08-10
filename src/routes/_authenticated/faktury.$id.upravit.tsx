@@ -227,6 +227,20 @@ function EditInvoice() {
       />
       <PageBody>
         <form onSubmit={submit} className="mx-auto max-w-5xl space-y-6">
+          {/*
+            Koncept je interný, ale vystavenú faktúru už mohol odberateľ dostať.
+            Nech je vidieť, že sa mení hotový doklad, nie rozpracovaný.
+          */}
+          {inv.status !== "draft" && (
+            <div className="rounded-xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+              <strong>Opravujete už vystavenú faktúru.</strong> Odberateľ ju mohol dostať, preto mu
+              po oprave pošlite nové PDF. Ak je obdobie uzamknuté uzávierkou, dátumy ani sumy sa
+              zmeniť nedajú.
+              {(inv.status as string) === "sent" && (
+                <> Riadky naviazané na sklad sa už meniť nedajú, aby sedel stav zásob.</>
+              )}
+            </div>
+          )}
           <section className="rounded-2xl border border-border bg-card p-5">
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">Základné údaje</h3>
             <div className="grid gap-4 sm:grid-cols-2">

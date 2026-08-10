@@ -51,6 +51,19 @@ function ProductsPage() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
+  const [bulkHardDelete, setBulkHardDelete] = useState(false);
+  async function confirmBulkHardDelete() {
+    const pocet = list.selectedIds.length;
+    try {
+      await list.hardDelete(list.selectedIds);
+      toast.success(`Natrvalo vymazaných: ${pocet}`);
+      list.clearSelection();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    } finally {
+      setBulkHardDelete(false);
+    }
+  }
   const trackFn = useServerFn(setProductStockTracking);
 
   // Príchod z menu cez `?new=1`. Parameter hneď odstránime, aby sa formulár
@@ -157,6 +170,7 @@ function ProductsPage() {
           </div>
         </div>
         <BulkBar
+          onHardDelete={() => setBulkHardDelete(true)}
           count={list.selectedIds.length}
           showDeleted={list.showDeleted}
           onDelete={() => setBulkDelete(true)}
@@ -372,6 +386,14 @@ function ProductsPage() {
         message="Vybraté položky budú skryté z rozhrania."
         onCancel={() => setBulkDelete(false)}
         onConfirm={confirmBulk}
+      />
+      <ConfirmDialog
+        open={bulkHardDelete}
+        title={`Natrvalo vymazať ${list.selectedIds.length} položiek?`}
+        message="Položky cenníka sa odstránia natrvalo. Na už vystavených faktúrach ostanú."
+        confirmLabel="Vymazať natrvalo"
+        onCancel={() => setBulkHardDelete(false)}
+        onConfirm={confirmBulkHardDelete}
       />
     </>
   );

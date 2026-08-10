@@ -35,6 +35,19 @@ function RecurringList() {
   const [busy, setBusy] = useState<string | null>(null);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
+  const [bulkHardDelete, setBulkHardDelete] = useState(false);
+  async function confirmBulkHardDelete() {
+    const pocet = list.selectedIds.length;
+    try {
+      await list.hardDelete(list.selectedIds);
+      toast.success(`Natrvalo vymazaných: ${pocet}`);
+      list.clearSelection();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    } finally {
+      setBulkHardDelete(false);
+    }
+  }
   const navigate = useNavigate();
   const runFn = useServerFn(runRecurringNow);
   const toggleFn = useServerFn(toggleRecurring);
@@ -115,6 +128,7 @@ function RecurringList() {
           </div>
         </div>
         <BulkBar
+          onHardDelete={() => setBulkHardDelete(true)}
           count={list.selectedIds.length}
           showDeleted={list.showDeleted}
           onDelete={() => setBulkDelete(true)}
@@ -291,6 +305,14 @@ function RecurringList() {
         message="Vybraté šablóny budú skryté a prestanú generovať faktúry."
         onCancel={() => setBulkDelete(false)}
         onConfirm={confirmBulk}
+      />
+      <ConfirmDialog
+        open={bulkHardDelete}
+        title={`Natrvalo vymazať ${list.selectedIds.length} šablón?`}
+        message="Šablóny sa odstránia natrvalo. Faktúry, ktoré z nich vznikli, ostanú."
+        confirmLabel="Vymazať natrvalo"
+        onCancel={() => setBulkHardDelete(false)}
+        onConfirm={confirmBulkHardDelete}
       />
     </>
   );
