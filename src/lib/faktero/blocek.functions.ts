@@ -51,11 +51,18 @@ const Vstup = z.object({
   image_data_url: z.string().max(12_000_000).optional(),
 });
 
-/** Najčastejšia sadzba z položiek — do hlavičky dokladu treba jednu. */
+/**
+ * Prevažujúca sadzba — do hlavičky dokladu treba jednu, aj keď doklad nesie
+ * viac sadzieb. Váži sa sumou riadku, nie počtom riadkov: jeden drahý tovar
+ * v základnej sadzbe rozhoduje o doklade viac než tri drobnosti v zníženej.
+ */
 function prevazujucaSadzba(items: BlocekPolozka[]): number | undefined {
   if (!items.length) return undefined;
   const podla = new Map<number, number>();
-  for (const p of items) podla.set(p.vat_rate, (podla.get(p.vat_rate) ?? 0) + (p.total ?? 0));
+  for (const p of items) {
+    const vaha = p.total ?? p.quantity * p.unit_price;
+    podla.set(p.vat_rate, (podla.get(p.vat_rate) ?? 0) + vaha);
+  }
   return [...podla.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
 }
 
@@ -154,12 +161,19 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
       };
     }
 
-    const items: BlocekPolozka[] = (ocr.items ?? []).map((p: any) => ({
-      name: String(p?.name ?? ""),
-      quantity: Number(p?.quantity) || 1,
-      unit_price: Number(p?.unit_price) || 0,
-      vat_rate: Number(p?.vat_rate) || 0,
-    }));
+    const items: BlocekPolozka[] = (ocr.items ?? []).map((p: any) => {
+      const mnozstvo = Number(p?.quantity) || 1;
+      const cena = Number(p?.unit_price) || 0;
+      return {
+        name: String(p?.name ?? ""),
+        quantity: mnozstvo,
+        unit_price: cena,
+        vat_rate: Number(p?.vat_rate) || 0,
+        // Z fotky súčet riadku nechodí; bez neho by prevažujúca sadzba vážila
+        // samé nuly a vyšla by tá, ktorá je v zozname náhodou prvá.
+        total: Math.round(mnozstvo * cena * 100) / 100,
+      };
+    });
 
     return {
       zdroj: "foto",
