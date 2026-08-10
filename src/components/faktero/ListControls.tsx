@@ -109,7 +109,7 @@ export function ConfirmDialog({
   title,
   message,
   warning,
-  confirmLabel = "Vymazať",
+  confirmLabel,
   danger = true,
   onCancel,
   onConfirm,
@@ -119,7 +119,14 @@ export function ConfirmDialog({
   title: string;
   message: string;
   warning?: string;
+  /**
+   * Text potvrdzovacieho tlačidla. Bez neho sa použije „Vymazať" pri
+   * nebezpečnej akcii a „Potvrdiť" pri ostatných — dialóg na označenie faktúr
+   * ako zaplatených mal predtým červené tlačidlo „Vymazať", takže sa zdalo,
+   * že sa akcia nedá potvrdiť vôbec.
+   */
   confirmLabel?: string;
+  /** `false` pre akcie, ktoré nič nemažú — tlačidlo nebude červené. */
   danger?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -152,7 +159,7 @@ export function ConfirmDialog({
             disabled={busy}
             className={`rounded-md px-4 py-2 text-sm font-medium ${danger ? "bg-destructive text-destructive-foreground hover:opacity-90" : "bg-primary text-primary-foreground hover:opacity-90"} disabled:opacity-50`}
           >
-            {busy ? "…" : confirmLabel}
+            {busy ? "…" : (confirmLabel ?? (danger ? "Vymazať" : "Potvrdiť"))}
           </button>
         </div>
       </div>

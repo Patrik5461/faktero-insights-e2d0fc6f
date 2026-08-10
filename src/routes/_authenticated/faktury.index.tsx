@@ -366,27 +366,36 @@ function InvoicesPage() {
     list.clearSelection();
   }
 
-  const confirmMessages: Record<Exclude<BulkAction, null>, { title: string; message: string }> = {
+  // Žiadna z týchto akcií nič nemaže, preto majú vlastný text tlačidla.
+  const confirmMessages: Record<
+    Exclude<BulkAction, null>,
+    { title: string; message: string; confirmLabel: string }
+  > = {
     paid: {
       title: `Označiť ${list.selectedIds.length} faktúr ako zaplatené?`,
       message: "Stornované a už zaplatené faktúry budú preskočené. Nastaví sa dnešný dátum úhrady.",
+      confirmLabel: "Označiť ako zaplatené",
     },
     email: {
       title: `Odoslať emailom ${emailableCount} faktúr?`,
       message: "Odosielajú sa iba vystavené/odoslané faktúry s emailom odberateľa.",
+      confirmLabel: "Odoslať",
     },
     clone: {
       title: `Vytvoriť kópie ${list.selectedIds.length} faktúr pre ďalší mesiac?`,
       message: "Vytvoria sa nové koncepty s inkrementovaným mesiacom v popisoch.",
+      confirmLabel: "Vytvoriť kópie",
     },
     reminder: {
       title: `Odoslať upomienky pre ${overdueSelectedCount} faktúr?`,
       message:
         "Odosielajú sa iba po splatnosti faktúry s emailom odberateľa. Číslo upomienky sa určí automaticky.",
+      confirmLabel: "Odoslať upomienky",
     },
     zip: {
       title: `Stiahnuť PDF ZIP pre ${list.selectedIds.length} faktúr?`,
       message: "Pre každú faktúru sa vygeneruje PDF a spakuje do jedného ZIP archívu.",
+      confirmLabel: "Stiahnuť ZIP",
     },
   };
   const runners: Record<Exclude<BulkAction, null>, () => Promise<void>> = {
@@ -762,6 +771,9 @@ function InvoicesPage() {
         open={!!bulkAction}
         title={bulkAction ? confirmMessages[bulkAction].title : ""}
         message={bulkAction ? confirmMessages[bulkAction].message : ""}
+        confirmLabel={bulkAction ? confirmMessages[bulkAction].confirmLabel : ""}
+        danger={false}
+        busy={busy}
         onCancel={() => setBulkAction(null)}
         onConfirm={() => {
           if (bulkAction) runners[bulkAction]();

@@ -14,7 +14,9 @@ export const bulkMarkPaidFn = createServerFn({ method: "POST" })
     const { data: rows, error: selErr } = await supabase
       .from("invoices")
       .select("id, status, company_id")
-      .in("id", data.invoiceIds);
+      .in("id", data.invoiceIds)
+      // Zmazanú faktúru nemá zmysel označovať za uhradenú.
+      .is("deleted_at", null);
     if (selErr) throw new Error(selErr.message);
 
     const eligible = (rows ?? []).filter((r) => r.status !== "paid" && r.status !== "cancelled");
