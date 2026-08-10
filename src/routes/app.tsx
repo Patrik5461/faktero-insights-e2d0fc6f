@@ -1,0 +1,692 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import {
+  Building2,
+  Camera,
+  Check,
+  FileText,
+  Files,
+  LogOut,
+  QrCode,
+  ScanLine,
+  Fingerprint,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  fetchMyCompanies,
+  getActiveCompanyId,
+  setActiveCompanyId,
+} from "@/lib/faktero/active-company";
+import { nacitajBlocekFn, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
+import { createExpenseFn } from "@/lib/faktero/expenses.functions";
+import { dokladNaZaznam, nahrajPrilohu, stranyDoPdf } from "@/lib/faktero/mobil-doklad";
+import { captureReceipt } from "@/lib/mobile/receipt-scanner";
+import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
+import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
+import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "@/components/faktero/mobil/MobilChrome";
+import { Logo } from "@/components/faktero/Logo";
+
+/**
+ * Mobilná aplikácia — prihlásenie, výber firmy a skenovanie dokladov.
+ *
+ * Natívny obal (Capacitor) ukazuje živý web, takže appka je táto stránka.
+ * Zámerne je oddelená od webovej aplikácie: na telefóne treba tri veci —
+ * dostať sa dnu, vedieť za ktorú firmu, a odfotiť doklad. Nič viac tu nie je.
+ */
+
+export const Route = createFileRoute("/app")({
+  head: () => ({
+    meta: [
+      { title: "Faktero" },
+      // Bez `viewport-fit=cover` sa na iPhone nedá odsadiť od výrezu.
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+    ],
+  }),
+  component: MobilnaApka,
+});
+
+type Firma = { id: string; name: string };
+type Uhrada = "hotovost" | "karta" | "prevod";
+type Krok = "nacitavam" | "prihlasenie" | "firma" | "domov" | "zachyt";
+type Zachyt = "blocek" | "pdf" | "strany";
+
+function MobilnaApka() {
+  const [krok, setKrok] = useState<Krok>("nacitavam");
+  const [firmy, setFirmy] = useState<Firma[]>([]);
+  const [firma, setFirma] = useState<Firma | null>(null);
+  const [zachyt, setZachyt] = useState<Zachyt>("blocek");
+
+  /** Kto je prihlásený a za akú firmu — to isté sa rieši pri štarte aj po prihlásení. */
+  async function zisti() {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      setKrok("prihlasenie");
+      return;
+    }
+    try {
+      const zoznam = (await fetchMyCompanies()) as Firma[];
+      setFirmy(zoznam);
+      const ulozena = getActiveCompanyId();
+      const najdena = zoznam.find((f) => f.id === ulozena);
+      // Pri jedinej firme nemá zmysel pýtať sa — vyberie sa sama.
+      const jedina = zoznam.length === 1 ? zoznam[0] : null;
+      const vybrana = najdena ?? jedina;
+      if (vybrana) {
+        setFirma(vybrana);
+        setActiveCompanyId(vybrana.id);
+        setKrok("domov");
+      } else {
+        setKrok("firma");
+      }
+    } catch {
+      setKrok("firma");
+    }
+  }
+
+  useEffect(() => {
+    zisti();
+  }, []);
+
+  async function odhlas() {
+    await supabase.auth.signOut();
+    setFirma(null);
+    setKrok("prihlasenie");
+  }
+
+  if (krok === "nacitavam") return <Pracujem text="Spúšťam Faktero…" />;
+  if (krok === "prihlasenie") return <Prihlasenie onHotovo={zisti} />;
+  if (krok === "firma")
+    return (
+      <VyberFirmy
+        firmy={firmy}
+        onVyber={(f) => {
+          setFirma(f);
+          setActiveCompanyId(f.id);
+          setKrok("domov");
+        }}
+        onOdhlasit={odhlas}
+      />
+    );
+  if (krok === "zachyt" && firma)
+    return (
+      <ZachytDokladu druh={zachyt} firma={firma} onSpat={() => setKrok("domov")} />
+    );
+
+  return (
+    <Domov
+      firma={firma}
+      viacFiriem={firmy.length > 1}
+      onZmenitFirmu={() => setKrok("firma")}
+      onZachyt={(d) => {
+        setZachyt(d);
+        setKrok("zachyt");
+      }}
+      onOdhlasit={odhlas}
+    />
+  );
+}
+
+/* ------------------------- Prihlásenie ------------------------- */
+
+function Prihlasenie({ onHotovo }: { onHotovo: () => void }) {
+  const [email, setEmail] = useState("");
+  const [heslo, setHeslo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [biometria, setBiometria] = useState(false);
+
+  useEffect(() => {
+    isBiometricAvailable().then(setBiometria);
+  }, []);
+
+  async function prihlas() {
+    if (!email.trim() || !heslo) return toast.error("Vyplňte e-mail aj heslo.");
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: heslo,
+      });
+      if (error) throw new Error(error.message);
+      onHotovo();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Prihlásenie zlyhalo.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function odomkni() {
+    const r = await loginWithBiometric();
+    if (r.ok) onHotovo();
+    else toast.error(r.error ?? "Odomknutie zlyhalo.");
+  }
+
+  return (
+    <div
+      className="flex min-h-[100dvh] flex-col justify-center bg-background px-6"
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top) + 2rem)",
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
+      }}
+    >
+      <div className="mx-auto w-full max-w-sm">
+        <Logo variant="header" className="mb-8 h-9" />
+        <h1 className="text-2xl font-semibold tracking-tight">Prihlásenie</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Prihláste sa do svojho účtu vo Faktere.
+        </p>
+
+        <div className="mt-6 space-y-3">
+          <input
+            type="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="username"
+            placeholder="E-mail"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base"
+          />
+          <input
+            type="password"
+            autoComplete="current-password"
+            placeholder="Heslo"
+            value={heslo}
+            onChange={(e) => setHeslo(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && prihlas()}
+            className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base"
+          />
+          <button
+            onClick={prihlas}
+            disabled={busy}
+            className="w-full rounded-xl bg-primary px-4 py-3 text-base font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {busy ? "Prihlasujem…" : "Prihlásiť sa"}
+          </button>
+
+          {biometria && (
+            <button
+              onClick={odomkni}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-base"
+            >
+              <Fingerprint className="h-5 w-5" /> Odomknúť biometriou
+            </button>
+          )}
+        </div>
+
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          Zabudnuté heslo alebo nový účet vybavíte na faktero.sk.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------- Výber firmy ------------------------- */
+
+function VyberFirmy({
+  firmy,
+  onVyber,
+  onOdhlasit,
+}: {
+  firmy: Firma[];
+  onVyber: (f: Firma) => void;
+  onOdhlasit: () => void;
+}) {
+  return (
+    <MobilObrazovka title="Vyberte firmu" subtitle="Doklady sa uložia do vybranej firmy">
+      {firmy.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          K tomuto účtu nie je pripojená žiadna firma. Vytvorte ju na faktero.sk.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {firmy.map((f) => (
+            <VelkeTlacidlo key={f.id} icon={Building2} label={f.name} onClick={() => onVyber(f)} />
+          ))}
+        </div>
+      )}
+      <button
+        onClick={onOdhlasit}
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground"
+      >
+        <LogOut className="h-4 w-4" /> Odhlásiť sa
+      </button>
+    </MobilObrazovka>
+  );
+}
+
+/* ------------------------- Domovská obrazovka ------------------------- */
+
+function Domov({
+  firma,
+  viacFiriem,
+  onZmenitFirmu,
+  onZachyt,
+  onOdhlasit,
+}: {
+  firma: Firma | null;
+  viacFiriem: boolean;
+  onZmenitFirmu: () => void;
+  onZachyt: (d: Zachyt) => void;
+  onOdhlasit: () => void;
+}) {
+  return (
+    <MobilObrazovka title="Skenovanie dokladov" subtitle={firma?.name}>
+      <div className="space-y-3">
+        <VelkeTlacidlo
+          icon={QrCode}
+          label="Bloček s QR kódom"
+          hint="Údaje sa načítajú z Finančnej správy aj s položkami"
+          variant="primary"
+          onClick={() => onZachyt("blocek")}
+        />
+        <VelkeTlacidlo
+          icon={FileText}
+          label="Faktúra v PDF"
+          hint="Vyberte súbor z telefónu alebo z cloudu"
+          onClick={() => onZachyt("pdf")}
+        />
+        <VelkeTlacidlo
+          icon={Files}
+          label="Viacstranový doklad"
+          hint="Odfoťte stranu po strane, uloží sa ako jedno PDF"
+          onClick={() => onZachyt("strany")}
+        />
+      </div>
+
+      <div className="mt-8 space-y-2">
+        {viacFiriem && (
+          <button
+            onClick={onZmenitFirmu}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm"
+          >
+            <Building2 className="h-4 w-4" /> Zmeniť firmu
+          </button>
+        )}
+        <button
+          onClick={onOdhlasit}
+          className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm text-muted-foreground"
+        >
+          <LogOut className="h-4 w-4" /> Odhlásiť sa
+        </button>
+      </div>
+    </MobilObrazovka>
+  );
+}
+
+/* ------------------------- Zachytenie dokladu ------------------------- */
+
+const NAZVY: Record<Zachyt, string> = {
+  blocek: "Bloček s QR kódom",
+  pdf: "Faktúra v PDF",
+  strany: "Viacstranový doklad",
+};
+
+function ZachytDokladu({
+  druh,
+  firma,
+  onSpat,
+}: {
+  druh: Zachyt;
+  firma: Firma;
+  onSpat: () => void;
+}) {
+  const nacitaj = useServerFn(nacitajBlocekFn);
+  const uloz = useServerFn(createExpenseFn);
+
+  const [stav, setStav] = useState<"start" | "citam" | "potvrdenie" | "ukladam">("start");
+  const [vysledok, setVysledok] = useState<BlocekVysledok | null>(null);
+  const [uhrada, setUhrada] = useState<Uhrada | null>(null);
+  const [foto, setFoto] = useState<string | null>(null);
+  const [strany, setStrany] = useState<string[]>([]);
+
+  /** Doklad prečítaný — ďalej sa pýtame na úhradu a na fotku. */
+  function prijmi(r: BlocekVysledok, prilozene?: string | null) {
+    setVysledok(r);
+    setUhrada(r.payment_method ?? null);
+    if (prilozene) setFoto(prilozene);
+    setStav("potvrdenie");
+    if (r.zdroj === "nic") toast.error(r.poznamka ?? "Doklad sa nepodarilo prečítať.");
+  }
+
+  /* --- Bloček: najprv QR, potom sa pýtame na úhradu a fotku --- */
+  async function nasnimajQr() {
+    const res = await scanQrCode();
+    if (!res) {
+      toast.error("QR skener nie je dostupný. Skúste doklad odfotiť.");
+      return;
+    }
+    setStav("citam");
+    try {
+      prijmi((await nacitaj({ data: { qr: res.raw } })) as BlocekVysledok);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Čítanie zlyhalo.");
+      setStav("start");
+    }
+  }
+
+  async function odfotDoklad() {
+    const cap = await captureReceipt();
+    if (!cap) return;
+    setStav("citam");
+    try {
+      const qr = await scanQrFromImage(cap.dataUrl);
+      prijmi(
+        (await nacitaj({
+          data: { qr: qr?.raw, image_data_url: cap.dataUrl },
+        })) as BlocekVysledok,
+        cap.dataUrl,
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Čítanie zlyhalo.");
+      setStav("start");
+    }
+  }
+
+  /* --- PDF faktúra --- */
+  async function vyberPdf() {
+    const dataUrl = await vyberSubor("application/pdf,image/*");
+    if (!dataUrl) return;
+    setStav("citam");
+    try {
+      prijmi(
+        (await nacitaj({ data: { image_data_url: dataUrl } })) as BlocekVysledok,
+        dataUrl,
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Čítanie zlyhalo.");
+      setStav("start");
+    }
+  }
+
+  /* --- Viacstranový doklad --- */
+  async function pridajStranu() {
+    const cap = await captureReceipt();
+    if (!cap) return;
+    setStrany((s) => [...s, cap.dataUrl]);
+  }
+
+  async function dokonciStrany() {
+    if (strany.length === 0) return;
+    setStav("citam");
+    try {
+      const pdf = await stranyDoPdf(strany);
+      prijmi((await nacitaj({ data: { image_data_url: pdf } })) as BlocekVysledok, pdf);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Spojenie strán zlyhalo.");
+      setStav("start");
+    }
+  }
+
+  /* --- Uloženie --- */
+  async function ulozDoklad() {
+    if (!vysledok || !uhrada) return;
+    setStav("ukladam");
+    try {
+      const priloha = foto ? await nahrajPrilohu(firma.id, foto) : null;
+      if (foto && !priloha) toast.error("Prílohu sa nepodarilo nahrať, doklad uložím bez nej.");
+      await uloz({ data: dokladNaZaznam(firma.id, vysledok, uhrada, priloha) as any });
+      toast.success("Doklad uložený");
+      onSpat();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Uloženie zlyhalo.");
+      setStav("potvrdenie");
+    }
+  }
+
+  if (stav === "citam") return <Pracujem text="Čítam doklad…" />;
+  if (stav === "ukladam") return <Pracujem text="Ukladám doklad…" />;
+
+  if (stav === "potvrdenie" && vysledok) {
+    return (
+      <Potvrdenie
+        vysledok={vysledok}
+        uhrada={uhrada}
+        setUhrada={setUhrada}
+        foto={foto}
+        onOdfotit={async () => {
+          const cap = await captureReceipt();
+          if (cap) setFoto(cap.dataUrl);
+        }}
+        onUloz={ulozDoklad}
+        onSpat={() => {
+          setVysledok(null);
+          setFoto(null);
+          setStrany([]);
+          setStav("start");
+        }}
+      />
+    );
+  }
+
+  return (
+    <MobilObrazovka title={NAZVY[druh]} subtitle={firma.name} onBack={onSpat}>
+      {druh === "blocek" && (
+        <div className="space-y-3">
+          <VelkeTlacidlo
+            icon={ScanLine}
+            label="Nasnímať QR kód"
+            hint="Namierte na QR kód na bločku"
+            variant="primary"
+            onClick={nasnimajQr}
+          />
+          <VelkeTlacidlo
+            icon={Camera}
+            label="Odfotiť celý bloček"
+            hint="QR sa nájde aj na fotke"
+            onClick={odfotDoklad}
+          />
+        </div>
+      )}
+
+      {druh === "pdf" && (
+        <div className="space-y-3">
+          <VelkeTlacidlo
+            icon={FileText}
+            label="Vybrať súbor"
+            hint="PDF alebo obrázok faktúry"
+            variant="primary"
+            onClick={vyberPdf}
+          />
+          <p className="text-xs text-muted-foreground">
+            Z faktúry sa prečíta dodávateľ, dátum, suma aj DPH. Údaje pred uložením skontrolujte.
+          </p>
+        </div>
+      )}
+
+      {druh === "strany" && (
+        <div className="space-y-3">
+          <VelkeTlacidlo
+            icon={Camera}
+            label={strany.length === 0 ? "Odfotiť prvú stranu" : "Pridať ďalšiu stranu"}
+            hint={strany.length > 0 ? `Zatiaľ ${strany.length} strán` : "Doklad odfoťte celý"}
+            variant="primary"
+            onClick={pridajStranu}
+          />
+          {strany.length > 0 && (
+            <>
+              <div className="grid grid-cols-3 gap-2">
+                {strany.map((s, i) => (
+                  <div key={i} className="relative overflow-hidden rounded-lg border border-border">
+                    <img src={s} alt={`strana ${i + 1}`} className="h-24 w-full object-cover" />
+                    <button
+                      onClick={() => setStrany((p) => p.filter((_, j) => j !== i))}
+                      className="absolute right-1 top-1 rounded-full bg-black/60 px-2 text-xs text-white"
+                      aria-label={`Odstrániť stranu ${i + 1}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <VelkeTlacidlo
+                icon={Check}
+                label={`Hotovo — ${strany.length} strán`}
+                hint="Strany sa spoja do jedného PDF"
+                onClick={dokonciStrany}
+              />
+            </>
+          )}
+        </div>
+      )}
+    </MobilObrazovka>
+  );
+}
+
+/* ------------------------- Potvrdenie dokladu ------------------------- */
+
+function Potvrdenie({
+  vysledok,
+  uhrada,
+  setUhrada,
+  foto,
+  onOdfotit,
+  onUloz,
+  onSpat,
+}: {
+  vysledok: BlocekVysledok;
+  uhrada: Uhrada | null;
+  setUhrada: (u: Uhrada) => void;
+  foto: string | null;
+  onOdfotit: () => void;
+  onUloz: () => void;
+  onSpat: () => void;
+}) {
+  const mena = vysledok.currency ?? "EUR";
+  const suma = (n?: number) =>
+    n == null ? "—" : new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n);
+
+  return (
+    <MobilObrazovka
+      title="Skontrolujte doklad"
+      subtitle={vysledok.zdroj === "ekasa" ? "Z Finančnej správy" : "Prečítané z dokladu"}
+      onBack={onSpat}
+      footer={
+        <button
+          onClick={onUloz}
+          disabled={!uhrada}
+          className="w-full rounded-xl bg-primary px-4 py-3 text-base font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {uhrada ? "Uložiť doklad" : "Vyberte spôsob úhrady"}
+        </button>
+      }
+    >
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="text-2xl font-semibold tabular-nums">{suma(vysledok.total)}</div>
+          <div className="mt-1 text-sm text-muted-foreground">
+            {vysledok.supplier ?? "Neznámy predajca"}
+            {vysledok.date ? ` · ${vysledok.date}` : ""}
+          </div>
+          {vysledok.vat_amount != null && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              z toho DPH {suma(vysledok.vat_amount)}
+              {vysledok.vat_breakdown?.length
+                ? ` (${vysledok.vat_breakdown.map((s) => `${s.sadzba} %`).join(" + ")})`
+                : ""}
+            </div>
+          )}
+          {vysledok.items.length > 0 && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              {vysledok.items.length} položiek z dokladu
+            </div>
+          )}
+        </div>
+
+        {/*
+          Spôsob úhrady sa z bločku vyčítať väčšinou nedá — pokladnica ho do
+          eKasy posielať nemusí. Pýtame sa hneď, lebo z pokladne uberá len
+          doklad platený hotovosťou.
+        */}
+        <div>
+          <div className="mb-2 text-sm font-medium">
+            Ako ste platili?
+            {vysledok.payment_method && (
+              <span className="ml-1 text-xs font-normal text-muted-foreground">
+                (prečítané z dokladu)
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {(
+              [
+                ["hotovost", "Hotovosť"],
+                ["karta", "Kartou"],
+                ["prevod", "Prevodom"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setUhrada(id)}
+                className={`rounded-xl border px-3 py-3 text-sm ${
+                  uhrada === id
+                    ? "border-primary bg-primary/10 font-medium text-primary"
+                    : "border-border bg-card"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {uhrada === "hotovost" && (
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Hotovostný doklad uberie zo stavu pokladne.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <div className="mb-2 text-sm font-medium">Fotka dokladu</div>
+          {foto ? (
+            <div className="space-y-2">
+              <div className="overflow-hidden rounded-xl border border-border">
+                {foto.startsWith("data:application/pdf") ? (
+                  <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
+                    <FileText className="h-5 w-5" /> Priložené PDF
+                  </div>
+                ) : (
+                  <img src={foto} alt="doklad" className="max-h-56 w-full object-contain" />
+                )}
+              </div>
+              <button
+                onClick={onOdfotit}
+                className="w-full rounded-xl border border-border px-4 py-2.5 text-sm"
+              >
+                Odfotiť znova
+              </button>
+            </div>
+          ) : (
+            <VelkeTlacidlo
+              icon={Camera}
+              label="Odfotiť doklad"
+              hint="Papierový doklad si treba odložiť aj tak — fotka ho nahradí"
+              onClick={onOdfotit}
+            />
+          )}
+        </div>
+      </div>
+    </MobilObrazovka>
+  );
+}
+
+/** Výber súboru z telefónu; vráti data URL. */
+function vyberSubor(accept: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = accept;
+    input.onchange = () => {
+      const f = input.files?.[0];
+      if (!f) return resolve(null);
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => resolve(null);
+      r.readAsDataURL(f);
+    };
+    input.click();
+  });
+}

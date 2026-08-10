@@ -20,7 +20,8 @@ export type OcrBlocek = {
   items?: Array<{ name: string; quantity: number; unit_price: number; vat_rate: number }>;
 };
 
-const PROMPT = `Si OCR asistent pre slovenské pokladničné bločky a faktúry. Z fotky prečítaj údaje.
+const PROMPT = `Si OCR asistent pre slovenské pokladničné bločky a faktúry. Z dokladu prečítaj údaje.
+Doklad môže mať viac strán — položky pozbieraj zo všetkých a sumy vezmi z tej, kde je celkový súčet.
 Sadzby DPH na Slovensku sú 23, 19, 5 alebo 0 percent — inú nevracaj.
 Dátum vráť tak, ako je na doklade, vo formáte YYYY-MM-DD.
 Keď údaj na doklade nie je, daj null; nič si nevymýšľaj.
@@ -28,16 +29,19 @@ Vráť VÝHRADNE JSON bez sprievodného textu:
 {"supplier":string|null,"ico":string|null,"ic_dph":string|null,"total":number|null,"vat_amount":number|null,"vat_rate":23|19|5|0|null,"currency":"EUR","date":"YYYY-MM-DD"|null,"document_number":string|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":23|19|5|0}]}`;
 
 export async function ocrBlocek(imageDataUrl: string): Promise<OcrBlocek | null> {
-  if (!imageDataUrl.startsWith("data:image/")) return null;
+  const jePdf = imageDataUrl.startsWith("data:application/pdf");
+  if (!imageDataUrl.startsWith("data:image/") && !jePdf) return null;
 
   const geminiKey = process.env.GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
-  if (!geminiKey && !openaiKey) throw new Error("Čítanie z fotky nie je nastavené.");
+  if (!geminiKey && !openaiKey) throw new Error("Čítanie z dokladu nie je nastavené.");
+  // PDF (aj viacstranové) číta Gemini priamo; obrázkový vstup OpenAI ho nezoberie.
+  if (jePdf && !geminiKey) throw new Error("Čítanie PDF nie je na tomto serveri dostupné.");
 
   let text = "";
   if (geminiKey) {
     const { geminiVision, splitDataUrl } = await import("./gemini.server");
-    const { base64, mimeType } = splitDataUrl(imageDataUrl, "image/jpeg");
+    const { base64, mimeType } = splitDataUrl(imageDataUrl, jePdf ? "application/pdf" : "image/jpeg");
     text = await geminiVision(base64, mimeType, PROMPT);
   } else {
     const model = process.env.OPENAI_VISION_MODEL || process.env.OPENAI_MODEL || "gpt-4o";

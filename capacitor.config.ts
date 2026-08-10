@@ -7,14 +7,20 @@ const config: CapacitorConfig = {
   // používame placeholder; reálne renderovanie ide cez `server.url`.
   webDir: ".output/public",
   server: {
-    url: "https://www.faktero.sk",
+    // Appka otvára rovno mobilný tok: prihlásenie → firma → skenovanie.
+    // Webová aplikácia je na tom istom mieste, len sa do nej z telefónu
+    // nechodí — na malej obrazovke je neovládateľná.
+    url: "https://www.faktero.sk/app",
     cleartext: false,
     androidScheme: "https",
-    errorPath: "/prihlasenie",
+    errorPath: "/app",
   },
   ios: {
-    contentInset: "always",
+    // Bez `never` si WebView pridá vlastné odsadenie a bije sa s odsadením
+    // pre výrez, ktoré si stránka rieši sama cez `env(safe-area-inset-*)`.
+    contentInset: "never",
     limitsNavigationsToAppBoundDomains: false,
+    scrollEnabled: true,
   },
   android: {
     allowMixedContent: false,
