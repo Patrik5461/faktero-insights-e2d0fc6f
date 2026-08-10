@@ -128,6 +128,17 @@ const sections: HelpSection[] = [
           Doklad sa vo Finančnej správe nemusí nájsť ani vtedy, keď ho predajca ešte neodoslal —
           pokladnica v režime offline ho posiela až dodatočne. Skúste to o pár hodín neskôr.
         </p>
+        <p>
+          <strong>Spôsob úhrady sa z bločku prečítať väčšinou nedá.</strong> Pokladnica ho do eKasy
+          posielať nemusí a väčšina ho neposiela — na doklade býva vytlačený, ale do údajov sa
+          nedostane. Keď ho doklad nesie, Faktero ho predvolí; inak si po naskenovaní vyberiete
+          hotovosť, kartu alebo prevod. Nie je to formalita: z pokladne uberá len doklad platený
+          hotovosťou.
+        </p>
+        <p>
+          Položky sa ukladajú k dokladu tak, ako prišli, aj s rozpisom DPH po sadzbách. Bloček ich
+          má často viac naraz — jedna sadzba by doklad popísala nesprávne.
+        </p>
       </>
     ),
   },
