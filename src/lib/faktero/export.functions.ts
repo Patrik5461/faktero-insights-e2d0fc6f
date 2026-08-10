@@ -19,7 +19,9 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
         .from("invoices")
         .select("*")
         .eq("company_id", data.companyId)
-        .in("id", data.invoiceIds),
+        .in("id", data.invoiceIds)
+        // Poistka aj na serveri: zoznam sa dá obísť priamym volaním.
+        .is("deleted_at", null),
     ]);
     if (cErr) throw new Error(cErr.message);
     if (iErr) throw new Error(iErr.message);

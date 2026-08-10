@@ -132,6 +132,8 @@ function ExportsPage() {
         .lte("issue_date", dateTo)
         .neq("status", "draft")
         .neq("status", "cancelled")
+        // Zmazaná faktúra sa do účtovníctva posielať nesmie.
+        .is("deleted_at", null)
         .order("issue_date", { ascending: false }),
     ]);
     setJobs(js ?? []);
