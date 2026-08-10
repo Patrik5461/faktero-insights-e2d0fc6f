@@ -149,7 +149,7 @@ export function PrijateDoklady({
           value={hladanie}
           onChange={(e) => setHladanie(e.target.value)}
           placeholder="Hľadať dodávateľa alebo číslo"
-          className="w-full rounded-xl border border-input bg-background py-3 pl-9 pr-3 text-base"
+          className="w-full rounded-2xl border border-border/70 bg-card py-3 pl-9 pr-3 text-[15px] shadow-[var(--shadow-card)]"
         />
       </div>
 
@@ -171,22 +171,24 @@ export function PrijateDoklady({
             const spolu = riadky.reduce((s, d) => s + (cislo(d.total_amount) ?? 0), 0);
             return (
               <div key={kluc}>
-                <div className="mb-2 flex items-baseline justify-between">
-                  <h2 className="text-sm font-medium capitalize">{nazovMesiaca(kluc)}</h2>
-                  <span className="text-xs tabular-nums text-muted-foreground">
+                <div className="mb-2 flex items-baseline justify-between px-1">
+                  <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {nazovMesiaca(kluc)}
+                  </h2>
+                  <span className="text-[13px] font-medium tabular-nums text-muted-foreground">
                     {riadky.length} × · {suma(spolu, riadky[0]?.currency ?? "EUR")}
                   </span>
                 </div>
-                <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
                   {riadky.map((d, i) => (
                     <button
                       key={d.id}
                       onClick={() => setOtvoreny(d)}
-                      className={`flex w-full items-center gap-3 px-4 py-3 text-left active:bg-secondary ${
-                        i > 0 ? "border-t border-border" : ""
+                      className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-secondary ${
+                        i > 0 ? "border-t border-border/70" : ""
                       }`}
                     >
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                         {d.source === "qr" ? (
                           <QrCode className="h-4 w-4" />
                         ) : d.file_mime === "application/pdf" ? (
@@ -196,15 +198,15 @@ export function PrijateDoklady({
                         )}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium">
+                        <span className="block truncate text-[15px] font-medium leading-tight">
                           {d.supplier_name ?? "Bez dodávateľa"}
                         </span>
-                        <span className="block truncate text-xs text-muted-foreground">
+                        <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
                           {d.issue_date ?? "—"}
                           {d.payment_method ? ` · ${UHRADY[d.payment_method]}` : ""}
                         </span>
                       </span>
-                      <span className="shrink-0 text-sm font-semibold tabular-nums">
+                      <span className="shrink-0 text-[15px] font-semibold tabular-nums">
                         {suma(d.total_amount, d.currency ?? "EUR")}
                       </span>
                     </button>
@@ -285,12 +287,12 @@ function DetailDokladu({
       onBack={onSpat}
     >
       <div className="space-y-4">
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="text-2xl font-semibold tabular-nums">
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
+          <div className="text-[32px] font-semibold leading-none tabular-nums">
             {suma(doklad.total_amount, mena)}
           </div>
           {cislo(doklad.vat_amount) != null && (
-            <div className="mt-1 text-xs text-muted-foreground">
+            <div className="mt-2 text-[13px] text-muted-foreground">
               základ {suma(doklad.net_amount, mena)} · DPH {suma(doklad.vat_amount, mena)}
               {rozpis.length > 1 ? ` (${rozpis.map((s) => `${s.sadzba} %`).join(" + ")})` : ""}
             </div>
@@ -302,7 +304,7 @@ function DetailDokladu({
           )}
         </div>
 
-        <div className="space-y-1.5 rounded-2xl border border-border bg-card p-4 text-sm">
+        <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-4 text-[14px] shadow-[var(--shadow-card)]">
           <Riadok label="IČO" value={doklad.supplier_ico ?? "—"} />
           <Riadok label="IČ DPH" value={doklad.supplier_ic_dph ?? "—"} />
           <Riadok label="Číslo dokladu" value={doklad.document_number ?? "—"} />
@@ -317,10 +319,10 @@ function DetailDokladu({
                 key={id}
                 disabled={busy}
                 onClick={() => zmenUhradu(id)}
-                className={`rounded-xl border px-3 py-2.5 text-sm disabled:opacity-60 ${
+                className={`rounded-2xl border py-3 text-[14px] transition active:scale-[0.98] disabled:opacity-60 ${
                   uhrada === id
-                    ? "border-primary bg-primary/10 font-medium text-primary"
-                    : "border-border bg-card"
+                    ? "border-primary bg-primary/10 font-semibold text-primary"
+                    : "border-border/70 bg-card"
                 }`}
               >
                 {UHRADY[id]}
@@ -330,15 +332,15 @@ function DetailDokladu({
         </div>
 
         {polozky.length > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            <div className="border-b border-border px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">
+          <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
+            <div className="border-b border-border/70 px-4 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
               Položky ({polozky.length})
             </div>
             {polozky.map((p, i) => (
               <div
                 key={i}
-                className={`flex items-start justify-between gap-3 px-4 py-2 text-sm ${
-                  i > 0 ? "border-t border-border" : ""
+                className={`flex items-start justify-between gap-3 px-4 py-2.5 text-[14px] ${
+                  i > 0 ? "border-t border-border/70" : ""
                 }`}
               >
                 <span className="min-w-0">

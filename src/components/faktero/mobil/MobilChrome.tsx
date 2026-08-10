@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
 
 /**
@@ -9,47 +9,141 @@ import { ChevronLeft, Loader2 } from "lucide-react";
  * spodnú lištu telefónu (`env(safe-area-inset-*)`): bez neho by hlavička
  * liezla pod hodiny a spodné tlačidlo pod indikátor domovskej obrazovky.
  */
+
+/**
+ * Potiahnutie od ľavého okraja = späť.
+ *
+ * Na iPhone to ľudia robia automaticky a čakajú, že to funguje. Vo WebView
+ * natívne gesto nefunguje: obrazovky appky nie sú položky histórie
+ * prehliadača, ale kroky jedného stavu. Preto sa sleduje prst.
+ *
+ * Gesto sa chytá len pri okraji — inak by braním prsta cez obsah nešlo
+ * vodorovne rolovať v tabuľkách a zoznamoch.
+ */
+const OKRAJ = 28;
+const PRAH = 70;
+
+function useSwipeSpat(onSpat?: () => void) {
+  const [posun, setPosun] = useState(0);
+  const [pusta, setPusta] = useState(false);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const smer = useRef<"?" | "vodorovne" | "zvisle">("?");
+
+  useEffect(() => {
+    if (!onSpat) return;
+
+    const dole = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (!t || t.clientX > OKRAJ) return;
+      start.current = { x: t.clientX, y: t.clientY };
+      smer.current = "?";
+      setPusta(false);
+    };
+
+    const pohyb = (e: TouchEvent) => {
+      const s = start.current;
+      const t = e.touches[0];
+      if (!s || !t) return;
+      const dx = t.clientX - s.x;
+      const dy = t.clientY - s.y;
+
+      // Kým nie je jasné, či človek ťahá do strany alebo roluje, nerobíme nič.
+      if (smer.current === "?") {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        smer.current = Math.abs(dx) > Math.abs(dy) ? "vodorovne" : "zvisle";
+      }
+      if (smer.current !== "vodorovne") return;
+
+      // Za pravý okraj sa ťahať nedá a doľava nemá gesto zmysel.
+      setPosun(Math.max(0, Math.min(dx, window.innerWidth)));
+    };
+
+    const hore = () => {
+      const dost = posun > PRAH;
+      start.current = null;
+      smer.current = "?";
+      setPusta(true);
+      if (dost) {
+        // Obrazovka domôže dobehnúť z obrazovky von, až potom sa prepne.
+        setPosun(window.innerWidth);
+        window.setTimeout(onSpat, 180);
+      } else {
+        setPosun(0);
+      }
+    };
+
+    window.addEventListener("touchstart", dole, { passive: true });
+    window.addEventListener("touchmove", pohyb, { passive: true });
+    window.addEventListener("touchend", hore, { passive: true });
+    window.addEventListener("touchcancel", hore, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", dole);
+      window.removeEventListener("touchmove", pohyb);
+      window.removeEventListener("touchend", hore);
+      window.removeEventListener("touchcancel", hore);
+    };
+  }, [onSpat, posun]);
+
+  return { posun, pusta };
+}
+
 export function MobilObrazovka({
   title,
   subtitle,
   onBack,
   children,
   footer,
+  akcia,
 }: {
   title: string;
   subtitle?: string;
   onBack?: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  akcia?: ReactNode;
 }) {
+  const { posun, pusta } = useSwipeSpat(onBack);
+
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-background">
+    <div
+      className="flex min-h-[100dvh] flex-col bg-background"
+      style={{
+        transform: posun ? `translateX(${posun}px)` : undefined,
+        transition: pusta ? "transform 180ms cubic-bezier(0.32, 0.72, 0, 1)" : undefined,
+        boxShadow: posun ? "-12px 0 32px rgba(0,0,0,0.18)" : undefined,
+      }}
+    >
       <header
-        className="sticky top-0 z-10 border-b border-border bg-card"
+        className="sticky top-0 z-10 border-b border-border/70 bg-card/95 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="flex items-center gap-2 px-4 py-3">
+        <div className="flex items-center gap-1 px-3 py-2.5">
           {onBack && (
             <button
               onClick={onBack}
               aria-label="Späť"
-              className="-ml-2 rounded-full p-2 hover:bg-secondary"
+              className="-ml-1 rounded-full p-2 text-primary active:bg-secondary"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-6 w-6" />
             </button>
           )}
-          <div className="min-w-0">
-            <h1 className="truncate text-base font-semibold">{title}</h1>
-            {subtitle && <p className="truncate text-xs text-muted-foreground">{subtitle}</p>}
+          <div className={`min-w-0 flex-1 ${onBack ? "" : "px-1"}`}>
+            <h1 className="truncate text-[17px] font-semibold leading-tight tracking-tight">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="truncate text-[13px] leading-tight text-muted-foreground">{subtitle}</p>
+            )}
           </div>
+          {akcia}
         </div>
       </header>
 
-      <main className="flex-1 px-4 py-4">{children}</main>
+      <main className="flex-1 px-4 pb-6 pt-4">{children}</main>
 
       {footer && (
         <footer
-          className="sticky bottom-0 border-t border-border bg-card px-4 py-3"
+          className="sticky bottom-0 border-t border-border/70 bg-card/95 px-4 pt-3 backdrop-blur"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
         >
           {footer}
@@ -79,24 +173,27 @@ export function VelkeTlacidlo({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition active:scale-[0.99] disabled:opacity-50 ${
+      style={variant === "primary" ? { backgroundImage: "var(--brand-gradient)" } : undefined}
+      className={`flex w-full items-center gap-3.5 rounded-2xl p-4 text-left transition active:scale-[0.985] disabled:opacity-50 ${
         variant === "primary"
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-card hover:bg-secondary"
+          ? "text-primary-foreground shadow-[var(--shadow-glow)]"
+          : "border border-border/70 bg-card shadow-[var(--shadow-card)] active:bg-secondary"
       }`}
     >
       <span
-        className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${
-          variant === "primary" ? "bg-white/15" : "bg-primary/10 text-primary"
+        className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${
+          variant === "primary" ? "bg-white/20" : "bg-primary/10 text-primary"
         }`}
       >
-        <Icon className="h-5 w-5" />
+        <Icon className="h-[22px] w-[22px]" />
       </span>
-      <span className="min-w-0">
-        <span className="block font-medium">{label}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[15px] font-semibold leading-tight">{label}</span>
         {hint && (
           <span
-            className={`block text-xs ${variant === "primary" ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+            className={`mt-0.5 block text-[13px] leading-snug ${
+              variant === "primary" ? "text-primary-foreground/85" : "text-muted-foreground"
+            }`}
           >
             {hint}
           </span>
@@ -108,11 +205,37 @@ export function VelkeTlacidlo({
 
 export function Pracujem({ text }: { text: string }) {
   return (
-    <div className="grid min-h-[50vh] place-items-center">
+    <div className="grid min-h-[100dvh] place-items-center bg-background">
       <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
+        <Loader2 className="h-7 w-7 animate-spin text-primary" />
         {text}
       </div>
     </div>
+  );
+}
+
+/** Spodné hlavné tlačidlo — jedno na obrazovku, nedá sa prehliadnuť. */
+export function HlavneTlacidlo({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={disabled ? undefined : { backgroundImage: "var(--brand-gradient)" }}
+      className={`w-full rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition active:scale-[0.99] ${
+        disabled
+          ? "bg-secondary text-muted-foreground"
+          : "text-primary-foreground shadow-[var(--shadow-glow)]"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

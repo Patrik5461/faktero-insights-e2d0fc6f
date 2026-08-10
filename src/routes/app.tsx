@@ -28,7 +28,12 @@ import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { PrijateDoklady } from "@/components/faktero/mobil/PrijateDoklady";
 import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
-import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "@/components/faktero/mobil/MobilChrome";
+import {
+  HlavneTlacidlo,
+  MobilObrazovka,
+  Pracujem,
+  VelkeTlacidlo,
+} from "@/components/faktero/mobil/MobilChrome";
 import { Logo } from "@/components/faktero/Logo";
 
 /**
@@ -90,6 +95,26 @@ function MobilnaApka() {
 
   useEffect(() => {
     zisti();
+  }, []);
+
+  /*
+   * Hardvérové tlačidlo Späť na Androide inak appku rovno zavrie — aj keď je
+   * človek uprostred skenovania. Na domovskej obrazovke ho necháme tak.
+   */
+  useEffect(() => {
+    let odstran: (() => void) | undefined;
+    (async () => {
+      try {
+        const { App } = await import("@capacitor/app");
+        const h = await App.addListener("backButton", () => {
+          setKrok((k) => (k === "zachyt" || k === "doklady" || k === "firma" ? "domov" : k));
+        });
+        odstran = () => h.remove();
+      } catch {
+        // na webe plugin nie je — gesto potiahnutím funguje aj tak
+      }
+    })();
+    return () => odstran?.();
   }, []);
 
   async function odhlas() {
@@ -290,12 +315,54 @@ function Domov({
   onOdhlasit: () => void;
 }) {
   return (
-    <MobilObrazovka title="Skenovanie dokladov" subtitle={firma?.name}>
-      <div className="space-y-3">
+    <div className="flex min-h-[100dvh] flex-col bg-background">
+      {/*
+        Hlavička je jediné farebné miesto v appke — nesie značku a hovorí, za
+        ktorú firmu sa práve skenuje. To je údaj, ktorý musí byť vidieť stále:
+        doklad uložený do zlej firmy sa hľadá ťažko.
+      */}
+      <header
+        className="px-5 pb-6 text-primary-foreground"
+        style={{
+          backgroundImage: "var(--brand-gradient)",
+          paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)",
+        }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[13px] font-medium text-primary-foreground/80">Faktero</p>
+            <h1 className="mt-0.5 text-[22px] font-semibold leading-tight">Skenovanie dokladov</h1>
+          </div>
+          <button
+            onClick={onOdhlasit}
+            aria-label="Odhlásiť sa"
+            className="rounded-full bg-white/15 p-2 active:bg-white/25"
+          >
+            <LogOut className="h-[18px] w-[18px]" />
+          </button>
+        </div>
+
+        <button
+          onClick={viacFiriem ? onZmenitFirmu : undefined}
+          className={`mt-4 flex w-full items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5 text-left ${
+            viacFiriem ? "active:bg-white/25" : "cursor-default"
+          }`}
+        >
+          <Building2 className="h-4 w-4 shrink-0" />
+          <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
+            {firma?.name ?? "Bez firmy"}
+          </span>
+          {viacFiriem && (
+            <span className="shrink-0 text-[12px] text-primary-foreground/80">zmeniť</span>
+          )}
+        </button>
+      </header>
+
+      <main className="flex-1 space-y-3 px-4 pt-5">
         <VelkeTlacidlo
           icon={QrCode}
           label="Bloček s QR kódom"
-          hint="Údaje sa načítajú z Finančnej správy aj s položkami"
+          hint="Načíta sa z Finančnej správy aj s položkami"
           variant="primary"
           onClick={() => onZachyt("blocek")}
         />
@@ -308,37 +375,27 @@ function Domov({
         <VelkeTlacidlo
           icon={Files}
           label="Viacstranový doklad"
-          hint="Odfoťte stranu po strane, uloží sa ako jedno PDF"
+          hint="Strana po strane, uloží sa ako jedno PDF"
           onClick={() => onZachyt("strany")}
         />
-      </div>
 
-      <div className="mt-4">
-        <VelkeTlacidlo
-          icon={Receipt}
-          label="Prijaté doklady"
-          hint="Bločky a faktúry, ktoré ste už naskenovali"
-          onClick={onDoklady}
-        />
-      </div>
+        <div className="pt-3">
+          <VelkeTlacidlo
+            icon={Receipt}
+            label="Prijaté doklady"
+            hint="Bločky a faktúry, ktoré ste už naskenovali"
+            onClick={onDoklady}
+          />
+        </div>
+      </main>
 
-      <div className="mt-8 space-y-2">
-        {viacFiriem && (
-          <button
-            onClick={onZmenitFirmu}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm"
-          >
-            <Building2 className="h-4 w-4" /> Zmeniť firmu
-          </button>
-        )}
-        <button
-          onClick={onOdhlasit}
-          className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm text-muted-foreground"
-        >
-          <LogOut className="h-4 w-4" /> Odhlásiť sa
-        </button>
+      <div
+        className="px-4 pb-4 pt-6 text-center text-[12px] text-muted-foreground"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
+      >
+        Doklady sa ukladajú do firmy {firma?.name ?? "—"}
       </div>
-    </MobilObrazovka>
+    </div>
   );
 }
 
@@ -601,19 +658,17 @@ function Potvrdenie({
       subtitle={vysledok.zdroj === "ekasa" ? "Z Finančnej správy" : "Prečítané z dokladu"}
       onBack={onSpat}
       footer={
-        <button
-          onClick={onUloz}
-          disabled={!uhrada}
-          className="w-full rounded-xl bg-primary px-4 py-3 text-base font-medium text-primary-foreground disabled:opacity-50"
-        >
+        <HlavneTlacidlo onClick={onUloz} disabled={!uhrada}>
           {uhrada ? "Uložiť doklad" : "Vyberte spôsob úhrady"}
-        </button>
+        </HlavneTlacidlo>
       }
     >
       <div className="space-y-4">
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="text-2xl font-semibold tabular-nums">{suma(vysledok.total)}</div>
-          <div className="mt-1 text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
+          <div className="text-[32px] font-semibold leading-none tabular-nums">
+            {suma(vysledok.total)}
+          </div>
+          <div className="mt-2 text-[14px] text-muted-foreground">
             {vysledok.supplier ?? "Neznámy predajca"}
             {vysledok.date ? ` · ${vysledok.date}` : ""}
           </div>
@@ -657,10 +712,10 @@ function Potvrdenie({
               <button
                 key={id}
                 onClick={() => setUhrada(id)}
-                className={`rounded-xl border px-3 py-3 text-sm ${
+                className={`rounded-2xl border py-3.5 text-[14px] transition active:scale-[0.98] ${
                   uhrada === id
-                    ? "border-primary bg-primary/10 font-medium text-primary"
-                    : "border-border bg-card"
+                    ? "border-primary bg-primary/10 font-semibold text-primary"
+                    : "border-border/70 bg-card text-foreground"
                 }`}
               >
                 {label}
