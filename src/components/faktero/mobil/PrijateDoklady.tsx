@@ -1,0 +1,426 @@
+import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import {
+  BadgeCheck,
+  Camera,
+  FileText,
+  QrCode,
+  Receipt,
+  Search,
+  Trash2,
+  ExternalLink,
+} from "lucide-react";
+import {
+  deleteExpenseFn,
+  getExpenseFileUrlFn,
+  listExpensesFn,
+  updateExpenseFn,
+} from "@/lib/faktero/expenses.functions";
+import { MobilObrazovka, Pracujem } from "./MobilChrome";
+
+/**
+ * Prijaté doklady v mobilnej aplikácii.
+ *
+ * Naskenovaný bloček bolo dovtedy vidieť len v prehliadači — v telefóne po
+ * uložení zmizol a nedalo sa overiť, či sa vôbec uložil. Tu je zoznam za
+ * vybranú firmu a detail dokladu vrátane prílohy a položiek.
+ */
+
+type Doklad = {
+  id: string;
+  supplier_name: string | null;
+  supplier_ico: string | null;
+  supplier_ic_dph: string | null;
+  document_number: string | null;
+  issue_date: string | null;
+  total_amount: number | string | null;
+  vat_amount: number | string | null;
+  net_amount: number | string | null;
+  vat_rate: number | string | null;
+  currency: string | null;
+  payment_method: "hotovost" | "karta" | "prevod" | null;
+  status: string | null;
+  source: string | null;
+  note: string | null;
+  file_path: string | null;
+  file_mime: string | null;
+  items: unknown;
+  vat_breakdown: unknown;
+  created_at: string;
+};
+
+type Uhrada = "hotovost" | "karta" | "prevod";
+
+const UHRADY: Record<Uhrada, string> = {
+  hotovost: "Hotovosť",
+  karta: "Kartou",
+  prevod: "Prevodom",
+};
+
+function cislo(v: unknown): number | null {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function suma(v: unknown, mena = "EUR"): string {
+  const n = cislo(v);
+  if (n == null) return "—";
+  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n);
+}
+
+/** „2026-08" → „august 2026" — mesiac sa v zozname používa ako predel. */
+function nazovMesiaca(kluc: string): string {
+  const [r, m] = kluc.split("-").map(Number);
+  const d = new Date(r, (m || 1) - 1, 1);
+  return d.toLocaleDateString("sk-SK", { month: "long", year: "numeric" });
+}
+
+export function PrijateDoklady({
+  firma,
+  onSpat,
+}: {
+  firma: { id: string; name: string };
+  onSpat: () => void;
+}) {
+  const nacitaj = useServerFn(listExpensesFn);
+  const [doklady, setDoklady] = useState<Doklad[] | null>(null);
+  const [hladanie, setHladanie] = useState("");
+  const [otvoreny, setOtvoreny] = useState<Doklad | null>(null);
+
+  async function obnov() {
+    try {
+      const rows = (await nacitaj({ data: { company_id: firma.id } })) as Doklad[];
+      setDoklady(rows);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Doklady sa nepodarilo načítať.");
+      setDoklady([]);
+    }
+  }
+
+  useEffect(() => {
+    obnov();
+    // eslint-disable-next-line
+  }, [firma.id]);
+
+  const najdene = useMemo(() => {
+    const q = hladanie.trim().toLowerCase();
+    if (!q) return doklady ?? [];
+    return (doklady ?? []).filter((d) =>
+      [d.supplier_name, d.document_number, d.supplier_ico]
+        .filter(Boolean)
+        .some((x) => String(x).toLowerCase().includes(q)),
+    );
+  }, [doklady, hladanie]);
+
+  /* Zoskupenie po mesiacoch — bez neho je zoznam nekonečná stena riadkov. */
+  const mesiace = useMemo(() => {
+    const mapa = new Map<string, Doklad[]>();
+    for (const d of najdene) {
+      const kluc = (d.issue_date ?? d.created_at).slice(0, 7);
+      if (!mapa.has(kluc)) mapa.set(kluc, []);
+      mapa.get(kluc)!.push(d);
+    }
+    return [...mapa.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  }, [najdene]);
+
+  if (otvoreny) {
+    return (
+      <DetailDokladu
+        doklad={otvoreny}
+        onSpat={() => setOtvoreny(null)}
+        onZmena={async () => {
+          setOtvoreny(null);
+          setDoklady(null);
+          await obnov();
+        }}
+      />
+    );
+  }
+
+  if (doklady === null) return <Pracujem text="Načítavam doklady…" />;
+
+  return (
+    <MobilObrazovka title="Prijaté doklady" subtitle={firma.name} onBack={onSpat}>
+      <div className="relative mb-4">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          value={hladanie}
+          onChange={(e) => setHladanie(e.target.value)}
+          placeholder="Hľadať dodávateľa alebo číslo"
+          className="w-full rounded-xl border border-input bg-background py-3 pl-9 pr-3 text-base"
+        />
+      </div>
+
+      {najdene.length === 0 ? (
+        <div className="grid place-items-center py-16 text-center">
+          <Receipt className="mb-3 h-10 w-10 text-muted-foreground/50" />
+          <p className="text-sm font-medium">
+            {hladanie ? "Nič sa nenašlo" : "Zatiaľ žiadne doklady"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {hladanie
+              ? "Skúste hľadať inak."
+              : "Naskenované bločky a faktúry sa objavia tu."}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {mesiace.map(([kluc, riadky]) => {
+            const spolu = riadky.reduce((s, d) => s + (cislo(d.total_amount) ?? 0), 0);
+            return (
+              <div key={kluc}>
+                <div className="mb-2 flex items-baseline justify-between">
+                  <h2 className="text-sm font-medium capitalize">{nazovMesiaca(kluc)}</h2>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {riadky.length} × · {suma(spolu, riadky[0]?.currency ?? "EUR")}
+                  </span>
+                </div>
+                <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                  {riadky.map((d, i) => (
+                    <button
+                      key={d.id}
+                      onClick={() => setOtvoreny(d)}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left active:bg-secondary ${
+                        i > 0 ? "border-t border-border" : ""
+                      }`}
+                    >
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                        {d.source === "qr" ? (
+                          <QrCode className="h-4 w-4" />
+                        ) : d.file_mime === "application/pdf" ? (
+                          <FileText className="h-4 w-4" />
+                        ) : (
+                          <Camera className="h-4 w-4" />
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">
+                          {d.supplier_name ?? "Bez dodávateľa"}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {d.issue_date ?? "—"}
+                          {d.payment_method ? ` · ${UHRADY[d.payment_method]}` : ""}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-sm font-semibold tabular-nums">
+                        {suma(d.total_amount, d.currency ?? "EUR")}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </MobilObrazovka>
+  );
+}
+
+/* ------------------------- Detail dokladu ------------------------- */
+
+function DetailDokladu({
+  doklad,
+  onSpat,
+  onZmena,
+}: {
+  doklad: Doklad;
+  onSpat: () => void;
+  onZmena: () => void;
+}) {
+  const urlFn = useServerFn(getExpenseFileUrlFn);
+  const updateFn = useServerFn(updateExpenseFn);
+  const deleteFn = useServerFn(deleteExpenseFn);
+
+  const [priloha, setPriloha] = useState<string | null>(null);
+  const [uhrada, setUhrada] = useState<Uhrada | null>(doklad.payment_method ?? null);
+  const [mazem, setMazem] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const mena = doklad.currency ?? "EUR";
+  const polozky = Array.isArray(doklad.items) ? (doklad.items as any[]) : [];
+  const rozpis = Array.isArray(doklad.vat_breakdown) ? (doklad.vat_breakdown as any[]) : [];
+
+  useEffect(() => {
+    if (!doklad.file_path) return;
+    urlFn({ data: { file_path: doklad.file_path } })
+      .then((r: any) => setPriloha(r.url))
+      .catch(() => setPriloha(null));
+    // eslint-disable-next-line
+  }, [doklad.file_path]);
+
+  /* Spôsob úhrady sa mení najčastejšie — pri skenovaní sa dá ľahko preklepnúť. */
+  async function zmenUhradu(u: Uhrada) {
+    setUhrada(u);
+    setBusy(true);
+    try {
+      await updateFn({ data: { id: doklad.id, patch: { payment_method: u } } });
+      toast.success("Spôsob úhrady zmenený");
+    } catch (e: any) {
+      setUhrada(doklad.payment_method ?? null);
+      toast.error(e?.message ?? "Zmena zlyhala.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function zmaz() {
+    setBusy(true);
+    try {
+      await deleteFn({ data: { id: doklad.id } });
+      toast.success("Doklad zmazaný");
+      onZmena();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Mazanie zlyhalo.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <MobilObrazovka
+      title={doklad.supplier_name ?? "Doklad"}
+      subtitle={doklad.issue_date ?? undefined}
+      onBack={onSpat}
+    >
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="text-2xl font-semibold tabular-nums">
+            {suma(doklad.total_amount, mena)}
+          </div>
+          {cislo(doklad.vat_amount) != null && (
+            <div className="mt-1 text-xs text-muted-foreground">
+              základ {suma(doklad.net_amount, mena)} · DPH {suma(doklad.vat_amount, mena)}
+              {rozpis.length > 1 ? ` (${rozpis.map((s) => `${s.sadzba} %`).join(" + ")})` : ""}
+            </div>
+          )}
+          {doklad.source === "qr" && (
+            <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+              <BadgeCheck className="h-3.5 w-3.5" /> Z Finančnej správy
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5 rounded-2xl border border-border bg-card p-4 text-sm">
+          <Riadok label="IČO" value={doklad.supplier_ico ?? "—"} />
+          <Riadok label="IČ DPH" value={doklad.supplier_ic_dph ?? "—"} />
+          <Riadok label="Číslo dokladu" value={doklad.document_number ?? "—"} />
+          {doklad.note && <Riadok label="Poznámka" value={doklad.note} />}
+        </div>
+
+        <div>
+          <div className="mb-2 text-sm font-medium">Spôsob úhrady</div>
+          <div className="grid grid-cols-3 gap-2">
+            {(Object.keys(UHRADY) as Uhrada[]).map((id) => (
+              <button
+                key={id}
+                disabled={busy}
+                onClick={() => zmenUhradu(id)}
+                className={`rounded-xl border px-3 py-2.5 text-sm disabled:opacity-60 ${
+                  uhrada === id
+                    ? "border-primary bg-primary/10 font-medium text-primary"
+                    : "border-border bg-card"
+                }`}
+              >
+                {UHRADY[id]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {polozky.length > 0 && (
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="border-b border-border px-4 py-2 text-xs uppercase tracking-wide text-muted-foreground">
+              Položky ({polozky.length})
+            </div>
+            {polozky.map((p, i) => (
+              <div
+                key={i}
+                className={`flex items-start justify-between gap-3 px-4 py-2 text-sm ${
+                  i > 0 ? "border-t border-border" : ""
+                }`}
+              >
+                <span className="min-w-0">
+                  <span className="block">{p.name || "—"}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {p.quantity} × {suma(p.unit_price, mena)} · {p.vat_rate} %
+                  </span>
+                </span>
+                <span className="shrink-0 tabular-nums">
+                  {suma(p.total ?? p.quantity * p.unit_price, mena)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {doklad.file_path && (
+          <div>
+            <div className="mb-2 text-sm font-medium">Doklad</div>
+            {priloha ? (
+              doklad.file_mime === "application/pdf" ? (
+                <a
+                  href={priloha}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm"
+                >
+                  <ExternalLink className="h-4 w-4" /> Otvoriť PDF
+                </a>
+              ) : (
+                <a href={priloha} target="_blank" rel="noreferrer">
+                  <img
+                    src={priloha}
+                    alt="doklad"
+                    className="w-full rounded-xl border border-border object-contain"
+                  />
+                </a>
+              )
+            ) : (
+              <p className="text-xs text-muted-foreground">Načítavam prílohu…</p>
+            )}
+          </div>
+        )}
+
+        {mazem ? (
+          <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
+            <p className="text-sm font-medium">Naozaj zmazať tento doklad?</p>
+            <p className="mt-1 text-xs text-muted-foreground">Vrátiť sa to nedá.</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setMazem(false)}
+                className="rounded-xl border border-border px-4 py-2.5 text-sm"
+              >
+                Ponechať
+              </button>
+              <button
+                onClick={zmaz}
+                disabled={busy}
+                className="rounded-xl bg-destructive px-4 py-2.5 text-sm font-medium text-destructive-foreground disabled:opacity-50"
+              >
+                Zmazať
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setMazem(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm text-muted-foreground"
+          >
+            <Trash2 className="h-4 w-4" /> Zmazať doklad
+          </button>
+        )}
+      </div>
+    </MobilObrazovka>
+  );
+}
+
+function Riadok({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-4">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium">{value}</span>
+    </div>
+  );
+}

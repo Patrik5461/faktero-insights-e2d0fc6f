@@ -10,6 +10,7 @@ import {
   Files,
   LogOut,
   QrCode,
+  Receipt,
   ScanLine,
   Fingerprint,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import { dokladNaZaznam, nahrajPrilohu, stranyDoPdf } from "@/lib/faktero/mobil-
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
+import { PrijateDoklady } from "@/components/faktero/mobil/PrijateDoklady";
 import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
 import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "@/components/faktero/mobil/MobilChrome";
 import { Logo } from "@/components/faktero/Logo";
@@ -50,7 +52,7 @@ export const Route = createFileRoute("/app")({
 
 type Firma = { id: string; name: string };
 type Uhrada = "hotovost" | "karta" | "prevod";
-type Krok = "nacitavam" | "prihlasenie" | "firma" | "domov" | "zachyt";
+type Krok = "nacitavam" | "prihlasenie" | "firma" | "domov" | "zachyt" | "doklady";
 type Zachyt = "blocek" | "pdf" | "strany";
 
 function MobilnaApka() {
@@ -110,9 +112,18 @@ function MobilnaApka() {
         onOdhlasit={odhlas}
       />
     );
+  if (krok === "doklady" && firma)
+    return <PrijateDoklady firma={firma} onSpat={() => setKrok("domov")} />;
   if (krok === "zachyt" && firma)
     return (
-      <ZachytDokladu druh={zachyt} firma={firma} onSpat={() => setKrok("domov")} />
+      <ZachytDokladu
+        druh={zachyt}
+        firma={firma}
+        onSpat={() => setKrok("domov")}
+        // Po uložení ukážeme zoznam — inak doklad zmizne a nedá sa overiť,
+        // či sa vôbec uložil.
+        onUlozene={() => setKrok("doklady")}
+      />
     );
 
   return (
@@ -124,6 +135,7 @@ function MobilnaApka() {
         setZachyt(d);
         setKrok("zachyt");
       }}
+      onDoklady={() => setKrok("doklady")}
       onOdhlasit={odhlas}
     />
   );
@@ -267,12 +279,14 @@ function Domov({
   viacFiriem,
   onZmenitFirmu,
   onZachyt,
+  onDoklady,
   onOdhlasit,
 }: {
   firma: Firma | null;
   viacFiriem: boolean;
   onZmenitFirmu: () => void;
   onZachyt: (d: Zachyt) => void;
+  onDoklady: () => void;
   onOdhlasit: () => void;
 }) {
   return (
@@ -296,6 +310,15 @@ function Domov({
           label="Viacstranový doklad"
           hint="Odfoťte stranu po strane, uloží sa ako jedno PDF"
           onClick={() => onZachyt("strany")}
+        />
+      </div>
+
+      <div className="mt-4">
+        <VelkeTlacidlo
+          icon={Receipt}
+          label="Prijaté doklady"
+          hint="Bločky a faktúry, ktoré ste už naskenovali"
+          onClick={onDoklady}
         />
       </div>
 
@@ -331,10 +354,12 @@ function ZachytDokladu({
   druh,
   firma,
   onSpat,
+  onUlozene,
 }: {
   druh: Zachyt;
   firma: Firma;
   onSpat: () => void;
+  onUlozene: () => void;
 }) {
   const nacitaj = useServerFn(nacitajBlocekFn);
   const uloz = useServerFn(createExpenseFn);
@@ -439,7 +464,7 @@ function ZachytDokladu({
       if (foto && !priloha) toast.error("Prílohu sa nepodarilo nahrať, doklad uložím bez nej.");
       await uloz({ data: dokladNaZaznam(firma.id, vysledok, uhrada, priloha) as any });
       toast.success("Doklad uložený");
-      onSpat();
+      onUlozene();
     } catch (e: any) {
       toast.error(e?.message ?? "Uloženie zlyhalo.");
       setStav("potvrdenie");
