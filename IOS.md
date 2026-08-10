@@ -23,10 +23,13 @@ App Store Connect na inom systéme nebežia.
 ```bash
 git pull
 npm install
-npm run build:mobile          # vygeneruje shell a spustí `cap sync`
-cd ios/App && pod install     # CocoaPods, potrebné po každom pribudnutí pluginu
-npx cap open ios              # otvorí Xcode
+npm run build:mobile   # vygeneruje shell a spustí `cap sync`
+npx cap open ios       # otvorí Xcode
 ```
+
+**CocoaPods netreba.** Projekt je postavený cez Swift Package Manager
+(`ios/App/CapApp-SPM/Package.swift`), balíky si Xcode stiahne sám pri prvom
+otvorení. `pod install` by tu nemal čo robiť.
 
 V Xcode:
 
@@ -36,6 +39,17 @@ V Xcode:
    majú posielať upozornenia (plugin je už v projekte).
 3. Ikony a štartovacia obrazovka — `App/Assets.xcassets`.
 4. Verzia: `MARKETING_VERSION` a `CURRENT_PROJECT_VERSION`.
+
+## Skener QR kódu
+
+Číta sa priamo v stránke cez kameru (`getUserMedia` + jsQR), nie natívnym
+pluginom. Dôvod: `@capacitor-mlkit/barcode-scanning` existuje len pre
+CocoaPods, takže do projektu postaveného cez Swift Package Manager sa vôbec
+nedostane a tlačidlo by na iPhone hlásilo „skener nie je dostupný". Appka
+natívny skener najprv skúsi (na Androide je rýchlejší) a keď nie je, otvorí
+vlastný.
+
+Preto je `NSCameraUsageDescription` povinné — bez neho iOS kameru nepustí.
 
 ## Čo už je nastavené
 

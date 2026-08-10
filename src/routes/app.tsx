@@ -24,6 +24,7 @@ import { createExpenseFn } from "@/lib/faktero/expenses.functions";
 import { dokladNaZaznam, nahrajPrilohu, stranyDoPdf } from "@/lib/faktero/mobil-doklad";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
+import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
 import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "@/components/faktero/mobil/MobilChrome";
 import { Logo } from "@/components/faktero/Logo";
@@ -343,6 +344,7 @@ function ZachytDokladu({
   const [uhrada, setUhrada] = useState<Uhrada | null>(null);
   const [foto, setFoto] = useState<string | null>(null);
   const [strany, setStrany] = useState<string[]>([]);
+  const [skenujem, setSkenujem] = useState(false);
 
   /** Doklad prečítaný — ďalej sa pýtame na úhradu a na fotku. */
   function prijmi(r: BlocekVysledok, prilozene?: string | null) {
@@ -354,19 +356,25 @@ function ZachytDokladu({
   }
 
   /* --- Bloček: najprv QR, potom sa pýtame na úhradu a fotku --- */
-  async function nasnimajQr() {
-    const res = await scanQrCode();
-    if (!res) {
-      toast.error("QR skener nie je dostupný. Skúste doklad odfotiť.");
-      return;
-    }
+  async function precitajQr(raw: string) {
+    setSkenujem(false);
     setStav("citam");
     try {
-      prijmi((await nacitaj({ data: { qr: res.raw } })) as BlocekVysledok);
+      prijmi((await nacitaj({ data: { qr: raw } })) as BlocekVysledok);
     } catch (e: any) {
       toast.error(e?.message ?? "Čítanie zlyhalo.");
       setStav("start");
     }
+  }
+
+  /**
+   * Natívny skener skúsime prvý — kde je (Android), je rýchlejší. Na iOS v
+   * projekte nie je, tak sa otvorí skener priamo v stránke.
+   */
+  async function nasnimajQr() {
+    const res = await scanQrCode();
+    if (res) return precitajQr(res.raw);
+    setSkenujem(true);
   }
 
   async function odfotDoklad() {
@@ -438,6 +446,8 @@ function ZachytDokladu({
     }
   }
 
+  if (skenujem)
+    return <QrSkener onNajdene={precitajQr} onZrusit={() => setSkenujem(false)} />;
   if (stav === "citam") return <Pracujem text="Čítam doklad…" />;
   if (stav === "ukladam") return <Pracujem text="Ukladám doklad…" />;
 
