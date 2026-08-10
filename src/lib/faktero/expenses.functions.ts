@@ -24,6 +24,10 @@ export type ExpenseInput = {
   file_size?: number | null;
   qr_raw?: string | null;
   ai_raw?: unknown;
+  /** Položky dokladu — z eKasy alebo z fotky. */
+  items?: unknown;
+  /** Rozpis základu a DPH po sadzbách; bloček ich má často viac naraz. */
+  vat_breakdown?: unknown;
 };
 
 const inputSchema = z.object({
@@ -49,6 +53,22 @@ const inputSchema = z.object({
   file_size: z.number().nullable().optional(),
   qr_raw: z.string().nullable().optional(),
   ai_raw: z.any().optional(),
+  items: z
+    .array(
+      z.object({
+        name: z.string(),
+        quantity: z.number(),
+        unit_price: z.number(),
+        vat_rate: z.number(),
+        total: z.number().optional(),
+      }),
+    )
+    .nullable()
+    .optional(),
+  vat_breakdown: z
+    .array(z.object({ sadzba: z.number(), zaklad: z.number(), dph: z.number() }))
+    .nullable()
+    .optional(),
 });
 
 export const createExpenseFn = createServerFn({ method: "POST" })

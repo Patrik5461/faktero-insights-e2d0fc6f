@@ -6,7 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
-import { nacitajBlocekFn, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
+import {
+  nacitajBlocekFn,
+  PRENOS_KLUC,
+  type BlocekVysledok,
+} from "@/lib/faktero/blocek.functions";
 import {
   createExpenseFn,
   updateExpenseFn,
@@ -17,36 +21,16 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: () => ({ meta: [{ title: "Nový doklad — Faktero" }] }),
-  // Okrem úpravy existujúceho dokladu sem chodí aj prenos zo skenera —
-  // bez týchto polí by sa prečítaný doklad cestou stratil.
-  validateSearch: (s: Record<string, unknown>): DokladSearch => {
-    const t = (k: string) => (typeof s[k] === "string" && s[k] ? (s[k] as string) : undefined);
-    return {
-      id: t("id"),
-      supplier: t("supplier"),
-      ico: t("ico"),
-      ic_dph: t("ic_dph"),
-      total: t("total"),
-      vat: t("vat"),
-      vat_rate: t("vat_rate"),
-      date: t("date"),
-      number: t("number"),
-    };
-  },
+  // `prenos` znamená, že bloček prečítaný v skeneri čaká v `sessionStorage`.
+  // Cez adresu sa neposiela — položiek býva aj dvadsať.
+  validateSearch: (s: Record<string, unknown>): DokladSearch => ({
+    id: typeof s.id === "string" && s.id ? s.id : undefined,
+    prenos: s.prenos ? "1" : undefined,
+  }),
   component: NovyDokladPage,
 });
 
-type DokladSearch = {
-  id?: string;
-  supplier?: string;
-  ico?: string;
-  ic_dph?: string;
-  total?: string;
-  vat?: string;
-  vat_rate?: string;
-  date?: string;
-  number?: string;
-};
+type DokladSearch = { id?: string; prenos?: string };
 
 type Form = {
   supplier_name: string;
@@ -97,6 +81,9 @@ function NovyDokladPage() {
   } | null>(null);
   const [source, setSource] = useState<"photo" | "qr" | "upload" | "web">("photo");
   const [qrRaw, setQrRaw] = useState<string | null>(null);
+  /* Položky a rozpis DPH z bločku — ukladajú sa k dokladu tak, ako prišli. */
+  const [polozky, setPolozky] = useState<BlocekVysledok["items"]>([]);
+  const [rozpisDph, setRozpisDph] = useState<BlocekVysledok["vat_breakdown"] | null>(null);
   const [ekasaBadge, setEkasaBadge] = useState<null | {
     source: BlocekVysledok["zdroj"];
     overeny: boolean;
@@ -135,6 +122,8 @@ function NovyDokladPage() {
       });
       setSource(data.source as "photo" | "qr" | "upload" | "web");
       setQrRaw(data.qr_raw);
+      setPolozky(Array.isArray(data.items) ? (data.items as any) : []);
+      setRozpisDph(Array.isArray(data.vat_breakdown) ? (data.vat_breakdown as any) : null);
       if (data.file_path) {
         setUploadedFile({
           path: data.file_path,
@@ -156,26 +145,31 @@ function NovyDokladPage() {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
-  /* Doklad prenesený zo skenera — predvyplní sa raz, pri otvorení stránky. */
+  /* Bloček prečítaný v skeneri — prevezme sa raz, pri otvorení stránky. */
   useEffect(() => {
-    if (search.id) return;
-    const spolu = Number(search.total);
-    const dph = Number(search.vat);
-    setForm((f) => ({
-      ...f,
-      supplier_name: search.supplier ?? f.supplier_name,
-      supplier_ico: search.ico ?? f.supplier_ico,
-      supplier_ic_dph: search.ic_dph ?? f.supplier_ic_dph,
-      document_number: search.number ?? f.document_number,
-      issue_date: search.date ?? f.issue_date,
-      vat_rate: search.vat_rate ?? f.vat_rate,
-      total_amount: Number.isFinite(spolu) && search.total ? String(spolu) : f.total_amount,
-      vat_amount: Number.isFinite(dph) && search.vat ? dph.toFixed(2) : f.vat_amount,
-      net_amount:
-        Number.isFinite(spolu) && Number.isFinite(dph) && search.total && search.vat
-          ? (spolu - dph).toFixed(2)
-          : f.net_amount,
-    }));
+    if (search.id || !search.prenos) return;
+    let r: BlocekVysledok | null = null;
+    try {
+      const raw = sessionStorage.getItem(PRENOS_KLUC);
+      // Prenos je jednorazový; inak by sa ten istý doklad predvyplnil aj
+      // pri ďalšom otvorení stránky.
+      sessionStorage.removeItem(PRENOS_KLUC);
+      r = raw ? JSON.parse(raw) : null;
+    } catch {
+      r = null;
+    }
+    if (!r) {
+      toast.error("Prečítaný doklad sa nenašiel. Naskenujte ho znova.");
+      return;
+    }
+    applyBlocek(r, { ticho: true });
+    if (r.qr_raw) setQrRaw(r.qr_raw);
+    setSource(r.zdroj === "foto" ? "photo" : "qr");
+    toast.success(
+      r.items.length
+        ? `Doklad prevzatý zo skenera vrátane ${r.items.length} položiek`
+        : "Doklad prevzatý zo skenera",
+    );
     // eslint-disable-next-line
   }, []);
 
@@ -272,7 +266,7 @@ function NovyDokladPage() {
    * Doklad z Finančnej správy nesie DPH priamo, tak sa nedopočítava — dopočet
    * zo sadzby by na doklade s viacerými sadzbami dal nesprávne číslo.
    */
-  function applyBlocek(r: BlocekVysledok) {
+  function applyBlocek(r: BlocekVysledok, opts?: { ticho?: boolean }) {
     if (r.supplier) updateForm("supplier_name", r.supplier);
     if (r.supplier_ico) updateForm("supplier_ico", r.supplier_ico);
     if (r.supplier_ic_dph) updateForm("supplier_ic_dph", r.supplier_ic_dph);
@@ -292,8 +286,18 @@ function NovyDokladPage() {
       updateForm("vat_amount", (total - net).toFixed(2));
     }
 
+    if (r.payment_method) updateForm("payment_method", r.payment_method);
+    setPolozky(r.items ?? []);
+    setRozpisDph(r.vat_breakdown ?? null);
+
     setEkasaBadge({ source: r.zdroj, overeny: r.overeny });
-    if (r.zdroj === "ekasa") toast.success("Doklad načítaný z Finančnej správy");
+    if (opts?.ticho) return;
+    if (r.zdroj === "ekasa")
+      toast.success(
+        r.items.length
+          ? `Doklad z Finančnej správy vrátane ${r.items.length} položiek`
+          : "Doklad načítaný z Finančnej správy",
+      );
     else if (r.zdroj === "nic") toast.error(r.poznamka ?? "Nepodarilo sa prečítať nič");
     else toast.success("Polia predvyplnené — skontrolujte ich a uložte");
   }
@@ -331,6 +335,10 @@ function NovyDokladPage() {
         file_size: uploadedFile?.size ?? null,
         payment_method: form.payment_method,
         qr_raw: qrRaw,
+        // Položky a rozpis DPH z bločku sa ukladajú tak, ako prišli — z nich
+        // je vidieť, za čo sa platilo, aj keď je doklad len jedna suma.
+        items: polozky.length ? polozky : null,
+        vat_breakdown: rozpisDph?.length ? rozpisDph : null,
       };
       if (search.id) await updateFn({ data: { id: search.id, patch: payload } });
       else await createFn({ data: payload });
@@ -347,7 +355,7 @@ function NovyDokladPage() {
     <>
       <PageHeader
         title={search.id ? "Upraviť doklad" : "Nový doklad"}
-        description="Naskenujte, odfoťte alebo nahrajte bloček — AI predvyplní polia."
+        description="Naskenujte, odfoťte alebo nahrajte bloček — údaje sa doplnia samé."
       />
       <PageBody>
         <div className="mx-auto max-w-3xl space-y-5">
@@ -447,6 +455,54 @@ function NovyDokladPage() {
                 <div className="mb-1 font-medium">QR obsah</div>
                 <div className="break-all font-mono">{qrRaw}</div>
               </div>
+            </div>
+          )}
+
+          {polozky.length > 0 && (
+            <div className="overflow-hidden rounded-2xl border border-border bg-card">
+              <div className="flex items-center justify-between border-b border-border px-5 py-3">
+                <h3 className="text-sm font-semibold">Položky dokladu ({polozky.length})</h3>
+                <button
+                  onClick={() => setPolozky([])}
+                  className="text-xs text-muted-foreground hover:text-destructive"
+                >
+                  Odstrániť položky
+                </button>
+              </div>
+              <table className="w-full text-sm">
+                <tbody>
+                  {polozky.map((p, i) => (
+                    <tr key={i} className="border-t border-border first:border-t-0">
+                      <td className="px-5 py-2">{p.name || "—"}</td>
+                      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                        {p.quantity} ×{" "}
+                        {new Intl.NumberFormat("sk-SK", {
+                          style: "currency",
+                          currency: form.currency || "EUR",
+                        }).format(p.unit_price)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">{p.vat_rate} %</td>
+                      <td className="px-5 py-2 text-right tabular-nums font-medium">
+                        {new Intl.NumberFormat("sk-SK", {
+                          style: "currency",
+                          currency: form.currency || "EUR",
+                        }).format(p.total ?? p.quantity * p.unit_price)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {rozpisDph && rozpisDph.length > 0 && (
+                <div className="border-t border-border bg-muted/30 px-5 py-2 text-xs text-muted-foreground">
+                  Rozpis DPH:{" "}
+                  {rozpisDph
+                    .map(
+                      (s) =>
+                        `${s.sadzba} % — základ ${s.zaklad.toFixed(2)}, daň ${s.dph.toFixed(2)}`,
+                    )
+                    .join(" · ")}
+                </div>
+              )}
             </div>
           )}
 

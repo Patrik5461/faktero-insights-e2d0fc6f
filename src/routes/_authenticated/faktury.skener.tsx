@@ -1,12 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { nacitajBlocekFn, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
+import {
+  nacitajBlocekFn,
+  PRENOS_KLUC,
+  type BlocekVysledok,
+} from "@/lib/faktero/blocek.functions";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Camera, Loader2, QrCode, BadgeCheck, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
+
+type Uhrada = "hotovost" | "karta" | "prevod";
 
 export const Route = createFileRoute("/_authenticated/faktury/skener")({
   head: () => ({ meta: [{ title: "Skener dokladov — Faktero" }] }),
@@ -24,6 +30,13 @@ function ScannerPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BlocekVysledok | null>(null);
+  /*
+   * Spôsob úhrady bloček nesie len zriedka — pokladnica ho do eKasy posielať
+   * nemusí a väčšina ho neposiela. Keď príde, predvolí sa; inak rozhoduje
+   * používateľ. Nie je to kozmetika: hotovostný doklad uberá z pokladne,
+   * kartový nie.
+   */
+  const [uhrada, setUhrada] = useState<Uhrada>("hotovost");
 
   async function spracuj(qr?: string, dataUrl?: string) {
     setLoading(true);
@@ -31,6 +44,7 @@ function ScannerPage() {
     try {
       const r = (await nacitaj({ data: { qr, image_data_url: dataUrl } })) as BlocekVysledok;
       setResult(r);
+      setUhrada(r.payment_method ?? "hotovost");
       if (r.zdroj === "ekasa") toast.success("Doklad načítaný z Finančnej správy");
       else if (r.zdroj === "nic") toast.error(r.poznamka ?? "Nepodarilo sa prečítať nič");
     } catch (e: any) {
@@ -63,18 +77,22 @@ function ScannerPage() {
     await spracuj(res.raw);
   }
 
+  /*
+   * Doklad sa odovzdáva cez `sessionStorage`, nie cez adresu — položiek býva
+   * aj dvadsať a do adresného riadka sa rozumne nezmestia.
+   */
   function vytvorVydavok() {
     if (!result) return;
-    const s = new URLSearchParams();
-    if (result.supplier) s.set("supplier", result.supplier);
-    if (result.supplier_ico) s.set("ico", result.supplier_ico);
-    if (result.supplier_ic_dph) s.set("ic_dph", result.supplier_ic_dph);
-    if (result.total != null) s.set("total", String(result.total));
-    if (result.vat_amount != null) s.set("vat", String(result.vat_amount));
-    if (result.vat_rate != null) s.set("vat_rate", String(result.vat_rate));
-    if (result.date) s.set("date", result.date);
-    if (result.document_number) s.set("number", result.document_number);
-    navigate({ to: "/doklady/novy", search: Object.fromEntries(s) as any });
+    try {
+      sessionStorage.setItem(
+        PRENOS_KLUC,
+        JSON.stringify({ ...result, payment_method: uhrada }),
+      );
+    } catch {
+      toast.error("Doklad sa nepodarilo odovzdať. Skúste to znova.");
+      return;
+    }
+    navigate({ to: "/doklady/novy", search: { prenos: "1" } as any });
   }
 
   return (
@@ -134,10 +152,72 @@ function ScannerPage() {
                   label="z toho DPH"
                   value={
                     result.vat_amount != null
-                      ? `${fmt(result.vat_amount, result.currency ?? "EUR")}${result.vat_rate != null ? ` (${result.vat_rate} %)` : ""}`
+                      ? `${fmt(result.vat_amount, result.currency ?? "EUR")}${
+                          result.vat_breakdown?.length
+                            ? ` (${result.vat_breakdown.map((s) => `${s.sadzba} %`).join(" + ")})`
+                            : result.vat_rate != null
+                              ? ` (${result.vat_rate} %)`
+                              : ""
+                        }`
                       : "—"
                   }
                 />
+              </div>
+
+              {result.vat_breakdown && result.vat_breakdown.length > 1 && (
+                <div className="rounded-lg border border-border">
+                  <div className="border-b border-border bg-muted/50 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
+                    Rozpis DPH
+                  </div>
+                  <table className="w-full text-xs">
+                    <tbody>
+                      {result.vat_breakdown.map((s, i) => (
+                        <tr key={i} className="border-t border-border first:border-t-0">
+                          <td className="px-3 py-1.5">{s.sadzba} %</td>
+                          <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
+                            základ {fmt(s.zaklad, result.currency ?? "EUR")}
+                          </td>
+                          <td className="px-3 py-1.5 text-right tabular-nums font-medium">
+                            {fmt(s.dph, result.currency ?? "EUR")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div>
+                <div className="mb-1.5 text-xs uppercase tracking-wide text-muted-foreground">
+                  Spôsob úhrady
+                  {result.payment_method && " · prečítané z dokladu"}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      ["hotovost", "Hotovosť"],
+                      ["karta", "Kartou"],
+                      ["prevod", "Prevodom"],
+                    ] as const
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      onClick={() => setUhrada(id)}
+                      className={`rounded-md border px-3 py-2 text-sm ${
+                        uhrada === id
+                          ? "border-primary bg-primary/10 font-medium text-primary"
+                          : "border-border hover:bg-secondary"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {uhrada === "hotovost" && (
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    Hotovostný doklad uberie zo stavu pokladne.
+                  </p>
+                )}
               </div>
 
               {result.items.length > 0 && (

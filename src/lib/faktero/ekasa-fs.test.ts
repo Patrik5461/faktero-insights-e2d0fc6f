@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { identifikatoryZQr, mapujFsDoklad } from "./ekasa";
+import { identifikatoryZQr, mapujFsDoklad, sposobUhrady } from "./ekasa";
 import { odpovedNaJson } from "./json-odpoved";
 
 describe("identifikátory z QR kódu", () => {
@@ -146,6 +146,109 @@ describe("doklad z Finančnej správy", () => {
     expect(chudobny.cisloDokladu).toBe("1");
     expect(chudobny.polozky).toEqual([]);
     expect(chudobny.suma).toBeUndefined();
+  });
+});
+
+/*
+ * Skutočná odpoveď z Finančnej správy (bloček z 9. 8. 2026, 48,55 €).
+ * Skrátená o položky, ale polia sú presne také, aké prišli — práve na nich sa
+ * ukázalo, že `vatAmountBasic` je nula a `vatRateBasic` ostalo na dávno
+ * neplatných 20 %, kým skutočný rozpis je vo `vatSummary`.
+ */
+describe("skutočný bloček z eKasy", () => {
+  const odpoved = {
+    receiptId: "O-E2B1BC957FA443C8B1BC957FA463C814",
+    ico: "54527571",
+    cashRegisterCode: "88821217136050090",
+    issueDate: "09.08.2026 18:43:20",
+    createDate: "09.08.2026 18:43:20",
+    dic: "2121713605",
+    icDph: "SK2121713605",
+    okp: "9F15B272-9D27B6A5-8B02B6A5-7D074910-6D7C27E2",
+    receiptNumber: 8305,
+    type: "PD",
+    taxBaseBasic: 0,
+    taxBaseReduced: 0,
+    totalPrice: 48.55,
+    freeTaxAmount: 0,
+    vatAmountBasic: 0,
+    vatAmountReduced: 0,
+    vatRateBasic: 20,
+    vatRateReduced: 10,
+    organization: {
+      buildingNumber: null,
+      country: "Slovensko",
+      municipality: "Bratislava - mestská časť Staré Mesto",
+      name: "Action Slovakia s.r.o.",
+      postalCode: "81108",
+      propertyRegistrationNumber: "2",
+      streetName: "Karadžičova",
+    },
+    vatSummary: [
+      { vatBase: 1.42, vatAmount: 0.07, vat: { vatRate: 5 } },
+      { vatBase: 38.26, vatAmount: 8.8, vat: { vatRate: 23 } },
+    ],
+    items: [
+      { name: "slamky 100ks papier", quantity: 1, vatRate: 23, price: 1.28 },
+      { name: "detské náplasti 30ks", quantity: 1, vatRate: 5, price: 1.49 },
+    ],
+  };
+
+  const d = mapujFsDoklad(odpoved);
+
+  it("DPH sa berie z rozpisu, nie z nulových súhrnných polí", () => {
+    expect(d.dph).toBe(8.87);
+    expect(d.zaklad).toBe(39.68);
+    // Doklad musí sedieť: základ + daň = celková suma.
+    expect(Math.round((d.zaklad! + d.dph!) * 100) / 100).toBe(d.suma);
+  });
+
+  it("rozpis po sadzbách ostane celý", () => {
+    expect(d.sadzby).toEqual([
+      { sadzba: 5, zaklad: 1.42, dph: 0.07 },
+      { sadzba: 23, zaklad: 38.26, dph: 8.8 },
+    ]);
+  });
+
+  it("slovenský dátum s časom", () => {
+    expect(d.datum).toBe("2026-08-09");
+  });
+
+  it("číslo dokladu chodí ako číslo", () => {
+    expect(d.cisloDokladu).toBe("8305");
+  });
+
+  it("spôsob úhrady doklad nenesie", () => {
+    expect(d.uhrada).toBeUndefined();
+  });
+});
+
+describe("spôsob úhrady z dokladu", () => {
+  it("hotovosť aj karta podľa kódu alebo popisu", () => {
+    expect(sposobUhrady([{ sum: 10, paymentType: { code: "CASH", paymentType: "Hotovosť" } }])).toBe(
+      "hotovost",
+    );
+    expect(sposobUhrady([{ sum: 10, paymentType: { code: "CARD", paymentType: "Karta" } }])).toBe(
+      "karta",
+    );
+    expect(
+      sposobUhrady([{ sum: 10, paymentType: { code: "X", paymentType: "Platobná karta" } }]),
+    ).toBe("karta");
+  });
+
+  it("pri delenej platbe rozhoduje vyššia suma", () => {
+    expect(
+      sposobUhrady([
+        { sum: 5, paymentType: { code: "CASH", paymentType: "Hotovosť" } },
+        { sum: 40, paymentType: { code: "CARD", paymentType: "Karta" } },
+      ]),
+    ).toBe("karta");
+  });
+
+  it("keď doklad úhradu nenesie, nič sa nehádá", () => {
+    expect(sposobUhrady(undefined)).toBeUndefined();
+    expect(sposobUhrady([])).toBeUndefined();
+    expect(sposobUhrady([{ sum: 1, paymentType: { code: "UNKNOWN" } }])).toBeUndefined();
   });
 });
 

@@ -1806,6 +1806,7 @@ export type Database = {
           file_size: number | null
           id: string
           issue_date: string | null
+          items: Json | null
           net_amount: number | null
           note: string | null
           payment_method: string
@@ -1817,6 +1818,7 @@ export type Database = {
           supplier_name: string | null
           total_amount: number | null
           updated_at: string
+          vat_breakdown: Json | null
           vat_amount: number | null
           vat_rate: number | null
         }
@@ -1835,6 +1837,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           issue_date?: string | null
+          items?: Json | null
           net_amount?: number | null
           note?: string | null
           payment_method?: string
@@ -1846,6 +1849,7 @@ export type Database = {
           supplier_name?: string | null
           total_amount?: number | null
           updated_at?: string
+          vat_breakdown?: Json | null
           vat_amount?: number | null
           vat_rate?: number | null
         }
@@ -1864,6 +1868,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           issue_date?: string | null
+          items?: Json | null
           net_amount?: number | null
           note?: string | null
           payment_method?: string
@@ -1875,6 +1880,7 @@ export type Database = {
           supplier_name?: string | null
           total_amount?: number | null
           updated_at?: string
+          vat_breakdown?: Json | null
           vat_amount?: number | null
           vat_rate?: number | null
         }

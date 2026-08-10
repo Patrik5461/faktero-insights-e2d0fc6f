@@ -17,6 +17,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * Skener predtým vedel len druhú cestu a o QR kóde na bločku nevedel nič.
  */
 
+/** Pod týmto kľúčom si stránka nového dokladu prevezme prečítaný bloček. */
+export const PRENOS_KLUC = "faktero.blocek";
+
 export type BlocekPolozka = {
   name: string;
   quantity: number;
@@ -37,14 +40,25 @@ export type BlocekVysledok = {
   supplier_address?: string;
   total?: number;
   vat_amount?: number;
+  net_amount?: number;
   vat_rate?: number;
+  /** Rozpis po sadzbách — bloček ich má často viac naraz. */
+  vat_breakdown?: { sadzba: number; zaklad: number; dph: number }[];
+  /** Spôsob úhrady, keď ho doklad nesie. Väčšina bločkov ho neposiela. */
+  payment_method?: "hotovost" | "karta" | "prevod";
   currency?: string;
   date?: string;
   document_number?: string;
   cash_register?: string;
   uid?: string;
+  /** Obsah QR kódu, z ktorého doklad vznikol — ukladá sa k dokladu. */
+  qr_raw?: string;
   items: BlocekPolozka[];
 };
+
+function round2(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
 
 const Vstup = z.object({
   qr: z.string().max(4000).optional(),
@@ -87,6 +101,7 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
         return {
           zdroj: "ekasa",
           overeny: true,
+          qr_raw: data.qr!.trim(),
           supplier: d.dodavatel,
           supplier_ico: d.ico,
           supplier_dic: d.dic,
@@ -94,7 +109,15 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
           supplier_address: d.adresa,
           total: d.suma,
           vat_amount: d.dph,
-          vat_rate: prevazujucaSadzba(items),
+          net_amount:
+            d.zaklad ?? (d.suma != null && d.dph != null ? round2(d.suma - d.dph) : undefined),
+          // Do hlavičky ide sadzba s najvyšším základom; celý rozpis ide vedľa,
+          // lebo bloček býva zmiešaný a jedna sadzba ho nepopíše.
+          vat_rate: d.sadzby?.length
+            ? [...d.sadzby].sort((a, b) => b.zaklad - a.zaklad)[0].sadzba
+            : prevazujucaSadzba(items),
+          vat_breakdown: d.sadzby?.length ? d.sadzby : undefined,
+          payment_method: d.uhrada,
           currency: d.mena ?? "EUR",
           date: d.datum,
           document_number: d.cisloDokladu,
@@ -111,6 +134,7 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
         const zQr: BlocekVysledok = {
           zdroj: "qr",
           overeny: false,
+          qr_raw: data.qr!.trim(),
           poznamka: "Doklad sa vo Finančnej správe nenašiel — údaje sú len z QR kódu.",
           supplier_ico: d.ico,
           supplier_ic_dph: d.ic_dph,
@@ -179,6 +203,7 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
       zdroj: "foto",
       overeny: false,
       poznamka,
+      qr_raw: data.qr?.trim() || undefined,
       supplier: ocr.supplier ?? undefined,
       supplier_ico: ocr.ico ?? undefined,
       supplier_ic_dph: ocr.ic_dph ?? undefined,

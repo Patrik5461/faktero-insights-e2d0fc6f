@@ -23,6 +23,12 @@ export type EkasaDecoded = {
   adresa?: string;
   suma?: number;
   dph?: number;
+  /** Základ dane spolu; z rozpisu podľa sadzieb. */
+  zaklad?: number;
+  /** Rozpis podľa sadzieb tak, ako je na doklade. */
+  sadzby?: { sadzba: number; zaklad: number; dph: number }[];
+  /** Spôsob úhrady — na doklade býva len niekedy. */
+  uhrada?: "hotovost" | "karta" | "prevod";
   mena?: string;
   datum?: string; // YYYY-MM-DD
   cisloDokladu?: string;
@@ -272,10 +278,22 @@ export function mapujFsDoklad(r: FsDoklad): EkasaDecoded {
     };
   });
 
-  const dph =
-    (cislo(r.vatAmountBasic) ?? 0) +
-    (cislo(r.vatAmountReduced) ?? 0) +
-    (cislo(r.vatAmountThirdReduced) ?? 0);
+  /*
+   * DPH sa berie z `vatSummary` — to je skutočný rozpis podľa sadzieb.
+   * Polia `vatAmountBasic`/`vatAmountReduced` vyzerajú ako súhrn, ale na
+   * skutočných dokladoch chodia nulové a `vatRateBasic` v nich ostalo na
+   * dávno neplatných 20 %. Doklad za 48,55 € tak vyšiel s nulovou DPH a
+   * dopočítal sa jednou sadzbou — na bločku s viacerými sadzbami je to zle
+   * vždy.
+   */
+  const suhrn: any[] = Array.isArray(r.vatSummary) ? r.vatSummary : [];
+  const dphZoSuhrnu = suhrn.reduce((s, v) => s + (cislo(v?.vatAmount) ?? 0), 0);
+  const zakladZoSuhrnu = suhrn.reduce((s, v) => s + (cislo(v?.vatBase) ?? 0), 0);
+  const dph = suhrn.length
+    ? dphZoSuhrnu
+    : (cislo(r.vatAmountBasic) ?? 0) +
+      (cislo(r.vatAmountReduced) ?? 0) +
+      (cislo(r.vatAmountThirdReduced) ?? 0);
 
   // Doklad nesie dátum vydania aj čas zaevidovania; platí ten z dokladu.
   const datum = parseDatum(r.issueDate ?? r.createDate ?? r.receiptIssueDate);
@@ -288,6 +306,15 @@ export function mapujFsDoklad(r: FsDoklad): EkasaDecoded {
     adresa: adresaOrganizacie(r.organization),
     suma: cislo(r.priceWithVat) ?? cislo(r.totalPrice),
     dph: dph > 0 ? Math.round(dph * 100) / 100 : undefined,
+    zaklad: zakladZoSuhrnu > 0 ? Math.round(zakladZoSuhrnu * 100) / 100 : undefined,
+    sadzby: suhrn
+      .map((v) => ({
+        sadzba: sadzbaVPercentach(v?.vat?.vatRate ?? v?.vatRate) ?? 0,
+        zaklad: cislo(v?.vatBase) ?? 0,
+        dph: cislo(v?.vatAmount) ?? 0,
+      }))
+      .filter((v) => v.zaklad > 0 || v.dph > 0),
+    uhrada: sposobUhrady(r.payments),
     mena: r.currency ? String(r.currency) : "EUR",
     datum,
     cisloDokladu: r.receiptNumber ? String(r.receiptNumber) : undefined,
@@ -314,6 +341,29 @@ function adresaOrganizacie(o: any): string | undefined {
     String(o.country ?? "").trim(),
   ].filter(Boolean);
   return casti.length ? casti.join(", ") : undefined;
+}
+
+/**
+ * Spôsob úhrady z dokladu.
+ *
+ * Doklad ho niesť **môže**, ale nemusí — v poli `payments` je len vtedy, keď
+ * ho pokladnica odošle, a väčšina bločkov ho neposiela. Preto sa vracia
+ * `undefined` a rozhodne používateľ; hádať sa to nedá.
+ */
+export function sposobUhrady(payments: unknown): "hotovost" | "karta" | "prevod" | undefined {
+  if (!Array.isArray(payments) || payments.length === 0) return undefined;
+  // Pri delenej platbe rozhoduje tá s vyššou sumou.
+  const zoradene = [...payments].sort(
+    (a: any, b: any) => (Number(b?.sum) || 0) - (Number(a?.sum) || 0),
+  );
+  for (const p of zoradene) {
+    const t = `${p?.paymentType?.code ?? ""} ${p?.paymentType?.paymentType ?? ""}`.toLowerCase();
+    if (!t.trim() || t.includes("unknown")) continue;
+    if (/karta|card/.test(t)) return "karta";
+    if (/hotovos|cash/.test(t)) return "hotovost";
+    if (/prevod|transfer|ucet|účet/.test(t)) return "prevod";
+  }
+  return undefined;
 }
 
 /**
