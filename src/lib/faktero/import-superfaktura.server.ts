@@ -713,6 +713,43 @@ function pick(
   return h ? (row[h] ?? "").trim() : "";
 }
 /**
+ * Stav dokladu z exportu. Cudzie systémy ho píšu po slovensky, po česky alebo
+ * číslom — bez prekladu skončí všetko na „vystavená" a **už zaplatené faktúry
+ * sa naimportujú ako neuhradené**, takže hneď po prechode vyzerá celá história
+ * ako pohľadávka.
+ *
+ * Pri pochybnosti sa zostáva na „vystavená". Označiť cudzí doklad za zaplatený
+ * omylom je horšie než ponechať ho otvorený.
+ */
+export function stavDokladu(hodnota: string | undefined): string {
+  const v = (hodnota ?? "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  if (!v) return "issued";
+
+  const ANGLICKE = ["draft", "issued", "sent", "paid", "cancelled", "overdue"];
+  if (ANGLICKE.includes(v)) return v;
+
+  // SuperFaktúra vracia stav číslom; 3 je uhradená, 2 je čiastočne uhradená.
+  if (v === "3") return "paid";
+  if (/^[0-9]+$/.test(v)) return "issued";
+
+  if (/^(ne|not|un)/.test(v)) {
+    // „neuhradená", „nezaplatená" — otvorená pohľadávka.
+    return /splatnost/.test(v) ? "overdue" : "issued";
+  }
+  if (/uhraden|zaplaten|zaplacen|uhrazen/.test(v)) return "paid";
+  if (/storn|zrusen|zruseny/.test(v)) return "cancelled";
+  if (/po splatnosti|omeskan|overdue/.test(v)) return "overdue";
+  if (/koncept|rozpracovan|draft/.test(v)) return "draft";
+  if (/odoslan|odeslan|sent/.test(v)) return "sent";
+  return "issued";
+}
+
+/**
  * Celková suma dokladu. SuperFaktúra pole „spolu" nemá — vyváža `amount`
  * (bez DPH) a `vat` (daň) zvlášť, takže bez dopočtu by sa faktúry importovali
  * v cene bez DPH.
@@ -987,12 +1024,13 @@ export async function runImport(args: {
         normDate(pick(head, mapping, "issue_date")) || new Date().toISOString().slice(0, 10);
       const dueDate = normDate(pick(head, mapping, "due_date")) || issueDate;
       const deliveryDate = normDate(pick(head, mapping, "delivery_date"));
-      const status = (pick(head, mapping, "status") || "issued").toLowerCase();
-      const ALLOWED = ["draft", "issued", "sent", "paid", "cancelled", "overdue"] as const;
-      type InvStatus = (typeof ALLOWED)[number];
-      const knownStatus: InvStatus = (ALLOWED as readonly string[]).includes(status)
-        ? (status as InvStatus)
-        : "issued";
+      const knownStatus = stavDokladu(pick(head, mapping, "status")) as
+        | "draft"
+        | "issued"
+        | "sent"
+        | "paid"
+        | "cancelled"
+        | "overdue";
 
       const payload = {
         company_id: companyId,

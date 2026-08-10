@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { zipSync, strToU8 } from "fflate";
-import { extractTables, detectMapping, buildPreview } from "./import-superfaktura.server";
+import {
+  extractTables,
+  detectMapping,
+  buildPreview,
+  stavDokladu,
+} from "./import-superfaktura.server";
 
 /**
  * Skutočný ISDOC súbor — v tomto formáte exportuje faktúry SuperFaktúra
@@ -272,5 +277,44 @@ describe("slovenské hlavičky", () => {
     expect(m.vat_total).toBe("DPH");
     expect(m.customer_ic_dph).toBe("IČ DPH");
     expect(m.subtotal).toBe("Celkom bez DPH");
+  });
+});
+
+describe("stavDokladu", () => {
+  /*
+   * Stav sa prijímal len ako anglický kód, takže „Uhradená" z iDokladu spadlo
+   * na „vystavená" — hneď po prechode vyzerala celá história ako pohľadávka.
+   */
+  it("slovenské a české stavy", () => {
+    expect(stavDokladu("Uhradená")).toBe("paid");
+    expect(stavDokladu("uhradena")).toBe("paid");
+    expect(stavDokladu("Zaplatená")).toBe("paid");
+    expect(stavDokladu("Zaplaceno")).toBe("paid");
+    expect(stavDokladu("Neuhradená")).toBe("issued");
+    expect(stavDokladu("Nezaplatená")).toBe("issued");
+    expect(stavDokladu("Po splatnosti")).toBe("overdue");
+    expect(stavDokladu("Stornovaná")).toBe("cancelled");
+    expect(stavDokladu("Koncept")).toBe("draft");
+    expect(stavDokladu("Odoslaná")).toBe("sent");
+  });
+
+  it("anglické kódy prejdú nezmenené", () => {
+    for (const s of ["draft", "issued", "sent", "paid", "cancelled", "overdue"]) {
+      expect(stavDokladu(s)).toBe(s);
+    }
+  });
+
+  // SuperFaktúra vracia stav číslom.
+  it("číselný stav zo SuperFaktúry", () => {
+    expect(stavDokladu("3")).toBe("paid");
+    expect(stavDokladu("1")).toBe("issued");
+    expect(stavDokladu("2")).toBe("issued");
+  });
+
+  // Radšej otvorená faktúra než cudzí doklad omylom označený za zaplatený.
+  it("neznáme a prázdne hodnoty ostanú vystavené", () => {
+    expect(stavDokladu("")).toBe("issued");
+    expect(stavDokladu(undefined)).toBe("issued");
+    expect(stavDokladu("čokoľvek iné")).toBe("issued");
   });
 });
