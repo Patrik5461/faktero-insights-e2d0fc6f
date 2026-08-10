@@ -163,6 +163,7 @@ import { Route as AuthenticatedZalohoveIndexRouteImport } from './routes/_authen
 import { Route as AdminCompaniesIndexRouteImport } from './routes/admin.companies.index'
 import { Route as AdminCompaniesIdRouteImport } from './routes/admin.companies.$id'
 import { Route as ApiAdminMigrationExportRouteImport } from './routes/api/admin/migration-export'
+import { Route as ApiPublicKontaktRouteImport } from './routes/api/public/kontakt'
 import { Route as ApiPublicSupportChatRouteImport } from './routes/api/public/support-chat'
 import { Route as ApiV1CustomersRouteImport } from './routes/api/v1/customers'
 import { Route as ApiV1FuelRecordsRouteImport } from './routes/api/v1/fuel-records'
@@ -1054,6 +1055,11 @@ const ApiAdminMigrationExportRoute = ApiAdminMigrationExportRouteImport.update({
   path: '/api/admin/migration-export',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicKontaktRoute = ApiPublicKontaktRouteImport.update({
+  id: '/api/public/kontakt',
+  path: '/api/public/kontakt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSupportChatRoute = ApiPublicSupportChatRouteImport.update({
   id: '/api/public/support-chat',
   path: '/api/public/support-chat',
@@ -1528,6 +1534,7 @@ export interface FileRoutesByFullPath {
   '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
+  '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
@@ -1736,6 +1743,7 @@ export interface FileRoutesByTo {
   '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
+  '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
@@ -1954,6 +1962,7 @@ export interface FileRoutesById {
   '/_authenticated/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
+  '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
   '/api/v1/fuel-records': typeof ApiV1FuelRecordsRoute
@@ -2172,6 +2181,7 @@ export interface FileRouteTypes {
     | '/zakazky/nova'
     | '/admin/companies/$id'
     | '/api/admin/migration-export'
+    | '/api/public/kontakt'
     | '/api/public/support-chat'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
@@ -2380,6 +2390,7 @@ export interface FileRouteTypes {
     | '/zakazky/nova'
     | '/admin/companies/$id'
     | '/api/admin/migration-export'
+    | '/api/public/kontakt'
     | '/api/public/support-chat'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
@@ -2597,6 +2608,7 @@ export interface FileRouteTypes {
     | '/_authenticated/zakazky/nova'
     | '/admin/companies/$id'
     | '/api/admin/migration-export'
+    | '/api/public/kontakt'
     | '/api/public/support-chat'
     | '/api/v1/customers'
     | '/api/v1/fuel-records'
@@ -2727,6 +2739,7 @@ export interface RootRouteChildren {
   PomocIndexRoute: typeof PomocIndexRoute
   PravneIndexRoute: typeof PravneIndexRoute
   ApiAdminMigrationExportRoute: typeof ApiAdminMigrationExportRoute
+  ApiPublicKontaktRoute: typeof ApiPublicKontaktRoute
   ApiPublicSupportChatRoute: typeof ApiPublicSupportChatRoute
   ApiV1CustomersRoute: typeof ApiV1CustomersRouteWithChildren
   ApiV1FuelRecordsRoute: typeof ApiV1FuelRecordsRoute
@@ -3842,6 +3855,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminMigrationExportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/kontakt': {
+      id: '/api/public/kontakt'
+      path: '/api/public/kontakt'
+      fullPath: '/api/public/kontakt'
+      preLoaderRoute: typeof ApiPublicKontaktRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/support-chat': {
       id: '/api/public/support-chat'
       path: '/api/public/support-chat'
@@ -4781,6 +4801,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocIndexRoute: PomocIndexRoute,
   PravneIndexRoute: PravneIndexRoute,
   ApiAdminMigrationExportRoute: ApiAdminMigrationExportRoute,
+  ApiPublicKontaktRoute: ApiPublicKontaktRoute,
   ApiPublicSupportChatRoute: ApiPublicSupportChatRoute,
   ApiV1CustomersRoute: ApiV1CustomersRouteWithChildren,
   ApiV1FuelRecordsRoute: ApiV1FuelRecordsRoute,

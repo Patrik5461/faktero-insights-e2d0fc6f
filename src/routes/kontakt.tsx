@@ -27,12 +27,17 @@ export const Route = createFileRoute("/kontakt")({
 const schema = z.object({
   name: z.string().trim().min(2, "Zadajte meno").max(100),
   email: z.string().trim().email("Neplatný e-mail").max(255),
-  message: z.string().trim().min(5, "Napíšte správu").max(2000),
+  // Server žiada aspoň desať znakov; nech to používateľ zistí hneď v poli,
+  // nie až po odoslaní.
+  message: z.string().trim().min(10, "Napíšte aspoň pár viet").max(2000),
 });
 
 function KontaktPage() {
   const [busy, setBusy] = useState(false);
+  const [odoslane, setOdoslane] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", message: "" });
+  /** Pasca na roboty. Pole je skryté, človek doň nič nenapíše. */
+  const [website, setWebsite] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,12 +48,33 @@ function KontaktPage() {
     }
     setBusy(true);
     try {
-      const subject = encodeURIComponent(`Kontakt z faktero.sk — ${parsed.data.name}`);
-      const body = encodeURIComponent(
-        `${parsed.data.message}\n\n—\n${parsed.data.name} <${parsed.data.email}>`,
-      );
-      window.location.href = `mailto:${LEGAL_COMPANY.email}?subject=${subject}&body=${body}`;
-      toast.success("Otvárame váš e-mailový klient…");
+      // Správa ide priamo cez Resend. Predtým sa len otváral poštový klient
+      // cez `mailto:` — kto ho nemá nastavený, správu nikdy neodoslal.
+      const res = await fetch("/api/public/kontakt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...parsed.data, website }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        setOdoslane(true);
+        setForm({ name: "", email: "", message: "" });
+        toast.success("Správa odoslaná. Ozveme sa vám čo najskôr.");
+        return;
+      }
+      if (res.status === 429) {
+        toast.error("Skúste to prosím o chvíľu — z tejto adresy prišlo priveľa správ.");
+        return;
+      }
+      if (res.status === 400) {
+        toast.error(data?.message ?? "Skontrolujte vyplnené údaje.");
+        return;
+      }
+      // Keď odoslanie zlyhá, nech používateľ neostane bez možnosti ozvať sa.
+      toast.error(`Správu sa nepodarilo odoslať. Napíšte nám prosím na ${LEGAL_COMPANY.email}.`);
+    } catch {
+      toast.error(`Správu sa nepodarilo odoslať. Napíšte nám prosím na ${LEGAL_COMPANY.email}.`);
     } finally {
       setBusy(false);
     }
@@ -118,6 +144,22 @@ function KontaktPage() {
             className="rounded-2xl border border-border bg-card p-6 space-y-4"
           >
             <h2 className="font-semibold text-base">Napíšte nám</h2>
+            {odoslane && (
+              <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary">
+                Správu sme dostali. Odpovieme na e-mail, ktorý ste uviedli.
+              </div>
+            )}
+            {/* Pasca na roboty — pre človeka neviditeľná, preto ani pre čítačku. */}
+            <input
+              type="text"
+              name="website"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="hidden"
+            />
             <div className="space-y-1.5">
               <label htmlFor="name" className="text-sm font-medium">
                 Meno
