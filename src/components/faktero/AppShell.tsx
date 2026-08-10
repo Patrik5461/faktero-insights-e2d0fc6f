@@ -146,7 +146,7 @@ const NAV: NavGroup[] = [
     key: "uctovnictvo",
     label: "Účtovníctvo",
     icon: FileSpreadsheet,
-    match: ["/exporty", "/importy", "/uctovnictvo", "/bankove-ucty"],
+    match: ["/pokladna", "/exporty", "/importy", "/uctovnictvo", "/bankove-ucty"],
     children: [
       { to: "/pokladna", label: "Pokladňa" },
       { to: "/uctovnictvo/dph", label: "DPH prehľad" },
@@ -269,11 +269,14 @@ function isPathActive(pathname: string, group: Pick<NavGroup, "match" | "exact">
 
 export type ProductMode = "invoicing" | "logbook" | "both";
 
+/** Kľúč, ktorý tu chýba, sa z lišty vytratí aj keď má skupina položky aj trasy —
+ *  `filterNav` púšťa ďalej len to, čo je v jednej z týchto dvoch množín. */
 const INVOICING_KEYS = new Set([
   "prehlad",
   "fakturacia",
   "doklady",
   "kontakty",
+  "zakazky",
   "sklad",
   "uctovnictvo",
 ]);
