@@ -48,7 +48,9 @@ function TxPage() {
     reload,
   } = usePagedLogs({
     resource: "bank_transactions",
-    searchColumns: ["counterparty", "variable_symbol", "description", "iban"],
+    // `iban` tu nikdy nebol — hľadanie kvôli nemu končilo chybou 400 a
+    // nenašlo nič. Referencia pohybu je to, čo sa naozaj dá hľadať.
+    searchColumns: ["counterparty", "variable_symbol", "description", "transaction_reference"],
     filters: { bank_account_id: selected ?? null },
     dateColumn: "booking_date",
     dateFrom: dateFrom || null,
@@ -141,7 +143,7 @@ function TxPage() {
         <LogsToolbar
           search={q}
           onSearchChange={setQ}
-          searchPlaceholder="Hľadať protistranu, VS, IBAN alebo popis…"
+          searchPlaceholder="Hľadať protistranu, VS alebo popis…"
           selects={[
             {
               label: "Účet",
