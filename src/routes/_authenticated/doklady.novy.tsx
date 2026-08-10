@@ -5,12 +5,11 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
-import { scanQrCode } from "@/lib/mobile/qr-scanner";
-import { aiParseReceiptFn } from "@/lib/faktero/ai-receipt.functions";
+import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
+import { nacitajBlocekFn, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
 import {
   createExpenseFn,
   updateExpenseFn,
-  parseQrFn,
   getExpenseFileUrlFn,
 } from "@/lib/faktero/expenses.functions";
 import { Camera, Loader2, QrCode, Save, Upload as UploadIcon } from "lucide-react";
@@ -60,8 +59,7 @@ const EMPTY: Form = {
 function NovyDokladPage() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/_authenticated/doklady/novy" });
-  const parseAi = useServerFn(aiParseReceiptFn);
-  const parseQr = useServerFn(parseQrFn);
+  const nacitaj = useServerFn(nacitajBlocekFn);
   const createFn = useServerFn(createExpenseFn);
   const updateFn = useServerFn(updateExpenseFn);
   const urlFn = useServerFn(getExpenseFileUrlFn);
@@ -75,7 +73,7 @@ function NovyDokladPage() {
   const [source, setSource] = useState<"photo" | "qr" | "upload" | "web">("photo");
   const [qrRaw, setQrRaw] = useState<string | null>(null);
   const [ekasaBadge, setEkasaBadge] = useState<null | {
-    source: "lzma" | "online" | "heuristic";
+    source: BlocekVysledok["zdroj"];
     overeny: boolean;
   }>(null);
   const [loading, setLoading] = useState(false);
@@ -162,10 +160,16 @@ function NovyDokladPage() {
     try {
       const stored = await uploadToStorage(cap.dataUrl, cap.mimeType);
       if (stored) setUploadedFile({ path: stored.path, mime: cap.mimeType, size: stored.size });
-      const parsed = await parseAi({ data: { image_data_url: cap.dataUrl } });
-      applyAiResult(parsed);
+      // Na fotke býva aj QR kód — keď sa dá prečítať, doklad príde z Finančnej
+      // správy presne, namiesto odhadu z obrázka.
+      const qr = await scanQrFromImage(cap.dataUrl);
+      if (qr?.raw) {
+        setQrRaw(qr.raw);
+        setSource("qr");
+      }
+      await precitaj(qr?.raw, cap.dataUrl);
     } catch (e: any) {
-      toast.error(e?.message ?? "AI spracovanie zlyhalo");
+      toast.error(e?.message ?? "Spracovanie zlyhalo");
     } finally {
       setLoading(false);
     }
@@ -181,17 +185,7 @@ function NovyDokladPage() {
     setQrRaw(res.raw);
     setLoading(true);
     try {
-      const { parsed, source: src, overeny } = await parseQr({ data: { raw: res.raw } });
-      if (parsed.supplier_ico) updateForm("supplier_ico", parsed.supplier_ico);
-      if (parsed.supplier_ic_dph) updateForm("supplier_ic_dph", parsed.supplier_ic_dph);
-      if (parsed.total_amount != null) updateForm("total_amount", String(parsed.total_amount));
-      if (parsed.vat_amount != null) updateForm("vat_amount", String(parsed.vat_amount));
-      if (parsed.issue_date) updateForm("issue_date", parsed.issue_date);
-      if (parsed.document_number) updateForm("document_number", parsed.document_number);
-      if (parsed.currency) updateForm("currency", parsed.currency);
-      setEkasaBadge({ source: src ?? "heuristic", overeny: !!overeny });
-      if (src === "lzma" || src === "online") toast.success("eKasa QR dekódovaný");
-      else toast.success("QR kód načítaný");
+      await precitaj(res.raw);
     } catch (e: any) {
       toast.error(e?.message ?? "QR sa nepodarilo spracovať");
     } finally {
@@ -213,8 +207,9 @@ function NovyDokladPage() {
       const stored = await uploadToStorage(dataUrl, file.type || "application/octet-stream");
       if (stored) setUploadedFile({ path: stored.path, mime: file.type, size: stored.size });
       if (file.type.startsWith("image/")) {
-        const parsed = await parseAi({ data: { image_data_url: dataUrl } });
-        applyAiResult(parsed);
+        const qr = await scanQrFromImage(dataUrl);
+        if (qr?.raw) setQrRaw(qr.raw);
+        await precitaj(qr?.raw, dataUrl);
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Nahratie zlyhalo");
@@ -223,21 +218,41 @@ function NovyDokladPage() {
     }
   }
 
-  function applyAiResult(parsed: any) {
-    if (parsed.supplier) updateForm("supplier_name", parsed.supplier);
-    if (parsed.total != null) updateForm("total_amount", String(parsed.total));
-    if (parsed.vat_rate != null) updateForm("vat_rate", String(parsed.vat_rate));
-    if (parsed.date) updateForm("issue_date", parsed.date);
-    if (parsed.currency) updateForm("currency", parsed.currency);
-    // Dopočítať net/vat ak chýba
-    const total = Number(parsed.total ?? 0);
-    const rate = Number(parsed.vat_rate ?? 0);
-    if (total > 0 && rate > 0) {
-      const net = total / (1 + rate / 100);
+  /**
+   * Prenesie prečítaný doklad do formulára.
+   *
+   * Doklad z Finančnej správy nesie DPH priamo, tak sa nedopočítava — dopočet
+   * zo sadzby by na doklade s viacerými sadzbami dal nesprávne číslo.
+   */
+  function applyBlocek(r: BlocekVysledok) {
+    if (r.supplier) updateForm("supplier_name", r.supplier);
+    if (r.supplier_ico) updateForm("supplier_ico", r.supplier_ico);
+    if (r.supplier_ic_dph) updateForm("supplier_ic_dph", r.supplier_ic_dph);
+    if (r.document_number) updateForm("document_number", r.document_number);
+    if (r.date) updateForm("issue_date", r.date);
+    if (r.currency) updateForm("currency", r.currency);
+    if (r.vat_rate != null) updateForm("vat_rate", String(r.vat_rate));
+    if (r.total != null) updateForm("total_amount", String(r.total));
+
+    const total = r.total ?? 0;
+    if (r.vat_amount != null) {
+      updateForm("vat_amount", r.vat_amount.toFixed(2));
+      if (total > 0) updateForm("net_amount", (total - r.vat_amount).toFixed(2));
+    } else if (total > 0 && r.vat_rate) {
+      const net = total / (1 + r.vat_rate / 100);
       updateForm("net_amount", net.toFixed(2));
       updateForm("vat_amount", (total - net).toFixed(2));
     }
-    toast.success("AI predvyplnila polia — skontrolujte a uložte");
+
+    setEkasaBadge({ source: r.zdroj, overeny: r.overeny });
+    if (r.zdroj === "ekasa") toast.success("Doklad načítaný z Finančnej správy");
+    else if (r.zdroj === "nic") toast.error(r.poznamka ?? "Nepodarilo sa prečítať nič");
+    else toast.success("Polia predvyplnené — skontrolujte ich a uložte");
+  }
+
+  async function precitaj(qr: string | undefined, dataUrl?: string) {
+    const r = (await nacitaj({ data: { qr, image_data_url: dataUrl } })) as BlocekVysledok;
+    applyBlocek(r);
   }
 
   async function handleSave() {
@@ -365,22 +380,17 @@ function NovyDokladPage() {
                 <div className="flex flex-wrap gap-2">
                   {ekasaBadge.overeny && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                      ✓ Overené na Finančnej správe
+                      ✓ Načítané z Finančnej správy
                     </span>
                   )}
-                  {ekasaBadge.source === "lzma" && !ekasaBadge.overeny && (
+                  {ekasaBadge.source === "qr" && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                      Dekódované lokálne (LZMA)
+                      Len z QR kódu — doklad sa vo Finančnej správe nenašiel
                     </span>
                   )}
-                  {ekasaBadge.source === "online" && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-950 dark:text-sky-300">
-                      Online overenie FS
-                    </span>
-                  )}
-                  {ekasaBadge.source === "heuristic" && (
+                  {ekasaBadge.source === "foto" && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground">
-                      Heuristika (needekódované)
+                      Odhadnuté z fotky — skontrolujte údaje
                     </span>
                   )}
                 </div>

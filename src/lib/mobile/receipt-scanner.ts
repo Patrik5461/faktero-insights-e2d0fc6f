@@ -1,9 +1,8 @@
 /**
- * Skener dokladov: kamera → base64 JPEG → OpenAI Vision parser.
- * Na webe používa file input (fallback). Na natívnych zariadeniach Capacitor Camera.
+ * Odfotenie dokladu: kamera → base64 JPEG.
+ * Natívne cez Capacitor Camera, na webe cez `input[type=file]` s kamerou.
+ * Prečítanie údajov robí `blocek.functions` — tu ide len o snímku.
  */
-import { supabase } from "@/integrations/supabase/client";
-
 export type ReceiptCapture = { dataUrl: string; mimeType: string };
 
 export async function captureReceipt(): Promise<ReceiptCapture | null> {
@@ -40,27 +39,4 @@ export async function captureReceipt(): Promise<ReceiptCapture | null> {
     };
     input.click();
   });
-}
-
-/**
- * Pošle obrázok do OpenAI Vision a vráti extrahované polia faktúry/dokladu.
- * Volá rovnaký endpoint ako aiParseInvoiceFn — len s vision payloadom.
- */
-export async function parseReceiptImage(dataUrl: string): Promise<{
-  supplier?: string;
-  total?: number;
-  vat_rate?: number;
-  currency?: string;
-  date?: string;
-  items?: Array<{ name: string; quantity: number; unit_price: number; vat_rate: number }>;
-}> {
-  const { data: session } = await supabase.auth.getSession();
-  const token = session.session?.access_token;
-  const res = await fetch("/api/v1/ai/parse-receipt", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: token ? `Bearer ${token}` : "" },
-    body: JSON.stringify({ image_data_url: dataUrl }),
-  });
-  if (!res.ok) throw new Error(`Parse error ${res.status}`);
-  return res.json();
 }

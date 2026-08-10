@@ -11,18 +11,21 @@
  * Tu ostáva len to, čo potrebuje LZMA a sieť.
  */
 import {
+  identifikatoryZQr,
   isEkasaQr,
   kandidatiPayloadu,
+  mapujFsDoklad,
   parseEkasaXml,
   type EkasaDecoded,
+  type EkasaHladanie,
   type EkasaItem,
 } from "./ekasa";
 
-export { isEkasaQr, parseEkasaXml };
-export type { EkasaDecoded, EkasaItem };
+export { isEkasaQr, parseEkasaXml, identifikatoryZQr };
+export type { EkasaDecoded, EkasaItem, EkasaHladanie };
 
 export type EkasaResult =
-  | { ok: true; source: "lzma" | "online"; overeny: boolean; data: EkasaDecoded }
+  | { ok: true; source: "ekasa" | "lzma" | "qr"; overeny: boolean; data: EkasaDecoded }
   | { ok: false; error: string; raw?: string };
 
 /** Base64 (aj URL-safe) → Uint8Array */
@@ -82,63 +85,115 @@ export async function decodeEkasaQr(qrContent: string): Promise<EkasaDecoded | n
 }
 
 /**
- * Pokus o overenie dokladu na Finančnej správe.
+ * Vyhľadanie dokladu vo Finančnej správe.
  *
- * FS nemá verejné API, doklad sa dá pozrieť len v ich webovej aplikácii, kde
- * identifikátory sedia **vo fragmente adresy** (`…/#/opd/<kód>/<číslo>`).
- * Fragment sa na server nikdy neposiela, takže odpoveď je vždy tá istá prázdna
- * schránka aplikácie. Pôvodná verzia v nej hľadala slová „evidovaný"
- * a „platný" — tie sa v schránke pokojne vyskytnúť môžu, a doklad by sa tak
- * označil za overený bez toho, aby ho ktokoľvek overil.
+ * Je to to isté rozhranie, na ktorom stojí ich vlastná aplikácia „Overenie
+ * pokladničného dokladu" (opd.financnasprava.sk) — teda ten istý zdroj, z
+ * ktorého čerpajú aj ostatné slovenské aplikácie na skenovanie bločkov.
+ * Vracia celý doklad vrátane položiek, takže sa nič nemusí hádať z fotky.
  *
- * Preto sa za overenie považuje len odpoveď, ktorá naozaj obsahuje číslo
- * hľadaného dokladu. Dovtedy je to poctivé „neoverené".
+ * Predošlá verzia sťahovala HTML tej aplikácie a hľadala v ňom slová. Bola to
+ * márna práca: identifikátory sedia vo fragmente adresy, ktorý sa na server
+ * neposiela, takže odpoveď bola vždy tá istá prázdna schránka.
  */
-export async function verifyEkasaOnline(
-  cisloDokladu: string,
-  kodPokladnice: string,
-): Promise<{ overeny: boolean; data: Record<string, unknown> }> {
+const FS_API = "https://ekasa.financnasprava.sk/mdu/api/v1/opd/receipt/find";
+
+export async function najdiDokladVEkase(
+  hladanie: EkasaHladanie,
+): Promise<{ ok: true; data: EkasaDecoded } | { ok: false; dovod: string }> {
+  // Rozhranie je za ochranou, ktorá odmieta požiadavky bez hlavičiek
+  // prehliadača — bez nich vráti stránku „Request Rejected", nie JSON.
+  const telo =
+    "receiptId" in hladanie
+      ? { receiptId: hladanie.receiptId }
+      : {
+          okp: hladanie.okp,
+          cashRegisterCode: hladanie.cashRegisterCode,
+          issueDateFormatted: hladanie.issueDate,
+          receiptNumber: hladanie.receiptNumber,
+          totalAmount: hladanie.totalAmount,
+        };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const url = `https://opd.financnasprava.sk/#/opd/${encodeURIComponent(kodPokladnice)}/${encodeURIComponent(cisloDokladu)}`;
-    const res = await fetch(url, { headers: { Accept: "text/html" } });
-    const html = await res.text();
-    const najdenyDoklad = html.includes(cisloDokladu) && html.includes(kodPokladnice);
-    const overeny = najdenyDoklad && (/evidovan[ýá]/i.test(html) || /platn[ýá]/i.test(html));
-    return { overeny, data: { status: res.status, doklad_v_odpovedi: najdenyDoklad } };
-  } catch {
-    return { overeny: false, data: {} };
+    const res = await fetch(FS_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+        Accept: "application/json, text/plain, */*",
+        Origin: "https://opd.financnasprava.sk",
+        Referer: "https://opd.financnasprava.sk/",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+      },
+      body: JSON.stringify(telo),
+      signal: controller.signal,
+    });
+    if (!res.ok) return { ok: false, dovod: `Finančná správa odpovedala ${res.status}` };
+
+    const json: any = await res.json().catch(() => null);
+    if (!json) return { ok: false, dovod: "Finančná správa vrátila neplatnú odpoveď" };
+    if (!json.receipt) {
+      // `notification` hovorí, prečo doklad nie je — napríklad že ešte nebol
+      // zaevidovaný alebo že je mimo rozsahu.
+      return {
+        ok: false,
+        dovod: json.notification
+          ? `Doklad sa vo Finančnej správe nenašiel (${json.notification})`
+          : "Doklad sa vo Finančnej správe nenašiel",
+      };
+    }
+    return { ok: true, data: mapujFsDoklad(json.receipt) };
+  } catch (e: any) {
+    return {
+      ok: false,
+      dovod: e?.name === "AbortError" ? "Finančná správa neodpovedala včas" : "Spojenie zlyhalo",
+    };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
-/** Hlavná funkcia — dekóduj + (voliteľne) over online. */
+/**
+ * Hlavná funkcia — z QR kódu spraviť doklad.
+ *
+ * Poradie je zámerné: najprv Finančná správa, lebo tá vydá doklad taký, aký je
+ * naozaj zaevidovaný — aj s položkami a názvom predajcu, ktoré v QR nikdy nie
+ * sú. Až keď sa doklad nenájde, skúsi sa dekódovať obsah samotného QR.
+ */
 export async function processEkasaQr(qrContent: string): Promise<EkasaResult> {
-  const decoded = await decodeEkasaQr(qrContent);
-  if (decoded && (decoded.cisloDokladu || decoded.suma || decoded.ico)) {
-    let overeny = false;
-    if (decoded.cisloDokladu && decoded.kodPokladnice) {
-      try {
-        const v = await verifyEkasaOnline(decoded.cisloDokladu, decoded.kodPokladnice);
-        overeny = v.overeny;
-      } catch {
-        /* overenie je nepovinné, doklad sa uloží aj bez neho */
-      }
-    }
-    return { ok: true, source: "lzma", overeny, data: decoded };
+  const hladanie = identifikatoryZQr(qrContent);
+  if (hladanie) {
+    const r = await najdiDokladVEkase(hladanie);
+    if (r.ok) return { ok: true, source: "ekasa", overeny: true, data: r.data };
+    // Doklad sa nenašiel — nižšie ešte skúsime prečítať samotný QR.
   }
 
-  // Keď sa payload dekódovať nedá, z URL sa dajú aspoň prečítať identifikátory
-  // dokladu. Doklad sa uloží ako neoverený — overiť ho zvonku nevieme.
-  const urlMatch = qrContent.match(/opd\/([A-Za-z0-9-]+)\/([A-Za-z0-9-]+)/i);
-  if (urlMatch) {
-    const [, kod, cislo] = urlMatch;
-    const v = await verifyEkasaOnline(cislo, kod);
+  const decoded = await decodeEkasaQr(qrContent);
+  if (decoded && (decoded.cisloDokladu || decoded.suma || decoded.ico)) {
+    return { ok: true, source: "lzma", overeny: false, data: decoded };
+  }
+
+  // Aspoň identifikátory, nech sa doklad dá dohľadať ručne.
+  if (hladanie) {
     return {
       ok: true,
-      source: "online",
-      overeny: v.overeny,
-      data: { cisloDokladu: cislo, kodPokladnice: kod, polozky: [] },
+      source: "qr",
+      overeny: false,
+      data:
+        "receiptId" in hladanie
+          ? { uid: hladanie.receiptId, polozky: [] }
+          : {
+              ocpId: hladanie.okp,
+              kodPokladnice: hladanie.cashRegisterCode,
+              datum: hladanie.issueDate,
+              cisloDokladu: hladanie.receiptNumber,
+              suma: hladanie.totalAmount,
+              polozky: [],
+            },
     };
   }
 
-  return { ok: false, error: "Nepodarilo sa dekódovať QR kód", raw: qrContent };
+  return { ok: false, error: "Nepodarilo sa prečítať QR kód", raw: qrContent };
 }

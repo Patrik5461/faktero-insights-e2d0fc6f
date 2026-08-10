@@ -18,6 +18,9 @@ export type EkasaDecoded = {
   ico?: string;
   dic?: string;
   ic_dph?: string;
+  /** Názov predajcu — z QR sa nedá vyčítať, chodí až z Finančnej správy. */
+  dodavatel?: string;
+  adresa?: string;
   suma?: number;
   dph?: number;
   mena?: string;
@@ -25,6 +28,8 @@ export type EkasaDecoded = {
   cisloDokladu?: string;
   kodPokladnice?: string;
   ocpId?: string;
+  /** Unikátny identifikátor dokladu pridelený systémom eKasa. */
+  uid?: string;
   polozky: EkasaItem[];
   raw_xml?: string;
 };
@@ -169,6 +174,160 @@ export function parseEkasaXml(xml: string): EkasaDecoded {
     polozky: items,
     raw_xml: xml.length < 20000 ? xml : xml.slice(0, 20000),
   };
+}
+
+/**
+ * Podľa čoho sa doklad hľadá vo Finančnej správe.
+ *
+ * Online vydaný doklad má **unikátny identifikátor (UID)**, ktorý mu pridelí
+ * systém eKasa — ten je v QR kóde a stačí sám. Doklad vydaný v režime offline
+ * UID ešte nemá, preto na ňom QR nesie **overovací kód podnikateľa (OKP)**
+ * spolu s kódom pokladnice, dátumom a časom, poradovým číslom a sumou; hľadá
+ * sa potom podľa tejto pätice.
+ */
+export type EkasaHladanie =
+  | { receiptId: string }
+  | {
+      okp: string;
+      cashRegisterCode: string;
+      issueDate: string;
+      receiptNumber: string;
+      totalAmount: number;
+    };
+
+/** Unikátny identifikátor dokladu, napr. `O-8F3C…`. */
+const UID = /\bO-[0-9A-Za-z]{8,}\b/;
+/** OKP je päť osemznakových skupín oddelených pomlčkou. */
+const OKP = /\b[0-9a-f]{8}(?:-[0-9a-f]{8}){4}\b/i;
+/** Kód pokladnice (ORP) má 17 číslic a začína osmičkami. */
+const KOD_POKLADNICE = /\b\d{17}\b/;
+
+/**
+ * Identifikátory dokladu z obsahu QR kódu.
+ *
+ * QR sa medzi tlačiarňami líši — raz je to holý identifikátor, raz odkaz do
+ * aplikácie Finančnej správy, raz zlepenec polí. Preto sa nič nepredpokladá a
+ * hľadá sa podľa tvaru jednotlivých hodnôt.
+ */
+export function identifikatoryZQr(qr: string): EkasaHladanie | null {
+  const t = (qr ?? "").trim();
+  if (!t) return null;
+
+  const uid = t.match(UID)?.[0];
+  if (uid) return { receiptId: uid };
+
+  // Odkaz do aplikácie: …/receipt/<id> alebo …/opd/<kód>/<id>.
+  const zOdkazu = t.match(/(?:receipt|opd)\/(?:[A-Za-z0-9-]+\/)?([A-Za-z0-9-]{8,})/i)?.[1];
+  if (zOdkazu && !/^\d{1,8}$/.test(zOdkazu)) return { receiptId: zOdkazu };
+
+  const okp = t.match(OKP)?.[0];
+  const kod = t.match(KOD_POKLADNICE)?.[0];
+  if (okp && kod) {
+    const datum = parseDatum(t.match(/\d{4}-\d{2}-\d{2}[T ]?\d{0,2}:?\d{0,2}/)?.[0] ?? t);
+    // Suma je posledné číslo s dvomi desatinnými miestami — poradové číslo
+    // dokladu je celé, tak sa s ňou nepomýli.
+    const sumy = t.match(/\d+[.,]\d{2}\b/g);
+    const cislo = t.match(/(?:^|[|;,\s])(\d{1,10})(?=[|;,\s]|$)/)?.[1];
+    const suma = sumy?.length ? parseNumber(sumy[sumy.length - 1]) : undefined;
+    if (datum && cislo && suma != null) {
+      return {
+        okp,
+        cashRegisterCode: kod,
+        issueDate: datum,
+        receiptNumber: cislo,
+        totalAmount: suma,
+      };
+    }
+  }
+
+  return null;
+}
+
+/** Doklad tak, ako ho vydáva rozhranie Finančnej správy. */
+export type FsDoklad = Record<string, any>;
+
+/**
+ * Odpoveď Finančnej správy → náš doklad.
+ *
+ * Sumár DPH chodí rozpísaný po sadzbách (základná verzus znížená), položky
+ * majú cenu s DPH za celý riadok. Jednotková cena sa preto dopočítava — na
+ * doklade býva uvedená len niekedy.
+ */
+export function mapujFsDoklad(r: FsDoklad): EkasaDecoded {
+  const cislo = (v: unknown): number | undefined => {
+    if (v == null || v === "") return undefined;
+    const n = typeof v === "number" ? v : parseNumber(String(v));
+    return n != null && Number.isFinite(n) ? n : undefined;
+  };
+
+  const polozky: EkasaItem[] = (Array.isArray(r.items) ? r.items : []).map((p: any) => {
+    const mnozstvo = cislo(p?.quantity) ?? 1;
+    const spolu = cislo(p?.price) ?? 0;
+    return {
+      name: String(p?.name ?? "").trim(),
+      quantity: mnozstvo,
+      unit_price: mnozstvo ? Math.round((spolu / mnozstvo) * 10000) / 10000 : spolu,
+      vat_rate: sadzbaVPercentach(p?.vatRate) ?? 0,
+      total: spolu,
+    };
+  });
+
+  const dph =
+    (cislo(r.vatAmountBasic) ?? 0) +
+    (cislo(r.vatAmountReduced) ?? 0) +
+    (cislo(r.vatAmountThirdReduced) ?? 0);
+
+  // Doklad nesie dátum vydania aj čas zaevidovania; platí ten z dokladu.
+  const datum = parseDatum(r.issueDate ?? r.createDate ?? r.receiptIssueDate);
+
+  return {
+    ico: r.ico ? String(r.ico) : undefined,
+    dic: r.dic ? String(r.dic) : undefined,
+    ic_dph: r.icDph ? String(r.icDph) : undefined,
+    dodavatel: r.organization?.name ? String(r.organization.name) : undefined,
+    adresa: adresaOrganizacie(r.organization),
+    suma: cislo(r.priceWithVat) ?? cislo(r.totalPrice),
+    dph: dph > 0 ? Math.round(dph * 100) / 100 : undefined,
+    mena: r.currency ? String(r.currency) : "EUR",
+    datum,
+    cisloDokladu: r.receiptNumber ? String(r.receiptNumber) : undefined,
+    kodPokladnice: r.cashRegisterCode ? String(r.cashRegisterCode) : undefined,
+    ocpId: r.okp ? String(r.okp) : undefined,
+    uid: r.receiptId ? String(r.receiptId) : undefined,
+    polozky,
+  };
+}
+
+/**
+ * Adresa ako jeden riadok — skladá sa rovnako ako v aplikácii Finančnej
+ * správy: `Ulica súpisné/orientačné, PSČ Obec, Krajina`. Orientačné číslo
+ * chodí raz ako `buildingNumber`, raz ako `houseNumber`.
+ */
+function adresaOrganizacie(o: any): string | undefined {
+  if (!o || typeof o !== "object") return undefined;
+  const orientacne = String(o.houseNumber ?? o.buildingNumber ?? "").trim();
+  const supisne = String(o.propertyRegistrationNumber ?? "").trim();
+  const cislo = [supisne, orientacne].filter(Boolean).join("/");
+  const casti = [
+    [String(o.streetName ?? "").trim(), cislo].filter(Boolean).join(" "),
+    [o.postalCode, o.municipality].filter(Boolean).join(" ").trim(),
+    String(o.country ?? "").trim(),
+  ].filter(Boolean);
+  return casti.length ? casti.join(", ") : undefined;
+}
+
+/**
+ * Sadzba DPH v percentách.
+ *
+ * Finančná správa ju posiela ako zlomok (`0.19`) — ich vlastná aplikácia to
+ * pozná podľa toho, či je hodnota väčšia než jedna. Bez tohto prepočtu by sa
+ * do dokladu uložila sadzba „0,19 %" a DPH by z nej vyšla nezmyselná.
+ */
+function sadzbaVPercentach(v: unknown): number | undefined {
+  const n = typeof v === "number" ? v : parseNumber(v == null ? undefined : String(v));
+  if (n == null || !Number.isFinite(n)) return undefined;
+  if (n === 0) return 0;
+  return n <= 1 ? Math.round(n * 10000) / 100 : n;
 }
 
 /** Rozpozná, či QR patrí eKasa (Finančná správa SR). */

@@ -1,4 +1,6 @@
-// Gemini vision cez generateContent API (podporuje obrázky aj PDF ako inline_data). Model gemini-3.5-flash.
+// Gemini vision cez generateContent API (podporuje obrázky aj PDF ako inline_data).
+// Vracia text odpovede; volajúci ho prečíta cez `odpovedNaJson`, lebo model
+// rád zabalí JSON do bloku so spätnými apostrofmi.
 export async function geminiVision(
   base64: string,
   mimeType: string,
@@ -37,7 +39,15 @@ export async function geminiVision(
   }
 
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "[]";
+  // Modely s uvažovaním vracajú viac častí a odpoveď nemusí byť tá prvá —
+  // `parts[0].text` z nich vytiahne prázdno alebo úvahu namiesto výsledku.
+  const parts = data.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return "";
+  return parts
+    .filter((p: any) => typeof p?.text === "string" && !p?.thought)
+    .map((p: any) => p.text)
+    .join("")
+    .trim();
 }
 
 /**

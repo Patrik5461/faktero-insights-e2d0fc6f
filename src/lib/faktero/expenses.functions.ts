@@ -126,69 +126,6 @@ export const getExpenseFileUrlFn = createServerFn({ method: "POST" })
     return { url: signed.signedUrl };
   });
 
-// Slovak eKasa QR — plné LZMA dekódovanie + fallback online overenie.
-export const parseQrFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((data: { raw: string }) => data)
-  .handler(async ({ data }) => {
-    const raw = data.raw || "";
-    const { processEkasaQr, isEkasaQr } = await import("./ekasa-decoder.server");
-
-    const out: {
-      supplier_ico?: string;
-      supplier_ic_dph?: string;
-      total_amount?: number;
-      vat_amount?: number;
-      vat_rate?: number;
-      issue_date?: string;
-      document_number?: string;
-      cash_register?: string;
-      currency?: string;
-      items?: Array<{ name: string; quantity: number; unit_price: number; vat_rate: number }>;
-    } = {};
-
-    let source: "lzma" | "online" | "heuristic" = "heuristic";
-    let overeny = false;
-
-    if (isEkasaQr(raw)) {
-      const res = await processEkasaQr(raw);
-      if (res.ok) {
-        source = res.source;
-        overeny = res.overeny;
-        const d = res.data;
-        if (d.ico) out.supplier_ico = d.ico;
-        if (d.ic_dph) out.supplier_ic_dph = d.ic_dph;
-        if (d.suma != null) out.total_amount = d.suma;
-        if (d.dph != null) out.vat_amount = d.dph;
-        if (d.datum) out.issue_date = d.datum;
-        if (d.cisloDokladu) out.document_number = d.cisloDokladu;
-        if (d.kodPokladnice) out.cash_register = d.kodPokladnice;
-        if (d.mena) out.currency = d.mena;
-        if (d.polozky?.length) {
-          out.items = d.polozky.map((p) => ({
-            name: p.name,
-            quantity: p.quantity,
-            unit_price: p.unit_price,
-            vat_rate: p.vat_rate,
-          }));
-        }
-        return { raw, parsed: out, source, overeny };
-      }
-    }
-
-    // Fallback — lightweight heuristika (starý parser)
-    const icoMatch = raw.match(/(?:ico|dic)[=:/]?\s*(\d{6,10})/i);
-    if (icoMatch) out.supplier_ico = icoMatch[1];
-    const amountMatch = raw.match(/(\d+[.,]\d{2})\s*(?:eur|€)?/i);
-    if (amountMatch) out.total_amount = Number(amountMatch[1].replace(",", "."));
-    const dateMatch = raw.match(/(20\d{2})[-./](\d{1,2})[-./](\d{1,2})/);
-    if (dateMatch)
-      out.issue_date = `${dateMatch[1]}-${dateMatch[2].padStart(2, "0")}-${dateMatch[3].padStart(2, "0")}`;
-    const numMatch = raw.match(/(?:cislo|number|ocp|receipt)[=:/]?\s*([A-Za-z0-9-]{3,})/i);
-    if (numMatch) out.document_number = numMatch[1];
-    return { raw, parsed: out, source, overeny };
-  });
-
 // Export vybraných dokladov ako ZIP (CSV súhrn + priložené súbory)
 export const exportExpensesZipFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
