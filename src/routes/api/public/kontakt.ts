@@ -23,18 +23,29 @@ const OKNO_MS = 10 * 60_000;
 const MAX_ZA_OKNO = 5;
 const historia = new Map<string, number[]>();
 
-function prekrocenyLimit(ip: string): boolean {
+function nedavnePokusy(ip: string): number[] {
   const teraz = Date.now();
-  const nedavne = (historia.get(ip) ?? []).filter((t) => teraz - t < OKNO_MS);
-  nedavne.push(teraz);
-  historia.set(ip, nedavne);
+  return (historia.get(ip) ?? []).filter((t) => teraz - t < OKNO_MS);
+}
+
+function prekrocenyLimit(ip: string): boolean {
+  return nedavnePokusy(ip).length >= MAX_ZA_OKNO;
+}
+
+/**
+ * Do stropu sa počíta až skutočný pokus o odoslanie. Keby sa rátalo aj zle
+ * vyplnené odoslanie, používateľ, ktorý si dvakrát pomýli e-mail, by sa sám
+ * zablokoval na desať minút.
+ */
+function zapisPokus(ip: string): void {
+  const teraz = Date.now();
+  historia.set(ip, [...nedavnePokusy(ip), teraz]);
   // Mapa by inak rástla donekonečna — staré IP adresy priebežne vyhadzujeme.
   if (historia.size > 5000) {
     for (const [k, v] of historia) {
       if (v.every((t) => teraz - t >= OKNO_MS)) historia.delete(k);
     }
   }
-  return nedavne.length > MAX_ZA_OKNO;
 }
 
 function escapeHtml(s: string): string {
@@ -81,6 +92,8 @@ export const Route = createFileRoute("/api/public/kontakt")({
 
         const apiKey = process.env.RESEND_API_KEY;
         if (!apiKey) return odpoved({ error: "email_unavailable" }, 503);
+
+        zapisPokus(ip);
 
         const prijemca = process.env.CONTACT_TO_EMAIL || "info@faktero.sk";
         const odosielatel = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
