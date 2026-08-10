@@ -889,9 +889,19 @@ export type ImportOptions = {
   updateExisting?: boolean;
   customersOnly?: boolean;
   invoicesOnly?: boolean;
-  generatePdfs?: boolean;
-  triggerWebhooks?: boolean;
 };
+
+/**
+ * Rozsah importu z volieb. Voľby „iba odberateľov" a „iba faktúry" sa vylučujú;
+ * keď prídu obe naraz (v stránke to boli dve nezávislé zaškrtávacie políčka),
+ * znamenalo to mlčky „nezapíš nič" — import dobehol ako úspešný, bez chýb a bez
+ * jedinej faktúry. Berieme to ako „zapíš všetko".
+ */
+export function rozsahImportu(o: ImportOptions): "vsetko" | "odberatelia" | "faktury" {
+  if (o.customersOnly && !o.invoicesOnly) return "odberatelia";
+  if (o.invoicesOnly && !o.customersOnly) return "faktury";
+  return "vsetko";
+}
 
 export type ImportResult = {
   imported_customers: number;
@@ -920,6 +930,10 @@ export async function runImport(args: {
     failed_rows: 0,
     duplicates: 0,
   };
+
+  const rozsah = rozsahImportu(options);
+  const lenOdberatelia = rozsah === "odberatelia";
+  const lenFaktury = rozsah === "faktury";
 
   // Pre-fetch existing customers + invoices for dup detection
   const { data: existingCustomers } = await supabaseAdmin
@@ -974,7 +988,9 @@ export async function runImport(args: {
             : undefined;
       if (lookupKey) {
         customerId = lookupKey;
-      } else if (custName || custIco) {
+      } else if (!lenFaktury && (custName || custIco)) {
+        // Pri „iba faktúry" sa odberateľ nezakladá; na existujúceho sa faktúra
+        // aj tak napojí a údaje odberateľa ostávajú opísané na doklade.
         const { data: ins, error } = await supabaseAdmin
           .from("customers")
           .insert({
@@ -1010,7 +1026,7 @@ export async function runImport(args: {
         );
       }
 
-      if (options.customersOnly) continue;
+      if (lenOdberatelia) continue;
 
       // ===== Invoice =====
       const externalId = pick(head, mapping, "external_id");

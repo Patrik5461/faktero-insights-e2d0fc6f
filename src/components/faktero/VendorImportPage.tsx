@@ -12,6 +12,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { ImportOptions, PREDVOLENE_VOLBY } from "@/components/faktero/ImportOptions";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createImportUploadUrl } from "@/lib/faktero/import-superfaktura.functions";
 import { previewVendorImport, executeVendorImport } from "@/lib/faktero/import-vendors.functions";
@@ -35,11 +36,7 @@ export function VendorImportPage(props: {
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<any>(null);
   const [result, setResult] = useState<any>(null);
-  const [options, setOptions] = useState({
-    updateExisting: false,
-    customersOnly: false,
-    invoicesOnly: false,
-  });
+  const [options, setOptions] = useState(PREDVOLENE_VOLBY);
 
   async function handleUpload() {
     const cid = getActiveCompanyId();
@@ -215,27 +212,7 @@ export function VendorImportPage(props: {
                   </div>
                 </div>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {(
-                  [
-                    ["updateExisting", "Aktualizovať existujúce faktúry"],
-                    ["customersOnly", "Importovať iba odberateľov"],
-                    ["invoicesOnly", "Importovať iba faktúry"],
-                  ] as const
-                ).map(([k, label]) => (
-                  <label
-                    key={k}
-                    className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={(options as any)[k]}
-                      onChange={(e) => setOptions({ ...options, [k]: e.target.checked })}
-                    />
-                    {label}
-                  </label>
-                ))}
-              </div>
+              <ImportOptions options={options} setOptions={setOptions} />
               <div className="flex justify-between">
                 <button
                   onClick={() => setStep(2)}

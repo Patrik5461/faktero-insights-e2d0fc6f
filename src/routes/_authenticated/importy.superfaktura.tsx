@@ -14,6 +14,7 @@ import {
   Sliders,
 } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { ImportOptions, PREDVOLENE_VOLBY } from "@/components/faktero/ImportOptions";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   createImportUploadUrl,
@@ -71,13 +72,10 @@ function ImportPage() {
   const [detection, setDetection] = useState<any>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
-  const [options, setOptions] = useState({
-    updateExisting: false,
-    customersOnly: false,
-    invoicesOnly: false,
-    generatePdfs: false,
-    triggerWebhooks: false,
-  });
+  // „Vygenerovať PDF" a „Spustiť webhooky" tu boli tiež, ale nikdy sa nikam
+  // nedostali — PDF sa robí až pri otvorení dokladu a rozposielať webhooky za
+  // roky starú históriu nie je čo.
+  const [options, setOptions] = useState(PREDVOLENE_VOLBY);
   const [result, setResult] = useState<any>(null);
 
   async function handleUpload() {
@@ -395,27 +393,7 @@ function ImportPage() {
                   </div>
                 </div>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {[
-                  ["updateExisting", "Aktualizovať existujúce faktúry"],
-                  ["customersOnly", "Importovať iba odberateľov"],
-                  ["invoicesOnly", "Importovať iba faktúry"],
-                  ["generatePdfs", "Vygenerovať PDF po importe"],
-                  ["triggerWebhooks", "Spustiť webhooky po importe"],
-                ].map(([k, label]) => (
-                  <label
-                    key={k}
-                    className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={(options as any)[k]}
-                      onChange={(e) => setOptions({ ...options, [k]: e.target.checked })}
-                    />
-                    {label}
-                  </label>
-                ))}
-              </div>
+              <ImportOptions options={options} setOptions={setOptions} />
               <Footer
                 onBack={() => setStep(3)}
                 onNext={handleRunImport}

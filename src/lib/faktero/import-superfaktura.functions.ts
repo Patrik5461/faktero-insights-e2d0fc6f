@@ -99,8 +99,6 @@ export const executeImport = createServerFn({ method: "POST" })
             updateExisting: z.boolean().optional(),
             customersOnly: z.boolean().optional(),
             invoicesOnly: z.boolean().optional(),
-            generatePdfs: z.boolean().optional(),
-            triggerWebhooks: z.boolean().optional(),
           })
           .default({}),
       })
