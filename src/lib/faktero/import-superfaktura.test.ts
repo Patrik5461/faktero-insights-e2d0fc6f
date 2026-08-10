@@ -176,3 +176,22 @@ describe("buildPreview", () => {
     expect(p.totalValue).toBeCloseTo(123 + 307.5, 2);
   });
 });
+
+describe("detectedSource", () => {
+  // Pôvodný zápis vracal pri zhode `true` namiesto reťazca, takže export
+  // priamo zo SuperFaktúry sa vždy označil ako „všeobecný".
+  it("ISDOC sa označí ako export zo SuperFaktúry", async () => {
+    const t = await jednaTabulka(new Uint8Array(ISDOC), "faktura.isdoc");
+    expect(detectMapping(t.headers, t.rows).detectedSource).toBe("superfaktura");
+  });
+
+  it("export z rozhrania sa označí tiež", async () => {
+    const t = await jednaTabulka(strToU8(API_XML), "export.xml");
+    expect(detectMapping(t.headers, t.rows).detectedSource).toBe("superfaktura");
+  });
+
+  it("cudzia tabuľka ostane všeobecná", () => {
+    const rows = [{ alfa: "1", beta: "2", gama: "3" }];
+    expect(detectMapping(["alfa", "beta", "gama"], rows).detectedSource).toBe("generic");
+  });
+});

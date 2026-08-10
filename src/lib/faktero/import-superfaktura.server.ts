@@ -652,20 +652,30 @@ export function detectMapping(headers: string[], rows: Record<string, string>[])
   const confidenceLabel: DetectionResult["confidenceLabel"] =
     confidence >= 0.75 ? "high" : confidence >= 0.45 ? "medium" : "low";
 
-  // Source detection: SuperFaktúra exports include certain headers / "SuperFaktúra" branding
+  /*
+   * Odkiaľ export pochádza. Pôvodný zápis bol `regex.test(...) || (... ? "a" : "b")`,
+   * čo pri zhode regulárneho výrazu vrátilo `true` (nie reťazec) a výsledok
+   * potom vždy vypadol ako „všeobecný export" — aj pri súbore priamo zo
+   * SuperFaktúry.
+   */
   const all = normHeaders.map((h) => h.norm).join(" | ");
+  const podpisSF =
+    /superfaktura|sf id|sf cislo|invoice no|client data/.test(all) ||
+    // Stĺpce, ktorými sa hlási náš prevod ISDOC.
+    (all.includes("invoice number") && all.includes("document type"));
+  // Celková suma sa dá aj dopočítať — SuperFaktúra vyváža základ a DPH zvlášť
+  // a pole „spolu" vôbec nemá.
+  const maSumu = !!(perField.total || (perField.subtotal && perField.vat_total));
+  const maJadro = !!(perField.invoice_number && perField.customer_name) && maSumu;
   const detectedSource: DetectionResult["detectedSource"] =
-    /superfaktura|sf id|sf cislo|invoice number/.test(all) ||
-    ((perField.invoice_number && perField.customer_name && perField.total
-      ? "superfaktura"
-      : "generic") as any);
+    podpisSF && maJadro ? "superfaktura" : "generic";
 
   return {
     mapping,
     perField,
     confidence,
     confidenceLabel,
-    detectedSource: detectedSource === "superfaktura" ? "superfaktura" : "generic",
+    detectedSource,
     detectedColumns: Object.keys(perField),
   };
 }
