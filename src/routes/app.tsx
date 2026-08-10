@@ -166,6 +166,7 @@ function MobilnaApka() {
           setKrok("zachyt");
         }}
         onDoklady={() => setKrok("doklady")}
+        onZmenitFirmu={() => setKrok("firma")}
         onPanel={() => setPanel(true)}
       />
       <MobilPanel
@@ -320,12 +321,14 @@ function Domov({
   viacFiriem,
   onZachyt,
   onDoklady,
+  onZmenitFirmu,
   onPanel,
 }: {
   firma: Firma | null;
   viacFiriem: boolean;
   onZachyt: (d: Zachyt) => void;
   onDoklady: () => void;
+  onZmenitFirmu: () => void;
   onPanel: () => void;
 }) {
   /*
@@ -386,7 +389,7 @@ function Domov({
         <h1 className="mt-3 text-[24px] font-semibold leading-tight">Skenovanie dokladov</h1>
 
         <button
-          onClick={viacFiriem ? onPanel : undefined}
+          onClick={viacFiriem ? onZmenitFirmu : undefined}
           className={`mt-4 flex w-full items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5 text-left ${
             viacFiriem ? "active:bg-white/25" : "cursor-default"
           }`}
