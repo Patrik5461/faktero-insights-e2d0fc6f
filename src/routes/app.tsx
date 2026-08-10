@@ -369,14 +369,20 @@ function Domov({
         ktorú firmu sa práve skenuje. To je údaj, ktorý musí byť vidieť stále:
         doklad uložený do zlej firmy sa hľadá ťažko.
       */}
+      {/*
+        Pás pod hodinami a batériou musí byť jednoliaty. Uhlopriečny prechod má
+        vpravo hore svetlejší koniec, takže práve tam, kde telefón kreslí stav
+        batérie, svietila iná zelená než zvyšok appky. Preto ide prechod zvisle
+        a horný okraj drží značkový tmavý odtieň.
+      */}
       <header
         className="px-5 pb-6 text-primary-foreground"
         style={{
-          backgroundImage: "var(--brand-gradient)",
-          paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)",
+          backgroundImage: "linear-gradient(180deg, #007e46 0%, #007e46 55%, #0a8f52 100%)",
+          paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)",
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={onPanel}
             aria-label="Nastavenia"
@@ -384,9 +390,10 @@ function Domov({
           >
             <Menu className="h-[20px] w-[20px]" />
           </button>
-          <p className="text-[13px] font-medium text-primary-foreground/80">Faktero</p>
+          <h1 className="min-w-0 truncate text-[20px] font-semibold leading-tight">
+            Skenovanie dokladov
+          </h1>
         </div>
-        <h1 className="mt-3 text-[24px] font-semibold leading-tight">Skenovanie dokladov</h1>
 
         <button
           onClick={viacFiriem ? onZmenitFirmu : undefined}

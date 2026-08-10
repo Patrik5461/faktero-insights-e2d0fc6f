@@ -25,8 +25,6 @@ import {
  * potiahnutím od ľavého okraja.
  */
 
-const SIRKA = 0.84; // podiel šírky obrazovky
-
 type Firma = { id: string; name: string };
 
 export function MobilPanel({
@@ -132,7 +130,7 @@ export function MobilPanel({
         <div
           className="px-5 pb-5 text-primary-foreground"
           style={{
-            backgroundImage: "var(--brand-gradient)",
+            backgroundImage: "linear-gradient(180deg, #007e46 0%, #007e46 55%, #0a8f52 100%)",
             paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)",
           }}
         >
@@ -247,6 +245,8 @@ export function MobilPanel({
             </span>
             <span className="text-[15px] font-medium">Odhlásiť sa</span>
           </button>
+
+          <p className="pt-2 text-center text-[12px] text-muted-foreground">Faktero V1</p>
         </div>
       </aside>
     </>
