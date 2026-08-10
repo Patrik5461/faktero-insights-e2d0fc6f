@@ -204,6 +204,20 @@ function InvoicesPage() {
     }
   }
   const [bulkHardDelete, setBulkHardDelete] = useState(false);
+  /** Vyprázdnenie koša — bez označovania riadkov, na celú aktuálnu stránku koša. */
+  const [vyprazdnitKos, setVyprazdnitKos] = useState(false);
+  async function confirmVyprazdnitKos() {
+    const ids = list.rows.map((r: any) => r.id);
+    try {
+      await list.hardDelete(ids);
+      toast.success(`Kôš vyprázdnený — natrvalo vymazaných ${ids.length} faktúr`);
+      list.clearSelection();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    } finally {
+      setVyprazdnitKos(false);
+    }
+  }
   async function confirmBulkHardDelete() {
     const pocet = list.selectedIds.length;
     try {
@@ -515,7 +529,12 @@ function InvoicesPage() {
               hodnota={list.sort}
               onChange={list.setSort}
             />
-            <DeletedToggle value={list.showDeleted} onChange={list.setShowDeleted} />
+            <DeletedToggle
+              value={list.showDeleted}
+              onChange={list.setShowDeleted}
+              onEmptyTrash={() => setVyprazdnitKos(true)}
+              trashCount={list.showDeleted ? list.rows.length : 0}
+            />
             <PageSizeSelect value={list.pageSize} onChange={list.setPageSize} />
           </div>
         </div>
@@ -813,6 +832,15 @@ function InvoicesPage() {
         confirmLabel="Vymazať natrvalo"
         onCancel={() => setBulkHardDelete(false)}
         onConfirm={confirmBulkHardDelete}
+      />
+      <ConfirmDialog
+        open={vyprazdnitKos}
+        title={`Vyprázdniť kôš — natrvalo vymazať ${list.rows.length} faktúr?`}
+        message="Faktúry sa odstránia aj s položkami, upomienkami a záznamami o odoslaní. Toto sa už nedá vrátiť."
+        warning="Maže sa to, čo je práve zobrazené na tejto stránke koša."
+        confirmLabel="Vyprázdniť kôš"
+        onCancel={() => setVyprazdnitKos(false)}
+        onConfirm={confirmVyprazdnitKos}
       />
       <ConfirmDialog
         open={!!bulkAction}

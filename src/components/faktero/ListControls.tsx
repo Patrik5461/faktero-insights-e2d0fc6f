@@ -228,15 +228,35 @@ export function BulkBar({
 export function DeletedToggle({
   value,
   onChange,
+  onEmptyTrash,
+  trashCount,
 }: {
   value: boolean;
   onChange: (v: boolean) => void;
+  /** Vyprázdnenie koša. Bez neho sa tlačidlo nezobrazí. */
+  onEmptyTrash?: () => void;
+  trashCount?: number;
 }) {
   return (
-    <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-      <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
-      Zobraziť vymazané
-    </label>
+    <span className="inline-flex items-center gap-3">
+      <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+        <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
+        Zobraziť vymazané
+      </label>
+      {/*
+        Trvalé mazanie bolo dovtedy len v hromadnej lište, ktorá sa objaví až po
+        označení riadkov — kto nič neoznačil, možnosť vyprázdniť kôš nenašiel.
+      */}
+      {value && onEmptyTrash && (trashCount ?? 0) > 0 && (
+        <button
+          type="button"
+          onClick={onEmptyTrash}
+          className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-3.5 w-3.5" /> Vyprázdniť kôš ({trashCount})
+        </button>
+      )}
+    </span>
   );
 }
 

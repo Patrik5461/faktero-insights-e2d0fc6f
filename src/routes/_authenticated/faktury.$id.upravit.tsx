@@ -68,8 +68,10 @@ function EditInvoice() {
         navigate({ to: "/faktury" });
         return;
       }
-      if (i.status === "paid" || i.status === "cancelled") {
-        toast.error("Uhradenú alebo stornovanú faktúru nemožno upraviť.");
+      // Opraviť sa dá aj uhradená faktúra — preklep v adrese sa nájde často až
+      // po zaplatení. Stornovaná ostáva zamknutá, tá sa už len archivuje.
+      if (i.status === "cancelled") {
+        toast.error("Stornovanú faktúru už upraviť nemožno.");
         navigate({ to: "/faktury/$id", params: { id } });
         return;
       }
@@ -233,9 +235,13 @@ function EditInvoice() {
           */}
           {inv.status !== "draft" && (
             <div className="rounded-xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
-              <strong>Opravujete už vystavenú faktúru.</strong> Odberateľ ju mohol dostať, preto mu
-              po oprave pošlite nové PDF. Ak je obdobie uzamknuté uzávierkou, dátumy ani sumy sa
-              zmeniť nedajú.
+              <strong>
+                {(inv.status as string) === "paid"
+                  ? "Opravujete už uhradenú faktúru."
+                  : "Opravujete už vystavenú faktúru."}
+              </strong>{" "}
+              Odberateľ ju mohol dostať, preto mu po oprave pošlite nové PDF. Ak je obdobie
+              uzamknuté uzávierkou, dátumy ani sumy sa zmeniť nedajú.
               {(inv.status as string) === "sent" && (
                 <> Riadky naviazané na sklad sa už meniť nedajú, aby sedel stav zásob.</>
               )}

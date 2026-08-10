@@ -608,10 +608,9 @@ function InvoiceDetail() {
             {/*
               Upraviť sa dá aj vystavená a odoslaná faktúra — formulár to vždy
               vedel, chýbalo len tlačidlo, takže sa k oprave nedalo dostať.
-              Uhradenú a stornovanú faktúru formulár odmieta, preto tam
-              tlačidlo nie je.
+              Stornovaná faktúra sa už len archivuje, preto pri nej tlačidlo nie je.
             */}
-            {inv.status !== "paid" && inv.status !== "cancelled" && (
+            {inv.status !== "cancelled" && (
               <Link
                 to="/faktury/$id/upravit"
                 params={{ id }}
