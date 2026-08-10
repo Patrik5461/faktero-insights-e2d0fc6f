@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export type ExportFormat = "pohoda_xml";
+export type ExportFormat = "pohoda_xml" | "omega_txt" | "money_s3_xml";
 
 export const exportInvoicesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -82,6 +82,8 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       fileName: built.fileName,
       content: built.content,
       mime: built.mime,
+      // Omega chce Windows-1250; prevod robí až sťahovanie v prehliadači.
+      encoding: strategy.encoding,
       invoiceCount: invs.length,
     };
   });
@@ -92,9 +94,17 @@ export const getExportContentFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("export_jobs")
-      .select("id, file_name, file_content")
+      .select("id, file_name, file_content, format")
       .eq("id", data.jobId)
       .single();
     if (error) throw new Error(error.message);
-    return { fileName: job.file_name, content: job.file_content };
+    // Starší súbor z histórie sa musí stiahnuť v tom kódovaní, v akom vznikol.
+    const { EXPORT_STRATEGIES: STRATEGIE } = await import("./export.server");
+    const strategia = STRATEGIE[job.format as ExportFormat];
+    return {
+      fileName: job.file_name,
+      content: job.file_content,
+      mime: strategia?.mime ?? "application/xml",
+      encoding: strategia?.encoding ?? ("utf-8" as const),
+    };
   });
