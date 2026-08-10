@@ -473,7 +473,8 @@ const SYNONYMS: Record<FieldKey, string[]> = {
   item_quantity: ["mnozstvo", "quantity", "qty", "pocet", "invoicedquantity"],
   item_unit: ["mj", "jednotka", "unit", "unitcode"],
   item_unit_price: ["cena", "cena za mj", "unit price", "cena jednotkova", "unitprice"],
-  item_vat_rate: ["sadzba dph", "vat rate", "dph %", "tax", "percent"],
+  // „dph %" sa po očistení zmení na „dph" a chytilo sa na stĺpec „ic dph".
+  item_vat_rate: ["sadzba dph", "vat rate", "sadzba", "tax", "percent"],
   item_total: ["polozka spolu", "item total", "cena spolu polozka", "lineextensionamount"],
 };
 
@@ -585,53 +586,44 @@ export function detectMapping(headers: string[], rows: Record<string, string>[])
   const valueTagsByHeader = new Map<string, Set<FieldKey>>();
   for (const h of headers) valueTagsByHeader.set(h, valueLooksLike(sampleValues(rows, h)));
 
+  /*
+   * Skóre každej dvojice pole × stĺpec. Priraďuje sa až potom, naraz a od
+   * najvyššieho skóre — nie postupne po poliach.
+   *
+   * Postupné priraďovanie malo dve tiché chyby: rozhodovalo poradie stĺpcov
+   * v súbore (pri rovnakom skóre vyhral ten skorší) a pole, ktoré o stĺpec
+   * prišlo, si už nikdy nevybralo druhý najlepší. Tak vypadla napríklad sadzba
+   * DPH na položke — a položky sa importovali s prednastavenými 23 %.
+   */
+  type Navrh = { field: FieldKey; header: string; score: number; priorita: number };
+  const priorita = (f: FieldKey) =>
+    CORE_FIELDS.includes(f) ? 0 : NICE_FIELDS.includes(f) ? 1 : 2;
+
+  const navrhy: Navrh[] = [];
   for (const field of Object.keys(SYNONYMS) as FieldKey[]) {
     const syns = SYNONYMS[field].map(normKey);
-    let best: { header: string; score: number } | null = null;
     for (const { raw, norm } of normHeaders) {
       let s = 0;
       for (const syn of syns) s = Math.max(s, fuzzyScore(norm, syn));
       // Bonus, keď hodnoty v stĺpci vyzerajú na daný typ (dátum, suma, e-mail).
-      // Nikdy nesmie dorovnať presnú zhodu mena — inak stĺpec „vat_total"
-      // (čiastočná zhoda + bonus) predbehne stĺpec „total" len preto, že je
-      // v tabuľke skôr, a do celkovej sumy sa zapíše DPH.
+      // Nikdy nesmie dorovnať presnú zhodu mena.
       const tags = valueTagsByHeader.get(raw);
       if (tags?.has(field) && s < 1) s = Math.min(0.95, s + 0.15);
       // legacy regex fallback
       if (s < 0.5 && HEURISTICS[field].some((p) => p.test(raw))) s = Math.max(s, 0.55);
-      if (s > (best?.score ?? 0)) best = { header: raw, score: s };
+      if (s >= 0.5) navrhy.push({ field, header: raw, score: s, priorita: priorita(field) });
     }
-    if (best && best.score >= 0.5) perField[field] = best;
   }
 
-  /*
-   * Keď si ten istý stĺpec vypýtalo viac polí, vyhráva to s vyšším skóre.
-   *
-   * Poradie musí byť **bez opakovania**. Kým sa zoznam skladal ako
-   * `[...CORE, ...NICE, ...všetky]`, kľúčové polia v ňom boli dvakrát — a pri
-   * druhom prechode narazili samy na seba, skóre nebolo vyššie a pole sa
-   * zmazalo. Dôsledok: číslo faktúry, dátum vystavenia, suma ani odberateľ sa
-   * **nikdy** nerozpoznali automaticky a používateľ musel mapovať všetko ručne.
-   */
-  const poradie: FieldKey[] = [];
-  for (const f of [...CORE_FIELDS, ...NICE_FIELDS, ...(Object.keys(SYNONYMS) as FieldKey[])]) {
-    if (!poradie.includes(f)) poradie.push(f);
-  }
+  navrhy.sort((a, b) => b.score - a.score || a.priorita - b.priorita);
 
-  const used = new Map<string, FieldKey>();
-  for (const field of poradie) {
-    const entry = perField[field];
-    if (!entry) continue;
-    const prev = used.get(entry.header);
-    if (!prev || prev === field) {
-      used.set(entry.header, field);
-      continue;
-    }
-    const prevScore = perField[prev]?.score ?? 0;
-    if (entry.score > prevScore) {
-      delete perField[prev];
-      used.set(entry.header, field);
-    } else delete perField[field];
+  const obsadeneHlavicky = new Set<string>();
+  const obsadenePolia = new Set<FieldKey>();
+  for (const n of navrhy) {
+    if (obsadenePolia.has(n.field) || obsadeneHlavicky.has(n.header)) continue;
+    obsadenePolia.add(n.field);
+    obsadeneHlavicky.add(n.header);
+    perField[n.field] = { header: n.header, score: n.score };
   }
 
   const mapping: Partial<Record<FieldKey, string>> = {};

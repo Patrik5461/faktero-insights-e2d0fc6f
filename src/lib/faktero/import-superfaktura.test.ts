@@ -195,3 +195,36 @@ describe("detectedSource", () => {
     expect(detectMapping(["alfa", "beta", "gama"], rows).detectedSource).toBe("generic");
   });
 });
+
+describe("priraďovanie stĺpcov", () => {
+  /*
+   * Priradzovalo sa postupne po poliach, takže pole, ktoré o stĺpec prišlo, si
+   * už nikdy nevybralo druhý najlepší. Sadzba DPH na položke sa tak chytila na
+   * „customer_ic_dph" (cez synonymum „dph"), prehrala súboj a vypadla — a
+   * položky sa importovali s prednastavenými 23 %.
+   */
+  it("sadzba DPH na položke sa priradí", async () => {
+    const t = await jednaTabulka(new Uint8Array(ISDOC), "faktura.isdoc");
+    const d = detectMapping(t.headers, t.rows);
+    expect(d.mapping.item_vat_rate).toBe("item_vat_rate");
+    expect(d.mapping.customer_ic_dph).toBe("customer_ic_dph");
+  });
+
+  // Pri rovnakom skóre rozhodovalo poradie stĺpcov v súbore.
+  it("na poradí stĺpcov v súbore nezáleží", () => {
+    const hlavicky = ["total", "vat_total", "subtotal"];
+    const riadky = [{ total: "123.00", vat_total: "23.00", subtotal: "100.00" }];
+    const a = detectMapping(hlavicky, riadky).mapping;
+    const b = detectMapping([...hlavicky].reverse(), riadky).mapping;
+    expect(a.total).toBe("total");
+    expect(a.vat_total).toBe("vat_total");
+    expect(a.subtotal).toBe("subtotal");
+    expect(b).toEqual(a);
+  });
+
+  it("jeden stĺpec sa nepriradí dvom poliam", async () => {
+    const t = await jednaTabulka(new Uint8Array(ISDOC), "faktura.isdoc");
+    const hlavicky = Object.values(detectMapping(t.headers, t.rows).mapping);
+    expect(new Set(hlavicky).size).toBe(hlavicky.length);
+  });
+});
