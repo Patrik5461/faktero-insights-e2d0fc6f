@@ -36,6 +36,29 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/pravne/reklamacny-poriadok", priority: 0.4 },
           { path: "/pravne/opakovane-platby", priority: 0.4 },
           { path: "/pravne/cookies", priority: 0.4 },
+          // Manuály. Sú to verejné stránky s návodmi — bez zápisu tu by ich
+          // vyhľadávače našli len náhodou cez odkazy z centra pomoci.
+          { path: "/pomoc", priority: 0.7 },
+          { path: "/pomoc/faktury", priority: 0.6 },
+          { path: "/pomoc/ponuky", priority: 0.6 },
+          { path: "/pomoc/objednavky", priority: 0.6 },
+          { path: "/pomoc/opakovane", priority: 0.6 },
+          { path: "/pomoc/prijate-faktury", priority: 0.6 },
+          { path: "/pomoc/odberatelia", priority: 0.6 },
+          { path: "/pomoc/efaktura", priority: 0.6 },
+          { path: "/pomoc/sklad", priority: 0.6 },
+          { path: "/pomoc/ceny", priority: 0.6 },
+          { path: "/pomoc/objednavky-dodavatel", priority: 0.6 },
+          { path: "/pomoc/zakazky", priority: 0.6 },
+          { path: "/pomoc/pokladna", priority: 0.6 },
+          { path: "/pomoc/dph", priority: 0.6 },
+          { path: "/pomoc/uzavierka", priority: 0.6 },
+          { path: "/pomoc/banka", priority: 0.6 },
+          { path: "/pomoc/exporty", priority: 0.6 },
+          { path: "/pomoc/jazdy", priority: 0.6 },
+          { path: "/pomoc/api", priority: 0.6 },
+          { path: "/pomoc/predplatne", priority: 0.6 },
+          { path: "/pomoc/online-platby/gopay", priority: 0.6 },
         ];
 
         const map = new Map<string, { priority: number; lastmod?: string }>();

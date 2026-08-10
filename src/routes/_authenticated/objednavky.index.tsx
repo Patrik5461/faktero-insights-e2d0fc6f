@@ -81,7 +81,6 @@ function OrdersPage() {
         action={
           <Link
             to="/objednavky/nova"
-            search={{ id: undefined }}
             className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             <Plus className="h-4 w-4" /> Nová objednávka

@@ -25,6 +25,7 @@ import {
   Car,
   ArrowRightLeft,
   HardHat,
+  BookOpen,
 } from "lucide-react";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
@@ -854,19 +855,86 @@ function MobileNav({
   );
 }
 
+/**
+ * Ku ktorej stránke patrí ktorý manuál. Odkaz sa vykreslí v hlavičke sám —
+ * inak by ho bolo treba dopísať do osemdesiatich súborov a pri každej novej
+ * stránke naň znova zabudnúť.
+ *
+ * Poradie nerozhoduje, hľadá sa **najdlhšia zhoda** predpony, takže
+ * `/sklad/objednavky` nájde svoj vlastný manuál a nie ten skladový.
+ */
+const MANUALY: { prefix: string; to: string }[] = [
+  { prefix: "/faktury", to: "/pomoc/faktury" },
+  { prefix: "/zalohove", to: "/pomoc/faktury" },
+  { prefix: "/ponuky", to: "/pomoc/ponuky" },
+  { prefix: "/objednavky", to: "/pomoc/objednavky" },
+  { prefix: "/opakovane", to: "/pomoc/opakovane" },
+  { prefix: "/prijate-faktury", to: "/pomoc/prijate-faktury" },
+  { prefix: "/doklady", to: "/pomoc/pokladna" },
+  { prefix: "/pokladna", to: "/pomoc/pokladna" },
+  { prefix: "/efaktura", to: "/pomoc/efaktura" },
+  { prefix: "/odberatelia", to: "/pomoc/odberatelia" },
+  { prefix: "/zakazky", to: "/pomoc/zakazky" },
+  { prefix: "/sklad", to: "/pomoc/sklad" },
+  { prefix: "/sklad/objednavky", to: "/pomoc/objednavky-dodavatel" },
+  { prefix: "/produkty", to: "/pomoc/sklad" },
+  { prefix: "/ceny", to: "/pomoc/ceny" },
+  { prefix: "/uctovnictvo/dph", to: "/pomoc/dph" },
+  { prefix: "/uctovnictvo/uzavierka", to: "/pomoc/uzavierka" },
+  { prefix: "/exporty", to: "/pomoc/exporty" },
+  { prefix: "/importy", to: "/pomoc/exporty" },
+  { prefix: "/bankove-ucty", to: "/pomoc/banka" },
+  { prefix: "/jazdy", to: "/pomoc/jazdy" },
+  { prefix: "/api-kluce", to: "/pomoc/api" },
+  { prefix: "/api-dokumentacia", to: "/pomoc/api" },
+  { prefix: "/api-playground", to: "/pomoc/api" },
+  { prefix: "/webhooky", to: "/pomoc/api" },
+  { prefix: "/predplatne", to: "/pomoc/predplatne" },
+  { prefix: "/nastavenia/online-platby", to: "/pomoc/online-platby/gopay" },
+];
+
+export function manualPre(pathname: string): string | null {
+  let najdlhsi: { prefix: string; to: string } | null = null;
+  for (const m of MANUALY) {
+    if (pathname === m.prefix || pathname.startsWith(m.prefix + "/")) {
+      if (!najdlhsi || m.prefix.length > najdlhsi.prefix.length) najdlhsi = m;
+    }
+  }
+  return najdlhsi?.to ?? null;
+}
+
 export function PageHeader({
   title,
   description,
   action,
+  help,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  /** Vlastný manuál, keď automatický odkaz nesedí. `false` ho skryje. */
+  help?: string | false;
 }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const manual = help === false ? null : (help ?? manualPre(pathname));
+
   return (
     <div className="flex flex-col gap-3 border-b border-border bg-card/40 px-4 py-4 sm:px-6 sm:py-6 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-4 lg:px-8">
       <div className="min-w-0">
-        <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
+          {manual && (
+            <a
+              href={manual}
+              target="_blank"
+              rel="noreferrer"
+              title="Otvoriť manuál v novom okne"
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+            >
+              <BookOpen className="h-3 w-3" /> Manuál
+            </a>
+          )}
+        </div>
         {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>
       {action && <div className="flex w-full flex-wrap gap-2 lg:w-auto">{action}</div>}

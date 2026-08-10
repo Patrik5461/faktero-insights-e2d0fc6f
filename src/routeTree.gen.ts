@@ -66,10 +66,24 @@ import { Route as FunkcieSlugRouteImport } from './routes/funkcie.$slug'
 import { Route as PayTokenRouteImport } from './routes/pay.$token'
 import { Route as PomocIndexRouteImport } from './routes/pomoc.index'
 import { Route as PomocApiRouteImport } from './routes/pomoc.api'
+import { Route as PomocBankaRouteImport } from './routes/pomoc.banka'
+import { Route as PomocCenyRouteImport } from './routes/pomoc.ceny'
+import { Route as PomocDphRouteImport } from './routes/pomoc.dph'
 import { Route as PomocEfakturaRouteImport } from './routes/pomoc.efaktura'
+import { Route as PomocExportyRouteImport } from './routes/pomoc.exporty'
 import { Route as PomocFakturyRouteImport } from './routes/pomoc.faktury'
+import { Route as PomocJazdyRouteImport } from './routes/pomoc.jazdy'
+import { Route as PomocObjednavkyRouteImport } from './routes/pomoc.objednavky'
+import { Route as PomocObjednavkyDodavatelRouteImport } from './routes/pomoc.objednavky-dodavatel'
+import { Route as PomocOdberateliaRouteImport } from './routes/pomoc.odberatelia'
+import { Route as PomocOpakovaneRouteImport } from './routes/pomoc.opakovane'
+import { Route as PomocPokladnaRouteImport } from './routes/pomoc.pokladna'
+import { Route as PomocPonukyRouteImport } from './routes/pomoc.ponuky'
 import { Route as PomocPredplatneRouteImport } from './routes/pomoc.predplatne'
+import { Route as PomocPrijateFakturyRouteImport } from './routes/pomoc.prijate-faktury'
 import { Route as PomocSkladRouteImport } from './routes/pomoc.sklad'
+import { Route as PomocUzavierkaRouteImport } from './routes/pomoc.uzavierka'
+import { Route as PomocZakazkyRouteImport } from './routes/pomoc.zakazky'
 import { Route as PravneIndexRouteImport } from './routes/pravne.index'
 import { Route as PravneCookiesRouteImport } from './routes/pravne.cookies'
 import { Route as PravneGdprRouteImport } from './routes/pravne.gdpr'
@@ -499,9 +513,29 @@ const PomocApiRoute = PomocApiRouteImport.update({
   path: '/pomoc/api',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PomocBankaRoute = PomocBankaRouteImport.update({
+  id: '/pomoc/banka',
+  path: '/pomoc/banka',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocCenyRoute = PomocCenyRouteImport.update({
+  id: '/pomoc/ceny',
+  path: '/pomoc/ceny',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocDphRoute = PomocDphRouteImport.update({
+  id: '/pomoc/dph',
+  path: '/pomoc/dph',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PomocEfakturaRoute = PomocEfakturaRouteImport.update({
   id: '/pomoc/efaktura',
   path: '/pomoc/efaktura',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocExportyRoute = PomocExportyRouteImport.update({
+  id: '/pomoc/exporty',
+  path: '/pomoc/exporty',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomocFakturyRoute = PomocFakturyRouteImport.update({
@@ -509,14 +543,65 @@ const PomocFakturyRoute = PomocFakturyRouteImport.update({
   path: '/pomoc/faktury',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PomocJazdyRoute = PomocJazdyRouteImport.update({
+  id: '/pomoc/jazdy',
+  path: '/pomoc/jazdy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocObjednavkyRoute = PomocObjednavkyRouteImport.update({
+  id: '/pomoc/objednavky',
+  path: '/pomoc/objednavky',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocObjednavkyDodavatelRoute =
+  PomocObjednavkyDodavatelRouteImport.update({
+    id: '/pomoc/objednavky-dodavatel',
+    path: '/pomoc/objednavky-dodavatel',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const PomocOdberateliaRoute = PomocOdberateliaRouteImport.update({
+  id: '/pomoc/odberatelia',
+  path: '/pomoc/odberatelia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocOpakovaneRoute = PomocOpakovaneRouteImport.update({
+  id: '/pomoc/opakovane',
+  path: '/pomoc/opakovane',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocPokladnaRoute = PomocPokladnaRouteImport.update({
+  id: '/pomoc/pokladna',
+  path: '/pomoc/pokladna',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocPonukyRoute = PomocPonukyRouteImport.update({
+  id: '/pomoc/ponuky',
+  path: '/pomoc/ponuky',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PomocPredplatneRoute = PomocPredplatneRouteImport.update({
   id: '/pomoc/predplatne',
   path: '/pomoc/predplatne',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PomocPrijateFakturyRoute = PomocPrijateFakturyRouteImport.update({
+  id: '/pomoc/prijate-faktury',
+  path: '/pomoc/prijate-faktury',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PomocSkladRoute = PomocSkladRouteImport.update({
   id: '/pomoc/sklad',
   path: '/pomoc/sklad',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocUzavierkaRoute = PomocUzavierkaRouteImport.update({
+  id: '/pomoc/uzavierka',
+  path: '/pomoc/uzavierka',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocZakazkyRoute = PomocZakazkyRouteImport.update({
+  id: '/pomoc/zakazky',
+  path: '/pomoc/zakazky',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PravneIndexRoute = PravneIndexRouteImport.update({
@@ -1351,10 +1436,24 @@ export interface FileRoutesByFullPath {
   '/funkcie/$slug': typeof FunkcieSlugRoute
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/api': typeof PomocApiRoute
+  '/pomoc/banka': typeof PomocBankaRoute
+  '/pomoc/ceny': typeof PomocCenyRoute
+  '/pomoc/dph': typeof PomocDphRoute
   '/pomoc/efaktura': typeof PomocEfakturaRoute
+  '/pomoc/exporty': typeof PomocExportyRoute
   '/pomoc/faktury': typeof PomocFakturyRoute
+  '/pomoc/jazdy': typeof PomocJazdyRoute
+  '/pomoc/objednavky': typeof PomocObjednavkyRoute
+  '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
+  '/pomoc/odberatelia': typeof PomocOdberateliaRoute
+  '/pomoc/opakovane': typeof PomocOpakovaneRoute
+  '/pomoc/pokladna': typeof PomocPokladnaRoute
+  '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
+  '/pomoc/prijate-faktury': typeof PomocPrijateFakturyRoute
   '/pomoc/sklad': typeof PomocSkladRoute
+  '/pomoc/uzavierka': typeof PomocUzavierkaRoute
+  '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
@@ -1545,10 +1644,24 @@ export interface FileRoutesByTo {
   '/funkcie/$slug': typeof FunkcieSlugRoute
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/api': typeof PomocApiRoute
+  '/pomoc/banka': typeof PomocBankaRoute
+  '/pomoc/ceny': typeof PomocCenyRoute
+  '/pomoc/dph': typeof PomocDphRoute
   '/pomoc/efaktura': typeof PomocEfakturaRoute
+  '/pomoc/exporty': typeof PomocExportyRoute
   '/pomoc/faktury': typeof PomocFakturyRoute
+  '/pomoc/jazdy': typeof PomocJazdyRoute
+  '/pomoc/objednavky': typeof PomocObjednavkyRoute
+  '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
+  '/pomoc/odberatelia': typeof PomocOdberateliaRoute
+  '/pomoc/opakovane': typeof PomocOpakovaneRoute
+  '/pomoc/pokladna': typeof PomocPokladnaRoute
+  '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
+  '/pomoc/prijate-faktury': typeof PomocPrijateFakturyRoute
   '/pomoc/sklad': typeof PomocSkladRoute
+  '/pomoc/uzavierka': typeof PomocUzavierkaRoute
+  '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
@@ -1747,10 +1860,24 @@ export interface FileRoutesById {
   '/funkcie/$slug': typeof FunkcieSlugRoute
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/api': typeof PomocApiRoute
+  '/pomoc/banka': typeof PomocBankaRoute
+  '/pomoc/ceny': typeof PomocCenyRoute
+  '/pomoc/dph': typeof PomocDphRoute
   '/pomoc/efaktura': typeof PomocEfakturaRoute
+  '/pomoc/exporty': typeof PomocExportyRoute
   '/pomoc/faktury': typeof PomocFakturyRoute
+  '/pomoc/jazdy': typeof PomocJazdyRoute
+  '/pomoc/objednavky': typeof PomocObjednavkyRoute
+  '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
+  '/pomoc/odberatelia': typeof PomocOdberateliaRoute
+  '/pomoc/opakovane': typeof PomocOpakovaneRoute
+  '/pomoc/pokladna': typeof PomocPokladnaRoute
+  '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
+  '/pomoc/prijate-faktury': typeof PomocPrijateFakturyRoute
   '/pomoc/sklad': typeof PomocSkladRoute
+  '/pomoc/uzavierka': typeof PomocUzavierkaRoute
+  '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
@@ -1950,10 +2077,24 @@ export interface FileRouteTypes {
     | '/funkcie/$slug'
     | '/pay/$token'
     | '/pomoc/api'
+    | '/pomoc/banka'
+    | '/pomoc/ceny'
+    | '/pomoc/dph'
     | '/pomoc/efaktura'
+    | '/pomoc/exporty'
     | '/pomoc/faktury'
+    | '/pomoc/jazdy'
+    | '/pomoc/objednavky'
+    | '/pomoc/objednavky-dodavatel'
+    | '/pomoc/odberatelia'
+    | '/pomoc/opakovane'
+    | '/pomoc/pokladna'
+    | '/pomoc/ponuky'
     | '/pomoc/predplatne'
+    | '/pomoc/prijate-faktury'
     | '/pomoc/sklad'
+    | '/pomoc/uzavierka'
+    | '/pomoc/zakazky'
     | '/pravne/cookies'
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
@@ -2144,10 +2285,24 @@ export interface FileRouteTypes {
     | '/funkcie/$slug'
     | '/pay/$token'
     | '/pomoc/api'
+    | '/pomoc/banka'
+    | '/pomoc/ceny'
+    | '/pomoc/dph'
     | '/pomoc/efaktura'
+    | '/pomoc/exporty'
     | '/pomoc/faktury'
+    | '/pomoc/jazdy'
+    | '/pomoc/objednavky'
+    | '/pomoc/objednavky-dodavatel'
+    | '/pomoc/odberatelia'
+    | '/pomoc/opakovane'
+    | '/pomoc/pokladna'
+    | '/pomoc/ponuky'
     | '/pomoc/predplatne'
+    | '/pomoc/prijate-faktury'
     | '/pomoc/sklad'
+    | '/pomoc/uzavierka'
+    | '/pomoc/zakazky'
     | '/pravne/cookies'
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
@@ -2345,10 +2500,24 @@ export interface FileRouteTypes {
     | '/funkcie/$slug'
     | '/pay/$token'
     | '/pomoc/api'
+    | '/pomoc/banka'
+    | '/pomoc/ceny'
+    | '/pomoc/dph'
     | '/pomoc/efaktura'
+    | '/pomoc/exporty'
     | '/pomoc/faktury'
+    | '/pomoc/jazdy'
+    | '/pomoc/objednavky'
+    | '/pomoc/objednavky-dodavatel'
+    | '/pomoc/odberatelia'
+    | '/pomoc/opakovane'
+    | '/pomoc/pokladna'
+    | '/pomoc/ponuky'
     | '/pomoc/predplatne'
+    | '/pomoc/prijate-faktury'
     | '/pomoc/sklad'
+    | '/pomoc/uzavierka'
+    | '/pomoc/zakazky'
     | '/pravne/cookies'
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
@@ -2516,10 +2685,24 @@ export interface RootRouteChildren {
   DocsApiRoute: typeof DocsApiRoute
   PayTokenRoute: typeof PayTokenRoute
   PomocApiRoute: typeof PomocApiRoute
+  PomocBankaRoute: typeof PomocBankaRoute
+  PomocCenyRoute: typeof PomocCenyRoute
+  PomocDphRoute: typeof PomocDphRoute
   PomocEfakturaRoute: typeof PomocEfakturaRoute
+  PomocExportyRoute: typeof PomocExportyRoute
   PomocFakturyRoute: typeof PomocFakturyRoute
+  PomocJazdyRoute: typeof PomocJazdyRoute
+  PomocObjednavkyRoute: typeof PomocObjednavkyRoute
+  PomocObjednavkyDodavatelRoute: typeof PomocObjednavkyDodavatelRoute
+  PomocOdberateliaRoute: typeof PomocOdberateliaRoute
+  PomocOpakovaneRoute: typeof PomocOpakovaneRoute
+  PomocPokladnaRoute: typeof PomocPokladnaRoute
+  PomocPonukyRoute: typeof PomocPonukyRoute
   PomocPredplatneRoute: typeof PomocPredplatneRoute
+  PomocPrijateFakturyRoute: typeof PomocPrijateFakturyRoute
   PomocSkladRoute: typeof PomocSkladRoute
+  PomocUzavierkaRoute: typeof PomocUzavierkaRoute
+  PomocZakazkyRoute: typeof PomocZakazkyRoute
   PravneCookiesRoute: typeof PravneCookiesRoute
   PravneGdprRoute: typeof PravneGdprRoute
   PravneGopayPodmienkyRoute: typeof PravneGopayPodmienkyRoute
@@ -2967,11 +3150,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PomocApiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pomoc/banka': {
+      id: '/pomoc/banka'
+      path: '/pomoc/banka'
+      fullPath: '/pomoc/banka'
+      preLoaderRoute: typeof PomocBankaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/ceny': {
+      id: '/pomoc/ceny'
+      path: '/pomoc/ceny'
+      fullPath: '/pomoc/ceny'
+      preLoaderRoute: typeof PomocCenyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/dph': {
+      id: '/pomoc/dph'
+      path: '/pomoc/dph'
+      fullPath: '/pomoc/dph'
+      preLoaderRoute: typeof PomocDphRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pomoc/efaktura': {
       id: '/pomoc/efaktura'
       path: '/pomoc/efaktura'
       fullPath: '/pomoc/efaktura'
       preLoaderRoute: typeof PomocEfakturaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/exporty': {
+      id: '/pomoc/exporty'
+      path: '/pomoc/exporty'
+      fullPath: '/pomoc/exporty'
+      preLoaderRoute: typeof PomocExportyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/faktury': {
@@ -2981,6 +3192,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PomocFakturyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pomoc/jazdy': {
+      id: '/pomoc/jazdy'
+      path: '/pomoc/jazdy'
+      fullPath: '/pomoc/jazdy'
+      preLoaderRoute: typeof PomocJazdyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/objednavky': {
+      id: '/pomoc/objednavky'
+      path: '/pomoc/objednavky'
+      fullPath: '/pomoc/objednavky'
+      preLoaderRoute: typeof PomocObjednavkyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/objednavky-dodavatel': {
+      id: '/pomoc/objednavky-dodavatel'
+      path: '/pomoc/objednavky-dodavatel'
+      fullPath: '/pomoc/objednavky-dodavatel'
+      preLoaderRoute: typeof PomocObjednavkyDodavatelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/odberatelia': {
+      id: '/pomoc/odberatelia'
+      path: '/pomoc/odberatelia'
+      fullPath: '/pomoc/odberatelia'
+      preLoaderRoute: typeof PomocOdberateliaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/opakovane': {
+      id: '/pomoc/opakovane'
+      path: '/pomoc/opakovane'
+      fullPath: '/pomoc/opakovane'
+      preLoaderRoute: typeof PomocOpakovaneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/pokladna': {
+      id: '/pomoc/pokladna'
+      path: '/pomoc/pokladna'
+      fullPath: '/pomoc/pokladna'
+      preLoaderRoute: typeof PomocPokladnaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/ponuky': {
+      id: '/pomoc/ponuky'
+      path: '/pomoc/ponuky'
+      fullPath: '/pomoc/ponuky'
+      preLoaderRoute: typeof PomocPonukyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pomoc/predplatne': {
       id: '/pomoc/predplatne'
       path: '/pomoc/predplatne'
@@ -2988,11 +3248,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PomocPredplatneRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pomoc/prijate-faktury': {
+      id: '/pomoc/prijate-faktury'
+      path: '/pomoc/prijate-faktury'
+      fullPath: '/pomoc/prijate-faktury'
+      preLoaderRoute: typeof PomocPrijateFakturyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pomoc/sklad': {
       id: '/pomoc/sklad'
       path: '/pomoc/sklad'
       fullPath: '/pomoc/sklad'
       preLoaderRoute: typeof PomocSkladRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/uzavierka': {
+      id: '/pomoc/uzavierka'
+      path: '/pomoc/uzavierka'
+      fullPath: '/pomoc/uzavierka'
+      preLoaderRoute: typeof PomocUzavierkaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/zakazky': {
+      id: '/pomoc/zakazky'
+      path: '/pomoc/zakazky'
+      fullPath: '/pomoc/zakazky'
+      preLoaderRoute: typeof PomocZakazkyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pravne/': {
@@ -4449,10 +4730,24 @@ const rootRouteChildren: RootRouteChildren = {
   DocsApiRoute: DocsApiRoute,
   PayTokenRoute: PayTokenRoute,
   PomocApiRoute: PomocApiRoute,
+  PomocBankaRoute: PomocBankaRoute,
+  PomocCenyRoute: PomocCenyRoute,
+  PomocDphRoute: PomocDphRoute,
   PomocEfakturaRoute: PomocEfakturaRoute,
+  PomocExportyRoute: PomocExportyRoute,
   PomocFakturyRoute: PomocFakturyRoute,
+  PomocJazdyRoute: PomocJazdyRoute,
+  PomocObjednavkyRoute: PomocObjednavkyRoute,
+  PomocObjednavkyDodavatelRoute: PomocObjednavkyDodavatelRoute,
+  PomocOdberateliaRoute: PomocOdberateliaRoute,
+  PomocOpakovaneRoute: PomocOpakovaneRoute,
+  PomocPokladnaRoute: PomocPokladnaRoute,
+  PomocPonukyRoute: PomocPonukyRoute,
   PomocPredplatneRoute: PomocPredplatneRoute,
+  PomocPrijateFakturyRoute: PomocPrijateFakturyRoute,
   PomocSkladRoute: PomocSkladRoute,
+  PomocUzavierkaRoute: PomocUzavierkaRoute,
+  PomocZakazkyRoute: PomocZakazkyRoute,
   PravneCookiesRoute: PravneCookiesRoute,
   PravneGdprRoute: PravneGdprRoute,
   PravneGopayPodmienkyRoute: PravneGopayPodmienkyRoute,

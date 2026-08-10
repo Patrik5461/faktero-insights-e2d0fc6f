@@ -14,10 +14,13 @@ import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/objednavky/nova")({
   head: () => ({ meta: [{ title: "Nová objednávka — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
-    /** Úprava existujúcej objednávky používa ten istý formulár. */
-    id: typeof s.id === "string" ? s.id : undefined,
-  }),
+  /**
+   * Úprava existujúcej objednávky používa ten istý formulár. Keď parameter
+   * nie je, musí sa vrátiť prázdny objekt — inak router vyžaduje `search` pri
+   * každom odkaze na „novú objednávku".
+   */
+  validateSearch: (s: Record<string, unknown>): { id?: string } =>
+    typeof s.id === "string" && s.id ? { id: s.id } : {},
   component: NewOrder,
 });
 
