@@ -148,6 +148,12 @@ export function CookieConsentBanner() {
   };
 
   if (!mounted || consent) return null;
+  /*
+   * V mobilnej aplikácii lišta nemá čo robiť: appka nič nemeria ani neinzeruje
+   * a jediné, čo ukladá, je prihlásenie — teda nevyhnutné. Navyše prekrývala
+   * spodné tlačidlo, ktorým sa doklad ukladá.
+   */
+  if (typeof window !== "undefined" && window.location.pathname.startsWith("/app")) return null;
 
   return (
     <>
