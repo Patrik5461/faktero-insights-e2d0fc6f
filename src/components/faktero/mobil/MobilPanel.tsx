@@ -107,7 +107,7 @@ export function MobilPanel({
 
       <aside
         role="dialog"
-        aria-label="Nastavenia"
+        aria-label="Panel nastavení"
         onTouchStart={(e) => {
           start.current = e.touches[0]?.clientX ?? null;
           setPusta(false);

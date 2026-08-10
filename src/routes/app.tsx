@@ -373,19 +373,17 @@ function Domov({
           paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)",
         }}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={onPanel}
             aria-label="Nastavenia"
-            className="-ml-2 rounded-full bg-white/15 p-2 active:bg-white/25"
+            className="-ml-2 rounded-full bg-white/15 p-2.5 active:bg-white/25"
           >
-            <Menu className="h-[18px] w-[18px]" />
+            <Menu className="h-[20px] w-[20px]" />
           </button>
-          <div className="min-w-0 flex-1 text-right">
-            <p className="text-[13px] font-medium text-primary-foreground/80">Faktero</p>
-            <h1 className="mt-0.5 text-[22px] font-semibold leading-tight">Skenovanie dokladov</h1>
-          </div>
+          <p className="text-[13px] font-medium text-primary-foreground/80">Faktero</p>
         </div>
+        <h1 className="mt-3 text-[24px] font-semibold leading-tight">Skenovanie dokladov</h1>
 
         <button
           onClick={viacFiriem ? onPanel : undefined}
