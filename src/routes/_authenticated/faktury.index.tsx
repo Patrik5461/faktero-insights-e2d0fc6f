@@ -29,6 +29,8 @@ import { usePagedList } from "@/hooks/usePagedList";
 import {
   Pagination,
   PageSizeSelect,
+  SortSelect,
+  type MoznostZoradenia,
   ConfirmDialog,
   BulkBar,
   DeletedToggle,
@@ -37,6 +39,18 @@ import { ResponsiveTable, MobileListCard } from "@/components/faktero/Responsive
 import { supabase } from "@/integrations/supabase/client";
 
 type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
+
+/** Ponuka zoradenia. Prvá možnosť je predvolená — od najnovšej faktúry. */
+const ZORADENIE_FAKTUR: MoznostZoradenia[] = [
+  { label: "Najnovšie prvé", column: "issue_date" },
+  { label: "Najstaršie prvé", column: "issue_date", ascending: true },
+  { label: "Číslo zostupne", column: "invoice_number" },
+  { label: "Číslo vzostupne", column: "invoice_number", ascending: true },
+  { label: "Najbližšia splatnosť", column: "due_date", ascending: true },
+  { label: "Najvyššia suma", column: "total" },
+  { label: "Najnižšia suma", column: "total", ascending: true },
+  { label: "Naposledy pridané", column: "created_at" },
+];
 
 /** Filtre z menu (Dobropisy, Koncepty) a `q` z vyhľadávania v hlavičke. */
 type InvoiceSearch = { type?: "credit"; status?: "draft"; q?: string };
@@ -65,6 +79,11 @@ function InvoicesPage() {
     resource: "invoices",
     searchColumns: ["invoice_number", "customer_name", "customer_ico"],
     equals: Object.keys(equals).length ? equals : undefined,
+    // Od najnovšej. Predtým sa radilo podľa `created_at`, čo je pri
+    // naimportovaných faktúrach čas importu — všetky mali rovnaký a zoznam
+    // vyzeral zoradený odzadu.
+    orderBy: { column: "issue_date", ascending: false },
+    sortKey: "faktury",
   });
   // Hľadanie z hlavičky príde ako `?q=`. Prepíšeme ním hľadacie pole zoznamu,
   // aby bolo vidieť, čo sa hľadá, a dalo sa to odtiaľ upraviť.
@@ -478,6 +497,11 @@ function InvoicesPage() {
               />
               Po splatnosti bez upomienky
             </label>
+            <SortSelect
+              moznosti={ZORADENIE_FAKTUR}
+              hodnota={list.sort}
+              onChange={list.setSort}
+            />
             <DeletedToggle value={list.showDeleted} onChange={list.setShowDeleted} />
             <PageSizeSelect value={list.pageSize} onChange={list.setPageSize} />
           </div>

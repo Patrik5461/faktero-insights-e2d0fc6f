@@ -26,6 +26,8 @@ function ProformaListPage() {
     searchColumns: ["invoice_number", "customer_name", "customer_ico"],
     equals: { type: "proforma" },
     pageSizeKey: "invoices-proforma",
+    orderBy: { column: "issue_date", ascending: false },
+    sortKey: "zalohove",
   });
 
   const [settledMap, setSettledMap] = useState<

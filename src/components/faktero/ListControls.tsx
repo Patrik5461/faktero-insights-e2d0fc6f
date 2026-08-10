@@ -8,6 +8,7 @@ import {
   Search,
   Trash2,
   X,
+  ArrowDownUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -405,5 +406,57 @@ export function EmptyState({
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>
+  );
+}
+
+export type MoznostZoradenia = {
+  label: string;
+  column: string;
+  ascending?: boolean;
+};
+
+/**
+ * Výber zoradenia zoznamu. Voľba sa pamätá (`sortKey` v `usePagedList`), takže
+ * si ju klient nemusí prestavovať pri každom otvorení.
+ */
+export function SortSelect({
+  moznosti,
+  hodnota,
+  onChange,
+  className = "",
+}: {
+  moznosti: MoznostZoradenia[];
+  hodnota: { column: string; ascending?: boolean };
+  onChange: (z: { column: string; ascending?: boolean }) => void;
+  className?: string;
+}) {
+  const kluc = (m: { column: string; ascending?: boolean }) =>
+    `${m.column}:${m.ascending ? "asc" : "desc"}`;
+  const aktualny = kluc(hodnota);
+  // Zoradenie, ktoré v ponuke nie je (napr. zapamätané zo staršej verzie),
+  // by inak vyzeralo ako prvá položka a mýlilo.
+  const zname = moznosti.some((m) => kluc(m) === aktualny);
+
+  return (
+    <label className={`flex items-center gap-1.5 text-sm ${className}`}>
+      <ArrowDownUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <span className="sr-only">Zoradenie</span>
+      <select
+        value={zname ? aktualny : ""}
+        onChange={(e) => {
+          const m = moznosti.find((x) => kluc(x) === e.target.value);
+          if (m) onChange({ column: m.column, ascending: m.ascending });
+        }}
+        className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+        aria-label="Zoradenie"
+      >
+        {!zname && <option value="">Vlastné zoradenie</option>}
+        {moznosti.map((m) => (
+          <option key={kluc(m)} value={kluc(m)}>
+            {m.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

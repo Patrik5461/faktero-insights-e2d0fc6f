@@ -5,22 +5,59 @@ import { useStoredPageSize } from "@/components/faktero/ListControls";
 
 type SoftDeletable = "invoices" | "quotes" | "recurring_invoices" | "customers" | "products";
 
+export type Zoradenie = { column: string; ascending?: boolean };
+
 export type PagedListOptions = {
   resource: SoftDeletable;
   searchColumns?: string[]; // ilike OR search
-  orderBy?: { column: string; ascending?: boolean };
+  /** Predvolené zoradenie. Používateľ si ho môže prestaviť cez `setSort`. */
+  orderBy?: Zoradenie;
+  /** Kľúč, pod ktorým sa zapamätá voľba zoradenia. Bez neho sa nepamätá. */
+  sortKey?: string;
   pageSizeKey?: string; // localStorage key suffix
   equals?: Record<string, string | number | boolean | null>;
 };
+
+/** Zapamätané zoradenie zoznamu — nech si to klient nemusí prestavovať zakaždým. */
+function nacitajZoradenie(kluc: string | undefined, vychodzie: Zoradenie): Zoradenie {
+  if (!kluc || typeof window === "undefined") return vychodzie;
+  try {
+    const ulozene = window.localStorage.getItem(`faktero.sort.${kluc}`);
+    if (!ulozene) return vychodzie;
+    const p = JSON.parse(ulozene);
+    return typeof p?.column === "string" ? { column: p.column, ascending: !!p.ascending } : vychodzie;
+  } catch {
+    return vychodzie;
+  }
+}
 
 export function usePagedList({
   resource,
   searchColumns = [],
   orderBy,
+  sortKey,
   pageSizeKey,
   equals,
 }: PagedListOptions) {
   const [pageSize, setPageSize] = useStoredPageSize(pageSizeKey ?? resource);
+  const vychodzieZoradenie = orderBy ?? { column: "created_at", ascending: false };
+  const [sort, setSortStav] = useState<Zoradenie>(() =>
+    nacitajZoradenie(sortKey, vychodzieZoradenie),
+  );
+  const setSort = useCallback(
+    (z: Zoradenie) => {
+      setSortStav(z);
+      setPage(1);
+      if (sortKey && typeof window !== "undefined") {
+        try {
+          window.localStorage.setItem(`faktero.sort.${sortKey}`, JSON.stringify(z));
+        } catch {
+          /* súkromný režim prehliadača — voľba sa jednoducho nezapamätá */
+        }
+      }
+    },
+    [sortKey],
+  );
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
@@ -66,8 +103,10 @@ export function usePagedList({
         const term = search.trim().replace(/[%_,]/g, "");
         q = q.or(searchColumns.map((c) => `${c}.ilike.%${term}%`).join(","));
       }
-      const ord = orderBy ?? { column: "created_at", ascending: false };
-      q = q.order(ord.column, { ascending: !!ord.ascending });
+      q = q.order(sort.column, { ascending: !!sort.ascending });
+      // Druhé kritérium drží poradie stabilné, keď má viac dokladov rovnaký
+      // dátum — pri importe majú všetky rovnaký `created_at` až na mikrosekundy.
+      if (sort.column !== "created_at") q = q.order("created_at", { ascending: false });
       q = q.range(from, to);
       const { data, error, count } = await q;
       if (cancelled) return;
@@ -91,8 +130,8 @@ export function usePagedList({
     search,
     showDeleted,
     nonce,
-    orderBy?.column,
-    orderBy?.ascending,
+    sort.column,
+    sort.ascending,
     searchColumns.join(","),
     JSON.stringify(equals ?? {}),
   ]);
@@ -155,6 +194,8 @@ export function usePagedList({
     setPageSize,
     search,
     setSearch,
+    sort,
+    setSort,
     showDeleted,
     setShowDeleted,
     selected,

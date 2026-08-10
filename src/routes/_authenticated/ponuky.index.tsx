@@ -38,6 +38,9 @@ function QuotesPage() {
   const list = usePagedList({
     resource: "quotes",
     searchColumns: ["quote_number", "customer_name"],
+    // Od najnovšej — `created_at` je pri importe čas importu, nie dátum dokladu.
+    orderBy: { column: "issue_date", ascending: false },
+    sortKey: "ponuky",
   });
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
