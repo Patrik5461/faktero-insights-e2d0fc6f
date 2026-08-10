@@ -26,7 +26,7 @@ import { dokladNaZaznam, nahrajPrilohu, stranyDoPdf } from "@/lib/faktero/mobil-
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
-import { PrijateDoklady } from "@/components/faktero/mobil/PrijateDoklady";
+import { PrijateDoklady, datum } from "@/components/faktero/mobil/PrijateDoklady";
 import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
 import {
   HlavneTlacidlo,
@@ -389,12 +389,8 @@ function Domov({
         </div>
       </main>
 
-      <div
-        className="px-4 pb-4 pt-6 text-center text-[12px] text-muted-foreground"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
-      >
-        Doklady sa ukladajú do firmy {firma?.name ?? "—"}
-      </div>
+      {/* Firma je v hlavičke — opakovať ju dole by bola len vata. */}
+      <div style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }} />
     </div>
   );
 }
@@ -670,7 +666,7 @@ function Potvrdenie({
           </div>
           <div className="mt-2 text-[14px] text-muted-foreground">
             {vysledok.supplier ?? "Neznámy predajca"}
-            {vysledok.date ? ` · ${vysledok.date}` : ""}
+            {vysledok.date ? ` · ${datum(vysledok.date)}` : ""}
           </div>
           {vysledok.vat_amount != null && (
             <div className="mt-2 text-xs text-muted-foreground">

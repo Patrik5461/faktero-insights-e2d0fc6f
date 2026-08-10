@@ -70,6 +70,14 @@ function suma(v: unknown, mena = "EUR"): string {
   return new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n);
 }
 
+/** „2026-08-09" → „9. 8. 2026". Zápis v ISO nikto nečíta ako dátum. */
+export function datum(v?: string | null): string {
+  if (!v) return "—";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+  if (!m) return v;
+  return `${Number(m[3])}. ${Number(m[2])}. ${m[1]}`;
+}
+
 /** „2026-08" → „august 2026" — mesiac sa v zozname používa ako predel. */
 function nazovMesiaca(kluc: string): string {
   const [r, m] = kluc.split("-").map(Number);
@@ -202,7 +210,7 @@ export function PrijateDoklady({
                           {d.supplier_name ?? "Bez dodávateľa"}
                         </span>
                         <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
-                          {d.issue_date ?? "—"}
+                          {datum(d.issue_date)}
                           {d.payment_method ? ` · ${UHRADY[d.payment_method]}` : ""}
                         </span>
                       </span>
@@ -283,7 +291,7 @@ function DetailDokladu({
   return (
     <MobilObrazovka
       title={doklad.supplier_name ?? "Doklad"}
-      subtitle={doklad.issue_date ?? undefined}
+      subtitle={doklad.issue_date ? datum(doklad.issue_date) : undefined}
       onBack={onSpat}
     >
       <div className="space-y-4">
