@@ -227,6 +227,11 @@ function parseXmlRows(xml: string): Record<string, string>[] {
     // ISDOC beží v mennom priestore; bez tohto by sa uzly volali `isdoc:Invoice`
     // a nenašlo by sa nič.
     removeNSPrefix: true,
+    // Bez tohto parser prevádza hodnoty na čísla a **zjedá vedúce nuly**:
+    // z IČO `00006947` sa stalo `6947`. Slovenské IČO má vedúce nuly bežne.
+    // Import aj tak pracuje s reťazcami.
+    parseTagValue: false,
+    parseAttributeValue: false,
   });
   const obj = parser.parse(xml);
 

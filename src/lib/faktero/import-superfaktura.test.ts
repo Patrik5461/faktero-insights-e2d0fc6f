@@ -228,3 +228,17 @@ describe("priraďovanie stĺpcov", () => {
     expect(new Set(hlavicky).size).toBe(hlavicky.length);
   });
 });
+
+describe("čísla ako text", () => {
+  // Parser prevádzal hodnoty na čísla a zjedal vedúce nuly — z IČO `00006947`
+  // sa stalo `6947`. Slovenské IČO ich má bežne (napr. 00151653).
+  it("IČO si zachová vedúce nuly", async () => {
+    const t = await jednaTabulka(new Uint8Array(ISDOC), "faktura.isdoc");
+    expect(t.rows[0].customer_ico).toBe("00006947");
+  });
+
+  it("PSČ ostane textom", async () => {
+    const t = await jednaTabulka(new Uint8Array(ISDOC), "faktura.isdoc");
+    expect(t.rows[0].customer_zip).toBe("11810");
+  });
+});
