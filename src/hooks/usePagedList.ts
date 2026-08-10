@@ -200,6 +200,13 @@ export function usePagedList({
       .update({ deleted_at: null } as any)
       .in("id", ids)
       .eq("company_id", cid);
+    // Číslo zmazaného dokladu sa medzitým mohlo použiť pre nový — vtedy sa
+    // pôvodný obnoviť nedá a hlásenie z databázy by nikomu nič nepovedalo.
+    if (error?.code === "23505") {
+      throw new Error(
+        "Číslo tohto dokladu už medzitým dostal iný doklad, preto sa nedá obnoviť. Zmeňte najprv číslo na tom novom.",
+      );
+    }
     if (error) throw error;
     reload();
   }
