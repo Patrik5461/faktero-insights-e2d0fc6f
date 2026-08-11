@@ -3,9 +3,11 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { toast } from "sonner";
+import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 import { recordLegalAcceptance } from "@/lib/legal.functions";
 import { LEGAL_VERSION } from "@/components/faktero/LegalShell";
 import { Logo } from "@/components/faktero/Logo";
+import { MailCheck } from "lucide-react";
 
 export const Route = createFileRoute("/registracia")({
   head: () => ({
@@ -43,6 +45,9 @@ function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptGdpr, setAcceptGdpr] = useState(false);
+  /* Účet vznikol, ale čaká na potvrdenie e-mailu — bez neho sa ďalej nedostane. */
+  const [cakaNaPotvrdenie, setCakaNaPotvrdenie] = useState(false);
+  const [posielamZnova, setPosielamZnova] = useState(false);
 
   async function persistAcceptances() {
     try {
@@ -76,9 +81,21 @@ function RegisterPage() {
       },
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
-    if (data.user?.id) await persistAcceptances();
+    if (error) return toast.error(prelozAuthChybu(error.message).sprava);
+    if (data.user?.id && data.session) await persistAcceptances();
     stashPlan();
+
+    /*
+     * Bez potvrdeného e-mailu Supabase reláciu nevydá. Doteraz sa aj tak
+     * pokračovalo na /onboarding, odkiaľ človeka ochrana trás vyhodila späť na
+     * prihlásenie — po úspešnej registrácii, s hláškou „Účet vytvorený".
+     * Vyzeralo to ako pokazená aplikácia. Preto sa to teraz povie rovno.
+     */
+    if (!data.session) {
+      setCakaNaPotvrdenie(true);
+      return;
+    }
+
     toast.success("Účet vytvorený. Pokračujte do nastavenia firmy.");
     navigate({ to: "/onboarding" });
   }
@@ -99,6 +116,54 @@ function RegisterPage() {
       options: { redirectTo: window.location.origin + "/onboarding" },
     });
     if (error) toast.error(error.message);
+  }
+
+  async function posliPotvrdenieZnova() {
+    setPosielamZnova(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
+    setPosielamZnova(false);
+    if (error) return toast.error(prelozAuthChybu(error.message).sprava);
+    toast.success("E-mail sme poslali znova.");
+  }
+
+  if (cakaNaPotvrdenie) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background px-4">
+        <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
+          <Link to="/" className="mb-6 inline-flex items-center">
+            <Logo variant="header" className="h-8" />
+          </Link>
+          <div className="mb-4 grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary">
+            <MailCheck className="h-6 w-6" />
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">Potvrďte si e-mail</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Účet <strong className="text-foreground">{email}</strong> je vytvorený. Poslali sme naň
+            odkaz — otvorte ho a budete rovno v aplikácii. Bez potvrdenia sa prihlásiť nedá.
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Ak e-mail do pár minút nepríde, pozrite si priečinok s nevyžiadanou poštou.
+          </p>
+          <button
+            onClick={posliPotvrdenieZnova}
+            disabled={posielamZnova}
+            className="mt-6 w-full rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-60"
+          >
+            {posielamZnova ? "Posielam…" : "Poslať e-mail znova"}
+          </button>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Už potvrdené?{" "}
+            <Link to="/prihlasenie" className="font-medium text-primary hover:underline">
+              Prihlásiť sa
+            </Link>
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -124,36 +189,48 @@ function RegisterPage() {
         </div>
 
         <form onSubmit={onSubmit} className="space-y-3">
-          <div>
-            <label className="text-sm font-medium">Meno a priezvisko</label>
+          {/*
+            Pole je vnútri <label>, takže patrí k svojmu popisu — ťuknutie na
+            popis kurzor postaví do poľa a čítačka obrazovky vie, čo sa pýta.
+            Predtým to boli dva nezávislé prvky vedľa seba.
+
+            `autoComplete` je tu kvôli telefónu: bez neho správca hesiel ani
+            iOS nevedia, čo do poľa patrí, a registrácia sa vypĺňa ručne.
+          */}
+          <label className="block">
+            <span className="text-sm font-medium">Meno a priezvisko</span>
             <input
+              type="text"
+              autoComplete="name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Email</label>
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">Email</span>
             <input
               type="email"
+              autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Heslo</label>
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">Heslo</span>
             <input
               type="password"
+              autoComplete="new-password"
               minLength={8}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
-          </div>
+          </label>
           <div className="space-y-2 pt-2">
             <label className="flex items-start gap-2 text-sm">
               <input

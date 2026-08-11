@@ -5,6 +5,7 @@ import { FileText, Car, Check, Fingerprint } from "lucide-react";
 import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
 
 import { toast } from "sonner";
+import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 import { Logo } from "@/components/faktero/Logo";
 import {
   getActiveProduct,
@@ -28,6 +29,8 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [nepotvrdeny, setNepotvrdeny] = useState(false);
+  const [posielam, setPosielam] = useState(false);
   // Start with a deterministic value so SSR markup matches first client render,
   // then hydrate from localStorage to avoid hydration mismatch warnings.
   const [product, setProduct] = useState<ActiveProduct>("invoicing");
@@ -48,8 +51,31 @@ function LoginPage() {
     setActiveProduct(product);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      /*
+       * Supabase hlási po anglicky. Pri prvom prihlásení je cudzia veta to
+       * posledné, čo človek potrebuje — a „Email not confirmed" navyše nie je
+       * chyba používateľa, len nedokončený krok. Preto sa k nej ponúkne aj
+       * odoslanie potvrdenia znova.
+       */
+      const ch = prelozAuthChybu(error.message);
+      setNepotvrdeny(ch.nepotvrdeny);
+      return toast.error(ch.sprava);
+    }
+    setNepotvrdeny(false);
     navigate({ to: landingPathFor(product) as any });
+  }
+
+  async function posliPotvrdenieZnova() {
+    setPosielam(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
+    setPosielam(false);
+    if (error) return toast.error(prelozAuthChybu(error.message).sprava);
+    toast.success("Potvrdzovací e-mail sme poslali znova.");
   }
 
   async function onGoogle() {
@@ -108,26 +134,29 @@ function LoginPage() {
         </div>
 
         <form onSubmit={onSubmit} className="space-y-3">
-          <div>
-            <label className="text-sm font-medium">Email</label>
+          {/* Pole vnútri <label> a `autoComplete` — to isté ako pri registrácii. */}
+          <label className="block">
+            <span className="text-sm font-medium">Email</span>
             <input
               type="email"
+              autoComplete="username"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Heslo</label>
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">Heslo</span>
             <input
               type="password"
+              autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
-          </div>
+          </label>
           <button
             type="submit"
             disabled={loading}
@@ -135,6 +164,23 @@ function LoginPage() {
           >
             {loading ? "Prihlasujem..." : "Prihlásiť sa"}
           </button>
+
+          {nepotvrdeny && (
+            <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm">
+              <p className="text-muted-foreground">
+                Účet ešte nie je potvrdený. Odkaz sme poslali na{" "}
+                <strong className="text-foreground">{email}</strong>.
+              </p>
+              <button
+                type="button"
+                onClick={posliPotvrdenieZnova}
+                disabled={posielam}
+                className="mt-2 font-medium text-primary hover:underline disabled:opacity-60"
+              >
+                {posielam ? "Posielam…" : "Poslať e-mail znova"}
+              </button>
+            </div>
+          )}
         </form>
 
         <BiometricLoginButton onSuccess={() => navigate({ to: landingPathFor(product) as any })} />
