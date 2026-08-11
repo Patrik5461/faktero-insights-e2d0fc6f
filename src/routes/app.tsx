@@ -16,6 +16,7 @@ import {
   ScanLine,
   Fingerprint,
   Car,
+  AlertTriangle,
   Landmark,
   Lock,
 } from "lucide-react";
@@ -36,6 +37,9 @@ import { NovaFaktura } from "@/components/faktero/mobil/NovaFaktura";
 import { VystaveneFaktury } from "@/components/faktero/mobil/VystaveneFaktury";
 import { Jazda } from "@/components/faktero/mobil/Jazda";
 import { Banka } from "@/components/faktero/mobil/Banka";
+import { ZrusenieUctu } from "@/components/faktero/ZrusenieUctu";
+import { dniDoZrusenia, terminSlovom } from "@/lib/faktero/ucet-zrusenie";
+import { DNI, sPoctom } from "@/lib/faktero/mnozne";
 import { MobilPanel } from "@/components/faktero/mobil/MobilPanel";
 import {
   isBiometricAvailable,
@@ -83,7 +87,8 @@ type Krok =
   | "novaFaktura"
   | "faktury"
   | "jazda"
-  | "banka";
+  | "banka"
+  | "ucet";
 type Zachyt = "blocek" | "pdf" | "strany";
 
 function MobilnaApka() {
@@ -94,6 +99,7 @@ function MobilnaApka() {
   const [email, setEmail] = useState<string | null>(null);
   const [panel, setPanel] = useState(false);
   const [zamknute, setZamknute] = useState(false);
+  const [zrusiSa, setZrusiSa] = useState<string | null>(null);
 
   /**
    * Kto je prihlásený a za akú firmu — to isté sa rieši pri štarte aj po prihlásení.
@@ -113,6 +119,14 @@ function MobilnaApka() {
       setZamknute(true);
     }
     setEmail(data.session.user?.email ?? null);
+    // Naplánované zrušenie účtu musí byť vidieť aj v telefóne — kto oň požiadal
+    // omylom, otvorí najskôr appku, nie nastavenia na webe.
+    supabase
+      .from("profiles")
+      .select("deletion_scheduled_for")
+      .eq("id", data.session.user.id)
+      .maybeSingle()
+      .then(({ data: p }) => setZrusiSa((p?.deletion_scheduled_for as string | null) ?? null));
     try {
       const zoznam = (await fetchMyCompanies()) as Firma[];
       setFirmy(zoznam);
@@ -222,6 +236,12 @@ function MobilnaApka() {
     );
   if (krok === "jazda" && firma) return <Jazda firma={firma} onSpat={() => setKrok("domov")} />;
   if (krok === "banka" && firma) return <Banka firma={firma} onSpat={() => setKrok("domov")} />;
+  if (krok === "ucet")
+    return (
+      <MobilObrazovka title="Účet" subtitle={email ?? undefined} onBack={() => setKrok("domov")}>
+        <ZrusenieUctu onZrusene={() => zisti()} />
+      </MobilObrazovka>
+    );
   if (krok === "faktury" && firma)
     return (
       <VystaveneFaktury
@@ -247,6 +267,8 @@ function MobilnaApka() {
       <Domov
         firma={firma}
         viacFiriem={firmy.length > 1}
+        zrusiSa={zrusiSa}
+        onUcet={() => setKrok("ucet")}
         onZachyt={(d) => {
           setZachyt(d);
           setKrok("zachyt");
@@ -268,6 +290,10 @@ function MobilnaApka() {
         onZmenitFirmu={() => setKrok("firma")}
         onDoklady={() => setKrok("doklady")}
         onFaktury={() => setKrok("faktury")}
+        onUcet={() => {
+          setPanel(false);
+          setKrok("ucet");
+        }}
         onOdhlasit={odhlas}
       />
     </>
@@ -464,8 +490,10 @@ function Domov({
   onFaktury,
   onJazda,
   onBanka,
+  onUcet,
   onZmenitFirmu,
   onPanel,
+  zrusiSa,
 }: {
   firma: Firma | null;
   viacFiriem: boolean;
@@ -475,8 +503,10 @@ function Domov({
   onFaktury: () => void;
   onJazda: () => void;
   onBanka: () => void;
+  onUcet: () => void;
   onZmenitFirmu: () => void;
   onPanel: () => void;
+  zrusiSa: string | null;
 }) {
   /*
    * Panel sa otvára aj potiahnutím od ľavého okraja. Na ostatných obrazovkách
@@ -578,6 +608,20 @@ function Domov({
         rovnakých tlačidlách ľahko ťukne vedľa a doklad skončí v zlej agende.
       */}
       <main className="flex-1 space-y-3 px-4 pt-5">
+        {zrusiSa && (
+          <button
+            onClick={onUcet}
+            className="flex w-full items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-left"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <span className="min-w-0 text-[13px]">
+              Účet je naplánovaný na zrušenie {terminSlovom(zrusiSa)} — o{" "}
+              {sPoctom(dniDoZrusenia(zrusiSa), DNI)}.
+              <span className="block font-medium text-primary">Odvolať žiadosť</span>
+            </span>
+          </button>
+        )}
+
         <Skupina nazov="Fakturácia" />
         <VelkeTlacidlo
           icon={FilePlus2}

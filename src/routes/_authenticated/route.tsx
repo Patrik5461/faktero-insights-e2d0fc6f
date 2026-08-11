@@ -14,6 +14,7 @@ import {
   fetchMyCompanies,
 } from "@/lib/faktero/active-company";
 import { PlanGateBanner } from "@/components/faktero/PlanGateBanner";
+import { ZrusenieBanner } from "@/components/faktero/ZrusenieBanner";
 import { ProductModePicker } from "@/components/faktero/ProductModePicker";
 import {
   ACTIVE_PRODUCT_EVENT,
@@ -49,6 +50,7 @@ function AuthedLayout() {
     getActiveProduct(),
   );
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [zrusiSa, setZrusiSa] = useState<string | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const requestedProduct: ActiveProduct =
@@ -81,12 +83,15 @@ function AuthedLayout() {
       if (!mounted || !data.user) return;
       supabase
         .from("profiles")
-        .select("product_mode")
+        .select("product_mode, deletion_scheduled_for")
         .eq("id", data.user.id)
         .maybeSingle()
         .then(({ data: p }) => {
           if (!mounted) return;
           setProductMode((p?.product_mode ?? null) as ProductMode | null);
+          // Naplánované zrušenie musí byť vidieť pri každom prihlásení, nie až
+          // v nastaveniach — inak sa človek dozvie o vlastnej chybe až potom.
+          setZrusiSa((p?.deletion_scheduled_for ?? null) as string | null);
           setProfileLoaded(true);
         });
     });
@@ -170,6 +175,7 @@ function AuthedLayout() {
         window.location.reload();
       }}
     >
+      {zrusiSa && <ZrusenieBanner zrusiSa={zrusiSa} />}
       <PlanGateBanner companyId={activeId} />
       <Outlet />
     </AppShell>

@@ -10,6 +10,7 @@ import {
   LogOut,
   Receipt,
   ShieldCheck,
+  UserX,
   X,
 } from "lucide-react";
 import {
@@ -38,6 +39,7 @@ export function MobilPanel({
   onZmenitFirmu,
   onDoklady,
   onFaktury,
+  onUcet,
   onOdhlasit,
 }: {
   otvoreny: boolean;
@@ -48,6 +50,7 @@ export function MobilPanel({
   onZmenitFirmu: () => void;
   onDoklady: () => void;
   onFaktury: () => void;
+  onUcet: () => void;
   onOdhlasit: () => void;
 }) {
   const [biometriaMozna, setBiometriaMozna] = useState(false);
@@ -241,6 +244,14 @@ export function MobilPanel({
             label="Otvoriť Faktero na webe"
             hint="Faktúry, sklad a zvyšok aplikácie"
             onClick={() => otvorNaWebe("/dashboard")}
+          />
+
+          {/* App Store vyžaduje, aby sa účet dal zrušiť z appky, nie len mailom na podporu. */}
+          <Polozka
+            icon={UserX}
+            label="Zrušenie účtu"
+            hint="S 14-dňovým odkladom, dá sa odvolať"
+            onClick={onUcet}
           />
 
           {/* App Store vyžaduje, aby sa k podmienkam a k ochrane údajov dalo dostať priamo z appky. */}

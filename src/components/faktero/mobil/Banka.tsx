@@ -64,7 +64,10 @@ function nazovUctu(u: Ucet): string {
 /** IBAN po štvoriciach — inak sa v ňom oko stratí. */
 function ibanCitatelne(iban: string | null): string {
   if (!iban) return "Účet";
-  return iban.replace(/\s+/g, "").replace(/(.{4})/g, "$1 ").trim();
+  return iban
+    .replace(/\s+/g, "")
+    .replace(/(.{4})/g, "$1 ")
+    .trim();
 }
 
 /** Porovnanie názvov naslepo — „PALIERA s.r.o." a „PALIERA s. r. o." je tá istá firma. */
@@ -210,7 +213,13 @@ export function Banka({
 
   const naposledy = useMemo(() => {
     const zoznam = vybrany ? (ucty ?? []).filter((u) => u.id === vybrany) : (ucty ?? []);
-    return zoznam.map((u) => u.synchronizovane).filter(Boolean).sort().pop() ?? null;
+    return (
+      zoznam
+        .map((u) => u.synchronizovane)
+        .filter(Boolean)
+        .sort()
+        .pop() ?? null
+    );
   }, [ucty, vybrany]);
 
   if (ucty === null) return <Pracujem text="Načítavam pohyby…" />;
