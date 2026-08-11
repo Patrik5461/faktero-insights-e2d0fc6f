@@ -50,6 +50,7 @@ import { useQuery } from "@tanstack/react-query";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { createInvoicePaymentLink, syncInvoicePayment } from "@/lib/faktero/payments.functions";
 import { paymentMethodLabel } from "@/lib/faktero/payment-method";
+import { adresaRiadky } from "@/lib/faktero/adresa";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 import { sendReminderFn, previewReminderFn } from "@/lib/faktero/reminders.functions";
 
@@ -804,10 +805,16 @@ function InvoiceDetail() {
                   Odberateľ
                 </div>
                 <div className="mt-1 font-medium">{inv.customer_name}</div>
+                {/* Prázdne časti adresy sa vynechajú — inak tam ostane holá čiarka. */}
                 <div className="text-sm text-muted-foreground">
-                  {inv.customer_street}
-                  <br />
-                  {inv.customer_zip} {inv.customer_city}, {inv.customer_country}
+                  {adresaRiadky(
+                    inv.customer_street,
+                    inv.customer_zip,
+                    inv.customer_city,
+                    inv.customer_country,
+                  ).map((r) => (
+                    <div key={r}>{r}</div>
+                  ))}
                 </div>
                 <div className="mt-2 text-sm">
                   IČO: {inv.customer_ico ?? "—"} · DIČ: {inv.customer_dic ?? "—"}
@@ -904,6 +911,25 @@ function InvoiceDetail() {
                 </div>
                 <div>Splatnosť: {inv.due_date}</div>
                 <div>Forma úhrady: {paymentMethodLabel(inv.payment_method)}</div>
+                {/*
+                  Bez IBAN-u nemá odberateľ kam zaplatiť a na doklade nie je ani
+                  QR kód. Pri novej firme sa toto pole preskočí ľahko — register
+                  ho nedopĺňa — a chyba sa ukáže až vtedy, keď peniaze neprídu.
+                */}
+                {!company?.iban && (
+                  <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
+                    <div className="font-medium text-foreground">Chýba IBAN</div>
+                    <p className="mt-0.5 text-muted-foreground">
+                      Odberateľ nemá kam zaplatiť a na doklade nebude QR kód.
+                    </p>
+                    <Link
+                      to="/firma"
+                      className="mt-1 inline-block font-medium text-primary hover:underline"
+                    >
+                      Doplniť v údajoch firmy
+                    </Link>
+                  </div>
+                )}
               </div>
             )}
             {inv.type === "proforma" && (
