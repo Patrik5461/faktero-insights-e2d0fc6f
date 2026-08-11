@@ -10,6 +10,7 @@ import {
   Package,
   Plus,
   Search,
+  Share2,
   Trash2,
   UserPlus,
   X,
@@ -26,7 +27,7 @@ import { SK_VAT_RATES, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
-import { otvorPdfFaktury } from "./pdf-faktury";
+import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 
 /**
  * Vystavenie faktúry v telefóne.
@@ -991,7 +992,7 @@ function Vystavena({
 }) {
   const pdfFn = useServerFn(generateInvoicePdf);
   const mailFn = useServerFn(sendInvoiceEmailFn);
-  const [busy, setBusy] = useState<"pdf" | "mail" | null>(null);
+  const [busy, setBusy] = useState<"pdf" | "mail" | "zdielam" | null>(null);
   const [odoslane, setOdoslane] = useState(false);
 
   async function otvorPdf() {
@@ -1000,6 +1001,21 @@ function Vystavena({
       await otvorPdfFaktury(() => pdfFn({ data: { invoiceId: faktura.id } }) as any);
     } catch (e: any) {
       toast.error(e?.message ?? "PDF sa nepodarilo pripraviť.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function zdielaj() {
+    setBusy("zdielam");
+    try {
+      await zdielajPdfFaktury(
+        () => pdfFn({ data: { invoiceId: faktura.id } }) as any,
+        faktura.invoice_number,
+        `Faktúra ${faktura.invoice_number} na ${suma(faktura.total, faktura.currency)}.`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Zdieľanie zlyhalo.");
     } finally {
       setBusy(null);
     }
@@ -1022,7 +1038,7 @@ function Vystavena({
   }
 
   if (busy === "mail") return <Pracujem text="Odosielam faktúru…" />;
-  if (busy === "pdf") return <Pracujem text="Pripravujem PDF…" />;
+  if (busy === "pdf" || busy === "zdielam") return <Pracujem text="Pripravujem PDF…" />;
 
   return (
     <MobilObrazovka
@@ -1050,9 +1066,15 @@ function Vystavena({
             />
           )}
           <VelkeTlacidlo
+            icon={Share2}
+            label="Zdieľať faktúru"
+            hint="Pošlite ju cez WhatsApp, Messenger alebo uložte do súborov"
+            onClick={zdielaj}
+          />
+          <VelkeTlacidlo
             icon={ExternalLink}
             label="Otvoriť PDF"
-            hint="Faktúra na zobrazenie alebo zdieľanie"
+            hint="Faktúra na prezretie"
             onClick={otvorPdf}
           />
         </div>

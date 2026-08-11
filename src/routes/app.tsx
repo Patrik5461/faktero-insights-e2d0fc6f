@@ -544,6 +544,8 @@ function ZachytDokladu({
   const [foto, setFoto] = useState<string | null>(null);
   const [strany, setStrany] = useState<string[]>([]);
   const [skenujem, setSkenujem] = useState(false);
+  /** QR kód sa odloží aj vtedy, keď ho server nemal ako prečítať. */
+  const [qrKod, setQrKod] = useState<string | null>(null);
 
   /** Doklad prečítaný — ďalej sa pýtame na úhradu a na fotku. */
   function prijmi(r: BlocekVysledok, prilozene?: string | null) {
@@ -554,16 +556,35 @@ function ZachytDokladu({
     if (r.zdroj === "nic") toast.error(r.poznamka ?? "Doklad sa nepodarilo prečítať.");
   }
 
-  /* --- Bloček: najprv QR, potom sa pýtame na úhradu a fotku --- */
-  async function precitajQr(raw: string) {
-    setSkenujem(false);
+  /*
+   * Bez signálu sa doklad prečítať nedá — čítanie z Finančnej správy aj OCR
+   * bežia na serveri. Namiesto chyby a straty bločku sa preto pokračuje na
+   * potvrdenie s prázdnym výsledkom a celý doklad sa odloží do fronty.
+   */
+  async function precitaj(
+    vstup: { qr?: string; image_data_url?: string },
+    prilozene?: string | null,
+  ) {
+    setQrKod(vstup.qr ?? null);
     setStav("citam");
     try {
-      prijmi((await nacitaj({ data: { qr: raw } })) as BlocekVysledok);
+      prijmi((await nacitaj({ data: vstup })) as BlocekVysledok, prilozene);
     } catch (e: any) {
+      const { isOnline } = await import("@/lib/mobile/offline-queue");
+      if (!(await isOnline())) {
+        const { nedostupnyDoklad } = await import("@/lib/mobile/doklady-odoslanie");
+        prijmi(nedostupnyDoklad(vstup.qr), prilozene);
+        return;
+      }
       toast.error(e?.message ?? "Čítanie zlyhalo.");
       setStav("start");
     }
+  }
+
+  /* --- Bloček: najprv QR, potom sa pýtame na úhradu a fotku --- */
+  async function precitajQr(raw: string) {
+    setSkenujem(false);
+    await precitaj({ qr: raw });
   }
 
   /**
@@ -579,32 +600,16 @@ function ZachytDokladu({
   async function odfotDoklad() {
     const cap = await captureReceipt();
     if (!cap) return;
-    setStav("citam");
-    try {
-      const qr = await scanQrFromImage(cap.dataUrl);
-      prijmi(
-        (await nacitaj({
-          data: { qr: qr?.raw, image_data_url: cap.dataUrl },
-        })) as BlocekVysledok,
-        cap.dataUrl,
-      );
-    } catch (e: any) {
-      toast.error(e?.message ?? "Čítanie zlyhalo.");
-      setStav("start");
-    }
+    // QR sa hľadá v obrázku ešte v telefóne, takže ho fronta má aj bez signálu.
+    const qr = await scanQrFromImage(cap.dataUrl);
+    await precitaj({ qr: qr?.raw, image_data_url: cap.dataUrl }, cap.dataUrl);
   }
 
   /* --- PDF faktúra --- */
   async function vyberPdf() {
     const dataUrl = await vyberSubor("application/pdf,image/*");
     if (!dataUrl) return;
-    setStav("citam");
-    try {
-      prijmi((await nacitaj({ data: { image_data_url: dataUrl } })) as BlocekVysledok, dataUrl);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Čítanie zlyhalo.");
-      setStav("start");
-    }
+    await precitaj({ image_data_url: dataUrl }, dataUrl);
   }
 
   /* --- Viacstranový doklad --- */
@@ -617,19 +622,43 @@ function ZachytDokladu({
   async function dokonciStrany() {
     if (strany.length === 0) return;
     setStav("citam");
+    let pdf: string;
     try {
-      const pdf = await stranyDoPdf(strany);
-      prijmi((await nacitaj({ data: { image_data_url: pdf } })) as BlocekVysledok, pdf);
+      pdf = await stranyDoPdf(strany);
     } catch (e: any) {
       toast.error(e?.message ?? "Spojenie strán zlyhalo.");
       setStav("start");
+      return;
     }
+    await precitaj({ image_data_url: pdf }, pdf);
   }
 
   /* --- Uloženie --- */
+
+  /** Doklad, ktorý sa nedá odoslať teraz, si počká vo fronte v telefóne. */
+  async function odlozDoklad(dovod: string) {
+    const { pridajDoFronty } = await import("@/lib/mobile/doklady-fronta");
+    await pridajDoFronty({
+      company_id: firma.id,
+      qr_raw: qrKod ?? vysledok?.qr_raw ?? null,
+      obrazok: foto,
+      uhrada: uhrada!,
+      vysledok: vysledok,
+    });
+    toast.success(dovod);
+    onUlozene();
+  }
+
   async function ulozDoklad() {
     if (!vysledok || !uhrada) return;
     setStav("ukladam");
+
+    const { isOnline } = await import("@/lib/mobile/offline-queue");
+    if (!(await isOnline())) {
+      await odlozDoklad("Bez signálu — doklad sa odošle sám, keď bude pripojenie.");
+      return;
+    }
+
     try {
       const priloha = foto ? await nahrajPrilohu(firma.id, foto) : null;
       if (foto && !priloha) toast.error("Prílohu sa nepodarilo nahrať, doklad uložím bez nej.");
@@ -637,6 +666,14 @@ function ZachytDokladu({
       toast.success("Doklad uložený");
       onUlozene();
     } catch (e: any) {
+      /*
+       * Signál vie vypadnúť aj uprostred ukladania. Doklad sa preto nezahodí
+       * ani tu — odloží sa a odošle neskôr; človek už fotí ďalší.
+       */
+      if (!(await isOnline())) {
+        await odlozDoklad("Spojenie vypadlo — doklad sa odošle sám neskôr.");
+        return;
+      }
       toast.error(e?.message ?? "Uloženie zlyhalo.");
       setStav("potvrdenie");
     }

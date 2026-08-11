@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Check, ExternalLink, FileText, Mail, Search } from "lucide-react";
+import { Check, ExternalLink, FileText, Mail, Search, Share2 } from "lucide-react";
 import { vystaveneFakturyFn } from "@/lib/faktero/mobil-faktura.functions";
 import { bulkMarkPaidFn } from "@/lib/faktero/invoice-bulk.functions";
 import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
@@ -9,7 +9,7 @@ import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
 import { FAKTURY, sPoctom } from "@/lib/faktero/mnozne";
 import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import { datum } from "./PrijateDoklady";
-import { otvorPdfFaktury } from "./pdf-faktury";
+import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 
 /**
  * Vystavené faktúry v telefóne.
@@ -245,7 +245,7 @@ function DetailFaktury({
   const pdfFn = useServerFn(generateInvoicePdf);
   const mailFn = useServerFn(sendInvoiceEmailFn);
   const paidFn = useServerFn(bulkMarkPaidFn);
-  const [busy, setBusy] = useState<"pdf" | "mail" | "paid" | null>(null);
+  const [busy, setBusy] = useState<"pdf" | "mail" | "paid" | "zdielam" | null>(null);
 
   const mena = faktura.currency ?? "EUR";
   const s = stav(faktura);
@@ -256,6 +256,21 @@ function DetailFaktury({
       await otvorPdfFaktury(() => pdfFn({ data: { invoiceId: faktura.id } }) as any);
     } catch (e: any) {
       toast.error(e?.message ?? "PDF sa nepodarilo pripraviť.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function zdielaj() {
+    setBusy("zdielam");
+    try {
+      await zdielajPdfFaktury(
+        () => pdfFn({ data: { invoiceId: faktura.id } }) as any,
+        faktura.invoice_number,
+        `Faktúra ${faktura.invoice_number} na ${suma(faktura.total, mena)}.`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Zdieľanie zlyhalo.");
     } finally {
       setBusy(null);
     }
@@ -286,7 +301,10 @@ function DetailFaktury({
     }
   }
 
-  if (busy) return <Pracujem text={busy === "pdf" ? "Pripravujem PDF…" : "Pracujem…"} />;
+  if (busy)
+    return (
+      <Pracujem text={busy === "pdf" || busy === "zdielam" ? "Pripravujem PDF…" : "Pracujem…"} />
+    );
 
   return (
     <MobilObrazovka
@@ -315,9 +333,15 @@ function DetailFaktury({
 
         <div className="space-y-2">
           <VelkeTlacidlo
+            icon={Share2}
+            label="Zdieľať faktúru"
+            hint="Pošlite ju cez WhatsApp, Messenger alebo uložte do súborov"
+            onClick={zdielaj}
+          />
+          <VelkeTlacidlo
             icon={ExternalLink}
             label="Otvoriť PDF"
-            hint="Faktúra na zobrazenie alebo zdieľanie"
+            hint="Faktúra na prezretie"
             onClick={otvorPdf}
           />
           {faktura.customer_email && (

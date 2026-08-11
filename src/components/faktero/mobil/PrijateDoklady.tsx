@@ -4,19 +4,26 @@ import { toast } from "sonner";
 import {
   BadgeCheck,
   Camera,
+  CloudOff,
   FileText,
   QrCode,
   Receipt,
+  RefreshCw,
   Search,
   Trash2,
   ExternalLink,
 } from "lucide-react";
 import {
+  createExpenseFn,
   deleteExpenseFn,
   getExpenseFileUrlFn,
   listExpensesFn,
   updateExpenseFn,
 } from "@/lib/faktero/expenses.functions";
+import { nacitajBlocekFn } from "@/lib/faktero/blocek.functions";
+import { DOKLADY, sPoctom } from "@/lib/faktero/mnozne";
+import { fronta, zmazZFronty, type CakajuciDoklad } from "@/lib/mobile/doklady-fronta";
+import { odosliCakajuce } from "@/lib/mobile/doklady-odoslanie";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
 
 /**
@@ -93,11 +100,16 @@ export function PrijateDoklady({
   onSpat: () => void;
 }) {
   const nacitaj = useServerFn(listExpensesFn);
+  const citajBlocek = useServerFn(nacitajBlocekFn);
+  const vytvorDoklad = useServerFn(createExpenseFn);
   const [doklady, setDoklady] = useState<Doklad[] | null>(null);
+  const [cakajuce, setCakajuce] = useState<CakajuciDoklad[]>([]);
+  const [odosielam, setOdosielam] = useState(false);
   const [hladanie, setHladanie] = useState("");
   const [otvoreny, setOtvoreny] = useState<Doklad | null>(null);
 
   async function obnov() {
+    setCakajuce(await fronta(firma.id));
     try {
       const rows = (await nacitaj({ data: { company_id: firma.id } })) as Doklad[];
       setDoklady(rows);
@@ -107,8 +119,36 @@ export function PrijateDoklady({
     }
   }
 
+  /**
+   * Odloženú frontu skúsime poslať pri každom otvorení zoznamu a znovu, len čo
+   * sa vráti signál — človek sa o to nemá prečo starať.
+   */
+  async function posliFrontu(nahlas: boolean) {
+    if (odosielam) return;
+    setOdosielam(true);
+    try {
+      const r = await odosliCakajuce(firma.id, citajBlocek as any, vytvorDoklad as any);
+      if (r.odoslane > 0) toast.success(`Odoslané doklady: ${r.odoslane}`);
+      else if (nahlas && r.zostalo > 0) toast.error("Zatiaľ bez signálu — skúsim to znova sám.");
+      if (r.odoslane > 0) await obnov();
+      else setCakajuce(await fronta(firma.id));
+    } finally {
+      setOdosielam(false);
+    }
+  }
+
   useEffect(() => {
-    obnov();
+    (async () => {
+      await obnov();
+      if ((await fronta(firma.id)).length) await posliFrontu(false);
+    })();
+    // eslint-disable-next-line
+  }, [firma.id]);
+
+  useEffect(() => {
+    const naSignal = () => posliFrontu(false);
+    window.addEventListener("online", naSignal);
+    return () => window.removeEventListener("online", naSignal);
     // eslint-disable-next-line
   }, [firma.id]);
 
@@ -161,6 +201,55 @@ export function PrijateDoklady({
         />
       </div>
 
+      {/*
+        Doklady, ktoré čakajú na signál. Sú hore a inak zafarbené — kým sa
+        neodošlú, nie sú v účtovníctve a človek to musí vidieť na prvý pohľad.
+      */}
+      {cakajuce.length > 0 && (
+        <div className="mb-4 overflow-hidden rounded-2xl border border-amber-500/40 bg-amber-500/5">
+          <div className="flex items-center gap-2 px-4 py-3">
+            <CloudOff className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
+            <span className="flex-1 text-[14px] font-medium text-amber-800 dark:text-amber-200">
+              Čaká na odoslanie: {sPoctom(cakajuce.length, DOKLADY)}
+            </span>
+            <button
+              onClick={() => posliFrontu(true)}
+              disabled={odosielam}
+              className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1.5 text-[13px] font-medium text-amber-900 disabled:opacity-60 dark:text-amber-100"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${odosielam ? "animate-spin" : ""}`} />
+              {odosielam ? "Odosielam…" : "Odoslať"}
+            </button>
+          </div>
+          {cakajuce.map((d) => (
+            <div
+              key={d.id}
+              className="flex items-center gap-3 border-t border-amber-500/25 px-4 py-3 text-[14px]"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">
+                  {d.vysledok?.supplier ?? "Neprečítaný doklad"}
+                </span>
+                <span className="block truncate text-[12px] text-muted-foreground">
+                  {new Date(d.ts).toLocaleString("sk-SK")}
+                  {d.chyba ? ` · ${d.chyba}` : d.qr_raw ? " · s QR kódom" : ""}
+                </span>
+              </span>
+              <button
+                onClick={async () => {
+                  await zmazZFronty(d.id);
+                  setCakajuce(await fronta(firma.id));
+                }}
+                aria-label="Zahodiť odložený doklad"
+                className="rounded-xl p-2 text-muted-foreground active:bg-secondary"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {najdene.length === 0 ? (
         <div className="grid place-items-center py-16 text-center">
           <Receipt className="mb-3 h-10 w-10 text-muted-foreground/50" />
@@ -168,9 +257,7 @@ export function PrijateDoklady({
             {hladanie ? "Nič sa nenašlo" : "Zatiaľ žiadne doklady"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {hladanie
-              ? "Skúste hľadať inak."
-              : "Naskenované bločky a faktúry sa objavia tu."}
+            {hladanie ? "Skúste hľadať inak." : "Naskenované bločky a faktúry sa objavia tu."}
           </p>
         </div>
       ) : (
