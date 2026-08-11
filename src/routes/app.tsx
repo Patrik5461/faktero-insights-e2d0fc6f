@@ -16,6 +16,7 @@ import {
   ScanLine,
   Fingerprint,
   Car,
+  Landmark,
   Lock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +35,7 @@ import { PrijateDoklady, datum } from "@/components/faktero/mobil/PrijateDoklady
 import { NovaFaktura } from "@/components/faktero/mobil/NovaFaktura";
 import { VystaveneFaktury } from "@/components/faktero/mobil/VystaveneFaktury";
 import { Jazda } from "@/components/faktero/mobil/Jazda";
+import { Banka } from "@/components/faktero/mobil/Banka";
 import { MobilPanel } from "@/components/faktero/mobil/MobilPanel";
 import {
   isBiometricAvailable,
@@ -80,7 +82,8 @@ type Krok =
   | "doklady"
   | "novaFaktura"
   | "faktury"
-  | "jazda";
+  | "jazda"
+  | "banka";
 type Zachyt = "blocek" | "pdf" | "strany";
 
 function MobilnaApka() {
@@ -218,6 +221,7 @@ function MobilnaApka() {
       />
     );
   if (krok === "jazda" && firma) return <Jazda firma={firma} onSpat={() => setKrok("domov")} />;
+  if (krok === "banka" && firma) return <Banka firma={firma} onSpat={() => setKrok("domov")} />;
   if (krok === "faktury" && firma)
     return (
       <VystaveneFaktury
@@ -251,6 +255,7 @@ function MobilnaApka() {
         onNovaFaktura={() => setKrok("novaFaktura")}
         onFaktury={() => setKrok("faktury")}
         onJazda={() => setKrok("jazda")}
+        onBanka={() => setKrok("banka")}
         onZmenitFirmu={() => setKrok("firma")}
         onPanel={() => setPanel(true)}
       />
@@ -458,6 +463,7 @@ function Domov({
   onNovaFaktura,
   onFaktury,
   onJazda,
+  onBanka,
   onZmenitFirmu,
   onPanel,
 }: {
@@ -468,6 +474,7 @@ function Domov({
   onNovaFaktura: () => void;
   onFaktury: () => void;
   onJazda: () => void;
+  onBanka: () => void;
   onZmenitFirmu: () => void;
   onPanel: () => void;
 }) {
@@ -610,6 +617,14 @@ function Domov({
           label="Prijaté doklady"
           hint="Bločky a faktúry, ktoré ste už naskenovali"
           onClick={onDoklady}
+        />
+
+        <Skupina nazov="Banka" />
+        <VelkeTlacidlo
+          icon={Landmark}
+          label="Pohyby na účte"
+          hint="Či prišli peniaze — zostatok a posledné platby"
+          onClick={onBanka}
         />
 
         <Skupina nazov="Kniha jázd" />
