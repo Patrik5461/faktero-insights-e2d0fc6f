@@ -40,6 +40,7 @@ import {
   VelkeTlacidlo,
 } from "@/components/faktero/mobil/MobilChrome";
 import { Logo } from "@/components/faktero/Logo";
+import { ZELENA_DOLE, ZELENA_HORE } from "@/lib/mobile/brand";
 
 /**
  * Mobilná aplikácia — prihlásenie, výber firmy a skenovanie dokladov.
@@ -404,45 +405,54 @@ function Domov({
         doklad uložený do zlej firmy sa hľadá ťažko.
       */}
       {/*
-        Pás pod hodinami a batériou musí byť jednoliaty. Uhlopriečny prechod má
-        vpravo hore svetlejší koniec, takže práve tam, kde telefón kreslí stav
-        batérie, svietila iná zelená než zvyšok appky. Preto ide prechod zvisle
-        a horný okraj drží značkový tmavý odtieň.
+        Pás pod hodinami a batériou musí byť jednoliaty s hlavičkou.
+
+        Odsadenie pre výrez drží ten istý prvok, ktorý kreslí pozadie, a to
+        pozadie je jednoliata značková zelená — do oblasti výrezu sa tak nemá
+        ako dostať svetlejší koniec prechodu. Presvetlenie smerom dole je až na
+        vnútornom prvku pod výrezom.
       */}
       <header
-        className="px-5 pb-6 text-primary-foreground"
+        className="text-primary-foreground"
         style={{
-          backgroundImage: "linear-gradient(180deg, #007e46 0%, #007e46 55%, #0a8f52 100%)",
-          paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)",
+          backgroundColor: ZELENA_HORE,
+          paddingTop: "env(safe-area-inset-top)",
         }}
       >
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={onPanel}
-            aria-label="Nastavenia"
-            className="-ml-2 rounded-full bg-white/15 p-2.5 active:bg-white/25"
-          >
-            <Menu className="h-[20px] w-[20px]" />
-          </button>
-          <h1 className="min-w-0 truncate text-[20px] font-semibold leading-tight">
-            Faktúry a doklady
-          </h1>
-        </div>
-
-        <button
-          onClick={viacFiriem ? onZmenitFirmu : undefined}
-          className={`mt-4 flex w-full items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5 text-left ${
-            viacFiriem ? "active:bg-white/25" : "cursor-default"
-          }`}
+        <div
+          className="px-5 pb-6 pt-3"
+          style={{
+            backgroundImage: `linear-gradient(180deg, ${ZELENA_HORE} 0%, ${ZELENA_HORE} 30%, ${ZELENA_DOLE} 100%)`,
+          }}
         >
-          <Building2 className="h-4 w-4 shrink-0" />
-          <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
-            {firma?.name ?? "Bez firmy"}
-          </span>
-          {viacFiriem && (
-            <span className="shrink-0 text-[12px] text-primary-foreground/80">zmeniť</span>
-          )}
-        </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={onPanel}
+              aria-label="Nastavenia"
+              className="-ml-2 rounded-full bg-white/15 p-2.5 active:bg-white/25"
+            >
+              <Menu className="h-[20px] w-[20px]" />
+            </button>
+            <h1 className="min-w-0 truncate text-[20px] font-semibold leading-tight">
+              Faktúry a doklady
+            </h1>
+          </div>
+
+          <button
+            onClick={viacFiriem ? onZmenitFirmu : undefined}
+            className={`mt-4 flex w-full items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5 text-left ${
+              viacFiriem ? "active:bg-white/25" : "cursor-default"
+            }`}
+          >
+            <Building2 className="h-4 w-4 shrink-0" />
+            <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
+              {firma?.name ?? "Bez firmy"}
+            </span>
+            {viacFiriem && (
+              <span className="shrink-0 text-[12px] text-primary-foreground/80">zmeniť</span>
+            )}
+          </button>
+        </div>
       </header>
 
       {/*
@@ -590,10 +600,7 @@ function ZachytDokladu({
     if (!dataUrl) return;
     setStav("citam");
     try {
-      prijmi(
-        (await nacitaj({ data: { image_data_url: dataUrl } })) as BlocekVysledok,
-        dataUrl,
-      );
+      prijmi((await nacitaj({ data: { image_data_url: dataUrl } })) as BlocekVysledok, dataUrl);
     } catch (e: any) {
       toast.error(e?.message ?? "Čítanie zlyhalo.");
       setStav("start");
@@ -635,8 +642,7 @@ function ZachytDokladu({
     }
   }
 
-  if (skenujem)
-    return <QrSkener onNajdene={precitajQr} onZrusit={() => setSkenujem(false)} />;
+  if (skenujem) return <QrSkener onNajdene={precitajQr} onZrusit={() => setSkenujem(false)} />;
   if (stav === "citam") return <Pracujem text="Čítam doklad…" />;
   if (stav === "ukladam") return <Pracujem text="Ukladám doklad…" />;
 
@@ -757,7 +763,9 @@ function Potvrdenie({
 }) {
   const mena = vysledok.currency ?? "EUR";
   const suma = (n?: number) =>
-    n == null ? "—" : new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n);
+    n == null
+      ? "—"
+      : new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n);
 
   return (
     <MobilObrazovka

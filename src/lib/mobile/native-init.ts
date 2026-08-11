@@ -15,13 +15,21 @@ export async function initNativePlatform(): Promise<void> {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return;
 
-    // Status bar — zelená brand farba
+    /*
+     * Status bar — pás pod hodinami musí mať presne farbu hlavičky.
+     *
+     * Farba sa nastavuje na oboch platformách, nielen na Androide: iOS má od
+     * Capacitora 8 vlastný podklad status baru a berie si farbu z konfigurácie
+     * zabudovanej do buildu. Kým sa nastavovala len na Androide, na iPhone
+     * ostávala tá, s ktorou bola appka zostavená — po zmene značkovej zelenej
+     * tam preto svietil svetlejší pás, ktorý sa dal opraviť len novým buildom.
+     * Takto sa farba dorovná pri každom štarte z webu.
+     */
     try {
       const { StatusBar, Style } = await import("@capacitor/status-bar");
+      const { ZELENA_HORE } = await import("./brand");
       await StatusBar.setStyle({ style: Style.Dark });
-      if (Capacitor.getPlatform() === "android") {
-        await StatusBar.setBackgroundColor({ color: "#007e46" });
-      }
+      await StatusBar.setBackgroundColor({ color: ZELENA_HORE });
       await StatusBar.setOverlaysWebView({ overlay: false });
     } catch (e) {
       console.warn("[native-init] StatusBar:", e);

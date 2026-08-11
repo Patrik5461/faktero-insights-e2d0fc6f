@@ -35,7 +35,10 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: "DARK",
+      // Musí sedieť so `ZELENA_HORE` v `src/lib/mobile/brand.ts` — táto hodnota
+      // sa zapečie do buildu, tá druhá sa nastavuje pri každom štarte z webu.
       backgroundColor: "#007e46",
+      // WebView začína až pod status barom, pás nad ním kreslí plugin.
       overlaysWebView: false,
     },
     PushNotifications: {
