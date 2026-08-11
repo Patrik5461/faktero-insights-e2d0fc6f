@@ -9,6 +9,7 @@ import {
   Check,
   FileText,
   Files,
+  FilePlus2,
   LogOut,
   QrCode,
   Receipt,
@@ -28,6 +29,8 @@ import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { PrijateDoklady, datum } from "@/components/faktero/mobil/PrijateDoklady";
+import { NovaFaktura } from "@/components/faktero/mobil/NovaFaktura";
+import { VystaveneFaktury } from "@/components/faktero/mobil/VystaveneFaktury";
 import { MobilPanel } from "@/components/faktero/mobil/MobilPanel";
 import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
 import {
@@ -59,7 +62,15 @@ export const Route = createFileRoute("/app")({
 
 type Firma = { id: string; name: string };
 type Uhrada = "hotovost" | "karta" | "prevod";
-type Krok = "nacitavam" | "prihlasenie" | "firma" | "domov" | "zachyt" | "doklady";
+type Krok =
+  | "nacitavam"
+  | "prihlasenie"
+  | "firma"
+  | "domov"
+  | "zachyt"
+  | "doklady"
+  | "novaFaktura"
+  | "faktury";
 type Zachyt = "blocek" | "pdf" | "strany";
 
 function MobilnaApka() {
@@ -112,7 +123,7 @@ function MobilnaApka() {
       try {
         const { App } = await import("@capacitor/app");
         const h = await App.addListener("backButton", () => {
-          setKrok((k) => (k === "zachyt" || k === "doklady" || k === "firma" ? "domov" : k));
+          setKrok((k) => (k === "domov" || k === "prihlasenie" || k === "nacitavam" ? k : "domov"));
         });
         odstran = () => h.remove();
       } catch {
@@ -144,6 +155,22 @@ function MobilnaApka() {
     );
   if (krok === "doklady" && firma)
     return <PrijateDoklady firma={firma} onSpat={() => setKrok("domov")} />;
+  if (krok === "novaFaktura" && firma)
+    return (
+      <NovaFaktura
+        firma={firma}
+        onSpat={() => setKrok("domov")}
+        onHotovo={() => setKrok("faktury")}
+      />
+    );
+  if (krok === "faktury" && firma)
+    return (
+      <VystaveneFaktury
+        firma={firma}
+        onSpat={() => setKrok("domov")}
+        onNova={() => setKrok("novaFaktura")}
+      />
+    );
   if (krok === "zachyt" && firma)
     return (
       <ZachytDokladu
@@ -166,6 +193,8 @@ function MobilnaApka() {
           setKrok("zachyt");
         }}
         onDoklady={() => setKrok("doklady")}
+        onNovaFaktura={() => setKrok("novaFaktura")}
+        onFaktury={() => setKrok("faktury")}
         onZmenitFirmu={() => setKrok("firma")}
         onPanel={() => setPanel(true)}
       />
@@ -177,6 +206,7 @@ function MobilnaApka() {
         viacFiriem={firmy.length > 1}
         onZmenitFirmu={() => setKrok("firma")}
         onDoklady={() => setKrok("doklady")}
+        onFaktury={() => setKrok("faktury")}
         onOdhlasit={odhlas}
       />
     </>
@@ -321,6 +351,8 @@ function Domov({
   viacFiriem,
   onZachyt,
   onDoklady,
+  onNovaFaktura,
+  onFaktury,
   onZmenitFirmu,
   onPanel,
 }: {
@@ -328,6 +360,8 @@ function Domov({
   viacFiriem: boolean;
   onZachyt: (d: Zachyt) => void;
   onDoklady: () => void;
+  onNovaFaktura: () => void;
+  onFaktury: () => void;
   onZmenitFirmu: () => void;
   onPanel: () => void;
 }) {
@@ -391,7 +425,7 @@ function Domov({
             <Menu className="h-[20px] w-[20px]" />
           </button>
           <h1 className="min-w-0 truncate text-[20px] font-semibold leading-tight">
-            Skenovanie dokladov
+            Faktúry a doklady
           </h1>
         </div>
 
@@ -411,12 +445,32 @@ function Domov({
         </button>
       </header>
 
+      {/*
+        Appka robí dve veci: vystavuje faktúry a zbiera prijaté doklady. Sú to
+        opačné strany účtovníctva, takže sú oddelené — inak sa v štyroch
+        rovnakých tlačidlách ľahko ťukne vedľa a doklad skončí v zlej agende.
+      */}
       <main className="flex-1 space-y-3 px-4 pt-5">
+        <Skupina nazov="Fakturácia" />
+        <VelkeTlacidlo
+          icon={FilePlus2}
+          label="Nová faktúra"
+          hint="Odberateľ, položky, splatnosť — a rovno odoslať"
+          variant="primary"
+          onClick={onNovaFaktura}
+        />
+        <VelkeTlacidlo
+          icon={FileText}
+          label="Vystavené faktúry"
+          hint="Kto ešte nezaplatil, PDF a odoslanie"
+          onClick={onFaktury}
+        />
+
+        <Skupina nazov="Skenovanie dokladov" />
         <VelkeTlacidlo
           icon={QrCode}
           label="Bloček s QR kódom"
           hint="Načíta sa z Finančnej správy aj s položkami"
-          variant="primary"
           onClick={() => onZachyt("blocek")}
         />
         <VelkeTlacidlo
@@ -431,19 +485,24 @@ function Domov({
           hint="Strana po strane, uloží sa ako jedno PDF"
           onClick={() => onZachyt("strany")}
         />
-
-        <div className="pt-3">
-          <VelkeTlacidlo
-            icon={Receipt}
-            label="Prijaté doklady"
-            hint="Bločky a faktúry, ktoré ste už naskenovali"
-            onClick={onDoklady}
-          />
-        </div>
+        <VelkeTlacidlo
+          icon={Receipt}
+          label="Prijaté doklady"
+          hint="Bločky a faktúry, ktoré ste už naskenovali"
+          onClick={onDoklady}
+        />
       </main>
 
       <div style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }} />
     </div>
+  );
+}
+
+function Skupina({ nazov }: { nazov: string }) {
+  return (
+    <p className="px-1 pb-0.5 pt-3 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+      {nazov}
+    </p>
   );
 }
 

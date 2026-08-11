@@ -4,6 +4,7 @@ import {
   Building2,
   BookOpen,
   ChevronRight,
+  FileText,
   Fingerprint,
   Globe,
   LogOut,
@@ -35,6 +36,7 @@ export function MobilPanel({
   viacFiriem,
   onZmenitFirmu,
   onDoklady,
+  onFaktury,
   onOdhlasit,
 }: {
   otvoreny: boolean;
@@ -44,6 +46,7 @@ export function MobilPanel({
   viacFiriem: boolean;
   onZmenitFirmu: () => void;
   onDoklady: () => void;
+  onFaktury: () => void;
   onOdhlasit: () => void;
 }) {
   const [biometriaMozna, setBiometriaMozna] = useState(false);
@@ -167,6 +170,14 @@ export function MobilPanel({
               }}
             />
           )}
+          <Polozka
+            icon={FileText}
+            label="Vystavené faktúry"
+            onClick={() => {
+              onZavri();
+              onFaktury();
+            }}
+          />
           <Polozka
             icon={Receipt}
             label="Prijaté doklady"
