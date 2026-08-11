@@ -15,7 +15,8 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { podkladyFakturyFn, vystavFakturuFn } from "@/lib/faktero/mobil-faktura.functions";
+import { podkladyFakturyFn } from "@/lib/faktero/mobil-faktura.functions";
+import { vystavFakturuFn } from "@/lib/faktero/faktura-vystavenie.functions";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, PRAZDNE_PODKLADY, type Podklady } from "@/lib/faktero/ceny";
 import { lookupCompanyByIcoFn } from "@/lib/faktero/company-lookup.functions";
