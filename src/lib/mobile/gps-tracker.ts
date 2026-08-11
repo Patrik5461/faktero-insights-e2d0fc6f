@@ -7,6 +7,8 @@
 type Point = { lat: number; lng: number; ts: number };
 
 let watchId: string | null = null;
+/** Sledovanie v prehliadači beží mimo Capacitora, preto vlastné číslo. */
+let webWatchId: number | null = null;
 let points: Point[] = [];
 let startedAt: number | null = null;
 
@@ -21,8 +23,40 @@ function haversineKm(a: Point, b: Point): number {
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
+/**
+ * Sledovanie v prehliadači.
+ *
+ * Capacitor plugin má na webe `requestPermissions` nedostupné a vyhodí
+ * „Not implemented on web" — na webovej verzii by sa teda jazda nikdy
+ * nespustila. Prehliadač pritom vlastné sledovanie polohy má.
+ */
+function startWeb(): { ok: boolean; error?: string } {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    return { ok: false, error: "Prehliadač neposkytuje polohu" };
+  }
+  points = [];
+  startedAt = Date.now();
+  webWatchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      points.push({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        ts: pos.timestamp,
+      });
+    },
+    () => {
+      /* jednotlivá chyba merania nemá jazdu zhodiť */
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+  );
+  return { ok: true };
+}
+
 export async function startTracking(): Promise<{ ok: boolean; error?: string }> {
   try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) return startWeb();
+
     const { Geolocation } = await import("@capacitor/geolocation");
     const perm = await Geolocation.requestPermissions();
     if (perm.location !== "granted") return { ok: false, error: "Bez povolenia polohy" };
@@ -53,10 +87,14 @@ export async function stopTracking(): Promise<{
       const { Geolocation } = await import("@capacitor/geolocation");
       await Geolocation.clearWatch({ id: watchId });
     }
+    if (webWatchId !== null && typeof navigator !== "undefined") {
+      navigator.geolocation.clearWatch(webWatchId);
+    }
   } catch {
     // watch už mohol byť zrušený systémom — cieľom je len uvoľniť ho
   }
   watchId = null;
+  webWatchId = null;
   let distance = 0;
   for (let i = 1; i < points.length; i++) distance += haversineKm(points[i - 1], points[i]);
   const start = points[0] ?? null;
@@ -75,7 +113,7 @@ export async function stopTracking(): Promise<{
 }
 
 export function isTracking(): boolean {
-  return watchId !== null;
+  return watchId !== null || webWatchId !== null;
 }
 export function getCurrentDistanceKm(): number {
   let d = 0;
