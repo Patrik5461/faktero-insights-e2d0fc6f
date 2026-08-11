@@ -67,25 +67,34 @@ function ibanCitatelne(iban: string | null): string {
   return iban.replace(/\s+/g, "").replace(/(.{4})/g, "$1 ").trim();
 }
 
+/** Porovnanie názvov naslepo — „PALIERA s.r.o." a „PALIERA s. r. o." je tá istá firma. */
+function rovnakeMeno(a: string | null | undefined, b: string | null | undefined): boolean {
+  const o = (s?: string | null) => (s ?? "").toLowerCase().replace(/[^a-z0-9á-ž]/gi, "");
+  return !!o(a) && o(a) === o(b);
+}
+
 /**
  * Nadpis riadka.
  *
- * Časť pohybov nemá od banky ani protistranu, ani popis (typicky platby kartou).
- * Napísať tam „Bankový pohyb" a pod to pomlčku nikomu nepomôže — aspoň smer
- * peňazí je z toho vidieť.
+ * Dve pasce zo skutočných dát: časť pohybov nemá od banky ani protistranu, ani
+ * popis (platby kartou), a pri poplatkoch a dani si banka dáva ako protistranu
+ * **samotného majiteľa účtu** — vypísať vlastný názov firmy na každý druhý
+ * riadok nehovorí nič, kým popis („Transakčná daň") hovorí všetko.
  */
-function nadpisPohybu(p: Pohyb): string {
-  const meno = p.protistrana?.trim() || p.popis?.trim();
-  if (meno) return meno;
-  return p.suma > 0 ? "Prijatá platba" : "Odchádzajúca platba";
+function nadpisPohybu(p: Pohyb, firma: string): string {
+  const protistrana = p.protistrana?.trim();
+  const popis = p.popis?.trim();
+  if (protistrana && !rovnakeMeno(protistrana, firma)) return protistrana;
+  return popis || protistrana || (p.suma > 0 ? "Prijatá platba" : "Odchádzajúca platba");
 }
 
-function podnadpisPohybu(p: Pohyb): string | null {
+function podnadpisPohybu(p: Pohyb, firma: string): string | null {
+  const popis = p.popis?.trim();
   const casti = [
     p.faktura ? `k faktúre ${p.faktura}` : null,
     p.vs ? `VS ${p.vs}` : null,
-    // Popis sa opakovať nemá — keď chýba protistrana, je už v nadpise.
-    p.protistrana?.trim() ? p.popis?.trim() || null : null,
+    // Popis len vtedy, keď nie je už v nadpise.
+    popis && popis !== nadpisPohybu(p, firma) ? popis : null,
   ].filter(Boolean);
   return casti.length ? casti.join(" · ") : null;
 }
@@ -290,11 +299,11 @@ export function Banka({
                   >
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[15px] font-medium leading-tight">
-                        {nadpisPohybu(p)}
+                        {nadpisPohybu(p, firma.name)}
                       </div>
-                      {podnadpisPohybu(p) && (
+                      {podnadpisPohybu(p, firma.name) && (
                         <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
-                          {podnadpisPohybu(p)}
+                          {podnadpisPohybu(p, firma.name)}
                         </div>
                       )}
                     </div>
