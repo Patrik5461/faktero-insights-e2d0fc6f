@@ -242,7 +242,20 @@ function CustomersPage() {
                       onChange={(e) => list.toggleSelect(c.id, e.target.checked)}
                     />
                   </td>
-                  <td className="p-3 font-medium">{c.name}</td>
+                  {/*
+                    Otvoriť kartu sa dalo len ceruzkou na opačnom konci riadka.
+                    Meno je to, na čo človek ťukne — v zozname faktúr to tak je
+                    tiež.
+                  */}
+                  <td className="p-3 font-medium">
+                    <button
+                      onClick={() => setEditing(c)}
+                      className="text-left hover:underline"
+                      title="Otvoriť kartu odberateľa"
+                    >
+                      {c.name}
+                    </button>
+                  </td>
                   <td className="p-3">{c.ico ?? "—"}</td>
                   <td className="p-3">{c.dic ?? "—"}</td>
                   <td className="p-3">{c.email ?? "—"}</td>
