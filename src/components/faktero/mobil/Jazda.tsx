@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Car, Play, Plus, Square } from "lucide-react";
+import { Car, ChevronRight, Play, Plus, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { getCurrentDistanceKm, startTracking, stopTracking } from "@/lib/mobile/gps-tracker";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem } from "./MobilChrome";
+import { HistoriaJazd } from "./HistoriaJazd";
 
 /**
  * Záznam jazdy v telefóne.
@@ -42,6 +43,7 @@ export function Jazda({
   const [odkedy, setOdkedy] = useState<number | null>(null);
   const [ukladam, setUkladam] = useState(false);
   const [pridavam, setPridavam] = useState(false);
+  const [historia, setHistoria] = useState<Vozidlo | null>(null);
   const cenaPaliva = useRef<number | null>(null);
 
   async function nacitajVozidla(vyberId?: string) {
@@ -133,6 +135,10 @@ export function Jazda({
   if (vozidla === null) return <Pracujem text="Načítavam vozidlá…" />;
   if (ukladam) return <Pracujem text="Ukladám jazdu…" />;
 
+  if (historia) {
+    return <HistoriaJazd firma={firma} vozidlo={historia} onSpat={() => setHistoria(null)} />;
+  }
+
   if (pridavam) {
     return (
       <NoveVozidlo
@@ -200,24 +206,43 @@ export function Jazda({
           <div className="mb-2 text-sm font-medium">Vozidlo</div>
           <div className="space-y-2">
             {vozidla.map((v) => (
-              <button
+              /*
+               * Dve akcie v jednom riadku: ťuknutie vyberá auto pre novú jazdu,
+               * šípka otvára jeho históriu. Keby história bola na celom riadku,
+               * nedalo by sa auto vybrať — a výber je to, čo človek robí v aute.
+               */
+              <div
                 key={v.id}
-                disabled={bezi}
-                onClick={() => setVozidloId(v.id)}
-                className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left transition disabled:opacity-60 ${
+                className={`flex w-full items-center rounded-2xl border transition ${
                   vozidloId === v.id
-                    ? "border-primary bg-primary/10 font-semibold text-primary"
+                    ? "border-primary bg-primary/10 text-primary"
                     : "border-border/70 bg-card"
-                }`}
+                } ${bezi ? "opacity-60" : ""}`}
               >
-                <Car className="h-4 w-4 shrink-0" />
-                <span className="min-w-0 flex-1 truncate text-[15px]">{v.name}</span>
-                {v.license_plate && (
-                  <span className="shrink-0 text-[13px] text-muted-foreground">
-                    {v.license_plate}
-                  </span>
-                )}
-              </button>
+                <button
+                  disabled={bezi}
+                  onClick={() => setVozidloId(v.id)}
+                  className={`flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 pr-2 text-left ${
+                    vozidloId === v.id ? "font-semibold" : ""
+                  }`}
+                >
+                  <Car className="h-4 w-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate text-[15px]">{v.name}</span>
+                  {v.license_plate && (
+                    <span className="shrink-0 text-[13px] text-muted-foreground">
+                      {v.license_plate}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setHistoria(v)}
+                  aria-label={`História jázd — ${v.name}`}
+                  className="flex shrink-0 items-center gap-0.5 self-stretch rounded-r-2xl px-3 text-[13px] text-muted-foreground active:bg-secondary"
+                >
+                  história
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             ))}
             <button
               disabled={bezi}
