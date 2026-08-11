@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { jeOtvorena, jePoSplatnosti, sucetDokladov } from "@/lib/faktero/faktury-sumy";
 import { useServerFn } from "@tanstack/react-start";
 import { getRecurringWidgetStats } from "@/lib/faktero/recurring.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -150,7 +151,7 @@ function Dashboard() {
           supabase
             .from("invoices")
             .select(
-              "id, invoice_number, customer_name, customer_id, total, subtotal, vat_total, currency, status, issue_date, due_date, paid_at, created_at",
+              "id, invoice_number, customer_name, customer_id, total, subtotal, vat_total, currency, status, type, issue_date, due_date, paid_at, created_at",
             )
             .eq("company_id", companyId)
             .is("deleted_at", null)
@@ -306,11 +307,7 @@ function Dashboard() {
   const countdown = useCountdown(new Date("2027-01-01T00:00:00"));
 
   const isEmpty = !loading && allInvoices.length === 0;
-  const hasPaidInvoice = useMemo(
-    () => allInvoices.some((i) => i.status === "paid"),
-    [allInvoices],
-  );
-
+  const hasPaidInvoice = useMemo(() => allInvoices.some((i) => i.status === "paid"), [allInvoices]);
 
   return (
     <>
@@ -356,7 +353,6 @@ function Dashboard() {
             </div>
           </>
         )}
-
 
         <div className="mt-6">
           <BankWidget />
@@ -896,8 +892,7 @@ function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
     );
   }
 
-  const revenueDelta =
-    metrics.prevMonthRevenue > 0 ? (metrics.monthRevenueDelta as number) : null;
+  const revenueDelta = metrics.prevMonthRevenue > 0 ? (metrics.monthRevenueDelta as number) : null;
 
   return (
     <div className="grid divide-y divide-border/60 rounded-xl border border-border/60 bg-card sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
@@ -922,7 +917,10 @@ function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
         value={fmt(metrics.receivables)}
         tone="primary"
         meta={
-          <Link to="/faktury" className="inline-flex items-center gap-1 text-primary hover:underline">
+          <Link
+            to="/faktury"
+            className="inline-flex items-center gap-1 text-primary hover:underline"
+          >
             Zobraziť pohľadávky <ArrowUpRight className="h-3 w-3" />
           </Link>
         }
@@ -950,7 +948,6 @@ function EmptyDashboard() {
     </div>
   );
 }
-
 
 function Panel({
   title,
@@ -1046,20 +1043,28 @@ function computeMetrics(invoices: any[], payments: any[], customers: any[]) {
     return x >= a && x < b;
   };
 
-  const monthRevenue = invoices
-    .filter((i) => i.status !== "cancelled" && new Date(i.issue_date) >= mStart)
-    .reduce((a, i) => a + Number(i.total ?? 0), 0);
-  const prevMonthRevenue = invoices
-    .filter((i) => i.status !== "cancelled" && inMonth(i.issue_date, pmStart, pmEnd))
-    .reduce((a, i) => a + Number(i.total ?? 0), 0);
+  /*
+   * Obrat sa počíta cez spoločné pravidlá: koncept ešte nie je doklad,
+   * zálohová faktúra to isté plnenie zdvojuje a dobropis sumu znižuje.
+   */
+  const monthRevenue = sucetDokladov(
+    invoices.filter((i) => new Date(i.issue_date) >= mStart),
+    "total",
+  );
+  const prevMonthRevenue = sucetDokladov(
+    invoices.filter((i) => inMonth(i.issue_date, pmStart, pmEnd)),
+    "total",
+  );
   const monthRevenueDelta =
     prevMonthRevenue > 0 ? ((monthRevenue - prevMonthRevenue) / prevMonthRevenue) * 100 : 0;
 
-  const unpaidStatuses = ["issued", "sent", "overdue"];
-  const unpaid = invoices.filter((i) => unpaidStatuses.includes(i.status));
-  const unpaidAmount = unpaid.reduce((a, i) => a + Number(i.total ?? 0), 0);
-  const overdueArr = invoices.filter((i) => i.status === "overdue");
-  const overdueAmount = overdueArr.reduce((a, i) => a + Number(i.total ?? 0), 0);
+  const unpaid = invoices.filter(jeOtvorena);
+  const unpaidAmount = sucetDokladov(unpaid, "total");
+  // Po splatnosti podľa dátumu — stav `overdue` do databázy nikto nezapisuje,
+  // takže filter podľa neho ukazoval nulu aj pri kope dlžníkov.
+  const dnesISO = new Date().toISOString().slice(0, 10);
+  const overdueArr = invoices.filter((i) => jePoSplatnosti(i, dnesISO));
+  const overdueAmount = sucetDokladov(overdueArr, "total");
 
   const last30 = Date.now() - 30 * 86400000;
   const paidLast30 = payments
@@ -1264,9 +1269,7 @@ function computeApiStats(logs: any[]) {
   todayStart.setHours(0, 0, 0, 0);
   const today = logs.filter((l) => new Date(l.created_at) >= todayStart).length;
   const month = logs.length;
-  const success = logs.filter(
-    (l) => Number(l.status) >= 200 && Number(l.status) < 400,
-  ).length;
+  const success = logs.filter((l) => Number(l.status) >= 200 && Number(l.status) < 400).length;
   const successRate = month > 0 ? (success / month) * 100 : 100;
   return { today, month, successRate };
 }
@@ -1318,6 +1321,8 @@ function buildAging(rows: any[], kind: "receivable" | "payable"): AgingBucket[] 
 
   rows.forEach((r) => {
     if (!openStatuses.has(r.status)) return;
+    // Zálohová faktúra ani dobropis nie sú pohľadávka po splatnosti.
+    if (kind === "receivable" && (r.type === "proforma" || r.type === "credit_note")) return;
     if (!r.due_date) return;
     const due = new Date(r.due_date);
     due.setHours(0, 0, 0, 0);
@@ -1339,13 +1344,11 @@ function buildAging(rows: any[], kind: "receivable" | "payable"): AgingBucket[] 
 function computeDSO(invoices: any[]) {
   const now = Date.now();
   const yearAgo = now - 365 * 86400000;
-  const openStatuses = new Set(["issued", "sent", "overdue"]);
-  const receivables = invoices
-    .filter((i) => openStatuses.has(i.status))
-    .reduce((a, i) => a + Number(i.total ?? 0), 0);
-  const revenue365 = invoices
-    .filter((i) => i.status !== "cancelled" && new Date(i.issue_date).getTime() >= yearAgo)
-    .reduce((a, i) => a + Number(i.total ?? 0), 0);
+  const receivables = sucetDokladov(invoices.filter(jeOtvorena), "total");
+  const revenue365 = sucetDokladov(
+    invoices.filter((i) => new Date(i.issue_date).getTime() >= yearAgo),
+    "total",
+  );
   const days = revenue365 > 0 ? (receivables / revenue365) * 365 : 0;
   return { days, receivables, revenue365 };
 }

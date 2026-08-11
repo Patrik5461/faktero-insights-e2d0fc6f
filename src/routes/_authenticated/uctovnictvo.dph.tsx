@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { znamienkoDokladu } from "@/lib/faktero/faktury-sumy";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -149,6 +150,10 @@ function DphPage() {
           .is("deleted_at", null)
           .neq("status", "draft")
           .neq("status", "cancelled")
+          // Zálohová faktúra je výzva na zaplatenie preddavku, nie zdaniteľné
+          // plnenie — do priznania nepatrí. Plnenie prizná až vyúčtovacia
+          // faktúra, inak by tá istá suma bola v prehľade dvakrát.
+          .neq("type", "proforma")
           .order("issue_date", { ascending: true }),
         supabase
           .from("purchase_invoices")
@@ -190,8 +195,9 @@ function DphPage() {
       if (!inv) continue;
       const key = inv.reverse_charge ? "pdp" : vatBucketKey(it.vat_rate);
       const riadok = bucket(b, key);
-      riadok.base += Number(it.subtotal || 0);
-      riadok.vat += Number(it.vat_amount || 0);
+      const zn = znamienkoDokladu(inv.type);
+      riadok.base += zn * Number(it.subtotal || 0);
+      riadok.vat += zn * Number(it.vat_amount || 0);
       riadok.docs.add(it.invoice_id);
     }
     for (const r of Object.keys(b)) b[r].count = b[r].docs.size;
@@ -261,8 +267,9 @@ function DphPage() {
     lines.push("VYSTAVENÉ FAKTÚRY");
     lines.push("Číslo;Dátum;Odberateľ;Základ;DPH;Spolu;PDP");
     for (const i of invoices) {
+      const zn = znamienkoDokladu(i.type);
       lines.push(
-        `${i.invoice_number};${i.issue_date};${(i.customer_name || "").replace(/;/g, ",")};${Number(i.subtotal || 0).toFixed(2)};${Number(i.vat_total || 0).toFixed(2)};${Number(i.total || 0).toFixed(2)};${i.reverse_charge ? "áno" : "nie"}`,
+        `${i.invoice_number};${i.issue_date};${(i.customer_name || "").replace(/;/g, ",")};${(zn * Number(i.subtotal || 0)).toFixed(2)};${(zn * Number(i.vat_total || 0)).toFixed(2)};${(zn * Number(i.total || 0)).toFixed(2)};${i.reverse_charge ? "áno" : "nie"}`,
       );
     }
     lines.push("");
@@ -307,7 +314,7 @@ function DphPage() {
 <table><tr class="tot"><td>${rozdiel >= 0 ? "Odvod DPH" : "Nadmerný odpočet"}</td><td style="text-align:right">${fmt(Math.abs(rozdiel))}</td></tr></table>
 <h2>Vystavené faktúry (${invoices.length})</h2>
 <table><thead><tr><th>Číslo</th><th>Dátum</th><th>Odberateľ</th><th style="text-align:right">Základ</th><th style="text-align:right">DPH</th><th style="text-align:right">Spolu</th></tr></thead>
-<tbody>${invoices.map((i) => `<tr><td>${i.invoice_number}</td><td>${i.issue_date}</td><td>${i.customer_name || ""}${i.reverse_charge ? " (PDP)" : ""}</td><td style="text-align:right">${fmt(Number(i.subtotal || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(i.vat_total || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(i.total || 0), i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
+<tbody>${invoices.map((i) => `<tr><td>${i.invoice_number}</td><td>${i.issue_date}</td><td>${i.customer_name || ""}${i.reverse_charge ? " (PDP)" : ""}${i.type === "credit_note" ? " (dobropis)" : ""}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.vat_total || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
 <h2>Prijaté faktúry (${purchases.length})</h2>
 <table><thead><tr><th>Číslo</th><th>Dátum</th><th>Dodávateľ</th><th style="text-align:right">Základ</th><th style="text-align:right">DPH</th><th style="text-align:right">Spolu</th></tr></thead>
 <tbody>${purchases.map((p) => `<tr><td>${p.invoice_number}</td><td>${p.issue_date}</td><td>${p.supplier_name || ""}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.vat_amount || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.amount_total || 0), p.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
@@ -520,15 +527,19 @@ function DphPage() {
                     <TableCell>
                       {i.customer_name}
                       {i.reverse_charge ? " (PDP)" : ""}
+                      {i.type === "credit_note" ? " (dobropis)" : ""}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmt(Number(i.subtotal || 0), i.currency || "EUR")}
+                      {fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmt(Number(i.vat_total || 0), i.currency || "EUR")}
+                      {fmt(
+                        znamienkoDokladu(i.type) * Number(i.vat_total || 0),
+                        i.currency || "EUR",
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {fmt(Number(i.total || 0), i.currency || "EUR")}
+                      {fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR")}
                     </TableCell>
                   </TableRow>
                 ))}
