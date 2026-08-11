@@ -84,8 +84,6 @@ function MobilnaApka() {
   const [zachyt, setZachyt] = useState<Zachyt>("blocek");
   const [email, setEmail] = useState<string | null>(null);
   const [panel, setPanel] = useState(false);
-  /* Knihu jázd ukazujeme len firme, ktorá má auto — inak je to zbytočný riadok. */
-  const [maVozidla, setMaVozidla] = useState(false);
 
   /** Kto je prihlásený a za akú firmu — to isté sa rieši pri štarte aj po prihlásení. */
   async function zisti() {
@@ -118,29 +116,6 @@ function MobilnaApka() {
   useEffect(() => {
     zisti();
   }, []);
-
-  /*
-   * Príznak sa musí prepočítať pri každej zmene firmy, nielen pri štarte —
-   * po prepnutí na firmu s autom by inak kniha jázd v menu chýbala a naopak.
-   */
-  useEffect(() => {
-    if (!firma) {
-      setMaVozidla(false);
-      return;
-    }
-    let zrusene = false;
-    supabase
-      .from("vehicles")
-      .select("id", { count: "exact", head: true })
-      .eq("company_id", firma.id)
-      .eq("active", true)
-      .then(({ count }) => {
-        if (!zrusene) setMaVozidla((count ?? 0) > 0);
-      });
-    return () => {
-      zrusene = true;
-    };
-  }, [firma?.id]);
 
   /*
    * Hardvérové tlačidlo Späť na Androide inak appku rovno zavrie — aj keď je
@@ -226,7 +201,6 @@ function MobilnaApka() {
         onNovaFaktura={() => setKrok("novaFaktura")}
         onFaktury={() => setKrok("faktury")}
         onJazda={() => setKrok("jazda")}
-        maVozidla={maVozidla}
         onZmenitFirmu={() => setKrok("firma")}
         onPanel={() => setPanel(true)}
       />
@@ -386,7 +360,6 @@ function Domov({
   onNovaFaktura,
   onFaktury,
   onJazda,
-  maVozidla,
   onZmenitFirmu,
   onPanel,
 }: {
@@ -397,7 +370,6 @@ function Domov({
   onNovaFaktura: () => void;
   onFaktury: () => void;
   onJazda: () => void;
-  maVozidla: boolean;
   onZmenitFirmu: () => void;
   onPanel: () => void;
 }) {
@@ -537,17 +509,13 @@ function Domov({
           onClick={onDoklady}
         />
 
-        {maVozidla && (
-          <>
-            <Skupina nazov="Kniha jázd" />
-            <VelkeTlacidlo
-              icon={Car}
-              label="Nová jazda"
-              hint="Kilometre odmeria telefón, stačí štart a stop"
-              onClick={onJazda}
-            />
-          </>
-        )}
+        <Skupina nazov="Kniha jázd" />
+        <VelkeTlacidlo
+          icon={Car}
+          label="Nová jazda"
+          hint="Kilometre odmeria telefón, stačí štart a stop"
+          onClick={onJazda}
+        />
       </main>
 
       <div style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }} />

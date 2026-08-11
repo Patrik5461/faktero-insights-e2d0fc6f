@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Car, Play, Square } from "lucide-react";
+import { Car, Play, Plus, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { getCurrentDistanceKm, startTracking, stopTracking } from "@/lib/mobile/gps-tracker";
+import { friendlyError } from "@/lib/faktero/plan-error";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem } from "./MobilChrome";
 
 /**
@@ -40,19 +41,24 @@ export function Jazda({
   const [km, setKm] = useState(0);
   const [odkedy, setOdkedy] = useState<number | null>(null);
   const [ukladam, setUkladam] = useState(false);
+  const [pridavam, setPridavam] = useState(false);
   const cenaPaliva = useRef<number | null>(null);
 
-  useEffect(() => {
-    supabase
+  async function nacitajVozidla(vyberId?: string) {
+    const { data } = await supabase
       .from("vehicles")
       .select("id, name, license_plate")
       .eq("company_id", firma.id)
       .eq("active", true)
-      .order("name")
-      .then(({ data }) => {
-        setVozidla(data ?? []);
-        if (data?.[0]) setVozidloId(data[0].id);
-      });
+      .order("name");
+    setVozidla(data ?? []);
+    const vyber = vyberId ?? data?.[0]?.id;
+    if (vyber) setVozidloId(vyber);
+  }
+
+  useEffect(() => {
+    nacitajVozidla();
+    // eslint-disable-next-line
   }, [firma.id]);
 
   /* Cena z posledného tankovania — bez nej nemá jazda náklad. */
@@ -127,14 +133,32 @@ export function Jazda({
   if (vozidla === null) return <Pracujem text="Načítavam vozidlá…" />;
   if (ukladam) return <Pracujem text="Ukladám jazdu…" />;
 
+  if (pridavam) {
+    return (
+      <NoveVozidlo
+        firma={firma}
+        onSpat={() => setPridavam(false)}
+        onPridane={async (id: string) => {
+          setPridavam(false);
+          await nacitajVozidla(id);
+        }}
+      />
+    );
+  }
+
   if (vozidla.length === 0) {
     return (
-      <MobilObrazovka title="Jazda" subtitle={firma.name} onBack={onSpat}>
+      <MobilObrazovka
+        title="Jazda"
+        subtitle={firma.name}
+        onBack={onSpat}
+        footer={<HlavneTlacidlo onClick={() => setPridavam(true)}>Pridať vozidlo</HlavneTlacidlo>}
+      >
         <div className="grid place-items-center py-16 text-center">
           <Car className="mb-3 h-10 w-10 text-muted-foreground/50" />
           <p className="text-sm font-medium">Firma nemá žiadne vozidlo</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Vozidlo sa pridáva na webe v sekcii Vozidlá a tankovanie.
+            Pridajte ho tu — stačí názov a značka, zvyšok sa dá doplniť na webe.
           </p>
         </div>
       </MobilObrazovka>
@@ -195,6 +219,14 @@ export function Jazda({
                 )}
               </button>
             ))}
+            <button
+              disabled={bezi}
+              onClick={() => setPridavam(true)}
+              className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border px-4 py-3 text-left text-muted-foreground disabled:opacity-60"
+            >
+              <Plus className="h-4 w-4 shrink-0" />
+              <span className="text-[15px]">Pridať vozidlo</span>
+            </button>
           </div>
         </div>
 
@@ -215,6 +247,111 @@ export function Jazda({
           Počas jazdy nechajte appku otvorenú — po zhasnutí displeja telefón meranie polohy zastaví
           a kilometre by sa doratali nesprávne.
         </p>
+      </div>
+    </MobilObrazovka>
+  );
+}
+
+/* ------------------------- Nové vozidlo ------------------------- */
+
+/**
+ * Pridanie auta priamo z telefónu.
+ *
+ * Formulár na webe má desať polí, tu stačia tri — auto sa najčastejšie
+ * zakladá práve vtedy, keď doň človek sadá a chce začať merať. Zvyšok
+ * (typ, palivo, počiatočný stav tachometra) sa dá doplniť na webe.
+ *
+ * Spotreba je zámerne súčasťou už tohto kroku: bez nej nemá jazda náklad a
+ * vyhodnotenie zákaziek aj kniha jázd ukážu pri doprave nulu.
+ */
+function NoveVozidlo({
+  firma,
+  onSpat,
+  onPridane,
+}: {
+  firma: { id: string; name: string };
+  onSpat: () => void;
+  onPridane: (id: string) => void;
+}) {
+  const [nazov, setNazov] = useState("");
+  const [spz, setSpz] = useState("");
+  const [spotreba, setSpotreba] = useState("");
+  const [ukladam, setUkladam] = useState(false);
+
+  async function uloz() {
+    if (!nazov.trim()) return toast.error("Zadajte názov vozidla.");
+    setUkladam(true);
+    const cislo = Number(spotreba.replace(",", "."));
+    const { data, error } = await supabase
+      .from("vehicles")
+      .insert({
+        company_id: firma.id,
+        name: nazov.trim(),
+        license_plate: spz.trim() || null,
+        consumption_l_100km: Number.isFinite(cislo) && cislo > 0 ? cislo : null,
+        active: true,
+      })
+      .select("id")
+      .single();
+    setUkladam(false);
+    if (error || !data) {
+      // Vozidlo smie zakladať len správca firmy — bežnému členovi to odmietne RLS.
+      return toast.error(friendlyError(error, "Vozidlo sa nepodarilo pridať."));
+    }
+    toast.success("Vozidlo pridané");
+    onPridane(data.id);
+  }
+
+  if (ukladam) return <Pracujem text="Ukladám vozidlo…" />;
+
+  return (
+    <MobilObrazovka
+      title="Nové vozidlo"
+      subtitle={firma.name}
+      onBack={onSpat}
+      footer={
+        <HlavneTlacidlo onClick={uloz} disabled={!nazov.trim()}>
+          Pridať vozidlo
+        </HlavneTlacidlo>
+      }
+    >
+      <div className="space-y-3">
+        <label className="block">
+          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">Názov</span>
+          <input
+            value={nazov}
+            onChange={(e) => setNazov(e.target.value)}
+            placeholder="napr. Škoda Octavia"
+            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+            Evidenčné číslo
+          </span>
+          <input
+            value={spz}
+            onChange={(e) => setSpz(e.target.value.toUpperCase())}
+            placeholder="TT123AB"
+            autoCapitalize="characters"
+            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+            Spotreba (l/100 km)
+          </span>
+          <input
+            value={spotreba}
+            onChange={(e) => setSpotreba(e.target.value)}
+            inputMode="decimal"
+            placeholder="napr. 6,5"
+            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+          />
+          <span className="mt-1 block text-[12px] text-muted-foreground">
+            Nepovinné, ale bez nej vyjde náklad na jazdu nula.
+          </span>
+        </label>
       </div>
     </MobilObrazovka>
   );
