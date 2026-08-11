@@ -348,3 +348,75 @@ export const zrusParovanie = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+/**
+ * Automatické spárovanie pre jednu firmu bez používateľa.
+ *
+ * Volá ho nočné sťahovanie z banky. Zapíše len to, čo je isté — teda presne to
+ * isté, čo by zapísalo tlačidlo „Spárovať automaticky"; sporné zhody ostávajú
+ * návrhmi na rozhodnutie človeka.
+ *
+ * Bez tohto kroku sa faktúra sama nikdy neoznačí za uhradenú a upozornenie
+ * „prišla platba" by nemalo z čoho vzniknúť — peniaze by na účte ležali až do
+ * chvíle, kým si niekto otvorí párovanie.
+ */
+export async function sparujFirmuAutomaticky(companyId: string): Promise<{
+  zapisanych: number;
+  uhradene: {
+    id: string;
+    invoice_number: string;
+    total: number;
+    currency: string;
+    customer_name: string | null;
+  }[];
+}> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { pohyby, doklady } = await podklady(supabaseAdmin, companyId);
+  const { auto } = sparuj(pohyby, doklady);
+  const uhradene: {
+    id: string;
+    invoice_number: string;
+    total: number;
+    currency: string;
+    customer_name: string | null;
+  }[] = [];
+  if (auto.length === 0) return { zapisanych: 0, uhradene };
+
+  let zapisanych = 0;
+  for (const z of auto) {
+    const pohyb = pohyby.find((p) => p.id === z.transactionId);
+    const { error } = await supabaseAdmin.from("payments").insert({
+      company_id: companyId,
+      invoice_id: z.invoiceId,
+      amount: z.suma,
+      paid_at: pohyb?.booking_date,
+      method: "bank",
+      note: "Automaticky spárované pri sťahovaní z banky",
+      bank_transaction_id: z.transactionId,
+    });
+    if (error) continue;
+    zapisanych++;
+    await supabaseAdmin
+      .from("bank_transactions")
+      .update({ matched_invoice_id: z.invoiceId })
+      .eq("id", z.transactionId);
+    if (z.ciastocna) continue;
+
+    await supabaseAdmin
+      .from("invoices")
+      .update({
+        status: "paid",
+        paid_at: new Date(pohyb?.booking_date ?? Date.now()).toISOString(),
+      })
+      .eq("id", z.invoiceId);
+    const doklad = doklady.find((d) => d.id === z.invoiceId);
+    uhradene.push({
+      id: z.invoiceId,
+      invoice_number: doklad?.invoice_number ?? "",
+      total: doklad?.total ?? z.suma,
+      currency: doklad?.currency ?? "EUR",
+      customer_name: doklad?.customer_name ?? null,
+    });
+  }
+  return { zapisanych, uhradene };
+}

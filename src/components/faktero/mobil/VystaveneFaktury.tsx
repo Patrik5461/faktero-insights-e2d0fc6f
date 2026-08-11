@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Check, ExternalLink, FileText, Mail, Search, Share2 } from "lucide-react";
+import { BellRing, Check, ExternalLink, FileText, Mail, Search, Share2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { vystaveneFakturyFn } from "@/lib/faktero/mobil-faktura.functions";
+import { sendReminderFn } from "@/lib/faktero/reminders.functions";
 import { bulkMarkPaidFn } from "@/lib/faktero/invoice-bulk.functions";
 import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
 import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
@@ -245,7 +247,19 @@ function DetailFaktury({
   const pdfFn = useServerFn(generateInvoicePdf);
   const mailFn = useServerFn(sendInvoiceEmailFn);
   const paidFn = useServerFn(bulkMarkPaidFn);
-  const [busy, setBusy] = useState<"pdf" | "mail" | "paid" | "zdielam" | null>(null);
+  const upomienkaFn = useServerFn(sendReminderFn);
+  /* Koľká upomienka je na rade — text sa s každou ďalšou pritvrdzuje. */
+  const [poslanych, setPoslanych] = useState(0);
+
+  useEffect(() => {
+    supabase
+      .from("invoice_reminders")
+      .select("reminder_number")
+      .eq("invoice_id", faktura.id)
+      .eq("status", "sent")
+      .then(({ data }) => setPoslanych(Math.max(0, ...(data ?? []).map((r) => r.reminder_number))));
+  }, [faktura.id]);
+  const [busy, setBusy] = useState<"pdf" | "mail" | "paid" | "zdielam" | "upomienka" | null>(null);
 
   const mena = faktura.currency ?? "EUR";
   const s = stav(faktura);
@@ -285,6 +299,27 @@ function DetailFaktury({
       onZmena();
     } catch (e: any) {
       toast.error(e?.message ?? "Odoslanie zlyhalo.");
+      setBusy(null);
+    }
+  }
+
+  async function posliUpomienku() {
+    if (!faktura.customer_email) return;
+    const cislo = Math.min(3, poslanych + 1) as 1 | 2 | 3;
+    setBusy("upomienka");
+    try {
+      await upomienkaFn({
+        data: {
+          invoiceId: faktura.id,
+          reminderNumber: cislo,
+          recipient_email: faktura.customer_email,
+        },
+      });
+      setPoslanych(cislo);
+      toast.success(`${cislo}. upomienka odoslaná`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Upomienku sa nepodarilo odoslať.");
+    } finally {
       setBusy(null);
     }
   }
@@ -350,6 +385,18 @@ function DetailFaktury({
               label="Poslať e-mailom"
               hint={faktura.customer_email}
               onClick={posli}
+            />
+          )}
+          {/*
+            Upomienka má zmysel len po splatnosti a len keď je kam písať —
+            inak je to tlačidlo, ktoré vždy skončí chybou.
+          */}
+          {s.text === "Po splatnosti" && faktura.customer_email && poslanych < 3 && (
+            <VelkeTlacidlo
+              icon={BellRing}
+              label={`Poslať ${Math.min(3, poslanych + 1)}. upomienku`}
+              hint={poslanych ? `Zatiaľ odoslané: ${poslanych}` : faktura.customer_email}
+              onClick={posliUpomienku}
             />
           )}
           {faktura.status !== "paid" && faktura.status !== "cancelled" && (

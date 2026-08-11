@@ -114,7 +114,10 @@ export function PrijateDoklady({
       const rows = (await nacitaj({ data: { company_id: firma.id } })) as Doklad[];
       setDoklady(rows);
     } catch (e: any) {
-      toast.error(e?.message ?? "Doklady sa nepodarilo načítať.");
+      // Bez signálu je prázdny zoznam očakávaný stav, nie chyba — hlásenie
+      // „Failed to fetch" by tu človeka len postrašilo.
+      const { isOnline } = await import("@/lib/mobile/offline-queue");
+      if (await isOnline()) toast.error(e?.message ?? "Doklady sa nepodarilo načítať.");
       setDoklady([]);
     }
   }

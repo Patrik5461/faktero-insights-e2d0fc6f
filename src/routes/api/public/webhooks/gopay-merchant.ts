@@ -98,7 +98,7 @@ async function handle(request: Request): Promise<Response> {
       // mark invoice paid (only if not already)
       const { data: inv } = await supabaseAdmin
         .from("invoices")
-        .select("id, status, total, currency")
+        .select("id, status, total, currency, invoice_number")
         .eq("id", link.invoice_id)
         .maybeSingle();
       if (inv && inv.status !== "paid") {
@@ -126,6 +126,17 @@ async function handle(request: Request): Promise<Response> {
           entity_id: inv.id,
           metadata: { payment_id: String(payment.id), amount_cents: link.amount_cents } as any,
         });
+        // Zákazník zaplatil online — o tom sa treba dozvedieť hneď, nie až
+        // pri otvorení prehľadu.
+        const { oznamUhradu } = await import("@/lib/faktero/push-uhrada.server");
+        await oznamUhradu(cid, [
+          {
+            id: inv.id,
+            invoice_number: (inv as any).invoice_number ?? "",
+            total: link.amount_cents / 100,
+            currency: inv.currency,
+          },
+        ]);
       }
     }
 

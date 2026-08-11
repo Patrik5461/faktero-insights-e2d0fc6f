@@ -45,9 +45,7 @@ export async function stranyDoPdf(strany: string[]): Promise<string> {
   const pdf = await PDFDocument.create();
   for (const strana of strany) {
     const { bytes, mime } = dataUrlNaBajty(strana);
-    const obrazok = mime.includes("png")
-      ? await pdf.embedPng(bytes)
-      : await pdf.embedJpg(bytes);
+    const obrazok = mime.includes("png") ? await pdf.embedPng(bytes) : await pdf.embedJpg(bytes);
     const stranaPdf = pdf.addPage([obrazok.width, obrazok.height]);
     stranaPdf.drawImage(obrazok, { x: 0, y: 0, width: obrazok.width, height: obrazok.height });
   }
@@ -66,7 +64,9 @@ export function dokladNaZaznam(
   const dph = r.vat_amount ?? null;
   return {
     company_id: companyId,
-    source: (r.zdroj === "foto" ? "photo" : "qr") as "photo" | "qr",
+    // Neprečítaný doklad (odložený bez signálu) je fotka, nie QR — inak má
+    // v zozname ikonu QR kódu a tvári sa, že z neho niečo prišlo.
+    source: (r.zdroj === "ekasa" || r.zdroj === "qr" ? "qr" : "photo") as "photo" | "qr",
     status: "processed" as const,
     supplier_name: r.supplier ?? null,
     supplier_ico: r.supplier_ico ?? null,
