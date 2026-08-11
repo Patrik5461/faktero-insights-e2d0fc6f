@@ -11,6 +11,7 @@
  *   3. GET  /v1/accounts/<účet>/statements/<statementId>
  *      PDF príde ako application/pdf, XML ako application/zip s XML súborom vnútri.
  */
+import { bankToken } from "./bank-tokens.server";
 
 const BUCKET = "bank-statements";
 /** TB odporúča max. 1 dopyt za 2 s. */
@@ -82,7 +83,8 @@ export async function waitForTask(
     await new Promise((r) => setTimeout(r, POLL_DELAY_MS));
     const res = await fetch(url, { headers: headers(accessToken, true) });
     const txt = await res.text();
-    if (!res.ok) throw new Error(`tb_statement_task_status_failed: ${res.status} ${txt.slice(0, 200)}`);
+    if (!res.ok)
+      throw new Error(`tb_statement_task_status_failed: ${res.status} ${txt.slice(0, 200)}`);
     last = JSON.parse(txt);
     if (last.state && last.state !== "PROCESSING") return last;
   }
@@ -101,7 +103,9 @@ export async function downloadStatement(
   const url = `${tbBase()}/v1/accounts/${encodeURIComponent(externalAccountId)}/statements/${encodeURIComponent(statementId)}`;
   const res = await fetch(url, { headers: headers(accessToken) });
   if (!res.ok)
-    throw new Error(`tb_statement_download_failed: ${res.status} ${(await res.text()).slice(0, 200)}`);
+    throw new Error(
+      `tb_statement_download_failed: ${res.status} ${(await res.text()).slice(0, 200)}`,
+    );
   const contentType = res.headers.get("content-type") ?? "application/octet-stream";
   const bytes = new Uint8Array(await res.arrayBuffer());
 
@@ -124,13 +128,15 @@ export async function downloadStatement(
 /** Vybaví jeden riadok výpisu: úloha → čakanie → stiahnutie → úložisko. */
 async function processRow(supabaseAdmin: any, accessToken: string, row: any, account: any) {
   const externalId = account.external_account_id ?? account.iban;
-  const taskId = row.task_id ?? (await createStatementTask(
-    accessToken,
-    externalId,
-    row.period_start,
-    row.period_end,
-    row.export_type,
-  ));
+  const taskId =
+    row.task_id ??
+    (await createStatementTask(
+      accessToken,
+      externalId,
+      row.period_start,
+      row.period_end,
+      row.export_type,
+    ));
   if (!row.task_id) {
     await supabaseAdmin.from("bank_statements").update({ task_id: taskId }).eq("id", row.id);
   }
@@ -242,7 +248,7 @@ export async function runMonthlyStatements(period?: { start: string; end: string
         }
 
         try {
-          const r = await processRow(supabaseAdmin, conn.access_token, row, acc);
+          const r = await processRow(supabaseAdmin, bankToken(conn.access_token)!, row, acc);
           if (r.done) ready++;
           else pending++;
         } catch (e: any) {

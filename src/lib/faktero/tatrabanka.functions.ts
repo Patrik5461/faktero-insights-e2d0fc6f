@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { bankToken } from "./bank-tokens.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getRequestHost, getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
@@ -227,7 +228,7 @@ export const syncBankAccounts = createServerFn({ method: "POST" })
         // z toho, čo banka obnovila sama (4× denne).
         const ip = clientIp();
         const taskId = ip
-          ? await refreshExternalBanks(conn.access_token, {
+          ? await refreshExternalBanks(bankToken(conn.access_token)!, {
               ip,
               userAgent: getRequestHeader("user-agent") ?? null,
               deviceOs: getRequestHeader("sec-ch-ua-platform")?.replace(/"/g, "") ?? null,
@@ -246,7 +247,7 @@ export const syncBankAccounts = createServerFn({ method: "POST" })
 
     const { fetchAccounts, upsertBankAccounts } = await import("./tatrabanka.server");
     // TB Premium API: consent is granted via OAuth access_token; no separate consent flow.
-    const list = await fetchAccounts(conn.access_token, conn.consent_id ?? null);
+    const list = await fetchAccounts(bankToken(conn.access_token)!, conn.consent_id ?? null);
     await upsertBankAccounts(data.company_id, conn.id, list);
     await supabaseAdmin
       .from("bank_connections")
@@ -275,7 +276,7 @@ export const syncBankTransactions = createServerFn({ method: "POST" })
     if (!conn?.access_token) throw new Error("not_connected");
     const { fetchTransactions } = await import("./tatrabanka.server");
     const txs = await fetchTransactions(
-      conn.access_token,
+      bankToken(conn.access_token)!,
       acc.external_account_id ?? acc.iban ?? "",
       conn.consent_id,
       90,

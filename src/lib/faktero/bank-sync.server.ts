@@ -22,18 +22,21 @@ const DEFAULT_DAYS_BACK = 14;
  * refresh token, obnoví ho a nový rovno uloží.
  */
 async function ensureFreshToken(supabaseAdmin: any, conn: any): Promise<string> {
+  const { bankToken, zasifrujBankToken } = await import("./bank-tokens.server");
+  const platnyToken = bankToken(conn.access_token);
+  const platnyRefresh = bankToken(conn.refresh_token);
   const expiresAt = conn.token_expires_at ? Date.parse(conn.token_expires_at) : 0;
   const staleSoon = expiresAt > 0 && expiresAt - Date.now() < 10 * 60 * 1000;
-  if (!staleSoon || !conn.refresh_token) return conn.access_token;
+  if (!staleSoon || !platnyRefresh) return platnyToken ?? "";
 
   const { refreshAccessToken } = await import("./tatrabanka.server");
-  const tokens = await refreshAccessToken(conn.refresh_token);
+  const tokens = await refreshAccessToken(platnyRefresh);
   const newExpiry = new Date(Date.now() + (tokens.expires_in ?? 3600) * 1000).toISOString();
   await supabaseAdmin
     .from("bank_connections")
     .update({
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token ?? conn.refresh_token,
+      access_token: zasifrujBankToken(tokens.access_token),
+      refresh_token: zasifrujBankToken(tokens.refresh_token ?? platnyRefresh),
       token_expires_at: newExpiry,
     })
     .eq("id", conn.id);

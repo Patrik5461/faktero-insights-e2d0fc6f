@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { zasifrujBankToken } from "@/lib/faktero/bank-tokens.server";
 
 export const Route = createFileRoute("/api/public/tatrabanka/callback")({
   server: {
@@ -16,7 +17,8 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
         // Platby chodia na ten istý redirect_uri ako súhlasy — TB prijme len
         // adresy zaregistrované v portáli, tak ich nerozmnožujeme. Rozlišuje
         // sa podľa `state`, ktorý si nastavujeme sami.
-        const { PAYMENT_STATE_PREFIX } = await import("@/lib/faktero/tatrabanka-payments.functions");
+        const { PAYMENT_STATE_PREFIX } =
+          await import("@/lib/faktero/tatrabanka-payments.functions");
         if (state.startsWith(PAYMENT_STATE_PREFIX)) {
           return handlePaymentCallback(code, state.slice(PAYMENT_STATE_PREFIX.length), origin);
         }
@@ -44,8 +46,9 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
           await supabaseAdmin
             .from("bank_connections")
             .update({
-              access_token: tokens.access_token,
-              refresh_token: tokens.refresh_token ?? null,
+              // Tokeny do banky sa ukladajú šifrované — pozri `bank-tokens.server`.
+              access_token: zasifrujBankToken(tokens.access_token),
+              refresh_token: zasifrujBankToken(tokens.refresh_token ?? null),
               token_expires_at: expiresAt,
               // consent_id vznikol pred redirectom; token ho už nevracia.
               consent_id: newConsentId,
