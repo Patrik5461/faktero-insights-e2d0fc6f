@@ -51,6 +51,8 @@
 	<string>Do fotiek ukladáme kópiu dokladu, keď si ju vyžiadate.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Face ID použijeme na rýchle odomknutie aplikácie bez zadávania hesla.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Polohu potrebujeme na odmeranie kilometrov služobnej jazdy do knihy jázd. Meriame len počas jazdy, ktorú sami spustíte.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>

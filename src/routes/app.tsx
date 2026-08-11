@@ -15,6 +15,7 @@ import {
   Receipt,
   ScanLine,
   Fingerprint,
+  Car,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -31,6 +32,7 @@ import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { PrijateDoklady, datum } from "@/components/faktero/mobil/PrijateDoklady";
 import { NovaFaktura } from "@/components/faktero/mobil/NovaFaktura";
 import { VystaveneFaktury } from "@/components/faktero/mobil/VystaveneFaktury";
+import { Jazda } from "@/components/faktero/mobil/Jazda";
 import { MobilPanel } from "@/components/faktero/mobil/MobilPanel";
 import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
 import {
@@ -71,7 +73,8 @@ type Krok =
   | "zachyt"
   | "doklady"
   | "novaFaktura"
-  | "faktury";
+  | "faktury"
+  | "jazda";
 type Zachyt = "blocek" | "pdf" | "strany";
 
 function MobilnaApka() {
@@ -81,6 +84,8 @@ function MobilnaApka() {
   const [zachyt, setZachyt] = useState<Zachyt>("blocek");
   const [email, setEmail] = useState<string | null>(null);
   const [panel, setPanel] = useState(false);
+  /* Knihu jázd ukazujeme len firme, ktorá má auto — inak je to zbytočný riadok. */
+  const [maVozidla, setMaVozidla] = useState(false);
 
   /** Kto je prihlásený a za akú firmu — to isté sa rieši pri štarte aj po prihlásení. */
   async function zisti() {
@@ -102,6 +107,12 @@ function MobilnaApka() {
         setFirma(vybrana);
         setActiveCompanyId(vybrana.id);
         setKrok("domov");
+        supabase
+          .from("vehicles")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", vybrana.id)
+          .eq("active", true)
+          .then(({ count }) => setMaVozidla((count ?? 0) > 0));
       } else {
         setKrok("firma");
       }
@@ -164,6 +175,7 @@ function MobilnaApka() {
         onHotovo={() => setKrok("faktury")}
       />
     );
+  if (krok === "jazda" && firma) return <Jazda firma={firma} onSpat={() => setKrok("domov")} />;
   if (krok === "faktury" && firma)
     return (
       <VystaveneFaktury
@@ -196,6 +208,8 @@ function MobilnaApka() {
         onDoklady={() => setKrok("doklady")}
         onNovaFaktura={() => setKrok("novaFaktura")}
         onFaktury={() => setKrok("faktury")}
+        onJazda={() => setKrok("jazda")}
+        maVozidla={maVozidla}
         onZmenitFirmu={() => setKrok("firma")}
         onPanel={() => setPanel(true)}
       />
@@ -354,6 +368,8 @@ function Domov({
   onDoklady,
   onNovaFaktura,
   onFaktury,
+  onJazda,
+  maVozidla,
   onZmenitFirmu,
   onPanel,
 }: {
@@ -363,6 +379,8 @@ function Domov({
   onDoklady: () => void;
   onNovaFaktura: () => void;
   onFaktury: () => void;
+  onJazda: () => void;
+  maVozidla: boolean;
   onZmenitFirmu: () => void;
   onPanel: () => void;
 }) {
@@ -501,6 +519,18 @@ function Domov({
           hint="Bločky a faktúry, ktoré ste už naskenovali"
           onClick={onDoklady}
         />
+
+        {maVozidla && (
+          <>
+            <Skupina nazov="Kniha jázd" />
+            <VelkeTlacidlo
+              icon={Car}
+              label="Nová jazda"
+              hint="Kilometre odmeria telefón, stačí štart a stop"
+              onClick={onJazda}
+            />
+          </>
+        )}
       </main>
 
       <div style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }} />
