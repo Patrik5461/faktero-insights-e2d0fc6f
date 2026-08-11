@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -98,8 +99,10 @@ function MovementDetail() {
               <Pair label="Typ pohybu" value={TYPE_LABEL[m.type] ?? m.type} />
               <Pair
                 label="Množstvo"
-                value={`${Number(m.quantity) > 0 ? "+" : ""}${m.quantity}`}
-                accent={Number(m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}
+                value={pohybText(m.type, m.quantity)}
+                accent={
+                  pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"
+                }
               />
               <Pair label="Jednotková cena" value={`${Number(m.unit_price).toFixed(4)} €`} />
               <Pair label="Celková hodnota" value={`${Number(m.total_value).toFixed(2)} €`} />

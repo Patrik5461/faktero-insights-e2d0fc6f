@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { friendlyError } from "@/lib/faktero/plan-error";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -81,7 +82,7 @@ function CategoriesPage() {
       resetForm();
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(friendlyError(e));
     } finally {
       setBusy(false);
     }
@@ -101,7 +102,7 @@ function CategoriesPage() {
       toast.success("Kategória zmazaná");
       await load();
     } catch (e: any) {
-      toast.error(e?.message ?? "Chyba");
+      toast.error(friendlyError(e));
     }
   }
 

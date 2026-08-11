@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -306,10 +307,9 @@ function ProductStockDetail() {
                     </td>
                     <td className="p-2">{TYPE_LABEL[m.type] ?? m.type}</td>
                     <td
-                      className={`p-2 text-right tabular-nums ${Number(m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}`}
+                      className={`p-2 text-right tabular-nums ${pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}`}
                     >
-                      {Number(m.quantity) > 0 ? "+" : ""}
-                      {m.quantity}
+                      {pohybText(m.type, m.quantity)}
                     </td>
                     <td className="p-2 text-right tabular-nums">
                       {m.unit_cost != null ? Number(m.unit_cost).toFixed(4) : "—"}

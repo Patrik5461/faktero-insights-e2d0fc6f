@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -183,7 +184,9 @@ function MovementsPage() {
         Produkt: prodName,
         SKU: si?.sku ?? "",
         Sklad: warehouses[m.warehouse_id] ?? "",
-        Množstvo: Number(m.quantity),
+        // Do exportu ide množstvo so znamienkom — inak sa výdaj a príjem
+        // v tabuľkovom procesore sčítajú ako dva prírastky.
+        Množstvo: pohybDelta(m.type, m.quantity),
         "Jednotková cena": Number(m.unit_price),
         "Celková hodnota": Number(m.total_value),
         Referencia: refLabel,
@@ -368,10 +371,9 @@ function MovementsPage() {
                   </td>
                   <td className="p-3 text-muted-foreground">{warehouses[m.warehouse_id] ?? "—"}</td>
                   <td
-                    className={`p-3 text-right tabular-nums ${Number(m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}`}
+                    className={`p-3 text-right tabular-nums ${pohybDelta(m.type, m.quantity) >= 0 ? "text-emerald-600" : "text-destructive"}`}
                   >
-                    {Number(m.quantity) > 0 ? "+" : ""}
-                    {m.quantity}
+                    {pohybText(m.type, m.quantity)}
                   </td>
                   <td className="p-3 text-right tabular-nums">
                     {m.unit_cost != null ? Number(m.unit_cost).toFixed(4) : "—"}
@@ -443,13 +445,12 @@ function MovementsPage() {
                 </div>
                 <div
                   className={
-                    Number(m.quantity) >= 0
+                    pohybDelta(m.type, m.quantity) >= 0
                       ? "text-emerald-600 font-semibold"
                       : "text-destructive font-semibold"
                   }
                 >
-                  {Number(m.quantity) > 0 ? "+" : ""}
-                  {m.quantity}
+                  {pohybText(m.type, m.quantity)}
                 </div>
               </div>
               <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">

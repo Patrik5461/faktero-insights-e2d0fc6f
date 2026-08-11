@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -1020,13 +1021,12 @@ function StockItemsPage() {
                         <span className="font-medium">{m.type}</span>
                         <span
                           className={
-                            Number(m.quantity) >= 0
+                            pohybDelta(m.type, m.quantity) >= 0
                               ? "text-emerald-600 tabular-nums"
                               : "text-destructive tabular-nums"
                           }
                         >
-                          {Number(m.quantity) > 0 ? "+" : ""}
-                          {m.quantity}
+                          {pohybText(m.type, m.quantity)}
                         </span>
                       </li>
                     ))}
