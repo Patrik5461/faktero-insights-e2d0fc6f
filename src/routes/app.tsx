@@ -107,12 +107,6 @@ function MobilnaApka() {
         setFirma(vybrana);
         setActiveCompanyId(vybrana.id);
         setKrok("domov");
-        supabase
-          .from("vehicles")
-          .select("id", { count: "exact", head: true })
-          .eq("company_id", vybrana.id)
-          .eq("active", true)
-          .then(({ count }) => setMaVozidla((count ?? 0) > 0));
       } else {
         setKrok("firma");
       }
@@ -124,6 +118,29 @@ function MobilnaApka() {
   useEffect(() => {
     zisti();
   }, []);
+
+  /*
+   * Príznak sa musí prepočítať pri každej zmene firmy, nielen pri štarte —
+   * po prepnutí na firmu s autom by inak kniha jázd v menu chýbala a naopak.
+   */
+  useEffect(() => {
+    if (!firma) {
+      setMaVozidla(false);
+      return;
+    }
+    let zrusene = false;
+    supabase
+      .from("vehicles")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", firma.id)
+      .eq("active", true)
+      .then(({ count }) => {
+        if (!zrusene) setMaVozidla((count ?? 0) > 0);
+      });
+    return () => {
+      zrusene = true;
+    };
+  }, [firma?.id]);
 
   /*
    * Hardvérové tlačidlo Späť na Androide inak appku rovno zavrie — aj keď je
