@@ -19,3 +19,4 @@ export function sPoctom(pocet: number, tvary: [string, string, string]): string 
 
 export const FAKTURY: [string, string, string] = ["faktúra", "faktúry", "faktúr"];
 export const POLOZKY: [string, string, string] = ["položka", "položky", "položiek"];
+export const ODBERATELIA: [string, string, string] = ["odberateľ", "odberatelia", "odberateľov"];

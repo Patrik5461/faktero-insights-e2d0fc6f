@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { jeOtvorena, jePoSplatnosti, sucetDokladov } from "@/lib/faktero/faktury-sumy";
+import { FAKTURY, ODBERATELIA, sPoctom } from "@/lib/faktero/mnozne";
 import { useServerFn } from "@tanstack/react-start";
 import { getRecurringWidgetStats } from "@/lib/faktero/recurring.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -904,13 +905,13 @@ function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
       <Segment
         label="Neuhradené"
         value={fmt(metrics.unpaidAmount)}
-        meta={`${metrics.unpaidCount} faktúr`}
+        meta={sPoctom(metrics.unpaidCount, FAKTURY)}
       />
       <Segment
         label="Po splatnosti"
         value={fmt(metrics.overdueAmount)}
         tone={metrics.overdueAmount > 0 ? "destructive" : undefined}
-        meta={`${metrics.overdueCount} faktúr · ${metrics.debtorCount} odberateľov`}
+        meta={`${sPoctom(metrics.overdueCount, FAKTURY)} · ${sPoctom(metrics.debtorCount, ODBERATELIA)}`}
       />
       <Segment
         label="Dlžia mi zákazníci"
