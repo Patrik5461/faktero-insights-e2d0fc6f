@@ -27,12 +27,20 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
           const { exchangeCodeForToken, getRedirectUri } =
             await import("@/lib/faktero/tatrabanka.server");
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          /*
+           * `state` je jednorazová náhodná hodnota uložená pri štarte
+           * prihlásenia. Vyhľadávame podľa nej, nie podľa identifikátora
+           * pripojenia — ten je stabilný a dal by sa použiť opakovane.
+           */
           const { data: conn } = await supabaseAdmin
             .from("bank_connections")
             .select("id, company_id, status, consent_id, metadata")
-            .eq("id", state)
+            .eq("metadata->>oauth_state", state)
             .maybeSingle();
           if (!conn) return redirect(`${back}?error=invalid_state`);
+          const platiDo = (conn.metadata as any)?.oauth_state_expires as string | undefined;
+          if (!platiDo || Date.parse(platiDo) < Date.now())
+            return redirect(`${back}?error=expired_state`);
           // PKCE verifier odložený pri štarte flowu — bez neho TB kód nevymení.
           const verifier = (conn.metadata as any)?.pkce_code_verifier as string | undefined;
           if (!verifier) return redirect(`${back}?error=missing_code_verifier`);
@@ -54,7 +62,14 @@ export const Route = createFileRoute("/api/public/tatrabanka/callback")({
               consent_id: newConsentId,
               status: "connected",
               // verifier aj odložený consent sú jednorazové — nenechávaj ich v DB
-              metadata: { ...meta, pkce_code_verifier: null, pending_consent_id: null },
+              // verifier, state aj odložený consent sú jednorazové — nenechávaj ich v DB
+              metadata: {
+                ...meta,
+                pkce_code_verifier: null,
+                pending_consent_id: null,
+                oauth_state: null,
+                oauth_state_expires: null,
+              },
             })
             .eq("id", conn.id);
 

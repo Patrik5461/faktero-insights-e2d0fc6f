@@ -3,6 +3,7 @@ import { bankToken } from "./bank-tokens.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getRequestHost, getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
+import { randomBytes } from "crypto";
 
 const CompanyInput = z.object({ company_id: z.string().uuid() });
 
@@ -50,6 +51,22 @@ function clientIp(): string | null {
 }
 
 /** List bank connections for a company (NO tokens returned). */
+/**
+ * Jednorazový `state` pre OAuth.
+ *
+ * Predtým sa posielal identifikátor pripojenia. Ten je stabilný, opakovane
+ * použiteľný a nie je viazaný na konkrétny pokus o prihlásenie — útočník, ktorý
+ * ho pozná, by vedel dokončiť návrat z banky s vlastným kódom a napojiť tak
+ * svoj účet na cudziu firmu. Náhodná hodnota s platnosťou 15 minút, ktorá sa
+ * po použití zahodí, to zatvára.
+ */
+function novyState(): { state: string; platiDo: string } {
+  return {
+    state: randomBytes(32).toString("base64url"),
+    platiDo: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+  };
+}
+
 export const listBankData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => CompanyInput.parse(d))
@@ -84,6 +101,7 @@ export const startBankConnect = createServerFn({ method: "POST" })
     // TB chce consent ešte pred presmerovaním — jeho id ide do scope authorize URL.
     const consentId = await createConsent();
     const { verifier, challenge } = createPkcePair();
+    const stav = novyState();
     const { data: conn, error } = await supabaseAdmin
       .from("bank_connections")
       .insert({
@@ -93,14 +111,18 @@ export const startBankConnect = createServerFn({ method: "POST" })
         consent_id: consentId,
         // code_verifier sa spotrebuje až v callbacku; bank_connections naň nemá
         // stĺpec, takže žije v metadata a po výmene kódu sa maže.
-        metadata: { pkce_code_verifier: verifier },
+        metadata: {
+          pkce_code_verifier: verifier,
+          oauth_state: stav.state,
+          oauth_state_expires: stav.platiDo,
+        },
       })
       .select("id")
       .single();
     if (error || !conn) throw new Error(error?.message ?? "insert_failed");
     const redirectUri = getRedirectUri(origin());
     const url = buildAuthorizeUrl({
-      state: conn.id,
+      state: stav.state,
       redirectUri,
       consentId,
       codeChallenge: challenge,
@@ -140,6 +162,7 @@ export const renewBankConsent = createServerFn({ method: "POST" })
 
     const consentId = await createConsent();
     const { verifier, challenge } = createPkcePair();
+    const stavObnovy = novyState();
     // Starý súhlas necháme platiť, kým používateľ nový nepotvrdí — keď to
     // vzdá na polceste, čítanie účtov mu funguje ďalej.
     const { error } = await supabaseAdmin
@@ -150,6 +173,8 @@ export const renewBankConsent = createServerFn({ method: "POST" })
           pkce_code_verifier: verifier,
           pending_consent_id: consentId,
           previous_consent_id: conn.consent_id ?? null,
+          oauth_state: stavObnovy.state,
+          oauth_state_expires: stavObnovy.platiDo,
         },
       })
       .eq("id", conn.id);
@@ -157,7 +182,7 @@ export const renewBankConsent = createServerFn({ method: "POST" })
 
     return {
       authorize_url: buildAuthorizeUrl({
-        state: conn.id,
+        state: stavObnovy.state,
         redirectUri: getRedirectUri(origin()),
         consentId,
         codeChallenge: challenge,
