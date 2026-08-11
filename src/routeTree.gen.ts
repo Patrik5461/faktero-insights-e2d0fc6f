@@ -58,6 +58,7 @@ import { Route as AdminSeoRouteImport } from './routes/admin.seo'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as DanovyDokladTokenRouteImport } from './routes/danovy-doklad.$token'
 import { Route as DocsApiRouteImport } from './routes/docs.api'
@@ -477,6 +478,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AdminRoute,
+} as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BlogRoute,
 } as any)
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/$slug',
@@ -1499,6 +1505,7 @@ export interface FileRoutesByFullPath {
   '/uctovnici/$slug': typeof UctovniciSlugRoute
   '/vyvojari/$slug': typeof VyvojariSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/blog/': typeof BlogIndexRoute
   '/efakturacia/': typeof EfakturaciaIndexRoute
   '/funkcie/': typeof FunkcieIndexRoute
   '/pomoc/': typeof PomocIndexRoute
@@ -1639,7 +1646,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aktivovat': typeof AktivovatRoute
   '/app': typeof AppRoute
-  '/blog': typeof BlogRouteWithChildren
   '/cennik': typeof CennikRoute
   '/kontakt': typeof KontaktRoute
   '/objednavka': typeof ObjednavkaRoute
@@ -1712,6 +1718,7 @@ export interface FileRoutesByTo {
   '/uctovnici/$slug': typeof UctovniciSlugRoute
   '/vyvojari/$slug': typeof VyvojariSlugRoute
   '/admin': typeof AdminIndexRoute
+  '/blog': typeof BlogIndexRoute
   '/efakturacia': typeof EfakturaciaIndexRoute
   '/funkcie': typeof FunkcieIndexRoute
   '/pomoc': typeof PomocIndexRoute
@@ -1933,6 +1940,7 @@ export interface FileRoutesById {
   '/uctovnici/$slug': typeof UctovniciSlugRoute
   '/vyvojari/$slug': typeof VyvojariSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/blog/': typeof BlogIndexRoute
   '/efakturacia/': typeof EfakturaciaIndexRoute
   '/funkcie/': typeof FunkcieIndexRoute
   '/pomoc/': typeof PomocIndexRoute
@@ -2155,6 +2163,7 @@ export interface FileRouteTypes {
     | '/uctovnici/$slug'
     | '/vyvojari/$slug'
     | '/admin/'
+    | '/blog/'
     | '/efakturacia/'
     | '/funkcie/'
     | '/pomoc/'
@@ -2295,7 +2304,6 @@ export interface FileRouteTypes {
     | '/'
     | '/aktivovat'
     | '/app'
-    | '/blog'
     | '/cennik'
     | '/kontakt'
     | '/objednavka'
@@ -2368,6 +2376,7 @@ export interface FileRouteTypes {
     | '/uctovnici/$slug'
     | '/vyvojari/$slug'
     | '/admin'
+    | '/blog'
     | '/efakturacia'
     | '/funkcie'
     | '/pomoc'
@@ -2588,6 +2597,7 @@ export interface FileRouteTypes {
     | '/uctovnici/$slug'
     | '/vyvojari/$slug'
     | '/admin/'
+    | '/blog/'
     | '/efakturacia/'
     | '/funkcie/'
     | '/pomoc/'
@@ -3157,6 +3167,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/blog/': {
+      id: '/blog/'
+      path: '/'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/blog/$slug': {
       id: '/blog/$slug'
@@ -4640,10 +4657,12 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface BlogRouteChildren {
   BlogSlugRoute: typeof BlogSlugRoute
+  BlogIndexRoute: typeof BlogIndexRoute
 }
 
 const BlogRouteChildren: BlogRouteChildren = {
   BlogSlugRoute: BlogSlugRoute,
+  BlogIndexRoute: BlogIndexRoute,
 }
 
 const BlogRouteWithChildren = BlogRoute._addFileChildren(BlogRouteChildren)
