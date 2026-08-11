@@ -16,6 +16,7 @@ import {
   ScanLine,
   Fingerprint,
   Car,
+  Lock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -34,7 +35,12 @@ import { NovaFaktura } from "@/components/faktero/mobil/NovaFaktura";
 import { VystaveneFaktury } from "@/components/faktero/mobil/VystaveneFaktury";
 import { Jazda } from "@/components/faktero/mobil/Jazda";
 import { MobilPanel } from "@/components/faktero/mobil/MobilPanel";
-import { isBiometricAvailable, loginWithBiometric } from "@/lib/mobile/biometric";
+import {
+  isBiometricAvailable,
+  isBiometricEnabled,
+  loginWithBiometric,
+  overBiometriu,
+} from "@/lib/mobile/biometric";
 import {
   HlavneTlacidlo,
   MobilObrazovka,
@@ -84,6 +90,7 @@ function MobilnaApka() {
   const [zachyt, setZachyt] = useState<Zachyt>("blocek");
   const [email, setEmail] = useState<string | null>(null);
   const [panel, setPanel] = useState(false);
+  const [zamknute, setZamknute] = useState(false);
 
   /** Kto je prihlásený a za akú firmu — to isté sa rieši pri štarte aj po prihlásení. */
   async function zisti() {
@@ -118,6 +125,38 @@ function MobilnaApka() {
   }, []);
 
   /*
+   * Zámok pri návrate do appky.
+   *
+   * Biometria dosiaľ chránila len prihlásenie — kto mal appku otvorenú, mal
+   * po odomknutí telefónu prístup k celej fakturácii. Po návrate z pozadia sa
+   * preto pýta znova, ale až po minúte: pri odskočení do fotoaparátu alebo do
+   * správ by inak otravovala pri každom kroku skenovania.
+   */
+  useEffect(() => {
+    let odstran: (() => void) | undefined;
+    let odNeaktivity: number | null = null;
+    (async () => {
+      try {
+        const { App } = await import("@capacitor/app");
+        const h = await App.addListener("appStateChange", async ({ isActive }) => {
+          if (!isActive) {
+            odNeaktivity = Date.now();
+            return;
+          }
+          const prec = odNeaktivity ? Date.now() - odNeaktivity : 0;
+          odNeaktivity = null;
+          if (prec < 60_000) return;
+          if (await isBiometricEnabled()) setZamknute(true);
+        });
+        odstran = () => h.remove();
+      } catch {
+        // na webe plugin nie je — appka sa nezamyká
+      }
+    })();
+    return () => odstran?.();
+  }, []);
+
+  /*
    * Hardvérové tlačidlo Späť na Androide inak appku rovno zavrie — aj keď je
    * človek uprostred skenovania. Na domovskej obrazovke ho necháme tak.
    */
@@ -143,6 +182,7 @@ function MobilnaApka() {
     setKrok("prihlasenie");
   }
 
+  if (zamknute) return <Zamok onOdomknute={() => setZamknute(false)} onOdhlasit={odhlas} />;
   if (krok === "nacitavam") return <Pracujem text="Spúšťam Faktero…" />;
   if (krok === "prihlasenie") return <Prihlasenie onHotovo={zisti} />;
   if (krok === "firma")
@@ -316,6 +356,54 @@ function Prihlasenie({ onHotovo }: { onHotovo: () => void }) {
   );
 }
 
+/* ------------------------- Zámok ------------------------- */
+
+function Zamok({ onOdomknute, onOdhlasit }: { onOdomknute: () => void; onOdhlasit: () => void }) {
+  const [busy, setBusy] = useState(false);
+
+  async function odomkni() {
+    setBusy(true);
+    const r = await overBiometriu();
+    setBusy(false);
+    if (r.ok) onOdomknute();
+    else toast.error(r.error ?? "Odomknutie zlyhalo.");
+  }
+
+  /* Pýtame sa hneď — ďalšie ťuknutie navyše nikoho nechráni. */
+  useEffect(() => {
+    odomkni();
+    // eslint-disable-next-line
+  }, []);
+
+  return (
+    <div
+      className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-background px-8"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
+      <div className="grid h-20 w-20 place-items-center rounded-3xl bg-primary/10 text-primary">
+        <Lock className="h-9 w-9" />
+      </div>
+      <div className="text-center">
+        <p className="text-[17px] font-semibold">Faktero je zamknuté</p>
+        <p className="mt-1 text-[14px] text-muted-foreground">
+          Odomknite ho biometriou a pokračujte tam, kde ste skončili.
+        </p>
+      </div>
+      <button
+        onClick={odomkni}
+        disabled={busy}
+        className="w-full max-w-xs rounded-2xl px-4 py-3.5 text-[15px] font-semibold text-primary-foreground disabled:opacity-60"
+        style={{ backgroundImage: "var(--brand-gradient)" }}
+      >
+        {busy ? "Odomykám…" : "Odomknúť"}
+      </button>
+      <button onClick={onOdhlasit} className="text-[14px] text-muted-foreground">
+        Odhlásiť sa
+      </button>
+    </div>
+  );
+}
+
 /* ------------------------- Výber firmy ------------------------- */
 
 function VyberFirmy({
@@ -419,8 +507,13 @@ function Domov({
         ako dostať svetlejší koniec prechodu. Presvetlenie smerom dole je až na
         vnútornom prvku pod výrezom.
       */}
+      {/*
+        Hlavička ostáva na mieste aj pri posúvaní. Inak pri prvom pohybe prsta
+        odíde hore a s ňou aj údaj o tom, za ktorú firmu sa práve pracuje —
+        pod ním sa objaví holé pozadie a horný pás stratí farbu.
+      */}
       <header
-        className="text-primary-foreground"
+        className="sticky top-0 z-20 text-primary-foreground"
         style={{
           backgroundColor: ZELENA_HORE,
           paddingTop: "env(safe-area-inset-top)",

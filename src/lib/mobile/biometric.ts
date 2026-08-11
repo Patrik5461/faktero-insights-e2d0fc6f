@@ -121,3 +121,26 @@ export async function loginWithBiometric(): Promise<{ ok: boolean; error?: strin
     return { ok: false, error: e?.message ?? "Biometria zlyhala" };
   }
 }
+
+/**
+ * Overenie totožnosti bez prihlasovania.
+ *
+ * Používa sa na zámok pri návrate do appky: relácia je platná, len treba
+ * potvrdiť, že telefón drží ten istý človek. Preto sa tu — na rozdiel od
+ * `loginWithBiometric` — nesiaha na uloženú reláciu.
+ */
+export async function overBiometriu(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!(await isBiometricAvailable())) return { ok: false, error: "Biometria nie je dostupná" };
+    const { BiometricAuth } = await import("@aparajita/capacitor-biometric-auth");
+    await BiometricAuth.authenticate({
+      reason: "Odomknutie Faktera",
+      cancelTitle: "Zrušiť",
+      androidTitle: "Faktero",
+      androidSubtitle: "Odomknúť aplikáciu",
+    });
+    return { ok: true };
+  } catch (e: any) {
+    return { ok: false, error: e?.message ?? "Odomknutie zlyhalo" };
+  }
+}

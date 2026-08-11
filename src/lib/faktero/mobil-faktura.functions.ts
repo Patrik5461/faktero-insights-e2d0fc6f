@@ -84,3 +84,48 @@ export const vystaveneFakturyFn = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
+
+/* ------------------------- Posledná faktúra odberateľa ------------------------- */
+
+/**
+ * Položky z poslednej faktúry toho istého odberateľa.
+ *
+ * Pri paušáloch a opakovaných dodávkach je ďalšia faktúra takmer vždy kópiou
+ * predošlej. Na telefóne je prepisovanie tých istých riadkov to najotravnejšie,
+ * čo appka pýta — takto sú na jedno ťuknutie.
+ *
+ * Zálohové faktúry a dobropisy sa nepreberajú: kopírovať sa má bežné plnenie,
+ * nie výzva na preddavok ani oprava.
+ */
+export const poslednaFakturaFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => Firma.extend({ customer_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: faktura } = await context.supabase
+      .from("invoices")
+      .select("id, invoice_number, issue_date, total, currency")
+      .eq("company_id", data.company_id)
+      .eq("customer_id", data.customer_id)
+      .eq("type", "regular")
+      .is("deleted_at", null)
+      .neq("status", "cancelled")
+      .order("issue_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!faktura) return null;
+
+    const { data: polozky } = await context.supabase
+      .from("invoice_items")
+      .select("name, quantity, unit, unit_price, vat_rate, product_id")
+      .eq("invoice_id", faktura.id)
+      .order("position");
+
+    return {
+      invoice_number: faktura.invoice_number,
+      issue_date: faktura.issue_date,
+      total: Number(faktura.total),
+      currency: faktura.currency,
+      polozky: polozky ?? [],
+    };
+  });

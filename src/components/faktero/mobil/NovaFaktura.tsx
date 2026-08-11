@@ -9,6 +9,7 @@ import {
   Mail,
   Package,
   Plus,
+  RotateCcw,
   Search,
   Share2,
   Trash2,
@@ -16,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { podkladyFakturyFn } from "@/lib/faktero/mobil-faktura.functions";
+import { podkladyFakturyFn, poslednaFakturaFn } from "@/lib/faktero/mobil-faktura.functions";
 import { vystavFakturuFn } from "@/lib/faktero/faktura-vystavenie.functions";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, PRAZDNE_PODKLADY, type Podklady } from "@/lib/faktero/ceny";
@@ -85,6 +86,12 @@ function suma(n: number, mena = "EUR"): string {
   return new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n);
 }
 
+/** „2026-08-11" → „11. 8. 2026" — ISO tvar nikto nečíta ako dátum. */
+function datumSk(v: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+  return m ? `${Number(m[3])}. ${Number(m[2])}. ${m[1]}` : v;
+}
+
 function dnes(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -119,6 +126,7 @@ export function NovaFaktura({
 }) {
   const nacitajPodklady = useServerFn(podkladyFakturyFn);
   const nacitajCennik = useServerFn(getPriceContext);
+  const nacitajPoslednu = useServerFn(poslednaFakturaFn);
   const vystav = useServerFn(vystavFakturuFn);
 
   const [podklady, setPodklady] = useState<Podkladove | null>(null);
@@ -130,6 +138,19 @@ export function NovaFaktura({
   const [splatnost, setSplatnost] = useState(oDni(dnes(), 14));
   const [uhrada, setUhrada] = useState<"bank_transfer" | "cash" | "card">("bank_transfer");
   const [poznamka, setPoznamka] = useState("");
+  /* Posledná faktúra toho istého odberateľa — ponúkne sa na zopakovanie. */
+  const [posledna, setPosledna] = useState<{
+    invoice_number: string;
+    issue_date: string;
+    polozky: {
+      name: string;
+      quantity: number;
+      unit: string | null;
+      unit_price: number;
+      vat_rate: number;
+      product_id: string | null;
+    }[];
+  } | null>(null);
   const [ukladam, setUkladam] = useState(false);
   const [hotova, setHotova] = useState<{
     id: string;
@@ -161,6 +182,10 @@ export function NovaFaktura({
     setOdberatel(o);
     setKrok("polozky");
     if (riadky.length === 0) setRiadky([prazdnyRiadok(zakladnaSadzba)]);
+    setPosledna(null);
+    nacitajPoslednu({ data: { company_id: firma.id, customer_id: o.id } })
+      .then((r: any) => setPosledna(r?.polozky?.length ? r : null))
+      .catch(() => setPosledna(null));
     try {
       const p = (await nacitajCennik({
         data: { company_id: firma.id, customer_id: o.id, datum: vystavenie },
@@ -188,6 +213,24 @@ export function NovaFaktura({
         dovod: v.zdroj === "zakladna" ? null : v.dovod,
       },
     ]);
+  }
+
+  /** Prevezme riadky z poslednej faktúry — ceny aj sadzby ostávajú tie isté. */
+  function zopakujPoslednu() {
+    if (!posledna) return;
+    setRiadky(
+      posledna.polozky.map((p) => ({
+        key: Math.random().toString(36).slice(2),
+        name: p.name,
+        quantity: String(p.quantity).replace(".", ","),
+        unit: p.unit || "ks",
+        unit_price: String(p.unit_price).replace(".", ","),
+        vat_rate: platca ? Number(p.vat_rate) : 0,
+        product_id: p.product_id,
+        dovod: `Z faktúry ${posledna.invoice_number}`,
+      })),
+    );
+    toast.success(`Položky z faktúry ${posledna.invoice_number}`);
   }
 
   function zmen(key: string, patch: Partial<Riadok>) {
@@ -277,6 +320,8 @@ export function NovaFaktura({
         onSpat={() => setKrok("odberatel")}
         onPridajProdukt={pridajProdukt}
         onPridajVlastnu={() => setRiadky((r) => [...r, prazdnyRiadok(zakladnaSadzba)])}
+        posledna={posledna}
+        onZopakuj={zopakujPoslednu}
         onZmen={zmen}
         onZmaz={(key) => setRiadky((r) => r.filter((x) => x.key !== key))}
         onDalej={() => setKrok("suhrn")}
@@ -569,6 +614,8 @@ function KrokPolozky({
   onZmaz,
   onDalej,
   pocetPouzitelnych,
+  posledna,
+  onZopakuj,
 }: {
   odberatel: Odberatel;
   produkty: Produkt[];
@@ -583,6 +630,8 @@ function KrokPolozky({
   onZmaz: (key: string) => void;
   onDalej: () => void;
   pocetPouzitelnych: number;
+  posledna: { invoice_number: string; issue_date: string } | null;
+  onZopakuj: () => void;
 }) {
   const [cennikOtvoreny, setCennikOtvoreny] = useState(false);
 
@@ -618,6 +667,29 @@ function KrokPolozky({
               onZmaz={() => onZmaz(r.key)}
             />
           ))}
+
+          {/*
+            Ďalšia faktúra pre toho istého odberateľa býva kópiou predošlej —
+            prepisovať tie isté riadky na telefóne je to najotravnejšie.
+          */}
+          {posledna && (
+            <button
+              onClick={onZopakuj}
+              className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-left active:bg-primary/10"
+            >
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <RotateCcw className="h-[18px] w-[18px]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-medium text-primary">
+                  Zopakovať poslednú faktúru
+                </span>
+                <span className="block truncate text-[13px] text-muted-foreground">
+                  {posledna.invoice_number} · {datumSk(posledna.issue_date)}
+                </span>
+              </span>
+            </button>
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             <button
