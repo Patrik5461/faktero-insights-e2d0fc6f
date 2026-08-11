@@ -6,8 +6,10 @@ import { vystaveneFakturyFn } from "@/lib/faktero/mobil-faktura.functions";
 import { bulkMarkPaidFn } from "@/lib/faktero/invoice-bulk.functions";
 import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
 import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
+import { FAKTURY, sPoctom } from "@/lib/faktero/mnozne";
 import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import { datum } from "./PrijateDoklady";
+import { otvorPdfFaktury } from "./pdf-faktury";
 
 /**
  * Vystavené faktúry v telefóne.
@@ -147,7 +149,9 @@ export function VystaveneFaktury({
           <div className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums">
             {suma(dlznici.spolu, dlznici.mena)}
           </div>
-          <div className="mt-1 text-[13px] text-muted-foreground">{dlznici.pocet} faktúr</div>
+          <div className="mt-1 text-[13px] text-muted-foreground">
+            {sPoctom(dlznici.pocet, FAKTURY)}
+          </div>
         </div>
       )}
 
@@ -249,8 +253,7 @@ function DetailFaktury({
   async function otvorPdf() {
     setBusy("pdf");
     try {
-      const r = (await pdfFn({ data: { invoiceId: faktura.id } })) as any;
-      window.open(r.signedUrl, "_blank", "noopener");
+      await otvorPdfFaktury(() => pdfFn({ data: { invoiceId: faktura.id } }) as any);
     } catch (e: any) {
       toast.error(e?.message ?? "PDF sa nepodarilo pripraviť.");
     } finally {

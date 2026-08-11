@@ -23,7 +23,9 @@ import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
 import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
 import { SK_VAT_RATES, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { friendlyError } from "@/lib/faktero/plan-error";
+import { POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
+import { otvorPdfFaktury } from "./pdf-faktury";
 
 /**
  * Vystavenie faktúry v telefóne.
@@ -177,7 +179,8 @@ export function NovaFaktura({
         name: p.name,
         quantity: "1",
         unit: p.unit || "ks",
-        unit_price: String(v.cena),
+        // Desatinná čiarka — inak sa v poli mieša „2.36" s tým, čo človek píše.
+        unit_price: String(v.cena).replace(".", ","),
         vat_rate: platca ? p.vat_rate : 0,
         product_id: p.id,
         dovod: v.zdroj === "zakladna" ? null : v.dovod,
@@ -872,7 +875,7 @@ function KrokSuhrn({
             {suma(sucty.spolu, mena)}
           </div>
           <div className="mt-2 text-[14px] text-muted-foreground">
-            {odberatel.name} · {pocetPoloziek} {pocetPoloziek === 1 ? "položka" : "položiek"}
+            {odberatel.name} · {sPoctom(pocetPoloziek, POLOZKY)}
           </div>
           {platca && (
             <div className="mt-1 text-[12px] text-muted-foreground">
@@ -993,10 +996,7 @@ function Vystavena({
   async function otvorPdf() {
     setBusy("pdf");
     try {
-      const r = (await pdfFn({ data: { invoiceId: faktura.id } })) as any;
-      // Otvorenie v novom okne musí prísť z kliknutia, inak ho WebView zablokuje;
-      // preto sa PDF otvára hneď po dorobení, nie cez medzikrok.
-      window.open(r.signedUrl, "_blank", "noopener");
+      await otvorPdfFaktury(() => pdfFn({ data: { invoiceId: faktura.id } }) as any);
     } catch (e: any) {
       toast.error(e?.message ?? "PDF sa nepodarilo pripraviť.");
     } finally {
