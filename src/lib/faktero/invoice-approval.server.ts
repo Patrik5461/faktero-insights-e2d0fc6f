@@ -152,7 +152,9 @@ export async function getInvoiceForApproval(token: string) {
   const [{ data: items }, { data: company }] = await Promise.all([
     supabaseAdmin
       .from("invoice_items")
-      .select("description, quantity, unit, unit_price, vat_rate, total")
+      // Názov položky je v `name`; `description` je nepovinný druhý riadok,
+      // ktorý väčšina faktúr nemá — bez `name` videl zákazník prázdny popis.
+      .select("name, description, quantity, unit, unit_price, vat_rate, total")
       .eq("invoice_id", inv.id)
       .order("position"),
     supabaseAdmin

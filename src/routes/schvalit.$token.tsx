@@ -178,7 +178,14 @@ function ApprovalPage() {
                 ) : (
                   items.map((it, i) => (
                     <tr key={i}>
-                      <td className="px-3 py-2">{it.description}</td>
+                      <td className="px-3 py-2">
+                        <span className="block">{it.name}</span>
+                        {it.description && (
+                          <span className="block text-xs text-muted-foreground">
+                            {it.description}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-right tabular-nums">
                         {Number(it.quantity ?? 0)} {it.unit ?? ""}
                       </td>
