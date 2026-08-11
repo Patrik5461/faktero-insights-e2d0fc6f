@@ -9,6 +9,7 @@ import {
   Globe,
   LogOut,
   Receipt,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import {
@@ -240,6 +241,19 @@ export function MobilPanel({
             label="Otvoriť Faktero na webe"
             hint="Faktúry, sklad a zvyšok aplikácie"
             onClick={() => otvorNaWebe("/dashboard")}
+          />
+
+          {/* App Store vyžaduje, aby sa k podmienkam a k ochrane údajov dalo dostať priamo z appky. */}
+          <Skupina nazov="Právne" />
+          <Polozka
+            icon={ShieldCheck}
+            label="Ochrana osobných údajov"
+            onClick={() => otvorNaWebe("/pravne/gdpr")}
+          />
+          <Polozka
+            icon={FileText}
+            label="Obchodné podmienky"
+            onClick={() => otvorNaWebe("/pravne/obchodne-podmienky")}
           />
         </nav>
 
