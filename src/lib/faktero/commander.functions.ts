@@ -118,8 +118,12 @@ export const disconnectCommander = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Naimportované autá a väzby musia odísť s integráciou — inak ostanú vo
+    // firme navždy, aj keď tam nikdy nepatrili.
+    const { odpojIntegraciu } = await import("./integracie-odpojenie.server");
+    const upratane = await odpojIntegraciu(data.companyId, "commander_vehicle_links");
     await supabaseAdmin.from("commander_connections").delete().eq("company_id", data.companyId);
-    return { ok: true };
+    return { ok: true, ...upratane };
   });
 
 async function loadCreds(companyId: string) {

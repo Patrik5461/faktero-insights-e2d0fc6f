@@ -82,11 +82,18 @@ function TeslaPage() {
 
   async function onDisconnect() {
     if (!cid) return;
-    if (!confirm("Naozaj odpojiť Tesla účet? Importované dáta zostanú zachované.")) return;
+    if (
+      !confirm(
+        "Naozaj odpojiť Tesla účet?\n\nImportované dáta zostanú zachované. Vozidlá, ktoré sem priniesla integrácia a nemajú žiadnu jazdu ani tankovanie, sa odstránia.",
+      )
+    )
+      return;
     setBusy("disc");
     try {
-      await _disc({ data: { companyId: cid } });
-      toast.success("Odpojené");
+      const r: any = await _disc({ data: { companyId: cid } });
+      toast.success(
+        r?.zmazaneVozidla ? `Odpojené — odstránených vozidiel: ${r.zmazaneVozidla}` : "Odpojené",
+      );
       await load();
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba");

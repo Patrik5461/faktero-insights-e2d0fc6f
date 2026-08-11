@@ -143,8 +143,10 @@ export const disconnectTesla = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { odpojIntegraciu } = await import("./integracie-odpojenie.server");
+    const upratane = await odpojIntegraciu(data.companyId, "tesla_vehicle_links");
     await supabaseAdmin.from("tesla_connections").delete().eq("company_id", data.companyId);
-    return { ok: true };
+    return { ok: true, ...upratane };
   });
 
 async function loadValidAccessToken(companyId: string): Promise<string> {

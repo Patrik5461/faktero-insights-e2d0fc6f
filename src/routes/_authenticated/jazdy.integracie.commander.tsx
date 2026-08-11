@@ -132,11 +132,18 @@ function CommanderPage() {
 
   async function onDisconnect() {
     if (!cid) return;
-    if (!confirm("Naozaj odpojiť Commander? Importované jazdy zostanú zachované.")) return;
+    if (
+      !confirm(
+        "Naozaj odpojiť Commander?\n\nImportované jazdy zostanú zachované. Vozidlá, ktoré sem priniesla integrácia a nemajú žiadnu jazdu ani tankovanie, sa odstránia.",
+      )
+    )
+      return;
     setBusy("disc");
     try {
-      await _disc({ data: { companyId: cid } });
-      toast.success("Odpojené");
+      const r: any = await _disc({ data: { companyId: cid } });
+      toast.success(
+        r?.zmazaneVozidla ? `Odpojené — odstránených vozidiel: ${r.zmazaneVozidla}` : "Odpojené",
+      );
       setUsername("");
       setPassword("");
       setNeedsReauth(false);
