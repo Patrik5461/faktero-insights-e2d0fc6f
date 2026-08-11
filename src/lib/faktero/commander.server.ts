@@ -69,6 +69,26 @@ export class CommanderAuthError extends Error {
   }
 }
 
+/**
+ * 404 „Page not found" — stránka s jazdami neexistuje.
+ *
+ * Commander nevracia prázdne pole, keď vo zvolenom okne vozidlo nejazdilo:
+ * odpovie rovno 404. Nie je to porucha, len koniec zoznamu. Rozlišuje sa to
+ * podľa textu — pri naozaj neznámom vozidle píše „Vehicle not found" a to už
+ * chyba je (napr. auto odpojené od jednotky).
+ */
+export class CommanderEmptyPageError extends Error {
+  constructor() {
+    super("page_not_found");
+  }
+}
+
+/** Je 404 iba prázdna stránka, alebo skutočne chýbajúci záznam? */
+export function jePrazdnaStranka(status: number, telo: string): boolean {
+  if (status !== 404) return false;
+  return /page\s*not\s*found/i.test(telo);
+}
+
 function authHeader(username: string, password: string): string {
   const b64 = Buffer.from(`${username}:${password}`).toString("base64");
   return `Basic ${b64}`;
@@ -132,6 +152,10 @@ async function call<T>(
   if (res.status === 401 || res.status === 403) throw new CommanderAuthError();
   if (!res.ok) {
     const text = await res.text().catch(() => "");
+    if (jePrazdnaStranka(res.status, text)) {
+      console.log(`[commander] GET ${url.toString()} -> 404 prázdna stránka (žiadne jazdy)`);
+      throw new CommanderEmptyPageError();
+    }
     console.error(`[commander] GET ${url.toString()} -> ${res.status} ${text.slice(0, 500)}`);
     throw new Error(`Commander API ${res.status}: ${text.slice(0, 300)}`);
   }
@@ -193,11 +217,18 @@ export async function commanderListRides(
   const toEpoch = Math.floor(to.getTime() / 1000);
   let totalPages = maxPages;
   for (let page = 1; page <= Math.min(totalPages, maxPages); page++) {
-    const data = await call<any>(`/rides/${encodeURIComponent(vehicleId)}`, username, password, {
-      datetimeStart: fromEpoch,
-      datetimeEnd: toEpoch,
-      page,
-    });
+    let data: any;
+    try {
+      data = await call<any>(`/rides/${encodeURIComponent(vehicleId)}`, username, password, {
+        datetimeStart: fromEpoch,
+        datetimeEnd: toEpoch,
+        page,
+      });
+    } catch (e) {
+      // Vozidlo v tomto okne nejazdilo — koniec zoznamu, nie porucha.
+      if (e instanceof CommanderEmptyPageError) break;
+      throw e;
+    }
     const arr: CommanderRide[] = Array.isArray(data) ? data : (data?.rides ?? data?.data ?? []);
     const tp = Number(data?.totalPages ?? data?.total_pages);
     if (Number.isFinite(tp) && tp > 0) totalPages = tp;
@@ -226,12 +257,19 @@ export async function commanderListAllRides(
   const out: CommanderRide[] = [];
   let totalPages = maxPages;
   for (let page = 1; page <= Math.min(totalPages, maxPages); page++) {
-    const data = await call<any>("/all-rides", username, password, {
-      datetimeStart: fromEpoch,
-      datetimeEnd: toEpoch,
-      page,
-      limit,
-    });
+    let data: any;
+    try {
+      data = await call<any>("/all-rides", username, password, {
+        datetimeStart: fromEpoch,
+        datetimeEnd: toEpoch,
+        page,
+        limit,
+      });
+    } catch (e) {
+      // V okne nikto nejazdil — Commander odpovie 404 namiesto prázdneho poľa.
+      if (e instanceof CommanderEmptyPageError) break;
+      throw e;
+    }
     const arr: CommanderRide[] = Array.isArray(data) ? data : (data?.rides ?? data?.data ?? []);
     const tp = Number(data?.totalPages ?? data?.total_pages);
     if (Number.isFinite(tp) && tp > 0) totalPages = tp;
