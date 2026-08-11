@@ -56,68 +56,90 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
     .eq("id", input.company_id)
     .single();
 
-  // Look up active payment link (used both for PDF embed and email CTA)
-  let paymentLinkUrl: string | null = null;
+  /*
+   * Záznam o pokuse vzniká hneď, nie až tesne pred odoslaním.
+   *
+   * Predtým sa zapisoval až po vyrobení PDF, takže keď sa odosielanie
+   * rozbilo skôr — a práve tam trvá najdlhšie — neostala po pokuse žiadna
+   * stopa. Faktúra vyzerala neodoslaná a nedalo sa zistiť prečo.
+   */
+  const { data: log, error: logErr } = await supabaseAdmin
+    .from("invoice_email_logs")
+    .insert({
+      company_id: input.company_id,
+      invoice_id: invoice.id,
+      recipient_email: input.recipient_email,
+      subject: `Faktúra ${invoice.invoice_number}`,
+      status: "pending",
+    })
+    .select("id")
+    .single();
+  if (logErr || !log)
+    throw new Error(logErr?.message ?? "Záznam o odoslaní sa nepodarilo založiť.");
+
   try {
-    const { data: link } = await supabaseAdmin
-      .from("invoice_payment_links")
-      .select("token, status, expires_at")
-      .eq("invoice_id", invoice.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (
-      link &&
-      link.status !== "cancelled" &&
-      (!link.expires_at || new Date(link.expires_at) > new Date())
-    ) {
-      const base = (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
-      paymentLinkUrl = `${base}/pay/${link.token}`;
+    // Look up active payment link (used both for PDF embed and email CTA)
+    let paymentLinkUrl: string | null = null;
+    try {
+      const { data: link } = await supabaseAdmin
+        .from("invoice_payment_links")
+        .select("token, status, expires_at")
+        .eq("invoice_id", invoice.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (
+        link &&
+        link.status !== "cancelled" &&
+        (!link.expires_at || new Date(link.expires_at) > new Date())
+      ) {
+        const base = (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
+        paymentLinkUrl = `${base}/pay/${link.token}`;
+      }
+    } catch {
+      /* ignore */
     }
-  } catch {
-    /* ignore */
-  }
 
-  // Ensure a fresh PDF exists (regenerates when the cached copy is stale)
-  const { ensureInvoicePdf } = await import("./invoice-pdf.server");
-  const { path: pdfPath } = await ensureInvoicePdf(invoice.id);
+    // Ensure a fresh PDF exists (regenerates when the cached copy is stale)
+    const { ensureInvoicePdf } = await import("./invoice-pdf.server");
+    const { path: pdfPath } = await ensureInvoicePdf(invoice.id);
 
-  const { data: pdfBlob, error: dlErr } = await supabaseAdmin.storage
-    .from("invoice-pdfs")
-    .download(pdfPath);
-  if (dlErr || !pdfBlob) throw new Error(dlErr?.message ?? "PDF sa nepodarilo načítať.");
-  const pdfB64 = arrayBufferToBase64(await pdfBlob.arrayBuffer());
+    const { data: pdfBlob, error: dlErr } = await supabaseAdmin.storage
+      .from("invoice-pdfs")
+      .download(pdfPath);
+    if (dlErr || !pdfBlob) throw new Error(dlErr?.message ?? "PDF sa nepodarilo načítať.");
+    const pdfB64 = arrayBufferToBase64(await pdfBlob.arrayBuffer());
 
-  let tplSubject: string | undefined;
-  let tplBody: string | undefined;
-  try {
-    const { getEmailTemplate } = await import("./email-templates.server");
-    const tpl = await getEmailTemplate(input.company_id, "invoice_send");
-    if (tpl.fromDb) {
-      tplSubject = tpl.subject;
-      tplBody = tpl.body;
+    let tplSubject: string | undefined;
+    let tplBody: string | undefined;
+    try {
+      const { getEmailTemplate } = await import("./email-templates.server");
+      const tpl = await getEmailTemplate(input.company_id, "invoice_send");
+      if (tpl.fromDb) {
+        tplSubject = tpl.subject;
+        tplBody = tpl.body;
+      }
+    } catch {
+      /* ignore */
     }
-  } catch {
-    /* ignore */
-  }
 
-  const subject =
-    input.subject ?? tplSubject ?? company?.email_default_subject ?? "Faktúra {invoice_number}";
-  const message =
-    input.message ??
-    tplBody ??
-    company?.email_default_message ??
-    "V prílohe posielame faktúru {invoice_number}.";
-  const finalSubject = applyVars(subject, invoice, company);
-  const finalMessage = applyVars(message, invoice, company);
+    const subject =
+      input.subject ?? tplSubject ?? company?.email_default_subject ?? "Faktúra {invoice_number}";
+    const message =
+      input.message ??
+      tplBody ??
+      company?.email_default_message ??
+      "V prílohe posielame faktúru {invoice_number}.";
+    const finalSubject = applyVars(subject, invoice, company);
+    const finalMessage = applyVars(message, invoice, company);
 
-  // Append online payment CTA to plain + HTML body when a link is active
-  const ctaPlain = paymentLinkUrl
-    ? `\n\nFaktúru môžete zaplatiť online kliknutím na tento odkaz: ${paymentLinkUrl}`
-    : "";
-  const finalPlain = finalMessage + ctaPlain;
-  const ctaHtml = paymentLinkUrl
-    ? `<div style="margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb">
+    // Append online payment CTA to plain + HTML body when a link is active
+    const ctaPlain = paymentLinkUrl
+      ? `\n\nFaktúru môžete zaplatiť online kliknutím na tento odkaz: ${paymentLinkUrl}`
+      : "";
+    const finalPlain = finalMessage + ctaPlain;
+    const ctaHtml = paymentLinkUrl
+      ? `<div style="margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb">
          <p style="margin:0 0 12px;font-family:Inter,Arial,sans-serif;font-size:14px;color:#111">
            Faktúru môžete zaplatiť online:
          </p>
@@ -128,29 +150,15 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
            Alebo otvorte: <a href="${escapeAttr(paymentLinkUrl)}" style="color:#12734f">${escapeHtml(paymentLinkUrl)}</a>
          </p>
        </div>`
-    : "";
-  const bodyHtml =
-    `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;white-space:pre-wrap">${escapeHtml(finalMessage)}</div>` +
-    ctaHtml;
+      : "";
+    const bodyHtml =
+      `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;white-space:pre-wrap">${escapeHtml(finalMessage)}</div>` +
+      ctaHtml;
 
-  const senderName = company?.email_sender_name || company?.name || "Faktero";
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
-  const from = `${senderName} <${fromEmail}>`;
+    const senderName = company?.email_sender_name || company?.name || "Faktero";
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
+    const from = `${senderName} <${fromEmail}>`;
 
-  const { data: log } = await supabaseAdmin
-    .from("invoice_email_logs")
-    .insert({
-      company_id: input.company_id,
-      invoice_id: invoice.id,
-      recipient_email: input.recipient_email,
-      subject: finalSubject,
-      message: finalPlain,
-      status: "pending",
-    })
-    .select("id")
-    .single();
-
-  try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
@@ -172,24 +180,20 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       // Resend pri chybe niekedy vráti HTML/prázdno — nižšie sa použije surový text
     }
     if (!res.ok) {
-      const errMsg = json?.message ?? text.slice(0, 500);
-      await supabaseAdmin
-        .from("invoice_email_logs")
-        .update({
-          status: "failed",
-          error_message: errMsg,
-        })
-        .eq("id", log!.id);
-      throw new Error(`Resend error: ${errMsg}`);
+      throw new Error(`Resend error: ${json?.message ?? text.slice(0, 500)}`);
     }
     await supabaseAdmin
       .from("invoice_email_logs")
       .update({
         status: "sent",
+        // Predmet a text sa dopĺňajú až tu — pri založení záznamu ešte nie sú
+        // zostavené zo šablóny firmy.
+        subject: finalSubject,
+        message: finalPlain,
         provider_message_id: json?.id ?? null,
         sent_at: new Date().toISOString(),
       })
-      .eq("id", log!.id);
+      .eq("id", log.id);
 
     // Update invoice as sent
     const { data: updated } = await supabaseAdmin
@@ -210,15 +214,15 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       data: invoicePayload(updated ?? invoice),
     });
 
-    return { ok: true, message_id: json?.id ?? null, log_id: log!.id };
+    return { ok: true, message_id: json?.id ?? null, log_id: log.id };
   } catch (e: any) {
     await supabaseAdmin
       .from("invoice_email_logs")
       .update({
         status: "failed",
-        error_message: e?.message ?? "unknown",
+        error_message: String(e?.message ?? "unknown").slice(0, 500),
       })
-      .eq("id", log!.id);
+      .eq("id", log.id);
     throw e;
   }
 }

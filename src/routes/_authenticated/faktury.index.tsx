@@ -17,6 +17,7 @@ import {
   Archive,
   Landmark,
   X,
+  Zap,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
@@ -536,6 +537,13 @@ function InvoicesPage() {
             >
               <FileCode2 className="h-4 w-4" /> Účtovné exporty
             </Link>
+            {/* Krátka cesta pre jednu položku — plný formulár je na zvyšok. */}
+            <Link
+              to="/faktury/rychla"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            >
+              <Zap className="h-4 w-4" /> Rýchla faktúra
+            </Link>
             <Link
               to="/faktury/nova"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
@@ -562,11 +570,7 @@ function InvoicesPage() {
               />
               Po splatnosti bez upomienky
             </label>
-            <SortSelect
-              moznosti={ZORADENIE_FAKTUR}
-              hodnota={list.sort}
-              onChange={list.setSort}
-            />
+            <SortSelect moznosti={ZORADENIE_FAKTUR} hodnota={list.sort} onChange={list.setSort} />
             <DeletedToggle
               value={list.showDeleted}
               onChange={list.setShowDeleted}

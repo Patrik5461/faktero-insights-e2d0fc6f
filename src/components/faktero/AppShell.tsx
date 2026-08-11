@@ -9,7 +9,6 @@ import {
   Settings,
   ChevronDown,
   ChevronsUpDown,
-
   Plus,
   Search,
   HelpCircle,
@@ -85,6 +84,7 @@ const NAV: NavGroup[] = [
     children: [
       { to: "/faktury", label: "Faktúry" },
       { to: "/faktury/nova", label: "Nová faktúra" },
+      { to: "/faktury/rychla", label: "Rýchla faktúra" },
       { to: "/zalohove", label: "Zálohové faktúry" },
       { to: "/ponuky", label: "Cenové ponuky" },
       { to: "/objednavky", label: "Prijaté objednávky" },
@@ -240,7 +240,6 @@ const ACCOUNT_SETTINGS_LINKS: NavChild[] = [
   { to: "/nastavenia", label: "Nastavenia systému" },
 ];
 
-
 /**
  * Ktorá položka podmenu je práve otvorená. Rozhoduje aj podľa parametrov,
  * inak by na `/faktury?status=draft` svietili Faktúry aj Koncepty naraz.
@@ -264,6 +263,9 @@ function activeChildKey(
 
 const QUICK_CREATE = [
   { to: "/faktury/nova", label: "Nová faktúra" },
+  // Krátka cesta: odberateľ, suma, popis. Bez nej sa na ňu dalo dostať len
+  // napísaním adresy, takže o nej nikto nevedel.
+  { to: "/faktury/rychla", label: "Rýchla faktúra" },
   { to: "/ponuky/nova", label: "Nová cenová ponuka" },
   { to: "/odberatelia", search: { new: "1" }, label: "Nový odberateľ" },
   { to: "/produkty", search: { new: "1" }, label: "Nový produkt" },
@@ -308,7 +310,6 @@ function filterNav(view: ActiveProduct, isCompanyAdmin: boolean): NavGroup[] {
   );
 }
 
-
 export function AppShell({
   companies,
   activeId,
@@ -352,7 +353,6 @@ export function AppShell({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-
 
   const view = resolveView(productMode, activeProduct);
   const isCompanyAdmin = active?.role === "owner" || active?.role === "admin";
@@ -515,8 +515,6 @@ export function AppShell({
             </div>
           )}
 
-
-
           {/* Company switcher — pill */}
           {active && (
             <DropdownMenu>
@@ -588,7 +586,8 @@ export function AppShell({
             {view !== "logbook" && (
               <DropdownMenu>
                 <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-[12px] font-medium text-primary-foreground hover:opacity-90">
-                  <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Vytvoriť</span>
+                  <Plus className="h-3.5 w-3.5" />{" "}
+                  <span className="hidden sm:inline">Vytvoriť</span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="flex items-center gap-1.5 text-xs">
@@ -681,15 +680,14 @@ export function AppShell({
               }
               return (
                 <DropdownMenu key={g.key}>
-                  <DropdownMenuTrigger
-                    className={`${base} ${g.key === "viac" ? "ml-auto" : ""}`}
-                  >
+                  <DropdownMenuTrigger className={`${base} ${g.key === "viac" ? "ml-auto" : ""}`}>
                     {g.label}
                     <ChevronDown className="h-3 w-3 opacity-60" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align={g.key === "viac" ? "end" : "start"} className="w-56">
                     {g.children.map((c) => {
-                      const isChildActive = activeKey === c.to + c.label && activeGroup?.key === g.key;
+                      const isChildActive =
+                        activeKey === c.to + c.label && activeGroup?.key === g.key;
                       return (
                         <DropdownMenuItem key={c.to + c.label} asChild>
                           <Link
@@ -709,7 +707,6 @@ export function AppShell({
           </nav>
         </div>
       </header>
-
 
       <main className="flex min-w-0 flex-1 flex-col">{children}</main>
       <CreateCompanyDialog open={createOpen} onOpenChange={setCreateOpen} />
