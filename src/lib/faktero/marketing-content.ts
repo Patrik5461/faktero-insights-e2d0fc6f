@@ -17,6 +17,14 @@ import {
   Plug,
   Boxes,
   MapPin,
+  ScanLine,
+  Smartphone,
+  Landmark,
+  Tags,
+  HardHat,
+  ClipboardList,
+  Wallet,
+  Calculator,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,7 +58,7 @@ export const funkcie: HubContent = {
   hubSlug: "funkcie",
   hubTitle: "Funkcie Faktero",
   hubDescription:
-    "Faktúry, ponuky, opakované faktúry, Pohoda export, import zo SuperFaktúry, multi-company, skladové hospodárstvo, kniha jázd a Commander GPS prepojenie v jednom systéme.",
+    "Faktúry, ponuky, skener bločkov z eKasy, párovanie platieb z banky, cenník a zľavy, zákazky, sklad, pokladňa, DPH prehľad, kniha jázd a aplikácia do telefónu — v jednom systéme.",
   hubLead:
     "Všetko, čo potrebujete na fakturáciu a prevádzku modernej firmy — bez kompromisov, pripravené na eFaktúru 2027.",
   items: [
@@ -182,6 +190,237 @@ export const funkcie: HubContent = {
             "Roly: vlastník, účtovník, spolupracovník",
             "Konsolidované prehľady cez všetky firmy",
           ],
+        },
+      ],
+    },
+    {
+      slug: "skener-blockov",
+      label: "Skener bločkov",
+      summary: "Odfoťte QR kód z bločku a doklad sa načíta z Finančnej správy aj s položkami.",
+      icon: ScanLine,
+      blocks: [
+        {
+          type: "lead",
+          text: "Bloček z obchodu nemusíte prepisovať ani odkladať do šuflíka. Naskenujte QR kód a Faktero si vypýta doklad priamo z eKasy — s dodávateľom, sumou, rozpisom DPH aj jednotlivými položkami.",
+        },
+        {
+          type: "bullets",
+          title: "Čo skener zvládne",
+          items: [
+            "QR kód z pokladničného dokladu — údaje idú priamo z Finančnej správy, nie z odhadu",
+            "Položky z bločku vrátane rozpisu po sadzbách DPH",
+            "Faktúru v PDF aj viacstranový doklad odfotený po stranách",
+            "Doklad bez QR kódu prečíta z fotky",
+            "Spôsob úhrady sa pýta hneď pri skenovaní — hotovosť uberá z pokladne",
+          ],
+        },
+        {
+          type: "section",
+          title: "Prečo to má zmysel",
+          body: "Prepisovanie bločkov je práca, ktorú nikto nechce robiť a preto sa odkladá — a na konci mesiaca chýbajú doklady k výdavkom. Naskenovaný bloček je v systéme za pár sekúnd aj s fotkou originálu.",
+        },
+      ],
+    },
+    {
+      slug: "mobilna-aplikacia",
+      label: "Faktero v telefóne",
+      summary: "Vystavte faktúru, naskenujte bloček a odmerajte jazdu priamo z mobilu.",
+      icon: Smartphone,
+      blocks: [
+        {
+          type: "lead",
+          text: "Aplikácia robí presne tri veci, ktoré sa robia mimo kancelárie: vystaví faktúru, zoberie doklad a odmeria jazdu. Nič viac — na malej obrazovke by zvyšok len prekážal.",
+        },
+        {
+          type: "bullets",
+          title: "Čo v telefóne funguje",
+          items: [
+            "Faktúra v troch krokoch — odberateľ, položky, splatnosť — s cenami z vášho cenníka",
+            "Hotovú faktúru pošlete e-mailom alebo cez systémové menu (WhatsApp, Messenger, Súbory)",
+            "Zopakovanie poslednej faktúry pre toho istého odberateľa jedným ťuknutím",
+            "Skenovanie dokladov funguje aj bez signálu — doklad počká v telefóne a odošle sa sám",
+            "Kniha jázd so štartom a stopom, kilometre odmeria telefón",
+            "Odomknutie Face ID alebo odtlačkom",
+          ],
+        },
+        {
+          type: "callout",
+          title: "Aplikácia je pred vydaním",
+          body: "Verziu pre iPhone dokončujeme a čaká na schválenie v App Store. Ohlásime ju hneď, ako bude dostupná.",
+        },
+      ],
+    },
+    {
+      slug: "bankove-parovanie",
+      label: "Banka a párovanie úhrad",
+      summary: "Faktero pozná pohyby na účte a samo označí zaplatené faktúry.",
+      icon: Landmark,
+      blocks: [
+        {
+          type: "lead",
+          text: "Pripojte bankový účet a Faktero si každý deň stiahne pohyby. Isté zhody spáruje samo, sporné vám predloží na rozhodnutie — nikdy nehádže mince za vás.",
+        },
+        {
+          type: "bullets",
+          title: "Ako to pracuje",
+          items: [
+            "Priame napojenie na Tatra banku, pre ostatné banky import výpisu",
+            "Párovanie podľa variabilného symbolu, sumy a názvu odberateľa",
+            "Čiastočné úhrady sa odrátajú, faktúra ostane otvorená na zvyšok",
+            "Nesprávne spárovanie sa dá vrátiť jedným klikom",
+            "Bankové výpisy vo formáte camt.053 aj v PDF",
+          ],
+        },
+        {
+          type: "section",
+          title: "Čo tým získate",
+          body: "Odpadá porovnávanie výpisu s faktúrami. Prehľad neuhradených je vždy aktuálny, takže upomienka odíde tomu, kto naozaj nezaplatil.",
+        },
+      ],
+    },
+    {
+      slug: "cennik-zlavy-akcie",
+      label: "Cenník, zľavy a akcie",
+      summary: "Dohodnuté ceny pre odberateľa, zľavy podľa skupín a časovo obmedzené akcie.",
+      icon: Tags,
+      blocks: [
+        {
+          type: "lead",
+          text: "Každý odberateľ môže mať vlastnú cenu a Faktero ju na faktúru doplní samo — aj s vysvetlením, odkiaľ tá cena je.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Individuálna cena pre odberateľa aj pre celú cenovú skupinu",
+            "Množstevné ceny — iná cena od určitého počtu kusov",
+            "Percentuálna zľava pre odberateľa alebo skupinu",
+            "Cenové akcie s platnosťou od–do, na vybrané produkty alebo na celý sortiment",
+            "Pri každej položke je vidieť, prečo je cena taká",
+          ],
+        },
+        {
+          type: "section",
+          title: "Poradie je pevné",
+          body: "Dohodnutá cena prebíja zľavu a akcia platí len vtedy, keď je pre odberateľa výhodnejšia. Vďaka tomu sa nestane, že by kampaň prepísala cenu dohodnutú v zmluve.",
+        },
+      ],
+    },
+    {
+      slug: "zakazky",
+      label: "Zákazky a ziskovosť",
+      summary: "Faktúry, materiál zo skladu a jazdy na jednom mieste — a koľko na zákazke ostalo.",
+      icon: HardHat,
+      blocks: [
+        {
+          type: "lead",
+          text: "Zákazka spojí výnosy a náklady jednej práce. Uvidíte, koľko ste vyfakturovali, koľko stál materiál a doprava, a čo z toho ostalo.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Faktúry, skladové výdaje a jazdy priradené k jednej zákazke",
+            "Materiál sa oceňuje váženou nákupnou cenou, nie predajnou",
+            "Zálohová faktúra sa do výnosov nezapočíta dvakrát",
+            "Prehľad otvorených a uzavretých zákaziek s maržou",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "prijate-objednavky",
+      label: "Prijaté objednávky",
+      summary: "Od objednávky odberateľa po faktúru — aj po častiach.",
+      icon: ClipboardList,
+      blocks: [
+        {
+          type: "lead",
+          text: "Objednávku prijmete, potvrdíte a vyfakturujete. Keď dodávate po častiach, do ďalšej faktúry ide vždy len to, čo ešte nebolo vyfakturované.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Stav objednávky sa počíta z toho, čo je vyfakturované",
+            "Čiastočná fakturácia bez ručného odpočítavania",
+            "Rezervácia tovaru na sklade po potvrdení objednávky",
+            "Objednávka vznikne aj z akceptovanej cenovej ponuky",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "pokladna-a-ekasa",
+      label: "Pokladňa a eKasa",
+      summary: "Stav hotovosti z pokladničných dokladov aj z dokladov platených v hotovosti.",
+      icon: Wallet,
+      blocks: [
+        {
+          type: "lead",
+          text: "Pokladňa vie, koľko máte v kase — počíta príjmové a výdavkové doklady spolu s naskenovanými bločkami, ktoré ste zaplatili hotovosťou.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Príjmové a výdavkové pokladničné doklady s vlastným číselným radom",
+            "Doklady zaplatené hotovosťou uberajú zo stavu automaticky",
+            "Zostatok k začiatku aj ku koncu obdobia",
+            "Bločky z eKasy s overenými údajmi z Finančnej správy",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "dph-a-uzavierka",
+      label: "DPH prehľad a uzávierka",
+      summary: "Podklad pre priznanie a zámok na obdobie, ktoré už bolo podané.",
+      icon: Calculator,
+      blocks: [
+        {
+          type: "lead",
+          text: "Prehľad DPH na výstupe aj na vstupe za mesiac alebo štvrťrok, s rozpisom po sadzbách a odvodom na úhradu. Na stiahnutie v CSV aj na tlač.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Rozpis po sadzbách 23 / 19 / 5 / 0 % vrátane prenosu daňovej povinnosti",
+            "Dobropis daň znižuje, zálohová faktúra do priznania nevstupuje",
+            "DPH na vstupe z prijatých faktúr",
+            "Uzamknutie obdobia — doklady s podaným priznaním sa už nedajú zmeniť ani zmazať",
+          ],
+        },
+        {
+          type: "section",
+          title: "Informatívny prehľad",
+          body: "Faktero nie je účtovný systém a priznanie za vás nepodá. Dáva podklad, ktorý si účtovníčka overí — a zámok, ktorý zabráni tomu, aby sa už podané čísla zmenili.",
+        },
+      ],
+    },
+    {
+      slug: "importy",
+      label: "Prechod z iného systému",
+      summary:
+        "Faktúry, odberateľov aj históriu prenesiete zo SuperFaktúry, Pohody, Money S3, Omegy, iDokladu aj KROSu.",
+      icon: Upload,
+      blocks: [
+        {
+          type: "lead",
+          text: "Zmena fakturačného systému nemá znamenať stratu histórie. Faktero prevezme odberateľov aj vystavené faktúry a zachová vaše číselné rady.",
+        },
+        {
+          type: "bullets",
+          title: "Odkiaľ viete prejsť",
+          items: [
+            "SuperFaktúra — export vrátane ZIP so súbormi isdoc",
+            "Pohoda a mPohoda",
+            "Money S3",
+            "Omega a KROS",
+            "iDoklad",
+            "Skladové karty z CSV alebo XLSX",
+          ],
+        },
+        {
+          type: "callout",
+          title: "Import viete pustiť aj po častiach",
+          body: "Najskôr len odberateľov, faktúry potom. Pred zápisom uvidíte, čo sa naimportuje, a rozpoznané stĺpce si viete opraviť.",
         },
       ],
     },
