@@ -188,14 +188,6 @@ const CATS: Cat[] = [
   },
 
   {
-    to: "/pomoc/online-platby/gopay",
-    label: "Online platby",
-    desc: "Pripojenie GoPay, prijímanie platieb, riešenie problémov.",
-    icon: CreditCard,
-    available: true,
-    skupina: "Účet a vývoj",
-  },
-  {
     to: "/pomoc/predplatne",
     label: "Predplatné",
     desc: "Plány, fakturácia, zrušenie predplatného.",
@@ -213,7 +205,13 @@ const CATS: Cat[] = [
   },
 ];
 
-const SKUPINY = ["Fakturácia", "Sklad a ceny", "Účtovníctvo", "Kniha jázd", "Účet a vývoj"] as const;
+const SKUPINY = [
+  "Fakturácia",
+  "Sklad a ceny",
+  "Účtovníctvo",
+  "Kniha jázd",
+  "Účet a vývoj",
+] as const;
 
 function Page() {
   return (

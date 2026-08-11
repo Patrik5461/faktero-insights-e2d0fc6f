@@ -24,6 +24,7 @@ import {
   Landmark,
   MapPin,
   Minus,
+  QrCode,
   Quote,
   Receipt,
   Repeat,
@@ -81,7 +82,6 @@ export const Route = createFileRoute("/")({
 const trustMetrics = [
   { label: "eFaktúra Ready", icon: ShieldCheck },
   { label: "FinStat Integrácia", icon: Database },
-  { label: "GoPay Platby", icon: CreditCard },
   { label: "Pohoda Export", icon: Download },
   { label: "API First", icon: Code2 },
   { label: "Webhooky", icon: Webhook },
@@ -109,9 +109,9 @@ const features = [
     text: "REST API s test / live režimom, idempotencia cez external_id a real-time webhooky.",
   },
   {
-    icon: CreditCard,
-    title: "GoPay platby",
-    text: "Online platby kartou a tlačidlami priamo z faktúry. Stav sa páruje cez webhook.",
+    icon: QrCode,
+    title: "QR platba na faktúre",
+    text: "Odberateľ naskenuje kód v mobilnej banke — suma aj variabilný symbol sú predvyplnené.",
   },
   {
     icon: Landmark,
@@ -493,7 +493,7 @@ function DashboardMockup() {
             </div>
             <div className="ml-auto text-right">
               <div className="text-sm font-bold tabular-nums">+1 698,60 €</div>
-              <div className="text-[10px] text-muted-foreground">pred 4 min · GoPay</div>
+              <div className="text-[10px] text-muted-foreground">pred 4 min · bankový prevod</div>
             </div>
           </div>
         </div>
@@ -1133,7 +1133,7 @@ function ComparisonSection() {
     { label: "Webhooky", faktero: true, ine: "Obmedzene", manual: false },
     { label: "eFaktúra 2027 pripravenosť", faktero: true, ine: "Plánované", manual: false },
     { label: "Opakované faktúry", faktero: true, ine: true, manual: false },
-    { label: "GoPay platby", faktero: true, ine: "Plánované", manual: false },
+    { label: "QR platba na faktúre", faktero: true, ine: true, manual: false },
     { label: "FinStat integrácia", faktero: true, ine: false, manual: false },
     { label: "Bankové párovanie", faktero: true, ine: "Obmedzene", manual: false },
     { label: "Prijaté faktúry", faktero: true, ine: true, manual: false },
@@ -1544,7 +1544,7 @@ function ScreenshotShowcase() {
     {
       key: "detail",
       title: "Detail faktúry",
-      desc: "PDF, QR platba, GoPay link a história udalostí v jednom okne.",
+      desc: "PDF, QR platba, úhrady a história udalostí v jednom okne.",
       node: <ShotInvoiceDetail />,
     },
     {
@@ -1639,7 +1639,7 @@ function ShotDashboard() {
       <div className="rounded-lg border border-border bg-card p-3 text-xs">
         <div className="font-semibold">Najnovšie aktivity</div>
         <ul className="mt-2 space-y-1.5 text-muted-foreground">
-          <li>· FA2026-0042 · Acme s.r.o. · +1 698,60 € · GoPay</li>
+          <li>· FA2026-0042 · Acme s.r.o. · +1 698,60 € · prevod</li>
           <li>· FA2026-0041 · Beta s.r.o. · odoslaná e-mailom</li>
           <li>· Nový odberateľ: Gamma s.r.o.</li>
         </ul>
@@ -1764,7 +1764,9 @@ function ShotInvoiceDetail() {
           <ul className="mt-2 space-y-1 text-muted-foreground">
             <li>· Vytvorená</li>
             <li>· Odoslaná e-mailom</li>
-            <li className="text-emerald-600 dark:text-emerald-400">· Uhradená cez GoPay</li>
+            <li className="text-emerald-600 dark:text-emerald-400">
+              · Uhradená — spárované s bankou
+            </li>
           </ul>
         </div>
       </div>
@@ -1830,7 +1832,7 @@ function HowItWorks() {
       icon: Wallet,
       n: "03",
       title: "Získajte zaplatené",
-      text: "Klient zaplatí cez GoPay alebo QR platbu. Stav sa zaznamená automaticky.",
+      text: "Klient zaplatí QR kódom z faktúry alebo prevodom. Úhrada sa spáruje automaticky.",
     },
   ];
   return (
@@ -1871,7 +1873,7 @@ function HowItWorks() {
 function IntegrationsTrust() {
   const items = [
     { name: "FinStat", desc: "Automatické dohľadanie firmy podľa IČO.", icon: Database },
-    { name: "GoPay", desc: "Platby kartou a tlačidlami priamo z faktúry.", icon: CreditCard },
+    { name: "Tatra banka", desc: "Pohyby na účte a párovanie úhrad s faktúrami.", icon: Landmark },
     { name: "Pohoda", desc: "XML export pripravený pre účtovníka.", icon: FileSpreadsheet },
     { name: "eFaktúra 2027", desc: "UBL 2.1 / Peppol pripravenosť.", icon: ShieldCheck },
     { name: "REST API", desc: "Vystavujte faktúry z e-shopu či CRM.", icon: Code2 },

@@ -38,7 +38,6 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Generovanie PDF",
       "Odosielanie faktúr e-mailom",
       "QR platby na faktúrach (PAY by square)",
-      "GoPay online platby (platobné odkazy)",
     ],
     routes: ["/faktury", "/ponuky", "/opakovane"],
   },

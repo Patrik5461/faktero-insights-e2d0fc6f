@@ -236,7 +236,6 @@ const ACCOUNT_SETTINGS_LINKS: NavChild[] = [
   { to: "/firma", label: "Firma" },
   { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry" },
   { to: "/nastavenia/email-sablony", label: "Email šablóny" },
-  { to: "/nastavenia/online-platby", label: "Online platby" },
   { to: "/nastavenia", label: "Nastavenia systému" },
 ];
 
@@ -890,7 +889,6 @@ const MANUALY: { prefix: string; to: string }[] = [
   { prefix: "/api-playground", to: "/pomoc/api" },
   { prefix: "/webhooky", to: "/pomoc/api" },
   { prefix: "/predplatne", to: "/pomoc/predplatne" },
-  { prefix: "/nastavenia/online-platby", to: "/pomoc/online-platby/gopay" },
 ];
 
 export function manualPre(pathname: string): string | null {
