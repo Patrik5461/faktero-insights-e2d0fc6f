@@ -526,13 +526,25 @@ function InvoiceDetail() {
     !!inv.due_date &&
     new Date(inv.due_date) < new Date(new Date().toDateString());
 
-  function openEmail() {
-    if (!inv.customer_email) {
-      toast.error("Odberateľ nemá e-mail. Doplňte e-mail v karte odberateľa.");
-      return;
+  /*
+   * Adresát: doklad si údaje odberateľa odkladá v okamihu vystavenia, takže
+   * faktúra vystavená pred doplnením e-mailu ho v sebe nemá. Dovtedy sa
+   * odoslanie odmietalo hláškou „doplňte e-mail v karte odberateľa" — aj
+   * potom, ako ho tam človek doplnil. Preto sa dopýta aktuálna karta a keď ani
+   * tá adresu nemá, dialóg sa otvorí prázdny a adresa sa dá napísať ručne.
+   */
+  async function openEmail() {
+    let adresa = inv.customer_email as string | null;
+    if (!adresa && inv.customer_id) {
+      const { data } = await supabase
+        .from("customers")
+        .select("email")
+        .eq("id", inv.customer_id)
+        .maybeSingle();
+      adresa = (data?.email as string | null) ?? null;
     }
     setEmailForm({
-      recipient_email: inv.customer_email,
+      recipient_email: adresa ?? "",
       subject: (company?.email_default_subject ?? "Faktúra {invoice_number}").replaceAll(
         "{invoice_number}",
         inv.invoice_number,
@@ -546,6 +558,10 @@ function InvoiceDetail() {
     setEmailOpen(true);
   }
   async function submitEmail() {
+    if (!emailForm.recipient_email.trim()) {
+      toast.error("Zadajte adresu príjemcu.");
+      return;
+    }
     setEmailBusy(true);
     try {
       await sendEmail({
@@ -1040,10 +1056,17 @@ function InvoiceDetail() {
             <label className="block text-sm">
               <span className="font-medium">Príjemca</span>
               <input
+                type="email"
                 value={emailForm.recipient_email}
                 onChange={(e) => setEmailForm({ ...emailForm, recipient_email: e.target.value })}
+                placeholder="odberatel@firma.sk"
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
+              {!emailForm.recipient_email && (
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Odberateľ nemá uloženú adresu — napíšte ju sem, alebo ju doplňte v jeho karte.
+                </span>
+              )}
             </label>
             <label className="block text-sm">
               <span className="font-medium">Predmet</span>
