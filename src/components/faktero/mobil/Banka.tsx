@@ -50,8 +50,44 @@ function koniecIbanu(iban: string | null): string {
   return `…${t.slice(-4)}`;
 }
 
+/**
+ * Popis účtu do prepínača.
+ *
+ * Banka posiela ako názov účtu majiteľa, takže všetkých päť účtov firmy sa volá
+ * rovnako a prepínač by bol na nerozoznanie. Rozlišuje ich koniec IBAN-u —
+ * podľa neho ich pozná aj človek.
+ */
 function nazovUctu(u: Ucet): string {
-  return u.nazov?.trim() || koniecIbanu(u.iban);
+  return koniecIbanu(u.iban);
+}
+
+/** IBAN po štvoriciach — inak sa v ňom oko stratí. */
+function ibanCitatelne(iban: string | null): string {
+  if (!iban) return "Účet";
+  return iban.replace(/\s+/g, "").replace(/(.{4})/g, "$1 ").trim();
+}
+
+/**
+ * Nadpis riadka.
+ *
+ * Časť pohybov nemá od banky ani protistranu, ani popis (typicky platby kartou).
+ * Napísať tam „Bankový pohyb" a pod to pomlčku nikomu nepomôže — aspoň smer
+ * peňazí je z toho vidieť.
+ */
+function nadpisPohybu(p: Pohyb): string {
+  const meno = p.protistrana?.trim() || p.popis?.trim();
+  if (meno) return meno;
+  return p.suma > 0 ? "Prijatá platba" : "Odchádzajúca platba";
+}
+
+function podnadpisPohybu(p: Pohyb): string | null {
+  const casti = [
+    p.faktura ? `k faktúre ${p.faktura}` : null,
+    p.vs ? `VS ${p.vs}` : null,
+    // Popis sa opakovať nemá — keď chýba protistrana, je už v nadpise.
+    p.protistrana?.trim() ? p.popis?.trim() || null : null,
+  ].filter(Boolean);
+  return casti.length ? casti.join(" · ") : null;
 }
 
 function denNazov(iso: string): string {
@@ -203,7 +239,7 @@ export function Banka({
     >
       <div className="mb-4 rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
         <div className="text-[13px] text-muted-foreground">
-          {vybrany ? nazovUctu(ucty.find((u) => u.id === vybrany)!) : "Zostatok spolu"}
+          {vybrany ? ibanCitatelne(ucty.find((u) => u.id === vybrany)!.iban) : "Zostatok spolu"}
         </div>
         {zostatky.length === 0 ? (
           <div className="mt-0.5 text-[26px] font-semibold leading-none">—</div>
@@ -254,15 +290,13 @@ export function Banka({
                   >
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[15px] font-medium leading-tight">
-                        {p.protistrana?.trim() || p.popis?.trim() || "Bankový pohyb"}
+                        {nadpisPohybu(p)}
                       </div>
-                      <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
-                        {[p.faktura ? `k faktúre ${p.faktura}` : null, p.vs ? `VS ${p.vs}` : null]
-                          .filter(Boolean)
-                          .join(" · ") ||
-                          p.popis?.trim() ||
-                          "—"}
-                      </div>
+                      {podnadpisPohybu(p) && (
+                        <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
+                          {podnadpisPohybu(p)}
+                        </div>
+                      )}
                     </div>
                     <div
                       className={`shrink-0 text-[15px] font-semibold tabular-nums ${
