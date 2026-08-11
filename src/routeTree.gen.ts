@@ -58,6 +58,7 @@ import { Route as AdminSeoRouteImport } from './routes/admin.seo'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as DanovyDokladTokenRouteImport } from './routes/danovy-doklad.$token'
 import { Route as DocsApiRouteImport } from './routes/docs.api'
 import { Route as EfakturaciaIndexRouteImport } from './routes/efakturacia.index'
@@ -476,6 +477,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AdminRoute,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => BlogRoute,
 } as any)
 const DanovyDokladTokenRoute = DanovyDokladTokenRouteImport.update({
   id: '/danovy-doklad/$token',
@@ -1414,7 +1420,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/aktivovat': typeof AktivovatRoute
   '/app': typeof AppRoute
-  '/blog': typeof BlogRoute
+  '/blog': typeof BlogRouteWithChildren
   '/cennik': typeof CennikRoute
   '/efakturacia': typeof EfakturaciaRouteWithChildren
   '/funkcie': typeof FunkcieRouteWithChildren
@@ -1457,6 +1463,7 @@ export interface FileRoutesByFullPath {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
@@ -1632,7 +1639,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aktivovat': typeof AktivovatRoute
   '/app': typeof AppRoute
-  '/blog': typeof BlogRoute
+  '/blog': typeof BlogRouteWithChildren
   '/cennik': typeof CennikRoute
   '/kontakt': typeof KontaktRoute
   '/objednavka': typeof ObjednavkaRoute
@@ -1669,6 +1676,7 @@ export interface FileRoutesByTo {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
@@ -1846,7 +1854,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/aktivovat': typeof AktivovatRoute
   '/app': typeof AppRoute
-  '/blog': typeof BlogRoute
+  '/blog': typeof BlogRouteWithChildren
   '/cennik': typeof CennikRoute
   '/efakturacia': typeof EfakturaciaRouteWithChildren
   '/funkcie': typeof FunkcieRouteWithChildren
@@ -1889,6 +1897,7 @@ export interface FileRoutesById {
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
   '/admin/users': typeof AdminUsersRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
@@ -2110,6 +2119,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
+    | '/blog/$slug'
     | '/danovy-doklad/$token'
     | '/docs/api'
     | '/efakturacia/$slug'
@@ -2322,6 +2332,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
+    | '/blog/$slug'
     | '/danovy-doklad/$token'
     | '/docs/api'
     | '/efakturacia/$slug'
@@ -2541,6 +2552,7 @@ export interface FileRouteTypes {
     | '/admin/subscriptions'
     | '/admin/usage'
     | '/admin/users'
+    | '/blog/$slug'
     | '/danovy-doklad/$token'
     | '/docs/api'
     | '/efakturacia/$slug'
@@ -2719,7 +2731,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AktivovatRoute: typeof AktivovatRoute
   AppRoute: typeof AppRoute
-  BlogRoute: typeof BlogRoute
+  BlogRoute: typeof BlogRouteWithChildren
   CennikRoute: typeof CennikRoute
   EfakturaciaRoute: typeof EfakturaciaRouteWithChildren
   FunkcieRoute: typeof FunkcieRouteWithChildren
@@ -3145,6 +3157,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof BlogRoute
     }
     '/danovy-doklad/$token': {
       id: '/danovy-doklad/$token'
@@ -4619,6 +4638,16 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface BlogRouteChildren {
+  BlogSlugRoute: typeof BlogSlugRoute
+}
+
+const BlogRouteChildren: BlogRouteChildren = {
+  BlogSlugRoute: BlogSlugRoute,
+}
+
+const BlogRouteWithChildren = BlogRoute._addFileChildren(BlogRouteChildren)
+
 interface EfakturaciaRouteChildren {
   EfakturaciaSlugRoute: typeof EfakturaciaSlugRoute
   EfakturaciaIndexRoute: typeof EfakturaciaIndexRoute
@@ -4798,7 +4827,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AktivovatRoute: AktivovatRoute,
   AppRoute: AppRoute,
-  BlogRoute: BlogRoute,
+  BlogRoute: BlogRouteWithChildren,
   CennikRoute: CennikRoute,
   EfakturaciaRoute: EfakturaciaRouteWithChildren,
   FunkcieRoute: FunkcieRouteWithChildren,

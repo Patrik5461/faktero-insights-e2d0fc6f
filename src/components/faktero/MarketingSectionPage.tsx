@@ -114,6 +114,11 @@ export function DetailPage({ hub, item }: { hub: HubContent; item: DetailItem })
   );
 }
 
+/** Ten istý vzhľad blokov používa aj blog — nech sa web nerozpadne na dva štýly. */
+export function BlogBlock({ block }: { block: ContentBlock }) {
+  return <Block block={block} />;
+}
+
 function Block({ block }: { block: ContentBlock }) {
   if (block.type === "lead") {
     return <p className="text-lg leading-relaxed text-foreground">{block.text}</p>;

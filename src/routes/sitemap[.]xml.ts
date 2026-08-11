@@ -30,6 +30,11 @@ export const Route = createFileRoute("/sitemap.xml")({
          * obsahom vždy zaostával, čo sa už raz stalo.
          */
         const { HUBS } = await import("@/lib/faktero/marketing-content");
+        const { POSTS } = await import("@/lib/faktero/blog-content");
+        const zBlogu = [
+          { path: "/blog", priority: 0.6 },
+          ...POSTS.map((p) => ({ path: `/blog/${p.slug}`, priority: 0.5 })),
+        ];
         const zObsahu = Object.values(HUBS).flatMap((h) => [
           { path: `/${h.hubSlug}`, priority: 0.7 },
           ...h.items.map((i) => ({ path: `/${h.hubSlug}/${i.slug}`, priority: 0.6 })),
@@ -74,7 +79,8 @@ export const Route = createFileRoute("/sitemap.xml")({
         ];
 
         const map = new Map<string, { priority: number; lastmod?: string }>();
-        for (const d of [...defaults, ...zObsahu]) map.set(d.path, { priority: d.priority });
+        for (const d of [...defaults, ...zObsahu, ...zBlogu])
+          map.set(d.path, { priority: d.priority });
         for (const r of rows) {
           if (EXCLUDED_EXACT.includes(r.path)) continue;
           if (EXCLUDED_PREFIXES.some((p) => r.path.startsWith(p))) continue;
