@@ -72,7 +72,7 @@ const PLANS = [
       "Neobmedzení používatelia",
       "Neobmedzené firmy",
       "API + Webhooky",
-      "Import zo SuperFaktúry",
+      "Prechod z iného systému",
       "Audit log",
       "Prioritná podpora",
     ],

@@ -1,4 +1,6 @@
+import { FileCheck2, MoveRight, Package2, Plug, type LucideIcon } from "lucide-react";
 import type { ContentBlock } from "./marketing-content";
+import type { Odtien } from "@/components/faktero/BlogCover";
 
 /**
  * Články blogu.
@@ -19,6 +21,9 @@ export type BlogPost = {
   excerpt: string;
   /** Odhad času čítania v minútach. */
   minuty: number;
+  /** Obálka sa kreslí v kóde — pozri `BlogCover`. */
+  ikona: LucideIcon;
+  odtien: Odtien;
   blocks: ContentBlock[];
 };
 
@@ -28,6 +33,8 @@ export const POSTS: BlogPost[] = [
     title: "eFaktúra 2027: čo musíte stihnúť pred 1.1.2027",
     date: "2026-05-12",
     minuty: 6,
+    ikona: FileCheck2,
+    odtien: "zelena",
     excerpt:
       "Od januára 2027 budú firmy v SR povinné posielať B2B faktúry štruktúrovane. Vysvetľujeme Peppol, Digitálneho poštára a čo to znamená pre vaše procesy.",
     blocks: [
@@ -74,30 +81,40 @@ export const POSTS: BlogPost[] = [
     ],
   },
   {
-    slug: "ako-prejst-zo-superfaktury-do-faktero",
-    title: "Ako prejsť zo SuperFaktúry do Faktero za 15 minút",
+    slug: "prechod-do-faktera-bez-straty-historie",
+    title: "Ako prejsť do Faktera bez straty histórie",
     date: "2026-04-22",
     minuty: 5,
+    ikona: MoveRight,
+    odtien: "modra",
     excerpt:
-      "Krok za krokom: export odberateľov, import faktúr, zachovanie číselných radov a kontrola otvorených pohľadávok.",
+      "Prenos odberateľov a faktúr z doterajšieho systému, zachovanie číselných radov a kontrola otvorených pohľadávok — krok za krokom.",
     blocks: [
       {
         type: "lead",
         text: "Najväčšia obava pri zmene fakturačného systému nie je cena ani ovládanie, ale história. Kam sa podejú faktúry z minulého roka, číselné rady a adresár, ktorý ste roky budovali? Odpoveď je, že nikam — dajú sa preniesť a trvá to približne štvrťhodinu.",
       },
       {
+        type: "section",
+        title: "Kedy má prechod zmysel",
+        body: "Väčšina fakturačných programov robí to isté dobre — faktúru vystaví každý. Prechod má zmysel vtedy, keď vám niečo konkrétne chýba: napojenie na banku, sklad prepojený s faktúrami, kniha jázd alebo pripravenosť na eFaktúru 2027. Ak vám doterajší nástroj stačí, pokojne pri ňom ostaňte; toto je návod pre prípad, keď ste sa už rozhodli.",
+      },
+      {
         type: "bullets",
-        title: "Čo si pripraviť",
+        title: "Odkiaľ vie Faktero prevziať dáta",
         items: [
-          "Export zo SuperFaktúry — stiahne sa ako ZIP so súbormi vo formáte isdoc",
-          "Prístup do Faktera s právami správcu firmy",
-          "Zoznam otvorených pohľadávok pre kontrolu na konci",
+          "SuperFaktúra — export agendy vrátane ZIP so súbormi isdoc",
+          "Pohoda a mPohoda",
+          "Money S3",
+          "Omega a KROS",
+          "iDoklad",
+          "CSV alebo XLSX, keď váš systém nie je v zozname",
         ],
       },
       {
         type: "section",
         title: "Postup",
-        body: "V Fakteri otvorte Účtovníctvo → Import zo SuperFaktúry a nahrajte stiahnutý ZIP. Faktero súbory rozbalí, rozpozná stĺpce a ukáže, čo z nich prečítalo. Až potom sa rozhodujete, čo sa naozaj zapíše — či len odberateľov, len faktúry, alebo oboje.",
+        body: "V starom systéme si vyexportujte agendu — odberateľov a vystavené faktúry. Vo Fakteri otvorte Účtovníctvo → Importy, vyberte svoj systém a nahrajte súbor. Faktero rozpozná stĺpce a ukáže, čo z nich prečítalo. Až potom sa rozhodujete, čo sa naozaj zapíše.",
       },
       {
         type: "section",
@@ -121,8 +138,8 @@ export const POSTS: BlogPost[] = [
       },
       {
         type: "callout",
-        title: "Nejdete zo SuperFaktúry?",
-        body: "Faktero prevezme dáta aj z Pohody a mPohody, Money S3, Omegy, KROSu a iDokladu. Postup je vždy rovnaký: nahrať súbor, skontrolovať rozpoznané stĺpce, vybrať rozsah a potvrdiť.",
+        title: "Starý systém nevypínajte hneď",
+        body: "Nechajte si k nemu prístup do konca účtovného obdobia. Nie preto, že by import niečo stratil, ale preto, že je pokojnejšie mať kde overiť číslo, keď sa na niečo spýta účtovníčka.",
       },
     ],
   },
@@ -131,6 +148,8 @@ export const POSTS: BlogPost[] = [
     title: "Pohoda export bez ručného prepisovania",
     date: "2026-03-30",
     minuty: 4,
+    ikona: Package2,
+    odtien: "jantar",
     excerpt: "Ako odovzdať účtovníčke mesačný balík faktúr jediným klikom — XML, PDF a sumár DPH.",
     blocks: [
       {
@@ -174,6 +193,8 @@ export const POSTS: BlogPost[] = [
     title: "API fakturácia pre SaaS: idempotencia, webhooky a opakované faktúry",
     date: "2026-02-18",
     minuty: 7,
+    ikona: Plug,
+    odtien: "fialova",
     excerpt:
       "Architektúra automatizovanej fakturácie pre SaaS produkty na Slovensku — vzory, ktoré fungujú v produkcii.",
     blocks: [

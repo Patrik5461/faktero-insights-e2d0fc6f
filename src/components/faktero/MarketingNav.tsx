@@ -15,7 +15,7 @@ const menus: Menu[] = [
       { label: "Cenové ponuky", href: "/funkcie/cenove-ponuky" },
       { label: "Opakované faktúry", href: "/funkcie/opakovane-faktury" },
       { label: "Pohoda export", href: "/funkcie/pohoda-export" },
-      { label: "Import zo SuperFaktúry", href: "/funkcie/import-superfaktura" },
+      { label: "Prechod z iného systému", href: "/funkcie/importy" },
       { label: "Multi-company", href: "/funkcie/multi-company" },
     ],
   },

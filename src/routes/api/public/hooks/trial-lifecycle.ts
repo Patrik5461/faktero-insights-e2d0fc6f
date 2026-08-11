@@ -68,7 +68,7 @@ export const Route = createFileRoute("/api/public/hooks/trial-lifecycle")({
               <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#0f172a">
                 <h1 style="font-size:20px;margin:0 0 12px">Váš trial vo Faktere končí o 3 dni</h1>
                 <p>Dobrý deň,</p>
-                <p>skúšobná verzia pre <strong>${companyName}</strong> končí o 3 dni. Po jej uplynutí vaše konto automaticky prejde na <strong>bezplatný plán Starter</strong> — aplikácia zostane plne funkčná, no niektoré Premium funkcie (API, webhooky, import zo SuperFaktúry) sa vypnú.</p>
+                <p>skúšobná verzia pre <strong>${companyName}</strong> končí o 3 dni. Po jej uplynutí vaše konto automaticky prejde na <strong>bezplatný plán Starter</strong> — aplikácia zostane plne funkčná, no niektoré Premium funkcie (API, webhooky, importy z iných systémov) sa vypnú.</p>
                 <p>Ak chcete pokračovať bez obmedzení, aktivujte si plán Premium.</p>
                 <p><a href="${appUrl}/predplatne" style="display:inline-block;background:#0f172a;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Vybrať plán</a></p>
                 <p style="color:#64748b;font-size:12px;margin-top:24px">Faktero · <a href="${appUrl}">${appUrl.replace(/^https?:\/\//, "")}</a></p>

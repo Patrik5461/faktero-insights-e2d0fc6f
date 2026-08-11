@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Calendar, Clock } from "lucide-react";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 import { BlogBlock } from "@/components/faktero/MarketingSectionPage";
 import { getPost, postsByDate } from "@/lib/faktero/blog-content";
+import { BlogCover } from "@/components/faktero/BlogCover";
 
 export const Route = createFileRoute("/blog/$slug")({
   head: ({ params }) => {
@@ -63,6 +64,12 @@ function ClanokPage() {
         </div>
       </section>
 
+      <div className="mx-auto max-w-3xl px-6 pt-8">
+        <div className="overflow-hidden rounded-2xl border border-border">
+          <BlogCover icon={clanok.ikona} odtien={clanok.odtien} vysoka />
+        </div>
+      </div>
+
       <article className="mx-auto max-w-3xl px-6 py-12">
         <div className="flex flex-col gap-8">
           {clanok.blocks.map((b, i) => (
@@ -96,11 +103,14 @@ function ClanokPage() {
                   <Link
                     to="/blog/$slug"
                     params={{ slug: p.slug }}
-                    className="block h-full rounded-2xl border border-border bg-card p-5 transition hover:border-primary/40"
+                    className="block h-full overflow-hidden rounded-2xl border border-border bg-card transition hover:border-primary/40"
                   >
-                    <div className="text-xs text-muted-foreground">{datum(p.date)}</div>
-                    <div className="mt-2 font-semibold">{p.title}</div>
-                    <p className="mt-1.5 text-sm text-muted-foreground">{p.excerpt}</p>
+                    <BlogCover icon={p.ikona} odtien={p.odtien} />
+                    <div className="p-5">
+                      <div className="text-xs text-muted-foreground">{datum(p.date)}</div>
+                      <div className="mt-2 font-semibold">{p.title}</div>
+                      <p className="mt-1.5 text-sm text-muted-foreground">{p.excerpt}</p>
+                    </div>
                   </Link>
                 </li>
               ))}

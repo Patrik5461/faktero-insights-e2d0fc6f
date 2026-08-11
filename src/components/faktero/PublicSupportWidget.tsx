@@ -9,7 +9,7 @@ const SUGGESTED = [
   "Máte bezplatnú skúšobnú verziu?",
   "Podporujete API?",
   "Čo je eFaktúra?",
-  "Dá sa prejsť zo SuperFaktúry?",
+  "Dá sa prejsť z iného fakturačného systému?",
   "Aký plán potrebujem?",
   "Ako funguje predplatné?",
 ];
@@ -17,7 +17,7 @@ const SUGGESTED = [
 const GREETING: Msg = {
   role: "assistant",
   content:
-    "Ahoj! 👋 Som **Faktero AI podpora**. Rád zodpoviem vaše otázky o Fakteri — cenách, skúšobnej verzii, API, eFaktúre 2027 alebo importe zo SuperFaktúry.",
+    "Ahoj! 👋 Som **Faktero AI podpora**. Rád zodpoviem vaše otázky o Fakteri — cenách, skúšobnej verzii, API, eFaktúre 2027 alebo prechode z iného systému.",
 };
 
 export function PublicSupportWidget() {

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 import { BookOpen, Calendar, Clock } from "lucide-react";
 import { postsByDate } from "@/lib/faktero/blog-content";
+import { BlogCover } from "@/components/faktero/BlogCover";
 
 export const Route = createFileRoute("/blog/")({
   head: () => ({
@@ -41,28 +42,31 @@ function BlogPage() {
               <Link
                 to="/blog/$slug"
                 params={{ slug: p.slug }}
-                className="group block h-full rounded-2xl border border-border bg-card p-6 transition hover:border-primary/40 hover:shadow-lg"
+                className="group block h-full overflow-hidden rounded-2xl border border-border bg-card transition hover:border-primary/40 hover:shadow-lg"
               >
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <BookOpen className="h-3.5 w-3.5" />
-                  <span className="inline-flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {new Date(p.date).toLocaleDateString("sk-SK", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    {p.minuty} min
+                <BlogCover icon={p.ikona} odtien={p.odtien} />
+                <div className="p-6">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <BookOpen className="h-3.5 w-3.5" />
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {new Date(p.date).toLocaleDateString("sk-SK", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5" />
+                      {p.minuty} min
+                    </span>
+                  </div>
+                  <h2 className="mt-3 text-lg font-semibold group-hover:text-primary">{p.title}</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">{p.excerpt}</p>
+                  <span className="mt-4 inline-block text-sm font-medium text-primary">
+                    Čítať článok →
                   </span>
                 </div>
-                <h2 className="mt-3 text-lg font-semibold group-hover:text-primary">{p.title}</h2>
-                <p className="mt-2 text-sm text-muted-foreground">{p.excerpt}</p>
-                <span className="mt-4 inline-block text-sm font-medium text-primary">
-                  Čítať článok →
-                </span>
               </Link>
             </li>
           ))}

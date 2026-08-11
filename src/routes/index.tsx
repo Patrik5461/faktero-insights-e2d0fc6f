@@ -60,7 +60,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Vystavujte faktúry, posielajte PDF, automatizujte cez API a pripravte firmu na eFaktúru 2027. Pohoda export, import zo SuperFaktúry. 30 dní zdarma.",
+          "Vystavujte faktúry, posielajte PDF, automatizujte cez API a pripravte firmu na eFaktúru 2027. Pohoda export, prechod z iného systému. 30 dní zdarma.",
       },
       { property: "og:title", content: "Faktero — Fakturácia pre moderné firmy" },
       {
@@ -150,7 +150,7 @@ const features = [
   },
   {
     icon: Upload,
-    title: "SuperFaktúra import",
+    title: "Prechod z iného systému",
     text: "Prejdite na Faktero bez straty histórie faktúr, odberateľov a číselných radov.",
   },
   {
@@ -219,7 +219,7 @@ const accounting = [
   {
     icon: Upload,
     title: "Import faktúr",
-    text: "Hromadný import faktúr a odberateľov zo SuperFaktúry, CSV alebo XML.",
+    text: "Hromadný import faktúr a odberateľov z doterajšieho systému, CSV alebo XML.",
   },
   {
     icon: TrendingUp,
@@ -1126,22 +1126,23 @@ function ComparisonSection() {
   const rows: Array<{
     label: string;
     faktero: boolean | string;
-    sf: boolean | string;
+    ine: boolean | string;
     manual: boolean | string;
   }> = [
-    { label: "REST API", faktero: true, sf: "Obmedzene", manual: false },
-    { label: "Webhooky", faktero: true, sf: "Obmedzene", manual: false },
-    { label: "eFaktúra 2027 pripravenosť", faktero: true, sf: "Plánované", manual: false },
-    { label: "Opakované faktúry", faktero: true, sf: true, manual: false },
-    { label: "GoPay platby", faktero: true, sf: "Plánované", manual: false },
-    { label: "FinStat integrácia", faktero: true, sf: false, manual: false },
-    { label: "Bankové párovanie", faktero: true, sf: "Obmedzene", manual: false },
-    { label: "Prijaté faktúry", faktero: true, sf: true, manual: false },
-    { label: "Mobilná appka (iOS + Android)", faktero: true, sf: false, manual: false },
-    { label: "Upomienky po splatnosti", faktero: true, sf: "Obmedzene", manual: false },
-    { label: "Schvaľovanie faktúr zákazníkom", faktero: true, sf: false, manual: false },
-    { label: "Skladové hospodárstvo", faktero: true, sf: false, manual: false },
-    { label: "Kniha jázd + Commander GPS", faktero: true, sf: false, manual: false },
+    { label: "REST API", faktero: true, ine: "Obmedzene", manual: false },
+    { label: "Webhooky", faktero: true, ine: "Obmedzene", manual: false },
+    { label: "eFaktúra 2027 pripravenosť", faktero: true, ine: "Plánované", manual: false },
+    { label: "Opakované faktúry", faktero: true, ine: true, manual: false },
+    { label: "GoPay platby", faktero: true, ine: "Plánované", manual: false },
+    { label: "FinStat integrácia", faktero: true, ine: false, manual: false },
+    { label: "Bankové párovanie", faktero: true, ine: "Obmedzene", manual: false },
+    { label: "Prijaté faktúry", faktero: true, ine: true, manual: false },
+    // Appka je pred vydaním — do porovnania nepatrí ako hotová vec.
+    { label: "Mobilná aplikácia", faktero: "Pripravujeme", ine: "Rôzne", manual: false },
+    { label: "Upomienky po splatnosti", faktero: true, ine: "Obmedzene", manual: false },
+    { label: "Schvaľovanie faktúr zákazníkom", faktero: true, ine: false, manual: false },
+    { label: "Skladové hospodárstvo", faktero: true, ine: false, manual: false },
+    { label: "Kniha jázd + Commander GPS", faktero: true, ine: false, manual: false },
   ];
   const cell = (v: boolean | string) => {
     if (v === true) return <CheckCircle2 className="mx-auto h-5 w-5 text-primary" />;
@@ -1184,7 +1185,7 @@ function ComparisonSection() {
                   <tr key={r.label} className={i % 2 === 0 ? "bg-card" : "bg-background/40"}>
                     <td className="px-6 py-4 font-medium text-foreground">{r.label}</td>
                     <td className="px-6 py-4 text-center">{cell(r.faktero)}</td>
-                    <td className="px-6 py-4 text-center">{cell(r.sf)}</td>
+                    <td className="px-6 py-4 text-center">{cell(r.ine)}</td>
                     <td className="px-6 py-4 text-center">{cell(r.manual)}</td>
                   </tr>
                 ))}
