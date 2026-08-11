@@ -200,7 +200,7 @@ export function MobilPanel({
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] font-medium">Prihlásenie biometriou</span>
                 <span className="block text-[13px] text-muted-foreground">
-                  {biometriaZapnuta ? "Zapnuté" : "Vypnuté"}
+                  {biometriaZapnuta ? "Pýta sa pri spustení appky" : "Vypnuté"}
                 </span>
               </span>
               {/* Prepínač: stav musí byť vidieť na prvý pohľad, nie až po ťuknutí. */}

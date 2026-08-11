@@ -92,12 +92,22 @@ function MobilnaApka() {
   const [panel, setPanel] = useState(false);
   const [zamknute, setZamknute] = useState(false);
 
-  /** Kto je prihlásený a za akú firmu — to isté sa rieši pri štarte aj po prihlásení. */
-  async function zisti() {
+  /**
+   * Kto je prihlásený a za akú firmu — to isté sa rieši pri štarte aj po prihlásení.
+   *
+   * `studenyStart` rozlišuje spustenie appky od návratu po prihlásení. Pri
+   * spustení sa zamyká: relácia prežije zabitie appky, takže bez tohto by stačilo
+   * appku zavrieť a otvoriť znova a biometria by sa nikdy nespýtala. Po
+   * prihlásení sa naopak pýtať nesmie — človek sa práve preukázal.
+   */
+  async function zisti(studenyStart = false) {
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
       setKrok("prihlasenie");
       return;
+    }
+    if (studenyStart && (await isBiometricEnabled()) && (await isBiometricAvailable())) {
+      setZamknute(true);
     }
     setEmail(data.session.user?.email ?? null);
     try {
@@ -121,7 +131,7 @@ function MobilnaApka() {
   }
 
   useEffect(() => {
-    zisti();
+    zisti(true);
   }, []);
 
   /*
@@ -184,7 +194,7 @@ function MobilnaApka() {
 
   if (zamknute) return <Zamok onOdomknute={() => setZamknute(false)} onOdhlasit={odhlas} />;
   if (krok === "nacitavam") return <Pracujem text="Spúšťam Faktero…" />;
-  if (krok === "prihlasenie") return <Prihlasenie onHotovo={zisti} />;
+  if (krok === "prihlasenie") return <Prihlasenie onHotovo={() => zisti()} />;
   if (krok === "firma")
     return (
       <VyberFirmy
