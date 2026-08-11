@@ -101,6 +101,31 @@ export type VysledokZrusenia = {
   opusteneFirmy: number;
 };
 
+/**
+ * Stopy po autorovi v cudzích firmách.
+ *
+ * Tieto odkazy na používateľa **blokujú** zmazanie prihlásenia (`ON DELETE NO
+ * ACTION`), takže bez ich uvoľnenia by účet ostal existovať a človek by sa
+ * vedel prihlásiť do systému, z ktorého už bol odstránený. Doklady v zdieľanej
+ * firme ostávajú kolegom — len prestanú menovať zmazaného človeka, čo je aj to,
+ * o čo pri výmaze osobných údajov ide.
+ */
+async function uvolniOdkazyNaAutora(userId: string): Promise<void> {
+  await supabaseAdmin.from("companies").update({ created_by: null }).eq("created_by", userId);
+  await supabaseAdmin.from("invoices").update({ created_by: null }).eq("created_by", userId);
+  await supabaseAdmin.from("quotes").update({ created_by: null }).eq("created_by", userId);
+  await supabaseAdmin
+    .from("recurring_invoices")
+    .update({ created_by: null })
+    .eq("created_by", userId);
+  await supabaseAdmin.from("api_keys").update({ created_by: null }).eq("created_by", userId);
+  await supabaseAdmin.from("import_jobs").update({ created_by: null }).eq("created_by", userId);
+  await supabaseAdmin
+    .from("google_seo_connections")
+    .update({ connected_by: null })
+    .eq("connected_by", userId);
+}
+
 /** Zruší jeden účet. Volá sa až po uplynutí odkladu. */
 export async function zrusUcet(userId: string): Promise<VysledokZrusenia> {
   const same = await firmyNaZmazanie(userId);
@@ -117,9 +142,14 @@ export async function zrusUcet(userId: string): Promise<VysledokZrusenia> {
     .delete({ count: "exact" })
     .eq("user_id", userId);
 
-  await supabaseAdmin.from("profiles").delete().eq("id", userId);
-  // Profil nevisí na `auth.users`, takže sa maže zvlášť — a až potom prihlásenie.
-  await supabaseAdmin.auth.admin.deleteUser(userId);
+  await uvolniOdkazyNaAutora(userId);
+
+  // `profiles` visí na `auth.users` cez CASCADE, takže sa zmaže s prihlásením.
+  // Poradie je dôležité: keby sa profil mazal prvý a zmazanie prihlásenia by
+  // zlyhalo, plánovaná úloha by o tomto účte už nikdy nevedela a človek by sa
+  // vedel prihlásiť do prázdna. Takto sa žiadosť skúsi znova pri ďalšom behu.
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  if (error) throw new Error(`prihlásenie sa nepodarilo zmazať: ${error.message}`);
 
   return {
     userId,
