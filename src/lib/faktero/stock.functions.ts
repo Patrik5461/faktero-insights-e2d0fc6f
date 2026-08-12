@@ -1728,8 +1728,21 @@ export const completeTransfer = createServerFn({ method: "POST" })
       sourceMap[s.id] = s;
     });
 
+    /**
+     * Cena presunu je nákladová. Keď ju nikto nevyplnil, vezme sa vážená
+     * nákupná cena zdrojovej karty — inak tovar pri presune stratí hodnotu:
+     * do cieľového skladu naskladní za nulu a zníži tam priemernú cenu.
+     */
+    const cenaPresunu = (it: any): number => {
+      const zadana = Number(it.unit_price);
+      if (Number.isFinite(zadana) && zadana > 0) return zadana;
+      const src = sourceMap[it.source_stock_item_id];
+      return Number(src?.avg_purchase_price ?? 0) || Number(src?.purchase_price ?? 0) || 0;
+    };
+
     // Resolve target stock items (match or create for inter-company)
     for (const it of items) {
+      const cena = cenaPresunu(it);
       let targetId = it.target_stock_item_id;
       if (!targetId) {
         if (targetCompanyId === transfer.company_id) {
@@ -1752,8 +1765,8 @@ export const completeTransfer = createServerFn({ method: "POST" })
         stock_item_id: it.source_stock_item_id,
         type: "vydaj",
         quantity: it.quantity,
-        unit_price: it.unit_price,
-        total_value: it.quantity * it.unit_price,
+        unit_price: cena,
+        total_value: it.quantity * cena,
         reference_type: "transfer",
         reference_id: transfer.id,
         reference_item_id: it.id,
@@ -1774,8 +1787,8 @@ export const completeTransfer = createServerFn({ method: "POST" })
         stock_item_id: targetId,
         type: "prijem",
         quantity: it.quantity,
-        unit_price: it.unit_price,
-        total_value: it.quantity * it.unit_price,
+        unit_price: cena,
+        total_value: it.quantity * cena,
         reference_type: "transfer",
         reference_id: transfer.id,
         reference_item_id: it.id,

@@ -60,7 +60,7 @@ function NewTransferPage() {
           .order("name"),
         supabase
           .from("stock_items")
-          .select("id, sku, barcode, product_id, sale_price, purchase_price")
+          .select("id, sku, barcode, product_id, sale_price, purchase_price, avg_purchase_price")
           .eq("company_id", cid)
           .is("archived_at", null)
           .order("sku"),
@@ -301,7 +301,19 @@ function NewTransferPage() {
                       <select
                         className="w-full rounded-md border px-2 py-1.5 text-sm"
                         value={it.source_stock_item_id}
-                        onChange={(e) => updateItem(idx, { source_stock_item_id: e.target.value })}
+                        onChange={(e) => {
+                          // Cena presunu je nákladová — bez predvyplnenia
+                          // z váženej ceny odchádzal tovar ocenený na nulu.
+                          const si = stockItems.find((x: any) => x.id === e.target.value);
+                          const cena =
+                            Number(si?.avg_purchase_price ?? 0) || Number(si?.purchase_price ?? 0);
+                          updateItem(idx, {
+                            source_stock_item_id: e.target.value,
+                            ...(it.unit_price === "0" || it.unit_price === ""
+                              ? { unit_price: cena ? String(cena) : it.unit_price }
+                              : {}),
+                          });
+                        }}
                       >
                         <option value="">— vyberte položku —</option>
                         {stockItems.map((si) => (

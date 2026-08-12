@@ -55,7 +55,14 @@ function WarehousesPage() {
       ? supabase.from("warehouses").update(payload).eq("id", w.id)
       : supabase.from("warehouses").insert(payload);
     const { error } = await op;
-    if (error) return toast.error(error.message);
+    if (error) {
+      // Jediné, čo tu človek reálne trafí, je rovnaký názov skladu.
+      return toast.error(
+        error.code === "23505"
+          ? "Sklad s týmto názvom už existuje."
+          : (error.message ?? "Sklad sa nepodarilo uložiť."),
+      );
+    }
     toast.success("Uložené");
     setEditing(null);
     load();
