@@ -202,7 +202,12 @@ function PurchaseInvoiceDetail() {
     if (!row?.file_path) return toast.error("Bez prílohy");
     const { data, error } = await supabase.storage
       .from("purchase-invoices")
-      .createSignedUrl(row.file_path, 60, { download: `${row.invoice_number ?? "faktura"}` });
+      // Bez koncovky sa súbor uloží ako „VS-2026-777" a systém ho nevie otvoriť.
+      .createSignedUrl(row.file_path, 60, {
+        download: `${(row.invoice_number ?? "faktura").replace(/[^A-Za-z0-9._-]+/g, "_")}.${
+          (row.file_path.split(".").pop() ?? "pdf").toLowerCase()
+        }`,
+      });
     if (error || !data) return toast.error(error?.message ?? "Chyba");
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
