@@ -9,7 +9,7 @@ import {
   type DeliveryNoteItem,
 } from "@/lib/faktero/ai-delivery-note.functions";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
-import { POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
+import { NOVE_PRODUKTY, POHYBY, POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
 import {
   Camera,
   Upload,
@@ -380,7 +380,9 @@ function DeliveryNoteScanPage() {
           })),
         },
       });
-      toast.success(`Import: ${res.movements} pohybov, ${res.createdProducts} nových produktov.`);
+      toast.success(
+        `Naskladnené: ${sPoctom(res.movements, POHYBY)}, ${sPoctom(res.createdProducts, NOVE_PRODUKTY)}.`,
+      );
       nav({ to: "/sklad/pohyby" });
     } catch (e: any) {
       toast.error(e?.message ?? "Import zlyhal.");

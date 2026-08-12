@@ -23,3 +23,9 @@ export const ODBERATELIA: [string, string, string] = ["odberateľ", "odberatelia
 export const DOKLADY: [string, string, string] = ["doklad", "doklady", "dokladov"];
 export const DNI: [string, string, string] = ["deň", "dni", "dní"];
 export const PRODUKTY: [string, string, string] = ["produkt", "produkty", "produktov"];
+export const POHYBY: [string, string, string] = ["pohyb", "pohyby", "pohybov"];
+export const NOVE_PRODUKTY: [string, string, string] = [
+  "nový produkt",
+  "nové produkty",
+  "nových produktov",
+];
