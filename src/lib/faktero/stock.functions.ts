@@ -1452,6 +1452,36 @@ export const listWarehousesForCompany = createServerFn({ method: "POST" })
     return whs ?? [];
   });
 
+/**
+ * Založí cieľovej firme základný sklad.
+ *
+ * Nová firma sklad nemá, kým v nej niekto neurobí prvý pohyb — presun tovaru
+ * do nej sa tak nedal ani vytvoriť a tlačidlo len ostalo zašednuté. Zápis ide
+ * cez klienta prihláseného človeka, takže RLS pustí len člena tej firmy.
+ */
+export const zalozZakladnySklad = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: existujuci } = await context.supabase
+      .from("warehouses")
+      .select("id, name, active")
+      .eq("company_id", data.company_id)
+      .eq("active", true)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle();
+    if (existujuci) return existujuci;
+
+    const { data: novy, error } = await context.supabase
+      .from("warehouses")
+      .insert({ company_id: data.company_id, name: "Hlavný sklad", active: true })
+      .select("id, name, active")
+      .single();
+    if (error) throw new Error(error.message);
+    return novy;
+  });
+
 export const listTransfers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))

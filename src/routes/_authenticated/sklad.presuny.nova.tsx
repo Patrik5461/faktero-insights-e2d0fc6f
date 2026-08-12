@@ -5,6 +5,7 @@ import {
   createTransfer,
   listUserCompaniesForTransfer,
   listWarehousesForCompany,
+  zalozZakladnySklad,
   previewTransferMatching,
 } from "@/lib/faktero/stock.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,7 @@ function NewTransferPage() {
   const create = useServerFn(createTransfer);
   const fetchCompanies = useServerFn(listUserCompaniesForTransfer);
   const fetchTargetWhs = useServerFn(listWarehousesForCompany);
+  const zalozSklad = useServerFn(zalozZakladnySklad);
   const fetchMatching = useServerFn(previewTransferMatching);
 
   const [mode, setMode] = useState<"warehouse" | "company">("warehouse");
@@ -259,6 +261,32 @@ function NewTransferPage() {
                         </option>
                       ))}
                     </select>
+                    {targetWarehouses.length === 0 && (
+                      <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                        Cieľová firma zatiaľ nemá žiadny sklad — presun by nemal kam prísť.
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={async () => {
+                            setBusy(true);
+                            try {
+                              const w: any = await zalozSklad({ data: { company_id: targetCompany } });
+                              const list = await fetchTargetWhs({ data: { company_id: targetCompany } });
+                              setTargetWarehouses(list ?? []);
+                              setWarehouseTo(w?.id ?? "");
+                              toast.success("Cieľová firma má teraz Hlavný sklad.");
+                            } catch (e: any) {
+                              toast.error(e?.message ?? "Sklad sa nepodarilo založiť.");
+                            } finally {
+                              setBusy(false);
+                            }
+                          }}
+                          className="ml-1 font-medium underline disabled:opacity-50"
+                        >
+                          Založiť jej Hlavný sklad
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -378,6 +406,20 @@ function NewTransferPage() {
               onChange={(e) => setNote(e.target.value)}
             />
           </div>
+
+          {!canSubmit && (
+            <p className="text-right text-xs text-muted-foreground">
+              {!warehouseFrom
+                ? "Vyberte zdrojový sklad."
+                : mode === "company" && !targetCompany
+                  ? "Vyberte cieľovú firmu."
+                  : !warehouseTo
+                    ? "Vyberte cieľový sklad."
+                    : mode === "warehouse" && warehouseTo === warehouseFrom
+                      ? "Cieľový sklad musí byť iný než zdrojový."
+                      : "Doplňte položku a množstvo väčšie než nula."}
+            </p>
+          )}
 
           <div className="flex justify-end gap-2">
             <Link to="/sklad/presuny" className="rounded-md border px-4 py-2 text-sm">
