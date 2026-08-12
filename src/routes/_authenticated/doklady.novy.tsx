@@ -264,10 +264,15 @@ function NovyDokladPage() {
       if (file.type.startsWith("image/")) setPreview(dataUrl);
       const stored = await uploadToStorage(dataUrl, file.type || "application/octet-stream");
       if (stored) setUploadedFile({ path: stored.path, mime: file.type, size: stored.size });
+      // Faktúra od dodávateľa chodí v PDF a čítať sa dá rovnako ako fotka —
+      // len QR kód v nej hľadať netreba, ten je na bločkoch. Doteraz sa PDF
+      // len priložilo a všetky údaje sa prepisovali ručne.
       if (file.type.startsWith("image/")) {
         const qr = await scanQrFromImage(dataUrl);
         if (qr?.raw) setQrRaw(qr.raw);
         await precitaj(qr?.raw, dataUrl);
+      } else if (file.type === "application/pdf") {
+        await precitaj(undefined, dataUrl);
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Nahratie zlyhalo");
