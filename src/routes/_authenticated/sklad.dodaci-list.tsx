@@ -9,6 +9,7 @@ import {
   type DeliveryNoteItem,
 } from "@/lib/faktero/ai-delivery-note.functions";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
+import { POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
 import {
   Camera,
   Upload,
@@ -244,7 +245,7 @@ function DeliveryNoteScanPage() {
       setScanStep(4);
       setScanSuccess(true);
       if (!finalItems.length) toast.warning("AI nenašlo žiadne položky, doplňte manuálne.");
-      else toast.success(`AI extrahovalo ${finalItems.length} položiek.`);
+      else toast.success(`AI prečítalo ${sPoctom(finalItems.length, POLOZKY)}.`);
       // Brief success flash, then auto-close so preview is visible.
       await new Promise((r) => setTimeout(r, 700));
       if (cancelledRef.current || signal.aborted) return;

@@ -25,16 +25,22 @@ async function processJob(jobId: string, storagePath: string, mimeType: string) 
     const base64 = Buffer.from(arrayBuf).toString("base64");
     const mt = (blob.type || mimeType || "application/octet-stream").toLowerCase();
 
-    const prompt = `ÚLOHA: Extrahuj KOMPLETNÝ zoznam všetkých produktov/položiek z tohto dodacieho listu alebo faktúry.
+    // Dodávateľa a číslo dokladu si formulár pýta, ale prompt ich predtým
+    // priamo zakazoval („ignoruj informácie o firme") — obe políčka preto
+    // zostávali prázdne a prepisovali sa ručne.
+    const prompt = `ÚLOHA: Extrahuj z tohto dodacieho listu alebo faktúry hlavičku a KOMPLETNÝ zoznam všetkých produktov/položiek.
 
 POVINNÉ PRAVIDLÁ:
 - Extrahuj KAŽDÝ riadok tabuľky s produktom
 - NIKDY nevynechaj žiadnu položku
 - Ak je 50 položiek, vráť 50 položiek
-- Ignoruj: hlavičky stĺpcov, súhrny, spolu, DPH, informácie o firme, adresa, dátum
+- Do položiek nedávaj: hlavičky stĺpcov, súhrny, spolu, DPH
+- "supplier" je firma, ktorá tovar DODÁVA (nie odberateľ, nie príjemca)
+- "delivery_number" je číslo dodacieho listu; keď tam nie je, daj číslo faktúry
+- Keď údaj na doklade nie je, daj null a nič si nevymýšľaj
 
-FORMÁT ODPOVEDE - VÝHRADNE JSON array, žiadny iný text:
-[{"name":"presný názov","code":"kód alebo null","quantity":číslo,"unit":"ks/kg/m/l/bal","unit_price":číslo alebo null,"total_price":číslo alebo null}]`;
+FORMÁT ODPOVEDE - VÝHRADNE JSON objekt, žiadny iný text:
+{"supplier":"názov dodávateľa alebo null","delivery_number":"číslo alebo null","items":[{"name":"presný názov","code":"kód alebo null","quantity":číslo,"unit":"ks/kg/m/l/bal","unit_price":číslo alebo null,"total_price":číslo alebo null}]}`;
 
     const geminiKey = process.env.GEMINI_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
