@@ -17,11 +17,14 @@ export type NextInvoiceNumber = { invoice_number: string; sequence_number: numbe
 export async function nextInvoiceNumberDetailed(
   company_id: string,
   issue_date?: string | null,
+  /** Zálohové faktúry majú vlastnú radu (ZF…), aby v rade daňových dokladov neboli diery. */
+  type?: string | null,
 ): Promise<NextInvoiceNumber> {
   const { data, error } = await supabaseAdmin.rpc("faktero_next_invoice_number", {
     _company_id: company_id,
     ...(issue_date ? { _issue_date: issue_date } : {}),
-  });
+    ...(type ? { _type: type } : {}),
+  } as never);
   if (error) throw new Error(error.message);
   const row = data as unknown as NextInvoiceNumber | null;
   if (!row?.invoice_number) throw new Error("Nepodarilo sa vygenerovať číslo faktúry.");
@@ -31,8 +34,9 @@ export async function nextInvoiceNumberDetailed(
 export async function nextInvoiceNumber(
   company_id: string,
   issue_date?: string | null,
+  type?: string | null,
 ): Promise<string> {
-  return (await nextInvoiceNumberDetailed(company_id, issue_date)).invoice_number;
+  return (await nextInvoiceNumberDetailed(company_id, issue_date, type)).invoice_number;
 }
 
 export function computeInvoiceTotals(

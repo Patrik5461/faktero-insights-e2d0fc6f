@@ -40,6 +40,7 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
     const { invoice_number: newNumber, sequence_number } = await nextInvoiceNumberDetailed(
       src.company_id,
       isoToday,
+      src.type,
     );
 
     // Build insert payload — copy everything except id/status/dates/number/lifecycle fields.

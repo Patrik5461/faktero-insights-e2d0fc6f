@@ -415,12 +415,14 @@ function NewInvoice() {
     );
   }
 
-  async function generateNumber(companyId: string, issueDate: string) {
+  async function generateNumber(companyId: string, issueDate: string, typ: string) {
     // Server-side, transactional (SELECT ... FOR UPDATE) — supports {YYYY} {YY} {MM} {NN}-{NNNN}
+    // Zálohová faktúra si berie číslo z vlastnej rady (ZF…).
     const { data, error } = await supabase.rpc("faktero_next_invoice_number", {
       _company_id: companyId,
       _issue_date: issueDate,
-    });
+      _type: typ,
+    } as never);
     if (error) throw new Error(error.message);
     const row = data as unknown as { invoice_number: string; sequence_number: number } | null;
     if (!row?.invoice_number) throw new Error("Nepodarilo sa vygenerovať číslo faktúry.");
@@ -492,7 +494,11 @@ function NewInvoice() {
     setSubmitting(true);
 
     try {
-      const { invoice_number, sequence_number } = await generateNumber(cid, form.issue_date);
+      const { invoice_number, sequence_number } = await generateNumber(
+        cid,
+        form.issue_date,
+        form.type,
+      );
       const variable_symbol = form.variable_symbol || invoice_number.replace(/\D/g, "");
 
       const { data: inv, error } = await supabase
