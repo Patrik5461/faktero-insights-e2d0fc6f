@@ -280,19 +280,61 @@ function CompanyPage() {
   );
 }
 
+const ROLA_POPIS: Record<string, string> = {
+  owner: "Majiteľ",
+  admin: "Administrátor",
+  accountant: "Účtovník (len na čítanie)",
+  employee: "Používateľ",
+};
+
 function TeamSection({ companyId }: { companyId: string }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "accountant" | "employee">("employee");
   const [invs, setInvs] = useState<any[]>([]);
+  const [clenovia, setClenovia] = useState<any[] | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Odkaz na poslednú pozvánku — ukáže sa, keď e-mail neodišiel. */
+  const [odkaz, setOdkaz] = useState<string | null>(null);
 
   async function load() {
-    const { listInvitationsFn } = await import("@/lib/faktero/invitations.functions");
+    const { listInvitationsFn, listMembersFn } = await import(
+      "@/lib/faktero/invitations.functions"
+    );
     try {
       const rows = await listInvitationsFn({ data: { company_id: companyId } });
       setInvs(rows as any[]);
     } catch (e: any) {
       console.error(e);
+    }
+    try {
+      const m = await listMembersFn({ data: { company_id: companyId } });
+      setClenovia(m as any[]);
+    } catch (e: any) {
+      // Bežný člen zoznam prístupov nevidí — nie je to chyba, len nemá právo.
+      setClenovia([]);
+    }
+  }
+
+  async function zmenRolu(userId: string, novaRola: string) {
+    const { changeMemberRoleFn } = await import("@/lib/faktero/invitations.functions");
+    try {
+      await changeMemberRoleFn({ data: { company_id: companyId, user_id: userId, role: novaRola as any } });
+      toast.success("Rola zmenená");
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Rolu sa nepodarilo zmeniť");
+    }
+  }
+
+  async function odober(userId: string, popis: string) {
+    if (!confirm(`Odobrať prístup do firmy používateľovi ${popis}?`)) return;
+    const { removeMemberFn } = await import("@/lib/faktero/invitations.functions");
+    try {
+      await removeMemberFn({ data: { company_id: companyId, user_id: userId } });
+      toast.success("Prístup odobratý");
+      load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Prístup sa nepodarilo odobrať");
     }
   }
   useEffect(() => {
@@ -304,8 +346,17 @@ function TeamSection({ companyId }: { companyId: string }) {
     setBusy(true);
     try {
       const { createInvitationFn } = await import("@/lib/faktero/invitations.functions");
-      await createInvitationFn({ data: { company_id: companyId, email, role } });
-      toast.success(`Pozvánka odoslaná na ${email}`);
+      const r: any = await createInvitationFn({ data: { company_id: companyId, email, role } });
+      if (r?.emailOdoslany) {
+        toast.success(`Pozvánka odoslaná na ${email}`);
+        setOdkaz(null);
+      } else {
+        // Pozvánka platí aj tak — treba len poslať odkaz ručne.
+        toast.warning(
+          `Pozvánka je vytvorená, ale e-mail neodišiel. ${r?.chybaEmailu ?? ""} Pošlite kolegovi odkaz nižšie.`,
+        );
+        setOdkaz(r?.odkaz ?? null);
+      }
       setEmail("");
       load();
     } catch (e: any) {
@@ -328,6 +379,56 @@ function TeamSection({ companyId }: { companyId: string }) {
       <p className="mt-1 text-sm text-muted-foreground">
         Pozvite kolegu alebo účtovníka na e-mail. Prijatie pozvánky ich pripojí k tejto firme.
       </p>
+
+      {clenovia && clenovia.length > 0 && (
+        <div className="mt-5 overflow-hidden rounded-md border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="p-3">Kto má prístup</th>
+                <th className="p-3">Rola</th>
+                <th className="p-3">Od</th>
+                <th className="p-3"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {clenovia.map((m) => (
+                <tr key={m.user_id}>
+                  <td className="p-3">
+                    {m.full_name ? `${m.full_name} · ` : ""}
+                    {m.email ?? m.user_id.slice(0, 8)}
+                    {m.je_to_ja && <span className="ml-2 text-xs text-muted-foreground">(vy)</span>}
+                  </td>
+                  <td className="p-3">
+                    <select
+                      value={m.role}
+                      onChange={(e) => zmenRolu(m.user_id, e.target.value)}
+                      className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+                    >
+                      <option value="owner">Majiteľ</option>
+                      <option value="admin">Administrátor</option>
+                      <option value="accountant">Účtovník (len na čítanie)</option>
+                      <option value="employee">Používateľ</option>
+                    </select>
+                  </td>
+                  <td className="p-3 text-muted-foreground">
+                    {new Date(m.created_at).toLocaleDateString("sk-SK")}
+                  </td>
+                  <td className="p-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => odober(m.user_id, m.email ?? "tento účet")}
+                      className="text-xs text-rose-600 hover:underline"
+                    >
+                      Odobrať prístup
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <form onSubmit={invite} className="mt-4 flex flex-wrap items-end gap-3">
         <label className="block">
@@ -362,6 +463,23 @@ function TeamSection({ companyId }: { companyId: string }) {
         </button>
       </form>
 
+      {odkaz && (
+        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <div className="font-medium">Odkaz na pozvánku</div>
+          <div className="mt-1 break-all font-mono text-xs">{odkaz}</div>
+          <button
+            type="button"
+            onClick={() => {
+              navigator.clipboard?.writeText(odkaz);
+              toast.success("Odkaz skopírovaný");
+            }}
+            className="mt-2 rounded-md border border-amber-300 px-2 py-1 text-xs hover:bg-amber-100"
+          >
+            Skopírovať
+          </button>
+        </div>
+      )}
+
       {invs.length > 0 && (
         <div className="mt-6 overflow-hidden rounded-md border border-border">
           <table className="w-full text-sm">
@@ -381,7 +499,7 @@ function TeamSection({ companyId }: { companyId: string }) {
                 return (
                   <tr key={r.id}>
                     <td className="p-3">{r.email}</td>
-                    <td className="p-3">{r.role}</td>
+                    <td className="p-3">{ROLA_POPIS[r.role] ?? r.role}</td>
                     <td className="p-3">{status}</td>
                     <td className="p-3 text-muted-foreground">
                       {new Date(r.created_at).toLocaleDateString("sk-SK")}

@@ -48,15 +48,22 @@ export const createInvitationFn = createServerFn({ method: "POST" })
       .single();
     if (error) throw error;
 
-    // Send email (best effort)
+    const base = (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
+    const odkaz = `${base}/pridat-pouzivatela?token=${token}`;
+
+    // E-mail je len pohodlie: keď neodíde, pozvánka platí ďalej a pozývajúci
+    // dostane odkaz, ktorý môže poslať sám. Predtým sa chyba prehltla a
+    // aplikácia aj tak hlásila „Pozvánka odoslaná".
+    let emailOdoslany = false;
+    let chybaEmailu: string | null = null;
     try {
       const apiKey = process.env.RESEND_API_KEY;
+      if (!apiKey) chybaEmailu = "Odosielanie e-mailov nie je nastavené.";
       if (apiKey) {
-        const base = (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
-        const url = `${base}/pridat-pouzivatela?token=${token}`;
+        const url = odkaz;
         const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
         const companyName = (inv as any)?.companies?.name || "Faktero";
-        await fetch("https://api.resend.com/emails", {
+        const odpoved = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
           body: JSON.stringify({
@@ -71,12 +78,15 @@ export const createInvitationFn = createServerFn({ method: "POST" })
             </div>`,
           }),
         });
+        if (odpoved.ok) emailOdoslany = true;
+        else chybaEmailu = `Poštová služba odmietla e-mail (${odpoved.status}).`;
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("[invitation-email]", e);
+      chybaEmailu = e?.message ?? "E-mail sa nepodarilo odoslať.";
     }
 
-    return { id: inv.id, token };
+    return { id: inv.id, token, odkaz, emailOdoslany, chybaEmailu };
   });
 
 export const getInvitationByTokenFn = createServerFn({ method: "POST" })
@@ -148,6 +158,101 @@ export const revokeInvitationFn = createServerFn({ method: "POST" })
   .validator((d: { id: string }) => d)
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("company_invitations").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+
+/* ---------- členovia firmy ---------- */
+
+type RolaClena = "owner" | "admin" | "accountant" | "employee";
+
+/** Kto v tejto firme rozhoduje o prístupoch. */
+async function overAdmina(context: any, companyId: string) {
+  const { data: admin } = await context.supabase.rpc("is_company_admin", {
+    _company_id: companyId,
+    _user_id: context.userId,
+  });
+  if (!admin) throw new Error("Na správu prístupov nemáte oprávnenie.");
+}
+
+/**
+ * Členovia firmy aj s e-mailom.
+ *
+ * E-maily sú v `profiles`, kam RLS pustí každého len k sebe — preto sa čítajú
+ * servisným kľúčom až po overení, že pýtajúci je v tejto firme admin.
+ */
+export const listMembersFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: { company_id: string }) => d)
+  .handler(async ({ data, context }) => {
+    await overAdmina(context, data.company_id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: clenovia, error } = await supabaseAdmin
+      .from("company_users")
+      .select("user_id, role, created_at")
+      .eq("company_id", data.company_id)
+      .order("created_at");
+    if (error) throw error;
+
+    const ids = (clenovia ?? []).map((c) => c.user_id as string);
+    const { data: profily } = ids.length
+      ? await supabaseAdmin.from("profiles").select("id, email, full_name").in("id", ids)
+      : { data: [] as any[] };
+    const podlaId = new Map((profily ?? []).map((p: any) => [p.id, p]));
+
+    return (clenovia ?? []).map((c: any) => ({
+      user_id: c.user_id as string,
+      role: c.role as RolaClena,
+      created_at: c.created_at as string,
+      email: podlaId.get(c.user_id)?.email ?? null,
+      full_name: podlaId.get(c.user_id)?.full_name ?? null,
+      je_to_ja: c.user_id === context.userId,
+    }));
+  });
+
+/** Koľko majiteľov firme ostane, keď tomuto členovi rolu vezmeme. */
+async function poslednyMajitel(admin: any, companyId: string, userId: string) {
+  const { data: majitelia } = await admin
+    .from("company_users")
+    .select("user_id")
+    .eq("company_id", companyId)
+    .eq("role", "owner");
+  const zoznam = (majitelia ?? []).map((m: any) => m.user_id as string);
+  return zoznam.length <= 1 && zoznam.includes(userId);
+}
+
+export const changeMemberRoleFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: { company_id: string; user_id: string; role: RolaClena }) => d)
+  .handler(async ({ data, context }) => {
+    await overAdmina(context, data.company_id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Firma bez majiteľa by ostala bez toho, kto ju vie zrušiť alebo platiť.
+    if (data.role !== "owner" && (await poslednyMajitel(supabaseAdmin, data.company_id, data.user_id)))
+      throw new Error("Firma musí mať aspoň jedného majiteľa.");
+    const { error } = await supabaseAdmin
+      .from("company_users")
+      .update({ role: data.role })
+      .eq("company_id", data.company_id)
+      .eq("user_id", data.user_id);
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const removeMemberFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: { company_id: string; user_id: string }) => d)
+  .handler(async ({ data, context }) => {
+    await overAdmina(context, data.company_id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (await poslednyMajitel(supabaseAdmin, data.company_id, data.user_id))
+      throw new Error("Posledného majiteľa firmy odobrať nemožno.");
+    const { error } = await supabaseAdmin
+      .from("company_users")
+      .delete()
+      .eq("company_id", data.company_id)
+      .eq("user_id", data.user_id);
     if (error) throw error;
     return { ok: true };
   });
