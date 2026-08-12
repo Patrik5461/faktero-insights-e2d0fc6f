@@ -20,9 +20,14 @@ function CompanyManagementPage() {
   const [open, setOpen] = useState(false);
 
   async function load() {
+    // Bez filtra na seba vráti RLS aj členstvá kolegov a firma sa v zozname
+    // zopakuje toľkokrát, koľko má členov.
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return;
     const { data, error } = await supabase
       .from("company_users")
       .select("role, company:companies(id, name, created_at)")
+      .eq("user_id", auth.user.id)
       .order("created_at", { ascending: true });
     if (error) {
       toast.error(error.message);
