@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -122,13 +122,14 @@ function CompanyManagementPage() {
                       >
                         Upraviť
                       </a>
-                      <button
-                        disabled
-                        title="Onedlho"
-                        className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground opacity-60"
+                      {/* Pozvánky žijú v nastaveniach firmy — tu bolo roky
+                          zašednuté tlačidlo s poznámkou „Onedlho". */}
+                      <Link
+                        to="/firma"
+                        className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
                       >
                         Pozvať
-                      </button>
+                      </Link>
                     </div>
                   </td>
                 </tr>

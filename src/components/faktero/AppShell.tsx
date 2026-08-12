@@ -707,7 +707,17 @@ export function AppShell({
         </div>
       </header>
 
-      <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+      <main className="flex min-w-0 flex-1 flex-col">
+        {/* Účtovník má prístup len na čítanie — nech to vie skôr, než niečo
+            vyplní a uloženie mu databáza odmietne. */}
+        {active?.role === "accountant" && (
+          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 sm:px-6 lg:px-8">
+            Ste vo firme <strong>{active.name}</strong> ako účtovník — doklady vidíte, ale meniť ich
+            môže len majiteľ alebo administrátor firmy.
+          </div>
+        )}
+        {children}
+      </main>
       <CreateCompanyDialog open={createOpen} onOpenChange={setCreateOpen} />
       <FloatingAIButton />
       <NativeShellExtras />

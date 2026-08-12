@@ -6,6 +6,14 @@ import { getInvitationByTokenFn, acceptInvitationFn } from "@/lib/faktero/invita
 import { setActiveCompanyId } from "@/lib/faktero/active-company";
 import { toast } from "sonner";
 
+/** Rola z databázy po slovensky — v pozvánke svietilo „accountant". */
+const ROLA_POPIS: Record<string, string> = {
+  owner: "majiteľ",
+  admin: "administrátor",
+  accountant: "účtovník (len na čítanie)",
+  employee: "používateľ",
+};
+
 export const Route = createFileRoute("/pridat-pouzivatela")({
   head: () => ({ meta: [{ title: "Pozvánka do firmy — Faktero" }] }),
   component: AcceptInvitationPage,
@@ -116,7 +124,7 @@ function AcceptInvitationPage() {
     <div className="mx-auto max-w-md p-8">
       <h1 className="text-2xl font-bold">Pozvánka do firmy</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Firma <strong>{inv.company_name}</strong> vás pozvala ako <strong>{inv.role}</strong>.
+        Firma <strong>{inv.company_name}</strong> vás pozvala ako <strong>{ROLA_POPIS[inv.role] ?? inv.role}</strong>.
       </p>
       <form
         onSubmit={handleAccept}
