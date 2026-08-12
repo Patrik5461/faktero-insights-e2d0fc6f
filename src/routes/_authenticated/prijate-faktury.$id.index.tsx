@@ -20,8 +20,7 @@ import {
   Trash2,
   Wallet,
   Landmark,
-  RefreshCw,
-} from "lucide-react";
+  RefreshCw, Pencil } from "lucide-react";
 
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
   ACTC: "Pripravená na podpis",
@@ -44,7 +43,7 @@ const PAY_ERRORS: Record<string, string> = {
   Forbidden: "Na platby potrebujete rolu vlastníka alebo správcu.",
 };
 
-export const Route = createFileRoute("/_authenticated/prijate-faktury/$id")({
+export const Route = createFileRoute("/_authenticated/prijate-faktury/$id/")({
   head: () => ({ meta: [{ title: "Detail prijatej faktúry — Faktero" }] }),
   component: PurchaseInvoiceDetail,
 });
@@ -222,6 +221,15 @@ function PurchaseInvoiceDetail() {
             >
               {STATUS_LABEL[row.status] ?? row.status}
             </span>
+            {row.status !== "cancelled" && (
+              <Link
+                to="/prijate-faktury/$id/upravit"
+                params={{ id }}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+              >
+                <Pencil className="h-4 w-4" /> Upraviť
+              </Link>
+            )}
             {row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
               <button
                 onClick={() => setStatus("received")}

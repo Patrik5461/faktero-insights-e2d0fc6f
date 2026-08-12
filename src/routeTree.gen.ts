@@ -145,7 +145,6 @@ import { Route as AuthenticatedPonukyIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedPonukyIdRouteImport } from './routes/_authenticated/ponuky.$id'
 import { Route as AuthenticatedPonukyNovaRouteImport } from './routes/_authenticated/ponuky.nova'
 import { Route as AuthenticatedPrijateFakturyIndexRouteImport } from './routes/_authenticated/prijate-faktury.index'
-import { Route as AuthenticatedPrijateFakturyIdRouteImport } from './routes/_authenticated/prijate-faktury.$id'
 import { Route as AuthenticatedPrijateFakturyNovaRouteImport } from './routes/_authenticated/prijate-faktury.nova'
 import { Route as AuthenticatedSkladIndexRouteImport } from './routes/_authenticated/sklad.index'
 import { Route as AuthenticatedSkladDodaciListRouteImport } from './routes/_authenticated/sklad.dodaci-list'
@@ -185,6 +184,8 @@ import { Route as AuthenticatedFakturyIdUpravitRouteImport } from './routes/_aut
 import { Route as AuthenticatedJazdyIntegracieIndexRouteImport } from './routes/_authenticated/jazdy.integracie.index'
 import { Route as AuthenticatedJazdyIntegracieCommanderRouteImport } from './routes/_authenticated/jazdy.integracie.commander'
 import { Route as AuthenticatedJazdyIntegracieTeslaRouteImport } from './routes/_authenticated/jazdy.integracie.tesla'
+import { Route as AuthenticatedPrijateFakturyIdIndexRouteImport } from './routes/_authenticated/prijate-faktury.$id.index'
+import { Route as AuthenticatedPrijateFakturyIdUpravitRouteImport } from './routes/_authenticated/prijate-faktury.$id.upravit'
 import { Route as AuthenticatedSkladObjednavkyIndexRouteImport } from './routes/_authenticated/sklad.objednavky.index'
 import { Route as AuthenticatedSkladObjednavkyIdRouteImport } from './routes/_authenticated/sklad.objednavky.$id'
 import { Route as AuthenticatedSkladObjednavkyNovaRouteImport } from './routes/_authenticated/sklad.objednavky.nova'
@@ -955,12 +956,6 @@ const AuthenticatedPrijateFakturyIndexRoute =
     path: '/prijate-faktury/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedPrijateFakturyIdRoute =
-  AuthenticatedPrijateFakturyIdRouteImport.update({
-    id: '/prijate-faktury/$id',
-    path: '/prijate-faktury/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedPrijateFakturyNovaRoute =
   AuthenticatedPrijateFakturyNovaRouteImport.update({
     id: '/prijate-faktury/nova',
@@ -1175,6 +1170,18 @@ const AuthenticatedJazdyIntegracieTeslaRoute =
     id: '/tesla',
     path: '/tesla',
     getParentRoute: () => AuthenticatedJazdyIntegracieRoute,
+  } as any)
+const AuthenticatedPrijateFakturyIdIndexRoute =
+  AuthenticatedPrijateFakturyIdIndexRouteImport.update({
+    id: '/prijate-faktury/$id/',
+    path: '/prijate-faktury/$id/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPrijateFakturyIdUpravitRoute =
+  AuthenticatedPrijateFakturyIdUpravitRouteImport.update({
+    id: '/prijate-faktury/$id/upravit',
+    path: '/prijate-faktury/$id/upravit',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedSkladObjednavkyIndexRoute =
   AuthenticatedSkladObjednavkyIndexRouteImport.update({
@@ -1552,7 +1559,6 @@ export interface FileRoutesByFullPath {
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
-  '/prijate-faktury/$id': typeof AuthenticatedPrijateFakturyIdRoute
   '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
   '/sklad/dodaci-list': typeof AuthenticatedSkladDodaciListRoute
   '/sklad/dodacie-listy': typeof AuthenticatedSkladDodacieListyRoute
@@ -1602,6 +1608,7 @@ export interface FileRoutesByFullPath {
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
+  '/prijate-faktury/$id/upravit': typeof AuthenticatedPrijateFakturyIdUpravitRoute
   '/sklad/objednavky/$id': typeof AuthenticatedSkladObjednavkyIdRoute
   '/sklad/objednavky/nova': typeof AuthenticatedSkladObjednavkyNovaRoute
   '/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
@@ -1635,6 +1642,7 @@ export interface FileRoutesByFullPath {
   '/api/v1/stock/valuation': typeof ApiV1StockValuationRoute
   '/faktury/$id/': typeof AuthenticatedFakturyIdIndexRoute
   '/jazdy/integracie/': typeof AuthenticatedJazdyIntegracieIndexRoute
+  '/prijate-faktury/$id/': typeof AuthenticatedPrijateFakturyIdIndexRoute
   '/sklad/objednavky/': typeof AuthenticatedSkladObjednavkyIndexRoute
   '/sklad/pohyby/': typeof AuthenticatedSkladPohybyIndexRoute
   '/sklad/presuny/': typeof AuthenticatedSkladPresunyIndexRoute
@@ -1765,7 +1773,6 @@ export interface FileRoutesByTo {
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
-  '/prijate-faktury/$id': typeof AuthenticatedPrijateFakturyIdRoute
   '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
   '/sklad/dodaci-list': typeof AuthenticatedSkladDodaciListRoute
   '/sklad/dodacie-listy': typeof AuthenticatedSkladDodacieListyRoute
@@ -1815,6 +1822,7 @@ export interface FileRoutesByTo {
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
+  '/prijate-faktury/$id/upravit': typeof AuthenticatedPrijateFakturyIdUpravitRoute
   '/sklad/objednavky/$id': typeof AuthenticatedSkladObjednavkyIdRoute
   '/sklad/objednavky/nova': typeof AuthenticatedSkladObjednavkyNovaRoute
   '/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
@@ -1848,6 +1856,7 @@ export interface FileRoutesByTo {
   '/api/v1/stock/valuation': typeof ApiV1StockValuationRoute
   '/faktury/$id': typeof AuthenticatedFakturyIdIndexRoute
   '/jazdy/integracie': typeof AuthenticatedJazdyIntegracieIndexRoute
+  '/prijate-faktury/$id': typeof AuthenticatedPrijateFakturyIdIndexRoute
   '/sklad/objednavky': typeof AuthenticatedSkladObjednavkyIndexRoute
   '/sklad/pohyby': typeof AuthenticatedSkladPohybyIndexRoute
   '/sklad/presuny': typeof AuthenticatedSkladPresunyIndexRoute
@@ -1989,7 +1998,6 @@ export interface FileRoutesById {
   '/_authenticated/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/_authenticated/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/_authenticated/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
-  '/_authenticated/prijate-faktury/$id': typeof AuthenticatedPrijateFakturyIdRoute
   '/_authenticated/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
   '/_authenticated/sklad/dodaci-list': typeof AuthenticatedSkladDodaciListRoute
   '/_authenticated/sklad/dodacie-listy': typeof AuthenticatedSkladDodacieListyRoute
@@ -2039,6 +2047,7 @@ export interface FileRoutesById {
   '/_authenticated/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/_authenticated/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/_authenticated/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
+  '/_authenticated/prijate-faktury/$id/upravit': typeof AuthenticatedPrijateFakturyIdUpravitRoute
   '/_authenticated/sklad/objednavky/$id': typeof AuthenticatedSkladObjednavkyIdRoute
   '/_authenticated/sklad/objednavky/nova': typeof AuthenticatedSkladObjednavkyNovaRoute
   '/_authenticated/sklad/pohyby/$id': typeof AuthenticatedSkladPohybyIdRoute
@@ -2072,6 +2081,7 @@ export interface FileRoutesById {
   '/api/v1/stock/valuation': typeof ApiV1StockValuationRoute
   '/_authenticated/faktury/$id/': typeof AuthenticatedFakturyIdIndexRoute
   '/_authenticated/jazdy/integracie/': typeof AuthenticatedJazdyIntegracieIndexRoute
+  '/_authenticated/prijate-faktury/$id/': typeof AuthenticatedPrijateFakturyIdIndexRoute
   '/_authenticated/sklad/objednavky/': typeof AuthenticatedSkladObjednavkyIndexRoute
   '/_authenticated/sklad/pohyby/': typeof AuthenticatedSkladPohybyIndexRoute
   '/_authenticated/sklad/presuny/': typeof AuthenticatedSkladPresunyIndexRoute
@@ -2213,7 +2223,6 @@ export interface FileRouteTypes {
     | '/opakovane/nova'
     | '/ponuky/$id'
     | '/ponuky/nova'
-    | '/prijate-faktury/$id'
     | '/prijate-faktury/nova'
     | '/sklad/dodaci-list'
     | '/sklad/dodacie-listy'
@@ -2263,6 +2272,7 @@ export interface FileRouteTypes {
     | '/faktury/$id/upravit'
     | '/jazdy/integracie/commander'
     | '/jazdy/integracie/tesla'
+    | '/prijate-faktury/$id/upravit'
     | '/sklad/objednavky/$id'
     | '/sklad/objednavky/nova'
     | '/sklad/pohyby/$id'
@@ -2296,6 +2306,7 @@ export interface FileRouteTypes {
     | '/api/v1/stock/valuation'
     | '/faktury/$id/'
     | '/jazdy/integracie/'
+    | '/prijate-faktury/$id/'
     | '/sklad/objednavky/'
     | '/sklad/pohyby/'
     | '/sklad/presuny/'
@@ -2426,7 +2437,6 @@ export interface FileRouteTypes {
     | '/opakovane/nova'
     | '/ponuky/$id'
     | '/ponuky/nova'
-    | '/prijate-faktury/$id'
     | '/prijate-faktury/nova'
     | '/sklad/dodaci-list'
     | '/sklad/dodacie-listy'
@@ -2476,6 +2486,7 @@ export interface FileRouteTypes {
     | '/faktury/$id/upravit'
     | '/jazdy/integracie/commander'
     | '/jazdy/integracie/tesla'
+    | '/prijate-faktury/$id/upravit'
     | '/sklad/objednavky/$id'
     | '/sklad/objednavky/nova'
     | '/sklad/pohyby/$id'
@@ -2509,6 +2520,7 @@ export interface FileRouteTypes {
     | '/api/v1/stock/valuation'
     | '/faktury/$id'
     | '/jazdy/integracie'
+    | '/prijate-faktury/$id'
     | '/sklad/objednavky'
     | '/sklad/pohyby'
     | '/sklad/presuny'
@@ -2649,7 +2661,6 @@ export interface FileRouteTypes {
     | '/_authenticated/opakovane/nova'
     | '/_authenticated/ponuky/$id'
     | '/_authenticated/ponuky/nova'
-    | '/_authenticated/prijate-faktury/$id'
     | '/_authenticated/prijate-faktury/nova'
     | '/_authenticated/sklad/dodaci-list'
     | '/_authenticated/sklad/dodacie-listy'
@@ -2699,6 +2710,7 @@ export interface FileRouteTypes {
     | '/_authenticated/faktury/$id/upravit'
     | '/_authenticated/jazdy/integracie/commander'
     | '/_authenticated/jazdy/integracie/tesla'
+    | '/_authenticated/prijate-faktury/$id/upravit'
     | '/_authenticated/sklad/objednavky/$id'
     | '/_authenticated/sklad/objednavky/nova'
     | '/_authenticated/sklad/pohyby/$id'
@@ -2732,6 +2744,7 @@ export interface FileRouteTypes {
     | '/api/v1/stock/valuation'
     | '/_authenticated/faktury/$id/'
     | '/_authenticated/jazdy/integracie/'
+    | '/_authenticated/prijate-faktury/$id/'
     | '/_authenticated/sklad/objednavky/'
     | '/_authenticated/sklad/pohyby/'
     | '/_authenticated/sklad/presuny/'
@@ -3791,13 +3804,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPrijateFakturyIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/prijate-faktury/$id': {
-      id: '/_authenticated/prijate-faktury/$id'
-      path: '/prijate-faktury/$id'
-      fullPath: '/prijate-faktury/$id'
-      preLoaderRoute: typeof AuthenticatedPrijateFakturyIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/prijate-faktury/nova': {
       id: '/_authenticated/prijate-faktury/nova'
       path: '/prijate-faktury/nova'
@@ -4070,6 +4076,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/jazdy/integracie/tesla'
       preLoaderRoute: typeof AuthenticatedJazdyIntegracieTeslaRouteImport
       parentRoute: typeof AuthenticatedJazdyIntegracieRoute
+    }
+    '/_authenticated/prijate-faktury/$id/': {
+      id: '/_authenticated/prijate-faktury/$id/'
+      path: '/prijate-faktury/$id'
+      fullPath: '/prijate-faktury/$id/'
+      preLoaderRoute: typeof AuthenticatedPrijateFakturyIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/prijate-faktury/$id/upravit': {
+      id: '/_authenticated/prijate-faktury/$id/upravit'
+      path: '/prijate-faktury/$id/upravit'
+      fullPath: '/prijate-faktury/$id/upravit'
+      preLoaderRoute: typeof AuthenticatedPrijateFakturyIdUpravitRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/sklad/objednavky/': {
       id: '/_authenticated/sklad/objednavky/'
@@ -4534,7 +4554,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOpakovaneNovaRoute: typeof AuthenticatedOpakovaneNovaRoute
   AuthenticatedPonukyIdRoute: typeof AuthenticatedPonukyIdRoute
   AuthenticatedPonukyNovaRoute: typeof AuthenticatedPonukyNovaRoute
-  AuthenticatedPrijateFakturyIdRoute: typeof AuthenticatedPrijateFakturyIdRoute
   AuthenticatedPrijateFakturyNovaRoute: typeof AuthenticatedPrijateFakturyNovaRoute
   AuthenticatedUctovnictvoDphRoute: typeof AuthenticatedUctovnictvoDphRoute
   AuthenticatedUctovnictvoUzavierkaRoute: typeof AuthenticatedUctovnictvoUzavierkaRoute
@@ -4554,7 +4573,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedZakazkyIndexRoute: typeof AuthenticatedZakazkyIndexRoute
   AuthenticatedZalohoveIndexRoute: typeof AuthenticatedZalohoveIndexRoute
   AuthenticatedFakturyIdUpravitRoute: typeof AuthenticatedFakturyIdUpravitRoute
+  AuthenticatedPrijateFakturyIdUpravitRoute: typeof AuthenticatedPrijateFakturyIdUpravitRoute
   AuthenticatedFakturyIdIndexRoute: typeof AuthenticatedFakturyIdIndexRoute
+  AuthenticatedPrijateFakturyIdIndexRoute: typeof AuthenticatedPrijateFakturyIdIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -4611,7 +4632,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOpakovaneNovaRoute: AuthenticatedOpakovaneNovaRoute,
   AuthenticatedPonukyIdRoute: AuthenticatedPonukyIdRoute,
   AuthenticatedPonukyNovaRoute: AuthenticatedPonukyNovaRoute,
-  AuthenticatedPrijateFakturyIdRoute: AuthenticatedPrijateFakturyIdRoute,
   AuthenticatedPrijateFakturyNovaRoute: AuthenticatedPrijateFakturyNovaRoute,
   AuthenticatedUctovnictvoDphRoute: AuthenticatedUctovnictvoDphRoute,
   AuthenticatedUctovnictvoUzavierkaRoute:
@@ -4632,7 +4652,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedZakazkyIndexRoute: AuthenticatedZakazkyIndexRoute,
   AuthenticatedZalohoveIndexRoute: AuthenticatedZalohoveIndexRoute,
   AuthenticatedFakturyIdUpravitRoute: AuthenticatedFakturyIdUpravitRoute,
+  AuthenticatedPrijateFakturyIdUpravitRoute:
+    AuthenticatedPrijateFakturyIdUpravitRoute,
   AuthenticatedFakturyIdIndexRoute: AuthenticatedFakturyIdIndexRoute,
+  AuthenticatedPrijateFakturyIdIndexRoute:
+    AuthenticatedPrijateFakturyIdIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
