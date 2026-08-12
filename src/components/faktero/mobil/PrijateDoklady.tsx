@@ -12,6 +12,7 @@ import {
   Search,
   Trash2,
   ExternalLink,
+  FileInput,
 } from "lucide-react";
 import {
   createExpenseFn,
@@ -180,6 +181,7 @@ export function PrijateDoklady({
     return (
       <DetailDokladu
         doklad={otvoreny}
+        firmaId={firma.id}
         onSpat={() => setOtvoreny(null)}
         onZmena={async () => {
           setOtvoreny(null);
@@ -323,10 +325,12 @@ export function PrijateDoklady({
 
 function DetailDokladu({
   doklad,
+  firmaId,
   onSpat,
   onZmena,
 }: {
   doklad: Doklad;
+  firmaId: string;
   onSpat: () => void;
   onZmena: () => void;
 }) {
@@ -338,6 +342,8 @@ function DetailDokladu({
   const [uhrada, setUhrada] = useState<Uhrada | null>(doklad.payment_method ?? null);
   const [mazem, setMazem] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Faktúru od dodávateľa netreba nosiť do počítača — presunie sa rovno tu. */
+  const [presuvam, setPresuvam] = useState(false);
 
   const mena = doklad.currency ?? "EUR";
   const polozky = Array.isArray(doklad.items) ? (doklad.items as any[]) : [];
@@ -363,6 +369,19 @@ function DetailDokladu({
       toast.error(e?.message ?? "Zmena zlyhala.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function doPrijatych() {
+    setPresuvam(true);
+    try {
+      const { presunDokladDoPrijatychFn } = await import("@/lib/faktero/doklad-presun.functions");
+      await presunDokladDoPrijatychFn({ data: { company_id: firmaId, id: doklad.id } });
+      toast.success("Doklad je medzi prijatými faktúrami.");
+      onZmena();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Presun sa nepodaril.");
+      setPresuvam(false);
     }
   }
 
@@ -482,6 +501,16 @@ function DetailDokladu({
             )}
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={doPrijatych}
+          disabled={busy || presuvam}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm disabled:opacity-50"
+        >
+          <FileInput className="h-4 w-4" />
+          {presuvam ? "Presúvam…" : "Presunúť medzi prijaté faktúry"}
+        </button>
 
         {mazem ? (
           <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
