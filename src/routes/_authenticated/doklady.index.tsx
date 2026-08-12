@@ -9,7 +9,15 @@ import {
   exportExpensesZipFn,
   getExpenseFileUrlFn,
 } from "@/lib/faktero/expenses.functions";
-import { Camera, Download, FileText, Plus, Trash2, Upload as UploadIcon } from "lucide-react";
+import {
+  Camera,
+  Download,
+  FileInput,
+  FileText,
+  Plus,
+  Trash2,
+  Upload as UploadIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
@@ -37,6 +45,8 @@ function DokladyPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("all");
+  /** Doklad, ktorý sa práve presúva medzi prijaté faktúry. */
+  const [presuvam, setPresuvam] = useState<string | null>(null);
   const [month, setMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
@@ -54,6 +64,30 @@ function DokladyPage() {
       setLoading(false);
     }
   }
+  async function doPrijatych(r: any) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    const popis = r.supplier_name ?? "doklad";
+    if (
+      !confirm(
+        `Presunúť ${popis} medzi prijaté faktúry? Z Dokladov zmizne, aby sa ten istý náklad nepočítal dvakrát.`,
+      )
+    )
+      return;
+    setPresuvam(r.id);
+    try {
+      const { presunDokladDoPrijatychFn } = await import("@/lib/faktero/doklad-presun.functions");
+      const v: any = await presunDokladDoPrijatychFn({ data: { company_id: cid, id: r.id } });
+      toast.success("Doklad je medzi prijatými faktúrami.");
+      navigate({ to: "/prijate-faktury/$id", params: { id: v.id } });
+    } catch (e: any) {
+      const { friendlyError } = await import("@/lib/faktero/plan-error");
+      toast.error(friendlyError(e, "Presun sa nepodaril"));
+    } finally {
+      setPresuvam(null);
+    }
+  }
+
   useEffect(() => {
     refresh(); /* eslint-disable-next-line */
   }, [status, month]);
@@ -278,6 +312,14 @@ function DokladyPage() {
                           <FileText className="h-4 w-4" />
                         </button>
                       )}
+                      <button
+                        onClick={() => doPrijatych(r)}
+                        disabled={presuvam === r.id}
+                        title="Presunúť medzi prijaté faktúry"
+                        className="rounded-md p-1.5 hover:bg-secondary disabled:opacity-50"
+                      >
+                        <FileInput className="h-4 w-4" />
+                      </button>
                       <button
                         onClick={() => del(r.id)}
                         title="Zmazať"
