@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { zostavaUhradit } from "./zaloha";
 
 /** Public view of a provider config (NO secret values). */
 export const getMyPaymentProvider = createServerFn({ method: "POST" })
@@ -398,7 +399,7 @@ export const createInvoicePaymentLink = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: inv, error } = await supabase
       .from("invoices")
-      .select("id, company_id, invoice_number, total, currency, status")
+      .select("id, company_id, invoice_number, total, advance_amount, currency, status")
       .eq("id", data.invoiceId)
       .eq("company_id", data.companyId)
       .maybeSingle();
@@ -438,7 +439,8 @@ export const createInvoicePaymentLink = createServerFn({ method: "POST" })
 
     const { randomBytes } = await import("crypto");
     const token = randomBytes(24).toString("base64url");
-    const amountCents = Math.round(Number(inv.total ?? 0) * 100);
+    // Zaplatenú zálohu odberateľ platiť druhýkrát nemá.
+    const amountCents = Math.round(zostavaUhradit(inv.total, (inv as any).advance_amount) * 100);
     if (amountCents <= 0) throw new Error("Suma faktúry musí byť kladná.");
 
     await supabaseAdmin.from("invoice_payment_links").insert({

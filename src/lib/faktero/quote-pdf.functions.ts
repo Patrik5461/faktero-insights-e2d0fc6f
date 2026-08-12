@@ -4,6 +4,11 @@ import { z } from "zod";
 
 const input = z.object({ quoteId: z.string().uuid() });
 
+/** Meno súboru pre stiahnutie — bez neho sa PDF uloží pod UUID objektu. */
+function nazovSuboru(cisloPonuky: unknown): string {
+  return `${String(cisloPonuky || "ponuka").replace(/[^A-Za-z0-9._-]+/g, "_")}.pdf`;
+}
+
 export const generateQuotePdf = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => input.parse(d))
@@ -68,7 +73,8 @@ export const generateQuotePdf = createServerFn({ method: "POST" })
 
     const { data: signed } = await supabaseAdmin.storage
       .from("invoice-pdfs")
-      .createSignedUrl(path, 60 * 60);
+      // Bez `download` sa súbor stiahne pod menom objektu — teda ako UUID.
+      .createSignedUrl(path, 60 * 60, { download: nazovSuboru(quote.quote_number) });
     return { path, signedUrl: signed?.signedUrl ?? null };
   });
 
@@ -78,14 +84,16 @@ export const getQuotePdfSignedUrl = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: quote, error } = await context.supabase
       .from("quotes")
-      .select("id, pdf_url")
+      .select("id, pdf_url, quote_number")
       .eq("id", data.quoteId)
       .single();
     if (error || !quote?.pdf_url) throw new Error("PDF zatiaľ neexistuje");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: signed, error: sErr } = await supabaseAdmin.storage
       .from("invoice-pdfs")
-      .createSignedUrl(quote.pdf_url, 60 * 60);
+      .createSignedUrl(quote.pdf_url, 60 * 60, {
+        download: nazovSuboru((quote as any).quote_number),
+      });
     if (sErr || !signed) throw new Error(sErr?.message ?? "Chyba podpisu URL");
     return { signedUrl: signed.signedUrl };
   });

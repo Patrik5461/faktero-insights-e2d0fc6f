@@ -48,6 +48,7 @@ import {
 } from "@/components/faktero/EfakturaStatusBadge";
 import { useQuery } from "@tanstack/react-query";
 import { friendlyError } from "@/lib/faktero/plan-error";
+import { maZuctovanuZalohu, zostavaUhradit } from "@/lib/faktero/zaloha";
 import { createInvoicePaymentLink, syncInvoicePayment } from "@/lib/faktero/payments.functions";
 import { paymentMethodLabel } from "@/lib/faktero/payment-method";
 import { adresaRiadky } from "@/lib/faktero/adresa";
@@ -895,13 +896,22 @@ function InvoiceDetail() {
               <div className="mt-3 space-y-1 text-sm">
                 <Row label="Bez DPH" value={`${Number(inv.subtotal).toFixed(2)} ${inv.currency}`} />
                 <Row label="DPH" value={`${Number(inv.vat_total).toFixed(2)} ${inv.currency}`} />
+                {maZuctovanuZalohu(inv.advance_amount) && (
+                  <>
+                    <Row label="Spolu" value={`${Number(inv.total).toFixed(2)} ${inv.currency}`} />
+                    <Row
+                      label="Zúčtovaná záloha"
+                      value={`−${Number(inv.advance_amount).toFixed(2)} ${inv.currency}`}
+                    />
+                  </>
+                )}
               </div>
               <div className="mt-3 border-t border-border pt-3">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
                   {inv.status === "paid" ? "Uhradené" : "Spolu k úhrade"}
                 </div>
                 <div className="text-lg font-semibold tabular-nums">
-                  {Number(inv.total).toFixed(2)} {inv.currency}
+                  {zostavaUhradit(inv.total, inv.advance_amount).toFixed(2)} {inv.currency}
                 </div>
               </div>
             </div>

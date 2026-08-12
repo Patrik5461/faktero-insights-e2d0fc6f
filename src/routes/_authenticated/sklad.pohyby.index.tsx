@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
+import { hodnotaPohybu, pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -187,8 +187,8 @@ function MovementsPage() {
         // Do exportu ide množstvo so znamienkom — inak sa výdaj a príjem
         // v tabuľkovom procesore sčítajú ako dva prírastky.
         Množstvo: pohybDelta(m.type, m.quantity),
-        "Jednotková cena": Number(m.unit_price),
-        "Celková hodnota": Number(m.total_value),
+        "Jednotková cena": Number(m.unit_cost ?? m.unit_price),
+        "Celková hodnota": hodnotaPohybu(m),
         Referencia: refLabel,
         Poznámka: m.note ?? "",
         Vytvoril: profiles[m.created_by] ?? "",
@@ -378,9 +378,7 @@ function MovementsPage() {
                   <td className="p-3 text-right tabular-nums">
                     {m.unit_cost != null ? Number(m.unit_cost).toFixed(4) : "—"}
                   </td>
-                  <td className="p-3 text-right tabular-nums">
-                    {Number(m.total_value).toFixed(2)} €
-                  </td>
+                  <td className="p-3 text-right tabular-nums">{hodnotaPohybu(m).toFixed(2)} €</td>
                   <td className="p-3 text-xs" onClick={(e) => e.stopPropagation()}>
                     {(m.source_document_type === "invoice" || m.reference_type === "invoice") &&
                     (m.source_document_id || m.reference_id) &&
@@ -455,7 +453,7 @@ function MovementsPage() {
               </div>
               <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                 <span>{warehouses[m.warehouse_id] ?? "—"}</span>
-                <span>{Number(m.total_value).toFixed(2)} €</span>
+                <span>{hodnotaPohybu(m).toFixed(2)} €</span>
               </div>
               {m.note && <div className="mt-1 text-xs text-muted-foreground">{m.note}</div>}
             </Link>

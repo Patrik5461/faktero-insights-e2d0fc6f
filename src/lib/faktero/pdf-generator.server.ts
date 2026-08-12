@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { RobotoRegularBase64 } from "./fonts/Roboto-Regular";
 import { RobotoBoldBase64 } from "./fonts/Roboto-Bold";
 import { paymentMethodLabel } from "./payment-method";
+import { maZuctovanuZalohu, zostavaUhradit } from "./zaloha";
 
 function b64ToBytes(b64: string): Uint8Array {
   const bin =
@@ -458,6 +459,37 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     );
     ty -= 18;
   }
+  // Zúčtovaná záloha znižuje sumu na úhradu — odberateľ ju už zaplatil.
+  const zaloha = maZuctovanuZalohu((invoice as any).advance_amount)
+    ? Number((invoice as any).advance_amount)
+    : 0;
+  if (zaloha > 0) {
+    drawTotalRow(
+      cur,
+      font,
+      "Spolu",
+      fmt(Number(invoice.total), invoice.currency),
+      totalsX,
+      ty,
+      totalsBlockW,
+      ink,
+      sub,
+    );
+    ty -= 18;
+    drawTotalRow(
+      cur,
+      font,
+      "Zúčtovaná záloha",
+      `− ${fmt(zaloha, invoice.currency)}`,
+      totalsX,
+      ty,
+      totalsBlockW,
+      ink,
+      sub,
+    );
+    ty -= 18;
+  }
+  const naUhradu = zostavaUhradit(invoice.total, zaloha);
   cur.drawLine({
     start: { x: totalsX, y: ty + 6 },
     end: { x: totalsX + totalsBlockW, y: ty + 6 },
@@ -485,7 +517,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   drawAligned(
     cur,
     bold,
-    fmt(Number(invoice.total), invoice.currency),
+    fmt(naUhradu, invoice.currency),
     totalsX + totalsBlockW - 16,
     ty - 42,
     16,
@@ -556,7 +588,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       try {
         const qrText = spaydString({
           iban: company.iban,
-          amount: Number(invoice.total),
+          amount: naUhradu,
           currency: invoice.currency,
           vs: invoice.variable_symbol,
           msg: `Faktura ${invoice.invoice_number}`,

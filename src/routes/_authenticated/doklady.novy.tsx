@@ -6,11 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
-import {
-  nacitajBlocekFn,
-  PRENOS_KLUC,
-  type BlocekVysledok,
-} from "@/lib/faktero/blocek.functions";
+import { nacitajBlocekFn, PRENOS_KLUC, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
 import {
   createExpenseFn,
   updateExpenseFn,
@@ -84,6 +80,8 @@ function NovyDokladPage() {
   /* Položky a rozpis DPH z bločku — ukladajú sa k dokladu tak, ako prišli. */
   const [polozky, setPolozky] = useState<BlocekVysledok["items"]>([]);
   const [rozpisDph, setRozpisDph] = useState<BlocekVysledok["vat_breakdown"] | null>(null);
+  /** Do „Celkom“ siahol človek alebo prišlo z bločku — potom sa nedopočítava. */
+  const celkomRucne = useRef(false);
   const [ekasaBadge, setEkasaBadge] = useState<null | {
     source: BlocekVysledok["zdroj"];
     overeny: boolean;
@@ -120,6 +118,7 @@ function NovyDokladPage() {
         category: data.category ?? "",
         note: data.note ?? "",
       });
+      celkomRucne.current = data.total_amount != null;
       setSource(data.source as "photo" | "qr" | "upload" | "web");
       setQrRaw(data.qr_raw);
       setPolozky(Array.isArray(data.items) ? (data.items as any) : []);
@@ -144,6 +143,23 @@ function NovyDokladPage() {
   function updateForm<K extends keyof Form>(k: K, v: Form[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
+
+  /**
+   * Celkovú sumu dopočítavame zo základu a DPH. Ručne vypísaný doklad inak
+   * ostal s prázdnym „Celkom“ — a doklad bez sumy nevstúpi ani do pokladne,
+   * ani do súčtov pre účtovníka.
+   */
+  useEffect(() => {
+    if (celkomRucne.current) return;
+    const zaklad = form.net_amount === "" ? null : Number(form.net_amount);
+    const dph = form.vat_amount === "" ? null : Number(form.vat_amount);
+    if (zaklad == null && dph == null) return;
+    const suma =
+      (Number.isFinite(zaklad as number) ? (zaklad as number) : 0) +
+      (Number.isFinite(dph as number) ? (dph as number) : 0);
+    const nova = suma.toFixed(2);
+    setForm((f) => (f.total_amount === nova ? f : { ...f, total_amount: nova }));
+  }, [form.net_amount, form.vat_amount]);
 
   /* Bloček prečítaný v skeneri — prevezme sa raz, pri otvorení stránky. */
   useEffect(() => {
@@ -274,7 +290,10 @@ function NovyDokladPage() {
     if (r.date) updateForm("issue_date", r.date);
     if (r.currency) updateForm("currency", r.currency);
     if (r.vat_rate != null) updateForm("vat_rate", String(r.vat_rate));
-    if (r.total != null) updateForm("total_amount", String(r.total));
+    if (r.total != null) {
+      celkomRucne.current = true;
+      updateForm("total_amount", String(r.total));
+    }
 
     const total = r.total ?? 0;
     if (r.vat_amount != null) {
@@ -557,7 +576,10 @@ function NovyDokladPage() {
                 label="Celkom"
                 type="number"
                 value={form.total_amount}
-                onChange={(v) => updateForm("total_amount", v)}
+                onChange={(v) => {
+                  celkomRucne.current = true;
+                  updateForm("total_amount", v);
+                }}
               />
               <Field
                 label="Sadzba DPH %"
@@ -628,9 +650,11 @@ function Field({
   type?: string;
   placeholder?: string;
 }) {
+  // Menovka musí patriť k políčku, inak ju čítačka obrazovky ani doplnenie
+  // údajov v prehliadači k ničomu nepriradia.
   return (
-    <div>
-      <label className="mb-1 block text-xs text-muted-foreground">{label}</label>
+    <label className="block">
+      <span className="mb-1 block text-xs text-muted-foreground">{label}</span>
       <input
         type={type}
         value={value}
@@ -638,6 +662,6 @@ function Field({
         placeholder={placeholder}
         className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
       />
-    </div>
+    </label>
   );
 }

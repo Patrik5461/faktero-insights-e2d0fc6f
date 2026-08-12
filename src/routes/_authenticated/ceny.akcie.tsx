@@ -11,6 +11,7 @@ import {
 } from "@/lib/faktero/ceny.functions";
 import { akciaPlati, cislo } from "@/lib/faktero/ceny";
 import { ArrowLeft, Plus, Pencil, Trash2, X } from "lucide-react";
+import { PRODUKTY, sPoctom } from "@/lib/faktero/mnozne";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/ceny/akcie")({
@@ -210,7 +211,7 @@ function AkciePage() {
                         {formatDatum(a.valid_from)} – {formatDatum(a.valid_to)} ·{" "}
                         {a.applies_to_all
                           ? "celý sortiment"
-                          : `${(a.price_action_products ?? []).length} produktov`}
+                          : sPoctom((a.price_action_products ?? []).length, PRODUKTY)}
                       </p>
                       {!a.applies_to_all && (a.price_action_products ?? []).length > 0 && (
                         <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">

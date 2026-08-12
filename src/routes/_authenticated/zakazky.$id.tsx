@@ -7,6 +7,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { deleteJob, getJob, setJobStatus, updateJob } from "@/lib/faktero/jobs.functions";
 import { STAV_ZAKAZKY_POPIS, nakladZJazdy, type StavZakazky } from "@/lib/faktero/zakazky";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
+import { pohybNazov } from "@/lib/faktero/stock-pohyb";
 import { ArrowLeft, Lock, Unlock, Pencil, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/zakazky/$id")({
@@ -455,7 +456,7 @@ function JobDetail() {
           hlavicka={["Položka", "Pohyb", "Množstvo", "Vážená cena", "Hodnota"]}
           riadky={data.pohyby.map((p: any) => [
             p.nazov,
-            p.type,
+            pohybNazov(p.type),
             Number(p.quantity),
             p.unit_cost == null ? "—" : suma(Number(p.unit_cost)),
             suma(Number(p.unit_cost ?? 0) * Number(p.quantity)),

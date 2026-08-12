@@ -29,6 +29,40 @@ export function pohybDelta(typ: string | null | undefined, mnozstvo: unknown): n
   }
 }
 
+/** Názvy pohybov tak, ako ich má vidieť človek. */
+export const POHYB_NAZOV: Record<string, string> = {
+  prijem: "Príjem",
+  vydaj: "Výdaj",
+  oprava: "Oprava",
+  inventura: "Inventúra",
+  faktura: "Faktúra",
+  dobropis: "Dobropis",
+};
+
+export function pohybNazov(typ: string | null | undefined): string {
+  return POHYB_NAZOV[String(typ ?? "")] ?? String(typ ?? "—");
+}
+
+/**
+ * Hodnota pohybu v nákladovej cene.
+ *
+ * `total_value` je pri výdaji uložené v **predajnej** cene (výdajka si pamätá,
+ * za koľko tovar odchádza), takže v prehľade skladu sedelo množstvo a vážená
+ * cena, ale hodnota riadku bola z iného sveta: 10 ks × 9,13 € svietilo ako
+ * 125 €. Kde poznáme `unit_cost`, počítame z neho.
+ */
+export function hodnotaPohybu(p: {
+  quantity?: unknown;
+  unit_cost?: unknown;
+  total_value?: unknown;
+}): number {
+  const mnozstvo = Math.abs(Number(p.quantity) || 0);
+  const jednotkova = Number(p.unit_cost);
+  if (Number.isFinite(jednotkova) && jednotkova > 0) return jednotkova * mnozstvo;
+  const hodnota = Number(p.total_value);
+  return Number.isFinite(hodnota) ? Math.abs(hodnota) : 0;
+}
+
 /** „+3" / „−3" — mínus je typografické, nie spojovník. */
 export function pohybText(typ: string | null | undefined, mnozstvo: unknown): string {
   const d = pohybDelta(typ, mnozstvo);

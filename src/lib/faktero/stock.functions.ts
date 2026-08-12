@@ -796,7 +796,7 @@ export const getStockValuation = createServerFn({ method: "POST" })
       await Promise.all([
         supabase
           .from("stock_items")
-          .select("id, sku, product_id, purchase_price, sale_price, unit")
+          .select("id, sku, product_id, purchase_price, avg_purchase_price, sale_price, unit")
           .eq("company_id", data.company_id),
         supabase
           .from("stock_levels")
@@ -838,7 +838,9 @@ export const getStockValuation = createServerFn({ method: "POST" })
       const it = itemMap.get(l.stock_item_id);
       if (!it) continue;
       const qty = Number(l.quantity ?? 0);
-      const pVal = qty * Number(it.purchase_price ?? 0);
+      // Ocenenie ide váženou nákupnou cenou z príjemok; statická nákupná cena
+      // na karte býva prázdna a hodnota skladu potom vyšla nula.
+      const pVal = qty * (Number(it.avg_purchase_price ?? 0) || Number(it.purchase_price ?? 0));
       const sVal = qty * Number(it.sale_price ?? 0);
       totalPurchase += pVal;
       totalSale += sVal;

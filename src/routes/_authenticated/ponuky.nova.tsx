@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -10,6 +10,8 @@ import { createReservationsFromQuote } from "@/lib/faktero/reservations.function
 import { nextQuoteNumberFn } from "@/lib/faktero/quote.functions";
 import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
 import { JobPicker } from "@/components/faktero/JobPicker";
+import { getPriceContext } from "@/lib/faktero/ceny.functions";
+import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 
 export const Route = createFileRoute("/_authenticated/ponuky/nova")({
   head: () => ({ meta: [{ title: "Nová cenová ponuka — Faktero" }] }),
@@ -23,6 +25,11 @@ type Item = {
   unit: string;
   unit_price: number;
   vat_rate: number;
+  /** Väzba na katalóg — z nej žije cenník aj rezervácia tovaru. */
+  product_id?: string | null;
+  /** Do ceny siahol človek, cenník ju už neprepíše. */
+  _cena_rucne?: boolean;
+  _dovod?: string;
 };
 const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate: 23 };
 
@@ -38,6 +45,10 @@ function NewQuote() {
     job_id: "",
   });
   const [items, setItems] = useState<Item[]>([{ ...EMPTY }]);
+  const [produkty, setProdukty] = useState<any[]>([]);
+  const [podklady, setPodklady] = useState<Podklady | null>(null);
+  const nacitajCennik = useServerFn(getPriceContext);
+  const cennikPrvyRaz = useRef(true);
   const [newCustOpen, setNewCustOpen] = useState(false);
   const [reserveStock, setReserveStock] = useState(false);
   const reserveFn = useServerFn(createReservationsFromQuote);
@@ -51,7 +62,78 @@ function NewQuote() {
       .select("id, name, ico, dic, ic_dph, street, city, zip, country, email")
       .eq("company_id", cid)
       .then(({ data }) => setCustomers(data ?? []));
+    supabase
+      .from("products")
+      .select("id, name, unit, unit_price, vat_rate")
+      .eq("company_id", cid)
+      .eq("active", true)
+      .is("deleted_at", null)
+      .order("name")
+      .then(({ data }) => setProdukty(data ?? []));
   }, []);
+
+  /* Cenník sa načíta pre vybraného odberateľa — dohodnuté ceny a akcie
+     patria na ponuku rovnako ako na faktúru. */
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid || !form.issue_date) return;
+    let zrusene = false;
+    nacitajCennik({
+      data: { company_id: cid, customer_id: form.customer_id || null, datum: form.issue_date },
+    })
+      .then((p: any) => {
+        if (!zrusene) setPodklady(p);
+      })
+      .catch(() => {
+        if (!zrusene) setPodklady(null);
+      });
+    return () => {
+      zrusene = true;
+    };
+  }, [form.customer_id, form.issue_date, nacitajCennik]);
+
+  // Po zmene odberateľa sa prepočítajú riadky z katalógu, do ktorých sa nesiahlo.
+  useEffect(() => {
+    if (!podklady) return;
+    if (cennikPrvyRaz.current) {
+      cennikPrvyRaz.current = false;
+      return;
+    }
+    setItems((arr) =>
+      arr.map((it) => {
+        if (!it.product_id || it._cena_rucne) return it;
+        const produkt = produkty.find((p) => p.id === it.product_id);
+        if (!produkt) return it;
+        const r = cenaZPodkladov(
+          podklady,
+          { id: it.product_id, unit_price: produkt.unit_price },
+          Number(it.quantity) || 0,
+        );
+        return { ...it, unit_price: r.cena, _dovod: r.zdroj === "zakladna" ? undefined : r.dovod };
+      }),
+    );
+  }, [podklady, produkty]);
+
+  /** Vloží položku z katalógu aj s cenou pre tohto odberateľa. */
+  function zKatalogu(produktId: string) {
+    const p = produkty.find((x) => x.id === produktId);
+    if (!p) return;
+    const r = podklady ? cenaZPodkladov(podklady, { id: p.id, unit_price: p.unit_price }, 1) : null;
+    const novy: Item = {
+      name: p.name,
+      quantity: 1,
+      unit: p.unit ?? "ks",
+      unit_price: r ? r.cena : Number(p.unit_price),
+      vat_rate: Number(p.vat_rate ?? 23),
+      product_id: p.id,
+      _dovod: r && r.zdroj !== "zakladna" ? r.dovod : undefined,
+    };
+    setItems((arr) => {
+      const posledny = arr[arr.length - 1];
+      if (posledny && !posledny.name && !posledny.unit_price) return [...arr.slice(0, -1), novy];
+      return [...arr, novy];
+    });
+  }
 
   const totals = useMemo(() => {
     let sub = 0,
@@ -65,7 +147,26 @@ function NewQuote() {
   }, [items]);
 
   function setItem(i: number, patch: Partial<Item>) {
-    setItems((arr) => arr.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
+    setItems((arr) =>
+      arr.map((it, idx) => {
+        if (idx !== i) return it;
+        const novy = { ...it, ...patch };
+        // Množstevná cena sa mení s množstvom — presne ako na faktúre.
+        if (patch.quantity != null && novy.product_id && !novy._cena_rucne && podklady) {
+          const produkt = produkty.find((p) => p.id === novy.product_id);
+          if (produkt) {
+            const r = cenaZPodkladov(
+              podklady,
+              { id: novy.product_id, unit_price: produkt.unit_price },
+              Number(novy.quantity) || 0,
+            );
+            novy.unit_price = r.cena;
+            novy._dovod = r.zdroj === "zakladna" ? undefined : r.dovod;
+          }
+        }
+        return novy;
+      }),
+    );
   }
 
   async function submit(e: React.FormEvent) {
@@ -114,6 +215,7 @@ function NewQuote() {
       return {
         quote_id: q.id,
         position: i,
+        product_id: it.product_id ?? null,
         name: it.name,
         description: it.description,
         quantity: it.quantity,
@@ -196,13 +298,31 @@ function NewQuote() {
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-semibold">Položky</h3>
-              <button
-                type="button"
-                onClick={() => setItems([...items, { ...EMPTY }])}
-                className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-              >
-                <Plus className="h-3.5 w-3.5" /> Pridať
-              </button>
+              <div className="flex items-center gap-2">
+                {produkty.length > 0 && (
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) zKatalogu(e.target.value);
+                    }}
+                    className="rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+                  >
+                    <option value="">Z katalógu…</option>
+                    {produkty.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} — {Number(p.unit_price).toFixed(2)} €
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setItems([...items, { ...EMPTY }])}
+                  className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Pridať
+                </button>
+              </div>
             </div>
             <div className="space-y-3">
               {items.map((it, idx) => (
@@ -218,12 +338,19 @@ function NewQuote() {
                     onChange={(v) => setItem(idx, { quantity: Number(v) })}
                   />
                   <In label="MJ" value={it.unit} onChange={(v) => setItem(idx, { unit: v })} />
-                  <In
-                    label="Cena"
-                    type="number"
-                    value={String(it.unit_price)}
-                    onChange={(v) => setItem(idx, { unit_price: Number(v) })}
-                  />
+                  <div>
+                    <In
+                      label="Cena"
+                      type="number"
+                      value={String(it.unit_price)}
+                      onChange={(v) => setItem(idx, { unit_price: Number(v), _cena_rucne: true })}
+                    />
+                    {it._dovod && (
+                      <div className="mt-1 text-[10px] leading-tight text-emerald-600">
+                        {it._dovod}
+                      </div>
+                    )}
+                  </div>
                   <In
                     label="DPH %"
                     type="number"
