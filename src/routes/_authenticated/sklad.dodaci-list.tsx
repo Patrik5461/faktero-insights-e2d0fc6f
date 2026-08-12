@@ -339,6 +339,21 @@ function DeliveryNoteScanPage() {
     ]);
   }
 
+  /** Nová firma sklad nemá — bez neho sa dodací list nedá naskladniť. */
+  async function zalozSkladFirme() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    try {
+      const { zalozZakladnySklad } = await import("@/lib/faktero/stock.functions");
+      const w: any = await zalozZakladnySklad({ data: { company_id: cid } });
+      setWarehouses([{ id: w.id, name: w.name }]);
+      setWarehouseId(w.id);
+      toast.success("Firma má teraz Hlavný sklad.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Sklad sa nepodarilo založiť.");
+    }
+  }
+
   async function doImport() {
     const cid = getActiveCompanyId();
     if (!cid) return toast.error("Vyberte firmu.");
@@ -507,6 +522,18 @@ function DeliveryNoteScanPage() {
                       </option>
                     ))}
                   </select>
+                  {warehouses.length === 0 && (
+                    <span className="mt-2 block rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
+                      Firma zatiaľ nemá sklad, tovar by nemal kam prísť.
+                      <button
+                        type="button"
+                        onClick={zalozSkladFirme}
+                        className="ml-1 font-medium underline"
+                      >
+                        Založiť Hlavný sklad
+                      </button>
+                    </span>
+                  )}
                 </label>
                 <label className="block">
                   <span className="text-xs font-medium text-muted-foreground">Dodávateľ</span>
