@@ -299,8 +299,58 @@ export type TbAccount = {
   iban: string | null;
   account_name: string | null;
   currency: string;
+  /** Disponibilný zostatok — číslo, ktoré klient vidí v banke. */
   balance: number;
+  /** Zaúčtovaný zostatok; null, keď ho banka pri účte neposlala. */
+  booked_balance: number | null;
 };
+
+/**
+ * Poradie, v akom sa zo zoznamu zostatkov vyberá ten disponibilný a ten
+ * zaúčtovaný. Banka posiela pole a **jeho poradie nie je záväzné** — pôvodné
+ * „vezmi prvý, čo sa podobá" preto pri účte v ČSOB vybralo `interimBooked`
+ * (4 593,78 €), hoci v banke svieti `interimAvailable` (204 575,08 €).
+ */
+const DISPONIBILNE = ["interimAvailable", "expected", "forwardAvailable", "closingAvailable"];
+const ZAUCTOVANE = ["interimBooked", "closingBooked", "openingBooked"];
+
+function podlaTypu(balances: any[], typy: string[]): any | null {
+  for (const typ of typy) {
+    const najdene = balances.find(
+      (b) => String(b?.balanceType ?? "").toLowerCase() === typ.toLowerCase(),
+    );
+    if (najdene) return najdene;
+  }
+  return null;
+}
+
+function suma(b: any | null): number | null {
+  if (!b) return null;
+  const raw = b.balanceAmount?.amount ?? b.amount;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Z poľa zostatkov vyberie disponibilný, zaúčtovaný a menu. */
+export function vyberZostatky(balances: any[]): {
+  balance: number;
+  booked_balance: number | null;
+  currency: string | null;
+} {
+  const zoznam = Array.isArray(balances) ? balances : [];
+  const disponibilny = podlaTypu(zoznam, DISPONIBILNE);
+  const zauctovany = podlaTypu(zoznam, ZAUCTOVANE);
+  // Keď banka pošle typ, ktorý nepoznáme, radšej ho použijeme, než ukázať nulu.
+  const nahradny = disponibilny ?? zauctovany ?? zoznam[0] ?? null;
+  const disp = suma(disponibilny) ?? suma(nahradny) ?? 0;
+  const book = suma(zauctovany);
+  const zdroj = disponibilny ?? nahradny ?? zauctovany;
+  return {
+    balance: disp,
+    booked_balance: book,
+    currency: zdroj?.balanceAmount?.currency ?? zdroj?.currency ?? null,
+  };
+}
 
 export async function fetchAccounts(
   accessToken: string,
@@ -310,18 +360,16 @@ export async function fetchAccounts(
   const json = await apiGet("/v3/accounts?withBalance=true", accessToken, consentId);
   const accounts: any[] = json.accounts ?? json.Accounts ?? [];
   return accounts.map((a: any) => {
-    const balances: any[] = a.balances ?? [];
-    const closing =
-      balances.find((b) => /closing|interim|expected/i.test(b.balanceType ?? "")) ?? balances[0];
-    const amt = closing?.balanceAmount?.amount ?? closing?.amount ?? 0;
+    const zostatky = vyberZostatky(a.balances ?? []);
     // Accounts v3 nesie IBAN a menu v accountReference, nie na koreni objektu.
     const ref = a.accountReference ?? {};
     return {
       external_account_id: a.accountId ?? a.resourceId ?? a.id ?? ref.iban ?? a.iban,
       iban: ref.iban ?? a.iban ?? null,
       account_name: a.displayName ?? a.name ?? a.product ?? a.ownerName ?? null,
-      currency: ref.currency ?? a.currency ?? closing?.balanceAmount?.currency ?? "EUR",
-      balance: Number(amt) || 0,
+      currency: ref.currency ?? a.currency ?? zostatky.currency ?? "EUR",
+      balance: zostatky.balance,
+      booked_balance: zostatky.booked_balance,
     };
   });
 }
@@ -443,6 +491,7 @@ export async function upsertBankAccounts(
     account_name: string | null;
     currency: string;
     balance: number;
+    booked_balance?: number | null;
   }>,
 ): Promise<{ updated: number; inserted: number }> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -463,6 +512,7 @@ export async function upsertBankAccounts(
       account_name: a.account_name,
       currency: a.currency,
       balance: a.balance,
+      booked_balance: a.booked_balance ?? null,
       last_synced_at: new Date().toISOString(),
     };
     if (match) {

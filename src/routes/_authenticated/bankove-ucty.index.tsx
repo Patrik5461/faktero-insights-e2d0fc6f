@@ -10,6 +10,7 @@ import {
   renewBankConsent,
 } from "@/lib/faktero/tatrabanka.functions";
 import { toast } from "sonner";
+import { zostatkyPodlaMien, formatujSumu, zobrazitZauctovany } from "@/lib/faktero/zostatky";
 import {
   Building2,
   Plus,
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/bankove-ucty/")({
 });
 
 function fmtMoney(n: number, c = "EUR") {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: c }).format(n);
+  return formatujSumu(n, c);
 }
 
 function BankAccountsPage() {
@@ -97,7 +98,8 @@ function BankAccountsPage() {
     }
   }
 
-  const totalBalance = (data?.accounts ?? []).reduce((s, a) => s + Number(a.balance ?? 0), 0);
+  // Meny sa nesčítavajú dokopy — každá má vlastný riadok.
+  const zostatky = zostatkyPodlaMien(data?.accounts ?? []);
 
   return (
     <>
@@ -116,10 +118,21 @@ function BankAccountsPage() {
       <PageBody>
         <div className="grid gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4">
-            <div className="text-xs uppercase tracking-wide text-emerald-700">Celkový zostatok</div>
-            <div className="mt-1 text-2xl font-semibold text-emerald-900">
-              {fmtMoney(totalBalance)}
+            <div className="text-xs uppercase tracking-wide text-emerald-700">
+              Celkový zostatok{zostatky.length > 1 ? " po menách" : ""}
             </div>
+            {zostatky.length === 0 ? (
+              <div className="mt-1 text-2xl font-semibold text-emerald-900">{fmtMoney(0)}</div>
+            ) : (
+              zostatky.map((z) => (
+                <div
+                  key={z.mena}
+                  className="mt-1 text-2xl font-semibold tabular-nums text-emerald-900"
+                >
+                  {fmtMoney(z.suma, z.mena)}
+                </div>
+              ))
+            )}
           </div>
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">Počet účtov</div>
@@ -211,6 +224,17 @@ function BankAccountsPage() {
                           <div className="text-lg font-semibold tabular-nums">
                             {fmtMoney(Number(a.balance ?? 0), a.currency)}
                           </div>
+                          {(() => {
+                            const zauctovany = zobrazitZauctovany(a.balance, a.booked_balance);
+                            return zauctovany.zobrazit ? (
+                              <div
+                                className="text-xs tabular-nums text-muted-foreground"
+                                title="Suma, ktorú má banka zaúčtovanú. Líši sa o blokácie a nezaúčtované platby."
+                              >
+                                Zaúčtovaný {fmtMoney(zauctovany.suma, a.currency)}
+                              </div>
+                            ) : null;
+                          })()}
                           <Link
                             to="/bankove-ucty/transakcie"
                             search={{ account: a.id } as any}

@@ -234,6 +234,7 @@ export type Database = {
           account_name: string | null
           balance: number
           bank_connection_id: string
+          booked_balance: number | null
           company_id: string
           created_at: string
           currency: string
@@ -247,6 +248,7 @@ export type Database = {
           account_name?: string | null
           balance?: number
           bank_connection_id: string
+          booked_balance?: number | null
           company_id: string
           created_at?: string
           currency?: string
@@ -260,6 +262,7 @@ export type Database = {
           account_name?: string | null
           balance?: number
           bank_connection_id?: string
+          booked_balance?: number | null
           company_id?: string
           created_at?: string
           currency?: string

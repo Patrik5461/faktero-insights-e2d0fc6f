@@ -80,7 +80,7 @@ export const listBankData = createServerFn({ method: "POST" })
     const { data: accounts } = await context.supabase
       .from("bank_accounts")
       .select(
-        "id, bank_connection_id, iban, account_name, currency, balance, last_synced_at, external_account_id",
+        "id, bank_connection_id, iban, account_name, currency, balance, booked_balance, last_synced_at, external_account_id",
       )
       .eq("company_id", data.company_id)
       .order("created_at", { ascending: true });

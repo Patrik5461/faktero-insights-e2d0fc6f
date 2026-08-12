@@ -464,7 +464,7 @@ export async function generateOwnStatements(period?: {
     try {
       const { data: account } = await supabaseAdmin
         .from("bank_accounts")
-        .select("id, company_id, iban, account_name, currency, balance")
+        .select("id, company_id, iban, account_name, currency, balance, booked_balance")
         .eq("id", accountId)
         .maybeSingle();
       if (!account) throw new Error("účet neexistuje");
@@ -523,8 +523,10 @@ export async function generateOwnStatements(period?: {
         description: t.description,
         transaction_reference: t.transaction_reference,
       }));
+      // Výpis je účtovný doklad, takže sa počíta zo zaúčtovaného zostatku;
+      // disponibilný v sebe nesie blokácie, ktoré na výpise nie sú.
       const sums = computeBalances(
-        Number(account.balance ?? 0),
+        Number(account.booked_balance ?? account.balance ?? 0),
         transactions,
         (after ?? []).map((t: any) => ({ amount: Number(t.amount) })),
       );

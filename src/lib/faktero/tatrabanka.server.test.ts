@@ -189,6 +189,50 @@ describe("tatrabanka.server", () => {
       });
     });
 
+    it("berie disponibilný zostatok, nie ten, čo je v odpovedi prvý", async () => {
+      // Presne to, čo posiela ČSOB cez TB: interimBooked je prvý, ale v banke
+      // svieti interimAvailable. Pôvodné „prvý, čo sedí" ukazovalo 4 593,78 €.
+      mockFetch(() => ({
+        status: 200,
+        body: JSON.stringify({
+          accounts: [
+            {
+              accountId: "acc-csob",
+              accountReference: { iban: "SK2075000000004034449488", currency: "EUR" },
+              displayName: "MAXITICKET S.R.O.",
+              balances: [
+                {
+                  balanceType: "interimBooked",
+                  balanceAmount: { amount: "4593.78", currency: "EUR" },
+                },
+                {
+                  balanceType: "interimAvailable",
+                  balanceAmount: { amount: "204575.08", currency: "EUR" },
+                },
+              ],
+            },
+          ],
+        }),
+      }));
+      const list = await fetchAccounts("AT");
+      expect(list[0]).toMatchObject({
+        iban: "SK2075000000004034449488",
+        balance: 204575.08,
+        booked_balance: 4593.78,
+      });
+    });
+
+    it("bez zostatkov nespadne a vráti nulu", async () => {
+      mockFetch(() => ({
+        status: 200,
+        body: JSON.stringify({
+          accounts: [{ accountId: "acc-2", accountReference: { iban: "SK9", currency: "CZK" } }],
+        }),
+      }));
+      const list = await fetchAccounts("AT");
+      expect(list[0]).toMatchObject({ currency: "CZK", balance: 0, booked_balance: null });
+    });
+
     it("400/401: throws tb_api_error with status", async () => {
       for (const status of [400, 401]) {
         mockFetch(() => ({ status, body: `err-${status}` }));
@@ -244,7 +288,10 @@ describe("tatrabanka.server", () => {
               accountReference: { iban: "SK9999", currency: "EUR" },
               displayName: "Firemný účet",
               balances: [
-                { balanceType: "closingBooked", balanceAmount: { amount: "10.50", currency: "EUR" } },
+                {
+                  balanceType: "closingBooked",
+                  balanceAmount: { amount: "10.50", currency: "EUR" },
+                },
               ],
             },
           ],
@@ -324,7 +371,11 @@ describe("tatrabanka.server", () => {
             ],
             // Druhá strana už ďalší odkaz nemá → stránkovanie končí.
             ...(isFirst
-              ? { _links: { next: { href: "https://api.tatrabanka.sk/premium/sandbox/v5/acc/next?page=2" } } }
+              ? {
+                  _links: {
+                    next: { href: "https://api.tatrabanka.sk/premium/sandbox/v5/acc/next?page=2" },
+                  },
+                }
               : {}),
           }),
         };

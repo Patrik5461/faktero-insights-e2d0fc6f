@@ -62,6 +62,7 @@ async function syncAccounts(supabaseAdmin: any, conn: any, accessToken: string) 
       account_name: a.account_name,
       currency: a.currency,
       balance: a.balance,
+      booked_balance: a.booked_balance ?? null,
       last_synced_at: now,
     };
     if (existing) {

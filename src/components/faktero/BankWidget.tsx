@@ -3,10 +3,7 @@ import { useEffect, useState } from "react";
 import { Landmark, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-
-function fmtMoney(n: number, c = "EUR") {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: c }).format(n);
-}
+import { zostatkyPodlaMien, formatujSumu } from "@/lib/faktero/zostatky";
 
 export function BankWidget() {
   const [accounts, setAccounts] = useState<any[] | null>(null);
@@ -21,7 +18,8 @@ export function BankWidget() {
       .then(({ data }) => setAccounts(data ?? []));
   }, []);
 
-  const total = (accounts ?? []).reduce((s, a) => s + Number(a.balance ?? 0), 0);
+  // Meny sa nemiešajú do jedného čísla — každá má vlastný riadok.
+  const zostatky = zostatkyPodlaMien(accounts ?? []);
   const lastSync = (accounts ?? []).reduce<string | null>((m, a) => {
     if (!a.last_synced_at) return m;
     if (!m || a.last_synced_at > m) return a.last_synced_at;
@@ -52,9 +50,11 @@ export function BankWidget() {
         </div>
       ) : (
         <>
-          <div className="mt-2 text-2xl font-semibold tabular-nums text-emerald-900">
-            {fmtMoney(total)}
-          </div>
+          {zostatky.map((z) => (
+            <div key={z.mena} className="mt-2 text-2xl font-semibold tabular-nums text-emerald-900">
+              {formatujSumu(z.suma, z.mena)}
+            </div>
+          ))}
           <div className="text-xs text-muted-foreground">
             Aktuálny zostatok · {accounts.length} účtov
           </div>

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Landmark, RefreshCw } from "lucide-react";
 import { bankaPrehladFn } from "@/lib/faktero/mobil-banka.functions";
 import { syncBankTransactions } from "@/lib/faktero/tatrabanka.functions";
+import { zostatkyPodlaMien } from "@/lib/faktero/zostatky";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
 
 /**
@@ -194,12 +195,11 @@ export function Banka({
    */
   const zostatky = useMemo(() => {
     const zoznam = vybrany ? (ucty ?? []).filter((u) => u.id === vybrany) : (ucty ?? []);
-    const mapa = new Map<string, number>();
-    for (const u of zoznam) {
-      if (u.zostatok === null) continue;
-      mapa.set(u.mena, (mapa.get(u.mena) ?? 0) + u.zostatok);
-    }
-    return [...mapa.entries()];
+    return zostatkyPodlaMien(
+      zoznam
+        .filter((u) => u.zostatok !== null)
+        .map((u) => ({ currency: u.mena, balance: u.zostatok })),
+    );
   }, [ucty, vybrany]);
 
   const dni = useMemo(() => {
@@ -262,9 +262,12 @@ export function Banka({
         {zostatky.length === 0 ? (
           <div className="mt-0.5 text-[26px] font-semibold leading-none">—</div>
         ) : (
-          zostatky.map(([mena, v]) => (
-            <div key={mena} className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums">
-              {suma(v, mena)}
+          zostatky.map((z) => (
+            <div
+              key={z.mena}
+              className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums"
+            >
+              {suma(z.suma, z.mena)}
             </div>
           ))
         )}
