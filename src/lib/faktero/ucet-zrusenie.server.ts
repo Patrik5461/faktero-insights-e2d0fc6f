@@ -133,8 +133,14 @@ export async function zrusUcet(userId: string): Promise<VysledokZrusenia> {
   let subory = 0;
   for (const f of same) {
     subory += await zmazSuboryFirmy(f.id);
-    // Ostatné tabuľky visia na `companies` cez ON DELETE CASCADE.
-    await supabaseAdmin.from("companies").delete().eq("id", f.id);
+    // Ostatné tabuľky visia na `companies` cez ON DELETE CASCADE, ale skladové
+    // pohyby stráži nemennosť — preto cez RPC, ktorá si na mazanie firmy zapne
+    // výnimku. Chyba sa nesmie prehltnúť: bez toho by človek prišiel o členstvo
+    // a firma by ostala ležať bez majiteľa.
+    const { error } = await (supabaseAdmin as any).rpc("faktero_zmaz_firmu", {
+      _company_id: f.id,
+    });
+    if (error) throw new Error(`firmu ${f.name} sa nepodarilo zmazať: ${error.message}`);
   }
 
   const { count } = await supabaseAdmin
@@ -149,7 +155,12 @@ export async function zrusUcet(userId: string): Promise<VysledokZrusenia> {
   // zlyhalo, plánovaná úloha by o tomto účte už nikdy nevedela a človek by sa
   // vedel prihlásiť do prázdna. Takto sa žiadosť skúsi znova pri ďalšom behu.
   const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
-  if (error) throw new Error(`prihlásenie sa nepodarilo zmazať: ${error.message}`);
+  if (error) {
+    // GoTrue vracia pri chybe z databázy prázdnu správu, tak radšej celý objekt
+    // — inak sa v logu objaví len „nepodarilo sa" a nikto nezistí prečo.
+    const popis = error.message || JSON.stringify(error);
+    throw new Error(`prihlásenie sa nepodarilo zmazať: ${popis}`);
+  }
 
   return {
     userId,
