@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { zostavLocalPart, celaAdresa, PODOMENA_DOKLADOV } from "./mail-prijem";
+import { zostavLocalPart, celaAdresa, podomenaDokladov } from "./mail-prijem";
 
 const CompanyInput = z.object({ company_id: z.string().uuid() });
 
@@ -81,12 +81,13 @@ export const stavPrijmuMailom = createServerFn({ method: "POST" })
       .order("received_at", { ascending: false })
       .limit(10);
 
+    const podomena = podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA);
     return {
-      adresa: celaAdresa(adresa.local_part),
+      adresa: celaAdresa(adresa.local_part, podomena),
       local_part: adresa.local_part,
       active: adresa.active,
       last_received_at: adresa.last_received_at,
-      podomena: PODOMENA_DOKLADOV,
+      podomena,
       spravy: (spravy ?? []) as any,
     };
   });
@@ -133,7 +134,8 @@ export const obnovAdresuNaDoklady = createServerFn({ method: "POST" })
         .update({ local_part: local })
         .eq("company_id", data.company_id)
         .eq("user_id", userId);
-      if (!error) return { adresa: celaAdresa(local) };
+      if (!error)
+        return { adresa: celaAdresa(local, podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA)) };
     }
     throw new Error("Novú adresu sa nepodarilo vyrobiť.");
   });

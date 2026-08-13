@@ -1,7 +1,8 @@
 /**
  * Príjem dokladov e-mailom — serverová časť.
  *
- * Poštu prijíma Resend na podoméne `doklady.faktero.sk` (MX záznam) a na každý mail
+ * Poštu prijíma Resend na doméne z `MAIL_PRIJEM_DOMENA` (predvolene
+ * `doklady.faktero.sk`, MX záznam) a na každý mail
  * pošle webhook `email.received`. Webhook nesie len metadáta, prílohy sa dopytujú
  * cez API a sťahujú z odkazu platného hodinu.
  */
@@ -10,6 +11,7 @@ import {
   vyberLocalPart,
   jePrilohaDoklad,
   zostavPrijatuFakturu,
+  podomenaDokladov,
   PODOMENA_DOKLADOV,
 } from "./mail-prijem";
 
@@ -118,7 +120,10 @@ export type VysledokPrijmu = {
 export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPrijmu> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const localPart = vyberLocalPart([...(mail.to ?? []), ...(mail.received_for ?? [])]);
+  const localPart = vyberLocalPart(
+    [...(mail.to ?? []), ...(mail.received_for ?? [])],
+    podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA),
+  );
   if (!localPart) return { stav: "neznama_adresa", vytvorenych: 0 };
 
   const { data: adresa } = await supabaseAdmin

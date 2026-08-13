@@ -43,7 +43,7 @@ https://www.faktero.sk/api/public/mail/prijem
 a zapni udalosť **`email.received`**. Resend ukáže **signing secret** v tvare
 `whsec_…`.
 
-### 4. Premenná na serveri
+### 4. Premenné na serveri
 
 Do `env` v `/home/patrik/ecosystem.config.cjs` pridaj:
 
@@ -55,6 +55,17 @@ a reštartuj cez `pm2 restart ecosystem.config.cjs --update-env`. Bez nej endpoi
 vracia 503 a maily sa zahadzujú — zámerne, radšej nič než prijať nepodpísaný obsah.
 
 `RESEND_API_KEY` už na serveri je, používa sa aj na sťahovanie príloh.
+
+**Kým vlastná poddoména nefunguje**, dá sa jazdiť na doméne, ktorú dáva Resend
+(`<id>.resend.app`) a ktorá nepotrebuje žiadny DNS záznam. Stačí pridať:
+
+```
+MAIL_PRIJEM_DOMENA: "<id>.resend.app",
+```
+
+Adresy sa vypíšu na nej a webhook aj spracovanie fungujú rovnako. Keď sa poddoména
+rozbehne, premennú zmaž (alebo prepíš na `doklady.faktero.sk`) a reštartuj —
+lokálne časti adries sa nemenia, takže používateľom sa zmení len to za zavináčom.
 
 ## Ako to beží
 

@@ -6,7 +6,17 @@
  * adresa nedala uhádnuť z názvu firmy.
  */
 
+/**
+ * Doména, na ktorej prijímame doklady. Dá sa prepísať premennou
+ * `MAIL_PRIJEM_DOMENA` — kým vlastná poddoména nefunguje, ide to na doménu, ktorú
+ * dáva Resend (`<id>.resend.app`) a ktorá nepotrebuje žiadny DNS záznam.
+ */
 export const PODOMENA_DOKLADOV = "doklady.faktero.sk";
+
+export function podomenaDokladov(zNastavenia?: string | null): string {
+  const t = (zNastavenia ?? "").trim().toLowerCase().replace(/^@/, "");
+  return t || PODOMENA_DOKLADOV;
+}
 
 /** Prípony a typy, ktoré má zmysel skúšať prečítať ako doklad. */
 const TYPY_DOKLADOV = ["application/pdf", "image/jpeg", "image/png", "image/webp", "image/heic"];

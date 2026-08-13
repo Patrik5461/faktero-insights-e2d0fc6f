@@ -8,6 +8,7 @@ import {
   cislo,
   datum,
   zostavPrijatuFakturu,
+  podomenaDokladov,
 } from "./mail-prijem";
 
 describe("adresa na príjem dokladov", () => {
@@ -150,5 +151,26 @@ describe("zostavenie prijatej faktúry z mailu", () => {
   it("bez predmetu siahne po názve súboru", () => {
     const f = zostavPrijatuFakturu({ ...zaklad, predmet: null, ai: {} });
     expect(f.invoice_number).toBe("faktura");
+  });
+});
+
+describe("doména sa dá prepnúť nastavením", () => {
+  it("bez nastavenia platí vlastná poddoména", () => {
+    expect(podomenaDokladov(undefined)).toBe("doklady.faktero.sk");
+    expect(podomenaDokladov("")).toBe("doklady.faktero.sk");
+  });
+
+  it("nastavenie prebije predvolenú doménu a znesie aj zavináč navyše", () => {
+    expect(podomenaDokladov("abc123.resend.app")).toBe("abc123.resend.app");
+    expect(podomenaDokladov("@ABC123.Resend.App ")).toBe("abc123.resend.app");
+  });
+
+  it("adresát sa hľadá na nastavenej doméne, nie na predvolenej", () => {
+    const podomena = podomenaDokladov("abc123.resend.app");
+    expect(vyberLocalPart(["maxiticket-k7f2p9@abc123.resend.app"], podomena)).toBe(
+      "maxiticket-k7f2p9",
+    );
+    // Na starú doménu už mail nepatrí.
+    expect(vyberLocalPart(["maxiticket-k7f2p9@doklady.faktero.sk"], podomena)).toBeNull();
   });
 });
