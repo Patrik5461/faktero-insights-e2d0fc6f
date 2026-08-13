@@ -1,16 +1,30 @@
 /**
- * GPS tracker pre knihu jázd. Sleduje pozíciu na pozadí (foreground na iOS bez
- * background-location capability), počíta vzdialenosť Haversinom.
+ * GPS tracker pre knihu jázd. Sleduje pozíciu, počíta vzdialenosť Haversinom.
  *
  * Vráti záznam použiteľný na uloženie do `trips`.
+ *
+ * V mobilnej aplikácii meria natívny plugin `@faktero/drive-detector` — ten
+ * istý, ktorý jazdu vie rozpoznať aj sám. Je to zámer: dve nezávislé inštancie
+ * `CLLocationManager` si navzájom prebíjajú nastavenú presnosť, takže polohu
+ * v celej appke vlastní jediné miesto.
+ *
+ * V prehliadači sa meria cez `navigator.geolocation` — detekcia na pozadí sa
+ * na webe spraviť nedá a ručné meranie tam fungovať musí.
  */
 type Point = { lat: number; lng: number; ts: number };
 
-let watchId: string | null = null;
 /** Sledovanie v prehliadači beží mimo Capacitora, preto vlastné číslo. */
 let webWatchId: number | null = null;
 let points: Point[] = [];
 let startedAt: number | null = null;
+
+/** Beží natívne meranie? Body sú vtedy v pluginu, nie tu. */
+let nativeTripId: string | null = null;
+let nativeDistanceKm = 0;
+let nativePoll: ReturnType<typeof setInterval> | null = null;
+
+/** Na „vždy" sa pýtame až po prvom skutočnom meraní, nie pri štarte appky. */
+const KLUC_ESKALACIE = "faktero.gps.background_asked";
 
 function haversineKm(a: Point, b: Point): number {
   const R = 6371;
@@ -26,9 +40,9 @@ function haversineKm(a: Point, b: Point): number {
 /**
  * Sledovanie v prehliadači.
  *
- * Capacitor plugin má na webe `requestPermissions` nedostupné a vyhodí
- * „Not implemented on web" — na webovej verzii by sa teda jazda nikdy
- * nespustila. Prehliadač pritom vlastné sledovanie polohy má.
+ * Natívny plugin má na webe všetky metódy nedostupné — meranie na pozadí sa
+ * v karte prehliadača spraviť nedá. Prehliadač pritom vlastné sledovanie
+ * polohy má, tak sa použije to.
  */
 function startWeb(): { ok: boolean; error?: string } {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -57,18 +71,33 @@ export async function startTracking(): Promise<{ ok: boolean; error?: string }> 
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return startWeb();
 
-    const { Geolocation } = await import("@capacitor/geolocation");
-    const perm = await Geolocation.requestPermissions();
+    // Appka načítava živý web, takže sa nová stránka môže stretnúť so starou
+    // binárkou, ktorá plugin ešte nemá.
+    if (!Capacitor.isPluginAvailable("DriveDetector")) {
+      return { ok: false, error: "Aktualizujte aplikáciu, meranie jázd sa zmenilo" };
+    }
+
+    const { DriveDetector } = await import("@faktero/drive-detector");
+    const perm = await DriveDetector.requestPermissions();
     if (perm.location !== "granted") return { ok: false, error: "Bez povolenia polohy" };
+
+    const jazda = await DriveDetector.startTrip();
+    nativeTripId = jazda.id;
+    nativeDistanceKm = 0;
+    startedAt = jazda.startedAt;
     points = [];
-    startedAt = Date.now();
-    watchId = await Geolocation.watchPosition(
-      { enableHighAccuracy: true, timeout: 10000 },
-      (pos, err) => {
-        if (err || !pos) return;
-        points.push({ lat: pos.coords.latitude, lng: pos.coords.longitude, ts: pos.timestamp });
-      },
-    );
+
+    // Priebeh z pluginu chodí najviac raz za 10 sekúnd, čo je na počítadlo
+    // kilometrov na obrazovke málo — stav sa preto ešte doťahuje.
+    nativePoll = setInterval(async () => {
+      try {
+        const stav = await DriveDetector.getState();
+        if (stav.activeTrip) nativeDistanceKm = stav.activeTrip.distanceMeters / 1000;
+      } catch {
+        /* jedno neúspešné doťahnutie meranie nezhodí */
+      }
+    }, 3000);
+
     return { ok: true };
   } catch (e: any) {
     return { ok: false, error: e?.message ?? "GPS chyba" };
@@ -82,18 +111,15 @@ export async function stopTracking(): Promise<{
   end: Point | null;
   points: Point[];
 }> {
+  if (nativeTripId) return stopNative();
+
   try {
-    if (watchId) {
-      const { Geolocation } = await import("@capacitor/geolocation");
-      await Geolocation.clearWatch({ id: watchId });
-    }
     if (webWatchId !== null && typeof navigator !== "undefined") {
       navigator.geolocation.clearWatch(webWatchId);
     }
   } catch {
     // watch už mohol byť zrušený systémom — cieľom je len uvoľniť ho
   }
-  watchId = null;
   webWatchId = null;
   let distance = 0;
   for (let i = 1; i < points.length; i++) distance += haversineKm(points[i - 1], points[i]);
@@ -112,10 +138,69 @@ export async function stopTracking(): Promise<{
   return result;
 }
 
-export function isTracking(): boolean {
-  return watchId !== null || webWatchId !== null;
+async function stopNative() {
+  if (nativePoll) clearInterval(nativePoll);
+  nativePoll = null;
+
+  let vzdialenostKm = nativeDistanceKm;
+  let trasa: Point[] = [];
+  let od = startedAt ?? Date.now();
+  let doKedy = Date.now();
+
+  try {
+    const { DriveDetector } = await import("@faktero/drive-detector");
+    const jazda = await DriveDetector.endTrip();
+    if (jazda) {
+      vzdialenostKm = jazda.distanceMeters / 1000;
+      trasa = jazda.points.map((b) => ({ lat: b.lat, lng: b.lng, ts: b.timestamp }));
+      od = jazda.startedAt;
+      doKedy = jazda.endedAt ?? Date.now();
+      // Jazda ide do knihy jázd ako služobná, takže je vybavená. Zamietnuť sa
+      // nesmie — to by na pol hodiny umlčalo aj automatickú detekciu.
+      await DriveDetector.confirmTrip({ tripId: jazda.id, classification: "business" });
+    }
+    await eskalujNaPozadie();
+  } catch {
+    // Jazdu už máme spočítanú z priebežného stavu; keď sa ukončenie nepodarí,
+    // radšej uložíme, čo vieme, než by sa stratila celá.
+  }
+
+  nativeTripId = null;
+  nativeDistanceKm = 0;
+  startedAt = null;
+
+  return {
+    distance_km: Math.round(vzdialenostKm * 100) / 100,
+    duration_min: Math.round((doKedy - od) / 60000),
+    start: trasa[0] ?? null,
+    end: trasa[trasa.length - 1] ?? null,
+    points: trasa,
+  };
 }
+
+/**
+ * Povolenie „vždy" sa pýta až po prvej dokončenej jazde. Apple žiadosť hneď
+ * pri štarte pri kontrole odmieta a používateľ v tej chvíli aj tak nevie, načo
+ * to je.
+ */
+async function eskalujNaPozadie(): Promise<void> {
+  try {
+    if (typeof localStorage === "undefined") return;
+    if (localStorage.getItem(KLUC_ESKALACIE) === "1") return;
+    localStorage.setItem(KLUC_ESKALACIE, "1");
+    const { DriveDetector } = await import("@faktero/drive-detector");
+    await DriveDetector.requestBackgroundPermission();
+  } catch {
+    /* povolenie navyše nie je nič, čo by malo zhodiť uloženie jazdy */
+  }
+}
+
+export function isTracking(): boolean {
+  return nativeTripId !== null || webWatchId !== null;
+}
+
 export function getCurrentDistanceKm(): number {
+  if (nativeTripId) return Math.round(nativeDistanceKm * 100) / 100;
   let d = 0;
   for (let i = 1; i < points.length; i++) d += haversineKm(points[i - 1], points[i]);
   return Math.round(d * 100) / 100;

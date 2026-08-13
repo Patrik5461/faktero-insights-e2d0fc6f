@@ -15,9 +15,9 @@ import { HistoriaJazd } from "./HistoriaJazd";
  * v aute otvárať nebude. Preto je tu len to podstatné: vozidlo, účel a jedno
  * veľké tlačidlo štart/stop.
  *
- * Meranie beží, kým je appka na obrazovke. iOS bez povolenia polohy na pozadí
- * sledovanie po zhasnutí displeja zastaví — preto to stojí priamo na
- * obrazovke a nie je to prekvapenie až po príchode.
+ * Meria natívny plugin, ktorý vlastní polohu v celej appke. S povolením
+ * „Vždy" beží meranie aj po zhasnutí displeja, bez neho ho iOS zastaví —
+ * preto to stojí priamo na obrazovke a nie je to prekvapenie až po príchode.
  */
 
 type Vozidlo = { id: string; name: string; license_plate: string | null };
@@ -269,8 +269,9 @@ export function Jazda({
         </label>
 
         <p className="text-xs text-muted-foreground">
-          Počas jazdy nechajte appku otvorenú — po zhasnutí displeja telefón meranie polohy zastaví
-          a kilometre by sa doratali nesprávne.
+          Ak ste polohu povolili len „počas používania", nechajte appku otvorenú — po zhasnutí
+          displeja telefón meranie zastaví a kilometre by sa doratali nesprávne. S povolením „Vždy"
+          beží meranie aj vo vrecku.
         </p>
       </div>
     </MobilObrazovka>

@@ -1,0 +1,37 @@
+{
+  "name": "@faktero/drive-detector",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Automatická detekcia jazdy autom a záznam trasy pre knihu jázd. iOS; Android je zatiaľ len kostra.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src/",
+    "ios/Sources",
+    "ios/Tests",
+    "android/src/main/",
+    "android/build.gradle",
+    "Package.swift",
+    "FakteroDriveDetector.podspec"
+  ],
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    },
+    "android": {
+      "src": "android"
+    }
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=8.0.0"
+  }
+}

@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import FakteroDriveDetector
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,7 +8,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Detekcia jazdy musí ožiť hneď tu. Pri prebudení kvôli polohe systém
+        // spustí proces a zaradenú polohu doručí len tomu, kto má správcu
+        // polohy vytvoreného — čakať na WebView (ktorý sa na pozadí nemusí
+        // načítať vôbec, lebo ťahá stránku zo siete) by znamenalo stratiť ju.
+        DriveDetectorService.shared.applicationLaunched(options: launchOptions)
         return true
     }
 

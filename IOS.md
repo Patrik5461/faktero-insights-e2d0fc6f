@@ -37,8 +37,30 @@ V Xcode:
    ID v Apple Developer účte.
 2. **Push Notifications** a **Background Modes → Remote notifications**, ak sa
    majú posielať upozornenia (plugin je už v projekte).
-3. Ikony a štartovacia obrazovka — `App/Assets.xcassets`.
-4. Verzia: `MARKETING_VERSION` a `CURRENT_PROJECT_VERSION`.
+3. **Background Modes → Location updates** — bez toho nebeží kniha jázd na
+   pozadí (viď nižšie).
+4. Ikony a štartovacia obrazovka — `App/Assets.xcassets`.
+5. Verzia: `MARKETING_VERSION` a `CURRENT_PROJECT_VERSION`.
+
+## Kniha jázd a poloha
+
+Polohu v celej appke vlastní jediný plugin — lokálny `@faktero/drive-detector`
+v `packages/drive-detector`. Vie jazdu aj sám rozpoznať (významná zmena polohy
+→ overenie GPS burstom → záznam trasy) a to isté meranie obsluhuje aj tlačidlo
+„Začať jazdu". `@capacitor/geolocation` bol **odstránený**: dve nezávislé
+inštancie `CLLocationManager` si navzájom prebíjajú nastavenú presnosť.
+
+V `Info.plist` sú kvôli tomu texty `NSLocationWhenInUseUsageDescription`,
+`NSLocationAlwaysAndWhenInUseUsageDescription`, `NSMotionUsageDescription`
+a `UIBackgroundModes → location`. V `AppDelegate.swift` je jeden riadok, ktorý
+detekciu prebudí hneď pri štarte procesu — bez neho sa pri prebudení na pozadí
+stratí prvá poloha.
+
+Do **App Review Notes** patrí, načo je poloha „Vždy": zákonná evidencia jázd
+firemným vozidlom. Bez vysvetlenia Apple takúto žiadosť vracia.
+
+Podrobnosti aj postup skúšky cez GPX v simulátore sú v
+`packages/drive-detector/README.md`.
 
 ## Skener QR kódu
 
