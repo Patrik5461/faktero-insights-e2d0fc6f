@@ -242,21 +242,25 @@ const plans = [
       "E-mail podpora",
     ],
     cta: "Vyskúšať zdarma",
+    ctaTo: "/registracia",
     featured: false,
   },
   {
-    name: "Business",
-    price: "24 €",
+    // Názov, cena aj rozsah musia sedieť s tabuľkou subscription_plans, z ktorej
+    // číta cenník. Predtým tu stál plán „Business 24 €", ktorý v nej roky nebol.
+    name: "Premium",
+    price: "19 €",
     period: "/ mesiac",
-    tagline: "Pre s.r.o. a tímy. API, webhooky a opakované faktúry.",
+    tagline: "Pre s.r.o. a tímy bez stropov. API, webhooky a importy.",
     features: [
-      "5 firiem",
+      "Neobmedzene firiem a používateľov",
       "Opakované faktúry",
       "REST API + webhooky",
-      "Test / live režim",
-      "Prioritná podpora",
+      "Prechod z iného systému",
+      "Audit log a prioritná podpora",
     ],
     cta: "Vyskúšať zdarma",
+    ctaTo: "/registracia",
     featured: true,
   },
   {
@@ -272,6 +276,9 @@ const plans = [
       "Vlastné podmienky",
     ],
     cta: "Kontaktovať",
+    // Tlačidlo hovorí „Kontaktovať", tak nech aj kontaktuje — dovtedy viedlo
+    // na registráciu ako ostatné dva plány.
+    ctaTo: "/kontakt",
     featured: false,
   },
 ] as const;
@@ -1096,7 +1103,7 @@ function PricingSection() {
                 ))}
               </ul>
               <Link
-                to="/registracia"
+                to={p.ctaTo}
                 onClick={() => track("pricing_click", { plan: p.name, featured: p.featured })}
                 className={[
                   "mt-8 inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold",
@@ -1111,7 +1118,7 @@ function PricingSection() {
           ))}
         </div>
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          Všetky plány zahŕňajú 15-dňovú skúšobnú dobu zdarma. Bez platobnej karty.
+          Všetky plány zahŕňajú 30-dňovú skúšobnú dobu zdarma. Bez platobnej karty.
         </p>
       </div>
     </section>

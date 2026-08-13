@@ -30,6 +30,9 @@ type Trip = {
   external_source: string | null;
 };
 
+/** Koľko jázd sa načíta naraz. */
+const DAVKA = 500;
+
 function TripsPage() {
   const { vehicle_id } = Route.useSearch();
   const navigate = useNavigate({ from: "/jazdy/" });
@@ -38,6 +41,10 @@ function TripsPage() {
     Array<{ id: string; name: string; license_plate: string | null }>
   >([]);
   const [loading, setLoading] = useState(true);
+  // Kniha jázd je účtovný záznam, takže sa nesmie ticho končiť na strope. Načítava
+  // sa po dávkach a vedľa nich je vidno, koľko jázd firma naozaj má.
+  const [limit, setLimit] = useState(DAVKA);
+  const [spolu, setSpolu] = useState<number | null>(null);
 
   async function load() {
     const cid = getActiveCompanyId();
@@ -48,12 +55,12 @@ function TripsPage() {
     setLoading(true);
     let q = supabase
       .from("trips")
-      .select("*")
+      .select("*", { count: "exact" })
       .eq("company_id", cid)
       .order("trip_date", { ascending: false })
-      .limit(500);
+      .limit(limit);
     if (vehicle_id) q = q.eq("vehicle_id", vehicle_id);
-    const [{ data: t }, { data: v }] = await Promise.all([
+    const [{ data: t, count }, { data: v }] = await Promise.all([
       q,
       supabase
         .from("vehicles")
@@ -62,11 +69,17 @@ function TripsPage() {
         .order("name"),
     ]);
     setRows((t ?? []) as any);
+    setSpolu(count ?? null);
     setVehicleList((v ?? []) as any);
     setLoading(false);
   }
   useEffect(() => {
     load(); /* eslint-disable-next-line */
+  }, [vehicle_id, limit]);
+
+  // Pri prepnutí vozidla začíname zase od prvej dávky.
+  useEffect(() => {
+    setLimit(DAVKA);
   }, [vehicle_id]);
 
   const vehicles = useMemo(() => {
@@ -119,7 +132,7 @@ function TripsPage() {
             ))}
           </select>
         </div>
-        {loading ? (
+        {loading && rows.length === 0 ? (
           <div className="text-sm text-muted-foreground">Načítavam…</div>
         ) : rows.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-10 text-center">
@@ -226,6 +239,22 @@ function TripsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground">
+              <span>
+                Zobrazených {rows.length}
+                {spolu !== null && spolu > rows.length ? ` z ${spolu}` : ""} jázd
+              </span>
+              {spolu !== null && spolu > rows.length && (
+                <button
+                  onClick={() => setLimit((l) => l + DAVKA)}
+                  disabled={loading}
+                  className="rounded-md border border-border bg-card px-3 py-1.5 font-medium text-foreground hover:bg-secondary disabled:opacity-60"
+                >
+                  {loading ? "Načítavam…" : `Načítať ďalších ${Math.min(DAVKA, spolu - rows.length)}`}
+                </button>
+              )}
             </div>
           </>
         )}
