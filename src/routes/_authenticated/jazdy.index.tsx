@@ -3,9 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Plus, Trash2, Car } from "lucide-react";
+import { Plus, Trash2, Car, Map as MapIcon } from "lucide-react";
 import { toast } from "sonner";
 import { formatDuration, formatSpeed, jeSukromna, sourceLabel } from "@/lib/faktero/trip-format";
+import { MapaTrasy } from "@/components/faktero/MapaTrasy";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/jazdy/")({
   head: () => ({ meta: [{ title: "Kniha jázd — Faktero" }] }),
@@ -29,6 +31,7 @@ type Trip = {
   average_speed_kmh: number | null;
   external_source: string | null;
   classification: string | null;
+  route: string | null;
 };
 
 /** Koľko jázd sa načíta naraz. */
@@ -46,6 +49,7 @@ function TripsPage() {
   // sa po dávkach a vedľa nich je vidno, koľko jázd firma naozaj má.
   const [limit, setLimit] = useState(DAVKA);
   const [spolu, setSpolu] = useState<number | null>(null);
+  const [trasa, setTrasa] = useState<Trip | null>(null);
 
   async function load() {
     const cid = getActiveCompanyId();
@@ -200,7 +204,16 @@ function TripsPage() {
                       <td className="p-3 text-xs text-muted-foreground">
                         {sourceLabel(r.external_source)}
                       </td>
-                      <td className="p-3 text-right">
+                      <td className="p-3 text-right whitespace-nowrap">
+                        {r.route && (
+                          <button
+                            onClick={() => setTrasa(r)}
+                            title="Zobraziť trasu na mape"
+                            className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+                          >
+                            <MapIcon className="h-4 w-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => del(r.id)}
                           className="rounded p-1.5 text-destructive hover:bg-destructive/10"
@@ -242,6 +255,15 @@ function TripsPage() {
                       <div className="text-sm font-bold tabular-nums">
                         {Number(r.distance_km).toFixed(1)} km
                       </div>
+                      {r.route && (
+                        <button
+                          onClick={() => setTrasa(r)}
+                          aria-label="Zobraziť trasu na mape"
+                          className="mt-1 rounded p-1 text-muted-foreground"
+                        >
+                          <MapIcon className="h-4 w-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => del(r.id)}
                         className="mt-1 rounded p-1 text-destructive"
@@ -273,6 +295,18 @@ function TripsPage() {
             </div>
           </>
         )}
+
+        <Dialog open={trasa !== null} onOpenChange={(o) => !o && setTrasa(null)}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>
+                Trasa jazdy
+                {trasa ? ` — ${trasa.trip_date}, ${Number(trasa.distance_km).toFixed(1)} km` : ""}
+              </DialogTitle>
+            </DialogHeader>
+            {trasa && <MapaTrasy route={trasa.route} vyska={420} />}
+          </DialogContent>
+        </Dialog>
       </PageBody>
     </>
   );

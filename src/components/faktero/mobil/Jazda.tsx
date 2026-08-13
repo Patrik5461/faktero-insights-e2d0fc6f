@@ -13,6 +13,7 @@ import {
 } from "@/lib/mobile/auto-jazdy-sync";
 import type { BufferedTrip, Classification } from "@faktero/drive-detector";
 import { trasaDoPolyline } from "@/lib/faktero/polyline";
+import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem } from "./MobilChrome";
 import { HistoriaJazd } from "./HistoriaJazd";
@@ -57,6 +58,7 @@ export function Jazda({
   const [cakajuce, setCakajuce] = useState<BufferedTrip[]>([]);
   const [vyberAuta, setVyberAuta] = useState<Record<string, string>>({});
   const [vybavujem, setVybavujem] = useState<string | null>(null);
+  const [trasaOtvorena, setTrasaOtvorena] = useState<string | null>(null);
   const cenaPaliva = useRef<number | null>(null);
 
   async function nacitajVozidla(vyberId?: string) {
@@ -330,6 +332,18 @@ export function Jazda({
                       </option>
                     ))}
                   </select>
+
+                  <button
+                    onClick={() => setTrasaOtvorena((t) => (t === j.id ? null : j.id))}
+                    className="mt-2 text-[13px] text-primary underline-offset-2 hover:underline"
+                  >
+                    {trasaOtvorena === j.id ? "Skryť trasu" : "Ukázať trasu"}
+                  </button>
+                  {trasaOtvorena === j.id && (
+                    <div className="mt-2">
+                      <MapaTrasy route={trasaDoPolyline(j.points)} vyska={220} />
+                    </div>
+                  )}
 
                   {j.classification ? (
                     // Zaradenie prišlo z notifikácie, ostáva potvrdiť auto.

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Route as RouteIcon, Satellite } from "lucide-react";
+import { Map as MapIcon, Route as RouteIcon, Satellite } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { trasa, trvanieJazdy } from "@/lib/faktero/adresa-jazdy";
+import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
 
 /**
@@ -28,6 +29,7 @@ type Jazdenka = {
   driver_name: string | null;
   start_time: string | null;
   external_source: string | null;
+  route: string | null;
 };
 
 const ZDROJE: Record<string, string> = {
@@ -71,13 +73,15 @@ export function HistoriaJazd({
   onSpat: () => void;
 }) {
   const [jazdy, setJazdy] = useState<Jazdenka[] | null>(null);
+  /* Mapa sa otvára ťuknutím na jazdu — na malej obrazovke sa nezmestia obe naraz. */
+  const [otvorena, setOtvorena] = useState<string | null>(null);
 
   useEffect(() => {
     let zrusene = false;
     supabase
       .from("trips")
       .select(
-        "id, trip_date, start_location, end_location, purpose, distance_km, duration_seconds, driver_name, start_time, external_source",
+        "id, trip_date, start_location, end_location, purpose, distance_km, duration_seconds, driver_name, start_time, external_source, route",
       )
       .eq("company_id", firma.id)
       .eq("vehicle_id", vozidlo.id)
@@ -165,36 +169,49 @@ export function HistoriaJazd({
                         .filter(Boolean)
                         .join(" · ");
                       return (
-                        <div
-                          key={j.id}
-                          className={`flex items-start gap-3 px-4 py-3.5 ${
-                            i > 0 ? "border-t border-border/70" : ""
-                          }`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="truncate text-[15px] font-medium leading-tight">
-                                {kam ?? j.purpose?.trim() ?? "Jazda"}
-                              </span>
-                              {j.external_source && (
-                                <Satellite
-                                  className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-                                  aria-label={ZDROJE[j.external_source] ?? j.external_source}
-                                />
+                        <div key={j.id} className={i > 0 ? "border-t border-border/70" : ""}>
+                          <div
+                            role={j.route ? "button" : undefined}
+                            onClick={() =>
+                              j.route && setOtvorena((o) => (o === j.id ? null : j.id))
+                            }
+                            className="flex items-start gap-3 px-4 py-3.5"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="truncate text-[15px] font-medium leading-tight">
+                                  {kam ?? j.purpose?.trim() ?? "Jazda"}
+                                </span>
+                                {j.external_source && (
+                                  <Satellite
+                                    className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                                    aria-label={ZDROJE[j.external_source] ?? j.external_source}
+                                  />
+                                )}
+                              </div>
+                              <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
+                                {podnadpis}
+                              </div>
+                              {kam && j.purpose?.trim() && (
+                                <div className="truncate text-[13px] text-muted-foreground">
+                                  {j.purpose.trim()}
+                                </div>
                               )}
                             </div>
-                            <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
-                              {podnadpis}
-                            </div>
-                            {kam && j.purpose?.trim() && (
-                              <div className="truncate text-[13px] text-muted-foreground">
-                                {j.purpose.trim()}
+                            <div className="shrink-0 text-right">
+                              <div className="text-[15px] font-semibold tabular-nums">
+                                {km(j.distance_km)}
                               </div>
-                            )}
+                              {j.route && (
+                                <MapIcon className="ml-auto mt-1 h-3.5 w-3.5 text-muted-foreground" />
+                              )}
+                            </div>
                           </div>
-                          <div className="shrink-0 text-[15px] font-semibold tabular-nums">
-                            {km(j.distance_km)}
-                          </div>
+                          {otvorena === j.id && (
+                            <div className="px-4 pb-3.5">
+                              <MapaTrasy route={j.route} vyska={220} />
+                            </div>
+                          )}
                         </div>
                       );
                     })}
