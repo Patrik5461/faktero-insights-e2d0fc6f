@@ -64,6 +64,18 @@ await DriveDetector.addListener("tripEnded", (jazda) => {
 });
 ```
 
+Jazdy nahraté počas zavretej appky sa vyzdvihnú po jej otvorení:
+
+```ts
+for (const jazda of await DriveDetector.getUnresolvedTrips()) {
+  // …uložiť do vlastnej agendy…
+  await DriveDetector.markSynced({ tripId: jazda.id });
+}
+```
+
+`markSynced` znamená „prevzaté", `discardTrip` znamená „takúto jazdu nechcem"
+a na `debounceMinutes` umlčí detekciu. Zameniť sa nesmú.
+
 Notifikácia s tromi tlačidlami sa vypaľuje **natívne**, takže funguje aj keď
 appka nebeží. „Služobná" a „Súkromná" volajú `confirmTrip`, „Zrušiť" volá
 `discardTrip` — všetko bez otvorenia aplikácie. Bez `notification` v

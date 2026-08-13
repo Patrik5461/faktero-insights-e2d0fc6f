@@ -16,6 +16,8 @@ final class TripStore {
         case ended
         case confirmed
         case discarded
+        /// Aplikácia si jazdu prevzala a uložila do knihy jázd.
+        case synced
     }
 
     private static let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
@@ -185,13 +187,33 @@ final class TripStore {
         }
     }
 
+    /// Všetky ukončené jazdy, ktoré si aplikácia ešte neprevzala — vrátane
+    /// tých, ktoré človek zaradil z notifikácie. Cez víkend ich môže byť aj
+    /// desať a stratiť sa nesmie ani jedna.
+    func unresolvedTrips(limit: Int = 50) -> [BufferedTrip] {
+        queue.sync {
+            flushLocked()
+            guard let stmt = prepare("""
+                select id from trips where status in ('ended', 'confirmed')
+                order by coalesce(ended_at, started_at) asc limit ?;
+                """) else { return [] }
+            sqlite3_bind_int64(stmt, 1, Int64(limit))
+            var ids: [String] = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let c = sqlite3_column_text(stmt, 0) { ids.append(String(cString: c)) }
+            }
+            sqlite3_finalize(stmt)
+            return ids.compactMap { loadTrip(where: "id = ?", bindings: [$0]) }
+        }
+    }
+
     /// Zamietnuté ideme zmazať hneď, zvyšok si necháme týždeň — appka si ich
     /// medzitým vyzdvihne a uloží do knihy jázd.
     func purge(olderThan seconds: TimeInterval, now: TimeInterval) {
         queue.sync {
             exec("delete from points where trip_id in (select id from trips where status = 'discarded');")
             exec("delete from trips where status = 'discarded';")
-            guard let stmt = prepare("select id from trips where status in ('ended','confirmed') and coalesce(ended_at, started_at) < ?;") else { return }
+            guard let stmt = prepare("select id from trips where status in ('ended','confirmed','synced') and coalesce(ended_at, started_at) < ?;") else { return }
             sqlite3_bind_double(stmt, 1, now - seconds)
             var ids: [String] = []
             while sqlite3_step(stmt) == SQLITE_ROW {

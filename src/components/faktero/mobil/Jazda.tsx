@@ -4,6 +4,14 @@ import { Car, ChevronRight, Play, Plus, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { getCurrentDistanceKm, startTracking, stopTracking } from "@/lib/mobile/gps-tracker";
+import {
+  nacitajRozpoznaneJazdy,
+  prepniDetekciu,
+  stavDetekcie,
+  ulozRozpoznanuJazdu,
+  zahodRozpoznanuJazdu,
+} from "@/lib/mobile/auto-jazdy-sync";
+import type { BufferedTrip, Classification } from "@faktero/drive-detector";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem } from "./MobilChrome";
 import { HistoriaJazd } from "./HistoriaJazd";
@@ -44,6 +52,9 @@ export function Jazda({
   const [ukladam, setUkladam] = useState(false);
   const [pridavam, setPridavam] = useState(false);
   const [historia, setHistoria] = useState<Vozidlo | null>(null);
+  const [detekcia, setDetekcia] = useState({ dostupna: false, zapnuta: false });
+  const [cakajuce, setCakajuce] = useState<BufferedTrip[]>([]);
+  const [vybavujem, setVybavujem] = useState<string | null>(null);
   const cenaPaliva = useRef<number | null>(null);
 
   async function nacitajVozidla(vyberId?: string) {
@@ -74,6 +85,71 @@ export function Jazda({
       zrusene = true;
     };
   }, [firma.id, vozidloId]);
+
+  useEffect(() => {
+    stavDetekcie().then(setDetekcia);
+  }, []);
+
+  /*
+   * Jazdy, ktoré appka nahrala, kým bola zavretá. Tie, pri ktorých už človek
+   * odpovedal na notifikáciu, sa uložia rovno — pýtať sa druhýkrát na to isté
+   * je otravné. Zvyšok sa ponúkne na obrazovke.
+   */
+  useEffect(() => {
+    if (!vozidloId) return;
+    let zrusene = false;
+    (async () => {
+      const jazdy = await nacitajRozpoznaneJazdy();
+      const zvysne: BufferedTrip[] = [];
+      for (const jazda of jazdy) {
+        if (jazda.classification) {
+          const r = await ulozRozpoznanuJazdu({
+            jazda,
+            companyId: firma.id,
+            vehicleId: vozidloId,
+            classification: jazda.classification,
+          });
+          if (r.ok) {
+            const vozidlo = vozidla?.find((v) => v.id === vozidloId);
+            toast.success(
+              `Rozpoznaná jazda uložená — ${(jazda.distanceMeters / 1000).toFixed(1)} km${
+                vozidlo ? `, ${vozidlo.name}` : ""
+              }`,
+            );
+            continue;
+          }
+        }
+        zvysne.push(jazda);
+      }
+      if (!zrusene) setCakajuce(zvysne);
+    })();
+    return () => {
+      zrusene = true;
+    };
+    // eslint-disable-next-line
+  }, [firma.id, vozidloId]);
+
+  async function vybav(jazda: BufferedTrip, classification: Classification) {
+    if (!vozidloId) return toast.error("Vyberte vozidlo.");
+    setVybavujem(jazda.id);
+    const r = await ulozRozpoznanuJazdu({
+      jazda,
+      companyId: firma.id,
+      vehicleId: vozidloId,
+      classification,
+    });
+    setVybavujem(null);
+    if (!r.ok) return toast.error(r.chyba ?? "Jazdu sa nepodarilo uložiť.");
+    setCakajuce((z) => z.filter((j) => j.id !== jazda.id));
+    toast.success(classification === "business" ? "Uložené ako služobná" : "Uložené ako súkromná");
+  }
+
+  async function zahod(jazda: BufferedTrip) {
+    setVybavujem(jazda.id);
+    await zahodRozpoznanuJazdu(jazda.id);
+    setVybavujem(null);
+    setCakajuce((z) => z.filter((j) => j.id !== jazda.id));
+  }
 
   /* Kilometre naživo — inak nie je vidieť, či sa vôbec niečo meria. */
   useEffect(() => {
@@ -201,6 +277,84 @@ export function Jazda({
             {bezi ? <Square className="h-7 w-7" /> : <Play className="h-7 w-7" />}
           </div>
         </div>
+
+        {cakajuce.length > 0 && (
+          <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
+            <div className="text-sm font-medium">
+              Appka rozpoznala {cakajuce.length === 1 ? "jazdu" : `jazdy (${cakajuce.length})`}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Zaradenie sa uloží do knihy jázd na vybrané vozidlo nižšie.
+            </p>
+            <div className="mt-3 space-y-2">
+              {cakajuce.map((j) => (
+                <div key={j.id} className="rounded-xl border border-border/70 bg-card p-3">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-[17px] font-semibold tabular-nums">
+                      {(j.distanceMeters / 1000).toFixed(1)} km
+                    </span>
+                    <span className="text-[12px] text-muted-foreground">
+                      {new Date(j.startedAt).toLocaleString("sk-SK", {
+                        day: "numeric",
+                        month: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      disabled={vybavujem === j.id}
+                      onClick={() => vybav(j, "business")}
+                      className="rounded-lg bg-primary px-3 py-2 text-[14px] font-medium text-primary-foreground disabled:opacity-60"
+                    >
+                      Služobná
+                    </button>
+                    <button
+                      disabled={vybavujem === j.id}
+                      onClick={() => vybav(j, "private")}
+                      className="rounded-lg border border-border px-3 py-2 text-[14px] disabled:opacity-60"
+                    >
+                      Súkromná
+                    </button>
+                    <button
+                      disabled={vybavujem === j.id}
+                      onClick={() => zahod(j)}
+                      className="ml-auto rounded-lg px-3 py-2 text-[14px] text-muted-foreground disabled:opacity-60"
+                    >
+                      Zahodiť
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {detekcia.dostupna && (
+          <label className="flex items-start justify-between gap-3 rounded-2xl border border-border/70 bg-card p-4">
+            <span className="min-w-0">
+              <span className="block text-sm font-medium">Rozpoznávať jazdy automaticky</span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Appka si jazdu všimne sama a spýta sa notifikáciou, či bola služobná. Potrebuje na
+                to povolenú polohu „Vždy".
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={detekcia.zapnuta}
+              disabled={bezi}
+              onChange={async (e) => {
+                const chce = e.target.checked;
+                const r = await prepniDetekciu(chce);
+                setDetekcia((s) => ({ ...s, zapnuta: r.zapnuta }));
+                if (r.chyba) toast.error(r.chyba);
+                else if (r.zapnuta) toast.success("Detekcia jázd je zapnutá");
+              }}
+              className="mt-0.5 h-5 w-5 shrink-0"
+            />
+          </label>
+        )}
 
         <div>
           <div className="mb-2 text-sm font-medium">Vozidlo</div>

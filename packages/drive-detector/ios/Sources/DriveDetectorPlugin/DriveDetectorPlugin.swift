@@ -14,6 +14,8 @@ public class DriveDetectorPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getState", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "getBufferedTrip", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getUnresolvedTrips", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "markSynced", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "confirmTrip", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "discardTrip", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "startTrip", returnType: CAPPluginReturnPromise),
@@ -74,6 +76,23 @@ public class DriveDetectorPlugin: CAPPlugin, CAPBridgedPlugin {
         onMain {
             let jazda: JSValue = self.service.bufferedTrip().map { $0.jsObject as JSValue } ?? NSNull()
             call.resolve(["trip": jazda])
+        }
+    }
+
+    @objc func getUnresolvedTrips(_ call: CAPPluginCall) {
+        onMain {
+            let jazdy = self.service.unresolvedTrips().map { $0.jsObject as JSValue } as JSArray
+            call.resolve(["trips": jazdy])
+        }
+    }
+
+    @objc func markSynced(_ call: CAPPluginCall) {
+        guard let tripId = call.getString("tripId") else {
+            return call.reject("Chýba tripId.")
+        }
+        onMain {
+            self.service.markSynced(tripId: tripId)
+            call.resolve()
         }
     }
 

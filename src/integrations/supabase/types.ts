@@ -5515,6 +5515,7 @@ export type Database = {
       trips: {
         Row: {
           average_speed_kmh: number | null
+          classification: string
           company_id: string
           created_at: string
           created_by: string | null
@@ -5543,6 +5544,7 @@ export type Database = {
         }
         Insert: {
           average_speed_kmh?: number | null
+          classification?: string
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -5571,6 +5573,7 @@ export type Database = {
         }
         Update: {
           average_speed_kmh?: number | null
+          classification?: string
           company_id?: string
           created_at?: string
           created_by?: string | null

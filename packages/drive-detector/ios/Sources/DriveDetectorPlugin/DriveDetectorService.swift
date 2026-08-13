@@ -176,6 +176,19 @@ public final class DriveDetectorService: NSObject {
         return engine.trip ?? store.latestUnresolvedTrip()
     }
 
+    /// Ukončené jazdy, ktoré si aplikácia ešte neprevzala.
+    func unresolvedTrips() -> [BufferedTrip] {
+        bootstrap()
+        return store.unresolvedTrips()
+    }
+
+    /// Aplikácia jazdu uložila do knihy jázd — plugin ju už nemá komu ponúkať.
+    func markSynced(tripId: String) {
+        bootstrap()
+        notifications.remove(tripId: tripId)
+        store.setStatus(tripId: tripId, status: .synced)
+    }
+
     @discardableResult
     func confirmTrip(tripId: String, classification: Classification) -> BufferedTrip? {
         bootstrap()

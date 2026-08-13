@@ -44,6 +44,16 @@ public class DriveDetectorPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void getUnresolvedTrips(PluginCall call) {
+        call.unimplemented(SPRAVA);
+    }
+
+    @PluginMethod
+    public void markSynced(PluginCall call) {
+        call.unimplemented(SPRAVA);
+    }
+
+    @PluginMethod
     public void confirmTrip(PluginCall call) {
         call.unimplemented(SPRAVA);
     }

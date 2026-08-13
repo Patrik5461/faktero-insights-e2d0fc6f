@@ -19,6 +19,8 @@ export interface NativeDriveDetectorPlugin {
   stop(): Promise<void>;
   getState(): Promise<DriveDetectorState>;
   getBufferedTrip(): Promise<{ trip: BufferedTrip | null }>;
+  getUnresolvedTrips(): Promise<{ trips: BufferedTrip[] }>;
+  markSynced(opts: { tripId: string }): Promise<void>;
   confirmTrip(opts: { tripId: string; classification: Classification }): Promise<BufferedTrip>;
   discardTrip(opts: { tripId: string }): Promise<void>;
   startTrip(): Promise<BufferedTrip>;

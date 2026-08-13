@@ -30,5 +30,16 @@ export function formatTime(iso: string | null | undefined): string {
 export function sourceLabel(source: string | null | undefined): string {
   if (!source) return "Manuálne";
   if (source === "commander") return "Commander GPS";
+  if (source === "drive_detector") return "Automatická detekcia";
   return source;
+}
+
+/** Súkromná jazda firemným autom patrí do knihy jázd, ale musí byť vidieť. */
+export function jeSukromna(classification: string | null | undefined): boolean {
+  return classification === "private";
+}
+
+/** Popis do exportov. Prázdna hodnota je služobná — tak vznikali staré jazdy. */
+export function charakterJazdy(classification: string | null | undefined): string {
+  return jeSukromna(classification) ? "Súkromná" : "Služobná";
 }

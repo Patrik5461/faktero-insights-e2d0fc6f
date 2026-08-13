@@ -39,6 +39,14 @@ export class DriveDetectorWeb extends WebPlugin implements NativeDriveDetectorPl
     throw this.unimplemented("Detekcia jazdy je dostupná len v mobilnej aplikácii.");
   }
 
+  async getUnresolvedTrips(): Promise<{ trips: BufferedTrip[] }> {
+    throw this.unimplemented("Detekcia jazdy je dostupná len v mobilnej aplikácii.");
+  }
+
+  async markSynced(_opts: { tripId: string }): Promise<void> {
+    throw this.unimplemented("Detekcia jazdy je dostupná len v mobilnej aplikácii.");
+  }
+
   async confirmTrip(_opts: {
     tripId: string;
     classification: Classification;

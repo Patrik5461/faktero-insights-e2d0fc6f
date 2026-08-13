@@ -5,7 +5,12 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
-import { formatDuration, formatSpeed, sourceLabel } from "@/lib/faktero/trip-format";
+import {
+  charakterJazdy,
+  formatDuration,
+  formatSpeed,
+  sourceLabel,
+} from "@/lib/faktero/trip-format";
 
 export const Route = createFileRoute("/_authenticated/jazdy/export")({
   head: () => ({ meta: [{ title: "Export jázd — Faktero" }] }),
@@ -60,7 +65,7 @@ function ExportPage() {
     let q = supabase
       .from("trips")
       .select(
-        "trip_date, driver_name, start_location, end_location, purpose, distance_km, duration_seconds, average_speed_kmh, start_time, end_time, external_source, note, vehicles(name, license_plate)",
+        "trip_date, driver_name, start_location, end_location, purpose, classification, distance_km, duration_seconds, average_speed_kmh, start_time, end_time, external_source, note, vehicles(name, license_plate)",
       )
       .eq("company_id", cid)
       .gte("trip_date", from)
@@ -87,6 +92,7 @@ function ExportPage() {
         "Priemerná rýchlosť (km/h)",
         "Vodič",
         "Typ jazdy",
+        "Charakter",
         "Zdroj",
         "Poznámka",
       ];
@@ -109,6 +115,7 @@ function ExportPage() {
             speedTxt,
             r.driver_name,
             r.purpose,
+            charakterJazdy(r.classification),
             sourceLabel(r.external_source),
             r.note,
           ]
@@ -144,6 +151,7 @@ function ExportPage() {
         "Priemerná rýchlosť",
         "Vodič",
         "Typ jazdy",
+        "Charakter",
         "Zdroj",
         "Poznámka",
       ];
@@ -169,6 +177,7 @@ function ExportPage() {
             cell(speedTxt),
             cell(r.driver_name ?? ""),
             cell(r.purpose ?? ""),
+            cell(charakterJazdy(r.classification)),
             cell(sourceLabel(r.external_source)),
             cell(r.note ?? ""),
           ].join("")}</Row>`;
@@ -193,11 +202,11 @@ function ExportPage() {
       const tr = rows
         .map(
           (r: any) =>
-            `<tr><td>${r.vehicles?.name ?? ""} ${r.vehicles?.license_plate ?? ""}</td><td>${r.trip_date}</td><td>${r.start_location ?? ""}</td><td>${r.end_location ?? ""}</td><td>${formatDuration(r.duration_seconds)}</td><td style="text-align:right">${Number(r.distance_km).toFixed(1)}</td><td style="text-align:right">${formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td><td>${r.driver_name ?? ""}</td><td>${r.purpose ?? ""}</td><td>${sourceLabel(r.external_source)}</td></tr>`,
+            `<tr><td>${r.vehicles?.name ?? ""} ${r.vehicles?.license_plate ?? ""}</td><td>${r.trip_date}</td><td>${r.start_location ?? ""}</td><td>${r.end_location ?? ""}</td><td>${formatDuration(r.duration_seconds)}</td><td style="text-align:right">${Number(r.distance_km).toFixed(1)}</td><td style="text-align:right">${formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td><td>${r.driver_name ?? ""}</td><td>${r.purpose ?? ""}</td><td>${charakterJazdy(r.classification)}</td><td>${sourceLabel(r.external_source)}</td></tr>`,
         )
         .join("");
       w.document.write(
-        `<!doctype html><html><head><meta charset="utf-8"><title>Kniha jázd ${from} – ${to}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}</style></head><body><h1>Kniha jázd</h1><div>Obdobie: ${from} – ${to}</div><table><thead><tr><th>Vozidlo</th><th>Dátum</th><th>Od</th><th>Do</th><th>Trvanie</th><th style="text-align:right">Km</th><th style="text-align:right">Priemer</th><th>Vodič</th><th>Typ</th><th>Zdroj</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">Spolu</td><td style="text-align:right">${total.toFixed(1)} km</td><td colspan="4"></td></tr></tfoot></table><script>window.onload=()=>window.print()</script></body></html>`,
+        `<!doctype html><html><head><meta charset="utf-8"><title>Kniha jázd ${from} – ${to}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}</style></head><body><h1>Kniha jázd</h1><div>Obdobie: ${from} – ${to}</div><table><thead><tr><th>Vozidlo</th><th>Dátum</th><th>Od</th><th>Do</th><th>Trvanie</th><th style="text-align:right">Km</th><th style="text-align:right">Priemer</th><th>Vodič</th><th>Typ</th><th>Charakter</th><th>Zdroj</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">Spolu</td><td style="text-align:right">${total.toFixed(1)} km</td><td colspan="5"></td></tr></tfoot></table><script>window.onload=()=>window.print()</script></body></html>`,
       );
       w.document.close();
     } catch (e: any) {

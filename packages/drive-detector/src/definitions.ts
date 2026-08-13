@@ -102,6 +102,15 @@ export interface DriveDetectorPlugin {
   /** Rozpracovaná jazda; keď žiadna nebeží, posledná nezaradená ukončená. */
   getBufferedTrip(): Promise<BufferedTrip | null>;
 
+  /**
+   * Ukončené jazdy, ktoré si aplikácia ešte neprevzala — od najstaršej.
+   * Cez víkend ich môže byť aj desať a stratiť sa nesmie ani jedna.
+   */
+  getUnresolvedTrips(): Promise<BufferedTrip[]>;
+
+  /** Jazda je uložená v knihe jázd, plugin ju už nemá komu ponúkať. */
+  markSynced(opts: { tripId: string }): Promise<void>;
+
   confirmTrip(opts: { tripId: string; classification: Classification }): Promise<BufferedTrip>;
   discardTrip(opts: { tripId: string }): Promise<void>;
 

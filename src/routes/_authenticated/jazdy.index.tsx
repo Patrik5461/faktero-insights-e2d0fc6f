@@ -5,7 +5,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Plus, Trash2, Car } from "lucide-react";
 import { toast } from "sonner";
-import { formatDuration, formatSpeed, sourceLabel } from "@/lib/faktero/trip-format";
+import { formatDuration, formatSpeed, jeSukromna, sourceLabel } from "@/lib/faktero/trip-format";
 
 export const Route = createFileRoute("/_authenticated/jazdy/")({
   head: () => ({ meta: [{ title: "Kniha jázd — Faktero" }] }),
@@ -28,6 +28,7 @@ type Trip = {
   duration_seconds: number | null;
   average_speed_kmh: number | null;
   external_source: string | null;
+  classification: string | null;
 };
 
 /** Koľko jázd sa načíta naraz. */
@@ -187,7 +188,15 @@ function TripsPage() {
                       <td className="p-3 text-right tabular-nums">
                         {formatDuration(r.duration_seconds)}
                       </td>
-                      <td className="p-3">{r.purpose ?? "—"}</td>
+                      <td className="p-3">
+                        {jeSukromna(r.classification) ? (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
+                            Súkromná
+                          </span>
+                        ) : (
+                          (r.purpose ?? "—")
+                        )}
+                      </td>
                       <td className="p-3 text-xs text-muted-foreground">
                         {sourceLabel(r.external_source)}
                       </td>
@@ -222,7 +231,11 @@ function TripsPage() {
                         <span>
                           Ø {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
                         </span>
-                        {r.purpose && <span>{r.purpose}</span>}
+                        {jeSukromna(r.classification) ? (
+                          <span className="font-medium">Súkromná</span>
+                        ) : (
+                          r.purpose && <span>{r.purpose}</span>
+                        )}
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
@@ -252,7 +265,9 @@ function TripsPage() {
                   disabled={loading}
                   className="rounded-md border border-border bg-card px-3 py-1.5 font-medium text-foreground hover:bg-secondary disabled:opacity-60"
                 >
-                  {loading ? "Načítavam…" : `Načítať ďalších ${Math.min(DAVKA, spolu - rows.length)}`}
+                  {loading
+                    ? "Načítavam…"
+                    : `Načítať ďalších ${Math.min(DAVKA, spolu - rows.length)}`}
                 </button>
               )}
             </div>

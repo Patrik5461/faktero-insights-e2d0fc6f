@@ -31,6 +31,9 @@ const DriveDetector: DriveDetectorPlugin = {
   getState: (): Promise<DriveDetectorState> => nativny.getState(),
   getBufferedTrip: async (): Promise<BufferedTrip | null> =>
     (await nativny.getBufferedTrip()).trip ?? null,
+  getUnresolvedTrips: async (): Promise<BufferedTrip[]> =>
+    (await nativny.getUnresolvedTrips()).trips ?? [],
+  markSynced: (opts: { tripId: string }) => nativny.markSynced(opts),
   confirmTrip: (opts: { tripId: string; classification: Classification }) =>
     nativny.confirmTrip(opts),
   discardTrip: (opts: { tripId: string }) => nativny.discardTrip(opts),

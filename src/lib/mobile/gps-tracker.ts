@@ -155,9 +155,10 @@ async function stopNative() {
       trasa = jazda.points.map((b) => ({ lat: b.lat, lng: b.lng, ts: b.timestamp }));
       od = jazda.startedAt;
       doKedy = jazda.endedAt ?? Date.now();
-      // Jazda ide do knihy jázd ako služobná, takže je vybavená. Zamietnuť sa
-      // nesmie — to by na pol hodiny umlčalo aj automatickú detekciu.
-      await DriveDetector.confirmTrip({ tripId: jazda.id, classification: "business" });
+      // Jazdu ukladá do knihy jázd volajúca obrazovka, takže plugin ju už
+      // nemá komu ponúkať. Zamietnuť sa nesmie — to by na pol hodiny umlčalo
+      // aj automatickú detekciu.
+      await DriveDetector.markSynced({ tripId: jazda.id });
     }
     await eskalujNaPozadie();
   } catch {
