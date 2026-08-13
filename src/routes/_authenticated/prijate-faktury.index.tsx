@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PrijemMailom } from "@/components/faktero/PrijemMailom";
 import { Plus, FileText, Archive, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -219,6 +220,7 @@ function PurchaseInvoicesPage() {
         }
       />
       <PageBody>
+        <PrijemMailom />
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard label="Počet faktúr" value={String(totals.count)} />
           <StatCard label="Celková suma" value={fmtMoney(totals.total)} />

@@ -207,6 +207,7 @@ import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public
 import { Route as ApiPublicHooksStockAlertsRouteImport } from './routes/api/public/hooks/stock-alerts'
 import { Route as ApiPublicHooksTrialLifecycleRouteImport } from './routes/api/public/hooks/trial-lifecycle'
 import { Route as ApiPublicHooksUcetZrusenieRouteImport } from './routes/api/public/hooks/ucet-zrusenie'
+import { Route as ApiPublicMailPrijemRouteImport } from './routes/api/public/mail/prijem'
 import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/public/tatrabanka/callback'
 import { Route as ApiPublicTatrabankaWebhookRouteImport } from './routes/api/public/tatrabanka/webhook'
 import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/tesla/callback'
@@ -1306,6 +1307,11 @@ const ApiPublicHooksUcetZrusenieRoute =
     path: '/api/public/hooks/ucet-zrusenie',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicMailPrijemRoute = ApiPublicMailPrijemRouteImport.update({
+  id: '/api/public/mail/prijem',
+  path: '/api/public/mail/prijem',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicTatrabankaCallbackRoute =
   ApiPublicTatrabankaCallbackRouteImport.update({
     id: '/api/public/tatrabanka/callback',
@@ -1626,6 +1632,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
+  '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
@@ -1840,6 +1847,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
+  '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
@@ -2065,6 +2073,7 @@ export interface FileRoutesById {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
+  '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
   '/api/public/tatrabanka/webhook': typeof ApiPublicTatrabankaWebhookRoute
   '/api/public/tesla/callback': typeof ApiPublicTeslaCallbackRoute
@@ -2290,6 +2299,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
+    | '/api/public/mail/prijem'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tatrabanka/webhook'
     | '/api/public/tesla/callback'
@@ -2504,6 +2514,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
+    | '/api/public/mail/prijem'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tatrabanka/webhook'
     | '/api/public/tesla/callback'
@@ -2728,6 +2739,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
+    | '/api/public/mail/prijem'
     | '/api/public/tatrabanka/callback'
     | '/api/public/tatrabanka/webhook'
     | '/api/public/tesla/callback'
@@ -2838,6 +2850,7 @@ export interface RootRouteChildren {
   ApiPublicHooksStockAlertsRoute: typeof ApiPublicHooksStockAlertsRoute
   ApiPublicHooksTrialLifecycleRoute: typeof ApiPublicHooksTrialLifecycleRoute
   ApiPublicHooksUcetZrusenieRoute: typeof ApiPublicHooksUcetZrusenieRoute
+  ApiPublicMailPrijemRoute: typeof ApiPublicMailPrijemRoute
   ApiPublicTatrabankaCallbackRoute: typeof ApiPublicTatrabankaCallbackRoute
   ApiPublicTatrabankaWebhookRoute: typeof ApiPublicTatrabankaWebhookRoute
   ApiPublicTeslaCallbackRoute: typeof ApiPublicTeslaCallbackRoute
@@ -4238,6 +4251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksUcetZrusenieRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/mail/prijem': {
+      id: '/api/public/mail/prijem'
+      path: '/api/public/mail/prijem'
+      fullPath: '/api/public/mail/prijem'
+      preLoaderRoute: typeof ApiPublicMailPrijemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/tatrabanka/callback': {
       id: '/api/public/tatrabanka/callback'
       path: '/api/public/tatrabanka/callback'
@@ -4963,6 +4983,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksStockAlertsRoute: ApiPublicHooksStockAlertsRoute,
   ApiPublicHooksTrialLifecycleRoute: ApiPublicHooksTrialLifecycleRoute,
   ApiPublicHooksUcetZrusenieRoute: ApiPublicHooksUcetZrusenieRoute,
+  ApiPublicMailPrijemRoute: ApiPublicMailPrijemRoute,
   ApiPublicTatrabankaCallbackRoute: ApiPublicTatrabankaCallbackRoute,
   ApiPublicTatrabankaWebhookRoute: ApiPublicTatrabankaWebhookRoute,
   ApiPublicTeslaCallbackRoute: ApiPublicTeslaCallbackRoute,

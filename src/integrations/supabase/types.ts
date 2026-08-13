@@ -1821,8 +1821,8 @@ export type Database = {
           supplier_name: string | null
           total_amount: number | null
           updated_at: string
-          vat_breakdown: Json | null
           vat_amount: number | null
+          vat_breakdown: Json | null
           vat_rate: number | null
         }
         Insert: {
@@ -1852,8 +1852,8 @@ export type Database = {
           supplier_name?: string | null
           total_amount?: number | null
           updated_at?: string
-          vat_breakdown?: Json | null
           vat_amount?: number | null
+          vat_breakdown?: Json | null
           vat_rate?: number | null
         }
         Update: {
@@ -1883,8 +1883,8 @@ export type Database = {
           supplier_name?: string | null
           total_amount?: number | null
           updated_at?: string
-          vat_breakdown?: Json | null
           vat_amount?: number | null
+          vat_breakdown?: Json | null
           vat_rate?: number | null
         }
         Relationships: [
@@ -2216,6 +2216,101 @@ export type Database = {
             columns: ["import_job_id"]
             isOneToOne: false
             referencedRelation: "import_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inbox_addresses: {
+        Row: {
+          active: boolean
+          company_id: string
+          created_at: string
+          id: string
+          last_received_at: string | null
+          local_part: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          created_at?: string
+          id?: string
+          last_received_at?: string | null
+          local_part: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          last_received_at?: string | null
+          local_part?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_addresses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inbox_messages: {
+        Row: {
+          address_id: string | null
+          attachment_count: number
+          company_id: string
+          created_invoice_ids: string[]
+          detail: string | null
+          from_email: string | null
+          id: string
+          provider_email_id: string | null
+          received_at: string
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          address_id?: string | null
+          attachment_count?: number
+          company_id: string
+          created_invoice_ids?: string[]
+          detail?: string | null
+          from_email?: string | null
+          id?: string
+          provider_email_id?: string | null
+          received_at?: string
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          address_id?: string | null
+          attachment_count?: number
+          company_id?: string
+          created_invoice_ids?: string[]
+          detail?: string | null
+          from_email?: string | null
+          id?: string
+          provider_email_id?: string | null
+          received_at?: string
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_messages_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_messages_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -3025,7 +3120,7 @@ export type Database = {
           {
             foreignKeyName: "payments_bank_transaction_id_fkey"
             columns: ["bank_transaction_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "bank_transactions"
             referencedColumns: ["id"]
           },
@@ -5861,11 +5956,12 @@ export type Database = {
         Returns: string
       }
       faktero_next_invoice_number: {
-        Args: { _company_id: string; _issue_date?: string }
+        Args: { _company_id: string; _issue_date?: string; _type?: string }
         Returns: Json
       }
       faktero_process_trial_expiry: { Args: never; Returns: number }
       faktero_recurring_cron_status: { Args: never; Returns: Json }
+      faktero_zmaz_firmu: { Args: { _company_id: string }; Returns: undefined }
       get_company_role: {
         Args: { _company_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["company_role"]
@@ -5875,6 +5971,10 @@ export type Database = {
         Returns: boolean
       }
       is_company_member: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_company_writer: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
