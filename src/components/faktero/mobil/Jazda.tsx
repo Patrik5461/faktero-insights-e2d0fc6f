@@ -54,6 +54,7 @@ export function Jazda({
   const [historia, setHistoria] = useState<Vozidlo | null>(null);
   const [detekcia, setDetekcia] = useState({ dostupna: false, zapnuta: false });
   const [cakajuce, setCakajuce] = useState<BufferedTrip[]>([]);
+  const [vyberAuta, setVyberAuta] = useState<Record<string, string>>({});
   const [vybavujem, setVybavujem] = useState<string | null>(null);
   const cenaPaliva = useRef<number | null>(null);
 
@@ -96,25 +97,25 @@ export function Jazda({
    * je otravné. Zvyšok sa ponúkne na obrazovke.
    */
   useEffect(() => {
-    if (!vozidloId) return;
+    if (!vozidla || vozidla.length === 0) return;
     let zrusene = false;
     (async () => {
       const jazdy = await nacitajRozpoznaneJazdy();
       const zvysne: BufferedTrip[] = [];
       for (const jazda of jazdy) {
-        if (jazda.classification) {
+        // Uloží sa samo len vtedy, keď sa niet čoho pýtať: zaradenie prišlo
+        // z notifikácie a firma má jediné auto. Pri viacerých autách by sa
+        // hádalo, do ktorého človek sadol — to nech povie sám.
+        if (jazda.classification && vozidla.length === 1) {
           const r = await ulozRozpoznanuJazdu({
             jazda,
             companyId: firma.id,
-            vehicleId: vozidloId,
+            vehicleId: vozidla[0]!.id,
             classification: jazda.classification,
           });
           if (r.ok) {
-            const vozidlo = vozidla?.find((v) => v.id === vozidloId);
             toast.success(
-              `Rozpoznaná jazda uložená — ${(jazda.distanceMeters / 1000).toFixed(1)} km${
-                vozidlo ? `, ${vozidlo.name}` : ""
-              }`,
+              `Rozpoznaná jazda uložená — ${(jazda.distanceMeters / 1000).toFixed(1)} km, ${vozidla[0]!.name}`,
             );
             continue;
           }
@@ -126,22 +127,32 @@ export function Jazda({
     return () => {
       zrusene = true;
     };
-    // eslint-disable-next-line
-  }, [firma.id, vozidloId]);
+  }, [firma.id, vozidla]);
+
+  /** Auto pre konkrétnu rozpoznanú jazdu; predvolené je to vybrané hore. */
+  function autoPre(jazda: BufferedTrip): string {
+    return vyberAuta[jazda.id] ?? vozidloId;
+  }
 
   async function vybav(jazda: BufferedTrip, classification: Classification) {
-    if (!vozidloId) return toast.error("Vyberte vozidlo.");
+    const vehicleId = autoPre(jazda);
+    if (!vehicleId) return toast.error("Vyberte vozidlo.");
     setVybavujem(jazda.id);
     const r = await ulozRozpoznanuJazdu({
       jazda,
       companyId: firma.id,
-      vehicleId: vozidloId,
+      vehicleId,
       classification,
     });
     setVybavujem(null);
     if (!r.ok) return toast.error(r.chyba ?? "Jazdu sa nepodarilo uložiť.");
     setCakajuce((z) => z.filter((j) => j.id !== jazda.id));
-    toast.success(classification === "business" ? "Uložené ako služobná" : "Uložené ako súkromná");
+    const vozidlo = vozidla?.find((v) => v.id === vehicleId);
+    toast.success(
+      `${classification === "business" ? "Uložené ako služobná" : "Uložené ako súkromná"}${
+        vozidlo ? ` — ${vozidlo.name}` : ""
+      }`,
+    );
   }
 
   async function zahod(jazda: BufferedTrip) {
@@ -284,7 +295,7 @@ export function Jazda({
               Appka rozpoznala {cakajuce.length === 1 ? "jazdu" : `jazdy (${cakajuce.length})`}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Zaradenie sa uloží do knihy jázd na vybrané vozidlo nižšie.
+              Telefón nevie, do ktorého auta ste sadli — skontrolujte ho pri každej jazde.
             </p>
             <div className="mt-3 space-y-2">
               {cakajuce.map((j) => (
@@ -302,29 +313,68 @@ export function Jazda({
                       })}
                     </span>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button
-                      disabled={vybavujem === j.id}
-                      onClick={() => vybav(j, "business")}
-                      className="rounded-lg bg-primary px-3 py-2 text-[14px] font-medium text-primary-foreground disabled:opacity-60"
-                    >
-                      Služobná
-                    </button>
-                    <button
-                      disabled={vybavujem === j.id}
-                      onClick={() => vybav(j, "private")}
-                      className="rounded-lg border border-border px-3 py-2 text-[14px] disabled:opacity-60"
-                    >
-                      Súkromná
-                    </button>
-                    <button
-                      disabled={vybavujem === j.id}
-                      onClick={() => zahod(j)}
-                      className="ml-auto rounded-lg px-3 py-2 text-[14px] text-muted-foreground disabled:opacity-60"
-                    >
-                      Zahodiť
-                    </button>
-                  </div>
+
+                  <select
+                    value={autoPre(j)}
+                    disabled={vybavujem === j.id}
+                    onChange={(e) => setVyberAuta((v) => ({ ...v, [j.id]: e.target.value }))}
+                    aria-label="Vozidlo pre rozpoznanú jazdu"
+                    className="mt-2 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px] disabled:opacity-60"
+                  >
+                    {(vozidla ?? []).map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}
+                        {v.license_plate ? ` — ${v.license_plate}` : ""}
+                      </option>
+                    ))}
+                  </select>
+
+                  {j.classification ? (
+                    // Zaradenie prišlo z notifikácie, ostáva potvrdiť auto.
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-muted px-2 py-1 text-[13px]">
+                        {j.classification === "business" ? "Služobná" : "Súkromná"}
+                      </span>
+                      <button
+                        disabled={vybavujem === j.id}
+                        onClick={() => vybav(j, j.classification!)}
+                        className="rounded-lg bg-primary px-3 py-2 text-[14px] font-medium text-primary-foreground disabled:opacity-60"
+                      >
+                        Uložiť
+                      </button>
+                      <button
+                        disabled={vybavujem === j.id}
+                        onClick={() => zahod(j)}
+                        className="ml-auto rounded-lg px-3 py-2 text-[14px] text-muted-foreground disabled:opacity-60"
+                      >
+                        Zahodiť
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        disabled={vybavujem === j.id}
+                        onClick={() => vybav(j, "business")}
+                        className="rounded-lg bg-primary px-3 py-2 text-[14px] font-medium text-primary-foreground disabled:opacity-60"
+                      >
+                        Služobná
+                      </button>
+                      <button
+                        disabled={vybavujem === j.id}
+                        onClick={() => vybav(j, "private")}
+                        className="rounded-lg border border-border px-3 py-2 text-[14px] disabled:opacity-60"
+                      >
+                        Súkromná
+                      </button>
+                      <button
+                        disabled={vybavujem === j.id}
+                        onClick={() => zahod(j)}
+                        className="ml-auto rounded-lg px-3 py-2 text-[14px] text-muted-foreground disabled:opacity-60"
+                      >
+                        Zahodiť
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
