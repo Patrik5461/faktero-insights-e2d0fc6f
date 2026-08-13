@@ -12,6 +12,7 @@
  */
 import type { BufferedTrip, Classification } from "@faktero/drive-detector";
 import type { TablesInsert } from "@/integrations/supabase/types";
+import { trasaDoPolyline } from "@/lib/faktero/polyline";
 
 export const ZDROJ = "drive_detector";
 
@@ -71,6 +72,7 @@ export function riadokZJazdy(args: {
     end_time: jazda.endedAt ? new Date(jazda.endedAt).toISOString() : null,
     duration_seconds: trvanieSekundy,
     average_speed_kmh: zaokruhli(jazda.avgSpeedKmh, 1),
+    route: trasaDoPolyline(jazda.points),
     external_source: ZDROJ,
     external_id: jazda.id,
     created_by: args.userId ?? null,

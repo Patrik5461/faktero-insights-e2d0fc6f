@@ -12,6 +12,7 @@ import {
   zahodRozpoznanuJazdu,
 } from "@/lib/mobile/auto-jazdy-sync";
 import type { BufferedTrip, Classification } from "@faktero/drive-detector";
+import { trasaDoPolyline } from "@/lib/faktero/polyline";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem } from "./MobilChrome";
 import { HistoriaJazd } from "./HistoriaJazd";
@@ -203,6 +204,7 @@ export function Jazda({
         distance_km: vysledok.distance_km,
         fuel_consumption: spotreba,
         fuel_price: cenaPaliva.current,
+        route: trasaDoPolyline(vysledok.points),
         note: `GPS: ${vysledok.duration_min} min, ${vysledok.points.length} bodov`,
       });
       if (error) throw new Error(error.message);

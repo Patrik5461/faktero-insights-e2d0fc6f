@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BufferedTrip } from "@faktero/drive-detector";
 import { cakaNaCloveka, jePrikratka, miestnyDatum, riadokZJazdy } from "./auto-jazdy";
+import { dekoduj } from "@/lib/faktero/polyline";
 
 function jazda(zmeny: Partial<BufferedTrip> = {}): BufferedTrip {
   const zaciatok = new Date("2026-08-13T08:00:00+02:00").getTime();
@@ -68,6 +69,26 @@ describe("riadok knihy jázd z rozpoznanej jazdy", () => {
     });
     expect(r.external_source).toBe("drive_detector");
     expect(r.external_id).toBe("jazda-xyz");
+  });
+
+  it("nesie prejdenú trasu", () => {
+    const r = riadokZJazdy({
+      jazda: jazda(),
+      companyId: "f",
+      vehicleId: "a",
+      classification: "business",
+    });
+    expect(dekoduj(r.route)).toHaveLength(2);
+  });
+
+  it("jazda bez použiteľnej trasy má stĺpec prázdny", () => {
+    const r = riadokZJazdy({
+      jazda: jazda({ points: [] }),
+      companyId: "f",
+      vehicleId: "a",
+      classification: "business",
+    });
+    expect(r.route).toBeNull();
   });
 
   it("spotrebu počíta len keď ju vozidlo má", () => {

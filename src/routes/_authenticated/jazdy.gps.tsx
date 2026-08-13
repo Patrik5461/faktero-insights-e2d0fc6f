@@ -11,6 +11,7 @@ import {
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
+import { trasaDoPolyline } from "@/lib/faktero/polyline";
 import { Play, Square } from "lucide-react";
 import { toast } from "sonner";
 
@@ -93,6 +94,7 @@ function GpsTripPage() {
         fuel_consumption: consumption,
         fuel_price: fuelPrice,
         job_id: jobId || null,
+        route: trasaDoPolyline(result.points),
         note: `GPS: ${result.duration_min} min, ${result.points.length} bodov`,
       })
       .select()

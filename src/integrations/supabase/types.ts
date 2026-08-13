@@ -5535,6 +5535,7 @@ export type Database = {
           note: string | null
           purpose: string | null
           raw_provider_data: Json | null
+          route: string | null
           start_location: string | null
           start_odometer: number
           start_time: string | null
@@ -5564,6 +5565,7 @@ export type Database = {
           note?: string | null
           purpose?: string | null
           raw_provider_data?: Json | null
+          route?: string | null
           start_location?: string | null
           start_odometer: number
           start_time?: string | null
@@ -5593,6 +5595,7 @@ export type Database = {
           note?: string | null
           purpose?: string | null
           raw_provider_data?: Json | null
+          route?: string | null
           start_location?: string | null
           start_odometer?: number
           start_time?: string | null
