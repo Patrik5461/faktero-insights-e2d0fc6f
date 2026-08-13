@@ -32,14 +32,23 @@ export function PrijemMailom() {
   const prepni = useServerFn(prepniPrijemMailom);
   const obnov = useServerFn(obnovAdresuNaDoklady);
 
-  const cid = getActiveCompanyId();
+  const [chyba, setChyba] = useState<string | null>(null);
 
+  // Aktívna firma sa číta až pri volaní. Pri prvom vykreslení (server, hydratácia)
+  // ešte v localStorage nemusí byť a zapamätaná hodnota by ostala navždy prázdna.
   async function obnovStav() {
-    if (!cid) return;
+    const cid = getActiveCompanyId();
+    if (!cid) {
+      setChyba("Najprv vyberte firmu.");
+      return;
+    }
     try {
+      setChyba(null);
       setStav(await nacitaj({ data: { company_id: cid } }));
     } catch (e: any) {
-      toast.error(e?.message ?? "Adresu na doklady sa nepodarilo načítať");
+      const m = e?.message ?? "Adresu na doklady sa nepodarilo načítať";
+      setChyba(m);
+      toast.error(m);
     }
   }
 
@@ -73,7 +82,9 @@ export function PrijemMailom() {
 
       {otvorene && (
         <div className="border-t border-border p-4">
-          {!stav ? (
+          {chyba ? (
+            <div className="text-sm text-destructive">{chyba}</div>
+          ) : !stav ? (
             <div className="text-sm text-muted-foreground">Načítavam…</div>
           ) : (
             <>
@@ -96,6 +107,7 @@ export function PrijemMailom() {
                 <button
                   disabled={pracuje}
                   onClick={async () => {
+                    const cid = getActiveCompanyId();
                     if (!cid) return;
                     if (
                       !confirm("Stará adresa okamžite prestane platiť. Vyrobiť novú?")
@@ -123,6 +135,7 @@ export function PrijemMailom() {
                     checked={stav.active}
                     disabled={pracuje}
                     onChange={async (e) => {
+                      const cid = getActiveCompanyId();
                       if (!cid) return;
                       setPracuje(true);
                       try {
