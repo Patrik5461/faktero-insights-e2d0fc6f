@@ -26,6 +26,12 @@ import {
   getRideType,
   getRideDriver,
 } from "./commander.server";
+import {
+  emptySkipBreakdown,
+  zalogovatPreskocenu,
+  jeDuplicitaVDatabaze,
+  type CommanderSkipReason,
+} from "./commander-preskocene";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -35,25 +41,6 @@ type DailyResult = {
   duplicates: number;
   errors: { company_id: string; error: string }[];
 };
-
-type CommanderSkipReason =
-  | "duplicate_external_id"
-  | "duplicate_fallback_match"
-  | "vehicle_not_linked"
-  | "missing_vehicle_mapping"
-  | "validation_error"
-  | "insert_error";
-
-function emptySkipBreakdown(): Record<CommanderSkipReason, number> {
-  return {
-    duplicate_external_id: 0,
-    duplicate_fallback_match: 0,
-    vehicle_not_linked: 0,
-    missing_vehicle_mapping: 0,
-    validation_error: 0,
-    insert_error: 0,
-  };
-}
 
 function parseCommanderDate(raw: unknown): Date | null {
   if (raw === null || raw === undefined || raw === "") return null;
@@ -208,7 +195,9 @@ async function syncCompanyDaily(
       datetimeStart: ride?.datetimeStart ?? null,
     };
     skippedRides.push(entry);
-    console.warn("[commander-cron] skipped ride", { company_id: companyId, ...entry });
+    if (zalogovatPreskocenu(reason, skippedBreakdown)) {
+      console.warn("[commander-cron] skipped ride", { company_id: companyId, ...entry });
+    }
   }
 
   try {
@@ -409,7 +398,14 @@ async function syncCompanyDaily(
         raw_provider_data: r as any,
       });
       if (error) {
-        skip("insert_error", r, mappedLink, error.message);
+        // Unikátny index chytí jazdu, ktorá prekĺzla kontrolou duplicít vyššie —
+        // je to duplicita, nie zlyhaný zápis.
+        skip(
+          jeDuplicitaVDatabaze(error.message) ? "duplicate_external_id" : "insert_error",
+          r,
+          mappedLink,
+          error.message,
+        );
         continue;
       }
       imported++;

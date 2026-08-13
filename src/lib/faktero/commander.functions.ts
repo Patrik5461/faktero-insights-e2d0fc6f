@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  emptySkipBreakdown,
+  zalogovatPreskocenu,
+  jeDuplicitaVDatabaze,
+  type CommanderSkipReason,
+} from "./commander-preskocene";
 
 function maskUser(u?: string | null) {
   if (!u) return null;
@@ -372,25 +378,6 @@ function rangeFor(preset: string, from?: string, to?: string): { from: Date; to:
   return { from: f, to: end };
 }
 
-type CommanderSkipReason =
-  | "duplicate_external_id"
-  | "duplicate_fallback_match"
-  | "vehicle_not_linked"
-  | "missing_vehicle_mapping"
-  | "validation_error"
-  | "insert_error";
-
-function emptySkipBreakdown(): Record<CommanderSkipReason, number> {
-  return {
-    duplicate_external_id: 0,
-    duplicate_fallback_match: 0,
-    vehicle_not_linked: 0,
-    missing_vehicle_mapping: 0,
-    validation_error: 0,
-    insert_error: 0,
-  };
-}
-
 function parseCommanderDate(raw: unknown): Date | null {
   if (raw === null || raw === undefined || raw === "") return null;
   if (typeof raw === "number" && Number.isFinite(raw)) {
@@ -537,7 +524,9 @@ export const syncCommanderRides = createServerFn({ method: "POST" })
         datetimeStart: ride?.datetimeStart ?? null,
       };
       skippedRides.push(entry);
-      console.warn("[commander] skipped ride", { company_id: data.companyId, ...entry });
+      if (zalogovatPreskocenu(reason, skippedBreakdown)) {
+        console.warn("[commander] skipped ride", { company_id: data.companyId, ...entry });
+      }
     }
 
     try {
@@ -751,9 +740,18 @@ export const syncCommanderRides = createServerFn({ method: "POST" })
             raw_provider_data: r as any,
           });
           if (error) {
+            // Unikátny index chytí jazdu, ktorá prekĺzla kontrolou duplicít vyššie.
+            // Je to duplicita, nie zlyhaný zápis — inak by prehľad hlásil chyby,
+            // ktoré žiadne nie sú.
+            if (jeDuplicitaVDatabaze(error.message)) {
+              skip("duplicate_external_id", r, mappedLink, error.message);
+              continue;
+            }
             skip("insert_error", r, mappedLink, error.message);
-            if (insertErrorSamples.length < 5) insertErrorSamples.push(error.message);
-            console.error("[commander] trip insert error", error.message);
+            if (insertErrorSamples.length < 5) {
+              insertErrorSamples.push(error.message);
+              console.error("[commander] trip insert error", error.message);
+            }
             continue;
           }
           imported++;
