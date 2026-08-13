@@ -11,6 +11,15 @@ import {
   formatSpeed,
   sourceLabel,
 } from "@/lib/faktero/trip-format";
+import { dekoduj } from "@/lib/faktero/polyline";
+import { obrazokTrasy } from "@/lib/faktero/mapa-obrazok";
+
+/**
+ * Koľko máp sa najviac priloží. Každá je pár desiatok dlaždíc z verejného
+ * servera OpenStreetMap — celá ročná kniha jázd naraz by bola sťahovanie
+ * vo veľkom, čo ich podmienky zakazujú.
+ */
+const MAX_MAP = 20;
 
 export const Route = createFileRoute("/_authenticated/jazdy/export")({
   head: () => ({ meta: [{ title: "Export jázd — Faktero" }] }),
@@ -44,6 +53,7 @@ function ExportPage() {
   const [from, setFrom] = useState(from0.toISOString().slice(0, 10));
   const [to, setTo] = useState(today);
   const [busy, setBusy] = useState(false);
+  const [sMapami, setSMapami] = useState(false);
   const [vehicles, setVehicles] = useState<
     Array<{ id: string; name: string; license_plate: string | null }>
   >([]);
@@ -65,7 +75,7 @@ function ExportPage() {
     let q = supabase
       .from("trips")
       .select(
-        "trip_date, driver_name, start_location, end_location, purpose, classification, distance_km, duration_seconds, average_speed_kmh, start_time, end_time, external_source, note, vehicles(name, license_plate)",
+        "trip_date, driver_name, start_location, end_location, purpose, classification, distance_km, duration_seconds, average_speed_kmh, start_time, end_time, external_source, note, route, vehicles(name, license_plate)",
       )
       .eq("company_id", cid)
       .gte("trip_date", from)
@@ -193,23 +203,59 @@ function ExportPage() {
   }
 
   async function exportPdf() {
+    // Okno sa otvára hneď, kým platí kliknutie používateľa — po čakaní na dáta
+    // a mapy by ho prehliadač zablokoval ako vyskakovacie.
+    const w = window.open("", "_blank");
+    if (!w) {
+      toast.error("Prehliadač zablokoval nové okno. Povoľte ho a skúste znova.");
+      return;
+    }
+    w.document.write(
+      "<!doctype html><meta charset='utf-8'><title>Kniha jázd</title><p style='font-family:system-ui;padding:24px'>Pripravujem…</p>",
+    );
+
     setBusy(true);
     try {
       const rows = await fetchRows();
-      const w = window.open("", "_blank");
-      if (!w) return;
       const total = rows.reduce((a: number, r: any) => a + Number(r.distance_km), 0);
+
+      const sTrasou = rows.filter((r: any) => r.route);
+      const mapy: Array<{ r: any; obrazok: string }> = [];
+      if (sMapami) {
+        // Zámerne po jednej: naraz by to bolo sťahovanie dlaždíc vo veľkom.
+        for (const r of sTrasou.slice(0, MAX_MAP)) {
+          const obrazok = await obrazokTrasy(dekoduj(r.route), { sirka: 640, vyska: 380 });
+          if (obrazok) mapy.push({ r, obrazok });
+        }
+      }
+
       const tr = rows
         .map(
           (r: any) =>
             `<tr><td>${r.vehicles?.name ?? ""} ${r.vehicles?.license_plate ?? ""}</td><td>${r.trip_date}</td><td>${r.start_location ?? ""}</td><td>${r.end_location ?? ""}</td><td>${formatDuration(r.duration_seconds)}</td><td style="text-align:right">${Number(r.distance_km).toFixed(1)}</td><td style="text-align:right">${formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}</td><td>${r.driver_name ?? ""}</td><td>${r.purpose ?? ""}</td><td>${charakterJazdy(r.classification)}</td><td>${sourceLabel(r.external_source)}</td></tr>`,
         )
         .join("");
+
+      const trasyHtml = mapy.length
+        ? `<h2 class="trasy-nadpis">Trasy</h2>${
+            sTrasou.length > mapy.length
+              ? `<div class="poznamka">Priložených ${mapy.length} máp z ${sTrasou.length} jázd s uloženou trasou.</div>`
+              : ""
+          }${mapy
+            .map(
+              ({ r, obrazok }) =>
+                `<div class="trasa"><div class="trasa-hlavicka">${r.trip_date} · ${r.vehicles?.name ?? ""} ${r.vehicles?.license_plate ?? ""} · ${Number(r.distance_km).toFixed(1)} km · ${charakterJazdy(r.classification)}</div><img src="${obrazok}" alt="Trasa jazdy"></div>`,
+            )
+            .join("")}`
+        : "";
+
+      w.document.open();
       w.document.write(
-        `<!doctype html><html><head><meta charset="utf-8"><title>Kniha jázd ${from} – ${to}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}</style></head><body><h1>Kniha jázd</h1><div>Obdobie: ${from} – ${to}</div><table><thead><tr><th>Vozidlo</th><th>Dátum</th><th>Od</th><th>Do</th><th>Trvanie</th><th style="text-align:right">Km</th><th style="text-align:right">Priemer</th><th>Vodič</th><th>Typ</th><th>Charakter</th><th>Zdroj</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">Spolu</td><td style="text-align:right">${total.toFixed(1)} km</td><td colspan="5"></td></tr></tfoot></table><script>window.onload=()=>window.print()</script></body></html>`,
+        `<!doctype html><html><head><meta charset="utf-8"><title>Kniha jázd ${from} – ${to}</title><style>body{font-family:system-ui;padding:24px;color:#111}h1{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:11px}th,td{border:1px solid #ddd;padding:5px 6px;text-align:left}th{background:#f3f4f6}tfoot td{font-weight:600;background:#f9fafb}.trasy-nadpis{page-break-before:always;margin:0 0 8px}.poznamka{font-size:11px;color:#555;margin-bottom:8px}.trasa{page-break-inside:avoid;margin-bottom:14px}.trasa-hlavicka{font-size:11px;font-weight:600;margin-bottom:4px}.trasa img{width:100%;max-width:640px;border:1px solid #ddd}</style></head><body><h1>Kniha jázd</h1><div>Obdobie: ${from} – ${to}</div><table><thead><tr><th>Vozidlo</th><th>Dátum</th><th>Od</th><th>Do</th><th>Trvanie</th><th style="text-align:right">Km</th><th style="text-align:right">Priemer</th><th>Vodič</th><th>Typ</th><th>Charakter</th><th>Zdroj</th></tr></thead><tbody>${tr}</tbody><tfoot><tr><td colspan="5">Spolu</td><td style="text-align:right">${total.toFixed(1)} km</td><td colspan="5"></td></tr></tfoot></table>${trasyHtml}<script>window.onload=()=>window.print()</script></body></html>`,
       );
       w.document.close();
     } catch (e: any) {
+      w.close();
       toast.error(e.message);
     } finally {
       setBusy(false);
@@ -259,6 +305,21 @@ function ExportPage() {
               />
             </label>
           </div>
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={sMapami}
+              onChange={(e) => setSMapami(e.target.checked)}
+              className="mt-0.5 h-4 w-4"
+            />
+            <span>
+              Priložiť do PDF mapy trás
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Len jazdy, ktoré majú uloženú trasu, najviac {MAX_MAP} máp. Príprava chvíľu trvá —
+                podklad sa sťahuje z OpenStreetMap.
+              </span>
+            </span>
+          </label>
           <div className="flex flex-wrap gap-2">
             <button
               disabled={busy}
