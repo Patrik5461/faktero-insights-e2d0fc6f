@@ -7,9 +7,19 @@
  * a uloží** — zámerne z nej nič neodvodzuje a nespúšťa žiadnu synchronizáciu.
  * Konať na základe neautentizovaného obsahu by bola diera; keď dorazí dokumentácia,
  * doplní sa overenie podpisu a spracovanie uložených záznamov.
+ *
+ * Banka nám notifikácie naozaj posiela (brána `Layer7-SecureSpan-Gateway`), ale
+ * naše zdieľané tajomstvo nepozná — nikdy sme jej ho nemali ako odovzdať. Všetky
+ * volania preto padali na 401 a nezostala po nich žiadna stopa okrem riadku v logu.
+ * Odmietnutú notifikáciu teraz uložíme ako diagnostiku (`error_message` vyplnené,
+ * `processed = false`), aby bolo z čoho zistiť, čím sa banka autentizuje. Stále
+ * vraciame 401 a stále z obsahu nič neodvodzujeme.
  */
 
 const MAX_BODY_BYTES = 64 * 1024;
+
+/** Koľko odmietnutých notifikácií si za deň uložíme, aby sa tabuľka nedala zaplaviť. */
+const MAX_ODMIETNUTYCH_ZA_DEN = 50;
 
 /** Porovnanie odolné voči časovej analýze. */
 function safeEqual(a: string, b: string): boolean {
@@ -19,25 +29,25 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-/** Hlavičky, ktoré má zmysel uchovať. Authorization ani cookie sa neukladajú. */
-const KEEP_HEADERS = [
-  "content-type",
-  "user-agent",
-  "x-request-id",
-  "x-correlation-id",
-  "x-tb-signature",
-  "x-signature",
-  "signature",
-  "digest",
-  "date",
+/**
+ * Hlavičky, ktorých hodnota sa neukladá nikdy — nesú prihlasovacie údaje.
+ * Ich názov v zázname ostane (s hodnotou `(vynechané)`), lebo práve to, či ich
+ * banka posiela, potrebujeme vedieť.
+ */
+const CITLIVE_HLAVICKY = [
+  "authorization",
+  "proxy-authorization",
+  "cookie",
+  "set-cookie",
+  "x-webhook-secret",
 ];
 
 function pickHeaders(request: Request): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const name of KEEP_HEADERS) {
-    const v = request.headers.get(name);
-    if (v) out[name] = v.slice(0, 500);
-  }
+  request.headers.forEach((value, name) => {
+    const kluc = name.toLowerCase();
+    out[kluc] = CITLIVE_HLAVICKY.includes(kluc) ? "(vynechané)" : value.slice(0, 500);
+  });
   return out;
 }
 
@@ -45,6 +55,58 @@ function clientIp(request: Request): string | null {
   const fwd = request.headers.get("x-forwarded-for");
   if (fwd) return fwd.split(",")[0]!.trim().slice(0, 64);
   return request.headers.get("x-real-ip")?.slice(0, 64) ?? null;
+}
+
+/** Uloží notifikáciu. `chyba` je vyplnená pri odmietnutej — tá je len diagnostika. */
+async function ulozUdalost(args: {
+  request: Request;
+  path: string;
+  raw: string;
+  chyba: string | null;
+}): Promise<void> {
+  const { request, path, raw, chyba } = args;
+
+  let payload: unknown = null;
+  if ((request.headers.get("content-type") ?? "").includes("json")) {
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      // Neplatný JSON necháme len v raw_body, nie je to dôvod vrátiť chybu.
+    }
+  }
+
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    if (chyba) {
+      // Odmietnutú notifikáciu môže poslať ktokoľvek, takže si ich za deň
+      // uložíme len obmedzený počet. Na zistenie, čím sa banka autentizuje,
+      // stačí zopár vzoriek.
+      const od = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count } = await supabaseAdmin
+        .from("bank_webhook_events")
+        .select("id", { count: "exact", head: true })
+        .not("error_message", "is", null)
+        .gte("created_at", od);
+      if ((count ?? 0) >= MAX_ODMIETNUTYCH_ZA_DEN) return;
+    }
+
+    const { error } = await supabaseAdmin.from("bank_webhook_events").insert({
+      provider: "tatrabanka",
+      path,
+      method: request.method,
+      headers: pickHeaders(request),
+      payload: payload as any,
+      raw_body: raw || null,
+      source_ip: clientIp(request),
+      error_message: chyba,
+    });
+    if (error) throw new Error(error.message);
+  } catch (e: any) {
+    // Chybu zalogujeme, ale banke vrátime pôvodnú odpoveď — inak by notifikáciu
+    // donekonečna opakovala kvôli našej internej chybe.
+    console.error("[tatrabanka webhook] uloženie zlyhalo:", e?.message ?? e);
+  }
 }
 
 export async function handleTatraWebhook(request: Request, path: string): Promise<Response> {
@@ -60,12 +122,7 @@ export async function handleTatraWebhook(request: Request, path: string): Promis
   const url = new URL(request.url);
   const supplied = url.searchParams.get("s") ?? request.headers.get("x-webhook-secret") ?? "";
 
-  if (secret) {
-    if (!safeEqual(supplied, secret)) {
-      console.warn(`[tatrabanka webhook] odmietnuté – nesedí tajomstvo (path=${path})`);
-      return new Response("unauthorized", { status: 401 });
-    }
-  } else {
+  if (!secret) {
     // Bez nastaveného tajomstva by ktokoľvek na internete vedel plniť tabuľku.
     // Notifikáciu preto potvrdíme, ale neukladáme – len zalogujeme, že prišla.
     console.warn(
@@ -85,32 +142,12 @@ export async function handleTatraWebhook(request: Request, path: string): Promis
     raw = raw.slice(0, MAX_BODY_BYTES);
   }
 
-  let payload: unknown = null;
-  if ((request.headers.get("content-type") ?? "").includes("json")) {
-    try {
-      payload = JSON.parse(raw);
-    } catch {
-      // Neplatný JSON necháme len v raw_body, nie je to dôvod vrátiť chybu.
-    }
+  if (!safeEqual(supplied, secret)) {
+    console.warn(`[tatrabanka webhook] odmietnuté – nesedí tajomstvo (path=${path})`);
+    await ulozUdalost({ request, path, raw, chyba: "odmietnuté – nesedí tajomstvo" });
+    return new Response("unauthorized", { status: 401 });
   }
 
-  try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("bank_webhook_events").insert({
-      provider: "tatrabanka",
-      path,
-      method: request.method,
-      headers: pickHeaders(request),
-      payload: payload as any,
-      raw_body: raw || null,
-      source_ip: clientIp(request),
-    });
-    if (error) throw new Error(error.message);
-  } catch (e: any) {
-    // Chybu zalogujeme, ale banke vrátime 200 — inak by notifikáciu donekonečna
-    // opakovala kvôli našej internej chybe.
-    console.error("[tatrabanka webhook] uloženie zlyhalo:", e?.message ?? e);
-  }
-
+  await ulozUdalost({ request, path, raw, chyba: null });
   return new Response("ok", { status: 200 });
 }
