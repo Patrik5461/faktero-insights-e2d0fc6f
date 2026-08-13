@@ -46,9 +46,9 @@ describe("logovanie preskočených jázd", () => {
         'duplicate key value violates unique constraint "idx_trips_external_unique"',
       ),
     ).toBe(true);
-    expect(jeDuplicitaVDatabaze("null value in column start_time violates not-null constraint")).toBe(
-      false,
-    );
+    expect(
+      jeDuplicitaVDatabaze("null value in column start_time violates not-null constraint"),
+    ).toBe(false);
     expect(jeDuplicitaVDatabaze(null)).toBe(false);
   });
 });

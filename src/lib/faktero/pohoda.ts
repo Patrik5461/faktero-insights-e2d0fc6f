@@ -80,10 +80,7 @@ function datum(v: string): string {
 export function jePohodaXml(xml: string): boolean {
   if (!xml) return false;
   const z = xml.slice(0, 3000);
-  return (
-    /stormware\.cz\/schema/i.test(z) ||
-    /<(dat:)?(dataPack|responsePack)[\s>]/i.test(z)
-  );
+  return /stormware\.cz\/schema/i.test(z) || /<(dat:)?(dataPack|responsePack)[\s>]/i.test(z);
 }
 
 /**

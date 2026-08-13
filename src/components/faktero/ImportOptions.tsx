@@ -37,7 +37,11 @@ export function volbyPreRozsah(v: ImportVolby, r: ImportRozsah): ImportVolby {
 }
 
 const ROZSAHY: { id: ImportRozsah; label: string; popis: string }[] = [
-  { id: "vsetko", label: "Faktúry aj odberateľov", popis: "Bežná voľba — prenesie sa celý doklad." },
+  {
+    id: "vsetko",
+    label: "Faktúry aj odberateľov",
+    popis: "Bežná voľba — prenesie sa celý doklad.",
+  },
   {
     id: "odberatelia",
     label: "Iba odberateľov",

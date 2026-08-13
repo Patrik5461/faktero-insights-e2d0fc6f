@@ -169,10 +169,9 @@ function ImportPage() {
               <div className="mt-3 rounded-lg border border-border bg-secondary/30 p-3 text-xs text-muted-foreground">
                 <p className="font-medium text-foreground">Kde export nájdete</p>
                 <p className="mt-1">
-                  Vo SuperFaktúre otvorte <strong>Nástroje → Export agendy</strong>, vyberte
-                  obdobie a stiahnite export. Dostanete ZIP, v ktorom je každá faktúra ako
-                  samostatný súbor <code>.isdoc</code> — nahrajte ho sem celý, rozbaľovať ho
-                  netreba.
+                  Vo SuperFaktúre otvorte <strong>Nástroje → Export agendy</strong>, vyberte obdobie
+                  a stiahnite export. Dostanete ZIP, v ktorom je každá faktúra ako samostatný súbor{" "}
+                  <code>.isdoc</code> — nahrajte ho sem celý, rozbaľovať ho netreba.
                 </p>
               </div>
               <label className="mt-5 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-6 py-12 text-sm hover:border-primary/50">

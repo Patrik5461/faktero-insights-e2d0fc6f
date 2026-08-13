@@ -75,7 +75,10 @@ function suma(n: number): string {
 /** Údaje o strane dokladu (odberateľ alebo dodávateľ). */
 function strana(p: any): Record<string, string> {
   const party = uzol(p, "Party") ?? p;
-  const ulica = [hodnota(party, "PostalAddress", "StreetName"), hodnota(party, "PostalAddress", "BuildingNumber")]
+  const ulica = [
+    hodnota(party, "PostalAddress", "StreetName"),
+    hodnota(party, "PostalAddress", "BuildingNumber"),
+  ]
     .filter(Boolean)
     .join(" ");
   return {

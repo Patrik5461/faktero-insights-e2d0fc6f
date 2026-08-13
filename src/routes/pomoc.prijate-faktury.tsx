@@ -62,7 +62,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Zoznam ukazuje, čo je splatné a čo po splatnosti. Po zaplatení faktúru označte za uhradenú.
+          Zoznam ukazuje, čo je splatné a čo po splatnosti. Po zaplatení faktúru označte za
+          uhradenú.
         </p>
         <p>
           Ak máte pripojený <Link to="/pomoc/banka">bankový účet</Link>, úhrady sa dajú párovať s

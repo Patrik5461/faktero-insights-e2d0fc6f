@@ -427,9 +427,7 @@ function CennikPage() {
               <div>
                 <label className={popis}>Cenová skupina</label>
                 {skupiny.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    Najprv založte cenovú skupinu.
-                  </p>
+                  <p className="text-sm text-muted-foreground">Najprv založte cenovú skupinu.</p>
                 ) : (
                   <select
                     className={pole}

@@ -14,11 +14,7 @@
  */
 
 export type StavPrijatejObjednavky =
-  | "draft"
-  | "confirmed"
-  | "partially_invoiced"
-  | "completed"
-  | "cancelled";
+  "draft" | "confirmed" | "partially_invoiced" | "completed" | "cancelled";
 
 export const STAV_POPIS: Record<StavPrijatejObjednavky, string> = {
   draft: "Rozpracovaná",
@@ -126,7 +122,9 @@ export function suctyObjednavky(polozky: PolozkaObjednavky[]): Sucty {
  * vybavená celá sa na faktúru nedostane, inak by sa odberateľovi fakturovalo
  * druhýkrát to isté.
  */
-export function polozkyNaFakturu<T extends PolozkaObjednavky>(polozky: T[]): (T & { quantity: number })[] {
+export function polozkyNaFakturu<T extends PolozkaObjednavky>(
+  polozky: T[],
+): (T & { quantity: number })[] {
   return (polozky ?? [])
     .map((p) => ({ ...p, quantity: zostavaVybavit(p) }))
     .filter((p) => p.quantity > 0);

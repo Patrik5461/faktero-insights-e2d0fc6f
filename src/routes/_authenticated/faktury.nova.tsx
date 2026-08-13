@@ -393,7 +393,11 @@ function NewInvoice() {
     if (!podklady || !it.product_id || it._cena_rucne) return {};
     const produkt = products.find((p) => p.id === it.product_id);
     if (!produkt) return {};
-    const r = cenaZPodkladov(podklady, { id: it.product_id, unit_price: produkt.unit_price }, mnozstvo);
+    const r = cenaZPodkladov(
+      podklady,
+      { id: it.product_id, unit_price: produkt.unit_price },
+      mnozstvo,
+    );
     return {
       unit_price: r.cena,
       _dovod: r.zdroj === "zakladna" ? undefined : r.dovod,

@@ -1,11 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  nacitajBlocekFn,
-  PRENOS_KLUC,
-  type BlocekVysledok,
-} from "@/lib/faktero/blocek.functions";
+import { nacitajBlocekFn, PRENOS_KLUC, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -84,10 +80,7 @@ function ScannerPage() {
   function vytvorVydavok() {
     if (!result) return;
     try {
-      sessionStorage.setItem(
-        PRENOS_KLUC,
-        JSON.stringify({ ...result, payment_method: uhrada }),
-      );
+      sessionStorage.setItem(PRENOS_KLUC, JSON.stringify({ ...result, payment_method: uhrada }));
     } catch {
       toast.error("Doklad sa nepodarilo odovzdať. Skúste to znova.");
       return;

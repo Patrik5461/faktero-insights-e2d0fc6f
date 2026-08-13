@@ -89,7 +89,6 @@ function ProductsPage() {
         e && e.id === editing.id ? { ...e, track_stock: !!data?.track_stock } : e,
       );
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing?.id]);
 
   async function save(p: Product) {

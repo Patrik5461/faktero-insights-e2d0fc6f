@@ -124,7 +124,8 @@ function AcceptInvitationPage() {
     <div className="mx-auto max-w-md p-8">
       <h1 className="text-2xl font-bold">Pozvánka do firmy</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Firma <strong>{inv.company_name}</strong> vás pozvala ako <strong>{ROLA_POPIS[inv.role] ?? inv.role}</strong>.
+        Firma <strong>{inv.company_name}</strong> vás pozvala ako{" "}
+        <strong>{ROLA_POPIS[inv.role] ?? inv.role}</strong>.
       </p>
       <form
         onSubmit={handleAccept}

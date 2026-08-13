@@ -86,7 +86,9 @@ export const listSalesOrders = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     let q = context.supabase
       .from("sales_orders")
-      .select("*, sales_order_items(quantity, invoiced_quantity, unit_price, vat_rate), customers(name)")
+      .select(
+        "*, sales_order_items(quantity, invoiced_quantity, unit_price, vat_rate), customers(name)",
+      )
       .eq("company_id", data.company_id)
       .is("deleted_at", null)
       .order("order_date", { ascending: false })
@@ -364,7 +366,9 @@ export const getSalesOrderForInvoice = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const o = await nacitajObjednavku(context.supabase, data.company_id, data.id);
     const polozky = polozkyNaFakturu(
-      [...(o.sales_order_items ?? [])].sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)),
+      [...(o.sales_order_items ?? [])].sort(
+        (a: any, b: any) => (a.position ?? 0) - (b.position ?? 0),
+      ),
     );
     return {
       order_number: o.order_number,

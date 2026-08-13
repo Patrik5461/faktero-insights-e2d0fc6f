@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  extractAccountIban,
-  parseStatementObjectName,
-} from "./bank-statements-restore.server";
+import { extractAccountIban, parseStatementObjectName } from "./bank-statements-restore.server";
 
 describe("parseStatementObjectName", () => {
   it("rozozná vlastný výpis a dopočíta hranice mesiaca", () => {

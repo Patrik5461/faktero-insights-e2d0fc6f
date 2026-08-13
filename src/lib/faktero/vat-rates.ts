@@ -22,9 +22,7 @@ export const LEGACY_SK_VAT_RATES = [20, 10] as const;
 export function najblizsiaSadzba(vypocitana: number): number {
   const n = Number(vypocitana);
   if (!Number.isFinite(n)) return 0;
-  const znama = [...SK_VAT_RATES, ...LEGACY_SK_VAT_RATES].find(
-    (r) => Math.abs(r - n) <= 0.5,
-  );
+  const znama = [...SK_VAT_RATES, ...LEGACY_SK_VAT_RATES].find((r) => Math.abs(r - n) <= 0.5);
   return znama ?? Math.round(n * 100) / 100;
 }
 

@@ -25,8 +25,8 @@ const sections: HelpSection[] = [
       <>
         <p>
           Keď je podané daňové priznanie alebo kontrolný výkaz, doklady za to obdobie sa už nesmú
-          meniť. Uzávierka je poistka proti tomu, aby niekto — aj omylom — nezmenil faktúru, ktorá je
-          už odovzdaná úradu.
+          meniť. Uzávierka je poistka proti tomu, aby niekto — aj omylom — nezmenil faktúru, ktorá
+          je už odovzdaná úradu.
         </p>
         <p>
           Nastavuje sa v <Link to="/uctovnictvo/uzavierka">Účtovníctvo → Uzávierka</Link> jediným
@@ -64,16 +64,16 @@ const sections: HelpSection[] = [
         <p>Zamykajú sa sumy a dátumy, nie práca s dokladom. Naďalej sa dá:</p>
         <ul>
           <li>
-            <strong>označiť faktúru za uhradenú</strong> a zapísať dátum úhrady — platba prichádza aj
-            mesiace po vystavení,
+            <strong>označiť faktúru za uhradenú</strong> a zapísať dátum úhrady — platba prichádza
+            aj mesiace po vystavení,
           </li>
           <li>meniť stav dokladu,</li>
           <li>dopísať poznámku,</li>
           <li>priradiť doklad na zákazku.</li>
         </ul>
         <p>
-          Bez týchto výnimiek by uzavretie obdobia znamenalo, že staré faktúry sa už nikdy
-          nespárujú s platbami.
+          Bez týchto výnimiek by uzavretie obdobia znamenalo, že staré faktúry sa už nikdy nespárujú
+          s platbami.
         </p>
       </>
     ),
@@ -104,8 +104,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Odomknúť sa dá kedykoľvek — posunutím dátumu dozadu alebo úplným zrušením zámku. Faktero si
-          pri tom vyžiada potvrdenie.
+          Odomknúť sa dá kedykoľvek — posunutím dátumu dozadu alebo úplným zrušením zámku. Faktero
+          si pri tom vyžiada potvrdenie.
         </p>
         <p>
           Odomknutie je legitímne, napríklad pri dodatočnom daňovom priznaní. Po oprave nezabudnite

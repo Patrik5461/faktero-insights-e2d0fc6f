@@ -24,8 +24,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          V <Link to="/odberatelia">Kontakty → Odberatelia</Link> stačí začať písať názov firmy alebo
-          zadať IČO — Faktero doplní adresu, DIČ aj IČ DPH z registra. Údaje sa dajú prepísať.
+          V <Link to="/odberatelia">Kontakty → Odberatelia</Link> stačí začať písať názov firmy
+          alebo zadať IČO — Faktero doplní adresu, DIČ aj IČ DPH z registra. Údaje sa dajú prepísať.
         </p>
         <p>
           Ak už odberateľ s rovnakým IČOm existuje, Faktero na to upozorní ešte pred uložením. Dva
@@ -85,9 +85,9 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Zmazaný odberateľ zmizne zo zoznamu, ale <strong>faktúry ostávajú</strong> — nesú si vlastný
-          odpis údajov z času vystavenia. Preto premenovanie odberateľa spätne neprepíše staré
-          doklady.
+          Zmazaný odberateľ zmizne zo zoznamu, ale <strong>faktúry ostávajú</strong> — nesú si
+          vlastný odpis údajov z času vystavenia. Preto premenovanie odberateľa spätne neprepíše
+          staré doklady.
         </p>
       </>
     ),

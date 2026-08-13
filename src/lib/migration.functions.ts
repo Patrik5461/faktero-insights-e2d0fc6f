@@ -26,7 +26,7 @@ export const exportMigrationBundle = createServerFn({ method: "POST" })
     let page = 1;
     const perPage = 1000;
     // listUsers returns at most ~1000 per page
-    // eslint-disable-next-line no-constant-condition
+
     while (true) {
       const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
       if (error) throw new Error(`listUsers page ${page}: ${error.message}`);
@@ -61,7 +61,7 @@ export const exportMigrationBundle = createServerFn({ method: "POST" })
       const out: Array<{ path: string; size: number | null; mimetype: string | null }> = [];
       let offset = 0;
       const limit = 1000;
-      // eslint-disable-next-line no-constant-condition
+
       while (true) {
         const { data, error } = await supabaseAdmin.storage
           .from(bucket)

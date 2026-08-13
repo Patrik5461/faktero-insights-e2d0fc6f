@@ -25,8 +25,9 @@ const sections: HelpSection[] = [
       <>
         <p>
           Bez cenníka má produkt jedinú cenu a zľavu prepisujete ručne na každom riadku každej
-          faktúry. Cenník tú istú vec povie raz: <em>stavebníci majú −15 %, Novák má tehlu za 0,38 €
-          a cez august beží akcia na tmely</em>. Doklad si potom cenu doplní sám.
+          faktúry. Cenník tú istú vec povie raz:{" "}
+          <em>stavebníci majú −15 %, Novák má tehlu za 0,38 € a cez august beží akcia na tmely</em>.
+          Doklad si potom cenu doplní sám.
         </p>
         <p>
           Cenník nájdete v <Link to="/ceny">Sklad → Cenník a zľavy</Link>, akcie v{" "}
@@ -71,8 +72,8 @@ const sections: HelpSection[] = [
       <>
         <p>
           Nevyhráva najnižšia cena a je to zámer. Stály odberateľ má občas dohodnutú cenu{" "}
-          <strong>vyššiu</strong> než pultovú — za prioritné dodanie, servis, dopravu na miesto. Taká
-          cena musí prejsť.
+          <strong>vyššiu</strong> než pultovú — za prioritné dodanie, servis, dopravu na miesto.
+          Taká cena musí prejsť.
         </p>
         <p>
           V cenníku takú položku spoznáte podľa oranžového znamienka plus vedľa dohodnutej ceny;
@@ -111,9 +112,8 @@ const sections: HelpSection[] = [
           e-shop. Má vlastnú percentuálnu zľavu a môže mať vlastné dohodnuté ceny.
         </p>
         <p>
-          Odberateľa do skupiny zaradíte v jeho karte v{" "}
-          <Link to="/odberatelia">Odberatelia</Link>. Tam sa nastavuje aj jeho{" "}
-          <strong>individuálna zľava</strong>.
+          Odberateľa do skupiny zaradíte v jeho karte v <Link to="/odberatelia">Odberatelia</Link>.
+          Tam sa nastavuje aj jeho <strong>individuálna zľava</strong>.
         </p>
         <p>
           Zmazaním skupiny sa odberatelia iba odviažu a stratia jej zľavu — dohodnuté ceny ostanú v
@@ -133,13 +133,13 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Akcia môže platiť na <strong>celý sortiment</strong>, alebo len na produkty, ktoré do nej
-          vyberiete. Pri vybraných produktoch sa dá zadať pevná akciová cena; keď ju necháte prázdnu,
-          platí percentuálna zľava akcie.
+          vyberiete. Pri vybraných produktoch sa dá zadať pevná akciová cena; keď ju necháte
+          prázdnu, platí percentuálna zľava akcie.
         </p>
         <p>
-          <strong>Akcia sa uplatní len vtedy, keď je pre odberateľa výhodnejšia</strong> než to, čo by
-          dostal podľa cenníka. Akcia je marketing — nemá nikomu zdvihnúť cenu, ktorú má dohodnutú.
-          Ak platí viac akcií naraz, vyhrá tá najvýhodnejšia.
+          <strong>Akcia sa uplatní len vtedy, keď je pre odberateľa výhodnejšia</strong> než to, čo
+          by dostal podľa cenníka. Akcia je marketing — nemá nikomu zdvihnúť cenu, ktorú má
+          dohodnutú. Ak platí viac akcií naraz, vyhrá tá najvýhodnejšia.
         </p>
         <p>
           Akciu sa dá dočasne <strong>vypnúť</strong> bez mazania. Rozhoduje{" "}
@@ -155,14 +155,15 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Keď na faktúru, ponuku alebo objednávku pridáte produkt, cena sa doplní podľa cenníka a pod
-          ňou sa zobrazí zeleným, prečo je taká — <em>Zľava odberateľa 10 %</em>,{" "}
+          Keď na faktúru, ponuku alebo objednávku pridáte produkt, cena sa doplní podľa cenníka a
+          pod ňou sa zobrazí zeleným, prečo je taká — <em>Zľava odberateľa 10 %</em>,{" "}
           <em>Cena cenovej skupiny</em>, <em>Akcia Letný výpredaj −30 %</em>. Ak sa cena líši od
           základnej, je vedľa nej preškrtnutá pôvodná.
         </p>
         <p>
-          Cena sa prepočíta aj po zmene odberateľa. <strong>Riadok, do ktorého ste zasiahli ručne,
-          už cenník neprepisuje</strong> — vaša cena má vždy prednosť.
+          Cena sa prepočíta aj po zmene odberateľa.{" "}
+          <strong>Riadok, do ktorého ste zasiahli ručne, už cenník neprepisuje</strong> — vaša cena
+          má vždy prednosť.
         </p>
       </>
     ),

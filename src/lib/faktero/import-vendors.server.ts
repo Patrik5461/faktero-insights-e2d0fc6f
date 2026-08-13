@@ -202,7 +202,9 @@ function parseMoneyS3(bytes: Uint8Array): CanonicalRow[] {
         item_name: pickFirst(it, "Popis", "Nazev", "Name"),
         item_quantity: num(pickFirst(it, "PocetMJ", "PocetMj", "Mnozstvo", "Quantity")),
         item_unit:
-          hlbka(it, "SklPolozka", "KmKarta", "MJ") || pickFirst(it, "Jednotka", "MJ", "Unit") || "ks",
+          hlbka(it, "SklPolozka", "KmKarta", "MJ") ||
+          pickFirst(it, "Jednotka", "MJ", "Unit") ||
+          "ks",
         item_unit_price: num(
           cudziaMena
             ? pickFirst(it, "Valuty") || pickFirst(it, "Cena")

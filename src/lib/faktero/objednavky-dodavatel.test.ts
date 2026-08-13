@@ -24,15 +24,13 @@ describe("zostavaPrijat", () => {
 
 describe("stavPodlaPrijatia", () => {
   it("nič neprišlo — ostáva odoslaná", () => {
-    expect(
-      stavPodlaPrijatia([{ quantity: 10, received_quantity: 0 }], "sent"),
-    ).toBe("sent");
+    expect(stavPodlaPrijatia([{ quantity: 10, received_quantity: 0 }], "sent")).toBe("sent");
   });
 
   it("časť prišla — čiastočne prijatá", () => {
-    expect(
-      stavPodlaPrijatia([{ quantity: 10, received_quantity: 4 }], "sent"),
-    ).toBe("partially_received");
+    expect(stavPodlaPrijatia([{ quantity: 10, received_quantity: 4 }], "sent")).toBe(
+      "partially_received",
+    );
   });
 
   it("všetko prišlo — prijatá", () => {
@@ -60,22 +58,18 @@ describe("stavPodlaPrijatia", () => {
   });
 
   it("nadmerný príjem uzavrie objednávku", () => {
-    expect(
-      stavPodlaPrijatia([{ quantity: 10, received_quantity: 11 }], "sent"),
-    ).toBe("received");
+    expect(stavPodlaPrijatia([{ quantity: 10, received_quantity: 11 }], "sent")).toBe("received");
   });
 
   // Zrušená objednávka sa nesmie dostať späť do hry len preto, že niečo prišlo.
   it("zrušenú objednávku príjem nevzkriesi", () => {
-    expect(
-      stavPodlaPrijatia([{ quantity: 10, received_quantity: 10 }], "cancelled"),
-    ).toBe("cancelled");
+    expect(stavPodlaPrijatia([{ quantity: 10, received_quantity: 10 }], "cancelled")).toBe(
+      "cancelled",
+    );
   });
 
   it("rozpracovanú objednávku prepočet stavu nemení", () => {
-    expect(
-      stavPodlaPrijatia([{ quantity: 10, received_quantity: 0 }], "draft"),
-    ).toBe("draft");
+    expect(stavPodlaPrijatia([{ quantity: 10, received_quantity: 0 }], "draft")).toBe("draft");
   });
 
   it("objednávka bez položiek si stav ponechá", () => {

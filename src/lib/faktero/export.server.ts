@@ -253,7 +253,9 @@ function cislaSk(n: any): string {
 
 /** Text do stĺpca s obmedzenou dĺžkou; tabulátor a nový riadok by rozbili riadok. */
 function pole(v: any, max = 0): string {
-  const s = String(v ?? "").replace(/[\t\r\n]+/g, " ").trim();
+  const s = String(v ?? "")
+    .replace(/[\t\r\n]+/g, " ")
+    .trim();
   return max > 0 ? s.slice(0, max) : s;
 }
 
@@ -281,7 +283,16 @@ export function buildOmegaTxt(opts: {
 
   // R00 — typ údajov a hlavička súboru: T01 = fakturácia.
   riadky.push(
-    ["R00", "T01", "", pole(company?.name), pole(company?.ico, 12), pole(company?.street, 40), pole(company?.zip, 6), pole(company?.city, 40)].join("\t"),
+    [
+      "R00",
+      "T01",
+      "",
+      pole(company?.name),
+      pole(company?.ico, 12),
+      pole(company?.street, 40),
+      pole(company?.zip, 6),
+      pole(company?.city, 40),
+    ].join("\t"),
   );
 
   for (const { invoice, items } of invoices) {
@@ -351,8 +362,7 @@ export function buildOmegaTxt(opts: {
     for (const it of items) {
       const sadzba = Number(it.vat_rate) || 0;
       // 0 nulová, N nižšia, Y znížená 2, V vyššia, X neobsahuje.
-      const kod =
-        sadzba === 0 ? "0" : sadzba === vyssia ? "V" : sadzba === nizsia ? "N" : "Y";
+      const kod = sadzba === 0 ? "0" : sadzba === vyssia ? "V" : sadzba === nizsia ? "N" : "Y";
       const r02 = [
         "R02",
         pole(it.name),
@@ -451,7 +461,9 @@ export function buildMoneyS3Xml(opts: {
         <Zaklad22>${fixed2(v.zaklad)}</Zaklad22>
         <DPH5>${fixed2(n.dan)}</DPH5>
         <DPH22>${fixed2(v.dan)}</DPH22>${
-          dalsieSadzby ? `\n        <SeznamDalsiSazby>${dalsieSadzby}\n        </SeznamDalsiSazby>` : ""
+          dalsieSadzby
+            ? `\n        <SeznamDalsiSazby>${dalsieSadzby}\n        </SeznamDalsiSazby>`
+            : ""
         }
       </SouhrnDPH>
       <Celkem>${fixed2(celkomDokladu(invoice, items))}</Celkem>

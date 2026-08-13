@@ -5,7 +5,9 @@ const D = (s: string) => new Date(s);
 
 describe("terminZrusenia", () => {
   it("posunie o 14 dní", () => {
-    expect(terminZrusenia(D("2026-08-11T10:00:00Z")).toISOString()).toBe("2026-08-25T10:00:00.000Z");
+    expect(terminZrusenia(D("2026-08-11T10:00:00Z")).toISOString()).toBe(
+      "2026-08-25T10:00:00.000Z",
+    );
     expect(ODKLAD_DNI).toBe(14);
   });
 });

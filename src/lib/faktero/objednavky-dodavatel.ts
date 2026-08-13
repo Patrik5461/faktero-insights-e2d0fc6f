@@ -9,12 +9,7 @@
  * stav by sa skôr či neskôr rozišiel s tým, čo je naozaj na sklade.
  */
 
-export type StavObjednavky =
-  | "draft"
-  | "sent"
-  | "partially_received"
-  | "received"
-  | "cancelled";
+export type StavObjednavky = "draft" | "sent" | "partially_received" | "received" | "cancelled";
 
 export type PolozkaObjednavky = {
   quantity: number;

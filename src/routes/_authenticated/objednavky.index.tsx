@@ -67,7 +67,10 @@ function OrdersPage() {
   const spolu = useMemo(
     () =>
       rows.reduce(
-        (s, r) => ({ hodnota: s.hodnota + Number(r.total || 0), zostava: s.zostava + Number(r.zostava || 0) }),
+        (s, r) => ({
+          hodnota: s.hodnota + Number(r.total || 0),
+          zostava: s.zostava + Number(r.zostava || 0),
+        }),
         { hodnota: 0, zostava: 0 },
       ),
     [rows],
@@ -144,7 +147,10 @@ function OrdersPage() {
                   const meska = jePoTermine(o.requested_date, stav, dnes);
                   const percento = percentoVybavenia(o.sales_order_items ?? []);
                   return (
-                    <tr key={o.id} className="border-b border-border last:border-0 hover:bg-muted/40">
+                    <tr
+                      key={o.id}
+                      className="border-b border-border last:border-0 hover:bg-muted/40"
+                    >
                       <td className="px-4 py-2">
                         <Link
                           to="/objednavky/$id"

@@ -154,8 +154,13 @@ function NewOrder() {
     (productId: string, mnozstvo: number | string) => {
       const produkt = products.find((p) => p.id === productId);
       if (!produkt) return null;
-      if (!podklady) return { cena: Number(produkt.unit_price ?? 0), dovod: undefined as string | undefined };
-      const r = cenaZPodkladov(podklady, { id: productId, unit_price: produkt.unit_price }, mnozstvo);
+      if (!podklady)
+        return { cena: Number(produkt.unit_price ?? 0), dovod: undefined as string | undefined };
+      const r = cenaZPodkladov(
+        podklady,
+        { id: productId, unit_price: produkt.unit_price },
+        mnozstvo,
+      );
       return { cena: r.cena, dovod: r.zdroj === "zakladna" ? undefined : r.dovod };
     },
     [podklady, products],
@@ -167,7 +172,12 @@ function NewOrder() {
         if (i !== j) return p;
         const novy = { ...p, ...patch };
         // Zmena množstva môže preklopiť riadok do inej množstevnej ceny.
-        if (patch.quantity !== undefined && patch.unit_price === undefined && novy.product_id && !novy._cena_rucne) {
+        if (
+          patch.quantity !== undefined &&
+          patch.unit_price === undefined &&
+          novy.product_id &&
+          !novy._cena_rucne
+        ) {
           const c = cenaProduktu(novy.product_id, patch.quantity);
           if (c) return { ...novy, unit_price: c.cena, _dovod: c.dovod };
         }

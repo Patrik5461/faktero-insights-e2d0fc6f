@@ -28,8 +28,8 @@ export const Route = createFileRoute("/_authenticated/importy/pohoda")({
           <p className="mb-2 mt-4 font-medium">mPohoda</p>
           <p className="text-muted-foreground">
             mPohoda dáta nevydáva ako XML, ale cez svoje rozhranie vo formáte <strong>JSON</strong>.
-            Súbor so zoznamom faktúr z rozhrania mPohody nahrajte rovnako nižšie — formát
-            rozpoznáme sami.
+            Súbor so zoznamom faktúr z rozhrania mPohody nahrajte rovnako nižšie — formát rozpoznáme
+            sami.
           </p>
         </>
       }

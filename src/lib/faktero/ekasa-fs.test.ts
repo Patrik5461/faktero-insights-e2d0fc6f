@@ -112,11 +112,19 @@ describe("doklad z Finančnej správy", () => {
    */
   it("sadzba zo zlomku na percentá", () => {
     expect(d.polozky[0].vat_rate).toBe(19);
-    expect(mapujFsDoklad({ items: [{ vatRate: 0.23, quantity: 1, price: 1 }] }).polozky[0].vat_rate).toBe(23);
-    expect(mapujFsDoklad({ items: [{ vatRate: 0.05, quantity: 1, price: 1 }] }).polozky[0].vat_rate).toBe(5);
-    expect(mapujFsDoklad({ items: [{ vatRate: 0, quantity: 1, price: 1 }] }).polozky[0].vat_rate).toBe(0);
+    expect(
+      mapujFsDoklad({ items: [{ vatRate: 0.23, quantity: 1, price: 1 }] }).polozky[0].vat_rate,
+    ).toBe(23);
+    expect(
+      mapujFsDoklad({ items: [{ vatRate: 0.05, quantity: 1, price: 1 }] }).polozky[0].vat_rate,
+    ).toBe(5);
+    expect(
+      mapujFsDoklad({ items: [{ vatRate: 0, quantity: 1, price: 1 }] }).polozky[0].vat_rate,
+    ).toBe(0);
     // Keby raz začali posielať percentá, nesmie sa to znásobiť druhýkrát.
-    expect(mapujFsDoklad({ items: [{ vatRate: 19, quantity: 1, price: 1 }] }).polozky[0].vat_rate).toBe(19);
+    expect(
+      mapujFsDoklad({ items: [{ vatRate: 19, quantity: 1, price: 1 }] }).polozky[0].vat_rate,
+    ).toBe(19);
   });
 
   /* Doklad nesie cenu za celý riadok; jednotková sa musí dopočítať. */
@@ -225,9 +233,9 @@ describe("skutočný bloček z eKasy", () => {
 
 describe("spôsob úhrady z dokladu", () => {
   it("hotovosť aj karta podľa kódu alebo popisu", () => {
-    expect(sposobUhrady([{ sum: 10, paymentType: { code: "CASH", paymentType: "Hotovosť" } }])).toBe(
-      "hotovost",
-    );
+    expect(
+      sposobUhrady([{ sum: 10, paymentType: { code: "CASH", paymentType: "Hotovosť" } }]),
+    ).toBe("hotovost");
     expect(sposobUhrady([{ sum: 10, paymentType: { code: "CARD", paymentType: "Karta" } }])).toBe(
       "karta",
     );
@@ -260,7 +268,7 @@ describe("čítanie odpovede modelu", () => {
    */
   it("JSON v bloku so spätnými apostrofmi", () => {
     expect(odpovedNaJson('```json\n{"total": 7.96}\n```')).toEqual({ total: 7.96 });
-    expect(odpovedNaJson("```\n{\"a\":1}\n```")).toEqual({ a: 1 });
+    expect(odpovedNaJson('```\n{"a":1}\n```')).toEqual({ a: 1 });
   });
 
   it("JSON s vetou navyše", () => {

@@ -177,8 +177,8 @@ function QuoteDetail() {
     return (
       <PageBody>
         <div className="rounded-xl border border-border bg-card p-6 text-sm">
-          Táto ponuka v aktívnej firme neexistuje. Ak patrí inej vašej firme, prepnite sa na ňu
-          hore v lište.{" "}
+          Táto ponuka v aktívnej firme neexistuje. Ak patrí inej vašej firme, prepnite sa na ňu hore
+          v lište.{" "}
           <Link to="/ponuky" className="text-primary underline">
             Späť na ponuky
           </Link>

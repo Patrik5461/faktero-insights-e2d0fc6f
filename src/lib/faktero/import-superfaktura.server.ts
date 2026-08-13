@@ -646,8 +646,7 @@ export function detectMapping(headers: string[], rows: Record<string, string>[])
    * DPH na položke — a položky sa importovali s prednastavenými 23 %.
    */
   type Navrh = { field: FieldKey; header: string; score: number; priorita: number };
-  const priorita = (f: FieldKey) =>
-    CORE_FIELDS.includes(f) ? 0 : NICE_FIELDS.includes(f) ? 1 : 2;
+  const priorita = (f: FieldKey) => (CORE_FIELDS.includes(f) ? 0 : NICE_FIELDS.includes(f) ? 1 : 2);
 
   const navrhy: Navrh[] = [];
   for (const field of Object.keys(SYNONYMS) as FieldKey[]) {
@@ -786,10 +785,7 @@ export function stavDokladu(hodnota: string | undefined): string {
  * (bez DPH) a `vat` (daň) zvlášť, takže bez dopočtu by sa faktúry importovali
  * v cene bez DPH.
  */
-function sumaSDph(
-  row: Record<string, string>,
-  mapping: Partial<Record<FieldKey, string>>,
-): number {
+function sumaSDph(row: Record<string, string>, mapping: Partial<Record<FieldKey, string>>): number {
   const total = num(pick(row, mapping, "total"));
   if (total) return total;
   const zaklad = num(pick(row, mapping, "subtotal"));
@@ -1078,12 +1074,7 @@ export async function runImport(args: {
       const dueDate = normDate(pick(head, mapping, "due_date")) || issueDate;
       const deliveryDate = normDate(pick(head, mapping, "delivery_date"));
       const knownStatus = stavDokladu(pick(head, mapping, "status")) as
-        | "draft"
-        | "issued"
-        | "sent"
-        | "paid"
-        | "cancelled"
-        | "overdue";
+        "draft" | "issued" | "sent" | "paid" | "cancelled" | "overdue";
 
       const payload = {
         company_id: companyId,

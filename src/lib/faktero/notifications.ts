@@ -141,7 +141,10 @@ export function buildNotifications(input: NotificationInput): AppNotification[] 
       key: `bank_unmatched:${t.id}`,
       severity: "info",
       title: `Nepriradená platba ${formatMoney(t.amount, t.currency)}`,
-      detail: [t.counterparty ?? "Neznáma protistrana", t.variable_symbol ? `VS ${t.variable_symbol}` : null]
+      detail: [
+        t.counterparty ?? "Neznáma protistrana",
+        t.variable_symbol ? `VS ${t.variable_symbol}` : null,
+      ]
         .filter(Boolean)
         .join(" · "),
       to: "/bankove-ucty/transakcie",

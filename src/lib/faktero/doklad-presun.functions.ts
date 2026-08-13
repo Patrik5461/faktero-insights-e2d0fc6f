@@ -43,7 +43,7 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
 
     /* --- príloha --- */
     let file_path: string | null = null;
-    let file_mime: string | null = doklad.file_mime ?? null;
+    const file_mime: string | null = doklad.file_mime ?? null;
     let file_size: number | null = doklad.file_size ?? null;
     if (doklad.file_path) {
       const { data: subor, error: chybaStiahnutia } = await supabase.storage
@@ -59,7 +59,8 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
           contentType: doklad.file_mime ?? "application/pdf",
           upsert: false,
         });
-      if (chybaNahratia) throw new Error(`Prílohu sa nepodarilo presunúť: ${chybaNahratia.message}`);
+      if (chybaNahratia)
+        throw new Error(`Prílohu sa nepodarilo presunúť: ${chybaNahratia.message}`);
       file_path = cielova;
       file_size = subor.size ?? file_size;
     }

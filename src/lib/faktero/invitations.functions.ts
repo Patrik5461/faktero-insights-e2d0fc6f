@@ -162,7 +162,6 @@ export const revokeInvitationFn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-
 /* ---------- členovia firmy ---------- */
 
 type RolaClena = "owner" | "admin" | "accountant" | "employee";
@@ -229,7 +228,10 @@ export const changeMemberRoleFn = createServerFn({ method: "POST" })
     await overAdmina(context, data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Firma bez majiteľa by ostala bez toho, kto ju vie zrušiť alebo platiť.
-    if (data.role !== "owner" && (await poslednyMajitel(supabaseAdmin, data.company_id, data.user_id)))
+    if (
+      data.role !== "owner" &&
+      (await poslednyMajitel(supabaseAdmin, data.company_id, data.user_id))
+    )
       throw new Error("Firma musí mať aspoň jedného majiteľa.");
     const { error } = await supabaseAdmin
       .from("company_users")

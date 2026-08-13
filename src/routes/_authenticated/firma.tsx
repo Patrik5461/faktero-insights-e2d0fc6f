@@ -297,9 +297,8 @@ function TeamSection({ companyId }: { companyId: string }) {
   const [odkaz, setOdkaz] = useState<string | null>(null);
 
   async function load() {
-    const { listInvitationsFn, listMembersFn } = await import(
-      "@/lib/faktero/invitations.functions"
-    );
+    const { listInvitationsFn, listMembersFn } =
+      await import("@/lib/faktero/invitations.functions");
     try {
       const rows = await listInvitationsFn({ data: { company_id: companyId } });
       setInvs(rows as any[]);
@@ -318,7 +317,9 @@ function TeamSection({ companyId }: { companyId: string }) {
   async function zmenRolu(userId: string, novaRola: string) {
     const { changeMemberRoleFn } = await import("@/lib/faktero/invitations.functions");
     try {
-      await changeMemberRoleFn({ data: { company_id: companyId, user_id: userId, role: novaRola as any } });
+      await changeMemberRoleFn({
+        data: { company_id: companyId, user_id: userId, role: novaRola as any },
+      });
       toast.success("Rola zmenená");
       load();
     } catch (e: any) {

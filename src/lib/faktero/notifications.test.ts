@@ -196,14 +196,44 @@ describe("buildNotifications", () => {
     const out = buildNotifications({
       ...PRAZDNE,
       overdueInvoices: [
-        { id: "novsia", invoice_number: "B", customer_name: null, total: 1, currency: "EUR", due_date: "2026-08-05" },
-        { id: "starsia", invoice_number: "A", customer_name: null, total: 1, currency: "EUR", due_date: "2026-08-02" },
+        {
+          id: "novsia",
+          invoice_number: "B",
+          customer_name: null,
+          total: 1,
+          currency: "EUR",
+          due_date: "2026-08-05",
+        },
+        {
+          id: "starsia",
+          invoice_number: "A",
+          customer_name: null,
+          total: 1,
+          currency: "EUR",
+          due_date: "2026-08-02",
+        },
       ],
       unmatchedIncoming: [
-        { id: "t", booking_date: "2026-08-06", amount: 1, currency: "EUR", counterparty: null, variable_symbol: null },
+        {
+          id: "t",
+          booking_date: "2026-08-06",
+          amount: 1,
+          currency: "EUR",
+          counterparty: null,
+          variable_symbol: null,
+        },
       ],
       failedPayments: [
-        { id: "p", purchase_invoice_id: null, creditor_name: null, amount: 1, currency: "EUR", status: "rejected", error_message: null, updated_at: "2026-08-01T00:00:00Z" },
+        {
+          id: "p",
+          purchase_invoice_id: null,
+          creditor_name: null,
+          amount: 1,
+          currency: "EUR",
+          status: "rejected",
+          error_message: null,
+          updated_at: "2026-08-01T00:00:00Z",
+        },
       ],
     });
     expect(out.map((n) => n.key)).toEqual([
@@ -218,12 +248,40 @@ describe("buildNotifications", () => {
     const out = buildNotifications({
       ...PRAZDNE,
       unmatchedIncoming: [
-        { id: "stara", booking_date: "2026-08-01", amount: 1, currency: "EUR", counterparty: null, variable_symbol: null },
-        { id: "nova", booking_date: "2026-08-06", amount: 1, currency: "EUR", counterparty: null, variable_symbol: null },
+        {
+          id: "stara",
+          booking_date: "2026-08-01",
+          amount: 1,
+          currency: "EUR",
+          counterparty: null,
+          variable_symbol: null,
+        },
+        {
+          id: "nova",
+          booking_date: "2026-08-06",
+          amount: 1,
+          currency: "EUR",
+          counterparty: null,
+          variable_symbol: null,
+        },
       ],
       overdueInvoices: [
-        { id: "nedavna", invoice_number: "B", customer_name: null, total: 1, currency: "EUR", due_date: "2026-08-05" },
-        { id: "davna", invoice_number: "A", customer_name: null, total: 1, currency: "EUR", due_date: "2026-07-01" },
+        {
+          id: "nedavna",
+          invoice_number: "B",
+          customer_name: null,
+          total: 1,
+          currency: "EUR",
+          due_date: "2026-08-05",
+        },
+        {
+          id: "davna",
+          invoice_number: "A",
+          customer_name: null,
+          total: 1,
+          currency: "EUR",
+          due_date: "2026-07-01",
+        },
       ],
     });
     expect(out.map((n) => n.key)).toEqual([
@@ -238,7 +296,14 @@ describe("buildNotifications", () => {
     const [n] = buildNotifications({
       ...PRAZDNE,
       unmatchedIncoming: [
-        { id: "t", booking_date: "2026-08-06", amount: 12.3, currency: "XYZ!", counterparty: null, variable_symbol: null },
+        {
+          id: "t",
+          booking_date: "2026-08-06",
+          amount: 12.3,
+          currency: "XYZ!",
+          counterparty: null,
+          variable_symbol: null,
+        },
       ],
     });
     expect(n.title).toContain("12.30");
@@ -250,8 +315,22 @@ describe("applyReadState", () => {
     const items = buildNotifications({
       ...PRAZDNE,
       overdueInvoices: [
-        { id: "a", invoice_number: "A", customer_name: null, total: 1, currency: "EUR", due_date: "2026-08-01" },
-        { id: "b", invoice_number: "B", customer_name: null, total: 1, currency: "EUR", due_date: "2026-08-02" },
+        {
+          id: "a",
+          invoice_number: "A",
+          customer_name: null,
+          total: 1,
+          currency: "EUR",
+          due_date: "2026-08-01",
+        },
+        {
+          id: "b",
+          invoice_number: "B",
+          customer_name: null,
+          total: 1,
+          currency: "EUR",
+          due_date: "2026-08-02",
+        },
       ],
     });
     const r = applyReadState(items, ["invoice_overdue:a"]);

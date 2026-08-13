@@ -40,9 +40,9 @@ const sections: HelpSection[] = [
           a <strong>dátum najbližšieho vystavenia</strong>.
         </p>
         <p>
-          Faktúra sa vystaví v ten deň a dátum sa posunie o interval ďalej. Pri mesačnom intervale sa
-          deň drží tak, aby dával zmysel: šablóna nastavená na 31. sa vo februári vystaví posledný
-          februárový deň, nie začiatkom marca.
+          Faktúra sa vystaví v ten deň a dátum sa posunie o interval ďalej. Pri mesačnom intervale
+          sa deň drží tak, aby dával zmysel: šablóna nastavená na 31. sa vo februári vystaví
+          posledný februárový deň, nie začiatkom marca.
         </p>
       </>
     ),
@@ -53,12 +53,10 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Faktero kontroluje šablóny každý deň. Faktúra dostane riadne poradové číslo a správa sa ako
-          každá iná — dá sa upraviť, odoslať aj stornovať.
+          Faktero kontroluje šablóny každý deň. Faktúra dostane riadne poradové číslo a správa sa
+          ako každá iná — dá sa upraviť, odoslať aj stornovať.
         </p>
-        <p>
-          Ak má šablóna zapnuté odosielanie, faktúra rovno odíde odberateľovi na e-mail.
-        </p>
+        <p>Ak má šablóna zapnuté odosielanie, faktúra rovno odíde odberateľovi na e-mail.</p>
       </>
     ),
   },

@@ -177,7 +177,10 @@ function OrderDetail() {
             <Karta popis="Vybavené">
               <div className="flex items-center gap-2">
                 <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${percento}%` }} />
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${percento}%` }}
+                  />
                 </div>
                 <span className="text-sm tabular-nums">{percento} %</span>
               </div>
@@ -197,7 +200,11 @@ function OrderDetail() {
               <Udaj popis="Požadovaný termín">{datum(o.requested_date)}</Udaj>
               <Udaj popis="Zákazka">
                 {o.jobs ? (
-                  <Link to="/zakazky/$id" params={{ id: o.job_id }} className="text-primary hover:underline">
+                  <Link
+                    to="/zakazky/$id"
+                    params={{ id: o.job_id }}
+                    className="text-primary hover:underline"
+                  >
                     {o.jobs.job_number} — {o.jobs.name}
                   </Link>
                 ) : (
@@ -206,7 +213,11 @@ function OrderDetail() {
               </Udaj>
               {o.quote_id && (
                 <Udaj popis="Vznikla z ponuky">
-                  <Link to="/ponuky/$id" params={{ id: o.quote_id }} className="text-primary hover:underline">
+                  <Link
+                    to="/ponuky/$id"
+                    params={{ id: o.quote_id }}
+                    className="text-primary hover:underline"
+                  >
                     zobraziť ponuku
                   </Link>
                 </Udaj>

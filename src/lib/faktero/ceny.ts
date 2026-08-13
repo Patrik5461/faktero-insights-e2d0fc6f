@@ -49,12 +49,7 @@ export type Akcia = {
 };
 
 export type ZdrojCeny =
-  | "zakladna"
-  | "individualna"
-  | "skupina"
-  | "zlava-odberatel"
-  | "zlava-skupina"
-  | "akcia";
+  "zakladna" | "individualna" | "skupina" | "zlava-odberatel" | "zlava-skupina" | "akcia";
 
 export type Vysledok = {
   cena: number;

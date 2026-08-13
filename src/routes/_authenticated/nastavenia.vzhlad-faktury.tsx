@@ -296,7 +296,9 @@ function InvoiceAppearancePage() {
                 >
                   Položka
                 </div>
-                <div className="border-b border-border px-2 py-1">Konzultácia · 1 ks · 120,00 €</div>
+                <div className="border-b border-border px-2 py-1">
+                  Konzultácia · 1 ks · 120,00 €
+                </div>
                 <div className="px-2 py-1">Vývoj · 4 h · 400,00 €</div>
               </div>
               <div

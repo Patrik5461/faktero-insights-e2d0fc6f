@@ -24,8 +24,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Aby ste nemuseli ručne označovať, ktorá faktúra je zaplatená. Faktero stiahne pohyby z účtu
-          a spáruje ich s faktúrami podľa variabilného symbolu a sumy.
+          Aby ste nemuseli ručne označovať, ktorá faktúra je zaplatená. Faktero stiahne pohyby z
+          účtu a spáruje ich s faktúrami podľa variabilného symbolu a sumy.
         </p>
         <p>
           Účty sa spravujú v <Link to="/bankove-ucty">Účtovníctvo → Bankové účty</Link>.
@@ -82,8 +82,8 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Odchádzajúce platby sa nepárujú — tie patria k prijatým faktúram, nie k vystaveným.
-          Párovanie podľa variabilného symbolu funguje spoľahlivo len vtedy, keď ho odberateľ uvedie;
-          preto Faktero predvypĺňa variabilný symbol z čísla faktúry.
+          Párovanie podľa variabilného symbolu funguje spoľahlivo len vtedy, keď ho odberateľ
+          uvedie; preto Faktero predvypĺňa variabilný symbol z čísla faktúry.
         </p>
         <p>
           Úhrada sa dá zapísať aj do <Link to="/pomoc/uzavierka">uzamknutého obdobia</Link> — platby

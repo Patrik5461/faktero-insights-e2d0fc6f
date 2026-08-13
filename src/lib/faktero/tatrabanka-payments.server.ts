@@ -86,7 +86,11 @@ export function formatAmount(amount: number): string {
  * pri dlhších symboloch radšej vynecháme tie menej dôležité, než aby banka
  * odmietla celý príkaz.
  */
-export function buildEndToEndId(vs?: string | null, ss?: string | null, ks?: string | null): string {
+export function buildEndToEndId(
+  vs?: string | null,
+  ss?: string | null,
+  ks?: string | null,
+): string {
   const digits = (s?: string | null) => (s ?? "").replace(/\D/g, "");
   const parts: Array<[string, string]> = [
     ["VS", digits(vs)],
@@ -128,9 +132,7 @@ export type InitiatePaymentResult = {
  * debtorIban je nepovinný — keď ho nepošleme, používateľ si účet vyberie
  * priamo na autorizačnom portáli banky.
  */
-export async function initiatePayment(
-  input: InitiatePaymentInput,
-): Promise<InitiatePaymentResult> {
+export async function initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentResult> {
   const creditorIban = normalizeIban(input.creditorIban);
   if (!isValidIban(creditorIban)) throw new Error("invalid_creditor_iban");
   const creditorName = sanitizeCreditorName(input.creditorName);
@@ -166,7 +168,9 @@ export async function initiatePayment(
   });
   const txt = await res.text();
   if (!res.ok) {
-    console.error(`[tb-pis] initiate ${res.status} (X-Request-ID=${requestId}): ${txt.slice(0, 400)}`);
+    console.error(
+      `[tb-pis] initiate ${res.status} (X-Request-ID=${requestId}): ${txt.slice(0, 400)}`,
+    );
     throw new Error(`tb_payment_init_failed: ${res.status} ${txt.slice(0, 400)}`);
   }
   const json = JSON.parse(txt);
@@ -260,7 +264,9 @@ export async function submitPayment(
   });
   const txt = await res.text();
   if (!res.ok) {
-    console.error(`[tb-pis] submit ${res.status} (X-Request-ID=${requestId}): ${txt.slice(0, 400)}`);
+    console.error(
+      `[tb-pis] submit ${res.status} (X-Request-ID=${requestId}): ${txt.slice(0, 400)}`,
+    );
     throw new Error(`tb_payment_submit_failed: ${res.status} ${txt.slice(0, 400)}`);
   }
   return JSON.parse(txt);
@@ -274,16 +280,13 @@ export async function getPaymentStatus(paymentId: string): Promise<{
   additionalInformation?: string;
 }> {
   const token = await getPisServiceToken();
-  const res = await fetch(
-    `${tbBase()}/v3/${PRODUCT}/${encodeURIComponent(paymentId)}/status`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-        "X-Request-ID": crypto.randomUUID(),
-      },
+  const res = await fetch(`${tbBase()}/v3/${PRODUCT}/${encodeURIComponent(paymentId)}/status`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      "X-Request-ID": crypto.randomUUID(),
     },
-  );
+  });
   const txt = await res.text();
   if (!res.ok) throw new Error(`tb_payment_status_failed: ${res.status} ${txt.slice(0, 300)}`);
   return JSON.parse(txt);

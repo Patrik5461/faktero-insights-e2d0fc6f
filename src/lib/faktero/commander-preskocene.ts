@@ -29,7 +29,10 @@ export function emptySkipBreakdown(): Record<CommanderSkipReason, number> {
 }
 
 /** Duplicita nie je chyba — jazdu už máme, len sme ju natiahli druhýkrát. */
-const OCAKAVANE_DOVODY: CommanderSkipReason[] = ["duplicate_external_id", "duplicate_fallback_match"];
+const OCAKAVANE_DOVODY: CommanderSkipReason[] = [
+  "duplicate_external_id",
+  "duplicate_fallback_match",
+];
 
 /** Koľko prvých výskytov toho istého dôvodu sa vypíše, kým sa začne len počítať. */
 const VZORIEK_NA_DOVOD = 3;

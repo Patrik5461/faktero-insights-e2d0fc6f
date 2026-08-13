@@ -109,8 +109,8 @@ const sections: HelpSection[] = [
           </li>
         </ul>
         <p>
-          Pri výdaji môžete vybrať <Link to="/pomoc/zakazky">zákazku</Link>. Tovar sa potom objaví
-          v jej nákladoch a vo vyhodnotení marže.
+          Pri výdaji môžete vybrať <Link to="/pomoc/zakazky">zákazku</Link>. Tovar sa potom objaví v
+          jej nákladoch a vo vyhodnotení marže.
         </p>
       </>
     ),
@@ -153,11 +153,12 @@ const sections: HelpSection[] = [
           zákazky, na ktorú bol pôvodne vydaný.
         </p>
         <p>
-          Kým je faktúra <em>koncept</em>, sklad sa nehýbe. Až odoslanie je moment, keď tovar odišiel.
+          Kým je faktúra <em>koncept</em>, sklad sa nehýbe. Až odoslanie je moment, keď tovar
+          odišiel.
         </p>
         <p>
-          Skladové položky odoslanej faktúry sa už nedajú meniť. Keby sa dali, stav skladu by prestal
-          zodpovedať dokladom.
+          Skladové položky odoslanej faktúry sa už nedajú meniť. Keby sa dali, stav skladu by
+          prestal zodpovedať dokladom.
         </p>
       </>
     ),
@@ -193,9 +194,9 @@ const sections: HelpSection[] = [
           <Link to="/sklad/nastavenia">Sklad → Nastavenia</Link>.
         </p>
         <p>
-          Presun tovaru medzi nimi robte cez{" "}
-          <Link to="/sklad/presuny">Sklad → Presuny</Link>, nie dvojicou výdaj + príjem. Prevod
-          zachová ocenenie a v histórii je vidieť, že tovar firmu neopustil.
+          Presun tovaru medzi nimi robte cez <Link to="/sklad/presuny">Sklad → Presuny</Link>, nie
+          dvojicou výdaj + príjem. Prevod zachová ocenenie a v histórii je vidieť, že tovar firmu
+          neopustil.
         </p>
       </>
     ),
@@ -226,10 +227,9 @@ const sections: HelpSection[] = [
           nástenke.
         </p>
         <p>
-          Odtiaľ sa dá rovno pripraviť{" "}
-          <Link to="/sklad/objednavky">objednávka u dodávateľa</Link>. Faktero navrhne množstvo tak,
-          aby ste sa dostali na optimálny stav. Príjem tovaru sa potom zapíše priamo na objednávku a
-          tá si sama drží prehľad, čo z nej ešte neprišlo.
+          Odtiaľ sa dá rovno pripraviť <Link to="/sklad/objednavky">objednávka u dodávateľa</Link>.
+          Faktero navrhne množstvo tak, aby ste sa dostali na optimálny stav. Príjem tovaru sa potom
+          zapíše priamo na objednávku a tá si sama drží prehľad, čo z nej ešte neprišlo.
         </p>
       </>
     ),
@@ -287,8 +287,8 @@ const sections: HelpSection[] = [
             skontrolujte najprv tento prepínač.
           </li>
           <li>
-            <strong>Príjem bez nákupnej ceny</strong> pokazí váženú cenu aj maržu. Cenu doplňte hneď,
-            spätne sa dohľadáva ťažko.
+            <strong>Príjem bez nákupnej ceny</strong> pokazí váženú cenu aj maržu. Cenu doplňte
+            hneď, spätne sa dohľadáva ťažko.
           </li>
           <li>
             <strong>Koncept faktúry sklad nehýbe.</strong> Ak tovar odišiel, faktúru odošlite.
@@ -298,9 +298,8 @@ const sections: HelpSection[] = [
             aj históriu.
           </li>
           <li>
-            <strong>Uzamknuté obdobie</strong> ({" "}
-            <Link to="/pomoc/uzavierka">uzávierka</Link>) nepustí zmeny do starých dokladov. Ak sa
-            pohyb nedá uložiť spätne, býva to práve toto.
+            <strong>Uzamknuté obdobie</strong> ( <Link to="/pomoc/uzavierka">uzávierka</Link>)
+            nepustí zmeny do starých dokladov. Ak sa pohyb nedá uložiť spätne, býva to práve toto.
           </li>
         </ul>
       </>

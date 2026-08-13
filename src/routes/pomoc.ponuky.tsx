@@ -105,8 +105,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Na ponuke sa dá zapnúť <strong>rezervácia tovaru</strong>. Ponúknuté kusy sa potom nezapočítajú
-          do dostupného množstva, takže ich medzitým nepredáte niekomu inému.
+          Na ponuke sa dá zapnúť <strong>rezervácia tovaru</strong>. Ponúknuté kusy sa potom
+          nezapočítajú do dostupného množstva, takže ich medzitým nepredáte niekomu inému.
         </p>
         <p>Rezervácia sa uvoľní, keď platnosť ponuky uplynie alebo ponuku zamietnete.</p>
       </>

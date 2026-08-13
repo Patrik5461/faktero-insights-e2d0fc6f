@@ -30,7 +30,6 @@ function darken(c: ReturnType<typeof rgb>, amount = 0.25) {
   return rgb(c.red * k, c.green * k, c.blue * k);
 }
 
-
 export type InvoicePdfInput = {
   company: any;
   invoice: any;

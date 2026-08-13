@@ -94,17 +94,16 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Rozhoduje <strong>dátum dodania</strong>, nie dátum vystavenia ani úhrady. Ak dátum dodania
-          nevyplníte, Faktero použije dátum vystavenia.
+          Rozhoduje <strong>dátum dodania</strong>, nie dátum vystavenia ani úhrady. Ak dátum
+          dodania nevyplníte, Faktero použije dátum vystavenia.
         </p>
         <p>
           Preto sa oplatí dátum dodania vypĺňať vždy, keď sa líši — inak sa doklad ocitne v zlom
           mesiaci DPH.
         </p>
         <p>
-          Keď je priznanie podané, obdobie{" "}
-          <Link to="/pomoc/uzavierka">uzamknite</Link>. Zabránite tým dodatočným zmenám v sumách a
-          dátumoch.
+          Keď je priznanie podané, obdobie <Link to="/pomoc/uzavierka">uzamknite</Link>. Zabránite
+          tým dodatočným zmenám v sumách a dátumoch.
         </p>
       </>
     ),
@@ -116,7 +115,9 @@ function Page() {
     <HelpArticle
       category="Pomoc · Účtovníctvo"
       title="DPH vo Faktere"
-      intro={<p>Sadzby, daň na výstupe a vstupe, prenesenie povinnosti a podklady pre priznanie.</p>}
+      intro={
+        <p>Sadzby, daň na výstupe a vstupe, prenesenie povinnosti a podklady pre priznanie.</p>
+      }
       sections={sections}
     />
   );

@@ -4,11 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import {
-  deletePriceAction,
-  listPriceActions,
-  savePriceAction,
-} from "@/lib/faktero/ceny.functions";
+import { deletePriceAction, listPriceActions, savePriceAction } from "@/lib/faktero/ceny.functions";
 import { akciaPlati, cislo } from "@/lib/faktero/ceny";
 import { ArrowLeft, Plus, Pencil, Trash2, X } from "lucide-react";
 import { PRODUKTY, sPoctom } from "@/lib/faktero/mnozne";

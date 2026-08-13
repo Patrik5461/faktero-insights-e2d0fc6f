@@ -28,8 +28,8 @@ const sections: HelpSection[] = [
           účtovníčku za zvolené obdobie — vydané faktúry, prijaté faktúry, doklady.
         </p>
         <p>
-          Každý export sa uloží do <strong>histórie</strong>, takže sa dá stiahnuť znova a je vidieť,
-          čo a kedy bolo odovzdané.
+          Každý export sa uloží do <strong>histórie</strong>, takže sa dá stiahnuť znova a je
+          vidieť, čo a kedy bolo odovzdané.
         </p>
         <p>
           Pred exportom skontrolujte <Link to="/pomoc/dph">prehľad DPH</Link> a obdobie potom{" "}
@@ -45,8 +45,8 @@ const sections: HelpSection[] = [
       <>
         <p>Faktero vie prevziať dáta zo SuperFaktúry, Money S3, Omega, iDokladu a KROSu.</p>
         <p>
-          Import nájdete v <Link to="/importy">Účtovníctvo → Importy</Link>. Prenášajú sa odberatelia,
-          produkty a faktúry — podľa toho, čo daný systém vie vyviezť.
+          Import nájdete v <Link to="/importy">Účtovníctvo → Importy</Link>. Prenášajú sa
+          odberatelia, produkty a faktúry — podľa toho, čo daný systém vie vyviezť.
         </p>
         <p>
           Po importe skontrolujte <strong>číslovanie faktúr</strong>, aby nové doklady nadviazali na
@@ -98,8 +98,8 @@ const sections: HelpSection[] = [
         <ul>
           <li>
             <strong>Money S3</strong> (Seyfor) — XML dátový balík <code>MoneyData</code> z{" "}
-            <em>XML prenosov</em>. Prenesú sa faktúry vydané aj prijaté vrátane položiek,
-            odberateľa s adresou a faktúr v cudzej mene.
+            <em>XML prenosov</em>. Prenesú sa faktúry vydané aj prijaté vrátane položiek, odberateľa
+            s adresou a faktúr v cudzej mene.
           </li>
           <li>
             <strong>iDoklad</strong> — CSV alebo XLSX zo zoznamu faktúr. iDoklad vyváža tie stĺpce,
@@ -113,13 +113,13 @@ const sections: HelpSection[] = [
           </li>
           <li>
             <strong>Pohoda</strong> — XML z <em>Súbor → Dátová komunikácia → XML import/export</em>,
-            alebo export do ISDOC. Prečítame aj súbor, ktorý Pohoda vydá pri exporte
-            (<code>responsePack</code>), nielen ten importný.
+            alebo export do ISDOC. Prečítame aj súbor, ktorý Pohoda vydá pri exporte (
+            <code>responsePack</code>), nielen ten importný.
           </li>
           <li>
             <strong>mPohoda</strong> — nie je to ten istý formát ako Pohoda. mPohoda je cloudová
-            aplikácia a dáta vydáva cez svoje rozhranie ako <strong>JSON</strong>. Nahrajte ho na
-            tú istú stránku, formát rozpoznáme sami.
+            aplikácia a dáta vydáva cez svoje rozhranie ako <strong>JSON</strong>. Nahrajte ho na tú
+            istú stránku, formát rozpoznáme sami.
           </li>
         </ul>
         <p>
@@ -140,12 +140,12 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Prenášajú sa <strong>faktúry, ich položky a odberatelia</strong>. Neprenášajú sa úhrady
-          a bankové pohyby, sklad a jeho stavy, cenníky ani prílohy a PDF pôvodných faktúr.
+          Prenášajú sa <strong>faktúry, ich položky a odberatelia</strong>. Neprenášajú sa úhrady a
+          bankové pohyby, sklad a jeho stavy, cenníky ani prílohy a PDF pôvodných faktúr.
         </p>
         <p>
-          Sklad si po prechode založte cez <Link to="/sklad/import">Sklad → Import</Link>,
-          bankový účet cez <Link to="/pomoc/banka">pripojenie banky</Link>.
+          Sklad si po prechode založte cez <Link to="/sklad/import">Sklad → Import</Link>, bankový
+          účet cez <Link to="/pomoc/banka">pripojenie banky</Link>.
         </p>
       </>
     ),

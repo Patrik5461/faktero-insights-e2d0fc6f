@@ -218,7 +218,13 @@ describe("cenaPreOdberatela", () => {
       zakladna: 100,
       datum: "2026-08-10",
       akcie: [
-        { id: "a", name: "Jarný výpredaj", discount_percent: 30, valid_from: "2026-08-01", valid_to: "2026-08-31" },
+        {
+          id: "a",
+          name: "Jarný výpredaj",
+          discount_percent: 30,
+          valid_from: "2026-08-01",
+          valid_to: "2026-08-31",
+        },
       ],
     });
     expect(r.cena).toBe(70);
@@ -269,7 +275,14 @@ describe("cenaPreOdberatela", () => {
     const r = cenaPreOdberatela({
       zakladna: 100,
       datum: "2026-09-05",
-      akcie: [{ name: "Augustová", discount_percent: 50, valid_from: "2026-08-01", valid_to: "2026-08-31" }],
+      akcie: [
+        {
+          name: "Augustová",
+          discount_percent: 50,
+          valid_from: "2026-08-01",
+          valid_to: "2026-08-31",
+        },
+      ],
     });
     expect(r.cena).toBe(100);
   });
@@ -277,7 +290,9 @@ describe("cenaPreOdberatela", () => {
   // Faktúra vystavená spätne musí dostať cenu platnú v deň vystavenia,
   // nie tú, ktorá platí dnes.
   it("rozhoduje dátum dokladu, nie dnešok", () => {
-    const akcie = [{ name: "Júlová", discount_percent: 50, valid_from: "2026-07-01", valid_to: "2026-07-31" }];
+    const akcie = [
+      { name: "Júlová", discount_percent: 50, valid_from: "2026-07-01", valid_to: "2026-07-31" },
+    ];
     expect(cenaPreOdberatela({ zakladna: 100, datum: "2026-07-15", akcie }).cena).toBe(50);
     expect(cenaPreOdberatela({ zakladna: 100, datum: "2026-08-15", akcie }).cena).toBe(100);
   });
@@ -311,7 +326,13 @@ describe("akcieNaProdukt", () => {
     datum: "2026-08-10",
     ceny: [],
     akcie: [
-      { id: "vsetko", name: "Celý sortiment", discount_percent: 10, applies_to_all: true, produkty: [] },
+      {
+        id: "vsetko",
+        name: "Celý sortiment",
+        discount_percent: 10,
+        applies_to_all: true,
+        produkty: [],
+      },
       {
         id: "vybrane",
         name: "Vybrané kusy",
@@ -388,8 +409,11 @@ describe("cenaZPodkladov", () => {
 
   // Bez odberateľa nesmie prepadnúť cena dohodnutá pre niekoho iného.
   it("prázdne podklady vrátia základnú cenu", () => {
-    const r = cenaZPodkladov({ datum: "2026-08-10", ceny: [], akcie: [] }, { id: "p1", unit_price: 12 });
+    const r = cenaZPodkladov(
+      { datum: "2026-08-10", ceny: [], akcie: [] },
+      { id: "p1", unit_price: 12 },
+    );
     expect(r.cena).toBe(12);
     expect(r.zdroj).toBe("zakladna");
   });
-})
+});

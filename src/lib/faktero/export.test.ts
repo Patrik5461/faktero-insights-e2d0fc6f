@@ -31,14 +31,57 @@ const faktura = {
 
 // Sadzby zámerne rôzne — Pohoda ich triedi do štyroch košov.
 const polozky = [
-  { name: "Montážne práce", quantity: 10, unit: "h", unit_price: 10, vat_rate: 23, subtotal: 100, vat_amount: 23, total: 123 },
-  { name: "Kniha", quantity: 1, unit: "ks", unit_price: 50, vat_rate: 19, subtotal: 50, vat_amount: 9.5, total: 59.5 },
-  { name: "Liek", quantity: 2, unit: "ks", unit_price: 10, vat_rate: 5, subtotal: 20, vat_amount: 1, total: 21 },
-  { name: "Poštovné", quantity: 1, unit: "ks", unit_price: 5, vat_rate: 0, subtotal: 5, vat_amount: 0, total: 5 },
+  {
+    name: "Montážne práce",
+    quantity: 10,
+    unit: "h",
+    unit_price: 10,
+    vat_rate: 23,
+    subtotal: 100,
+    vat_amount: 23,
+    total: 123,
+  },
+  {
+    name: "Kniha",
+    quantity: 1,
+    unit: "ks",
+    unit_price: 50,
+    vat_rate: 19,
+    subtotal: 50,
+    vat_amount: 9.5,
+    total: 59.5,
+  },
+  {
+    name: "Liek",
+    quantity: 2,
+    unit: "ks",
+    unit_price: 10,
+    vat_rate: 5,
+    subtotal: 20,
+    vat_amount: 1,
+    total: 21,
+  },
+  {
+    name: "Poštovné",
+    quantity: 1,
+    unit: "ks",
+    unit_price: 5,
+    vat_rate: 0,
+    subtotal: 5,
+    vat_amount: 0,
+    total: 5,
+  },
 ];
 
-const xml = buildPohodaInvoiceXml({ company: firma, invoices: [{ invoice: faktura, items: polozky }] });
-const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@", removeNSPrefix: true });
+const xml = buildPohodaInvoiceXml({
+  company: firma,
+  invoices: [{ invoice: faktura, items: polozky }],
+});
+const parser = new XMLParser({
+  ignoreAttributes: false,
+  attributeNamePrefix: "@",
+  removeNSPrefix: true,
+});
 const doc = parser.parse(xml);
 const hlavicka = doc.dataPack.dataPackItem.invoice.invoiceHeader;
 const suhrn = doc.dataPack.dataPackItem.invoice.invoiceSummary.homeCurrency;
@@ -89,11 +132,14 @@ describe("Pohoda XML export", () => {
     const zaklad = polozky.reduce((s, p) => s + p.subtotal, 0);
     const dan = polozky.reduce((s, p) => s + p.vat_amount, 0);
     expect(
-      Number(suhrn.priceHigh) + Number(suhrn.priceLow) + Number(suhrn.price3) + Number(suhrn.priceNone),
+      Number(suhrn.priceHigh) +
+        Number(suhrn.priceLow) +
+        Number(suhrn.price3) +
+        Number(suhrn.priceNone),
     ).toBe(zaklad);
-    expect(
-      Number(suhrn.priceHighVAT) + Number(suhrn.priceLowVAT) + Number(suhrn.price3VAT),
-    ).toBe(dan);
+    expect(Number(suhrn.priceHighVAT) + Number(suhrn.priceLowVAT) + Number(suhrn.price3VAT)).toBe(
+      dan,
+    );
   });
 
   it("dobropis sa označí ako dobropis", () => {
@@ -110,12 +156,14 @@ describe("Pohoda XML export", () => {
   it("znaky z názvu firmy sa ošetria", () => {
     const d = buildPohodaInvoiceXml({
       company: firma,
-      invoices: [{ invoice: { ...faktura, customer_name: 'Kováč & Syn <s.r.o.>' }, items: polozky }],
+      invoices: [
+        { invoice: { ...faktura, customer_name: "Kováč & Syn <s.r.o.>" }, items: polozky },
+      ],
     });
     expect(XMLValidator.validate(d)).toBe(true);
-    expect(parser.parse(d).dataPack.dataPackItem.invoice.invoiceHeader.partnerIdentity.address.company).toBe(
-      "Kováč & Syn <s.r.o.>",
-    );
+    expect(
+      parser.parse(d).dataPack.dataPackItem.invoice.invoiceHeader.partnerIdentity.address.company,
+    ).toBe("Kováč & Syn <s.r.o.>");
   });
 
   it("viac faktúr dá viac položiek dátového balíka", () => {
@@ -141,7 +189,16 @@ describe("Pohoda XML export", () => {
 });
 
 describe("KROS Omega TXT", () => {
-  const txt = buildOmegaTxt({ company: { name: "Tobify s.r.o.", ico: "56607016", street: "Športová 707/43", zip: "91926", city: "Zavar" }, invoices: [{ invoice: faktura, items: polozky }] });
+  const txt = buildOmegaTxt({
+    company: {
+      name: "Tobify s.r.o.",
+      ico: "56607016",
+      street: "Športová 707/43",
+      zip: "91926",
+      city: "Zavar",
+    },
+    invoices: [{ invoice: faktura, items: polozky }],
+  });
   const riadky = txt.split("\r\n").filter(Boolean);
   const stlpce = (r: string) => r.split("\t");
 
@@ -210,7 +267,10 @@ describe("KROS Omega TXT", () => {
   });
 
   it("dobropis má typ dokladu 4", () => {
-    const d = buildOmegaTxt({ company: {}, invoices: [{ invoice: { ...faktura, type: "credit_note" }, items: polozky }] });
+    const d = buildOmegaTxt({
+      company: {},
+      invoices: [{ invoice: { ...faktura, type: "credit_note" }, items: polozky }],
+    });
     expect(d.split("\r\n")[1].split("\t")[17]).toBe("4");
   });
 
@@ -226,7 +286,10 @@ describe("KROS Omega TXT", () => {
   });
 
   it("cudzia mena ide do sumy CM, nie TM", () => {
-    const d = buildOmegaTxt({ company: {}, invoices: [{ invoice: { ...faktura, currency: "CZK" }, items: polozky }] });
+    const d = buildOmegaTxt({
+      company: {},
+      invoices: [{ invoice: { ...faktura, currency: "CZK" }, items: polozky }],
+    });
     const c = d.split("\r\n")[1].split("\t");
     expect(c[16]).toBe("208,50"); // suma spolu CM
     expect(c[42]).toBe(""); // suma spolu TM ostáva prázdna
@@ -235,9 +298,16 @@ describe("KROS Omega TXT", () => {
 });
 
 describe("Money S3 XML", () => {
-  const x = buildMoneyS3Xml({ company: { name: "Tobify s.r.o.", ico: "56607016" }, invoices: [{ invoice: faktura, items: polozky }] });
+  const x = buildMoneyS3Xml({
+    company: { name: "Tobify s.r.o.", ico: "56607016" },
+    invoices: [{ invoice: faktura, items: polozky }],
+  });
   // Bez `parseTagValue: false` by parser z IČO `00151653` urobil číslo.
-  const parserText = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@", parseTagValue: false });
+  const parserText = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@",
+    parseTagValue: false,
+  });
   const d = parserText.parse(x);
   const f = d.MoneyData.SeznamFaktVyd.FaktVyd;
 
@@ -290,7 +360,10 @@ describe("Money S3 XML", () => {
   });
 
   it("dobropis sa označí príznakom", () => {
-    const c = buildMoneyS3Xml({ company: {}, invoices: [{ invoice: { ...faktura, type: "credit_note" }, items: polozky }] });
+    const c = buildMoneyS3Xml({
+      company: {},
+      invoices: [{ invoice: { ...faktura, type: "credit_note" }, items: polozky }],
+    });
     expect(Number(parser.parse(c).MoneyData.SeznamFaktVyd.FaktVyd.Dobropis)).toBe(1);
   });
 });

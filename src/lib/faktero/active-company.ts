@@ -31,5 +31,7 @@ export async function fetchMyCompanies() {
     .eq("user_id", uid)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []).filter((r: any) => r.company).map((r: any) => ({ role: r.role, ...r.company }));
+  return (data ?? [])
+    .filter((r: any) => r.company)
+    .map((r: any) => ({ role: r.role, ...r.company }));
 }

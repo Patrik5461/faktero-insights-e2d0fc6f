@@ -40,8 +40,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          V <Link to="/zakazky/nova">Zákazky → Nová zákazka</Link> stačí názov. Číslo pridelí Faktero
-          samo v tvare <code>ZAK{"{rok}{poradie}"}</code>.
+          V <Link to="/zakazky/nova">Zákazky → Nová zákazka</Link> stačí názov. Číslo pridelí
+          Faktero samo v tvare <code>ZAK{"{rok}{poradie}"}</code>.
         </p>
         <p>Nepovinne pridajte:</p>
         <ul>
@@ -88,8 +88,8 @@ const sections: HelpSection[] = [
       <>
         <p>
           <strong>Výnosy</strong> sú sumy bez DPH z vydaných faktúr priradených k zákazke. Dobropis
-          sa odpočítava. <strong>Zálohová faktúra sa nepočíta</strong> — záloha nie je výnos, výnosom
-          sa stane až vyúčtovacia faktúra. Koncepty a zrušené faktúry sa preskakujú.
+          sa odpočítava. <strong>Zálohová faktúra sa nepočíta</strong> — záloha nie je výnos,
+          výnosom sa stane až vyúčtovacia faktúra. Koncepty a zrušené faktúry sa preskakujú.
         </p>
         <p>
           <strong>Náklady</strong> sú tri:
@@ -144,8 +144,8 @@ const sections: HelpSection[] = [
           doklady sa na ňu už nepriradia. Uzavretie sa dá vrátiť.
         </p>
         <p>
-          <strong>Zmazať sa dá len zákazka bez dokladov.</strong> Ak sú na ňu naviazané faktúry alebo
-          pohyby, Faktero mazanie odmietne — inak by tie doklady stratili súvislosť.
+          <strong>Zmazať sa dá len zákazka bez dokladov.</strong> Ak sú na ňu naviazané faktúry
+          alebo pohyby, Faktero mazanie odmietne — inak by tie doklady stratili súvislosť.
         </p>
       </>
     ),

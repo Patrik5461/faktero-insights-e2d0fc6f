@@ -270,8 +270,12 @@ function NewTransferPage() {
                           onClick={async () => {
                             setBusy(true);
                             try {
-                              const w: any = await zalozSklad({ data: { company_id: targetCompany } });
-                              const list = await fetchTargetWhs({ data: { company_id: targetCompany } });
+                              const w: any = await zalozSklad({
+                                data: { company_id: targetCompany },
+                              });
+                              const list = await fetchTargetWhs({
+                                data: { company_id: targetCompany },
+                              });
                               setTargetWarehouses(list ?? []);
                               setWarehouseTo(w?.id ?? "");
                               toast.success("Cieľová firma má teraz Hlavný sklad.");

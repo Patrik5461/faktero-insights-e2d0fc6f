@@ -85,7 +85,10 @@ export function normMeno(v: string | null | undefined): string {
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
     .toLowerCase()
-    .replace(/\b(s\s*\.?\s*r\s*\.?\s*o|a\s*\.?\s*s|spol|k\s*\.?\s*s|n\s*\.?\s*o|o\s*\.?\s*z|ltd|sro)\b/g, " ")
+    .replace(
+      /\b(s\s*\.?\s*r\s*\.?\s*o|a\s*\.?\s*s|spol|k\s*\.?\s*s|n\s*\.?\s*o|o\s*\.?\s*z|ltd|sro)\b/g,
+      " ",
+    )
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 }

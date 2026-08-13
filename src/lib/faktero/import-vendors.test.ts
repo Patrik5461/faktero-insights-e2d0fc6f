@@ -85,7 +85,8 @@ describe("Money S3", () => {
   });
 
   it("prijaté faktúry sa čítajú rovnako", () => {
-    const xml = new TextDecoder().decode(VYDANA)
+    const xml = new TextDecoder()
+      .decode(VYDANA)
       .replace(/SeznamFaktVyd/g, "SeznamFaktPrij")
       .replace(/FaktVyd/g, "FaktPrij");
     const [r] = parseVendorFile("money-s3", "PF.xml", new TextEncoder().encode(xml));

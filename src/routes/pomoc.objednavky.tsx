@@ -122,8 +122,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Ak na objednávke zapnete <strong>Po potvrdení rezervovať tovar na sklade</strong>, potvrdením
-          sa objednané množstvá zarezervujú. Tovar ostane fyzicky na sklade, ale zníži sa{" "}
+          Ak na objednávke zapnete <strong>Po potvrdení rezervovať tovar na sklade</strong>,
+          potvrdením sa objednané množstvá zarezervujú. Tovar ostane fyzicky na sklade, ale zníži sa{" "}
           <strong>dostupné množstvo</strong>, takže ho niekto iný nepredá omylom.
         </p>
         <p>

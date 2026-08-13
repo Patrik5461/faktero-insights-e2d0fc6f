@@ -66,12 +66,12 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Priamo v pokladni pridávate príjmy a výdaje, ktoré nemajú vlastný doklad — vklad
-          majiteľa, odvod tržby do banky, drobný nákup bez bločku.
+          Priamo v pokladni pridávate príjmy a výdaje, ktoré nemajú vlastný doklad — vklad majiteľa,
+          odvod tržby do banky, drobný nákup bez bločku.
         </p>
         <p>
-          Číslujú sa v tvare <code>PD{"{rok}{poradie}"}</code>. Suma je vždy kladná, smer určuje druh
-          pohybu.
+          Číslujú sa v tvare <code>PD{"{rok}{poradie}"}</code>. Suma je vždy kladná, smer určuje
+          druh pohybu.
         </p>
         <p>
           <strong>Hotovostný bloček sa do pokladne neprepisuje.</strong> Pokladňa ho číta priamo z
@@ -88,7 +88,8 @@ const sections: HelpSection[] = [
       <>
         <p>
           Tabuľka ukazuje pohyby vybraného mesiaca a pri každom <strong>priebežný zostatok</strong>.
-          Nad ňou je zostatok na začiatku obdobia, aby stav sedel aj pri prezeraní starších mesiacov.
+          Nad ňou je zostatok na začiatku obdobia, aby stav sedel aj pri prezeraní starších
+          mesiacov.
         </p>
         <p>
           V rámci jedného dňa idú <strong>príjmy pred výdavkami</strong>. Inak by sa mohlo stať, že
@@ -121,8 +122,8 @@ const sections: HelpSection[] = [
         </p>
         <p>
           <strong>Keď QR kód nie je alebo sa nedá prečítať</strong> — pokrčený bloček, vyblednutá
-          termopáska, zahraničný doklad — údaje sa prečítajú z fotky. To je odhad, nie úradný údaj, a
-          Faktero to pri doklade aj napíše. Vtedy si skontrolujte hlavne dátum a sumu.
+          termopáska, zahraničný doklad — údaje sa prečítajú z fotky. To je odhad, nie úradný údaj,
+          a Faktero to pri doklade aj napíše. Vtedy si skontrolujte hlavne dátum a sumu.
         </p>
         <p>
           Doklad sa vo Finančnej správe nemusí nájsť ani vtedy, keď ho predajca ešte neodoslal —

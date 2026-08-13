@@ -58,7 +58,9 @@ async function zozbierajSignaly(companyId: string): Promise<NotificationInput> {
       .limit(LIMIT),
     supabaseAdmin
       .from("bank_payments")
-      .select("id, purchase_invoice_id, creditor_name, amount, currency, status, error_message, updated_at")
+      .select(
+        "id, purchase_invoice_id, creditor_name, amount, currency, status, error_message, updated_at",
+      )
       .eq("company_id", companyId)
       .in("status", ["rejected", "failed"])
       .order("updated_at", { ascending: false })

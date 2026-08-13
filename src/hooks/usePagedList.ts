@@ -25,7 +25,9 @@ function nacitajZoradenie(kluc: string | undefined, vychodzie: Zoradenie): Zorad
     const ulozene = window.localStorage.getItem(`faktero.sort.${kluc}`);
     if (!ulozene) return vychodzie;
     const p = JSON.parse(ulozene);
-    return typeof p?.column === "string" ? { column: p.column, ascending: !!p.ascending } : vychodzie;
+    return typeof p?.column === "string"
+      ? { column: p.column, ascending: !!p.ascending }
+      : vychodzie;
   } catch {
     return vychodzie;
   }

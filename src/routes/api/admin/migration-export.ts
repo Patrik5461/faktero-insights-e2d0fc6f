@@ -58,7 +58,7 @@ export const Route = createFileRoute("/api/admin/migration-export")({
         const users: any[] = [];
         let page = 1;
         const perPage = 1000;
-        // eslint-disable-next-line no-constant-condition
+
         while (true) {
           const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
           if (error) {
@@ -98,7 +98,7 @@ export const Route = createFileRoute("/api/admin/migration-export")({
           const out: Array<{ path: string; size: number | null; mimetype: string | null }> = [];
           let offset = 0;
           const limit = 1000;
-          // eslint-disable-next-line no-constant-condition
+
           while (true) {
             const { data, error } = await supabaseAdmin.storage
               .from(bucket)

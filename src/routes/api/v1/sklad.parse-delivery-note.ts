@@ -126,9 +126,10 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON objekt, žiadny iný text:
         quantity: Number(r?.quantity ?? r?.mnozstvo ?? 0) || 0,
         // Dodacie listy píšu jednotku raz „KS", raz „ks"; na skladovej karte
         // by z toho boli dve rôzne jednotky.
-        unit: String(r?.unit ?? r?.jednotka ?? "ks")
-          .trim()
-          .toLowerCase() || "ks",
+        unit:
+          String(r?.unit ?? r?.jednotka ?? "ks")
+            .trim()
+            .toLowerCase() || "ks",
         unit_price: r?.unit_price != null ? Number(r.unit_price) : null,
         total_price: r?.total_price != null ? Number(r.total_price) : null,
       }))
