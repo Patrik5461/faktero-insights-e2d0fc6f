@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Push notifikácie. Appka ich zatiaľ neposiela, ale schopnosť musí byť v binárke —
+  dopĺňať ju neskôr by znamenalo nový build a ďalšie posudzovanie v App Store.
+
+  `development` je správna hodnota aj pre App Store build: Xcode ju pri archivácii
+  prepíše na `production` podľa provisioning profilu.
+-->
+<plist version="1.0">
+<dict>
+  <key>aps-environment</key>
+  <string>development</string>
+</dict>
+</plist>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Privacy manifest. Apple ho vyžaduje od roku 2024; bez neho chodia po nahratí
+  buildu maily ITMS-91053 („Missing API declaration").
+
+  Deklaruje sa tu len to, čo appka naozaj robí:
+  – UserDefaults používa Capacitor Preferences aj náš DriveDetector (rozpoznané
+    jazdy čakajúce na odoslanie),
+  – čas súboru čítame pri prílohách dokladov,
+  – nič sa nesleduje a nič sa nespája s reklamnými identifikátormi.
+
+  Údaje sú zbierané výhradne na fungovanie appky (kniha jázd, doklady), nie na
+  reklamu ani na profilovanie — preto `NSPrivacyTracking` = false.
+-->
+<plist version="1.0">
+<dict>
+  <key>NSPrivacyTracking</key>
+  <false/>
+  <key>NSPrivacyTrackingDomains</key>
+  <array/>
+
+  <key>NSPrivacyAccessedAPITypes</key>
+  <array>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <!-- CA92.1 — prístup len k vlastným dátam appky. -->
+        <string>CA92.1</string>
+      </array>
+    </dict>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <!-- C617.1 — časy súborov, ktoré appka sama vytvorila (prílohy dokladov). -->
+        <string>C617.1</string>
+      </array>
+    </dict>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <!-- E174.1 — kontrola miesta pred uložením fotky dokladu. -->
+        <string>E174.1</string>
+      </array>
+    </dict>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+      <key>NSPrivacyAccessedAPITypeReasons</key>
+      <array>
+        <!-- 35F9.1 — meranie trvania udalostí v appke. -->
+        <string>35F9.1</string>
+      </array>
+    </dict>
+  </array>
+
+  <key>NSPrivacyCollectedDataTypes</key>
+  <array>
+    <dict>
+      <key>NSPrivacyCollectedDataType</key>
+      <string>NSPrivacyCollectedDataTypePreciseLocation</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key>
+      <true/>
+      <key>NSPrivacyCollectedDataTypeTracking</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array>
+        <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+      </array>
+    </dict>
+    <dict>
+      <key>NSPrivacyCollectedDataType</key>
+      <string>NSPrivacyCollectedDataTypeEmailAddress</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key>
+      <true/>
+      <key>NSPrivacyCollectedDataTypeTracking</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array>
+        <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+      </array>
+    </dict>
+    <dict>
+      <key>NSPrivacyCollectedDataType</key>
+      <string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key>
+      <true/>
+      <key>NSPrivacyCollectedDataTypeTracking</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array>
+        <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+      </array>
+    </dict>
+    <dict>
+      <key>NSPrivacyCollectedDataType</key>
+      <string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+      <key>NSPrivacyCollectedDataTypeLinked</key>
+      <true/>
+      <key>NSPrivacyCollectedDataTypeTracking</key>
+      <false/>
+      <key>NSPrivacyCollectedDataTypePurposes</key>
+      <array>
+        <string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>

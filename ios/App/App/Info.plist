@@ -60,6 +60,9 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
+		<!-- Tichý push, ktorým si appka vie obnoviť dáta bez otvorenia. Dopĺňať
+		     to neskôr by znamenalo nový build a ďalšie posudzovanie. -->
+		<string>remote-notification</string>
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>

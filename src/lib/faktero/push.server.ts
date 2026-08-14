@@ -1,5 +1,7 @@
 /**
- * Push notifikácie cez Firebase FCM HTTP v1 (Android + iOS APNs cez FCM).
+ * Push notifikácie. iOS ide priamo cez APNs (appka registruje APNs token a nemá
+ * v sebe Firebase), Android cez FCM. Podľa tvaru tokenu sa vyberie správna cesta,
+ * takže volajúci nemusí vedieť platformu.
  *
  * Vyžadované secrety:
  *  - FCM_PROJECT_ID            (Firebase project id)
@@ -95,6 +97,21 @@ async function sendToToken(
   body: string,
   data?: Record<string, string>,
 ) {
+  const { jeApnsToken } = await import("./apns");
+  if (jeApnsToken(token)) {
+    const { jeApnsNastavene, posliCezApns } = await import("./apns.server");
+    if (!jeApnsNastavene()) return { ok: false, status: 0, error: "APNs nie je nastavené" };
+    const r = await posliCezApns(token, { title, body, data });
+    // Token, ktorý Apple označí za mŕtvy, sa zahodí — appku už niekto odinštaloval.
+    if (r.mrtvyToken) {
+      await supabaseAdmin
+        .from("profiles")
+        .update({ push_token: null, push_platform: null } as any)
+        .eq("push_token", token);
+    }
+    return r;
+  }
+
   const projectId = process.env.FCM_PROJECT_ID;
   if (!projectId) throw new Error("FCM_PROJECT_ID not set");
   const accessToken = await getAccessToken();
@@ -127,7 +144,14 @@ async function sendToToken(
 }
 
 export function isPushConfigured() {
-  return Boolean(process.env.FCM_PROJECT_ID && process.env.FCM_SERVICE_ACCOUNT_JSON);
+  const fcm = Boolean(process.env.FCM_PROJECT_ID && process.env.FCM_SERVICE_ACCOUNT_JSON);
+  const apns = Boolean(
+    process.env.APNS_KEY_ID &&
+      process.env.APNS_TEAM_ID &&
+      process.env.APNS_PRIVATE_KEY &&
+      process.env.APNS_BUNDLE_ID,
+  );
+  return fcm || apns;
 }
 
 /**
@@ -154,7 +178,7 @@ export async function sendPushToTokens(
 
 export async function sendPush(input: SendInput) {
   if (!isPushConfigured()) {
-    return { ok: false, skipped: true, reason: "FCM not configured" };
+    return { ok: false, skipped: true, reason: "Push nie je nastavený" };
   }
 
   let query = supabaseAdmin

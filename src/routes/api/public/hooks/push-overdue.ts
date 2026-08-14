@@ -26,7 +26,7 @@ export const Route = createFileRoute("/api/public/hooks/push-overdue")({
         const { isPushConfigured, sendPushToTokens } = await import("@/lib/faktero/push.server");
 
         if (!isPushConfigured()) {
-          return Response.json({ ok: false, skipped: true, reason: "FCM not configured" });
+          return Response.json({ ok: false, skipped: true, reason: "Push nie je nastavený" });
         }
 
         const today = new Date().toISOString().slice(0, 10);
