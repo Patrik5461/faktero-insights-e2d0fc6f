@@ -40,6 +40,7 @@ import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { odosliCakajuceJazdy } from "@/lib/mobile/auto-jazdy-sync";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { StavPushu } from "@/components/faktero/mobil/StavPushu";
+import { Diagnostika } from "@/components/faktero/mobil/Diagnostika";
 import { PrijateDoklady, datum } from "@/components/faktero/mobil/PrijateDoklady";
 import { NovaFaktura } from "@/components/faktero/mobil/NovaFaktura";
 import { VystaveneFaktury } from "@/components/faktero/mobil/VystaveneFaktury";
@@ -95,6 +96,7 @@ export function MobilnaApka() {
   const [firma, setFirma] = useState<Firma | null>(null);
   const [faza, setFaza] = useState("štart");
   const [chybaStartu, setChybaStartu] = useState<string | null>(null);
+  const [diagnostika, setDiagnostika] = useState(false);
   const [dlho, setDlho] = useState(false);
   const [zachyt, setZachyt] = useState<Zachyt>("blocek");
   const [email, setEmail] = useState<string | null>(null);
@@ -272,6 +274,7 @@ export function MobilnaApka() {
     setKrok("prihlasenie");
   }
 
+  if (diagnostika) return <Diagnostika onSpat={() => setDiagnostika(false)} />;
   if (zamknute) return <Zamok onOdomknute={() => setZamknute(false)} onOdhlasit={odhlas} />;
   if (krok === "nacitavam") {
     const peciatka = typeof __PECIATKA__ === "string" ? __PECIATKA__ : "web";
@@ -315,6 +318,7 @@ export function MobilnaApka() {
   if (krok === "firma")
     return (
       <VyberFirmy
+        onDiagnostika={() => setDiagnostika(true)}
         poznamka={chybaStartu}
         firmy={firmy}
         onVyber={(f) => {
@@ -342,6 +346,15 @@ export function MobilnaApka() {
       <MobilObrazovka title="Účet" subtitle={email ?? undefined} onBack={() => setKrok("domov")}>
         <div className="space-y-4">
           <StavPushu />
+          <button
+            onClick={() => setDiagnostika(true)}
+            className="w-full rounded-2xl border border-border/70 p-4 text-left text-sm"
+          >
+            Diagnostika
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Čo appka v telefóne vidí — balíček, pamäť, pripojenie.
+            </span>
+          </button>
           <ZrusenieUctu onZrusene={() => zisti()} />
         </div>
       </MobilObrazovka>
@@ -556,12 +569,14 @@ function VyberFirmy({
   onVyber,
   onOdhlasit,
   poznamka,
+  onDiagnostika,
 }: {
   firmy: Firma[];
   onVyber: (f: Firma) => void;
   onOdhlasit: () => void;
   /** Prečo je zoznam prázdny — bez toho by appka tvrdila nepravdu. */
   poznamka?: string | null;
+  onDiagnostika?: () => void;
 }) {
   return (
     <MobilObrazovka title="Vyberte firmu" subtitle="Doklady sa uložia do vybranej firmy">
@@ -582,6 +597,16 @@ function VyberFirmy({
       >
         <LogOut className="h-4 w-4" /> Odhlásiť sa
       </button>
+      {onDiagnostika && (
+        // Práve tu sa človek zasekne, keď sa zoznam nenačíta — nech má odkiaľ
+        // zistiť prečo, bez pripájania telefónu k počítaču.
+        <button
+          onClick={onDiagnostika}
+          className="mt-2 w-full py-2 text-center text-[13px] text-muted-foreground underline"
+        >
+          Diagnostika
+        </button>
+      )}
     </MobilObrazovka>
   );
 }
