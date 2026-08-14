@@ -19,14 +19,21 @@ Vyváža sa:
 - **Prijaté doklady** (`receivedInvoice`) — `buildPohodaExpensesXml`.
 - **Pokladňa** (`voucher`, príjmový a výdavkový doklad) — `buildPohodaCashXml`.
 
-Dostať sa to von dá dvoma cestami:
+**Hlavná cesta je odovzdanie za mesiac** (Účtovné exporty,
+`odovzdanie.functions.ts`). Vyberie sa mesiac a vznikne jeden ZIP: XML faktúr,
+prijatých dokladov a pokladne, súpisky v CSV, PDF faktúr a skeny dokladov.
+Odchádza buď na stiahnutie, alebo tlačidlom **Poslať účtovníčke** rovno mailom
+cez Resend na `companies.uctovnik_email` (zadaná adresa sa uloží). Oboje si
+zapamätá, čo už odišlo — faktúry cez `export_logs`, prijaté doklady cez
+`expense_documents.exported_at` — a nabudúce priloží len nové.
 
-1. **Odovzdanie za mesiac** (Účtovné exporty, `odovzdanie.functions.ts`) — jeden
-   ZIP s XML faktúr, súpiskou, PDF faktúr a pokladňou, ak v mesiaci nejaký pohyb
-   bol. Tlačidlo „Odovzdať" si zapamätá, čo už odišlo (`export_logs`), a
-   nabudúce priloží len nové doklady. **Toto je hlavná cesta** — výber
-   jednotlivých faktúr nižšie je na doplnenie jedného zabudnutého dokladu.
-2. **Mesačný balík dokladov** (Doklady) — `pohoda.xml` vedľa súpisky a skenov.
+Pri maile má **strop na prílohy** (`STROP_PRILOH_MAILOM`, 12 MB). Resend prijme
+40 MB, ale schránka príjemcu býva prísnejšia a base64 objem nafúkne o tretinu;
+keď sa PDF a skeny nezmestia, balík odíde bez nich a v texte mailu je o tom
+poznámka. Údaje na zaúčtovanie sú dôležitejšie než obrázky.
+
+Vedľajšie cesty ostávajú: výber jednotlivých faktúr na tej istej stránke (na
+doplnenie jedného zabudnutého dokladu) a mesačný balík na stránke Doklady.
 
 Pokladňa sa vyváža **bez rozpisu DPH**: pohyb v pokladni u nás sadzbu nemá
 (vklady, výbery, drobné výdavky), kým doklady s DPH sú prijaté doklady a
@@ -85,9 +92,8 @@ Takto sa našlo, že cudzia mena bola postavená zle.
 
 ## Čo ďalej
 
-**1. Poslať balík účtovníčke priamo.** Dnes sa ZIP stiahne a človek ho pošle
-sám. Mailom (Resend už používame) alebo cez prístup pre rolu účtovníka by z toho
-bolo skutočné odovzdanie bez medzikroku.
+**1. Poslať balík sám od seba.** Dnes treba stlačiť tlačidlo. Cron 5. v mesiaci
+(alebo pripomienka) by odovzdávanie zavrel úplne.
 
 **2. Zvyšné agendy.** Pohoda berie ešte adresár (`addressbook`), sklad (`stock`)
 a zákazky (`contract`) — `customers`, `stock_items`, `jobs`. Adresár si Pohoda
