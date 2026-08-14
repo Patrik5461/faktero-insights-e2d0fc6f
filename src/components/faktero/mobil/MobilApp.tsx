@@ -94,6 +94,7 @@ export function MobilnaApka() {
   const [firmy, setFirmy] = useState<Firma[]>([]);
   const [firma, setFirma] = useState<Firma | null>(null);
   const [faza, setFaza] = useState("štart");
+  const [chybaStartu, setChybaStartu] = useState<string | null>(null);
   const [dlho, setDlho] = useState(false);
   const [zachyt, setZachyt] = useState<Zachyt>("blocek");
   const [email, setEmail] = useState<string | null>(null);
@@ -181,7 +182,9 @@ export function MobilnaApka() {
   }
 
   useEffect(() => {
-    zisti(true);
+    // Nezachytená výnimka v štarte nechá appku na úvodnej obrazovke bez slova.
+    // Radšej nech je vidieť, čo presne padlo.
+    zisti(true).catch((e: any) => setChybaStartu(String(e?.message ?? e).slice(0, 200)));
     // Keď sa štart do desiatich sekúnd nedokončí, appka to prizná a ponúkne
     // východisko namiesto točiaceho sa kolieska.
     const t = setTimeout(() => setDlho(true), 10000);
@@ -250,7 +253,8 @@ export function MobilnaApka() {
   if (zamknute) return <Zamok onOdomknute={() => setZamknute(false)} onOdhlasit={odhlas} />;
   if (krok === "nacitavam") {
     const peciatka = typeof __PECIATKA__ === "string" ? __PECIATKA__ : "web";
-    if (!dlho) return <Pracujem text={`Spúšťam Faktero… (${faza}) · ${peciatka}`} />;
+    if (!dlho && !chybaStartu)
+      return <Pracujem text={`Spúšťam Faktero… (${faza}) · ${peciatka}`} />;
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-background p-6 text-center">
         <div className="space-y-3">
@@ -258,6 +262,11 @@ export function MobilnaApka() {
           <p className="text-[13px] text-muted-foreground">
             Býva to slabým pripojením. Skúste to znova, alebo sa prihláste nanovo.
           </p>
+          {chybaStartu && (
+            <p className="rounded-lg bg-destructive/10 p-2 text-[12px] text-destructive">
+              {chybaStartu}
+            </p>
+          )}
           <p className="text-[11px] text-muted-foreground">balíček {peciatka}</p>
           <div className="flex flex-col gap-2 pt-2">
             <button

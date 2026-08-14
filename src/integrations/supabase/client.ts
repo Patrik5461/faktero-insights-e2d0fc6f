@@ -13,6 +13,20 @@ import type { Database } from "./types";
  * V telefóne žiadne druhé okno neexistuje, takže sa použije jednoduchý zámok
  * v pamäti. Na webe ostáva pôvodný, tam viac kariet zmysel dáva.
  */
+/**
+ * Prístup k `localStorage` vie vo WebView vyhodiť (SecurityError), a keďže sa
+ * klient vyrába pri prvom použití, taká výnimka zhodí celý štart appky.
+ */
+function bezpecneUlozisko(): Storage | undefined {
+  try {
+    if (typeof window === "undefined") return undefined;
+    window.localStorage.getItem("faktero.test");
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
 function jeVlastnaSchema(): boolean {
   if (typeof window === "undefined") return false;
   return !/^https?:$/.test(window.location.protocol);
@@ -37,7 +51,7 @@ function createSupabaseClient() {
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
-      storage: typeof window !== "undefined" ? localStorage : undefined,
+      storage: bezpecneUlozisko(),
       persistSession: true,
       autoRefreshToken: true,
       ...(jeVlastnaSchema() ? { lock: processLock } : {}),
