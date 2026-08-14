@@ -3,20 +3,12 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
   appId: "sk.faktero.app",
   appName: "Faktero",
-  // SSR app — appka načítava živú web verziu. Bez `webDir` nutného pre `cap sync`
-  // používame placeholder; reálne renderovanie ide cez `server.url`.
-  webDir: ".output/public",
+  // Appka má rozhranie v sebe (build z `vite.config.mobile.ts`), takže sa otvorí
+  // aj bez signálu. Dovtedy sa ťahalo zo živého webu cez `server.url` a bez
+  // pripojenia sa nedalo spraviť nič.
+  webDir: "dist-mobile",
   server: {
-    // Appka otvára rovno mobilný tok: prihlásenie → firma → skenovanie.
-    // Webová aplikácia je na tom istom mieste, len sa do nej z telefónu
-    // nechodí — na malej obrazovke je neovládateľná.
-    url: "https://www.faktero.sk/app",
-    cleartext: false,
     androidScheme: "https",
-    // Musí ukazovať na súbor vo `webDir`. Bolo tu „/app", čo je cesta na webe —
-    // lokálne taký súbor nie je, takže sa pri výpadku siete nemalo čo zobraziť
-    // a v appke ostalo svietiť len logo.
-    errorPath: "index.html",
   },
   ios: {
     // Bez `never` si WebView pridá vlastné odsadenie a bije sa s odsadením

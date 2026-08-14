@@ -17,9 +17,23 @@ nedá odoslať teraz, odložiť do fronty.
   Trasa `/app` je už len obal. Obrazovky neriešia router, prepína ich stav —
   vďaka tomu sa dajú zostaviť aj mimo TanStack Start.
 - **Klientský build** — `vite.config.mobile.ts`, `index.mobile.html`,
-  `src/mobile/main.tsx`. Výstup ide do `dist-mobile`.
+  `src/mobile/main.tsx`, výstup do `dist-mobile`. Púšťa ho `npm run build:mobile`,
+  ktorý rovno spustí aj `cap sync`.
+- **Most na server** — obrazovky si operáciu pýtajú kľúčom (`operacie.ts`),
+  vybaví ju `server-most.ts` (web) alebo `server-most.mobile.ts` (appka, cez
+  `/api/mobil/<operácia>`). Prepína sa aliasom pri builde. Endpoint volá tú istú
+  serverovú funkciu, takže sa logika nezdvojuje a prihlásenie sa nerieši druhý raz.
+  **Overené naživo:** bez tokenu 401, s tokenom 57 faktúr, neznáma operácia 404.
+- **Capacitor ukazuje na balíček** — `webDir: "dist-mobile"`, `server.url` je preč.
 
-## Na čom to stojí
+## Čo ostáva
+
+4. **Offline kniha jázd** — vozidlá a jazdy do IndexedDB, zápisy cez frontu,
+   zosúladenie po pripojení.
+5. **Zvyšok agend offline** — doklady frontu majú; faktúry offline len na čítanie.
+6. **Skúška na zariadení a odoslanie do App Store.**
+
+## Ako to bolo predtým
 
 Build zatiaľ neprejde, lebo mobilné obrazovky volajú **serverové funkcie**
 (`useServerFn`), ktoré ťahajú do balíčka serverové jadro TanStacku. V balíčku
@@ -37,7 +51,7 @@ Týka sa to deviatich volaní:
 Kniha jázd medzi nimi **nie je** — tá ide priamo cez Supabase, takže offline
 zvládne všetko hneď, ako bude balíček stáť.
 
-## Postup
+## Pôvodný postup (pre históriu)
 
 1. **Most na server.** `src/lib/mobile/server-volanie.ts` s dvoma
    implementáciami: na webe `useServerFn`, v appke `fetch` na
