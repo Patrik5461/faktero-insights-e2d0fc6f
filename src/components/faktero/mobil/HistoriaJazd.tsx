@@ -89,14 +89,35 @@ export function HistoriaJazd({
       .order("trip_date", { ascending: false })
       .order("start_time", { ascending: false, nullsFirst: false })
       .limit(200)
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (zrusene) return;
-        if (error) toast.error(error.message);
-        setJazdy(
-          (data ?? []).map((t) => ({
-            ...t,
-            distance_km: t.distance_km === null ? null : Number(t.distance_km),
-          })) as Jazdenka[],
+        const { ulozJazdy, jazdyZPamate, zoradJazdy } = await import("@/lib/mobile/jazdy-lokalne");
+
+        if (error || !data) {
+          // Bez pripojenia sa história vezme z telefónu. Prázdna kniha jázd v
+          // aute je horšia než mierne zastaraná.
+          const zPamate = (await jazdyZPamate(firma.id)).filter(
+            (j) => j.vehicle_id === vozidlo.id,
+          );
+          if (zrusene) return;
+          if (zPamate.length === 0 && error) toast.error(error.message);
+          setJazdy(zoradJazdy(zPamate) as unknown as Jazdenka[]);
+          return;
+        }
+
+        const jazdenky = data.map((t) => ({
+          ...t,
+          distance_km: t.distance_km === null ? null : Number(t.distance_km),
+        })) as Jazdenka[];
+        setJazdy(jazdenky);
+        void ulozJazdy(
+          firma.id,
+          jazdenky.map((j: any) => ({
+            ...j,
+            company_id: firma.id,
+            vehicle_id: vozidlo.id,
+            distance_km: Number(j.distance_km ?? 0),
+          })),
         );
       });
     return () => {

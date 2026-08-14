@@ -17,6 +17,12 @@ import type { BufferedTrip, Classification } from "@faktero/drive-detector";
 import { trasaDoPolyline } from "@/lib/faktero/polyline";
 import { mojeVozidlo, zapamatajVozidlo, vozidloPreRozpoznanuJazdu } from "@/lib/mobile/moje-vozidlo";
 import { ulozOfflinePodklady } from "@/lib/mobile/offline-podklady";
+import {
+  ulozVozidla,
+  vozidlaZPamate,
+  pridajCakajucuJazdu,
+  odosliCakajuceZapisy,
+} from "@/lib/mobile/jazdy-lokalne";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem } from "./MobilChrome";
@@ -69,25 +75,30 @@ export function Jazda({
   const cenaPaliva = useRef<number | null>(null);
 
   async function nacitajVozidla(vyberId?: string) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("vehicles")
       .select("id, name, license_plate")
       .eq("company_id", firma.id)
       .eq("active", true)
       .order("name");
-    setVozidla(data ?? []);
+
+    // Bez signálu sa siahne po poslednom známom zozname — inak by kniha jázd
+    // v aute, teda presne tam, kde je potrebná, ostala prázdna.
+    const zoznam = error || !data ? await vozidlaZPamate(firma.id) : data;
+    if (!error && data) void ulozVozidla(firma.id, data.map((v) => ({ ...v, company_id: firma.id })));
+    setVozidla(zoznam as Vozidlo[]);
     // Predvolí sa auto, ktorým sa z tohto telefónu jazdí; až potom prvé v zozname.
     const zapamatane = mojeVozidlo(firma.id);
     const vyber =
       vyberId ??
-      (zapamatane && data?.some((v) => v.id === zapamatane) ? zapamatane : data?.[0]?.id);
+      (zapamatane && zoznam.some((v) => v.id === zapamatane) ? zapamatane : zoznam[0]?.id);
     if (vyber) setVozidloId(vyber);
 
     // Offline obrazovka nemá ako zistiť, aké má firma autá — odložíme jej ich.
     void ulozOfflinePodklady({
       companyId: firma.id,
       companyName: firma.name,
-      vozidla: (data ?? []).map((v) => ({
+      vozidla: zoznam.map((v) => ({
         id: v.id,
         name: v.name,
         license_plate: v.license_plate,
@@ -119,6 +130,21 @@ export function Jazda({
 
   useEffect(() => {
     vozidlaSCommanderom(firma.id).then(setCommander).catch(() => {});
+  }, [firma.id]);
+
+  /* Jazdy zapísané bez pripojenia — pri otvorení sa skúsia odoslať. */
+  useEffect(() => {
+    odosliCakajuceZapisy(firma.id)
+      .then((pocet) => {
+        if (pocet > 0) {
+          toast.success(
+            pocet === 1
+              ? "Jazda zapísaná bez signálu je odoslaná"
+              : `Odoslaných ${pocet} jázd zapísaných bez signálu`,
+          );
+        }
+      })
+      .catch(() => {});
   }, [firma.id]);
 
   /*
@@ -245,10 +271,11 @@ export function Jazda({
         ? (vysledok.distance_km * Number(plne.consumption_l_100km)) / 100
         : null;
 
-      const { error } = await supabase.from("trips").insert({
+      const dnes = new Date().toISOString().slice(0, 10);
+      const zapis = {
         company_id: firma.id,
         vehicle_id: vozidloId,
-        trip_date: new Date().toISOString().slice(0, 10),
+        trip_date: dnes,
         classification: typJazdy,
         purpose: ucel.trim() || "GPS jazda",
         start_odometer: 0,
@@ -258,11 +285,34 @@ export function Jazda({
         fuel_price: cenaPaliva.current,
         route: trasaDoPolyline(vysledok.points),
         note: `GPS: ${vysledok.duration_min} min, ${vysledok.points.length} bodov`,
-      });
-      if (error) throw new Error(error.message);
-      toast.success(
-        `Jazda uložená — ${vysledok.distance_km} km${vozidlo ? `, ${vozidlo.name}` : ""}`,
-      );
+      };
+
+      const { error } = await supabase.from("trips").insert(zapis);
+
+      if (error) {
+        // Bez pripojenia sa jazda nezahodí — odloží sa v telefóne a odošle sa
+        // po pripojení. Kniha jázd je záznam z cesty, nie z kancelárie.
+        await pridajCakajucuJazdu({
+          id: crypto.randomUUID(),
+          company_id: firma.id,
+          vehicle_id: vozidloId,
+          trip_date: dnes,
+          purpose: zapis.purpose,
+          distance_km: vysledok.distance_km,
+          classification: typJazdy,
+          route: zapis.route,
+          zapis,
+          chyba: error.message,
+        });
+        toast.success(
+          `Jazda uložená v telefóne — ${vysledok.distance_km} km. Odošle sa po pripojení.`,
+          { duration: 6000 },
+        );
+      } else {
+        toast.success(
+          `Jazda uložená — ${vysledok.distance_km} km${vozidlo ? `, ${vozidlo.name}` : ""}`,
+        );
+      }
       setUcel("");
       setKm(0);
       setOdkedy(null);
