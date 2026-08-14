@@ -196,11 +196,28 @@ export async function zahodRozpoznanuJazdu(tripId: string): Promise<void> {
  * jazdy by prišli druhýkrát a v knihe jázd by boli dvakrát.
  */
 export async function vozidlaSCommanderom(companyId: string): Promise<Set<string>> {
-  const { data } = await supabase
+  const { ulozDoPamate, zPamate } = await import("./jazdy-lokalne");
+  const kluc = `commander:${companyId}`;
+
+  // Bez siete dotaz vyhodí — vtedy sa vezme posledný známy stav, nech odznak
+  // pri aute nezmizne a človek nezačne merať jazdu, ktorú ťahá Commander.
+  const { data, error } = await supabase
     .from("commander_vehicle_links")
     .select("faktero_vehicle_id")
-    .eq("company_id", companyId);
-  return new Set((data ?? []).map((r: any) => r.faktero_vehicle_id).filter(Boolean));
+    .eq("company_id", companyId)
+    .then(
+      (r) => r,
+      (e) => ({ data: null, error: e as any }),
+    );
+
+  if (error || !data) {
+    const zapamatane = await zPamate<string[]>(kluc);
+    return new Set(zapamatane?.hodnota ?? []);
+  }
+
+  const idcka = data.map((r: any) => r.faktero_vehicle_id).filter(Boolean);
+  void ulozDoPamate(kluc, idcka);
+  return new Set(idcka);
 }
 
 /**

@@ -77,11 +77,26 @@ export function VystaveneFaktury({
   const [otvorena, setOtvorena] = useState<Faktura | null>(null);
 
   async function obnov() {
+    const { ulozDoPamate, zPamate } = await import("@/lib/mobile/jazdy-lokalne");
+    const kluc = `faktury:${firma.id}`;
     try {
-      setFaktury((await nacitaj({ data: { company_id: firma.id } })) as Faktura[]);
+      const zoznam = (await nacitaj({ data: { company_id: firma.id } })) as Faktura[];
+      setFaktury(zoznam);
+      void ulozDoPamate(kluc, zoznam);
     } catch (e: any) {
-      toast.error(e?.message ?? "Faktúry sa nepodarilo načítať.");
-      setFaktury([]);
+      // Bez pripojenia sa ukáže posledný známy zoznam. Vystaviť ani odoslať sa
+      // offline nedá, ale pozrieť sa, kto nezaplatil, áno — a to je v teréne
+      // najčastejšia otázka.
+      const zapamatane = await zPamate<Faktura[]>(kluc);
+      if (zapamatane?.hodnota?.length) {
+        setFaktury(zapamatane.hodnota);
+        toast.message("Bez pripojenia — zobrazené naposledy načítané faktúry.", {
+          description: new Date(zapamatane.kedy).toLocaleString("sk-SK"),
+        });
+      } else {
+        toast.error(e?.message ?? "Faktúry sa nepodarilo načítať.");
+        setFaktury([]);
+      }
     }
   }
 

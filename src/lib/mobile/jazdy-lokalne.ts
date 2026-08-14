@@ -11,9 +11,10 @@
  */
 
 const DB = "faktero-jazdy";
-const VERZIA = 1;
+const VERZIA = 2;
 const VOZIDLA = "vozidla";
 const JAZDY = "jazdy";
+const PAMAT = "pamat";
 
 export type LokalneVozidlo = {
   id: string;
@@ -58,6 +59,11 @@ function otvor(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(JAZDY)) {
         db.createObjectStore(JAZDY, { keyPath: "id" }).createIndex("firma", "company_id");
+      }
+      // Odkladacia polica na čokoľvek, čo sa oplatí ukázať aj bez siete —
+      // zoznam faktúr, autá pripojené na Commander a podobne.
+      if (!db.objectStoreNames.contains(PAMAT)) {
+        db.createObjectStore(PAMAT, { keyPath: "kluc" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -195,11 +201,16 @@ export async function odosliCakajuceZapisy(companyId: string): Promise<number> {
 
   for (const jazda of cakajuce) {
     const zapis = jazda.zapis ?? {};
+    // Bez siete zápis vyhodí; jazda vtedy ostáva vo fronte na ďalší pokus.
     const { data, error } = await supabase
       .from("trips")
       .insert(zapis as never)
       .select("id")
-      .single();
+      .single()
+      .then(
+        (r) => r,
+        (e) => ({ data: null, error: e as any }),
+      );
 
     if (error) {
       // 23505 = jazda tam už je z predošlého pokusu; taká sa má z fronty vyhodiť.
@@ -210,4 +221,29 @@ export async function odosliCakajuceZapisy(companyId: string): Promise<number> {
     if (data?.id) odoslane++;
   }
   return odoslane;
+}
+
+/* ── odkladacia polica ───────────────────────────────────────────────────── */
+
+/**
+ * Uloží čokoľvek pod kľúčom, nech sa to dá ukázať aj bez pripojenia.
+ * Zámerne bez schémy — sú to len posledné videné dáta, nie zdroj pravdy.
+ */
+export async function ulozDoPamate(kluc: string, hodnota: unknown): Promise<void> {
+  try {
+    await transakcia(PAMAT, "readwrite", (s) =>
+      s.put({ kluc, hodnota, kedy: Date.now() }),
+    );
+  } catch {
+    /* pamäť je pohodlie, nie podmienka */
+  }
+}
+
+export async function zPamate<T>(kluc: string): Promise<{ hodnota: T; kedy: number } | null> {
+  try {
+    const z = await transakcia<any>(PAMAT, "readonly", (s) => s.get(kluc));
+    return z ? { hodnota: z.hodnota as T, kedy: z.kedy as number } : null;
+  } catch {
+    return null;
+  }
 }
