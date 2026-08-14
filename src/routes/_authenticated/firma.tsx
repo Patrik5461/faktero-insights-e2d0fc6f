@@ -173,6 +173,17 @@ function CompanyPage() {
                 value={c.pohoda_clenenie_dph_prijata ?? ""}
                 onChange={f("pohoda_clenenie_dph_prijata")}
               />
+              <In
+                label="Pokladňa v Pohode"
+                value={c.pohoda_pokladna ?? ""}
+                onChange={f("pohoda_pokladna")}
+                placeholder="napr. HOT"
+              />
+              <In
+                label="Predkontácia — pokladničný doklad"
+                value={c.pohoda_predkontacia_pokladna ?? ""}
+                onChange={f("pohoda_predkontacia_pokladna")}
+              />
             </div>
           </div>
           <label className="sm:col-span-2 block">

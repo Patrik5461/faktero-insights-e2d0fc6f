@@ -15,11 +15,28 @@ Súborová výmena obidvoma smermi:
 
 Vyváža sa:
 
-- **Vydaná faktúra, zálohová faktúra a dobropis** — stránka Účtovné exporty,
-  `buildPohodaInvoiceXml`.
-- **Prijaté doklady** (`receivedInvoice`) — sú v mesačnom balíku na stránke
-  Doklady ako `pohoda.xml` vedľa súpisky a naskenovaných dokladov,
-  `buildPohodaExpensesXml`.
+- **Vydaná faktúra, zálohová faktúra a dobropis** — `buildPohodaInvoiceXml`.
+- **Prijaté doklady** (`receivedInvoice`) — `buildPohodaExpensesXml`.
+- **Pokladňa** (`voucher`, príjmový a výdavkový doklad) — `buildPohodaCashXml`.
+
+Dostať sa to von dá dvoma cestami:
+
+1. **Odovzdanie za mesiac** (Účtovné exporty, `odovzdanie.functions.ts`) — jeden
+   ZIP s XML faktúr, súpiskou, PDF faktúr a pokladňou, ak v mesiaci nejaký pohyb
+   bol. Tlačidlo „Odovzdať" si zapamätá, čo už odišlo (`export_logs`), a
+   nabudúce priloží len nové doklady. **Toto je hlavná cesta** — výber
+   jednotlivých faktúr nižšie je na doplnenie jedného zabudnutého dokladu.
+2. **Mesačný balík dokladov** (Doklady) — `pohoda.xml` vedľa súpisky a skenov.
+
+Pokladňa sa vyváža **bez rozpisu DPH**: pohyb v pokladni u nás sadzbu nemá
+(vklady, výbery, drobné výdavky), kým doklady s DPH sú prijaté doklady a
+faktúry. Vymyslená sadzba by bola tichá chyba v priznaní, takže celá suma ide do
+nulovej priehradky. Výdavok sa nezapisuje záporne — o smere hovorí `voucherType`
+(`receipt` / `expense`).
+
+**Banka sa zámerne nevyváža.** Účtovníčka si výpis načíta priamo z banky (a
+Faktero jej vie vyrobiť camt.053), takže náš export by v Pohode vyrobil druhý
+komplet bankových dokladov.
 
 Pri prijatom doklade sa zapisuje **len súhrn po sadzbách, nie položky**. Bloček
 z pokladne má položky v cenách s daňou a býva ich aj dvadsať („Záloh plech");
@@ -68,17 +85,15 @@ Takto sa našlo, že cudzia mena bola postavená zle.
 
 ## Čo ďalej
 
-**1. Viac agend.** Pohoda cez XML berie aj pokladňu (`voucher`), banku (`bank`),
-adresár (`addressbook`), sklad (`stock`) a zákazky (`contract`). Tabuľky na to
-máme: `cash_entries`, `bank_transactions`, `customers`, `stock_items`, `jobs`.
-Pozor, `purchase_invoices` je prázdna — prijaté doklady žijú v
-`expense_documents`.
+**1. Poslať balík účtovníčke priamo.** Dnes sa ZIP stiahne a človek ho pošle
+sám. Mailom (Resend už používame) alebo cez prístup pre rolu účtovníka by z toho
+bolo skutočné odovzdanie bez medzikroku.
 
-**2. Odovzdanie za obdobie.** Nie „vyber faktúry a stiahni", ale „odovzdaj
-marec" — jeden balík (XML + PDF + súpiska), evidencia, čo už išlo, a možnosť
-poslať to účtovníkovi mailom alebo mu dať prístup (rola účtovníka existuje).
-`export_jobs` a `export_logs` na to už sú; `export_logs.status` rozlišuje `ok`
-a `skipped`.
+**2. Zvyšné agendy.** Pohoda berie ešte adresár (`addressbook`), sklad (`stock`)
+a zákazky (`contract`) — `customers`, `stock_items`, `jobs`. Adresár si Pohoda
+pri importe faktúr zakladá sama, takže úžitok je malý; sklad a zákazky dávajú
+zmysel len tomu, kto ich v Pohode naozaj vedie. Pozor, `purchase_invoices` je
+prázdna tabuľka — prijaté doklady žijú v `expense_documents`.
 
 **3. Živý most cez POHODA mServer.** Pohoda má vstavaný HTTP server:
 `POST http://localhost:444/xml`, hlavička `STW-Authorization: Basic

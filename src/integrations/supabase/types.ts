@@ -938,7 +938,9 @@ export type Database = {
           pohoda_clenenie_dph_prijata: string | null
           pohoda_predkontacia: string | null
           pohoda_predkontacia_dobropis: string | null
+          pohoda_pokladna: string | null
           pohoda_predkontacia_prijata: string | null
+          pohoda_predkontacia_pokladna: string | null
           pohoda_predkontacia_zaloha: string | null
           preferred_accounting_system: Database["public"]["Enums"]["accounting_system"]
           reminder_days_1: number
@@ -989,7 +991,9 @@ export type Database = {
           pohoda_clenenie_dph_prijata?: string | null
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
+          pohoda_pokladna?: string | null
           pohoda_predkontacia_prijata?: string | null
+          pohoda_predkontacia_pokladna?: string | null
           pohoda_predkontacia_zaloha?: string | null
           preferred_accounting_system?: Database["public"]["Enums"]["accounting_system"]
           reminder_days_1?: number
@@ -1040,7 +1044,9 @@ export type Database = {
           pohoda_clenenie_dph_prijata?: string | null
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
+          pohoda_pokladna?: string | null
           pohoda_predkontacia_prijata?: string | null
+          pohoda_predkontacia_pokladna?: string | null
           pohoda_predkontacia_zaloha?: string | null
           preferred_accounting_system?: Database["public"]["Enums"]["accounting_system"]
           reminder_days_1?: number

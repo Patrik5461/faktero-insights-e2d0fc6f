@@ -126,6 +126,10 @@ export type PohodaNastavenia = {
   predkontaciaPrijata?: string | null;
   /** Členenie DPH pre prijatý doklad. */
   clenenieDphPrijata?: string | null;
+  /** Skratka pokladne v Pohode — do ktorej pokladne pohyby patria. */
+  pokladna?: string | null;
+  /** Predkontácia pre pokladničný doklad. */
+  predkontaciaPokladna?: string | null;
 };
 
 function domacaMenaFirmy(company: CompanyRow): string {
@@ -329,6 +333,76 @@ export function buildPohodaInvoiceXml(opts: {
 <dat:dataPack id="${dataPackId}" ico="${ico}" application="Faktero" version="2.0" note="Export z Faktero"
   xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
   xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">${entries}
+</dat:dataPack>`;
+}
+
+/**
+ * Pokladničné doklady ako agenda `voucher` (príjmový a výdavkový doklad).
+ *
+ * **Bez rozpisu DPH.** Pohyb v pokladni u nás nemá sadzbu — evidujú sa ním
+ * vklady, výbery a drobné výdavky, kým doklady s DPH sú prijaté doklady a
+ * faktúry. Zapisovať vymyslenú sadzbu by znamenalo tichú chybu v priznaní,
+ * takže celá suma ide do nulovej priehradky a DPH priradí účtovník, ak nejaká
+ * na doklad patrí.
+ *
+ * Číslo dokladu si Pohoda pridelí z vlastnej rady; naše číslo je v texte, aby
+ * sa dal pohyb spätne nájsť.
+ */
+export function buildPohodaCashXml(opts: {
+  company: CompanyRow;
+  pohyby: DokladRow[];
+  nastavenia?: PohodaNastavenia;
+}): string {
+  const { company, pohyby, nastavenia } = opts;
+  const ico = esc(company?.ico ?? "");
+  const dataPackId = `FAKTERO_POKLADNA_${new Date().toISOString().replace(/[:.]/g, "-")}`;
+
+  const entries = pohyby
+    .map((p, idx) => {
+      // `prijem` = príjmový doklad, čokoľvek iné je výdavok.
+      const druh = String(p?.type ?? "") === "prijem" ? "receipt" : "expense";
+      const suma = Math.abs(Number(p?.amount ?? 0));
+      const popis = skrat(
+        [p?.entry_number, p?.description, p?.category].filter(Boolean).join(" — "),
+        240,
+      );
+
+      return `
+  <dat:dataPackItem id="POK${idx + 1}" version="2.0">
+    <vch:voucher version="2.0">
+      <vch:voucherHeader>
+        <vch:voucherType>${druh}</vch:voucherType>${
+          nastavenia?.pokladna
+            ? `\n        <vch:cashAccount><typ:ids>${esc(nastavenia.pokladna)}</typ:ids></vch:cashAccount>`
+            : ""
+        }
+        <vch:date>${esc(p?.entry_date ?? "")}</vch:date>
+        <vch:dateTax>${esc(p?.entry_date ?? "")}</vch:dateTax>${
+          nastavenia?.predkontaciaPokladna
+            ? `\n        <vch:accounting><typ:ids>${esc(nastavenia.predkontaciaPokladna)}</typ:ids></vch:accounting>`
+            : ""
+        }${el("vch:text", popis || "Pokladničný doklad", "        ")}${el(
+          "vch:note",
+          skrat(p?.note, 200),
+          "        ",
+        )}
+      </vch:voucherHeader>
+      <vch:voucherSummary>
+        <vch:homeCurrency>
+          <typ:priceNone>${fixed2(suma)}</typ:priceNone>
+          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        </vch:homeCurrency>
+      </vch:voucherSummary>
+    </vch:voucher>
+  </dat:dataPackItem>`;
+    })
+    .join("");
+
+  return `<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="${dataPackId}" ico="${ico}" application="Faktero" version="2.0" note="Pokladňa z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
   xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">${entries}
 </dat:dataPack>`;
 }

@@ -3,6 +3,7 @@ import { XMLParser, XMLValidator } from "fast-xml-parser";
 import {
   buildPohodaInvoiceXml,
   buildPohodaExpensesXml,
+  buildPohodaCashXml,
   buildOmegaTxt,
   buildMoneyS3Xml,
   EXPORT_STRATEGIES,
@@ -407,6 +408,56 @@ describe("Pohoda XML — prijaté doklady", () => {
   it("doklad v cudzej mene sa vynechá", () => {
     const d = posli([bloček, { ...bloček, document_number: "9", currency: "CZK" }]);
     expect(d.dataPackItem.invoice.invoiceHeader.symVar).toBe(2516);
+  });
+});
+
+describe("Pohoda XML — pokladňa", () => {
+  const firmaSk = { ico: "56607016", default_currency: "EUR" };
+  const pohyby = [
+    {
+      entry_number: "PPD 2026/14",
+      entry_date: "2026-08-03",
+      type: "prijem",
+      amount: 250,
+      description: "Vklad do pokladne",
+    },
+    {
+      entry_number: "VPD 2026/22",
+      entry_date: "2026-08-07",
+      type: "vydaj",
+      amount: 18.4,
+      description: "Kancelárske potreby",
+      category: "Réžia",
+    },
+  ];
+  const posli = (nastavenia?: any) =>
+    parser.parse(buildPohodaCashXml({ company: firmaSk, pohyby, nastavenia })).dataPack;
+
+  it("príjem a výdavok sú rozlíšené", () => {
+    const v = posli().dataPackItem.map((x: any) => x.voucher.voucherHeader.voucherType);
+    expect(v).toEqual(["receipt", "expense"]);
+  });
+
+  it("suma je vždy kladná a v nulovej sadzbe", () => {
+    // Pokladničný pohyb u nás sadzbu nemá; vymyslená by bola tichá chyba v DPH.
+    const s = posli().dataPackItem[1].voucher.voucherSummary.homeCurrency;
+    expect(Number(s.priceNone)).toBe(18.4);
+    // Výdavok sa nezapisuje záporne — o smere hovorí typ dokladu.
+    expect(String(s.priceNone).startsWith("-")).toBe(false);
+  });
+
+  it("naše číslo pohybu ostane v texte, aby sa dal dohľadať", () => {
+    const t = posli().dataPackItem[0].voucher.voucherHeader.text;
+    expect(String(t)).toContain("PPD 2026/14");
+    expect(String(t)).toContain("Vklad do pokladne");
+  });
+
+  it("pokladňa a predkontácia sa doplnia, len keď sú nastavené", () => {
+    expect(posli().dataPackItem[0].voucher.voucherHeader.cashAccount).toBeUndefined();
+    const h = posli({ pokladna: "HOT", predkontaciaPokladna: "3Pp" }).dataPackItem[0].voucher
+      .voucherHeader;
+    expect(h.cashAccount.ids).toBe("HOT");
+    expect(h.accounting.ids).toBe("3Pp");
   });
 });
 
