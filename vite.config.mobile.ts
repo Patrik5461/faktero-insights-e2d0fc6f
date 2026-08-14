@@ -14,6 +14,14 @@ import { resolve } from "node:path";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Appka sa sama neaktualizuje, takže musí byť na prvý pohľad jasné, ktorý
+  // balíček v telefóne beží — inak sa nedá rozlíšiť neúspešná oprava od
+  // starého buildu.
+  define: {
+    __PECIATKA__: JSON.stringify(
+      new Date().toISOString().slice(0, 16).replace("T", " "),
+    ),
+  },
   resolve: {
     // Poradie je dôležité — konkrétne cesty musia byť pred všeobecným "@".
     // Takto sa do balíčka dostane most cez endpointy a nie serverové funkcie.

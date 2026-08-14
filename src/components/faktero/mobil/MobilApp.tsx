@@ -27,6 +27,7 @@ import {
   Lock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { nacitajUlozenuRelaciu } from "@/lib/mobile/relacia";
 import {
   fetchMyCompanies,
   getActiveCompanyId,
@@ -119,7 +120,12 @@ export function MobilnaApka() {
       supabase.auth.getSession().catch(() => ({ data: { session: null } })),
       new Promise((res) => setTimeout(() => res({ data: { session: null } }), 6000)),
     ])) as { data: { session: any } };
-    if (!data.session) {
+
+    // Keď overenie nestihlo odpovedať, ešte sa pozrieme, či relácia v telefóne
+    // je — inak by sme prihláseného človeka posielali prihlásiť sa znova pri
+    // každom pomalom štarte.
+    const relacia = data.session ?? nacitajUlozenuRelaciu();
+    if (!relacia) {
       setKrok("prihlasenie");
       return;
     }
@@ -127,7 +133,7 @@ export function MobilnaApka() {
     if (studenyStart && (await isBiometricEnabled()) && (await isBiometricAvailable())) {
       setZamknute(true);
     }
-    setEmail(data.session.user?.email ?? null);
+    setEmail(relacia.user?.email ?? null);
     // Token na push mohol doraziť skôr, než bol používateľ prihlásený.
     void import("@/lib/mobile/push").then((m) => m.dorucCakajuciPushToken());
     // Naplánované zrušenie účtu musí byť vidieť aj v telefóne — kto oň požiadal
@@ -135,7 +141,7 @@ export function MobilnaApka() {
     supabase
       .from("profiles")
       .select("deletion_scheduled_for")
-      .eq("id", data.session.user.id)
+      .eq("id", relacia.user.id)
       .maybeSingle()
       .then(({ data: p }) => setZrusiSa((p?.deletion_scheduled_for as string | null) ?? null));
     setFaza("firmy");
@@ -243,7 +249,8 @@ export function MobilnaApka() {
 
   if (zamknute) return <Zamok onOdomknute={() => setZamknute(false)} onOdhlasit={odhlas} />;
   if (krok === "nacitavam") {
-    if (!dlho) return <Pracujem text={`Spúšťam Faktero… (${faza})`} />;
+    const peciatka = typeof __PECIATKA__ === "string" ? __PECIATKA__ : "web";
+    if (!dlho) return <Pracujem text={`Spúšťam Faktero… (${faza}) · ${peciatka}`} />;
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-background p-6 text-center">
         <div className="space-y-3">
@@ -251,6 +258,7 @@ export function MobilnaApka() {
           <p className="text-[13px] text-muted-foreground">
             Býva to slabým pripojením. Skúste to znova, alebo sa prihláste nanovo.
           </p>
+          <p className="text-[11px] text-muted-foreground">balíček {peciatka}</p>
           <div className="flex flex-col gap-2 pt-2">
             <button
               onClick={() => {
