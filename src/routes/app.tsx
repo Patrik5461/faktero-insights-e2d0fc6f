@@ -145,6 +145,20 @@ function MobilnaApka() {
         setKrok("domov");
         // Jazdy, ktoré telefón nahral, kým bola appka zavretá, netreba držať
         // v telefóne do chvíle, kým sa človek preklikne na obrazovku Jazda.
+        // Doklady odfotené na offline obrazovke prevezme appka do svojej fronty.
+        void import("@/lib/mobile/offline-prevzatie")
+          .then((m) => m.prevezmiOfflineDoklady(vybrana.id))
+          .then((pocet) => {
+            if (pocet > 0) {
+              toast.success(
+                pocet === 1
+                  ? "Doklad odfotený bez signálu čaká na odoslanie"
+                  : `${pocet} dokladov odfotených bez signálu čaká na odoslanie`,
+              );
+            }
+          })
+          .catch(() => {});
+
         void odosliCakajuceJazdy(vybrana.id)
           .then(({ ulozene }) => {
             if (ulozene > 0) {

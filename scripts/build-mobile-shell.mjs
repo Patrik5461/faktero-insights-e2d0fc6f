@@ -38,6 +38,11 @@ const html = `<!doctype html>
         border: 0; border-radius: 12px; background: #fff; color: #047857; }
       button:disabled { opacity: .6; }
       .skryte { display: none; }
+      #nadstavba { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+      #nadstavba.skryte { display: none; }
+      .vedlajsie { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.5);
+        font-weight: 500; }
+      .hlaska { margin-top: 12px; font-size: 14px; min-height: 20px; }
     </style>
   </head>
   <body>
@@ -51,11 +56,16 @@ const html = `<!doctype html>
       <div id="offline" class="skryte">
         <h1>Nie ste pripojený</h1>
         <p>
-          Faktero sa bez internetu neotvorí. Jazdy, ktoré medzitým zachytí
-          automatická detekcia, sa ukladajú do telefónu a odošlú sa samy po
-          pripojení — tá beží aj so zavretou aplikáciou.
+          Rozhranie Faktera sa bez internetu nenačíta. Jazdu a doklad ale
+          zvládnete aj teraz — uložia sa do telefónu a odošlú sa samy po
+          pripojení.
         </p>
-        <button id="znova" type="button">Skúsiť znova</button>
+        <div id="nadstavba" class="skryte">
+          <button id="jazda" type="button">Spustiť jazdu</button>
+          <button id="doklad" type="button">Odfotiť doklad</button>
+        </div>
+        <p id="hlaska" class="hlaska"></p>
+        <button id="znova" type="button" class="vedlajsie">Skúsiť znova</button>
       </div>
     </div>
     <script>
@@ -74,6 +84,7 @@ const html = `<!doctype html>
         nacitavam.classList.add("skryte");
         offline.classList.remove("skryte");
         schovajSplash();
+        pripravNadstavbu();
       }
 
       // Splash schováva webová vrstva až po načítaní stránky. Bez signálu sa
@@ -87,6 +98,107 @@ const html = `<!doctype html>
           /* na webe žiadny most nie je, netreba nič */
         }
       }
+
+      // ── Čo sa dá spraviť bez pripojenia ────────────────────────────────
+      // Rozhranie sa načítava zo živého webu, ale natívne pluginy sú tu aj
+      // offline. Jazdu preto vie spustiť plugin priamo a doklad sa odfotí a
+      // odloží do súborov telefónu; appka si ho prevezme pri najbližšom
+      // pripojení. Odkladá sa cez Preferences, lebo tá je natívna a vidí do nej
+      // aj web — jeho localStorage aj IndexedDB sú na inom pôvode.
+      var KLUC_DOKLADOV = "faktero.offline.doklady";
+      var jazdaBezi = false;
+
+      function pluginy() {
+        return (window.Capacitor && window.Capacitor.Plugins) || null;
+      }
+      function hlaska(text) {
+        document.getElementById("hlaska").textContent = text || "";
+      }
+
+      function pripravNadstavbu() {
+        var p = pluginy();
+        if (!p || !p.DriveDetector) return;
+        document.getElementById("nadstavba").classList.remove("skryte");
+        p.DriveDetector.getState()
+          .then(function (stav) {
+            jazdaBezi = !!(stav && stav.activeTrip);
+            document.getElementById("jazda").textContent = jazdaBezi
+              ? "Ukončiť jazdu"
+              : "Spustiť jazdu";
+          })
+          .catch(function () {});
+      }
+
+      function prepniJazdu() {
+        var p = pluginy();
+        if (!p || !p.DriveDetector) return;
+        var tlac = document.getElementById("jazda");
+        tlac.disabled = true;
+        var akcia = jazdaBezi ? p.DriveDetector.endTrip() : p.DriveDetector.startTrip();
+        akcia
+          .then(function (r) {
+            jazdaBezi = !jazdaBezi;
+            tlac.textContent = jazdaBezi ? "Ukončiť jazdu" : "Spustiť jazdu";
+            if (!jazdaBezi) {
+              var km = r && r.trip ? Math.round((r.trip.distanceMeters / 1000) * 10) / 10 : 0;
+              hlaska("Jazda uložená (" + km + " km). Zaradíte ju po pripojení.");
+            } else {
+              hlaska("Jazda beží. Telefón môžete zamknúť.");
+            }
+          })
+          .catch(function (e) {
+            hlaska("Jazdu sa nepodarilo prepnúť: " + (e && e.message ? e.message : e));
+          })
+          .then(function () {
+            tlac.disabled = false;
+          });
+      }
+
+      function odfotDoklad() {
+        var p = pluginy();
+        if (!p || !p.Camera || !p.Filesystem || !p.Preferences) {
+          return hlaska("Fotoaparát tu nie je dostupný.");
+        }
+        var tlac = document.getElementById("doklad");
+        tlac.disabled = true;
+        p.Camera.getPhoto({ quality: 60, resultType: "base64", source: "CAMERA", correctOrientation: true })
+          .then(function (foto) {
+            var id = String(Date.now()) + "-" + Math.floor(Math.random() * 100000);
+            var nazov = "offline-doklady/" + id + "." + (foto.format || "jpeg");
+            return p.Filesystem.writeFile({
+              path: nazov,
+              data: foto.base64String,
+              directory: "DATA",
+              recursive: true,
+            }).then(function () {
+              return p.Preferences.get({ key: KLUC_DOKLADOV }).then(function (ulozene) {
+                var zoznam = [];
+                try {
+                  zoznam = JSON.parse((ulozene && ulozene.value) || "[]");
+                } catch (e) {
+                  zoznam = [];
+                }
+                zoznam.push({ id: id, path: nazov, mime: "image/" + (foto.format || "jpeg"), ts: Date.now() });
+                return p.Preferences.set({ key: KLUC_DOKLADOV, value: JSON.stringify(zoznam) }).then(
+                  function () {
+                    hlaska("Doklad uložený (" + zoznam.length + " čaká). Odošle sa po pripojení.");
+                  },
+                );
+              });
+            });
+          })
+          .catch(function (e) {
+            // Zrušené fotenie nie je chyba, netreba strašiť.
+            var m = e && e.message ? e.message : String(e);
+            if (!/cancel/i.test(m)) hlaska("Doklad sa nepodarilo uložiť: " + m);
+          })
+          .then(function () {
+            tlac.disabled = false;
+          });
+      }
+
+      document.getElementById("jazda").addEventListener("click", prepniJazdu);
+      document.getElementById("doklad").addEventListener("click", odfotDoklad);
 
       // Poistka: keby zlyhalo aj presmerovanie, logo nesmie visieť donekonečna.
       setTimeout(schovajSplash, 4000);
