@@ -2,6 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 /**
+ * Riadky z databázy sa tu netypujú — modul ich len prehadzuje do XML, CSV a
+ * ZIPu a o ich tvare rozhodujú generátory v `export.server.ts`.
+ */
+type Riadok = any;
+/** Klient Supabase z middlewaru; nesie práva prihláseného používateľa. */
+type Klient = any;
+
+/**
  * Odovzdanie za obdobie — jeden balík pre účtovníčku.
  *
  * Doterajší export bol „vyber si faktúry a stiahni XML". To znamená, že si
@@ -9,8 +17,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * vzniká buď chýbajúci, alebo dvakrát zaúčtovaný doklad. Tu sa vyberá
  * **mesiac** a Faktero vie, čo z neho už išlo.
  *
- * V balíku je XML pre Pohodu, súpiska na kontrolu a PDF faktúr, aby účtovníčka
- * mala aj doklad, nielen údaje.
+ * V balíku je všetko, čo účtovníčka za mesiac potrebuje: vydané faktúry,
+ * prijaté doklady, pokladňa, súpisky na kontrolu a samotné doklady v PDF.
  */
 export type OdovzdanieVstup = {
   companyId: string;
@@ -22,13 +30,29 @@ export type OdovzdanieVstup = {
   lenNove: boolean;
 };
 
-function rozsahMesiaca(mesiac: string): { od: string; do: string } {
+const MESIACE = [
+  "január",
+  "február",
+  "marec",
+  "apríl",
+  "máj",
+  "jún",
+  "júl",
+  "august",
+  "september",
+  "október",
+  "november",
+  "december",
+];
+
+function rozsahMesiaca(mesiac: string): { od: string; do: string; nazov: string } {
   const [r, m] = mesiac.split("-").map(Number);
   const dalsiMesiac = m === 12 ? 1 : m + 1;
   const dalsiRok = m === 12 ? r + 1 : r;
   return {
     od: `${r}-${String(m).padStart(2, "0")}-01`,
     do: `${dalsiRok}-${String(dalsiMesiac).padStart(2, "0")}-01`,
+    nazov: `${MESIACE[m - 1] ?? mesiac} ${r}`,
   };
 }
 
@@ -37,228 +61,548 @@ function csvHodnota(v: unknown): string {
   return /[;"\n\r]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
 }
 
+function csvSubor(hlavicka: string[], riadky: unknown[][]): string {
+  // BOM, nech Excel prečíta diakritiku.
+  return "﻿" + [hlavicka.join(";"), ...riadky.map((r) => r.map(csvHodnota).join(";"))].join("\r\n");
+}
+
 const TYP_DOKLADU: Record<string, string> = {
   regular: "Faktúra",
   proforma: "Zálohová faktúra",
   credit_note: "Dobropis",
 };
 
+/** Bezpečný názov súboru v ZIPe — diakritika ostáva, oddeľovače nie. */
+function nazovSuboru(s: unknown): string {
+  return String(s ?? "doklad")
+    .replace(/[/\\?%*:|"<>\r\n]+/g, "-")
+    .trim()
+    .slice(0, 80);
+}
+
+/**
+ * Koľko sa toho zmestí do prílohy mailu.
+ *
+ * Resend prijme 40 MB, ale schránka príjemcu býva prísnejšia (Gmail 25 MB) a
+ * base64 objem ešte o tretinu nafúkne. Keď sa PDF a skeny nezmestia, balík
+ * odíde bez nich — údaje na zaúčtovanie sú dôležitejšie než obrázky a v
+ * Fakteru ostanú dostupné.
+ */
+const STROP_PRILOH_MAILOM = 12 * 1024 * 1024;
+
+type Balik = {
+  base64: string;
+  fileName: string;
+  pocetFaktur: number;
+  pocetDokladov: number;
+  pocetPokladnicnych: number;
+  preskocene: string[];
+  vynechanePrilohy: number;
+  fakturyIds: string[];
+  dokladyIds: string[];
+  xmlFaktur: string;
+  poslednyDatum: string;
+  nazovObdobia: string;
+};
+
+/**
+ * Zostaví balík za mesiac. Nič nezapisuje — o tom, či sa doklady označia za
+ * odovzdané, rozhoduje volajúci.
+ */
+async function zostavBalik(
+  supabase: Klient,
+  vstup: OdovzdanieVstup & { stropPriloh?: number },
+): Promise<{ balik: Balik; company: Riadok }> {
+  const { od, do: doDatumu, nazov } = rozsahMesiaca(vstup.mesiac);
+
+  const [{ data: company, error: cErr }, { data: vsetky, error: iErr }] = await Promise.all([
+    supabase.from("companies").select("*").eq("id", vstup.companyId).single(),
+    supabase
+      .from("invoices")
+      .select("*")
+      .eq("company_id", vstup.companyId)
+      .gte("issue_date", od)
+      .lt("issue_date", doDatumu)
+      .neq("status", "draft")
+      .neq("status", "cancelled")
+      .is("deleted_at", null)
+      .order("issue_date"),
+  ]);
+  if (cErr) throw new Error(cErr.message);
+  if (iErr) throw new Error(iErr.message);
+  if (!company) throw new Error("Firma nenájdená");
+
+  // Čo už raz odišlo, sa druhýkrát neposiela — inak doklad pribudne dvakrát.
+  const { data: uzOdovzdane } = await supabase
+    .from("export_logs")
+    .select("invoice_id")
+    .eq("company_id", vstup.companyId)
+    .eq("status", "ok");
+  const odovzdaneIds = new Set((uzOdovzdane ?? []).map((r: Riadok) => r.invoice_id));
+
+  const faktury = (vsetky ?? []).filter((f: Riadok) => !vstup.lenNove || !odovzdaneIds.has(f.id));
+
+  const [{ data: vsetkyDoklady }, { data: pokladnica }] = await Promise.all([
+    supabase
+      .from("expense_documents")
+      .select("*")
+      .eq("company_id", vstup.companyId)
+      .gte("issue_date", od)
+      .lt("issue_date", doDatumu)
+      .order("issue_date"),
+    supabase
+      .from("cash_entries")
+      .select("*")
+      .eq("company_id", vstup.companyId)
+      .gte("entry_date", od)
+      .lt("entry_date", doDatumu)
+      .order("entry_date"),
+  ]);
+  const doklady = (vsetkyDoklady ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at);
+
+  if (!faktury.length && !doklady.length && !pokladnica?.length) {
+    throw new Error(
+      vstup.lenNove && (vsetky?.length || vsetkyDoklady?.length)
+        ? `Za ${nazov} už bolo všetko odovzdané`
+        : `Za ${nazov} nie sú žiadne doklady`,
+    );
+  }
+
+  const { data: polozky, error: pErr } = faktury.length
+    ? await supabase
+        .from("invoice_items")
+        .select("*")
+        .in(
+          "invoice_id",
+          faktury.map((f: Riadok) => f.id),
+        )
+        .order("position")
+    : { data: [], error: null };
+  if (pErr) throw new Error(pErr.message);
+
+  const nastavenia = {
+    predkontacia: company.pohoda_predkontacia,
+    predkontaciaZaloha: company.pohoda_predkontacia_zaloha,
+    predkontaciaDobropis: company.pohoda_predkontacia_dobropis,
+    clenenieDph: company.pohoda_clenenie_dph,
+    clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
+    predkontaciaPrijata: company.pohoda_predkontacia_prijata,
+    clenenieDphPrijata: company.pohoda_clenenie_dph_prijata,
+    pokladna: company.pohoda_pokladna,
+    predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
+  };
+
+  const { EXPORT_STRATEGIES, buildPohodaCashXml, buildPohodaExpensesXml } =
+    await import("./export.server");
+  const JSZip = (await import("jszip")).default;
+  const zip = new JSZip();
+
+  let xmlFaktur = "";
+  let preskocene: string[] = [];
+  let vyvezene: Riadok[] = [];
+  if (faktury.length) {
+    const balikFaktur = faktury.map((invoice: Riadok) => ({
+      invoice,
+      items: (polozky ?? []).filter((p: Riadok) => p.invoice_id === invoice.id),
+    }));
+    const vystup = EXPORT_STRATEGIES.pohoda_xml.build({
+      company,
+      invoices: balikFaktur,
+      nastavenia,
+    });
+    xmlFaktur = vystup.content;
+    preskocene = vystup.preskocene ?? [];
+    const cislaPreskocenych = new Set(preskocene.map((d) => String(d).split(" — ")[0]));
+    vyvezene = faktury.filter((f: Riadok) => !cislaPreskocenych.has(f.invoice_number));
+
+    zip.file("pohoda-faktury.xml", xmlFaktur);
+    zip.file(
+      "faktury.csv",
+      csvSubor(
+        [
+          "cislo",
+          "typ",
+          "vystavena",
+          "dodanie",
+          "splatnost",
+          "odberatel",
+          "ico",
+          "ic_dph",
+          "zaklad",
+          "dph",
+          "celkom",
+          "mena",
+          "v_xml",
+        ],
+        faktury.map((f: Riadok) => [
+          f.invoice_number,
+          TYP_DOKLADU[f.type] ?? f.type,
+          f.issue_date,
+          f.delivery_date ?? "",
+          f.due_date,
+          f.customer_name ?? "",
+          f.customer_ico ?? "",
+          f.customer_ic_dph ?? "",
+          f.subtotal,
+          f.vat_total,
+          f.total,
+          f.currency,
+          cislaPreskocenych.has(f.invoice_number) ? "nie" : "áno",
+        ]),
+      ),
+    );
+  }
+
+  if (doklady.length) {
+    zip.file(
+      "pohoda-prijate-doklady.xml",
+      buildPohodaExpensesXml({ company, doklady, nastavenia }),
+    );
+    zip.file(
+      "prijate-doklady.csv",
+      csvSubor(
+        [
+          "datum",
+          "dodavatel",
+          "ico",
+          "ic_dph",
+          "cislo_dokladu",
+          "zaklad",
+          "dph",
+          "celkom",
+          "mena",
+          "kategoria",
+        ],
+        doklady.map((d: Riadok) => [
+          d.issue_date,
+          d.supplier_name ?? "",
+          d.supplier_ico ?? "",
+          d.supplier_ic_dph ?? "",
+          d.document_number ?? "",
+          d.net_amount,
+          d.vat_amount,
+          d.total_amount,
+          d.currency,
+          d.category ?? "",
+        ]),
+      ),
+    );
+  }
+
+  if (pokladnica?.length) {
+    zip.file(
+      "pohoda-pokladna.xml",
+      buildPohodaCashXml({ company, pohyby: pokladnica, nastavenia }),
+    );
+    zip.file(
+      "pokladna.csv",
+      csvSubor(
+        ["cislo", "datum", "druh", "suma", "popis", "kategoria"],
+        pokladnica.map((p: Riadok) => [
+          p.entry_number,
+          p.entry_date,
+          p.type === "prijem" ? "príjem" : "výdavok",
+          p.amount,
+          p.description ?? "",
+          p.category ?? "",
+        ]),
+      ),
+    );
+  }
+
+  // Samotné doklady. Účtovníčka potrebuje aj papier, nielen údaje — ale keď sa
+  // balík posiela mailom, prílohy majú strop a údaje sú dôležitejšie.
+  const strop = vstup.stropPriloh ?? Infinity;
+  let velkost = 0;
+  let vynechanePrilohy = 0;
+
+  const { ensureInvoicePdf } = await import("./invoice-pdf.server");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const pdfPriecinok = zip.folder("faktury-pdf")!;
+  for (const f of vyvezene) {
+    if (velkost >= strop) {
+      vynechanePrilohy++;
+      continue;
+    }
+    try {
+      const { path, fileName } = await ensureInvoicePdf(f.id);
+      const { data: subor } = await supabaseAdmin.storage.from("invoice-pdfs").download(path);
+      if (!subor) {
+        vynechanePrilohy++;
+        continue;
+      }
+      const bajty = await subor.arrayBuffer();
+      velkost += bajty.byteLength;
+      pdfPriecinok.file(fileName, bajty);
+    } catch {
+      // Jedna nevydarená faktúra nesmie zhodiť celé odovzdanie.
+      vynechanePrilohy++;
+    }
+  }
+
+  const skeny = zip.folder("prijate-doklady-skeny")!;
+  for (const d of doklady) {
+    if (!d.file_path) continue;
+    if (velkost >= strop) {
+      vynechanePrilohy++;
+      continue;
+    }
+    try {
+      const { data: subor } = await supabaseAdmin.storage
+        .from("expense-receipts")
+        .download(d.file_path);
+      if (!subor) {
+        vynechanePrilohy++;
+        continue;
+      }
+      const bajty = await subor.arrayBuffer();
+      velkost += bajty.byteLength;
+      const pripona = (d.file_path.split(".").pop() || "bin").toLowerCase();
+      skeny.file(
+        `${nazovSuboru([d.issue_date, d.supplier_name, d.document_number].filter(Boolean).join("_"))}.${pripona}`,
+        bajty,
+      );
+    } catch {
+      vynechanePrilohy++;
+    }
+  }
+
+  const base64 = await zip.generateAsync({ type: "base64" });
+
+  return {
+    company,
+    balik: {
+      base64,
+      fileName: `odovzdanie-${vstup.mesiac}.zip`,
+      pocetFaktur: vyvezene.length,
+      pocetDokladov: doklady.length,
+      pocetPokladnicnych: pokladnica?.length ?? 0,
+      preskocene,
+      vynechanePrilohy,
+      fakturyIds: faktury.map((f: Riadok) => f.id),
+      dokladyIds: doklady.map((d: Riadok) => d.id),
+      xmlFaktur,
+      poslednyDatum: faktury[faktury.length - 1]?.issue_date ?? od,
+      nazovObdobia: nazov,
+    },
+  };
+}
+
+/** Zapíše, že doklady odišli. Bez toho by ich ďalšie odovzdanie poslalo znova. */
+async function oznacOdovzdane(
+  supabase: Klient,
+  vstup: { companyId: string; mesiac: string; userId: string },
+  balik: Balik,
+  faktury: { id: string; invoice_number: string }[],
+) {
+  const cislaPreskocenych = new Set(balik.preskocene.map((d) => String(d).split(" — ")[0]));
+  const { od } = rozsahMesiaca(vstup.mesiac);
+
+  const { data: job, error } = await supabase
+    .from("export_jobs")
+    .insert({
+      company_id: vstup.companyId,
+      created_by: vstup.userId,
+      format: "pohoda_xml",
+      target_system: "pohoda",
+      status: "completed",
+      invoice_count: balik.pocetFaktur,
+      date_from: od,
+      date_to: balik.poslednyDatum,
+      file_name: `pohoda-faktury-${vstup.mesiac}.xml`,
+      // V histórii sa drží XML, nie celý balík — ZIP s PDF by tabuľku nafúkol
+      // a dôležitý je práve importovateľný súbor.
+      file_content: balik.xmlFaktur,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  if (job && faktury.length) {
+    await supabase.from("export_logs").insert(
+      faktury.map((f) => ({
+        export_job_id: job.id,
+        company_id: vstup.companyId,
+        invoice_id: f.id,
+        invoice_number: f.invoice_number,
+        status: cislaPreskocenych.has(f.invoice_number) ? "skipped" : "ok",
+        error: balik.preskocene.find((d) => d.startsWith(f.invoice_number)) ?? null,
+      })),
+    );
+  }
+  if (job && balik.dokladyIds.length) {
+    await supabase
+      .from("expense_documents")
+      .update({
+        status: "exported",
+        exported_at: new Date().toISOString(),
+        export_job_id: job.id,
+      })
+      .in("id", balik.dokladyIds);
+  }
+  return job?.id as string | undefined;
+}
+
 export const odovzdajUctovnikoviFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: OdovzdanieVstup) => input)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { od, do: doDatumu } = rozsahMesiaca(data.mesiac);
-
-    const [{ data: company, error: cErr }, { data: vsetky, error: iErr }] = await Promise.all([
-      supabase.from("companies").select("*").eq("id", data.companyId).single(),
-      supabase
-        .from("invoices")
-        .select("*")
-        .eq("company_id", data.companyId)
-        .gte("issue_date", od)
-        .lt("issue_date", doDatumu)
-        .neq("status", "draft")
-        .neq("status", "cancelled")
-        .is("deleted_at", null)
-        .order("issue_date"),
-    ]);
-    if (cErr) throw new Error(cErr.message);
-    if (iErr) throw new Error(iErr.message);
-    if (!company) throw new Error("Firma nenájdená");
-
-    // Čo už raz odišlo, sa druhýkrát neposiela — inak doklad pribudne dvakrát.
-    const { data: uzOdovzdane } = await supabase
-      .from("export_logs")
-      .select("invoice_id")
-      .eq("company_id", data.companyId)
-      .eq("status", "ok");
-    const odovzdaneIds = new Set((uzOdovzdane ?? []).map((r) => r.invoice_id));
-
-    const faktury = (vsetky ?? []).filter((f) => !data.lenNove || !odovzdaneIds.has(f.id));
-    if (!faktury.length) {
-      throw new Error(
-        data.lenNove && vsetky?.length
-          ? "Všetky faktúry z tohto mesiaca už boli odovzdané"
-          : "V tomto mesiaci nie sú žiadne faktúry",
-      );
-    }
-
-    const { data: polozky, error: pErr } = await supabase
-      .from("invoice_items")
-      .select("*")
-      .in(
-        "invoice_id",
-        faktury.map((f) => f.id),
-      )
-      .order("position");
-    if (pErr) throw new Error(pErr.message);
-
-    const balik = faktury.map((invoice) => ({
-      invoice,
-      items: (polozky ?? []).filter((p) => p.invoice_id === invoice.id),
-    }));
-
-    const nastavenia = {
-      predkontacia: company.pohoda_predkontacia,
-      predkontaciaZaloha: company.pohoda_predkontacia_zaloha,
-      predkontaciaDobropis: company.pohoda_predkontacia_dobropis,
-      clenenieDph: company.pohoda_clenenie_dph,
-      clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
-      pokladna: company.pohoda_pokladna,
-      predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
-    };
-
-    const { EXPORT_STRATEGIES, buildPohodaCashXml } = await import("./export.server");
-    const vystup = EXPORT_STRATEGIES.pohoda_xml.build({
-      company,
-      invoices: balik,
-      nastavenia,
-    });
-    const preskocene = new Map(
-      (vystup.preskocene ?? []).map((d) => [String(d).split(" — ")[0], String(d)]),
-    );
-    const vyvezene = faktury.filter((f) => !preskocene.has(f.invoice_number));
-
-    const JSZip = (await import("jszip")).default;
-    const zip = new JSZip();
-    zip.file("pohoda-faktury.xml", vystup.content);
-
-    // Súpiska — na nej sa dá skontrolovať, že v XML je naozaj všetko.
-    const hlavicka = [
-      "cislo",
-      "typ",
-      "vystavena",
-      "dodanie",
-      "splatnost",
-      "odberatel",
-      "ico",
-      "ic_dph",
-      "zaklad",
-      "dph",
-      "celkom",
-      "mena",
-      "v_xml",
-    ].join(";");
-    const riadky = faktury.map((f) =>
-      [
-        f.invoice_number,
-        TYP_DOKLADU[f.type] ?? f.type,
-        f.issue_date,
-        f.delivery_date ?? "",
-        f.due_date,
-        f.customer_name ?? "",
-        f.customer_ico ?? "",
-        f.customer_ic_dph ?? "",
-        f.subtotal,
-        f.vat_total,
-        f.total,
-        f.currency,
-        preskocene.has(f.invoice_number) ? `nie — ${preskocene.get(f.invoice_number)}` : "áno",
-      ]
-        .map(csvHodnota)
-        .join(";"),
-    );
-    zip.file("faktury.csv", "﻿" + [hlavicka, ...riadky].join("\r\n"));
-
-    // Pokladňa za ten istý mesiac. Do balíka ide, len keď v ňom nejaký pohyb je.
-    const { data: pokladnica } = await supabase
-      .from("cash_entries")
-      .select("*")
-      .eq("company_id", data.companyId)
-      .gte("entry_date", od)
-      .lt("entry_date", doDatumu)
-      .order("entry_date");
-    if (pokladnica?.length) {
-      zip.file(
-        "pohoda-pokladna.xml",
-        buildPohodaCashXml({ company, pohyby: pokladnica, nastavenia }),
-      );
-    }
-
-    // PDF dokladov. Účtovníčka potrebuje aj samotnú faktúru, nielen údaje;
-    // chýbajúce sa dogenerujú, aby balík nebol deravý.
-    const { ensureInvoicePdf } = await import("./invoice-pdf.server");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const pdfPriecinok = zip.folder("faktury-pdf")!;
-    let chybajucePdf = 0;
-    for (const f of vyvezene) {
-      try {
-        const { path, fileName } = await ensureInvoicePdf(f.id);
-        const { data: subor } = await supabaseAdmin.storage.from("invoice-pdfs").download(path);
-        if (!subor) {
-          chybajucePdf++;
-          continue;
-        }
-        pdfPriecinok.file(fileName, await subor.arrayBuffer());
-      } catch {
-        // Jedna nevydarená faktúra nesmie zhodiť celé odovzdanie.
-        chybajucePdf++;
-      }
-    }
-
-    const base64 = await zip.generateAsync({ type: "base64" });
+    const { balik } = await zostavBalik(supabase, data);
 
     let jobId: string | undefined;
     if (data.oznacit) {
-      const { data: job, error: jErr } = await supabase
-        .from("export_jobs")
-        .insert({
-          company_id: data.companyId,
-          created_by: userId,
-          format: "pohoda_xml",
-          target_system: "pohoda",
-          status: "completed",
-          invoice_count: vyvezene.length,
-          date_from: od,
-          date_to: faktury[faktury.length - 1]?.issue_date ?? od,
-          file_name: `pohoda-faktury-${data.mesiac}.xml`,
-          // V histórii sa drží XML, nie celý balík — ZIP s PDF by tabuľku
-          // nafúkol a dôležitý je práve importovateľný súbor.
-          file_content: vystup.content,
-        })
-        .select()
-        .single();
-      if (jErr) throw new Error(jErr.message);
-      jobId = job?.id;
-
-      if (job) {
-        await supabase.from("export_logs").insert(
-          faktury.map((f) => ({
-            export_job_id: job.id,
-            company_id: data.companyId,
-            invoice_id: f.id,
-            invoice_number: f.invoice_number,
-            status: preskocene.has(f.invoice_number) ? "skipped" : "ok",
-            error: preskocene.get(f.invoice_number) ?? null,
-          })),
+      const { data: faktury } = await supabase
+        .from("invoices")
+        .select("id, invoice_number")
+        .in(
+          "id",
+          balik.fakturyIds.length ? balik.fakturyIds : ["00000000-0000-0000-0000-000000000000"],
         );
-      }
+      jobId = await oznacOdovzdane(
+        supabase,
+        { companyId: data.companyId, mesiac: data.mesiac, userId },
+        balik,
+        faktury ?? [],
+      );
     }
 
     return {
-      base64,
-      fileName: `odovzdanie-${data.mesiac}.zip`,
-      pocetFaktur: vyvezene.length,
-      pocetPokladnicnych: pokladnica?.length ?? 0,
-      preskocene: vystup.preskocene ?? [],
-      chybajucePdf,
+      base64: balik.base64,
+      fileName: balik.fileName,
+      pocetFaktur: balik.pocetFaktur,
+      pocetDokladov: balik.pocetDokladov,
+      pocetPokladnicnych: balik.pocetPokladnicnych,
+      preskocene: balik.preskocene,
+      vynechanePrilohy: balik.vynechanePrilohy,
       jobId,
     };
   });
 
-/** Koľko faktúr v mesiaci ešte nebolo odovzdaných — podklad pre tlačidlo. */
+/**
+ * Ten istý balík, ale rovno účtovníčke do schránky.
+ *
+ * Bez tohto sa balík stiahne a človek ho musí preposlať sám — čo je presne ten
+ * medzikrok, kvôli ktorému sa na odovzdávanie zabúda.
+ */
+export const posliOdovzdanieMailomFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: OdovzdanieVstup & { email?: string; poznamka?: string }) => input)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { balik, company } = await zostavBalik(supabase, {
+      ...data,
+      stropPriloh: STROP_PRILOH_MAILOM,
+    });
+
+    const prijemca = (data.email || company.uctovnik_email || "").trim();
+    if (!prijemca) throw new Error("Chýba e-mail účtovníčky — doplňte ho vo Firma → Pohoda");
+
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) throw new Error("Odosielanie e-mailov nie je nastavené");
+
+    const casti = [
+      balik.pocetFaktur ? `${balik.pocetFaktur} vydaných faktúr` : "",
+      balik.pocetDokladov ? `${balik.pocetDokladov} prijatých dokladov` : "",
+      balik.pocetPokladnicnych ? `${balik.pocetPokladnicnych} pokladničných dokladov` : "",
+    ].filter(Boolean);
+
+    const riadky = [
+      `Dobrý deň,`,
+      ``,
+      `v prílohe posielame podklady za ${balik.nazovObdobia} — ${casti.join(", ")}.`,
+      ``,
+      `V balíku sú súbory XML na priamy import do programu POHODA (Súbor → Dátová komunikácia → XML import/export), súpisky v CSV na kontrolu a samotné doklady.`,
+      balik.vynechanePrilohy
+        ? `\nPozn.: ${balik.vynechanePrilohy} dokladov je bez prílohy, aby sa e-mail zmestil do schránky. Radi ich pošleme samostatne.`
+        : "",
+      balik.preskocene.length
+        ? `\nPozn.: do XML sa nedostali tieto doklady: ${balik.preskocene.join(", ")}. Sú v súpiske a treba ich zadať ručne.`
+        : "",
+      data.poznamka ? `\n${data.poznamka}` : "",
+      ``,
+      `S pozdravom`,
+      company.name ?? "",
+    ];
+    const text = riadky.filter((r) => r !== null).join("\n");
+
+    const odosielatel = company.email_sender_name || company.name || "Faktero";
+    const from = `${odosielatel} <${process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk"}>`;
+
+    const odpoved = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        from,
+        to: [prijemca],
+        reply_to: company.email_reply_to || company.email || undefined,
+        subject: `Podklady za ${balik.nazovObdobia} — ${company.name ?? "Faktero"}`,
+        text,
+        html: `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;white-space:pre-wrap">${text
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")}</div>`,
+        attachments: [{ filename: balik.fileName, content: balik.base64 }],
+      }),
+    });
+    const surove = await odpoved.text();
+    if (!odpoved.ok) {
+      let sprava = surove.slice(0, 300);
+      try {
+        sprava = JSON.parse(surove)?.message ?? sprava;
+      } catch {
+        // Resend pri chybe niekedy vráti HTML — použije sa surový text
+      }
+      throw new Error(`Odoslanie zlyhalo: ${sprava}`);
+    }
+
+    let jobId: string | undefined;
+    if (data.oznacit) {
+      const { data: faktury } = await supabase
+        .from("invoices")
+        .select("id, invoice_number")
+        .in(
+          "id",
+          balik.fakturyIds.length ? balik.fakturyIds : ["00000000-0000-0000-0000-000000000000"],
+        );
+      jobId = await oznacOdovzdane(
+        supabase,
+        { companyId: data.companyId, mesiac: data.mesiac, userId },
+        balik,
+        faktury ?? [],
+      );
+    }
+
+    return {
+      prijemca,
+      pocetFaktur: balik.pocetFaktur,
+      pocetDokladov: balik.pocetDokladov,
+      pocetPokladnicnych: balik.pocetPokladnicnych,
+      vynechanePrilohy: balik.vynechanePrilohy,
+      preskocene: balik.preskocene,
+      jobId,
+    };
+  });
+
+/** Koľko dokladov v mesiaci ešte nebolo odovzdaných — podklad pre tlačidlá. */
 export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { companyId: string; mesiac: string }) => input)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { od, do: doDatumu } = rozsahMesiaca(data.mesiac);
+    const { od, do: doDatumu, nazov } = rozsahMesiaca(data.mesiac);
 
-    const [{ data: faktury }, { data: logy }, { data: pokladnica }] = await Promise.all([
+    const [
+      { data: faktury },
+      { data: logy },
+      { data: pokladnica },
+      { data: doklady },
+      { data: firma },
+    ] = await Promise.all([
       supabase
         .from("invoices")
-        .select("id, invoice_number, total")
+        .select("id, total")
         .eq("company_id", data.companyId)
         .gte("issue_date", od)
         .lt("issue_date", doDatumu)
@@ -276,14 +620,26 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
         .eq("company_id", data.companyId)
         .gte("entry_date", od)
         .lt("entry_date", doDatumu),
+      supabase
+        .from("expense_documents")
+        .select("id, exported_at")
+        .eq("company_id", data.companyId)
+        .gte("issue_date", od)
+        .lt("issue_date", doDatumu),
+      supabase.from("companies").select("uctovnik_email").eq("id", data.companyId).single(),
     ]);
 
-    const odovzdane = new Set((logy ?? []).map((r) => r.invoice_id));
+    const odovzdane = new Set((logy ?? []).map((r: Riadok) => r.invoice_id));
     const spolu = faktury ?? [];
+    const dok = doklady ?? [];
     return {
+      obdobie: nazov,
       spolu: spolu.length,
-      odovzdanych: spolu.filter((f) => odovzdane.has(f.id)).length,
-      suma: spolu.reduce((a, f) => a + Number(f.total ?? 0), 0),
+      odovzdanych: spolu.filter((f: Riadok) => odovzdane.has(f.id)).length,
+      suma: spolu.reduce((a: number, f: Riadok) => a + Number(f.total ?? 0), 0),
       pokladnicnych: pokladnica?.length ?? 0,
+      dokladov: dok.length,
+      dokladovNovych: dok.filter((d: Riadok) => !d.exported_at).length,
+      uctovnikEmail: (firma?.uctovnik_email ?? null) as string | null,
     };
   });

@@ -136,6 +136,12 @@ function CompanyPage() {
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <In
+                label="E-mail účtovníčky"
+                value={c.uctovnik_email ?? ""}
+                onChange={f("uctovnik_email")}
+                placeholder="kam chodí mesačné odovzdanie"
+              />
+              <In
                 label="Predkontácia — faktúra"
                 value={c.pohoda_predkontacia ?? ""}
                 onChange={f("pohoda_predkontacia")}

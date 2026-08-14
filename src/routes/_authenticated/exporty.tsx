@@ -10,8 +10,12 @@ import {
   type ExportFormat,
 } from "@/lib/faktero/export.functions";
 import { toast } from "sonner";
-import { odovzdajUctovnikoviFn, prehladOdovzdaniaFn } from "@/lib/faktero/odovzdanie.functions";
-import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight } from "lucide-react";
+import {
+  odovzdajUctovnikoviFn,
+  posliOdovzdanieMailomFn,
+  prehladOdovzdaniaFn,
+} from "@/lib/faktero/odovzdanie.functions";
+import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/exporty")({
   head: () => ({ meta: [{ title: "Účtovné exporty — Faktero" }] }),
@@ -482,18 +486,26 @@ function ExportsPage() {
  *
  * Výber jednotlivých faktúr je dobrý na doplnenie jedného dokladu, ale bežná
  * práca je mesačná a človek si musí sám pamätať, čo už poslal. Tu sa vyberie
- * mesiac a Faktero povie, koľko z neho ešte neodišlo.
+ * mesiac a Faktero povie, koľko z neho ešte neodišlo — a vie to rovno poslať
+ * účtovníčke, aby odpadlo aj sťahovanie a preposielanie.
  */
+type Prehlad = {
+  obdobie: string;
+  spolu: number;
+  odovzdanych: number;
+  suma: number;
+  pokladnicnych: number;
+  dokladov: number;
+  dokladovNovych: number;
+  uctovnikEmail: string | null;
+};
+
 function OdovzdanieZaMesiac() {
   const [mesiac, setMesiac] = useState(() => new Date().toISOString().slice(0, 7));
-  const [prehlad, setPrehlad] = useState<{
-    spolu: number;
-    odovzdanych: number;
-    suma: number;
-    pokladnicnych: number;
-  } | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [prehlad, setPrehlad] = useState<Prehlad | null>(null);
+  const [busy, setBusy] = useState<null | "stiahnut" | "odovzdat" | "mail">(null);
   const odovzdaj = useServerFn(odovzdajUctovnikoviFn);
+  const posliMailom = useServerFn(posliOdovzdanieMailomFn);
   const nacitajPrehlad = useServerFn(prehladOdovzdaniaFn);
 
   // Po odovzdaní sa prehľad musí prepočítať; zvýšenie čísla znovu spustí načítanie.
@@ -511,10 +523,42 @@ function OdovzdanieZaMesiac() {
     };
   }, [mesiac, verzia, nacitajPrehlad]);
 
-  async function spusti(oznacit: boolean) {
+  /** Spoločné hlásenia — platia pre stiahnutie aj pre e-mail. */
+  function povedzVysledok(r: {
+    preskocene: string[];
+    vynechanePrilohy: number;
+    pocetFaktur: number;
+    pocetDokladov: number;
+    pocetPokladnicnych: number;
+  }) {
+    if (r.preskocene.length) {
+      toast.warning(`Do XML sa nedostali: ${r.preskocene.join(", ")}`, { duration: 10000 });
+    }
+    if (r.vynechanePrilohy) {
+      toast.warning(`${r.vynechanePrilohy} dokladov je bez prílohy — balík by sa inak nezmestil`);
+    }
+  }
+
+  function popisObsahu(r: {
+    pocetFaktur: number;
+    pocetDokladov: number;
+    pocetPokladnicnych: number;
+  }) {
+    return (
+      [
+        r.pocetFaktur ? `${r.pocetFaktur} faktúr` : "",
+        r.pocetDokladov ? `${r.pocetDokladov} prijatých dokladov` : "",
+        r.pocetPokladnicnych ? `${r.pocetPokladnicnych} pokladničných` : "",
+      ]
+        .filter(Boolean)
+        .join(", ") || "nič"
+    );
+  }
+
+  async function stiahni(oznacit: boolean) {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    setBusy(true);
+    setBusy(oznacit ? "odovzdat" : "stiahnut");
     try {
       const r = await odovzdaj({ data: { companyId: cid, mesiac, oznacit, lenNove: oznacit } });
       const bajty = Uint8Array.from(atob(r.base64), (z) => z.charCodeAt(0));
@@ -526,25 +570,41 @@ function OdovzdanieZaMesiac() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-
-      toast.success(
-        `Balík má ${r.pocetFaktur} faktúr${r.pocetPokladnicnych ? ` a ${r.pocetPokladnicnych} pokladničných dokladov` : ""}`,
-      );
-      if (r.preskocene.length) {
-        toast.warning(`Do XML sa nedostali: ${r.preskocene.join(", ")}`, { duration: 10000 });
-      }
-      if (r.chybajucePdf) {
-        toast.warning(`${r.chybajucePdf} faktúram sa nepodarilo priložiť PDF`);
-      }
+      toast.success(`Balík obsahuje ${popisObsahu(r)}`);
+      povedzVysledok(r);
       refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Odovzdanie zlyhalo");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
-  const zostava = prehlad ? prehlad.spolu - prehlad.odovzdanych : 0;
+  async function posli() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    const email =
+      prehlad?.uctovnikEmail ||
+      window.prompt("E-mail účtovníčky (uloží sa vo Firma → Pohoda):")?.trim();
+    if (!email) return;
+    setBusy("mail");
+    try {
+      const r = await posliMailom({
+        data: { companyId: cid, mesiac, oznacit: true, lenNove: true, email },
+      });
+      toast.success(`Odoslané na ${r.prijemca} — ${popisObsahu(r)}`);
+      povedzVysledok(r);
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Odoslanie zlyhalo");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const zostava = prehlad ? prehlad.spolu - prehlad.odovzdanych + prehlad.dokladovNovych : 0;
+  const jeCo = (prehlad?.spolu ?? 0) + (prehlad?.dokladov ?? 0) + (prehlad?.pokladnicnych ?? 0) > 0;
+  const pracuje = busy !== null;
 
   return (
     <div className="mb-6 rounded-2xl border border-border bg-card p-5">
@@ -561,45 +621,68 @@ function OdovzdanieZaMesiac() {
         <div className="text-sm">
           {prehlad === null ? (
             <span className="text-muted-foreground">Zisťujem…</span>
-          ) : prehlad.spolu === 0 ? (
-            <span className="text-muted-foreground">V tomto mesiaci nie sú faktúry.</span>
+          ) : !jeCo ? (
+            <span className="text-muted-foreground">
+              Za {prehlad.obdobie} nie sú žiadne doklady.
+            </span>
           ) : (
             <>
               <div className="font-medium">
                 {prehlad.spolu} faktúr ·{" "}
                 {prehlad.suma.toLocaleString("sk-SK", { style: "currency", currency: "EUR" })}
+                {prehlad.dokladov ? ` · ${prehlad.dokladov} prijatých dokladov` : ""}
+                {prehlad.pokladnicnych ? ` · pokladňa ${prehlad.pokladnicnych}` : ""}
               </div>
               <div className="text-xs text-muted-foreground">
-                {zostava === 0
-                  ? "Všetko už bolo odovzdané."
-                  : `Ešte neodovzdaných: ${zostava}${prehlad.odovzdanych ? ` (${prehlad.odovzdanych} už áno)` : ""}`}
-                {prehlad.pokladnicnych ? ` · pokladňa: ${prehlad.pokladnicnych}` : ""}
+                {zostava === 0 ? "Všetko už bolo odovzdané." : `Ešte neodovzdaných: ${zostava}`}
+                {prehlad.uctovnikEmail ? ` · účtovníčka: ${prehlad.uctovnikEmail}` : ""}
               </div>
             </>
           )}
         </div>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap gap-2">
           <button
-            onClick={() => spusti(false)}
-            disabled={busy || !prehlad?.spolu}
+            onClick={() => stiahni(false)}
+            disabled={pracuje || !jeCo}
             className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-50"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {busy === "stiahnut" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
             Stiahnuť balík
           </button>
           <button
-            onClick={() => spusti(true)}
-            disabled={busy || !zostava}
+            onClick={() => stiahni(true)}
+            disabled={pracuje || !zostava}
+            className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+          >
+            {busy === "odovzdat" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Označiť za odovzdané
+          </button>
+          <button
+            onClick={posli}
+            disabled={pracuje || !zostava}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Odovzdať účtovníkovi
+            {busy === "mail" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Mail className="h-4 w-4" />
+            )}
+            Poslať účtovníčke
           </button>
         </div>
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        V balíku je XML pre Pohodu, súpiska a PDF faktúr — a pokladňa, ak v mesiaci nejaký pohyb
-        bol. „Odovzdať" si navyše zapamätá, čo už odišlo, a nabudúce pošle len nové doklady.
+        V balíku sú súbory XML pre Pohodu (faktúry, prijaté doklady, pokladňa), súpisky v CSV a
+        samotné doklady. Odoslanie aj označenie si zapamätá, čo už odišlo, a nabudúce priloží len
+        nové doklady.
       </p>
     </div>
   );

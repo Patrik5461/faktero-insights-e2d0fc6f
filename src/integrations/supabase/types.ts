@@ -957,6 +957,7 @@ export type Database = {
           suspended_at: string | null
           suspended_reason: string | null
           swift: string | null
+          uctovnik_email: string | null
           updated_at: string
           website: string | null
           zip: string | null
@@ -1010,6 +1011,7 @@ export type Database = {
           suspended_at?: string | null
           suspended_reason?: string | null
           swift?: string | null
+          uctovnik_email?: string | null
           updated_at?: string
           website?: string | null
           zip?: string | null
@@ -1063,6 +1065,7 @@ export type Database = {
           suspended_at?: string | null
           suspended_reason?: string | null
           swift?: string | null
+          uctovnik_email?: string | null
           updated_at?: string
           website?: string | null
           zip?: string | null
