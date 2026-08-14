@@ -72,7 +72,23 @@ const html = `<!doctype html>
       function ukazOffline() {
         nacitavam.classList.add("skryte");
         offline.classList.remove("skryte");
+        schovajSplash();
       }
+
+      // Splash schováva webová vrstva až po načítaní stránky. Bez signálu sa
+      // nenačíta nikdy a v appke by ostalo svietiť len logo — preto ho schová
+      // aj táto obrazovka, cez most, ktorý Capacitor vkladá do lokálnych stránok.
+      function schovajSplash() {
+        try {
+          var p = window.Capacitor && window.Capacitor.Plugins;
+          if (p && p.SplashScreen) p.SplashScreen.hide();
+        } catch (e) {
+          /* na webe žiadny most nie je, netreba nič */
+        }
+      }
+
+      // Poistka: keby zlyhalo aj presmerovanie, logo nesmie visieť donekonečna.
+      setTimeout(schovajSplash, 4000);
 
       tlacidlo.addEventListener("click", skus);
       // Len čo sa signál vráti, netreba čakať na klik.

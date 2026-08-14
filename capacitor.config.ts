@@ -13,7 +13,10 @@ const config: CapacitorConfig = {
     url: "https://www.faktero.sk/app",
     cleartext: false,
     androidScheme: "https",
-    errorPath: "/app",
+    // Musí ukazovať na súbor vo `webDir`. Bolo tu „/app", čo je cesta na webe —
+    // lokálne taký súbor nie je, takže sa pri výpadku siete nemalo čo zobraziť
+    // a v appke ostalo svietiť len logo.
+    errorPath: "index.html",
   },
   ios: {
     // Bez `never` si WebView pridá vlastné odsadenie a bije sa s odsadením
@@ -28,6 +31,8 @@ const config: CapacitorConfig = {
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,
+      // Splash schováva webová vrstva až po načítaní. Bez signálu sa nenačíta
+      // nikdy, takže ju schová aj offline obrazovka — viď scripts/build-mobile-shell.mjs.
       launchAutoHide: false,
       backgroundColor: "#007e46",
       androidSplashResourceName: "splash",
