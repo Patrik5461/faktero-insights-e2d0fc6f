@@ -140,45 +140,7 @@ export function MobilnaApka() {
         setKrok("domov");
         // Jazdy, ktoré telefón nahral, kým bola appka zavretá, netreba držať
         // v telefóne do chvíle, kým sa človek preklikne na obrazovku Jazda.
-        // Vozidlá pre offline obrazovku — odkladajú sa hneď pri štarte, nie až
-        // keď človek otvorí knihu jázd. Kto ide rovno do terénu, na tú obrazovku
-        // nemusí zablúdiť vôbec.
-        void (async () => {
-          try {
-            const [{ data: auta }, { ulozOfflinePodklady }, { mojeVozidlo }] = await Promise.all([
-              supabase
-                .from("vehicles")
-                .select("id, name, license_plate")
-                .eq("company_id", vybrana.id)
-                .eq("active", true)
-                .order("name"),
-              import("@/lib/mobile/offline-podklady"),
-              import("@/lib/mobile/moje-vozidlo"),
-            ]);
-            await ulozOfflinePodklady({
-              companyId: vybrana.id,
-              companyName: vybrana.name,
-              vozidla: auta ?? [],
-              mojeVozidloId: mojeVozidlo(vybrana.id) ?? auta?.[0]?.id ?? null,
-            });
-          } catch {
-            /* offline obrazovka si poradí aj bez zoznamu áut */
-          }
-        })();
 
-        // Doklady odfotené na offline obrazovke prevezme appka do svojej fronty.
-        void import("@/lib/mobile/offline-prevzatie")
-          .then((m) => m.prevezmiOfflineDoklady(vybrana.id))
-          .then((pocet) => {
-            if (pocet > 0) {
-              toast.success(
-                pocet === 1
-                  ? "Doklad odfotený bez signálu čaká na odoslanie"
-                  : `${pocet} dokladov odfotených bez signálu čaká na odoslanie`,
-              );
-            }
-          })
-          .catch(() => {});
 
         void odosliCakajuceJazdy(vybrana.id)
           .then(({ ulozene }) => {

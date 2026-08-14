@@ -16,7 +16,6 @@ import {
 import type { BufferedTrip, Classification } from "@faktero/drive-detector";
 import { trasaDoPolyline } from "@/lib/faktero/polyline";
 import { mojeVozidlo, zapamatajVozidlo, vozidloPreRozpoznanuJazdu } from "@/lib/mobile/moje-vozidlo";
-import { ulozOfflinePodklady } from "@/lib/mobile/offline-podklady";
 import {
   ulozVozidla,
   vozidlaZPamate,
@@ -94,17 +93,6 @@ export function Jazda({
       (zapamatane && zoznam.some((v) => v.id === zapamatane) ? zapamatane : zoznam[0]?.id);
     if (vyber) setVozidloId(vyber);
 
-    // Offline obrazovka nemá ako zistiť, aké má firma autá — odložíme jej ich.
-    void ulozOfflinePodklady({
-      companyId: firma.id,
-      companyName: firma.name,
-      vozidla: zoznam.map((v) => ({
-        id: v.id,
-        name: v.name,
-        license_plate: v.license_plate,
-      })),
-      mojeVozidloId: vyber ?? null,
-    });
   }
 
   useEffect(() => {
@@ -569,16 +557,6 @@ export function Jazda({
                     // uložiť samy aj vtedy, keď firma áut viac.
                     zapamatajVozidlo(firma.id, v.id);
                     void nastavVozidloVNotifikacii(v.name);
-                    void ulozOfflinePodklady({
-                      companyId: firma.id,
-                      companyName: firma.name,
-                      vozidla: (vozidla ?? []).map((x) => ({
-                        id: x.id,
-                        name: x.name,
-                        license_plate: x.license_plate,
-                      })),
-                      mojeVozidloId: v.id,
-                    });
                   }}
                   className={`flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 pr-2 text-left ${
                     vozidloId === v.id ? "font-semibold" : ""
