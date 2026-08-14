@@ -49,6 +49,7 @@ export function Jazda({
   const [vozidloId, setVozidloId] = useState("");
   const [ucel, setUcel] = useState("");
   const [bezi, setBezi] = useState(false);
+  const [typJazdy, setTypJazdy] = useState<Classification>("business");
   const [km, setKm] = useState(0);
   const [odkedy, setOdkedy] = useState<number | null>(null);
   const [ukladam, setUkladam] = useState(false);
@@ -185,6 +186,21 @@ export function Jazda({
     setUkladam(true);
     const vysledok = await stopTracking();
     setBezi(false);
+
+    // Jazda bez jediného použiteľného merania nie je jazda. Predtým sa taká
+    // uložila ako 0 km bez trasy a v knihe jázd ostal riadok, ktorý nič
+    // nehovorí — a človek ani nevedel, že sa nič nenameralo.
+    if (vysledok.points.length < 2 && vysledok.distance_km <= 0) {
+      setUkladam(false);
+      setKm(0);
+      setOdkedy(null);
+      toast.error(
+        `Nenamerali sme žiadnu polohu, jazdu som neuložil. Skúste to vonku — v budove je poloha nepresná — a polohu povoľte na „Vždy“.`,
+        { duration: 8000 },
+      );
+      return;
+    }
+
     try {
       const vozidlo = vozidla?.find((v) => v.id === vozidloId);
       const { data: plne } = await supabase
@@ -200,6 +216,7 @@ export function Jazda({
         company_id: firma.id,
         vehicle_id: vozidloId,
         trip_date: new Date().toISOString().slice(0, 10),
+        classification: typJazdy,
         purpose: ucel.trim() || "GPS jazda",
         start_odometer: 0,
         end_odometer: vysledok.distance_km,
@@ -487,6 +504,30 @@ export function Jazda({
             className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px] disabled:opacity-60"
           />
         </label>
+
+        {/* Typ jazdy sa dal určiť len pri automaticky zachytených jazdách; ručne
+            spustená sa ticho ukladala ako služobná podľa predvolenej hodnoty
+            v databáze. Prepnúť sa dá aj počas jazdy — človek to často vie až cestou. */}
+        <div>
+          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+            Typ jazdy
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            {(["business", "private"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTypJazdy(t)}
+                className={`rounded-xl border px-3 py-2.5 text-[15px] ${
+                  typJazdy === t
+                    ? "border-primary bg-primary/10 font-semibold text-primary"
+                    : "border-input bg-background text-muted-foreground"
+                }`}
+              >
+                {t === "business" ? "Služobná" : "Súkromná"}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <p className="text-xs text-muted-foreground">
           Ak ste polohu povolili len „počas používania", nechajte appku otvorenú — po zhasnutí
