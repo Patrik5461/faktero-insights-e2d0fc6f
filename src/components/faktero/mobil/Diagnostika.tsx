@@ -61,6 +61,27 @@ async function zisti(): Promise<Riadok[]> {
     r.push({ co: "firmy v pamäti", hodnota: String(e?.message ?? e), zle: true });
   }
 
+  // Natívne úložisko — jediné, o ktorom vieme, že reštart appky prežije.
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) {
+      r.push({ co: "natívne úložisko", hodnota: "nie je (beží web)" });
+    } else {
+      const { Preferences } = await import("@capacitor/preferences");
+      await Preferences.set({ key: "faktero.diag", value: "1" });
+      const { value } = await Preferences.get({ key: "faktero.pamat.firmy" });
+      await Preferences.remove({ key: "faktero.diag" });
+      const pocet = value ? (JSON.parse(value)?.hodnota?.length ?? 0) : 0;
+      r.push({
+        co: "natívne úložisko",
+        hodnota: value ? `funguje, firiem ${pocet}` : "funguje, firmy zatiaľ neuložené",
+        zle: !value,
+      });
+    }
+  } catch (e: any) {
+    r.push({ co: "natívne úložisko", hodnota: String(e?.message ?? e), zle: true });
+  }
+
   // Prihlásenie — a hlavne či sa naň vôbec dá spýtať.
   try {
     const odpoved = await Promise.race([

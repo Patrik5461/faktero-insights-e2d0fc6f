@@ -246,10 +246,42 @@ function jednoduchyKluc(kluc: string): string {
   return `faktero.pamat.${kluc}`;
 }
 
+/**
+ * Natívne úložisko telefónu (Preferences). Prehliadačové úložiská vo WebView
+ * reštart appky neprežili — po znovuotvorení bola pamäť prázdna, hoci sa do nej
+ * pred chvíľou zapísalo. Toto je to isté miesto, kam si ukladajú nastavenia
+ * skutočné appky, a prežije všetko okrem odinštalovania.
+ */
+async function natívne() {
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) return null;
+    const { Preferences } = await import("@capacitor/preferences");
+    return Preferences;
+  } catch {
+    return null;
+  }
+}
+
 export async function ulozDoPamate(kluc: string, hodnota: unknown): Promise<void> {
   const zaznam = { hodnota, kedy: Date.now() };
+  let text = "";
   try {
-    const text = JSON.stringify(zaznam);
+    text = JSON.stringify(zaznam);
+  } catch {
+    return;
+  }
+
+  const p = await natívne();
+  if (p) {
+    try {
+      await p.set({ key: jednoduchyKluc(kluc), value: text });
+    } catch {
+      /* aj natívne úložisko môže byť plné — nižšie sú náhrady */
+    }
+  }
+
+  try {
     if (typeof localStorage !== "undefined" && text.length <= STROP_JEDNODUCHEHO) {
       localStorage.setItem(jednoduchyKluc(kluc), text);
     }
@@ -264,6 +296,16 @@ export async function ulozDoPamate(kluc: string, hodnota: unknown): Promise<void
 }
 
 export async function zPamate<T>(kluc: string): Promise<{ hodnota: T; kedy: number } | null> {
+  // Najprv natívne — jediné, o ktorom vieme, že reštart appky prežije.
+  const p = await natívne();
+  if (p) {
+    try {
+      const { value } = await p.get({ key: jednoduchyKluc(kluc) });
+      if (value) return JSON.parse(value) as { hodnota: T; kedy: number };
+    } catch {
+      /* skúsime nižšie */
+    }
+  }
   try {
     if (typeof localStorage !== "undefined") {
       const text = localStorage.getItem(jednoduchyKluc(kluc));

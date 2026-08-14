@@ -96,17 +96,23 @@ export function HistoriaJazd({
       )
       .then(async ({ data, error }) => {
         if (zrusene) return;
-        const { ulozJazdy, jazdyZPamate, zoradJazdy } = await import("@/lib/mobile/jazdy-lokalne");
+        const { ulozJazdy, jazdyZPamate, zoradJazdy, ulozDoPamate, zPamate } = await import(
+          "@/lib/mobile/jazdy-lokalne"
+        );
+        const kluc = `jazdy:${vozidlo.id}`;
 
         if (error || !data) {
           // Bez pripojenia sa história vezme z telefónu. Prázdna kniha jázd v
           // aute je horšia než mierne zastaraná.
-          const zPamate = (await jazdyZPamate(firma.id)).filter(
+          const zIndexedDb = (await jazdyZPamate(firma.id)).filter(
             (j) => j.vehicle_id === vozidlo.id,
           );
+          const zalozne = zIndexedDb.length
+            ? zIndexedDb
+            : ((await zPamate<any[]>(kluc))?.hodnota ?? []);
           if (zrusene) return;
-          if (zPamate.length === 0 && error) toast.error(error.message);
-          setJazdy(zoradJazdy(zPamate) as unknown as Jazdenka[]);
+          if (zalozne.length === 0 && error) toast.error(error.message);
+          setJazdy(zoradJazdy(zalozne as any) as unknown as Jazdenka[]);
           return;
         }
 
@@ -115,6 +121,16 @@ export function HistoriaJazd({
           distance_km: t.distance_km === null ? null : Number(t.distance_km),
         })) as Jazdenka[];
         setJazdy(jazdenky);
+        // Do natívneho úložiska ide skrátený zoznam — prehliadačové úložiská
+        // vo WebView reštart appky neprežili.
+        void ulozDoPamate(
+          kluc,
+          jazdenky.slice(0, 200).map((j: any) => ({
+            ...j,
+            company_id: firma.id,
+            vehicle_id: vozidlo.id,
+          })),
+        );
         void ulozJazdy(
           firma.id,
           jazdenky.map((j: any) => ({
