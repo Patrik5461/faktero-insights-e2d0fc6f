@@ -24,3 +24,25 @@ createRoot(koren).render(
     <Toaster position="top-center" richColors closeButton />
   </StrictMode>,
 );
+
+/**
+ * Natívne veci — schovanie úvodného loga, stavový riadok, push, hlboké odkazy.
+ *
+ * Na webe to spúšťa koreň TanStacku, ktorý tu nie je. Bez tohto volania ostane
+ * appka navždy pod úvodným logom, aj keď je rozhranie pod ním hotové.
+ */
+void import("@/lib/mobile/native-init")
+  .then((m) => m.initNativePlatform())
+  .catch(() => {
+    /* na webe natívne pluginy nie sú — appka beží ďalej */
+  });
+
+/**
+ * Poistka. Keby inicializácia zlyhala uprostred, logo nesmie ostať navrchu —
+ * appka pod ním funguje a človek by to nemal ako zistiť.
+ */
+setTimeout(() => {
+  void import("@capacitor/splash-screen")
+    .then(({ SplashScreen }) => SplashScreen.hide())
+    .catch(() => {});
+}, 4000);
