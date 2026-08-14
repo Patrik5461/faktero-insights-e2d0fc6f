@@ -6,12 +6,25 @@ import type { BufferedTrip, Classification } from "@faktero/drive-detector";
 import { supabase } from "@/integrations/supabase/client";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { jePrikratka, riadokZJazdy } from "./auto-jazdy";
+import { vozidloPreRozpoznanuJazdu } from "./moje-vozidlo";
 
 /**
  * Texty notifikácie patria sem, nie do Swiftu — plugin o slovenčine nemá čo
  * vedieť a preklad by sa inak menil len s novou verziou appky.
  */
-const NASTAVENIE = {
+function nastavenie(vozidlo?: string | null) {
+  return {
+    ...ZAKLAD,
+    notification: {
+      ...ZAKLAD.notification,
+      // Z uzamknutej obrazovky musí byť jasné, kam jazda pôjde — inak sa človek
+      // dozvie o zle zaradenej jazde až v knihe jázd.
+      body: vozidlo ? `Ide o služobnú cestu? (${vozidlo})` : ZAKLAD.notification.body,
+    },
+  };
+}
+
+const ZAKLAD = {
   speedThresholdKmh: 32,
   sustainedSeconds: 60,
   minConsecutiveFixes: 3,
@@ -56,6 +69,7 @@ export async function stavDetekcie(): Promise<{ dostupna: boolean; zapnuta: bool
  */
 export async function prepniDetekciu(
   zapnut: boolean,
+  vozidlo?: string | null,
 ): Promise<{ zapnuta: boolean; chyba?: string }> {
   const p = await plugin();
   if (!p) return { zapnuta: false, chyba: "Detekcia jázd je len v mobilnej aplikácii." };
@@ -65,7 +79,7 @@ export async function prepniDetekciu(
       await p.stop();
       return { zapnuta: false };
     }
-    await p.configure(NASTAVENIE);
+    await p.configure(nastavenie(vozidlo));
     const povolenie = await p.requestPermissions();
     if (povolenie.location !== "granted") {
       return { zapnuta: false, chyba: "Bez povolenia polohy detekcia nefunguje." };
@@ -85,6 +99,20 @@ export async function prepniDetekciu(
  * Jazdy, ktoré čakajú na prevzatie. Príliš krátke záznamy sa tu ticho vybavia
  * — do knihy jázd nepatrí popojdenie na parkovisku.
  */
+/**
+ * Prepíše text notifikácie, keď sa zmení auto, ktorým sa z telefónu jazdí.
+ * Posiela sa celé nastavenie — plugin si prahy nepamätá zvlášť od textov.
+ */
+export async function nastavVozidloVNotifikacii(vozidlo: string | null): Promise<void> {
+  const p = await plugin();
+  if (!p) return;
+  try {
+    await p.configure(nastavenie(vozidlo));
+  } catch {
+    /* text notifikácie nie je nič, kvôli čomu by mala appka hlásiť chybu */
+  }
+}
+
 export async function nacitajRozpoznaneJazdy(): Promise<BufferedTrip[]> {
   const p = await plugin();
   if (!p) return [];
@@ -161,4 +189,57 @@ export async function zahodRozpoznanuJazdu(tripId: string): Promise<void> {
   } catch {
     /* zahodenie je konečné aj tak — netreba kvôli nemu hlásiť chybu */
   }
+}
+
+/**
+ * Vozidlá, ktorých jazdy ťahá Commander. Telefón ich merať nemá — tie isté
+ * jazdy by prišli druhýkrát a v knihe jázd by boli dvakrát.
+ */
+export async function vozidlaSCommanderom(companyId: string): Promise<Set<string>> {
+  const { data } = await supabase
+    .from("commander_vehicle_links")
+    .select("faktero_vehicle_id")
+    .eq("company_id", companyId);
+  return new Set((data ?? []).map((r: any) => r.faktero_vehicle_id).filter(Boolean));
+}
+
+/**
+ * Odošle jazdy, ktoré telefón nahral, kým bola appka zavretá. Volá sa hneď po
+ * otvorení appky, nielen na obrazovke Jazda — inak jazda čaká v telefóne dovtedy,
+ * kým sa človek náhodou preklikne na tú správnu obrazovku.
+ *
+ * Uloží len tie, pri ktorých sa niet čoho pýtať: zaradenie prišlo z notifikácie
+ * a auto je jednoznačné. Zvyšok nechá čakať — na obrazovke Jazda sa dorieši.
+ */
+export async function odosliCakajuceJazdy(
+  companyId: string,
+): Promise<{ ulozene: number; cakajuce: number }> {
+  const jazdy = await nacitajRozpoznaneJazdy();
+  if (!jazdy.length) return { ulozene: 0, cakajuce: 0 };
+
+  const [{ data: vozidla }, commander] = await Promise.all([
+    supabase
+      .from("vehicles")
+      .select("id")
+      .eq("company_id", companyId)
+      .eq("active", true),
+    vozidlaSCommanderom(companyId),
+  ]);
+
+  // Auto pripojené na Commander sa neponúka — jeho jazdy prídu odtiaľ.
+  const dostupne = (vozidla ?? []).map((v: any) => v.id).filter((id: string) => !commander.has(id));
+
+  let ulozene = 0;
+  let cakajuce = 0;
+  for (const jazda of jazdy) {
+    const vehicleId = vozidloPreRozpoznanuJazdu({ companyId, dostupne });
+    if (!jazda.classification || !vehicleId) {
+      cakajuce++;
+      continue;
+    }
+    const r = await ulozRozpoznanuJazdu({ jazda, companyId, vehicleId, classification: jazda.classification });
+    if (r.ok) ulozene++;
+    else cakajuce++;
+  }
+  return { ulozene, cakajuce };
 }

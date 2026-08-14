@@ -31,6 +31,7 @@ import { createExpenseFn } from "@/lib/faktero/expenses.functions";
 import { dokladNaZaznam, nahrajPrilohu, stranyDoPdf } from "@/lib/faktero/mobil-doklad";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
+import { odosliCakajuceJazdy } from "@/lib/mobile/auto-jazdy-sync";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { PrijateDoklady, datum } from "@/components/faktero/mobil/PrijateDoklady";
 import { NovaFaktura } from "@/components/faktero/mobil/NovaFaktura";
@@ -139,6 +140,19 @@ function MobilnaApka() {
         setFirma(vybrana);
         setActiveCompanyId(vybrana.id);
         setKrok("domov");
+        // Jazdy, ktoré telefón nahral, kým bola appka zavretá, netreba držať
+        // v telefóne do chvíle, kým sa človek preklikne na obrazovku Jazda.
+        void odosliCakajuceJazdy(vybrana.id)
+          .then(({ ulozene }) => {
+            if (ulozene > 0) {
+              toast.success(
+                ulozene === 1 ? "Rozpoznaná jazda uložená" : `Uložených ${ulozene} rozpoznaných jázd`,
+              );
+            }
+          })
+          .catch(() => {
+            /* jazda ostane čakať na obrazovke Jazda, nie je to dôvod na hlášku */
+          });
       } else {
         setKrok("firma");
       }

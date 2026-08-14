@@ -10,6 +10,8 @@ import {
   stavDetekcie,
   ulozRozpoznanuJazdu,
   zahodRozpoznanuJazdu,
+  vozidlaSCommanderom,
+  nastavVozidloVNotifikacii,
 } from "@/lib/mobile/auto-jazdy-sync";
 import type { BufferedTrip, Classification } from "@faktero/drive-detector";
 import { trasaDoPolyline } from "@/lib/faktero/polyline";
@@ -57,6 +59,8 @@ export function Jazda({
   const [pridavam, setPridavam] = useState(false);
   const [historia, setHistoria] = useState<Vozidlo | null>(null);
   const [detekcia, setDetekcia] = useState({ dostupna: false, zapnuta: false });
+  // Autá, ktorých jazdy ťahá Commander — tie telefón merať nemá, prišli by dvakrát.
+  const [commander, setCommander] = useState<Set<string>>(new Set());
   const [cakajuce, setCakajuce] = useState<BufferedTrip[]>([]);
   const [vyberAuta, setVyberAuta] = useState<Record<string, string>>({});
   const [vybavujem, setVybavujem] = useState<string | null>(null);
@@ -100,6 +104,10 @@ export function Jazda({
     stavDetekcie().then(setDetekcia);
   }, []);
 
+  useEffect(() => {
+    vozidlaSCommanderom(firma.id).then(setCommander).catch(() => {});
+  }, [firma.id]);
+
   /*
    * Jazdy, ktoré appka nahrala, kým bola zavretá. Tie, pri ktorých už človek
    * odpovedal na notifikáciu, sa uložia rovno — pýtať sa druhýkrát na to isté
@@ -118,7 +126,7 @@ export function Jazda({
         // hádať medzi autami nemá zmysel.
         const auto = vozidloPreRozpoznanuJazdu({
           companyId: firma.id,
-          dostupne: vozidla.map((v) => v.id),
+          dostupne: vozidla.map((v) => v.id).filter((id) => !commander.has(id)),
         });
         if (jazda.classification && auto) {
           const r = await ulozRozpoznanuJazdu({
@@ -143,7 +151,7 @@ export function Jazda({
     return () => {
       zrusene = true;
     };
-  }, [firma.id, vozidla]);
+  }, [firma.id, vozidla, commander]);
 
   /** Auto pre konkrétnu rozpoznanú jazdu; predvolené je to vybrané hore. */
   function autoPre(jazda: BufferedTrip): string {
@@ -433,7 +441,16 @@ export function Jazda({
               <span className="mt-1 block text-xs text-muted-foreground">
                 Appka si jazdu všimne sama a spýta sa notifikáciou, či bola služobná. Potrebuje na
                 to povolenú polohu „Vždy".
-                {vozidla && vozidla.length > 1 && vozidloId ? (
+                {vozidloId && commander.has(vozidloId) ? (
+                  <>
+                    {" "}
+                    <span className="font-medium text-foreground">
+                      Jazdy tohto auta ťahá Commander
+                    </span>
+                    , takže ich telefón merať nemusí — vyber iné auto, alebo nechaj detekciu
+                    vypnutú.
+                  </>
+                ) : vozidla && vozidla.length > 1 && vozidloId ? (
                   <>
                     {" "}
                     Ukladá sa na{" "}
@@ -451,7 +468,10 @@ export function Jazda({
               disabled={bezi}
               onChange={async (e) => {
                 const chce = e.target.checked;
-                const r = await prepniDetekciu(chce);
+                const r = await prepniDetekciu(
+                  chce,
+                  vozidla?.find((v) => v.id === vozidloId)?.name ?? null,
+                );
                 setDetekcia((s) => ({ ...s, zapnuta: r.zapnuta }));
                 if (r.chyba) toast.error(r.chyba);
                 else if (r.zapnuta) toast.success("Detekcia jázd je zapnutá");
@@ -485,6 +505,7 @@ export function Jazda({
                     // Telefón si auto pamätá, takže rozpoznané jazdy sa naň vedia
                     // uložiť samy aj vtedy, keď firma áut viac.
                     zapamatajVozidlo(firma.id, v.id);
+                    void nastavVozidloVNotifikacii(v.name);
                   }}
                   className={`flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 pr-2 text-left ${
                     vozidloId === v.id ? "font-semibold" : ""
@@ -492,6 +513,13 @@ export function Jazda({
                 >
                   <Car className="h-4 w-4 shrink-0" />
                   <span className="min-w-0 flex-1 truncate text-[15px]">{v.name}</span>
+                  {/* Jazdy tohto auta chodia z Commanderu — telefón ich merať nemá,
+                      inak by tá istá jazda bola v knihe dvakrát. */}
+                  {commander.has(v.id) && (
+                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                      Commander
+                    </span>
+                  )}
                   {v.license_plate && (
                     <span className="shrink-0 text-[13px] text-muted-foreground">
                       {v.license_plate}
