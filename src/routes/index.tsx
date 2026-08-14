@@ -1245,7 +1245,11 @@ function MobileAppSection() {
               <span className="text-primary">fakturujte kdekoľvek</span>
             </h2>
             <p className="mt-5 max-w-lg text-muted-foreground">
-              iOS a Android appka s offline režimom, skenovaním dokladov a GPS knihou jázd.
+              {/* Pôvodne tu stálo „s offline režimom". Appka bez signálu naozaj zapíše
+                  jazdu aj doklad, ale rozhranie sa načítava zo živého webu — pri
+                  studenom štarte bez pripojenia sa neotvorí. Sľubujme len to, čo platí. */}
+              iOS a Android appka so skenovaním dokladov a GPS knihou jázd. Jazdu aj odfotený
+              doklad zapíše aj bez signálu a odošle ich, len čo ste online.
             </p>
             <ul className="mt-8 grid gap-3 sm:grid-cols-2">
               {items.map((i) => (
