@@ -51,8 +51,9 @@ const html = `<!doctype html>
       <div id="offline" class="skryte">
         <h1>Nie ste pripojený</h1>
         <p>
-          Faktero potrebuje internet. Zaznamenané jazdy a odfotené doklady sa
-          medzitým nestratia — odošlú sa samé, len čo sa pripojíte.
+          Faktero sa bez internetu neotvorí. Jazdy, ktoré medzitým zachytí
+          automatická detekcia, sa ukladajú do telefónu a odošlú sa samy po
+          pripojení — tá beží aj so zavretou aplikáciou.
         </p>
         <button id="znova" type="button">Skúsiť znova</button>
       </div>
