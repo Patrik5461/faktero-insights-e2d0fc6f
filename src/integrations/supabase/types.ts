@@ -932,6 +932,7 @@ export type Database = {
           logo_url: string | null
           name: string
           online_payments_enabled: boolean
+          odovzdanie_automaticky: boolean
           phone: string | null
           pohoda_clenenie_dph: string | null
           pohoda_clenenie_dph_pdp: string | null
@@ -986,6 +987,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           online_payments_enabled?: boolean
+          odovzdanie_automaticky?: boolean
           phone?: string | null
           pohoda_clenenie_dph?: string | null
           pohoda_clenenie_dph_pdp?: string | null
@@ -1040,6 +1042,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           online_payments_enabled?: boolean
+          odovzdanie_automaticky?: boolean
           phone?: string | null
           pohoda_clenenie_dph?: string | null
           pohoda_clenenie_dph_pdp?: string | null

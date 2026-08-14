@@ -141,6 +141,21 @@ function CompanyPage() {
                 onChange={f("uctovnik_email")}
                 placeholder="kam chodí mesačné odovzdanie"
               />
+              <label className="flex items-start gap-3 rounded-md border border-border p-3">
+                <input
+                  type="checkbox"
+                  checked={!!c.odovzdanie_automaticky}
+                  onChange={(e) => setC({ ...c, odovzdanie_automaticky: e.target.checked })}
+                  className="mt-0.5 h-4 w-4"
+                />
+                <span className="text-sm">
+                  Posielať automaticky
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    Podklady za minulý mesiac odídu 5. v mesiaci samy. Posiela sa len to, čo ešte
+                    neodišlo.
+                  </span>
+                </span>
+              </label>
               <In
                 label="Predkontácia — faktúra"
                 value={c.pohoda_predkontacia ?? ""}

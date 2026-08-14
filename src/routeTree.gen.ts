@@ -202,6 +202,7 @@ import { Route as ApiPublicHooksBankStatementsRouteImport } from './routes/api/p
 import { Route as ApiPublicHooksBankStatementsRestoreRouteImport } from './routes/api/public/hooks/bank-statements-restore'
 import { Route as ApiPublicHooksBankSyncRouteImport } from './routes/api/public/hooks/bank-sync'
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
+import { Route as ApiPublicHooksOdovzdanieMesacneRouteImport } from './routes/api/public/hooks/odovzdanie-mesacne'
 import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
 import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/public/hooks/recurring-run'
 import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public/hooks/reminders'
@@ -1278,6 +1279,12 @@ const ApiPublicHooksCommanderSyncRoute =
     path: '/api/public/hooks/commander-sync',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksOdovzdanieMesacneRoute =
+  ApiPublicHooksOdovzdanieMesacneRouteImport.update({
+    id: '/api/public/hooks/odovzdanie-mesacne',
+    path: '/api/public/hooks/odovzdanie-mesacne',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksPushOverdueRoute =
   ApiPublicHooksPushOverdueRouteImport.update({
     id: '/api/public/hooks/push-overdue',
@@ -1633,6 +1640,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
@@ -1849,6 +1857,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
@@ -2076,6 +2085,7 @@ export interface FileRoutesById {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
@@ -2303,6 +2313,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
@@ -2519,6 +2530,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
@@ -2745,6 +2757,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
@@ -2857,6 +2870,7 @@ export interface RootRouteChildren {
   ApiPublicHooksBankStatementsRestoreRoute: typeof ApiPublicHooksBankStatementsRestoreRoute
   ApiPublicHooksBankSyncRoute: typeof ApiPublicHooksBankSyncRoute
   ApiPublicHooksCommanderSyncRoute: typeof ApiPublicHooksCommanderSyncRoute
+  ApiPublicHooksOdovzdanieMesacneRoute: typeof ApiPublicHooksOdovzdanieMesacneRoute
   ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
   ApiPublicHooksRecurringRunRoute: typeof ApiPublicHooksRecurringRunRoute
   ApiPublicHooksRemindersRoute: typeof ApiPublicHooksRemindersRoute
@@ -4229,6 +4243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksCommanderSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/odovzdanie-mesacne': {
+      id: '/api/public/hooks/odovzdanie-mesacne'
+      path: '/api/public/hooks/odovzdanie-mesacne'
+      fullPath: '/api/public/hooks/odovzdanie-mesacne'
+      preLoaderRoute: typeof ApiPublicHooksOdovzdanieMesacneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/push-overdue': {
       id: '/api/public/hooks/push-overdue'
       path: '/api/public/hooks/push-overdue'
@@ -4998,6 +5019,7 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicHooksBankStatementsRestoreRoute,
   ApiPublicHooksBankSyncRoute: ApiPublicHooksBankSyncRoute,
   ApiPublicHooksCommanderSyncRoute: ApiPublicHooksCommanderSyncRoute,
+  ApiPublicHooksOdovzdanieMesacneRoute: ApiPublicHooksOdovzdanieMesacneRoute,
   ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,
   ApiPublicHooksRecurringRunRoute: ApiPublicHooksRecurringRunRoute,
   ApiPublicHooksRemindersRoute: ApiPublicHooksRemindersRoute,
