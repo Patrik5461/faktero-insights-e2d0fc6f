@@ -115,5 +115,5 @@ otváranie portov. Vlastný program pre Windows so všetkým, čo k tomu patrí.
 `Bearer` na `https://api.mpohoda.sk`. Bez inštalácie čohokoľvek, ale len vo
 variante **mPohoda Pro** a dáva zmysel iba tomu, kto mPohodu už používa.
 
-Poradie podľa úžitku: **2 → 1 → 3 → 4**. Body 2 a 1 fungujú s každou radou
-Pohody a účtovník neinštaluje nič.
+Body 1 a 2 fungujú s každou radou Pohody a účtovníčka neinštaluje nič, preto
+majú prednosť pred 3 a 4.
