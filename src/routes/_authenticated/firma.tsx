@@ -162,6 +162,17 @@ function CompanyPage() {
                 value={c.pohoda_clenenie_dph_pdp ?? ""}
                 onChange={f("pohoda_clenenie_dph_pdp")}
               />
+              <In
+                label="Predkontácia — prijatý doklad"
+                value={c.pohoda_predkontacia_prijata ?? ""}
+                onChange={f("pohoda_predkontacia_prijata")}
+                placeholder="napr. 5Fp"
+              />
+              <In
+                label="Členenie DPH — prijatý doklad"
+                value={c.pohoda_clenenie_dph_prijata ?? ""}
+                onChange={f("pohoda_clenenie_dph_prijata")}
+              />
             </div>
           </div>
           <label className="sm:col-span-2 block">

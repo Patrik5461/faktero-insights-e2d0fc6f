@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import {
   buildPohodaInvoiceXml,
+  buildPohodaExpensesXml,
   buildOmegaTxt,
   buildMoneyS3Xml,
   EXPORT_STRATEGIES,
@@ -324,6 +325,88 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
     ).toBe("UDpdp");
     // Bez nastavenia sa nedopĺňa nič — vymyslený kód by import zhodil.
     expect(posli(faktura).invoiceHeader.accounting).toBeUndefined();
+  });
+});
+
+/**
+ * Prijaté doklady. Bloček z registračnej pokladne má položky v cenách s daňou
+ * a býva ich aj dvadsať; do účtovníctva z nich nie je nič, zato rozpis DPH
+ * musí sedieť na halier.
+ */
+describe("Pohoda XML — prijaté doklady", () => {
+  const firmaSk = { ico: "56607016", default_currency: "EUR" };
+  const bloček = {
+    document_number: "2516",
+    supplier_name: "STORX s. r. o.",
+    supplier_ico: "12345678",
+    supplier_ic_dph: "SK1234567890",
+    issue_date: "2026-08-05",
+    net_amount: 20.16,
+    vat_amount: 4.41,
+    total_amount: 24.57,
+    vat_rate: 23,
+    currency: "EUR",
+    payment_method: "karta",
+    vat_breakdown: [
+      { dph: 4.32, sadzba: 23, zaklad: 18.77 },
+      { dph: 0, sadzba: 0, zaklad: 0.9 },
+      { dph: 0.09, sadzba: 19, zaklad: 0.49 },
+    ],
+  };
+  const posli = (doklady: any[], nastavenia?: any) =>
+    parser.parse(buildPohodaExpensesXml({ company: firmaSk, doklady, nastavenia })).dataPack;
+
+  it("rozpis DPH z bločku sadne do priehradok Pohody", () => {
+    const s = posli([bloček]).dataPackItem.invoice.invoiceSummary.homeCurrency;
+    expect(Number(s.priceHigh)).toBe(18.77);
+    expect(Number(s.priceHighVAT)).toBe(4.32);
+    expect(Number(s.priceLow)).toBe(0.49);
+    expect(Number(s.priceLowVAT)).toBe(0.09);
+    expect(Number(s.priceNone)).toBe(0.9);
+    // Súčet musí dať sumu dokladu, inak by účtovníčke nesedela pokladňa.
+    const spolu =
+      Number(s.priceHigh) +
+      Number(s.priceHighVAT) +
+      Number(s.priceLow) +
+      Number(s.priceLowVAT) +
+      Number(s.priceNone) +
+      Number(s.round.priceRound);
+    expect(Math.round(spolu * 100) / 100).toBe(24.57);
+  });
+
+  it("je to prijatá faktúra a číslo od dodávateľa ide do variabilného symbolu", () => {
+    // Vlastné číslo si Pohoda pridelí z vlastnej rady, tak ako pri ručnom zadaní.
+    const h = posli([bloček]).dataPackItem.invoice.invoiceHeader;
+    expect(h.invoiceType).toBe("receivedInvoice");
+    expect(String(h.symVar)).toBe("2516");
+    expect(h.number).toBeUndefined();
+    expect(h.paymentType.paymentType).toBe("creditcard");
+    expect(h.partnerIdentity.address.company).toBe("STORX s. r. o.");
+  });
+
+  it("položky bločku sa nevyvážajú", () => {
+    // Sú v cenách s daňou a „Záloh plech" v účtovníctve nikto nepotrebuje.
+    expect(posli([bloček]).dataPackItem.invoice.invoiceDetail).toBeUndefined();
+  });
+
+  it("starší doklad bez rozpisu sa odvodí z hlavičky", () => {
+    const s = posli([
+      { ...bloček, vat_breakdown: null, net_amount: 100, vat_amount: 23, total_amount: 123 },
+    ]).dataPackItem.invoice.invoiceSummary.homeCurrency;
+    expect(Number(s.priceHigh)).toBe(100);
+    expect(Number(s.priceHighVAT)).toBe(23);
+  });
+
+  it("predkontácia prijatého dokladu je vlastná", () => {
+    const h = posli([bloček], { predkontacia: "3Fv", predkontaciaPrijata: "5Fp" }).dataPackItem
+      .invoice.invoiceHeader;
+    // Náklad sa neúčtuje predkontáciou výnosu.
+    expect(h.accounting.ids).toBe("5Fp");
+  });
+
+  it("doklad v cudzej mene sa vynechá", () => {
+    const d = posli([bloček, { ...bloček, document_number: "9", currency: "CZK" }]);
+    expect(d.dataPackItem.invoice.invoiceHeader.symVar).toBe(2516);
   });
 });
 

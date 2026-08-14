@@ -4,6 +4,8 @@
 type InvoiceRow = any;
 type ItemRow = any;
 type CompanyRow = any;
+/** Prijatý doklad (`expense_documents`) — rovnaký zvyk ako pri riadkoch vyššie. */
+type DokladRow = any;
 
 function esc(s: any): string {
   if (s === null || s === undefined) return "";
@@ -120,6 +122,10 @@ export type PohodaNastavenia = {
   clenenieDph?: string | null;
   /** Členenie DPH pri prenesení daňovej povinnosti. */
   clenenieDphPdp?: string | null;
+  /** Predkontácia pre prijatý doklad — náklady sa účtujú inam než výnosy. */
+  predkontaciaPrijata?: string | null;
+  /** Členenie DPH pre prijatý doklad. */
+  clenenieDphPrijata?: string | null;
 };
 
 function domacaMenaFirmy(company: CompanyRow): string {
@@ -321,6 +327,148 @@ export function buildPohodaInvoiceXml(opts: {
 
   return `<?xml version="1.0" encoding="utf-8"?>
 <dat:dataPack id="${dataPackId}" ico="${ico}" application="Faktero" version="2.0" note="Export z Faktero"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
+  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">${entries}
+</dat:dataPack>`;
+}
+
+/** Riadok rozpisu DPH tak, ako ho ukladá rozpoznávanie dokladov. */
+type RozpisDph = { sadzba: number; zaklad: number; dph: number };
+
+function rozpisDokladu(doklad: DokladRow): RozpisDph[] {
+  const r = Array.isArray(doklad?.vat_breakdown) ? doklad.vat_breakdown : null;
+  if (r?.length) {
+    return (r as Record<string, unknown>[])
+      .map((x) => ({
+        sadzba: Number(x?.sadzba ?? 0),
+        zaklad: Number(x?.zaklad ?? 0),
+        dph: Number(x?.dph ?? 0),
+      }))
+      .filter((x) => x.zaklad || x.dph);
+  }
+  // Starší doklad má len jednu sadzbu v hlavičke.
+  const zaklad = Number(doklad?.net_amount ?? 0);
+  const dph = Number(doklad?.vat_amount ?? 0);
+  if (!zaklad && !dph) return [];
+  return [{ sadzba: Number(doklad?.vat_rate ?? 0), zaklad, dph }];
+}
+
+/**
+ * Prijaté doklady (bločky, prijaté faktúry) ako `receivedInvoice`.
+ *
+ * Zapisuje sa **len súhrn po sadzbách, nie položky**. Doklad z bločku má
+ * položky v cenách s daňou a býva ich aj dvadsať („Záloh plech"); do
+ * účtovníctva z nich nie je nič, kým rozpis DPH — ktorý pri rozpoznávaní
+ * ukladáme — je presne to, čo účtovník potrebuje, a sedí na halier.
+ *
+ * Číslo dokladu si Pohoda pridelí z vlastnej rady; číslo od dodávateľa ide do
+ * variabilného symbolu, tak ako sa prijaté faktúry zadávajú ručne.
+ */
+export function buildPohodaExpensesXml(opts: {
+  company: CompanyRow;
+  doklady: DokladRow[];
+  nastavenia?: PohodaNastavenia;
+}): string {
+  const { company, nastavenia } = opts;
+  const domaca = domacaMenaFirmy(company);
+  const doklady = opts.doklady.filter(
+    (d) => (String(d?.currency ?? domaca).toUpperCase() || domaca) === domaca,
+  );
+  const ico = esc(company?.ico ?? "");
+  const dataPackId = `FAKTERO_DOKLADY_${new Date().toISOString().replace(/[:.]/g, "-")}`;
+
+  const entries = doklady
+    .map((d, idx) => {
+      const tab = sadzbyKuDnu(String(d?.issue_date ?? ""));
+      const rozpis = rozpisDokladu(d);
+      const zaSadzbu = (p: Priehradka) =>
+        rozpis.filter((x) => priehradka(kodSadzby(x.sadzba, tab)) === p);
+      const zaklad = (arr: RozpisDph[]) => arr.reduce((a, x) => a + x.zaklad, 0);
+      const dan = (arr: RozpisDph[]) => arr.reduce((a, x) => a + x.dph, 0);
+
+      const s0 = zaSadzbu("none");
+      const s3 = zaSadzbu("third");
+      const sLow = zaSadzbu("low");
+      const sHigh = zaSadzbu("high");
+
+      const zRozpisu =
+        zaklad(s0) + zaklad(s3) + zaklad(sLow) + zaklad(sHigh) + dan(s3) + dan(sLow) + dan(sHigh);
+      const celkom = Number(d?.total_amount ?? 0) || zRozpisu;
+      const zaokruhlenie = Math.round((celkom - zRozpisu) * 100) / 100;
+
+      // Variabilný symbol je číselný; z čísla dokladu sa berú len číslice.
+      const symVar = String(d?.document_number ?? "")
+        .replace(/\D/g, "")
+        .slice(0, 20);
+      const popis = skrat(
+        [d?.supplier_name, d?.document_number ? `č. ${d.document_number}` : "", d?.category]
+          .filter(Boolean)
+          .join(" "),
+        240,
+      );
+
+      const adresa = [
+        el("typ:company", skrat(d?.supplier_name, 96), "            "),
+        el("typ:ico", skrat(d?.supplier_ico, 15), "            "),
+        el("typ:icDph", skrat(d?.supplier_ic_dph, 18), "            "),
+      ].join("");
+
+      return `
+  <dat:dataPackItem id="DOK${idx + 1}" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:invoiceHeader>
+        <inv:invoiceType>receivedInvoice</inv:invoiceType>${el("inv:symVar", symVar, "        ")}
+        <inv:date>${esc(d?.issue_date ?? "")}</inv:date>
+        <inv:dateTax>${esc(d?.issue_date ?? "")}</inv:dateTax>${el(
+          "inv:text",
+          popis || "Prijatý doklad",
+          "        ",
+        )}${el("inv:note", skrat(d?.note, 200), "        ")}${
+          nastavenia?.predkontaciaPrijata
+            ? `\n        <inv:accounting><typ:ids>${esc(nastavenia.predkontaciaPrijata)}</typ:ids></inv:accounting>`
+            : ""
+        }${
+          nastavenia?.clenenieDphPrijata
+            ? `\n        <inv:classificationVAT><typ:ids>${esc(nastavenia.clenenieDphPrijata)}</typ:ids></inv:classificationVAT>`
+            : ""
+        }${
+          adresa
+            ? `
+        <inv:partnerIdentity>
+          <typ:address>${adresa}
+          </typ:address>
+        </inv:partnerIdentity>`
+            : ""
+        }
+        <inv:paymentType><typ:paymentType>${
+          FORMY_UHRADY[String(d?.payment_method ?? "")] ?? "draft"
+        }</typ:paymentType></inv:paymentType>
+      </inv:invoiceHeader>
+      <inv:invoiceSummary>
+        <inv:homeCurrency>${elSuma("typ:priceNone", zaklad(s0), "          ")}${elSuma(
+          "typ:price3",
+          zaklad(s3),
+          "          ",
+        )}${elSuma("typ:price3VAT", dan(s3), "          ")}${elSuma(
+          "typ:priceLow",
+          zaklad(sLow),
+          "          ",
+        )}${elSuma("typ:priceLowVAT", dan(sLow), "          ")}${elSuma(
+          "typ:priceHigh",
+          zaklad(sHigh),
+          "          ",
+        )}${elSuma("typ:priceHighVAT", dan(sHigh), "          ")}
+          <typ:round><typ:priceRound>${fixed2(zaokruhlenie)}</typ:priceRound></typ:round>
+        </inv:homeCurrency>
+      </inv:invoiceSummary>
+    </inv:invoice>
+  </dat:dataPackItem>`;
+    })
+    .join("");
+
+  return `<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="${dataPackId}" ico="${ico}" application="Faktero" version="2.0" note="Prijaté doklady z Faktero"
   xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
   xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
   xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">${entries}

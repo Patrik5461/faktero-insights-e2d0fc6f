@@ -13,7 +13,21 @@ Súborová výmena obidvoma smermi:
 - **Dnu:** `src/lib/faktero/pohoda.ts` číta Pohoda XML aj mPohoda JSON pri
   importe dokladov do Faktera.
 
-Vyváža sa zatiaľ len **vydaná faktúra, zálohová faktúra a dobropis**.
+Vyváža sa:
+
+- **Vydaná faktúra, zálohová faktúra a dobropis** — stránka Účtovné exporty,
+  `buildPohodaInvoiceXml`.
+- **Prijaté doklady** (`receivedInvoice`) — sú v mesačnom balíku na stránke
+  Doklady ako `pohoda.xml` vedľa súpisky a naskenovaných dokladov,
+  `buildPohodaExpensesXml`.
+
+Pri prijatom doklade sa zapisuje **len súhrn po sadzbách, nie položky**. Bloček
+z pokladne má položky v cenách s daňou a býva ich aj dvadsať („Záloh plech");
+do účtovníctva z nich nie je nič, kým rozpis DPH, ktorý pri rozpoznávaní
+ukladáme (`expense_documents.vat_breakdown`), je presne to, čo účtovník
+potrebuje, a sedí na halier. Vlastné číslo dokladu sa nepýta — Pohoda si ho
+pridelí z vlastnej rady a číslo od dodávateľa ide do variabilného symbolu, tak
+ako sa prijaté faktúry zadávajú ručne.
 
 ## Čo v XML musí sedieť, inak sa doklad zaúčtuje potichu zle
 
@@ -54,11 +68,11 @@ Takto sa našlo, že cudzia mena bola postavená zle.
 
 ## Čo ďalej
 
-**1. Viac agend do toho istého balíka.** Pohoda cez XML berie aj prijaté faktúry
-(`receivedInvoice`), pokladňu (`voucher`), banku (`bank`), adresár
-(`addressbook`), sklad (`stock`) a zákazky (`contract`). Tabuľky na to máme:
-`purchase_invoices`, `cash_entries`, `bank_transactions`, `customers`,
-`stock_items`, `jobs`.
+**1. Viac agend.** Pohoda cez XML berie aj pokladňu (`voucher`), banku (`bank`),
+adresár (`addressbook`), sklad (`stock`) a zákazky (`contract`). Tabuľky na to
+máme: `cash_entries`, `bank_transactions`, `customers`, `stock_items`, `jobs`.
+Pozor, `purchase_invoices` je prázdna — prijaté doklady žijú v
+`expense_documents`.
 
 **2. Odovzdanie za obdobie.** Nie „vyber faktúry a stiahni", ale „odovzdaj
 marec" — jeden balík (XML + PDF + súpiska), evidencia, čo už išlo, a možnosť

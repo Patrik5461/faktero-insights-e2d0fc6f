@@ -220,6 +220,11 @@ function DokladyPage() {
           </div>
         </div>
 
+        <p className="mb-4 text-xs text-muted-foreground">
+          V balíku je <strong>pohoda.xml</strong> na priamy import do Pohody, súpiska v CSV a
+          naskenované doklady. Predkontáciu prijatých dokladov nastavíte vo Firma → Pohoda.
+        </p>
+
         <div className="mb-4 grid grid-cols-3 gap-3">
           <SummaryCard label="Základ" value={totals.net} />
           <SummaryCard label="DPH" value={totals.vat} />

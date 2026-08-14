@@ -222,6 +222,27 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     }
     zip.file("doklady.csv", "\uFEFF" + lines.join("\n"));
 
+    // Pohoda XML — účtovníčka doklady nemusí prepisovať z tabuľky ručne.
+    // Kódy predkontácie a členenia DPH sú z nastavení firmy; bez nich sa
+    // doklad naimportuje tiež, len ho musí zaúčtovať sama.
+    const { data: firma } = await supabase
+      .from("companies")
+      .select("ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata")
+      .eq("id", data.company_id)
+      .single();
+    const { buildPohodaExpensesXml } = await import("./export.server");
+    zip.file(
+      "pohoda.xml",
+      buildPohodaExpensesXml({
+        company: firma ?? {},
+        doklady: rows,
+        nastavenia: {
+          predkontaciaPrijata: firma?.pohoda_predkontacia_prijata,
+          clenenieDphPrijata: firma?.pohoda_clenenie_dph_prijata,
+        },
+      }),
+    );
+
     // Priložené súbory
     const files = zip.folder("subory")!;
     for (const r of rows) {
