@@ -125,6 +125,45 @@ function CompanyPage() {
               <option value="other">Iný</option>
             </select>
           </label>
+          <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
+            <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Pohoda — účtovanie
+            </h3>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Skratky z Pohody vašej účtovníčky. Keď ich vyplníte, doklady sa po importe rovno
+              zaúčtujú a nemusí ich preklikávať. Nechajte prázdne, ak neviete — export bude fungovať
+              aj tak.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <In
+                label="Predkontácia — faktúra"
+                value={c.pohoda_predkontacia ?? ""}
+                onChange={f("pohoda_predkontacia")}
+                placeholder="napr. 3Fv"
+              />
+              <In
+                label="Predkontácia — zálohová faktúra"
+                value={c.pohoda_predkontacia_zaloha ?? ""}
+                onChange={f("pohoda_predkontacia_zaloha")}
+              />
+              <In
+                label="Predkontácia — dobropis"
+                value={c.pohoda_predkontacia_dobropis ?? ""}
+                onChange={f("pohoda_predkontacia_dobropis")}
+              />
+              <In
+                label="Členenie DPH"
+                value={c.pohoda_clenenie_dph ?? ""}
+                onChange={f("pohoda_clenenie_dph")}
+                placeholder="napr. UD"
+              />
+              <In
+                label="Členenie DPH — prenesenie daňovej povinnosti"
+                value={c.pohoda_clenenie_dph_pdp ?? ""}
+                onChange={f("pohoda_clenenie_dph_pdp")}
+              />
+            </div>
+          </div>
           <label className="sm:col-span-2 block">
             <span className="text-sm font-medium">Pätička faktúry</span>
             <textarea
@@ -531,11 +570,13 @@ function In({
   value,
   onChange,
   full,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   full?: boolean;
+  placeholder?: string;
 }) {
   return (
     <label className={`block ${full ? "sm:col-span-2" : ""}`}>
@@ -543,6 +584,7 @@ function In({
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
         className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
       />
     </label>

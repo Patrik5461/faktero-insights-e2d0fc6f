@@ -188,6 +188,145 @@ describe("Pohoda XML export", () => {
   });
 });
 
+/**
+ * Veci, ktoré účtovníkovi po importe pokazia účtovníctvo potichu — doklad sa
+ * naimportuje, len je zaúčtovaný zle. Preto majú vlastné kolo.
+ */
+describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
+  const posli = (invoice: any, items = polozky, nastavenia?: any) =>
+    parser.parse(
+      buildPohodaInvoiceXml({ company: firma, invoices: [{ invoice, items }], nastavenia }),
+    ).dataPack.dataPackItem.invoice;
+
+  it("zálohová faktúra nie je bežná faktúra", () => {
+    // Ako `issuedInvoice` by sa záloha zaúčtovala ako výnos, hoci ním nie je.
+    expect(posli({ ...faktura, type: "proforma" }).invoiceHeader.invoiceType).toBe(
+      "issuedAdvanceInvoice",
+    );
+  });
+
+  it("dobropis má záporné sumy", () => {
+    // Pohoda zakladá dobropis záporne; s kladnými sumami by pohľadávku zvýšil.
+    const d = posli({ ...faktura, type: "credit_note" });
+    expect(Number(d.invoiceSummary.homeCurrency.priceHigh)).toBe(-100);
+    expect(Number(d.invoiceSummary.homeCurrency.priceHighVAT)).toBe(-23);
+    const p = d.invoiceDetail.invoiceItem;
+    expect(Number(p[0].quantity)).toBe(-10);
+    expect(Number(p[0].homeCurrency.priceSum)).toBe(-123);
+    // Jednotková cena ostáva kladná — otáča sa množstvo, ako to robí Pohoda.
+    expect(Number(p[0].homeCurrency.unitPrice)).toBe(10);
+  });
+
+  it("forma úhrady ide z dokladu, nie natvrdo príkazom", () => {
+    const forma = (m: any) => posli({ ...faktura, payment_method: m }).invoiceHeader.paymentType;
+    expect(forma("cash").paymentType).toBe("cash");
+    expect(forma("card").paymentType).toBe("creditcard");
+    expect(forma("bank_transfer").paymentType).toBe("draft");
+    // Neznámu formu radšej príkazom než vôbec.
+    expect(forma("nieco_ine").paymentType).toBe("draft");
+  });
+
+  it("konštantný a špecifický symbol sa nesú ďalej", () => {
+    // Kontroluje sa surové XML — v konštantnom symbole je vedúca nula, ktorú by
+    // parser v teste zahodil, kým v súbore ostáva.
+    const x = buildPohodaInvoiceXml({
+      company: firma,
+      invoices: [
+        {
+          invoice: { ...faktura, constant_symbol: "0308", specific_symbol: "123456" },
+          items: polozky,
+        },
+      ],
+    });
+    expect(x).toContain("<inv:symConst>0308</inv:symConst>");
+    expect(x).toContain("<inv:symSpec>123456</inv:symSpec>");
+  });
+
+  it("prázdne polia sa nezapisujú vôbec", () => {
+    // Prázdny `<typ:ico></typ:ico>` Pohoda pri importe hlási ako chybu.
+    const a = posli({ ...faktura, customer_ico: null, customer_dic: "", customer_email: null })
+      .invoiceHeader.partnerIdentity.address;
+    expect(a.ico).toBeUndefined();
+    expect(a.dic).toBeUndefined();
+    expect(a.email).toBeUndefined();
+    expect(a.company).toBe("ACME s.r.o.");
+  });
+
+  it("zaokrúhlenie dorovná rozdiel medzi hlavičkou a položkami", () => {
+    // Bez toho Pohoda hlási nesúlad o cent a doklad sa nedá zlikvidovať úhradou.
+    const s = posli({ ...faktura, total: 208.51 }).invoiceSummary.homeCurrency;
+    expect(Number(s.round.priceRound)).toBe(0.01);
+  });
+
+  it("sadzby sa prekladajú podľa dňa plnenia, nie podľa dneška", () => {
+    // Pohoda si k priehradke domyslí percento podľa dátumu; doklad z roku 2024
+    // s 20 % je „základná sadzba", nie historická.
+    const stare = posli({ ...faktura, issue_date: "2024-06-10", delivery_date: "2024-06-10" }, [
+      { ...polozky[0], vat_rate: 20, subtotal: 100, vat_amount: 20, total: 120 },
+      { ...polozky[1], vat_rate: 10, subtotal: 50, vat_amount: 5, total: 55 },
+    ]);
+    expect(stare.invoiceDetail.invoiceItem.map((x: any) => x.rateVAT)).toEqual(["high", "low"]);
+
+    // Naopak 20 % na doklade z roku 2025 je oprava k staršej faktúre.
+    const nove = posli(faktura, [
+      { ...polozky[0], vat_rate: 20, subtotal: 100, vat_amount: 20, total: 120 },
+    ]);
+    expect(nove.invoiceDetail.invoiceItem.rateVAT).toBe("historyHigh");
+  });
+
+  it("faktúra v cudzej mene sa radšej vynechá, než by sa vyviezla zle", () => {
+    // Pohoda chce rozpis po sadzbách v domácej mene a kurz k faktúre nemáme —
+    // v `homeCurrency` by čítala doláre ako eurá a nikto by si to nevšimol.
+    const r = EXPORT_STRATEGIES.pohoda_xml.build({
+      company: firma,
+      invoices: [
+        { invoice: faktura, items: polozky },
+        { invoice: { ...faktura, invoice_number: "20250009", currency: "USD" }, items: polozky },
+      ],
+    });
+    const d = parser.parse(r.content).dataPack;
+    expect(d.dataPackItem.invoice.invoiceHeader.number.numberRequested).toBe(20250001);
+    expect(r.preskocene).toEqual(["20250009 — faktúra v mene USD"]);
+  });
+
+  it("keď by v balíku nezostalo nič, export sa nespraví", () => {
+    // Prázdny `dataPack` schéma nepripúšťa a účtovníčke by prišiel súbor,
+    // ktorý vyzerá ako export, ale niet v ňom dokladu.
+    expect(() =>
+      EXPORT_STRATEGIES.pohoda_xml.build({
+        company: firma,
+        invoices: [{ invoice: { ...faktura, currency: "CZK" }, items: polozky }],
+      }),
+    ).toThrow(/nedá vyviezť/);
+  });
+
+  it("prenesenie daňovej povinnosti sa dá na doklade spoznať", () => {
+    // Z čísel to nevidno — vyzerá to rovnako ako oslobodené plnenie.
+    const h = posli({ ...faktura, reverse_charge: true }).invoiceHeader;
+    expect(String(h.note)).toContain("Prenesenie daňovej povinnosti");
+  });
+
+  it("predkontácia a členenie DPH sa doplnia podľa typu dokladu", () => {
+    const n = {
+      predkontacia: "3Fv",
+      predkontaciaDobropis: "3Fd",
+      clenenieDph: "UD",
+      clenenieDphPdp: "UDpdp",
+    };
+    expect(posli(faktura, polozky, n).invoiceHeader.accounting.ids).toBe("3Fv");
+    expect(posli(faktura, polozky, n).invoiceHeader.classificationVAT.ids).toBe("UD");
+    expect(
+      posli({ ...faktura, type: "credit_note" }, polozky, n).invoiceHeader.accounting.ids,
+    ).toBe("3Fd");
+    // Pri prenesení daňovej povinnosti platí vlastné členenie.
+    expect(
+      posli({ ...faktura, reverse_charge: true }, polozky, n).invoiceHeader.classificationVAT.ids,
+    ).toBe("UDpdp");
+    // Bez nastavenia sa nedopĺňa nič — vymyslený kód by import zhodil.
+    expect(posli(faktura).invoiceHeader.accounting).toBeUndefined();
+  });
+});
+
 describe("KROS Omega TXT", () => {
   const txt = buildOmegaTxt({
     company: {

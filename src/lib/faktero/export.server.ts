@@ -20,99 +20,298 @@ function fixed2(n: any) {
 }
 
 /**
- * Build a Pohoda XML data pack (Stormware) containing N invoice entries.
- * Conforms to the Pohoda XML schema family (invoice / invoiceItem).
- * Reference: data_xml_invoice.xsd
+ * Pohoda XML — dátový balík `dataPack` pre XML import v programe POHODA
+ * (Súbor → Dátová komunikácia → XML import/export).
+ *
+ * Schéma: `invoice.xsd` a `type.xsd` z www.stormware.cz/xml/schema/version_2.
+ * Prázdne elementy sa nezapisujú vôbec — Pohoda ich pri niektorých poliach
+ * odmieta a v ostatných prípadoch len zbytočne šumia v protokole importu.
+ */
+
+/** Sadzba DPH, ktorú Pohoda pozná pod daným kódom, podľa dňa plnenia. */
+type Priehradka = "none" | "low" | "high" | "third";
+type KodSadzby = Priehradka | "historyLow" | "historyHigh" | "historyThird";
+
+/**
+ * Pohoda neukladá percento, ale **priehradku** (základná, znížená, tretia) a
+ * percento si k nej domyslí podľa dátumu plnenia. Preto sa tu percentá musia
+ * prekladať tou istou tabuľkou, akú má program pre daný deň — inak by sa
+ * doklad z roku 2024 s 20 % zaúčtoval na 23 %.
+ */
+function sadzbyKuDnu(den: string): { high: number; low: number; third: number | null } {
+  const d = String(den ?? "");
+  // Sadzby platné od 1. 1. 2025; predtým platili 20 % a 10 %.
+  return d >= "2025-01-01" ? { high: 23, low: 19, third: 5 } : { high: 20, low: 10, third: null };
+}
+
+function kodSadzby(sadzba: number, tab: ReturnType<typeof sadzbyKuDnu>): KodSadzby {
+  const n = Number(sadzba) || 0;
+  if (n === 0) return "none";
+  if (n === tab.high) return "high";
+  if (n === tab.low) return "low";
+  if (tab.third != null && n === tab.third) return "third";
+  // Sadzba, ktorá v ten deň neplatila — opravný doklad k staršej faktúre.
+  if (n > tab.low) return "historyHigh";
+  if (tab.third != null && n <= tab.third) return "historyThird";
+  return "historyLow";
+}
+
+/** Do ktorej priehradky súhrnu položka spadne. História ide k svojej sadzbe. */
+function priehradka(kod: KodSadzby): Priehradka {
+  if (kod === "historyHigh") return "high";
+  if (kod === "historyLow") return "low";
+  if (kod === "historyThird") return "third";
+  return kod;
+}
+
+/**
+ * Forma úhrady. Naše hodnoty sa v priebehu času menili (`prevod` aj
+ * `bank_transfer`), preto sú tu obidve; neznáme padne na príkaz.
+ */
+const FORMY_UHRADY: Record<string, string> = {
+  bank_transfer: "draft",
+  prevod: "draft",
+  transfer: "draft",
+  cash: "cash",
+  hotovost: "cash",
+  card: "creditcard",
+  karta: "creditcard",
+  cod: "delivery",
+  dobierka: "delivery",
+  compensation: "compensation",
+  zapocet: "compensation",
+};
+
+/** Typ dokladu. Zálohová faktúra **nie je** bežná faktúra — nesmie sa zaúčtovať ako výnos. */
+const TYPY_DOKLADU: Record<string, string> = {
+  regular: "issuedInvoice",
+  credit_note: "issuedCreditNotice",
+  proforma: "issuedAdvanceInvoice",
+};
+
+/** Element, ktorý sa zapíše len keď má obsah. */
+function el(nazov: string, hodnota: unknown, odsadenie: string): string {
+  const v = hodnota == null ? "" : String(hodnota).trim();
+  return v ? `\n${odsadenie}<${nazov}>${esc(v)}</${nazov}>` : "";
+}
+
+/** Peňažný element — nula je platná hodnota, takže sa zapisuje vždy. */
+function elSuma(nazov: string, hodnota: unknown, odsadenie: string): string {
+  return `\n${odsadenie}<${nazov}>${fixed2(hodnota)}</${nazov}>`;
+}
+
+/** Text s obmedzenou dĺžkou; Pohoda dlhší reťazec pri importe odmietne. */
+function skrat(v: unknown, max: number): string {
+  return String(v ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
+/** Predkontácia a členenie DPH — kódy z Pohody účtovníka, ak si ich vyplnil. */
+export type PohodaNastavenia = {
+  /** Predkontácia pre bežnú faktúru, napr. `3Fv`. */
+  predkontacia?: string | null;
+  /** Predkontácia pre zálohovú faktúru. */
+  predkontaciaZaloha?: string | null;
+  /** Predkontácia pre dobropis. */
+  predkontaciaDobropis?: string | null;
+  /** Členenie DPH, napr. `UD` alebo `UDpdp`. */
+  clenenieDph?: string | null;
+  /** Členenie DPH pri prenesení daňovej povinnosti. */
+  clenenieDphPdp?: string | null;
+};
+
+function domacaMenaFirmy(company: CompanyRow): string {
+  return String(company?.default_currency ?? "EUR").toUpperCase() || "EUR";
+}
+
+/**
+ * Prečo sa doklad do Pohody vyviezť nedá, alebo `null`, keď sa dá.
+ *
+ * Pohoda drží rozpis po sadzbách **vždy v domácej mene** a cudziu menu berie
+ * len ako celkovú sumu s kurzom (`typeCurrencyForeign`: currency, rate, amount,
+ * priceSum). Kurz k faktúre neevidujeme, takže domáce základy dane nemáme z
+ * čoho spočítať — a odhad by znamenal tichú chybu v priznaní k DPH. Taký doklad
+ * je preto lepšie vynechať a povedať to, než ho vyviezť nesprávne.
+ */
+export function pohodaPrekazka(invoice: InvoiceRow, company: CompanyRow): string | null {
+  const domaca = domacaMenaFirmy(company);
+  const mena = String(invoice?.currency ?? domaca).toUpperCase() || domaca;
+  if (mena !== domaca) return `${invoice?.invoice_number ?? "?"} — faktúra v mene ${mena}`;
+  return null;
+}
+
+/**
+ * Balík faktúr pre XML import do Pohody.
+ *
+ * **Dobropis má záporné sumy** — tak ho zakladá aj samotná Pohoda príkazom
+ * Záznam → Dobropis a inak by znížením pohľadávky nebolo, ale zvýšením.
+ * V databáze ho držíme kladný a znamienko dávame až pri sčítavaní, preto sa
+ * musí otočiť tu.
+ *
+ * Doklady, ktoré Pohoda takto prijať nevie, sa preskočia — dôvod povie
+ * {@link pohodaPrekazka}.
  */
 export function buildPohodaInvoiceXml(opts: {
   company: CompanyRow;
   invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
+  nastavenia?: PohodaNastavenia;
 }): string {
-  const { company, invoices } = opts;
+  const { company, nastavenia } = opts;
+  const invoices = opts.invoices.filter(({ invoice }) => !pohodaPrekazka(invoice, company));
   const ico = esc(company?.ico ?? "");
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const dataPackId = `FAKTERO_${stamp}`;
 
   const entries = invoices
     .map(({ invoice, items }, idx) => {
-      const isCreditNote = invoice.type === "credit_note";
-      const invoiceType = isCreditNote ? "issuedCreditNotice" : "issuedInvoice";
-      // Pohoda `typ:vatRateType` pozná hodnoty none | high | low | third |
-      // historyHigh: "none" = 0 %, "third" = druhá znížená (5 %), "low" =
-      // znížená (19 %), "high" = základná (23 %).
-      const rateVatCode = (r: number) => {
-        const n = Number(r);
-        if (n === 0) return "none";
-        if (n === 5) return "third";
-        if (n === 19 || n === 10) return "low";
-        return "high"; // 23, 20 alebo iné → základná
-      };
-      const bucket = (code: "none" | "third" | "low" | "high") =>
-        items.filter((it) => rateVatCode(Number(it.vat_rate)) === code);
-      const sum0 = bucket("none");
-      const sumThird = bucket("third");
-      const sumLow = bucket("low");
-      const sumHigh = bucket("high");
-      const sumBase = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.subtotal ?? 0), 0);
-      const sumVat = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.vat_amount ?? 0), 0);
+      const typ = String(invoice.type ?? "regular");
+      const invoiceType = TYPY_DOKLADU[typ] ?? "issuedInvoice";
+      // Dobropis sa zapisuje záporne; otáča sa množstvo, nie jednotková cena,
+      // aby doklad aj po vytlačení vyzeral tak, ako ho Pohoda robí sama.
+      const zn = typ === "credit_note" ? -1 : 1;
+
+      const denPlnenia = String(invoice.delivery_date ?? invoice.issue_date ?? "");
+      const tab = sadzbyKuDnu(denPlnenia);
+
+      const kody = items.map((it) => kodSadzby(Number(it.vat_rate), tab));
+      const kosik = (p: Priehradka) => items.filter((_, i) => priehradka(kody[i]) === p);
+      const zaklad = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.subtotal ?? 0), 0);
+      const dan = (arr: ItemRow[]) => arr.reduce((a, it) => a + Number(it.vat_amount ?? 0), 0);
+
+      const s0 = kosik("none");
+      const s3 = kosik("third");
+      const sLow = kosik("low");
+      const sHigh = kosik("high");
+
+      // Zaokrúhlenie je rozdiel medzi hlavičkou dokladu a súčtom položiek. Bez
+      // neho by Pohoda hlásila nesúlad o cent a doklad by sa nedal zlikvidovať
+      // úhradou na presnú sumu.
+      const zPoloziek =
+        zaklad(s0) + zaklad(s3) + zaklad(sLow) + zaklad(sHigh) + dan(s3) + dan(sLow) + dan(sHigh);
+      const celkom = Number(invoice.total ?? 0) || zPoloziek;
+      const zaokruhlenie = Math.round((celkom - zPoloziek) * 100) / 100;
+
+      const predkontacia =
+        typ === "proforma"
+          ? nastavenia?.predkontaciaZaloha
+          : typ === "credit_note"
+            ? nastavenia?.predkontaciaDobropis
+            : nastavenia?.predkontacia;
+      const clenenie = invoice.reverse_charge
+        ? (nastavenia?.clenenieDphPdp ?? nastavenia?.clenenieDph)
+        : nastavenia?.clenenieDph;
+
+      const forma = FORMY_UHRADY[String(invoice.payment_method ?? "")] ?? "draft";
 
       const itemRows = items
-        .map(
-          (it) => `
-        <inv:invoiceItem>
-          <inv:text>${esc(it.name)}</inv:text>
-          <inv:quantity>${Number(it.quantity ?? 0)}</inv:quantity>
-          <inv:unit>${esc(it.unit ?? "ks")}</inv:unit>
-          <inv:rateVAT>${rateVatCode(Number(it.vat_rate))}</inv:rateVAT>
-          <inv:homeCurrency>
-            <typ:unitPrice>${fixed2(it.unit_price)}</typ:unitPrice>
-            <typ:price>${fixed2(it.subtotal)}</typ:price>
-            <typ:priceVAT>${fixed2(it.vat_amount)}</typ:priceVAT>
-            <typ:priceSum>${fixed2(it.total)}</typ:priceSum>
+        .map((it, i) => {
+          const kod = kody[i];
+          const mnozstvo = zn * Number(it.quantity ?? 0);
+          return `
+        <inv:invoiceItem>${el("inv:text", skrat(it.name, 90), "          ")}
+          <inv:quantity>${mnozstvo}</inv:quantity>${el("inv:unit", skrat(it.unit ?? "ks", 10), "          ")}
+          <inv:rateVAT>${kod}</inv:rateVAT>
+          <inv:homeCurrency>${elSuma("typ:unitPrice", it.unit_price, "            ")}${elSuma(
+            "typ:price",
+            zn * Number(it.subtotal ?? 0),
+            "            ",
+          )}${elSuma("typ:priceVAT", zn * Number(it.vat_amount ?? 0), "            ")}${elSuma(
+            "typ:priceSum",
+            zn * Number(it.total ?? 0),
+            "            ",
+          )}
           </inv:homeCurrency>
-        </inv:invoiceItem>`,
-        )
+        </inv:invoiceItem>`;
+        })
         .join("");
+
+      const adresa = [
+        el("typ:company", skrat(invoice.customer_name, 96), "            "),
+        el("typ:street", skrat(invoice.customer_street, 64), "            "),
+        el("typ:city", skrat(invoice.customer_city, 45), "            "),
+        el("typ:zip", skrat(invoice.customer_zip, 15), "            "),
+        invoice.customer_country
+          ? `\n            <typ:country><typ:ids>${esc(invoice.customer_country)}</typ:ids></typ:country>`
+          : "",
+        el("typ:ico", skrat(invoice.customer_ico, 15), "            "),
+        el("typ:dic", skrat(invoice.customer_dic, 18), "            "),
+        el("typ:icDph", skrat(invoice.customer_ic_dph, 18), "            "),
+        el("typ:email", skrat(invoice.customer_email, 98), "            "),
+      ].join("");
+
+      // Poznámka pre účtovníka. Prenesenie daňovej povinnosti sa z holých čísel
+      // nedá spoznať — na doklade sú nulové sadzby ako pri oslobodení.
+      const poznamky = [
+        invoice.reverse_charge ? "Prenesenie daňovej povinnosti" : "",
+        skrat(invoice.notes, 200),
+      ]
+        .filter(Boolean)
+        .join(" · ");
 
       return `
   <dat:dataPackItem id="INV${idx + 1}" version="2.0">
     <inv:invoice version="2.0">
       <inv:invoiceHeader>
         <inv:invoiceType>${invoiceType}</inv:invoiceType>
-        <inv:number><typ:numberRequested>${esc(invoice.invoice_number)}</typ:numberRequested></inv:number>
-        <inv:symVar>${esc(invoice.variable_symbol ?? invoice.invoice_number)}</inv:symVar>
-        <inv:date>${esc(invoice.issue_date)}</inv:date>
-        <inv:dateTax>${esc(invoice.delivery_date ?? invoice.issue_date)}</inv:dateTax>
-        <inv:dateDue>${esc(invoice.due_date)}</inv:dateDue>
-        <inv:text>${esc(invoice.notes ?? `Faktúra ${invoice.invoice_number}`)}</inv:text>
+        <inv:number><typ:numberRequested>${esc(invoice.invoice_number)}</typ:numberRequested></inv:number>${el(
+          "inv:symVar",
+          skrat(invoice.variable_symbol ?? invoice.invoice_number, 20),
+          "        ",
+        )}${el("inv:symConst", skrat(invoice.constant_symbol, 4), "        ")}${el(
+          "inv:symSpec",
+          skrat(invoice.specific_symbol, 16),
+          "        ",
+        )}
+        <inv:date>${esc(invoice.issue_date)}</inv:date>${el(
+          "inv:dateTax",
+          invoice.delivery_date ?? invoice.issue_date,
+          "        ",
+        )}${el("inv:dateDue", invoice.due_date, "        ")}${el(
+          "inv:text",
+          skrat(invoice.notes ?? `Faktúra ${invoice.invoice_number}`, 240),
+          "        ",
+        )}${el("inv:note", poznamky, "        ")}${
+          predkontacia
+            ? `\n        <inv:accounting><typ:ids>${esc(predkontacia)}</typ:ids></inv:accounting>`
+            : ""
+        }${
+          clenenie
+            ? `\n        <inv:classificationVAT><typ:ids>${esc(clenenie)}</typ:ids></inv:classificationVAT>`
+            : ""
+        }${
+          invoice.order_number
+            ? `\n        <inv:numberOrder>${esc(skrat(invoice.order_number, 32))}</inv:numberOrder>`
+            : ""
+        }
         <inv:partnerIdentity>
-          <typ:address>
-            <typ:company>${esc(invoice.customer_name)}</typ:company>
-            <typ:street>${esc(invoice.customer_street ?? "")}</typ:street>
-            <typ:city>${esc(invoice.customer_city ?? "")}</typ:city>
-            <typ:zip>${esc(invoice.customer_zip ?? "")}</typ:zip>
-            <typ:country><typ:ids>${esc(invoice.customer_country ?? "SK")}</typ:ids></typ:country>
-            <typ:ico>${esc(invoice.customer_ico ?? "")}</typ:ico>
-            <typ:dic>${esc(invoice.customer_dic ?? "")}</typ:dic>
-            <typ:icDph>${esc(invoice.customer_ic_dph ?? "")}</typ:icDph>
-            <typ:email>${esc(invoice.customer_email ?? "")}</typ:email>
+          <typ:address>${adresa}
           </typ:address>
         </inv:partnerIdentity>
-        <inv:paymentType><typ:paymentType>draft</typ:paymentType></inv:paymentType>
-        <inv:account><typ:accountNo>${esc(company?.iban ?? "")}</typ:accountNo></inv:account>
+        <inv:paymentType><typ:paymentType>${forma}</typ:paymentType></inv:paymentType>${
+          company?.iban
+            ? `\n        <inv:account><typ:accountNo>${esc(company.iban)}</typ:accountNo></inv:account>`
+            : ""
+        }
       </inv:invoiceHeader>
       <inv:invoiceDetail>${itemRows}
       </inv:invoiceDetail>
       <inv:invoiceSummary>
-        <inv:homeCurrency>
-          <typ:priceNone>${fixed2(sumBase(sum0))}</typ:priceNone>
-          <typ:price3>${fixed2(sumBase(sumThird))}</typ:price3>
-          <typ:price3VAT>${fixed2(sumVat(sumThird))}</typ:price3VAT>
-          <typ:priceLow>${fixed2(sumBase(sumLow))}</typ:priceLow>
-          <typ:priceLowVAT>${fixed2(sumVat(sumLow))}</typ:priceLowVAT>
-          <typ:priceHigh>${fixed2(sumBase(sumHigh))}</typ:priceHigh>
-          <typ:priceHighVAT>${fixed2(sumVat(sumHigh))}</typ:priceHighVAT>
-          <typ:round><typ:priceRound>0.00</typ:priceRound></typ:round>
+        <inv:homeCurrency>${elSuma("typ:priceNone", zn * zaklad(s0), "          ")}${elSuma(
+          "typ:price3",
+          zn * zaklad(s3),
+          "          ",
+        )}${elSuma("typ:price3VAT", zn * dan(s3), "          ")}${elSuma(
+          "typ:priceLow",
+          zn * zaklad(sLow),
+          "          ",
+        )}${elSuma("typ:priceLowVAT", zn * dan(sLow), "          ")}${elSuma(
+          "typ:priceHigh",
+          zn * zaklad(sHigh),
+          "          ",
+        )}${elSuma("typ:priceHighVAT", zn * dan(sHigh), "          ")}
+          <typ:round><typ:priceRound>${fixed2(zn * zaokruhlenie)}</typ:priceRound></typ:round>
         </inv:homeCurrency>
       </inv:invoiceSummary>
     </inv:invoice>
@@ -144,10 +343,17 @@ export interface ExportStrategy {
   encoding: "utf-8" | "windows-1250";
   /** Typ súboru — potrebný aj pri sťahovaní z histórie, bez prestavania obsahu. */
   mime: string;
-  build(input: { company: CompanyRow; invoices: { invoice: InvoiceRow; items: ItemRow[] }[] }): {
+  build(input: {
+    company: CompanyRow;
+    invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
+    /** Kódy z Pohody účtovníka; ostatné formáty ich ignorujú. */
+    nastavenia?: PohodaNastavenia;
+  }): {
     content: string;
     fileName: string;
     mime: string;
+    /** Doklady, ktoré do súboru neprešli, aj s dôvodom. */
+    preskocene?: string[];
   };
 }
 
@@ -157,11 +363,19 @@ export const POHODA_XML: ExportStrategy = {
   label: "Pohoda XML",
   encoding: "utf-8",
   mime: "application/xml",
-  build({ company, invoices }) {
-    const content = buildPohodaInvoiceXml({ company, invoices });
+  build({ company, invoices, nastavenia }) {
+    const preskocene = invoices
+      .map(({ invoice }) => pohodaPrekazka(invoice, company))
+      .filter((d): d is string => !!d);
+    // Prázdny balík schéma Pohody nepripúšťa a účtovníčke by prišiel súbor,
+    // ktorý sa tvári ako export, ale nie je v ňom nič.
+    if (preskocene.length === invoices.length) {
+      throw new Error(`Do Pohody sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
+    }
+    const content = buildPohodaInvoiceXml({ company, invoices, nastavenia });
     const stamp = new Date().toISOString().slice(0, 10);
     const fileName = `pohoda-faktury-${stamp}.xml`;
-    return { content, fileName, mime: "application/xml" };
+    return { content, fileName, mime: "application/xml", preskocene };
   },
 };
 

@@ -933,6 +933,11 @@ export type Database = {
           name: string
           online_payments_enabled: boolean
           phone: string | null
+          pohoda_clenenie_dph: string | null
+          pohoda_clenenie_dph_pdp: string | null
+          pohoda_predkontacia: string | null
+          pohoda_predkontacia_dobropis: string | null
+          pohoda_predkontacia_zaloha: string | null
           preferred_accounting_system: Database["public"]["Enums"]["accounting_system"]
           reminder_days_1: number
           reminder_days_2: number
@@ -977,6 +982,11 @@ export type Database = {
           name: string
           online_payments_enabled?: boolean
           phone?: string | null
+          pohoda_clenenie_dph?: string | null
+          pohoda_clenenie_dph_pdp?: string | null
+          pohoda_predkontacia?: string | null
+          pohoda_predkontacia_dobropis?: string | null
+          pohoda_predkontacia_zaloha?: string | null
           preferred_accounting_system?: Database["public"]["Enums"]["accounting_system"]
           reminder_days_1?: number
           reminder_days_2?: number
@@ -1021,6 +1031,11 @@ export type Database = {
           name?: string
           online_payments_enabled?: boolean
           phone?: string | null
+          pohoda_clenenie_dph?: string | null
+          pohoda_clenenie_dph_pdp?: string | null
+          pohoda_predkontacia?: string | null
+          pohoda_predkontacia_dobropis?: string | null
+          pohoda_predkontacia_zaloha?: string | null
           preferred_accounting_system?: Database["public"]["Enums"]["accounting_system"]
           reminder_days_1?: number
           reminder_days_2?: number

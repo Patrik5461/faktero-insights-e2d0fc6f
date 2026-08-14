@@ -43,9 +43,28 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       items: (items ?? []).filter((it) => it.invoice_id === invoice.id),
     }));
 
-    const built = strategy.build({ company, invoices: bundle });
+    // Predkontácie a členenie DPH sú kódy z Pohody účtovníka; bez nich sa
+    // doklad naimportuje, ale všetko okolo účtovania si musí doklikať sám.
+    const built = strategy.build({
+      company,
+      invoices: bundle,
+      nastavenia: {
+        predkontacia: company.pohoda_predkontacia,
+        predkontaciaZaloha: company.pohoda_predkontacia_zaloha,
+        predkontaciaDobropis: company.pohoda_predkontacia_dobropis,
+        clenenieDph: company.pohoda_clenenie_dph,
+        clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
+      },
+    });
 
-    const dates = invs
+    // Doklad, ktorý do súboru neprešiel, sa nesmie tváriť ako odovzdaný —
+    // inak by pri ďalšom exporte vypadol ako „už poslané" a nikde by nebol.
+    const preskocene = new Map(
+      (built.preskocene ?? []).map((d) => [String(d).split(" — ")[0], String(d)]),
+    );
+    const vyvezene = invs.filter((i) => !preskocene.has(i.invoice_number));
+
+    const dates = vyvezene
       .map((i) => i.issue_date)
       .filter(Boolean)
       .sort();
@@ -57,7 +76,7 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
         format: strategy.format,
         target_system: strategy.target_system,
         status: "completed",
-        invoice_count: invs.length,
+        invoice_count: vyvezene.length,
         date_from: dates[0] ?? null,
         date_to: dates[dates.length - 1] ?? null,
         file_name: built.fileName,
@@ -74,7 +93,8 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
           company_id: data.companyId,
           invoice_id: inv.id,
           invoice_number: inv.invoice_number,
-          status: "ok",
+          status: preskocene.has(inv.invoice_number) ? "skipped" : "ok",
+          error: preskocene.get(inv.invoice_number) ?? null,
         })),
       );
     }
@@ -86,7 +106,8 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
       mime: built.mime,
       // Omega chce Windows-1250; prevod robí až sťahovanie v prehliadači.
       encoding: strategy.encoding,
-      invoiceCount: invs.length,
+      invoiceCount: vyvezene.length,
+      preskocene: built.preskocene ?? [],
     };
   });
 

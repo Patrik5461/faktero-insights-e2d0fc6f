@@ -182,7 +182,11 @@ function downloadFile(
 
 /** Ponuka formátov. `note` vysvetlí, komu ešte súbor sadne. */
 const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
-  { format: "pohoda_xml", label: "Pohoda XML" },
+  {
+    format: "pohoda_xml",
+    label: "Pohoda XML",
+    note: "Predkontácie a členenie DPH sa vypĺňajú vo Firma → Pohoda; bez nich si ich účtovníčka doklikáva sama.",
+  },
   {
     format: "omega_txt",
     label: "KROS Omega (TXT)",
@@ -254,6 +258,10 @@ function ExportsPage() {
       });
       downloadFile(r.fileName, r.content, r.mime, r.encoding);
       toast.success(`Exportovaných ${r.invoiceCount} faktúr`);
+      // Vynechaný doklad sa musí povedať nahlas — inak by účtovníčke ticho chýbal.
+      if (r.preskocene?.length) {
+        toast.warning(`Do súboru sa nedostali: ${r.preskocene.join(", ")}`, { duration: 10000 });
+      }
       setPicked({});
       load();
     } catch (e: any) {
