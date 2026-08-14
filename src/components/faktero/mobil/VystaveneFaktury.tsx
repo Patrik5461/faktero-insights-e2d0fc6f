@@ -1,13 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import { BellRing, Check, ExternalLink, FileText, Mail, Search, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { vystaveneFakturyFn } from "@/lib/faktero/mobil-faktura.functions";
-import { sendReminderFn } from "@/lib/faktero/reminders.functions";
-import { bulkMarkPaidFn } from "@/lib/faktero/invoice-bulk.functions";
-import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
-import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
 import { FAKTURY, sPoctom } from "@/lib/faktero/mnozne";
 import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import { datum } from "./PrijateDoklady";
@@ -76,7 +71,7 @@ export function VystaveneFaktury({
   onSpat: () => void;
   onNova: () => void;
 }) {
-  const nacitaj = useServerFn(vystaveneFakturyFn);
+  const nacitaj = useOperacia("faktury-zoznam");
   const [faktury, setFaktury] = useState<Faktura[] | null>(null);
   const [hladanie, setHladanie] = useState("");
   const [otvorena, setOtvorena] = useState<Faktura | null>(null);
@@ -244,10 +239,10 @@ function DetailFaktury({
   onSpat: () => void;
   onZmena: () => void;
 }) {
-  const pdfFn = useServerFn(generateInvoicePdf);
-  const mailFn = useServerFn(sendInvoiceEmailFn);
-  const paidFn = useServerFn(bulkMarkPaidFn);
-  const upomienkaFn = useServerFn(sendReminderFn);
+  const pdfFn = useOperacia("faktura-pdf");
+  const mailFn = useOperacia("faktura-email");
+  const paidFn = useOperacia("faktury-uhradene");
+  const upomienkaFn = useOperacia("faktura-upomienka");
   /* Koľká upomienka je na rade — text sa s každou ďalšou pritvrdzuje. */
   const [poslanych, setPoslanych] = useState(0);
 

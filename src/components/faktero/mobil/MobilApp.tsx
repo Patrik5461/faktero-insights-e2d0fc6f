@@ -6,7 +6,7 @@
  * aj bez pripojenia. Preto tu nie je nič z routera — obrazovky prepína stav.
  */
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import {
   Building2,
@@ -32,8 +32,7 @@ import {
   getActiveCompanyId,
   setActiveCompanyId,
 } from "@/lib/faktero/active-company";
-import { nacitajBlocekFn, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
-import { createExpenseFn } from "@/lib/faktero/expenses.functions";
+import type { BlocekVysledok } from "@/lib/faktero/blocek.functions";
 import { dokladNaZaznam, nahrajPrilohu, stranyDoPdf } from "@/lib/faktero/mobil-doklad";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
@@ -768,8 +767,8 @@ function ZachytDokladu({
   onSpat: () => void;
   onUlozene: () => void;
 }) {
-  const nacitaj = useServerFn(nacitajBlocekFn);
-  const uloz = useServerFn(createExpenseFn);
+  const nacitaj = useOperacia<BlocekVysledok>("blocek-precitaj");
+  const uloz = useOperacia("vydavok-uloz");
 
   const [stav, setStav] = useState<"start" | "citam" | "potvrdenie" | "ukladam">("start");
   const [vysledok, setVysledok] = useState<BlocekVysledok | null>(null);

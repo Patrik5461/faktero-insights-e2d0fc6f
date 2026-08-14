@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import {
   BadgeCheck,
@@ -14,14 +14,6 @@ import {
   ExternalLink,
   FileInput,
 } from "lucide-react";
-import {
-  createExpenseFn,
-  deleteExpenseFn,
-  getExpenseFileUrlFn,
-  listExpensesFn,
-  updateExpenseFn,
-} from "@/lib/faktero/expenses.functions";
-import { nacitajBlocekFn } from "@/lib/faktero/blocek.functions";
 import { DOKLADY, sPoctom } from "@/lib/faktero/mnozne";
 import { fronta, zmazZFronty, type CakajuciDoklad } from "@/lib/mobile/doklady-fronta";
 import { odosliCakajuce } from "@/lib/mobile/doklady-odoslanie";
@@ -100,9 +92,9 @@ export function PrijateDoklady({
   firma: { id: string; name: string };
   onSpat: () => void;
 }) {
-  const nacitaj = useServerFn(listExpensesFn);
-  const citajBlocek = useServerFn(nacitajBlocekFn);
-  const vytvorDoklad = useServerFn(createExpenseFn);
+  const nacitaj = useOperacia("vydavky-zoznam");
+  const citajBlocek = useOperacia("blocek-precitaj");
+  const vytvorDoklad = useOperacia("vydavok-uloz");
   const [doklady, setDoklady] = useState<Doklad[] | null>(null);
   const [cakajuce, setCakajuce] = useState<CakajuciDoklad[]>([]);
   const [odosielam, setOdosielam] = useState(false);
@@ -334,9 +326,9 @@ function DetailDokladu({
   onSpat: () => void;
   onZmena: () => void;
 }) {
-  const urlFn = useServerFn(getExpenseFileUrlFn);
-  const updateFn = useServerFn(updateExpenseFn);
-  const deleteFn = useServerFn(deleteExpenseFn);
+  const urlFn = useOperacia("vydavok-subor");
+  const updateFn = useOperacia("vydavok-uprav");
+  const deleteFn = useOperacia("vydavok-zmaz");
 
   const [priloha, setPriloha] = useState<string | null>(null);
   const [uhrada, setUhrada] = useState<Uhrada | null>(doklad.payment_method ?? null);
@@ -375,8 +367,8 @@ function DetailDokladu({
   async function doPrijatych() {
     setPresuvam(true);
     try {
-      const { presunDokladDoPrijatychFn } = await import("@/lib/faktero/doklad-presun.functions");
-      await presunDokladDoPrijatychFn({ data: { company_id: firmaId, id: doklad.id } });
+      const { volajOperaciu } = await import("@/lib/mobile/server-most-volanie");
+      await volajOperaciu("doklad-presun", { company_id: firmaId, id: doklad.id });
       toast.success("Doklad je medzi prijatými faktúrami.");
       onZmena();
     } catch (e: any) {

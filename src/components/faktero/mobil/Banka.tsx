@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import { Landmark, RefreshCw } from "lucide-react";
-import { bankaPrehladFn } from "@/lib/faktero/mobil-banka.functions";
-import { syncBankTransactions } from "@/lib/faktero/tatrabanka.functions";
 import { zostatkyPodlaMien } from "@/lib/faktero/zostatky";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
 
@@ -133,8 +131,8 @@ export function Banka({
   firma: { id: string; name: string };
   onSpat: () => void;
 }) {
-  const nacitaj = useServerFn(bankaPrehladFn);
-  const stiahni = useServerFn(syncBankTransactions);
+  const nacitaj = useOperacia("banka-prehlad");
+  const stiahni = useOperacia("banka-stiahni");
   const [ucty, setUcty] = useState<Ucet[] | null>(null);
   const [pohyby, setPohyby] = useState<Pohyb[]>([]);
   const [vybrany, setVybrany] = useState<string | null>(null);

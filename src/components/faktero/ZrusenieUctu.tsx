@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
-import {
-  odvolajZrusenieUctuFn,
-  poziadajOZrusenieUctuFn,
-  stavZrusenieUctuFn,
-} from "@/lib/faktero/ucet-zrusenie.functions";
 import { dniDoZrusenia, terminSlovom } from "@/lib/faktero/ucet-zrusenie";
 import { DNI, sPoctom } from "@/lib/faktero/mnozne";
 
@@ -30,9 +25,9 @@ type Stav = {
 };
 
 export function ZrusenieUctu({ onZrusene }: { onZrusene?: () => void }) {
-  const nacitaj = useServerFn(stavZrusenieUctuFn);
-  const poziadaj = useServerFn(poziadajOZrusenieUctuFn);
-  const odvolaj = useServerFn(odvolajZrusenieUctuFn);
+  const nacitaj = useOperacia("ucet-stav-zrusenia");
+  const poziadaj = useOperacia("ucet-poziadaj-o-zrusenie");
+  const odvolaj = useOperacia("ucet-odvolaj-zrusenie");
 
   const [stav, setStav] = useState<Stav | null>(null);
   const [potvrdzujem, setPotvrdzujem] = useState(false);

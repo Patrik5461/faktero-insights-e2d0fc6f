@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import {
   Building2,
@@ -17,13 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { podkladyFakturyFn, poslednaFakturaFn } from "@/lib/faktero/mobil-faktura.functions";
-import { vystavFakturuFn } from "@/lib/faktero/faktura-vystavenie.functions";
-import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, PRAZDNE_PODKLADY, type Podklady } from "@/lib/faktero/ceny";
-import { lookupCompanyByIcoFn } from "@/lib/faktero/company-lookup.functions";
-import { generateInvoicePdf } from "@/lib/faktero/pdf.functions";
-import { sendInvoiceEmailFn } from "@/lib/faktero/email.functions";
 import { SK_VAT_RATES, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
@@ -124,10 +118,10 @@ export function NovaFaktura({
   /** Po vystavení vedieme človeka do zoznamu — nech vidí, že faktúra existuje. */
   onHotovo: () => void;
 }) {
-  const nacitajPodklady = useServerFn(podkladyFakturyFn);
-  const nacitajCennik = useServerFn(getPriceContext);
-  const nacitajPoslednu = useServerFn(poslednaFakturaFn);
-  const vystav = useServerFn(vystavFakturuFn);
+  const nacitajPodklady = useOperacia("faktura-podklady");
+  const nacitajCennik = useOperacia("cennik-kontext");
+  const nacitajPoslednu = useOperacia("faktura-posledna");
+  const vystav = useOperacia("faktura-vystav");
 
   const [podklady, setPodklady] = useState<Podkladove | null>(null);
   const [krok, setKrok] = useState<Krok>("odberatel");
@@ -457,7 +451,7 @@ function NovyOdberatel({
   onSpat: () => void;
   onPridany: (o: Odberatel) => void;
 }) {
-  const lookup = useServerFn(lookupCompanyByIcoFn);
+  const lookup = useOperacia("firma-podla-ica");
   const [f, setF] = useState({
     name: predvyplneneMeno,
     ico: "",
@@ -1062,8 +1056,8 @@ function Vystavena({
   };
   onHotovo: () => void;
 }) {
-  const pdfFn = useServerFn(generateInvoicePdf);
-  const mailFn = useServerFn(sendInvoiceEmailFn);
+  const pdfFn = useOperacia("faktura-pdf");
+  const mailFn = useOperacia("faktura-email");
   const [busy, setBusy] = useState<"pdf" | "mail" | "zdielam" | null>(null);
   const [odoslane, setOdoslane] = useState(false);
 
