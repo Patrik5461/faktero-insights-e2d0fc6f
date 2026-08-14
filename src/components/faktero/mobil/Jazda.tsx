@@ -13,6 +13,7 @@ import {
 } from "@/lib/mobile/auto-jazdy-sync";
 import type { BufferedTrip, Classification } from "@faktero/drive-detector";
 import { trasaDoPolyline } from "@/lib/faktero/polyline";
+import { mojeVozidlo, zapamatajVozidlo, vozidloPreRozpoznanuJazdu } from "@/lib/mobile/moje-vozidlo";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem } from "./MobilChrome";
@@ -70,7 +71,11 @@ export function Jazda({
       .eq("active", true)
       .order("name");
     setVozidla(data ?? []);
-    const vyber = vyberId ?? data?.[0]?.id;
+    // Predvolí sa auto, ktorým sa z tohto telefónu jazdí; až potom prvé v zozname.
+    const zapamatane = mojeVozidlo(firma.id);
+    const vyber =
+      vyberId ??
+      (zapamatane && data?.some((v) => v.id === zapamatane) ? zapamatane : data?.[0]?.id);
     if (vyber) setVozidloId(vyber);
   }
 
@@ -108,18 +113,25 @@ export function Jazda({
       const zvysne: BufferedTrip[] = [];
       for (const jazda of jazdy) {
         // Uloží sa samo len vtedy, keď sa niet čoho pýtať: zaradenie prišlo
-        // z notifikácie a firma má jediné auto. Pri viacerých autách by sa
-        // hádalo, do ktorého človek sadol — to nech povie sám.
-        if (jazda.classification && vozidla.length === 1) {
+        // z notifikácie a auto je jednoznačné — firma ho má jediné, alebo si
+        // telefón pamätá, ktorým sa z neho jazdí. Inak sa spýtame človeka,
+        // hádať medzi autami nemá zmysel.
+        const auto = vozidloPreRozpoznanuJazdu({
+          companyId: firma.id,
+          dostupne: vozidla.map((v) => v.id),
+        });
+        if (jazda.classification && auto) {
           const r = await ulozRozpoznanuJazdu({
             jazda,
             companyId: firma.id,
-            vehicleId: vozidla[0]!.id,
+            vehicleId: auto,
             classification: jazda.classification,
           });
           if (r.ok) {
             toast.success(
-              `Rozpoznaná jazda uložená — ${(jazda.distanceMeters / 1000).toFixed(1)} km, ${vozidla[0]!.name}`,
+              `Rozpoznaná jazda uložená — ${(jazda.distanceMeters / 1000).toFixed(1)} km, ${
+                vozidla.find((v) => v.id === auto)?.name ?? ""
+              }`,
             );
             continue;
           }
@@ -421,6 +433,16 @@ export function Jazda({
               <span className="mt-1 block text-xs text-muted-foreground">
                 Appka si jazdu všimne sama a spýta sa notifikáciou, či bola služobná. Potrebuje na
                 to povolenú polohu „Vždy".
+                {vozidla && vozidla.length > 1 && vozidloId ? (
+                  <>
+                    {" "}
+                    Ukladá sa na{" "}
+                    <span className="font-medium text-foreground">
+                      {vozidla.find((v) => v.id === vozidloId)?.name}
+                    </span>{" "}
+                    — zmeníš výberom vozidla vyššie.
+                  </>
+                ) : null}
               </span>
             </span>
             <input
@@ -458,7 +480,12 @@ export function Jazda({
               >
                 <button
                   disabled={bezi}
-                  onClick={() => setVozidloId(v.id)}
+                  onClick={() => {
+                    setVozidloId(v.id);
+                    // Telefón si auto pamätá, takže rozpoznané jazdy sa naň vedia
+                    // uložiť samy aj vtedy, keď firma áut viac.
+                    zapamatajVozidlo(firma.id, v.id);
+                  }}
                   className={`flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 pr-2 text-left ${
                     vozidloId === v.id ? "font-semibold" : ""
                   }`}
