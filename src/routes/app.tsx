@@ -33,6 +33,7 @@ import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { odosliCakajuceJazdy } from "@/lib/mobile/auto-jazdy-sync";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
+import { StavPushu } from "@/components/faktero/mobil/StavPushu";
 import { PrijateDoklady, datum } from "@/components/faktero/mobil/PrijateDoklady";
 import { NovaFaktura } from "@/components/faktero/mobil/NovaFaktura";
 import { VystaveneFaktury } from "@/components/faktero/mobil/VystaveneFaktury";
@@ -255,7 +256,10 @@ function MobilnaApka() {
   if (krok === "ucet")
     return (
       <MobilObrazovka title="Účet" subtitle={email ?? undefined} onBack={() => setKrok("domov")}>
-        <ZrusenieUctu onZrusene={() => zisti()} />
+        <div className="space-y-4">
+          <StavPushu />
+          <ZrusenieUctu onZrusene={() => zisti()} />
+        </div>
       </MobilObrazovka>
     );
   if (krok === "faktury" && firma)
