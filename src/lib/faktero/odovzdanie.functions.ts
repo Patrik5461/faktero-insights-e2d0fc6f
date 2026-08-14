@@ -498,6 +498,9 @@ export const posliOdovzdanieMailomFn = createServerFn({ method: "POST" })
 
     const prijemca = (data.email || company.uctovnik_email || "").trim();
     if (!prijemca) throw new Error("Chýba e-mail účtovníčky — doplňte ho vo Firma → Pohoda");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(prijemca)) {
+      throw new Error(`„${prijemca}" nevyzerá ako e-mailová adresa`);
+    }
 
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) throw new Error("Odosielanie e-mailov nie je nastavené");
@@ -555,6 +558,15 @@ export const posliOdovzdanieMailomFn = createServerFn({ method: "POST" })
         // Resend pri chybe niekedy vráti HTML — použije sa surový text
       }
       throw new Error(`Odoslanie zlyhalo: ${sprava}`);
+    }
+
+    // Adresa zadaná pri odosielaní sa zapamätá, aby ju človek nemusel písať
+    // každý mesiac znovu — presne to sľubuje aj výzva v rozhraní.
+    if (prijemca !== company.uctovnik_email) {
+      await supabase
+        .from("companies")
+        .update({ uctovnik_email: prijemca })
+        .eq("id", data.companyId);
     }
 
     let jobId: string | undefined;
