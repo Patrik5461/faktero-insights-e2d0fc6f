@@ -157,7 +157,15 @@ export function MobilnaApka() {
         void ulozDoPamate(klucFiriem, zoznam);
       } catch (e) {
         const zapamatane = await zPamate<Firma[]>(klucFiriem);
-        if (!zapamatane?.hodnota?.length) throw e;
+        if (!zapamatane?.hodnota?.length) {
+          // Bez siete a bez zapamätaného zoznamu sa nedá povedať nič iné, než
+          // ako to je. Tvrdiť, že k účtu nepatrí firma, by bola nepravda.
+          setChybaStartu(
+            "Bez pripojenia a v telefóne zatiaľ nie je uložený zoznam firiem. Otvorte appku raz s internetom.",
+          );
+          setKrok("firma");
+          return;
+        }
         zoznam = zapamatane.hodnota;
       }
       setFirmy(zoznam);

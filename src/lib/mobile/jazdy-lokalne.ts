@@ -99,6 +99,9 @@ async function vsetky<T>(store: string, companyId: string): Promise<T[]> {
 /* ── vozidlá ─────────────────────────────────────────────────────────────── */
 
 export async function ulozVozidla(companyId: string, vozidla: LokalneVozidlo[]): Promise<void> {
+  // Zoznam áut je krátky, tak ide aj do jednoduchého úložiska — vo WebView je
+  // istejšie než IndexedDB a práve vozidlá sú to, bez čoho sa jazda nezapíše.
+  void ulozDoPamate(`vozidla:${companyId}`, vozidla);
   try {
     const db = await otvor();
     await new Promise<void>((resolve, reject) => {
@@ -123,8 +126,11 @@ export async function ulozVozidla(companyId: string, vozidla: LokalneVozidlo[]):
   }
 }
 
-export function vozidlaZPamate(companyId: string): Promise<LokalneVozidlo[]> {
-  return vsetky<LokalneVozidlo>(VOZIDLA, companyId);
+export async function vozidlaZPamate(companyId: string): Promise<LokalneVozidlo[]> {
+  const zoznam = await vsetky<LokalneVozidlo>(VOZIDLA, companyId);
+  if (zoznam.length) return zoznam;
+  const zalozne = await zPamate<LokalneVozidlo[]>(`vozidla:${companyId}`);
+  return zalozne?.hodnota ?? [];
 }
 
 /* ── jazdy ───────────────────────────────────────────────────────────────── */
@@ -228,18 +234,44 @@ export async function odosliCakajuceZapisy(companyId: string): Promise<number> {
 /**
  * Uloží čokoľvek pod kľúčom, nech sa to dá ukázať aj bez pripojenia.
  * Zámerne bez schémy — sú to len posledné videné dáta, nie zdroj pravdy.
+ *
+ * Píše sa na dve miesta. IndexedDB unesie aj tisíce jázd, ale vo WebView sa
+ * občas nedá otvoriť a zlyhá potichu; jednoduché úložisko je istota (drží sa
+ * v ňom aj prihlásenie), len má strop okolo 5 MB — preto sa doň veľké veci
+ * neukladajú. Čítanie berie to, čo nájde skôr.
  */
+const STROP_JEDNODUCHEHO = 512 * 1024;
+
+function jednoduchyKluc(kluc: string): string {
+  return `faktero.pamat.${kluc}`;
+}
+
 export async function ulozDoPamate(kluc: string, hodnota: unknown): Promise<void> {
+  const zaznam = { hodnota, kedy: Date.now() };
   try {
-    await transakcia(PAMAT, "readwrite", (s) =>
-      s.put({ kluc, hodnota, kedy: Date.now() }),
-    );
+    const text = JSON.stringify(zaznam);
+    if (typeof localStorage !== "undefined" && text.length <= STROP_JEDNODUCHEHO) {
+      localStorage.setItem(jednoduchyKluc(kluc), text);
+    }
+  } catch {
+    /* plné alebo nedostupné úložisko — ostáva IndexedDB */
+  }
+  try {
+    await transakcia(PAMAT, "readwrite", (s) => s.put({ kluc, ...zaznam }));
   } catch {
     /* pamäť je pohodlie, nie podmienka */
   }
 }
 
 export async function zPamate<T>(kluc: string): Promise<{ hodnota: T; kedy: number } | null> {
+  try {
+    if (typeof localStorage !== "undefined") {
+      const text = localStorage.getItem(jednoduchyKluc(kluc));
+      if (text) return JSON.parse(text) as { hodnota: T; kedy: number };
+    }
+  } catch {
+    /* poškodený obsah nie je dôvod appku zhodiť */
+  }
   try {
     const z = await transakcia<any>(PAMAT, "readonly", (s) => s.get(kluc));
     return z ? { hodnota: z.hodnota as T, kedy: z.kedy as number } : null;
