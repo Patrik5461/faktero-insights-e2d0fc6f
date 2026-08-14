@@ -147,7 +147,9 @@ export function MobilnaApka() {
       .then(({ data: p }) => setZrusiSa((p?.deletion_scheduled_for as string | null) ?? null));
     setFaza("firmy");
     const { ulozDoPamate, zPamate } = await import("@/lib/mobile/jazdy-lokalne");
-    const klucFiriem = `firmy:${relacia.user.id}`;
+    // Kľúč zámerne bez id používateľa: pri núdzovom čítaní relácie z telefónu
+    // nemusí byť id po ruke a zoznam by sa potom hľadal pod iným menom.
+    const klucFiriem = "firmy";
     try {
       // Bez pripojenia sa zoznam firiem nenačíta a appka by tvrdila, že k účtu
       // žiadna firma nepatrí. Preto sa posledný známy drží v telefóne.
@@ -313,6 +315,7 @@ export function MobilnaApka() {
   if (krok === "firma")
     return (
       <VyberFirmy
+        poznamka={chybaStartu}
         firmy={firmy}
         onVyber={(f) => {
           setFirma(f);
@@ -552,16 +555,19 @@ function VyberFirmy({
   firmy,
   onVyber,
   onOdhlasit,
+  poznamka,
 }: {
   firmy: Firma[];
   onVyber: (f: Firma) => void;
   onOdhlasit: () => void;
+  /** Prečo je zoznam prázdny — bez toho by appka tvrdila nepravdu. */
+  poznamka?: string | null;
 }) {
   return (
     <MobilObrazovka title="Vyberte firmu" subtitle="Doklady sa uložia do vybranej firmy">
       {firmy.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          K tomuto účtu nie je pripojená žiadna firma. Vytvorte ju na faktero.sk.
+          {poznamka ?? "K tomuto účtu nie je pripojená žiadna firma. Vytvorte ju na faktero.sk."}
         </p>
       ) : (
         <div className="space-y-2">
