@@ -32,6 +32,14 @@ Pri maile má **strop na prílohy** (`STROP_PRILOH_MAILOM`, 12 MB). Resend prijm
 keď sa PDF a skeny nezmestia, balík odíde bez nich a v texte mailu je o tom
 poznámka. Údaje na zaúčtovanie sú dôležitejšie než obrázky.
 
+**Automaticky** to ide 5. v mesiaci cronom `faktero-odovzdanie-mesacne`
+(`0 6 5 * *`, hook `/api/public/hooks/odovzdanie-mesacne`, hlavička
+`x-faktero-cron-token`) — posiela minulý mesiac a len firmám, ktoré si to zapli
+(`companies.odovzdanie_automaticky`) a majú adresu. E-mail v mene firmy sa
+nesmie posielať bez jej vedomia, preto sa to zapína, nie vypína. Volanie má
+`timeout_milliseconds := 600000`; bez neho pg_net spojenie po piatich sekundách
+pretrhne a úloha sa tvári, že prebehla.
+
 Vedľajšie cesty ostávajú: výber jednotlivých faktúr na tej istej stránke (na
 doplnenie jedného zabudnutého dokladu) a mesačný balík na stránke Doklady.
 
@@ -92,16 +100,13 @@ Takto sa našlo, že cudzia mena bola postavená zle.
 
 ## Čo ďalej
 
-**1. Poslať balík sám od seba.** Dnes treba stlačiť tlačidlo. Cron 5. v mesiaci
-(alebo pripomienka) by odovzdávanie zavrel úplne.
-
-**2. Zvyšné agendy.** Pohoda berie ešte adresár (`addressbook`), sklad (`stock`)
+**1. Zvyšné agendy.** Pohoda berie ešte adresár (`addressbook`), sklad (`stock`)
 a zákazky (`contract`) — `customers`, `stock_items`, `jobs`. Adresár si Pohoda
 pri importe faktúr zakladá sama, takže úžitok je malý; sklad a zákazky dávajú
 zmysel len tomu, kto ich v Pohode naozaj vedie. Pozor, `purchase_invoices` je
 prázdna tabuľka — prijaté doklady žijú v `expense_documents`.
 
-**3. Živý most cez POHODA mServer.** Pohoda má vstavaný HTTP server:
+**2. Živý most cez POHODA mServer.** Pohoda má vstavaný HTTP server:
 `POST http://localhost:444/xml`, hlavička `STW-Authorization: Basic
 base64(meno:heslo)`, `Content-Type: text/xml`, odpoveďou je `responsePack` so
 stavom každého dokladu — teda vieme overiť, že sa doklad naozaj založil, a s
@@ -110,10 +115,10 @@ Pohody a Stormware neodporúča vystaviť ho na verejnú IP. Znamenalo by to mal
 spojku na tom počítači, ktorá si sama ťahá z Faktera, čo je nové — žiadne
 otváranie portov. Vlastný program pre Windows so všetkým, čo k tomu patrí.
 
-**4. mPohoda (cloud).** OAuth2 `client_credentials` na
+**3. mPohoda (cloud).** OAuth2 `client_credentials` na
 `https://ucet.pohoda.cz/connect/token`, scope `Mph.OpenApi.Access.Sk`, potom
 `Bearer` na `https://api.mpohoda.sk`. Bez inštalácie čohokoľvek, ale len vo
 variante **mPohoda Pro** a dáva zmysel iba tomu, kto mPohodu už používa.
 
-Body 1 a 2 fungujú s každou radou Pohody a účtovníčka neinštaluje nič, preto
-majú prednosť pred 3 a 4.
+Bod 1 funguje s každou radou Pohody a účtovníčka neinštaluje nič, preto má
+prednosť pred 2 a 3.
