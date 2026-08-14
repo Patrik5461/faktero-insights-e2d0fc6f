@@ -66,8 +66,7 @@ const html = `<!doctype html>
         <div id="nadstavba" class="skryte">
           <select id="vozidlo" class="skryte" aria-label="Vozidlo"></select>
           <button id="jazda" type="button">Spustiť jazdu</button>
-          <button id="qr" type="button">Načítať QR z bločku</button>
-          <button id="doklad" type="button">Odfotiť doklad</button>
+          <button id="doklad" type="button">Odfotiť doklad (načíta aj QR)</button>
         </div>
         <p id="hlaska" class="hlaska"></p>
         <button id="znova" type="button" class="vedlajsie">Skúsiť znova</button>
@@ -226,27 +225,24 @@ const html = `<!doctype html>
         tlac.disabled = true;
         p.Camera.getPhoto({ quality: 60, resultType: "base64", source: "CAMERA", correctOrientation: true })
           .then(function (foto) {
+            var mime = "image/" + (foto.format || "jpeg");
+            var dataUrl = "data:" + mime + ";base64," + foto.base64String;
             var id = String(Date.now()) + "-" + Math.floor(Math.random() * 100000);
             var nazov = "offline-doklady/" + id + "." + (foto.format || "jpeg");
-            return p.Filesystem.writeFile({
-              path: nazov,
-              data: foto.base64String,
-              directory: "DATA",
-              recursive: true,
-            }).then(function () {
-              return p.Preferences.get({ key: KLUC_DOKLADOV }).then(function (ulozene) {
-                var zoznam = [];
-                try {
-                  zoznam = JSON.parse((ulozene && ulozene.value) || "[]");
-                } catch (e) {
-                  zoznam = [];
-                }
-                zoznam.push({ id: id, path: nazov, mime: "image/" + (foto.format || "jpeg"), ts: Date.now() });
-                return p.Preferences.set({ key: KLUC_DOKLADOV, value: JSON.stringify(zoznam) }).then(
-                  function () {
-                    hlaska("Doklad uložený (" + zoznam.length + " čaká). Odošle sa po pripojení.");
-                  },
-                );
+
+            // QR sa číta zo snímky — živý skener (scan) je v tomto plugine len
+            // pre Android. Práve v QR je identifikátor, pod ktorým Finančná
+            // správa vydá celý doklad, takže stojí za to skúsiť ho vždy.
+            return citajQr(dataUrl).then(function (qr) {
+              return p.Filesystem.writeFile({
+                path: nazov,
+                data: foto.base64String,
+                directory: "DATA",
+                recursive: true,
+              }).then(function () {
+                return ulozDoklad({ path: nazov, mime: mime, qr_raw: qr }).then(function () {
+                  if (qr) hlaska(document.getElementById("hlaska").textContent + " QR načítaný.");
+                });
               });
             });
           })
@@ -260,29 +256,15 @@ const html = `<!doctype html>
           });
       }
 
-      function nacitajQr() {
+      function citajQr(dataUrl) {
         var p = pluginy();
-        if (!p || !p.BarcodeScanner) return hlaska("Skener tu nie je dostupný.");
-        var tlac = document.getElementById("qr");
-        tlac.disabled = true;
-        p.BarcodeScanner.requestPermissions()
-          .then(function (perm) {
-            if (perm.camera !== "granted" && perm.camera !== "limited") {
-              throw new Error("bez povolenia fotoaparátu");
-            }
-            return p.BarcodeScanner.scan();
-          })
+        if (!p || !p.BarcodeScanner) return Promise.resolve(null);
+        return p.BarcodeScanner.readBarcodesFromImage({ path: dataUrl, formats: [] })
           .then(function (v) {
-            var raw = v && v.barcodes && v.barcodes[0] ? v.barcodes[0].rawValue : null;
-            if (!raw) return hlaska("QR kód sa nenačítal.");
-            return ulozDoklad({ qr_raw: raw });
+            return v && v.barcodes && v.barcodes[0] ? v.barcodes[0].rawValue : null;
           })
-          .catch(function (e) {
-            var m = e && e.message ? e.message : String(e);
-            if (!/cancel/i.test(m)) hlaska("QR sa nepodarilo načítať: " + m);
-          })
-          .then(function () {
-            tlac.disabled = false;
+          .catch(function () {
+            return null;
           });
       }
 
@@ -307,7 +289,6 @@ const html = `<!doctype html>
         });
       }
 
-      document.getElementById("qr").addEventListener("click", nacitajQr);
       document.getElementById("jazda").addEventListener("click", prepniJazdu);
       document.getElementById("doklad").addEventListener("click", odfotDoklad);
 
