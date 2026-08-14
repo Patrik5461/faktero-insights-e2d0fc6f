@@ -36,3 +36,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Zostavená mobilná appka — vyrába ju `npm run build:mobile`
+dist-mobile
