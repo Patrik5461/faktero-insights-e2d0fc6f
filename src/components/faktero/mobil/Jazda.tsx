@@ -74,12 +74,18 @@ export function Jazda({
   const cenaPaliva = useRef<number | null>(null);
 
   async function nacitajVozidla(vyberId?: string) {
+    // Bez siete dotaz nevráti chybu, ale vyhodí výnimku — a nezachytená by
+    // nechala obrazovku navždy na „Načítavam vozidlá…".
     const { data, error } = await supabase
       .from("vehicles")
       .select("id, name, license_plate")
       .eq("company_id", firma.id)
       .eq("active", true)
-      .order("name");
+      .order("name")
+      .then(
+        (r) => r,
+        (e) => ({ data: null, error: e as any }),
+      );
 
     // Bez signálu sa siahne po poslednom známom zozname — inak by kniha jázd
     // v aute, teda presne tam, kde je potrebná, ostala prázdna.

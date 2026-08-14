@@ -89,6 +89,11 @@ export function HistoriaJazd({
       .order("trip_date", { ascending: false })
       .order("start_time", { ascending: false, nullsFirst: false })
       .limit(200)
+      // Bez siete dotaz vyhodí výnimku; bez tohto by sa história nikdy nedočkala.
+      .then(
+        (r) => r,
+        (e) => ({ data: null, error: e as any }),
+      )
       .then(async ({ data, error }) => {
         if (zrusene) return;
         const { ulozJazdy, jazdyZPamate, zoradJazdy } = await import("@/lib/mobile/jazdy-lokalne");
