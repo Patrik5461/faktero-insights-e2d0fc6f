@@ -146,8 +146,20 @@ export function MobilnaApka() {
       .maybeSingle()
       .then(({ data: p }) => setZrusiSa((p?.deletion_scheduled_for as string | null) ?? null));
     setFaza("firmy");
+    const { ulozDoPamate, zPamate } = await import("@/lib/mobile/jazdy-lokalne");
+    const klucFiriem = `firmy:${relacia.user.id}`;
     try {
-      const zoznam = (await fetchMyCompanies()) as Firma[];
+      // Bez pripojenia sa zoznam firiem nenačíta a appka by tvrdila, že k účtu
+      // žiadna firma nepatrí. Preto sa posledný známy drží v telefóne.
+      let zoznam: Firma[];
+      try {
+        zoznam = (await fetchMyCompanies()) as Firma[];
+        void ulozDoPamate(klucFiriem, zoznam);
+      } catch (e) {
+        const zapamatane = await zPamate<Firma[]>(klucFiriem);
+        if (!zapamatane?.hodnota?.length) throw e;
+        zoznam = zapamatane.hodnota;
+      }
       setFirmy(zoznam);
       const ulozena = getActiveCompanyId();
       const najdena = zoznam.find((f) => f.id === ulozena);
