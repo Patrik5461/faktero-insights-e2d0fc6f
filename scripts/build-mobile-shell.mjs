@@ -43,6 +43,9 @@ const html = `<!doctype html>
       .vedlajsie { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.5);
         font-weight: 500; }
       .hlaska { margin-top: 12px; font-size: 14px; min-height: 20px; }
+      select { padding: 11px 12px; font-size: 16px; border: 0; border-radius: 12px;
+        background: rgba(255,255,255,.15); color: #fff; }
+      select.skryte { display: none; }
     </style>
   </head>
   <body>
@@ -61,7 +64,9 @@ const html = `<!doctype html>
           pripojení.
         </p>
         <div id="nadstavba" class="skryte">
+          <select id="vozidlo" class="skryte" aria-label="Vozidlo"></select>
           <button id="jazda" type="button">Spustiť jazdu</button>
+          <button id="qr" type="button">Načítať QR z bločku</button>
           <button id="doklad" type="button">Odfotiť doklad</button>
         </div>
         <p id="hlaska" class="hlaska"></p>
@@ -106,7 +111,10 @@ const html = `<!doctype html>
       // pripojení. Odkladá sa cez Preferences, lebo tá je natívna a vidí do nej
       // aj web — jeho localStorage aj IndexedDB sú na inom pôvode.
       var KLUC_DOKLADOV = "faktero.offline.doklady";
+      var KLUC_PODKLADOV = "faktero.offline.podklady";
+      var KLUC_JAZD = "faktero.offline.jazdy";
       var jazdaBezi = false;
+      var aktivnaJazdaId = null;
 
       function pluginy() {
         return (window.Capacitor && window.Capacitor.Plugins) || null;
@@ -122,11 +130,60 @@ const html = `<!doctype html>
         p.DriveDetector.getState()
           .then(function (stav) {
             jazdaBezi = !!(stav && stav.activeTrip);
+            aktivnaJazdaId = jazdaBezi ? stav.activeTrip.id : null;
             document.getElementById("jazda").textContent = jazdaBezi
               ? "Ukončiť jazdu"
               : "Spustiť jazdu";
           })
           .catch(function () {});
+        naplnVozidla();
+      }
+
+      // Autá si appka odložila, kým bola online — inak by sa tu nedali ponúknuť.
+      function naplnVozidla() {
+        var p = pluginy();
+        if (!p || !p.Preferences) return;
+        p.Preferences.get({ key: KLUC_PODKLADOV })
+          .then(function (ulozene) {
+            var podklady = null;
+            try {
+              podklady = JSON.parse((ulozene && ulozene.value) || "null");
+            } catch (e) {}
+            if (!podklady || !podklady.vozidla || podklady.vozidla.length === 0) return;
+            var sel = document.getElementById("vozidlo");
+            sel.innerHTML = "";
+            podklady.vozidla.forEach(function (v) {
+              var o = document.createElement("option");
+              o.value = v.id;
+              o.textContent = v.name + (v.license_plate ? " — " + v.license_plate : "");
+              if (v.id === podklady.mojeVozidloId) o.selected = true;
+              sel.appendChild(o);
+            });
+            // Pri jedinom aute nie je čo vyberať.
+            if (podklady.vozidla.length > 1) sel.classList.remove("skryte");
+          })
+          .catch(function () {});
+      }
+
+      function zvoleneVozidlo() {
+        var sel = document.getElementById("vozidlo");
+        return sel && sel.value ? sel.value : null;
+      }
+
+      // Auto k jazde sa odloží zvlášť — plugin o vozidlách nič nevie.
+      function zapamatajAutoKJazde(tripId, vehicleId) {
+        var p = pluginy();
+        if (!p || !p.Preferences || !tripId || !vehicleId) return Promise.resolve();
+        return p.Preferences.get({ key: KLUC_JAZD }).then(function (ulozene) {
+          var mapa = {};
+          try {
+            mapa = JSON.parse((ulozene && ulozene.value) || "{}");
+          } catch (e) {
+            mapa = {};
+          }
+          mapa[tripId] = vehicleId;
+          return p.Preferences.set({ key: KLUC_JAZD, value: JSON.stringify(mapa) });
+        });
       }
 
       function prepniJazdu() {
@@ -137,6 +194,12 @@ const html = `<!doctype html>
         var akcia = jazdaBezi ? p.DriveDetector.endTrip() : p.DriveDetector.startTrip();
         akcia
           .then(function (r) {
+            // Pri štarte vráti plugin jazdu, pri ukončení ju má vo vlastnosti trip.
+            var jazda = r && r.trip ? r.trip : r;
+            var id = jazda && jazda.id ? jazda.id : aktivnaJazdaId;
+            aktivnaJazdaId = jazdaBezi ? null : id;
+            var auto = zvoleneVozidlo();
+            if (id && auto) zapamatajAutoKJazde(id, auto);
             jazdaBezi = !jazdaBezi;
             tlac.textContent = jazdaBezi ? "Ukončiť jazdu" : "Spustiť jazdu";
             if (!jazdaBezi) {
@@ -197,6 +260,54 @@ const html = `<!doctype html>
           });
       }
 
+      function nacitajQr() {
+        var p = pluginy();
+        if (!p || !p.BarcodeScanner) return hlaska("Skener tu nie je dostupný.");
+        var tlac = document.getElementById("qr");
+        tlac.disabled = true;
+        p.BarcodeScanner.requestPermissions()
+          .then(function (perm) {
+            if (perm.camera !== "granted" && perm.camera !== "limited") {
+              throw new Error("bez povolenia fotoaparátu");
+            }
+            return p.BarcodeScanner.scan();
+          })
+          .then(function (v) {
+            var raw = v && v.barcodes && v.barcodes[0] ? v.barcodes[0].rawValue : null;
+            if (!raw) return hlaska("QR kód sa nenačítal.");
+            return ulozDoklad({ qr_raw: raw });
+          })
+          .catch(function (e) {
+            var m = e && e.message ? e.message : String(e);
+            if (!/cancel/i.test(m)) hlaska("QR sa nepodarilo načítať: " + m);
+          })
+          .then(function () {
+            tlac.disabled = false;
+          });
+      }
+
+      // Doklad — fotka, QR alebo oboje. Ukladá sa rovnako, appka si to prevezme.
+      function ulozDoklad(zaznam) {
+        var p = pluginy();
+        return p.Preferences.get({ key: KLUC_DOKLADOV }).then(function (ulozene) {
+          var zoznam = [];
+          try {
+            zoznam = JSON.parse((ulozene && ulozene.value) || "[]");
+          } catch (e) {
+            zoznam = [];
+          }
+          zaznam.id = String(Date.now()) + "-" + Math.floor(Math.random() * 100000);
+          zaznam.ts = Date.now();
+          zoznam.push(zaznam);
+          return p.Preferences.set({ key: KLUC_DOKLADOV, value: JSON.stringify(zoznam) }).then(
+            function () {
+              hlaska("Doklad uložený (" + zoznam.length + " čaká). Odošle sa po pripojení.");
+            },
+          );
+        });
+      }
+
+      document.getElementById("qr").addEventListener("click", nacitajQr);
       document.getElementById("jazda").addEventListener("click", prepniJazdu);
       document.getElementById("doklad").addEventListener("click", odfotDoklad);
 

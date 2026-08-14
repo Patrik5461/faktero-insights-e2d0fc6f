@@ -13,7 +13,14 @@
 
 const KLUC = "faktero.offline.doklady";
 
-type OdlozenyDoklad = { id: string; path: string; mime?: string; ts?: number };
+/** Z offline obrazovky príde fotka, QR kód, alebo oboje. */
+type OdlozenyDoklad = {
+  id: string;
+  path?: string | null;
+  mime?: string;
+  qr_raw?: string | null;
+  ts?: number;
+};
 
 async function pluginy() {
   const { Capacitor } = await import("@capacitor/core");
@@ -49,25 +56,34 @@ export async function prevezmiOfflineDoklady(companyId: string): Promise<number>
 
   for (const doklad of zoznam) {
     try {
-      const subor = await p.Filesystem.readFile({
-        path: doklad.path,
-        directory: p.Directory.Data,
-      });
-      const base64 = typeof subor.data === "string" ? subor.data : "";
-      if (!base64) throw new Error("prázdny súbor");
+      let obrazok: string | null = null;
+      if (doklad.path) {
+        const subor = await p.Filesystem.readFile({
+          path: doklad.path,
+          directory: p.Directory.Data,
+        });
+        const base64 = typeof subor.data === "string" ? subor.data : "";
+        if (!base64) throw new Error("prázdny súbor");
+        obrazok = `data:${doklad.mime ?? "image/jpeg"};base64,${base64}`;
+      }
+
+      // Záznam bez fotky aj bez QR by bol prázdny doklad — ten do fronty nepatrí.
+      if (!obrazok && !doklad.qr_raw) continue;
 
       await pridajDoFronty({
         company_id: companyId,
-        obrazok: `data:${doklad.mime ?? "image/jpeg"};base64,${base64}`,
+        obrazok,
         // Bez pripojenia sa nedalo vybrať; hotovosť je pri bločkoch najbežnejšia
         // a na doklade sa to dá opraviť.
         uhrada: "hotovost",
-        qr_raw: null,
+        qr_raw: doklad.qr_raw ?? null,
       });
       prevzate++;
-      await p.Filesystem.deleteFile({ path: doklad.path, directory: p.Directory.Data }).catch(
-        () => {},
-      );
+      if (doklad.path) {
+        await p.Filesystem.deleteFile({ path: doklad.path, directory: p.Directory.Data }).catch(
+          () => {},
+        );
+      }
     } catch (e) {
       // Doklad, ktorý sa teraz nepodarilo prevziať, sa nezahodí — skúsi sa nabudúce.
       console.warn("[offline] doklad sa nepodarilo prevziať", e);

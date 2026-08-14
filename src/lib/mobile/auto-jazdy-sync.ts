@@ -229,17 +229,28 @@ export async function odosliCakajuceJazdy(
   // Auto pripojené na Commander sa neponúka — jeho jazdy prídu odtiaľ.
   const dostupne = (vozidla ?? []).map((v: any) => v.id).filter((id: string) => !commander.has(id));
 
+  // Jazda spustená na offline obrazovke už auto priradené má — to má prednosť
+  // pred tým, čo by sa domyslelo zo zapamätaného vozidla.
+  const { autaKOfflineJazdam, zabudniAutoKJazde } = await import("./offline-podklady");
+  const rucnePriradene = await autaKOfflineJazdam();
+
   let ulozene = 0;
   let cakajuce = 0;
   for (const jazda of jazdy) {
-    const vehicleId = vozidloPreRozpoznanuJazdu({ companyId, dostupne });
+    const zOfflineObrazovky = rucnePriradene[jazda.id];
+    const vehicleId =
+      zOfflineObrazovky && dostupne.includes(zOfflineObrazovky)
+        ? zOfflineObrazovky
+        : vozidloPreRozpoznanuJazdu({ companyId, dostupne });
     if (!jazda.classification || !vehicleId) {
       cakajuce++;
       continue;
     }
     const r = await ulozRozpoznanuJazdu({ jazda, companyId, vehicleId, classification: jazda.classification });
-    if (r.ok) ulozene++;
-    else cakajuce++;
+    if (r.ok) {
+      ulozene++;
+      await zabudniAutoKJazde(jazda.id);
+    } else cakajuce++;
   }
   return { ulozene, cakajuce };
 }
