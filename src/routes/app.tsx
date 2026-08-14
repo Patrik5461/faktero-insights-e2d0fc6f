@@ -120,6 +120,8 @@ function MobilnaApka() {
       setZamknute(true);
     }
     setEmail(data.session.user?.email ?? null);
+    // Token na push mohol doraziť skôr, než bol používateľ prihlásený.
+    void import("@/lib/mobile/push").then((m) => m.dorucCakajuciPushToken());
     // Naplánované zrušenie účtu musí byť vidieť aj v telefóne — kto oň požiadal
     // omylom, otvorí najskôr appku, nie nastavenia na webe.
     supabase
