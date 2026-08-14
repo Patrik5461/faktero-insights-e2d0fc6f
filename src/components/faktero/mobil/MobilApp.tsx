@@ -92,6 +92,8 @@ export function MobilnaApka() {
   const [krok, setKrok] = useState<Krok>("nacitavam");
   const [firmy, setFirmy] = useState<Firma[]>([]);
   const [firma, setFirma] = useState<Firma | null>(null);
+  const [faza, setFaza] = useState("štart");
+  const [dlho, setDlho] = useState(false);
   const [zachyt, setZachyt] = useState<Zachyt>("blocek");
   const [email, setEmail] = useState<string | null>(null);
   const [panel, setPanel] = useState(false);
@@ -107,11 +109,21 @@ export function MobilnaApka() {
    * prihlásení sa naopak pýtať nesmie — človek sa práve preukázal.
    */
   async function zisti(studenyStart = false) {
-    const { data } = await supabase.auth.getSession();
+    // Štart sa dá zaseknúť na ktorejkoľvek z týchto vecí a na telefóne to inak
+    // vyzerá len ako večné točenie. Nech je vidieť, kde stojíme.
+    setFaza("prihlásenie");
+    // Overenie relácie v telefóne občas neodpovie vôbec (nie chybou, ale tichom).
+    // Bez stropu by appka ostala navždy na úvodnej obrazovke, tak radšej po
+    // šiestich sekundách pokračujeme a človek sa prihlási znova.
+    const { data } = (await Promise.race([
+      supabase.auth.getSession().catch(() => ({ data: { session: null } })),
+      new Promise((res) => setTimeout(() => res({ data: { session: null } }), 6000)),
+    ])) as { data: { session: any } };
     if (!data.session) {
       setKrok("prihlasenie");
       return;
     }
+    setFaza("odomknutie");
     if (studenyStart && (await isBiometricEnabled()) && (await isBiometricAvailable())) {
       setZamknute(true);
     }
@@ -126,6 +138,7 @@ export function MobilnaApka() {
       .eq("id", data.session.user.id)
       .maybeSingle()
       .then(({ data: p }) => setZrusiSa((p?.deletion_scheduled_for as string | null) ?? null));
+    setFaza("firmy");
     try {
       const zoznam = (await fetchMyCompanies()) as Firma[];
       setFirmy(zoznam);
@@ -163,6 +176,11 @@ export function MobilnaApka() {
 
   useEffect(() => {
     zisti(true);
+    // Keď sa štart do desiatich sekúnd nedokončí, appka to prizná a ponúkne
+    // východisko namiesto točiaceho sa kolieska.
+    const t = setTimeout(() => setDlho(true), 10000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line
   }, []);
 
   /*
@@ -224,7 +242,36 @@ export function MobilnaApka() {
   }
 
   if (zamknute) return <Zamok onOdomknute={() => setZamknute(false)} onOdhlasit={odhlas} />;
-  if (krok === "nacitavam") return <Pracujem text="Spúšťam Faktero…" />;
+  if (krok === "nacitavam") {
+    if (!dlho) return <Pracujem text={`Spúšťam Faktero… (${faza})`} />;
+    return (
+      <div className="grid min-h-[100dvh] place-items-center bg-background p-6 text-center">
+        <div className="space-y-3">
+          <p className="text-sm font-medium">Štart sa zasekol na kroku „{faza}".</p>
+          <p className="text-[13px] text-muted-foreground">
+            Býva to slabým pripojením. Skúste to znova, alebo sa prihláste nanovo.
+          </p>
+          <div className="flex flex-col gap-2 pt-2">
+            <button
+              onClick={() => {
+                setDlho(false);
+                zisti();
+              }}
+              className="rounded-xl bg-primary px-4 py-3 text-[15px] font-medium text-primary-foreground"
+            >
+              Skúsiť znova
+            </button>
+            <button
+              onClick={odhlas}
+              className="rounded-xl border border-border px-4 py-3 text-[15px]"
+            >
+              Prihlásiť sa nanovo
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (krok === "prihlasenie") return <Prihlasenie onHotovo={() => zisti()} />;
   if (krok === "firma")
     return (
