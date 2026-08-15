@@ -179,6 +179,25 @@ export async function runDailyBankSync(daysBack = DEFAULT_DAYS_BACK) {
           // Párovanie je nadstavba — keď zlyhá, stiahnuté pohyby ostávajú.
           console.error(`[bank-sync] párovanie firmy ${conn.company_id} zlyhalo:`, e?.message ?? e);
         }
+
+        /*
+          To isté pre splátky leasingov a úverov. Je to samostatný prechod:
+          faktúry sa párujú z prichádzajúcich platieb, splátky z odchádzajúcich,
+          a pravidlá sú iné — pri splátkach nestačí suma, lebo sú každý mesiac
+          rovnaké.
+        */
+        try {
+          const { sparujSplatkyFirmyAutomaticky } = await import("./financovanie.functions");
+          const { zapisanych } = await sparujSplatkyFirmyAutomaticky(conn.company_id);
+          if (zapisanych > 0) {
+            console.log(`[bank-sync] firma ${conn.company_id}: spárovaných splátok ${zapisanych}`);
+          }
+        } catch (e: any) {
+          console.error(
+            `[bank-sync] párovanie splátok firmy ${conn.company_id} zlyhalo:`,
+            e?.message ?? e,
+          );
+        }
       }
 
       results.push({ ...base, accounts: accounts.length, inserted });

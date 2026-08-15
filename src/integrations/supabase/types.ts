@@ -519,6 +519,7 @@ export type Database = {
           currency: string
           description: string | null
           id: string
+          matched_installment_id: string | null
           matched_invoice_id: string | null
           transaction_reference: string | null
           variable_symbol: string | null
@@ -533,6 +534,7 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
+          matched_installment_id?: string | null
           matched_invoice_id?: string | null
           transaction_reference?: string | null
           variable_symbol?: string | null
@@ -547,6 +549,7 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
+          matched_installment_id?: string | null
           matched_invoice_id?: string | null
           transaction_reference?: string | null
           variable_symbol?: string | null
@@ -564,6 +567,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_matched_installment_id_fkey"
+            columns: ["matched_installment_id"]
+            isOneToOne: false
+            referencedRelation: "financing_installments"
             referencedColumns: ["id"]
           },
           {
@@ -2086,6 +2096,181 @@ export type Database = {
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financing_contracts: {
+        Row: {
+          company_id: string
+          contract_number: string | null
+          counterparty_hint: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          document_path: string | null
+          down_payment: number
+          first_due_date: string
+          id: string
+          interest_rate: number
+          kind: Database["public"]["Enums"]["financing_kind"]
+          name: string
+          note: string | null
+          payment_amount: number | null
+          principal: number
+          provider_name: string | null
+          residual_value: number
+          status: string
+          term_months: number
+          updated_at: string
+          variable_symbol: string | null
+          vat_rate: number
+          vehicle_id: string | null
+        }
+        Insert: {
+          company_id: string
+          contract_number?: string | null
+          counterparty_hint?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          document_path?: string | null
+          down_payment?: number
+          first_due_date: string
+          id?: string
+          interest_rate?: number
+          kind: Database["public"]["Enums"]["financing_kind"]
+          name: string
+          note?: string | null
+          payment_amount?: number | null
+          principal: number
+          provider_name?: string | null
+          residual_value?: number
+          status?: string
+          term_months: number
+          updated_at?: string
+          variable_symbol?: string | null
+          vat_rate?: number
+          vehicle_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          contract_number?: string | null
+          counterparty_hint?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          document_path?: string | null
+          down_payment?: number
+          first_due_date?: string
+          id?: string
+          interest_rate?: number
+          kind?: Database["public"]["Enums"]["financing_kind"]
+          name?: string
+          note?: string | null
+          payment_amount?: number | null
+          principal?: number
+          provider_name?: string | null
+          residual_value?: number
+          status?: string
+          term_months?: number
+          updated_at?: string
+          variable_symbol?: string | null
+          vat_rate?: number
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financing_contracts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financing_contracts_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financing_installments: {
+        Row: {
+          amount: number
+          bank_transaction_id: string | null
+          company_id: string
+          contract_id: string
+          created_at: string
+          due_date: string
+          id: string
+          interest_part: number
+          note: string | null
+          number: number
+          paid_amount: number | null
+          paid_at: string | null
+          principal_part: number
+          remaining_principal: number
+          updated_at: string
+          vat_amount: number
+        }
+        Insert: {
+          amount: number
+          bank_transaction_id?: string | null
+          company_id: string
+          contract_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          interest_part?: number
+          note?: string | null
+          number: number
+          paid_amount?: number | null
+          paid_at?: string | null
+          principal_part?: number
+          remaining_principal?: number
+          updated_at?: string
+          vat_amount?: number
+        }
+        Update: {
+          amount?: number
+          bank_transaction_id?: string | null
+          company_id?: string
+          contract_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          interest_part?: number
+          note?: string | null
+          number?: number
+          paid_amount?: number | null
+          paid_at?: string | null
+          principal_part?: number
+          remaining_principal?: number
+          updated_at?: string
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financing_installments_bank_transaction_id_fkey"
+            columns: ["bank_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "bank_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financing_installments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financing_installments_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "financing_contracts"
             referencedColumns: ["id"]
           },
         ]
@@ -6222,6 +6407,7 @@ export type Database = {
         | "accepted"
         | "rejected"
         | "archived"
+      financing_kind: "leasing" | "uver"
       inventory_count_status: "open" | "completed" | "cancelled"
       invoice_status:
         | "draft"
@@ -6422,6 +6608,7 @@ export const Constants = {
         "rejected",
         "archived",
       ],
+      financing_kind: ["leasing", "uver"],
       inventory_count_status: ["open", "completed", "cancelled"],
       invoice_status: [
         "draft",

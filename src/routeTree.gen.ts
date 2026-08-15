@@ -119,6 +119,9 @@ import { Route as AuthenticatedFakturyNovaRouteImport } from './routes/_authenti
 import { Route as AuthenticatedFakturyParovanieRouteImport } from './routes/_authenticated/faktury.parovanie'
 import { Route as AuthenticatedFakturyRychlaRouteImport } from './routes/_authenticated/faktury.rychla'
 import { Route as AuthenticatedFakturySkenerRouteImport } from './routes/_authenticated/faktury.skener'
+import { Route as AuthenticatedFinancovanieIndexRouteImport } from './routes/_authenticated/financovanie.index'
+import { Route as AuthenticatedFinancovanieIdRouteImport } from './routes/_authenticated/financovanie.$id'
+import { Route as AuthenticatedFinancovanieNovaRouteImport } from './routes/_authenticated/financovanie.nova'
 import { Route as AuthenticatedImportyIndexRouteImport } from './routes/_authenticated/importy.index'
 import { Route as AuthenticatedImportyIdokladRouteImport } from './routes/_authenticated/importy.idoklad'
 import { Route as AuthenticatedImportyKrosRouteImport } from './routes/_authenticated/importy.kros'
@@ -811,6 +814,24 @@ const AuthenticatedFakturySkenerRoute =
   AuthenticatedFakturySkenerRouteImport.update({
     id: '/faktury/skener',
     path: '/faktury/skener',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinancovanieIndexRoute =
+  AuthenticatedFinancovanieIndexRouteImport.update({
+    id: '/financovanie/',
+    path: '/financovanie/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinancovanieIdRoute =
+  AuthenticatedFinancovanieIdRouteImport.update({
+    id: '/financovanie/$id',
+    path: '/financovanie/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedFinancovanieNovaRoute =
+  AuthenticatedFinancovanieNovaRouteImport.update({
+    id: '/financovanie/nova',
+    path: '/financovanie/nova',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedImportyIndexRoute =
@@ -1602,6 +1623,8 @@ export interface FileRoutesByFullPath {
   '/faktury/parovanie': typeof AuthenticatedFakturyParovanieRoute
   '/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
+  '/financovanie/$id': typeof AuthenticatedFinancovanieIdRoute
+  '/financovanie/nova': typeof AuthenticatedFinancovanieNovaRoute
   '/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
   '/importy/kros': typeof AuthenticatedImportyKrosRoute
   '/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
@@ -1659,6 +1682,7 @@ export interface FileRoutesByFullPath {
   '/doklady/': typeof AuthenticatedDokladyIndexRoute
   '/efaktura/': typeof AuthenticatedEfakturaIndexRoute
   '/faktury/': typeof AuthenticatedFakturyIndexRoute
+  '/financovanie/': typeof AuthenticatedFinancovanieIndexRoute
   '/importy/': typeof AuthenticatedImportyIndexRoute
   '/jazdy/': typeof AuthenticatedJazdyIndexRoute
   '/nastavenia/': typeof AuthenticatedNastaveniaIndexRoute
@@ -1827,6 +1851,8 @@ export interface FileRoutesByTo {
   '/faktury/parovanie': typeof AuthenticatedFakturyParovanieRoute
   '/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
+  '/financovanie/$id': typeof AuthenticatedFinancovanieIdRoute
+  '/financovanie/nova': typeof AuthenticatedFinancovanieNovaRoute
   '/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
   '/importy/kros': typeof AuthenticatedImportyKrosRoute
   '/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
@@ -1883,6 +1909,7 @@ export interface FileRoutesByTo {
   '/doklady': typeof AuthenticatedDokladyIndexRoute
   '/efaktura': typeof AuthenticatedEfakturaIndexRoute
   '/faktury': typeof AuthenticatedFakturyIndexRoute
+  '/financovanie': typeof AuthenticatedFinancovanieIndexRoute
   '/importy': typeof AuthenticatedImportyIndexRoute
   '/jazdy': typeof AuthenticatedJazdyIndexRoute
   '/nastavenia': typeof AuthenticatedNastaveniaIndexRoute
@@ -2061,6 +2088,8 @@ export interface FileRoutesById {
   '/_authenticated/faktury/parovanie': typeof AuthenticatedFakturyParovanieRoute
   '/_authenticated/faktury/rychla': typeof AuthenticatedFakturyRychlaRoute
   '/_authenticated/faktury/skener': typeof AuthenticatedFakturySkenerRoute
+  '/_authenticated/financovanie/$id': typeof AuthenticatedFinancovanieIdRoute
+  '/_authenticated/financovanie/nova': typeof AuthenticatedFinancovanieNovaRoute
   '/_authenticated/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
   '/_authenticated/importy/kros': typeof AuthenticatedImportyKrosRoute
   '/_authenticated/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
@@ -2118,6 +2147,7 @@ export interface FileRoutesById {
   '/_authenticated/doklady/': typeof AuthenticatedDokladyIndexRoute
   '/_authenticated/efaktura/': typeof AuthenticatedEfakturaIndexRoute
   '/_authenticated/faktury/': typeof AuthenticatedFakturyIndexRoute
+  '/_authenticated/financovanie/': typeof AuthenticatedFinancovanieIndexRoute
   '/_authenticated/importy/': typeof AuthenticatedImportyIndexRoute
   '/_authenticated/jazdy/': typeof AuthenticatedJazdyIndexRoute
   '/_authenticated/nastavenia/': typeof AuthenticatedNastaveniaIndexRoute
@@ -2296,6 +2326,8 @@ export interface FileRouteTypes {
     | '/faktury/parovanie'
     | '/faktury/rychla'
     | '/faktury/skener'
+    | '/financovanie/$id'
+    | '/financovanie/nova'
     | '/importy/idoklad'
     | '/importy/kros'
     | '/importy/money-s3'
@@ -2353,6 +2385,7 @@ export interface FileRouteTypes {
     | '/doklady/'
     | '/efaktura/'
     | '/faktury/'
+    | '/financovanie/'
     | '/importy/'
     | '/jazdy/'
     | '/nastavenia/'
@@ -2521,6 +2554,8 @@ export interface FileRouteTypes {
     | '/faktury/parovanie'
     | '/faktury/rychla'
     | '/faktury/skener'
+    | '/financovanie/$id'
+    | '/financovanie/nova'
     | '/importy/idoklad'
     | '/importy/kros'
     | '/importy/money-s3'
@@ -2577,6 +2612,7 @@ export interface FileRouteTypes {
     | '/doklady'
     | '/efaktura'
     | '/faktury'
+    | '/financovanie'
     | '/importy'
     | '/jazdy'
     | '/nastavenia'
@@ -2754,6 +2790,8 @@ export interface FileRouteTypes {
     | '/_authenticated/faktury/parovanie'
     | '/_authenticated/faktury/rychla'
     | '/_authenticated/faktury/skener'
+    | '/_authenticated/financovanie/$id'
+    | '/_authenticated/financovanie/nova'
     | '/_authenticated/importy/idoklad'
     | '/_authenticated/importy/kros'
     | '/_authenticated/importy/money-s3'
@@ -2811,6 +2849,7 @@ export interface FileRouteTypes {
     | '/_authenticated/doklady/'
     | '/_authenticated/efaktura/'
     | '/_authenticated/faktury/'
+    | '/_authenticated/financovanie/'
     | '/_authenticated/importy/'
     | '/_authenticated/jazdy/'
     | '/_authenticated/nastavenia/'
@@ -3752,6 +3791,27 @@ declare module '@tanstack/react-router' {
       path: '/faktury/skener'
       fullPath: '/faktury/skener'
       preLoaderRoute: typeof AuthenticatedFakturySkenerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financovanie/': {
+      id: '/_authenticated/financovanie/'
+      path: '/financovanie'
+      fullPath: '/financovanie/'
+      preLoaderRoute: typeof AuthenticatedFinancovanieIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financovanie/$id': {
+      id: '/_authenticated/financovanie/$id'
+      path: '/financovanie/$id'
+      fullPath: '/financovanie/$id'
+      preLoaderRoute: typeof AuthenticatedFinancovanieIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financovanie/nova': {
+      id: '/_authenticated/financovanie/nova'
+      path: '/financovanie/nova'
+      fullPath: '/financovanie/nova'
+      preLoaderRoute: typeof AuthenticatedFinancovanieNovaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/importy/': {
@@ -4735,6 +4795,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFakturyParovanieRoute: typeof AuthenticatedFakturyParovanieRoute
   AuthenticatedFakturyRychlaRoute: typeof AuthenticatedFakturyRychlaRoute
   AuthenticatedFakturySkenerRoute: typeof AuthenticatedFakturySkenerRoute
+  AuthenticatedFinancovanieIdRoute: typeof AuthenticatedFinancovanieIdRoute
+  AuthenticatedFinancovanieNovaRoute: typeof AuthenticatedFinancovanieNovaRoute
   AuthenticatedImportyIdokladRoute: typeof AuthenticatedImportyIdokladRoute
   AuthenticatedImportyKrosRoute: typeof AuthenticatedImportyKrosRoute
   AuthenticatedImportyMoneyS3Route: typeof AuthenticatedImportyMoneyS3Route
@@ -4765,6 +4827,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCenyIndexRoute: typeof AuthenticatedCenyIndexRoute
   AuthenticatedDokladyIndexRoute: typeof AuthenticatedDokladyIndexRoute
   AuthenticatedFakturyIndexRoute: typeof AuthenticatedFakturyIndexRoute
+  AuthenticatedFinancovanieIndexRoute: typeof AuthenticatedFinancovanieIndexRoute
   AuthenticatedImportyIndexRoute: typeof AuthenticatedImportyIndexRoute
   AuthenticatedJazdyIndexRoute: typeof AuthenticatedJazdyIndexRoute
   AuthenticatedNastaveniaIndexRoute: typeof AuthenticatedNastaveniaIndexRoute
@@ -4809,6 +4872,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFakturyParovanieRoute: AuthenticatedFakturyParovanieRoute,
   AuthenticatedFakturyRychlaRoute: AuthenticatedFakturyRychlaRoute,
   AuthenticatedFakturySkenerRoute: AuthenticatedFakturySkenerRoute,
+  AuthenticatedFinancovanieIdRoute: AuthenticatedFinancovanieIdRoute,
+  AuthenticatedFinancovanieNovaRoute: AuthenticatedFinancovanieNovaRoute,
   AuthenticatedImportyIdokladRoute: AuthenticatedImportyIdokladRoute,
   AuthenticatedImportyKrosRoute: AuthenticatedImportyKrosRoute,
   AuthenticatedImportyMoneyS3Route: AuthenticatedImportyMoneyS3Route,
@@ -4844,6 +4909,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCenyIndexRoute: AuthenticatedCenyIndexRoute,
   AuthenticatedDokladyIndexRoute: AuthenticatedDokladyIndexRoute,
   AuthenticatedFakturyIndexRoute: AuthenticatedFakturyIndexRoute,
+  AuthenticatedFinancovanieIndexRoute: AuthenticatedFinancovanieIndexRoute,
   AuthenticatedImportyIndexRoute: AuthenticatedImportyIndexRoute,
   AuthenticatedJazdyIndexRoute: AuthenticatedJazdyIndexRoute,
   AuthenticatedNastaveniaIndexRoute: AuthenticatedNastaveniaIndexRoute,
