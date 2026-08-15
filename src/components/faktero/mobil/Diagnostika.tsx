@@ -91,16 +91,50 @@ async function zisti(): Promise<Riadok[]> {
     } else {
       const { Preferences } = await import("@capacitor/preferences");
       const { keys } = await Preferences.keys();
-      const relacia = keys.filter((k) => /^sb-.*-auth-token$/.test(k));
+
+      /*
+        Relácia sa hľadá na dvoch miestach a v tomto poradí.
+
+        Prihlasovací token je citlivý, takže `trvale-ulozisko` ho presunie do
+        Keychainu a z bežného natívneho úložiska ho **zmaže**. Táto kontrola
+        dovtedy pozerala len do Preferences — a hlásila „NIE" práve vtedy, keď
+        appka robila tú bezpečnejšiu vec. Falošný poplach na mieste, kde má
+        človek hľadať pravdu.
+      */
+      let kde: string | null = null;
+      try {
+        const { SecureStorage } = await import("@aparajita/capacitor-secure-storage");
+        const trezorKluce = (await SecureStorage.keys()) as string[];
+        if (trezorKluce.some((k) => /^sb-.*-auth-token$/.test(k))) kde = "áno, v Keychaine";
+      } catch {
+        // Starší build bez pluginu — token vtedy ostáva v Preferences nižšie.
+      }
+      if (!kde && keys.some((k) => /^sb-.*-auth-token$/.test(k))) {
+        kde = "áno, v natívnom úložisku";
+      }
       r.push({
         co: "prihlásenie prežije reštart",
-        hodnota: relacia.length ? "áno, je natívne" : "NIE — relácia nie je natívne",
-        zle: !relacia.length,
+        hodnota: kde ?? "NIE — relácia nie je natívne",
+        zle: !kde,
       });
-      const vFronte = keys.filter((k) => /^faktero\.offline\.queue\./.test(k)).length;
+      /*
+        Pozeralo sa na `faktero.offline.queue.` — kľúč fronty, ktorá bola
+        medzitým zrušená, lebo ju nikto nevolal. Riadok tak vždy hlásil to isté
+        bez ohľadu na skutočnosť. Faktúry čakajúce na signál sú jediné, čo v
+        natívnom úložisku naozaj leží; jazdy a doklady sú v IndexedDB.
+      */
+      let cakajuce = 0;
+      for (const k of keys.filter((x) => /^faktero\.faktury\.fronta\./.test(x))) {
+        const { value } = await Preferences.get({ key: k });
+        try {
+          cakajuce += value ? (JSON.parse(value)?.length ?? 0) : 0;
+        } catch {
+          /* pokazený záznam nemá zhodiť celú diagnostiku */
+        }
+      }
       r.push({
-        co: "fronta prežije reštart",
-        hodnota: vFronte ? "áno" : "prázdna alebo zatiaľ nezapísaná",
+        co: "faktúry čakajúce na signál",
+        hodnota: cakajuce ? `${cakajuce}` : "žiadne — všetko je odoslané",
       });
     }
   } catch (e: any) {
