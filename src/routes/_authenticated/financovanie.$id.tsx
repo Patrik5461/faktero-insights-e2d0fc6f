@@ -10,10 +10,12 @@ import {
   oznacSplatkuFn,
   potvrdSplatkuFn,
   zmazZmluvuFn,
+  sparujTerazFn,
   zrusSparovanieSplatkyFn,
 } from "@/lib/faktero/financovanie.functions";
 import { formatujSumu } from "@/lib/faktero/zostatky";
-import { Check, Link2, Trash2, Undo2 } from "lucide-react";
+import { Check, Link2, Pencil, RefreshCw, Trash2, Undo2 } from "lucide-react";
+import { FormularZmluvy } from "@/components/faktero/FormularZmluvy";
 
 export const Route = createFileRoute("/_authenticated/financovanie/$id")({
   head: () => ({ meta: [{ title: "Zmluva o financovaní — Faktero" }] }),
@@ -47,11 +49,13 @@ function Stranka() {
   const potvrd = useServerFn(potvrdSplatkuFn);
   const zrus = useServerFn(zrusSparovanieSplatkyFn);
   const zmaz = useServerFn(zmazZmluvuFn);
+  const sparujTeraz = useServerFn(sparujTerazFn);
 
   const [data, setData] = useState<any>(null);
   const [navrhy, setNavrhy] = useState<any[]>([]);
   const [pohyby, setPohyby] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
+  const [upravujem, setUpravujem] = useState(false);
 
   const obnov = useCallback(async () => {
     const cid = getActiveCompanyId();
@@ -116,21 +120,44 @@ function Stranka() {
           .filter(Boolean)
           .join(" · ")}
         action={
-          <button
-            onClick={() => {
-              if (!confirm("Zmazať zmluvu aj s celým splátkovým kalendárom?")) return;
-              void urobit(async () => {
-                await zmaz({ data: { company_id: cid, id } });
-                navigate({ to: "/financovanie" });
-              }, "Zmluva zmazaná.");
-            }}
-            className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-destructive"
-          >
-            <Trash2 className="h-4 w-4" /> Zmazať
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setUpravujem((x) => !x)}
+              className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+            >
+              <Pencil className="h-4 w-4" /> {upravujem ? "Zavrieť úpravu" : "Upraviť"}
+            </button>
+            <button
+              onClick={() => {
+                if (!confirm("Zmazať zmluvu aj s celým splátkovým kalendárom?")) return;
+                void urobit(async () => {
+                  await zmaz({ data: { company_id: cid, id } });
+                  navigate({ to: "/financovanie" });
+                }, "Zmluva zmazaná.");
+              }}
+              className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-destructive"
+            >
+              <Trash2 className="h-4 w-4" /> Zmazať
+            </button>
+          </div>
         }
       />
       <PageBody>
+        {upravujem && (
+          <div className="mb-6">
+            <FormularZmluvy
+              companyId={cid}
+              zmluva={z}
+              onZrusit={() => setUpravujem(false)}
+              onUlozene={async (_id, splatok) => {
+                toast.success(`Uložené, kalendár má ${splatok} splátok.`);
+                setUpravujem(false);
+                await obnov();
+              }}
+            />
+          </div>
+        )}
+
         <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Financovaná suma", formatujSumu(Number(z.principal), z.currency)],

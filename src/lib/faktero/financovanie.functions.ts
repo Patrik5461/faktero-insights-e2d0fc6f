@@ -56,6 +56,8 @@ const Zmluva_ = z.object({
   vat_rate: z.number().min(0).max(100).default(0),
   down_payment: z.number().min(0).max(100_000_000).default(0),
   residual_value: z.number().min(0).max(100_000_000).default(0),
+  day_count: z.enum(["ACT/365", "ACT/360", "30E/360"]).default("ACT/365"),
+  interest_from: z.string().regex(DATUM).optional().nullable(),
   vehicle_id: z.string().uuid().optional().nullable(),
   document_path: z.string().max(500).optional().nullable(),
   note: z.string().max(2000).optional().nullable(),
@@ -92,6 +94,8 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
       vat_rate: data.vat_rate,
       down_payment: data.down_payment,
       residual_value: data.residual_value,
+      day_count: data.day_count,
+      interest_from: data.interest_from || null,
       vehicle_id: data.vehicle_id || null,
       document_path: data.document_path || null,
       note: data.note || null,
@@ -392,6 +396,34 @@ export const navrhySplatokFn = createServerFn({ method: "POST" })
       pohyby,
       splatky,
     };
+  });
+
+/**
+ * Spárovanie na požiadanie.
+ *
+ * Automatika beží pri sťahovaní pohybov z banky. Lenže keď firma zapíše zmluvu
+ * až potom, čo sa platby stiahli, nemá to čo spustiť — a človek márne čaká.
+ * Toto tlačidlo prejde už stiahnuté pohyby a isté zhody zapíše.
+ */
+export const sparujTerazFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => IdFirmy.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    await overClena(context, data.company_id);
+
+    const { pohyby, splatky } = await podkladyParovania(supabase, data.company_id);
+    const { auto, navrhy } = sparujSplatky(pohyby, splatky);
+
+    let zapisanych = 0;
+    for (const z of auto) {
+      const ok = await zapisPlatbu(supabase, data.company_id, {
+        installmentId: z.installmentId,
+        transactionId: z.transactionId,
+      });
+      if (ok) zapisanych++;
+    }
+    return { zapisanych, navrhov: navrhy.length, pohybov: pohyby.length };
   });
 
 const Potvrdenie = z.object({

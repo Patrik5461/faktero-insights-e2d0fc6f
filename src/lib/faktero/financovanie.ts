@@ -7,8 +7,12 @@
  * odpočet DPH.
  *
  * Počíta sa anuita: splátka je po celý čas rovnaká, ale mení sa jej zloženie —
- * na začiatku je v nej najviac úroku, na konci najviac istiny. Presne tak to
- * robia banky aj leasingovky, takže kalendár sa dá porovnať so zmluvou.
+ * na začiatku je v nej najviac úroku, na konci najviac istiny.
+ *
+ * Úrok sa predvolene počíta zo **skutočného počtu dní** v období (`ACT/365`).
+ * Tak to robia slovenské banky a bez toho sa kalendár so zmluvou rozíde: mesiac
+ * s 31 dňami má vyšší úrok než predchádzajúci tridsaťdňový, takže úrok neklesá
+ * plynulo. Overené na skutočnej zmluve ČSOB Leasing — sedí na cent.
  *
  * Zaokrúhľovanie je tu tá zradná časť. Keby sa každý riadok počítal nezávisle,
  * súčet istín by sa o pár centov rozišiel s financovanou sumou a v účtovníctve
@@ -29,6 +33,19 @@ export type Zmluva = {
   vat_rate?: number | null;
   /** Zostatková cena splatná na konci — pripočíta sa k poslednej splátke. */
   residual_value?: number | null;
+  /**
+   * Ako sa počíta úrok.
+   *
+   * `ACT/365` je to, čo naozaj robia slovenské banky: úrok za obdobie sa počíta
+   * zo skutočného počtu dní. Preto v ich kalendári úrok neklesá plynulo —
+   * mesiac s 31 dňami má vyšší úrok než predchádzajúci tridsaťdňový.
+   *
+   * `30E/360` delí rok na rovnaké dvanástiny. Jednoduchšie, ale so zmluvou
+   * banky sa rozíde o jednotky eur.
+   */
+  day_count?: "ACT/365" | "ACT/360" | "30E/360" | null;
+  /** Deň čerpania — začiatok prvého úrokového obdobia. */
+  interest_from?: string | null;
 };
 
 export type Splatka = {
@@ -75,6 +92,42 @@ export function datumSplatky(prva: string, poradie: number): string {
   return `${rok}-${String(mesiac + 1).padStart(2, "0")}-${String(den).padStart(2, "0")}`;
 }
 
+/** Počet dní medzi dvoma dátumami. */
+export function dniMedzi(od: string, do_: string): number {
+  return Math.round((Date.parse(`${do_}T00:00:00Z`) - Date.parse(`${od}T00:00:00Z`)) / 86_400_000);
+}
+
+/** Základ roka pre daný spôsob výpočtu. */
+function zakladRoka(sposob: Zmluva["day_count"]): number {
+  return sposob === "ACT/360" ? 360 : 365;
+}
+
+/**
+ * Splátka, pri ktorej zostatok istiny vyjde na konci presne na nulu.
+ *
+ * Pri počítaní podľa skutočných dní sa splátka zo vzorca pre anuitu vyrátať
+ * nedá — dĺžky období nie sú rovnaké. Hľadá sa preto polovením intervalu.
+ * Šesťdesiat krokov je viac než dosť na presnosť na cent.
+ */
+function hladajSplatku(istina: number, sadzba: number, obdobia: number[], zaklad: number): number {
+  const zostatokPri = (splatka: number) => {
+    let z = istina;
+    for (const dni of obdobia) {
+      const urok = (z * sadzba * dni) / (100 * zaklad);
+      z = z - (splatka - urok);
+    }
+    return z;
+  };
+  let dolu = 0;
+  let hore = istina + istina * (sadzba / 100) + 1;
+  for (let k = 0; k < 60; k++) {
+    const stred = (dolu + hore) / 2;
+    if (zostatokPri(stred) > 0) dolu = stred;
+    else hore = stred;
+  }
+  return zaokruhli((dolu + hore) / 2);
+}
+
 /**
  * Celý kalendár.
  *
@@ -86,22 +139,45 @@ export function kalendar(z: Zmluva): Splatka[] {
   const istina = zaokruhli(z.principal);
   const sadzbaDph = Math.max(0, z.vat_rate ?? 0);
   const zostatkova = zaokruhli(Math.max(0, z.residual_value ?? 0));
+  const sposob = z.day_count ?? "ACT/365";
+  const podlaDni = sposob !== "30E/360";
+  const zaklad = zakladRoka(sposob);
 
-  /* Zostatková cena sa nesplácala v priebehu — spláca sa istina bez nej a
+  /* Zostatková cena sa nespláca v priebehu — spláca sa istina bez nej a
      zvyšok dobehne na konci. Inak by vyšla splátka vyššia, než je v zmluve. */
   const splacana = zaokruhli(istina - zostatkova);
+
+  const datumy: string[] = [];
+  for (let n = 1; n <= mesiacov; n++) datumy.push(datumSplatky(z.first_due_date, n - 1));
+
+  /* Dĺžky úrokových období. Prvé sa počíta odo dňa čerpania — a to nemusí byť
+     presne mesiac pred prvou splatnosťou. Práve na tom sa rozchádzal prvý
+     riadok so skutočnou zmluvou. */
+  const zaciatok = z.interest_from || datumSplatky(z.first_due_date, -1);
+  const obdobia: number[] = [];
+  for (let n = 0; n < mesiacov; n++) {
+    obdobia.push(Math.max(0, dniMedzi(n === 0 ? zaciatok : datumy[n - 1], datumy[n])));
+  }
+
   const splatka =
     z.payment_amount && z.payment_amount > 0
       ? zaokruhli(z.payment_amount)
-      : anuita(splacana, z.interest_rate, mesiacov);
+      : podlaDni && z.interest_rate > 0
+        ? hladajSplatku(splacana, z.interest_rate, obdobia, zaklad)
+        : anuita(splacana, z.interest_rate, mesiacov);
 
-  const i = z.interest_rate / 100 / 12;
+  const mesacnaSadzba = z.interest_rate / 100 / 12;
   const riadky: Splatka[] = [];
   let zostava = splacana;
 
   for (let n = 1; n <= mesiacov; n++) {
     const posledna = n === mesiacov;
-    let urok = i > 0 ? zaokruhli(zostava * i) : 0;
+    let urok =
+      z.interest_rate > 0
+        ? podlaDni
+          ? zaokruhli((zostava * z.interest_rate * obdobia[n - 1]) / (100 * zaklad))
+          : zaokruhli(zostava * mesacnaSadzba)
+        : 0;
     let castIstiny = zaokruhli(splatka - urok);
     let suma = splatka;
 
@@ -127,7 +203,7 @@ export function kalendar(z: Zmluva): Splatka[] {
 
     riadky.push({
       number: n,
-      due_date: datumSplatky(z.first_due_date, n - 1),
+      due_date: datumy[n - 1],
       amount: suma,
       principal_part: castIstiny,
       interest_part: urok,

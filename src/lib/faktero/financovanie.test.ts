@@ -148,3 +148,63 @@ describe("súhrn", () => {
     expect(suhrn(kalendar(z), z).prepatok).toBe(0);
   });
 });
+
+describe("skutočná zmluva ČSOB Leasing UZF/26/80359", () => {
+  /*
+    Toto nie je vymyslený príklad — je to prvá skutočná zmluva, ktorú do Faktera
+    niekto zapísal, a práve na nej sa ukázalo, že úrok treba počítať zo
+    skutočných dní. Preto je tu celý jej úrokový stĺpec: keby sa výpočet niekedy
+    zmenil, tento test to zachytí skôr než zákazník.
+  */
+  const ZMLUVA = {
+    principal: 18699.81,
+    interest_rate: 6.2968,
+    term_months: 36,
+    first_due_date: "2026-06-18",
+    interest_from: "2026-05-19",
+    payment_amount: 571.43,
+    day_count: "ACT/365" as const,
+  };
+
+  const UROK_ZO_ZMLUVY = [
+    96.78, 94.33, 94.92, 92.37, 86.91, 87.22, 81.9, 82.01, 79.39, 69.33, 74.07, 69.11, 68.73, 63.91,
+    63.33, 60.61, 56.01, 55.12, 50.67, 49.57, 46.78, 41.14, 41.14, 37.07, 35.45, 31.53, 29.69, 26.8,
+    23.11, 20.95, 17.43, 15.04, 12.07, 8.2, 6.06, 2.92,
+  ];
+
+  it("úrok sedí so zmluvou riadok po riadku (do troch centov)", () => {
+    /*
+      Sadzba 6,2968 % je spätne odvodená z prvého riadku — v zmluve uvedená nie
+      je. Banka si navyše každý riadok zaokrúhľuje sama, takže zopár centov
+      rozdielu je fyzikálne nevyhnutných. Podstatné je, že to už nie sú eurá.
+    */
+    const r = kalendar(ZMLUVA);
+    for (let i = 0; i < 36; i++) {
+      expect(Math.abs(r[i].interest_part - UROK_ZO_ZMLUVY[i])).toBeLessThanOrEqual(0.03);
+    }
+  });
+
+  it("úrok neklesá plynulo — kopíruje dĺžku mesiaca", () => {
+    // Práve toto pôvodný výpočet nevedel: február má menej dní, tak má menej
+    // úroku než mesiace okolo neho.
+    const r = kalendar(ZMLUVA);
+    expect(r[2].interest_part).toBeGreaterThan(r[1].interest_part);
+    expect(r[9].interest_part).toBeLessThan(r[8].interest_part);
+    expect(r[10].interest_part).toBeGreaterThan(r[9].interest_part);
+  });
+
+  it("celkový úrok aj posledná splátka sedia", () => {
+    const r = kalendar(ZMLUVA);
+    const spolu = r.reduce((s, x) => s + x.interest_part, 0);
+    expect(Math.abs(spolu - 1871.67)).toBeLessThan(0.5);
+    expect(Math.abs(r[35].amount - 571.43)).toBeLessThan(0.5);
+    expect(zaokruhli(r.reduce((s, x) => s + x.principal_part, 0))).toBe(18699.81);
+  });
+
+  it("starý spôsob (30E/360) by sa rozišiel o vyše eura", () => {
+    // Dôkaz, že to nie je kozmetika: rovnaká zmluva počítaná dvanástinami roka.
+    const stary = kalendar({ ...ZMLUVA, day_count: "30E/360" });
+    const spolu = stary.reduce((s, x) => s + x.interest_part, 0);
+    expect(Math.abs(spolu - 1871.67)).toBeGreaterThan(1);
+  });
+});

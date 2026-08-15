@@ -2108,10 +2108,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           currency: string
+          day_count: string
           document_path: string | null
           down_payment: number
           first_due_date: string
           id: string
+          interest_from: string | null
           interest_rate: number
           kind: Database["public"]["Enums"]["financing_kind"]
           name: string
@@ -2134,10 +2136,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency?: string
+          day_count?: string
           document_path?: string | null
           down_payment?: number
           first_due_date: string
           id?: string
+          interest_from?: string | null
           interest_rate?: number
           kind: Database["public"]["Enums"]["financing_kind"]
           name: string
@@ -2160,10 +2164,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           currency?: string
+          day_count?: string
           document_path?: string | null
           down_payment?: number
           first_due_date?: string
           id?: string
+          interest_from?: string | null
           interest_rate?: number
           kind?: Database["public"]["Enums"]["financing_kind"]
           name?: string
