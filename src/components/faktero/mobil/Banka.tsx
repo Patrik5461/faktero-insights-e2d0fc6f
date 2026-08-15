@@ -137,6 +137,8 @@ export function Banka({
   const [pohyby, setPohyby] = useState<Pohyb[]>([]);
   const [vybrany, setVybrany] = useState<string | null>(null);
   const [tahame, setTahame] = useState(false);
+  /** Účty sa nedali načítať, lebo nie je signál. */
+  const [nedostupne, setNedostupne] = useState(false);
 
   async function obnov() {
     try {
@@ -147,7 +149,12 @@ export function Banka({
       setUcty(r.ucty);
       setPohyby(r.pohyby);
     } catch (e: any) {
-      toast.error(e?.message ?? "Pohyby sa nepodarilo načítať.");
+      // Bez signálu nevieme, či firma účet má — tvrdiť, že nemá, je nepravda a
+      // človek by šiel zbytočne pripájať banku, ktorú už pripojenú má.
+      const { isOnline } = await import("@/lib/mobile/offline-queue");
+      const online = await isOnline();
+      setNedostupne(!online);
+      if (online) toast.error(e?.message ?? "Pohyby sa nepodarilo načítať.");
       setUcty([]);
     }
   }
@@ -227,10 +234,15 @@ export function Banka({
       <MobilObrazovka title="Banka" subtitle={firma.name} onBack={onSpat}>
         <div className="grid place-items-center py-16 text-center">
           <Landmark className="mb-3 h-10 w-10 text-muted-foreground/50" />
-          <p className="text-sm font-medium">Firma nemá pripojený bankový účet</p>
+          <p className="text-sm font-medium">
+            {nedostupne
+              ? "Bez pripojenia sa účty nedajú načítať"
+              : "Firma nemá pripojený bankový účet"}
+          </p>
           <p className="mt-1 max-w-xs text-[13px] text-muted-foreground">
-            Účet sa pripája na webe — banka pri tom vyžaduje prihlásenie a súhlas, ktorý sa v
-            telefóne dobre vybaviť nedá.
+            {nedostupne
+              ? "Zostatky a pohyby sa dajú pozrieť, len keď je signál — z telefónu sa nikam neukladajú."
+              : "Účet sa pripája na webe — banka pri tom vyžaduje prihlásenie a súhlas, ktorý sa v telefóne dobre vybaviť nedá."}
           </p>
         </div>
       </MobilObrazovka>

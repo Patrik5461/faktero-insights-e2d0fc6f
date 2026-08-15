@@ -224,8 +224,10 @@ export function MobilnaApka() {
       // žiadna firma nepatrí. Preto sa posledný známy drží v telefóne.
       let zoznam: Firma[];
       try {
-        // Bez signálu sa dotaz nedočká odpovede a appka by pri štarte visela na
-        // točiacom sa koliesku. Osem sekúnd a ideme s tým, čo je v telefóne.
+        // Keď telefón vie, že signál nie je, nemá zmysel čakať na vypršanie —
+        // ideme rovno po tom, čo je uložené. Inak strop osem sekúnd.
+        const { isOnline } = await import("@/lib/mobile/offline-queue");
+        if (!(await isOnline())) throw new Error("bez pripojenia");
         zoznam = (await Promise.race([
           fetchMyCompanies(),
           new Promise((_, zamietni) => setTimeout(() => zamietni(new Error("bez odpovede")), 8000)),

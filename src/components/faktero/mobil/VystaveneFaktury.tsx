@@ -75,6 +75,8 @@ export function VystaveneFaktury({
   const [faktury, setFaktury] = useState<Faktura[] | null>(null);
   const [hladanie, setHladanie] = useState("");
   const [otvorena, setOtvorena] = useState<Faktura | null>(null);
+  /** Zoznam sa nepodarilo načítať a nebolo z čoho vziať starší. */
+  const [nedostupne, setNedostupne] = useState(false);
 
   async function obnov() {
     const { ulozDoPamate, zPamate } = await import("@/lib/mobile/jazdy-lokalne");
@@ -94,7 +96,12 @@ export function VystaveneFaktury({
           description: new Date(zapamatane.kedy).toLocaleString("sk-SK"),
         });
       } else {
-        toast.error(e?.message ?? "Faktúry sa nepodarilo načítať.");
+        // Tvrdiť „zatiaľ žiadne faktúry" by bola nepravda — vieme len to, že
+        // sme sa ich nedopýtali. Kto to prvýkrát otvorí bez signálu, by inak
+        // uveril, že o doklady prišiel.
+        const { isOnline } = await import("@/lib/mobile/offline-queue");
+        setNedostupne(!(await isOnline()));
+        if (await isOnline()) toast.error(e?.message ?? "Faktúry sa nepodarilo načítať.");
         setFaktury([]);
       }
     }
@@ -181,9 +188,19 @@ export function VystaveneFaktury({
         <div className="grid place-items-center py-14 text-center">
           <FileText className="mb-3 h-10 w-10 text-muted-foreground/50" />
           <p className="text-sm font-medium">
-            {hladanie ? "Nič sa nenašlo" : "Zatiaľ žiadne faktúry"}
+            {hladanie
+              ? "Nič sa nenašlo"
+              : nedostupne
+                ? "Bez pripojenia sa faktúry nedajú načítať"
+                : "Zatiaľ žiadne faktúry"}
           </p>
-          {!hladanie && (
+          {nedostupne && !hladanie && (
+            <p className="mt-2 max-w-[16rem] text-[13px] text-muted-foreground">
+              V telefóne zatiaľ nie je uložený žiadny zoznam. Otvorte túto obrazovku raz s
+              internetom a potom bude dostupná aj bez neho.
+            </p>
+          )}
+          {!hladanie && !nedostupne && (
             <button onClick={onNova} className="mt-3 text-sm font-medium text-primary">
               Vystaviť prvú faktúru
             </button>

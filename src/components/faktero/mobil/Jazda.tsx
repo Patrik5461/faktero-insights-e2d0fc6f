@@ -59,6 +59,8 @@ export function Jazda({
   onSpat: () => void;
 }) {
   const [vozidla, setVozidla] = useState<Vozidlo[] | null>(null);
+  /** Zoznam vozidiel sa nedal zistiť — nie je signál a v telefóne nič nie je. */
+  const [nezistene, setNezistene] = useState(false);
   const [vozidloId, setVozidloId] = useState("");
   const [ucel, setUcel] = useState("");
   const [bezi, setBezi] = useState(false);
@@ -94,6 +96,14 @@ export function Jazda({
     // Bez signálu sa siahne po poslednom známom zozname — inak by kniha jázd
     // v aute, teda presne tam, kde je potrebná, ostala prázdna.
     const zoznam = error || !data ? await vozidlaZPamate(firma.id) : data;
+    // Keď ani v telefóne nič nie je, nevieme, či firma vozidlá má — a tvrdiť,
+    // že nemá, by človeka v aute poslalo zakladať auto, ktoré už existuje.
+    if ((error || !data) && !zoznam.length) {
+      const { isOnline } = await import("@/lib/mobile/offline-queue");
+      setNezistene(!(await isOnline()));
+    } else {
+      setNezistene(false);
+    }
     if (!error && data)
       void ulozVozidla(
         firma.id,
@@ -367,9 +377,13 @@ export function Jazda({
       >
         <div className="grid place-items-center py-16 text-center">
           <Car className="mb-3 h-10 w-10 text-muted-foreground/50" />
-          <p className="text-sm font-medium">Firma nemá žiadne vozidlo</p>
+          <p className="text-sm font-medium">
+            {nezistene ? "Bez pripojenia sa vozidlá nedajú načítať" : "Firma nemá žiadne vozidlo"}
+          </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Pridajte ho tu — stačí názov a značka, zvyšok sa dá doplniť na webe.
+            {nezistene
+              ? "V telefóne zatiaľ nie je uložený zoznam. Otvorte túto obrazovku raz s internetom."
+              : "Pridajte ho tu — stačí názov a značka, zvyšok sa dá doplniť na webe."}
           </p>
         </div>
       </MobilObrazovka>

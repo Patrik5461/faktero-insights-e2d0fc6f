@@ -100,6 +100,8 @@ export function PrijateDoklady({
   const [odosielam, setOdosielam] = useState(false);
   const [hladanie, setHladanie] = useState("");
   const [otvoreny, setOtvoreny] = useState<Doklad | null>(null);
+  /** Zoznam sa nepodarilo načítať, lebo nie je signál. */
+  const [nedostupne, setNedostupne] = useState(false);
 
   async function obnov() {
     setCakajuce(await fronta(firma.id));
@@ -110,7 +112,11 @@ export function PrijateDoklady({
       // Bez signálu je prázdny zoznam očakávaný stav, nie chyba — hlásenie
       // „Failed to fetch" by tu človeka len postrašilo.
       const { isOnline } = await import("@/lib/mobile/offline-queue");
-      if (await isOnline()) toast.error(e?.message ?? "Doklady sa nepodarilo načítať.");
+      const online = await isOnline();
+      // „Zatiaľ žiadne doklady" je tvrdenie, ktoré bez signálu nemáme čím
+      // podložiť — a človek by si myslel, že o naskenované bločky prišiel.
+      setNedostupne(!online);
+      if (online) toast.error(e?.message ?? "Doklady sa nepodarilo načítať.");
       setDoklady([]);
     }
   }
@@ -251,10 +257,18 @@ export function PrijateDoklady({
         <div className="grid place-items-center py-16 text-center">
           <Receipt className="mb-3 h-10 w-10 text-muted-foreground/50" />
           <p className="text-sm font-medium">
-            {hladanie ? "Nič sa nenašlo" : "Zatiaľ žiadne doklady"}
+            {hladanie
+              ? "Nič sa nenašlo"
+              : nedostupne
+                ? "Bez pripojenia sa doklady nedajú načítať"
+                : "Zatiaľ žiadne doklady"}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {hladanie ? "Skúste hľadať inak." : "Naskenované bločky a faktúry sa objavia tu."}
+            {hladanie
+              ? "Skúste hľadať inak."
+              : nedostupne
+                ? "Odložené bločky sa odošlú samy, len čo sa vráti signál."
+                : "Naskenované bločky a faktúry sa objavia tu."}
           </p>
         </div>
       ) : (
