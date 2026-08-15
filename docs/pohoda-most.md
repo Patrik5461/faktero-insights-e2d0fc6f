@@ -121,6 +121,25 @@ neposielajú vôbec; schéma ho pri vytvorení vyžaduje a spadla by celá dávk
 Názov karty je na `products`, nie na `stock_items` — bez pripojenia by odišla
 karta bez názvu.
 
+### Zákazky
+
+Zákazky (`contract`, tabuľka `jobs`) sa zapínajú
+`companies.pohoda_posielat_zakazky`. Hlavný úžitok nie je zoznam zákaziek, ale
+to, že **faktúra nesie `inv:contract`** — účtovníčka z Pohody vidí výnos po
+zákazkách.
+
+Agenda `contract` **nemá v schéme `actionType` ani `extId`**, takže zákazku sa dá
+založiť, ale nie prepísať. Ide preto **práve raz**: `dataPackItem id` je bez
+verzie (na rozdiel od adresára a skladu), evidenčné číslo má
+`checkDuplicity="true"` a v `pohoda_odoslane` sa neporovnáva verzia, stačí, že
+záznam existuje. Neskoršiu zmenu názvu treba prepísať aj v Pohode — rozhranie to
+hovorí. `con:text` (názov) je pri vytvorení povinný, bez neho sa zákazka
+neposiela.
+
+V dávke majú prednosť zákazky, na ktoré sa odvoláva faktúra v tej istej dávke —
+inak by faktúra ukázala na zákazku, ktorá v Pohode ešte nie je. Stav zákazky sa
+neposiela: v Pohode je to odkaz do vlastného zoznamu stavov účtovníčky.
+
 Pozor na menné priestory: `extId` je na skladovej karte vyhlásený v `stock.xsd`
 (`<stk:extId>`), v adresári v `type.xsd` (`<typ:extId>`) a vo filtri v
 `filter.xsd` (`<ftr:extId>`) — obsah rovnaký, predpona iná. Toto chytila až
@@ -183,10 +202,11 @@ Takto sa našlo, že cudzia mena bola postavená zle.
 
 ## Čo ďalej
 
-**1. Zákazky (`contract`).** Posledná agenda, ktorá by sa dala pridať —
-`jobs`. Dáva zmysel len tomu, kto zákazky v Pohode naozaj vedie. Adresár a sklad
-sú už hotové (vyššie). Pozor, `purchase_invoices` je prázdna tabuľka — prijaté
-doklady žijú v `expense_documents`.
+**1. Agendy sú hotové** — faktúry, prijaté doklady, pokladňa, adresár, sklad aj
+zákazky. Ostávajú už len tie, po ktorých zatiaľ nikto nesiahol: príjemky a
+výdajky (`vydejka`, `prijemka`) by doplnili stav skladu, ale prekrývali by sa s
+faktúrami a museli by sa strážiť dvojité pohyby. Pozor, `purchase_invoices` je
+prázdna tabuľka — prijaté doklady žijú v `expense_documents`.
 
 **2. Živý most cez POHODA mServer.** _Prekonané konektorom vyššie — ostáva tu
 ako záznam, prečo sa touto cestou nešlo._ Pohoda má vstavaný HTTP server:
