@@ -12,7 +12,9 @@
  */
 import { isOnline } from "./offline-queue";
 
-const ADRESA = "https://www.faktero.sk/mobil-verzia.json";
+// Endpoint, nie statický súbor: appka beží na vlastnom pôvode a statické súbory
+// neposielajú hlavičky CORS — prehliadač vo WebView by odpoveď zahodil.
+const ADRESA = "https://www.faktero.sk/api/public/mobil/verzia";
 
 export type NovsiaVerzia = { peciatka: string; odkaz: string };
 
