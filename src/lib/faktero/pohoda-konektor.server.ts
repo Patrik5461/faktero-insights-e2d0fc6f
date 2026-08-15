@@ -58,31 +58,52 @@ export type Davka = {
   preskocene: string[];
 };
 
+/** Ktorá agenda číselníka — pod týmto sa vedie v `pohoda_odoslane`. */
+type Agenda = "adresar" | "sklad";
+
 /**
  * Číselníky sa neposielajú podľa dátumu, ale podľa zmeny.
  *
- * Porovnať dva stĺpce sa cez PostgREST filtrom nedá, preto sa najprv natiahnu
- * len tri malé stĺpce a porovnanie prebehne tu. Na tisíckach riadkov je to
- * stále lacnejšie než sťahovať celé karty.
+ * Odoslaná verzia sa **nedrží na samotnej karte**. Obidve tabuľky majú trigger
+ * `set_updated_at`, takže vlastný zápis by posunul `updated_at` a karta by sa
+ * navždy tvárila ako zmenená — konektor by ju posielal každý deň znova. Preto je
+ * na to samostatná tabuľka, ktorej sa zdrojový riadok nedotkne.
+ *
+ * Porovnanie prebieha tu, nie vo filtri: PostgREST dva stĺpce porovnať nevie a
+ * natiahnuť dva malé stĺpce je aj na tisíckach riadkov lacnejšie než celé karty.
  */
-async function cakajuceIds(
+async function cakajuce(
   supabase: Klient,
   tabulka: "customers" | "stock_items",
+  agenda: Agenda,
   companyId: string,
   stlpecZmazania: "deleted_at" | "archived_at",
-): Promise<string[]> {
-  const { data } = await supabase
-    .from(tabulka)
-    .select(`id, updated_at, pohoda_odoslane_at`)
-    .eq("company_id", companyId)
-    .is(stlpecZmazania, null);
+): Promise<{ id: string; verzia: string }[]> {
+  const [{ data: karty }, { data: odoslane }] = await Promise.all([
+    supabase
+      .from(tabulka)
+      .select("id, updated_at")
+      .eq("company_id", companyId)
+      .is(stlpecZmazania, null),
+    supabase
+      .from("pohoda_odoslane")
+      .select("zaznam_id, verzia")
+      .eq("company_id", companyId)
+      .eq("agenda", agenda),
+  ]);
 
-  return (data ?? [])
-    .filter(
-      (r: Riadok) => !r.pohoda_odoslane_at || String(r.updated_at) > String(r.pohoda_odoslane_at),
-    )
+  const uz = new Map<string, string>(
+    (odoslane ?? []).map((r: Riadok) => [String(r.zaznam_id), String(r.verzia)]),
+  );
+
+  return (karty ?? [])
+    .filter((r: Riadok) => {
+      const posledna = uz.get(String(r.id));
+      // Časy z databázy prídu v rovnakom tvare, takže stačí porovnať okamih.
+      return !posledna || new Date(String(r.updated_at)) > new Date(posledna);
+    })
     .slice(0, STROP_DAVKY)
-    .map((r: Riadok) => r.id as string);
+    .map((r: Riadok) => ({ id: String(r.id), verzia: String(r.updated_at) }));
 }
 
 function nahodnyToken(): string {
@@ -162,7 +183,7 @@ export async function zostavDavku(
   // Číselníky — len keď si ich firma zapla. Sklad navyše potrebuje členenie,
   // bez neho Pohoda kartu nezaloží, tak sa ani neposiela.
   const zakaznici = company.pohoda_posielat_adresar
-    ? await nacitajCakajuce(supabase, "customers", vstup.companyId, "deleted_at")
+    ? await nacitajZakaznikov(supabase, vstup.companyId)
     : [];
   const zasoby =
     company.pohoda_posielat_sklad && company.pohoda_sklad
@@ -251,8 +272,8 @@ export async function zostavDavku(
       preskocene,
       dokladyIds: (doklady ?? []).map((d: Riadok) => d.id),
       pokladnicaIds: (pokladnica ?? []).map((p: Riadok) => p.id),
-      zakazniciIds: zakaznici.map((z: Riadok) => z.id),
-      zasobyIds: zasoby.map((s: Riadok) => s.id),
+      zakaznici,
+      zasoby,
     });
   }
 
@@ -270,15 +291,16 @@ export async function zostavDavku(
 }
 
 /** Kontakty, ktoré ešte neodišli alebo sa od odoslania zmenili. */
-async function nacitajCakajuce(
-  supabase: Klient,
-  tabulka: "customers",
-  companyId: string,
-  stlpecZmazania: "deleted_at",
-): Promise<Riadok[]> {
-  const ids = await cakajuceIds(supabase, tabulka, companyId, stlpecZmazania);
-  if (!ids.length) return [];
-  const { data } = await supabase.from(tabulka).select("*").in("id", ids);
+async function nacitajZakaznikov(supabase: Klient, companyId: string): Promise<Riadok[]> {
+  const cakaju = await cakajuce(supabase, "customers", "adresar", companyId, "deleted_at");
+  if (!cakaju.length) return [];
+  const { data } = await supabase
+    .from("customers")
+    .select("*")
+    .in(
+      "id",
+      cakaju.map((c) => c.id),
+    );
   return data ?? [];
 }
 
@@ -289,13 +311,16 @@ async function nacitajCakajuce(
  * pripojenia by do Pohody odišla karta bez názvu a tú by odmietla.
  */
 async function nacitajZasoby(supabase: Klient, companyId: string): Promise<Riadok[]> {
-  const ids = await cakajuceIds(supabase, "stock_items", companyId, "archived_at");
-  if (!ids.length) return [];
+  const cakaju = await cakajuce(supabase, "stock_items", "sklad", companyId, "archived_at");
+  if (!cakaju.length) return [];
 
   const { data } = await supabase
     .from("stock_items")
     .select("*, products(name, code, unit, vat_rate)")
-    .in("id", ids);
+    .in(
+      "id",
+      cakaju.map((c) => c.id),
+    );
 
   return (data ?? []).map((s: Riadok) => ({
     ...s,
@@ -342,8 +367,8 @@ async function zapisOdovzdanie(
     preskocene: string[];
     dokladyIds: string[];
     pokladnicaIds: string[];
-    zakazniciIds: string[];
-    zasobyIds: string[];
+    zakaznici: Riadok[];
+    zasoby: Riadok[];
   },
 ): Promise<string | null> {
   const { data: job, error } = await supabase
@@ -390,11 +415,23 @@ async function zapisOdovzdanie(
       .update({ exported_at: teraz, export_job_id: job.id })
       .in("id", p.pokladnicaIds);
   }
-  if (p.zakazniciIds.length) {
-    await supabase.from("customers").update({ pohoda_odoslane_at: teraz }).in("id", p.zakazniciIds);
-  }
-  if (p.zasobyIds.length) {
-    await supabase.from("stock_items").update({ pohoda_odoslane_at: teraz }).in("id", p.zasobyIds);
+  // Zapisuje sa verzia, ktorú sme naozaj poslali — nie čas odoslania. Karta tak
+  // znovu odíde presne vtedy, keď ju niekto zmení, a nie stále dokola.
+  const ciselniky = [
+    ...p.zakaznici.map((z: Riadok) => ({ agenda: "adresar", id: z.id, verzia: z.updated_at })),
+    ...p.zasoby.map((s: Riadok) => ({ agenda: "sklad", id: s.id, verzia: s.updated_at })),
+  ];
+  if (ciselniky.length) {
+    await supabase.from("pohoda_odoslane").upsert(
+      ciselniky.map((c) => ({
+        company_id: p.companyId,
+        agenda: c.agenda,
+        zaznam_id: c.id,
+        verzia: c.verzia,
+        odoslane_at: teraz,
+      })),
+      { onConflict: "company_id,agenda,zaznam_id" },
+    );
   }
   return job.id as string;
 }
@@ -587,20 +624,13 @@ export async function spracujOdpoved(
     }
 
     // Adresár a sklad: odmietnutá karta sa vráti do fronty tým, že sa zabudne,
-    // kedy odišla. Číslo si Pohoda pri číselníkoch neprideľuje.
+    // ktorá verzia odišla. Číslo si Pohoda pri číselníkoch neprideľuje.
     if (!chyba) continue;
-    for (const tabulka of ["customers", "stock_items"] as const) {
-      const { data: r } = await supabase
-        .from(tabulka)
-        .select("id")
-        .eq("company_id", vstup.companyId)
-        .eq("id", id)
-        .maybeSingle();
-      if (r) {
-        await supabase.from(tabulka).update({ pohoda_odoslane_at: null }).eq("id", id);
-        break;
-      }
-    }
+    await supabase
+      .from("pohoda_odoslane")
+      .delete()
+      .eq("company_id", vstup.companyId)
+      .eq("zaznam_id", id);
   }
 
   return {

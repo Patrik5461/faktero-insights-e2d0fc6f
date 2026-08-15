@@ -1345,7 +1345,6 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
-          pohoda_odoslane_at: string | null
           price_group_id: string | null
           street: string | null
           updated_at: string
@@ -1369,7 +1368,6 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
-          pohoda_odoslane_at?: string | null
           price_group_id?: string | null
           street?: string | null
           updated_at?: string
@@ -1393,7 +1391,6 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
-          pohoda_odoslane_at?: string | null
           price_group_id?: string | null
           street?: string | null
           updated_at?: string
@@ -3368,6 +3365,38 @@ export type Database = {
         }
         Relationships: []
       }
+      pohoda_odoslane: {
+        Row: {
+          agenda: string
+          company_id: string
+          odoslane_at: string
+          verzia: string
+          zaznam_id: string
+        }
+        Insert: {
+          agenda: string
+          company_id: string
+          odoslane_at?: string
+          verzia: string
+          zaznam_id: string
+        }
+        Update: {
+          agenda?: string
+          company_id?: string
+          odoslane_at?: string
+          verzia?: string
+          zaznam_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pohoda_odoslane_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_action_products: {
         Row: {
           company_id: string
@@ -4737,7 +4766,6 @@ export type Database = {
           name_en: string | null
           optimal_stock: number
           photo_url: string | null
-          pohoda_odoslane_at: string | null
           product_id: string | null
           purchase_price: number
           sale_price: number
@@ -4763,7 +4791,6 @@ export type Database = {
           name_en?: string | null
           optimal_stock?: number
           photo_url?: string | null
-          pohoda_odoslane_at?: string | null
           product_id?: string | null
           purchase_price?: number
           sale_price?: number
@@ -4789,7 +4816,6 @@ export type Database = {
           name_en?: string | null
           optimal_stock?: number
           photo_url?: string | null
-          pohoda_odoslane_at?: string | null
           product_id?: string | null
           purchase_price?: number
           sale_price?: number
