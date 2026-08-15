@@ -75,7 +75,12 @@ async function trezor(): Promise<Trezor | null> {
       return null;
     }
     const { SecureStorage } = await import("@aparajita/capacitor-secure-storage");
-    trezorUlozisko = SecureStorage as unknown as Trezor;
+    // Zabalené do obyčajného objektu zámerne — pozri poznámku pri `nativne()`.
+    trezorUlozisko = {
+      getItem: (kluc) => SecureStorage.getItem(kluc) as Promise<string | null>,
+      setItem: (kluc, hodnota) => SecureStorage.setItem(kluc, hodnota),
+      removeItem: (kluc) => SecureStorage.removeItem(kluc),
+    };
   } catch {
     trezorUlozisko = null;
   }
@@ -94,7 +99,21 @@ async function nativne(): Promise<Preferences | null> {
       return null;
     }
     const { Preferences } = await import("@capacitor/preferences");
-    nativneUlozisko = Preferences as unknown as Preferences;
+    /*
+     * Plugin sa **nesmie vrátiť z asynchrónnej funkcie priamo.**
+     *
+     * Capacitor ho podáva ako proxy, ktorá z každého prístupu k vlastnosti robí
+     * volanie natívnej metódy — vrátane `then`. Plugin je tým pádom „thenable"
+     * a `await` naň zavolá `Preferences.then()`, čo v telefóne neexistuje.
+     * Výsledok: úložisko sa tvárilo ako nedostupné a všetko spadlo na
+     * prehliadačovú náhradu, ktorá reštart neprežije. Preto obyčajný objekt.
+     */
+    nativneUlozisko = {
+      get: (o) => Preferences.get(o),
+      set: (o) => Preferences.set(o),
+      remove: (o) => Preferences.remove(o),
+      keys: () => Preferences.keys(),
+    };
   } catch {
     nativneUlozisko = null;
   }

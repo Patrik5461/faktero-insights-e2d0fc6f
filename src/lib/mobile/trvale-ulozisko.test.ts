@@ -69,3 +69,38 @@ describe("trvalé úložisko", () => {
     expect(klucePamate()).not.toContain("sb-projekt-auth-token");
   });
 });
+
+describe("plugin sa nesmie vrátiť z asynchrónnej funkcie priamo", () => {
+  it("objekt s vlastnosťou then sa pri await zavolá, nie vráti", async () => {
+    // Presne toto robí proxy Capacitora: každý prístup k vlastnosti — vrátane
+    // `then` — považuje za natívnu metódu. Preto sa plugin musí zabaliť.
+    let zavolaneThen = false;
+    const akoPlugin = new Proxy(
+      {},
+      {
+        get(_, prop) {
+          if (prop === "then") {
+            zavolaneThen = true;
+            return () => {
+              throw new Error(`"Preferences.then()" is not implemented`);
+            };
+          }
+          return () => Promise.resolve(null);
+        },
+      },
+    );
+
+    async function zle() {
+      return akoPlugin;
+    }
+    await expect(zle()).rejects.toThrow("not implemented");
+    expect(zavolaneThen).toBe(true);
+
+    // Obal je obyčajný objekt — `await` ho vráti tak, ako je.
+    async function spravne() {
+      return { get: () => Promise.resolve("hodnota") };
+    }
+    const obal = await spravne();
+    expect(await obal.get()).toBe("hodnota");
+  });
+});

@@ -257,7 +257,15 @@ async function natívne() {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return null;
     const { Preferences } = await import("@capacitor/preferences");
-    return Preferences;
+    // Plugin sa nesmie vrátiť priamo: Capacitor ho podáva ako proxy, ktorá aj
+    // `then` považuje za natívnu metódu. `await` naň potom zavolá
+    // `Preferences.then()`, tá v telefóne neexistuje, funkcia skončí v `catch`
+    // a natívne úložisko sa tvárilo, že nie je — hoci bolo. Preto obal.
+    return {
+      get: (o: { key: string }) => Preferences.get(o),
+      set: (o: { key: string; value: string }) => Preferences.set(o),
+      remove: (o: { key: string }) => Preferences.remove(o),
+    };
   } catch {
     return null;
   }
