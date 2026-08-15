@@ -155,6 +155,8 @@ const SCHEMY: Record<string, string> = {
   adb: "addressbook.xsd",
   stk: "stock.xsd",
   con: "contract.xsd",
+  pri: "prijemka.xsd",
+  vyd: "vydejka.xsd",
   ftr: "filter.xsd",
 };
 
@@ -835,6 +837,135 @@ export function buildPohodaAddressbookXml(opts: {
   });
 }
 
+/** Skupina pohybov, z ktorej vznikne jedna príjemka alebo výdajka. */
+export type SkupinaPohybov = {
+  /** Identifikátor dokladu — id prvého pohybu v skupine. */
+  id: string;
+  smer: "prijem" | "vydaj";
+  datum: string;
+  pohyby: DokladRow[];
+};
+
+/**
+ * Ako sa jednotlivé pohyby zliewajú do dokladov.
+ *
+ * Jeden pohyb = jeden doklad by znamenal, že z jedného importu 300 kariet vznikne
+ * 300 príjemiek. Preto sa zlievajú podľa **smeru, dňa a zdrojového dokladu** —
+ * čo prišlo na jednu dodávku, ostane spolu.
+ *
+ * Smer sa berie z typu pohybu; pri inventúre a oprave ho typ nepovie, tam
+ * rozhoduje **znamienko množstva** (prebytok hore, manko dole).
+ */
+export function zoskupPohyby(pohyby: DokladRow[]): SkupinaPohybov[] {
+  const DO_PRIJMU = new Set(["prijem", "dobropis"]);
+  const DO_VYDAJA = new Set(["vydaj", "faktura"]);
+
+  const skupiny = new Map<string, SkupinaPohybov>();
+  for (const p of pohyby) {
+    const mnozstvo = Number(p?.quantity ?? 0);
+    if (!mnozstvo) continue;
+
+    const typ = String(p?.type ?? "");
+    const smer: "prijem" | "vydaj" = DO_PRIJMU.has(typ)
+      ? "prijem"
+      : DO_VYDAJA.has(typ)
+        ? "vydaj"
+        : mnozstvo > 0
+          ? "prijem"
+          : "vydaj";
+
+    const datum = String(p?.created_at ?? "").slice(0, 10);
+    const doklad = String(p?.source_document_id ?? p?.reference_id ?? "");
+    const kluc = `${smer}|${datum}|${doklad}`;
+
+    const skupina = skupiny.get(kluc);
+    if (skupina) skupina.pohyby.push(p);
+    else skupiny.set(kluc, { id: String(p?.id ?? kluc), smer, datum, pohyby: [p] });
+  }
+  return [...skupiny.values()];
+}
+
+/**
+ * Príjemky a výdajky — aby v Pohode sedeli **stavy** skladu, nielen karty.
+ *
+ * **Príjemka ide s príznakom `notPost`** — pohne skladom, ale nezaúčtuje sa.
+ * Náklad je už na prijatom doklade a v režime skladov A by ho príjemka zaúčtovala
+ * druhýkrát. Výdajka taký príznak v schéme nemá a nepotrebuje ho: v režime A
+ * zaúčtuje úbytok zásob, kým výnos je na faktúre, takže sa nič nezdvojí.
+ *
+ * Položka sa na skladovú kartu odvoláva **naším identifikátorom**, nie kódom —
+ * kód sa dá v Pohode prepísať, identifikátor nie. Preto sa pohyby posielajú až
+ * po kartách.
+ */
+export function polozkySkladovychPohybov(opts: {
+  skupiny: SkupinaPohybov[];
+  nastavenia?: PohodaNastavenia;
+}): string {
+  const sklad = opts.nastavenia?.sklad;
+  if (!sklad) return "";
+
+  return opts.skupiny
+    .map((s) => {
+      const prijem = s.smer === "prijem";
+      const p = prijem ? "pri" : "vyd";
+      const agenda = prijem ? "prijemka" : "vydejka";
+      const tab = sadzbyKuDnu(s.datum);
+
+      const polozky = s.pohyby
+        .map((m) => {
+          const nazov = skrat(m?.nazov ?? m?.name, 90) || "Skladová položka";
+          const cena = prijem ? (m?.unit_price ?? m?.unit_cost) : (m?.unit_price ?? m?.unit_cost);
+          return `
+        <${p}:${agenda}Item>
+          <${p}:text>${esc(nazov)}</${p}:text>
+          <${p}:quantity>${Math.abs(Number(m?.quantity ?? 0))}</${p}:quantity>${el(
+            `${p}:unit`,
+            skrat(m?.unit ?? "ks", 10),
+            "          ",
+          )}
+          <${p}:rateVAT>${kodSadzby(Number(m?.vat_rate ?? 0), tab)}</${p}:rateVAT>
+          <${p}:homeCurrency>${elSuma("typ:unitPrice", cena, "            ")}
+          </${p}:homeCurrency>${el(`${p}:code`, skrat(m?.sku, 20), "          ")}
+          <${p}:stockItem>
+            <typ:store><typ:ids>${esc(sklad)}</typ:ids></typ:store>
+            <typ:stockItem>${extId("typ", m?.stock_item_id, "              ")}
+            </typ:stockItem>
+          </${p}:stockItem>
+        </${p}:${agenda}Item>`;
+        })
+        .join("");
+
+      return `
+  <dat:dataPackItem id="${esc(s.id)}" version="2.0">
+    <${p}:${agenda} version="2.0">
+      <${p}:${agenda}Header>
+        <${p}:date>${esc(s.datum)}</${p}:date>
+        <${p}:text>${prijem ? "Príjem na sklad" : "Výdaj zo skladu"} — Faktero</${p}:text>${
+          prijem ? "\n        <pri:notPost>true</pri:notPost>" : ""
+        }
+      </${p}:${agenda}Header>
+      <${p}:${agenda}Detail>${polozky}
+      </${p}:${agenda}Detail>
+    </${p}:${agenda}>
+  </dat:dataPackItem>`;
+    })
+    .join("");
+}
+
+/** Skladové pohyby samostatne. */
+export function buildPohodaMovementsXml(opts: {
+  company: CompanyRow;
+  skupiny: SkupinaPohybov[];
+  nastavenia?: PohodaNastavenia;
+}): string {
+  return obalka({
+    ico: opts.company?.ico,
+    note: "Skladové pohyby z Faktero",
+    prefixy: ["pri", "vyd"],
+    entries: polozkySkladovychPohybov(opts),
+  });
+}
+
 /** Zákazky samostatne. */
 export function buildPohodaContractsXml(opts: {
   company: CompanyRow;
@@ -876,6 +1007,7 @@ export function buildPohodaDavkaXml(opts: {
   zakaznici?: DokladRow[];
   zasoby?: DokladRow[];
   zakazkyNove?: DokladRow[];
+  skupinyPohybov?: SkupinaPohybov[];
   nastavenia?: PohodaNastavenia;
   odkazy?: Record<string, string>;
   zakazky?: Record<string, string>;
@@ -886,6 +1018,13 @@ export function buildPohodaDavkaXml(opts: {
     opts.zakaznici?.length ? polozkyAdresara({ zakaznici: opts.zakaznici }) : "",
     opts.zasoby?.length ? polozkySkladu({ zasoby: opts.zasoby, nastavenia: opts.nastavenia }) : "",
     opts.zakazkyNove?.length ? polozkyZakaziek({ zakazky: opts.zakazkyNove }) : "",
+    // Pohyby až po kartách — položka sa na kartu odvoláva a tá musí existovať.
+    opts.skupinyPohybov?.length
+      ? polozkySkladovychPohybov({
+          skupiny: opts.skupinyPohybov,
+          nastavenia: opts.nastavenia,
+        })
+      : "",
     polozkyFaktur(opts),
     polozkyDokladov(opts),
     polozkyPokladne(opts),
@@ -893,7 +1032,7 @@ export function buildPohodaDavkaXml(opts: {
   return obalka({
     ico: opts.company?.ico,
     note: "Dávka z Faktero",
-    prefixy: ["inv", "vch", "adb", "stk", "con", "ftr"],
+    prefixy: ["inv", "vch", "adb", "stk", "con", "pri", "vyd", "ftr"],
     entries,
   });
 }

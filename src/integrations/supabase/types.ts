@@ -948,6 +948,7 @@ export type Database = {
           pohoda_clenenie_dph_prijata: string | null
           pohoda_odkaz_na_pdf: boolean
           pohoda_posielat_adresar: boolean
+          pohoda_posielat_pohyby: boolean
           pohoda_posielat_sklad: boolean
           pohoda_posielat_zakazky: boolean
           pohoda_predkontacia: string | null
@@ -1008,6 +1009,7 @@ export type Database = {
           pohoda_clenenie_dph_prijata?: string | null
           pohoda_odkaz_na_pdf?: boolean
           pohoda_posielat_adresar?: boolean
+          pohoda_posielat_pohyby?: boolean
           pohoda_posielat_sklad?: boolean
           pohoda_posielat_zakazky?: boolean
           pohoda_predkontacia?: string | null
@@ -1068,6 +1070,7 @@ export type Database = {
           pohoda_clenenie_dph_prijata?: string | null
           pohoda_odkaz_na_pdf?: boolean
           pohoda_posielat_adresar?: boolean
+          pohoda_posielat_pohyby?: boolean
           pohoda_posielat_sklad?: boolean
           pohoda_posielat_zakazky?: boolean
           pohoda_predkontacia?: string | null

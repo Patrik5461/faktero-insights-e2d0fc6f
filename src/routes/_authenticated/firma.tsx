@@ -246,6 +246,22 @@ function CompanyPage() {
               <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
                 <input
                   type="checkbox"
+                  checked={!!c.pohoda_posielat_pohyby}
+                  onChange={(e) => setC({ ...c, pohoda_posielat_pohyby: e.target.checked })}
+                  className="mt-0.5 h-4 w-4"
+                />
+                <span className="text-sm">
+                  Posielať skladové pohyby
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    Príjemky a výdajky, aby v Pohode sedeli <strong>stavy</strong> skladu, nielen
+                    karty. Príjemka ide s príznakom „neúčtovať", aby sa náklad nezdvojil s prijatým
+                    dokladom. Potrebuje zapnuté skladové karty.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
+                <input
+                  type="checkbox"
                   checked={!!c.pohoda_posielat_zakazky}
                   onChange={(e) => setC({ ...c, pohoda_posielat_zakazky: e.target.checked })}
                   className="mt-0.5 h-4 w-4"

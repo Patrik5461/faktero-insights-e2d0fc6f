@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { XMLValidator } from "fast-xml-parser";
-import { buildPohodaDavkaXml, buildPohodaInvoiceXml } from "./export.server";
+import { buildPohodaDavkaXml, buildPohodaInvoiceXml, zoskupPohyby } from "./export.server";
 import {
   dekodujOdpoved,
   holeId,
@@ -285,6 +285,145 @@ describe("zákazky", () => {
       pohyby: [],
     });
     expect(bez).not.toContain("inv:contract");
+  });
+});
+
+describe("skladové pohyby", () => {
+  const karta = "88888888-8888-8888-8888-888888888888";
+  const pohyb = (o: Record<string, unknown>) => ({
+    stock_item_id: karta,
+    nazov: "Skrutka M8",
+    sku: "SKR-M8",
+    unit: "ks",
+    vat_rate: 23,
+    unit_price: 0.12,
+    ...o,
+  });
+
+  it("pohyby z jedného dňa sa zlejú do jedného dokladu", () => {
+    // Jeden pohyb = jeden doklad by z jedného importu urobil tristo príjemiek.
+    const skupiny = zoskupPohyby([
+      pohyb({ id: "aaa", type: "prijem", quantity: 10, created_at: "2026-03-01T08:00:00Z" }),
+      pohyb({ id: "bbb", type: "prijem", quantity: 5, created_at: "2026-03-01T14:00:00Z" }),
+      pohyb({ id: "ccc", type: "prijem", quantity: 3, created_at: "2026-03-02T09:00:00Z" }),
+    ]);
+    expect(skupiny).toHaveLength(2);
+    expect(skupiny[0].pohyby).toHaveLength(2);
+    expect(skupiny[0].id).toBe("aaa");
+  });
+
+  it("príjem a výdaj v ten istý deň sú dva doklady", () => {
+    const skupiny = zoskupPohyby([
+      pohyb({ id: "aaa", type: "prijem", quantity: 10, created_at: "2026-03-01T08:00:00Z" }),
+      pohyb({ id: "bbb", type: "vydaj", quantity: 4, created_at: "2026-03-01T09:00:00Z" }),
+    ]);
+    expect(skupiny.map((s) => s.smer)).toEqual(["prijem", "vydaj"]);
+  });
+
+  it("čo prišlo na jednu dodávku, ostane spolu", () => {
+    const skupiny = zoskupPohyby([
+      pohyb({
+        id: "aaa",
+        type: "prijem",
+        quantity: 1,
+        created_at: "2026-03-01T08:00:00Z",
+        source_document_id: "d1",
+      }),
+      pohyb({
+        id: "bbb",
+        type: "prijem",
+        quantity: 1,
+        created_at: "2026-03-01T08:00:00Z",
+        source_document_id: "d2",
+      }),
+    ]);
+    expect(skupiny).toHaveLength(2);
+  });
+
+  it("pri inventúre rozhoduje znamienko", () => {
+    // Typ pohybu smer nepovie — prebytok ide na sklad, manko z neho.
+    const skupiny = zoskupPohyby([
+      pohyb({ id: "aaa", type: "inventura", quantity: 7, created_at: "2026-03-01T08:00:00Z" }),
+      pohyb({ id: "bbb", type: "inventura", quantity: -2, created_at: "2026-03-01T08:00:00Z" }),
+    ]);
+    expect(skupiny.find((s) => s.smer === "prijem")?.pohyby).toHaveLength(1);
+    expect(skupiny.find((s) => s.smer === "vydaj")?.pohyby).toHaveLength(1);
+  });
+
+  const davka = buildPohodaDavkaXml({
+    company: firma,
+    invoices: [{ invoice: faktura, items: [polozka] }],
+    doklady: [],
+    pohyby: [],
+    skupinyPohybov: zoskupPohyby([
+      pohyb({ id: "aaa", type: "prijem", quantity: 10, created_at: "2026-03-01T08:00:00Z" }),
+      pohyb({ id: "bbb", type: "vydaj", quantity: -4, created_at: "2026-03-01T09:00:00Z" }),
+    ]),
+    nastavenia: { sklad: "TOVAR" },
+  });
+
+  it("príjemka aj výdajka sú platné XML", () => {
+    expect(XMLValidator.validate(davka)).toBe(true);
+    expect(davka).toContain('<pri:prijemka version="2.0">');
+    expect(davka).toContain('<vyd:vydejka version="2.0">');
+  });
+
+  it("množstvo je vždy kladné, smer hovorí doklad", () => {
+    // Záporné množstvo na výdajke by sklad pohlo opačne.
+    expect(davka).toContain("<vyd:quantity>4</vyd:quantity>");
+    expect(davka).not.toMatch(/<(pri|vyd):quantity>-/);
+  });
+
+  it("príjemka sa nezaúčtuje, výdajka taký príznak nemá", () => {
+    // Náklad je už na prijatom doklade a v režime skladov A by ho príjemka
+    // zaúčtovala druhýkrát. Výdajka v schéme `notPost` nemá — a nepotrebuje ho,
+    // úbytok zásob proti výnosu na faktúre nič nezdvojí.
+    expect(davka).toContain("<pri:notPost>true</pri:notPost>");
+    expect(davka).not.toContain("vyd:notPost");
+  });
+
+  it("položka sa na kartu odvoláva naším identifikátorom", () => {
+    // Kód zásoby sa dá v Pohode prepísať, identifikátor nie.
+    expect(davka).toContain(`<typ:ids>${karta}</typ:ids>`);
+    expect(davka).toContain("<typ:store><typ:ids>TOVAR</typ:ids></typ:store>");
+  });
+
+  it("pohyby idú až po skladových kartách", () => {
+    const sKartami = buildPohodaDavkaXml({
+      company: firma,
+      invoices: [],
+      doklady: [],
+      pohyby: [],
+      zasoby: [
+        {
+          id: karta,
+          updated_at: "2026-03-01T07:00:00.000Z",
+          nazov: "Skrutka M8",
+          sku: "SKR-M8",
+          unit: "ks",
+          vat_rate: 23,
+        },
+      ],
+      skupinyPohybov: zoskupPohyby([
+        pohyb({ id: "aaa", type: "prijem", quantity: 10, created_at: "2026-03-01T08:00:00Z" }),
+      ]),
+      nastavenia: { sklad: "TOVAR" },
+    });
+    expect(sKartami.indexOf("stk:stock")).toBeLessThan(sKartami.indexOf("pri:prijemka"));
+  });
+
+  it("bez členenia skladu sa pohyby neposielajú", () => {
+    const bezSkladu = buildPohodaDavkaXml({
+      company: firma,
+      invoices: [{ invoice: faktura, items: [polozka] }],
+      doklady: [],
+      pohyby: [],
+      skupinyPohybov: zoskupPohyby([
+        pohyb({ id: "aaa", type: "prijem", quantity: 10, created_at: "2026-03-01T08:00:00Z" }),
+      ]),
+      nastavenia: {},
+    });
+    expect(bezSkladu).not.toContain("pri:prijemka");
   });
 });
 

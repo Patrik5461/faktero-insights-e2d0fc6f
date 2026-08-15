@@ -59,6 +59,7 @@ export const Route = createFileRoute("/api/v1/pohoda/davka")({
               "x-faktero-zakaznikov": String(davka.zakaznikov),
               "x-faktero-zasob": String(davka.zasob),
               "x-faktero-zakaziek": String(davka.zakaziek),
+              "x-faktero-pohybov": String(davka.pohybov),
               ...(davka.jobId ? { "x-faktero-davka": davka.jobId } : {}),
             },
           });

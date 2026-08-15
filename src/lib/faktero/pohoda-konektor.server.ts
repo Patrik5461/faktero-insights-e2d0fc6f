@@ -56,11 +56,12 @@ export type Davka = {
   zakaznikov: number;
   zasob: number;
   zakaziek: number;
+  pohybov: number;
   preskocene: string[];
 };
 
 /** Ktorá agenda číselníka — pod týmto sa vedie v `pohoda_odoslane`. */
-type Agenda = "adresar" | "sklad" | "zakazka";
+type Agenda = "adresar" | "sklad" | "zakazka" | "pohyb";
 
 /**
  * Číselníky sa neposielajú podľa dátumu, ale podľa zmeny.
@@ -194,13 +195,23 @@ export async function zostavDavku(
     ? await nacitajZakazky(supabase, vstup.companyId, faktury)
     : { nove: [], kody: {} };
 
+  // Pohyby majú zmysel len vtedy, keď sú v Pohode karty — položka sa na kartu
+  // odvoláva. Posielajú sa preto až tie, ktorých karta už odišla.
+  const pohyby =
+    company.pohoda_posielat_pohyby && company.pohoda_posielat_sklad && company.pohoda_sklad
+      ? await nacitajPohyby(supabase, vstup.companyId, zasoby)
+      : [];
+  const { zoskupPohyby } = await import("./export.server");
+  const skupinyPohybov = zoskupPohyby(pohyby);
+
   const prazdna =
     !faktury.length &&
     !doklady?.length &&
     !pokladnica?.length &&
     !zakaznici.length &&
     !zasoby.length &&
-    !zakazkyNove.length;
+    !zakazkyNove.length &&
+    !pohyby.length;
   if (prazdna) {
     return {
       xml: "",
@@ -212,6 +223,7 @@ export async function zostavDavku(
       zakaznikov: 0,
       zasob: 0,
       zakaziek: 0,
+      pohybov: 0,
       preskocene: [],
     };
   }
@@ -258,6 +270,7 @@ export async function zostavDavku(
     zakaznici,
     zasoby,
     zakazkyNove,
+    skupinyPohybov,
     nastavenia,
     odkazy,
     zakazky,
@@ -283,6 +296,7 @@ export async function zostavDavku(
       zakaznici,
       zasoby,
       zakazkyNove,
+      pohyby,
     });
   }
 
@@ -296,8 +310,57 @@ export async function zostavDavku(
     zakaznikov: zakaznici.length,
     zasob: zasoby.length,
     zakaziek: zakazkyNove.length,
+    pohybov: pohyby.length,
     preskocene,
   };
+}
+
+/**
+ * Skladové pohyby, ktoré ešte neodišli — a len tie, ktorých karta v Pohode už
+ * je (alebo ide v tej istej dávke).
+ *
+ * Položka príjemky sa na kartu odvoláva naším identifikátorom; keby karta ešte
+ * neexistovala, Pohoda by doklad odmietla a pohyb by sa zbytočne vracal do
+ * fronty. Radšej počká deň.
+ */
+async function nacitajPohyby(
+  supabase: Klient,
+  companyId: string,
+  zasobyVDavke: Riadok[],
+): Promise<Riadok[]> {
+  const [{ data: vsetky }, { data: odoslanePohyby }, { data: odoslaneKarty }] = await Promise.all([
+    supabase
+      .from("stock_movements")
+      .select("*, stock_items(sku, unit, vat_rate, products(name, code, unit, vat_rate))")
+      .eq("company_id", companyId)
+      .order("created_at")
+      .limit(2000),
+    supabase
+      .from("pohoda_odoslane")
+      .select("zaznam_id")
+      .eq("company_id", companyId)
+      .eq("agenda", "pohyb"),
+    supabase
+      .from("pohoda_odoslane")
+      .select("zaznam_id")
+      .eq("company_id", companyId)
+      .eq("agenda", "sklad"),
+  ]);
+
+  const uz = new Set((odoslanePohyby ?? []).map((r: Riadok) => String(r.zaznam_id)));
+  const karty = new Set((odoslaneKarty ?? []).map((r: Riadok) => String(r.zaznam_id)));
+  for (const z of zasobyVDavke) karty.add(String(z.id));
+
+  return (vsetky ?? [])
+    .filter((m: Riadok) => !uz.has(String(m.id)) && karty.has(String(m.stock_item_id)))
+    .slice(0, STROP_DAVKY)
+    .map((m: Riadok) => ({
+      ...m,
+      nazov: m.stock_items?.products?.name ?? null,
+      sku: m.stock_items?.sku || m.stock_items?.products?.code || null,
+      unit: m.stock_items?.unit || m.stock_items?.products?.unit || "ks",
+      vat_rate: m.stock_items?.vat_rate ?? m.stock_items?.products?.vat_rate ?? 0,
+    }));
 }
 
 /**
@@ -429,6 +492,7 @@ async function zapisOdovzdanie(
     zakaznici: Riadok[];
     zasoby: Riadok[];
     zakazkyNove: Riadok[];
+    pohyby: Riadok[];
   },
 ): Promise<string | null> {
   const { data: job, error } = await supabase
@@ -481,6 +545,8 @@ async function zapisOdovzdanie(
     ...p.zakaznici.map((z: Riadok) => ({ agenda: "adresar", id: z.id, verzia: z.updated_at })),
     ...p.zasoby.map((s: Riadok) => ({ agenda: "sklad", id: s.id, verzia: s.updated_at })),
     ...p.zakazkyNove.map((z: Riadok) => ({ agenda: "zakazka", id: z.id, verzia: z.updated_at })),
+    // Pohyb sa nemení, takže verzia je len jeho vznik.
+    ...p.pohyby.map((m: Riadok) => ({ agenda: "pohyb", id: m.id, verzia: m.created_at })),
   ];
   if (ciselniky.length) {
     await supabase.from("pohoda_odoslane").upsert(
@@ -684,14 +750,18 @@ export async function spracujOdpoved(
       continue;
     }
 
-    // Adresár a sklad: odmietnutá karta sa vráti do fronty tým, že sa zabudne,
-    // ktorá verzia odišla. Číslo si Pohoda pri číselníkoch neprideľuje.
+    // Číselníky a skladové doklady: odmietnutý záznam sa vráti do fronty tým, že
+    // sa zabudne, čo odišlo. Číslo im Pohoda neprideľuje.
     if (!chyba) continue;
     await supabase
       .from("pohoda_odoslane")
       .delete()
       .eq("company_id", vstup.companyId)
       .eq("zaznam_id", id);
+
+    // Príjemka a výdajka nesie identifikátor prvého pohybu, ale nezaložených
+    // ostane celá skupina — inak by zvyšok zmizol: u nás odoslaný, v Pohode nie.
+    await vratSkupinuPohybov(supabase, vstup.companyId, id);
   }
 
   return {
@@ -700,6 +770,45 @@ export async function spracujOdpoved(
     chybnych: chyby.length,
     chyby: chyby.slice(0, 20),
   };
+}
+
+/**
+ * Vráti do fronty všetky pohyby z tej istej príjemky či výdajky.
+ *
+ * Doklad nesie identifikátor prvého pohybu v skupine; ostatné by po odmietnutí
+ * ostali označené za odoslané a v Pohode by neboli. Skupina sa dopočíta rovnako,
+ * ako sa skladala — podľa smeru, dňa a zdrojového dokladu.
+ */
+async function vratSkupinuPohybov(supabase: Klient, companyId: string, id: string): Promise<void> {
+  const { data: prvy } = await supabase
+    .from("stock_movements")
+    .select("id, type, quantity, created_at, source_document_id, reference_id")
+    .eq("company_id", companyId)
+    .eq("id", id)
+    .maybeSingle();
+  if (!prvy) return;
+
+  const den = String(prvy.created_at ?? "").slice(0, 10);
+  const { data: vDen } = await supabase
+    .from("stock_movements")
+    .select("id, type, quantity, created_at, source_document_id, reference_id")
+    .eq("company_id", companyId)
+    .gte("created_at", `${den}T00:00:00Z`)
+    .lt("created_at", `${den}T23:59:59.999Z`);
+
+  const { zoskupPohyby } = await import("./export.server");
+  const skupina = zoskupPohyby(vDen ?? []).find((s) => s.id === id);
+  if (!skupina) return;
+
+  await supabase
+    .from("pohoda_odoslane")
+    .delete()
+    .eq("company_id", companyId)
+    .eq("agenda", "pohyb")
+    .in(
+      "zaznam_id",
+      skupina.pohyby.map((m: Riadok) => m.id),
+    );
 }
 
 /**
