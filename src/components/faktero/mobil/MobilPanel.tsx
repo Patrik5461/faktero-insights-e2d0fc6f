@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   UserX,
   X,
+  Stethoscope,
 } from "lucide-react";
 import {
   disableBiometric,
@@ -227,6 +228,17 @@ export function MobilPanel({
           )}
 
           <Skupina nazov="Pomoc" />
+          {/*
+            Diagnostika sa dovtedy dala otvoriť len cez položku „Zrušenie účtu",
+            lebo obidve vedú na tú istú obrazovku. Keď sa niečo pokazí, nikto ju
+            tam hľadať nebude — a práve vtedy je potrebná.
+          */}
+          <Polozka
+            icon={Stethoscope}
+            label="Účet a diagnostika"
+            hint="Čo appka v telefóne vidí — pamäť, pripojenie, verzia"
+            onClick={onUcet}
+          />
           <Polozka
             icon={BookOpen}
             label="Návody k Fakteru"
