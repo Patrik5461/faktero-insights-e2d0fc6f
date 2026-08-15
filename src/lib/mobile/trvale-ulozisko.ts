@@ -39,6 +39,49 @@ type Preferences = {
   keys(): Promise<{ keys: string[] }>;
 };
 
+/**
+ * Kľúče, ktoré patria do Keychainu, nie do bežného natívneho úložiska.
+ *
+ * `Preferences` sú na iOS `UserDefaults`: sandbox a šifrovanie zamknutého
+ * zariadenia áno, ale obsah ide do nešifrovanej zálohy a na odomknutom
+ * zariadení sa dá prečítať. Prihlasovací token je dlhodobý prístup k účtu, tak
+ * patrí do Keychainu — teda tam, kam si heslá ukladá systém.
+ */
+function jeCitlivy(kluc: string): boolean {
+  return /^sb-.*-auth-token$/.test(kluc) || kluc.startsWith("faktero.biometric.");
+}
+
+type Trezor = {
+  getItem(kluc: string): Promise<string | null>;
+  setItem(kluc: string, hodnota: string): Promise<void>;
+  removeItem(kluc: string): Promise<void>;
+};
+
+let trezorUlozisko: Trezor | null | undefined;
+
+/**
+ * Keychain, alebo `null`.
+ *
+ * Keď plugin v balíčku nie je (starší build, web), vráti `null` a token skončí
+ * v bežnom natívnom úložisku ako doteraz. Radšej appka, ktorá funguje, než
+ * appka, ktorá sa nespustí kvôli chýbajúcemu pluginu.
+ */
+async function trezor(): Promise<Trezor | null> {
+  if (trezorUlozisko !== undefined) return trezorUlozisko;
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) {
+      trezorUlozisko = null;
+      return null;
+    }
+    const { SecureStorage } = await import("@aparajita/capacitor-secure-storage");
+    trezorUlozisko = SecureStorage as unknown as Trezor;
+  } catch {
+    trezorUlozisko = null;
+  }
+  return trezorUlozisko;
+}
+
 let nativneUlozisko: Preferences | null | undefined;
 
 /** Natívne úložisko, alebo `null` na webe. Zisťuje sa raz. */
@@ -86,7 +129,37 @@ export function pripravUlozisko(): Promise<void> {
     for (const kluc of keys) {
       if (!patriDoPamate(kluc)) continue;
       const { value } = await p.get({ key: kluc });
-      if (value != null) pamat.set(kluc, value);
+      if (value == null) continue;
+      pamat.set(kluc, value);
+      // Citlivé kľúče zo starších verzií presunieme do Keychainu a z bežného
+      // úložiska ich odstránime — inak by presun nič neriešil.
+      if (jeCitlivy(kluc)) {
+        const t = await trezor();
+        if (t) {
+          try {
+            await t.setItem(kluc, value);
+            await p.remove({ key: kluc });
+          } catch {
+            /* keď Keychain nie je, token ostáva tam, kde bol */
+          }
+        }
+      }
+    }
+
+    // Čo už v Keychaine je, musí byť aj v pamäti — núdzové čítanie relácie je
+    // synchrónne a inak by o prihlásení nevedelo.
+    const t = await trezor();
+    if (t) {
+      try {
+        const { SecureStorage } = await import("@aparajita/capacitor-secure-storage");
+        for (const kluc of await SecureStorage.keys()) {
+          if (pamat.has(kluc)) continue;
+          const hodnota = await t.getItem(kluc);
+          if (hodnota != null) pamat.set(kluc, hodnota);
+        }
+      } catch {
+        /* bez zoznamu kľúčov sa relácia načíta až asynchrónne cez Supabase */
+      }
     }
 
     // Presun z prehliadača. Robí sa raz — po ňom je natívne úložisko zdrojom
@@ -117,9 +190,16 @@ export function pripravUlozisko(): Promise<void> {
  * je to problém. Toto ju odstráni lokálne bez ohľadu na sieť.
  */
 export function zabudniPrihlasenie(): void {
+  const citlive = [...pamat.keys()].filter(jeCitlivy);
   for (const kluc of [...pamat.keys()]) {
-    if (/^sb-.*-auth-token$/.test(kluc) || kluc === "faktero.active_company") zmaz(kluc);
+    if (jeCitlivy(kluc) || kluc === "faktero.active_company") zmaz(kluc);
   }
+  // Keychain prežije aj to, čo sme zmazali inde — bez tohto by relácia po
+  // odhlásení ostala presne na tom najbezpečnejšom mieste.
+  void trezor().then((t) => {
+    if (!t) return;
+    for (const kluc of citlive) void t.removeItem(kluc).catch(() => {});
+  });
   try {
     if (typeof localStorage !== "undefined") {
       for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -180,6 +260,20 @@ export function zmaz(kluc: string): void {
  */
 export const trvaleUlozisko = {
   async getItem(kluc: string): Promise<string | null> {
+    if (jeCitlivy(kluc)) {
+      const t = await trezor();
+      if (t) {
+        try {
+          const zTrezoru = await t.getItem(kluc);
+          if (zTrezoru != null) {
+            pamat.set(kluc, zTrezoru);
+            return zTrezoru;
+          }
+        } catch {
+          /* nižšie sa skúsi bežné úložisko */
+        }
+      }
+    }
     const p = await nativne();
     if (p) {
       try {
@@ -197,6 +291,27 @@ export const trvaleUlozisko = {
 
   async setItem(kluc: string, hodnota: string): Promise<void> {
     pamat.set(kluc, hodnota);
+
+    if (jeCitlivy(kluc)) {
+      const t = await trezor();
+      if (t) {
+        try {
+          await t.setItem(kluc, hodnota);
+          // Token nesmie ostať aj na starom mieste — inak by presun do
+          // Keychainu nič neriešil.
+          try {
+            if (typeof localStorage !== "undefined") localStorage.removeItem(kluc);
+          } catch {
+            /* nič */
+          }
+          void nativne().then((p) => p?.remove({ key: kluc }).catch(() => {}));
+          return;
+        } catch {
+          /* Keychain zlyhal — nižšie ostáva pôvodná cesta */
+        }
+      }
+    }
+
     try {
       if (typeof localStorage !== "undefined") localStorage.setItem(kluc, hodnota);
     } catch {
@@ -213,6 +328,10 @@ export const trvaleUlozisko = {
   },
 
   async removeItem(kluc: string): Promise<void> {
+    if (jeCitlivy(kluc)) {
+      const t = await trezor();
+      if (t) await t.removeItem(kluc).catch(() => {});
+    }
     zmaz(kluc);
   },
 };

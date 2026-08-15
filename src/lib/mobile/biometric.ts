@@ -7,6 +7,7 @@
  * zavoláme `authenticate()` → odomkne sa → načítame token → `supabase.auth.setSession()`.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { trvaleUlozisko } from "./trvale-ulozisko";
 
 const STORAGE_KEY = "faktero.biometric.session.v1";
 
@@ -34,19 +35,14 @@ export async function enableBiometric(): Promise<{ ok: boolean; error?: string }
       androidTitle: "Faktero",
       androidSubtitle: "Povoliť biometriu",
     });
-    const { Preferences } = await import("@capacitor/preferences").catch(() => ({
-      Preferences: null as any,
-    }));
     const payload = JSON.stringify({
       refresh_token: data.session.refresh_token,
       access_token: data.session.access_token,
       saved_at: Date.now(),
     });
-    if (Preferences) {
-      await Preferences.set({ key: STORAGE_KEY, value: payload });
-    } else {
-      localStorage.setItem(STORAGE_KEY, payload);
-    }
+    // Cez trvalé úložisko, ktoré citlivé kľúče odkladá do Keychainu — je to
+    // prístup k účtu, nie nastavenie.
+    await trvaleUlozisko.setItem(STORAGE_KEY, payload);
     return { ok: true };
   } catch (e: any) {
     return { ok: false, error: e?.message ?? "Chyba biometrie" };
@@ -56,37 +52,16 @@ export async function enableBiometric(): Promise<{ ok: boolean; error?: string }
 /** Je rýchle prihlásenie zapnuté? Prepínač v nastaveniach musí vedieť, čo ukázať. */
 export async function isBiometricEnabled(): Promise<boolean> {
   try {
-    const { Preferences } = await import("@capacitor/preferences").catch(() => ({
-      Preferences: null as any,
-    }));
-    if (Preferences) {
-      const { value } = await Preferences.get({ key: STORAGE_KEY });
-      if (value) return true;
-    }
-  } catch {
-    // @capacitor/preferences nie je vo webovom builde
-  }
-  try {
-    return !!localStorage.getItem(STORAGE_KEY);
+    return !!(await trvaleUlozisko.getItem(STORAGE_KEY));
   } catch {
     return false;
   }
 }
 
 export async function disableBiometric(): Promise<void> {
-  try {
-    const { Preferences } = await import("@capacitor/preferences").catch(() => ({
-      Preferences: null as any,
-    }));
-    if (Preferences) await Preferences.remove({ key: STORAGE_KEY });
-  } catch {
-    // @capacitor/preferences nie je vo webovom builde
-  }
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // localStorage môže byť zakázané — kľúč tam potom ani nie je
-  }
+  // Maže naraz v Keychaine aj v starších miestach, kde token mohol ostať z
+  // predchádzajúcich verzií.
+  await trvaleUlozisko.removeItem(STORAGE_KEY).catch(() => {});
 }
 
 export async function loginWithBiometric(): Promise<{ ok: boolean; error?: string }> {
@@ -99,16 +74,7 @@ export async function loginWithBiometric(): Promise<{ ok: boolean; error?: strin
       androidTitle: "Faktero",
       androidSubtitle: "Prihlásiť sa biometriou",
     });
-    const { Preferences } = await import("@capacitor/preferences").catch(() => ({
-      Preferences: null as any,
-    }));
-    let raw: string | null = null;
-    if (Preferences) {
-      const r = await Preferences.get({ key: STORAGE_KEY });
-      raw = r.value;
-    } else {
-      raw = localStorage.getItem(STORAGE_KEY);
-    }
+    const raw = await trvaleUlozisko.getItem(STORAGE_KEY);
     if (!raw) return { ok: false, error: "Biometria nie je nakonfigurovaná" };
     const parsed = JSON.parse(raw) as { refresh_token: string; access_token: string };
     const { error } = await supabase.auth.setSession({
