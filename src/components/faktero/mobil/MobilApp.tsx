@@ -257,6 +257,11 @@ export function MobilnaApka() {
         // Jazdy, ktoré telefón nahral, kým bola appka zavretá, netreba držať
         // v telefóne do chvíle, kým sa človek preklikne na obrazovku Jazda.
 
+        // Vozidlá sa dovtedy ukladali až pri otvorení Jazdy. Kto tú obrazovku
+        // pred cestou neotvoril, mal v aute bez signálu prázdny zoznam a nemal
+        // čím zapísať jazdu — teda presne tam, kde ju potrebuje najviac.
+        void nacitajVozidlaDoPamate(vybrana.id);
+
         void odosliCakajuceJazdy(vybrana.id)
           .then(({ ulozene }) => {
             if (ulozene > 0) {
@@ -275,6 +280,37 @@ export function MobilnaApka() {
       }
     } catch {
       setKrok("firma");
+    }
+  }
+
+  /**
+   * Zoznam áut do telefónu hneď pri štarte.
+   *
+   * Beží na pozadí a ticho — keď nie je signál, ostane posledný známy zoznam a
+   * to je presne to, o čo ide.
+   */
+  async function nacitajVozidlaDoPamate(companyId: string) {
+    try {
+      const { isOnline } = await import("@/lib/mobile/offline-queue");
+      if (!(await isOnline())) return;
+      const { data } = await supabase
+        .from("vehicles")
+        .select("id, name, license_plate")
+        .eq("company_id", companyId)
+        .eq("active", true)
+        .order("name")
+        .then(
+          (r) => r,
+          () => ({ data: null }),
+        );
+      if (!data?.length) return;
+      const { ulozVozidla } = await import("@/lib/mobile/jazdy-lokalne");
+      await ulozVozidla(
+        companyId,
+        data.map((v) => ({ ...v, company_id: companyId })),
+      );
+    } catch {
+      /* pamäť je pohodlie, nie podmienka štartu */
     }
   }
 
