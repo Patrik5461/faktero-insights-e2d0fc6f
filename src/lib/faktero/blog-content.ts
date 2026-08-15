@@ -60,7 +60,7 @@ export const POSTS: BlogPost[] = [
           "Prijaté doklady — bločky aj faktúry, s rozpisom DPH po sadzbách",
           "Pokladňa: príjmové a výdavkové doklady",
           "Voliteľne adresár odberateľov — zmenený kontakt sa prepíše, nezaloží sa druhý",
-          "Voliteľne skladové karty (číselník zásob, nie stav skladu)",
+          "Voliteľne skladové karty — a s nimi príjemky a výdajky, aby sedeli aj stavy skladu",
           "Voliteľne zákazky — faktúra potom nesie zákazku, takže vidno výnos po zákazkách",
           "Odkaz na PDF faktúry priamo v záložke Dokumenty",
         ],
@@ -73,7 +73,7 @@ export const POSTS: BlogPost[] = [
       {
         type: "section",
         title: "Čo zámerne neposielame",
-        body: "Banku nie: výpis si účtovníčka načíta priamo z banky, takže náš export by v POHODE vyrobil druhý komplet bankových dokladov. Stav skladu tiež nie: posielame číselník zásob, ale množstvá v POHODE vznikajú príjemkami a výdajkami a dosadené číslo by sa s dokladmi rozišlo. A faktúru v cudzej mene preskočíme a povieme to — POHODA chce rozpis po sadzbách vždy v domácej mene a kurz k faktúre neevidujeme, takže by sa doláre zaúčtovali ako eurá.",
+        body: "Banku nie: výpis si účtovníčka načíta priamo z banky, takže náš export by v POHODE vyrobil druhý komplet bankových dokladov. Množstvo na skladovej karte tiež nie — stav v POHODE vzniká príjemkami a výdajkami, tie posielame zvlášť a sklad si dopočíta sama. A faktúru v cudzej mene preskočíme a povieme to: POHODA chce rozpis po sadzbách vždy v domácej mene a kurz k faktúre neevidujeme, takže by sa doláre zaúčtovali ako eurá.",
       },
       {
         type: "callout",

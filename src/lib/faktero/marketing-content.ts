@@ -147,7 +147,7 @@ export const funkcie: HubContent = {
           type: "bullets",
           items: [
             "Vydané aj zálohové faktúry, dobropisy, prijaté doklady a pokladňa",
-            "Voliteľne adresár, skladové karty a zákazky — faktúra potom nesie zákazku",
+            "Voliteľne adresár, skladové karty, pohyby aj zákazky — faktúra potom nesie zákazku",
             "Späť sa vracajú čísla, ktoré doklady dostali v Pohode",
             "Predkontácie a členenia DPH, takže sa doklad rovno zaúčtuje",
             "Odovzdaný doklad sa neposiela druhýkrát",
@@ -816,6 +816,7 @@ export const uctovnici: HubContent = {
             "Neotvárajú sa žiadne porty, spojenie ide von",
             "Späť sa vracajú čísla dokladov z Pohody",
             "Odmietnutý doklad sa vráti do fronty aj s dôvodom",
+            "Príjemky a výdajky, aby v Pohode sedeli aj stavy skladu",
             "Doklad sa nezaloží dvakrát, ani keď príde z dvoch strán",
             "Funguje so všetkými radami Pohody",
           ],

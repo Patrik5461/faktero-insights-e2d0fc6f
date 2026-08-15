@@ -140,6 +140,33 @@ V dávke majú prednosť zákazky, na ktoré sa odvoláva faktúra v tej istej d
 inak by faktúra ukázala na zákazku, ktorá v Pohode ešte nie je. Stav zákazky sa
 neposiela: v Pohode je to odkaz do vlastného zoznamu stavov účtovníčky.
 
+### Príjemky a výdajky
+
+Zapínajú sa `companies.pohoda_posielat_pohyby` a **potrebujú zapnuté skladové
+karty** — položka sa na kartu odvoláva naším identifikátorom (`typ:stockItem` →
+`typ:extId`), nie kódom, ktorý sa dá v Pohode prepísať. Posielajú sa preto len
+pohyby, ktorých karta už odišla alebo ide v tej istej dávke, a v dávke idú **až
+za kartami**.
+
+Bez nich má účtovníčka karty s nulovými stavmi — množstvá v Pohode vznikajú
+práve týmito dokladmi.
+
+Pohyby sa zlievajú do dokladov podľa **smeru, dňa a zdrojového dokladu**
+(`zoskupPohyby`); jeden pohyb = jeden doklad by z jedného importu urobil tristo
+príjemiek. Identifikátorom dokladu je **id prvého pohybu v skupine** — je stály a
+keď na ten istý deň pribudnú ďalšie pohyby, vznikne doklad s iným
+identifikátorom, takže sa nestratia. Pri odmietnutí sa do fronty vracia **celá
+skupina**, nielen prvý pohyb (`vratSkupinuPohybov`).
+
+Smer sa berie z typu pohybu; pri `inventura` a `oprava` ho typ nepovie a
+rozhoduje **znamienko množstva** (prebytok na príjemku, manko na výdajku). Do XML
+ide množstvo vždy kladné — smer hovorí druh dokladu.
+
+**Príjemka ide s `notPost`** (nezaúčtovať): náklad je už na prijatom doklade a v
+režime skladov A by ho príjemka zaúčtovala druhýkrát. **Výdajka taký príznak v
+schéme nemá** a nepotrebuje ho — úbytok zásob proti výnosu na faktúre nič
+nezdvojí. Toto chytila validácia proti schéme, nie testy.
+
 Pozor na menné priestory: `extId` je na skladovej karte vyhlásený v `stock.xsd`
 (`<stk:extId>`), v adresári v `type.xsd` (`<typ:extId>`) a vo filtri v
 `filter.xsd` (`<ftr:extId>`) — obsah rovnaký, predpona iná. Toto chytila až
@@ -202,11 +229,10 @@ Takto sa našlo, že cudzia mena bola postavená zle.
 
 ## Čo ďalej
 
-**1. Agendy sú hotové** — faktúry, prijaté doklady, pokladňa, adresár, sklad aj
-zákazky. Ostávajú už len tie, po ktorých zatiaľ nikto nesiahol: príjemky a
-výdajky (`vydejka`, `prijemka`) by doplnili stav skladu, ale prekrývali by sa s
-faktúrami a museli by sa strážiť dvojité pohyby. Pozor, `purchase_invoices` je
-prázdna tabuľka — prijaté doklady žijú v `expense_documents`.
+**1. Agendy sú hotové** — faktúry, prijaté doklady, pokladňa, adresár, sklad,
+zákazky, príjemky aj výdajky. Ďalej by ostávali už len okrajové veci: ponuky,
+objednávky a prevodky medzi skladmi. Pozor, `purchase_invoices` je prázdna
+tabuľka — prijaté doklady žijú v `expense_documents`.
 
 **2. Živý most cez POHODA mServer.** _Prekonané konektorom vyššie — ostáva tu
 ako záznam, prečo sa touto cestou nešlo._ Pohoda má vstavaný HTTP server:

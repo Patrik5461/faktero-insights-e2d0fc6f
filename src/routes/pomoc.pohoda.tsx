@@ -202,6 +202,10 @@ const sections: HelpSection[] = [
             <strong>skladové karty</strong> — číselník zásob. Potrebuje vyplnené členenie skladu.
           </li>
           <li>
+            <strong>skladové pohyby</strong> — príjemky a výdajky, aby v Pohode sedeli aj{" "}
+            <strong>stavy</strong> skladu, nielen karty. Potrebuje zapnuté skladové karty.
+          </li>
+          <li>
             <strong>zákazky</strong> — a čo je hlavné, faktúra potom v Pohode nesie zákazku, takže z
             nej vidno výnos po zákazkách.
           </li>
@@ -224,13 +228,42 @@ const sections: HelpSection[] = [
           dokladov.
         </p>
         <p>
-          <strong>Stav skladu.</strong> Posielame číselník zásob, nie množstvá. Stav v Pohode vzniká
-          príjemkami a výdajkami, takže dosadené číslo by sa rozišlo s dokladmi a sklad by nesedel.
+          <strong>Množstvá na skladovej karte.</strong> Karta ide bez stavu — ten v Pohode vzniká
+          príjemkami a výdajkami, takže dosadené číslo by sa rozišlo s dokladmi. Ak chcete mať v
+          Pohode aj stavy, zapnite <strong>skladové pohyby</strong>: Faktero pošle príjemky a
+          výdajky a sklad si Pohoda dopočíta sama, tak ako má.
         </p>
         <p>
           <strong>Faktúry v cudzej mene.</strong> Pohoda chce rozpis po sadzbách vždy v domácej mene
           a kurz k faktúre neevidujeme — doláre by sa zaúčtovali ako eurá. Taký doklad sa preskočí,
           povieme to a je v súpiske na ručné zadanie.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "pohyby",
+    title: "Aby v Pohode sedeli aj stavy skladu",
+    body: (
+      <>
+        <p>
+          Skladové karty samy o sebe idú do Pohody s nulovým stavom. Množstvá tam vznikajú
+          príjemkami a výdajkami — a tie vieme posielať tiež, keď vo{" "}
+          <Link to="/firma">Firma → Pohoda</Link> zapnete <strong>skladové pohyby</strong>.
+        </p>
+        <p>
+          Pohyby z jedného dňa sa zlejú do jedného dokladu, takže z väčšieho príjmu nevznikne stovka
+          príjemiek. Manko z inventúry odíde ako výdajka, prebytok ako príjemka.
+        </p>
+        <p>
+          <strong>Príjemka sa nezaúčtuje</strong> — nesie príznak „neúčtovať". Náklad je totiž už na
+          prijatom doklade a pri sklade vedenom spôsobom A by ho príjemka zaúčtovala druhýkrát.
+          Výdajka taký príznak nemá a nepotrebuje ho: úbytok zásob proti výnosu na faktúre nič
+          nezdvojí.
+        </p>
+        <p>
+          Pohyb odíde až vtedy, keď je v Pohode jeho skladová karta. Ak ste karty práve zapli, prvá
+          dávka ich pošle a pohyby prídu hneď za nimi.
         </p>
       </>
     ),
