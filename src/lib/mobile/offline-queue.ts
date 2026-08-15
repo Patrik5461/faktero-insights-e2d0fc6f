@@ -1,43 +1,24 @@
 /**
- * Offline fronta pre zápisy (faktúry, jazdy, ...).
- * Stratégia: ak `navigator.onLine === false` alebo nativ. fetch zlyhá,
- * uloží sa request do localStorage. Po `online` evente sa fronta presype.
+ * Čo appka robí, keď sa vráti signál.
  *
- * Toto je minimálny adapter — komponenty volajú `queueOrPost(...)` namiesto fetch.
+ * Pôvodne tu bola všeobecná fronta HTTP požiadaviek (`queueOrPost`) — lenže ju
+ * **nikto nikdy nevolal**. Fronta bola vždy prázdna a po pripojení sa vyprázdnil
+ * prázdny zoznam. Skutočná offline práca sa medzitým odkladá na dvoch iných
+ * miestach: jazdy v `jazdy-lokalne` a doklady v `doklady-fronta`. Zmizla teda
+ * atrapa a ostalo to, čo sa naozaj používa.
+ *
+ * Doklady si po pripojení posiela obrazovka Prijaté doklady, kým je otvorená.
+ * Jazdy nemal kto — odosielali sa len pri otvorení obrazovky Jazda, takže jazda
+ * zapísaná bez signálu mohla v telefóne ležať týždeň. Preto sa po pripojení
+ * posielajú odtiaľto.
  */
-import { citaj, zapis } from "./trvale-ulozisko";
-
-type Job = {
-  id: string;
-  url: string;
-  method: string;
-  headers: Record<string, string>;
-  body?: string;
-  ts: number;
-};
-
-const KEY = "faktero.offline.queue.v1";
 
 /**
- * Fronta musí prežiť zatvorenie appky — inak sa práve to, čo človek spravil bez
- * signálu, pri ďalšom otvorení stratí. V telefóne preto ide cez natívne
- * úložisko, na webe ostáva prehliadačové.
+ * Je signál?
+ *
+ * V telefóne sa pýtame systému; `navigator.onLine` vo WebView tvrdí „online" aj
+ * vtedy, keď sa von nedostane nič.
  */
-function load(): Job[] {
-  try {
-    return JSON.parse(citaj(KEY) ?? "[]");
-  } catch {
-    return [];
-  }
-}
-function save(q: Job[]) {
-  zapis(KEY, JSON.stringify(q));
-}
-
-export function queueLength(): number {
-  return load().length;
-}
-
 export async function isOnline(): Promise<boolean> {
   try {
     const { Capacitor } = await import("@capacitor/core");
@@ -52,79 +33,34 @@ export async function isOnline(): Promise<boolean> {
   return typeof navigator === "undefined" ? true : navigator.onLine;
 }
 
-export async function queueOrPost(
-  url: string,
-  init: RequestInit & { body?: string },
-): Promise<Response> {
-  const online = await isOnline();
-  if (online) {
-    try {
-      const res = await fetch(url, init);
-      return res;
-    } catch (e) {
-      // network error → queue
-    }
+/** Pošle, čo v telefóne čaká na signál. Ticho — človek o tom nemusí vedieť. */
+async function posliCoCaka(): Promise<void> {
+  try {
+    const { getActiveCompanyId } = await import("@/lib/faktero/active-company");
+    const firma = getActiveCompanyId();
+    if (!firma) return;
+    const { odosliCakajuceZapisy } = await import("./jazdy-lokalne");
+    await odosliCakajuceZapisy(firma);
+  } catch {
+    /* ďalší pokus príde pri ďalšom pripojení alebo pri otvorení obrazovky */
   }
-  const job: Job = {
-    id: crypto.randomUUID(),
-    url,
-    method: init.method ?? "POST",
-    headers: (init.headers as Record<string, string>) ?? {},
-    body: typeof init.body === "string" ? init.body : undefined,
-    ts: Date.now(),
-  };
-  const q = load();
-  q.push(job);
-  save(q);
-  return new Response(JSON.stringify({ queued: true, id: job.id }), {
-    status: 202,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-export async function flushQueue(): Promise<{ sent: number; failed: number }> {
-  const q = load();
-  if (q.length === 0) return { sent: 0, failed: 0 };
-  let sent = 0,
-    failed = 0;
-  const remaining: Job[] = [];
-  for (const job of q) {
-    try {
-      const res = await fetch(job.url, {
-        method: job.method,
-        headers: job.headers,
-        body: job.body,
-      });
-      if (res.ok) sent++;
-      else {
-        failed++;
-        remaining.push(job);
-      }
-    } catch {
-      failed++;
-      remaining.push(job);
-    }
-  }
-  save(remaining);
-  return { sent, failed };
 }
 
 export function initOfflineSync() {
   if (typeof window === "undefined") return;
   window.addEventListener("online", () => {
-    flushQueue().catch(() => {});
+    void posliCoCaka();
   });
   (async () => {
     try {
       const { Capacitor } = await import("@capacitor/core");
-      if (Capacitor.isNativePlatform()) {
-        const { Network } = await import("@capacitor/network");
-        Network.addListener("networkStatusChange", (s) => {
-          if (s.connected) flushQueue().catch(() => {});
-        });
-      }
+      if (!Capacitor.isNativePlatform()) return;
+      const { Network } = await import("@capacitor/network");
+      await Network.addListener("networkStatusChange", (s) => {
+        if (s.connected) void posliCoCaka();
+      });
     } catch {
-      // bez Network pluginu sa queue vyprázdni až pri ďalšej akcii používateľa
+      // Bez Network pluginu ostáva `online` event z prehliadača.
     }
   })();
 }
