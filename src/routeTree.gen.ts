@@ -80,6 +80,7 @@ import { Route as PomocObjednavkyRouteImport } from './routes/pomoc.objednavky'
 import { Route as PomocObjednavkyDodavatelRouteImport } from './routes/pomoc.objednavky-dodavatel'
 import { Route as PomocOdberateliaRouteImport } from './routes/pomoc.odberatelia'
 import { Route as PomocOpakovaneRouteImport } from './routes/pomoc.opakovane'
+import { Route as PomocPohodaRouteImport } from './routes/pomoc.pohoda'
 import { Route as PomocPokladnaRouteImport } from './routes/pomoc.pokladna'
 import { Route as PomocPonukyRouteImport } from './routes/pomoc.ponuky'
 import { Route as PomocPredplatneRouteImport } from './routes/pomoc.predplatne'
@@ -596,6 +597,11 @@ const PomocOdberateliaRoute = PomocOdberateliaRouteImport.update({
 const PomocOpakovaneRoute = PomocOpakovaneRouteImport.update({
   id: '/pomoc/opakovane',
   path: '/pomoc/opakovane',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocPohodaRoute = PomocPohodaRouteImport.update({
+  id: '/pomoc/pohoda',
+  path: '/pomoc/pohoda',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomocPokladnaRoute = PomocPokladnaRouteImport.update({
@@ -1538,6 +1544,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
+  '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
@@ -1759,6 +1766,7 @@ export interface FileRoutesByTo {
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
+  '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
@@ -1989,6 +1997,7 @@ export interface FileRoutesById {
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
+  '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
@@ -2220,6 +2229,7 @@ export interface FileRouteTypes {
     | '/pomoc/objednavky-dodavatel'
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
+    | '/pomoc/pohoda'
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
     | '/pomoc/predplatne'
@@ -2441,6 +2451,7 @@ export interface FileRouteTypes {
     | '/pomoc/objednavky-dodavatel'
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
+    | '/pomoc/pohoda'
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
     | '/pomoc/predplatne'
@@ -2670,6 +2681,7 @@ export interface FileRouteTypes {
     | '/pomoc/objednavky-dodavatel'
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
+    | '/pomoc/pohoda'
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
     | '/pomoc/predplatne'
@@ -2868,6 +2880,7 @@ export interface RootRouteChildren {
   PomocObjednavkyDodavatelRoute: typeof PomocObjednavkyDodavatelRoute
   PomocOdberateliaRoute: typeof PomocOdberateliaRoute
   PomocOpakovaneRoute: typeof PomocOpakovaneRoute
+  PomocPohodaRoute: typeof PomocPohodaRoute
   PomocPokladnaRoute: typeof PomocPokladnaRoute
   PomocPonukyRoute: typeof PomocPonukyRoute
   PomocPredplatneRoute: typeof PomocPredplatneRoute
@@ -3426,6 +3439,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/opakovane'
       fullPath: '/pomoc/opakovane'
       preLoaderRoute: typeof PomocOpakovaneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/pohoda': {
+      id: '/pomoc/pohoda'
+      path: '/pomoc/pohoda'
+      fullPath: '/pomoc/pohoda'
+      preLoaderRoute: typeof PomocPohodaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/pokladna': {
@@ -5040,6 +5060,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocObjednavkyDodavatelRoute: PomocObjednavkyDodavatelRoute,
   PomocOdberateliaRoute: PomocOdberateliaRoute,
   PomocOpakovaneRoute: PomocOpakovaneRoute,
+  PomocPohodaRoute: PomocPohodaRoute,
   PomocPokladnaRoute: PomocPokladnaRoute,
   PomocPonukyRoute: PomocPonukyRoute,
   PomocPredplatneRoute: PomocPredplatneRoute,

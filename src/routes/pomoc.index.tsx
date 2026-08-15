@@ -19,6 +19,7 @@ import {
   FileDown,
   Truck,
   ReceiptText,
+  Plug,
 } from "lucide-react";
 
 export const Route = createFileRoute("/pomoc/")({
@@ -174,6 +175,14 @@ const CATS: Cat[] = [
     label: "Exporty a importy",
     desc: "Podklady pre účtovníčku a prechod z iného systému.",
     icon: FileDown,
+    available: true,
+    skupina: "Účtovníctvo",
+  },
+  {
+    to: "/pomoc/pohoda",
+    label: "Prepojenie s Pohodou",
+    desc: "Mesačné podklady, automatické odosielanie a priame prepojenie.",
+    icon: Plug,
     available: true,
     skupina: "Účtovníctvo",
   },

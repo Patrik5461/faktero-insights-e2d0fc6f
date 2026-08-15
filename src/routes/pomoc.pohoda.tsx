@@ -1,0 +1,285 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+
+export const Route = createFileRoute("/pomoc/pohoda")({
+  head: () => ({
+    meta: [
+      { title: "Pomoc — Prepojenie s Pohodou — Faktero" },
+      {
+        name: "description",
+        content:
+          "Ako dostať doklady z Faktera do programu POHODA: mesačné podklady mailom, automatické odosielanie a priame prepojenie, pri ktorom si Pohoda doklady vezme sama.",
+      },
+      { property: "og:url", content: "https://faktero.sk/pomoc/pohoda" },
+    ],
+    links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/pohoda" }],
+  }),
+  component: Page,
+});
+
+const sections: HelpSection[] = [
+  {
+    id: "tri-cesty",
+    title: "Tri spôsoby, vyberte si jeden",
+    body: (
+      <>
+        <p>Doklady sa dajú do Pohody dostať tromi spôsobmi. Líšia sa len tým, kto nesie súbor:</p>
+        <ol>
+          <li>
+            <strong>Stiahnem a pošlem sám</strong> — v{" "}
+            <Link to="/exporty">Účtovníctvo → Účtovné exporty</Link> vyberiete mesiac a stiahnete
+            ZIP.
+          </li>
+          <li>
+            <strong>Odíde mailom samo</strong> — 5. v mesiaci, keď si to zapnete.
+          </li>
+          <li>
+            <strong>Pohoda si to vezme sama</strong> — priame prepojenie, žiadne súbory ani maily.
+          </li>
+        </ol>
+        <p>
+          Všetky tri si pamätajú, čo už odišlo, takže sa doklad neodovzdá dvakrát. Pokojne ich aj
+          kombinujte — keď si účtovníčka niečo natiahne konektorom, mail jej to už znova nepošle.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "skratky",
+    title: "Najprv skratky z Pohody (5 minút, oplatí sa)",
+    body: (
+      <>
+        <p>
+          Vo <Link to="/firma">Firma → Pohoda — účtovanie</Link> vyplňte skratky, ktoré má
+          účtovníčka vo svojej Pohode: <strong>predkontácie</strong> (napr. <code>3Fv</code>) a{" "}
+          <strong>členenia DPH</strong> (napr. <code>UD</code>).
+        </p>
+        <p>
+          Bez nich doklady naimportuje bez chyby, ale zaúčtovanie si ku každému doklikáva ručne —
+          teda presne tú prácu, ktorú mal export ušetriť. Stačí sa jej raz opýtať a prepísať to sem.
+        </p>
+        <p>
+          Sem patrí aj <strong>e-mail účtovníčky</strong>, na ktorý chodia mesačné podklady.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "mesacne",
+    title: "Mesačné podklady",
+    body: (
+      <>
+        <p>
+          V <Link to="/exporty">Účtovných exportoch</Link> vyberiete mesiac a Faktero povie, koľko z
+          neho ešte neodišlo. Vznikne jeden ZIP:
+        </p>
+        <ul>
+          <li>XML na priamy import do Pohody — vydané faktúry, prijaté doklady, pokladňa</li>
+          <li>súpisky v CSV na kontrolu</li>
+          <li>PDF faktúr a skeny dokladov</li>
+        </ul>
+        <p>
+          <strong>Stiahnuť balík</strong> nič nezapisuje, takže sa dá stiahnuť koľkokrát chcete.{" "}
+          <strong>Označiť za odovzdané</strong> a <strong>Poslať účtovníčke</strong> si už
+          zapamätajú, čo odišlo, a nabudúce priložia len nové doklady.
+        </p>
+        <p>
+          Pri odoslaní mailom platí strop na prílohy. Keď sa PDF a skeny nezmestia, balík odíde bez
+          nich a v maile je o tom poznámka — údaje na zaúčtovanie sú dôležitejšie než obrázky a
+          doklady zostanú vo Fakteru.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "automaticky",
+    title: "Automatické odosielanie 5. v mesiaci",
+    body: (
+      <>
+        <p>
+          Vo <Link to="/firma">Firma → Pohoda</Link> zaškrtnite{" "}
+          <strong>Posielať automaticky</strong>. Podklady za minulý mesiac potom odídu 5. ráno samy
+          na adresu účtovníčky.
+        </p>
+        <p>
+          Piaty preto, že dovtedy bývajú doklady doplnené a zároveň ostáva čas do daňových termínov.
+        </p>
+        <p>
+          Je to <strong>vypnuté, kým to nezapnete</strong> — e-mail odchádza v mene vašej firmy,
+          takže to musí byť vedomé rozhodnutie. Posiela sa vždy len to, čo ešte neodišlo.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "konektor",
+    title: "Priame prepojenie — Pohoda si doklady vezme sama",
+    body: (
+      <>
+        <p>
+          Najpohodlnejšia cesta. Raz denne v noci si Pohoda stiahne doklady, ktoré v nej ešte nie
+          sú, načíta ich a pošle späť správu o tom, ako import dopadol. Vďaka tomu Faktero vie,
+          ktoré doklady sa naozaj založili a <strong>aké čísla dostali</strong>.
+        </p>
+        <p>
+          <strong>Nič sa neinštaluje.</strong> POHODA vie import spustiť sama z príkazového riadku,
+          takže celé prepojenie je priečinok s dávkovým súborom a jedna naplánovaná úloha Windows.
+          Neotvárajú sa žiadne porty — von ide len bežné zabezpečené spojenie, rovnako ako keby si
+          niekto otvoril webovú stránku.
+        </p>
+        <p>
+          Pohoda ani nemusí byť spustená; dávkový súbor si ju otvorí a po skončení zavrie. Počítač
+          však musí byť v tom čase zapnutý — keď nie je, prenos sa vynechá a doklady prídu ďalšiu
+          noc.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "konektor-navod",
+    title: "Ako prepojenie zapnúť",
+    body: (
+      <>
+        <ol>
+          <li>
+            Vo <Link to="/firma">Firma → Pohoda → Priame prepojenie s Pohodou</Link> kliknite na{" "}
+            <strong>Stiahnuť balíček pre účtovníčku</strong> a pošlite jej ho.
+          </li>
+          <li>
+            Účtovníčka priečinok skopíruje na počítač, kde je POHODA — ideálne{" "}
+            <code>C:\Faktero</code>, teda cesta bez medzier a diakritiky.
+          </li>
+          <li>
+            V súbore <code>faktero-pohoda.cmd</code> vyplní štyri riadky: cestu k Pohode,
+            prihlasovacie meno a heslo do nej a názov databázy účtovnej jednotky (nájde ho v Pohode
+            v <em>Súbor → Účtovné jednotky</em>, stĺpec Databáza).
+          </li>
+          <li>
+            Dvakrát klikne na ten istý súbor a pozrie sa, čo vypíše. Prvý beh najlepšie vtedy, keď v
+            Pohode nikto nepracuje.
+          </li>
+          <li>
+            Keď prvý beh prejde, spustí <code>nastav-ulohu.cmd</code> — založí naplánovanú úlohu na
+            druhú hodinu v noci.
+          </li>
+        </ol>
+        <p>
+          V priečinku vzniká <code>protokol.txt</code>, kde je vidieť, čo sa kedy stalo. Keď niečo
+          nesedí, začnite tam.
+        </p>
+        <p>
+          Kľúč je vložený priamo v súbore a dá sa kedykoľvek zneplatniť v{" "}
+          <Link to="/api-kluce">Nastavenia → API kľúče</Link>. Prepojenie zrušíte zmazaním
+          naplánovanej úlohy alebo celého priečinka.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "co-chodi",
+    title: "Čo do Pohody chodí",
+    body: (
+      <>
+        <p>Vždy:</p>
+        <ul>
+          <li>
+            <strong>vydané faktúry</strong>, zálohové faktúry a dobropisy
+          </li>
+          <li>
+            <strong>prijaté doklady</strong> — bločky aj prijaté faktúry, s rozpisom DPH po sadzbách
+          </li>
+          <li>
+            <strong>pokladňa</strong> — príjmové a výdavkové doklady
+          </li>
+        </ul>
+        <p>Naviac, keď si ich zapnete vo Firma → Pohoda:</p>
+        <ul>
+          <li>
+            <strong>adresár</strong> — odberatelia idú do Pohody aj vtedy, keď im ten mesiac nič
+            nefakturujete. Zmenený kontakt sa prepíše, nezaloží sa druhý.
+          </li>
+          <li>
+            <strong>skladové karty</strong> — číselník zásob. Potrebuje vyplnené členenie skladu.
+          </li>
+          <li>
+            <strong>zákazky</strong> — a čo je hlavné, faktúra potom v Pohode nesie zákazku, takže z
+            nej vidno výnos po zákazkách.
+          </li>
+        </ul>
+        <p>
+          Pri priamom prepojení sa navyše k faktúre pripne <strong>odkaz na jej PDF</strong> — v
+          Pohode ho účtovníčka nájde v záložke Dokumenty a otvorí jedným kliknutím. Dá sa vypnúť.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "co-nechodi",
+    title: "Čo do Pohody zámerne nechodí",
+    body: (
+      <>
+        <p>
+          <strong>Banka.</strong> Účtovníčka si výpis načíta priamo z banky (a Faktero jej vie
+          vyrobiť súbor camt.053), takže náš export by v Pohode vyrobil druhý komplet bankových
+          dokladov.
+        </p>
+        <p>
+          <strong>Stav skladu.</strong> Posielame číselník zásob, nie množstvá. Stav v Pohode vzniká
+          príjemkami a výdajkami, takže dosadené číslo by sa rozišlo s dokladmi a sklad by nesedel.
+        </p>
+        <p>
+          <strong>Faktúry v cudzej mene.</strong> Pohoda chce rozpis po sadzbách vždy v domácej mene
+          a kurz k faktúre neevidujeme — doláre by sa zaúčtovali ako eurá. Taký doklad sa preskočí,
+          povieme to a je v súpiske na ručné zadanie.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "otazky",
+    title: "Časté otázky",
+    body: (
+      <>
+        <p>
+          <strong>Môže sa doklad naimportovať dvakrát?</strong> Nie. Každý doklad má stály
+          identifikátor a Pohoda má zapnutú kontrolu duplicity, takže druhý pokus odmietne — aj keby
+          ten istý doklad prišiel raz konektorom a raz z mailu.
+        </p>
+        <p>
+          <strong>Čo keď Pohoda doklad odmietne?</strong> Dôvod uvidíte vo Firma → Pohoda a doklad
+          sa vráti do fronty — príde znova, keď sa chyba opraví. Nezmizne.
+        </p>
+        <p>
+          <strong>Zmenil som zákazke názov, prepíše sa?</strong> Nie. Pohoda vie zákazku založiť,
+          ale nie prepísať, takže zmenu treba urobiť aj tam. Pri odberateľoch a skladových kartách
+          sa zmena prepíše sama.
+        </p>
+        <p>
+          <strong>Funguje to s mojou radou Pohody?</strong> Áno, aj so základnou. Nepoužívame
+          mServer, ktorý býva obmedzený.
+        </p>
+        <p>
+          <strong>Používame mPohodu.</strong> Tá je iná aplikácia a doklady si do desktopovej Pohody
+          sťahuje sama; naše XML čítať nepotrebuje. Import <em>z</em> mPohody do Faktera zvládame —
+          nájdete ho v <Link to="/pomoc/exporty">exportoch a importoch</Link>.
+        </p>
+      </>
+    ),
+  },
+];
+
+function Page() {
+  return (
+    <HelpArticle
+      category="Pomoc · Účtovníctvo"
+      title="Prepojenie s Pohodou"
+      intro={
+        <p>
+          Od stiahnutého súboru až po prepojenie, pri ktorom si Pohoda doklady vezme sama a povie
+          späť, aké čísla im pridelila.
+        </p>
+      }
+      sections={sections}
+    />
+  );
+}

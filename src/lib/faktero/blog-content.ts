@@ -29,6 +29,60 @@ export type BlogPost = {
 
 export const POSTS: BlogPost[] = [
   {
+    slug: "pohoda-si-doklady-vezme-sama",
+    title: "Pohoda si doklady vezme sama — a povie, aké čísla im dala",
+    date: "2026-08-15",
+    minuty: 5,
+    ikona: Plug,
+    odtien: "jantar",
+    excerpt:
+      "Nové priame prepojenie s programom POHODA: bez inštalácie, bez otvárania portov a s návratom čísel dokladov späť do Faktera.",
+    blocks: [
+      {
+        type: "lead",
+        text: "Doteraz sa podklady pre účtovníčku sťahovali alebo posielali mailom. Od augusta 2026 to ide aj tretím spôsobom: POHODA si doklady raz denne v noci stiahne sama, načíta ich a pošle späť správu o tom, ako import dopadol. Účtovníčka pritom nič neinštaluje.",
+      },
+      {
+        type: "section",
+        title: "Prečo to nie je ďalší program",
+        body: "POHODA vie XML import spustiť sama z príkazového riadku. Celé prepojenie je preto priečinok s dávkovým súborom a jedna naplánovaná úloha Windows — päť riadkov textu, ktoré si účtovníčka vie prečítať v Poznámkovom bloku a kedykoľvek zmazať. Žiadny inštalátor, žiadny neznámy .exe, žiadne aktualizácie. Neotvárajú sa ani porty: spojenie ide von z jej počítača, rovnako ako keby si otvorila webovú stránku.",
+      },
+      {
+        type: "section",
+        title: "Čísla dokladov sa vracajú",
+        body: "Po importe POHODA vydá správu o každom doklade. Vďaka nej Faktero vie, ktoré doklady sa naozaj založili a aké čísla dostali — pri faktúre teda vidíte aj to, ako sa volá v účtovníctve. A hlavne: doklad, ktorý POHODA odmietne, sa aj s dôvodom vráti do fronty a príde znova, keď sa chyba opraví. Nestane sa, že by bol u vás odovzdaný a v účtovníctve neexistoval.",
+      },
+      {
+        type: "bullets",
+        title: "Čo do POHODY chodí",
+        items: [
+          "Vydané faktúry, zálohové faktúry a dobropisy",
+          "Prijaté doklady — bločky aj faktúry, s rozpisom DPH po sadzbách",
+          "Pokladňa: príjmové a výdavkové doklady",
+          "Voliteľne adresár odberateľov — zmenený kontakt sa prepíše, nezaloží sa druhý",
+          "Voliteľne skladové karty (číselník zásob, nie stav skladu)",
+          "Voliteľne zákazky — faktúra potom nesie zákazku, takže vidno výnos po zákazkách",
+          "Odkaz na PDF faktúry priamo v záložke Dokumenty",
+        ],
+      },
+      {
+        type: "section",
+        title: "Doklad sa nezaloží dvakrát",
+        body: "Každý doklad má stály identifikátor a POHODA má pri importe zapnutú kontrolu duplicity. Druhý pokus preto odmietne sama — aj keby tá istá faktúra prišla raz prepojením a raz z mesačného mailu. Obidve cesty sa tak dajú pokojne kombinovať.",
+      },
+      {
+        type: "section",
+        title: "Čo zámerne neposielame",
+        body: "Banku nie: výpis si účtovníčka načíta priamo z banky, takže náš export by v POHODE vyrobil druhý komplet bankových dokladov. Stav skladu tiež nie: posielame číselník zásob, ale množstvá v POHODE vznikajú príjemkami a výdajkami a dosadené číslo by sa s dokladmi rozišlo. A faktúru v cudzej mene preskočíme a povieme to — POHODA chce rozpis po sadzbách vždy v domácej mene a kurz k faktúre neevidujeme, takže by sa doláre zaúčtovali ako eurá.",
+      },
+      {
+        type: "callout",
+        title: "Vyplňte predkontácie, kým to zapnete",
+        body: "Vo Firma → Pohoda sa dajú vyplniť skratky z POHODY vašej účtovníčky (napríklad 3Fv a UD). Bez nich sa doklady naimportujú, ale zaúčtovanie si ku každému doklikáva ručne — teda presne tú prácu, ktorú mal prenos ušetriť. Stačí sa jej raz opýtať.",
+      },
+    ],
+  },
+  {
     slug: "efaktura-2027-co-potrebujete-vediet",
     title: "eFaktúra 2027: čo musíte stihnúť pred 1.1.2027",
     date: "2026-05-12",
@@ -180,6 +234,11 @@ export const POSTS: BlogPost[] = [
         type: "section",
         title: "Nepoužívate Pohodu?",
         body: "Rovnaký balík viete vyexportovať aj pre Omegu (TXT) a Money S3 (XML). Výber formátu je jedna položka v ponuke, zvyšok postupu je rovnaký.",
+      },
+      {
+        type: "callout",
+        title: "Odvtedy pribudlo priame prepojenie",
+        body: "Tento článok popisuje cestu súborom, ktorá platí ďalej. Od augusta 2026 si však POHODA vie doklady stiahnuť sama každú noc a poslať späť čísla, ktoré im pridelila — bez sťahovania a bez mailov. Viac v článku „Pohoda si doklady vezme sama“.",
       },
       {
         type: "callout",

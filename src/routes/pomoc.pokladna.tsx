@@ -156,6 +156,23 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "pohoda",
+    title: "Pokladňa pre účtovníčku",
+    body: (
+      <>
+        <p>
+          Pokladničné doklady sú súčasťou mesačných podkladov aj priameho prepojenia s Pohodou — idú
+          ako príjmové a výdavkové doklady. Pozrite si{" "}
+          <Link to="/pomoc/pohoda">manuál k Pohode</Link>.
+        </p>
+        <p>
+          Rozpis DPH sa k nim <strong>nedopĺňa</strong>: pohyb v pokladni sadzbu nemá a vymyslená by
+          bola tichá chyba v priznaní. Doklady s DPH sú prijaté doklady a faktúry.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

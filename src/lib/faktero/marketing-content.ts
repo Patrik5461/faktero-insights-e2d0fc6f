@@ -135,21 +135,23 @@ export const funkcie: HubContent = {
     },
     {
       slug: "pohoda-export",
-      label: "Pohoda export",
-      summary: "XML export priamo do Pohody — bez ručného prepisovania.",
+      label: "Prepojenie s Pohodou",
+      summary: "Pohoda si doklady vezme sama a povie, aké čísla im pridelila.",
       icon: Download,
       blocks: [
         {
           type: "lead",
-          text: "Štruktúrovaný XML export, ktorý účtovník naimportuje do Pohody jedným klikom.",
+          text: "Podklady odídu mailom 5. v mesiaci, alebo si ich Pohoda stiahne sama každú noc. Účtovníčka pritom nič neinštaluje.",
         },
         {
           type: "bullets",
           items: [
-            "Faktúry vydané aj prijaté",
-            "Mesačný balík pre účtovníka",
-            "Kompatibilita s aktuálnymi verziami Pohody",
-            "Sumáre DPH pripravené pre kontrolný výkaz",
+            "Vydané aj zálohové faktúry, dobropisy, prijaté doklady a pokladňa",
+            "Voliteľne adresár, skladové karty a zákazky — faktúra potom nesie zákazku",
+            "Späť sa vracajú čísla, ktoré doklady dostali v Pohode",
+            "Predkontácie a členenia DPH, takže sa doklad rovno zaúčtuje",
+            "Odovzdaný doklad sa neposiela druhýkrát",
+            "Funguje so všetkými radami Pohody",
           ],
         },
       ],
@@ -779,20 +781,43 @@ export const uctovnici: HubContent = {
     {
       slug: "pohoda-export",
       label: "Pohoda export",
-      summary: "XML export priamo do Pohody.",
+      summary: "XML, ktoré sa naimportuje a rovno zaúčtuje.",
       icon: FileSpreadsheet,
       blocks: [
         {
           type: "lead",
-          text: "Štandardný XML export, ktorý naimportujete do Pohody bez ručného prepisovania.",
+          text: "Dátový balík pre XML import v Pohode — overený proti oficiálnej schéme Stormware, nie len „nejako poskladaný“.",
         },
         {
           type: "bullets",
           items: [
-            "Faktúry vydané aj prijaté",
-            "Číselné rady, sadzby DPH, predmet plnenia",
-            "Mesačný balík pre celé obdobie",
-            "Sumáre DPH pre kontrolný výkaz",
+            "Zálohová faktúra ako zálohová, dobropis so zápornými sumami",
+            "Sadzba DPH podľa dňa plnenia, nie podľa dneška",
+            "Predkontácie a členenia DPH z vašej Pohody",
+            "Prijaté doklady s rozpisom DPH po sadzbách a pokladňa",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "pohoda-konektor",
+      label: "Priame prepojenie s Pohodou",
+      summary: "Pohoda si doklady stiahne sama každú noc — bez inštalácie.",
+      icon: Plug,
+      blocks: [
+        {
+          type: "lead",
+          text: "Žiadne posielanie súborov. Raz denne si Pohoda vezme doklady, ktoré v nej ešte nie sú, a pošle späť správu o tom, ako import dopadol.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Nič sa neinštaluje — priečinok a naplánovaná úloha Windows",
+            "Neotvárajú sa žiadne porty, spojenie ide von",
+            "Späť sa vracajú čísla dokladov z Pohody",
+            "Odmietnutý doklad sa vráti do fronty aj s dôvodom",
+            "Doklad sa nezaloží dvakrát, ani keď príde z dvoch strán",
+            "Funguje so všetkými radami Pohody",
           ],
         },
       ],
@@ -810,10 +835,10 @@ export const uctovnici: HubContent = {
         {
           type: "bullets",
           items: [
-            "ZIP balík: faktúry PDF + XML export + sumár",
-            "Filtre podľa firmy, obdobia a typu dokladu",
-            "Doručenie e-mailom alebo zdieľaným odkazom",
-            "Audit log: čo a kedy bolo odoslané",
+            "ZIP balík: XML na import, súpisky v CSV, PDF faktúr a skeny dokladov",
+            "Odoslanie mailom jedným klikom — alebo automaticky 5. v mesiaci",
+            "Faktero vie, čo už odišlo, a druhýkrát to nepošle",
+            "História: čo a kedy bolo odovzdané",
           ],
         },
       ],

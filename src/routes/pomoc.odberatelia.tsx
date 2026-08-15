@@ -92,6 +92,22 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "pohoda",
+    title: "Odberatelia v Pohode",
+    body: (
+      <>
+        <p>
+          Adresár sa dá posielať do Pohody, takže tam odberateľ je aj vtedy, keď mu tento mesiac nič
+          nefakturujete. Zmenený kontakt sa <strong>prepíše</strong>, nezaloží sa druhý.
+        </p>
+        <p>
+          Zapína sa to vo <Link to="/firma">Firma → Pohoda</Link> — viac v{" "}
+          <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

@@ -305,6 +305,23 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "pohoda",
+    title: "Skladové karty do Pohody",
+    body: (
+      <>
+        <p>
+          Ak účtovníčka vedie sklad v Pohode, karty jej vieme posielať priamo — zapína sa to vo{" "}
+          <Link to="/firma">Firma → Pohoda</Link> a treba k tomu vyplniť členenie skladu.
+        </p>
+        <p>
+          Posiela sa <strong>číselník zásob, nie stav skladu</strong>. Množstvá v Pohode vznikajú
+          príjemkami a výdajkami, takže dosadené číslo by sa s dokladmi rozišlo. Viac v{" "}
+          <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

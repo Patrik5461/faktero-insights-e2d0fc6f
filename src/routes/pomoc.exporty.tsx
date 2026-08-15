@@ -24,12 +24,20 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          V <Link to="/exporty">Účtovníctvo → Účtovné exporty</Link> pripravíte podklady pre
-          účtovníčku za zvolené obdobie — vydané faktúry, prijaté faktúry, doklady.
+          V <Link to="/exporty">Účtovníctvo → Účtovné exporty</Link> vyberiete mesiac a Faktero
+          povie, koľko z neho ešte neodišlo. Vznikne jeden balík: XML na import, súpisky v CSV na
+          kontrolu a samotné doklady v PDF.
         </p>
         <p>
-          Každý export sa uloží do <strong>histórie</strong>, takže sa dá stiahnuť znova a je
-          vidieť, čo a kedy bolo odovzdané.
+          Odovzdanie si <strong>pamätá, čo už odišlo</strong>, takže nabudúce priloží len nové
+          doklady a nič sa nezaúčtuje dvakrát. Každý export sa uloží do histórie, takže sa dá
+          stiahnuť znova.
+        </p>
+        <p>
+          Balík sa dá <strong>poslať účtovníčke rovno mailom</strong>, prípadne nechať odchádzať
+          samo 5. v mesiaci. Ak účtuje v Pohode, oplatí sa ísť ešte ďalej — pozrite si{" "}
+          <Link to="/pomoc/pohoda">prepojenie s Pohodou</Link>, pri ktorom si doklady vezme sama a
+          vráti čísla, ktoré im pridelila.
         </p>
         <p>
           Pred exportom skontrolujte <Link to="/pomoc/dph">prehľad DPH</Link> a obdobie potom{" "}
@@ -156,8 +164,10 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Z Fakera sa faktúry vyvážajú do <strong>Pohody</strong> ako XML dátový balík — vrátane
-          položiek, odberateľa, dobropisov a súčtov rozpísaných po sadzbách DPH.
+          Do <strong>Pohody</strong> vieme poslať vydané faktúry (aj zálohové a dobropisy), prijaté
+          doklady, pokladňu, a keď si to zapnete, aj adresár, skladové karty a zákazky. Buď súborom,
+          mailom, alebo <strong>priamym prepojením</strong>, pri ktorom si Pohoda doklady vezme sama
+          — celé je to v <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
         </p>
         <p>
           Ďalej vieme vyviezť do <strong>KROS Omegy</strong> (textový súbor R00/R01/R02 v kódovaní
