@@ -725,8 +725,11 @@ export type Database = {
           description: string
           entry_date: string
           entry_number: string
+          export_job_id: string | null
+          exported_at: string | null
           id: string
           note: string | null
+          pohoda_cislo: string | null
           type: Database["public"]["Enums"]["cash_entry_type"]
           updated_at: string
         }
@@ -739,8 +742,11 @@ export type Database = {
           description: string
           entry_date?: string
           entry_number: string
+          export_job_id?: string | null
+          exported_at?: string | null
           id?: string
           note?: string | null
+          pohoda_cislo?: string | null
           type: Database["public"]["Enums"]["cash_entry_type"]
           updated_at?: string
         }
@@ -753,8 +759,11 @@ export type Database = {
           description?: string
           entry_date?: string
           entry_number?: string
+          export_job_id?: string | null
+          exported_at?: string | null
           id?: string
           note?: string | null
+          pohoda_cislo?: string | null
           type?: Database["public"]["Enums"]["cash_entry_type"]
           updated_at?: string
         }
@@ -937,6 +946,7 @@ export type Database = {
           pohoda_clenenie_dph: string | null
           pohoda_clenenie_dph_pdp: string | null
           pohoda_clenenie_dph_prijata: string | null
+          pohoda_odkaz_na_pdf: boolean
           pohoda_predkontacia: string | null
           pohoda_predkontacia_dobropis: string | null
           pohoda_pokladna: string | null
@@ -992,6 +1002,7 @@ export type Database = {
           pohoda_clenenie_dph?: string | null
           pohoda_clenenie_dph_pdp?: string | null
           pohoda_clenenie_dph_prijata?: string | null
+          pohoda_odkaz_na_pdf?: boolean
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
           pohoda_pokladna?: string | null
@@ -1047,6 +1058,7 @@ export type Database = {
           pohoda_clenenie_dph?: string | null
           pohoda_clenenie_dph_pdp?: string | null
           pohoda_clenenie_dph_prijata?: string | null
+          pohoda_odkaz_na_pdf?: boolean
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
           pohoda_pokladna?: string | null
@@ -1846,6 +1858,7 @@ export type Database = {
           net_amount: number | null
           note: string | null
           payment_method: string
+          pohoda_cislo: string | null
           qr_raw: string | null
           source: string
           status: string
@@ -1877,6 +1890,7 @@ export type Database = {
           net_amount?: number | null
           note?: string | null
           payment_method?: string
+          pohoda_cislo?: string | null
           qr_raw?: string | null
           source?: string
           status?: string
@@ -1908,6 +1922,7 @@ export type Database = {
           net_amount?: number | null
           note?: string | null
           payment_method?: string
+          pohoda_cislo?: string | null
           qr_raw?: string | null
           source?: string
           status?: string
@@ -1995,6 +2010,9 @@ export type Database = {
           id: string
           invoice_id: string | null
           invoice_number: string | null
+          pohoda_cislo: string | null
+          pohoda_stav: string | null
+          potvrdene_at: string | null
           status: string
         }
         Insert: {
@@ -2005,6 +2023,9 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           invoice_number?: string | null
+          pohoda_cislo?: string | null
+          pohoda_stav?: string | null
+          potvrdene_at?: string | null
           status?: string
         }
         Update: {
@@ -2015,6 +2036,9 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           invoice_number?: string | null
+          pohoda_cislo?: string | null
+          pohoda_stav?: string | null
+          potvrdene_at?: string | null
           status?: string
         }
         Relationships: [
@@ -2772,6 +2796,7 @@ export type Database = {
           paid_at: string | null
           payment_method: string | null
           pdf_source_hash: string | null
+          pdf_token: string | null
           pdf_url: string | null
           reminders_enabled: boolean
           reverse_charge: boolean
@@ -2831,6 +2856,7 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           pdf_source_hash?: string | null
+          pdf_token?: string | null
           pdf_url?: string | null
           reminders_enabled?: boolean
           reverse_charge?: boolean
@@ -2890,6 +2916,7 @@ export type Database = {
           paid_at?: string | null
           payment_method?: string | null
           pdf_source_hash?: string | null
+          pdf_token?: string | null
           pdf_url?: string | null
           reminders_enabled?: boolean
           reverse_charge?: boolean

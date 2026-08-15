@@ -198,6 +198,7 @@ import { Route as AuthenticatedSkladPresunyNovaRouteImport } from './routes/_aut
 import { Route as AuthenticatedSkladProduktyIndexRouteImport } from './routes/_authenticated/sklad.produkty.index'
 import { Route as ApiAdminSeoCallbackRouteImport } from './routes/api/admin/seo.callback'
 import { Route as ApiBankoveUctyTatrabankaWebhookRouteImport } from './routes/api/bankove-ucty/tatrabanka/webhook'
+import { Route as ApiPublicFakturaTokenRouteImport } from './routes/api/public/faktura.$token'
 import { Route as ApiPublicHooksBankStatementsRouteImport } from './routes/api/public/hooks/bank-statements'
 import { Route as ApiPublicHooksBankStatementsRestoreRouteImport } from './routes/api/public/hooks/bank-statements-restore'
 import { Route as ApiPublicHooksBankSyncRouteImport } from './routes/api/public/hooks/bank-sync'
@@ -216,6 +217,8 @@ import { Route as ApiPublicTeslaCallbackRouteImport } from './routes/api/public/
 import { Route as ApiPublicWebhooksGopayMerchantRouteImport } from './routes/api/public/webhooks/gopay-merchant'
 import { Route as ApiV1CustomersIdRouteImport } from './routes/api/v1/customers.$id'
 import { Route as ApiV1InvoicesIdRouteImport } from './routes/api/v1/invoices.$id'
+import { Route as ApiV1PohodaDavkaRouteImport } from './routes/api/v1/pohoda/davka'
+import { Route as ApiV1PohodaOdpovedRouteImport } from './routes/api/v1/pohoda/odpoved'
 import { Route as ApiV1QuotesIdRouteImport } from './routes/api/v1/quotes.$id'
 import { Route as ApiV1RecurringInvoicesIdRouteImport } from './routes/api/v1/recurring-invoices.$id'
 import { Route as ApiV1SkladParseDeliveryNoteRouteImport } from './routes/api/v1/sklad.parse-delivery-note'
@@ -1256,6 +1259,11 @@ const ApiBankoveUctyTatrabankaWebhookRoute =
     path: '/api/bankove-ucty/tatrabanka/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicFakturaTokenRoute = ApiPublicFakturaTokenRouteImport.update({
+  id: '/api/public/faktura/$token',
+  path: '/api/public/faktura/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksBankStatementsRoute =
   ApiPublicHooksBankStatementsRouteImport.update({
     id: '/api/public/hooks/bank-statements',
@@ -1357,6 +1365,16 @@ const ApiV1InvoicesIdRoute = ApiV1InvoicesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiV1InvoicesRoute,
+} as any)
+const ApiV1PohodaDavkaRoute = ApiV1PohodaDavkaRouteImport.update({
+  id: '/api/v1/pohoda/davka',
+  path: '/api/v1/pohoda/davka',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiV1PohodaOdpovedRoute = ApiV1PohodaOdpovedRouteImport.update({
+  id: '/api/v1/pohoda/odpoved',
+  path: '/api/v1/pohoda/odpoved',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1QuotesIdRoute = ApiV1QuotesIdRouteImport.update({
   id: '/$id',
@@ -1636,6 +1654,7 @@ export interface FileRoutesByFullPath {
   '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
@@ -1654,6 +1673,8 @@ export interface FileRoutesByFullPath {
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
+  '/api/v1/pohoda/davka': typeof ApiV1PohodaDavkaRoute
+  '/api/v1/pohoda/odpoved': typeof ApiV1PohodaOdpovedRoute
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
   '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
@@ -1853,6 +1874,7 @@ export interface FileRoutesByTo {
   '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
@@ -1871,6 +1893,8 @@ export interface FileRoutesByTo {
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
+  '/api/v1/pohoda/davka': typeof ApiV1PohodaDavkaRoute
+  '/api/v1/pohoda/odpoved': typeof ApiV1PohodaOdpovedRoute
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
   '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
@@ -2081,6 +2105,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
@@ -2099,6 +2124,8 @@ export interface FileRoutesById {
   '/api/public/webhooks/gopay-merchant': typeof ApiPublicWebhooksGopayMerchantRoute
   '/api/v1/customers/$id': typeof ApiV1CustomersIdRoute
   '/api/v1/invoices/$id': typeof ApiV1InvoicesIdRouteWithChildren
+  '/api/v1/pohoda/davka': typeof ApiV1PohodaDavkaRoute
+  '/api/v1/pohoda/odpoved': typeof ApiV1PohodaOdpovedRoute
   '/api/v1/quotes/$id': typeof ApiV1QuotesIdRouteWithChildren
   '/api/v1/recurring-invoices/$id': typeof ApiV1RecurringInvoicesIdRoute
   '/api/v1/sklad/parse-delivery-note': typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
@@ -2309,6 +2336,7 @@ export interface FileRouteTypes {
     | '/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/faktura/$token'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
@@ -2327,6 +2355,8 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/gopay-merchant'
     | '/api/v1/customers/$id'
     | '/api/v1/invoices/$id'
+    | '/api/v1/pohoda/davka'
+    | '/api/v1/pohoda/odpoved'
     | '/api/v1/quotes/$id'
     | '/api/v1/recurring-invoices/$id'
     | '/api/v1/sklad/parse-delivery-note'
@@ -2526,6 +2556,7 @@ export interface FileRouteTypes {
     | '/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/faktura/$token'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
@@ -2544,6 +2575,8 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/gopay-merchant'
     | '/api/v1/customers/$id'
     | '/api/v1/invoices/$id'
+    | '/api/v1/pohoda/davka'
+    | '/api/v1/pohoda/odpoved'
     | '/api/v1/quotes/$id'
     | '/api/v1/recurring-invoices/$id'
     | '/api/v1/sklad/parse-delivery-note'
@@ -2753,6 +2786,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/faktura/$token'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
@@ -2771,6 +2805,8 @@ export interface FileRouteTypes {
     | '/api/public/webhooks/gopay-merchant'
     | '/api/v1/customers/$id'
     | '/api/v1/invoices/$id'
+    | '/api/v1/pohoda/davka'
+    | '/api/v1/pohoda/odpoved'
     | '/api/v1/quotes/$id'
     | '/api/v1/recurring-invoices/$id'
     | '/api/v1/sklad/parse-delivery-note'
@@ -2866,6 +2902,7 @@ export interface RootRouteChildren {
   PomocOnlinePlatbyGopayRoute: typeof PomocOnlinePlatbyGopayRoute
   ApiAdminSeoCallbackRoute: typeof ApiAdminSeoCallbackRoute
   ApiBankoveUctyTatrabankaWebhookRoute: typeof ApiBankoveUctyTatrabankaWebhookRoute
+  ApiPublicFakturaTokenRoute: typeof ApiPublicFakturaTokenRoute
   ApiPublicHooksBankStatementsRoute: typeof ApiPublicHooksBankStatementsRoute
   ApiPublicHooksBankStatementsRestoreRoute: typeof ApiPublicHooksBankStatementsRestoreRoute
   ApiPublicHooksBankSyncRoute: typeof ApiPublicHooksBankSyncRoute
@@ -2882,6 +2919,8 @@ export interface RootRouteChildren {
   ApiPublicTatrabankaWebhookRoute: typeof ApiPublicTatrabankaWebhookRoute
   ApiPublicTeslaCallbackRoute: typeof ApiPublicTeslaCallbackRoute
   ApiPublicWebhooksGopayMerchantRoute: typeof ApiPublicWebhooksGopayMerchantRoute
+  ApiV1PohodaDavkaRoute: typeof ApiV1PohodaDavkaRoute
+  ApiV1PohodaOdpovedRoute: typeof ApiV1PohodaOdpovedRoute
   ApiV1SkladParseDeliveryNoteRoute: typeof ApiV1SkladParseDeliveryNoteRouteWithChildren
   ApiV1StockItemsRoute: typeof ApiV1StockItemsRouteWithChildren
   ApiV1StockLevelsRoute: typeof ApiV1StockLevelsRoute
@@ -4215,6 +4254,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBankoveUctyTatrabankaWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/faktura/$token': {
+      id: '/api/public/faktura/$token'
+      path: '/api/public/faktura/$token'
+      fullPath: '/api/public/faktura/$token'
+      preLoaderRoute: typeof ApiPublicFakturaTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/bank-statements': {
       id: '/api/public/hooks/bank-statements'
       path: '/api/public/hooks/bank-statements'
@@ -4340,6 +4386,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/v1/invoices/$id'
       preLoaderRoute: typeof ApiV1InvoicesIdRouteImport
       parentRoute: typeof ApiV1InvoicesRoute
+    }
+    '/api/v1/pohoda/davka': {
+      id: '/api/v1/pohoda/davka'
+      path: '/api/v1/pohoda/davka'
+      fullPath: '/api/v1/pohoda/davka'
+      preLoaderRoute: typeof ApiV1PohodaDavkaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/v1/pohoda/odpoved': {
+      id: '/api/v1/pohoda/odpoved'
+      path: '/api/v1/pohoda/odpoved'
+      fullPath: '/api/v1/pohoda/odpoved'
+      preLoaderRoute: typeof ApiV1PohodaOdpovedRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/v1/quotes/$id': {
       id: '/api/v1/quotes/$id'
@@ -5014,6 +5074,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocOnlinePlatbyGopayRoute: PomocOnlinePlatbyGopayRoute,
   ApiAdminSeoCallbackRoute: ApiAdminSeoCallbackRoute,
   ApiBankoveUctyTatrabankaWebhookRoute: ApiBankoveUctyTatrabankaWebhookRoute,
+  ApiPublicFakturaTokenRoute: ApiPublicFakturaTokenRoute,
   ApiPublicHooksBankStatementsRoute: ApiPublicHooksBankStatementsRoute,
   ApiPublicHooksBankStatementsRestoreRoute:
     ApiPublicHooksBankStatementsRestoreRoute,
@@ -5031,6 +5092,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicTatrabankaWebhookRoute: ApiPublicTatrabankaWebhookRoute,
   ApiPublicTeslaCallbackRoute: ApiPublicTeslaCallbackRoute,
   ApiPublicWebhooksGopayMerchantRoute: ApiPublicWebhooksGopayMerchantRoute,
+  ApiV1PohodaDavkaRoute: ApiV1PohodaDavkaRoute,
+  ApiV1PohodaOdpovedRoute: ApiV1PohodaOdpovedRoute,
   ApiV1SkladParseDeliveryNoteRoute:
     ApiV1SkladParseDeliveryNoteRouteWithChildren,
   ApiV1StockItemsRoute: ApiV1StockItemsRouteWithChildren,

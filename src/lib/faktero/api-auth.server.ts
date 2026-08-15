@@ -221,6 +221,38 @@ async function logRequest(p: {
   }
 }
 
+/**
+ * Overí Bearer kľúč a vráti firmu, ktorej patrí.
+ *
+ * `handleApi` odpovedá vždy JSONom; konektor do Pohody potrebuje vrátiť surové
+ * XML a prijať ho, preto si autentifikáciu volá takto samostatne.
+ */
+export async function overApiKluc(
+  request: Request,
+): Promise<{ company_id: string; api_key_id: string; mode: "test" | "live" } | null> {
+  const auth = request.headers.get("authorization") ?? "";
+  if (!auth.startsWith("Bearer ")) return null;
+  const key_hash = await sha256Hex(auth.slice(7).trim());
+
+  const { data } = await supabaseAdmin
+    .from("api_keys")
+    .select("id, company_id, mode, revoked_at")
+    .eq("key_hash", key_hash)
+    .maybeSingle();
+  if (!data || data.revoked_at) return null;
+
+  void supabaseAdmin
+    .from("api_keys")
+    .update({ last_used_at: new Date().toISOString() })
+    .eq("id", data.id);
+
+  return {
+    company_id: data.company_id,
+    api_key_id: data.id,
+    mode: data.mode as "test" | "live",
+  };
+}
+
 export function ok(body: any, status = 200) {
   return { status, body };
 }

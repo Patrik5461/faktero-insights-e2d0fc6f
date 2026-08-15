@@ -137,6 +137,54 @@ function domacaMenaFirmy(company: CompanyRow): string {
 }
 
 /**
+ * Identifikátor dávky. **Zámerne stály.**
+ *
+ * Pohoda kontroluje duplicitu importovaného dokladu podľa dvojice `id` balíka
+ * a `id` položky (data.xsd). Keby sa balík volal zakaždým inak, ten istý doklad
+ * by prešiel druhýkrát — a to je presne to, čo pri dennom konektore aj pri
+ * ručnom importe toho istého súboru hrozí najviac. S touto konštantou a s
+ * identifikátorom dokladu v položke Pohoda druhý pokus odmietne sama.
+ */
+const ID_BALIKA = "FAKTERO";
+
+const SCHEMY: Record<string, string> = {
+  inv: "invoice.xsd",
+  vch: "voucher.xsd",
+};
+
+/** Obálka `dataPack` okolo hotových položiek. */
+function obalka(opts: { ico: unknown; note: string; prefixy: string[]; entries: string }): string {
+  const xmlns = opts.prefixy
+    .map((p) => `\n  xmlns:${p}="http://www.stormware.cz/schema/version_2/${SCHEMY[p]}"`)
+    .join("");
+  return `<?xml version="1.0" encoding="utf-8"?>
+<dat:dataPack id="${ID_BALIKA}" ico="${esc(opts.ico ?? "")}" application="Faktero" version="2.0" note="${esc(opts.note)}"
+  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"${xmlns}
+  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">${opts.entries}
+</dat:dataPack>`;
+}
+
+/**
+ * Odkaz na doklad v záložke Dokumenty.
+ *
+ * Účtovníčka tak má papier na jedno kliknutie z Pohody a nemusí ho hľadať v
+ * prílohe mailu. Schéma dovolí `typ:urlAddress` (názov a adresa, obidve do 255
+ * znakov) — vložiť samotný súbor sa pri importe nedá, `typ:file` je len na
+ * export.
+ */
+function prilohaOdkaz(nazov: string, url: unknown, odsadenie: string): string {
+  const u = String(url ?? "").trim();
+  if (!u || u.length > 255) return "";
+  return `
+${odsadenie}<inv:attachments>
+${odsadenie}  <typ:urlAddress>
+${odsadenie}    <typ:name>${esc(skrat(nazov, 255))}</typ:name>
+${odsadenie}    <typ:url>${esc(u)}</typ:url>
+${odsadenie}  </typ:urlAddress>
+${odsadenie}</inv:attachments>`;
+}
+
+/**
  * Prečo sa doklad do Pohody vyviezť nedá, alebo `null`, keď sa dá.
  *
  * Pohoda drží rozpis po sadzbách **vždy v domácej mene** a cudziu menu berie
@@ -167,14 +215,27 @@ export function buildPohodaInvoiceXml(opts: {
   company: CompanyRow;
   invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
   nastavenia?: PohodaNastavenia;
+  odkazy?: Record<string, string>;
+}): string {
+  return obalka({
+    ico: opts.company?.ico,
+    note: "Export z Faktero",
+    prefixy: ["inv"],
+    entries: polozkyFaktur(opts),
+  });
+}
+
+/** Položky `dataPackItem` s faktúrami — bez obálky, aby sa dali zliať do dávky. */
+export function polozkyFaktur(opts: {
+  company: CompanyRow;
+  invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
+  nastavenia?: PohodaNastavenia;
+  odkazy?: Record<string, string>;
 }): string {
   const { company, nastavenia } = opts;
   const invoices = opts.invoices.filter(({ invoice }) => !pohodaPrekazka(invoice, company));
-  const ico = esc(company?.ico ?? "");
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const dataPackId = `FAKTERO_${stamp}`;
 
-  const entries = invoices
+  return invoices
     .map(({ invoice, items }, idx) => {
       const typ = String(invoice.type ?? "regular");
       const invoiceType = TYPY_DOKLADU[typ] ?? "issuedInvoice";
@@ -261,7 +322,7 @@ export function buildPohodaInvoiceXml(opts: {
         .join(" · ");
 
       return `
-  <dat:dataPackItem id="INV${idx + 1}" version="2.0">
+  <dat:dataPackItem id="${esc(invoice.id ?? `INV${idx + 1}`)}" version="2.0">
     <inv:invoice version="2.0">
       <inv:invoiceHeader>
         <inv:invoiceType>${invoiceType}</inv:invoiceType>
@@ -323,18 +384,15 @@ export function buildPohodaInvoiceXml(opts: {
         )}${elSuma("typ:priceHighVAT", zn * dan(sHigh), "          ")}
           <typ:round><typ:priceRound>${fixed2(zn * zaokruhlenie)}</typ:priceRound></typ:round>
         </inv:homeCurrency>
-      </inv:invoiceSummary>
+      </inv:invoiceSummary>${prilohaOdkaz(
+        `Faktúra ${invoice.invoice_number ?? ""} (PDF)`,
+        opts.odkazy?.[String(invoice.id ?? "")],
+        "      ",
+      )}
     </inv:invoice>
   </dat:dataPackItem>`;
     })
     .join("");
-
-  return `<?xml version="1.0" encoding="utf-8"?>
-<dat:dataPack id="${dataPackId}" ico="${ico}" application="Faktero" version="2.0" note="Export z Faktero"
-  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
-  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
-  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">${entries}
-</dat:dataPack>`;
 }
 
 /**
@@ -354,11 +412,23 @@ export function buildPohodaCashXml(opts: {
   pohyby: DokladRow[];
   nastavenia?: PohodaNastavenia;
 }): string {
-  const { company, pohyby, nastavenia } = opts;
-  const ico = esc(company?.ico ?? "");
-  const dataPackId = `FAKTERO_POKLADNA_${new Date().toISOString().replace(/[:.]/g, "-")}`;
+  return obalka({
+    ico: opts.company?.ico,
+    note: "Pokladňa z Faktero",
+    prefixy: ["vch"],
+    entries: polozkyPokladne(opts),
+  });
+}
 
-  const entries = pohyby
+/** Položky `dataPackItem` s pokladničnými dokladmi — bez obálky. */
+export function polozkyPokladne(opts: {
+  company: CompanyRow;
+  pohyby: DokladRow[];
+  nastavenia?: PohodaNastavenia;
+}): string {
+  const { pohyby, nastavenia } = opts;
+
+  return pohyby
     .map((p, idx) => {
       // `prijem` = príjmový doklad, čokoľvek iné je výdavok.
       const druh = String(p?.type ?? "") === "prijem" ? "receipt" : "expense";
@@ -369,7 +439,7 @@ export function buildPohodaCashXml(opts: {
       );
 
       return `
-  <dat:dataPackItem id="POK${idx + 1}" version="2.0">
+  <dat:dataPackItem id="${esc(p?.id ?? `POK${idx + 1}`)}" version="2.0">
     <vch:voucher version="2.0">
       <vch:voucherHeader>
         <vch:voucherType>${druh}</vch:voucherType>${
@@ -398,13 +468,6 @@ export function buildPohodaCashXml(opts: {
   </dat:dataPackItem>`;
     })
     .join("");
-
-  return `<?xml version="1.0" encoding="utf-8"?>
-<dat:dataPack id="${dataPackId}" ico="${ico}" application="Faktero" version="2.0" note="Pokladňa z Faktero"
-  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
-  xmlns:vch="http://www.stormware.cz/schema/version_2/voucher.xsd"
-  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">${entries}
-</dat:dataPack>`;
 }
 
 /** Riadok rozpisu DPH tak, ako ho ukladá rozpoznávanie dokladov. */
@@ -444,15 +507,27 @@ export function buildPohodaExpensesXml(opts: {
   doklady: DokladRow[];
   nastavenia?: PohodaNastavenia;
 }): string {
+  return obalka({
+    ico: opts.company?.ico,
+    note: "Prijaté doklady z Faktero",
+    prefixy: ["inv"],
+    entries: polozkyDokladov(opts),
+  });
+}
+
+/** Položky `dataPackItem` s prijatými dokladmi — bez obálky. */
+export function polozkyDokladov(opts: {
+  company: CompanyRow;
+  doklady: DokladRow[];
+  nastavenia?: PohodaNastavenia;
+}): string {
   const { company, nastavenia } = opts;
   const domaca = domacaMenaFirmy(company);
   const doklady = opts.doklady.filter(
     (d) => (String(d?.currency ?? domaca).toUpperCase() || domaca) === domaca,
   );
-  const ico = esc(company?.ico ?? "");
-  const dataPackId = `FAKTERO_DOKLADY_${new Date().toISOString().replace(/[:.]/g, "-")}`;
 
-  const entries = doklady
+  return doklady
     .map((d, idx) => {
       const tab = sadzbyKuDnu(String(d?.issue_date ?? ""));
       const rozpis = rozpisDokladu(d);
@@ -489,7 +564,7 @@ export function buildPohodaExpensesXml(opts: {
       ].join("");
 
       return `
-  <dat:dataPackItem id="DOK${idx + 1}" version="2.0">
+  <dat:dataPackItem id="${esc(d?.id ?? `DOK${idx + 1}`)}" version="2.0">
     <inv:invoice version="2.0">
       <inv:invoiceHeader>
         <inv:invoiceType>receivedInvoice</inv:invoiceType>${el("inv:symVar", symVar, "        ")}
@@ -540,13 +615,29 @@ export function buildPohodaExpensesXml(opts: {
   </dat:dataPackItem>`;
     })
     .join("");
+}
 
-  return `<?xml version="1.0" encoding="utf-8"?>
-<dat:dataPack id="${dataPackId}" ico="${ico}" application="Faktero" version="2.0" note="Prijaté doklady z Faktero"
-  xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd"
-  xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd"
-  xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">${entries}
-</dat:dataPack>`;
+/**
+ * Jedna dávka pre konektor — faktúry, prijaté doklady aj pokladňa naraz.
+ *
+ * Pohoda zvládne v jednom balíku viac agend, takže konektor sťahuje jeden súbor
+ * a nemusí riešiť poradie ani to, čo robiť, keď mu druhý súbor nedôjde.
+ */
+export function buildPohodaDavkaXml(opts: {
+  company: CompanyRow;
+  invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
+  doklady: DokladRow[];
+  pohyby: DokladRow[];
+  nastavenia?: PohodaNastavenia;
+  odkazy?: Record<string, string>;
+}): string {
+  const entries = [polozkyFaktur(opts), polozkyDokladov(opts), polozkyPokladne(opts)].join("");
+  return obalka({
+    ico: opts.company?.ico,
+    note: "Dávka z Faktero",
+    prefixy: ["inv", "vch"],
+    entries,
+  });
 }
 
 export type ExportFormat = "pohoda_xml" | "omega_txt" | "money_s3_xml";
