@@ -246,6 +246,22 @@ function CompanyPage() {
               <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
                 <input
                   type="checkbox"
+                  checked={!!c.pohoda_posielat_zakazky}
+                  onChange={(e) => setC({ ...c, pohoda_posielat_zakazky: e.target.checked })}
+                  className="mt-0.5 h-4 w-4"
+                />
+                <span className="text-sm">
+                  Posielať zákazky
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    Faktúra potom v Pohode nesie zákazku, takže je z nej vidieť výnos po zákazkách.
+                    Zákazka odchádza <strong>raz</strong> — Pohoda ju vie založiť, ale nie prepísať,
+                    tak si neskoršiu zmenu názvu prepíšte aj tam.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
+                <input
+                  type="checkbox"
                   checked={c.pohoda_odkaz_na_pdf !== false}
                   onChange={(e) => setC({ ...c, pohoda_odkaz_na_pdf: e.target.checked })}
                   className="mt-0.5 h-4 w-4"

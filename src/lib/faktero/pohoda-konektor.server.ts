@@ -55,11 +55,12 @@ export type Davka = {
   pokladnicnych: number;
   zakaznikov: number;
   zasob: number;
+  zakaziek: number;
   preskocene: string[];
 };
 
 /** Ktorá agenda číselníka — pod týmto sa vedie v `pohoda_odoslane`. */
-type Agenda = "adresar" | "sklad";
+type Agenda = "adresar" | "sklad" | "zakazka";
 
 /**
  * Číselníky sa neposielajú podľa dátumu, ale podľa zmeny.
@@ -189,13 +190,17 @@ export async function zostavDavku(
     company.pohoda_posielat_sklad && company.pohoda_sklad
       ? await nacitajZasoby(supabase, vstup.companyId)
       : [];
+  const { nove: zakazkyNove, kody: zakazky } = company.pohoda_posielat_zakazky
+    ? await nacitajZakazky(supabase, vstup.companyId, faktury)
+    : { nove: [], kody: {} };
 
   const prazdna =
     !faktury.length &&
     !doklady?.length &&
     !pokladnica?.length &&
     !zakaznici.length &&
-    !zasoby.length;
+    !zasoby.length &&
+    !zakazkyNove.length;
   if (prazdna) {
     return {
       xml: "",
@@ -206,6 +211,7 @@ export async function zostavDavku(
       pokladnicnych: 0,
       zakaznikov: 0,
       zasob: 0,
+      zakaziek: 0,
       preskocene: [],
     };
   }
@@ -251,8 +257,10 @@ export async function zostavDavku(
     pohyby: pokladnica ?? [],
     zakaznici,
     zasoby,
+    zakazkyNove,
     nastavenia,
     odkazy,
+    zakazky,
   });
 
   const cislaPreskocenych = new Set<string>(
@@ -274,6 +282,7 @@ export async function zostavDavku(
       pokladnicaIds: (pokladnica ?? []).map((p: Riadok) => p.id),
       zakaznici,
       zasoby,
+      zakazkyNove,
     });
   }
 
@@ -286,8 +295,58 @@ export async function zostavDavku(
     pokladnicnych: pokladnica?.length ?? 0,
     zakaznikov: zakaznici.length,
     zasob: zasoby.length,
+    zakaziek: zakazkyNove.length,
     preskocene,
   };
+}
+
+/**
+ * Zákazky: ktoré ešte neodišli, a ako sa volajú tie, na ktoré sa odvolávajú
+ * faktúry v dávke.
+ *
+ * Posielajú sa **len raz** — agenda `contract` nemá v schéme `actionType`, takže
+ * zákazku sa dá založiť, ale nie prepísať; druhé poslanie by v Pohode vyrobilo
+ * druhú. Preto sa tu neporovnáva verzia, stačí, že záznam o odoslaní existuje.
+ *
+ * Zákazka bez evidenčného čísla sa dá do Pohody založiť, ale faktúru ňou
+ * označiť nevieme — odkaz z faktúry je práve na to číslo.
+ */
+async function nacitajZakazky(
+  supabase: Klient,
+  companyId: string,
+  faktury: Riadok[],
+): Promise<{ nove: Riadok[]; kody: Record<string, string> }> {
+  const [{ data: vsetky }, { data: odoslane }] = await Promise.all([
+    supabase.from("jobs").select("*").eq("company_id", companyId).order("created_at"),
+    supabase
+      .from("pohoda_odoslane")
+      .select("zaznam_id")
+      .eq("company_id", companyId)
+      .eq("agenda", "zakazka"),
+  ]);
+
+  const uz = new Set((odoslane ?? []).map((r: Riadok) => String(r.zaznam_id)));
+  const zakazky = vsetky ?? [];
+
+  const kody: Record<string, string> = {};
+  for (const z of zakazky) {
+    if (z.job_number) kody[String(z.id)] = String(z.job_number).slice(0, 12);
+  }
+
+  // Prednosť majú zákazky, na ktoré sa odvoláva niečo v tejto dávke — inak by
+  // faktúra ukázala na zákazku, ktorá v Pohode ešte nie je.
+  const potrebne = new Set(
+    faktury.map((f: Riadok) => String(f.job_id ?? "")).filter((x: string) => x),
+  );
+  const nove = zakazky
+    .filter((z: Riadok) => !uz.has(String(z.id)))
+    .sort(
+      (a: Riadok, b: Riadok) =>
+        Number(potrebne.has(String(b.id))) - Number(potrebne.has(String(a.id))),
+    )
+    .slice(0, STROP_DAVKY);
+
+  return { nove, kody };
 }
 
 /** Kontakty, ktoré ešte neodišli alebo sa od odoslania zmenili. */
@@ -369,6 +428,7 @@ async function zapisOdovzdanie(
     pokladnicaIds: string[];
     zakaznici: Riadok[];
     zasoby: Riadok[];
+    zakazkyNove: Riadok[];
   },
 ): Promise<string | null> {
   const { data: job, error } = await supabase
@@ -420,6 +480,7 @@ async function zapisOdovzdanie(
   const ciselniky = [
     ...p.zakaznici.map((z: Riadok) => ({ agenda: "adresar", id: z.id, verzia: z.updated_at })),
     ...p.zasoby.map((s: Riadok) => ({ agenda: "sklad", id: s.id, verzia: s.updated_at })),
+    ...p.zakazkyNove.map((z: Riadok) => ({ agenda: "zakazka", id: z.id, verzia: z.updated_at })),
   ];
   if (ciselniky.length) {
     await supabase.from("pohoda_odoslane").upsert(

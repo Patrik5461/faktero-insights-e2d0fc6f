@@ -154,6 +154,7 @@ const SCHEMY: Record<string, string> = {
   vch: "voucher.xsd",
   adb: "addressbook.xsd",
   stk: "stock.xsd",
+  con: "contract.xsd",
   ftr: "filter.xsd",
 };
 
@@ -221,6 +222,7 @@ export function buildPohodaInvoiceXml(opts: {
   invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
   nastavenia?: PohodaNastavenia;
   odkazy?: Record<string, string>;
+  zakazky?: Record<string, string>;
 }): string {
   return obalka({
     ico: opts.company?.ico,
@@ -236,6 +238,8 @@ export function polozkyFaktur(opts: {
   invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
   nastavenia?: PohodaNastavenia;
   odkazy?: Record<string, string>;
+  /** Evidenčné číslo zákazky podľa `invoices.job_id`. */
+  zakazky?: Record<string, string>;
 }): string {
   const { company, nastavenia } = opts;
   const invoices = opts.invoices.filter(({ invoice }) => !pohodaPrekazka(invoice, company));
@@ -355,6 +359,12 @@ export function polozkyFaktur(opts: {
         }${
           clenenie
             ? `\n        <inv:classificationVAT><typ:ids>${esc(clenenie)}</typ:ids></inv:classificationVAT>`
+            : ""
+        }${
+          opts.zakazky?.[String(invoice.job_id ?? "")]
+            ? `\n        <inv:contract><typ:ids>${esc(
+                opts.zakazky[String(invoice.job_id)],
+              )}</typ:ids></inv:contract>`
             : ""
         }${
           invoice.order_number
@@ -766,6 +776,52 @@ export function polozkySkladu(opts: {
     .join("");
 }
 
+/**
+ * Zákazky (`contract`).
+ *
+ * **Ide každá práve raz.** Schéma tejto agendy nemá `actionType` ani `extId`,
+ * takže zákazku sa dá len založiť, nie prepísať — druhé poslanie by v Pohode
+ * vyrobilo druhú zákazku. Bráni tomu identifikátor položky (bez verzie, na
+ * rozdiel od adresára a skladu) aj `checkDuplicity` na evidenčnom čísle.
+ *
+ * Stav zákazky sa neposiela: v Pohode je to odkaz do vlastného zoznamu stavov
+ * účtovníčky a naše `active`/`closed` v ňom nemusí existovať.
+ */
+export function polozkyZakaziek(opts: { zakazky: DokladRow[] }): string {
+  return opts.zakazky
+    .map((z) => {
+      const popis = skrat(z?.name, 90);
+      if (!popis) return "";
+      const cislo = skrat(z?.job_number, 12);
+
+      return `
+  <dat:dataPackItem id="${esc(z?.id ?? "")}" version="2.0">
+    <con:contract version="2.0">
+      <con:contractDesc>${
+        cislo
+          ? `\n        <con:number><typ:numberRequested checkDuplicity="true">${esc(cislo)}</typ:numberRequested></con:number>`
+          : ""
+      }${el("con:dateStart", z?.start_date, "        ")}${el(
+        "con:datePlanDelivery",
+        z?.end_date,
+        "        ",
+      )}
+        <con:text>${esc(popis)}</con:text>${
+          z?.customer_name
+            ? `
+        <con:partnerIdentity>
+          <typ:address>${el("typ:company", skrat(z.customer_name, 96), "            ")}
+          </typ:address>
+        </con:partnerIdentity>`
+            : ""
+        }${el("con:note", skrat(z?.note, 240), "        ")}
+      </con:contractDesc>
+    </con:contract>
+  </dat:dataPackItem>`;
+    })
+    .join("");
+}
+
 /** Adresár samostatne — na ručný import bez konektora. */
 export function buildPohodaAddressbookXml(opts: {
   company: CompanyRow;
@@ -776,6 +832,19 @@ export function buildPohodaAddressbookXml(opts: {
     note: "Adresár z Faktero",
     prefixy: ["adb", "ftr"],
     entries: polozkyAdresara(opts),
+  });
+}
+
+/** Zákazky samostatne. */
+export function buildPohodaContractsXml(opts: {
+  company: CompanyRow;
+  zakazky: DokladRow[];
+}): string {
+  return obalka({
+    ico: opts.company?.ico,
+    note: "Zákazky z Faktero",
+    prefixy: ["con"],
+    entries: polozkyZakaziek(opts),
   });
 }
 
@@ -806,14 +875,17 @@ export function buildPohodaDavkaXml(opts: {
   pohyby: DokladRow[];
   zakaznici?: DokladRow[];
   zasoby?: DokladRow[];
+  zakazkyNove?: DokladRow[];
   nastavenia?: PohodaNastavenia;
   odkazy?: Record<string, string>;
+  zakazky?: Record<string, string>;
 }): string {
-  // Číselníky idú prvé, nech je odberateľ v adresári skôr, než sa naňho
-  // odvolá faktúra.
+  // Číselníky idú prvé, nech je odberateľ v adresári a zákazka v zozname skôr,
+  // než sa na ne odvolá faktúra.
   const entries = [
     opts.zakaznici?.length ? polozkyAdresara({ zakaznici: opts.zakaznici }) : "",
     opts.zasoby?.length ? polozkySkladu({ zasoby: opts.zasoby, nastavenia: opts.nastavenia }) : "",
+    opts.zakazkyNove?.length ? polozkyZakaziek({ zakazky: opts.zakazkyNove }) : "",
     polozkyFaktur(opts),
     polozkyDokladov(opts),
     polozkyPokladne(opts),
@@ -821,7 +893,7 @@ export function buildPohodaDavkaXml(opts: {
   return obalka({
     ico: opts.company?.ico,
     note: "Dávka z Faktero",
-    prefixy: ["inv", "vch", "adb", "stk", "ftr"],
+    prefixy: ["inv", "vch", "adb", "stk", "con", "ftr"],
     entries,
   });
 }

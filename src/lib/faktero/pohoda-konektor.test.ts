@@ -223,6 +223,71 @@ describe("adresár a sklad", () => {
   });
 });
 
+describe("zákazky", () => {
+  const zakazka = {
+    id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    updated_at: "2026-03-01T07:00:00.000Z",
+    job_number: "ZAK-2026-1",
+    name: "Rekonštrukcia haly",
+    customer_name: "ACME s.r.o.",
+    start_date: "2026-02-01",
+    end_date: "2026-06-30",
+    note: "prvá etapa",
+  };
+  const fakturaSoZakazkou = { ...faktura, job_id: zakazka.id };
+
+  const davka = buildPohodaDavkaXml({
+    company: firma,
+    invoices: [{ invoice: fakturaSoZakazkou, items: [polozka] }],
+    doklady: [],
+    pohyby: [],
+    zakazkyNove: [zakazka],
+    zakazky: { [zakazka.id]: "ZAK-2026-1" },
+  });
+
+  it("zákazka je v dávke a XML je platné", () => {
+    expect(XMLValidator.validate(davka)).toBe(true);
+    expect(davka).toContain("<con:text>Rekonštrukcia haly</con:text>");
+    expect(davka).toContain("<con:dateStart>2026-02-01</con:dateStart>");
+  });
+
+  it("faktúra nesie zákazku", () => {
+    // Toto je celý úžitok: v Pohode je potom vidieť výnos po zákazkách.
+    expect(davka).toContain("<inv:contract><typ:ids>ZAK-2026-1</typ:ids></inv:contract>");
+    expect(davka.indexOf("con:contract")).toBeLessThan(davka.indexOf("inv:invoice"));
+  });
+
+  it("identifikátor je bez verzie", () => {
+    // Agenda `contract` nemá v schéme actionType — zákazku sa dá založiť, nie
+    // prepísať. Stály identifikátor a checkDuplicity sú jediné, čo bráni tomu,
+    // aby druhý beh vyrobil druhú zákazku.
+    expect(davka).toContain(`<dat:dataPackItem id="${zakazka.id}" version="2.0">`);
+    expect(davka).toContain('<typ:numberRequested checkDuplicity="true">ZAK-2026-1');
+  });
+
+  it("bez názvu sa zákazka neposiela", () => {
+    // `text` je podľa schémy pri vytvorení povinný.
+    const bezNazvu = buildPohodaDavkaXml({
+      company: firma,
+      invoices: [{ invoice: faktura, items: [polozka] }],
+      doklady: [],
+      pohyby: [],
+      zakazkyNove: [{ ...zakazka, name: null }],
+    });
+    expect(bezNazvu).not.toContain("con:contract");
+  });
+
+  it("faktúra bez zákazky odkaz nemá", () => {
+    const bez = buildPohodaDavkaXml({
+      company: firma,
+      invoices: [{ invoice: faktura, items: [polozka] }],
+      doklady: [],
+      pohyby: [],
+    });
+    expect(bez).not.toContain("inv:contract");
+  });
+});
+
 describe("odpoveď z Pohody", () => {
   const odpoved = `<?xml version="1.0" encoding="Windows-1250"?>
 <rsp:responsePack version="2.0" id="FAKTERO" state="ok"

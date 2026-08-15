@@ -949,6 +949,7 @@ export type Database = {
           pohoda_odkaz_na_pdf: boolean
           pohoda_posielat_adresar: boolean
           pohoda_posielat_sklad: boolean
+          pohoda_posielat_zakazky: boolean
           pohoda_predkontacia: string | null
           pohoda_predkontacia_dobropis: string | null
           pohoda_pokladna: string | null
@@ -1008,6 +1009,7 @@ export type Database = {
           pohoda_odkaz_na_pdf?: boolean
           pohoda_posielat_adresar?: boolean
           pohoda_posielat_sklad?: boolean
+          pohoda_posielat_zakazky?: boolean
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
           pohoda_pokladna?: string | null
@@ -1067,6 +1069,7 @@ export type Database = {
           pohoda_odkaz_na_pdf?: boolean
           pohoda_posielat_adresar?: boolean
           pohoda_posielat_sklad?: boolean
+          pohoda_posielat_zakazky?: boolean
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
           pohoda_pokladna?: string | null
