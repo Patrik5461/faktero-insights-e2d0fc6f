@@ -91,6 +91,41 @@ ktorý podpis vyrobí až pri kliknutí. Vypína sa vo Firma → Pohoda
 Pokladňa dostala `exported_at` — mesačný balík posielal celý mesiac naraz, ale
 denný konektor by bez toho posielal tie isté pohyby každý deň.
 
+### Adresár a skladové karty
+
+Konektor vie poslať aj číselníky — **odberateľov** (`addressbook`) a **skladové
+karty** (`stock`). Obidve sú vypnuté, kým si ich firma nezapne vo Firma → Pohoda
+(`pohoda_posielat_adresar`, `pohoda_posielat_sklad`): adresár si Pohoda pri
+importe faktúr zakladá aj sama a sklad v nej vedie málokto.
+
+Číselník nemá dátum, takže sa neposiela „od mesiaca", ale podľa zmeny. Zmenená
+karta sa v Pohode **prepíše, nezaloží sa druhá** — cez `actionType`
+`<add add="true" update="true">` s filtrom na `extId` (naše `id` a
+`exSystemName = Faktero`). Aby zmenená karta prešla kontrolou duplicity, nesie
+`dataPackItem id` aj verziu záznamu (`<id>-<updated_at bez oddeľovačov>`); späť
+sa mapuje cez `holeId()`.
+
+**Odoslaná verzia sa nedrží na karte, ale v tabuľke `pohoda_odoslane`.** Prvý
+pokus ju mal ako stĺpec na `customers`/`stock_items` a bol chybný: obidve tabuľky
+majú trigger `set_updated_at`, takže vlastný zápis posunul `updated_at`, karta sa
+navždy tvárila ako zmenená a chodila každý deň znova. Naostro to bolo vidieť hneď
+pri druhom behu.
+
+**Stav skladu sa neposiela.** Schéma `count` pripúšťa len pri exporte z Pohody
+(„Stav zásoby (jen pro export)") a je to tak správne — stav tam vzniká
+príjemkami a výdajkami, takže dosadené číslo by sa rozišlo s pohybmi. Ide teda
+číselník zásob, nie sklad.
+
+Bez členenia skladu (`companies.pohoda_sklad` → element `storage`) sa karty
+neposielajú vôbec; schéma ho pri vytvorení vyžaduje a spadla by celá dávka.
+Názov karty je na `products`, nie na `stock_items` — bez pripojenia by odišla
+karta bez názvu.
+
+Pozor na menné priestory: `extId` je na skladovej karte vyhlásený v `stock.xsd`
+(`<stk:extId>`), v adresári v `type.xsd` (`<typ:extId>`) a vo filtri v
+`filter.xsd` (`<ftr:extId>`) — obsah rovnaký, predpona iná. Toto chytila až
+validácia proti schéme.
+
 Pokladňa sa vyváža **bez rozpisu DPH**: pohyb v pokladni u nás sadzbu nemá
 (vklady, výbery, drobné výdavky), kým doklady s DPH sú prijaté doklady a
 faktúry. Vymyslená sadzba by bola tichá chyba v priznaní, takže celá suma ide do
@@ -148,11 +183,10 @@ Takto sa našlo, že cudzia mena bola postavená zle.
 
 ## Čo ďalej
 
-**1. Zvyšné agendy.** Pohoda berie ešte adresár (`addressbook`), sklad (`stock`)
-a zákazky (`contract`) — `customers`, `stock_items`, `jobs`. Adresár si Pohoda
-pri importe faktúr zakladá sama, takže úžitok je malý; sklad a zákazky dávajú
-zmysel len tomu, kto ich v Pohode naozaj vedie. Pozor, `purchase_invoices` je
-prázdna tabuľka — prijaté doklady žijú v `expense_documents`.
+**1. Zákazky (`contract`).** Posledná agenda, ktorá by sa dala pridať —
+`jobs`. Dáva zmysel len tomu, kto zákazky v Pohode naozaj vedie. Adresár a sklad
+sú už hotové (vyššie). Pozor, `purchase_invoices` je prázdna tabuľka — prijaté
+doklady žijú v `expense_documents`.
 
 **2. Živý most cez POHODA mServer.** _Prekonané konektorom vyššie — ostáva tu
 ako záznam, prečo sa touto cestou nešlo._ Pohoda má vstavaný HTTP server:
