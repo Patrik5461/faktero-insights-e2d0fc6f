@@ -269,6 +269,35 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "vazby",
+    title: "Storno, dobropisy a zálohy",
+    body: (
+      <>
+        <p>
+          <strong>Zrušená faktúra.</strong> Keď faktúru zrušíte po tom, ako už odišla, Faktero
+          požiada Pohodu o <strong>stornujúci doklad</strong>. Pôvodný v účtovníctve ostáva — tak to
+          má byť, doklad z evidencie len tak nezmizne.
+        </p>
+        <p>
+          <strong>Dobropis.</strong> Pri jeho vystavení sa dá vybrať, ktorú faktúru opravuje
+          (tlačidlo „Ktorú faktúru opravuje" pri položkách). V Pohode potom vznikne ako opravný
+          doklad naviazaný na pôvodnú faktúru, takže sa spárujú a sedí aj kontrolný výkaz. Bez
+          výberu odíde ako samostatný doklad, ako doteraz.
+        </p>
+        <p>
+          <strong>Zálohová faktúra.</strong> Keď si ju konečná faktúra odpočíta, odpočet ide do
+          Pohody ako <strong>vlastný druh položky</strong> — nie ako záporná bežná položka. Vďaka
+          tomu ho Pohoda spáruje so zálohovou faktúrou a nezaúčtuje ako ďalšie plnenie.
+        </p>
+        <p>
+          Všetky tri sa odvolávajú na číslo, ktoré doklad dostal v Pohode. Kým sa jeho import
+          nepotvrdí, väzba počká a doklad odíde bez nej — radšej doklad bez väzby než doklad, ktorý
+          sa nenaimportuje vôbec.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "otazky",
     title: "Časté otázky",
     body: (
@@ -286,6 +315,11 @@ const sections: HelpSection[] = [
           <strong>Zmenil som zákazke názov, prepíše sa?</strong> Nie. Pohoda vie zákazku založiť,
           ale nie prepísať, takže zmenu treba urobiť aj tam. Pri odberateľoch a skladových kartách
           sa zmena prepíše sama.
+        </p>
+        <p>
+          <strong>Opravil som už odovzdanú faktúru.</strong> Oprava sa do Pohody neprenesie — doklad
+          tam ostane v pôvodnej podobe. Ak treba, zrušte faktúru (vtedy pošleme storno) a vystavte
+          novú, alebo rozdiel doriešte dobropisom.
         </p>
         <p>
           <strong>Funguje to s mojou radou Pohody?</strong> Áno, aj so základnou. Nepoužívame

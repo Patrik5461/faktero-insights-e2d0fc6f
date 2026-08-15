@@ -91,6 +91,36 @@ ktorý podpis vyrobí až pri kliknutí. Vypína sa vo Firma → Pohoda
 Pokladňa dostala `exported_at` — mesačný balík posielal celý mesiac naraz, ale
 denný konektor by bez toho posielal tie isté pohyby každý deň.
 
+### Väzby na doklady, ktoré v Pohode už sú
+
+Storno, dobropis aj odpočet zálohy sa odvolávajú na **číslo, ktoré doklad dostal
+v Pohode** — nie na naše. `numberRequested` je len želanie; skutočné číslo
+poznáme až z odpovede po importe (`export_logs.pohoda_cislo`, mapa
+`cislaVPohode`). Kým sa pôvodný doklad nepotvrdí, väzba sa **vynechá** a doklad
+odíde ako doteraz. Radšej doklad bez väzby než doklad, ktorý sa neimportuje.
+
+**Storno** (`polozkyStorna`, agenda `storno` v `pohoda_odoslane`): faktúra, ktorá
+už odišla a potom sa zrušila (`invoices.cancelled_at`), dostane cez
+`inv:cancelDocument` stornujúci doklad. Pôvodný v Pohode ostáva — účtovníctvo si
+ho musí pamätať. Identifikátor položky je `<id faktúry>-storno`, aby nekolidoval
+s pôvodnou faktúrou. Storno ide v dávke **posledné**.
+
+**Dobropis** ide cez `inv:correctiveDocument` s `itemTransfer="false"` — položky
+nesieme vlastné, dobropis býva čiastočný. Väzbu drží nový stĺpec
+`invoices.opravuje_fakturu_id`; predtým bola nanajvýš v poznámke a nedala sa
+zistiť inak než hádaním z variabilného symbolu. V rozhraní sa vyberá tým istým
+dialógom ako zálohová faktúra, len pre typ „Dobropis".
+
+**Odpočet zálohy** je `inv:invoiceAdvancePaymentItem` — **vlastný druh položky**,
+nie záporná bežná. Ako bežná by sa zaúčtovala ako ďalšie plnenie a Pohoda by ju
+nespárovala so zálohovou faktúrou. Sadzba sa berie **zo zálohovej faktúry**
+(`sadzbaZalohy` z jej `subtotal`/`vat_total`), nie z konečnej — záloha má vlastnú
+sadzbu a dopočítať ju z jednej sumy by znamenalo hádať; bez zálohovej faktúry sa
+odpočet radšej neposiela. `invoices.advance_amount` je suma **s daňou**. Súhrn
+dokladu je o zálohu nižší v jej priehradke, inak by Pohoda hlásila nesúlad medzi
+hlavičkou a položkami; zaokrúhlenie ostáva rovnaké, lebo záloha sa odčíta z
+oboch strán.
+
 ### Adresár a skladové karty
 
 Konektor vie poslať aj číselníky — **odberateľov** (`addressbook`) a **skladové
