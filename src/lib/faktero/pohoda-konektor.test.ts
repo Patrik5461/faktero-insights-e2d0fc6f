@@ -427,6 +427,117 @@ describe("skladové pohyby", () => {
   });
 });
 
+describe("storno odovzdanej faktúry", () => {
+  const davka = buildPohodaDavkaXml({
+    company: firma,
+    invoices: [],
+    doklady: [],
+    pohyby: [],
+    storna: [{ id: "99999999-9999-9999-9999-999999999999", cislo: "260148" }],
+  });
+
+  it("vyrobí stornujúci doklad k pôvodnému číslu", () => {
+    // Doklad, ktorý v Pohode je, sa nedá odobrať — účtovníctvo si ho musí
+    // pamätať, takže sa k nemu vyrába stornujúci.
+    expect(XMLValidator.validate(davka)).toBe(true);
+    expect(davka).toContain("<inv:cancelDocument>");
+    expect(davka).toContain("<typ:number>260148</typ:number>");
+  });
+
+  it("má vlastný identifikátor, aby nekolidoval s pôvodnou faktúrou", () => {
+    expect(davka).toContain('<dat:dataPackItem id="99999999-9999-9999-9999-999999999999-storno"');
+  });
+});
+
+describe("dobropis naviazaný na pôvodnú faktúru", () => {
+  const dobropis = {
+    ...faktura,
+    id: "aaaaaaaa-1111-1111-1111-111111111111",
+    invoice_number: "20260009",
+    type: "credit_note",
+  };
+
+  it("ide ako opravný doklad k nej", () => {
+    const xml = buildPohodaInvoiceXml({
+      company: firma,
+      invoices: [{ invoice: dobropis, items: [polozka] }],
+      opravovane: { [dobropis.id]: "260148" },
+    });
+    expect(XMLValidator.validate(xml)).toBe(true);
+    expect(xml).toContain('<inv:correctiveDocument itemTransfer="false">');
+    expect(xml).toContain("<typ:number>260148</typ:number>");
+    // Väzba patrí podľa schémy pred hlavičku dokladu.
+    expect(xml.indexOf("correctiveDocument")).toBeLessThan(xml.indexOf("invoiceHeader"));
+  });
+
+  it("bez väzby ostáva samostatným dokladom", () => {
+    // Kým sa pôvodná faktúra v Pohode nepotvrdí, jej číslo nepoznáme — vtedy je
+    // lepší dobropis bez väzby než doklad, ktorý sa neimportuje.
+    const xml = buildPohodaInvoiceXml({
+      company: firma,
+      invoices: [{ invoice: dobropis, items: [polozka] }],
+    });
+    expect(xml).not.toContain("correctiveDocument");
+    expect(xml).toContain("<inv:invoiceType>issuedCreditNotice</inv:invoiceType>");
+  });
+
+  it("väzba sa nedáva na bežnú faktúru", () => {
+    const xml = buildPohodaInvoiceXml({
+      company: firma,
+      invoices: [{ invoice: faktura, items: [polozka] }],
+      opravovane: { [faktura.id]: "260148" },
+    });
+    expect(xml).not.toContain("correctiveDocument");
+  });
+});
+
+describe("odpočet zálohy na konečnej faktúre", () => {
+  // Faktúra na 123 € s daňou, z toho 60 € už prišlo zálohou (50 základ + 10 DPH
+  // pri 20 %; zámerne iná sadzba než na faktúre, nech je vidieť, že sa berie zo
+  // zálohovej faktúry).
+  const xml = buildPohodaInvoiceXml({
+    company: firma,
+    invoices: [{ invoice: faktura, items: [polozka] }],
+    zalohy: { [faktura.id]: { cislo: "260100", zaklad: 50, dph: 11.5, sadzba: 23 } },
+  });
+
+  it("je to vlastný druh položky, nie záporná bežná položka", () => {
+    // Ako bežná položka by sa zaúčtovala ako ďalšie plnenie a Pohoda by ju
+    // nespárovala so zálohovou faktúrou.
+    expect(XMLValidator.validate(xml)).toBe(true);
+    expect(xml).toContain("<inv:invoiceAdvancePaymentItem>");
+    expect(xml).toContain("<typ:number>260100</typ:number>");
+    expect(xml).toContain("<typ:unitPrice>-50.00</typ:unitPrice>");
+    expect(xml).toContain("<typ:priceVAT>-11.50</typ:priceVAT>");
+  });
+
+  it("súhrn dokladu je o zálohu nižší", () => {
+    // Inak by Pohoda hlásila nesúlad medzi hlavičkou a položkami.
+    expect(xml).toContain("<typ:priceHigh>50.00</typ:priceHigh>");
+    expect(xml).toContain("<typ:priceHighVAT>11.50</typ:priceHighVAT>");
+  });
+
+  it("bez zálohy ostáva súhrn celý", () => {
+    const bez = buildPohodaInvoiceXml({
+      company: firma,
+      invoices: [{ invoice: faktura, items: [polozka] }],
+    });
+    expect(bez).not.toContain("invoiceAdvancePaymentItem");
+    expect(bez).toContain("<typ:priceHigh>100.00</typ:priceHigh>");
+  });
+
+  it("bez čísla zálohovej faktúry ide ručný odpočet", () => {
+    const rucny = buildPohodaInvoiceXml({
+      company: firma,
+      invoices: [{ invoice: faktura, items: [polozka] }],
+      zalohy: { [faktura.id]: { cislo: null, zaklad: 50, dph: 11.5, sadzba: 23 } },
+    });
+    expect(XMLValidator.validate(rucny)).toBe(true);
+    expect(rucny).toContain("<inv:invoiceAdvancePaymentItem>");
+    expect(rucny).not.toContain("inv:sourceDocument");
+  });
+});
+
 describe("odpoveď z Pohody", () => {
   const odpoved = `<?xml version="1.0" encoding="Windows-1250"?>
 <rsp:responsePack version="2.0" id="FAKTERO" state="ok"

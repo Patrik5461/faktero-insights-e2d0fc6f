@@ -2806,6 +2806,7 @@ export type Database = {
           issue_date: string
           job_id: string | null
           notes: string | null
+          opravuje_fakturu_id: string | null
           order_number: string | null
           original_external_id: string | null
           paid_at: string | null
@@ -2866,6 +2867,7 @@ export type Database = {
           issue_date?: string
           job_id?: string | null
           notes?: string | null
+          opravuje_fakturu_id?: string | null
           order_number?: string | null
           original_external_id?: string | null
           paid_at?: string | null
@@ -2926,6 +2928,7 @@ export type Database = {
           issue_date?: string
           job_id?: string | null
           notes?: string | null
+          opravuje_fakturu_id?: string | null
           order_number?: string | null
           original_external_id?: string | null
           paid_at?: string | null

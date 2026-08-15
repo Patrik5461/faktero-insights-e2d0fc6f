@@ -209,6 +209,44 @@ export function pohodaPrekazka(invoice: InvoiceRow, company: CompanyRow): string
 }
 
 /**
+ * Zúčtovanie zálohy na konečnej faktúre.
+ *
+ * Rozpad na základ a daň sa berie zo **zálohovej faktúry**, nie z konečnej —
+ * záloha má vlastnú sadzbu a dopočítať ju z jednej sumy by znamenalo hádať.
+ */
+export type OdpocetZalohy = {
+  /** Číslo zálohovej faktúry v Pohode; bez neho ide „ručný odpočet". */
+  cislo?: string | null;
+  zaklad: number;
+  dph: number;
+  sadzba: number;
+};
+
+/**
+ * Storno už odovzdaného dokladu.
+ *
+ * Pohoda k pôvodnému dokladu vyrobí stornujúci — pôvodný ostáva v evidencii,
+ * ako to účtovníctvo vyžaduje. Nájde si ho **podľa čísla**, preto sa storno dá
+ * poslať až vtedy, keď vieme, aké číslo doklad v Pohode dostal.
+ */
+export function polozkyStorna(opts: { storna: { id: string; cislo: string }[] }): string {
+  return opts.storna
+    .map(
+      (s) => `
+  <dat:dataPackItem id="${esc(s.id)}-storno" version="2.0">
+    <inv:invoice version="2.0">
+      <inv:cancelDocument>
+        <typ:sourceDocument>
+          <typ:number>${esc(skrat(s.cislo, 32))}</typ:number>
+        </typ:sourceDocument>
+      </inv:cancelDocument>
+    </inv:invoice>
+  </dat:dataPackItem>`,
+    )
+    .join("");
+}
+
+/**
  * Balík faktúr pre XML import do Pohody.
  *
  * **Dobropis má záporné sumy** — tak ho zakladá aj samotná Pohoda príkazom
@@ -225,6 +263,8 @@ export function buildPohodaInvoiceXml(opts: {
   nastavenia?: PohodaNastavenia;
   odkazy?: Record<string, string>;
   zakazky?: Record<string, string>;
+  zalohy?: Record<string, OdpocetZalohy>;
+  opravovane?: Record<string, string>;
 }): string {
   return obalka({
     ico: opts.company?.ico,
@@ -242,6 +282,10 @@ export function polozkyFaktur(opts: {
   odkazy?: Record<string, string>;
   /** Evidenčné číslo zákazky podľa `invoices.job_id`. */
   zakazky?: Record<string, string>;
+  /** Odpočet zálohy podľa `invoices.id`. */
+  zalohy?: Record<string, OdpocetZalohy>;
+  /** Číslo faktúry, ktorú dobropis opravuje, podľa `invoices.id`. */
+  opravovane?: Record<string, string>;
 }): string {
   const { company, nastavenia } = opts;
   const invoices = opts.invoices.filter(({ invoice }) => !pohodaPrekazka(invoice, company));
@@ -267,12 +311,23 @@ export function polozkyFaktur(opts: {
       const sLow = kosik("low");
       const sHigh = kosik("high");
 
+      // Odpočet zálohy. Náš `total` je celá cena dodávky a záloha sa odčítava
+      // až pri platení — Pohoda to má rovnako, len ten odpočet chce ako
+      // samostatnú položku dokladu.
+      const zaloha = opts.zalohy?.[String(invoice.id ?? "")];
+      const zalohaPriehradka = zaloha ? priehradka(kodSadzby(zaloha.sadzba, tab)) : null;
+      const zalohaZaklad = zaloha ? zaloha.zaklad : 0;
+      const zalohaDan = zaloha ? zaloha.dph : 0;
+      const uber = (p: Priehradka, hodnota: number) => (zalohaPriehradka === p ? hodnota : 0);
+
       // Zaokrúhlenie je rozdiel medzi hlavičkou dokladu a súčtom položiek. Bez
       // neho by Pohoda hlásila nesúlad o cent a doklad by sa nedal zlikvidovať
       // úhradou na presnú sumu.
       const zPoloziek =
         zaklad(s0) + zaklad(s3) + zaklad(sLow) + zaklad(sHigh) + dan(s3) + dan(sLow) + dan(sHigh);
       const celkom = Number(invoice.total ?? 0) || zPoloziek;
+      // Záloha sa odčíta od položiek aj od celkovej sumy rovnako, takže rozdiel
+      // medzi hlavičkou a položkami ostáva ten istý.
       const zaokruhlenie = Math.round((celkom - zPoloziek) * 100) / 100;
 
       const predkontacia =
@@ -309,6 +364,31 @@ export function polozkyFaktur(opts: {
         })
         .join("");
 
+      // Odpočet zálohy je vlastný druh položky, nie záporná bežná položka —
+      // Pohoda ho tak vie spárovať so zálohovou faktúrou a nezaúčtuje ho ako
+      // ďalšie plnenie. Bez čísla zálohovej faktúry ostane „ručný odpočet".
+      const zalohaRiadok = zaloha
+        ? `
+        <inv:invoiceAdvancePaymentItem>${
+          zaloha.cislo
+            ? `
+          <inv:sourceDocument>
+            <typ:number>${esc(skrat(zaloha.cislo, 32))}</typ:number>
+          </inv:sourceDocument>`
+            : ""
+        }
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>${kodSadzby(zaloha.sadzba, tab)}</inv:rateVAT>
+          <inv:homeCurrency>${elSuma("typ:unitPrice", -zaloha.zaklad, "            ")}${elSuma(
+            "typ:price",
+            -zaloha.zaklad,
+            "            ",
+          )}${elSuma("typ:priceVAT", -zaloha.dph, "            ")}
+          </inv:homeCurrency>
+        </inv:invoiceAdvancePaymentItem>`
+        : "";
+
       const adresa = [
         el("typ:company", skrat(invoice.customer_name, 96), "            "),
         el("typ:street", skrat(invoice.customer_street, 64), "            "),
@@ -332,9 +412,23 @@ export function polozkyFaktur(opts: {
         .filter(Boolean)
         .join(" · ");
 
+      // Dobropis naviazaný na pôvodnú faktúru. Pohoda ho potom vedie ako
+      // opravný doklad k nej, nie ako samostatný záporný doklad — vďaka tomu
+      // sedí párovanie aj kontrolný výkaz. `itemTransfer="false"`, lebo položky
+      // nesieme vlastné: dobropis býva čiastočný.
+      const opravovana = typ === "credit_note" ? opts.opravovane?.[String(invoice.id ?? "")] : null;
+      const vazba = opravovana
+        ? `
+      <inv:correctiveDocument itemTransfer="false">
+        <typ:sourceDocument>
+          <typ:number>${esc(skrat(opravovana, 32))}</typ:number>
+        </typ:sourceDocument>
+      </inv:correctiveDocument>`
+        : "";
+
       return `
   <dat:dataPackItem id="${esc(invoice.id ?? `INV${idx + 1}`)}" version="2.0">
-    <inv:invoice version="2.0">
+    <inv:invoice version="2.0">${vazba}
       <inv:invoiceHeader>
         <inv:invoiceType>${invoiceType}</inv:invoiceType>
         <inv:number><typ:numberRequested>${esc(invoice.invoice_number)}</typ:numberRequested></inv:number>${el(
@@ -383,22 +477,30 @@ export function polozkyFaktur(opts: {
             : ""
         }
       </inv:invoiceHeader>
-      <inv:invoiceDetail>${itemRows}
+      <inv:invoiceDetail>${itemRows}${zalohaRiadok}
       </inv:invoiceDetail>
       <inv:invoiceSummary>
-        <inv:homeCurrency>${elSuma("typ:priceNone", zn * zaklad(s0), "          ")}${elSuma(
-          "typ:price3",
-          zn * zaklad(s3),
+        <inv:homeCurrency>${elSuma(
+          "typ:priceNone",
+          zn * (zaklad(s0) - uber("none", zalohaZaklad)),
           "          ",
-        )}${elSuma("typ:price3VAT", zn * dan(s3), "          ")}${elSuma(
+        )}${elSuma("typ:price3", zn * (zaklad(s3) - uber("third", zalohaZaklad)), "          ")}${elSuma(
+          "typ:price3VAT",
+          zn * (dan(s3) - uber("third", zalohaDan)),
+          "          ",
+        )}${elSuma(
           "typ:priceLow",
-          zn * zaklad(sLow),
+          zn * (zaklad(sLow) - uber("low", zalohaZaklad)),
           "          ",
-        )}${elSuma("typ:priceLowVAT", zn * dan(sLow), "          ")}${elSuma(
+        )}${elSuma(
+          "typ:priceLowVAT",
+          zn * (dan(sLow) - uber("low", zalohaDan)),
+          "          ",
+        )}${elSuma(
           "typ:priceHigh",
-          zn * zaklad(sHigh),
+          zn * (zaklad(sHigh) - uber("high", zalohaZaklad)),
           "          ",
-        )}${elSuma("typ:priceHighVAT", zn * dan(sHigh), "          ")}
+        )}${elSuma("typ:priceHighVAT", zn * (dan(sHigh) - uber("high", zalohaDan)), "          ")}
           <typ:round><typ:priceRound>${fixed2(zn * zaokruhlenie)}</typ:priceRound></typ:round>
         </inv:homeCurrency>
       </inv:invoiceSummary>${prilohaOdkaz(
@@ -1008,9 +1110,12 @@ export function buildPohodaDavkaXml(opts: {
   zasoby?: DokladRow[];
   zakazkyNove?: DokladRow[];
   skupinyPohybov?: SkupinaPohybov[];
+  storna?: { id: string; cislo: string }[];
   nastavenia?: PohodaNastavenia;
   odkazy?: Record<string, string>;
   zakazky?: Record<string, string>;
+  zalohy?: Record<string, OdpocetZalohy>;
+  opravovane?: Record<string, string>;
 }): string {
   // Číselníky idú prvé, nech je odberateľ v adresári a zákazka v zozname skôr,
   // než sa na ne odvolá faktúra.
@@ -1028,6 +1133,8 @@ export function buildPohodaDavkaXml(opts: {
     polozkyFaktur(opts),
     polozkyDokladov(opts),
     polozkyPokladne(opts),
+    // Storno až nakoniec — ruší doklad, ktorý v Pohode už je.
+    opts.storna?.length ? polozkyStorna({ storna: opts.storna }) : "",
   ].join("");
   return obalka({
     ico: opts.company?.ico,

@@ -140,6 +140,7 @@ function NewInvoice() {
     reverse_charge: false,
     reverse_charge_type: "" as "" | "domestic_69" | "eu_b2b" | "export",
     advance_invoice_id: "" as string | "",
+    opravuje_fakturu_id: "" as string | "",
     advance_amount: 0,
     job_id: "",
     notes: "",
@@ -157,7 +158,7 @@ function NewInvoice() {
       },
     ];
   });
-  const [pickerOpen, setPickerOpen] = useState<null | "copy" | "advance">(null);
+  const [pickerOpen, setPickerOpen] = useState<null | "copy" | "advance" | "opravuje">(null);
 
   /**
    * Podklady cenníka pre tohto odberateľa a tento dátum. Načítajú sa raz na
@@ -525,6 +526,7 @@ function NewInvoice() {
             ? form.reverse_charge_type || "domestic_69"
             : null,
           advance_invoice_id: form.advance_invoice_id || null,
+          opravuje_fakturu_id: form.opravuje_fakturu_id || null,
           advance_amount: form.advance_amount ? Number(form.advance_amount) : null,
           job_id: form.job_id || null,
           issue_date: form.issue_date,
@@ -797,6 +799,30 @@ function NewInvoice() {
                 <Link2 className="h-4 w-4" />{" "}
                 {form.advance_invoice_id ? "Zmeniť zálohovú faktúru" : "Pridať zálohovú faktúru"}
               </button>
+              {form.type === "credit_note" && (
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen("opravuje")}
+                  className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                >
+                  <Link2 className="h-4 w-4" />{" "}
+                  {form.opravuje_fakturu_id
+                    ? "Zmeniť opravovanú faktúru"
+                    : "Ktorú faktúru opravuje"}
+                </button>
+              )}
+              {form.type === "credit_note" && form.opravuje_fakturu_id && (
+                <span className="text-xs text-muted-foreground">
+                  Opravuje faktúru — v účtovníctve sa spárujú
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, opravuje_fakturu_id: "" })}
+                    className="ml-2 text-destructive hover:underline"
+                  >
+                    Zrušiť
+                  </button>
+                </span>
+              )}
               {form.advance_invoice_id && (
                 <span className="text-xs text-muted-foreground">
                   Záloha odpočítaná:{" "}
@@ -1287,12 +1313,17 @@ function NewInvoice() {
               setPickerOpen(null);
             }}
             onPickAdvance={(inv) => {
-              setForm((f) => ({
-                ...f,
-                advance_invoice_id: inv.id,
-                advance_amount: Number(inv.total),
-              }));
-              toast.success(`Záloha pripojená: ${inv.invoice_number}`);
+              if (pickerOpen === "opravuje") {
+                setForm((f) => ({ ...f, opravuje_fakturu_id: inv.id }));
+                toast.success(`Dobropis opravuje faktúru ${inv.invoice_number}`);
+              } else {
+                setForm((f) => ({
+                  ...f,
+                  advance_invoice_id: inv.id,
+                  advance_amount: Number(inv.total),
+                }));
+                toast.success(`Záloha pripojená: ${inv.invoice_number}`);
+              }
               setPickerOpen(null);
             }}
           />
@@ -1903,7 +1934,7 @@ function InvoicePickerModal({
   onPickCopy,
   onPickAdvance,
 }: {
-  mode: "copy" | "advance";
+  mode: "copy" | "advance" | "opravuje";
   onClose: () => void;
   onPickCopy: (items: Partial<Item>[]) => void;
   onPickAdvance: (inv: { id: string; invoice_number: string; total: number }) => void;
@@ -1922,6 +1953,8 @@ function InvoicePickerModal({
       .order("issue_date", { ascending: false })
       .limit(50);
     if (mode === "advance") query = query.eq("type", "proforma");
+    // Dobropis opravuje bežnú faktúru, nie zálohovú ani iný dobropis.
+    if (mode === "opravuje") query = query.eq("type", "regular");
     query.then(({ data }) => {
       setList(data ?? []);
       setLoading(false);
@@ -1935,7 +1968,7 @@ function InvoicePickerModal({
     : list;
 
   async function handlePick(inv: any) {
-    if (mode === "advance") {
+    if (mode === "advance" || mode === "opravuje") {
       onPickAdvance({ id: inv.id, invoice_number: inv.invoice_number, total: Number(inv.total) });
       return;
     }
@@ -1958,7 +1991,11 @@ function InvoicePickerModal({
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h3 className="text-sm font-semibold">
-            {mode === "copy" ? "Načítať položky z dokladu" : "Vybrať zálohovú faktúru"}
+            {mode === "copy"
+              ? "Načítať položky z dokladu"
+              : mode === "opravuje"
+                ? "Ktorú faktúru dobropis opravuje"
+                : "Vybrať zálohovú faktúru"}
           </h3>
           <button type="button" onClick={onClose} className="rounded-md p-1 hover:bg-muted">
             <X className="h-4 w-4" />

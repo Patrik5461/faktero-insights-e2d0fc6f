@@ -15,7 +15,7 @@
  * Windows, druhú spustenú inštanciu Pohody a Stormware ju sám neodporúča
  * vystavovať mimo vnútornej siete.
  */
-import type { PohodaNastavenia } from "./export.server";
+import type { OdpocetZalohy, PohodaNastavenia } from "./export.server";
 
 /** Riadky z databázy sa tu netypujú — modul ich len prekladá do XML. */
 type Riadok = any;
@@ -57,8 +57,33 @@ export type Davka = {
   zasob: number;
   zakaziek: number;
   pohybov: number;
+  storien: number;
   preskocene: string[];
 };
+
+/**
+ * Ako sa doklad volá v Pohode.
+ *
+ * Väzby — storno, dobropis aj odpočet zálohy — sa na pôvodný doklad odvolávajú
+ * **jeho číslom v Pohode**, nie naším. Pohoda si číslo prideľuje z vlastnej rady
+ * a naše `numberRequested` je len želanie, takže sa spoľahnúť naň nedá. Číslo
+ * poznáme z odpovede po importe (`export_logs.pohoda_cislo`); kým sa doklad
+ * nepotvrdí, väzba sa neposiela a doklad ide bez nej.
+ */
+async function cislaVPohode(supabase: Klient, companyId: string): Promise<Map<string, string>> {
+  const { data } = await supabase
+    .from("export_logs")
+    .select("invoice_id, pohoda_cislo, potvrdene_at")
+    .eq("company_id", companyId)
+    .not("pohoda_cislo", "is", null)
+    .order("potvrdene_at", { ascending: true });
+
+  const mapa = new Map<string, string>();
+  for (const r of data ?? []) {
+    if (r.invoice_id && r.pohoda_cislo) mapa.set(String(r.invoice_id), String(r.pohoda_cislo));
+  }
+  return mapa;
+}
 
 /** Ktorá agenda číselníka — pod týmto sa vedie v `pohoda_odoslane`. */
 type Agenda = "adresar" | "sklad" | "zakazka" | "pohyb";
@@ -204,6 +229,12 @@ export async function zostavDavku(
   const { zoskupPohyby } = await import("./export.server");
   const skupinyPohybov = zoskupPohyby(pohyby);
 
+  // Väzby na doklady, ktoré v Pohode už sú: storno zrušenej faktúry, dobropis k
+  // pôvodnej faktúre a odpočet zálohy na konečnej.
+  const cisla = await cislaVPohode(supabase, vstup.companyId);
+  const storna = await nacitajStorna(supabase, vstup.companyId, cisla);
+  const { zalohy, opravovane } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
+
   const prazdna =
     !faktury.length &&
     !doklady?.length &&
@@ -211,7 +242,8 @@ export async function zostavDavku(
     !zakaznici.length &&
     !zasoby.length &&
     !zakazkyNove.length &&
-    !pohyby.length;
+    !pohyby.length &&
+    !storna.length;
   if (prazdna) {
     return {
       xml: "",
@@ -224,6 +256,7 @@ export async function zostavDavku(
       zasob: 0,
       zakaziek: 0,
       pohybov: 0,
+      storien: 0,
       preskocene: [],
     };
   }
@@ -271,9 +304,12 @@ export async function zostavDavku(
     zasoby,
     zakazkyNove,
     skupinyPohybov,
+    storna,
     nastavenia,
     odkazy,
     zakazky,
+    zalohy,
+    opravovane,
   });
 
   const cislaPreskocenych = new Set<string>(
@@ -297,6 +333,7 @@ export async function zostavDavku(
       zasoby,
       zakazkyNove,
       pohyby,
+      storna,
     });
   }
 
@@ -311,8 +348,122 @@ export async function zostavDavku(
     zasob: zasoby.length,
     zakaziek: zakazkyNove.length,
     pohybov: pohyby.length,
+    storien: storna.length,
     preskocene,
   };
+}
+
+/**
+ * Faktúry, ktoré sa po odovzdaní zrušili.
+ *
+ * Doklad, ktorý v Pohode už je, sa nedá len tak „odobrať" — účtovníctvo si ho
+ * musí pamätať. Pohoda k nemu vyrobí **stornujúci doklad** a nájde si ho podľa
+ * čísla, takže storno vieme poslať až po tom, ako sa import pôvodnej faktúry
+ * potvrdil. Pokiaľ sa nepotvrdil, faktúra sa jednoducho čaká.
+ */
+async function nacitajStorna(
+  supabase: Klient,
+  companyId: string,
+  cisla: Map<string, string>,
+): Promise<{ id: string; cislo: string }[]> {
+  if (!cisla.size) return [];
+
+  const [{ data: zrusene }, { data: uzStornovane }] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("id, invoice_number, cancelled_at, status")
+      .eq("company_id", companyId)
+      .not("cancelled_at", "is", null)
+      .in("id", [...cisla.keys()]),
+    supabase
+      .from("pohoda_odoslane")
+      .select("zaznam_id")
+      .eq("company_id", companyId)
+      .eq("agenda", "storno"),
+  ]);
+
+  const uz = new Set((uzStornovane ?? []).map((r: Riadok) => String(r.zaznam_id)));
+  return (zrusene ?? [])
+    .filter((f: Riadok) => !uz.has(String(f.id)))
+    .slice(0, STROP_DAVKY)
+    .map((f: Riadok) => ({ id: String(f.id), cislo: cisla.get(String(f.id)) as string }));
+}
+
+/**
+ * Väzby na už existujúce doklady: odpočet zálohy a dobropis k pôvodnej faktúre.
+ *
+ * Obidve sa odvolávajú na číslo v Pohode. Keď ho ešte nepoznáme, väzba sa
+ * vynechá a doklad odíde tak ako doteraz — samostatne. Radšej doklad bez väzby
+ * než doklad, ktorý sa neimportuje vôbec.
+ */
+async function nacitajVazby(
+  supabase: Klient,
+  companyId: string,
+  faktury: Riadok[],
+  cisla: Map<string, string>,
+): Promise<{ zalohy: Record<string, OdpocetZalohy>; opravovane: Record<string, string> }> {
+  const zalohy: Record<string, OdpocetZalohy> = {};
+  const opravovane: Record<string, string> = {};
+
+  const zalohoveIds = faktury
+    .filter((f: Riadok) => Number(f.advance_amount ?? 0) > 0 && f.advance_invoice_id)
+    .map((f: Riadok) => String(f.advance_invoice_id));
+  const opraveneIds = faktury
+    .filter((f: Riadok) => f.type === "credit_note" && f.opravuje_fakturu_id)
+    .map((f: Riadok) => String(f.opravuje_fakturu_id));
+
+  const potrebne = [...new Set([...zalohoveIds, ...opraveneIds])];
+  const { data: suvisiace } = potrebne.length
+    ? await supabase
+        .from("invoices")
+        .select("id, invoice_number, subtotal, vat_total")
+        .eq("company_id", companyId)
+        .in("id", potrebne)
+    : { data: [] };
+  const podlaId = new Map<string, Riadok>((suvisiace ?? []).map((f: Riadok) => [String(f.id), f]));
+
+  for (const f of faktury) {
+    const suma = Number(f.advance_amount ?? 0);
+    if (suma > 0) {
+      const zalohova = f.advance_invoice_id ? podlaId.get(String(f.advance_invoice_id)) : null;
+      const sadzba = sadzbaZalohy(zalohova);
+      if (sadzba !== null) {
+        // `advance_amount` je suma s daňou — odberateľ ju už zaplatil celú.
+        const zaklad = Math.round((suma / (1 + sadzba / 100)) * 100) / 100;
+        zalohy[String(f.id)] = {
+          cislo: f.advance_invoice_id
+            ? (cisla.get(String(f.advance_invoice_id)) ??
+              (zalohova?.invoice_number ? String(zalohova.invoice_number) : null))
+            : null,
+          zaklad,
+          dph: Math.round((suma - zaklad) * 100) / 100,
+          sadzba,
+        };
+      }
+    }
+
+    if (f.type === "credit_note" && f.opravuje_fakturu_id) {
+      const cislo = cisla.get(String(f.opravuje_fakturu_id));
+      if (cislo) opravovane[String(f.id)] = cislo;
+    }
+  }
+
+  return { zalohy, opravovane };
+}
+
+/**
+ * Sadzba DPH zálohy — zo **zálohovej faktúry**, nie z konečnej.
+ *
+ * Záloha má vlastnú sadzbu a dopočítať ju z jednej sumy sa nedá. Keď zálohovú
+ * faktúru nemáme (suma zadaná ručne), odpočet radšej neposielame: nesprávna
+ * sadzba by bola tichá chyba v priznaní.
+ */
+function sadzbaZalohy(zalohova: Riadok | null | undefined): number | null {
+  if (!zalohova) return null;
+  const zaklad = Number(zalohova.subtotal ?? 0);
+  const dan = Number(zalohova.vat_total ?? 0);
+  if (!zaklad) return dan ? null : 0;
+  return Math.round((dan / zaklad) * 100);
 }
 
 /**
@@ -493,6 +644,7 @@ async function zapisOdovzdanie(
     zasoby: Riadok[];
     zakazkyNove: Riadok[];
     pohyby: Riadok[];
+    storna: { id: string; cislo: string }[];
   },
 ): Promise<string | null> {
   const { data: job, error } = await supabase
@@ -547,6 +699,8 @@ async function zapisOdovzdanie(
     ...p.zakazkyNove.map((z: Riadok) => ({ agenda: "zakazka", id: z.id, verzia: z.updated_at })),
     // Pohyb sa nemení, takže verzia je len jeho vznik.
     ...p.pohyby.map((m: Riadok) => ({ agenda: "pohyb", id: m.id, verzia: m.created_at })),
+    // Storno ide raz; verzia je len na to, aby stĺpec nebol prázdny.
+    ...p.storna.map((s: { id: string }) => ({ agenda: "storno", id: s.id, verzia: teraz })),
   ];
   if (ciselniky.length) {
     await supabase.from("pohoda_odoslane").upsert(
