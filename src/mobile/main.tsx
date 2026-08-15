@@ -18,12 +18,30 @@ import "@/styles.css";
 const koren = document.getElementById("root");
 if (!koren) throw new Error("Chýba #root");
 
-createRoot(koren).render(
-  <StrictMode>
-    <MobilnaApka />
-    <Toaster position="top-center" richColors closeButton />
-  </StrictMode>,
-);
+/**
+ * Natívne úložisko sa musí načítať skôr, než sa appka spýta na prihlásenie a
+ * na vybranú firmu — inak by prvé čítanie vrátilo prázdno a appka by ponúkla
+ * prihlásenie aj prihlásenému človeku. Strop je tam preto, aby zaseknuté
+ * úložisko nenechalo appku navždy pod úvodným logom.
+ *
+ * Zabalené v funkcii zámerne: `await` na najvyššej úrovni cieľ buildu (es2020)
+ * nepozná a balíček by sa nezostavil.
+ */
+async function spusti() {
+  await Promise.race([
+    import("@/lib/mobile/trvale-ulozisko").then((m) => m.pripravUlozisko()).catch(() => {}),
+    new Promise((res) => setTimeout(res, 3000)),
+  ]);
+
+  createRoot(koren!).render(
+    <StrictMode>
+      <MobilnaApka />
+      <Toaster position="top-center" richColors closeButton />
+    </StrictMode>,
+  );
+}
+
+void spusti();
 
 /**
  * Natívne veci — schovanie úvodného loga, stavový riadok, push, hlboké odkazy.

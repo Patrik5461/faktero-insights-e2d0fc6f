@@ -3,6 +3,7 @@
  * Bezpečné na webe — všetko sa preskočí.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { citaj, zapis, zmaz } from "./trvale-ulozisko";
 
 /**
  * Token, ktorý dorazil skôr, než bol používateľ prihlásený.
@@ -16,7 +17,7 @@ const CAKAJUCI = "faktero.push.cakajuci";
 
 function odlozToken(token: string, platform: string): void {
   try {
-    localStorage.setItem(CAKAJUCI, JSON.stringify({ token, platform }));
+    zapis(CAKAJUCI, JSON.stringify({ token, platform }));
   } catch {
     /* súkromný režim — token sa doručí pri ďalšom štarte */
   }
@@ -42,11 +43,11 @@ async function zapisToken(token: string, platform: string): Promise<boolean> {
  */
 export async function dorucCakajuciPushToken(): Promise<void> {
   try {
-    const raw = typeof localStorage === "undefined" ? null : localStorage.getItem(CAKAJUCI);
+    const raw = citaj(CAKAJUCI);
     if (!raw) return;
     const { token, platform } = JSON.parse(raw) as { token: string; platform: string };
     if (!token) return;
-    if (await zapisToken(token, platform)) localStorage.removeItem(CAKAJUCI);
+    if (await zapisToken(token, platform)) zmaz(CAKAJUCI);
   } catch (e) {
     console.warn("[push] odložený token sa nepodarilo doručiť", e);
   }

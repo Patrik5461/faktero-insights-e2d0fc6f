@@ -53,9 +53,8 @@ export function StavPushu() {
   async function zopakuj() {
     setPracujem(true);
     try {
-      const { registerPushNotifications, dorucCakajuciPushToken } = await import(
-        "@/lib/mobile/push"
-      );
+      const { registerPushNotifications, dorucCakajuciPushToken } =
+        await import("@/lib/mobile/push");
       const r = await registerPushNotifications();
       await dorucCakajuciPushToken();
       await zisti();

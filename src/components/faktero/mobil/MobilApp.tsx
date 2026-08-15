@@ -73,7 +73,6 @@ import { ZELENA_DOLE, ZELENA_HORE } from "@/lib/mobile/brand";
  * dostať sa dnu, vedieť za ktorú firmu, a odfotiť doklad. Nič viac tu nie je.
  */
 
-
 type Firma = { id: string; name: string };
 type Uhrada = "hotovost" | "karta" | "prevod";
 type Krok =
@@ -157,7 +156,12 @@ export function MobilnaApka() {
       // žiadna firma nepatrí. Preto sa posledný známy drží v telefóne.
       let zoznam: Firma[];
       try {
-        zoznam = (await fetchMyCompanies()) as Firma[];
+        // Bez signálu sa dotaz nedočká odpovede a appka by pri štarte visela na
+        // točiacom sa koliesku. Osem sekúnd a ideme s tým, čo je v telefóne.
+        zoznam = (await Promise.race([
+          fetchMyCompanies(),
+          new Promise((_, zamietni) => setTimeout(() => zamietni(new Error("bez odpovede")), 8000)),
+        ])) as Firma[];
         void ulozDoPamate(klucFiriem, zoznam);
       } catch (e) {
         const zapamatane = await zPamate<Firma[]>(klucFiriem);
@@ -185,12 +189,13 @@ export function MobilnaApka() {
         // Jazdy, ktoré telefón nahral, kým bola appka zavretá, netreba držať
         // v telefóne do chvíle, kým sa človek preklikne na obrazovku Jazda.
 
-
         void odosliCakajuceJazdy(vybrana.id)
           .then(({ ulozene }) => {
             if (ulozene > 0) {
               toast.success(
-                ulozene === 1 ? "Rozpoznaná jazda uložená" : `Uložených ${ulozene} rozpoznaných jázd`,
+                ulozene === 1
+                  ? "Rozpoznaná jazda uložená"
+                  : `Uložených ${ulozene} rozpoznaných jázd`,
               );
             }
           })
@@ -213,7 +218,6 @@ export function MobilnaApka() {
     // východisko namiesto točiaceho sa kolieska.
     const t = setTimeout(() => setDlho(true), 10000);
     return () => clearTimeout(t);
-    // eslint-disable-next-line
   }, []);
 
   /*
@@ -269,7 +273,15 @@ export function MobilnaApka() {
   }, []);
 
   async function odhlas() {
-    await supabase.auth.signOut();
+    // Odhlásenie odvoláva token na serveri, takže bez signálu zlyhá. Relácia v
+    // telefóne sa musí zmazať tak či tak — na požičanom telefóne by inak ostala.
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      /* bez siete sa token odvolať nedá; lokálne ho zabudneme nižšie */
+    }
+    const { zabudniPrihlasenie } = await import("@/lib/mobile/trvale-ulozisko");
+    zabudniPrihlasenie();
     setFirma(null);
     setKrok("prihlasenie");
   }

@@ -64,34 +64,141 @@ async function transakcia<T>(
   });
 }
 
-export async function pridajDoFronty(
-  doklad: Omit<CakajuciDoklad, "id" | "ts">,
-): Promise<CakajuciDoklad> {
-  const zaznam: CakajuciDoklad = { ...doklad, id: crypto.randomUUID(), ts: Date.now() };
-  await transakcia("readwrite", (s) => s.put(zaznam));
-  return zaznam;
+/**
+ * Súbory v telefóne — jediné miesto, o ktorom vieme, že zatvorenie appky
+ * prežije.
+ *
+ * IndexedDB vo WebView zdieľa osud ostatných prehliadačových úložísk: po
+ * znovuotvorení appky môže byť prázdna. Pri zozname faktúr je to nepríjemnosť,
+ * pri fronte dokladov je to **strata práce** — bloček zo stavby už druhýkrát
+ * nenaskenujete. Preto sa v telefóne každý čakajúci doklad ukladá aj ako súbor.
+ *
+ * Na webe žiadny súborový systém nie je a IndexedDB stačí.
+ */
+const PRIECINOK = "doklady-fronta";
+
+async function subory() {
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) return null;
+    const { Filesystem, Directory, Encoding } = await import("@capacitor/filesystem");
+    return { Filesystem, Directory, Encoding };
+  } catch {
+    return null;
+  }
 }
 
-export async function fronta(companyId?: string): Promise<CakajuciDoklad[]> {
+async function zapisSubor(zaznam: CakajuciDoklad): Promise<void> {
+  const f = await subory();
+  if (!f) return;
   try {
-    const vsetko = await transakcia<CakajuciDoklad[]>("readonly", (s) => s.getAll());
-    const zoznam = companyId ? vsetko.filter((d) => d.company_id === companyId) : vsetko;
-    return zoznam.sort((a, b) => b.ts - a.ts);
+    await f.Filesystem.mkdir({
+      path: PRIECINOK,
+      directory: f.Directory.Data,
+      recursive: true,
+    }).catch(() => {
+      /* priečinok už existuje */
+    });
+    await f.Filesystem.writeFile({
+      path: `${PRIECINOK}/${zaznam.id}.json`,
+      data: JSON.stringify(zaznam),
+      directory: f.Directory.Data,
+      encoding: f.Encoding.UTF8,
+    });
   } catch {
-    // Bez IndexedDB (súkromné okno, starý WebView) appka funguje ďalej, len
-    // bez odkladania — preto prázdna fronta a nie chyba.
+    /* zlyhaný zápis súboru neruší IndexedDB — doklad ostáva aspoň tam */
+  }
+}
+
+async function zmazSubor(id: string): Promise<void> {
+  const f = await subory();
+  if (!f) return;
+  try {
+    await f.Filesystem.deleteFile({
+      path: `${PRIECINOK}/${id}.json`,
+      directory: f.Directory.Data,
+    });
+  } catch {
+    /* súbor tam nemusí byť */
+  }
+}
+
+async function zoSuborov(): Promise<CakajuciDoklad[]> {
+  const f = await subory();
+  if (!f) return [];
+  try {
+    const { files } = await f.Filesystem.readdir({
+      path: PRIECINOK,
+      directory: f.Directory.Data,
+    });
+    const von: CakajuciDoklad[] = [];
+    for (const s of files) {
+      const nazov = typeof s === "string" ? s : s.name;
+      if (!nazov.endsWith(".json")) continue;
+      try {
+        const { data } = await f.Filesystem.readFile({
+          path: `${PRIECINOK}/${nazov}`,
+          directory: f.Directory.Data,
+          encoding: f.Encoding.UTF8,
+        });
+        von.push(JSON.parse(String(data)) as CakajuciDoklad);
+      } catch {
+        /* jeden poškodený súbor neruší zvyšok fronty */
+      }
+    }
+    return von;
+  } catch {
     return [];
   }
 }
 
+export async function pridajDoFronty(
+  doklad: Omit<CakajuciDoklad, "id" | "ts">,
+): Promise<CakajuciDoklad> {
+  const zaznam: CakajuciDoklad = { ...doklad, id: crypto.randomUUID(), ts: Date.now() };
+  await zapisSubor(zaznam);
+  try {
+    await transakcia("readwrite", (s) => s.put(zaznam));
+  } catch {
+    // Keď IndexedDB nie je, doklad ostáva v súbore — to je to, na čom záleží.
+  }
+  return zaznam;
+}
+
+export async function fronta(companyId?: string): Promise<CakajuciDoklad[]> {
+  const podlaId = new Map<string, CakajuciDoklad>();
+  // Súbory prvé: sú zdrojom pravdy, IndexedDB len dopĺňa, čo v nich chýba.
+  for (const d of await zoSuborov()) podlaId.set(d.id, d);
+  try {
+    const vsetko = await transakcia<CakajuciDoklad[]>("readonly", (s) => s.getAll());
+    for (const d of vsetko) if (!podlaId.has(d.id)) podlaId.set(d.id, d);
+  } catch {
+    // Bez IndexedDB (súkromné okno, starý WebView) appka funguje ďalej, len
+    // bez odkladania — preto prázdna fronta a nie chyba.
+  }
+  const zoznam = [...podlaId.values()].filter((d) => !companyId || d.company_id === companyId);
+  return zoznam.sort((a, b) => b.ts - a.ts);
+}
+
 export async function zmazZFronty(id: string): Promise<void> {
-  await transakcia("readwrite", (s) => s.delete(id));
+  await zmazSubor(id);
+  try {
+    await transakcia("readwrite", (s) => s.delete(id));
+  } catch {
+    /* stačí, že je preč zo súborov */
+  }
 }
 
 export async function zapisChybu(id: string, chyba: string): Promise<void> {
-  const doklad = await transakcia<CakajuciDoklad | undefined>("readonly", (s) => s.get(id));
+  const doklad = (await fronta()).find((d) => d.id === id);
   if (!doklad) return;
-  await transakcia("readwrite", (s) => s.put({ ...doklad, chyba: chyba.slice(0, 200) }));
+  const upraveny = { ...doklad, chyba: chyba.slice(0, 200) };
+  await zapisSubor(upraveny);
+  try {
+    await transakcia("readwrite", (s) => s.put(upraveny));
+  } catch {
+    /* nič */
+  }
 }
 
 export async function pocetVoFronte(companyId?: string): Promise<number> {

@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { mojeVozidlo, zapamatajVozidlo, vozidloPreRozpoznanuJazdu } from "./moje-vozidlo";
+import { vycistiPamat } from "./trvale-ulozisko";
 
 // Testy bežia v Node, kde localStorage nie je. Stačí najjednoduchšia náhrada —
 // modul od nej nič viac nechce.
@@ -20,7 +21,9 @@ const AUTO_B = "bbbb2222-0000-0000-0000-000000000000";
 
 describe("moje vozidlo v telefóne", () => {
   beforeEach(() => {
+    // Voľba žije v telefóne natívne, nie v prehliadači — vyčistiť treba obe.
     localStorage.clear();
+    vycistiPamat();
   });
 
   it("zapamätá a vráti voľbu pre danú firmu", () => {
@@ -39,7 +42,9 @@ describe("moje vozidlo v telefóne", () => {
 
 describe("do ktorého auta uložiť rozpoznanú jazdu", () => {
   beforeEach(() => {
+    // Voľba žije v telefóne natívne, nie v prehliadači — vyčistiť treba obe.
     localStorage.clear();
+    vycistiPamat();
   });
 
   it("pri jedinom aute netreba nič pamätať", () => {

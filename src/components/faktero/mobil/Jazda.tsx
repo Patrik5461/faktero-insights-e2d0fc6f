@@ -15,7 +15,11 @@ import {
 } from "@/lib/mobile/auto-jazdy-sync";
 import type { BufferedTrip, Classification } from "@faktero/drive-detector";
 import { trasaDoPolyline } from "@/lib/faktero/polyline";
-import { mojeVozidlo, zapamatajVozidlo, vozidloPreRozpoznanuJazdu } from "@/lib/mobile/moje-vozidlo";
+import {
+  mojeVozidlo,
+  zapamatajVozidlo,
+  vozidloPreRozpoznanuJazdu,
+} from "@/lib/mobile/moje-vozidlo";
 import {
   ulozVozidla,
   vozidlaZPamate,
@@ -90,7 +94,11 @@ export function Jazda({
     // Bez signálu sa siahne po poslednom známom zozname — inak by kniha jázd
     // v aute, teda presne tam, kde je potrebná, ostala prázdna.
     const zoznam = error || !data ? await vozidlaZPamate(firma.id) : data;
-    if (!error && data) void ulozVozidla(firma.id, data.map((v) => ({ ...v, company_id: firma.id })));
+    if (!error && data)
+      void ulozVozidla(
+        firma.id,
+        data.map((v) => ({ ...v, company_id: firma.id })),
+      );
     setVozidla(zoznam as Vozidlo[]);
     // Predvolí sa auto, ktorým sa z tohto telefónu jazdí; až potom prvé v zozname.
     const zapamatane = mojeVozidlo(firma.id);
@@ -98,7 +106,6 @@ export function Jazda({
       vyberId ??
       (zapamatane && zoznam.some((v) => v.id === zapamatane) ? zapamatane : zoznam[0]?.id);
     if (vyber) setVozidloId(vyber);
-
   }
 
   useEffect(() => {
@@ -123,7 +130,9 @@ export function Jazda({
   }, []);
 
   useEffect(() => {
-    vozidlaSCommanderom(firma.id).then(setCommander).catch(() => {});
+    vozidlaSCommanderom(firma.id)
+      .then(setCommander)
+      .catch(() => {});
   }, [firma.id]);
 
   /* Jazdy zapísané bez pripojenia — pri otvorení sa skúsia odoslať. */
@@ -281,7 +290,12 @@ export function Jazda({
         note: `GPS: ${vysledok.duration_min} min, ${vysledok.points.length} bodov`,
       };
 
-      const { error } = await supabase.from("trips").insert(zapis);
+      // Bez signálu nemá zmysel čakať na vypršanie spojenia — človek stojí nad
+      // telefónom a jazda sa aj tak odloží.
+      const { isOnline } = await import("@/lib/mobile/offline-queue");
+      const { error } = (await isOnline())
+        ? await supabase.from("trips").insert(zapis)
+        : { error: { message: "bez pripojenia" } as { message: string } };
 
       if (error) {
         // Bez pripojenia sa jazda nezahodí — odloží sa v telefóne a odošle sa

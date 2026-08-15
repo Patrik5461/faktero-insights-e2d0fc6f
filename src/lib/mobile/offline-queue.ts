@@ -5,6 +5,8 @@
  *
  * Toto je minimálny adapter — komponenty volajú `queueOrPost(...)` namiesto fetch.
  */
+import { citaj, zapis } from "./trvale-ulozisko";
+
 type Job = {
   id: string;
   url: string;
@@ -16,15 +18,20 @@ type Job = {
 
 const KEY = "faktero.offline.queue.v1";
 
+/**
+ * Fronta musí prežiť zatvorenie appky — inak sa práve to, čo človek spravil bez
+ * signálu, pri ďalšom otvorení stratí. V telefóne preto ide cez natívne
+ * úložisko, na webe ostáva prehliadačové.
+ */
 function load(): Job[] {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? "[]");
+    return JSON.parse(citaj(KEY) ?? "[]");
   } catch {
     return [];
   }
 }
 function save(q: Job[]) {
-  localStorage.setItem(KEY, JSON.stringify(q));
+  zapis(KEY, JSON.stringify(q));
 }
 
 export function queueLength(): number {

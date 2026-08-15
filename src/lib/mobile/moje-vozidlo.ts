@@ -7,6 +7,7 @@
  * uložená v telefóne, nie v databáze — patrí k zariadeniu („toto je moje auto"),
  * nie k firme, a dvaja ľudia s dvoma telefónmi tak môžu mať každý svoje.
  */
+import { citaj, zapis, zmaz } from "./trvale-ulozisko";
 
 const KLUC = "faktero.mobil.vozidlo";
 
@@ -17,7 +18,7 @@ function kluc(companyId: string): string {
 export function mojeVozidlo(companyId: string): string | null {
   if (typeof localStorage === "undefined" || !companyId) return null;
   try {
-    return localStorage.getItem(kluc(companyId)) || null;
+    return citaj(kluc(companyId)) || null;
   } catch {
     return null;
   }
@@ -26,8 +27,8 @@ export function mojeVozidlo(companyId: string): string | null {
 export function zapamatajVozidlo(companyId: string, vehicleId: string | null): void {
   if (typeof localStorage === "undefined" || !companyId) return;
   try {
-    if (vehicleId) localStorage.setItem(kluc(companyId), vehicleId);
-    else localStorage.removeItem(kluc(companyId));
+    if (vehicleId) zapis(kluc(companyId), vehicleId);
+    else zmaz(kluc(companyId));
   } catch {
     /* súkromný režim prehliadača — voľba sa proste nezapamätá */
   }

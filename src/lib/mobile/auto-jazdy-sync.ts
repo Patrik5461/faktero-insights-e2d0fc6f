@@ -235,11 +235,7 @@ export async function odosliCakajuceJazdy(
   if (!jazdy.length) return { ulozene: 0, cakajuce: 0 };
 
   const [{ data: vozidla }, commander] = await Promise.all([
-    supabase
-      .from("vehicles")
-      .select("id")
-      .eq("company_id", companyId)
-      .eq("active", true),
+    supabase.from("vehicles").select("id").eq("company_id", companyId).eq("active", true),
     vozidlaSCommanderom(companyId),
   ]);
 
@@ -254,7 +250,12 @@ export async function odosliCakajuceJazdy(
       cakajuce++;
       continue;
     }
-    const r = await ulozRozpoznanuJazdu({ jazda, companyId, vehicleId, classification: jazda.classification });
+    const r = await ulozRozpoznanuJazdu({
+      jazda,
+      companyId,
+      vehicleId,
+      classification: jazda.classification,
+    });
     if (r.ok) ulozene++;
     else cakajuce++;
   }

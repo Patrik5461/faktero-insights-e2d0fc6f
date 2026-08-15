@@ -96,9 +96,8 @@ export function HistoriaJazd({
       )
       .then(async ({ data, error }) => {
         if (zrusene) return;
-        const { ulozJazdy, jazdyZPamate, zoradJazdy, ulozDoPamate, zPamate } = await import(
-          "@/lib/mobile/jazdy-lokalne"
-        );
+        const { ulozJazdy, jazdyZPamate, zoradJazdy, ulozDoPamate, zPamate } =
+          await import("@/lib/mobile/jazdy-lokalne");
         const kluc = `jazdy:${vozidlo.id}`;
 
         if (error || !data) {

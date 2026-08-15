@@ -82,6 +82,31 @@ async function zisti(): Promise<Riadok[]> {
     r.push({ co: "natívne úložisko", hodnota: String(e?.message ?? e), zle: true });
   }
 
+  // Kde býva prihlásenie. Toto je tá vec, na ktorej offline stálo a padalo:
+  // v prehliadačovom úložisku reštart neprežije a bez signálu sa prihlásiť nedá.
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isNativePlatform()) {
+      r.push({ co: "prihlásenie prežije reštart", hodnota: "nie je (beží web)" });
+    } else {
+      const { Preferences } = await import("@capacitor/preferences");
+      const { keys } = await Preferences.keys();
+      const relacia = keys.filter((k) => /^sb-.*-auth-token$/.test(k));
+      r.push({
+        co: "prihlásenie prežije reštart",
+        hodnota: relacia.length ? "áno, je natívne" : "NIE — relácia nie je natívne",
+        zle: !relacia.length,
+      });
+      const vFronte = keys.filter((k) => /^faktero\.offline\.queue\./.test(k)).length;
+      r.push({
+        co: "fronta prežije reštart",
+        hodnota: vFronte ? "áno" : "prázdna alebo zatiaľ nezapísaná",
+      });
+    }
+  } catch (e: any) {
+    r.push({ co: "prihlásenie prežije reštart", hodnota: String(e?.message ?? e), zle: true });
+  }
+
   // Prihlásenie — a hlavne či sa naň vôbec dá spýtať.
   try {
     const odpoved = await Promise.race([
@@ -129,7 +154,9 @@ export function Diagnostika({ onSpat }: { onSpat: () => void }) {
         ) : (
           riadky.map((r) => (
             <div key={r.co} className="rounded-xl border border-border/70 p-3">
-              <div className="text-[12px] uppercase tracking-wide text-muted-foreground">{r.co}</div>
+              <div className="text-[12px] uppercase tracking-wide text-muted-foreground">
+                {r.co}
+              </div>
               <div className={`text-[15px] ${r.zle ? "text-destructive" : ""}`}>{r.hodnota}</div>
             </div>
           ))

@@ -1,16 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
+import { citaj, zapis, zmaz } from "@/lib/mobile/trvale-ulozisko";
 
 const KEY = "faktero.active_company";
 
+/**
+ * Vybraná firma prežije zatvorenie appky.
+ *
+ * V telefóne to `localStorage` nezvládne — po znovuotvorení bol prázdny a appka
+ * sa pýtala na firmu znova, hoci si ju človek vybral. `citaj`/`zapis` idú v
+ * telefóne cez natívne úložisko, na webe ostáva prehliadačové.
+ */
 export function getActiveCompanyId(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(KEY);
+  return citaj(KEY);
 }
 
 export function setActiveCompanyId(id: string | null) {
   if (typeof window === "undefined") return;
-  if (id) localStorage.setItem(KEY, id);
-  else localStorage.removeItem(KEY);
+  if (id) zapis(KEY, id);
+  else zmaz(KEY);
 }
 
 /**
@@ -22,8 +30,11 @@ export function setActiveCompanyId(id: string | null) {
  * majiteľ a v menu mu svietili položky pre administrátora.
  */
 export async function fetchMyCompanies() {
-  const { data: auth } = await supabase.auth.getUser();
-  const uid = auth.user?.id;
+  // `getUser()` sa pýta servera; bez signálu čaká na vypršanie a appka pri
+  // štarte visí. Relácia v telefóne to isté id povie hneď a serveru sa aj tak
+  // verí až pri samotnom dotaze, ktorý stráži RLS.
+  const { data: auth } = await supabase.auth.getSession();
+  const uid = auth.session?.user?.id;
   if (!uid) return [];
   const { data, error } = await supabase
     .from("company_users")

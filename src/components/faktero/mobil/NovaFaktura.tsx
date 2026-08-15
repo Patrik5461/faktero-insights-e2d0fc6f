@@ -274,7 +274,18 @@ export function NovaFaktura({
       setHotova(r);
       setKrok("hotovo");
     } catch (e: any) {
-      toast.error(friendlyError(e, "Faktúru sa nepodarilo vystaviť."));
+      // Faktúra sa bez signálu vystaviť nedá a je to zámer: číslo prideľuje
+      // server, aby dvaja ľudia nedostali to isté. Nech to appka povie rovno,
+      // namiesto všeobecného „nepodarilo sa".
+      const { isOnline } = await import("@/lib/mobile/offline-queue");
+      if (!(await isOnline())) {
+        toast.error(
+          "Bez pripojenia sa faktúra vystaviť nedá — číslo jej prideľuje server. Rozpísané údaje tu ostanú.",
+          { duration: 7000 },
+        );
+      } else {
+        toast.error(friendlyError(e, "Faktúru sa nepodarilo vystaviť."));
+      }
     } finally {
       setUkladam(false);
     }
