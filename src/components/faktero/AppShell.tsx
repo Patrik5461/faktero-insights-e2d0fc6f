@@ -21,6 +21,7 @@ import {
   Sparkles,
   Shield,
   Warehouse,
+  Landmark,
   Car,
   ArrowRightLeft,
   HardHat,
@@ -149,20 +150,28 @@ const NAV: NavGroup[] = [
     ],
   },
   {
+    key: "banka",
+    label: "Banka",
+    icon: Landmark,
+    match: ["/bankove-ucty"],
+    children: [
+      { to: "/bankove-ucty", label: "Bankové účty" },
+      { to: "/bankove-ucty/transakcie", label: "Bankové transakcie" },
+      { to: "/bankove-ucty/vypisy", label: "Bankové výpisy" },
+      { to: "/bankove-ucty/pripojit", label: "Pripojiť banku" },
+    ],
+  },
+  {
     key: "uctovnictvo",
     label: "Účtovníctvo",
     icon: FileSpreadsheet,
-    match: ["/pokladna", "/exporty", "/importy", "/uctovnictvo", "/bankove-ucty"],
+    match: ["/pokladna", "/exporty", "/importy", "/uctovnictvo"],
     children: [
       { to: "/pokladna", label: "Pokladňa" },
       { to: "/uctovnictvo/dph", label: "DPH prehľad" },
       { to: "/uctovnictvo/uzavierka", label: "Uzávierka" },
       { to: "/exporty", label: "Účtovné exporty" },
       { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
-      { to: "/bankove-ucty", label: "Bankové účty" },
-      { to: "/bankove-ucty/transakcie", label: "Bankové transakcie" },
-      { to: "/bankove-ucty/vypisy", label: "Bankové výpisy" },
-      { to: "/bankove-ucty/pripojit", label: "Pripojiť banku" },
       { to: "/importy/superfaktura", label: "Import zo SuperFaktúry" },
       { to: "/importy/pohoda", label: "Import z Pohody a mPohody" },
       { to: "/importy/money-s3", label: "Import z Money S3" },
@@ -286,6 +295,7 @@ const INVOICING_KEYS = new Set([
   "kontakty",
   "zakazky",
   "sklad",
+  "banka",
   "uctovnictvo",
 ]);
 const LOGBOOK_KEYS = new Set(["logbook-prehlad", "jazdy", "vozidla", "integracie"]);
@@ -708,12 +718,13 @@ export function AppShell({
       </header>
 
       <main className="flex min-w-0 flex-1 flex-col">
-        {/* Účtovník má prístup len na čítanie — nech to vie skôr, než niečo
-            vyplní a uloženie mu databáza odmietne. */}
+        {/* Účtovník doklady zapisuje aj mení. Nedostane sa len k tomu, čo je
+            správa firmy — nech to vie skôr, než to začne hľadať. */}
         {active?.role === "accountant" && (
           <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 sm:px-6 lg:px-8">
-            Ste vo firme <strong>{active.name}</strong> ako účtovník — doklady vidíte, ale meniť ich
-            môže len majiteľ alebo administrátor firmy.
+            Ste vo firme <strong>{active.name}</strong> ako účtovník — doklady vediete v plnom
+            rozsahu. Napojenie banky, platby, API kľúče a správu používateľov má na starosti majiteľ
+            alebo administrátor.
           </div>
         )}
         {children}

@@ -10,7 +10,7 @@ import { toast } from "sonner";
 const ROLA_POPIS: Record<string, string> = {
   owner: "majiteľ",
   admin: "administrátor",
-  accountant: "účtovník (len na čítanie)",
+  accountant: "účtovník",
   employee: "používateľ",
 };
 

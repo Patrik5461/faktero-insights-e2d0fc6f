@@ -22,7 +22,9 @@ export function useStockPermissions() {
   }, [fetchRole]);
 
   const isAdmin = role === "owner" || role === "admin";
-  const canMutate = isAdmin || role === "employee";
+  // Účtovník od 2026-08-16 sklad zapisuje tiež — inventúru a opravy pohybov
+  // robí práve on. Spravovať sklady (zakladať, rušiť) ostáva na administrácii.
+  const canMutate = isAdmin || role === "employee" || role === "accountant";
   const canManage = isAdmin;
   const canExport = role !== null;
   return { role, loading, isAdmin, canMutate, canManage, canExport };

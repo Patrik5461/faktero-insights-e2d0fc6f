@@ -452,7 +452,7 @@ function CompanyPage() {
 const ROLA_POPIS: Record<string, string> = {
   owner: "Majiteľ",
   admin: "Administrátor",
-  accountant: "Účtovník (len na čítanie)",
+  accountant: "Účtovník",
   employee: "Používateľ",
 };
 
@@ -577,7 +577,7 @@ function TeamSection({ companyId }: { companyId: string }) {
                     >
                       <option value="owner">Majiteľ</option>
                       <option value="admin">Administrátor</option>
-                      <option value="accountant">Účtovník (len na čítanie)</option>
+                      <option value="accountant">Účtovník</option>
                       <option value="employee">Používateľ</option>
                     </select>
                   </td>
@@ -620,7 +620,7 @@ function TeamSection({ companyId }: { companyId: string }) {
             className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
             <option value="employee">Používateľ</option>
-            <option value="accountant">Účtovník (read-only)</option>
+            <option value="accountant">Účtovník</option>
             <option value="admin">Administrátor</option>
           </select>
         </label>
