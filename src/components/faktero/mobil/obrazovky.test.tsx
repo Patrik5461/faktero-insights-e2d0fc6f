@@ -80,3 +80,13 @@ describe("mobilné obrazovky sa vykreslia", () => {
     expect(otvoreny).toContain("skuska@faktero.sk");
   });
 });
+
+describe("poistka pri načítaní obrazovky", () => {
+  it("appka sa vykreslí, aj keď sa obrazovka načítava zvlášť", () => {
+    // Obrazovky sa načítavajú až pri kliknutí. Štart z toho nesmie mať nič —
+    // ani prázdnu stránku, ani čakanie na súbor, ktorý netreba.
+    const html = renderToString(<MobilnaApka />);
+    expect(html).toContain("Spúšťam Faktero");
+    expect(html).not.toContain("Otváram…");
+  });
+});

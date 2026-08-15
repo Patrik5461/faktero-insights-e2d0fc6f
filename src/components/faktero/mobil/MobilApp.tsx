@@ -5,7 +5,7 @@
  * samostatného balíčka v telefóne (`src/mobile/main.tsx`), aby appka fungovala
  * aj bez pripojenia. Preto tu nie je nič z routera — obrazovky prepína stav.
  */
-import { useEffect, useState } from "react";
+import { Component, lazy, Suspense, useEffect, useState } from "react";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import {
@@ -41,12 +41,78 @@ import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { odosliCakajuceJazdy } from "@/lib/mobile/auto-jazdy-sync";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { StavPushu } from "@/components/faktero/mobil/StavPushu";
-import { Diagnostika } from "@/components/faktero/mobil/Diagnostika";
-import { PrijateDoklady, datum } from "@/components/faktero/mobil/PrijateDoklady";
-import { NovaFaktura } from "@/components/faktero/mobil/NovaFaktura";
-import { VystaveneFaktury } from "@/components/faktero/mobil/VystaveneFaktury";
-import { Jazda } from "@/components/faktero/mobil/Jazda";
-import { Banka } from "@/components/faktero/mobil/Banka";
+import { datum } from "@/components/faktero/mobil/PrijateDoklady";
+
+/**
+ * Obrazovky sa načítajú až keď na ne človek klikne.
+ *
+ * Do štartu appky patrí domov a prihlásenie; faktúry, jazda, banka a doklady sú
+ * spolu vyše troch tisíc riadkov, ktoré sa pri otvorení appky nikdy nezobrazia.
+ * V balíčku sú to súbory na disku telefónu, takže načítanie funguje aj bez
+ * signálu — offline sa tým nič nemení.
+ */
+const Diagnostika = lazy(() =>
+  import("@/components/faktero/mobil/Diagnostika").then((m) => ({ default: m.Diagnostika })),
+);
+const PrijateDoklady = lazy(() =>
+  import("@/components/faktero/mobil/PrijateDoklady").then((m) => ({ default: m.PrijateDoklady })),
+);
+const NovaFaktura = lazy(() =>
+  import("@/components/faktero/mobil/NovaFaktura").then((m) => ({ default: m.NovaFaktura })),
+);
+const VystaveneFaktury = lazy(() =>
+  import("@/components/faktero/mobil/VystaveneFaktury").then((m) => ({
+    default: m.VystaveneFaktury,
+  })),
+);
+const Jazda = lazy(() =>
+  import("@/components/faktero/mobil/Jazda").then((m) => ({ default: m.Jazda })),
+);
+const Banka = lazy(() =>
+  import("@/components/faktero/mobil/Banka").then((m) => ({ default: m.Banka })),
+);
+
+/**
+ * Kým sa obrazovka načíta z disku. V telefóne je to zlomok sekundy.
+ *
+ * Poistka je tam kvôli tomu, že sa obrazovky načítavajú zvlášť: keby sa jeden
+ * súbor nenačítal (pokazená inštalácia, zle prebehnutá aktualizácia), bez nej
+ * by ostala biela obrazovka bez slova a bez cesty späť.
+ */
+class PoistkaObrazovky extends Component<
+  { children: React.ReactNode; onSpat: () => void },
+  { chyba: string | null }
+> {
+  state = { chyba: null as string | null };
+
+  static getDerivedStateFromError(e: unknown) {
+    return { chyba: e instanceof Error ? e.message : "obrazovku sa nepodarilo načítať" };
+  }
+
+  render() {
+    if (this.state.chyba === null) return this.props.children;
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 p-6 text-center">
+        <p className="text-[15px]">Túto obrazovku sa nepodarilo otvoriť.</p>
+        <p className="text-[12px] text-muted-foreground">{this.state.chyba}</p>
+        <button
+          onClick={this.props.onSpat}
+          className="rounded-xl border border-border px-4 py-3 text-[15px]"
+        >
+          Späť
+        </button>
+      </div>
+    );
+  }
+}
+
+function Obrazovka({ children, onSpat }: { children: React.ReactNode; onSpat: () => void }) {
+  return (
+    <PoistkaObrazovky onSpat={onSpat}>
+      <Suspense fallback={<Pracujem text="Otváram…" />}>{children}</Suspense>
+    </PoistkaObrazovky>
+  );
+}
 import { ZrusenieUctu } from "@/components/faktero/ZrusenieUctu";
 import { dniDoZrusenia, terminSlovom } from "@/lib/faktero/ucet-zrusenie";
 import { DNI, sPoctom } from "@/lib/faktero/mnozne";
@@ -295,7 +361,12 @@ export function MobilnaApka() {
     setKrok("prihlasenie");
   }
 
-  if (diagnostika) return <Diagnostika onSpat={() => setDiagnostika(false)} />;
+  if (diagnostika)
+    return (
+      <Obrazovka onSpat={() => setDiagnostika(false)}>
+        <Diagnostika onSpat={() => setDiagnostika(false)} />
+      </Obrazovka>
+    );
   if (zamknute) return <Zamok onOdomknute={() => setZamknute(false)} onOdhlasit={odhlas} />;
   if (krok === "nacitavam") {
     const peciatka = typeof __PECIATKA__ === "string" ? __PECIATKA__ : "web";
@@ -351,17 +422,33 @@ export function MobilnaApka() {
       />
     );
   if (krok === "doklady" && firma)
-    return <PrijateDoklady firma={firma} onSpat={() => setKrok("domov")} />;
+    return (
+      <Obrazovka onSpat={() => setKrok("domov")}>
+        <PrijateDoklady firma={firma} onSpat={() => setKrok("domov")} />
+      </Obrazovka>
+    );
   if (krok === "novaFaktura" && firma)
     return (
-      <NovaFaktura
-        firma={firma}
-        onSpat={() => setKrok("domov")}
-        onHotovo={() => setKrok("faktury")}
-      />
+      <Obrazovka onSpat={() => setKrok("domov")}>
+        <NovaFaktura
+          firma={firma}
+          onSpat={() => setKrok("domov")}
+          onHotovo={() => setKrok("faktury")}
+        />
+      </Obrazovka>
     );
-  if (krok === "jazda" && firma) return <Jazda firma={firma} onSpat={() => setKrok("domov")} />;
-  if (krok === "banka" && firma) return <Banka firma={firma} onSpat={() => setKrok("domov")} />;
+  if (krok === "jazda" && firma)
+    return (
+      <Obrazovka onSpat={() => setKrok("domov")}>
+        <Jazda firma={firma} onSpat={() => setKrok("domov")} />
+      </Obrazovka>
+    );
+  if (krok === "banka" && firma)
+    return (
+      <Obrazovka onSpat={() => setKrok("domov")}>
+        <Banka firma={firma} onSpat={() => setKrok("domov")} />
+      </Obrazovka>
+    );
   if (krok === "ucet")
     return (
       <MobilObrazovka title="Účet" subtitle={email ?? undefined} onBack={() => setKrok("domov")}>
@@ -382,11 +469,13 @@ export function MobilnaApka() {
     );
   if (krok === "faktury" && firma)
     return (
-      <VystaveneFaktury
-        firma={firma}
-        onSpat={() => setKrok("domov")}
-        onNova={() => setKrok("novaFaktura")}
-      />
+      <Obrazovka onSpat={() => setKrok("domov")}>
+        <VystaveneFaktury
+          firma={firma}
+          onSpat={() => setKrok("domov")}
+          onNova={() => setKrok("novaFaktura")}
+        />
+      </Obrazovka>
     );
   if (krok === "zachyt" && firma)
     return (

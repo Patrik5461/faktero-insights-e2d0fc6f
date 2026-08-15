@@ -60,7 +60,25 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: "dist-mobile",
       emptyOutDir: true,
-      rollupOptions: { input: resolve(import.meta.dirname, "index.mobile.html") },
+      rollupOptions: {
+        input: resolve(import.meta.dirname, "index.mobile.html"),
+        output: {
+          /*
+           * Knižnice zvlášť od nášho kódu.
+           *
+           * Nie kvôli medzipamäti prehliadača — appka je v telefóne, nič sa
+           * nesťahuje. Ide o štart: prehliadaču stačí najprv spracovať to, čo
+           * treba na prvú obrazovku, a zvyšok si vezme, keď naň príde rad.
+           */
+          manualChunks(id: string) {
+            if (!id.includes("node_modules")) return undefined;
+            if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "react";
+            if (id.includes("@supabase")) return "supabase";
+            if (id.includes("lucide-react")) return "ikony";
+            return undefined;
+          },
+        },
+      },
       target: "es2020",
     },
   };
