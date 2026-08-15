@@ -90,6 +90,7 @@ start "" /wait "%POHODA%" /XML "%MENO%" "%HESLO%" "%PRIECINOK%import.ini"
 call :log "Import skoncil."
 
 rem 4. Odpoved spat do Faktera - z nej sa dozvie cisla dokladov a chyby.
+dir /b "%ODPOVED%\\*.xml" >nul 2>&1 || call :log "Pohoda nevratila ziadnu odpoved - pozrite protokol importu v Pohode."
 for %%f in ("%ODPOVED%\\*.xml") do (
   for /f %%k in ('curl -sS -o nul -w "%%{http_code}" -X POST -H "Authorization: Bearer %KLUC%" -H "Content-Type: text/xml" --data-binary "@%%f" "%ADRESA%/api/v1/pohoda/odpoved"') do set "KOD2=%%k"
   if "!KOD2!"=="200" (
@@ -106,7 +107,9 @@ endlocal
 exit /b 0
 
 :log
-echo %date% %time% %~1>>"%PROTOKOL%"
+rem Presmerovanie je pred echom zamerne: ked by text koncil cislicou,
+rem cmd by ju spojil so znakmi >> a vzalo by to ako presmerovanie prudu.
+>>"%PROTOKOL%" echo %date% %time% %~1
 echo %~1
 exit /b
 `;

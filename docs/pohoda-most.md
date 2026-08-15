@@ -43,6 +43,54 @@ pretrhne a úloha sa tvári, že prebehla.
 Vedľajšie cesty ostávajú: výber jednotlivých faktúr na tej istej stránke (na
 doplnenie jedného zabudnutého dokladu) a mesačný balík na stránke Doklady.
 
+## Konektor — Pohoda si doklady vezme sama
+
+POHODA vie XML import spustiť z príkazového riadku:
+
+```
+Pohoda.exe /XML "meno" "heslo" "C:\Faktero\import.ini"
+```
+
+a `import.ini` povie, odkiaľ brať (`input_dir`) a kam odpovedať (`response_dir`).
+Vďaka tomu je celý most na strane účtovníčky **dávkový súbor a naplánovaná
+úloha Windows** — nič sa neinštaluje, neotvárajú sa porty a nepotrebuje sa
+POHODA mServer (ten obsadí druhú inštanciu Pohody a Stormware ho neodporúča
+vystavovať mimo vnútornej siete).
+
+Balíček sa vydáva vo **Firma → Pohoda → Priame prepojenie s Pohodou**
+(`pohoda-konektor.functions.ts`). Obsahuje `faktero-pohoda.cmd` s vloženým API
+kľúčom, `nastav-ulohu.cmd` (`schtasks`, denne o 2:00) a `NAVOD.txt`. Kľúč vzniká
+až pri stiahnutí a nikde sa nezobrazuje; zrušiť sa dá v Nastavenia → API kľúče.
+
+Dva endpointy, obidva na bežnom API kľúči (`overApiKluc`):
+
+- `GET /api/v1/pohoda/davka` — jeden `dataPack` s faktúrami, prijatými dokladmi
+  aj pokladňou. **204** znamená, že nie je čo posielať. `?nahlad=1` nezapisuje
+  históriu, `?od=RRRR-MM-DD` posunie začiatok. Predvolene sa berie od začiatku
+  **minulého mesiaca** — konektor je na priebežnú prácu, dosypanie histórie
+  patrí do mesačného balíka. Strop je 200 dokladov na dávku.
+- `POST /api/v1/pohoda/odpoved` — `responsePack` z Pohody. Doklad, ktorý Pohoda
+  odmietla, sa **vráti do fronty** (inak by u nás bol odovzdaný a v Pohode by
+  neexistoval); ostatné si zapíšu číslo, ktoré im Pohoda pridelila
+  (`export_logs.pohoda_cislo`, `expense_documents.pohoda_cislo`,
+  `cash_entries.pohoda_cislo`). Telo sa dekóduje podľa hlavičky XML — Pohoda
+  píše Windows-1250 a inak by sa diakritika v hláškach rozsypala.
+
+**Identifikátor dokladu je jeho `id` a `dataPack id` je stále `FAKTERO`.** Pohoda
+kontroluje duplicitu podľa tejto dvojice, takže druhý pokus odmietne sama — aj
+keď ten istý doklad príde raz z konektora a raz z mesačného mailu. V `import.ini`
+k tomu patrí `check_duplicity=1`.
+
+**Odkaz na PDF** ide do záložky Dokumenty ako `typ:urlAddress`. Vložiť samotný
+súbor sa pri importe nedá (`typ:file` je len na export) a podpísaný odkaz zo
+Supabase sa nezmestí — schéma dáva URL 255 znakov. Preto má faktúra vlastný
+krátky token (`invoices.pdf_token`) a PDF vydáva `/api/public/faktura/$token`,
+ktorý podpis vyrobí až pri kliknutí. Vypína sa vo Firma → Pohoda
+(`companies.pohoda_odkaz_na_pdf`).
+
+Pokladňa dostala `exported_at` — mesačný balík posielal celý mesiac naraz, ale
+denný konektor by bez toho posielal tie isté pohyby každý deň.
+
 Pokladňa sa vyváža **bez rozpisu DPH**: pohyb v pokladni u nás sadzbu nemá
 (vklady, výbery, drobné výdavky), kým doklady s DPH sú prijaté doklady a
 faktúry. Vymyslená sadzba by bola tichá chyba v priznaní, takže celá suma ide do
@@ -106,7 +154,8 @@ pri importe faktúr zakladá sama, takže úžitok je malý; sklad a zákazky d�
 zmysel len tomu, kto ich v Pohode naozaj vedie. Pozor, `purchase_invoices` je
 prázdna tabuľka — prijaté doklady žijú v `expense_documents`.
 
-**2. Živý most cez POHODA mServer.** Pohoda má vstavaný HTTP server:
+**2. Živý most cez POHODA mServer.** _Prekonané konektorom vyššie — ostáva tu
+ako záznam, prečo sa touto cestou nešlo._ Pohoda má vstavaný HTTP server:
 `POST http://localhost:444/xml`, hlavička `STW-Authorization: Basic
 base64(meno:heslo)`, `Content-Type: text/xml`, odpoveďou je `responsePack` so
 stavom každého dokladu — teda vieme overiť, že sa doklad naozaj založil, a s
@@ -117,8 +166,13 @@ otváranie portov. Vlastný program pre Windows so všetkým, čo k tomu patrí.
 
 **3. mPohoda (cloud).** OAuth2 `client_credentials` na
 `https://ucet.pohoda.cz/connect/token`, scope `Mph.OpenApi.Access.Sk`, potom
-`Bearer` na `https://api.mpohoda.sk`. Bez inštalácie čohokoľvek, ale len vo
-variante **mPohoda Pro** a dáva zmysel iba tomu, kto mPohodu už používa.
+`Bearer` na `https://api.mpohoda.sk`. Skutočné REST API, ale: je len vo variante
+**mPohoda Pro** (298 Kč/mes.), zapisovať sa dá vydaná a zálohová faktúra,
+prijatá faktúra a objednávky — **pokladňa nie** — a stiahnutie do desktopovej
+Pohody je zase naplánovaná úloha Windows
+(`Pohoda.exe /mPohoda "meno" "heslo" "jednotka"`). Čiže tá istá úloha ako pri
+konektore, plus predplatné a polovica agend. Dáva zmysel jedine tomu, kto
+mPohodu Pro už používa.
 
 Bod 1 funguje s každou radou Pohody a účtovníčka neinštaluje nič, preto má
 prednosť pred 2 a 3.
