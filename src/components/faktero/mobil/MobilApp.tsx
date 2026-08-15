@@ -295,6 +295,13 @@ function ObsahApky() {
           } catch {
             /* skúsi sa znova pri návrate signálu */
           }
+          try {
+            // Odberatelia do telefónu. Bez nich sa faktúra bez signálu nedá ani
+            // začať a človek by sa to dozvedel až v teréne.
+            await predzasobPodklady(vybrana.id);
+          } catch {
+            /* pamäť je pohodlie, nie podmienka štartu */
+          }
         })();
 
         void odosliCakajuceJazdy(vybrana.id)
@@ -316,6 +323,22 @@ function ObsahApky() {
     } catch {
       setKrok("firma");
     }
+  }
+
+  /**
+   * Odberatelia a produkty do telefónu — to isté, čo si pýta Nová faktúra.
+   *
+   * Bez nich sa bez signálu nedá vystaviť faktúra vôbec: obrazovka nemá z čoho
+   * ponúknuť odberateľa. Ukladá sa pod ten istý kľúč, z ktorého Nová faktúra
+   * číta, keď sa jej server neozve.
+   */
+  async function predzasobPodklady(companyId: string) {
+    const { isOnline } = await import("@/lib/mobile/offline-queue");
+    if (!(await isOnline())) return;
+    const { volajOperaciu } = await import("@/lib/mobile/server-most-volanie");
+    const p = await volajOperaciu("faktura-podklady", { company_id: companyId });
+    const { ulozDoPamate } = await import("@/lib/mobile/jazdy-lokalne");
+    await ulozDoPamate(`podklady-faktury:${companyId}`, p);
   }
 
   /**

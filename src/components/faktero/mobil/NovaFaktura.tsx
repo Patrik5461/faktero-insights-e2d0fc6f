@@ -164,11 +164,33 @@ export function NovaFaktura({
 
   useEffect(() => {
     (async () => {
+      const { ulozDoPamate, zPamate } = await import("@/lib/mobile/jazdy-lokalne");
+      const kluc = `podklady-faktury:${firma.id}`;
       try {
         const p = (await nacitajPodklady({ data: { company_id: firma.id } })) as Podkladove;
         setPodklady(p);
+        void ulozDoPamate(kluc, p);
       } catch (e: any) {
-        toast.error(e?.message ?? "Podklady sa nepodarilo načítať.");
+        /*
+          Bez odberateľov sa faktúra nedá ani začať — a práve bez signálu ju
+          človek potrebuje. Preto sa berie posledný známy zoznam. Nové ceny v
+          ňom nie sú, ale odberateľ a jeho údaje sa menia zriedka.
+        */
+        const zapamatane = await zPamate<Podkladove>(kluc);
+        if (zapamatane?.hodnota?.odberatelia?.length) {
+          setPodklady(zapamatane.hodnota);
+          toast.message("Bez pripojenia — pracujem s naposledy načítanými údajmi.", {
+            description: new Date(zapamatane.kedy).toLocaleString("sk-SK"),
+          });
+          return;
+        }
+        const { isOnline } = await import("@/lib/mobile/offline-queue");
+        toast.error(
+          (await isOnline())
+            ? (e?.message ?? "Podklady sa nepodarilo načítať.")
+            : "Bez pripojenia a bez uložených odberateľov sa faktúra vystaviť nedá. Otvorte túto obrazovku raz s internetom.",
+          { duration: 7000 },
+        );
         onSpat();
       }
     })();
