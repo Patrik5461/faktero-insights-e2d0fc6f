@@ -28,9 +28,22 @@ export async function initNativePlatform(): Promise<void> {
     try {
       const { StatusBar, Style } = await import("@capacitor/status-bar");
       const { ZELENA_HORE } = await import("./brand");
+      // `Style.Dark` = tmavé pozadie, teda **biele** hodiny a ikony. Znie to
+      // naopak, ale plugin pomenúva pozadie, nie text; `Style.Light` by dal
+      // čierny text a na zelenej by sa stratil.
       await StatusBar.setStyle({ style: Style.Dark });
       await StatusBar.setBackgroundColor({ color: ZELENA_HORE });
-      await StatusBar.setOverlaysWebView({ overlay: false });
+
+      /*
+        Pás kreslí stránka (`PasHore`), preto WebView ide až pod hodiny — ale
+        len na iOS. Android WebView hlási `env(safe-area-inset-top)` ako nulu aj
+        vtedy, keď je appka roztiahnutá pod stavovú lištu; pás by mal nulovú
+        výšku a obsah by liezol pod hodiny. Tam je lepšie nechať lištu mimo
+        WebView a farbu na plugine — rozdelený pás pri otvorenom paneli tam
+        vzniknúť nemôže, lebo panel sa pod lištu vôbec nedostane.
+      */
+      const { Capacitor } = await import("@capacitor/core");
+      await StatusBar.setOverlaysWebView({ overlay: Capacitor.getPlatform() === "ios" });
     } catch (e) {
       console.warn("[native-init] StatusBar:", e);
     }

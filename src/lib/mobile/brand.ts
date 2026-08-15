@@ -1,10 +1,10 @@
 /**
  * Značková zelená horného pásu mobilnej aplikácie.
  *
- * Pás pod hodinami nekreslí stránka, ale natívny plugin StatusBar (appka beží
- * s `overlaysWebView: false`, takže WebView začína až pod ním). Plugin ani
+ * Pás pod hodinami kreslí na iOS stránka (`PasHore` v `MobilChrome.tsx`,
+ * `overlaysWebView: true`), na Androide plugin StatusBar. Plugin ani
  * `capacitor.config.ts` nevedia prečítať CSS premennú, preto je hex tu na
- * jednom mieste — berie si ho hlavička aj status bar a nemôžu sa rozísť.
+ * jednom mieste — berie si ho pás, hlavičky aj status bar a nemôžu sa rozísť.
  *
  * Hodnota je `--primary` zo `styles.css` (`oklch(0.52 0.13 155)`) v hex tvare.
  * Keď sa mení značková farba, mení sa aj tu a v `capacitor.config.ts`.

@@ -126,6 +126,7 @@ import {
 import {
   HlavneTlacidlo,
   MobilObrazovka,
+  PasHore,
   Pracujem,
   VelkeTlacidlo,
 } from "@/components/faktero/mobil/MobilChrome";
@@ -156,7 +157,21 @@ type Krok =
   | "ucet";
 type Zachyt = "blocek" | "pdf" | "strany";
 
+/**
+ * Appka má veľa stavov a každý sa vracia vlastným `return` — prihlásenie, výber
+ * firmy, jednotlivé obrazovky. Zelený pás preto visí tu, nad nimi všetkými:
+ * inak by sa musel opakovať v každej vetve a raz by sa na niektorú zabudlo.
+ */
 export function MobilnaApka() {
+  return (
+    <>
+      <PasHore />
+      <ObsahApky />
+    </>
+  );
+}
+
+function ObsahApky() {
   const [krok, setKrok] = useState<Krok>("nacitavam");
   const [firmy, setFirmy] = useState<Firma[]>([]);
   const [firma, setFirma] = useState<Firma | null>(null);

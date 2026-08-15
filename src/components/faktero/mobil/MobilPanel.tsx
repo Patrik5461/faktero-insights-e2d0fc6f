@@ -20,6 +20,7 @@ import {
   isBiometricAvailable,
   isBiometricEnabled,
 } from "@/lib/mobile/biometric";
+import { ZELENA_DOLE, ZELENA_HORE } from "@/lib/mobile/brand";
 
 /**
  * Vysúvací panel s nastaveniami.
@@ -135,31 +136,44 @@ export function MobilPanel({
           transition: pusta ? "transform 220ms cubic-bezier(0.32, 0.72, 0, 1)" : undefined,
         }}
       >
+        {/*
+          Rovnaká stavba ako domovská hlavička: navrchu plná ZELENA_HORE presne
+          po výšku výrezu, prechod až pod ním. Keby prechod začínal hore, na
+          telefónoch s iným výrezom by sa pod spoločným pásom objavil o odtieň
+          svetlejší pruh — a práve ten predel bolo vidieť.
+        */}
         <div
-          className="px-5 pb-5 text-primary-foreground"
+          className="text-primary-foreground"
           style={{
-            backgroundImage: "linear-gradient(180deg, #007e46 0%, #007e46 55%, #0a8f52 100%)",
-            paddingTop: "calc(env(safe-area-inset-top) + 1.25rem)",
+            backgroundColor: ZELENA_HORE,
+            paddingTop: "env(safe-area-inset-top)",
           }}
         >
-          <div className="flex items-start justify-between">
-            <div className="min-w-0">
-              <p className="text-[13px] text-primary-foreground/80">Prihlásený ako</p>
-              <p className="mt-0.5 truncate text-[15px] font-semibold">{email ?? "—"}</p>
+          <div
+            className="px-5 pb-5 pt-5"
+            style={{
+              backgroundImage: `linear-gradient(180deg, ${ZELENA_HORE} 0%, ${ZELENA_HORE} 30%, ${ZELENA_DOLE} 100%)`,
+            }}
+          >
+            <div className="flex items-start justify-between">
+              <div className="min-w-0">
+                <p className="text-[13px] text-primary-foreground/80">Prihlásený ako</p>
+                <p className="mt-0.5 truncate text-[15px] font-semibold">{email ?? "—"}</p>
+              </div>
+              <button
+                onClick={onZavri}
+                aria-label="Zavrieť"
+                className="-mr-1 rounded-full bg-white/15 p-2 active:bg-white/25"
+              >
+                <X className="h-[18px] w-[18px]" />
+              </button>
             </div>
-            <button
-              onClick={onZavri}
-              aria-label="Zavrieť"
-              className="-mr-1 rounded-full bg-white/15 p-2 active:bg-white/25"
-            >
-              <X className="h-[18px] w-[18px]" />
-            </button>
-          </div>
-          <div className="mt-4 flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5">
-            <Building2 className="h-4 w-4 shrink-0" />
-            <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
-              {firma?.name ?? "Bez firmy"}
-            </span>
+            <div className="mt-4 flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5">
+              <Building2 className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
+                {firma?.name ?? "Bez firmy"}
+              </span>
+            </div>
           </div>
         </div>
 

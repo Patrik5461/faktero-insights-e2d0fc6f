@@ -1,5 +1,30 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
+import { ZELENA_HORE } from "@/lib/mobile/brand";
+
+/**
+ * Zelený pás pod hodinami — jedna vrstva pre celú appku.
+ *
+ * Kreslí ho stránka, nie plugin StatusBar: appka beží s `overlaysWebView: true`,
+ * takže WebView siaha až pod hodiny a farbu tam určuje toto.
+ *
+ * Prečo jeden spoločný prvok a nie pás v každej hlavičke: bočný panel leží nad
+ * obrazovkou (z-50) a jeho stmavenie cez ňu (z-40). Keby si pás kreslila každá
+ * obrazovka sama, pri otvorenom paneli by bol horný pruh na šírku panela zelený
+ * a vedľa neho stmavený. Tento pás je nad oboma (z-60), takže je vždy celý a
+ * vždy rovnaký — nezávisle od toho, čo je pod ním.
+ *
+ * `pointer-events-none`, aby neprekrýval dotyky v hlavičkách pod sebou.
+ */
+export function PasHore() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-x-0 top-0 z-[60]"
+      style={{ height: "env(safe-area-inset-top)", backgroundColor: ZELENA_HORE }}
+    />
+  );
+}
 
 /**
  * Rám mobilnej aplikácie.
@@ -94,6 +119,7 @@ export function MobilObrazovka({
   children,
   footer,
   akcia,
+  variant = "default",
 }: {
   title: string;
   subtitle?: string;
@@ -101,8 +127,18 @@ export function MobilObrazovka({
   children: ReactNode;
   footer?: ReactNode;
   akcia?: ReactNode;
+  /**
+   * `green` = hlavička v značkovej zelenej, rovnako ako domovská obrazovka.
+   *
+   * Používajú ju kroky vystavenia faktúry: bez nej bola pod zeleným pásom biela
+   * hlavička a na styku bola vidieť hrana. Pozadie je **plná** {@link ZELENA_HORE}
+   * bez prechodu — jednak nie je vidieť predel voči pásu nad ňou, jednak biely
+   * text na svetlejšom konci prechodu nemá dosť kontrastu (4,15:1).
+   */
+  variant?: "default" | "green";
 }) {
   const { posun, pusta } = useSwipeSpat(onBack);
+  const zelena = variant === "green";
 
   return (
     <div
@@ -114,15 +150,24 @@ export function MobilObrazovka({
       }}
     >
       <header
-        className="sticky top-0 z-10 border-b border-border/70 bg-card/95 backdrop-blur"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
+        className={
+          zelena
+            ? "sticky top-0 z-10 text-white"
+            : "sticky top-0 z-10 border-b border-border/70 bg-card/95 backdrop-blur"
+        }
+        style={{
+          paddingTop: "env(safe-area-inset-top)",
+          backgroundColor: zelena ? ZELENA_HORE : undefined,
+        }}
       >
         <div className="flex items-center gap-1 px-3 py-2.5">
           {onBack && (
             <button
               onClick={onBack}
               aria-label="Späť"
-              className="-ml-1 rounded-full p-2 text-primary active:bg-secondary"
+              className={`-ml-1 rounded-full p-2 ${
+                zelena ? "text-white active:bg-white/20" : "text-primary active:bg-secondary"
+              }`}
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
@@ -132,7 +177,16 @@ export function MobilObrazovka({
               {title}
             </h1>
             {subtitle && (
-              <p className="truncate text-[13px] leading-tight text-muted-foreground">{subtitle}</p>
+              <p
+                className={`truncate text-[13px] leading-tight ${
+                  zelena ? "" : "text-muted-foreground"
+                }`}
+                // Nie `text-white/80`: na zelenej má len 3,9:1. Pri 0,92 je to
+                // 4,6:1, teda nad hranicou pre bežne veľký text.
+                style={zelena ? { color: "rgba(255,255,255,0.92)" } : undefined}
+              >
+                {subtitle}
+              </p>
             )}
           </div>
           {akcia}

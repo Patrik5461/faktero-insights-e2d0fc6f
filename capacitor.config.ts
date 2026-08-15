@@ -35,8 +35,10 @@ const config: CapacitorConfig = {
       // Musí sedieť so `ZELENA_HORE` v `src/lib/mobile/brand.ts` — táto hodnota
       // sa zapečie do buildu, tá druhá sa nastavuje pri každom štarte z webu.
       backgroundColor: "#007e46",
-      // WebView začína až pod status barom, pás nad ním kreslí plugin.
-      overlaysWebView: false,
+      // WebView siaha až pod hodiny a pás nad ním kreslí stránka (`PasHore`).
+      // Keď ho kreslil plugin, pri otvorenom bočnom paneli sa pás rozdelil:
+      // nad panelom ostal zelený, vedľa neho ho stmavilo prekrytie panela.
+      overlaysWebView: true,
     },
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],
