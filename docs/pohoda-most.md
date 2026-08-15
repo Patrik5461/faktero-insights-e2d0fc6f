@@ -40,8 +40,31 @@ nesmie posielať bez jej vedomia, preto sa to zapína, nie vypína. Volanie má
 `timeout_milliseconds := 600000`; bez neho pg_net spojenie po piatich sekundách
 pretrhne a úloha sa tvári, že prebehla.
 
+Balík nesie **to isté, čo priame prepojenie** — okrem faktúr, prijatých dokladov
+a pokladne aj adresár, sklad, skladové pohyby, zákazky a storná, každé ako
+vlastný súbor, aby si účtovníčka naimportovala len to, čo chce. Číselníky sa
+zapisujú do tej istej tabuľky `pohoda_odoslane` ako pri konektore, takže sa
+doklad neodovzdá dvakrát ani pri používaní oboch ciest. Loadery sú spoločné
+(`nacitajZakaznikov`, `nacitajZasoby`, `nacitajZakazky`, `nacitajPohyby`,
+`nacitajStorna`, `nacitajVazby` v `pohoda-konektor.server.ts`).
+
 Vedľajšie cesty ostávajú: výber jednotlivých faktúr na tej istej stránke (na
 doplnenie jedného zabudnutého dokladu) a mesačný balík na stránke Doklady.
+
+## Strážca mlčania
+
+Konektor je tichý zo svojej podstaty — keď prestane chodiť, prestane rovnako
+ticho a doklady sa hromadia týždne. Cron `faktero-pohoda-strazca` (`30 6 * * *`,
+hook `/api/public/hooks/pohoda-strazca`, `timeout_milliseconds := 120000`) sa
+denne pozrie na `api_keys.last_used_at` kľúčov menom `Pohoda — konektor%` a po
+**siedmich dňoch ticha** (`DNI_TICHA`) pošle firme mail.
+
+Upozorňuje sa len firma, ktorej konektor **už raz bežal** — balíček stiahnutý a
+odložený do zásuvky nie je porucha. Druhýkrát sa ozve až vtedy, keď sa konektor
+medzitým rozbehol a znovu stíchol (`companies.pohoda_konektor_upozorneny_at`
+porovnané s posledným ozvaním). Rozhoduje kľúč, ktorý sa ozval naposledy —
+každé stiahnutie balíčka vyrobí nový a staré ostávajú platné. Mail ide na adresu
+firmy, nie účtovníčky: rozhodnúť, či niekomu zavolá, patrí majiteľovi.
 
 ## Konektor — Pohoda si doklady vezme sama
 

@@ -79,6 +79,11 @@ const sections: HelpSection[] = [
           <li>PDF faktúr a skeny dokladov</li>
         </ul>
         <p>
+          Keď máte zapnuté číselníky (adresár, sklad, zákazky), sú v balíku tiež — každý ako vlastný
+          súbor, aby si účtovníčka naimportovala len to, čo chce. Balík teda nesie to isté čo priame
+          prepojenie.
+        </p>
+        <p>
           <strong>Stiahnuť balík</strong> nič nezapisuje, takže sa dá stiahnuť koľkokrát chcete.{" "}
           <strong>Označiť za odovzdané</strong> a <strong>Poslať účtovníčke</strong> si už
           zapamätajú, čo odišlo, a nabudúce priložia len nové doklady.
@@ -166,6 +171,10 @@ const sections: HelpSection[] = [
         <p>
           V priečinku vzniká <code>protokol.txt</code>, kde je vidieť, čo sa kedy stalo. Keď niečo
           nesedí, začnite tam.
+        </p>
+        <p>
+          <strong>Keď prepojenie prestane chodiť, ozveme sa.</strong> Po týždni ticha vám príde
+          e-mail — doklady sa medzitým nestratia, čakajú a odídu, hneď ako sa spojenie obnoví.
         </p>
         <p>
           Kľúč je vložený priamo v súbore a dá sa kedykoľvek zneplatniť v{" "}
