@@ -775,6 +775,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cash_entries_export_job_id_fkey"
+            columns: ["export_job_id"]
+            isOneToOne: false
+            referencedRelation: "export_jobs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       commander_connections: {
@@ -940,23 +947,23 @@ export type Database = {
           locked_until: string | null
           logo_url: string | null
           name: string
-          online_payments_enabled: boolean
           odovzdanie_automaticky: boolean
+          online_payments_enabled: boolean
           phone: string | null
           pohoda_clenenie_dph: string | null
           pohoda_clenenie_dph_pdp: string | null
           pohoda_clenenie_dph_prijata: string | null
           pohoda_konektor_upozorneny_at: string | null
           pohoda_odkaz_na_pdf: boolean
+          pohoda_pokladna: string | null
           pohoda_posielat_adresar: boolean
           pohoda_posielat_pohyby: boolean
           pohoda_posielat_sklad: boolean
           pohoda_posielat_zakazky: boolean
           pohoda_predkontacia: string | null
           pohoda_predkontacia_dobropis: string | null
-          pohoda_pokladna: string | null
-          pohoda_predkontacia_prijata: string | null
           pohoda_predkontacia_pokladna: string | null
+          pohoda_predkontacia_prijata: string | null
           pohoda_predkontacia_zaloha: string | null
           pohoda_sklad: string | null
           preferred_accounting_system: Database["public"]["Enums"]["accounting_system"]
@@ -1002,23 +1009,23 @@ export type Database = {
           locked_until?: string | null
           logo_url?: string | null
           name: string
-          online_payments_enabled?: boolean
           odovzdanie_automaticky?: boolean
+          online_payments_enabled?: boolean
           phone?: string | null
           pohoda_clenenie_dph?: string | null
           pohoda_clenenie_dph_pdp?: string | null
           pohoda_clenenie_dph_prijata?: string | null
           pohoda_konektor_upozorneny_at?: string | null
           pohoda_odkaz_na_pdf?: boolean
+          pohoda_pokladna?: string | null
           pohoda_posielat_adresar?: boolean
           pohoda_posielat_pohyby?: boolean
           pohoda_posielat_sklad?: boolean
           pohoda_posielat_zakazky?: boolean
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
-          pohoda_pokladna?: string | null
-          pohoda_predkontacia_prijata?: string | null
           pohoda_predkontacia_pokladna?: string | null
+          pohoda_predkontacia_prijata?: string | null
           pohoda_predkontacia_zaloha?: string | null
           pohoda_sklad?: string | null
           preferred_accounting_system?: Database["public"]["Enums"]["accounting_system"]
@@ -1064,23 +1071,23 @@ export type Database = {
           locked_until?: string | null
           logo_url?: string | null
           name?: string
-          online_payments_enabled?: boolean
           odovzdanie_automaticky?: boolean
+          online_payments_enabled?: boolean
           phone?: string | null
           pohoda_clenenie_dph?: string | null
           pohoda_clenenie_dph_pdp?: string | null
           pohoda_clenenie_dph_prijata?: string | null
           pohoda_konektor_upozorneny_at?: string | null
           pohoda_odkaz_na_pdf?: boolean
+          pohoda_pokladna?: string | null
           pohoda_posielat_adresar?: boolean
           pohoda_posielat_pohyby?: boolean
           pohoda_posielat_sklad?: boolean
           pohoda_posielat_zakazky?: boolean
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
-          pohoda_pokladna?: string | null
-          pohoda_predkontacia_prijata?: string | null
           pohoda_predkontacia_pokladna?: string | null
+          pohoda_predkontacia_prijata?: string | null
           pohoda_predkontacia_zaloha?: string | null
           pohoda_sklad?: string | null
           preferred_accounting_system?: Database["public"]["Enums"]["accounting_system"]
@@ -2636,6 +2643,63 @@ export type Database = {
           },
         ]
       }
+      invoice_number_reservations: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          device: string | null
+          expires_at: string
+          id: string
+          invoice_id: string | null
+          invoice_number: string
+          issue_date: string
+          sequence_number: number
+          used_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          device?: string | null
+          expires_at: string
+          id?: string
+          invoice_id?: string | null
+          invoice_number: string
+          issue_date: string
+          sequence_number: number
+          used_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          device?: string | null
+          expires_at?: string
+          id?: string
+          invoice_id?: string | null
+          invoice_number?: string
+          issue_date?: string
+          sequence_number?: number
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_number_reservations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_number_reservations_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_payment_links: {
         Row: {
           amount_cents: number
@@ -2982,6 +3046,13 @@ export type Database = {
             columns: ["job_id"]
             isOneToOne: false
             referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_opravuje_fakturu_id_fkey"
+            columns: ["opravuje_fakturu_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
           {
@@ -6080,6 +6151,19 @@ export type Database = {
       }
       faktero_process_trial_expiry: { Args: never; Returns: number }
       faktero_recurring_cron_status: { Args: never; Returns: Json }
+      faktero_release_invoice_numbers: {
+        Args: { _company_id: string; _numbers?: string[] }
+        Returns: number
+      }
+      faktero_reserve_invoice_numbers: {
+        Args: {
+          _company_id: string
+          _count?: number
+          _days?: number
+          _device?: string
+        }
+        Returns: Json
+      }
       faktero_zmaz_firmu: { Args: { _company_id: string }; Returns: undefined }
       get_company_role: {
         Args: { _company_id: string; _user_id: string }

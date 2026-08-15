@@ -56,6 +56,18 @@ async function posliCoCaka(): Promise<void> {
   }
 
   try {
+    await posliFaktury(firma);
+  } catch {
+    /* fronta ostáva, ďalší pokus príde pri ďalšom pripojení */
+  }
+
+  try {
+    await doplnCisla(firma);
+  } catch {
+    /* zásoba čísel je pohodlie, nie podmienka — skúsi sa nabudúce */
+  }
+
+  try {
     const { pocetVoFronte } = await import("./doklady-fronta");
     if ((await pocetVoFronte(firma)) === 0) return;
 
@@ -69,6 +81,52 @@ async function posliCoCaka(): Promise<void> {
   } catch {
     /* to isté — obrazovka Prijaté doklady to skúsi znova */
   }
+}
+
+/**
+ * Odošle faktúry vystavené bez signálu.
+ *
+ * Volá sa aj z obrazovky faktúr — človek tam po návrate signálu chodí prvý a
+ * čaká, že sa to pohne, kým sa pozerá.
+ */
+export async function posliFaktury(companyId: string): Promise<number> {
+  const { pocetCakajucichFaktur, odosliCakajuceFaktury } = await import("./faktury-fronta");
+  if (pocetCakajucichFaktur(companyId) === 0) return 0;
+  if (!(await isOnline())) return 0;
+
+  const { volajOperaciu } = await import("@/lib/mobile/server-most-volanie");
+  const { odoslane } = await odosliCakajuceFaktury(companyId, (vstup) =>
+    volajOperaciu("faktura-vystav", vstup as unknown as Record<string, unknown>),
+  );
+  return odoslane;
+}
+
+/** Koľko čísel dopredu si appka drží, keď je vydávanie s číslom zapnuté. */
+const ZASOBA_CISEL = 5;
+
+/**
+ * Doplní zásobu rezervovaných čísel.
+ *
+ * Robí sa to len vtedy, keď je vydávanie s číslom zapnuté — inak by sa čísla
+ * zbytočne držali a v rade by vznikali diery, ktoré nikto nepotrebuje.
+ */
+export async function doplnCisla(companyId: string): Promise<number> {
+  const { jeCislovanieDopredu, volnychCisel, ulozRezervacie } = await import("./faktury-fronta");
+  if (!jeCislovanieDopredu(companyId)) return 0;
+
+  const chyba = ZASOBA_CISEL - volnychCisel(companyId);
+  if (chyba <= 0) return 0;
+  if (!(await isOnline())) return 0;
+
+  const { volajOperaciu } = await import("@/lib/mobile/server-most-volanie");
+  const r = (await volajOperaciu("cisla-rezervuj", {
+    company_id: companyId,
+    count: chyba,
+    device: typeof navigator === "undefined" ? null : navigator.userAgent.slice(0, 120),
+  })) as { cisla?: unknown[] };
+  const cisla = (r?.cisla ?? []) as Parameters<typeof ulozRezervacie>[1];
+  ulozRezervacie(companyId, cisla);
+  return cisla.length;
 }
 
 export function initOfflineSync() {

@@ -24,6 +24,11 @@ import {
 } from "@/lib/faktero/expenses.functions";
 import { podkladyFakturyFn, poslednaFakturaFn } from "@/lib/faktero/mobil-faktura.functions";
 import { vystavFakturuFn } from "@/lib/faktero/faktura-vystavenie.functions";
+import {
+  rezervujCislaFn,
+  stavRezervaciiFn,
+  uvolniCislaFn,
+} from "@/lib/faktero/cisla-rezervacia.functions";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { lookupCompanyByIcoFn } from "@/lib/faktero/company-lookup.functions";
 import { presunDokladDoPrijatychFn } from "@/lib/faktero/doklad-presun.functions";
@@ -52,6 +57,9 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "faktura-podklady": podkladyFakturyFn,
   "faktura-posledna": poslednaFakturaFn,
   "faktura-vystav": vystavFakturuFn,
+  "cisla-rezervuj": rezervujCislaFn,
+  "cisla-uvolni": uvolniCislaFn,
+  "cisla-stav": stavRezervaciiFn,
   "cennik-kontext": getPriceContext,
   "firma-podla-ica": lookupCompanyByIcoFn,
   "doklad-presun": presunDokladDoPrijatychFn,

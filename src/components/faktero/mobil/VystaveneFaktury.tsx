@@ -1,12 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
-import { BellRing, Check, ExternalLink, FileText, Mail, Search, Share2 } from "lucide-react";
+import {
+  BellRing,
+  Check,
+  CloudOff,
+  ExternalLink,
+  FileText,
+  Mail,
+  Search,
+  Share2,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FAKTURY, sPoctom } from "@/lib/faktero/mnozne";
 import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import { datum } from "./PrijateDoklady";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
+import type { OdlozenaFaktura } from "@/lib/mobile/faktury-fronta";
 
 /**
  * Vystavené faktúry v telefóne.
@@ -77,10 +87,33 @@ export function VystaveneFaktury({
   const [otvorena, setOtvorena] = useState<Faktura | null>(null);
   /** Zoznam sa nepodarilo načítať a nebolo z čoho vziať starší. */
   const [nedostupne, setNedostupne] = useState(false);
+  /** Faktúry vystavené bez signálu, ktoré ešte len čakajú na odoslanie. */
+  const [cakajuce, setCakajuce] = useState<OdlozenaFaktura[]>([]);
 
   async function obnov() {
     const { ulozDoPamate, zPamate } = await import("@/lib/mobile/jazdy-lokalne");
     const kluc = `faktury:${firma.id}`;
+
+    // Najprv sa skúsi odoslať, čo leží v telefóne — človek sem po návrate
+    // signálu chodí prvý a čaká, že sa to pohne, kým sa pozerá.
+    try {
+      const { posliFaktury } = await import("@/lib/mobile/offline-queue");
+      const odoslane = await posliFaktury(firma.id);
+      if (odoslane > 0) {
+        toast.success(
+          odoslane === 1 ? "Odložená faktúra je vystavená." : `Vystavených faktúr: ${odoslane}.`,
+        );
+      }
+    } catch {
+      /* zoznam sa aj tak načíta; fronta to skúsi znova */
+    }
+    try {
+      const { cakajuceFaktury } = await import("@/lib/mobile/faktury-fronta");
+      setCakajuce(cakajuceFaktury(firma.id));
+    } catch {
+      setCakajuce([]);
+    }
+
     try {
       const zoznam = (await nacitaj({ data: { company_id: firma.id } })) as Faktura[];
       setFaktury(zoznam);
@@ -171,6 +204,31 @@ export function VystaveneFaktury({
           <div className="mt-1 text-[13px] text-muted-foreground">
             {sPoctom(dlznici.pocet, FAKTURY)}
           </div>
+        </div>
+      )}
+
+      {cakajuce.length > 0 && (
+        <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <div className="flex items-center gap-2 text-[14px] font-medium">
+            <CloudOff className="h-4 w-4 shrink-0" />
+            Čaká na odoslanie: {sPoctom(cakajuce.length, FAKTURY)}
+          </div>
+          <div className="mt-2 space-y-1.5">
+            {cakajuce.map((f) => (
+              <div key={f.id} className="flex items-baseline justify-between gap-2 text-[13px]">
+                <span className="min-w-0 truncate">
+                  {/* Bez rezervovaného čísla ho faktúra ešte nemá — vypísať
+                      hocijaké by znamenalo, že si ho niekto poznačí. */}
+                  {f.cislo ? `${f.cislo} · ` : ""}
+                  {f.odberatel}
+                </span>
+                <span className="shrink-0 tabular-nums">{suma(f.spolu, dlznici.mena)}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
+            Odošlú sa samy, len čo bude signál. Netreba na to myslieť.
+          </p>
         </div>
       )}
 

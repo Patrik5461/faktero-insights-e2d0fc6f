@@ -5,6 +5,7 @@ import {
   Building2,
   Check,
   CheckCircle2,
+  CloudOff,
   ExternalLink,
   Mail,
   Package,
@@ -22,6 +23,7 @@ import { SK_VAT_RATES, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
+import type { OdlozenaFaktura } from "@/lib/mobile/faktury-fronta";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 
 /**
@@ -68,7 +70,7 @@ type Riadok = {
   dovod?: string | null;
 };
 
-type Krok = "odberatel" | "polozky" | "suhrn" | "hotovo";
+type Krok = "odberatel" | "polozky" | "suhrn" | "hotovo" | "odlozena";
 
 /** „12,50" aj „12.50" — na telefóne sa píše desatinná čiarka. */
 function cislo(v: string): number {
@@ -153,6 +155,8 @@ export function NovaFaktura({
     currency: string;
     customer_email: string | null;
   } | null>(null);
+  /** Faktúra vystavená bez signálu — leží v telefóne a čaká na odoslanie. */
+  const [odlozena, setOdlozena] = useState<OdlozenaFaktura | null>(null);
 
   const platca = podklady?.firma.platcaDph ?? true;
   const mena = podklady?.firma.mena ?? "EUR";
@@ -250,39 +254,56 @@ export function NovaFaktura({
       toast.error("Splatnosť nemôže byť skôr ako vystavenie.");
       return;
     }
+    const vstup = {
+      company_id: firma.id,
+      customer_id: odberatel.id,
+      issue_date: vystavenie,
+      due_date: splatnost,
+      payment_method: uhrada,
+      currency: mena,
+      notes: poznamka.trim() || null,
+      items: pouzitelne.map((x) => ({
+        name: x.name.trim(),
+        quantity: cislo(x.quantity),
+        unit: x.unit || "ks",
+        unit_price: cislo(x.unit_price),
+        vat_rate: platca ? x.vat_rate : 0,
+        product_id: x.product_id,
+      })),
+    };
+
+    /**
+     * Bez signálu sa faktúra odloží do telefónu a odošle sa sama, keď sa
+     * pripojenie vráti. Keď má človek zapnuté vydávanie s číslom, dostane
+     * rovno aj číslo z rezervovaných — vtedy sa dá doklad odovzdať na mieste.
+     */
+    async function odloz() {
+      const { zaradFakturu } = await import("@/lib/mobile/faktury-fronta");
+      const z = zaradFakturu(firma.id, vstup, {
+        odberatel: odberatel!.name,
+        spolu: sucty.spolu,
+      });
+      setOdlozena(z);
+      setKrok("odlozena");
+    }
+
     setUkladam(true);
     try {
-      const r = (await vystav({
-        data: {
-          company_id: firma.id,
-          customer_id: odberatel.id,
-          issue_date: vystavenie,
-          due_date: splatnost,
-          payment_method: uhrada,
-          currency: mena,
-          notes: poznamka.trim() || null,
-          items: pouzitelne.map((x) => ({
-            name: x.name.trim(),
-            quantity: cislo(x.quantity),
-            unit: x.unit || "ks",
-            unit_price: cislo(x.unit_price),
-            vat_rate: platca ? x.vat_rate : 0,
-            product_id: x.product_id,
-          })),
-        },
-      })) as any;
+      const { isOnline } = await import("@/lib/mobile/offline-queue");
+      if (!(await isOnline())) {
+        await odloz();
+        return;
+      }
+      const r = (await vystav({ data: vstup })) as any;
       setHotova(r);
       setKrok("hotovo");
     } catch (e: any) {
-      // Faktúra sa bez signálu vystaviť nedá a je to zámer: číslo prideľuje
-      // server, aby dvaja ľudia nedostali to isté. Nech to appka povie rovno,
-      // namiesto všeobecného „nepodarilo sa".
+      // Signál mohol vypadnúť práve teraz — vtedy sa faktúra neztráca, ale
+      // odloží. Ozajstnú chybu servera (chýbajúci odberateľ, limit plánu)
+      // treba naopak povedať, nie ju zamiesť do fronty.
       const { isOnline } = await import("@/lib/mobile/offline-queue");
       if (!(await isOnline())) {
-        toast.error(
-          "Bez pripojenia sa faktúra vystaviť nedá — číslo jej prideľuje server. Rozpísané údaje tu ostanú.",
-          { duration: 7000 },
-        );
+        await odloz();
       } else {
         toast.error(friendlyError(e, "Faktúru sa nepodarilo vystaviť."));
       }
@@ -296,6 +317,10 @@ export function NovaFaktura({
 
   if (krok === "hotovo" && hotova) {
     return <Vystavena faktura={hotova} onHotovo={onHotovo} />;
+  }
+
+  if (krok === "odlozena" && odlozena) {
+    return <Odlozena faktura={odlozena} mena={mena} onHotovo={onHotovo} />;
   }
 
   if (krok === "odberatel") {
@@ -1061,6 +1086,75 @@ function KrokSuhrn({
 }
 
 /* ------------------------- Hotovo ------------------------- */
+
+/**
+ * Faktúra vystavená bez signálu.
+ *
+ * Dva veľmi rôzne konce, a človek musí na prvý pohľad vidieť, ktorý má:
+ * s rezervovaným číslom je doklad hotový a číslo sa dá odovzdať na mieste,
+ * bez neho je to zatiaľ len odložený zápis. Zamlčať ten rozdiel by znamenalo,
+ * že niekto nadiktuje zákazníkovi číslo, ktoré ešte neexistuje.
+ */
+function Odlozena({
+  faktura,
+  mena,
+  onHotovo,
+}: {
+  faktura: OdlozenaFaktura;
+  mena: string;
+  onHotovo: () => void;
+}) {
+  return (
+    <MobilObrazovka title="Bez pripojenia" variant="green">
+      <div className="space-y-4 pt-2 text-center">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-secondary">
+          <CloudOff className="h-8 w-8 text-muted-foreground" />
+        </div>
+
+        {faktura.cislo ? (
+          <>
+            <div>
+              <p className="text-[13px] text-muted-foreground">Faktúra má pridelené číslo</p>
+              <p className="mt-1 text-[30px] font-semibold leading-none tabular-nums">
+                {faktura.cislo}
+              </p>
+            </div>
+            <p className="text-[14px] leading-snug text-muted-foreground">
+              Číslo je vaše a nikomu inému sa nepridelí — pokojne ho odovzdajte zákazníkovi. PDF sa
+              vytvorí a faktúra odošle sama, len čo bude signál.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-[17px] font-semibold">Faktúra je odložená v telefóne</p>
+            <p className="text-[14px] leading-snug text-muted-foreground">
+              Vystaví sa aj s číslom sama, len čo bude signál. Číslo zatiaľ nemá, takže sa
+              zákazníkovi nedá nadiktovať — ak to potrebujete, zapnite si v nastaveniach vydávanie s
+              číslom dopredu.
+            </p>
+          </>
+        )}
+
+        <div className="rounded-2xl border border-border/70 bg-card p-4 text-left">
+          <div className="flex items-baseline justify-between">
+            <span className="text-[14px] text-muted-foreground">Odberateľ</span>
+            <span className="text-[15px] font-medium">{faktura.odberatel}</span>
+          </div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <span className="text-[14px] text-muted-foreground">Spolu</span>
+            <span className="text-[17px] font-semibold tabular-nums">
+              {suma(faktura.spolu, mena)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-6">
+        <HlavneTlacidlo onClick={onHotovo}>Hotovo</HlavneTlacidlo>
+      </div>
+    </MobilObrazovka>
+  );
+}
 
 function Vystavena({
   faktura,

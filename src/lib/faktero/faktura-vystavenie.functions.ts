@@ -39,6 +39,19 @@ const NovaFaktura = z.object({
   // nepatria — tie vznikajú až životom faktúry (odoslaná, uhradená).
   status: z.enum(["draft", "issued"]).default("issued"),
   items: z.array(Polozka).min(1).max(50),
+  /**
+   * Kľúč proti duplicite. Appka ho dáva odloženej faktúre — keď sa signál
+   * pretrhne po zápise, ale pred doručením odpovede, fronta pošle to isté
+   * znova a bez tohto by vznikli dve faktúry. Rovnaký mechanizmus ako vo
+   * verejnom API.
+   */
+  external_id: z.string().max(120).optional().nullable(),
+  /**
+   * Číslo, ktoré si appka vypýtala dopredu, aby vedela vystaviť aj bez signálu.
+   * Musí byť nepoužitá rezervácia tejto firmy — inak sa faktúra odmietne, nie
+   * očísluje nanovo: ľudia už to číslo majú na papieri.
+   */
+  reserved_number: z.string().max(60).optional().nullable(),
 });
 
 export const vystavFakturuFn = createServerFn({ method: "POST" })
@@ -51,6 +64,31 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
     // predplatnom je zrozumiteľnejšia než hláška z databázového triggera.
     const { assertCompanyActive } = await import("./active-check.server");
     await assertCompanyActive(data.company_id);
+
+    // Už raz vystavená? Fronta v telefóne posiela dovtedy, kým nedostane
+    // odpoveď — pri stratenej odpovedi by inak vznikla druhá faktúra.
+    if (data.external_id) {
+      const { data: uz } = await supabase
+        .from("invoices")
+        .select("id, invoice_number, total, currency, customer_id")
+        .eq("company_id", data.company_id)
+        .eq("external_id", data.external_id)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (uz) {
+        const { data: odb } = uz.customer_id
+          ? await supabase.from("customers").select("email").eq("id", uz.customer_id).maybeSingle()
+          : { data: null };
+        return {
+          id: uz.id,
+          invoice_number: uz.invoice_number,
+          total: Number(uz.total),
+          currency: uz.currency,
+          customer_email: odb?.email ?? null,
+          uz_existovala: true,
+        };
+      }
+    }
 
     const { data: odberatel } = await supabase
       .from("customers")
@@ -71,11 +109,31 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       })),
     );
     // Číslo dáva RPC v transakcii — počítať ho z počtu faktúr alebo si ho
-    // vymyslieť z času znamená duplicitu alebo dieru v rade.
-    const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
-      data.company_id,
-      data.issue_date,
-    );
+    // vymyslieť z času znamená duplicitu alebo dieru v rade. Výnimkou je
+    // faktúra vystavená bez signálu: tá si číslo priniesla z rezervácie.
+    let rezervacia: { id: string } | null = null;
+    let invoice_number: string;
+    let sequence_number: number;
+
+    if (data.reserved_number) {
+      const { data: r } = await supabase
+        .from("invoice_number_reservations")
+        .select("id, invoice_number, sequence_number, used_at, expires_at")
+        .eq("company_id", data.company_id)
+        .eq("invoice_number", data.reserved_number)
+        .maybeSingle();
+      if (!r) throw new Error(`Číslo ${data.reserved_number} nie je rezervované pre túto firmu.`);
+      if (r.used_at) {
+        throw new Error(`Číslo ${data.reserved_number} už bolo použité na inej faktúre.`);
+      }
+      rezervacia = { id: r.id };
+      invoice_number = r.invoice_number;
+      sequence_number = r.sequence_number;
+    } else {
+      const dalsie = await nextInvoiceNumberDetailed(data.company_id, data.issue_date);
+      invoice_number = dalsie.invoice_number;
+      sequence_number = dalsie.sequence_number;
+    }
 
     const { data: faktura, error: chyba } = await supabase
       .from("invoices")
@@ -108,6 +166,7 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
         vat_total: sucty.vat_total,
         total: sucty.total,
         notes: data.notes || null,
+        external_id: data.external_id || null,
       })
       .select("id, invoice_number, total, currency, status, customer_id, external_id")
       .single();
@@ -135,6 +194,15 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       // a v PDF je prázdna tabuľka.
       await supabase.from("invoices").delete().eq("id", faktura.id);
       throw new Error(chybaRiadkov.message);
+    }
+
+    // Rezervácia sa značí až tu. Keby sa značila pred zápisom a ten by zlyhal,
+    // číslo by ostalo spálené — a človek ho má napísané na papieri.
+    if (rezervacia) {
+      await supabase
+        .from("invoice_number_reservations")
+        .update({ used_at: new Date().toISOString(), invoice_id: faktura.id })
+        .eq("id", rezervacia.id);
     }
 
     try {

@@ -41,6 +41,7 @@ import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { odosliCakajuceJazdy } from "@/lib/mobile/auto-jazdy-sync";
 import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { StavPushu } from "@/components/faktero/mobil/StavPushu";
+import { CislaDopredu } from "@/components/faktero/mobil/CislaDopredu";
 import { datum } from "@/components/faktero/mobil/PrijateDoklady";
 
 /**
@@ -115,7 +116,7 @@ function Obrazovka({ children, onSpat }: { children: React.ReactNode; onSpat: ()
 }
 import { ZrusenieUctu } from "@/components/faktero/ZrusenieUctu";
 import { dniDoZrusenia, terminSlovom } from "@/lib/faktero/ucet-zrusenie";
-import { DNI, sPoctom } from "@/lib/faktero/mnozne";
+import { DNI, FAKTURY, sPoctom } from "@/lib/faktero/mnozne";
 import { MobilPanel } from "@/components/faktero/mobil/MobilPanel";
 import {
   isBiometricAvailable,
@@ -277,6 +278,25 @@ function ObsahApky() {
         // čím zapísať jazdu — teda presne tam, kde ju potrebuje najviac.
         void nacitajVozidlaDoPamate(vybrana.id);
 
+        // Faktúry vystavené bez signálu a zásoba čísel na ďalšie. Obe ticho —
+        // človek otvára appku kvôli niečomu inému.
+        void (async () => {
+          try {
+            const { posliFaktury, doplnCisla } = await import("@/lib/mobile/offline-queue");
+            const odoslane = await posliFaktury(vybrana.id);
+            if (odoslane > 0) {
+              toast.success(
+                odoslane === 1
+                  ? "Faktúra vystavená bez signálu je odoslaná."
+                  : `Odoslaných odložených faktúr: ${odoslane}.`,
+              );
+            }
+            await doplnCisla(vybrana.id);
+          } catch {
+            /* skúsi sa znova pri návrate signálu */
+          }
+        })();
+
         void odosliCakajuceJazdy(vybrana.id)
           .then(({ ulozene }) => {
             if (ulozene > 0) {
@@ -401,6 +421,30 @@ function ObsahApky() {
   }, []);
 
   async function odhlas() {
+    /*
+      Neodoslaná faktúra sa odhlásením stratí — obsahuje údaje zákazníka, takže
+      v telefóne po odhlásení ostať nesmie. Preto sa najprv skúsi doposlať a keď
+      to nejde, odhlásenie sa zastaví. Ticho ju zahodiť by znamenalo, že človek
+      príde o prácu, o ktorej si myslí, že je vybavená.
+    */
+    if (firma) {
+      try {
+        const { posliFaktury } = await import("@/lib/mobile/offline-queue");
+        await posliFaktury(firma.id);
+        const { pocetCakajucichFaktur } = await import("@/lib/mobile/faktury-fronta");
+        const zostava = pocetCakajucichFaktur(firma.id);
+        if (zostava > 0) {
+          toast.error(
+            `V telefóne čaká ${sPoctom(zostava, FAKTURY)} na odoslanie. Pripojte sa a otvorte Vystavené faktúry — potom sa dá odhlásiť.`,
+            { duration: 8000 },
+          );
+          return;
+        }
+      } catch {
+        /* keď sa to nedá ani zistiť, odhlásenie neblokujeme */
+      }
+    }
+
     // Odhlásenie odvoláva token na serveri, takže bez signálu zlyhá. Relácia v
     // telefóne sa musí zmazať tak či tak — na požičanom telefóne by inak ostala.
     try {
@@ -410,6 +454,9 @@ function ObsahApky() {
     }
     const { zabudniPrihlasenie } = await import("@/lib/mobile/trvale-ulozisko");
     zabudniPrihlasenie();
+    // Rezervované čísla aj nastavenie patria k účtu, nie k telefónu.
+    const { vycistiFaktury } = await import("@/lib/mobile/faktury-fronta");
+    vycistiFaktury();
     setFirma(null);
     setKrok("prihlasenie");
   }
@@ -507,6 +554,7 @@ function ObsahApky() {
       <MobilObrazovka title="Účet" subtitle={email ?? undefined} onBack={() => setKrok("domov")}>
         <div className="space-y-4">
           <StavPushu />
+          {firma && <CislaDopredu firma={firma} />}
           <button
             onClick={() => setDiagnostika(true)}
             className="w-full rounded-2xl border border-border/70 p-4 text-left text-sm"
