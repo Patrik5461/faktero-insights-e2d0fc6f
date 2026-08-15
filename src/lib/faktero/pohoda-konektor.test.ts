@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { XMLValidator } from "fast-xml-parser";
 import { buildPohodaDavkaXml, buildPohodaInvoiceXml } from "./export.server";
-import { dekodujOdpoved, predvolenyZaciatok, rozoberOdpoved } from "./pohoda-konektor.server";
+import {
+  dekodujOdpoved,
+  holeId,
+  predvolenyZaciatok,
+  rozoberOdpoved,
+} from "./pohoda-konektor.server";
 
 const firma = { ico: "12345678", default_currency: "EUR" };
 
@@ -130,6 +135,91 @@ describe("odkaz na PDF pri doklade", () => {
       odkazy: { [faktura.id]: `https://www.faktero.sk/${"x".repeat(260)}` },
     });
     expect(xml).not.toContain("attachments");
+  });
+});
+
+describe("adresár a sklad", () => {
+  const zakaznik = {
+    id: "77777777-7777-7777-7777-777777777777",
+    updated_at: "2026-03-10T08:30:00.000Z",
+    name: "ACME s.r.o.",
+    contact_person: "Ján Novák",
+    street: "Hlavná 1",
+    city: "Trnava",
+    zip: "91701",
+    country: "SK",
+    ico: "00151653",
+    dic: "2020304050",
+    ic_dph: "SK2020304050",
+    email: "f@acme.sk",
+    phone: "+421900123456",
+  };
+  const zasoba = {
+    id: "88888888-8888-8888-8888-888888888888",
+    updated_at: "2026-03-11T09:00:00.000Z",
+    nazov: "Skrutka M8",
+    sku: "SKR-M8",
+    barcode: "8591234567890",
+    unit: "ks",
+    vat_rate: 23,
+    purchase_price: 0.12,
+    sale_price: 0.29,
+    min_stock: 100,
+    description: "pozinkovaná",
+  };
+
+  const davka = buildPohodaDavkaXml({
+    company: firma,
+    invoices: [{ invoice: faktura, items: [polozka] }],
+    doklady: [],
+    pohyby: [],
+    zakaznici: [zakaznik],
+    zasoby: [zasoba],
+    nastavenia: { sklad: "TOVAR" },
+  });
+
+  it("kontakt aj karta sú v dávke a XML je platné", () => {
+    expect(XMLValidator.validate(davka)).toBe(true);
+    expect(davka).toContain("<typ:company>ACME s.r.o.</typ:company>");
+    expect(davka).toContain("<stk:name>Skrutka M8</stk:name>");
+    expect(davka).toContain("<stk:storage><typ:ids>TOVAR</typ:ids></stk:storage>");
+  });
+
+  it("číselníky idú pred faktúrami", () => {
+    // Aby odberateľ bol v adresári skôr, než sa naňho odvolá faktúra.
+    expect(davka.indexOf("adb:addressbook")).toBeLessThan(davka.indexOf("inv:invoice"));
+  });
+
+  it("zmenená karta prejde, nezaloží sa druhá", () => {
+    // Identifikátor nesie verziu, inak by ju kontrola duplicity v Pohode
+    // odmietla ako už prijatú; a `add update="true"` s filtrom na náš
+    // identifikátor povie Pohode, že má prepísať, nie pridať.
+    expect(davka).toContain(`<dat:dataPackItem id="${zakaznik.id}-20260310083000"`);
+    expect(davka).toContain('<adb:add add="true" update="true">');
+    expect(davka).toContain("<typ:exSystemName>Faktero</typ:exSystemName>");
+    expect(holeId(`${zakaznik.id}-20260310083000`)).toBe(zakaznik.id);
+    expect(holeId(faktura.id)).toBe(faktura.id);
+  });
+
+  it("stav skladu sa neposiela", () => {
+    // Schéma ho pripúšťa len pri exporte z Pohody — stav tam vzniká príjemkami
+    // a výdajkami, takže dosadené číslo by sa rozišlo s pohybmi.
+    expect(davka).not.toContain("stk:count");
+  });
+
+  it("bez členenia skladu sa karty neposielajú vôbec", () => {
+    // Schéma hovorí, že `storage` je pri vytvorení povinné — bez neho by celá
+    // dávka spadla na jednej karte.
+    const bezSkladu = buildPohodaDavkaXml({
+      company: firma,
+      invoices: [{ invoice: faktura, items: [polozka] }],
+      doklady: [],
+      pohyby: [],
+      zasoby: [zasoba],
+      nastavenia: {},
+    });
+    expect(bezSkladu).not.toContain("stk:stock");
+    expect(bezSkladu).toContain("inv:invoice");
   });
 });
 

@@ -947,12 +947,15 @@ export type Database = {
           pohoda_clenenie_dph_pdp: string | null
           pohoda_clenenie_dph_prijata: string | null
           pohoda_odkaz_na_pdf: boolean
+          pohoda_posielat_adresar: boolean
+          pohoda_posielat_sklad: boolean
           pohoda_predkontacia: string | null
           pohoda_predkontacia_dobropis: string | null
           pohoda_pokladna: string | null
           pohoda_predkontacia_prijata: string | null
           pohoda_predkontacia_pokladna: string | null
           pohoda_predkontacia_zaloha: string | null
+          pohoda_sklad: string | null
           preferred_accounting_system: Database["public"]["Enums"]["accounting_system"]
           reminder_days_1: number
           reminder_days_2: number
@@ -1003,12 +1006,15 @@ export type Database = {
           pohoda_clenenie_dph_pdp?: string | null
           pohoda_clenenie_dph_prijata?: string | null
           pohoda_odkaz_na_pdf?: boolean
+          pohoda_posielat_adresar?: boolean
+          pohoda_posielat_sklad?: boolean
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
           pohoda_pokladna?: string | null
           pohoda_predkontacia_prijata?: string | null
           pohoda_predkontacia_pokladna?: string | null
           pohoda_predkontacia_zaloha?: string | null
+          pohoda_sklad?: string | null
           preferred_accounting_system?: Database["public"]["Enums"]["accounting_system"]
           reminder_days_1?: number
           reminder_days_2?: number
@@ -1059,12 +1065,15 @@ export type Database = {
           pohoda_clenenie_dph_pdp?: string | null
           pohoda_clenenie_dph_prijata?: string | null
           pohoda_odkaz_na_pdf?: boolean
+          pohoda_posielat_adresar?: boolean
+          pohoda_posielat_sklad?: boolean
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
           pohoda_pokladna?: string | null
           pohoda_predkontacia_prijata?: string | null
           pohoda_predkontacia_pokladna?: string | null
           pohoda_predkontacia_zaloha?: string | null
+          pohoda_sklad?: string | null
           preferred_accounting_system?: Database["public"]["Enums"]["accounting_system"]
           reminder_days_1?: number
           reminder_days_2?: number
@@ -1336,6 +1345,7 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          pohoda_odoslane_at: string | null
           price_group_id: string | null
           street: string | null
           updated_at: string
@@ -1359,6 +1369,7 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          pohoda_odoslane_at?: string | null
           price_group_id?: string | null
           street?: string | null
           updated_at?: string
@@ -1382,6 +1393,7 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          pohoda_odoslane_at?: string | null
           price_group_id?: string | null
           street?: string | null
           updated_at?: string
@@ -4725,6 +4737,7 @@ export type Database = {
           name_en: string | null
           optimal_stock: number
           photo_url: string | null
+          pohoda_odoslane_at: string | null
           product_id: string | null
           purchase_price: number
           sale_price: number
@@ -4750,6 +4763,7 @@ export type Database = {
           name_en?: string | null
           optimal_stock?: number
           photo_url?: string | null
+          pohoda_odoslane_at?: string | null
           product_id?: string | null
           purchase_price?: number
           sale_price?: number
@@ -4775,6 +4789,7 @@ export type Database = {
           name_en?: string | null
           optimal_stock?: number
           photo_url?: string | null
+          pohoda_odoslane_at?: string | null
           product_id?: string | null
           purchase_price?: number
           sale_price?: number

@@ -53,8 +53,37 @@ export type Davka = {
   faktur: number;
   dokladov: number;
   pokladnicnych: number;
+  zakaznikov: number;
+  zasob: number;
   preskocene: string[];
 };
+
+/**
+ * Číselníky sa neposielajú podľa dátumu, ale podľa zmeny.
+ *
+ * Porovnať dva stĺpce sa cez PostgREST filtrom nedá, preto sa najprv natiahnu
+ * len tri malé stĺpce a porovnanie prebehne tu. Na tisíckach riadkov je to
+ * stále lacnejšie než sťahovať celé karty.
+ */
+async function cakajuceIds(
+  supabase: Klient,
+  tabulka: "customers" | "stock_items",
+  companyId: string,
+  stlpecZmazania: "deleted_at" | "archived_at",
+): Promise<string[]> {
+  const { data } = await supabase
+    .from(tabulka)
+    .select(`id, updated_at, pohoda_odoslane_at`)
+    .eq("company_id", companyId)
+    .is(stlpecZmazania, null);
+
+  return (data ?? [])
+    .filter(
+      (r: Riadok) => !r.pohoda_odoslane_at || String(r.updated_at) > String(r.pohoda_odoslane_at),
+    )
+    .slice(0, STROP_DAVKY)
+    .map((r: Riadok) => r.id as string);
+}
 
 function nahodnyToken(): string {
   const b = new Uint8Array(16);
@@ -130,7 +159,22 @@ export async function zostavDavku(
       .limit(STROP_DAVKY),
   ]);
 
-  const prazdna = !faktury.length && !doklady?.length && !pokladnica?.length;
+  // Číselníky — len keď si ich firma zapla. Sklad navyše potrebuje členenie,
+  // bez neho Pohoda kartu nezaloží, tak sa ani neposiela.
+  const zakaznici = company.pohoda_posielat_adresar
+    ? await nacitajCakajuce(supabase, "customers", vstup.companyId, "deleted_at")
+    : [];
+  const zasoby =
+    company.pohoda_posielat_sklad && company.pohoda_sklad
+      ? await nacitajZasoby(supabase, vstup.companyId)
+      : [];
+
+  const prazdna =
+    !faktury.length &&
+    !doklady?.length &&
+    !pokladnica?.length &&
+    !zakaznici.length &&
+    !zasoby.length;
   if (prazdna) {
     return {
       xml: "",
@@ -139,6 +183,8 @@ export async function zostavDavku(
       faktur: 0,
       dokladov: 0,
       pokladnicnych: 0,
+      zakaznikov: 0,
+      zasob: 0,
       preskocene: [],
     };
   }
@@ -164,6 +210,7 @@ export async function zostavDavku(
     clenenieDphPrijata: company.pohoda_clenenie_dph_prijata,
     pokladna: company.pohoda_pokladna,
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
+    sklad: company.pohoda_sklad,
   };
 
   const odkazy = company.pohoda_odkaz_na_pdf ? await odkazyNaPdf(supabase, faktury) : {};
@@ -181,6 +228,8 @@ export async function zostavDavku(
     })),
     doklady: doklady ?? [],
     pohyby: pokladnica ?? [],
+    zakaznici,
+    zasoby,
     nastavenia,
     odkazy,
   });
@@ -202,6 +251,8 @@ export async function zostavDavku(
       preskocene,
       dokladyIds: (doklady ?? []).map((d: Riadok) => d.id),
       pokladnicaIds: (pokladnica ?? []).map((p: Riadok) => p.id),
+      zakazniciIds: zakaznici.map((z: Riadok) => z.id),
+      zasobyIds: zasoby.map((s: Riadok) => s.id),
     });
   }
 
@@ -212,8 +263,47 @@ export async function zostavDavku(
     faktur: vyvezene.length,
     dokladov: doklady?.length ?? 0,
     pokladnicnych: pokladnica?.length ?? 0,
+    zakaznikov: zakaznici.length,
+    zasob: zasoby.length,
     preskocene,
   };
+}
+
+/** Kontakty, ktoré ešte neodišli alebo sa od odoslania zmenili. */
+async function nacitajCakajuce(
+  supabase: Klient,
+  tabulka: "customers",
+  companyId: string,
+  stlpecZmazania: "deleted_at",
+): Promise<Riadok[]> {
+  const ids = await cakajuceIds(supabase, tabulka, companyId, stlpecZmazania);
+  if (!ids.length) return [];
+  const { data } = await supabase.from(tabulka).select("*").in("id", ids);
+  return data ?? [];
+}
+
+/**
+ * Skladové karty aj s názvom.
+ *
+ * Názov, kód a jednotka nie sú na skladovej karte, ale na produkte — bez
+ * pripojenia by do Pohody odišla karta bez názvu a tú by odmietla.
+ */
+async function nacitajZasoby(supabase: Klient, companyId: string): Promise<Riadok[]> {
+  const ids = await cakajuceIds(supabase, "stock_items", companyId, "archived_at");
+  if (!ids.length) return [];
+
+  const { data } = await supabase
+    .from("stock_items")
+    .select("*, products(name, code, unit, vat_rate)")
+    .in("id", ids);
+
+  return (data ?? []).map((s: Riadok) => ({
+    ...s,
+    nazov: s.products?.name ?? null,
+    sku: s.sku || s.products?.code || null,
+    unit: s.unit || s.products?.unit || "ks",
+    vat_rate: s.vat_rate ?? s.products?.vat_rate ?? 0,
+  }));
 }
 
 /**
@@ -252,6 +342,8 @@ async function zapisOdovzdanie(
     preskocene: string[];
     dokladyIds: string[];
     pokladnicaIds: string[];
+    zakazniciIds: string[];
+    zasobyIds: string[];
   },
 ): Promise<string | null> {
   const { data: job, error } = await supabase
@@ -297,6 +389,12 @@ async function zapisOdovzdanie(
       .from("cash_entries")
       .update({ exported_at: teraz, export_job_id: job.id })
       .in("id", p.pokladnicaIds);
+  }
+  if (p.zakazniciIds.length) {
+    await supabase.from("customers").update({ pohoda_odoslane_at: teraz }).in("id", p.zakazniciIds);
+  }
+  if (p.zasobyIds.length) {
+    await supabase.from("stock_items").update({ pohoda_odoslane_at: teraz }).in("id", p.zasobyIds);
   }
   return job.id as string;
 }
@@ -387,6 +485,19 @@ export function rozoberOdpoved(xml: string): VysledokDokladu[] {
   return vysledky;
 }
 
+/**
+ * Identifikátor bez verzie.
+ *
+ * Doklady posielame pod holým `id`, číselníky pod `id-verzia` (aby zmenená
+ * karta prešla kontrolou duplicity). Späť sa mapujú obidva rovnako.
+ */
+export function holeId(id: string): string {
+  const m = String(id).match(
+    /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:-\d+)?$/i,
+  );
+  return m ? m[1] : String(id);
+}
+
 export type SpracovanieOdpovede = {
   spracovanych: number;
   zalozenych: number;
@@ -415,11 +526,15 @@ export async function spracujOdpoved(
     if (chyba) chyby.push(`${v.cislo ?? v.id}: ${v.poznamka ?? "neznáma chyba"}`);
     else zalozenych++;
 
+    // Číselníky nesú v identifikátore aj verziu záznamu — späť sa mapujú na
+    // holé id.
+    const id = holeId(v.id);
+
     const { data: log } = await supabase
       .from("export_logs")
       .select("id")
       .eq("company_id", vstup.companyId)
-      .eq("invoice_id", v.id)
+      .eq("invoice_id", id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -439,12 +554,12 @@ export async function spracujOdpoved(
       continue;
     }
 
-    // Nie je to faktúra — skús prijatý doklad a potom pokladňu.
+    // Nie je to faktúra — skús prijatý doklad, pokladňu a nakoniec číselníky.
     const { data: doklad } = await supabase
       .from("expense_documents")
       .select("id")
       .eq("company_id", vstup.companyId)
-      .eq("id", v.id)
+      .eq("id", id)
       .maybeSingle();
     if (doklad) {
       await supabase
@@ -453,15 +568,39 @@ export async function spracujOdpoved(
           pohoda_cislo: v.cislo,
           ...(chyba ? { exported_at: null, status: "new" } : {}),
         })
-        .eq("id", v.id);
+        .eq("id", id);
       continue;
     }
 
-    await supabase
+    const { data: pohyb } = await supabase
       .from("cash_entries")
-      .update({ pohoda_cislo: v.cislo, ...(chyba ? { exported_at: null } : {}) })
+      .select("id")
       .eq("company_id", vstup.companyId)
-      .eq("id", v.id);
+      .eq("id", id)
+      .maybeSingle();
+    if (pohyb) {
+      await supabase
+        .from("cash_entries")
+        .update({ pohoda_cislo: v.cislo, ...(chyba ? { exported_at: null } : {}) })
+        .eq("id", id);
+      continue;
+    }
+
+    // Adresár a sklad: odmietnutá karta sa vráti do fronty tým, že sa zabudne,
+    // kedy odišla. Číslo si Pohoda pri číselníkoch neprideľuje.
+    if (!chyba) continue;
+    for (const tabulka of ["customers", "stock_items"] as const) {
+      const { data: r } = await supabase
+        .from(tabulka)
+        .select("id")
+        .eq("company_id", vstup.companyId)
+        .eq("id", id)
+        .maybeSingle();
+      if (r) {
+        await supabase.from(tabulka).update({ pohoda_odoslane_at: null }).eq("id", id);
+        break;
+      }
+    }
   }
 
   return {

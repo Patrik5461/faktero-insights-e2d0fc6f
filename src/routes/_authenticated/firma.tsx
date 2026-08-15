@@ -207,6 +207,42 @@ function CompanyPage() {
                 value={c.pohoda_predkontacia_pokladna ?? ""}
                 onChange={f("pohoda_predkontacia_pokladna")}
               />
+              <In
+                label="Členenie skladu v Pohode"
+                value={c.pohoda_sklad ?? ""}
+                onChange={f("pohoda_sklad")}
+                placeholder="napr. TOVAR"
+              />
+              <label className="flex items-start gap-3 rounded-md border border-border p-3">
+                <input
+                  type="checkbox"
+                  checked={!!c.pohoda_posielat_adresar}
+                  onChange={(e) => setC({ ...c, pohoda_posielat_adresar: e.target.checked })}
+                  className="mt-0.5 h-4 w-4"
+                />
+                <span className="text-sm">
+                  Posielať adresár
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    Odberatelia idú do Pohody aj vtedy, keď im tento mesiac nič nefakturujeme.
+                    Zmenený kontakt sa prepíše, nezaloží sa druhý.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 rounded-md border border-border p-3">
+                <input
+                  type="checkbox"
+                  checked={!!c.pohoda_posielat_sklad}
+                  onChange={(e) => setC({ ...c, pohoda_posielat_sklad: e.target.checked })}
+                  className="mt-0.5 h-4 w-4"
+                />
+                <span className="text-sm">
+                  Posielať skladové karty
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    Posiela sa <strong>číselník zásob</strong>, nie stav skladu — ten v Pohode
+                    vzniká príjemkami a výdajkami. Potrebuje vyplnené členenie skladu.
+                  </span>
+                </span>
+              </label>
               <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
                 <input
                   type="checkbox"

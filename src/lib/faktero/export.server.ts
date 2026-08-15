@@ -130,6 +130,8 @@ export type PohodaNastavenia = {
   pokladna?: string | null;
   /** Predkontácia pre pokladničný doklad. */
   predkontaciaPokladna?: string | null;
+  /** Členenie skladu v Pohode (`storage`); bez neho sa skladová karta nezaloží. */
+  sklad?: string | null;
 };
 
 function domacaMenaFirmy(company: CompanyRow): string {
@@ -150,6 +152,9 @@ const ID_BALIKA = "FAKTERO";
 const SCHEMY: Record<string, string> = {
   inv: "invoice.xsd",
   vch: "voucher.xsd",
+  adb: "addressbook.xsd",
+  stk: "stock.xsd",
+  ftr: "filter.xsd",
 };
 
 /** Obálka `dataPack` okolo hotových položiek. */
@@ -618,6 +623,177 @@ export function polozkyDokladov(opts: {
 }
 
 /**
+ * Vlož alebo aktualizuj podľa nášho identifikátora.
+ *
+ * Pohoda si popri svojom zázname drží odkaz do cudzej databázy (`extId`), takže
+ * pri druhom poslaní tej istej karty neurobí druhú, ale prepíše prvú. Bez toho
+ * by sa každá zmena kontaktu prejavila ako nový riadok v adresári.
+ *
+ * `add="true" update="true"`: keď sa záznam nenájde, vloží sa; keď sa nájde,
+ * aktualizuje sa.
+ */
+function vlozAleboUprav(predpona: string, id: unknown, odsadenie: string): string {
+  return `
+${odsadenie}<${predpona}:actionType>
+${odsadenie}  <${predpona}:add add="true" update="true">
+${odsadenie}    <ftr:filter>
+${odsadenie}      <ftr:extId>
+${odsadenie}        <typ:ids>${esc(id)}</typ:ids>
+${odsadenie}        <typ:exSystemName>Faktero</typ:exSystemName>
+${odsadenie}      </ftr:extId>
+${odsadenie}    </ftr:filter>
+${odsadenie}  </${predpona}:add>
+${odsadenie}</${predpona}:actionType>`;
+}
+
+/**
+ * Odkaz na náš záznam. Predpona nie je vždy `typ:` — element je vyhlásený tam,
+ * kde sa používa (v adresári v `type.xsd`, na skladovej karte v `stock.xsd`),
+ * a schéma je na to citlivá, hoci obsah je rovnaký.
+ */
+function extId(predpona: string, id: unknown, odsadenie: string): string {
+  return `
+${odsadenie}<${predpona}:extId>
+${odsadenie}  <typ:ids>${esc(id)}</typ:ids>
+${odsadenie}  <typ:exSystemName>Faktero</typ:exSystemName>
+${odsadenie}</${predpona}:extId>`;
+}
+
+/**
+ * Číselník sa neposiela podľa dátumu, ale podľa zmeny — a keď sa zmení, musí
+ * prejsť znova. Preto je v identifikátore položky aj verzia záznamu: inak by ho
+ * kontrola duplicity v Pohode odmietla ako ten istý, čo už raz prišiel.
+ */
+function idSVerziou(id: unknown, verzia: unknown): string {
+  const v = String(verzia ?? "")
+    .replace(/\D/g, "")
+    .slice(0, 14);
+  return `${String(id ?? "")}${v ? `-${v}` : ""}`.slice(0, 64);
+}
+
+/**
+ * Adresár (`addressbook`) — odberatelia.
+ *
+ * Pohoda si adresu z faktúry zakladá aj sama, ale len tú, ktorá na faktúre bola.
+ * Tu ide celá karta vrátane kontaktu, telefónu a e-mailu, takže účtovníčka má
+ * odberateľa aj vtedy, keď mu tento mesiac nič nefakturujeme.
+ */
+export function polozkyAdresara(opts: { zakaznici: DokladRow[] }): string {
+  return opts.zakaznici
+    .map((z) => {
+      const adresa = [
+        el("typ:company", skrat(z?.name, 96), "              "),
+        el("typ:name", skrat(z?.contact_person, 64), "              "),
+        el("typ:street", skrat(z?.street, 64), "              "),
+        el("typ:city", skrat(z?.city, 45), "              "),
+        el("typ:zip", skrat(z?.zip, 15), "              "),
+        z?.country
+          ? `\n              <typ:country><typ:ids>${esc(z.country)}</typ:ids></typ:country>`
+          : "",
+        el("typ:ico", skrat(z?.ico, 15), "              "),
+        el("typ:dic", skrat(z?.dic, 18), "              "),
+        el("typ:icDph", skrat(z?.ic_dph, 18), "              "),
+      ].join("");
+
+      return `
+  <dat:dataPackItem id="${esc(idSVerziou(z?.id, z?.updated_at))}" version="2.0">
+    <adb:addressbook version="2.0">${vlozAleboUprav("adb", z?.id, "      ")}
+      <adb:addressbookHeader>
+        <adb:identity>${extId("typ", z?.id, "          ")}
+          <typ:address>${adresa}
+          </typ:address>
+        </adb:identity>${el("adb:phone", skrat(z?.phone, 40), "        ")}${el(
+          "adb:email",
+          skrat(z?.email, 98),
+          "        ",
+        )}
+      </adb:addressbookHeader>
+    </adb:addressbook>
+  </dat:dataPackItem>`;
+    })
+    .join("");
+}
+
+/**
+ * Skladové karty (`stock`) — číselník zásob, **nie stav skladu**.
+ *
+ * Množstvo sa zámerne neposiela: schéma ho pripúšťa len pri exporte z Pohody
+ * („Stav zásoby (jen pro export)") a je to tak správne — stav v Pohode vzniká
+ * príjemkami a výdajkami, takže dosadené číslo by sa rozišlo s pohybmi a
+ * účtovníčka by mala sklad, ktorý nesedí na doklady.
+ *
+ * Bez členenia skladu (`storage`) sa karta založiť nedá — schéma to hovorí
+ * priamo („Tento element je vyžadován při vytvoření dokladu“), preto sa bez
+ * vyplnenej skratky karty neposielajú vôbec.
+ */
+export function polozkySkladu(opts: {
+  zasoby: DokladRow[];
+  nastavenia?: PohodaNastavenia;
+}): string {
+  const sklad = opts.nastavenia?.sklad;
+  if (!sklad) return "";
+
+  return opts.zasoby
+    .map((s) => {
+      const nazov = skrat(s?.nazov ?? s?.name, 90);
+      if (!nazov) return "";
+      const tab = sadzbyKuDnu(new Date().toISOString().slice(0, 10));
+      const sadzba = kodSadzby(Number(s?.vat_rate ?? 0), tab);
+
+      return `
+  <dat:dataPackItem id="${esc(idSVerziou(s?.id, s?.updated_at))}" version="2.0">
+    <stk:stock version="2.0">${vlozAleboUprav("stk", s?.id, "      ")}
+      <stk:stockHeader>${extId("stk", s?.id, "        ")}
+        <stk:stockType>card</stk:stockType>${el("stk:code", skrat(s?.sku, 20), "        ")}${el(
+          "stk:EAN",
+          skrat(s?.barcode, 20),
+          "        ",
+        )}
+        <stk:purchasingRateVAT>${sadzba}</stk:purchasingRateVAT>
+        <stk:sellingRateVAT>${sadzba}</stk:sellingRateVAT>
+        <stk:name>${esc(nazov)}</stk:name>${el("stk:unit", skrat(s?.unit ?? "ks", 10), "        ")}
+        <stk:storage><typ:ids>${esc(sklad)}</typ:ids></stk:storage>
+        <stk:purchasingPrice>${fixed2(s?.purchase_price)}</stk:purchasingPrice>
+        <stk:sellingPrice payVAT="false">${fixed2(s?.sale_price)}</stk:sellingPrice>${
+          Number(s?.min_stock ?? 0)
+            ? `\n        <stk:limitMin>${Number(s.min_stock)}</stk:limitMin>`
+            : ""
+        }${el("stk:description", skrat(s?.description, 240), "        ")}
+      </stk:stockHeader>
+    </stk:stock>
+  </dat:dataPackItem>`;
+    })
+    .join("");
+}
+
+/** Adresár samostatne — na ručný import bez konektora. */
+export function buildPohodaAddressbookXml(opts: {
+  company: CompanyRow;
+  zakaznici: DokladRow[];
+}): string {
+  return obalka({
+    ico: opts.company?.ico,
+    note: "Adresár z Faktero",
+    prefixy: ["adb", "ftr"],
+    entries: polozkyAdresara(opts),
+  });
+}
+
+/** Skladové karty samostatne. */
+export function buildPohodaStockXml(opts: {
+  company: CompanyRow;
+  zasoby: DokladRow[];
+  nastavenia?: PohodaNastavenia;
+}): string {
+  return obalka({
+    ico: opts.company?.ico,
+    note: "Skladové karty z Faktero",
+    prefixy: ["stk", "ftr"],
+    entries: polozkySkladu(opts),
+  });
+}
+
+/**
  * Jedna dávka pre konektor — faktúry, prijaté doklady aj pokladňa naraz.
  *
  * Pohoda zvládne v jednom balíku viac agend, takže konektor sťahuje jeden súbor
@@ -628,14 +804,24 @@ export function buildPohodaDavkaXml(opts: {
   invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
   doklady: DokladRow[];
   pohyby: DokladRow[];
+  zakaznici?: DokladRow[];
+  zasoby?: DokladRow[];
   nastavenia?: PohodaNastavenia;
   odkazy?: Record<string, string>;
 }): string {
-  const entries = [polozkyFaktur(opts), polozkyDokladov(opts), polozkyPokladne(opts)].join("");
+  // Číselníky idú prvé, nech je odberateľ v adresári skôr, než sa naňho
+  // odvolá faktúra.
+  const entries = [
+    opts.zakaznici?.length ? polozkyAdresara({ zakaznici: opts.zakaznici }) : "",
+    opts.zasoby?.length ? polozkySkladu({ zasoby: opts.zasoby, nastavenia: opts.nastavenia }) : "",
+    polozkyFaktur(opts),
+    polozkyDokladov(opts),
+    polozkyPokladne(opts),
+  ].join("");
   return obalka({
     ico: opts.company?.ico,
     note: "Dávka z Faktero",
-    prefixy: ["inv", "vch"],
+    prefixy: ["inv", "vch", "adb", "stk", "ftr"],
     entries,
   });
 }
