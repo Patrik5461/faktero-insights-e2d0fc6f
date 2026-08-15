@@ -147,6 +147,42 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "bez-signalu",
+    title: "Fakturovanie v mobile bez signálu",
+    body: (
+      <>
+        <p>
+          V mobilnej aplikácii sa faktúra dá vystaviť aj bez internetu. Sú na to dve cesty a líšia
+          sa v tom, čo zákazník dostane priamo na mieste.
+        </p>
+        <p>
+          <strong>Odložená faktúra</strong> je predvolená a netreba nič nastavovať. Faktúru vypíšete
+          bez signálu, uloží sa do telefónu a odošle sa sama, len čo je pripojenie — pri otvorení
+          aplikácie alebo obrazovky <em>Vystavené faktúry</em>. Číslo jej pridelí Faktero až vtedy,
+          takže sa zákazníkovi na mieste nedá nadiktovať.
+        </p>
+        <p>
+          <strong>Vydávanie s číslom</strong> zapnete v aplikácii v <strong>Účte</strong>. Telefón
+          si v signáli vypýta päť čísel dopredu a bez signálu z nich vydáva — faktúra má číslo hneď
+          a dá sa odovzdať alebo nadiktovať. Hodí sa remeselníkovi po oprave alebo predaju z auta.
+        </p>
+        <p>
+          Rezervované číslo je vaše a nikomu inému sa nepridelí. Ak ho nepoužijete, po dvoch
+          týždňoch prepadne a vráti sa do radu — Faktero prideľuje najnižšie voľné číslo, takže
+          dieru samo zaplní. Trvalé diery v číselnom rade tým nevznikajú.
+        </p>
+        <p>
+          <strong>Pozor:</strong> PDF vytvára server, takže aj pri vydávaní s číslom príde až so
+          signálom. Na mieste odovzdáte číslo a sumu, nie hotový doklad.
+        </p>
+        <p>
+          Aby to fungovalo, musí mať telefón uložených odberateľov — aplikácia si ich ukladá pri
+          každom spustení s internetom. Po inštalácii ju teda raz otvorte v dosahu signálu.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

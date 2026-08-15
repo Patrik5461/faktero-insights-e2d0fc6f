@@ -28,10 +28,11 @@ nedá odoslať teraz, odložiť do fronty.
 
 ## Čo ostáva
 
-4. **Offline kniha jázd** — vozidlá a jazdy do IndexedDB, zápisy cez frontu,
-   zosúladenie po pripojení.
-5. **Zvyšok agend offline** — doklady frontu majú; faktúry offline len na čítanie.
 6. **Skúška na zariadení a odoslanie do App Store.**
+
+Kniha jázd aj vystavovanie faktúr bez signálu sú hotové — vozidlá aj odberatelia
+sa ukladajú do telefónu hneď pri štarte, nie až pri otvorení obrazovky. Bez toho
+mal človek v teréne prázdny zoznam presne tam, kde ho potreboval najviac.
 
 ## Ako to bolo predtým
 
@@ -66,10 +67,38 @@ zvládne všetko hneď, ako bude balíček stáť.
    čítanie (číslovanie potrebuje databázu).
 6. **Skúška na zariadení a odoslanie.**
 
+## Vystavenie faktúry bez signálu
+
+Dlho tu stálo, že to nepôjde nikdy: číslo musí prideliť databáza, inak vzniknú
+dve faktúry s rovnakým číslom. Prvá časť tvrdenia platí, druhá sa dá obísť.
+
+**Odložená faktúra (predvolené).** Údaje sa uložia do telefónu
+(`src/lib/mobile/faktury-fronta.ts`) a faktúra sa vystaví sama, len čo je
+signál — pri štarte appky, pri otvorení Vystavených faktúr a pri návrate
+pripojenia. Číslo prideľuje server ako vždy. Zákazník na mieste nedostane nič.
+
+**Vydávanie s číslom (voliteľné, v Účte).** Appka si v signáli vypýta päť čísel
+dopredu (`faktero_reserve_invoice_numbers`) a bez signálu z nich vydáva. Číslo
+sa dá odovzdať na mieste. Rezervácia je pre `faktero_next_invoice_number`
+rovnako záväzná ako vystavená faktúra, takže to isté číslo nedostane nikto iný.
+
+Nepoužitá rezervácia po dvoch týždňoch prepadne a číslo sa vráti do rady —
+generátor berie **najnižšie voľné** číslo, takže dieru sám zaplní. Trvalé diery
+v číselnom rade z toho teda nevznikajú. Pri vypnutí sa nepoužité čísla vracajú
+hneď (`faktero_release_invoice_numbers`).
+
+Proti duplicite pri stratenej odpovedi ide faktúra s `external_id` — rovnaký
+mechanizmus ako vo verejnom API. Rezervácia sa značí za použitú až po zapísaní
+položiek: inak by zlyhanie spálilo číslo, ktoré má človek na papieri.
+
+**Overené naživo** (demo firma, produkčný server): číslo prisľúbené offline
+sedelo s číslom vystavenej faktúry; opakované odoslanie tej istej faktúry
+druhú nevyrobilo; odložená faktúra bez rezervácie dostala číslo od servera.
+
 ## Čo offline nebude nikdy
 
-- Vystavenie faktúry s číslom z radu — číslovanie musí prideliť databáza, inak
-  vzniknú dve faktúry s rovnakým číslom.
 - Čítanie dokladu cez AI a sťahovanie z Finančnej správy — obe sú na serveri.
   Doklad sa odloží a prečíta po pripojení, tak ako dnes.
+- PDF faktúry — vytvára ho server. Aj pri vydávaní s číslom platí, že číslo je
+  na mieste hotové, ale PDF príde až so signálom.
 - Bankové zostatky a synchronizácia s bankou.
