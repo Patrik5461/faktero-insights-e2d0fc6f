@@ -265,11 +265,17 @@ export function Jazda({
 
     try {
       const vozidlo = vozidla?.find((v) => v.id === vozidloId);
+      // Bez siete dotaz **vyhodí** a zhodil by celé uloženie — jazda by sa
+      // nedostala ani do fronty, hoci práve to je zmysel offline záznamu.
       const { data: plne } = await supabase
         .from("vehicles")
         .select("consumption_l_100km")
         .eq("id", vozidloId)
-        .maybeSingle();
+        .maybeSingle()
+        .then(
+          (r) => r,
+          () => ({ data: null }),
+        );
       const spotreba = plne?.consumption_l_100km
         ? (vysledok.distance_km * Number(plne.consumption_l_100km)) / 100
         : null;
@@ -695,6 +701,8 @@ function NoveVozidlo({
     if (!nazov.trim()) return toast.error("Zadajte názov vozidla.");
     setUkladam(true);
     const cislo = Number(spotreba.replace(",", "."));
+    // Bez siete zápis vyhodí; nezachytené by to nechalo tlačidlo navždy v
+    // stave „ukladám" a človek by nevedel, čo sa deje.
     const { data, error } = await supabase
       .from("vehicles")
       .insert({
@@ -705,7 +713,11 @@ function NoveVozidlo({
         active: true,
       })
       .select("id")
-      .single();
+      .single()
+      .then(
+        (r) => r,
+        (e) => ({ data: null, error: e as any }),
+      );
     setUkladam(false);
     if (error || !data) {
       // Vozidlo smie zakladať len správca firmy — bežnému členovi to odmietne RLS.

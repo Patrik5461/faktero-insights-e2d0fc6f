@@ -509,6 +509,8 @@ function NovyOdberatel({
   async function uloz() {
     if (!f.name.trim()) return toast.error("Zadajte názov odberateľa.");
     setUkladam(true);
+    // Bez siete zápis vyhodí; nezachytené by to nechalo tlačidlo navždy
+    // v stave „ukladám".
     const { data, error } = await supabase
       .from("customers")
       .insert({
@@ -526,7 +528,11 @@ function NovyOdberatel({
       .select(
         "id, name, email, ico, dic, ic_dph, street, city, zip, country, discount_percent, price_group_id",
       )
-      .single();
+      .single()
+      .then(
+        (r) => r,
+        (e) => ({ data: null, error: e as any }),
+      );
     setUkladam(false);
     if (error || !data)
       return toast.error(friendlyError(error, "Odberateľa sa nepodarilo uložiť."));
