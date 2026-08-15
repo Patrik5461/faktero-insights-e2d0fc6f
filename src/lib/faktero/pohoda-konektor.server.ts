@@ -70,7 +70,10 @@ export type Davka = {
  * poznáme z odpovede po importe (`export_logs.pohoda_cislo`); kým sa doklad
  * nepotvrdí, väzba sa neposiela a doklad ide bez nej.
  */
-async function cislaVPohode(supabase: Klient, companyId: string): Promise<Map<string, string>> {
+export async function cislaVPohode(
+  supabase: Klient,
+  companyId: string,
+): Promise<Map<string, string>> {
   const { data } = await supabase
     .from("export_logs")
     .select("invoice_id, pohoda_cislo, potvrdene_at")
@@ -361,7 +364,7 @@ export async function zostavDavku(
  * čísla, takže storno vieme poslať až po tom, ako sa import pôvodnej faktúry
  * potvrdil. Pokiaľ sa nepotvrdil, faktúra sa jednoducho čaká.
  */
-async function nacitajStorna(
+export async function nacitajStorna(
   supabase: Klient,
   companyId: string,
   cisla: Map<string, string>,
@@ -396,7 +399,7 @@ async function nacitajStorna(
  * vynechá a doklad odíde tak ako doteraz — samostatne. Radšej doklad bez väzby
  * než doklad, ktorý sa neimportuje vôbec.
  */
-async function nacitajVazby(
+export async function nacitajVazby(
   supabase: Klient,
   companyId: string,
   faktury: Riadok[],
@@ -474,7 +477,7 @@ function sadzbaZalohy(zalohova: Riadok | null | undefined): number | null {
  * neexistovala, Pohoda by doklad odmietla a pohyb by sa zbytočne vracal do
  * fronty. Radšej počká deň.
  */
-async function nacitajPohyby(
+export async function nacitajPohyby(
   supabase: Klient,
   companyId: string,
   zasobyVDavke: Riadok[],
@@ -525,7 +528,7 @@ async function nacitajPohyby(
  * Zákazka bez evidenčného čísla sa dá do Pohody založiť, ale faktúru ňou
  * označiť nevieme — odkaz z faktúry je práve na to číslo.
  */
-async function nacitajZakazky(
+export async function nacitajZakazky(
   supabase: Klient,
   companyId: string,
   faktury: Riadok[],
@@ -564,7 +567,7 @@ async function nacitajZakazky(
 }
 
 /** Kontakty, ktoré ešte neodišli alebo sa od odoslania zmenili. */
-async function nacitajZakaznikov(supabase: Klient, companyId: string): Promise<Riadok[]> {
+export async function nacitajZakaznikov(supabase: Klient, companyId: string): Promise<Riadok[]> {
   const cakaju = await cakajuce(supabase, "customers", "adresar", companyId, "deleted_at");
   if (!cakaju.length) return [];
   const { data } = await supabase
@@ -583,7 +586,7 @@ async function nacitajZakaznikov(supabase: Klient, companyId: string): Promise<R
  * Názov, kód a jednotka nie sú na skladovej karte, ale na produkte — bez
  * pripojenia by do Pohody odišla karta bez názvu a tú by odmietla.
  */
-async function nacitajZasoby(supabase: Klient, companyId: string): Promise<Riadok[]> {
+export async function nacitajZasoby(supabase: Klient, companyId: string): Promise<Riadok[]> {
   const cakaju = await cakajuce(supabase, "stock_items", "sklad", companyId, "archived_at");
   if (!cakaju.length) return [];
 

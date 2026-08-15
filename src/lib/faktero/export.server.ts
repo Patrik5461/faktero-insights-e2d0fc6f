@@ -1068,6 +1068,19 @@ export function buildPohodaMovementsXml(opts: {
   });
 }
 
+/** Storná samostatne — na ručný import bez konektora. */
+export function buildPohodaStornaXml(opts: {
+  company: CompanyRow;
+  storna: { id: string; cislo: string }[];
+}): string {
+  return obalka({
+    ico: opts.company?.ico,
+    note: "Storná z Faktero",
+    prefixy: ["inv"],
+    entries: polozkyStorna(opts),
+  });
+}
+
 /** Zákazky samostatne. */
 export function buildPohodaContractsXml(opts: {
   company: CompanyRow;
@@ -1165,6 +1178,10 @@ export interface ExportStrategy {
     invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
     /** Kódy z Pohody účtovníka; ostatné formáty ich ignorujú. */
     nastavenia?: PohodaNastavenia;
+    /** Väzby na doklady, ktoré v Pohode už sú; ostatné formáty ich ignorujú. */
+    zalohy?: Record<string, OdpocetZalohy>;
+    opravovane?: Record<string, string>;
+    zakazky?: Record<string, string>;
   }): {
     content: string;
     fileName: string;
@@ -1180,7 +1197,7 @@ export const POHODA_XML: ExportStrategy = {
   label: "Pohoda XML",
   encoding: "utf-8",
   mime: "application/xml",
-  build({ company, invoices, nastavenia }) {
+  build({ company, invoices, nastavenia, zalohy, opravovane, zakazky }) {
     const preskocene = invoices
       .map(({ invoice }) => pohodaPrekazka(invoice, company))
       .filter((d): d is string => !!d);
@@ -1189,7 +1206,14 @@ export const POHODA_XML: ExportStrategy = {
     if (preskocene.length === invoices.length) {
       throw new Error(`Do Pohody sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
     }
-    const content = buildPohodaInvoiceXml({ company, invoices, nastavenia });
+    const content = buildPohodaInvoiceXml({
+      company,
+      invoices,
+      nastavenia,
+      zalohy,
+      opravovane,
+      zakazky,
+    });
     const stamp = new Date().toISOString().slice(0, 10);
     const fileName = `pohoda-faktury-${stamp}.xml`;
     return { content, fileName, mime: "application/xml", preskocene };

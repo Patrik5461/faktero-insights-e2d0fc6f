@@ -97,6 +97,9 @@ export type Balik = {
   vynechanePrilohy: number;
   fakturyIds: string[];
   dokladyIds: string[];
+  /** Číselníky, ktoré v balíku išli — zapisujú sa do `pohoda_odoslane`. */
+  ciselniky: { agenda: string; id: string; verzia: string }[];
+  pocetCiselnikov: number;
   xmlFaktur: string;
   poslednyDatum: string;
   nazovObdobia: string;
@@ -187,10 +190,52 @@ export async function zostavBalik(
     clenenieDphPrijata: company.pohoda_clenenie_dph_prijata,
     pokladna: company.pohoda_pokladna,
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
+    sklad: company.pohoda_sklad,
   };
 
-  const { EXPORT_STRATEGIES, buildPohodaCashXml, buildPohodaExpensesXml } =
-    await import("./export.server");
+  const {
+    EXPORT_STRATEGIES,
+    buildPohodaCashXml,
+    buildPohodaExpensesXml,
+    buildPohodaAddressbookXml,
+    buildPohodaStockXml,
+    buildPohodaContractsXml,
+    buildPohodaMovementsXml,
+    buildPohodaStornaXml,
+    zoskupPohyby,
+  } = await import("./export.server");
+
+  // Balík nesie to isté, čo priame prepojenie — inak by ten, kto konektor
+  // nechce, o adresár, sklad a zákazky prišiel len preto, že si vybral mail.
+  const {
+    cislaVPohode,
+    nacitajPohyby,
+    nacitajStorna,
+    nacitajVazby,
+    nacitajZakaznikov,
+    nacitajZakazky,
+    nacitajZasoby,
+  } = await import("./pohoda-konektor.server");
+
+  const cisla = await cislaVPohode(supabase, vstup.companyId);
+  const { zalohy, opravovane } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
+  const storna = await nacitajStorna(supabase, vstup.companyId, cisla);
+
+  const zakaznici = company.pohoda_posielat_adresar
+    ? await nacitajZakaznikov(supabase, vstup.companyId)
+    : [];
+  const zasoby =
+    company.pohoda_posielat_sklad && company.pohoda_sklad
+      ? await nacitajZasoby(supabase, vstup.companyId)
+      : [];
+  const { nove: zakazkyNove, kody: zakazky } = company.pohoda_posielat_zakazky
+    ? await nacitajZakazky(supabase, vstup.companyId, faktury)
+    : { nove: [] as Riadok[], kody: {} as Record<string, string> };
+  const pohyby =
+    company.pohoda_posielat_pohyby && company.pohoda_posielat_sklad && company.pohoda_sklad
+      ? await nacitajPohyby(supabase, vstup.companyId, zasoby)
+      : [];
+
   const JSZip = (await import("jszip")).default;
   const zip = new JSZip();
 
@@ -206,6 +251,9 @@ export async function zostavBalik(
       company,
       invoices: balikFaktur,
       nastavenia,
+      zalohy,
+      opravovane,
+      zakazky,
     });
     xmlFaktur = vystup.content;
     preskocene = vystup.preskocene ?? [];
@@ -307,6 +355,29 @@ export async function zostavBalik(
     );
   }
 
+  // Číselníky a väzby — každý ako vlastný súbor, aby si účtovníčka mohla
+  // naimportovať len to, čo naozaj chce.
+  if (zakaznici.length) {
+    zip.file("pohoda-adresar.xml", buildPohodaAddressbookXml({ company, zakaznici }));
+  }
+  if (zasoby.length) {
+    zip.file("pohoda-sklad.xml", buildPohodaStockXml({ company, zasoby, nastavenia }));
+  }
+  if (zakazkyNove.length) {
+    zip.file("pohoda-zakazky.xml", buildPohodaContractsXml({ company, zakazky: zakazkyNove }));
+  }
+  if (pohyby.length) {
+    zip.file(
+      "pohoda-skladove-pohyby.xml",
+      buildPohodaMovementsXml({ company, skupiny: zoskupPohyby(pohyby), nastavenia }),
+    );
+  }
+  if (storna.length) {
+    // Storno je samostatný súbor zámerne: ruší doklad, ktorý v Pohode už je, a
+    // účtovníčka si ho má naimportovať vedome.
+    zip.file("pohoda-storna.xml", buildPohodaStornaXml({ company, storna }));
+  }
+
   // Samotné doklady. Účtovníčka potrebuje aj papier, nielen údaje — ale keď sa
   // balík posiela mailom, prílohy majú strop a údaje sú dôležitejšie.
   const strop = vstup.stropPriloh ?? Infinity;
@@ -379,6 +450,35 @@ export async function zostavBalik(
       vynechanePrilohy,
       fakturyIds: faktury.map((f: Riadok) => f.id),
       dokladyIds: doklady.map((d: Riadok) => d.id),
+      ciselniky: [
+        ...zakaznici.map((z: Riadok) => ({
+          agenda: "adresar",
+          id: String(z.id),
+          verzia: String(z.updated_at),
+        })),
+        ...zasoby.map((z: Riadok) => ({
+          agenda: "sklad",
+          id: String(z.id),
+          verzia: String(z.updated_at),
+        })),
+        ...zakazkyNove.map((z: Riadok) => ({
+          agenda: "zakazka",
+          id: String(z.id),
+          verzia: String(z.updated_at),
+        })),
+        ...pohyby.map((m: Riadok) => ({
+          agenda: "pohyb",
+          id: String(m.id),
+          verzia: String(m.created_at),
+        })),
+        ...storna.map((x: { id: string }) => ({
+          agenda: "storno",
+          id: x.id,
+          verzia: new Date().toISOString(),
+        })),
+      ],
+      pocetCiselnikov:
+        zakaznici.length + zasoby.length + zakazkyNove.length + pohyby.length + storna.length,
       xmlFaktur,
       poslednyDatum: faktury[faktury.length - 1]?.issue_date ?? od,
       nazovObdobia: nazov,
@@ -438,6 +538,20 @@ export async function oznacOdovzdane(
       })
       .in("id", balik.dokladyIds);
   }
+  // Číselníky si pamätá tá istá tabuľka ako pri konektore, takže sa doklad
+  // neodovzdá dvakrát ani vtedy, keď firma používa obidve cesty.
+  if (job && balik.ciselniky.length) {
+    await supabase.from("pohoda_odoslane").upsert(
+      balik.ciselniky.map((c) => ({
+        company_id: vstup.companyId,
+        agenda: c.agenda,
+        zaznam_id: c.id,
+        verzia: c.verzia,
+        odoslane_at: new Date().toISOString(),
+      })),
+      { onConflict: "company_id,agenda,zaznam_id" },
+    );
+  }
   return job?.id as string | undefined;
 }
 
@@ -469,6 +583,7 @@ export async function posliBalikMailom(opts: {
     balik.pocetFaktur ? `${balik.pocetFaktur} vydaných faktúr` : "",
     balik.pocetDokladov ? `${balik.pocetDokladov} prijatých dokladov` : "",
     balik.pocetPokladnicnych ? `${balik.pocetPokladnicnych} pokladničných dokladov` : "",
+    balik.pocetCiselnikov ? `${balik.pocetCiselnikov} záznamov číselníkov` : "",
   ].filter(Boolean);
 
   const text = [

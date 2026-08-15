@@ -7,6 +7,7 @@ import {
   predvolenyZaciatok,
   rozoberOdpoved,
 } from "./pohoda-konektor.server";
+import { mlciaceFirmy } from "./pohoda-strazca.server";
 
 const firma = { ico: "12345678", default_currency: "EUR" };
 
@@ -611,5 +612,90 @@ describe("kódovanie odpovede", () => {
   it("UTF-8 ostáva UTF-8", () => {
     const xml = `<?xml version="1.0" encoding="utf-8"?><rsp:responsePack>áäč</rsp:responsePack>`;
     expect(dekodujOdpoved(new TextEncoder().encode(xml).buffer as ArrayBuffer)).toContain("áäč");
+  });
+});
+
+describe("strážca konektora", () => {
+  const dnes = new Date("2026-08-15T06:00:00Z");
+  const firma = (o: Record<string, unknown>) => ({
+    id: "f1",
+    name: "Firma",
+    pohoda_konektor_upozorneny_at: null,
+    ...o,
+  });
+
+  it("ozve sa, keď konektor mlčí dlhšie než týždeň", () => {
+    const mlciace = mlciaceFirmy(
+      [{ company_id: "f1", last_used_at: "2026-08-01T02:00:00Z", revoked_at: null }],
+      [firma({})],
+      dnes,
+    );
+    expect(mlciace).toHaveLength(1);
+  });
+
+  it("bežiaci konektor nechá na pokoji", () => {
+    const mlciace = mlciaceFirmy(
+      [{ company_id: "f1", last_used_at: "2026-08-14T02:00:00Z", revoked_at: null }],
+      [firma({})],
+      dnes,
+    );
+    expect(mlciace).toHaveLength(0);
+  });
+
+  it("firmu, ktorá konektor nikdy nespustila, nerieši", () => {
+    // Balíček stiahnutý a odložený do zásuvky nie je porucha.
+    const mlciace = mlciaceFirmy(
+      [{ company_id: "f1", last_used_at: null, revoked_at: null }],
+      [firma({})],
+      dnes,
+    );
+    expect(mlciace).toHaveLength(0);
+  });
+
+  it("neupozorňuje každý deň znova", () => {
+    const mlciace = mlciaceFirmy(
+      [{ company_id: "f1", last_used_at: "2026-08-01T02:00:00Z", revoked_at: null }],
+      [firma({ pohoda_konektor_upozorneny_at: "2026-08-09T06:00:00Z" })],
+      dnes,
+    );
+    expect(mlciace).toHaveLength(0);
+  });
+
+  it("po opätovnom rozbehnutí a novom tichu sa ozve zas", () => {
+    const mlciace = mlciaceFirmy(
+      [{ company_id: "f1", last_used_at: "2026-08-05T02:00:00Z", revoked_at: null }],
+      [firma({ pohoda_konektor_upozorneny_at: "2026-08-01T06:00:00Z" })],
+      dnes,
+    );
+    expect(mlciace).toHaveLength(1);
+  });
+
+  it("rozhoduje kľúč, ktorý sa ozval naposledy", () => {
+    // Každé stiahnutie balíčka vyrobí nový kľúč, staré ostávajú platné.
+    const mlciace = mlciaceFirmy(
+      [
+        { company_id: "f1", last_used_at: "2026-08-01T02:00:00Z", revoked_at: null },
+        { company_id: "f1", last_used_at: "2026-08-14T02:00:00Z", revoked_at: null },
+      ],
+      [firma({})],
+      dnes,
+    );
+    expect(mlciace).toHaveLength(0);
+  });
+
+  it("zneplatnený kľúč sa nepočíta", () => {
+    const mlciace = mlciaceFirmy(
+      [
+        { company_id: "f1", last_used_at: "2026-08-01T02:00:00Z", revoked_at: null },
+        {
+          company_id: "f1",
+          last_used_at: "2026-08-14T02:00:00Z",
+          revoked_at: "2026-08-14T10:00:00Z",
+        },
+      ],
+      [firma({})],
+      dnes,
+    );
+    expect(mlciace).toHaveLength(1);
   });
 });
