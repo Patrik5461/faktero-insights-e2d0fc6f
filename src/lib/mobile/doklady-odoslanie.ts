@@ -59,7 +59,27 @@ async function odosliJeden(d: CakajuciDoklad, nacitaj: NacitajFn, uloz: UlozFn):
  * Pošle všetko, čo čaká. Vracia počty, nie chyby — volajúci ukáže hlásenie.
  * Bez signálu sa ani nepokúša, aby fronta nezbierala falošné chyby.
  */
-export async function odosliCakajuce(
+/**
+ * Beží už odosielanie?
+ *
+ * Frontu vyprázdňuje obrazovka Prijaté doklady aj listener po obnovení signálu.
+ * Keby sa stretli, obidva by prečítali ten istý doklad skôr, než ho ten druhý
+ * stihne zmazať — a z jedného bločku by vznikli dva výdavky.
+ */
+let prebieha: Promise<{ odoslane: number; zostalo: number }> | null = null;
+
+export function odosliCakajuce(
+  companyId: string,
+  nacitaj: NacitajFn,
+  uloz: UlozFn,
+): Promise<{ odoslane: number; zostalo: number }> {
+  prebieha ??= odosliCakajuceRaz(companyId, nacitaj, uloz).finally(() => {
+    prebieha = null;
+  });
+  return prebieha;
+}
+
+async function odosliCakajuceRaz(
   companyId: string,
   nacitaj: NacitajFn,
   uloz: UlozFn,

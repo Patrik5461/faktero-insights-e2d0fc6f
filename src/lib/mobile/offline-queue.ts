@@ -33,16 +33,41 @@ export async function isOnline(): Promise<boolean> {
   return typeof navigator === "undefined" ? true : navigator.onLine;
 }
 
-/** Pošle, čo v telefóne čaká na signál. Ticho — človek o tom nemusí vedieť. */
+/**
+ * Pošle, čo v telefóne čaká na signál. Ticho — človek o tom nemusí vedieť.
+ *
+ * Doklady sa dovtedy posielali len vtedy, keď mal otvorenú ich obrazovku;
+ * naskenovaný bloček tak mohol čakať aj po tom, čo sa signál dávno vrátil.
+ * Operácie chodia cez `server-most-volanie`, ktorý funguje aj mimo komponentu —
+ * na webe volá serverovú funkciu priamo, v appke cez endpoint.
+ */
 async function posliCoCaka(): Promise<void> {
+  const { getActiveCompanyId } = await import("@/lib/faktero/active-company").catch(() => ({
+    getActiveCompanyId: () => null,
+  }));
+  const firma = getActiveCompanyId();
+  if (!firma) return;
+
   try {
-    const { getActiveCompanyId } = await import("@/lib/faktero/active-company");
-    const firma = getActiveCompanyId();
-    if (!firma) return;
     const { odosliCakajuceZapisy } = await import("./jazdy-lokalne");
     await odosliCakajuceZapisy(firma);
   } catch {
     /* ďalší pokus príde pri ďalšom pripojení alebo pri otvorení obrazovky */
+  }
+
+  try {
+    const { pocetVoFronte } = await import("./doklady-fronta");
+    if ((await pocetVoFronte(firma)) === 0) return;
+
+    const { volajOperaciu } = await import("@/lib/mobile/server-most-volanie");
+    const { odosliCakajuce } = await import("./doklady-odoslanie");
+    await odosliCakajuce(
+      firma,
+      (vstup) => volajOperaciu("blocek-precitaj", vstup.data),
+      (vstup) => volajOperaciu("vydavok-uloz", vstup.data),
+    );
+  } catch {
+    /* to isté — obrazovka Prijaté doklady to skúsi znova */
   }
 }
 

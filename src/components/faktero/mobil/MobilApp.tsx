@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { nacitajUlozenuRelaciu } from "@/lib/mobile/relacia";
+import { vyberFirmy } from "@/lib/mobile/start";
 import {
   fetchMyCompanies,
   getActiveCompanyId,
@@ -178,11 +179,9 @@ export function MobilnaApka() {
         zoznam = zapamatane.hodnota;
       }
       setFirmy(zoznam);
-      const ulozena = getActiveCompanyId();
-      const najdena = zoznam.find((f) => f.id === ulozena);
-      // Pri jedinej firme nemá zmysel pýtať sa — vyberie sa sama.
-      const jedina = zoznam.length === 1 ? zoznam[0] : null;
-      const vybrana = najdena ?? jedina;
+      // Pravidlo je v `start.ts`, aby sa dalo overiť testom — tu bolo zamotané
+      // medzi šiestimi `await` a skúšalo sa len na telefóne.
+      const vybrana = vyberFirmy(zoznam, getActiveCompanyId());
       if (vybrana) {
         setFirma(vybrana);
         setActiveCompanyId(vybrana.id);
