@@ -134,8 +134,38 @@ async function zisti(): Promise<Riadok[]> {
   return r;
 }
 
+/**
+ * Odošle diagnostiku na podporu.
+ *
+ * Dovtedy sa dala poslať len ako snímka obrazovky — čo znamená, že sa väčšinou
+ * neposlala vôbec. Ide to cez ten istý kontaktný endpoint ako formulár na webe,
+ * takže netreba novú tabuľku ani obrazovku v admine.
+ */
+async function posli(riadky: Riadok[]): Promise<void> {
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data } = await supabase.auth
+    .getSession()
+    .catch(() => ({ data: { session: null } }) as any);
+  const email = data?.session?.user?.email ?? "appka@faktero.sk";
+
+  const sprava = [
+    "Diagnostika z mobilnej aplikácie:",
+    "",
+    ...riadky.map((r) => `${r.co}: ${r.hodnota}${r.zle ? "  <-- problém" : ""}`),
+  ].join("\n");
+
+  const odpoved = await fetch("https://www.faktero.sk/api/public/kontakt", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name: "Diagnostika z appky", email, message: sprava }),
+  });
+  if (!odpoved.ok) throw new Error(`server odpovedal ${odpoved.status}`);
+}
+
 export function Diagnostika({ onSpat }: { onSpat: () => void }) {
   const [riadky, setRiadky] = useState<Riadok[] | null>(null);
+  const [odosielam, setOdosielam] = useState(false);
+  const [odoslane, setOdoslane] = useState(false);
 
   useEffect(() => {
     zisti().then(setRiadky);
@@ -145,7 +175,7 @@ export function Diagnostika({ onSpat }: { onSpat: () => void }) {
     <div className="min-h-[100dvh] bg-background p-5">
       <h1 className="text-base font-semibold">Diagnostika</h1>
       <p className="mt-1 text-[13px] text-muted-foreground">
-        Odfoťte túto obrazovku a pošlite ju — je v nej všetko podstatné.
+        Pošlite ju tlačidlom dole, alebo odfoťte — je v nej všetko podstatné.
       </p>
 
       <div className="mt-4 space-y-2">
@@ -164,8 +194,27 @@ export function Diagnostika({ onSpat }: { onSpat: () => void }) {
       </div>
 
       <button
+        disabled={!riadky || odosielam || odoslane}
+        onClick={async () => {
+          if (!riadky) return;
+          setOdosielam(true);
+          try {
+            await posli(riadky);
+            setOdoslane(true);
+          } catch (e: any) {
+            alert(`Odoslať sa to nepodarilo (${e?.message ?? "chyba"}). Odfoťte obrazovku.`);
+          } finally {
+            setOdosielam(false);
+          }
+        }}
+        className="mt-6 w-full rounded-xl bg-primary px-4 py-3 text-[15px] font-medium text-primary-foreground disabled:opacity-50"
+      >
+        {odoslane ? "Odoslané, ďakujeme" : odosielam ? "Odosielam…" : "Poslať diagnostiku podpore"}
+      </button>
+
+      <button
         onClick={onSpat}
-        className="mt-6 w-full rounded-xl border border-border px-4 py-3 text-[15px]"
+        className="mt-2 w-full rounded-xl border border-border px-4 py-3 text-[15px]"
       >
         Späť
       </button>

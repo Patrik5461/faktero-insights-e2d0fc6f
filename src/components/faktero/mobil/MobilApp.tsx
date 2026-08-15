@@ -102,6 +102,7 @@ export function MobilnaApka() {
   const [panel, setPanel] = useState(false);
   const [zamknute, setZamknute] = useState(false);
   const [zrusiSa, setZrusiSa] = useState<string | null>(null);
+  const [novsia, setNovsia] = useState<{ peciatka: string; odkaz: string } | null>(null);
 
   /**
    * Kto je prihlásený a za akú firmu — to isté sa rieši pri štarte aj po prihlásení.
@@ -209,6 +210,15 @@ export function MobilnaApka() {
       setKrok("firma");
     }
   }
+
+  useEffect(() => {
+    // Appka sa neaktualizuje sama, takže o novšej verzii sa človek inak
+    // nedozvie — čas zostavenia je len v Diagnostike.
+    void import("@/lib/mobile/verzia")
+      .then((m) => m.zistiNovsiuVerziu())
+      .then(setNovsia)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Nezachytená výnimka v štarte nechá appku na úvodnej obrazovke bez slova.
@@ -393,6 +403,18 @@ export function MobilnaApka() {
 
   return (
     <>
+      {novsia && (
+        <button
+          onClick={() => {
+            // Odkaz do obchodu otvára systém; plugin na prehliadač v balíčku
+            // nie je a kvôli jednému odkazu ho pridávať netreba.
+            window.open(novsia.odkaz, "_blank");
+          }}
+          className="w-full bg-primary/10 px-4 py-2 text-left text-[13px] text-primary"
+        >
+          Je dostupná novšia verzia aplikácie — ťuknite na aktualizáciu
+        </button>
+      )}
       <Domov
         firma={firma}
         viacFiriem={firmy.length > 1}
