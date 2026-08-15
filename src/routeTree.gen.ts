@@ -85,6 +85,7 @@ import { Route as PomocPokladnaRouteImport } from './routes/pomoc.pokladna'
 import { Route as PomocPonukyRouteImport } from './routes/pomoc.ponuky'
 import { Route as PomocPredplatneRouteImport } from './routes/pomoc.predplatne'
 import { Route as PomocPrijateFakturyRouteImport } from './routes/pomoc.prijate-faktury'
+import { Route as PomocRoleRouteImport } from './routes/pomoc.role'
 import { Route as PomocSkladRouteImport } from './routes/pomoc.sklad'
 import { Route as PomocUzavierkaRouteImport } from './routes/pomoc.uzavierka'
 import { Route as PomocZakazkyRouteImport } from './routes/pomoc.zakazky'
@@ -624,6 +625,11 @@ const PomocPredplatneRoute = PomocPredplatneRouteImport.update({
 const PomocPrijateFakturyRoute = PomocPrijateFakturyRouteImport.update({
   id: '/pomoc/prijate-faktury',
   path: '/pomoc/prijate-faktury',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocRoleRoute = PomocRoleRouteImport.update({
+  id: '/pomoc/role',
+  path: '/pomoc/role',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomocSkladRoute = PomocSkladRouteImport.update({
@@ -1562,6 +1568,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
   '/pomoc/prijate-faktury': typeof PomocPrijateFakturyRoute
+  '/pomoc/role': typeof PomocRoleRoute
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
@@ -1786,6 +1793,7 @@ export interface FileRoutesByTo {
   '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
   '/pomoc/prijate-faktury': typeof PomocPrijateFakturyRoute
+  '/pomoc/role': typeof PomocRoleRoute
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
@@ -2019,6 +2027,7 @@ export interface FileRoutesById {
   '/pomoc/ponuky': typeof PomocPonukyRoute
   '/pomoc/predplatne': typeof PomocPredplatneRoute
   '/pomoc/prijate-faktury': typeof PomocPrijateFakturyRoute
+  '/pomoc/role': typeof PomocRoleRoute
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
@@ -2253,6 +2262,7 @@ export interface FileRouteTypes {
     | '/pomoc/ponuky'
     | '/pomoc/predplatne'
     | '/pomoc/prijate-faktury'
+    | '/pomoc/role'
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
     | '/pomoc/zakazky'
@@ -2477,6 +2487,7 @@ export interface FileRouteTypes {
     | '/pomoc/ponuky'
     | '/pomoc/predplatne'
     | '/pomoc/prijate-faktury'
+    | '/pomoc/role'
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
     | '/pomoc/zakazky'
@@ -2709,6 +2720,7 @@ export interface FileRouteTypes {
     | '/pomoc/ponuky'
     | '/pomoc/predplatne'
     | '/pomoc/prijate-faktury'
+    | '/pomoc/role'
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
     | '/pomoc/zakazky'
@@ -2910,6 +2922,7 @@ export interface RootRouteChildren {
   PomocPonukyRoute: typeof PomocPonukyRoute
   PomocPredplatneRoute: typeof PomocPredplatneRoute
   PomocPrijateFakturyRoute: typeof PomocPrijateFakturyRoute
+  PomocRoleRoute: typeof PomocRoleRoute
   PomocSkladRoute: typeof PomocSkladRoute
   PomocUzavierkaRoute: typeof PomocUzavierkaRoute
   PomocZakazkyRoute: typeof PomocZakazkyRoute
@@ -3501,6 +3514,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/prijate-faktury'
       fullPath: '/pomoc/prijate-faktury'
       preLoaderRoute: typeof PomocPrijateFakturyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/role': {
+      id: '/pomoc/role'
+      path: '/pomoc/role'
+      fullPath: '/pomoc/role'
+      preLoaderRoute: typeof PomocRoleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/sklad': {
@@ -5106,6 +5126,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocPonukyRoute: PomocPonukyRoute,
   PomocPredplatneRoute: PomocPredplatneRoute,
   PomocPrijateFakturyRoute: PomocPrijateFakturyRoute,
+  PomocRoleRoute: PomocRoleRoute,
   PomocSkladRoute: PomocSkladRoute,
   PomocUzavierkaRoute: PomocUzavierkaRoute,
   PomocZakazkyRoute: PomocZakazkyRoute,

@@ -205,6 +205,14 @@ const CATS: Cat[] = [
     skupina: "Účet a vývoj",
   },
   {
+    to: "/pomoc/role",
+    label: "Role a prístupy",
+    desc: "Kto vo firme čo smie — majiteľ, administrátor, účtovník, zamestnanec.",
+    icon: Users,
+    available: true,
+    skupina: "Účet a vývoj",
+  },
+  {
     to: "/pomoc/api",
     label: "API a webhooky",
     desc: "Napojenie vlastného systému na Faktero.",
