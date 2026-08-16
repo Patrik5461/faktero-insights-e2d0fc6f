@@ -299,43 +299,21 @@ export const syncBankTransactions = createServerFn({ method: "POST" })
     if (!acc) throw new Error("not_found");
     const conn: any = (acc as any).bank_connections;
     if (!conn?.access_token) throw new Error("not_connected");
-    const { fetchTransactions } = await import("./tatrabanka.server");
-    const txs = await fetchTransactions(
+    // Rovnaká cesta ako pri nočnom behu — vrátane 90-dňového okna pre účet,
+    // na ktorom ešte nemáme nič, a stráženia duplicít po tisíckach riadkov.
+    const { stiahniTransakcieUctu, MAX_DAYS_BACK } = await import("./bank-sync.server");
+    const { inserted, total } = await stiahniTransakcieUctu(
+      supabaseAdmin,
+      { ...conn, company_id: data.company_id },
       bankToken(conn.access_token)!,
-      acc.external_account_id ?? acc.iban ?? "",
-      conn.consent_id,
-      90,
+      acc,
+      MAX_DAYS_BACK,
     );
-    let inserted = 0;
-    for (const t of txs) {
-      const ref = t.transaction_reference;
-      if (ref) {
-        const { data: ex } = await supabaseAdmin
-          .from("bank_transactions")
-          .select("id")
-          .eq("bank_account_id", acc.id)
-          .eq("transaction_reference", ref)
-          .maybeSingle();
-        if (ex) continue;
-      }
-      const { error } = await supabaseAdmin.from("bank_transactions").insert({
-        company_id: data.company_id,
-        bank_account_id: acc.id,
-        booking_date: t.booking_date,
-        amount: t.amount,
-        currency: t.currency,
-        variable_symbol: t.variable_symbol,
-        counterparty: t.counterparty,
-        description: t.description,
-        transaction_reference: ref,
-      });
-      if (!error) inserted++;
-    }
     await supabaseAdmin
       .from("bank_accounts")
       .update({ last_synced_at: new Date().toISOString() })
       .eq("id", acc.id);
-    return { ok: true, inserted, total: txs.length };
+    return { ok: true, inserted, total };
   });
 
 /** Zoznam mesačných výpisov firmy (bez súborov — tie sa sťahujú cez podpísaný odkaz). */

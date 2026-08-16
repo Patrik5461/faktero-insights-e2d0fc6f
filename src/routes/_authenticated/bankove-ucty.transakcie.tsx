@@ -62,10 +62,10 @@ function TxPage() {
   useEffect(() => {
     const cid = getActiveCompanyId();
     if (!cid) return;
-    fetchData({ data: { company_id: cid } }).then((d) => {
-      setAccounts(d.accounts);
-      if (!selected && d.accounts[0]) setSelected(d.accounts[0].id);
-    });
+    // Žiadny účet sa nepredvolí. Firma ich má v jednom pripojení aj osem
+    // (TB sprístupňuje aj účty v iných bankách) a predvolený prvý účet
+    // vyzeral, akoby polovica platieb chýbala.
+    fetchData({ data: { company_id: cid } }).then((d) => setAccounts(d.accounts));
   }, []);
 
   /* K spárovaným pohybom dotiahneme číslo faktúry — samotné id nikomu nič nepovie. */
@@ -188,6 +188,7 @@ function TxPage() {
             <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-3 py-2">Dátum</th>
+                {!selected && <th className="px-3 py-2">Účet</th>}
                 <th className="px-3 py-2">Protistrana</th>
                 <th className="px-3 py-2">VS</th>
                 <th className="px-3 py-2">Popis</th>
@@ -199,6 +200,15 @@ function TxPage() {
               {txs.map((t) => (
                 <tr key={t.id} className="border-t border-border">
                   <td className="px-3 py-2 tabular-nums">{t.booking_date}</td>
+                  {!selected && (
+                    <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
+                      {(() => {
+                        const a = accounts.find((x) => x.id === t.bank_account_id);
+                        const iban = a?.iban as string | undefined;
+                        return iban ? `…${iban.slice(-6)}` : "—";
+                      })()}
+                    </td>
+                  )}
                   <td className="px-3 py-2">{t.counterparty ?? "—"}</td>
                   <td className="px-3 py-2 font-mono text-xs">{t.variable_symbol ?? "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground">{t.description ?? "—"}</td>
@@ -235,7 +245,7 @@ function TxPage() {
               ))}
               {!loading && txs.length === 0 && (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={selected ? 6 : 7}>
                     <EmptyState
                       icon={Landmark}
                       title="Žiadne transakcie"

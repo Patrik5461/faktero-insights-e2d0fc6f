@@ -251,6 +251,34 @@ export function FormularZmluvy({
             />
           </div>
           <div>
+            <label className={popis}>Deň čerpania</label>
+            <input
+              type="date"
+              className={pole}
+              value={interestFrom}
+              onChange={(e) => setInterestFrom(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Odkedy banka počíta úrok. Keď ho necháte prázdny, ráta sa mesiac pred prvou splátkou —
+              a prvý riadok potom môže o pár eur ujsť.
+            </p>
+          </div>
+          <div>
+            <label className={popis}>Výpočet úroku</label>
+            <select
+              className={pole}
+              value={dayCount}
+              onChange={(e) => setDayCount(e.target.value as "ACT/365")}
+            >
+              <option value="ACT/365">Zo skutočných dní (ACT/365)</option>
+              <option value="ACT/360">Zo skutočných dní (ACT/360)</option>
+              <option value="30E/360">Každý mesiac 30 dní (30E/360)</option>
+            </select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Slovenské banky bežne používajú ACT/365 — dlhší mesiac stojí viac na úroku.
+            </p>
+          </div>
+          <div>
             <label className={popis}>Splátka zo zmluvy</label>
             <input
               className={pole}

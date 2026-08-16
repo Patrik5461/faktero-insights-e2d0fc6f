@@ -11,6 +11,8 @@ type SyncResult = {
   company_id: string;
   accounts: number;
   inserted: number;
+  /** Účty, ktoré sa nepodarilo stiahnuť — zvyšok pripojenia beží ďalej. */
+  failed_accounts?: string[];
   error?: string;
 };
 
@@ -84,33 +86,71 @@ async function syncAccounts(supabaseAdmin: any, conn: any, accessToken: string) 
   return accounts ?? [];
 }
 
-/** Stiahne transakcie účtu a vloží len tie, ktoré ešte nemáme. */
-async function syncTransactions(
+/** Najdlhšie okno, ktoré Tatra banka na transakciách dáva. */
+export const MAX_DAYS_BACK = 90;
+
+/**
+ * Referencie pohybov, ktoré na účte už máme, od zadaného dňa.
+ *
+ * Číta sa po tisíckach: PostgREST vracia bez `range` najviac 1000 riadkov a
+ * jeden účet ich za 90 dní pokojne má viac. Neúplný zoznam by znamenal, že sa
+ * tie isté pohyby vložia druhý raz — teda tichý duplikát v účtovníctve.
+ */
+export async function znameReferencie(
+  supabaseAdmin: any,
+  accountId: string,
+  odDna: string,
+): Promise<Set<string>> {
+  const seen = new Set<string>();
+  const KROK = 1000;
+  for (let od = 0; ; od += KROK) {
+    const { data, error } = await supabaseAdmin
+      .from("bank_transactions")
+      .select("transaction_reference")
+      .eq("bank_account_id", accountId)
+      .gte("booking_date", odDna)
+      .not("transaction_reference", "is", null)
+      .order("booking_date", { ascending: true })
+      .range(od, od + KROK - 1);
+    if (error) throw new Error(`known_failed: ${error.message}`);
+    for (const r of data ?? []) seen.add(r.transaction_reference);
+    if (!data || data.length < KROK) return seen;
+  }
+}
+
+/**
+ * Stiahne transakcie účtu a vloží len tie, ktoré ešte nemáme.
+ *
+ * Účet, na ktorom zatiaľ nemáme ani jeden pohyb (čerstvo pripojená banka),
+ * sa ťahá na plných 90 dní. Bez toho by novo pripojenému účtu navždy chýbalo
+ * všetko staršie než okno denného behu.
+ */
+export async function stiahniTransakcieUctu(
   supabaseAdmin: any,
   conn: any,
   accessToken: string,
   account: any,
   daysBack: number,
-): Promise<number> {
+): Promise<{ inserted: number; total: number }> {
+  const { count } = await supabaseAdmin
+    .from("bank_transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("bank_account_id", account.id);
+  const okno = (count ?? 0) === 0 ? MAX_DAYS_BACK : daysBack;
+
   const { fetchTransactions } = await import("./tatrabanka.server");
   const txs = await fetchTransactions(
     accessToken,
     account.external_account_id ?? account.iban ?? "",
     conn.consent_id ?? null,
-    daysBack,
+    okno,
   );
 
-  // Referencie už uložených transakcií načítame naraz — inak by to bol jeden
-  // SELECT na každú transakciu a pri 300+ položkách denne to je zbytočná záťaž.
-  const { data: known } = await supabaseAdmin
-    .from("bank_transactions")
-    .select("transaction_reference")
-    .eq("bank_account_id", account.id)
-    .not("transaction_reference", "is", null);
-  const seen = new Set((known ?? []).map((r: any) => r.transaction_reference));
+  const odDna = new Date(Date.now() - okno * 86400_000).toISOString().slice(0, 10);
+  const seen = await znameReferencie(supabaseAdmin, account.id, odDna);
 
   const fresh = txs.filter((t) => !t.transaction_reference || !seen.has(t.transaction_reference));
-  if (fresh.length === 0) return 0;
+  if (fresh.length === 0) return { inserted: 0, total: txs.length };
 
   const { error, data } = await supabaseAdmin
     .from("bank_transactions")
@@ -129,7 +169,7 @@ async function syncTransactions(
     )
     .select("id");
   if (error) throw new Error(`insert_failed: ${error.message}`);
-  return data?.length ?? 0;
+  return { inserted: data?.length ?? 0, total: txs.length };
 }
 
 /**
@@ -152,9 +192,27 @@ export async function runDailyBankSync(daysBack = DEFAULT_DAYS_BACK) {
       if (!conn.access_token) throw new Error("chýba access_token");
       const accessToken = await ensureFreshToken(supabaseAdmin, conn);
       const accounts = await syncAccounts(supabaseAdmin, conn, accessToken);
+      /*
+       * Účty sa ťahajú každý zvlášť a chyba jedného nesmie zhodiť ostatné.
+       * Firmy majú v jednom pripojení aj účty vedené v iných bankách (TB ich
+       * sprístupňuje cez multibanking) a tie sa správajú inak — keby na nich
+       * sťahovanie padlo, o zvyšné účty by firma prišla celkom.
+       */
       let inserted = 0;
+      const chybneUcty: string[] = [];
       for (const acc of accounts) {
-        inserted += await syncTransactions(supabaseAdmin, conn, accessToken, acc, daysBack);
+        try {
+          const r = await stiahniTransakcieUctu(supabaseAdmin, conn, accessToken, acc, daysBack);
+          inserted += r.inserted;
+        } catch (e: any) {
+          chybneUcty.push(acc.iban ?? acc.id);
+          console.error(`[bank-sync] účet ${acc.iban ?? acc.id} zlyhal:`, e?.message ?? e);
+        }
+      }
+      if (chybneUcty.length) {
+        console.error(
+          `[bank-sync] pripojenie ${conn.id}: nepodarilo sa ${chybneUcty.length} účtov (${chybneUcty.join(", ")})`,
+        );
       }
       await supabaseAdmin
         .from("bank_connections")
@@ -200,7 +258,12 @@ export async function runDailyBankSync(daysBack = DEFAULT_DAYS_BACK) {
         }
       }
 
-      results.push({ ...base, accounts: accounts.length, inserted });
+      results.push({
+        ...base,
+        accounts: accounts.length,
+        inserted,
+        ...(chybneUcty.length ? { failed_accounts: chybneUcty } : {}),
+      });
     } catch (e: any) {
       const error = e?.message ?? "sync_failed";
       console.error(`[bank-sync] pripojenie ${conn.id} zlyhalo:`, error);
