@@ -404,7 +404,21 @@ export async function fetchTransactions(
   const booked: any[] = [];
   // Poistka proti nekonečnej slučke, keby banka vracala next donekonečna.
   for (let page = 0; next && page < 25; page++) {
-    const json = await apiGet(next, accessToken, consentId);
+    const json: any = await apiGet(next, accessToken, consentId).catch((e: any) => {
+      /*
+       * Ako ďaleko dozadu banka pustí, sa dopredu nedá zistiť — pri každom účte
+       * je to inak a povie to až v chybe ("Earliest allowed dateFrom is …").
+       * Namiesto hádania sa teda pýtame smelo a keď nás odbije, zopakujeme to
+       * s dátumom, ktorý sama ponúkla.
+       */
+      const m = /Earliest allowed dateFrom is (\d{4}-\d{2}-\d{2})/.exec(String(e?.message ?? ""));
+      if (page > 0 || !m) throw e;
+      return apiGet(
+        next!.replace(/dateFrom=\d{4}-\d{2}-\d{2}/, `dateFrom=${m[1]}`),
+        accessToken,
+        consentId,
+      );
+    });
     const batch: any[] = json.transactions?.booked ?? json.booked ?? json.transactions ?? [];
     booked.push(...batch);
     const href = json._links?.next?.href;

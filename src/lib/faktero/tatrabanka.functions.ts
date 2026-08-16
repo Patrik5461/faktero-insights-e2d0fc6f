@@ -283,7 +283,7 @@ export const syncBankAccounts = createServerFn({ method: "POST" })
 
 const AccountInput = z.object({ company_id: z.string().uuid(), account_id: z.string().uuid() });
 
-/** Sync transactions for an account (last 90 days). */
+/** Dotiahne pohyby účtu tak ďaleko dozadu, ako banka pustí. */
 export const syncBankTransactions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => AccountInput.parse(d))
@@ -299,8 +299,9 @@ export const syncBankTransactions = createServerFn({ method: "POST" })
     if (!acc) throw new Error("not_found");
     const conn: any = (acc as any).bank_connections;
     if (!conn?.access_token) throw new Error("not_connected");
-    // Rovnaká cesta ako pri nočnom behu — vrátane 90-dňového okna pre účet,
-    // na ktorom ešte nemáme nič, a stráženia duplicít po tisíckach riadkov.
+    // Rovnaká cesta ako pri nočnom behu — vrátane stráženia duplicít po
+    // tisíckach riadkov. Okno je najdlhšie, aké banka dá, takže ručné
+    // spustenie dotiahne aj históriu, ktorú nočný beh (14 dní) nikdy nevidí.
     const { stiahniTransakcieUctu, MAX_DAYS_BACK } = await import("./bank-sync.server");
     const { inserted, total } = await stiahniTransakcieUctu(
       supabaseAdmin,

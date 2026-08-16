@@ -86,8 +86,14 @@ async function syncAccounts(supabaseAdmin: any, conn: any, accessToken: string) 
   return accounts ?? [];
 }
 
-/** Najdlhšie okno, ktoré Tatra banka na transakciách dáva. */
-export const MAX_DAYS_BACK = 90;
+/**
+ * Ako ďaleko dozadu sa oplatí pýtať pri účte, na ktorom ešte nič nemáme.
+ *
+ * Banka pustí pri každom účte inak ďaleko — bežne rok aj viac — a hranicu
+ * povie až v chybe. `fetchTransactions` ju z nej prečíta a dopyt zopakuje s
+ * dátumom, ktorý banka ponúkla, takže tu môže stáť pokojne viac, než dá.
+ */
+export const MAX_DAYS_BACK = 500;
 
 /**
  * Referencie pohybov, ktoré na účte už máme, od zadaného dňa.
@@ -121,9 +127,9 @@ export async function znameReferencie(
 /**
  * Stiahne transakcie účtu a vloží len tie, ktoré ešte nemáme.
  *
- * Účet, na ktorom zatiaľ nemáme ani jeden pohyb (čerstvo pripojená banka),
- * sa ťahá na plných 90 dní. Bez toho by novo pripojenému účtu navždy chýbalo
- * všetko staršie než okno denného behu.
+ * Účet, na ktorom zatiaľ nemáme ani jeden pohyb (čerstvo pripojená banka), sa
+ * ťahá tak ďaleko, ako banka pustí. Bez toho by novo pripojenému účtu navždy
+ * chýbalo všetko staršie než okno denného behu.
  */
 export async function stiahniTransakcieUctu(
   supabaseAdmin: any,

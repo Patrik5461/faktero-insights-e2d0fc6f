@@ -20,11 +20,14 @@ export const Route = createFileRoute("/api/public/hooks/bank-sync")({
           });
         }
         try {
+          const { MAX_DAYS_BACK } = await import("@/lib/faktero/bank-sync.server");
           let daysBack = 14;
           try {
             const body = await request.json();
             const n = Number(body?.days_back);
-            if (Number.isFinite(n) && n > 0 && n <= 365) daysBack = n;
+            // Strop je najdlhšie okno, aké banka dá — dlhší dopyt aj tak
+            // orežeme na dátum, ktorý ponúkne sama.
+            if (Number.isFinite(n) && n > 0 && n <= MAX_DAYS_BACK) daysBack = n;
           } catch {
             // prázdne telo je v poriadku — ostáva default
           }
