@@ -14,7 +14,8 @@ import {
   zrusSparovanieSplatkyFn,
 } from "@/lib/faktero/financovanie.functions";
 import { formatujSumu } from "@/lib/faktero/zostatky";
-import { Check, Link2, Pencil, RefreshCw, Trash2, Undo2 } from "lucide-react";
+import { Check, FileText, Link2, Pencil, RefreshCw, Trash2, Undo2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { FormularZmluvy } from "@/components/faktero/FormularZmluvy";
 
 export const Route = createFileRoute("/_authenticated/financovanie/$id")({
@@ -38,6 +39,18 @@ type Splatka = {
 
 function datum(d: string): string {
   return new Date(`${d}T00:00:00`).toLocaleDateString("sk-SK");
+}
+
+/** Nahratá zmluva sa otvára cez podpísaný odkaz — vedro je súkromné. */
+async function otvorDokument(cesta: string) {
+  const { data, error } = await supabase.storage
+    .from("financing-documents")
+    .createSignedUrl(cesta, 300);
+  if (error || !data?.signedUrl) {
+    toast.error("Dokument sa nepodarilo otvoriť.");
+    return;
+  }
+  window.open(data.signedUrl, "_blank", "noopener");
 }
 
 function Stranka() {
@@ -116,11 +129,43 @@ function Stranka() {
           z.kind === "leasing" ? "Leasing" : "Úver",
           z.provider_name,
           z.contract_number ? `zmluva ${z.contract_number}` : null,
+          z.schedule_source === "zmluva" ? "kalendár prevzatý z dokumentu" : null,
         ]
           .filter(Boolean)
           .join(" · ")}
         action={
           <div className="flex gap-2">
+            {z.document_path && (
+              <button
+                onClick={() => void otvorDokument(z.document_path)}
+                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+              >
+                <FileText className="h-4 w-4" /> Zmluva
+              </button>
+            )}
+            <button
+              onClick={() =>
+                void urobit(async () => {
+                  const r = await sparujTeraz({ data: { company_id: cid } });
+                  /*
+                   * Keď sa nič nespárovalo, je dôležité povedať prečo. „Hotovo"
+                   * bez čísla vyzerá ako chyba aj vtedy, keď v banke jednoducho
+                   * žiadna zodpovedajúca platba nie je.
+                   */
+                  if (r.zapisanych === 0 && r.navrhov === 0) {
+                    throw new Error(
+                      r.pohybov === 0
+                        ? "V banke nie sú žiadne nespárované odchádzajúce platby."
+                        : `Prezrelo sa ${r.pohybov} odchádzajúcich platieb a ani jedna nesedí so splátkou. Skontrolujte variabilný symbol zmluvy.`,
+                    );
+                  }
+                }, "Párovanie s bankou prebehlo.")
+              }
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+            >
+              <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} /> Spárovať s bankou
+            </button>
             <button
               onClick={() => setUpravujem((x) => !x)}
               className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"

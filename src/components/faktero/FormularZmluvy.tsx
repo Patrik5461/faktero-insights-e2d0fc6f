@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ulozZmluvuFn } from "@/lib/faktero/financovanie.functions";
-import { kalendar, suhrn } from "@/lib/faktero/financovanie";
+import { kalendar, suhrn, type Zmluva } from "@/lib/faktero/financovanie";
 import { formatujSumu } from "@/lib/faktero/zostatky";
 import { SK_VAT_RATES } from "@/lib/faktero/vat-rates";
 
@@ -34,6 +34,19 @@ export type ZmluvaNaUpravu = {
   day_count: string | null;
   interest_from: string | null;
   note: string | null;
+  /** 'zmluva' = kalendár je prečítaný z dokumentu a neprepočítava sa. */
+  schedule_source?: string | null;
+};
+
+/** Kalendár prečítaný z nahratého dokumentu — riadok po riadku tak, ako je. */
+export type SplatkaZoZmluvy = {
+  number: number;
+  due_date: string;
+  amount: number;
+  principal_part: number;
+  interest_part: number;
+  vat_amount: number;
+  remaining_principal: number;
 };
 
 function cislo(v: string): number {
@@ -49,12 +62,19 @@ function text(v: unknown): string {
 export function FormularZmluvy({
   companyId,
   zmluva,
+  zoZmluvy,
   onUlozene,
   onZrusit,
 }: {
   companyId: string;
   /** Bez nej sa zakladá nová. */
   zmluva?: ZmluvaNaUpravu | null;
+  /** Čo sa prečítalo z nahratého dokumentu. Kalendár odtiaľ má prednosť. */
+  zoZmluvy?: {
+    document_path: string | null;
+    splatky: SplatkaZoZmluvy[];
+    vyhrady: string[];
+  } | null;
   onUlozene: (id: string, splatok: number) => void;
   onZrusit?: () => void;
 }) {
@@ -82,7 +102,20 @@ export function FormularZmluvy({
   const [note, setNote] = useState(text(zmluva?.note));
   const [ukladam, setUkladam] = useState(false);
 
+  /*
+   * Kalendár z dokumentu sa nikdy neprepočítava — sú to sumy, ktoré banka
+   * naozaj stiahne, a vlastný výpočet sa od nich o pár centov líši.
+   * `drziKalendarZoZmluvy` platí aj pri úprave zmluvy, ktorá už taký kalendár
+   * má; inak by úprava názvu prepísala predpis dopočítanými číslami.
+   */
+  const riadkyZoZmluvy = zoZmluvy?.splatky ?? [];
+  const drziKalendarZoZmluvy = riadkyZoZmluvy.length > 0 || zmluva?.schedule_source === "zmluva";
+
   const nahlad = useMemo(() => {
+    if (riadkyZoZmluvy.length > 0) {
+      const z = { principal: cislo(principal) } as Zmluva;
+      return { riadky: riadkyZoZmluvy, suhrn: suhrn(riadkyZoZmluvy, z) };
+    }
     const z = {
       principal: cislo(principal),
       interest_rate: cislo(rate),
@@ -97,7 +130,18 @@ export function FormularZmluvy({
     if (z.principal <= 0 || z.term_months <= 0) return null;
     const riadky = kalendar(z);
     return { riadky, suhrn: suhrn(riadky, z) };
-  }, [principal, rate, months, firstDue, payment, vat, residual, dayCount, interestFrom]);
+  }, [
+    principal,
+    rate,
+    months,
+    firstDue,
+    payment,
+    vat,
+    residual,
+    dayCount,
+    interestFrom,
+    riadkyZoZmluvy,
+  ]);
 
   async function odosli() {
     if (!name.trim()) {
@@ -132,6 +176,8 @@ export function FormularZmluvy({
           day_count: dayCount,
           interest_from: interestFrom || null,
           note: note.trim() || null,
+          ...(zoZmluvy?.document_path ? { document_path: zoZmluvy.document_path } : {}),
+          ...(riadkyZoZmluvy.length ? { splatky: riadkyZoZmluvy } : {}),
         },
       });
       onUlozene(r.id, r.splatok);
@@ -148,6 +194,24 @@ export function FormularZmluvy({
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
       <div className="space-y-5 rounded-xl border bg-card p-5">
+        {drziKalendarZoZmluvy && (
+          <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm">
+            <p className="font-medium">Kalendár je z dokumentu.</p>
+            <p className="mt-1 text-muted-foreground">
+              {riadkyZoZmluvy.length > 0
+                ? `Prečítalo sa ${riadkyZoZmluvy.length} splátok a uložia sa presne tak, ako sú v zmluve — Faktero ich neprepočítava.`
+                : "Riadky prišli z nahratej zmluvy. Úprava údajov nižšie ich neprepíše — kalendár ostáva taký, aký je v zmluve."}
+            </p>
+            {(zoZmluvy?.vyhrady ?? []).length > 0 && (
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-amber-700 dark:text-amber-400">
+                {zoZmluvy!.vyhrady.map((v) => (
+                  <li key={v}>{v}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         <div>
           <span className={popis}>Druh</span>
           <div className="flex gap-2">
@@ -390,9 +454,19 @@ export function FormularZmluvy({
         </div>
 
         <p className="px-1 text-xs leading-relaxed text-muted-foreground">
-          Kalendár je anuitný — splátka je rovnaká, ale mení sa jej zloženie. Ak sa čísla nezhodujú
-          so zmluvou, vyplňte <strong>Splátku zo zmluvy</strong>; kalendár sa dopočíta z nej a bude
-          sedieť na cent. Už zaplatené splátky sa prepočtom nemenia.
+          {drziKalendarZoZmluvy ? (
+            <>
+              Riadky sú prevzaté z dokumentu, nie dopočítané — sedia s predpisom banky na cent.
+              Údaje vyššie slúžia na párovanie platieb a na zaúčtovanie. Už zaplatené splátky sa
+              nemenia.
+            </>
+          ) : (
+            <>
+              Kalendár je anuitný — splátka je rovnaká, ale mení sa jej zloženie. Ak sa čísla
+              nezhodujú so zmluvou, vyplňte <strong>Splátku zo zmluvy</strong>; kalendár sa dopočíta
+              z nej a bude sedieť na cent. Už zaplatené splátky sa prepočtom nemenia.
+            </>
+          )}
         </p>
       </div>
     </div>

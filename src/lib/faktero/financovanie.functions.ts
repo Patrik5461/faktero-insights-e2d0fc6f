@@ -61,6 +61,24 @@ const Zmluva_ = z.object({
   vehicle_id: z.string().uuid().optional().nullable(),
   document_path: z.string().max(500).optional().nullable(),
   note: z.string().max(2000).optional().nullable(),
+  /**
+   * Kalendár prečítaný z nahratého dokumentu. Keď príde, je záväzný a nič sa
+   * nedopočítava — sú to sumy, ktoré banka naozaj stiahne.
+   */
+  splatky: z
+    .array(
+      z.object({
+        number: z.number().int().min(1).max(600),
+        due_date: z.string().regex(DATUM),
+        amount: z.number().min(0).max(10_000_000),
+        principal_part: z.number().min(0).max(10_000_000),
+        interest_part: z.number().min(0).max(10_000_000),
+        vat_amount: z.number().min(0).max(10_000_000),
+        remaining_principal: z.number().min(0).max(100_000_000),
+      }),
+    )
+    .max(600)
+    .optional(),
 });
 
 /**
@@ -76,6 +94,22 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await overClena(context, data.company_id);
+
+    /*
+     * Odkiaľ je kalendár. Nové riadky z dokumentu prebíjajú všetko; keď
+     * nechodia, ostáva to, čo zmluva mala doteraz — inak by úprava názvu
+     * prepočítala kalendár prečítaný z papiera a rozišla ho s predpisom.
+     */
+    let zdrojKalendara: "vypocet" | "zmluva" = data.splatky?.length ? "zmluva" : "vypocet";
+    if (!data.splatky?.length && data.id) {
+      const { data: stara } = await supabase
+        .from("financing_contracts")
+        .select("schedule_source")
+        .eq("id", data.id)
+        .eq("company_id", data.company_id)
+        .maybeSingle();
+      if (stara?.schedule_source === "zmluva") zdrojKalendara = "zmluva";
+    }
 
     const hlavicka = {
       company_id: data.company_id,
@@ -99,6 +133,7 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
       vehicle_id: data.vehicle_id || null,
       document_path: data.document_path || null,
       note: data.note || null,
+      schedule_source: zdrojKalendara,
     };
 
     let zmluvaId = data.id ?? null;
@@ -119,14 +154,71 @@ export const ulozZmluvuFn = createServerFn({ method: "POST" })
       zmluvaId = nova.id;
     }
 
+    if (data.splatky?.length) {
+      const pocet = await zapisKalendarZoZmluvy(supabase, zmluvaId!, data.company_id, data.splatky);
+      return { id: zmluvaId!, splatok: pocet, zdroj: "zmluva" as const };
+    }
+    if (zdrojKalendara === "zmluva") {
+      // Kalendár je z papiera a nové riadky neprišli — necháme ho na pokoji.
+      const { count } = await supabase
+        .from("financing_installments")
+        .select("id", { count: "exact", head: true })
+        .eq("contract_id", zmluvaId!);
+      return { id: zmluvaId!, splatok: count ?? 0, zdroj: "zmluva" as const };
+    }
+
     const pocet = await prepocitajKalendar(
       supabase,
       zmluvaId!,
       data.company_id,
       hlavicka as Zmluva,
     );
-    return { id: zmluvaId!, splatok: pocet };
+    return { id: zmluvaId!, splatok: pocet, zdroj: "vypocet" as const };
   });
+
+/**
+ * Zapíše kalendár tak, ako je v dokumente.
+ *
+ * Zaplatené splátky sa ani tu neprepisujú — keby si niekto nahral kalendár
+ * druhýkrát, prišiel by o spárované platby.
+ */
+async function zapisKalendarZoZmluvy(
+  supabase: any,
+  contractId: string,
+  companyId: string,
+  riadky: Array<{
+    number: number;
+    due_date: string;
+    amount: number;
+    principal_part: number;
+    interest_part: number;
+    vat_amount: number;
+    remaining_principal: number;
+  }>,
+): Promise<number> {
+  const { data: existujuce } = await supabase
+    .from("financing_installments")
+    .select("id, number, paid_at")
+    .eq("contract_id", contractId);
+
+  const stare = (existujuce ?? []) as { id: string; number: number; paid_at: string | null }[];
+  const zaplatene = new Set(stare.filter((r) => r.paid_at).map((r) => r.number));
+  const podlaCisla = new Map(stare.map((r) => [r.number, r.id]));
+
+  const nadbytocne = stare.filter((r) => r.number > riadky.length && !r.paid_at).map((r) => r.id);
+  if (nadbytocne.length) {
+    await supabase.from("financing_installments").delete().in("id", nadbytocne);
+  }
+
+  for (const r of riadky) {
+    if (zaplatene.has(r.number)) continue;
+    const zaznam = { company_id: companyId, contract_id: contractId, ...r };
+    const id = podlaCisla.get(r.number);
+    if (id) await supabase.from("financing_installments").update(zaznam).eq("id", id);
+    else await supabase.from("financing_installments").insert(zaznam);
+  }
+  return riadky.length;
+}
 
 /**
  * Prepíše nezaplatené splátky podľa aktuálnej hlavičky.
@@ -528,3 +620,60 @@ export async function sparujSplatkyFirmyAutomaticky(
   }
   return { zapisanych: zapisane.length, zhody: zapisane };
 }
+
+/* ------------------------------------------------------------------ *
+ * Načítanie zmluvy z dokumentu
+ * ------------------------------------------------------------------ */
+
+/** 15 MB — nad tým už PDF od banky nebýva a telo požiadavky by bolo neúnosné. */
+const MAX_DOKUMENT = 15 * 1024 * 1024;
+
+const Dokument = z.object({
+  company_id: z.string().uuid(),
+  /** Súbor ako data URL — rovnako, ako to robí čítanie bločkov. */
+  subor: z.string().min(100),
+  nazov: z.string().max(200).optional().nullable(),
+});
+
+/**
+ * Prečíta nahratú zmluvu alebo splátkový kalendár a vráti údaje do formulára.
+ *
+ * Dokument sa **uloží ako prvý**, ešte pred čítaním. Keď model zlyhá alebo
+ * vráti nezmysel, papier je aspoň v systéme a človek ho prepíše ručne; opačné
+ * poradie by pri chybe zahodilo aj súbor.
+ */
+export const precitajZmluvuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => Dokument.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    await overClena(context, data.company_id);
+
+    const zhoda = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(data.subor);
+    if (!zhoda || !zhoda[2]) throw new Error("Súbor sa nepodarilo prečítať.");
+    const mime = (zhoda[1] || "application/pdf").trim();
+    const base64 = zhoda[3] ?? "";
+    if (!/^(application\/pdf|image\/(png|jpe?g|webp|heic))$/i.test(mime)) {
+      throw new Error("Nahrajte PDF alebo fotku zmluvy.");
+    }
+    const bajty = Buffer.from(base64, "base64");
+    if (bajty.length === 0) throw new Error("Súbor je prázdny.");
+    if (bajty.length > MAX_DOKUMENT) throw new Error("Súbor je väčší než 15 MB.");
+
+    const pripona = mime === "application/pdf" ? "pdf" : mime.split("/")[1]!.replace("jpeg", "jpg");
+    const cesta = `${data.company_id}/${crypto.randomUUID()}.${pripona}`;
+    const { error: upErr } = await supabase.storage
+      .from("financing-documents")
+      .upload(cesta, bajty, { contentType: mime, upsert: false });
+    if (upErr) throw new Error(`Dokument sa nepodarilo uložiť: ${upErr.message}`);
+
+    const { precitajZmluvu } = await import("./financovanie-citanie.server");
+    try {
+      const precitane = await precitajZmluvu(base64, mime);
+      return { document_path: cesta, nazov_suboru: data.nazov ?? null, ...precitane };
+    } catch (e: any) {
+      throw new Error(
+        `${e?.message ?? "Dokument sa nepodarilo prečítať."} Údaje vyplňte ručne, súbor je uložený.`,
+      );
+    }
+  });

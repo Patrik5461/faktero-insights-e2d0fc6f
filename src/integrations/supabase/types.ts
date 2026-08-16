@@ -2122,6 +2122,7 @@ export type Database = {
           principal: number
           provider_name: string | null
           residual_value: number
+          schedule_source: string
           status: string
           term_months: number
           updated_at: string
@@ -2150,6 +2151,7 @@ export type Database = {
           principal: number
           provider_name?: string | null
           residual_value?: number
+          schedule_source?: string
           status?: string
           term_months: number
           updated_at?: string
@@ -2178,6 +2180,7 @@ export type Database = {
           principal?: number
           provider_name?: string | null
           residual_value?: number
+          schedule_source?: string
           status?: string
           term_months?: number
           updated_at?: string
