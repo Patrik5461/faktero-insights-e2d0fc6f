@@ -5,6 +5,12 @@ export async function geminiVision(
   base64: string,
   mimeType: string,
   prompt: string,
+  nastavenie?: {
+    /** Strop odpovede. Dlhý splátkový kalendár sa do predvoleného nezmestí. */
+    maxOutputTokens?: number;
+    /** Vypýta si čistý JSON, takže odpoveď nechodí zabalená v apostrofoch. */
+    json?: boolean;
+  },
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
@@ -26,6 +32,17 @@ export async function geminiVision(
             parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } }],
           },
         ],
+        ...(nastavenie
+          ? {
+              generationConfig: {
+                temperature: 0,
+                ...(nastavenie.maxOutputTokens
+                  ? { maxOutputTokens: nastavenie.maxOutputTokens }
+                  : {}),
+                ...(nastavenie.json ? { responseMimeType: "application/json" } : {}),
+              },
+            }
+          : {}),
       }),
       signal: controller.signal,
     },

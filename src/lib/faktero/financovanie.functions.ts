@@ -636,13 +636,13 @@ const Dokument = z.object({
 });
 
 /**
- * Prečíta nahratú zmluvu alebo splátkový kalendár a vráti údaje do formulára.
+ * Uloží nahratú zmluvu alebo splátkový kalendár a spustí jeho čítanie.
  *
- * Dokument sa **uloží ako prvý**, ešte pred čítaním. Keď model zlyhá alebo
- * vráti nezmysel, papier je aspoň v systéme a človek ho prepíše ručne; opačné
- * poradie by pri chybe zahodilo aj súbor.
+ * Vracia sa hneď po uložení súboru; na výsledok sa stránka pýta cez
+ * `stavCitaniaZmluvyFn`. Dokument sa ukladá **ako prvý**, ešte pred čítaním —
+ * keď model zlyhá, papier je aspoň v systéme a človek ho prepíše ručne.
  */
-export const precitajZmluvuFn = createServerFn({ method: "POST" })
+export const spustiCitanieZmluvyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => Dokument.parse(d))
   .handler(async ({ data, context }) => {
@@ -667,13 +667,57 @@ export const precitajZmluvuFn = createServerFn({ method: "POST" })
       .upload(cesta, bajty, { contentType: mime, upsert: false });
     if (upErr) throw new Error(`Dokument sa nepodarilo uložiť: ${upErr.message}`);
 
+    // Čítanie beží ďalej samo a odpoveď ide von hneď. Kalendár na 72 splátok
+    // číta model aj 40 sekúnd a taká dlhá požiadavka po ceste padne — prehliadač
+    // ju zavrie skôr, než odpoveď príde, a človek vidí len točiace sa koliesko.
+    void citajNaPozadi(supabase, cesta, base64, mime);
+    return { document_path: cesta, nazov_suboru: data.nazov ?? null };
+  });
+
+/** Výsledok čítania — leží vedľa dokumentu ako `<cesta>.vysledok.json`. */
+async function citajNaPozadi(supabase: any, cesta: string, base64: string, mime: string) {
+  let vysledok: Record<string, unknown>;
+  try {
     const { precitajZmluvu } = await import("./financovanie-citanie.server");
-    try {
-      const precitane = await precitajZmluvu(base64, mime);
-      return { document_path: cesta, nazov_suboru: data.nazov ?? null, ...precitane };
-    } catch (e: any) {
-      throw new Error(
-        `${e?.message ?? "Dokument sa nepodarilo prečítať."} Údaje vyplňte ručne, súbor je uložený.`,
-      );
+    vysledok = { ok: true, zmluva: await precitajZmluvu(base64, mime) };
+  } catch (e: any) {
+    vysledok = {
+      ok: false,
+      chyba: `${e?.message ?? "Dokument sa nepodarilo prečítať."} Údaje vyplňte ručne, súbor je uložený.`,
+    };
+  }
+  const { error } = await supabase.storage
+    .from("financing-documents")
+    .upload(`${cesta}.vysledok.json`, Buffer.from(JSON.stringify(vysledok)), {
+      contentType: "application/json",
+      upsert: true,
+    });
+  if (error) console.error("Výsledok čítania zmluvy sa nepodarilo uložiť:", error.message);
+}
+
+const StavCitania = z.object({
+  company_id: z.string().uuid(),
+  document_path: z.string().min(10).max(300),
+});
+
+/**
+ * Ako je na tom čítanie. Kým výsledok nie je na svete, vracia `hotovo: false`
+ * a stránka sa spýta o chvíľu znova.
+ */
+export const stavCitaniaZmluvyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => StavCitania.parse(d))
+  .handler(async ({ data, context }) => {
+    await overClena(context, data.company_id);
+    // Cesta chodí z prehliadača — bez tejto kontroly by sa dal vypýtať výsledok
+    // z priečinka cudzej firmy.
+    if (!data.document_path.startsWith(`${data.company_id}/`)) {
+      throw new Error("Neplatný dokument.");
     }
+    const { data: subor } = await context.supabase.storage
+      .from("financing-documents")
+      .download(`${data.document_path}.vysledok.json`);
+    if (!subor) return { hotovo: false as const };
+    const obsah = JSON.parse(await subor.text());
+    return { hotovo: true as const, ...obsah };
   });

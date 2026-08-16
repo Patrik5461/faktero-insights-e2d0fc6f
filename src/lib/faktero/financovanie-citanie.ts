@@ -39,6 +39,9 @@ export type PrecitanaZmluva = {
 
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
+const VYHRADA_BEZ_SPLATNOSTI =
+  "Splatnosť prvej splátky sa v dokumente nenašla — doplňte ju, inak sa kalendár dopočíta od zlého dátumu.";
+
 function cislo(v: unknown): number | null {
   if (v === null || v === undefined || v === "") return null;
   const n = typeof v === "number" ? v : Number(String(v).replace(/\s/g, "").replace(",", "."));
@@ -125,7 +128,86 @@ export function vyhradyKuKalendaru(z: {
       "Kalendár nemá rozpad na istinu a úrok — na zaúčtovanie ho budete musieť doplniť.",
     );
   }
+  /*
+   * Zle prečítaný rok v jednom riadku sa inak nikde neprejaví: riadky sa
+   * zoraďujú podľa dátumu, takže taký riadok sa ticho presunie inam a kalendár
+   * vyzerá v poriadku. Prezradia ho dva zvyšky — dvakrát ten istý deň a diera
+   * na mieste, odkiaľ riadok odišiel.
+   */
+  const dupli = z.splatky
+    .map((r) => r.due_date)
+    .filter((d, i, p) => p.indexOf(d) !== i)
+    .filter((d, i, p) => p.indexOf(d) === i);
+  if (dupli.length) {
+    vyhrady.push(
+      `Dva riadky kalendára majú rovnakú splatnosť (${dupli.slice(0, 3).join(", ")}) — skontrolujte v nich rok.`,
+    );
+  }
+  for (let i = 1; i < z.splatky.length; i++) {
+    const dni =
+      (Date.parse(z.splatky[i].due_date) - Date.parse(z.splatky[i - 1].due_date)) / 86_400_000;
+    if (dni > 45) {
+      vyhrady.push(
+        `Medzi splátkami č. ${i} a ${i + 1} je odstup ${Math.round(dni)} dní — skontrolujte dátumy.`,
+      );
+      break;
+    }
+  }
   return vyhrady;
+}
+
+/**
+ * Zmluva a splátkový kalendár chodia často ako dva samostatné PDF — v zmluve
+ * je úrok a akontácia, v kalendári riadky. Nahrať sa dajú naraz a tu sa spoja
+ * do jednej prečítanej zmluvy.
+ *
+ * Riadky vyhrávajú z toho dokumentu, ktorý ich má najviac; hlavičkové údaje sa
+ * dopĺňajú prvou nájdenou hodnotou, takže prázdno v jednom dokumente vyplní
+ * druhý. Nič sa nepriemeruje ani nedopočítava — to by už bola domnienka.
+ */
+export function spojPrecitane(dokumenty: PrecitanaZmluva[]): PrecitanaZmluva {
+  if (dokumenty.length === 1) return dokumenty[0];
+
+  const skalar = <K extends keyof PrecitanaZmluva>(k: K): PrecitanaZmluva[K] => {
+    for (const d of dokumenty) if (d[k] !== null && d[k] !== undefined) return d[k];
+    return dokumenty[0][k];
+  };
+
+  const riadky = dokumenty.reduce<PrecitanaSplatka[]>(
+    (najviac, d) => (d.splatky.length > najviac.length ? d.splatky : najviac),
+    [],
+  );
+
+  const spojena: PrecitanaZmluva = {
+    kind: skalar("kind"),
+    provider_name: skalar("provider_name"),
+    contract_number: skalar("contract_number"),
+    variable_symbol: skalar("variable_symbol"),
+    currency: skalar("currency") ?? "EUR",
+    principal: skalar("principal"),
+    interest_rate: skalar("interest_rate"),
+    term_months: riadky.length || skalar("term_months"),
+    first_due_date: riadky[0]?.due_date ?? skalar("first_due_date"),
+    interest_from: skalar("interest_from"),
+    payment_amount: skalar("payment_amount") ?? riadky[0]?.amount ?? null,
+    vat_rate: skalar("vat_rate"),
+    down_payment: skalar("down_payment"),
+    residual_value: skalar("residual_value"),
+    splatky: riadky,
+    vyhrady: [],
+  };
+
+  // Výhrady sa počítajú nanovo zo spojeného — tie z jednotlivých dokumentov
+  // hovoria o tom, čo v nich chýbalo, a druhý dokument to práve doplnil.
+  spojena.vyhrady = vyhradyKuKalendaru({
+    principal: spojena.principal,
+    splatky: riadky,
+    term_months: null,
+  });
+  if (!spojena.first_due_date) {
+    spojena.vyhrady.push(VYHRADA_BEZ_SPLATNOSTI);
+  }
+  return spojena;
 }
 
 export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
@@ -159,9 +241,7 @@ export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
     term_months: term ? Math.round(term) : null,
   });
   if (!zmluva.first_due_date) {
-    zmluva.vyhrady.push(
-      "Splatnosť prvej splátky sa v dokumente nenašla — doplňte ju, inak sa kalendár dopočíta od zlého dátumu.",
-    );
+    zmluva.vyhrady.push(VYHRADA_BEZ_SPLATNOSTI);
   }
   return zmluva;
 }

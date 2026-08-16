@@ -39,7 +39,15 @@ Vráť VÝHRADNE JSON bez sprievodného textu:
 
 export async function precitajZmluvu(base64: string, mimeType: string): Promise<PrecitanaZmluva> {
   const { geminiVision } = await import("./gemini.server");
-  const odpoved = await geminiVision(base64, mimeType, PROMPT);
+  /*
+   * Strop odpovede treba zdvihnúť ručne: kalendár na 72 splátok má vyše 5 000
+   * tokenov a s predvoleným stropom sa odreže uprostred riadka. `json` navyše
+   * zaručí, že odpoveď je naozaj JSON — bez neho ju model rád zabalí do bloku.
+   */
+  const odpoved = await geminiVision(base64, mimeType, PROMPT, {
+    maxOutputTokens: 32768,
+    json: true,
+  });
   const parsed = odpovedNaJson<any>(odpoved);
   if (!parsed) throw new Error("Z dokumentu sa nepodarilo prečítať nič.");
 

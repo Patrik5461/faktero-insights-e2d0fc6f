@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { FileUp, Loader2 } from "lucide-react";
-import { precitajZmluvuFn } from "@/lib/faktero/financovanie.functions";
+import { spustiCitanieZmluvyFn, stavCitaniaZmluvyFn } from "@/lib/faktero/financovanie.functions";
+import { spojPrecitane, type PrecitanaZmluva } from "@/lib/faktero/financovanie-citanie";
 import type { SplatkaZoZmluvy, ZmluvaNaUpravu } from "./FormularZmluvy";
 
 /**
@@ -11,6 +12,13 @@ import type { SplatkaZoZmluvy, ZmluvaNaUpravu } from "./FormularZmluvy";
  * Cieľom nie je ušetriť pár klikov — je to jediný spôsob, ako dostať do
  * Faktera **presné** riadky kalendára. Dopočítaný kalendár sa od predpisu
  * banky vždy o pár centov líši a v účtovníctve ten rozdiel visí navždy.
+ *
+ * Nahrať sa dá viac súborov naraz: zmluva a splátkový kalendár chodia od banky
+ * ako dve samostatné PDF a ani jedno z nich nemá všetko. Prečítané sa spoja.
+ *
+ * Čítanie beží na serveri a stránka sa naň pýta, kým nie je hotové. Držať
+ * otvorenú požiadavku sa nedá — dlhý kalendár číta model aj 40 sekúnd a taká
+ * požiadavka sa po ceste zavrie.
  *
  * Prečítané údaje sa nikam neukladajú samy: naplnia formulár a človek ich
  * potvrdí. Model sa mýli a zmluva je záväzný dokument.
@@ -21,6 +29,10 @@ export type PrecitanyDokument = {
   splatky: SplatkaZoZmluvy[];
   vyhrady: string[];
 };
+
+/** Ako dlho sa oplatí čakať, kým to vzdáme. */
+const STROP_MS = 240_000;
+const KROK_MS = 2000;
 
 async function naDataUrl(f: File): Promise<string> {
   return await new Promise((hotovo, chyba) => {
@@ -38,24 +50,66 @@ export function NahratieZmluvy({
   companyId: string;
   onPrecitane: (d: PrecitanyDokument) => void;
 }) {
-  const citaj = useServerFn(precitajZmluvuFn);
+  const spusti = useServerFn(spustiCitanieZmluvyFn);
+  const stav = useServerFn(stavCitaniaZmluvyFn);
   const vstup = useRef<HTMLInputElement>(null);
   const [pracujem, setPracujem] = useState(false);
+  const [sekundy, setSekundy] = useState(0);
+  const [kolko, setKolko] = useState({ hotovych: 0, spolu: 0 });
 
-  async function spracuj(f: File | undefined) {
-    if (!f) return;
+  useEffect(() => {
+    if (!pracujem) return;
+    const t = setInterval(() => setSekundy((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [pracujem]);
+
+  /** Pýta sa servera, kým výsledok nie je na svete. */
+  async function pockajNaVysledok(cesta: string): Promise<PrecitanaZmluva> {
+    const koniec = Date.now() + STROP_MS;
+    while (Date.now() < koniec) {
+      await new Promise((r) => setTimeout(r, KROK_MS));
+      const s: any = await stav({ data: { company_id: companyId, document_path: cesta } });
+      if (!s?.hotovo) continue;
+      if (!s.ok) throw new Error(s.chyba ?? "Dokument sa nepodarilo prečítať.");
+      return s.zmluva as PrecitanaZmluva;
+    }
+    throw new Error("Čítanie trvá príliš dlho. Súbor je uložený, údaje vyplňte ručne.");
+  }
+
+  async function spracuj(subory: File[]) {
+    if (!subory.length) return;
     setPracujem(true);
+    setSekundy(0);
+    setKolko({ hotovych: 0, spolu: subory.length });
     try {
-      const subor = await naDataUrl(f);
-      const r = await citaj({ data: { company_id: companyId, subor, nazov: f.name } });
+      const precitane: { zmluva: PrecitanaZmluva; cesta: string | null }[] = [];
+      for (const f of subory) {
+        const subor = await naDataUrl(f);
+        const zaciatok: any = await spusti({
+          data: { company_id: companyId, subor, nazov: f.name },
+        });
+        const zmluva = await pockajNaVysledok(zaciatok.document_path);
+        precitane.push({ zmluva, cesta: zaciatok.document_path });
+        setKolko((k) => ({ ...k, hotovych: k.hotovych + 1 }));
+      }
+
+      const r = spojPrecitane(precitane.map((p) => p.zmluva));
+      // Do zmluvy sa ukladá jeden dokument — nech je to ten s kalendárom.
+      const sKalendarom = precitane.reduce((a, b) =>
+        b.zmluva.splatky.length > a.zmluva.splatky.length ? b : a,
+      );
+
       onPrecitane({
-        document_path: r.document_path,
+        document_path: sKalendarom.cesta,
         splatky: r.splatky,
         vyhrady: r.vyhrady,
         predvyplnene: {
           kind: r.kind ?? "leasing",
           // Názov v zmluve nebýva — nech je aspoň podľa čoho ju v zozname spoznať.
-          name: [r.provider_name, r.contract_number].filter(Boolean).join(" ") || f.name,
+          name:
+            [r.provider_name, r.contract_number].filter(Boolean).join(" ") ||
+            subory[0]?.name ||
+            "",
           provider_name: r.provider_name,
           contract_number: r.contract_number,
           variable_symbol: r.variable_symbol,
@@ -94,8 +148,9 @@ export function NahratieZmluvy({
         <div className="min-w-0">
           <h2 className="text-sm font-medium">Máte zmluvu v PDF?</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Nahrajte zmluvu alebo splátkový kalendár. Faktero z neho vyčíta údaje a keď je v ňom
-            kalendár, prevezme ho riadok po riadku — presne tak, ako ho predpísala banka.
+            Nahrajte zmluvu aj splátkový kalendár — pokojne naraz, aj keď sú to dva súbory. Faktero
+            z nich vyčíta údaje a kalendár prevezme riadok po riadku, presne tak, ako ho predpísala
+            banka.
           </p>
         </div>
         <button
@@ -109,14 +164,16 @@ export function NahratieZmluvy({
         <input
           ref={vstup}
           type="file"
+          multiple
           accept="application/pdf,image/*"
           className="hidden"
-          onChange={(e) => void spracuj(e.target.files?.[0])}
+          onChange={(e) => void spracuj(Array.from(e.target.files ?? []))}
         />
       </div>
       {pracujem && (
         <p className="mt-3 text-xs text-muted-foreground">
-          Viacstranový kalendár trvá aj pol minúty — stránku nezatvárajte.
+          {kolko.spolu > 1 ? `Dokument ${kolko.hotovych + 1} z ${kolko.spolu}. ` : ""}
+          Čítam už {sekundy} s — viacstranový kalendár trvá aj minútu. Stránku nezatvárajte.
         </p>
       )}
     </div>

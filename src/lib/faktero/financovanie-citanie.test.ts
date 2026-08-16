@@ -3,6 +3,7 @@ import {
   jePouzitelna,
   normalizujOdpoved,
   normalizujSplatky,
+  spojPrecitane,
   vyhradyKuKalendaru,
 } from "./financovanie-citanie";
 
@@ -166,5 +167,102 @@ describe("normalizujOdpoved", () => {
   it("prázdna odpoveď nie je použiteľná", () => {
     expect(jePouzitelna(normalizujOdpoved({}))).toBe(false);
     expect(jePouzitelna(normalizujOdpoved({ principal: 1000 }))).toBe(true);
+  });
+});
+
+describe("zle prečítaný dátum", () => {
+  // Riadky sa zoraďujú podľa splatnosti, takže riadok so zle prečítaným rokom
+  // sa ticho presunie inam. Kalendár potom vyzerá spojito a chyba sa objaví až
+  // pri párovaní platby o rok neskôr.
+  it("dvakrát ten istý deň v kalendári povie", () => {
+    const v = vyhradyKuKalendaru({
+      principal: 300,
+      term_months: null,
+      splatky: normalizujSplatky([
+        { number: 1, due_date: "2025-01-09", amount: 100, principal_part: 100 },
+        { number: 2, due_date: "2025-02-09", amount: 100, principal_part: 100 },
+        { number: 3, due_date: "2025-02-09", amount: 100, principal_part: 100 },
+      ]),
+    });
+    expect(v.join(" ")).toMatch(/rovnakú splatnosť/);
+  });
+
+  it("dieru po presunutom riadku povie", () => {
+    const v = vyhradyKuKalendaru({
+      principal: 300,
+      term_months: null,
+      splatky: normalizujSplatky([
+        { number: 1, due_date: "2025-01-09", amount: 100, principal_part: 100 },
+        { number: 2, due_date: "2025-02-09", amount: 100, principal_part: 100 },
+        { number: 3, due_date: "2025-06-09", amount: 100, principal_part: 100 },
+      ]),
+    });
+    expect(v.join(" ")).toMatch(/odstup/);
+  });
+
+  it("pravidelný mesačný kalendár nekomentuje", () => {
+    const v = vyhradyKuKalendaru({
+      principal: 300,
+      term_months: null,
+      splatky: normalizujSplatky([
+        // Február je krátky a január dlhý — odstup kolíše, a to je v poriadku.
+        { number: 1, due_date: "2025-01-31", amount: 100, principal_part: 100 },
+        { number: 2, due_date: "2025-02-28", amount: 100, principal_part: 100 },
+        { number: 3, due_date: "2025-03-31", amount: 100, principal_part: 100 },
+      ]),
+    });
+    expect(v.filter((x) => /odstup|rovnakú splatnosť/.test(x))).toEqual([]);
+  });
+});
+
+describe("spojPrecitane", () => {
+  // Banka posiela zmluvu a splátkový kalendár ako dve samostatné PDF: v zmluve
+  // je úrok a akontácia, v kalendári riadky. Ani jedno samo nestačí.
+  const zoZmluvy = normalizujOdpoved({
+    kind: "uver",
+    provider_name: "ČSOB Leasing, a.s.",
+    contract_number: "UZF/24/81047",
+    principal: 23500,
+    interest_rate: 6.95,
+    term_months: 72,
+    down_payment: 7000,
+    splatky: [],
+  });
+  const zKalendara = normalizujOdpoved({
+    variable_symbol: "2481047",
+    interest_from: "2024-12-10",
+    splatky: [
+      { number: 1, due_date: "2025-01-09", amount: 399.99, principal_part: 265.82 },
+      { number: 2, due_date: "2025-02-09", amount: 399.99, principal_part: 262.91 },
+    ],
+  });
+
+  it("vezme riadky z kalendára a hlavičku zo zmluvy", () => {
+    const z = spojPrecitane([zoZmluvy, zKalendara]);
+    expect(z.splatky.length).toBe(2);
+    expect(z.interest_rate).toBe(6.95);
+    expect(z.down_payment).toBe(7000);
+    expect(z.variable_symbol).toBe("2481047");
+    expect(z.interest_from).toBe("2024-12-10");
+    expect(z.first_due_date).toBe("2025-01-09");
+  });
+
+  it("na poradí nahratia nezáleží", () => {
+    const a = spojPrecitane([zoZmluvy, zKalendara]);
+    const b = spojPrecitane([zKalendara, zoZmluvy]);
+    expect(b.splatky).toEqual(a.splatky);
+    expect(b.interest_rate).toBe(a.interest_rate);
+    expect(b.principal).toBe(a.principal);
+  });
+
+  it("výhrady o chýbajúcom kalendári zo zmluvy zmiznú, keď kalendár dorazil druhým súborom", () => {
+    expect(zoZmluvy.vyhrady.join(" ")).toMatch(/nenašiel sa|nenašiel/i);
+    const z = spojPrecitane([zoZmluvy, zKalendara]);
+    expect(z.vyhrady.join(" ")).not.toMatch(/nenašiel/);
+    expect(z.vyhrady.join(" ")).not.toMatch(/Splatnosť prvej splátky/);
+  });
+
+  it("jediný dokument prejde nezmenený", () => {
+    expect(spojPrecitane([zKalendara])).toBe(zKalendara);
   });
 });
