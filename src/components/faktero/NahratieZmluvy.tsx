@@ -83,17 +83,28 @@ export function NahratieZmluvy({
     setKolko({ hotovych: 0, spolu: subory.length });
     try {
       const precitane: { zmluva: PrecitanaZmluva; cesta: string | null }[] = [];
+      const zlyhane: string[] = [];
       for (const f of subory) {
-        const subor = await naDataUrl(f);
-        const zaciatok: any = await spusti({
-          data: { company_id: companyId, subor, nazov: f.name },
-        });
-        const zmluva = await pockajNaVysledok(zaciatok.document_path);
-        precitane.push({ zmluva, cesta: zaciatok.document_path });
+        try {
+          const subor = await naDataUrl(f);
+          const zaciatok: any = await spusti({
+            data: { company_id: companyId, subor, nazov: f.name },
+          });
+          const zmluva = await pockajNaVysledok(zaciatok.document_path);
+          precitane.push({ zmluva, cesta: zaciatok.document_path });
+        } catch (e: unknown) {
+          // Jeden nečitateľný dokument nesmie zahodiť aj ten, ktorý sa
+          // prečítal — kalendár býva ten druhý a je z nich cennejší.
+          zlyhane.push(`${f.name}: ${e instanceof Error ? e.message : "nepodarilo sa prečítať"}`);
+        }
         setKolko((k) => ({ ...k, hotovych: k.hotovych + 1 }));
+      }
+      if (precitane.length === 0) {
+        throw new Error(zlyhane[0] ?? "Dokument sa nepodarilo prečítať.");
       }
 
       const r = spojPrecitane(precitane.map((p) => p.zmluva));
+      if (zlyhane.length) r.vyhrady = [...r.vyhrady, ...zlyhane];
       // Do zmluvy sa ukladá jeden dokument — nech je to ten s kalendárom.
       const sKalendarom = precitane.reduce((a, b) =>
         b.zmluva.splatky.length > a.zmluva.splatky.length ? b : a,

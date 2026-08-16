@@ -41,13 +41,14 @@ export async function precitajZmluvu(base64: string, mimeType: string): Promise<
   const { geminiVision } = await import("./gemini.server");
   /*
    * Strop odpovede treba zdvihnúť ručne: kalendár na 72 splátok má vyše 5 000
-   * tokenov a s predvoleným stropom sa odreže uprostred riadka. `json` navyše
-   * zaručí, že odpoveď je naozaj JSON — bez neho ju model rád zabalí do bloku.
+   * tokenov a s predvoleným stropom sa odreže uprostred riadka.
+   *
+   * Vynútený JSON režim (`responseMimeType`) sa nepoužíva. Overené na zmluve
+   * z ČSOB 2026-08-16: model v ňom vráti odpoveď bez poslednej zátvorky a tvári
+   * sa, že skončil normálne. Bez neho pošle JSON v bloku so spätnými
+   * apostrofmi, čo `odpovedNaJson` číta bez problémov.
    */
-  const odpoved = await geminiVision(base64, mimeType, PROMPT, {
-    maxOutputTokens: 32768,
-    json: true,
-  });
+  const odpoved = await geminiVision(base64, mimeType, PROMPT, { maxOutputTokens: 32768 });
   const parsed = odpovedNaJson<any>(odpoved);
   if (!parsed) throw new Error("Z dokumentu sa nepodarilo prečítať nič.");
 
