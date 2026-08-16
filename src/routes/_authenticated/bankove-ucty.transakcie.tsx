@@ -1,9 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { listBankData, syncBankTransactions } from "@/lib/faktero/tatrabanka.functions";
+import {
+  listBankData,
+  sumyTransakcii,
+  syncBankTransactions,
+} from "@/lib/faktero/tatrabanka.functions";
+import type { SucetMeny } from "@/lib/faktero/bank-sumy";
 import { toast } from "sonner";
 import { ArrowLeft, RefreshCw, Link2, Unlink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,16 +29,42 @@ function fmtMoney(n: number, c = "EUR") {
   return new Intl.NumberFormat("sk-SK", { style: "currency", currency: c }).format(n);
 }
 
+/** Popis obdobia nad súčtom — bez neho nie je jasné, za čo to číslo je. */
+function obdobiePopis(od: string, do_: string): string {
+  const d = (s: string) => s.split("-").reverse().join(". ");
+  if (od && do_) return `${d(od)} – ${d(do_)}`;
+  if (od) return `od ${d(od)}`;
+  if (do_) return `do ${d(do_)}`;
+  return "Celé obdobie";
+}
+
 function TxPage() {
   const search = Route.useSearch();
   const fetchData = useServerFn(listBankData);
   const sync = useServerFn(syncBankTransactions);
+  const nacitajSumy = useServerFn(sumyTransakcii);
   const zrus = useServerFn(zrusParovanie);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [selected, setSelected] = useState<string | undefined>(search.account);
   const [busy, setBusy] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [smer, setSmer] = useState<"" | "prijate" | "odoslane">("");
+
+  /*
+   * Smer platby sa nedá vybrať rovnosťou — banka ho ukladá znamienkom sumy.
+   * Bez tohto filtra v databáze by sa filtrovalo len v rámci zobrazenej strany
+   * a súčty by nesedeli s tým, čo je v tabuľke.
+   */
+  const compare = useMemo(
+    () =>
+      smer === "prijate"
+        ? ([{ column: "amount", op: "gt", value: 0 }] as const)
+        : smer === "odoslane"
+          ? ([{ column: "amount", op: "lt", value: 0 }] as const)
+          : undefined,
+    [smer],
+  );
 
   const {
     rows: txs,
@@ -52,6 +83,7 @@ function TxPage() {
     // nenašlo nič. Referencia pohybu je to, čo sa naozaj dá hľadať.
     searchColumns: ["counterparty", "variable_symbol", "description", "transaction_reference"],
     filters: { bank_account_id: selected ?? null },
+    compare: compare as any,
     dateColumn: "booking_date",
     dateFrom: dateFrom || null,
     dateTo: dateTo || null,
@@ -67,6 +99,35 @@ function TxPage() {
     // vyzeral, akoby polovica platieb chýbala.
     fetchData({ data: { company_id: cid } }).then((d) => setAccounts(d.accounts));
   }, []);
+
+  /*
+   * Súčty za obdobie. Rátajú sa na serveri z celého výberu, nie zo zobrazenej
+   * strany — a bez ohľadu na zvolený smer, aby bolo vidieť obe strany naraz.
+   */
+  const [sumy, setSumy] = useState<SucetMeny[]>([]);
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    let zrusene = false;
+    nacitajSumy({
+      data: {
+        company_id: cid,
+        account_id: selected ?? null,
+        date_from: dateFrom || null,
+        date_to: dateTo || null,
+        hladat: q || null,
+      },
+    })
+      .then((r) => {
+        if (!zrusene) setSumy(r.sumy);
+      })
+      .catch(() => {
+        if (!zrusene) setSumy([]);
+      });
+    return () => {
+      zrusene = true;
+    };
+  }, [selected, dateFrom, dateTo, q, total]);
 
   /* K spárovaným pohybom dotiahneme číslo faktúry — samotné id nikomu nič nepovie. */
   const [faktury, setFaktury] = useState<Record<string, string>>({});
@@ -154,6 +215,16 @@ function TxPage() {
                 ...accounts.map((a) => ({ value: a.id, label: a.account_name ?? a.iban ?? a.id })),
               ],
             },
+            {
+              label: "Smer",
+              value: smer,
+              onChange: (v) => setSmer(v as "" | "prijate" | "odoslane"),
+              options: [
+                { value: "", label: "Prijaté aj odoslané" },
+                { value: "prijate", label: "Iba prijaté" },
+                { value: "odoslane", label: "Iba odoslané" },
+              ],
+            },
           ]}
           dateFrom={dateFrom}
           dateTo={dateTo}
@@ -163,6 +234,7 @@ function TxPage() {
             setQ("");
             setDateFrom("");
             setDateTo("");
+            setSmer("");
           }}
           right={
             <div className="flex gap-2">
@@ -182,6 +254,47 @@ function TxPage() {
             </div>
           }
         />
+
+        {sumy.length > 0 && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {sumy.map((s) => (
+              <div key={s.currency} className="rounded-xl border border-border bg-card p-4">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                    {obdobiePopis(dateFrom, dateTo)}
+                  </span>
+                  <span className="font-mono text-xs text-muted-foreground">{s.currency}</span>
+                </div>
+                <dl className="mt-3 space-y-1.5 text-sm">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <dt className="text-muted-foreground">
+                      Prijaté <span className="text-xs">({s.pocetPrijatych})</span>
+                    </dt>
+                    <dd className="tabular-nums font-medium text-emerald-700">
+                      {fmtMoney(s.prijate, s.currency)}
+                    </dd>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <dt className="text-muted-foreground">
+                      Odoslané <span className="text-xs">({s.pocetOdoslanych})</span>
+                    </dt>
+                    <dd className="tabular-nums font-medium text-destructive">
+                      {fmtMoney(s.odoslane, s.currency)}
+                    </dd>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-3 border-t border-border pt-1.5">
+                    <dt className="font-medium">Rozdiel</dt>
+                    <dd
+                      className={`tabular-nums font-semibold ${s.rozdiel < 0 ? "text-destructive" : ""}`}
+                    >
+                      {fmtMoney(s.rozdiel, s.currency)}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">

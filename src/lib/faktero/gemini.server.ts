@@ -39,6 +39,15 @@ export async function geminiVision(
   }
 
   const data = await res.json();
+  /*
+   * Odrezanú odpoveď treba povedať nahlas. Pri dlhom splátkovom kalendári sa
+   * JSON nedopíše do konca, ticho sa neprečíta a volajúci to vidí ako
+   * „v dokumente nič nebolo“ — pritom tam bolo, len sa nezmestilo.
+   */
+  const dovod = data.candidates?.[0]?.finishReason;
+  if (dovod === "MAX_TOKENS") {
+    throw new Error("Odpoveď modelu sa nezmestila — dokument je príliš dlhý, rozdeľte ho.");
+  }
   // Modely s uvažovaním vracajú viac častí a odpoveď nemusí byť tá prvá —
   // `parts[0].text` z nich vytiahne prázdno alebo úvahu namiesto výsledku.
   const parts = data.candidates?.[0]?.content?.parts;

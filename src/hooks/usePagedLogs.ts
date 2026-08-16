@@ -23,6 +23,11 @@ export type PagedLogsOptions = {
   searchColumns?: string[];
   /** Equality filters; null/empty values are ignored. */
   filters?: LogFilters;
+  /**
+   * Nerovnosti — napríklad smer platby (`amount > 0`). Rovnosti na to nestačia
+   * a bez toho by sa filtrovalo len v rámci zobrazenej strany.
+   */
+  compare?: Array<{ column: string; op: "gt" | "gte" | "lt" | "lte"; value: number | string }>;
   /** Column for the date range filter. Defaults to created_at. */
   dateColumn?: string;
   dateFrom?: string | null;
@@ -46,6 +51,7 @@ export function usePagedLogs(opts: PagedLogsOptions) {
     resource,
     searchColumns = [],
     filters,
+    compare,
     dateColumn = "created_at",
     dateFrom,
     dateTo,
@@ -66,7 +72,10 @@ export function usePagedLogs(opts: PagedLogsOptions) {
   const [loading, setLoading] = useState(true);
   const [nonce, setNonce] = useState(0);
 
-  const filterSignature = useMemo(() => JSON.stringify(filters ?? {}), [filters]);
+  const filterSignature = useMemo(
+    () => JSON.stringify({ f: filters ?? {}, c: compare ?? [] }),
+    [filters, compare],
+  );
 
   // Reset to page 1 when filters change.
   useEffect(() => {
@@ -106,6 +115,9 @@ export function usePagedLogs(opts: PagedLogsOptions) {
           if (v == null || v === "" || v === "all") continue;
           q = q.eq(k, v);
         }
+      }
+      for (const c of compare ?? []) {
+        q = (q as any)[c.op](c.column, c.value);
       }
       if (dateFrom) q = q.gte(dateColumn, dateFrom);
       if (dateTo) {

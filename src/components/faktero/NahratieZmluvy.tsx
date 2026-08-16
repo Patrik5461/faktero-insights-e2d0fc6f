@@ -62,7 +62,12 @@ export function NahratieZmluvy({
           principal: r.principal ?? "",
           interest_rate: r.interest_rate ?? "",
           term_months: r.term_months ?? r.splatky.length,
-          first_due_date: r.first_due_date ?? new Date().toISOString().slice(0, 10),
+          /*
+           * Žiadny dnešok. Keď sa splatnosť v dokumente nenájde, pole ostane
+           * prázdne a človek ho doplní — dosadený dnešok vyzeral ako údaj zo
+           * zmluvy a pri spätne zapísanej zmluve posunul celý kalendár.
+           */
+          first_due_date: r.first_due_date ?? "",
           payment_amount: r.payment_amount,
           vat_rate: r.vat_rate ?? 0,
           down_payment: r.down_payment ?? 0,

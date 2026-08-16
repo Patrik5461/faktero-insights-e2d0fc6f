@@ -158,6 +158,11 @@ export function normalizujOdpoved(parsed: any): PrecitanaZmluva {
     splatky: riadky,
     term_months: term ? Math.round(term) : null,
   });
+  if (!zmluva.first_due_date) {
+    zmluva.vyhrady.push(
+      "Splatnosť prvej splátky sa v dokumente nenašla — doplňte ju, inak sa kalendár dopočíta od zlého dátumu.",
+    );
+  }
   return zmluva;
 }
 

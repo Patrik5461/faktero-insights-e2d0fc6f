@@ -6,6 +6,8 @@ import { kalendar, suhrn, type Zmluva } from "@/lib/faktero/financovanie";
 import { formatujSumu } from "@/lib/faktero/zostatky";
 import { SK_VAT_RATES } from "@/lib/faktero/vat-rates";
 
+const DATUM = /^\d{4}-\d{2}-\d{2}$/;
+
 /**
  * Formulár zmluvy o financovaní — spoločný pre založenie aj úpravu.
  *
@@ -127,7 +129,9 @@ export function FormularZmluvy({
       day_count: dayCount,
       interest_from: interestFrom || null,
     };
-    if (z.principal <= 0 || z.term_months <= 0) return null;
+    // Bez platnej prvej splatnosti sa kalendár nedá postaviť — radšej žiadny
+    // náhľad než riadky s vymysleným dátumom.
+    if (z.principal <= 0 || z.term_months <= 0 || !DATUM.test(firstDue)) return null;
     const riadky = kalendar(z);
     return { riadky, suhrn: suhrn(riadky, z) };
   }, [
@@ -150,6 +154,10 @@ export function FormularZmluvy({
     }
     if (cislo(principal) <= 0) {
       toast.error("Zadajte financovanú sumu.");
+      return;
+    }
+    if (!DATUM.test(firstDue)) {
+      toast.error("Doplňte splatnosť prvej splátky — bez nej sa kalendár nedá zapísať.");
       return;
     }
     setUkladam(true);

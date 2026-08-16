@@ -137,6 +137,27 @@ describe("normalizujOdpoved", () => {
     expect(z.vyhrady.join(" ")).toMatch(/36 splátkach/);
   });
 
+  it("chýbajúcu prvú splatnosť povie, namiesto aby dosadila dnešok", () => {
+    // Spätne zapísaná zmluva bez čitateľného dátumu: dosadený dnešok by posunul
+    // celý kalendár o roky a vyzeral by ako údaj zo zmluvy.
+    const z = normalizujOdpoved({ kind: "uver", principal: 1000, splatky: [] });
+    expect(z.first_due_date).toBeNull();
+    expect(z.vyhrady.join(" ")).toMatch(/Splatnosť prvej splátky/);
+  });
+
+  it("keď je kalendár prečítaný, o prvú splatnosť sa nesťažuje", () => {
+    const z = normalizujOdpoved({
+      kind: "uver",
+      principal: 200,
+      splatky: [
+        { number: 1, due_date: "2025-02-20", amount: 110, principal_part: 100, interest_part: 10 },
+        { number: 2, due_date: "2025-03-20", amount: 110, principal_part: 100, interest_part: 10 },
+      ],
+    });
+    expect(z.first_due_date).toBe("2025-02-20");
+    expect(z.vyhrady.join(" ")).not.toMatch(/Splatnosť prvej splátky/);
+  });
+
   it("neznámy druh nechá na človeku a nehádže leasing naslepo", () => {
     const z = normalizujOdpoved({ kind: "nieco ine", principal: 1000, splatky: [] });
     expect(z.kind).toBeNull();

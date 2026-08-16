@@ -414,3 +414,63 @@ export const listBankTransactions = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { transactions: rows ?? [] };
   });
+
+/**
+ * Súčty prijatých a odoslaných platieb za vybrané obdobie.
+ *
+ * Nedá sa to spočítať zo zobrazenej strany — tá má dvadsať riadkov a súčet by
+ * bol súčtom strany, nie obdobia. Číta sa preto po tisícoch (PostgREST viac
+ * naraz nedá) a sčítava sa až na serveri; z účtov chodia len sumy a mena.
+ */
+const SumyInput = z.object({
+  company_id: z.string().uuid(),
+  account_id: z.string().uuid().optional().nullable(),
+  date_from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
+  date_to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
+  hladat: z.string().max(200).optional().nullable(),
+});
+
+export const sumyTransakcii = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => SumyInput.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertMember(context.supabase, context.userId, data.company_id);
+    const { spocitajPohyby } = await import("./bank-sumy");
+
+    const KROK = 1000;
+    const riadky: { amount: number | string | null; currency: string | null }[] = [];
+    for (let od = 0; ; od += KROK) {
+      let q = context.supabase
+        .from("bank_transactions")
+        .select("amount, currency")
+        .eq("company_id", data.company_id)
+        .order("booking_date", { ascending: false })
+        .range(od, od + KROK - 1);
+      if (data.account_id) q = q.eq("bank_account_id", data.account_id);
+      if (data.date_from) q = q.gte("booking_date", data.date_from);
+      if (data.date_to) q = q.lte("booking_date", data.date_to);
+      const term = (data.hladat ?? "").trim().replace(/[%_,()]/g, "");
+      if (term) {
+        q = q.or(
+          ["counterparty", "variable_symbol", "description", "transaction_reference"]
+            .map((c) => `${c}.ilike.%${term}%`)
+            .join(","),
+        );
+      }
+      const { data: cast, error } = await q;
+      if (error) throw new Error(error.message);
+      riadky.push(...((cast as any[]) ?? []));
+      if (!cast || cast.length < KROK) break;
+      // Poistka proti behu naprázdno, keby databáza vracala stále plnú stranu.
+      if (od > 100_000) break;
+    }
+    return { sumy: spocitajPohyby(riadky) };
+  });
