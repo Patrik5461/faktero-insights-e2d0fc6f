@@ -402,8 +402,13 @@ export async function fetchTransactions(
     `/v5/accounts/${encodeURIComponent(externalAccountId)}/transactions?dateFrom=${fromStr}&pageSize=200`;
 
   const booked: any[] = [];
-  // Poistka proti nekonečnej slučke, keby banka vracala next donekonečna.
-  for (let page = 0; next && page < 25; page++) {
+  /*
+   * Poistka proti nekonečnej slučke, keby banka vracala next donekonečna.
+   * Pri 25 stranách sa rušný účet zastavil presne na 5 000 pohyboch a chýbal
+   * mu pol rok histórie — a nikde to nebolo vidieť, lebo orezaná odpoveď
+   * vyzerá presne ako úplná.
+   */
+  for (let page = 0; next && page < 100; page++) {
     const json: any = await apiGet(next, accessToken, consentId).catch((e: any) => {
       /*
        * Ako ďaleko dozadu banka pustí, sa dopredu nedá zistiť — pri každom účte
