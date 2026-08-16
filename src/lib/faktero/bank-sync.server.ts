@@ -101,6 +101,11 @@ export const MAX_DAYS_BACK = 500;
  * Číta sa po tisíckach: PostgREST vracia bez `range` najviac 1000 riadkov a
  * jeden účet ich za 90 dní pokojne má viac. Neúplný zoznam by znamenal, že sa
  * tie isté pohyby vložia druhý raz — teda tichý duplikát v účtovníctve.
+ *
+ * Radí sa podľa `id`, nie podľa dňa zaúčtovania. Pri radení podľa dňa má
+ * databáza pri rovnakom dni voľnú ruku v poradí a medzi stranami tak riadky
+ * vypadávajú — na účte s piatimi tisíckami pohybov to skončilo pokusom vložiť
+ * pohyby, ktoré tam už boli.
  */
 export async function znameReferencie(
   supabaseAdmin: any,
@@ -116,7 +121,7 @@ export async function znameReferencie(
       .eq("bank_account_id", accountId)
       .gte("booking_date", odDna)
       .not("transaction_reference", "is", null)
-      .order("booking_date", { ascending: true })
+      .order("id", { ascending: true })
       .range(od, od + KROK - 1);
     if (error) throw new Error(`known_failed: ${error.message}`);
     for (const r of data ?? []) seen.add(r.transaction_reference);
@@ -158,24 +163,53 @@ export async function stiahniTransakcieUctu(
   const fresh = txs.filter((t) => !t.transaction_reference || !seen.has(t.transaction_reference));
   if (fresh.length === 0) return { inserted: 0, total: txs.length };
 
-  const { error, data } = await supabaseAdmin
-    .from("bank_transactions")
-    .insert(
-      fresh.map((t) => ({
-        company_id: conn.company_id,
-        bank_account_id: account.id,
-        booking_date: t.booking_date,
-        amount: t.amount,
-        currency: t.currency,
-        variable_symbol: t.variable_symbol,
-        counterparty: t.counterparty,
-        description: t.description,
-        transaction_reference: t.transaction_reference,
-      })),
-    )
-    .select("id");
-  if (error) throw new Error(`insert_failed: ${error.message}`);
-  return { inserted: data?.length ?? 0, total: txs.length };
+  const riadky = fresh.map((t) => ({
+    company_id: conn.company_id,
+    bank_account_id: account.id,
+    booking_date: t.booking_date,
+    amount: t.amount,
+    currency: t.currency,
+    variable_symbol: t.variable_symbol,
+    counterparty: t.counterparty,
+    description: t.description,
+    transaction_reference: t.transaction_reference,
+  }));
+  return { inserted: await vlozPohyby(supabaseAdmin, riadky), total: txs.length };
+}
+
+/**
+ * Vloží pohyby a nedá sa zhodiť jedným, ktorý tam už je.
+ *
+ * Zoznam známych referencií je prvá obrana proti duplicitám, jedinečný index
+ * druhá. Keď zaberie tá druhá, Postgres zhodí celý zápis — a účet, ktorý mal
+ * pribudnúť o rok histórie, neuloží nič. Preto sa píše po dávkach a dávka,
+ * ktorá narazí na duplicitu, sa zopakuje po riadkoch.
+ *
+ * `upsert` sa použiť nedá: index je čiastočný (`where transaction_reference is
+ * not null`) a taký sa ako cieľ `on conflict` cez PostgREST vybrať nedá.
+ */
+async function vlozPohyby(supabaseAdmin: any, riadky: any[]): Promise<number> {
+  const DAVKA = 500;
+  let vlozenych = 0;
+  for (let od = 0; od < riadky.length; od += DAVKA) {
+    const cast = riadky.slice(od, od + DAVKA);
+    const { error, data } = await supabaseAdmin.from("bank_transactions").insert(cast).select("id");
+    if (!error) {
+      vlozenych += data?.length ?? 0;
+      continue;
+    }
+    if (!/duplicate key|23505/.test(error.message ?? "")) {
+      throw new Error(`insert_failed: ${error.message}`);
+    }
+    for (const r of cast) {
+      const { error: e1 } = await supabaseAdmin.from("bank_transactions").insert(r);
+      if (!e1) vlozenych += 1;
+      else if (!/duplicate key|23505/.test(e1.message ?? "")) {
+        throw new Error(`insert_failed: ${e1.message}`);
+      }
+    }
+  }
+  return vlozenych;
 }
 
 /**
