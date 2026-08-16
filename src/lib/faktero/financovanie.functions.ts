@@ -423,27 +423,56 @@ export const oznacSplatkuFn = createServerFn({ method: "POST" })
     return { ok: true, id: splatka?.id };
   });
 
+/**
+ * Načíta celý výsledok dopytu, nie prvú tisícku.
+ *
+ * PostgREST vracia bez `range` najviac 1000 riadkov a mlčí o tom. Firma, ktorá
+ * má v banke vyše desaťtisíc pohybov, tak dostala náhodnú tisícku a splátky
+ * zaplatené minulý mesiac medzi nimi neboli — párovanie potom nenašlo nič a
+ * vyzeralo to, akoby prestalo fungovať. Radí sa podľa `id`, lebo pri radení
+ * podľa dátumu si databáza pri rovnakom dni poradie volí sama a medzi stranami
+ * riadky vypadávajú.
+ */
+async function vsetkyRiadky(dopyt: (od: number, do_: number) => any): Promise<any[]> {
+  const KROK = 1000;
+  const riadky: any[] = [];
+  for (let od = 0; ; od += KROK) {
+    const { data, error } = await dopyt(od, od + KROK - 1);
+    if (error) throw new Error(error.message);
+    riadky.push(...((data as any[]) ?? []));
+    if (!data || data.length < KROK) return riadky;
+  }
+}
+
 /** Podklady na párovanie: nespárované odchádzajúce platby a otvorené splátky. */
 async function podkladyParovania(supabase: any, companyId: string) {
   const od = new Date(Date.now() - DNI_DOZADU * 86_400_000).toISOString().slice(0, 10);
 
-  const [{ data: txs }, { data: splatky }] = await Promise.all([
-    supabase
-      .from("bank_transactions")
-      .select("id, booking_date, amount, currency, variable_symbol, counterparty, description")
-      .eq("company_id", companyId)
-      .is("matched_installment_id", null)
-      .is("matched_invoice_id", null)
-      .lt("amount", 0)
-      .gte("booking_date", od),
-    supabase
-      .from("financing_installments")
-      .select(
-        "id, contract_id, number, due_date, amount, financing_contracts!inner(currency, variable_symbol, counterparty_hint, provider_name, name, status)",
-      )
-      .eq("company_id", companyId)
-      .is("paid_at", null)
-      .gte("due_date", od),
+  const [txs, splatky] = await Promise.all([
+    vsetkyRiadky((a, b) =>
+      supabase
+        .from("bank_transactions")
+        .select("id, booking_date, amount, currency, variable_symbol, counterparty, description")
+        .eq("company_id", companyId)
+        .is("matched_installment_id", null)
+        .is("matched_invoice_id", null)
+        .lt("amount", 0)
+        .gte("booking_date", od)
+        .order("id", { ascending: true })
+        .range(a, b),
+    ),
+    vsetkyRiadky((a, b) =>
+      supabase
+        .from("financing_installments")
+        .select(
+          "id, contract_id, number, due_date, amount, financing_contracts!inner(currency, variable_symbol, counterparty_hint, provider_name, name, status)",
+        )
+        .eq("company_id", companyId)
+        .is("paid_at", null)
+        .gte("due_date", od)
+        .order("id", { ascending: true })
+        .range(a, b),
+    ),
   ]);
 
   const pohyby: OdchadzajuciPohyb[] = ((txs ?? []) as any[]).map((t) => ({
