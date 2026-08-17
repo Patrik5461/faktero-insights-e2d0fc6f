@@ -197,6 +197,42 @@ function text(hodnota: unknown, max = 200): string | null {
   return t ? t.slice(0, max) : null;
 }
 
+export type PolozkaDokladu = {
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+  unit_price: number | null;
+  vat_rate: number | null;
+  total: number | null;
+};
+
+/**
+ * Položky z dokladu. Sú informatívne — neúčtujú sa a nespájajú so skladom,
+ * preto sa nič nedopočítava; berie sa len to, čo model naozaj prečítal.
+ * Riadok bez názvu nemá zmysel a súčtové riadky sa medzi položky nepúšťajú.
+ */
+export function polozkyDokladu(surove: unknown): PolozkaDokladu[] | null {
+  if (!Array.isArray(surove)) return null;
+  const SUCTY = /^(spolu|celkom|sucet|súčet|total|zaokr|k úhrade|k uhrade|dph)\b/i;
+  const out: PolozkaDokladu[] = [];
+  for (const r of surove) {
+    if (!r || typeof r !== "object") continue;
+    const z = r as Record<string, unknown>;
+    const nazov = text(z.name, 200);
+    if (!nazov || SUCTY.test(nazov)) continue;
+    out.push({
+      name: nazov,
+      quantity: cislo(z.quantity),
+      unit: text(z.unit, 20),
+      unit_price: cislo(z.unit_price),
+      vat_rate: cislo(z.vat_rate),
+      total: cislo(z.total),
+    });
+    if (out.length >= 200) break;
+  }
+  return out.length ? out : null;
+}
+
 export type PrijataFakturaZMailu = {
   supplier_name: string;
   supplier_ico: string | null;
@@ -214,6 +250,7 @@ export type PrijataFakturaZMailu = {
   currency: string;
   status: string;
   note: string;
+  items: PolozkaDokladu[] | null;
 };
 
 /**
@@ -267,5 +304,6 @@ export function zostavPrijatuFakturu(args: {
     // Doklad z mailu nikto neschválil, takže ostáva rozpracovaný.
     status: "draft",
     note: `Prijaté e-mailom${odkial}.${args.predmet ? ` Predmet: ${args.predmet.slice(0, 120)}` : ""}`,
+    items: polozkyDokladu(ai.items),
   };
 }

@@ -4,7 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrijemMailom } from "@/components/faktero/PrijemMailom";
-import { Plus, FileText, Archive, Loader2 } from "lucide-react";
+import {
+  Plus,
+  FileText,
+  Archive,
+  Loader2,
+  Check,
+  Trash2,
+  Mail,
+  ScanLine,
+  User,
+} from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
+import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
@@ -64,6 +77,11 @@ function PurchaseInvoicesPage() {
   const [supplier, setSupplier] = useState<string>("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [zipBusy, setZipBusy] = useState(false);
+  const [hromadneBusy, setHromadneBusy] = useState(false);
+  const [mazanie, setMazanie] = useState(false);
+  /** Meno k `created_by`; profily číta server, RLS pustí každého len k sebe. */
+  const [mena, setMena] = useState<Record<string, string>>({});
+  const nacitajMena = useServerFn(menaClenovFirmy);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -162,6 +180,63 @@ function PurchaseInvoicesPage() {
     }
   }
 
+  /** Označí vybrané za prijaté. Stornované a už prijaté sa nechávajú tak. */
+  async function hromadnePrijat() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    const ciel = rows.filter(
+      (r) => selected.has(r.id) && r.status !== "cancelled" && r.status !== "received",
+    );
+    if (!ciel.length) {
+      toast.info("Vybrané faktúry už prijaté sú (alebo sú stornované).");
+      return;
+    }
+    setHromadneBusy(true);
+    try {
+      const { error } = await supabase
+        .from("purchase_invoices")
+        .update({ status: "received" })
+        .eq("company_id", cid)
+        .in(
+          "id",
+          ciel.map((r) => r.id),
+        );
+      if (error) throw new Error(error.message);
+      toast.success(ciel.length === 1 ? "Faktúra prijatá" : `Prijatých ${ciel.length} faktúr`);
+      setSelected(new Set());
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    } finally {
+      setHromadneBusy(false);
+    }
+  }
+
+  /** Mäkké mazanie — doklad ostáva v databáze kvôli exportom a auditu. */
+  async function hromadneVymazat() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    const ids = rows.filter((r) => selected.has(r.id)).map((r) => r.id);
+    if (!ids.length) return;
+    setHromadneBusy(true);
+    try {
+      const { error } = await supabase
+        .from("purchase_invoices")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("company_id", cid)
+        .in("id", ids);
+      if (error) throw new Error(error.message);
+      toast.success(ids.length === 1 ? "Faktúra vymazaná" : `Vymazaných ${ids.length} faktúr`);
+      setSelected(new Set());
+      setMazanie(false);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    } finally {
+      setHromadneBusy(false);
+    }
+  }
+
   async function load() {
     const cid = getActiveCompanyId();
     if (!cid) return;
@@ -189,6 +264,15 @@ function PurchaseInvoicesPage() {
   useEffect(() => {
     load();
   }, [status, month, supplier]);
+
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    nacitajMena({ data: { company_id: cid } })
+      .then((m) => setMena(m as Record<string, string>))
+      .catch(() => setMena({}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const totals = useMemo(() => {
     let total = 0,
@@ -280,6 +364,20 @@ function PurchaseInvoicesPage() {
               Stiahnuť ZIP (PDF + CSV)
             </button>
             <button
+              onClick={hromadnePrijat}
+              disabled={hromadneBusy}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <Check className="h-3.5 w-3.5" /> Označiť ako prijaté
+            </button>
+            <button
+              onClick={() => setMazanie(true)}
+              disabled={hromadneBusy}
+              className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Vymazať
+            </button>
+            <button
               onClick={() => setSelected(new Set())}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
@@ -301,23 +399,25 @@ function PurchaseInvoicesPage() {
                 </th>
                 <th className="p-3">Číslo</th>
                 <th className="p-3">Dodávateľ</th>
+                <th className="p-3">VS</th>
                 <th className="p-3">Vystavená</th>
                 <th className="p-3">Splatnosť</th>
                 <th className="p-3 text-right">Suma</th>
+                <th className="p-3">Zapísal</th>
                 <th className="p-3">Stav</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="p-8 text-center text-muted-foreground">
                     Načítavam…
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="p-8 text-center text-muted-foreground">
                     <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
                     Žiadne prijaté faktúry. Pridajte prvú cez „Nová prijatá faktúra".
                   </td>
@@ -344,10 +444,16 @@ function PurchaseInvoicesPage() {
                   >
                     {r.supplier_name}
                   </td>
+                  <td className="p-3 tabular-nums text-muted-foreground">
+                    {r.variable_symbol || "—"}
+                  </td>
                   <td className="p-3">{r.issue_date}</td>
                   <td className="p-3">{r.due_date}</td>
                   <td className="p-3 text-right tabular-nums">
                     {fmtMoney(Number(r.amount_total ?? 0), r.currency)}
+                  </td>
+                  <td className="p-3">
+                    <Zapisal zdroj={r.source} autor={r.created_by ? mena[r.created_by] : null} />
                   </td>
                   <td className="p-3">
                     <StatusBadge status={r.status} />
@@ -358,7 +464,41 @@ function PurchaseInvoicesPage() {
           </table>
         </div>
       </PageBody>
+
+      <ConfirmDialog
+        open={mazanie}
+        title={selected.size === 1 ? "Vymazať faktúru?" : `Vymazať ${selected.size} faktúr?`}
+        message="Doklady sa presunú do koša — v exportoch ani v prehľadoch sa už neobjavia."
+        confirmLabel="Vymazať"
+        onCancel={() => setMazanie(false)}
+        onConfirm={hromadneVymazat}
+        busy={hromadneBusy}
+      />
     </>
+  );
+}
+
+/**
+ * Kto doklad zapísal. Pri doklade z mailu je v `created_by` majiteľ adresy, nie
+ * ten, kto niečo vypĺňal — meno by tam klamalo, preto rozhoduje zdroj.
+ */
+function Zapisal({ zdroj, autor }: { zdroj?: string | null; autor?: string | null }) {
+  if (zdroj === "mail")
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Mail className="h-3.5 w-3.5" /> E-mailom
+      </span>
+    );
+  if (zdroj === "doklad")
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        <ScanLine className="h-3.5 w-3.5" /> Z dokladov
+      </span>
+    );
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <User className="h-3.5 w-3.5" /> {autor || "Ručne"}
+    </span>
   );
 }
 

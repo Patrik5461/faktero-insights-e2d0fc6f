@@ -258,3 +258,44 @@ export const removeMemberFn = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
+/**
+ * Mená členov firmy pre zobrazenie „kto to zapísal".
+ *
+ * Oproti `listMembersFn` to nie je správa prístupov, len menovka — stačí byť
+ * členom firmy. E-maily aj mená sú v `profiles`, kam RLS pustí každého len
+ * k sebe, preto sa čítajú servisným kľúčom až po overení členstva.
+ */
+export const menaClenovFirmy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: { company_id: string }) => d)
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    const { data: som } = await supabase
+      .from("company_users")
+      .select("user_id")
+      .eq("company_id", data.company_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!som) throw new Error("Forbidden");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: clenovia } = await supabaseAdmin
+      .from("company_users")
+      .select("user_id")
+      .eq("company_id", data.company_id);
+
+    const ids = (clenovia ?? []).map((c: any) => c.user_id as string);
+    if (!ids.length) return {} as Record<string, string>;
+
+    const { data: profily } = await supabaseAdmin
+      .from("profiles")
+      .select("id, email, full_name")
+      .in("id", ids);
+
+    const mapa: Record<string, string> = {};
+    for (const p of profily ?? []) {
+      mapa[(p as any).id] = ((p as any).full_name || (p as any).email || "").trim() || "Neznámy";
+    }
+    return mapa;
+  });

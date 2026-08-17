@@ -73,6 +73,8 @@ function PurchaseInvoiceDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [row, setRow] = useState<any | null>(null);
+  // Náhľad prílohy priamo na stránke — podpísaný odkaz platí 10 minút.
+  const [nahlad, setNahlad] = useState<string | null>(null);
   // Bez tohto ostal na neexistujúcom doklade navždy nápis „Načítavam…".
   const [nenajdene, setNenajdene] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
@@ -217,6 +219,24 @@ function PurchaseInvoiceDetail() {
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
 
+  // Odkaz sa pýta až keď doklad existuje a prílohu má.
+  useEffect(() => {
+    let zrusene = false;
+    if (!row?.file_path) {
+      setNahlad(null);
+      return;
+    }
+    supabase.storage
+      .from("purchase-invoices")
+      .createSignedUrl(row.file_path, 600)
+      .then(({ data }) => {
+        if (!zrusene) setNahlad(data?.signedUrl ?? null);
+      });
+    return () => {
+      zrusene = true;
+    };
+  }, [row?.file_path]);
+
   if (nenajdene)
     return (
       <PageBody>
@@ -331,6 +351,15 @@ function PurchaseInvoiceDetail() {
                 {row.payment_date && <Row label="Úhrada" value={row.payment_date} />}
               </div>
             </div>
+
+            <PolozkyDokladu items={row.items} mena={row.currency} />
+
+            <NahladPrilohy
+              url={nahlad}
+              mime={row.file_mime}
+              maPrilohu={!!row.file_path}
+              stiahni={downloadPdf}
+            />
 
             {row.note && (
               <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap">
@@ -487,6 +516,111 @@ function Row({ label, value }: { label: string; value: string | number }) {
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+/**
+ * Položky prečítané z dokladu.
+ *
+ * Sú informatívne — needitujú sa a nespájajú so skladom. Zmysel majú v tom, že
+ * pri kontrole nemusí človek otvárať PDF, keď chce len vidieť, za čo to je.
+ */
+function PolozkyDokladu({ items, mena }: { items: unknown; mena?: string | null }) {
+  if (!Array.isArray(items) || items.length === 0) return null;
+  const cena = (n: unknown) =>
+    typeof n === "number" && Number.isFinite(n)
+      ? new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena || "EUR" }).format(n)
+      : "—";
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-5 py-3">
+        <h2 className="text-sm font-medium">Položky z dokladu</h2>
+        <span className="text-xs text-muted-foreground">
+          {items.length === 1 ? "1 položka" : `${items.length} položiek`} · prečítané z prílohy
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[34rem] text-sm">
+          <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+            <tr>
+              <th className="p-3">Položka</th>
+              <th className="p-3 text-right">Množstvo</th>
+              <th className="p-3 text-right">Cena za kus</th>
+              <th className="p-3 text-right">DPH</th>
+              <th className="p-3 text-right">Spolu</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {(items as any[]).map((p, i) => (
+              <tr key={i}>
+                <td className="p-3">{p?.name ?? "—"}</td>
+                <td className="p-3 text-right tabular-nums">
+                  {p?.quantity != null ? `${p.quantity}${p?.unit ? ` ${p.unit}` : ""}` : "—"}
+                </td>
+                <td className="p-3 text-right tabular-nums">{cena(p?.unit_price)}</td>
+                <td className="p-3 text-right tabular-nums">
+                  {p?.vat_rate != null ? `${p.vat_rate} %` : "—"}
+                </td>
+                <td className="p-3 text-right tabular-nums font-medium">{cena(p?.total)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
+        Položky sú len na prezretie — do skladu ani do účtovníctva nevstupujú. Rozhodujú sumy v
+        hlavičke dokladu.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Náhľad prílohy priamo na stránke. PDF sa vloží cez `object`, fotka ako obrázok
+ * — sťahovať sa nemusí nič. Keď to prehliadač nezvládne, ostáva tlačidlo.
+ */
+function NahladPrilohy({
+  url,
+  mime,
+  maPrilohu,
+  stiahni,
+}: {
+  url: string | null;
+  mime?: string | null;
+  maPrilohu: boolean;
+  stiahni: () => void;
+}) {
+  if (!maPrilohu) return null;
+  const jeObrazok = (mime ?? "").startsWith("image/");
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
+        <h2 className="text-sm font-medium">Náhľad dokladu</h2>
+        <button
+          onClick={stiahni}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary"
+        >
+          <Download className="h-3.5 w-3.5" /> Stiahnuť
+        </button>
+      </div>
+      {!url ? (
+        <div className="p-8 text-center text-sm text-muted-foreground">Načítavam náhľad…</div>
+      ) : jeObrazok ? (
+        <img src={url} alt="Doklad" className="max-h-[70vh] w-full bg-muted/20 object-contain" />
+      ) : (
+        <object data={url} type="application/pdf" className="h-[70vh] w-full">
+          {/* Mobilné prehliadače PDF vo vnorenom rámci často nezobrazia. */}
+          <div className="p-8 text-center text-sm text-muted-foreground">
+            Váš prehliadač náhľad PDF nezobrazí.{" "}
+            <button onClick={stiahni} className="text-primary underline">
+              Otvoriť doklad
+            </button>
+          </div>
+        </object>
+      )}
     </div>
   );
 }

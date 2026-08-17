@@ -140,6 +140,7 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
       const payload = {
         company_id: cid,
         created_by: user.user?.id ?? null,
+        source: "rucne",
         supplier_name: form.supplier_name.trim(),
         supplier_ico: form.supplier_ico.trim() || null,
         supplier_dic: form.supplier_dic.trim() || null,

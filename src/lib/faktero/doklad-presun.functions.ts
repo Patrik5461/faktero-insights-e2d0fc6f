@@ -79,6 +79,9 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
       .insert({
         company_id: data.company_id,
         created_by: userId,
+        source: "doklad",
+        // Položky sa na bločku už raz prečítali — netreba ich čítať znova.
+        items: doklad.items ?? null,
         supplier_name: doklad.supplier_name ?? "Neuvedený dodávateľ",
         supplier_ico: doklad.supplier_ico ?? null,
         supplier_ic_dph: doklad.supplier_ic_dph ?? null,

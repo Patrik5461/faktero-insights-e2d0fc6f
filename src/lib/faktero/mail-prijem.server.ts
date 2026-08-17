@@ -63,14 +63,18 @@ export function overPodpisWebhooku(args: {
   return false;
 }
 
-const PROMPT = `Si účtovník. Z priloženého dokladu (faktúra, blok alebo účtenka) vytiahni údaje DODÁVATEĽA a sumy.
+const PROMPT = `Si účtovník. Z priloženého dokladu (faktúra, blok alebo účtenka) vytiahni údaje DODÁVATEĽA, sumy a jednotlivé položky.
 Vráť VÝLUČNE JSON v tvare:
 {"supplier_name": string|null, "supplier_ico": string|null, "supplier_dic": string|null,
  "supplier_ic_dph": string|null, "supplier_iban": string|null, "invoice_number": string|null,
  "variable_symbol": string|null, "issue_date": "YYYY-MM-DD"|null, "due_date": "YYYY-MM-DD"|null,
  "amount_without_vat": number|null, "vat_amount": number|null, "amount_total": number|null,
- "currency": string|null}
+ "currency": string|null,
+ "items": [{"name": string, "quantity": number|null, "unit": string|null,
+            "unit_price": number|null, "vat_rate": number|null, "total": number|null}]}
 Dodávateľ je ten, KTO doklad vystavil, nie odberateľ. Sumy uveď ako čísla s bodkou.
+Do "items" daj riadky tabuľky dokladu v poradí, v akom sú na papieri; keď doklad
+položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie sú položka.
 Čo na doklade nie je, nechaj null — nič si nevymýšľaj.`;
 
 /** Prečíta doklad cez Gemini. Keď sa to nepodarí, vráti null a doklad vznikne prázdny. */
@@ -247,6 +251,9 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
           ...faktura,
           company_id: adresa.company_id,
           created_by: adresa.user_id,
+          // `created_by` je majiteľ adresy, nie ten, kto doklad zapísal — bez
+          // zdroja by zoznam tvrdil, že to niekto vyplnil ručne.
+          source: "mail",
           file_path: cesta,
           file_mime: mime,
           file_size: bajty.length,
