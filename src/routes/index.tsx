@@ -36,6 +36,7 @@ import {
   Sparkles,
   Tags,
   TrendingUp,
+  Truck,
   Upload,
   UserPlus,
   Wallet,
@@ -197,6 +198,11 @@ const features = [
     icon: Boxes,
     title: "Skladové hospodárstvo",
     text: "Príjemky, výdajky, viacero skladov a prepojenie skladových položiek priamo s faktúrami.",
+  },
+  {
+    icon: Truck,
+    title: "Dodací list na naskladnenie",
+    text: "Odfoťte dodací list od dodávateľa — položky aj nákupné ceny sa prečítajú a tovar sa naskladní.",
   },
   {
     icon: MapPin,
