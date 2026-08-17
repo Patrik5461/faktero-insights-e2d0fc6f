@@ -92,4 +92,30 @@ do
   fi
 done
 
+# ── Package.resolved ─────────────────────────────────────────────────────────
+# Xcode Cloud stavia s vypnutým automatickým riešením balíkov a odmietne začať
+# bez hotového Package.resolved. V gite ho nemáme (Xcode ho prepisuje pri
+# každom otvorení projektu, viď .gitignore), tak ho vyrobíme tu.
+#
+# Ide to až teraz: pokiaľ `node_modules` neexistovalo, nedali sa rozlúsknuť
+# lokálne balíky pluginov a resolver by nemal z čoho vychádzať.
+readonly XCPROJEKT="ios/App/App.xcodeproj"
+readonly RESOLVED="$XCPROJEKT/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+
+if command -v xcodebuild >/dev/null 2>&1; then
+  echo "▸ xcodebuild -resolvePackageDependencies"
+  # So schémou aj bez nej: schéma `App` nie je v repozitári zdieľaná, takže na
+  # čistom klone nemusí existovať a xcodebuild by na ňu zbytočne padol.
+  xcodebuild -resolvePackageDependencies -project "$XCPROJEKT" \
+    || xcodebuild -resolvePackageDependencies -project "$XCPROJEKT" -scheme App
+
+  if [ ! -f "$RESOLVED" ]; then
+    echo "✗ Package.resolved sa nevyrobil — build by padol na riešení závislostí."
+    exit 1
+  fi
+  echo "✓ Package.resolved vyrobený ($(wc -c <"$RESOLVED" | tr -d ' ') B)"
+else
+  echo "! xcodebuild nie je k dispozícii, Package.resolved sa preskakuje."
+fi
+
 echo "✓ Zdroje pripravené, Xcode Cloud môže stavať."
