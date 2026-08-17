@@ -68,7 +68,15 @@ function Stranka() {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setUklada(true);
-    const patch = Object.fromEntries(POLIA.map((k) => [k, c[k] ?? null]));
+    // Vyprázdnené pole musí ísť ako NULL, nie ako "". Prázdny reťazec by sa
+    // pri zostavovaní XML tváril ako vyplnená skratka a Pohoda by dostala
+    // prázdny element namiesto vynechaného.
+    const patch = Object.fromEntries(
+      POLIA.map((k) => {
+        const v = c[k];
+        return [k, typeof v === "string" ? v.trim() || null : (v ?? null)];
+      }),
+    );
     const { error } = await supabase
       .from("companies")
       .update(patch as never)
