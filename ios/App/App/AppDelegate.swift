@@ -38,6 +38,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+    // MARK: - Push notifikácie
+    //
+    // Výsledok registrácie u Apple oznamuje iOS jedine cez tieto metódy a plugin
+    // Capacitora ho počúva ako správu v NotificationCenter (viď `load()`
+    // v PushNotificationsPlugin). Keď tu chýbali, appka si token vypýtala,
+    // Apple ho vydal — ale do JavaScriptu sa neozvalo nič. Registrácia sa preto
+    // točila donekonečna a server sa o zariadení nikdy nedozvedel.
+
+    func application(_ application: UIApplication,
+                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications,
+                                        object: deviceToken)
+    }
+
+    func application(_ application: UIApplication,
+                     didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications,
+                                        object: error)
+    }
+
     func application(_ application: UIApplication,
                      configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {

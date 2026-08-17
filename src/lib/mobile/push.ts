@@ -74,28 +74,59 @@ export async function registerPushNotifications(): Promise<{
     return await new Promise((resolve) => {
       const platform = Capacitor.getPlatform() as "ios" | "android";
       let resolved = false;
-      const finish = (r: { ok: boolean; token?: string; error?: string }) => {
+      const odpoj: Array<() => void> = [];
+      /*
+       * iOS odpovie na registráciu do sekundy. Keď sa neozve nič, sľub tu kedysi
+       * čakal navždy a tlačidlo v Účte sa donekonečna točilo — chyba bola pritom
+       * v natívnej časti (chýbajúce metódy v AppDelegate). Radšej to po chvíli
+       * vzdať a povedať to nahlas.
+       */
+      const cas = setTimeout(
+        () => finish({ ok: false, error: "iOS na registráciu neodpovedal (30 s)" }),
+        30_000,
+      );
+
+      function finish(r: { ok: boolean; token?: string; error?: string }) {
         if (resolved) return;
         resolved = true;
+        clearTimeout(cas);
+        // Bez odpojenia by každé ďalšie ťuknutie na „Skúsiť znova" pridalo
+        // ďalšiu kópiu poslucháčov a token by sa zapisoval viackrát.
+        odpoj.forEach((f) => f());
         resolve(r);
+      }
+
+      /** Podrží poslucháča, aby sa dal po dokončení odpojiť. */
+      const drz = (p: Promise<{ remove: () => Promise<void> }>) => {
+        p.then((h) => {
+          if (resolved) void h.remove();
+          else odpoj.push(() => void h.remove());
+        }).catch(() => {
+          /* poslucháča sa nepodarilo napojiť — vyrieši to časový limit */
+        });
       };
 
-      PushNotifications.addListener("registration", async (token) => {
-        try {
-          // Keď ešte nikto nie je prihlásený, token sa odloží — zahodiť ho
-          // znamená, že server o zariadení nikdy nebude vedieť.
-          if (!(await zapisToken(token.value, platform))) odlozToken(token.value, platform);
-          finish({ ok: true, token: token.value });
-        } catch (e: any) {
-          odlozToken(token.value, platform);
-          finish({ ok: false, error: e?.message ?? "save failed" });
-        }
-      });
+      drz(
+        PushNotifications.addListener("registration", async (token) => {
+          try {
+            // Keď ešte nikto nie je prihlásený, token sa odloží — zahodiť ho
+            // znamená, že server o zariadení nikdy nebude vedieť.
+            if (!(await zapisToken(token.value, platform))) odlozToken(token.value, platform);
+            finish({ ok: true, token: token.value });
+          } catch (e: any) {
+            odlozToken(token.value, platform);
+            finish({ ok: false, error: e?.message ?? "save failed" });
+          }
+        }),
+      );
 
-      PushNotifications.addListener("registrationError", (err) => {
-        finish({ ok: false, error: String(err?.error ?? err) });
-      });
+      drz(
+        PushNotifications.addListener("registrationError", (err) => {
+          finish({ ok: false, error: String(err?.error ?? err) });
+        }),
+      );
 
+      // Tento ostáva napojený aj po dokončení — otvára cieľ ťuknutej notifikácie.
       PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
         try {
           const path = (action.notification.data as any)?.path;
