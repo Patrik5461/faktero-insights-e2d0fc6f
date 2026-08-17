@@ -16,6 +16,12 @@
 # závislostí — čo je presne ten správny okamih.
 set -euo pipefail
 
+# Hneď prvý riadok v logu. Keď v ňom nie je, skript sa vôbec nespustil a nemá
+# zmysel hľadať chybu v ňom — príčina je vtedy v tom, že ho Xcode Cloud nenašiel
+# alebo stavia starší commit. Vypísaný commit to rovno prezradí.
+echo "════ ci_post_clone.sh BEŽÍ ════"
+echo "▸ commit: ${CI_COMMIT:-neznámy}  vetva: ${CI_BRANCH:-neznáma}  build: ${CI_BUILD_NUMBER:-?}"
+
 # Vite 7 chce Node ≥ 20.19 / ≥ 22.12. V package.json pole `engines` nie je,
 # takže verzia je tu — na serveri aj na Patrikovom stroji beží rovnaká rada 22.
 readonly NODE_VERZIA="22.22.3"
@@ -61,6 +67,8 @@ fi
 # V repozitári je aj bun.lock, ale ten sa tu zámerne nepoužíva — package-lock
 # nesie aj mac-ové varianty binárok (esbuild, rollup, lightningcss, oxide).
 echo "▸ npm ci"
+# Xcode Cloud vie pri mnohých súbežných spojeniach zamrznúť na sťahovaní balíkov.
+npm config set maxsockets 3
 npm ci --no-audit --no-fund
 
 # ── Webové rozhranie + prekopírovanie do natívneho projektu ──────────────────
