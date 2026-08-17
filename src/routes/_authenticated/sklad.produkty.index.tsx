@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import {
   Plus,
   Pencil,
+  FileText,
   AlertTriangle,
   Download,
   History,
@@ -860,6 +861,20 @@ function StockItemsPage() {
                           </button>
                         ) : (
                           <>
+                            {/* Skladová karta (pohyby, rezervácie, priemerná
+                                nákupná cena) sa dala doteraz otvoriť len z
+                                detailu pohybu alebo zo zoznamu pod minimom —
+                                z tohto zoznamu na ňu neviedlo nič. */}
+                            {s.product_id && (
+                              <Link
+                                to="/sklad/produkty/$id"
+                                params={{ id: s.product_id }}
+                                className="rounded p-1.5 hover:bg-muted"
+                                title="Skladová karta"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Link>
+                            )}
                             <button
                               onClick={() => setEditing(s)}
                               className="rounded p-1.5 hover:bg-muted"
