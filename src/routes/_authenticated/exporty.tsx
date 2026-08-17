@@ -293,9 +293,11 @@ function ExportsPage() {
       />
       <PageBody>
         <OdovzdanieZaMesiac />
+        {/* `min-w-0` na stĺpcoch: bez neho má položka mriežky min-width auto,
+            takže široká tabuľka stĺpec roztiahne a na mobile presiahne stránku. */}
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           {/* LEFT: selector */}
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <div className="rounded-2xl border border-border bg-card p-5">
               <div className="mb-4 flex flex-wrap items-end gap-3">
                 <div>
@@ -443,7 +445,7 @@ function ExportsPage() {
           </div>
 
           {/* RIGHT: formats sidebar */}
-          <aside className="space-y-3">
+          <aside className="min-w-0 space-y-3">
             <div className="rounded-2xl border border-border bg-card p-5">
               <h3 className="text-sm font-semibold uppercase tracking-wide">Podporované formáty</h3>
               <ul className="mt-3 space-y-2 text-sm">
