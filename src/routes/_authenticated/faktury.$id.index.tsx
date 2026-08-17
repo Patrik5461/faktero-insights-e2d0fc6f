@@ -65,6 +65,8 @@ function InvoiceDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [inv, setInv] = useState<any>(null);
+  // Bez tohto ostal na neexistujúcej faktúre navždy nápis „Načítavam…".
+  const [nenajdene, setNenajdene] = useState(false);
   const [items, setItems] = useState<any[]>([]);
   const [company, setCompany] = useState<any>(null);
   const [stockMoves, setStockMoves] = useState<any[]>([]);
@@ -207,7 +209,8 @@ function InvoiceDetail() {
   }
 
   async function load() {
-    const { data } = await supabase.from("invoices").select("*").eq("id", id).single();
+    const { data } = await supabase.from("invoices").select("*").eq("id", id).maybeSingle();
+    setNenajdene(!data);
     setInv(data);
     if (data?.job_id) {
       const { data: job } = await supabase
@@ -522,6 +525,20 @@ function InvoiceDetail() {
     }
   }
 
+  if (nenajdene)
+    return (
+      <PageBody>
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm">
+          <p>Táto faktúra v aktívnej firme neexistuje.</p>
+          <p className="mt-1 text-muted-foreground">
+            Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.
+          </p>
+          <Link to="/faktury" className="mt-4 inline-block text-primary underline">
+            Späť na faktúry
+          </Link>
+        </div>
+      </PageBody>
+    );
   if (!inv) return <PageBody>Načítavam…</PageBody>;
 
   const isOverdue =

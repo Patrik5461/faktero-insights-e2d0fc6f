@@ -73,6 +73,8 @@ function PurchaseInvoiceDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [row, setRow] = useState<any | null>(null);
+  // Bez tohto ostal na neexistujúcom doklade navždy nápis „Načítavam…".
+  const [nenajdene, setNenajdene] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [debtorAccountId, setDebtorAccountId] = useState<string>("");
@@ -88,6 +90,7 @@ function PurchaseInvoiceDetail() {
       .select("*")
       .eq("id", id)
       .maybeSingle();
+    setNenajdene(!data);
     setRow(data);
   }
   useEffect(() => {
@@ -214,6 +217,20 @@ function PurchaseInvoiceDetail() {
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
 
+  if (nenajdene)
+    return (
+      <PageBody>
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm">
+          <p>Tento doklad v aktívnej firme neexistuje.</p>
+          <p className="mt-1 text-muted-foreground">
+            Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.
+          </p>
+          <Link to="/prijate-faktury" className="mt-4 inline-block text-primary underline">
+            Späť na prijaté faktúry
+          </Link>
+        </div>
+      </PageBody>
+    );
   if (!row) return <PageBody>Načítavam…</PageBody>;
 
   return (

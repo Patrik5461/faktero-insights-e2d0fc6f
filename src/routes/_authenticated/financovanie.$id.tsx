@@ -69,6 +69,9 @@ function Stranka() {
   const [pohyby, setPohyby] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
   const [upravujem, setUpravujem] = useState(false);
+  // Keď zmluva neexistuje, servírka vyhodí chybu — bez tohto by na stránke
+  // ostal navždy nápis „Načítavam…" a toast by medzitým zmizol.
+  const [nenajdene, setNenajdene] = useState(false);
 
   const obnov = useCallback(async () => {
     const cid = getActiveCompanyId();
@@ -83,6 +86,7 @@ function Stranka() {
       setNavrhy((n.navrhy as any[]).filter((z) => z.contractId === id));
       setPohyby(n.pohyby as any[]);
     } catch (e: any) {
+      setNenajdene(true);
       toast.error(e?.message ?? "Zmluvu sa nepodarilo načítať.");
     }
   }, [id, nacitaj, nacitajNavrhy]);
@@ -109,7 +113,19 @@ function Stranka() {
       <>
         <PageHeader title="Zmluva o financovaní" />
         <PageBody>
-          <p className="text-sm text-muted-foreground">Načítavam…</p>
+          {nenajdene ? (
+            <div className="rounded-xl border border-border bg-card p-8 text-center text-sm">
+              <p>Táto zmluva v aktívnej firme neexistuje.</p>
+              <p className="mt-1 text-muted-foreground">
+                Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.
+              </p>
+              <Link to="/financovanie" className="mt-4 inline-block text-primary underline">
+                Späť na leasingy a úvery
+              </Link>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Načítavam…</p>
+          )}
         </PageBody>
       </>
     );

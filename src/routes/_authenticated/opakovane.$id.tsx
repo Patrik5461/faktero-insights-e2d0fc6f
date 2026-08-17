@@ -32,6 +32,8 @@ function RecurringDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const [rec, setRec] = useState<any>(null);
+  // Bez tohto ostala na neexistujúcej šablóne navždy hláška „Načítavam…".
+  const [nenajdene, setNenajdene] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -39,7 +41,12 @@ function RecurringDetail() {
   const toggleFn = useServerFn(toggleRecurring);
 
   async function load() {
-    const { data } = await supabase.from("recurring_invoices").select("*").eq("id", id).single();
+    const { data } = await supabase
+      .from("recurring_invoices")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    setNenajdene(!data);
     setRec(data);
     setItems((data?.items as any[]) ?? []);
     const { data: lg } = await (supabase as any)
@@ -127,6 +134,20 @@ function RecurringDetail() {
     }
   }
 
+  if (nenajdene)
+    return (
+      <PageBody>
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm">
+          <p>Táto opakovaná faktúra v aktívnej firme neexistuje.</p>
+          <p className="mt-1 text-muted-foreground">
+            Ak patrí inej vašej firme, prepnite sa na ňu hore v lište.
+          </p>
+          <Link to="/opakovane" className="mt-4 inline-block text-primary underline">
+            Späť na opakované faktúry
+          </Link>
+        </div>
+      </PageBody>
+    );
   if (!rec) return <PageBody>Načítavam…</PageBody>;
 
   return (
