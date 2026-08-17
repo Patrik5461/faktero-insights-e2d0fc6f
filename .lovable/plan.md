@@ -85,7 +85,7 @@ bun run cap:ios         # otvorí Xcode
 
 V Xcode:
 
-- **Signing & Capabilities** → vyber svoj Team, Bundle ID `sk.faktero.app`
+- **Signing & Capabilities** → vyber svoj Team, Bundle ID `sk.tobify.faktero`
 - **Capabilities** → pridaj _Push Notifications_, _Background Modes → Remote notifications_
 - **Info.plist** doplň:
   - `NSCameraUsageDescription` = „Skenovanie dokladov a fotografie faktúr"
@@ -115,14 +115,14 @@ Run → vyber emulátor / pripojený telefón.
 
 ### 5) Apple Developer Console (pred submit)
 
-- App ID `sk.faktero.app` + capability _Push Notifications_
+- App ID `sk.tobify.faktero` + capability _Push Notifications_
 - APNs Auth Key `.p8` (Keys → +) — uložiť pre Fázu 3
 - Provisioning Profile (Distribution → App Store)
 - App Store Connect → vytvor app záznam, screenshoty, ikona 1024×1024
 
 ### 6) Google Play Console + Firebase (pred submit)
 
-- Firebase projekt → _Add Android app_ s package `sk.faktero.app`
+- Firebase projekt → _Add Android app_ s package `sk.tobify.faktero`
 - Stiahnuť `google-services.json` → `android/app/`
 - _Cloud Messaging_ enabled, _Service Account JSON_ pre server-side push (Fáza 3)
 - Play Console → Internal testing track → upload AAB (`./gradlew bundleRelease`)

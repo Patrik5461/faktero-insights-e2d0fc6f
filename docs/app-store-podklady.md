@@ -11,7 +11,7 @@ Pripravené 12. 8. 2026. Všetko v tomto súbore je na skopírovanie do App Stor
 | --- | --- |
 | Názov aplikácie | **Faktero** |
 | Podnadpis (30 znakov) | **Faktúry a kniha jázd** |
-| Bundle ID | `sk.faktero.app` |
+| Bundle ID | `sk.tobify.faktero` |
 | Primárna kategória | Business |
 | Sekundárna kategória | Finance |
 | Veková hranica | 4+ (bez obmedzení) |
@@ -171,7 +171,7 @@ File → Save Screen. Alebo priamo na zariadení a orežte na požadovaný rozme
 
 ## 7. Čo treba spraviť pred odoslaním
 
-- [ ] Build v Xcode: tím, `sk.faktero.app`, verzia 1.0, build 1
+- [ ] Build v Xcode: tím, `sk.tobify.faktero`, verzia 1.0, build 1
 - [ ] **Push Notifications** capability — v projekte už je (`App.entitlements` s
       `aps-environment`, `remote-notification` v `UIBackgroundModes`). V Xcode len over,
       že sa Signing & Capabilities nesťažuje; doplnenie neskôr znamená nový build.

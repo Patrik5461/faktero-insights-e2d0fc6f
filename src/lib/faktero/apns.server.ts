@@ -5,7 +5,7 @@
  *   APNS_KEY_ID       – id kľúča z Apple Developer → Keys
  *   APNS_TEAM_ID      – id tímu (vpravo hore v portáli)
  *   APNS_PRIVATE_KEY  – obsah .p8 súboru aj s riadkami BEGIN/END
- *   APNS_BUNDLE_ID    – sk.faktero.app
+ *   APNS_BUNDLE_ID    – sk.tobify.faktero
  * Voliteľne APNS_ENV=sandbox pre buildy z Xcode (ostré buildy idú na produkciu).
  *
  * APNs hovorí výhradne HTTP/2, takže sa nedá použiť `fetch` — ten v Node vie len

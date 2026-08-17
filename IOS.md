@@ -33,7 +33,7 @@ otvorení. `pod install` by tu nemal čo robiť.
 
 V Xcode:
 
-1. **Signing & Capabilities** — vybrať tím, `sk.faktero.app` musí sedieť s App
+1. **Signing & Capabilities** — vybrať tím, `sk.tobify.faktero` musí sedieť s App
    ID v Apple Developer účte.
 2. **Push Notifications** a **Background Modes → Remote notifications**, ak sa
    majú posielať upozornenia (plugin je už v projekte).

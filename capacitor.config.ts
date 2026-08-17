@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "sk.faktero.app",
+  appId: "sk.tobify.faktero",
   appName: "Faktero",
   // Appka má rozhranie v sebe (build z `vite.config.mobile.ts`), takže sa otvorí
   // aj bez signálu. Dovtedy sa ťahalo zo živého webu cez `server.url` a bez

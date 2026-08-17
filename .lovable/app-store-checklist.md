@@ -18,7 +18,7 @@
 ### Apple Developer Account
 
 - [ ] Apple Developer Program aktívny ($99/rok)
-- [ ] App ID `sk.faktero.app` vytvorené (Certificates, IDs & Profiles)
+- [ ] App ID `sk.tobify.faktero` vytvorené (Certificates, IDs & Profiles)
 - [ ] Capabilities zapnuté: **Push Notifications**, **Sign in with Apple** (ak používaš)
 - [ ] **APNs Auth Key** vygenerovaný (Keys → +, typ "Apple Push Notifications service")
   - Stiahnuť `.p8`, poznačiť **Key ID** a **Team ID**
@@ -27,7 +27,7 @@
 
 ### Xcode projekt
 
-- [ ] Signing & Capabilities → Team vybraný, Bundle ID `sk.faktero.app`
+- [ ] Signing & Capabilities → Team vybraný, Bundle ID `sk.tobify.faktero`
 - [ ] Capabilities: Push Notifications + Background Modes → Remote notifications
 - [ ] `Info.plist` obsahuje:
   - `NSCameraUsageDescription` = "Skenovanie dokladov a fotografie faktúr"
@@ -64,7 +64,7 @@
 ### Firebase + Service Account
 
 - [ ] Firebase projekt vytvorený
-- [ ] Android app pridaná v Firebase Console (package `sk.faktero.app`)
+- [ ] Android app pridaná v Firebase Console (package `sk.tobify.faktero`)
 - [ ] `google-services.json` stiahnutý → uložiť do `android/app/`
 - [ ] Cloud Messaging API (V1) zapnuté
 - [ ] Service Account JSON vygenerovaný (Project Settings → Service Accounts → Generate new private key)
@@ -75,7 +75,7 @@
 ### Android Studio projekt
 
 - [ ] `android/app/build.gradle`:
-  - `applicationId "sk.faktero.app"`
+  - `applicationId "sk.tobify.faktero"`
   - `compileSdkVersion 34`, `targetSdkVersion 34`, `minSdkVersion 24`
   - `versionCode` a `versionName` zladené s iOS
 - [ ] `AndroidManifest.xml` permissions:

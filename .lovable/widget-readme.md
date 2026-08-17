@@ -31,9 +31,9 @@ V Xcode:
 
 1. **File → New → Target → Widget Extension** (názov `FakteroWidget`)
 2. V hlavnej app a vo widget targete pridaj rovnakú **App Group**
-   (Signing & Capabilities → +Capability → App Groups → `group.sk.faktero.app`)
+   (Signing & Capabilities → +Capability → App Groups → `group.sk.tobify.faktero`)
 3. V hlavnej appke (Capacitor wrapper) implementuj plugin, ktorý pri každom
-   foreground evente zapíše JSON do `UserDefaults(suiteName: "group.sk.faktero.app")`.
+   foreground evente zapíše JSON do `UserDefaults(suiteName: "group.sk.tobify.faktero")`.
 4. Widget `Provider.getTimeline` číta JSON, vracia `TimelineEntry` s
    `policy: .after(Date().addingTimeInterval(30 * 60))` → refresh každých 30 min.
 5. Widget view (SwiftUI):

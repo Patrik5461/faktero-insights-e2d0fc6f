@@ -26,7 +26,7 @@ Do `env` v `/home/patrik/ecosystem.config.cjs`:
 ```
 APNS_KEY_ID: "ABC123DEFG",
 APNS_TEAM_ID: "1234567890",
-APNS_BUNDLE_ID: "sk.faktero.app",
+APNS_BUNDLE_ID: "sk.tobify.faktero",
 APNS_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\n…\n-----END PRIVATE KEY-----",
 ```
 
