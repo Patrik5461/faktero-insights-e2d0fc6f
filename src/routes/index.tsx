@@ -21,6 +21,7 @@ import {
   FileText,
   HardHat,
   Landmark,
+  Mail,
   MapPin,
   Minus,
   Plug,
@@ -163,6 +164,11 @@ const features = [
     icon: ScanLine,
     title: "Skener bločkov",
     text: "Naskenujte QR kód z bločku a doklad sa načíta z Finančnej správy aj s položkami.",
+  },
+  {
+    icon: Mail,
+    title: "Doklady e-mailom",
+    text: "Faktúru od dodávateľa prepošlete na svoju adresu a zaeviduje sa sama — aj s dodávateľom, sumami a DPH.",
   },
   {
     icon: Smartphone,

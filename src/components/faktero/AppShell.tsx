@@ -105,6 +105,7 @@ const NAV: NavGroup[] = [
     children: [
       { to: "/doklady", label: "Prehľad dokladov" },
       { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
+      { to: "/doklady/mailom", label: "Doklady e-mailom" },
       { to: "/efaktura", label: "Prehľad eFaktúry" },
       { to: "/efaktura/odoslane", label: "Odoslané eFaktúry" },
       { to: "/efaktura/prijate", label: "Prijaté eFaktúry" },

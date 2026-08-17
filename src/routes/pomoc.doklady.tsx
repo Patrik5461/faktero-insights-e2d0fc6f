@@ -141,6 +141,50 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "mailom",
+    title: "Doklady e-mailom",
+    body: (
+      <>
+        <p>
+          Najrýchlejšia cesta, ako dostať faktúru od dodávateľa dnu: nechať ju tam prísť samu. Každá
+          firma má vlastnú adresu, napríklad <code>vasafirma-k7f2p9@doklady.faktero.sk</code>, a čo
+          na ňu prepošlete, to sa spracuje.
+        </p>
+        <p>
+          Adresu nájdete v <Link to="/doklady/mailom">Doklady → Doklady e-mailom</Link>. Skopírujete
+          ju a prepošlete na ňu mail od dodávateľa — nič sa nesťahuje a nikam sa neprihlasujete. Z
+          PDF v prílohe sa prečíta dodávateľ, IČO, IČ DPH, IBAN, číslo faktúry, variabilný symbol,
+          dátum vystavenia aj splatnosti a sumy.
+        </p>
+        <p>
+          Doklad potom čaká medzi <Link to="/prijate-faktury">prijatými faktúrami</Link> ako{" "}
+          <strong>rozpracovaný</strong>. <strong>Nič sa neschváli samo</strong> — prezriete si ho a
+          uložíte.
+        </p>
+        <p>Čo je dobré vedieť:</p>
+        <ul>
+          <li>
+            Adresa je pre <strong>každú firmu iná</strong>. Ak máte firiem viac, prepnite sa hore v
+            lište a vezmite si tú správnu.
+          </li>
+          <li>
+            Berie sa <strong>PDF alebo fotka</strong> v prílohe. Mail bez prílohy sa v denníku
+            označí ako „bez prílohy“ a nič sa nezaloží.
+          </li>
+          <li>
+            Viac príloh v jednom maile znamená <strong>viac dokladov</strong> — každá sa spracuje
+            zvlášť.
+          </li>
+        </ul>
+        <p>
+          Na tej istej stránke je aj <strong>denník posledných mailov</strong> — pri každom vidno,
+          ako dopadol. Keď doklad nedorazil, začnite tam. A keby sa adresa dostala tam, kam nemá, dá
+          sa vypnúť alebo vymeniť za novú; stará vtedy prestane prijímať.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "mobil",
     title: "V telefóne",
     body: (

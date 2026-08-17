@@ -111,6 +111,7 @@ import { Route as AuthenticatedBankoveUctyVypisyRouteImport } from './routes/_au
 import { Route as AuthenticatedCenyIndexRouteImport } from './routes/_authenticated/ceny.index'
 import { Route as AuthenticatedCenyAkcieRouteImport } from './routes/_authenticated/ceny.akcie'
 import { Route as AuthenticatedDokladyIndexRouteImport } from './routes/_authenticated/doklady.index'
+import { Route as AuthenticatedDokladyMailomRouteImport } from './routes/_authenticated/doklady.mailom'
 import { Route as AuthenticatedDokladyNovyRouteImport } from './routes/_authenticated/doklady.novy'
 import { Route as AuthenticatedEfakturaIndexRouteImport } from './routes/_authenticated/efaktura.index'
 import { Route as AuthenticatedEfakturaDoruceniaRouteImport } from './routes/_authenticated/efaktura.dorucenia'
@@ -767,6 +768,12 @@ const AuthenticatedDokladyIndexRoute =
   AuthenticatedDokladyIndexRouteImport.update({
     id: '/doklady/',
     path: '/doklady/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDokladyMailomRoute =
+  AuthenticatedDokladyMailomRouteImport.update({
+    id: '/doklady/mailom',
+    path: '/doklady/mailom',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDokladyNovyRoute =
@@ -1636,6 +1643,7 @@ export interface FileRoutesByFullPath {
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
   '/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
   '/ceny/akcie': typeof AuthenticatedCenyAkcieRoute
+  '/doklady/mailom': typeof AuthenticatedDokladyMailomRoute
   '/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
@@ -1867,6 +1875,7 @@ export interface FileRoutesByTo {
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
   '/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
   '/ceny/akcie': typeof AuthenticatedCenyAkcieRoute
+  '/doklady/mailom': typeof AuthenticatedDokladyMailomRoute
   '/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
@@ -2107,6 +2116,7 @@ export interface FileRoutesById {
   '/_authenticated/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
   '/_authenticated/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
   '/_authenticated/ceny/akcie': typeof AuthenticatedCenyAkcieRoute
+  '/_authenticated/doklady/mailom': typeof AuthenticatedDokladyMailomRoute
   '/_authenticated/doklady/novy': typeof AuthenticatedDokladyNovyRoute
   '/_authenticated/efaktura/dorucenia': typeof AuthenticatedEfakturaDoruceniaRoute
   '/_authenticated/efaktura/odoslane': typeof AuthenticatedEfakturaOdoslaneRoute
@@ -2348,6 +2358,7 @@ export interface FileRouteTypes {
     | '/bankove-ucty/transakcie'
     | '/bankove-ucty/vypisy'
     | '/ceny/akcie'
+    | '/doklady/mailom'
     | '/doklady/novy'
     | '/efaktura/dorucenia'
     | '/efaktura/odoslane'
@@ -2579,6 +2590,7 @@ export interface FileRouteTypes {
     | '/bankove-ucty/transakcie'
     | '/bankove-ucty/vypisy'
     | '/ceny/akcie'
+    | '/doklady/mailom'
     | '/doklady/novy'
     | '/efaktura/dorucenia'
     | '/efaktura/odoslane'
@@ -2818,6 +2830,7 @@ export interface FileRouteTypes {
     | '/_authenticated/bankove-ucty/transakcie'
     | '/_authenticated/bankove-ucty/vypisy'
     | '/_authenticated/ceny/akcie'
+    | '/_authenticated/doklady/mailom'
     | '/_authenticated/doklady/novy'
     | '/_authenticated/efaktura/dorucenia'
     | '/_authenticated/efaktura/odoslane'
@@ -3774,6 +3787,13 @@ declare module '@tanstack/react-router' {
       path: '/doklady'
       fullPath: '/doklady/'
       preLoaderRoute: typeof AuthenticatedDokladyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/doklady/mailom': {
+      id: '/_authenticated/doklady/mailom'
+      path: '/doklady/mailom'
+      fullPath: '/doklady/mailom'
+      preLoaderRoute: typeof AuthenticatedDokladyMailomRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/doklady/novy': {
@@ -4850,6 +4870,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBankoveUctyTransakcieRoute: typeof AuthenticatedBankoveUctyTransakcieRoute
   AuthenticatedBankoveUctyVypisyRoute: typeof AuthenticatedBankoveUctyVypisyRoute
   AuthenticatedCenyAkcieRoute: typeof AuthenticatedCenyAkcieRoute
+  AuthenticatedDokladyMailomRoute: typeof AuthenticatedDokladyMailomRoute
   AuthenticatedDokladyNovyRoute: typeof AuthenticatedDokladyNovyRoute
   AuthenticatedFakturyNovaRoute: typeof AuthenticatedFakturyNovaRoute
   AuthenticatedFakturyParovanieRoute: typeof AuthenticatedFakturyParovanieRoute
@@ -4928,6 +4949,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedBankoveUctyTransakcieRoute,
   AuthenticatedBankoveUctyVypisyRoute: AuthenticatedBankoveUctyVypisyRoute,
   AuthenticatedCenyAkcieRoute: AuthenticatedCenyAkcieRoute,
+  AuthenticatedDokladyMailomRoute: AuthenticatedDokladyMailomRoute,
   AuthenticatedDokladyNovyRoute: AuthenticatedDokladyNovyRoute,
   AuthenticatedFakturyNovaRoute: AuthenticatedFakturyNovaRoute,
   AuthenticatedFakturyParovanieRoute: AuthenticatedFakturyParovanieRoute,

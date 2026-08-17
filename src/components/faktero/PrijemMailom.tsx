@@ -22,9 +22,11 @@ const STAVY: Record<string, { text: string; trieda: string }> = {
  * Adresa, na ktorú si používateľ prepošle mail od dodávateľa. Denník posledných
  * mailov je tu zámerne — bez neho by pri nedoručenom doklade nebolo kam pozrieť.
  */
-export function PrijemMailom() {
+export function PrijemMailom({
+  predvoleneOtvorene = false,
+}: { predvoleneOtvorene?: boolean } = {}) {
   const [stav, setStav] = useState<StavPrijmuMailom | null>(null);
-  const [otvorene, setOtvorene] = useState(false);
+  const [otvorene, setOtvorene] = useState(predvoleneOtvorene);
   const [skopirovane, setSkopirovane] = useState(false);
   const [pracuje, setPracuje] = useState(false);
 
@@ -109,10 +111,7 @@ export function PrijemMailom() {
                   onClick={async () => {
                     const cid = getActiveCompanyId();
                     if (!cid) return;
-                    if (
-                      !confirm("Stará adresa okamžite prestane platiť. Vyrobiť novú?")
-                    )
-                      return;
+                    if (!confirm("Stará adresa okamžite prestane platiť. Vyrobiť novú?")) return;
                     setPracuje(true);
                     try {
                       await obnov({ data: { company_id: cid } });

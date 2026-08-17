@@ -225,6 +225,39 @@ export const funkcie: HubContent = {
       ],
     },
     {
+      slug: "doklady-mailom",
+      label: "Doklady e-mailom",
+      summary: "Prepošlete faktúru od dodávateľa a ona sa sama zaeviduje.",
+      icon: Mail,
+      blocks: [
+        {
+          type: "lead",
+          text: "Každá firma dostane vlastnú adresu. Čo na ňu prepošlete, to sa prečíta a založí medzi prijaté faktúry — bez sťahovania, bez prihlasovania.",
+        },
+        {
+          type: "bullets",
+          title: "Čo sa z prílohy prečíta",
+          items: [
+            "Dodávateľ, IČO, IČ DPH a IBAN",
+            "Číslo faktúry a variabilný symbol",
+            "Dátum vystavenia a splatnosti",
+            "Základ dane, DPH a suma celkom",
+            "Samotné PDF ostáva priložené k dokladu",
+          ],
+        },
+        {
+          type: "callout",
+          title: "Nič sa neschváli samo",
+          body: "Doklad čaká medzi prijatými faktúrami ako rozpracovaný, kým si ho neprezriete. Stroj pripraví podklad, rozhodnutie ostáva na človeku — a pri každom maile je v denníku vidieť, ako dopadol.",
+        },
+        {
+          type: "section",
+          title: "Keď adresa unikne",
+          body: "Adresa sa dá kedykoľvek vypnúť alebo vymeniť za novú; stará vtedy prestane prijímať. Berú sa len PDF a fotky, takže mail bez prílohy nič nezaloží.",
+        },
+      ],
+    },
+    {
       slug: "mobilna-aplikacia",
       label: "Faktero v telefóne",
       summary: "Vystavte faktúru, naskenujte bloček a odmerajte jazdu priamo z mobilu.",
@@ -516,7 +549,8 @@ export const funkcie: HubContent = {
     {
       slug: "leasingy-a-uvery",
       label: "Leasingy a úvery",
-      summary: "Splátkový kalendár s rozpadom na istinu, úrok a DPH — a platby si nájde v banke sám.",
+      summary:
+        "Splátkový kalendár s rozpadom na istinu, úrok a DPH — a platby si nájde v banke sám.",
       icon: Banknote,
       blocks: [
         {
