@@ -17,13 +17,13 @@ import {
   CreditCard,
   ClipboardList,
   Database,
-  Download,
   FileSpreadsheet,
   FileText,
   HardHat,
   Landmark,
   MapPin,
   Minus,
+  Plug,
   QrCode,
   Quote,
   Receipt,
@@ -83,7 +83,7 @@ export const Route = createFileRoute("/")({
 const trustMetrics = [
   { label: "eFaktúra Ready", icon: ShieldCheck },
   { label: "FinStat Integrácia", icon: Database },
-  { label: "Pohoda Export", icon: Download },
+  { label: "Prepojenie s Pohodou", icon: Plug },
   { label: "API First", icon: Code2 },
   { label: "Webhooky", icon: Webhook },
 ] as const;
@@ -145,9 +145,9 @@ const features = [
     text: "Označte, odošlite alebo exportujte desiatky faktúr naraz. Ušetrite hodiny manuálnej práce.",
   },
   {
-    icon: Download,
-    title: "Pohoda export",
-    text: "XML export priamo do Pohody. Účtovník dostáva podklady stlačením jediného tlačidla.",
+    icon: Plug,
+    title: "Prepojenie s Pohodou",
+    text: "Pohoda si doklady stiahne sama každú noc a vráti čísla, ktoré im pridelila. Účtovníčka pritom nič neinštaluje.",
   },
   {
     icon: Upload,
@@ -219,8 +219,8 @@ const features = [
 const accounting = [
   {
     icon: FileSpreadsheet,
-    title: "Pohoda XML export",
-    text: "Štruktúrovaný XML export kompatibilný s Pohodou — bez ručného prepisovania.",
+    title: "Pohoda: konektor alebo XML",
+    text: "Buď si Pohoda doklady stiahne sama, alebo dostanete XML na import — aj s predkontáciami a členením DPH.",
   },
   {
     icon: Receipt,
@@ -1427,6 +1427,7 @@ function SiteFooter() {
           {
             title: "Účtovníci",
             links: [
+              ["Prepojenie s Pohodou", "/uctovnici/pohoda-konektor"],
               ["Pohoda export", "/uctovnici/pohoda-export"],
               ["Mesačné podklady", "/uctovnici/mesacne-podklady"],
               ["Integrácie", "/uctovnici/integracie"],
@@ -1896,7 +1897,11 @@ function IntegrationsTrust() {
   const items = [
     { name: "FinStat", desc: "Automatické dohľadanie firmy podľa IČO.", icon: Database },
     { name: "Tatra banka", desc: "Pohyby na účte a párovanie úhrad s faktúrami.", icon: Landmark },
-    { name: "Pohoda", desc: "XML export pripravený pre účtovníka.", icon: FileSpreadsheet },
+    {
+      name: "Pohoda",
+      desc: "Doklady si Pohoda vezme sama a vráti čísla, ktoré im pridelila.",
+      icon: FileSpreadsheet,
+    },
     { name: "eFaktúra 2027", desc: "UBL 2.1 / Peppol pripravenosť.", icon: ShieldCheck },
     { name: "REST API", desc: "Vystavujte faktúry z e-shopu či CRM.", icon: Code2 },
   ];
