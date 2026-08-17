@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { Plus, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sklad/nastavenia")({
@@ -17,6 +18,7 @@ const EMPTY: WH = { name: "", address: "", active: true };
 function WarehousesPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [editing, setEditing] = useState<WH | null>(null);
+  useZatvorNaEscape(editing ? () => setEditing(null) : null);
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -137,6 +139,9 @@ function WarehousesPage() {
           onClick={() => setEditing(null)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Sklad"
             className="w-full max-w-lg rounded-xl border border-border bg-card p-6"
             onClick={(e) => e.stopPropagation()}
           >

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { Plus, Trash2, Copy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/webhooky")({
@@ -34,6 +35,7 @@ function WebhooksPage() {
   const [hooks, setHooks] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
+  useZatvorNaEscape(editing ? () => setEditing(null) : null);
 
   async function reload() {
     const cid = getActiveCompanyId();
@@ -188,8 +190,17 @@ function WebhooksPage() {
         </div>
 
         {editing && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+            onClick={() => setEditing(null)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Webhook"
+              className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h3 className="text-lg font-semibold">
                 {editing.id ? "Upraviť webhook" : "Nový webhook"}
               </h3>

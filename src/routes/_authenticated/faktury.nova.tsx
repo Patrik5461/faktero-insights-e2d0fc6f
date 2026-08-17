@@ -31,6 +31,7 @@ import {
   FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useServerFn } from "@tanstack/react-start";
 import { triggerEventFn } from "@/lib/faktero/email.functions";
 import { aiParseInvoiceFn } from "@/lib/faktero/ai-invoice.functions";
@@ -1508,6 +1509,7 @@ function NewCustomerModal({
   onClose: () => void;
   onCreated: (c: any) => void;
 }) {
+  useZatvorNaEscape(onClose);
   const [saving, setSaving] = useState(false);
   const [dup, setDup] = useState<null | {
     id: string;
@@ -1586,6 +1588,9 @@ function NewCustomerModal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Nový odberateľ"
         className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -1869,12 +1874,16 @@ function AiModal({
   onClose: () => void;
   onRun: () => void;
 }) {
+  useZatvorNaEscape(onClose);
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center bg-background/60 p-4 pt-24 backdrop-blur"
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Faktúra z dokumentu"
         className="w-full max-w-xl rounded-2xl border border-border bg-card p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -1939,6 +1948,7 @@ function InvoicePickerModal({
   onPickCopy: (items: Partial<Item>[]) => void;
   onPickAdvance: (inv: { id: string; invoice_number: string; total: number }) => void;
 }) {
+  useZatvorNaEscape(onClose);
   const [list, setList] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
@@ -1986,6 +1996,9 @@ function InvoicePickerModal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Výber faktúry"
         className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >

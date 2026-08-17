@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loader2, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
+  useZatvorNaEscape(onClose);
   const [saving, setSaving] = useState(false);
   const [dup, setDup] = useState<null | {
     id: string;
@@ -96,6 +98,9 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Nový odberateľ"
         className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >

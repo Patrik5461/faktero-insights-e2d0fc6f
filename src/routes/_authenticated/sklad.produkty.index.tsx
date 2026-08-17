@@ -7,6 +7,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createStockProductDebug, getStockDebugSnapshot } from "@/lib/faktero/stock.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import {
   Plus,
   Pencil,
@@ -98,9 +99,11 @@ function StockItemsPage() {
   const [levels, setLevels] = useState<Record<string, number>>({});
   const [products, setProducts] = useState<any[]>([]);
   const [editing, setEditing] = useState<SI | null>(null);
+  useZatvorNaEscape(editing ? () => setEditing(null) : null);
   const [creating, setCreating] = useState<NewProduct | null>(null);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
+  useZatvorNaEscape(creating && !saving ? () => setCreating(null) : null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState<string>("");
@@ -919,6 +922,9 @@ function StockItemsPage() {
           onClick={() => setEditing(null)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Skladová karta"
             className="w-full max-w-2xl rounded-xl border border-border bg-card p-6"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1059,6 +1065,9 @@ function StockItemsPage() {
           onClick={() => !saving && setCreating(null)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Nová položka na sklad"
             className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 my-8"
             onClick={(e) => e.stopPropagation()}
           >

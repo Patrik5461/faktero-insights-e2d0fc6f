@@ -5,6 +5,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Plus, Pencil, Power, Fuel } from "lucide-react";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 
 export const Route = createFileRoute("/_authenticated/jazdy/vozidla")({
   head: () => ({ meta: [{ title: "Vozidlá — Faktero" }] }),
@@ -201,21 +202,6 @@ function VehiclesPage() {
       )}
     </>
   );
-}
-
-/**
- * Oba dialógy na tejto stránke sú kreslené ručne, nie cez Radix. Bez tohto
- * háčika sa nedali zavrieť klávesou Esc — všade inde v aplikácii sa dajú, takže
- * to pôsobilo ako zaseknuté okno.
- */
-function useZatvorNaEscape(onClose: () => void) {
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, [onClose]);
 }
 
 function VehicleDialog({

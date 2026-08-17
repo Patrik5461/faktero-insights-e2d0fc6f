@@ -20,6 +20,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 
 export const Route = createFileRoute("/_authenticated/ponuky/$id")({
   head: () => ({ meta: [{ title: "Detail ponuky — Faktero" }] }),
@@ -52,6 +53,7 @@ function QuoteDetail() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [emailOpen, setEmailOpen] = useState(false);
+  useZatvorNaEscape(emailOpen ? () => setEmailOpen(false) : null);
   const [emailForm, setEmailForm] = useState({ recipient_email: "", subject: "", message: "" });
 
   const genPdf = useServerFn(generateQuotePdf);
@@ -419,8 +421,17 @@ function QuoteDetail() {
       </PageBody>
 
       {emailOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setEmailOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Odoslať ponuku e-mailom"
+            className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-lg font-semibold">Odoslať ponuku e-mailom</h3>
             <label className="block text-sm">
               <span className="font-medium">Príjemca</span>

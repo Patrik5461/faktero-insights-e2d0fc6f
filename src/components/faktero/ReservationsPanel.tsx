@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { Plus, XCircle } from "lucide-react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
@@ -161,6 +162,7 @@ function ManualReservationDialog({
   onCreated: () => void;
 }) {
   const createFn = useServerFn(createManualReservation);
+  useZatvorNaEscape(onClose);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [warehouse, setWarehouse] = useState("");
   const [qty, setQty] = useState("1");
@@ -212,6 +214,9 @@ function ManualReservationDialog({
       onClick={onClose}
     >
       <form
+        role="dialog"
+        aria-modal="true"
+        aria-label="Ručná rezervácia"
         onSubmit={submit}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md space-y-3 rounded-xl border border-border bg-card p-5"

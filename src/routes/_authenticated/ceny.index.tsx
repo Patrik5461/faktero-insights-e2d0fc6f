@@ -15,6 +15,7 @@ import {
 import { cislo } from "@/lib/faktero/ceny";
 import { Plus, Pencil, Trash2, Tag, Percent } from "lucide-react";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 
 export const Route = createFileRoute("/_authenticated/ceny/")({
   head: () => ({ meta: [{ title: "Cenník — Faktero" }] }),
@@ -497,9 +498,12 @@ function CennikPage() {
 }
 
 function Overlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  useZatvorNaEscape(onClose);
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
         className="w-full max-w-lg rounded-xl border border-border bg-card p-6"
         onClick={(e) => e.stopPropagation()}
       >

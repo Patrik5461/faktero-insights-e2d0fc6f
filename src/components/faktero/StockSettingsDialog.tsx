@@ -9,6 +9,7 @@ import {
   deleteStockCategory,
 } from "@/lib/faktero/stock.functions";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { Plus, Pencil, Trash2, Tags, Warehouse as WarehouseIcon, X } from "lucide-react";
 
 const PALETTE = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#64748b"];
@@ -23,6 +24,7 @@ export function StockSettingsDialog({
   onChanged?: () => void;
 }) {
   const [tab, setTab] = useState<"kategorie" | "sklady">("kategorie");
+  useZatvorNaEscape(open ? () => onOpenChange(false) : null);
   if (!open) return null;
   return (
     <div
@@ -30,6 +32,9 @@ export function StockSettingsDialog({
       onClick={() => onOpenChange(false)}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Nastavenia skladu"
         className="w-full max-w-3xl rounded-xl border border-border bg-card p-0 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
@@ -101,6 +106,7 @@ function CategoriesTab({ onChanged }: { onChanged?: () => void }) {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<any | null>(null);
+  useZatvorNaEscape(editing ? () => setEditing(null) : null);
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>("");
   const [note, setNote] = useState("");
@@ -308,6 +314,7 @@ const EMPTY_WH: WH = { name: "", address: "", active: true };
 function WarehousesTab({ onChanged }: { onChanged?: () => void }) {
   const [rows, setRows] = useState<any[]>([]);
   const [editing, setEditing] = useState<WH | null>(null);
+  useZatvorNaEscape(editing ? () => setEditing(null) : null);
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -404,6 +411,9 @@ function WarehousesTab({ onChanged }: { onChanged?: () => void }) {
           onClick={() => setEditing(null)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Sklad"
             className="w-full max-w-lg rounded-xl border border-border bg-card p-6"
             onClick={(e) => e.stopPropagation()}
           >

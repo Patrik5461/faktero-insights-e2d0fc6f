@@ -5,6 +5,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Plus, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { usePagedList } from "@/hooks/usePagedList";
 import {
   Pagination,
@@ -49,6 +50,7 @@ const EMPTY: Product = {
 function ProductsPage() {
   const list = usePagedList({ resource: "products", searchColumns: ["name", "code"] });
   const [editing, setEditing] = useState<Product | null>(null);
+  useZatvorNaEscape(editing ? () => setEditing(null) : null);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
   const [bulkDelete, setBulkDelete] = useState(false);
   const [bulkHardDelete, setBulkHardDelete] = useState(false);
@@ -283,6 +285,9 @@ function ProductsPage() {
           onClick={() => setEditing(null)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Produkt"
             className="w-full max-w-lg rounded-xl border border-border bg-card p-6"
             onClick={(e) => e.stopPropagation()}
           >

@@ -5,6 +5,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Plus, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useServerFn } from "@tanstack/react-start";
 import { triggerEventFn } from "@/lib/faktero/email.functions";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
@@ -344,6 +345,7 @@ function CustomerDialog({
   onClose: () => void;
   onSave: (c: Customer) => void;
 }) {
+  useZatvorNaEscape(onClose);
   const [c, setC] = useState<Customer>(initial);
   const [dup, setDup] = useState<null | { id: string; name: string }>(null);
   const findDup = useServerFn(findCustomerByIcoFn);
@@ -387,6 +389,9 @@ function CustomerDialog({
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={c.id ? "Upraviť odberateľa" : "Nový odberateľ"}
         className="w-full max-w-2xl rounded-xl border border-border bg-card p-6"
         onClick={(e) => e.stopPropagation()}
       >

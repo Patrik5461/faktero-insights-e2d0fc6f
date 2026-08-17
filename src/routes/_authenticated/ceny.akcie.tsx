@@ -9,6 +9,7 @@ import { akciaPlati, cislo } from "@/lib/faktero/ceny";
 import { ArrowLeft, Plus, Pencil, Trash2, X } from "lucide-react";
 import { PRODUKTY, sPoctom } from "@/lib/faktero/mnozne";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 
 export const Route = createFileRoute("/_authenticated/ceny/akcie")({
   head: () => ({ meta: [{ title: "Cenové akcie — Faktero" }] }),
@@ -47,6 +48,7 @@ function AkciePage() {
   const [produkty, setProdukty] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<any | null>(null);
+  useZatvorNaEscape(form ? () => setForm(null) : null);
   const [chyba, setChyba] = useState<string | null>(null);
 
   const cid = useMemo(() => getActiveCompanyId(), []);
@@ -274,6 +276,9 @@ function AkciePage() {
           onClick={() => setForm(null)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Cenová akcia"
             className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6"
             onClick={(e) => e.stopPropagation()}
           >

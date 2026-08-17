@@ -11,6 +11,7 @@ import {
   ArrowDownUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 
 export function PageSizeSelect({
   value,
@@ -133,10 +134,15 @@ export function ConfirmDialog({
   onConfirm: () => void;
   busy?: boolean;
 }) {
+  // Hook musí bežať aj pri zavretom dialógu — inak by sa poradie hookov menilo.
+  useZatvorNaEscape(open ? onCancel : null);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onCancel}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className="w-full max-w-md rounded-xl border border-border bg-card p-6"
         onClick={(e) => e.stopPropagation()}
       >

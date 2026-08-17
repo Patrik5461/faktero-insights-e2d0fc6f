@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
 import { toast } from "sonner";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { useServerFn } from "@tanstack/react-start";
 import { generateInvoicePdf, getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.functions";
 import { sendInvoiceEmailFn, triggerEventFn } from "@/lib/faktero/email.functions";
@@ -73,6 +74,8 @@ function InvoiceDetail() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
+  useZatvorNaEscape(emailOpen ? () => setEmailOpen(false) : null);
+  useZatvorNaEscape(reminderOpen ? () => setReminderOpen(false) : null);
   const [reminderBusy, setReminderBusy] = useState(false);
   const [reminderForm, setReminderForm] = useState({
     reminderNumber: 1 as 1 | 2 | 3,
@@ -1060,8 +1063,17 @@ function InvoiceDetail() {
         </div>
       </PageBody>
       {emailOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setEmailOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Odoslať faktúru e-mailom"
+            className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-lg font-semibold">Odoslať faktúru e-mailom</h3>
             <label className="block text-sm">
               <span className="font-medium">Príjemca</span>
@@ -1117,8 +1129,17 @@ function InvoiceDetail() {
         </div>
       )}
       {reminderOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setReminderOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Poslať upomienku"
+            className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-lg font-semibold">
               Poslať upomienku ({reminderForm.reminderNumber}.)
             </h3>
