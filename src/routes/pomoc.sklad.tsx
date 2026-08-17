@@ -59,6 +59,10 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
+          Kliknutím na ikonu dokumentu pri položke sa otvorí <strong>skladová karta</strong>: pohyby
+          od začiatku, rezervácie, priemerná aj posledná nákupná cena a export pohybov do CSV.
+        </p>
+        <p>
           Karta vzniká v <Link to="/sklad/produkty">Sklad → Skladové položky</Link>. Má SKU, názov,
           mernú jednotku, nákupnú a predajnú cenu, prípadne čiarový kód, umiestnenie a fotku.
         </p>
