@@ -100,9 +100,9 @@ function QuotesPage() {
             value={list.search}
             onChange={(e) => list.setSearch(e.target.value)}
             placeholder="Hľadať číslo, odberateľa…"
-            className="w-64 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
           />
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <DeletedToggle value={list.showDeleted} onChange={list.setShowDeleted} />
             <PageSizeSelect value={list.pageSize} onChange={list.setPageSize} />
           </div>

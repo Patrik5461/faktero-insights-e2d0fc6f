@@ -630,7 +630,7 @@ function StockItemsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Hľadať SKU, čiarový kód…"
-              className="w-64 rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
             />
             <select
               value={warehouseFilter}

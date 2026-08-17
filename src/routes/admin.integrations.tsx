@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { AdminShell } from "@/components/faktero/AdminShell";
+import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell";
 
 function mask(u?: string | null) {
   if (!u) return "—";
@@ -107,108 +107,108 @@ function AdminIntegrations() {
       .catch((e) => setErr(e.message));
   }, []);
   return (
-    <AdminShell>
-      <div className="p-6 space-y-4">
-        <header>
-          <h1 className="text-2xl font-semibold">Integrácie</h1>
-          <p className="text-sm text-muted-foreground">
-            Prehľad pripojených externých služieb po firmách.
-          </p>
-        </header>
-        {err && (
-          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{err}</div>
-        )}
-        <section className="rounded-xl border border-border bg-card">
-          <div className="border-b border-border px-4 py-3 font-medium">Commander GPS</div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-2">Firma</th>
-                  <th className="px-4 py-2">Aktívne</th>
-                  <th className="px-4 py-2">Auto sync</th>
-                  <th className="px-4 py-2">Používateľ</th>
-                  <th className="px-4 py-2">Posledná sync.</th>
-                  <th className="px-4 py-2">Posl. denná sync.</th>
-                  <th className="px-4 py-2">Import. (posl. deň)</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Vozidlá</th>
-                  <th className="px-4 py-2">Posledná chyba</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.length === 0 ? (
+    <>
+      <AdminPageHeader
+        title="Integrácie"
+        description="Prehľad pripojených externých služieb po firmách."
+      />
+      <AdminPageBody>
+        <div className="space-y-4">
+          {err && (
+            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{err}</div>
+          )}
+          <section className="rounded-xl border border-border bg-card">
+            <div className="border-b border-border px-4 py-3 font-medium">Commander GPS</div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs uppercase text-muted-foreground">
                   <tr>
-                    <td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">
-                      Žiadne pripojenia.
-                    </td>
+                    <th className="px-4 py-2">Firma</th>
+                    <th className="px-4 py-2">Aktívne</th>
+                    <th className="px-4 py-2">Auto sync</th>
+                    <th className="px-4 py-2">Používateľ</th>
+                    <th className="px-4 py-2">Posledná sync.</th>
+                    <th className="px-4 py-2">Posl. denná sync.</th>
+                    <th className="px-4 py-2">Import. (posl. deň)</th>
+                    <th className="px-4 py-2">Status</th>
+                    <th className="px-4 py-2">Vozidlá</th>
+                    <th className="px-4 py-2">Posledná chyba</th>
                   </tr>
-                ) : (
-                  rows.map((r) => (
-                    <tr key={r.companyId} className="border-t border-border">
-                      <td className="px-4 py-2">{r.companyName}</td>
-                      <td className="px-4 py-2">{r.enabled ? "Áno" : "Nie"}</td>
-                      <td className="px-4 py-2">{r.autoSync ? "Áno" : "Nie"}</td>
-                      <td className="px-4 py-2 font-mono">{r.username}</td>
-                      <td className="px-4 py-2">
-                        {r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString("sk-SK") : "—"}
+                </thead>
+                <tbody>
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">
+                        Žiadne pripojenia.
                       </td>
-                      <td className="px-4 py-2">
-                        {r.lastDailyAt ? new Date(r.lastDailyAt).toLocaleString("sk-SK") : "—"}
-                      </td>
-                      <td className="px-4 py-2">{r.lastDailyImported ?? "—"}</td>
-                      <td className="px-4 py-2">{r.status ?? "—"}</td>
-                      <td className="px-4 py-2">{r.linkedVehicles}</td>
-                      <td className="px-4 py-2 text-destructive">{r.error ?? ""}</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-        <section className="rounded-xl border border-border bg-card">
-          <div className="border-b border-border px-4 py-3 font-medium">Tesla Fleet API</div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-2">Firma</th>
-                  <th className="px-4 py-2">Aktívne</th>
-                  <th className="px-4 py-2">Tesla účet</th>
-                  <th className="px-4 py-2">Posledná sync.</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Vozidlá</th>
-                  <th className="px-4 py-2">Posledná chyba</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teslaRows.length === 0 ? (
+                  ) : (
+                    rows.map((r) => (
+                      <tr key={r.companyId} className="border-t border-border">
+                        <td className="px-4 py-2">{r.companyName}</td>
+                        <td className="px-4 py-2">{r.enabled ? "Áno" : "Nie"}</td>
+                        <td className="px-4 py-2">{r.autoSync ? "Áno" : "Nie"}</td>
+                        <td className="px-4 py-2 font-mono">{r.username}</td>
+                        <td className="px-4 py-2">
+                          {r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString("sk-SK") : "—"}
+                        </td>
+                        <td className="px-4 py-2">
+                          {r.lastDailyAt ? new Date(r.lastDailyAt).toLocaleString("sk-SK") : "—"}
+                        </td>
+                        <td className="px-4 py-2">{r.lastDailyImported ?? "—"}</td>
+                        <td className="px-4 py-2">{r.status ?? "—"}</td>
+                        <td className="px-4 py-2">{r.linkedVehicles}</td>
+                        <td className="px-4 py-2 text-destructive">{r.error ?? ""}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section className="rounded-xl border border-border bg-card">
+            <div className="border-b border-border px-4 py-3 font-medium">Tesla Fleet API</div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs uppercase text-muted-foreground">
                   <tr>
-                    <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
-                      Žiadne Tesla pripojenia.
-                    </td>
+                    <th className="px-4 py-2">Firma</th>
+                    <th className="px-4 py-2">Aktívne</th>
+                    <th className="px-4 py-2">Tesla účet</th>
+                    <th className="px-4 py-2">Posledná sync.</th>
+                    <th className="px-4 py-2">Status</th>
+                    <th className="px-4 py-2">Vozidlá</th>
+                    <th className="px-4 py-2">Posledná chyba</th>
                   </tr>
-                ) : (
-                  teslaRows.map((r) => (
-                    <tr key={r.companyId} className="border-t border-border">
-                      <td className="px-4 py-2">{r.companyName}</td>
-                      <td className="px-4 py-2">{r.enabled ? "Áno" : "Nie"}</td>
-                      <td className="px-4 py-2 font-mono text-xs">{r.email}</td>
-                      <td className="px-4 py-2">
-                        {r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString("sk-SK") : "—"}
+                </thead>
+                <tbody>
+                  {teslaRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
+                        Žiadne Tesla pripojenia.
                       </td>
-                      <td className="px-4 py-2">{r.status ?? "—"}</td>
-                      <td className="px-4 py-2">{r.linkedVehicles}</td>
-                      <td className="px-4 py-2 text-destructive">{r.error ?? ""}</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-    </AdminShell>
+                  ) : (
+                    teslaRows.map((r) => (
+                      <tr key={r.companyId} className="border-t border-border">
+                        <td className="px-4 py-2">{r.companyName}</td>
+                        <td className="px-4 py-2">{r.enabled ? "Áno" : "Nie"}</td>
+                        <td className="px-4 py-2 font-mono text-xs">{r.email}</td>
+                        <td className="px-4 py-2">
+                          {r.lastSyncAt ? new Date(r.lastSyncAt).toLocaleString("sk-SK") : "—"}
+                        </td>
+                        <td className="px-4 py-2">{r.status ?? "—"}</td>
+                        <td className="px-4 py-2">{r.linkedVehicles}</td>
+                        <td className="px-4 py-2 text-destructive">{r.error ?? ""}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </AdminPageBody>
+    </>
   );
 }

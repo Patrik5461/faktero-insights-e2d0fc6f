@@ -559,9 +559,9 @@ function InvoicesPage() {
             value={list.search}
             onChange={(e) => list.setSearch(e.target.value)}
             placeholder="Hľadať číslo, odberateľa, IČO…"
-            className="w-64 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
           />
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
