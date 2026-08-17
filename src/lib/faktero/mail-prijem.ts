@@ -25,8 +25,23 @@ const TYPY_DOKLADOV = ["application/pdf", "image/jpeg", "image/png", "image/webp
 const ZNAKY = "abcdefghjkmnpqrstuvwxyz23456789";
 
 const DIAKRITIKA: Record<string, string> = {
-  á: "a", ä: "a", č: "c", ď: "d", é: "e", í: "i", ĺ: "l", ľ: "l", ň: "n",
-  ó: "o", ô: "o", ŕ: "r", š: "s", ť: "t", ú: "u", ý: "y", ž: "z",
+  á: "a",
+  ä: "a",
+  č: "c",
+  ď: "d",
+  é: "e",
+  í: "i",
+  ĺ: "l",
+  ľ: "l",
+  ň: "n",
+  ó: "o",
+  ô: "o",
+  ŕ: "r",
+  š: "s",
+  ť: "t",
+  ú: "u",
+  ý: "y",
+  ž: "z",
 };
 
 /** Z názvu firmy spraví časť adresy: bez diakritiky, malé písmená, bez s.r.o. */
@@ -55,6 +70,65 @@ export function zostavLocalPart(nazovFirmy: string, nahodne?: () => number): str
 
 export function celaAdresa(localPart: string, podomena = PODOMENA_DOKLADOV): string {
   return `${localPart}@${podomena}`;
+}
+
+/**
+ * Mená, ktoré si nikto nesmie zabrať. `postmaster` a `abuse` žiada norma pre
+ * doménu, zvyšok by sa dal zneužiť na to, aby adresa vyzerala ako naša vlastná.
+ */
+const ZAKAZANE = new Set([
+  "abuse",
+  "admin",
+  "administrator",
+  "billing",
+  "doklady",
+  "faktero",
+  "fakturacia",
+  "help",
+  "hostmaster",
+  "info",
+  "mail",
+  "noreply",
+  "no-reply",
+  "podpora",
+  "postmaster",
+  "root",
+  "security",
+  "support",
+  "webmaster",
+]);
+
+/** Najkratšia a najdlhšia dĺžka vlastnej adresy. */
+export const VLASTNA_ADRESA_MIN = 4;
+export const VLASTNA_ADRESA_MAX = 40;
+
+export type OverenieAdresy = { ok: true; hodnota: string } | { ok: false; chyba: string };
+
+/**
+ * Overí a upraví vlastnú časť adresy, ktorú si zadal používateľ.
+ *
+ * Diakritika a veľké písmená sa tichým prepisom opravia — kto napíše „Píla 2026",
+ * dostane `pila-2026` a nemusí hádať, čo sa smie. Odmieta sa len to, čo by
+ * adresu pokazilo alebo zabralo cudzie meno.
+ */
+export function overVlastnyLocalPart(vstup: string): OverenieAdresy {
+  const upravene = (vstup ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/[áäčďéíĺľňóôŕšťúýž]/g, (z) => DIAKRITIKA[z] ?? z)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (!upravene)
+    return { ok: false, chyba: "Adresa musí obsahovať aspoň jedno písmeno alebo číslo." };
+  if (upravene.length < VLASTNA_ADRESA_MIN)
+    return { ok: false, chyba: `Adresa musí mať aspoň ${VLASTNA_ADRESA_MIN} znaky.` };
+  if (upravene.length > VLASTNA_ADRESA_MAX)
+    return { ok: false, chyba: `Adresa môže mať najviac ${VLASTNA_ADRESA_MAX} znakov.` };
+  if (ZAKAZANE.has(upravene)) return { ok: false, chyba: "Toto meno je vyhradené, zvoľte si iné." };
+
+  return { ok: true, hodnota: upravene };
 }
 
 /**

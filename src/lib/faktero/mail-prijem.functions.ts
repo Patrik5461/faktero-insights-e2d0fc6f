@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { zostavLocalPart, celaAdresa, podomenaDokladov } from "./mail-prijem";
+import { zostavLocalPart, celaAdresa, podomenaDokladov, overVlastnyLocalPart } from "./mail-prijem";
 
 const CompanyInput = z.object({ company_id: z.string().uuid() });
 
@@ -138,4 +138,44 @@ export const obnovAdresuNaDoklady = createServerFn({ method: "POST" })
         return { adresa: celaAdresa(local, podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA)) };
     }
     throw new Error("Novú adresu sa nepodarilo vyrobiť.");
+  });
+
+/**
+ * Vlastná adresa namiesto generovanej.
+ *
+ * Adresa je zároveň heslo — kto ju pozná, vie firme podstrčiť doklad. Preto sa
+ * predvolene generuje s náhodným chvostom. Vlastnú si používateľ nastaviť môže,
+ * ale vedome; upozorňuje ho na to rozhranie a kedykoľvek sa dá vrátiť ku
+ * generovanej cez „Vymeniť adresu".
+ */
+export const nastavVlastnuAdresu = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) =>
+    z.object({ company_id: z.string().uuid(), local_part: z.string().min(1).max(80) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await assertMember(supabase, userId, data.company_id);
+
+    const overene = overVlastnyLocalPart(data.local_part);
+    if (!overene.ok) throw new Error(overene.chyba);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("inbox_addresses")
+      .update({ local_part: overene.hodnota })
+      .eq("company_id", data.company_id)
+      .eq("user_id", userId);
+
+    if (error) {
+      // Jedinečnosť stráži index nad lower(local_part) — hlásiť to treba ľudsky.
+      if (/duplicate key|23505/.test(error.message ?? ""))
+        throw new Error("Túto adresu už niekto používa, skúste inú.");
+      throw new Error(error.message);
+    }
+
+    return {
+      adresa: celaAdresa(overene.hodnota, podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA)),
+      local_part: overene.hodnota,
+    };
   });

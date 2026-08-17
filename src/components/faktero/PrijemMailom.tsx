@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { Mail, Copy, Check, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { Mail, Copy, Check, RefreshCw, Pencil, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import {
   stavPrijmuMailom,
   prepniPrijemMailom,
   obnovAdresuNaDoklady,
+  nastavVlastnuAdresu,
   type StavPrijmuMailom,
 } from "@/lib/faktero/mail-prijem.functions";
+import { overVlastnyLocalPart } from "@/lib/faktero/mail-prijem";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 
 const STAVY: Record<string, { text: string; trieda: string }> = {
@@ -33,6 +35,10 @@ export function PrijemMailom({
   const nacitaj = useServerFn(stavPrijmuMailom);
   const prepni = useServerFn(prepniPrijemMailom);
   const obnov = useServerFn(obnovAdresuNaDoklady);
+  const nastavVlastnu = useServerFn(nastavVlastnuAdresu);
+
+  const [upravujem, setUpravujem] = useState(false);
+  const [vlastna, setVlastna] = useState("");
 
   const [chyba, setChyba] = useState<string | null>(null);
 
@@ -128,6 +134,16 @@ export function PrijemMailom({
                 >
                   <RefreshCw className="h-4 w-4" /> Nová adresa
                 </button>
+                <button
+                  onClick={() => {
+                    setVlastna(stav.local_part);
+                    setUpravujem((u) => !u);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+                  title="Namiesto vygenerovanej si zvoľte vlastnú."
+                >
+                  <Pencil className="h-4 w-4" /> {upravujem ? "Zavrieť" : "Zvoliť vlastnú"}
+                </button>
                 <label className="ml-auto inline-flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
@@ -150,6 +166,68 @@ export function PrijemMailom({
                   Príjem zapnutý
                 </label>
               </div>
+
+              {upravujem && (
+                <form
+                  className="mt-3 rounded-md border border-border bg-muted/20 p-3"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const cid = getActiveCompanyId();
+                    if (!cid) return;
+                    setPracuje(true);
+                    try {
+                      await nastavVlastnu({ data: { company_id: cid, local_part: vlastna } });
+                      await obnovStav();
+                      setUpravujem(false);
+                      toast.success("Adresa je nastavená");
+                    } catch (err: any) {
+                      toast.error(err?.message ?? "Nepodarilo sa");
+                    } finally {
+                      setPracuje(false);
+                    }
+                  }}
+                >
+                  <label className="block text-sm font-medium">Vlastná adresa</label>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <input
+                      autoFocus
+                      value={vlastna}
+                      onChange={(e) => setVlastna(e.target.value)}
+                      placeholder="napr. doklady-2026"
+                      className="w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    />
+                    <span className="text-sm text-muted-foreground">@{stav.podomena}</span>
+                    <button
+                      type="submit"
+                      disabled={pracuje}
+                      className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                    >
+                      Uložiť
+                    </button>
+                  </div>
+                  {/* Náhľad ukazuje, čo z toho naozaj bude — diakritika, medzery
+                      a veľké písmená sa opravia ticho, nech používateľ nehádа. */}
+                  {vlastna.trim() !== "" &&
+                    (() => {
+                      const o = overVlastnyLocalPart(vlastna);
+                      return o.ok ? (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Adresa bude:{" "}
+                          <code className="font-medium text-foreground">
+                            {o.hodnota}@{stav.podomena}
+                          </code>
+                        </p>
+                      ) : (
+                        <p className="mt-2 text-xs text-destructive">{o.chyba}</p>
+                      );
+                    })()}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Krátku a uhádnuteľnú adresu si vie domyslieť aj cudzí človek a poslať vám
+                    doklad. Ak nechcete riskovať, nechajte tú vygenerovanú s náhodným koncom — alebo
+                    si do vlastnej pridajte nejaké svoje číslo.
+                  </p>
+                </form>
+              )}
 
               <p className="mt-2 text-xs text-muted-foreground">
                 Adresu si nechajte pre seba — kto ju pozná, môže vám do prijatých faktúr poslať

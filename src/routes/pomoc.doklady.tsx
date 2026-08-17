@@ -177,6 +177,18 @@ const sections: HelpSection[] = [
           </li>
         </ul>
         <p>
+          Adresa sa dá <strong>zmeniť na vlastnú</strong> — tlačidlom „Zvoliť vlastnú" si namiesto
+          náhodného konca zadáte svoje slovo a číslo, napríklad{" "}
+          <code>doklady-2026@doklady.faktero.sk</code>. Diakritiku, medzery a veľké písmená si
+          Faktero opraví samo a hneď ukáže, ako bude adresa naozaj vyzerať.
+        </p>
+        <p>
+          <strong>Pozor, adresa je zároveň heslo.</strong> Kto ju pozná, vie vám poslať doklad —
+          preto sa predvolene generuje s náhodným koncom, ktorý sa nedá uhádnuť z názvu firmy.
+          Krátku a logickú adresu si vie domyslieť aj cudzí človek. Ak vlastnú chcete, pridajte do
+          nej niečo svoje, čo nie je na prvý pokus zrejmé.
+        </p>
+        <p>
           Na tej istej stránke je aj <strong>denník posledných mailov</strong> — pri každom vidno,
           ako dopadol. Keď doklad nedorazil, začnite tam. A keby sa adresa dostala tam, kam nemá, dá
           sa vypnúť alebo vymeniť za novú; stará vtedy prestane prijímať.

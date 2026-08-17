@@ -9,6 +9,7 @@ import {
   datum,
   zostavPrijatuFakturu,
   podomenaDokladov,
+  overVlastnyLocalPart,
 } from "./mail-prijem";
 
 describe("adresa na príjem dokladov", () => {
@@ -43,7 +44,9 @@ describe("výber adresáta z prijatého mailu", () => {
   });
 
   it("plusovú časť zahodí a veľké písmená neprekážajú", () => {
-    expect(vyberLocalPart(["MaxiTicket-K7F2P9+august@Doklady.Faktero.SK"])).toBe("maxiticket-k7f2p9");
+    expect(vyberLocalPart(["MaxiTicket-K7F2P9+august@Doklady.Faktero.SK"])).toBe(
+      "maxiticket-k7f2p9",
+    );
   });
 
   it("mail pre inú doménu ignoruje", () => {
@@ -172,5 +175,36 @@ describe("doména sa dá prepnúť nastavením", () => {
     );
     // Na starú doménu už mail nepatrí.
     expect(vyberLocalPart(["maxiticket-k7f2p9@doklady.faktero.sk"], podomena)).toBeNull();
+  });
+});
+
+describe("vlastná adresa na doklady", () => {
+  it("z ľudského zápisu spraví použiteľnú adresu", () => {
+    expect(overVlastnyLocalPart("Píla 2026")).toEqual({ ok: true, hodnota: "pila-2026" });
+    expect(overVlastnyLocalPart("  DOKLADY__2026  ")).toEqual({
+      ok: true,
+      hodnota: "doklady-2026",
+    });
+    expect(overVlastnyLocalPart("-nakup-")).toEqual({ ok: true, hodnota: "nakup" });
+  });
+
+  it("odmietne prikrátku, pridlhú a prázdnu", () => {
+    expect(overVlastnyLocalPart("ab").ok).toBe(false);
+    expect(overVlastnyLocalPart("!!!").ok).toBe(false);
+    expect(overVlastnyLocalPart("a".repeat(41)).ok).toBe(false);
+  });
+
+  it("nepustí vyhradené mená", () => {
+    for (const m of ["postmaster", "ADMIN", "Info", "faktero"]) {
+      expect(overVlastnyLocalPart(m).ok).toBe(false);
+    }
+  });
+
+  it("výsledok je vždy platná ľavá časť adresy", () => {
+    for (const vstup of ["Ľuboš & Co.", "firma---2026", "ŠTÚDIO 1"]) {
+      const o = overVlastnyLocalPart(vstup);
+      expect(o.ok).toBe(true);
+      if (o.ok) expect(o.hodnota).toMatch(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/);
+    }
   });
 });
