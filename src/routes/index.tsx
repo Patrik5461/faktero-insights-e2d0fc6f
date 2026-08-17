@@ -203,6 +203,11 @@ const features = [
     title: "Kniha jázd + Commander GPS",
     text: "Prepojenie na Commander GPS — jazdy a tankovania sa sťahujú automaticky do knihy jázd.",
   },
+  {
+    icon: Banknote,
+    title: "Leasingy a úvery",
+    text: "Splátkový kalendár s rozpadom na istinu, úrok a DPH. Zmluvu načítate z PDF a splátky si Faktero páruje s platbami z banky.",
+  },
 ] as const;
 
 const accounting = [
@@ -1248,8 +1253,8 @@ function MobileAppSection() {
               {/* Pôvodne tu stálo „s offline režimom". Appka bez signálu naozaj zapíše
                   jazdu aj doklad, ale rozhranie sa načítava zo živého webu — pri
                   studenom štarte bez pripojenia sa neotvorí. Sľubujme len to, čo platí. */}
-              iOS a Android appka so skenovaním dokladov a GPS knihou jázd. Jazdu aj odfotený
-              doklad zapíše aj bez signálu a odošle ich, len čo ste online.
+              iOS a Android appka so skenovaním dokladov a GPS knihou jázd. Jazdu aj odfotený doklad
+              zapíše aj bez signálu a odošle ich, len čo ste online.
             </p>
             <ul className="mt-8 grid gap-3 sm:grid-cols-2">
               {items.map((i) => (

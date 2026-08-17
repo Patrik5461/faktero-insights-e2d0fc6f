@@ -71,10 +71,12 @@ import { Route as PomocIndexRouteImport } from './routes/pomoc.index'
 import { Route as PomocApiRouteImport } from './routes/pomoc.api'
 import { Route as PomocBankaRouteImport } from './routes/pomoc.banka'
 import { Route as PomocCenyRouteImport } from './routes/pomoc.ceny'
+import { Route as PomocDokladyRouteImport } from './routes/pomoc.doklady'
 import { Route as PomocDphRouteImport } from './routes/pomoc.dph'
 import { Route as PomocEfakturaRouteImport } from './routes/pomoc.efaktura'
 import { Route as PomocExportyRouteImport } from './routes/pomoc.exporty'
 import { Route as PomocFakturyRouteImport } from './routes/pomoc.faktury'
+import { Route as PomocFinancovanieRouteImport } from './routes/pomoc.financovanie'
 import { Route as PomocJazdyRouteImport } from './routes/pomoc.jazdy'
 import { Route as PomocObjednavkyRouteImport } from './routes/pomoc.objednavky'
 import { Route as PomocObjednavkyDodavatelRouteImport } from './routes/pomoc.objednavky-dodavatel'
@@ -559,6 +561,11 @@ const PomocCenyRoute = PomocCenyRouteImport.update({
   path: '/pomoc/ceny',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PomocDokladyRoute = PomocDokladyRouteImport.update({
+  id: '/pomoc/doklady',
+  path: '/pomoc/doklady',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PomocDphRoute = PomocDphRouteImport.update({
   id: '/pomoc/dph',
   path: '/pomoc/dph',
@@ -577,6 +584,11 @@ const PomocExportyRoute = PomocExportyRouteImport.update({
 const PomocFakturyRoute = PomocFakturyRouteImport.update({
   id: '/pomoc/faktury',
   path: '/pomoc/faktury',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocFinancovanieRoute = PomocFinancovanieRouteImport.update({
+  id: '/pomoc/financovanie',
+  path: '/pomoc/financovanie',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomocJazdyRoute = PomocJazdyRouteImport.update({
@@ -1575,10 +1587,12 @@ export interface FileRoutesByFullPath {
   '/pomoc/api': typeof PomocApiRoute
   '/pomoc/banka': typeof PomocBankaRoute
   '/pomoc/ceny': typeof PomocCenyRoute
+  '/pomoc/doklady': typeof PomocDokladyRoute
   '/pomoc/dph': typeof PomocDphRoute
   '/pomoc/efaktura': typeof PomocEfakturaRoute
   '/pomoc/exporty': typeof PomocExportyRoute
   '/pomoc/faktury': typeof PomocFakturyRoute
+  '/pomoc/financovanie': typeof PomocFinancovanieRoute
   '/pomoc/jazdy': typeof PomocJazdyRoute
   '/pomoc/objednavky': typeof PomocObjednavkyRoute
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
@@ -1803,10 +1817,12 @@ export interface FileRoutesByTo {
   '/pomoc/api': typeof PomocApiRoute
   '/pomoc/banka': typeof PomocBankaRoute
   '/pomoc/ceny': typeof PomocCenyRoute
+  '/pomoc/doklady': typeof PomocDokladyRoute
   '/pomoc/dph': typeof PomocDphRoute
   '/pomoc/efaktura': typeof PomocEfakturaRoute
   '/pomoc/exporty': typeof PomocExportyRoute
   '/pomoc/faktury': typeof PomocFakturyRoute
+  '/pomoc/financovanie': typeof PomocFinancovanieRoute
   '/pomoc/jazdy': typeof PomocJazdyRoute
   '/pomoc/objednavky': typeof PomocObjednavkyRoute
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
@@ -2040,10 +2056,12 @@ export interface FileRoutesById {
   '/pomoc/api': typeof PomocApiRoute
   '/pomoc/banka': typeof PomocBankaRoute
   '/pomoc/ceny': typeof PomocCenyRoute
+  '/pomoc/doklady': typeof PomocDokladyRoute
   '/pomoc/dph': typeof PomocDphRoute
   '/pomoc/efaktura': typeof PomocEfakturaRoute
   '/pomoc/exporty': typeof PomocExportyRoute
   '/pomoc/faktury': typeof PomocFakturyRoute
+  '/pomoc/financovanie': typeof PomocFinancovanieRoute
   '/pomoc/jazdy': typeof PomocJazdyRoute
   '/pomoc/objednavky': typeof PomocObjednavkyRoute
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
@@ -2278,10 +2296,12 @@ export interface FileRouteTypes {
     | '/pomoc/api'
     | '/pomoc/banka'
     | '/pomoc/ceny'
+    | '/pomoc/doklady'
     | '/pomoc/dph'
     | '/pomoc/efaktura'
     | '/pomoc/exporty'
     | '/pomoc/faktury'
+    | '/pomoc/financovanie'
     | '/pomoc/jazdy'
     | '/pomoc/objednavky'
     | '/pomoc/objednavky-dodavatel'
@@ -2506,10 +2526,12 @@ export interface FileRouteTypes {
     | '/pomoc/api'
     | '/pomoc/banka'
     | '/pomoc/ceny'
+    | '/pomoc/doklady'
     | '/pomoc/dph'
     | '/pomoc/efaktura'
     | '/pomoc/exporty'
     | '/pomoc/faktury'
+    | '/pomoc/financovanie'
     | '/pomoc/jazdy'
     | '/pomoc/objednavky'
     | '/pomoc/objednavky-dodavatel'
@@ -2742,10 +2764,12 @@ export interface FileRouteTypes {
     | '/pomoc/api'
     | '/pomoc/banka'
     | '/pomoc/ceny'
+    | '/pomoc/doklady'
     | '/pomoc/dph'
     | '/pomoc/efaktura'
     | '/pomoc/exporty'
     | '/pomoc/faktury'
+    | '/pomoc/financovanie'
     | '/pomoc/jazdy'
     | '/pomoc/objednavky'
     | '/pomoc/objednavky-dodavatel'
@@ -2947,10 +2971,12 @@ export interface RootRouteChildren {
   PomocApiRoute: typeof PomocApiRoute
   PomocBankaRoute: typeof PomocBankaRoute
   PomocCenyRoute: typeof PomocCenyRoute
+  PomocDokladyRoute: typeof PomocDokladyRoute
   PomocDphRoute: typeof PomocDphRoute
   PomocEfakturaRoute: typeof PomocEfakturaRoute
   PomocExportyRoute: typeof PomocExportyRoute
   PomocFakturyRoute: typeof PomocFakturyRoute
+  PomocFinancovanieRoute: typeof PomocFinancovanieRoute
   PomocJazdyRoute: typeof PomocJazdyRoute
   PomocObjednavkyRoute: typeof PomocObjednavkyRoute
   PomocObjednavkyDodavatelRoute: typeof PomocObjednavkyDodavatelRoute
@@ -3457,6 +3483,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PomocCenyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pomoc/doklady': {
+      id: '/pomoc/doklady'
+      path: '/pomoc/doklady'
+      fullPath: '/pomoc/doklady'
+      preLoaderRoute: typeof PomocDokladyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pomoc/dph': {
       id: '/pomoc/dph'
       path: '/pomoc/dph'
@@ -3483,6 +3516,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/faktury'
       fullPath: '/pomoc/faktury'
       preLoaderRoute: typeof PomocFakturyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/financovanie': {
+      id: '/pomoc/financovanie'
+      path: '/pomoc/financovanie'
+      fullPath: '/pomoc/financovanie'
+      preLoaderRoute: typeof PomocFinancovanieRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/jazdy': {
@@ -5178,10 +5218,12 @@ const rootRouteChildren: RootRouteChildren = {
   PomocApiRoute: PomocApiRoute,
   PomocBankaRoute: PomocBankaRoute,
   PomocCenyRoute: PomocCenyRoute,
+  PomocDokladyRoute: PomocDokladyRoute,
   PomocDphRoute: PomocDphRoute,
   PomocEfakturaRoute: PomocEfakturaRoute,
   PomocExportyRoute: PomocExportyRoute,
   PomocFakturyRoute: PomocFakturyRoute,
+  PomocFinancovanieRoute: PomocFinancovanieRoute,
   PomocJazdyRoute: PomocJazdyRoute,
   PomocObjednavkyRoute: PomocObjednavkyRoute,
   PomocObjednavkyDodavatelRoute: PomocObjednavkyDodavatelRoute,

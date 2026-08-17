@@ -7,14 +7,25 @@ import { JobPicker } from "@/components/faktero/JobPicker";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { toast } from "sonner";
 
+/**
+ * Tá istá stránka zakladá aj upravuje. Kniha jázd je účtovný záznam a preklep v
+ * tachometri alebo zle označená súkromná jazda sa musia dať opraviť — bez toho
+ * ostávalo jediné riešenie jazdu zmazať a zapísať znova, čím sa pri stiahnutých
+ * jazdách stratila trasa aj väzba na Commander.
+ */
 export const Route = createFileRoute("/_authenticated/jazdy/nova")({
-  head: () => ({ meta: [{ title: "Nová jazda — Faktero" }] }),
+  validateSearch: (s: Record<string, unknown>): { id?: string } =>
+    typeof s.id === "string" && s.id ? { id: s.id } : {},
+  head: () => ({ meta: [{ title: "Jazda — Faktero" }] }),
   component: NewTripPage,
 });
 
 function NewTripPage() {
   const navigate = useNavigate();
+  const { id } = Route.useSearch();
+  const upravujem = !!id;
   const [vehicles, setVehicles] = useState<any[]>([]);
+  const [nacitavam, setNacitavam] = useState(upravujem);
   const [form, setForm] = useState({
     vehicle_id: "",
     trip_date: new Date().toISOString().slice(0, 10),
@@ -27,6 +38,7 @@ function NewTripPage() {
     fuel_price: "",
     job_id: "",
     note: "",
+    classification: "business",
   });
   const [saving, setSaving] = useState(false);
   // Doplnená cena sa smie prepísať ďalším vozidlom, ručne zadaná nikdy.
@@ -39,13 +51,49 @@ function NewTripPage() {
       .from("vehicles")
       .select("*")
       .eq("company_id", cid)
-      .eq("active", true)
+      // Pri úprave staršej jazdy môže byť vozidlo už odstavené — keby sa
+      // nenačítalo, výber by sa ticho prepol na iné auto.
       .order("name")
       .then(({ data }) => {
+        const zoznam = (data ?? []).filter((v) => v.active);
         setVehicles(data ?? []);
-        if (data?.[0]) setForm((p) => ({ ...p, vehicle_id: data[0].id }));
+        if (!upravujem && zoznam[0]) setForm((p) => ({ ...p, vehicle_id: zoznam[0].id }));
       });
-  }, []);
+  }, [upravujem]);
+
+  useEffect(() => {
+    if (!id) return;
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    supabase
+      .from("trips")
+      .select("*")
+      .eq("company_id", cid)
+      .eq("id", id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        setNacitavam(false);
+        if (error || !data) {
+          toast.error("Jazda sa nenašla.");
+          return navigate({ to: "/jazdy" });
+        }
+        setCenaDoplnena(false);
+        setForm({
+          vehicle_id: data.vehicle_id ?? "",
+          trip_date: data.trip_date ?? new Date().toISOString().slice(0, 10),
+          driver_name: data.driver_name ?? "",
+          start_location: data.start_location ?? "",
+          end_location: data.end_location ?? "",
+          purpose: data.purpose ?? "",
+          start_odometer: data.start_odometer == null ? "" : String(data.start_odometer),
+          end_odometer: data.end_odometer == null ? "" : String(data.end_odometer),
+          fuel_price: data.fuel_price == null ? "" : String(data.fuel_price),
+          job_id: data.job_id ?? "",
+          note: data.note ?? "",
+          classification: data.classification === "private" ? "private" : "business",
+        });
+      });
+  }, [id, navigate]);
 
   /**
    * Cena PHM z posledného tankovania. Bez nej ostane jazda bez nákladu a vo
@@ -89,8 +137,7 @@ function NewTripPage() {
     const consumption = vehicle?.consumption_l_100km
       ? (distance * Number(vehicle.consumption_l_100km)) / 100
       : null;
-    const { error } = await supabase.from("trips").insert({
-      company_id: cid,
+    const riadok = {
       vehicle_id: form.vehicle_id,
       trip_date: form.trip_date,
       driver_name: form.driver_name || null,
@@ -104,18 +151,31 @@ function NewTripPage() {
       fuel_consumption: consumption,
       job_id: form.job_id || null,
       note: form.note || null,
-    });
+      classification: form.classification,
+    };
+    const { error } = id
+      ? await supabase.from("trips").update(riadok).eq("company_id", cid).eq("id", id)
+      : await supabase.from("trips").insert({ company_id: cid, ...riadok });
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Jazda uložená");
+    toast.success(id ? "Jazda upravená" : "Jazda uložená");
     navigate({ to: "/jazdy" });
   }
 
   return (
     <>
-      <PageHeader title="Nová jazda" description="Pridajte záznam o služobnej ceste." />
+      <PageHeader
+        title={upravujem ? "Upraviť jazdu" : "Nová jazda"}
+        description={
+          upravujem
+            ? "Oprava zapísanej jazdy — trasa a väzba na zdroj ostávajú zachované."
+            : "Pridajte záznam o služobnej ceste."
+        }
+      />
       <PageBody>
-        {vehicles.length === 0 ? (
+        {nacitavam ? (
+          <div className="text-sm text-muted-foreground">Načítavam…</div>
+        ) : vehicles.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-6 text-sm">
             Najskôr pridajte vozidlo v sekcii{" "}
             <a href="/jazdy/vozidla" className="text-primary hover:underline">
@@ -161,6 +221,18 @@ function NewTripPage() {
                 onChange={(e) => setForm({ ...form, purpose: e.target.value })}
                 className="input"
               />
+            </Field>
+            {/* Súkromná jazda firemným autom patrí do knihy jázd, ale musí byť
+                v nej označená — do exportu pre účtovníčku ide ako súkromná. */}
+            <Field label="Charakter jazdy">
+              <select
+                value={form.classification}
+                onChange={(e) => setForm({ ...form, classification: e.target.value })}
+                className="input"
+              >
+                <option value="business">Služobná</option>
+                <option value="private">Súkromná</option>
+              </select>
             </Field>
             <Field label="Odkiaľ">
               <input

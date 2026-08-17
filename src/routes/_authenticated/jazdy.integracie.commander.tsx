@@ -563,13 +563,13 @@ function CommanderPage() {
                               </span>
                             </div>
                             <div>
-                              Imported:{" "}
+                              Zapísané:{" "}
                               <span className="text-foreground font-medium">
                                 {l.raw_response.inserted_trips_count ?? 0}
                               </span>
                             </div>
                             <div>
-                              Duplicate:{" "}
+                              Už boli v knihe:{" "}
                               <span className="text-foreground font-medium">
                                 {l.raw_response.skipped_duplicates ??
                                   (l.raw_response.duplicate_external_id ?? 0) +
@@ -577,107 +577,121 @@ function CommanderPage() {
                               </span>
                             </div>
                             <div>
-                              Vehicle not linked:{" "}
+                              Vozidlo neprepojené:{" "}
                               <span className="text-foreground font-medium">
                                 {l.raw_response.skipped_unlinked_vehicle ?? 0}
                               </span>
                             </div>
                             <div>
-                              Validation error:{" "}
+                              Neúplné údaje:{" "}
                               <span className="text-foreground font-medium">
                                 {l.raw_response.validation_errors ?? 0}
                               </span>
                             </div>
                             <div>
-                              Insert error:{" "}
+                              Chyba pri zápise:{" "}
                               <span className="text-foreground font-medium">
                                 {l.raw_response.insert_errors ?? 0}
                               </span>
                             </div>
                             <div>
-                              Missing mapping:{" "}
+                              Vozidlo nerozpoznané:{" "}
                               <span className="text-foreground font-medium">
                                 {l.raw_response.missing_vehicle_mapping ?? 0}
                               </span>
                             </div>
                           </div>
-                          {Array.isArray(l.raw_response.skipped_rides) &&
-                            l.raw_response.skipped_rides.length > 0 && (
-                              <div className="max-h-56 overflow-auto rounded border border-border bg-muted/40 p-2">
-                                <div className="mb-1 font-medium text-foreground">
-                                  Dôvody preskočenia ({l.raw_response.skipped_rides.length})
-                                </div>
-                                <div className="space-y-1 font-mono text-[10px]">
-                                  {l.raw_response.skipped_rides.map((ride: any, idx: number) => (
-                                    <div
-                                      key={`${ride.external_id ?? "ride"}-${idx}`}
-                                      className="border-t border-border pt-1 first:border-t-0 first:pt-0"
-                                    >
-                                      <span className="text-foreground">{ride.reason}</span>
-                                      {ride.external_id ? (
-                                        <span> · ride {ride.external_id}</span>
-                                      ) : null}
-                                      {ride.commander_vehicle_id ? (
-                                        <span> · vehicle {ride.commander_vehicle_id}</span>
-                                      ) : null}
-                                      {ride.detail ? (
-                                        <div className="whitespace-pre-wrap">{ride.detail}</div>
-                                      ) : null}
+                          {/* Surové odpovede z Commandera sú diagnostika pre
+                              podporu — na stránke ich môže byť stovky kilobajtov,
+                              takže sa vypisujú až po rozkliknutí. */}
+                          <details className="[&[open]>summary]:mb-2">
+                            <summary className="cursor-pointer select-none text-[11px] text-muted-foreground hover:text-foreground">
+                              Podrobnosti pre podporu
+                            </summary>
+                            <div className="space-y-2">
+                              {Array.isArray(l.raw_response.skipped_rides) &&
+                                l.raw_response.skipped_rides.length > 0 && (
+                                  <div className="max-h-56 overflow-auto rounded border border-border bg-muted/40 p-2">
+                                    <div className="mb-1 font-medium text-foreground">
+                                      Dôvody preskočenia ({l.raw_response.skipped_rides.length})
                                     </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          {Array.isArray(l.raw_response.sample_rides) &&
-                            l.raw_response.sample_rides.length > 0 && (
-                              <div className="max-h-56 overflow-auto rounded border border-border bg-muted/40 p-2">
-                                <div className="mb-1 font-medium text-foreground">
-                                  Vzorka jázd ({l.raw_response.sample_rides.length}) — surové vs.
-                                  parsované dátumy
-                                </div>
-                                <div className="space-y-1 font-mono text-[10px]">
-                                  {l.raw_response.sample_rides.map((s: any, idx: number) => (
-                                    <div
-                                      key={`${s.ride_id ?? "s"}-${idx}`}
-                                      className="border-t border-border pt-1 first:border-t-0 first:pt-0"
-                                    >
-                                      <div>
-                                        ride {s.ride_id ?? "—"} · vehicle {s.vehicle_id ?? "—"} ·
-                                        typ {s.datetimeStart_type}
-                                      </div>
-                                      {Array.isArray(s.keys) && (
-                                        <div>keys: [{s.keys.join(", ")}]</div>
+                                    <div className="space-y-1 font-mono text-[10px]">
+                                      {l.raw_response.skipped_rides.map(
+                                        (ride: any, idx: number) => (
+                                          <div
+                                            key={`${ride.external_id ?? "ride"}-${idx}`}
+                                            className="border-t border-border pt-1 first:border-t-0 first:pt-0"
+                                          >
+                                            <span className="text-foreground">{ride.reason}</span>
+                                            {ride.external_id ? (
+                                              <span> · ride {ride.external_id}</span>
+                                            ) : null}
+                                            {ride.commander_vehicle_id ? (
+                                              <span> · vehicle {ride.commander_vehicle_id}</span>
+                                            ) : null}
+                                            {ride.detail ? (
+                                              <div className="whitespace-pre-wrap">
+                                                {ride.detail}
+                                              </div>
+                                            ) : null}
+                                          </div>
+                                        ),
                                       )}
-                                      <div>
-                                        start raw: {JSON.stringify(s.datetimeStart_raw)} →{" "}
-                                        {s.datetimeStart_parsed ?? "null"}
-                                      </div>
-                                      <div>
-                                        end&nbsp;&nbsp; raw: {JSON.stringify(s.datetimeEnd_raw)} →{" "}
-                                        {s.datetimeEnd_parsed ?? "null"}
-                                      </div>
-                                      <div>
-                                        distance: {s.distance ?? "null"} · start_loc:{" "}
-                                        {s.start_location ?? "null"} · end_loc:{" "}
-                                        {s.end_location ?? "null"}
-                                      </div>
                                     </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          {Array.isArray(l.raw_response.raw_ride_sample_full) &&
-                            l.raw_response.raw_ride_sample_full.length > 0 && (
-                              <div className="max-h-72 overflow-auto rounded border border-border bg-muted/40 p-2">
-                                <div className="mb-1 font-medium text-foreground">
-                                  Surová Commander odpoveď (
-                                  {l.raw_response.raw_ride_sample_full.length} jázd)
-                                </div>
-                                <pre className="whitespace-pre-wrap break-all font-mono text-[10px]">
-                                  {JSON.stringify(l.raw_response.raw_ride_sample_full, null, 2)}
-                                </pre>
-                              </div>
-                            )}
+                                  </div>
+                                )}
+                              {Array.isArray(l.raw_response.sample_rides) &&
+                                l.raw_response.sample_rides.length > 0 && (
+                                  <div className="max-h-56 overflow-auto rounded border border-border bg-muted/40 p-2">
+                                    <div className="mb-1 font-medium text-foreground">
+                                      Vzorka jázd ({l.raw_response.sample_rides.length}) — surové
+                                      vs. parsované dátumy
+                                    </div>
+                                    <div className="space-y-1 font-mono text-[10px]">
+                                      {l.raw_response.sample_rides.map((s: any, idx: number) => (
+                                        <div
+                                          key={`${s.ride_id ?? "s"}-${idx}`}
+                                          className="border-t border-border pt-1 first:border-t-0 first:pt-0"
+                                        >
+                                          <div>
+                                            ride {s.ride_id ?? "—"} · vehicle {s.vehicle_id ?? "—"}{" "}
+                                            · typ {s.datetimeStart_type}
+                                          </div>
+                                          {Array.isArray(s.keys) && (
+                                            <div>keys: [{s.keys.join(", ")}]</div>
+                                          )}
+                                          <div>
+                                            start raw: {JSON.stringify(s.datetimeStart_raw)} →{" "}
+                                            {s.datetimeStart_parsed ?? "null"}
+                                          </div>
+                                          <div>
+                                            end&nbsp;&nbsp; raw: {JSON.stringify(s.datetimeEnd_raw)}{" "}
+                                            → {s.datetimeEnd_parsed ?? "null"}
+                                          </div>
+                                          <div>
+                                            distance: {s.distance ?? "null"} · start_loc:{" "}
+                                            {s.start_location ?? "null"} · end_loc:{" "}
+                                            {s.end_location ?? "null"}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              {Array.isArray(l.raw_response.raw_ride_sample_full) &&
+                                l.raw_response.raw_ride_sample_full.length > 0 && (
+                                  <div className="max-h-72 overflow-auto rounded border border-border bg-muted/40 p-2">
+                                    <div className="mb-1 font-medium text-foreground">
+                                      Surová Commander odpoveď (
+                                      {l.raw_response.raw_ride_sample_full.length} jázd)
+                                    </div>
+                                    <pre className="whitespace-pre-wrap break-all font-mono text-[10px]">
+                                      {JSON.stringify(l.raw_response.raw_ride_sample_full, null, 2)}
+                                    </pre>
+                                  </div>
+                                )}
+                            </div>
+                          </details>
                         </div>
                       )}
                     </li>

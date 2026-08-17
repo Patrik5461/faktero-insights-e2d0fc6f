@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Plus, Trash2, Car, Map as MapIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Car, Map as MapIcon } from "lucide-react";
 import { toast } from "sonner";
 import { formatDuration, formatSpeed, jeSukromna, sourceLabel } from "@/lib/faktero/trip-format";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
@@ -214,8 +214,17 @@ function TripsPage() {
                             <MapIcon className="h-4 w-4" />
                           </button>
                         )}
+                        <Link
+                          to="/jazdy/nova"
+                          search={{ id: r.id }}
+                          title="Upraviť jazdu"
+                          className="inline-block rounded p-1.5 text-muted-foreground hover:bg-muted"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Link>
                         <button
                           onClick={() => del(r.id)}
+                          title="Vymazať jazdu"
                           className="rounded p-1.5 text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -264,8 +273,17 @@ function TripsPage() {
                           <MapIcon className="h-4 w-4" />
                         </button>
                       )}
+                      <Link
+                        to="/jazdy/nova"
+                        search={{ id: r.id }}
+                        aria-label="Upraviť jazdu"
+                        className="mt-1 inline-block rounded p-1 text-muted-foreground"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Link>
                       <button
                         onClick={() => del(r.id)}
+                        aria-label="Vymazať jazdu"
                         className="mt-1 rounded p-1 text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />

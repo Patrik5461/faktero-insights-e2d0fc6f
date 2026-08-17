@@ -203,6 +203,21 @@ function VehiclesPage() {
   );
 }
 
+/**
+ * Oba dialógy na tejto stránke sú kreslené ručne, nie cez Radix. Bez tohto
+ * háčika sa nedali zavrieť klávesou Esc — všade inde v aplikácii sa dajú, takže
+ * to pôsobilo ako zaseknuté okno.
+ */
+function useZatvorNaEscape(onClose: () => void) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+}
+
 function VehicleDialog({
   initial,
   onClose,
@@ -213,9 +228,13 @@ function VehicleDialog({
   onSave: (v: Vehicle) => void;
 }) {
   const [v, setV] = useState<Vehicle>(initial);
+  useZatvorNaEscape(onClose);
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={v.id ? "Upraviť vozidlo" : "Nové vozidlo"}
         className="w-full max-w-xl rounded-xl border border-border bg-card p-6"
         onClick={(e) => e.stopPropagation()}
       >
@@ -312,6 +331,7 @@ function FuelDialog({
     receipt_number: "",
   });
   const total = (Number(f.liters || 0) * Number(f.price_per_liter || 0)).toFixed(2);
+  useZatvorNaEscape(onClose);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -335,6 +355,9 @@ function FuelDialog({
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Nové tankovanie"
         className="w-full max-w-md rounded-xl border border-border bg-card p-6"
         onClick={(e) => e.stopPropagation()}
       >

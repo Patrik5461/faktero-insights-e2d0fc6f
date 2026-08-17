@@ -20,6 +20,8 @@ import {
   Truck,
   ReceiptText,
   Plug,
+  ScanLine,
+  Banknote,
 } from "lucide-react";
 
 export const Route = createFileRoute("/pomoc/")({
@@ -147,6 +149,14 @@ const CATS: Cat[] = [
     skupina: "Účtovníctvo",
   },
   {
+    to: "/pomoc/doklady",
+    label: "Doklady a skenovanie",
+    desc: "Odfotenie bločku, eKasa QR z Finančnej správy a presun medzi prijaté faktúry.",
+    icon: ScanLine,
+    available: true,
+    skupina: "Účtovníctvo",
+  },
+  {
     to: "/pomoc/dph",
     label: "DPH",
     desc: "Sadzby, daň na vstupe a výstupe, prenesenie daňovej povinnosti.",
@@ -167,6 +177,14 @@ const CATS: Cat[] = [
     label: "Bankové účty",
     desc: "Pripojenie banky, párovanie úhrad a bankové výpisy.",
     icon: Landmark,
+    available: true,
+    skupina: "Účtovníctvo",
+  },
+  {
+    to: "/pomoc/financovanie",
+    label: "Leasingy a úvery",
+    desc: "Splátkový kalendár s istinou, úrokom a DPH — načítaný zo zmluvy a párovaný s bankou.",
+    icon: Banknote,
     available: true,
     skupina: "Účtovníctvo",
   },

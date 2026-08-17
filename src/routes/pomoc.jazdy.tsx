@@ -49,7 +49,30 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Rozlišuje sa <strong>služobná</strong> a <strong>súkromná</strong> jazda; do nákladov idú
-          len služobné.
+          len služobné. Charakter jazdy vyberiete priamo vo formulári a v zozname je súkromná jazda
+          označená štítkom. Jazdy bez uvedeného charakteru sa berú ako služobné — tak vznikali
+          staršie záznamy.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "uprava",
+    title: "Oprava a vymazanie jazdy",
+    body: (
+      <>
+        <p>
+          Na každom riadku v <Link to="/jazdy">zozname jázd</Link> je ceruzka — otvorí tú istú jazdu
+          na úpravu. Opraviť sa dá všetko vrátane tachometra, vozidla, zákazky aj charakteru jazdy.
+        </p>
+        <p>
+          Pri jazdách stiahnutých z Commandera alebo zaznamenaných GPS-kou{" "}
+          <strong>opravujte, nemažte</strong> — vymazaním sa stratí uložená trasa. Nočná
+          synchronizácia ju sama nevráti, lebo sťahuje len čerstvé dni; museli by ste si dané
+          obdobie natiahnuť ručne v <Link to="/jazdy/integracie/commander">Integráciách</Link>.
+        </p>
+        <p>
+          Kôš na jazdy nie je: vymazanie je okamžité a nedá sa vrátiť. Preto sa pýta na potvrdenie.
         </p>
       </>
     ),
