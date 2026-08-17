@@ -93,7 +93,16 @@ async function prilohyMailu(emailId: string, apiKey: string): Promise<ResendPril
   const r = await fetch(`https://api.resend.com/emails/receiving/${emailId}/attachments`, {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
-  if (!r.ok) throw new Error(`Resend prílohy: ${r.status} ${(await r.text()).slice(0, 200)}`);
+  if (!r.ok) {
+    const telo = (await r.text()).slice(0, 200);
+    // Najčastejšia príčina: kľúč smie len posielať. Bez tejto vety sa z hlášky
+    // Resendu nedá uhádnuť, že chýba druhý kľúč.
+    const rada =
+      r.status === 401 && /restricted/i.test(telo)
+        ? " — kľúč nemá právo čítať prijatú poštu, doplňte RESEND_INBOUND_API_KEY"
+        : "";
+    throw new Error(`Resend prílohy: ${r.status} ${telo}${rada}`);
+  }
   const json: any = await r.json();
   return (json?.data ?? []) as ResendPrilohaMeta[];
 }
@@ -169,8 +178,14 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
   }
 
   try {
-    const apiKey = process.env.RESEND_API_KEY?.trim();
-    if (!apiKey) throw new Error("RESEND_API_KEY nie je nastavený");
+    /*
+     * Prílohy prijatého mailu treba z Resendu **čítať**, kým odosielací kľúč
+     * má zámerne len právo posielať — inak by jeho únik znamenal prístup k
+     * celej pošte. Preto vlastný kľúč; keď nie je, skúsi sa odosielací, aby
+     * to na inštalácii s jedným plnohodnotným kľúčom fungovalo tiež.
+     */
+    const apiKey = (process.env.RESEND_INBOUND_API_KEY || process.env.RESEND_API_KEY)?.trim();
+    if (!apiKey) throw new Error("RESEND_INBOUND_API_KEY ani RESEND_API_KEY nie je nastavený");
 
     const vsetky = await prilohyMailu(mail.email_id, apiKey);
     const doklady = vsetky.filter((p) => jePrilohaDoklad(p.content_type, p.filename));

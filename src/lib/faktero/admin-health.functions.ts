@@ -135,6 +135,8 @@ export const getSystemHealth = createServerFn({ method: "GET" })
     const integrations: Array<{ key: string; label: string }> = [
       { key: "OPENAI_API_KEY", label: "OpenAI (AI asistent)" },
       { key: "RESEND_API_KEY", label: "Resend (e-maily)" },
+      { key: "RESEND_WEBHOOK_SECRET", label: "Resend webhook (doklady mailom)" },
+      { key: "RESEND_INBOUND_API_KEY", label: "Resend čítanie pošty (doklady mailom)" },
       { key: "GOPAY_GOID", label: "GoPay GoID" },
       { key: "GOPAY_CLIENT_ID", label: "GoPay Client ID" },
       { key: "GOPAY_CLIENT_SECRET", label: "GoPay Client Secret" },

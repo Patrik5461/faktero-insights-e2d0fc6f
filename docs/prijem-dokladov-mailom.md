@@ -45,10 +45,25 @@ a zapni udalosť **`email.received`**. Resend ukáže **signing secret** v tvare
 
 ### 4. Premenné na serveri
 
-Do `env` v `/home/patrik/ecosystem.config.cjs` pridaj:
+Do `env` v `/home/patrik/ecosystem.config.cjs` pridaj **dve** premenné:
 
 ```
 RESEND_WEBHOOK_SECRET: "whsec_…",
+RESEND_INBOUND_API_KEY: "re_…",
+```
+
+`RESEND_INBOUND_API_KEY` je **druhý** kľúč z Resendu, ktorý smie **čítať**.
+Odosielací `RESEND_API_KEY` je zámerne obmedzený len na posielanie, takže na
+stiahnutie prílohy prijatého mailu nestačí — Resend vráti
+`401 restricted_api_key` a doklad sa nezaloží. Dva kľúče preto, aby únik toho
+odosielacieho neznamenal prístup k prijatej pošte. Keď `RESEND_INBOUND_API_KEY`
+nie je nastavený, skúsi sa `RESEND_API_KEY` (pre inštaláciu s jedným plným
+kľúčom).
+
+Najjednoduchšie sa vkladajú skriptom, ktorý si hodnotu vypýta skryto:
+
+```
+/home/patrik/vloz-tajomstvo.sh RESEND_INBOUND_API_KEY
 ```
 
 a reštartuj cez `pm2 restart ecosystem.config.cjs --update-env`. Bez nej endpoint
