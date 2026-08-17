@@ -1,7 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { pripravKonektorFn, stavKonektoraFn } from "@/lib/faktero/pohoda-konektor.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -127,172 +125,21 @@ function CompanyPage() {
               <option value="other">Iný</option>
             </select>
           </label>
-          <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
-            <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Pohoda — účtovanie
-            </h3>
-            <p className="mb-3 text-xs text-muted-foreground">
-              Skratky z Pohody vašej účtovníčky. Keď ich vyplníte, doklady sa po importe rovno
-              zaúčtujú a nemusí ich preklikávať. Nechajte prázdne, ak neviete — export bude fungovať
-              aj tak.
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <In
-                label="E-mail účtovníčky"
-                value={c.uctovnik_email ?? ""}
-                onChange={f("uctovnik_email")}
-                placeholder="kam chodí mesačné odovzdanie"
-              />
-              <label className="flex items-start gap-3 rounded-md border border-border p-3">
-                <input
-                  type="checkbox"
-                  checked={!!c.odovzdanie_automaticky}
-                  onChange={(e) => setC({ ...c, odovzdanie_automaticky: e.target.checked })}
-                  className="mt-0.5 h-4 w-4"
-                />
-                <span className="text-sm">
-                  Posielať automaticky
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Podklady za minulý mesiac odídu 5. v mesiaci samy. Posiela sa len to, čo ešte
-                    neodišlo.
-                  </span>
-                </span>
-              </label>
-              <In
-                label="Predkontácia — faktúra"
-                value={c.pohoda_predkontacia ?? ""}
-                onChange={f("pohoda_predkontacia")}
-                placeholder="napr. 3Fv"
-              />
-              <In
-                label="Predkontácia — zálohová faktúra"
-                value={c.pohoda_predkontacia_zaloha ?? ""}
-                onChange={f("pohoda_predkontacia_zaloha")}
-              />
-              <In
-                label="Predkontácia — dobropis"
-                value={c.pohoda_predkontacia_dobropis ?? ""}
-                onChange={f("pohoda_predkontacia_dobropis")}
-              />
-              <In
-                label="Členenie DPH"
-                value={c.pohoda_clenenie_dph ?? ""}
-                onChange={f("pohoda_clenenie_dph")}
-                placeholder="napr. UD"
-              />
-              <In
-                label="Členenie DPH — prenesenie daňovej povinnosti"
-                value={c.pohoda_clenenie_dph_pdp ?? ""}
-                onChange={f("pohoda_clenenie_dph_pdp")}
-              />
-              <In
-                label="Predkontácia — prijatý doklad"
-                value={c.pohoda_predkontacia_prijata ?? ""}
-                onChange={f("pohoda_predkontacia_prijata")}
-                placeholder="napr. 5Fp"
-              />
-              <In
-                label="Členenie DPH — prijatý doklad"
-                value={c.pohoda_clenenie_dph_prijata ?? ""}
-                onChange={f("pohoda_clenenie_dph_prijata")}
-              />
-              <In
-                label="Pokladňa v Pohode"
-                value={c.pohoda_pokladna ?? ""}
-                onChange={f("pohoda_pokladna")}
-                placeholder="napr. HOT"
-              />
-              <In
-                label="Predkontácia — pokladničný doklad"
-                value={c.pohoda_predkontacia_pokladna ?? ""}
-                onChange={f("pohoda_predkontacia_pokladna")}
-              />
-              <In
-                label="Členenie skladu v Pohode"
-                value={c.pohoda_sklad ?? ""}
-                onChange={f("pohoda_sklad")}
-                placeholder="napr. TOVAR"
-              />
-              <label className="flex items-start gap-3 rounded-md border border-border p-3">
-                <input
-                  type="checkbox"
-                  checked={!!c.pohoda_posielat_adresar}
-                  onChange={(e) => setC({ ...c, pohoda_posielat_adresar: e.target.checked })}
-                  className="mt-0.5 h-4 w-4"
-                />
-                <span className="text-sm">
-                  Posielať adresár
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Odberatelia idú do Pohody aj vtedy, keď im tento mesiac nič nefakturujeme.
-                    Zmenený kontakt sa prepíše, nezaloží sa druhý.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-3 rounded-md border border-border p-3">
-                <input
-                  type="checkbox"
-                  checked={!!c.pohoda_posielat_sklad}
-                  onChange={(e) => setC({ ...c, pohoda_posielat_sklad: e.target.checked })}
-                  className="mt-0.5 h-4 w-4"
-                />
-                <span className="text-sm">
-                  Posielať skladové karty
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Posiela sa <strong>číselník zásob</strong>, nie stav skladu — ten v Pohode
-                    vzniká príjemkami a výdajkami. Potrebuje vyplnené členenie skladu.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={!!c.pohoda_posielat_pohyby}
-                  onChange={(e) => setC({ ...c, pohoda_posielat_pohyby: e.target.checked })}
-                  className="mt-0.5 h-4 w-4"
-                />
-                <span className="text-sm">
-                  Posielať skladové pohyby
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Príjemky a výdajky, aby v Pohode sedeli <strong>stavy</strong> skladu, nielen
-                    karty. Príjemka ide s príznakom „neúčtovať", aby sa náklad nezdvojil s prijatým
-                    dokladom. Potrebuje zapnuté skladové karty.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={!!c.pohoda_posielat_zakazky}
-                  onChange={(e) => setC({ ...c, pohoda_posielat_zakazky: e.target.checked })}
-                  className="mt-0.5 h-4 w-4"
-                />
-                <span className="text-sm">
-                  Posielať zákazky
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Faktúra potom v Pohode nesie zákazku, takže je z nej vidieť výnos po zákazkách.
-                    Zákazka odchádza <strong>raz</strong> — Pohoda ju vie založiť, ale nie prepísať,
-                    tak si neskoršiu zmenu názvu prepíšte aj tam.
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-3 rounded-md border border-border p-3 sm:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={c.pohoda_odkaz_na_pdf !== false}
-                  onChange={(e) => setC({ ...c, pohoda_odkaz_na_pdf: e.target.checked })}
-                  className="mt-0.5 h-4 w-4"
-                />
-                <span className="text-sm">
-                  Prikladať odkaz na PDF faktúry
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Doklad má v Pohode v záložke Dokumenty odkaz, ktorým sa otvorí PDF. Odkaz je
-                    dlhý náhodný reťazec a otvorí ho každý, kto ho má — rovnako ako faktúra poslaná
-                    mailom.
-                  </span>
-                </span>
-              </label>
+          <div className="sm:col-span-2 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="font-medium">Prepojenie s Pohodou</div>
+                <div className="text-xs text-muted-foreground">
+                  Predkontácie, členenia DPH, čo sa posiela a balíček pre účtovníčku.
+                </div>
+              </div>
+              <Link
+                to="/uctovnictvo/pohoda"
+                className="shrink-0 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+              >
+                Otvoriť
+              </Link>
             </div>
-            <KonektorPohody companyId={c.id} />
           </div>
           <label className="sm:col-span-2 block">
             <span className="text-sm font-medium">Pätička faktúry</span>
@@ -691,109 +538,6 @@ function TeamSection({ companyId }: { companyId: string }) {
           </table>
         </div>
       )}
-    </div>
-  );
-}
-
-/**
- * Priame prepojenie s Pohodou.
- *
- * Účtovníčka si nič neinštaluje — POHODA vie XML import spustiť z príkazového
- * riadku, takže balíček je dávkový súbor a naplánovaná úloha Windows. Kľúč sa
- * vyrába až pri stiahnutí a vloží sa rovno do súboru, aby sa nikde nezobrazoval.
- */
-type PotvrdenyDoklad = {
-  invoice_number: string | null;
-  pohoda_cislo: string | null;
-  pohoda_stav: string | null;
-  error: string | null;
-};
-type StavKonektora = { kluce: number; naposledy: string | null; potvrdene: PotvrdenyDoklad[] };
-
-function KonektorPohody({ companyId }: { companyId: string }) {
-  const [stav, setStav] = useState<StavKonektora | null>(null);
-  const [pracuje, setPracuje] = useState(false);
-  const fnPriprav = useServerFn(pripravKonektorFn);
-  const fnStav = useServerFn(stavKonektoraFn);
-
-  useEffect(() => {
-    fnStav({ data: { companyId } })
-      .then((r) => setStav(r as StavKonektora))
-      .catch(() => setStav(null));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companyId]);
-
-  async function stiahni() {
-    setPracuje(true);
-    try {
-      const r = await fnPriprav({ data: { companyId } });
-      const bin = atob(r.base64);
-      const bajty = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bajty[i] = bin.charCodeAt(i);
-      const url = URL.createObjectURL(new Blob([bajty], { type: "application/zip" }));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = r.fileName;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("Balíček stiahnutý — pošlite ho účtovníčke.");
-      fnStav({ data: { companyId } }).then((r) => setStav(r as StavKonektora));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Balíček sa nepodarilo pripraviť.");
-    } finally {
-      setPracuje(false);
-    }
-  }
-
-  return (
-    <div className="mt-4 rounded-md border border-border p-4">
-      <h4 className="text-sm font-semibold">Priame prepojenie s Pohodou</h4>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Namiesto posielania súborov mailom si Pohoda vezme doklady sama — raz denne v noci a späť
-        nám povie, aké čísla im pridelila. Účtovníčka nič neinštaluje: stiahnutý priečinok skopíruje
-        k Pohode, vyplní v ňom cestu a názov databázy a spustí druhý súbor, ktorý založí naplánovanú
-        úlohu.
-      </p>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={stiahni}
-          disabled={pracuje}
-          className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
-        >
-          {pracuje ? "Pripravujem…" : "Stiahnuť balíček pre účtovníčku"}
-        </button>
-        {stav?.naposledy ? (
-          <span className="text-xs text-muted-foreground">
-            Naposledy sa ozval {new Date(stav.naposledy).toLocaleString("sk-SK")}
-          </span>
-        ) : stav?.kluce ? (
-          <span className="text-xs text-muted-foreground">
-            Balíček je vydaný, zatiaľ sa neozval.
-          </span>
-        ) : null}
-      </div>
-      {stav?.potvrdene?.length ? (
-        <div className="mt-3 text-xs">
-          <div className="mb-1 font-medium">Naposledy potvrdené Pohodou</div>
-          <ul className="space-y-0.5 text-muted-foreground">
-            {stav.potvrdene.map((r: PotvrdenyDoklad, i: number) => (
-              <li key={i}>
-                {r.invoice_number}
-                {r.pohoda_cislo ? ` → ${r.pohoda_cislo}` : ""}
-                {r.pohoda_stav === "error" ? ` — chyba: ${r.error ?? "neznáma"}` : ""}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      <p className="mt-3 text-xs text-muted-foreground">
-        Každé stiahnutie vyrobí nový kľúč; staré ostávajú platné a zrušiť sa dajú v{" "}
-        <Link to="/api-kluce" className="underline">
-          API kľúčoch
-        </Link>
-        .
-      </p>
     </div>
   );
 }

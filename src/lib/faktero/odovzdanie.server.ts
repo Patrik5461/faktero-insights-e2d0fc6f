@@ -571,7 +571,8 @@ export async function posliBalikMailom(opts: {
 }): Promise<void> {
   const { company, balik, poznamka } = opts;
   const prijemca = (opts.prijemca ?? "").trim();
-  if (!prijemca) throw new Error("Chýba e-mail účtovníčky — doplňte ho vo Firma → Pohoda");
+  if (!prijemca)
+    throw new Error("Chýba e-mail účtovníčky — doplňte ho v Účtovníctvo → Prepojenie s Pohodou");
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(prijemca)) {
     throw new Error(`„${prijemca}" nevyzerá ako e-mailová adresa`);
   }

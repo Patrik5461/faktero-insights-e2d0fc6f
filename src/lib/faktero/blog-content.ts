@@ -78,7 +78,7 @@ export const POSTS: BlogPost[] = [
       {
         type: "callout",
         title: "Vyplňte predkontácie, kým to zapnete",
-        body: "Vo Firma → Pohoda sa dajú vyplniť skratky z POHODY vašej účtovníčky (napríklad 3Fv a UD). Bez nich sa doklady naimportujú, ale zaúčtovanie si ku každému doklikáva ručne — teda presne tú prácu, ktorú mal prenos ušetriť. Stačí sa jej raz opýtať.",
+        body: "V Účtovníctvo → Prepojenie s Pohodou sa dajú vyplniť skratky z POHODY vašej účtovníčky (napríklad 3Fv a UD). Bez nich sa doklady naimportujú, ale zaúčtovanie si ku každému doklikáva ručne — teda presne tú prácu, ktorú mal prenos ušetriť. Stačí sa jej raz opýtať.",
       },
     ],
   },

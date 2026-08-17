@@ -222,7 +222,8 @@ function DokladyPage() {
 
         <p className="mb-4 text-xs text-muted-foreground">
           V balíku je <strong>pohoda.xml</strong> na priamy import do Pohody, súpiska v CSV a
-          naskenované doklady. Predkontáciu prijatých dokladov nastavíte vo Firma → Pohoda.
+          naskenované doklady. Predkontáciu prijatých dokladov nastavíte v Účtovníctvo → Prepojenie
+          s Pohodou.
         </p>
 
         <div className="mb-4 grid grid-cols-3 gap-3">

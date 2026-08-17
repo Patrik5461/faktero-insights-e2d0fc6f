@@ -50,9 +50,9 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Vo <Link to="/firma">Firma → Pohoda — účtovanie</Link> vyplňte skratky, ktoré má
-          účtovníčka vo svojej Pohode: <strong>predkontácie</strong> (napr. <code>3Fv</code>) a{" "}
-          <strong>členenia DPH</strong> (napr. <code>UD</code>).
+          V <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link> vyplňte
+          skratky, ktoré má účtovníčka vo svojej Pohode: <strong>predkontácie</strong> (napr.{" "}
+          <code>3Fv</code>) a <strong>členenia DPH</strong> (napr. <code>UD</code>).
         </p>
         <p>
           Bez nich doklady naimportuje bez chyby, ale zaúčtovanie si ku každému doklikáva ručne —
@@ -102,7 +102,7 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Vo <Link to="/firma">Firma → Pohoda</Link> zaškrtnite{" "}
+          V <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link> zaškrtnite{" "}
           <strong>Posielať automaticky</strong>. Podklady za minulý mesiac potom odídu 5. ráno samy
           na adresu účtovníčky.
         </p>
@@ -147,8 +147,8 @@ const sections: HelpSection[] = [
       <>
         <ol>
           <li>
-            Vo <Link to="/firma">Firma → Pohoda → Priame prepojenie s Pohodou</Link> kliknite na{" "}
-            <strong>Stiahnuť balíček pre účtovníčku</strong> a pošlite jej ho.
+            V <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link> dole kliknite
+            na <strong>Stiahnuť balíček pre účtovníčku</strong> a pošlite jej ho.
           </li>
           <li>
             Účtovníčka priečinok skopíruje na počítač, kde je POHODA — ideálne{" "}
@@ -201,7 +201,7 @@ const sections: HelpSection[] = [
             <strong>pokladňa</strong> — príjmové a výdavkové doklady
           </li>
         </ul>
-        <p>Naviac, keď si ich zapnete vo Firma → Pohoda:</p>
+        <p>Naviac, keď si ich zapnete v Účtovníctvo → Prepojenie s Pohodou:</p>
         <ul>
           <li>
             <strong>adresár</strong> — odberatelia idú do Pohody aj vtedy, keď im ten mesiac nič
@@ -258,7 +258,8 @@ const sections: HelpSection[] = [
         <p>
           Skladové karty samy o sebe idú do Pohody s nulovým stavom. Množstvá tam vznikajú
           príjemkami a výdajkami — a tie vieme posielať tiež, keď vo{" "}
-          <Link to="/firma">Firma → Pohoda</Link> zapnete <strong>skladové pohyby</strong>.
+          <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link> zapnete{" "}
+          <strong>skladové pohyby</strong>.
         </p>
         <p>
           Pohyby z jedného dňa sa zlejú do jedného dokladu, takže z väčšieho príjmu nevznikne stovka
@@ -317,8 +318,8 @@ const sections: HelpSection[] = [
           ten istý doklad prišiel raz konektorom a raz z mailu.
         </p>
         <p>
-          <strong>Čo keď Pohoda doklad odmietne?</strong> Dôvod uvidíte vo Firma → Pohoda a doklad
-          sa vráti do fronty — príde znova, keď sa chyba opraví. Nezmizne.
+          <strong>Čo keď Pohoda doklad odmietne?</strong> Dôvod uvidíte v Účtovníctvo → Prepojenie s
+          Pohodou a doklad sa vráti do fronty — príde znova, keď sa chyba opraví. Nezmizne.
         </p>
         <p>
           <strong>Zmenil som zákazke názov, prepíše sa?</strong> Nie. Pohoda vie zákazku založiť,

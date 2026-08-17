@@ -190,7 +190,7 @@ const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
   {
     format: "pohoda_xml",
     label: "Pohoda XML",
-    note: "Predkontácie a členenie DPH sa vypĺňajú vo Firma → Pohoda; bez nich si ich účtovníčka doklikáva sama.",
+    note: "Predkontácie a členenie DPH sa vypĺňajú v Účtovníctvo → Prepojenie s Pohodou; bez nich si ich účtovníčka doklikáva sama.",
   },
   {
     format: "omega_txt",
@@ -585,7 +585,7 @@ function OdovzdanieZaMesiac() {
     if (!cid) return;
     const email =
       prehlad?.uctovnikEmail ||
-      window.prompt("E-mail účtovníčky (uloží sa vo Firma → Pohoda):")?.trim();
+      window.prompt("E-mail účtovníčky (uloží sa v Účtovníctvo → Prepojenie s Pohodou):")?.trim();
     if (!email) return;
     setBusy("mail");
     try {

@@ -6,7 +6,7 @@
  * vyprší platnosť. Tu je adresa krátka a podpis sa vyrába až pri kliknutí.
  *
  * Odkaz existuje len pre faktúry, ktoré cez konektor naozaj išli do Pohody
- * (token vzniká pri zostavovaní dávky), dá sa vypnúť vo Firma → Pohoda a
+ * (token vzniká pri zostavovaní dávky), dá sa vypnúť v Účtovníctvo → Prepojenie s Pohodou a
  * zrušiť vymazaním tokenu. Prezradzuje to isté, čo faktúra poslaná mailom.
  */
 import { createFileRoute } from "@tanstack/react-router";

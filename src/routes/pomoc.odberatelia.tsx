@@ -102,8 +102,8 @@ const sections: HelpSection[] = [
           nefakturujete. Zmenený kontakt sa <strong>prepíše</strong>, nezaloží sa druhý.
         </p>
         <p>
-          Zapína sa to vo <Link to="/firma">Firma → Pohoda</Link> — viac v{" "}
-          <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
+          Zapína sa to v <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link> —
+          viac v <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
         </p>
       </>
     ),
