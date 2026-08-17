@@ -172,13 +172,16 @@ File → Save Screen. Alebo priamo na zariadení a orežte na požadovaný rozme
 ## 7. Čo treba spraviť pred odoslaním
 
 - [ ] Build v Xcode: tím, `sk.faktero.app`, verzia 1.0, build 1
-- [ ] Zapnúť **Push Notifications** capability (bez Firebase zatiaľ nič neodošle, ale
-      capability musí byť v profile, inak sa dopĺňa až novým buildom)
+- [ ] **Push Notifications** capability — v projekte už je (`App.entitlements` s
+      `aps-environment`, `remote-notification` v `UIBackgroundModes`). V Xcode len over,
+      že sa Signing & Capabilities nesťažuje; doplnenie neskôr znamená nový build.
 - [ ] Archive → Distribute App → App Store Connect → Upload
 - [ ] V App Store Connect vyplniť sekcie z tohto dokumentu
 - [ ] Nahrať snímky obrazovky
 - [ ] Vyplniť App Privacy podľa tabuľky vyššie
 - [ ] Skontrolovať, že demo účet funguje (prihlásenie + vidno dáta)
+- [ ] **Najprv TestFlight** — po nahratí sa build objaví v TestFlight → iOS Builds; interné
+      testovanie ide hneď, externá skupina potrebuje jednorazové Beta App Review
 - [ ] Submit for Review
 
 ---
@@ -190,7 +193,9 @@ File → Save Screen. Alebo priamo na zariadení a orežte na požadovaný rozme
 - **V aplikácii nesmie pribudnúť odkaz na kúpu predplatného.** Dnes ho tam nemá — mobilná
   časť (`/app`) obrazovku s cenníkom ani platbou neobsahuje. Keby pribudol odkaz na
   web s cenníkom, Apple to bude posudzovať podľa pravidla 3.1.1 a odmietne to.
-- **Push notifikácie zatiaľ nefungujú** (chýba Firebase/FCM). Nie je to dôvod na
-  zamietnutie, ale nesľubujte ich v popise, kým nebežia — v texte vyššie preto nie sú.
+- **Push ide priamo do APNs, Firebase netreba** (od 2026-08-14, `docs/push-apns.md`).
+  Serverové premenné `APNS_*` sú nastavené. Čaká sa už len na token zo skutočného
+  zariadenia — ten vznikne pri prvom spustení buildu z TestFlightu. V popise appky
+  push zatiaľ nesľubujeme, kým to neprejde naostro.
 - **eFaktúra (Peppol) ešte nie je napojená.** Popis ju spomína len v kontexte webu, nie
   ako funkciu aplikácie.
