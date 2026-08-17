@@ -102,20 +102,37 @@ done
 readonly XCPROJEKT="ios/App/App.xcodeproj"
 readonly RESOLVED="$XCPROJEKT/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
 
-if command -v xcodebuild >/dev/null 2>&1; then
-  echo "▸ xcodebuild -resolvePackageDependencies"
-  # So schémou aj bez nej: schéma `App` nie je v repozitári zdieľaná, takže na
-  # čistom klone nemusí existovať a xcodebuild by na ňu zbytočne padol.
-  xcodebuild -resolvePackageDependencies -project "$XCPROJEKT" \
-    || xcodebuild -resolvePackageDependencies -project "$XCPROJEKT" -scheme App
+mkdir -p "$(dirname "$RESOLVED")"
 
-  if [ ! -f "$RESOLVED" ]; then
-    echo "✗ Package.resolved sa nevyrobil — build by padol na riešení závislostí."
-    exit 1
-  fi
-  echo "✓ Package.resolved vyrobený ($(wc -c <"$RESOLVED" | tr -d ' ') B)"
-else
-  echo "! xcodebuild nie je k dispozícii, Package.resolved sa preskakuje."
+# Prvý pokus: xcodebuild. Keď prejde, vyrobí presne ten tvar, ktorý Xcode chce.
+# Nesmie ale zhodiť skript — v prostredí Xcode Cloudu je riešenie balíkov vypnuté
+# a xcodebuild to zdedí, čiže tu vie skončiť chybou 74. Od toho je druhý pokus.
+if command -v xcodebuild >/dev/null 2>&1; then
+  echo "▸ 1/2 xcodebuild -resolvePackageDependencies"
+  xcodebuild -resolvePackageDependencies -project "$XCPROJEKT" 2>&1 | tail -20 || true
 fi
+
+# Druhý pokus: čistý SwiftPM nad CapApp-SPM. Projekt má jedinú referenciu na
+# balík — lokálny CapApp-SPM (viď XCLocalSwiftPackageReference v project.pbxproj)
+# — takže všetky vzdialené závislosti (capacitor-swift-pm, ion-ios-camera,
+# keychain-swift) sú jeho podzávislosti a v tomto zozname budú tiež. `swift`
+# nastavenie Xcode Cloudu nezaujíma, preto sa dostane ďalej.
+if [ ! -f "$RESOLVED" ] && command -v swift >/dev/null 2>&1; then
+  echo "▸ 2/2 swift package resolve (CapApp-SPM)"
+  ( cd ios/App/CapApp-SPM && swift package resolve )
+  if [ -f "ios/App/CapApp-SPM/Package.resolved" ]; then
+    cp "ios/App/CapApp-SPM/Package.resolved" "$RESOLVED"
+    echo "▸ Zoznam prekopírovaný tam, kde ho Xcode hľadá."
+  fi
+fi
+
+if [ ! -f "$RESOLVED" ]; then
+  echo "✗ Package.resolved sa nevyrobil — build padne na riešení závislostí."
+  echo "  Núdzové riešenie: na Macu otvor projekt, File → Packages → Resolve"
+  echo "  Package Versions, a súbor commitni (v .gitignore už výnimku má)."
+  exit 1
+fi
+echo "✓ Package.resolved je na mieste:"
+cat "$RESOLVED"
 
 echo "✓ Zdroje pripravené, Xcode Cloud môže stavať."
