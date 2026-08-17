@@ -154,7 +154,12 @@ const sections: HelpSection[] = [
           Adresu nájdete v <Link to="/doklady/mailom">Doklady → Doklady e-mailom</Link>. Skopírujete
           ju a prepošlete na ňu mail od dodávateľa — nič sa nesťahuje a nikam sa neprihlasujete. Z
           PDF v prílohe sa prečíta dodávateľ, IČO, IČ DPH, IBAN, číslo faktúry, variabilný symbol,
-          dátum vystavenia aj splatnosti a sumy.
+          dátum vystavenia aj splatnosti, sumy a <strong>jednotlivé položky</strong> — tie sú na
+          detaile dokladu len na prezretie, do skladu ani do účtovníctva nevstupujú.
+        </p>
+        <p>
+          Na detaile dokladu je aj <strong>náhľad prílohy</strong>, takže na prezretie nemusíte nič
+          sťahovať.
         </p>
         <p>
           Doklad potom čaká medzi <Link to="/prijate-faktury">prijatými faktúrami</Link> ako{" "}

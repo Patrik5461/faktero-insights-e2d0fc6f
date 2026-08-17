@@ -10,6 +10,7 @@ import {
   zostavPrijatuFakturu,
   podomenaDokladov,
   overVlastnyLocalPart,
+  polozkyDokladu,
 } from "./mail-prijem";
 
 describe("adresa na príjem dokladov", () => {
@@ -206,5 +207,54 @@ describe("vlastná adresa na doklady", () => {
       expect(o.ok).toBe(true);
       if (o.ok) expect(o.hodnota).toMatch(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/);
     }
+  });
+});
+
+describe("položky prečítané z dokladu", () => {
+  it("prevezme riadky a doplní chýbajúce hodnoty ako null", () => {
+    expect(
+      polozkyDokladu([
+        { name: "Kancelársky papier A4", quantity: 10, unit: "bal.", unit_price: 4.5, total: 45 },
+        { name: "Tonery" },
+      ]),
+    ).toEqual([
+      {
+        name: "Kancelársky papier A4",
+        quantity: 10,
+        unit: "bal.",
+        unit_price: 4.5,
+        vat_rate: null,
+        total: 45,
+      },
+      { name: "Tonery", quantity: null, unit: null, unit_price: null, vat_rate: null, total: null },
+    ]);
+  });
+
+  it("súčtové riadky medzi položky nepustí", () => {
+    const v = polozkyDokladu([
+      { name: "Tovar" },
+      { name: "Spolu k úhrade" },
+      { name: "DPH 23 %" },
+      { name: "Zaokrúhlenie" },
+    ]);
+    expect(v?.map((p) => p.name)).toEqual(["Tovar"]);
+  });
+
+  it("z prázdneho alebo nezmyselného vstupu vráti null", () => {
+    expect(polozkyDokladu([])).toBeNull();
+    expect(polozkyDokladu(null)).toBeNull();
+    expect(polozkyDokladu("nič")).toBeNull();
+    expect(polozkyDokladu([{ quantity: 2 }])).toBeNull();
+  });
+
+  it("zostavená faktúra položky prenesie", () => {
+    const f = zostavPrijatuFakturu({
+      ai: { supplier_name: "Lipa", items: [{ name: "Papier", quantity: 2 }] },
+      odosielatel: null,
+      predmet: null,
+      nazovSuboru: null,
+      dnes: "2026-08-17",
+    });
+    expect(f.items?.[0]?.name).toBe("Papier");
   });
 });
