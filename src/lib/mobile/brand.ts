@@ -18,3 +18,11 @@ export const ZELENA_HORE = "#007e46";
  * inak je nad nadpisom vidieť predel.
  */
 export const ZELENA_DOLE = "#0a8f52";
+
+/**
+ * Verzia mobilnej aplikácie tak, ako ju vidí človek.
+ *
+ * Musí sedieť s `MARKETING_VERSION` v `ios/App/App.xcodeproj/project.pbxproj` —
+ * inak appka o sebe tvrdí jedno a v App Store je napísané druhé.
+ */
+export const VERZIA_APKY = "1.2";

@@ -20,7 +20,7 @@ import {
   isBiometricAvailable,
   isBiometricEnabled,
 } from "@/lib/mobile/biometric";
-import { ZELENA_DOLE, ZELENA_HORE } from "@/lib/mobile/brand";
+import { VERZIA_APKY, ZELENA_DOLE, ZELENA_HORE } from "@/lib/mobile/brand";
 import { AppHeader } from "@/components/faktero/mobil/MobilChrome";
 
 /**
@@ -302,7 +302,9 @@ export function MobilPanel({
             <span className="text-[15px] font-medium">Odhlásiť sa</span>
           </button>
 
-          <p className="pt-2 text-center text-[12px] text-muted-foreground">Faktero V1</p>
+          <p className="pt-2 text-center text-[12px] text-muted-foreground">
+            Faktero v{VERZIA_APKY}
+          </p>
         </div>
       </aside>
     </>
