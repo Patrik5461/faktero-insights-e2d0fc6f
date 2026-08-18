@@ -192,7 +192,6 @@ export function normalizujVypis(surove: unknown): Vypis {
   };
 }
 
-
 /**
  * Rozdelenie textu výpisu na kusy, ktoré model stihne prečítať naraz.
  *
@@ -252,7 +251,8 @@ export function zlejVypisy(casti: Vypis[]): Vypis {
     cisloVypisu: prve((v) => v.cisloVypisu),
     ucet: prve((v) => v.ucet),
     mena: prve((v) => v.mena),
-    datumVypisu: prve((v) => v.datumVypisu) ?? (pohyby.length ? pohyby[pohyby.length - 1].datum : null),
+    datumVypisu:
+      prve((v) => v.datumVypisu) ?? (pohyby.length ? pohyby[pohyby.length - 1].datum : null),
     pohyby,
   };
 }

@@ -3,7 +3,11 @@ import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { nacitajBankovyVypisFn, vypisDoPohodyFn } from "@/lib/faktero/vypis-pdf.functions";
+import {
+  spustiCitanieVypisuFn,
+  stavCitaniaVypisuFn,
+  vypisDoPohodyFn,
+} from "@/lib/faktero/vypis-pdf.functions";
 import type { VypisPohyb } from "@/lib/faktero/vypis-pohyby";
 import { Download, FileUp, Loader2, Trash2 } from "lucide-react";
 
@@ -64,7 +68,8 @@ function eur(n: number): string {
 type Riadok = VypisPohyb & { vyviezt: boolean };
 
 function VypisDoPohodyPage() {
-  const precitaj = useServerFn(nacitajBankovyVypisFn);
+  const spusti = useServerFn(spustiCitanieVypisuFn);
+  const stav = useServerFn(stavCitaniaVypisuFn);
   const doXml = useServerFn(vypisDoPohodyFn);
 
   const cid = useMemo(() => getActiveCompanyId(), []);
@@ -93,18 +98,34 @@ function VypisDoPohodyPage() {
 
   async function nahraj(file: File | null) {
     if (!file) return;
+    if (!cid) return setChyba("Najprv vyberte firmu.");
     setChyba(null);
     setNacitavam(true);
     try {
       const zPrehliadaca = await textZPdf(file);
-      const v = await precitaj({
-        data: zPrehliadaca ?? { pdf: await suborNaBase64(file) },
+      const { id } = await spusti({
+        data: { company_id: cid, ...(zPrehliadaca ?? { pdf: await suborNaBase64(file) }) },
       });
+
+      /*
+        Čítanie beží na serveri a stránka sa naň pýta. Jedna dlhá požiadavka to
+        byť nemôže — čokoľvek nad asi tridsať sekúnd sa medzi prehliadačom a
+        serverom pretrhne a ostane z toho holé „Failed to fetch".
+      */
+      let odpoved: any = null;
+      for (let i = 0; i < 150 && !odpoved?.hotovo; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        odpoved = await stav({ data: { company_id: cid, id } }).catch(() => null);
+      }
+      if (!odpoved?.hotovo) throw new Error("Čítanie trvá príliš dlho. Skúste kratší výpis.");
+      if (!odpoved.ok || !odpoved.vypis)
+        throw new Error(odpoved.chyba ?? "Výpis sa nepodarilo prečítať.");
+      const v = odpoved.vypis;
       setCisloVypisu(v.cisloVypisu ?? "");
       setDatumVypisu(v.datumVypisu ?? "");
       setUcet(v.ucet);
       setMena(v.mena);
-      setRiadky(v.pohyby.map((p) => ({ ...p, vyviezt: true })));
+      setRiadky(v.pohyby.map((p: VypisPohyb) => ({ ...p, vyviezt: true })));
       setZdroj(
         v.zdroj === "sken"
           ? `PDF nemá textovú vrstvu, čítalo sa z obrazu (${v.stran} str.) — prejdite riadky pozornejšie.`

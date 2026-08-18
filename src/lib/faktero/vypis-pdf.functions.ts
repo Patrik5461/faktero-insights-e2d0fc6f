@@ -53,10 +53,14 @@ function odpovedNaJson(odpoved: string): unknown {
   }
 }
 
-export const nacitajBankovyVypisFn = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator((input: { pdf?: string; text?: string; stran?: number }) => input)
-  .handler(async ({ data }): Promise<Vypis & { zdroj: "text" | "sken"; stran: number }> => {
+type PrecitanyVypis = Vypis & { zdroj: "text" | "sken"; stran: number };
+
+async function precitajVypis(data: {
+  pdf?: string;
+  text?: string;
+  stran?: number;
+}): Promise<PrecitanyVypis> {
+  {
     /*
       Text si vie vytiahnuť už prehliadač a vtedy sa sem posiela **len text**.
       Je to rozdiel medzi pár kilobajtmi a niekoľkými megabajtmi: PDF sa do
@@ -115,7 +119,83 @@ export const nacitajBankovyVypisFn = createServerFn({ method: "POST" })
       );
     }
     return { ...vypis, zdroj: maTextovuVrstvu ? "text" : "sken", stran };
+  }
+}
+
+/**
+ * Spustenie čítania a doptávanie sa na výsledok.
+ *
+ * Nedá sa to spraviť jednou požiadavkou: čokoľvek, čo beží dlhšie než asi
+ * tridsať sekúnd, sa medzi prehliadačom a serverom pretrhne — v prehliadači to
+ * vyzerá ako „Failed to fetch", hoci server pokojne pracuje ďalej. Výpis so
+ * štyridsiatimi pohybmi číta model vyše minúty, takže sa odpoveď pošle hneď a
+ * stránka sa pýta na výsledok, kým nie je hotový. Rovnaký vzor má čítanie
+ * zmlúv o financovaní.
+ */
+const KOS = "imports";
+
+function cestaVysledku(companyId: string, id: string): string {
+  return `${companyId}/vypisy/${id}.json`;
+}
+
+async function overClena(ctx: { supabase: any; userId: string }, companyId: string) {
+  const { data } = await ctx.supabase.rpc("is_company_member", {
+    _company_id: companyId,
+    _user_id: ctx.userId,
   });
+  if (!data) throw new Error("Nemáte prístup k firme.");
+}
+
+export const spustiCitanieVypisuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: { company_id: string; pdf?: string; text?: string; stran?: number }) => input)
+  .handler(async ({ data, context }): Promise<{ id: string }> => {
+    const ctx = context as unknown as { supabase: any; userId: string };
+    await overClena(ctx, data.company_id);
+
+    const id = crypto.randomUUID();
+    void (async () => {
+      let vysledok: Record<string, unknown>;
+      try {
+        vysledok = { ok: true, vypis: await precitajVypis(data) };
+      } catch (e: any) {
+        vysledok = { ok: false, chyba: e?.message ?? "Výpis sa nepodarilo prečítať." };
+      }
+      const { error } = await ctx.supabase.storage
+        .from(KOS)
+        .upload(cestaVysledku(data.company_id, id), Buffer.from(JSON.stringify(vysledok)), {
+          contentType: "application/json",
+          upsert: true,
+        });
+      if (error) console.error("[vypis] výsledok sa nepodarilo uložiť:", error.message);
+    })();
+
+    return { id };
+  });
+
+export const stavCitaniaVypisuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: { company_id: string; id: string }) => input)
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<
+      { hotovo: false } | { hotovo: true; ok: boolean; vypis?: PrecitanyVypis; chyba?: string }
+    > => {
+      const ctx = context as unknown as { supabase: any; userId: string };
+      await overClena(ctx, data.company_id);
+      // Id chodí z prehliadača — bez tejto kontroly by sa dal vypýtať výsledok
+      // z priečinka cudzej firmy.
+      if (!/^[0-9a-f-]{36}$/i.test(data.id)) throw new Error("Neplatné čítanie.");
+
+      const { data: subor } = await ctx.supabase.storage
+        .from(KOS)
+        .download(cestaVysledku(data.company_id, data.id));
+      if (!subor) return { hotovo: false };
+      return { hotovo: true, ...JSON.parse(await subor.text()) };
+    },
+  );
 
 /**
  * Potvrdené pohyby do XML pre Pohodu.
