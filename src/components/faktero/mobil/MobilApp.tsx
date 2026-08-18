@@ -5,7 +5,7 @@
  * samostatného balíčka v telefóne (`src/mobile/main.tsx`), aby appka fungovala
  * aj bez pripojenia. Preto tu nie je nič z routera — obrazovky prepína stav.
  */
-import { Component, lazy, Suspense, useEffect, useState } from "react";
+import { Component, lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import {
@@ -186,6 +186,26 @@ function ObsahApky() {
   const [zamknute, setZamknute] = useState(false);
   const [zrusiSa, setZrusiSa] = useState<string | null>(null);
   const [novsia, setNovsia] = useState<{ peciatka: string; odkaz: string } | null>(null);
+
+  /*
+   * Povolenie na notifikácie sa pýta až tu: na domovskej obrazovke, teda po
+   * prihlásení a po prípadnom odomknutí biometriou.
+   *
+   * Pri štarte appky vyskakovalo systémové okno skôr, než človek vedel, čo
+   * appka robí — a kto vtedy ťukol „Nepovoliť", mal push nadobro vypnutý,
+   * lebo iOS sa druhýkrát nepýta. Čakať treba aj na odomknutie: dve systémové
+   * okná naraz (Face ID a notifikácie) si preliezajú cez seba.
+   */
+  const pytaliSmeSaNaPush = useRef(false);
+  useEffect(() => {
+    if (krok !== "domov" || zamknute || pytaliSmeSaNaPush.current) return;
+    pytaliSmeSaNaPush.current = true;
+    void (async () => {
+      const m = await import("@/lib/mobile/push");
+      await m.registerPushNotifications();
+      await m.dorucCakajuciPushToken();
+    })();
+  }, [krok, zamknute]);
 
   /**
    * Kto je prihlásený a za akú firmu — to isté sa rieši pri štarte aj po prihlásení.

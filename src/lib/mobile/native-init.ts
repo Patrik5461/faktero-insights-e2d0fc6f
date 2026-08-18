@@ -48,10 +48,19 @@ export async function initNativePlatform(): Promise<void> {
       console.warn("[native-init] StatusBar:", e);
     }
 
-    // Push notifikácie — registrácia tokenu po prihlásení
+    /*
+     * Push notifikácie — pri štarte sa len obnoví token, **nič sa nepýta**.
+     *
+     * iOS token vydá do sekundy po štarte a druhýkrát ten istý už nedá, takže
+     * registrácia musí prebehnúť tu. Systémové okno o povolenie sa ale pýta až
+     * domovská obrazovka (po prihlásení) — pri prvom otvorení by vyskočilo skôr,
+     * než človek vie, čo appka robí, a „Nepovoliť" sa už nedá vziať späť.
+     */
     try {
       const { registerPushNotifications } = await import("./push");
-      registerPushNotifications().catch((e) => console.warn("[native-init] push:", e));
+      registerPushNotifications({ pytatPovolenie: false }).catch((e) =>
+        console.warn("[native-init] push:", e),
+      );
     } catch {
       // push moduly nie sú vo webovom builde; chyby registrácie loguje sám modul
     }

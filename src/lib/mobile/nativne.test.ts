@@ -39,6 +39,18 @@ vi.mock("@aparajita/capacitor-biometric-auth", () => ({
   },
 }));
 
+const skontrolujPovolenia = vi.fn(async () => ({ receive: "prompt" }));
+const vypytajPovolenia = vi.fn(async () => ({ receive: "granted" }));
+const zaregistruj = vi.fn(async () => undefined);
+vi.mock("@capacitor/push-notifications", () => ({
+  PushNotifications: {
+    checkPermissions: () => skontrolujPovolenia(),
+    requestPermissions: () => vypytajPovolenia(),
+    register: () => zaregistruj(),
+    addListener: vi.fn(async () => ({ remove: async () => {} })),
+  },
+}));
+
 // Appka sa musí považovať za natívnu, inak biometriu ani neponúkne. Ostatné
 // pluginy podstrčené nie sú — ich načítanie zlyhá a úložisko spadne na
 // prehliadačovú náhradu, čo testu nevadí.
@@ -116,6 +128,21 @@ describe("push token", () => {
     );
     // Po doručení sa odložený token zahodí, nech sa neposiela dokola.
     expect(citaj("faktero.push.cakajuci")).toBeNull();
+  });
+
+  it("pri štarte sa appka na povolenie nepýta", async () => {
+    /*
+      Systémové okno o notifikáciách vyskakovalo pri prvom otvorení appky, teda
+      skôr, než človek vedel, čo appka robí. „Nepovoliť" sa pritom vziať späť
+      nedá — iOS sa druhýkrát nepýta. Pýta sa preto až domovská obrazovka.
+    */
+    const { registerPushNotifications } = await import("./push");
+
+    const r = await registerPushNotifications({ pytatPovolenie: false });
+
+    expect(r.ok).toBe(false);
+    expect(vypytajPovolenia).not.toHaveBeenCalled();
+    expect(zaregistruj).not.toHaveBeenCalled();
   });
 
   it("bez odloženého tokenu sa nikam nič neposiela", async () => {

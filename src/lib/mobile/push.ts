@@ -53,7 +53,19 @@ export async function dorucCakajuciPushToken(): Promise<void> {
   }
 }
 
-export async function registerPushNotifications(): Promise<{
+/**
+ * Registrácia u Apple, prípadne aj so systémovým oknom o povolenie.
+ *
+ * `pytatPovolenie: false` je pre štart appky: token sa obnoví, keď je
+ * povolenie už dané, ale nikoho sa nič nepýta. Systémové okno vyskakovalo pri
+ * prvom otvorení, teda skôr, než človek vôbec vedel, čo appka robí — a kto
+ * vtedy ťukol „Nepovoliť", mal push nadobro vypnutý, lebo iOS sa druhýkrát
+ * nepýta a zapnúť sa to dá už len v nastaveniach telefónu. Pýta sa preto až
+ * domovská obrazovka, teda po prihlásení.
+ */
+export async function registerPushNotifications(
+  { pytatPovolenie = true }: { pytatPovolenie?: boolean } = {},
+): Promise<{
   ok: boolean;
   token?: string;
   error?: string;
@@ -66,6 +78,7 @@ export async function registerPushNotifications(): Promise<{
     const perm = await PushNotifications.checkPermissions();
     let granted = perm.receive === "granted";
     if (!granted) {
+      if (!pytatPovolenie) return { ok: false, error: "permission not requested" };
       const req = await PushNotifications.requestPermissions();
       granted = req.receive === "granted";
     }
