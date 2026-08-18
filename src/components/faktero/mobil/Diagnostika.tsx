@@ -141,6 +141,74 @@ async function zisti(): Promise<Riadok[]> {
     r.push({ co: "prihlásenie prežije reštart", hodnota: String(e?.message ?? e), zle: true });
   }
 
+  /*
+    Detekcia jazdy. Keď notifikácia „Ide o služobnú cestu?" počas jazdy nepríde,
+    príčina je takmer vždy v jednom z týchto štyroch riadkov — a zvonku sa
+    nedá rozoznať ani jeden od druhého.
+  */
+  try {
+    const { diagnostikaDetekcie } = await import("@/lib/mobile/auto-jazdy-sync");
+    const d = await diagnostikaDetekcie();
+    if (!d.dostupna) {
+      r.push({ co: "detekcia jázd", hodnota: "nie je (beží web alebo starší build)" });
+    } else {
+      r.push({
+        co: "detekcia jázd",
+        hodnota: d.zapnuta
+          ? d.aktivna
+            ? "zapnutá, práve nahráva jazdu"
+            : "zapnutá, čaká na jazdu"
+          : "VYPNUTÁ — zapína sa na obrazovke Jazda",
+        zle: !d.zapnuta,
+      });
+
+      const poloha = d.povolenia?.location;
+      const pozadie = d.povolenia?.background;
+      r.push({
+        co: "poloha pre detekciu",
+        hodnota:
+          poloha !== "granted"
+            ? "zakázaná — bez nej detekcia nefunguje"
+            : pozadie === "granted"
+              ? "Vždy — meria aj s telefónom vo vrecku"
+              : "len „Počas používania“ — na pozadí sa nemeria",
+        zle: poloha !== "granted" || pozadie !== "granted",
+      });
+
+      r.push({
+        co: "pohybové senzory",
+        hodnota:
+          d.povolenia?.motion === "granted"
+            ? "povolené — jazda sa potvrdí rýchlejšie"
+            : "nie sú — prah rýchlosti musí držať dlhšie",
+      });
+
+      r.push({
+        co: "rozpoznané jazdy čakajúce v telefóne",
+        hodnota: d.nevybavene ? `${d.nevybavene}` : "žiadne",
+      });
+    }
+  } catch (e: any) {
+    r.push({ co: "detekcia jázd", hodnota: String(e?.message ?? e), zle: true });
+  }
+
+  // Povolenie na notifikácie. Platí spoločne pre push zo servera aj pre
+  // notifikáciu, ktorou sa detekcia pýta na zaradenie jazdy.
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.isNativePlatform()) {
+      const { PushNotifications } = await import("@capacitor/push-notifications");
+      const { receive } = await PushNotifications.checkPermissions();
+      r.push({
+        co: "notifikácie",
+        hodnota: receive === "granted" ? "povolené" : `NIE — systém hlási „${receive}“`,
+        zle: receive !== "granted",
+      });
+    }
+  } catch (e: any) {
+    r.push({ co: "notifikácie", hodnota: String(e?.message ?? e), zle: true });
+  }
+
   // Prihlásenie — a hlavne či sa naň vôbec dá spýtať.
   try {
     const odpoved = await Promise.race([

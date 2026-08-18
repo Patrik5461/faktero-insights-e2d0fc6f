@@ -64,6 +64,46 @@ export async function stavDetekcie(): Promise<{ dostupna: boolean; zapnuta: bool
 }
 
 /**
+ * Čo o detekcii vie telefón — pre obrazovku Diagnostika.
+ *
+ * Bez tohto sa „notifikácia počas jazdy neprišla" nedá odlíšiť od štyroch
+ * rôznych príčin: vypnutá detekcia, poloha len „počas používania" (na pozadí
+ * sa vtedy nemeria vôbec), zakázané notifikácie, alebo jazda rozpoznaná bola
+ * a nepodarilo sa len upozorniť.
+ */
+export async function diagnostikaDetekcie(): Promise<{
+  dostupna: boolean;
+  zapnuta: boolean;
+  povolenia: { location: string; background: string; motion: string } | null;
+  aktivna: boolean;
+  nevybavene: number;
+}> {
+  const p = await plugin();
+  if (!p) {
+    return { dostupna: false, zapnuta: false, povolenia: null, aktivna: false, nevybavene: 0 };
+  }
+  try {
+    const [stav, povolenia, jazdy] = await Promise.all([
+      p.getState(),
+      p.checkPermissions(),
+      // Nevybavené jazdy sa čítajú priamo z pluginu, nie cez
+      // `nacitajRozpoznaneJazdy` — tá príliš krátke ticho odbaví a v
+      // diagnostike by po nej ostal nulový počet bez vysvetlenia.
+      p.getUnresolvedTrips(),
+    ]);
+    return {
+      dostupna: true,
+      zapnuta: stav.monitoring,
+      povolenia,
+      aktivna: Boolean(stav.activeTrip),
+      nevybavene: jazdy.length,
+    };
+  } catch {
+    return { dostupna: true, zapnuta: false, povolenia: null, aktivna: false, nevybavene: 0 };
+  }
+}
+
+/**
  * Zapnutie žiada polohu „počas používania"; na „vždy" sa eskaluje až potom,
  * lebo Apple žiadosť o „vždy" pri prvom otvorení pri kontrole odmieta.
  */
