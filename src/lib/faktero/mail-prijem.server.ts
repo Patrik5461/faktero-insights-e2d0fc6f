@@ -83,8 +83,8 @@ export async function precitajDoklad(
   mimeType: string,
 ): Promise<Record<string, unknown> | null> {
   try {
-    const { geminiVision } = await import("./gemini.server");
-    const odpoved = await geminiVision(base64, mimeType, PROMPT);
+    const { aiVision } = await import("./ai.server");
+    const odpoved = await aiVision(base64, mimeType, PROMPT);
     const json = odpoved.match(/\{[\s\S]*\}/)?.[0];
     return json ? JSON.parse(json) : null;
   } catch (e: any) {

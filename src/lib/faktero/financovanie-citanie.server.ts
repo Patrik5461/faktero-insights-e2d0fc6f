@@ -38,7 +38,7 @@ Vráť VÝHRADNE JSON bez sprievodného textu:
 {"kind":"leasing"|"uver"|null,"provider_name":string|null,"contract_number":string|null,"variable_symbol":string|null,"currency":"EUR","principal":number|null,"interest_rate":number|null,"term_months":number|null,"first_due_date":"YYYY-MM-DD"|null,"interest_from":"YYYY-MM-DD"|null,"payment_amount":number|null,"vat_rate":number|null,"down_payment":number|null,"residual_value":number|null,"splatky":[{"number":number,"due_date":"YYYY-MM-DD","amount":number,"principal_part":number,"interest_part":number,"vat_amount":number,"remaining_principal":number}]}`;
 
 export async function precitajZmluvu(base64: string, mimeType: string): Promise<PrecitanaZmluva> {
-  const { geminiVision } = await import("./gemini.server");
+  const { aiVision } = await import("./ai.server");
   /*
    * Strop odpovede treba zdvihnúť ručne: kalendár na 72 splátok má vyše 5 000
    * tokenov a s predvoleným stropom sa odreže uprostred riadka.
@@ -48,7 +48,7 @@ export async function precitajZmluvu(base64: string, mimeType: string): Promise<
    * sa, že skončil normálne. Bez neho pošle JSON v bloku so spätnými
    * apostrofmi, čo `odpovedNaJson` číta bez problémov.
    */
-  const odpoved = await geminiVision(base64, mimeType, PROMPT, { maxOutputTokens: 32768 });
+  const odpoved = await aiVision(base64, mimeType, PROMPT, { maxOutputTokens: 32768 });
   const parsed = odpovedNaJson<any>(odpoved);
   if (!parsed) throw new Error("Z dokumentu sa nepodarilo prečítať nič.");
 

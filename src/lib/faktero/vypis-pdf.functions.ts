@@ -47,28 +47,6 @@ function odpovedNaJson(odpoved: string): unknown {
   }
 }
 
-async function cezOpenAi(pokyn: string, obsah: unknown[]): Promise<string> {
-  const kluc = process.env.OPENAI_API_KEY;
-  if (!kluc) throw new Error("Rozpoznávanie výpisov nie je nastavené (chýba kľúč k AI).");
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${kluc}` },
-    body: JSON.stringify({
-      model: process.env.OPENAI_VISION_MODEL || "gpt-4o",
-      messages: [
-        { role: "system", content: pokyn },
-        { role: "user", content: obsah },
-      ],
-      response_format: { type: "json_object" },
-      max_tokens: 8000,
-      temperature: 0,
-    }),
-  });
-  if (!res.ok) throw new Error(`AI odmietla požiadavku (${res.status}).`);
-  const j: any = await res.json();
-  return j?.choices?.[0]?.message?.content ?? "{}";
-}
-
 export const nacitajBankovyVypisFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input: { pdf: string }) => input)
@@ -96,30 +74,12 @@ export const nacitajBankovyVypisFn = createServerFn({ method: "POST" })
       );
     }
 
-    const maGemini = Boolean(process.env.GEMINI_API_KEY?.trim());
-    let odpoved: string;
-
-    if (maTextovuVrstvu) {
-      const pokyn = `${POKYN}\n\nTEXT VÝPISU:\n${text}`;
-      odpoved = maGemini
-        ? await (await import("./gemini.server")).geminiText(pokyn, {
-            json: true,
-            maxOutputTokens: 30000,
-          })
-        : await cezOpenAi(POKYN, [{ type: "text", text: `TEXT VÝPISU:\n${text}` }]);
-    } else {
-      // Naskenovaný výpis — text v ňom nie je, musí sa čítať z obrazu.
-      const base64 = bajty.toString("base64");
-      odpoved = maGemini
-        ? await (await import("./gemini.server")).geminiVision(base64, "application/pdf", POKYN, {
-            json: true,
-            maxOutputTokens: 30000,
-          })
-        : await cezOpenAi(POKYN, [
-            { type: "text", text: "Prečítaj tento bankový výpis." },
-            { type: "file", file: { filename: "vypis.pdf", file_data: `data:application/pdf;base64,${base64}` } },
-          ]);
-    }
+    const { aiText, aiVision } = await import("./ai.server");
+    const nastavenie = { json: true, maxOutputTokens: 30000 };
+    const odpoved = maTextovuVrstvu
+      ? await aiText(`${POKYN}\n\nTEXT VÝPISU:\n${text}`, nastavenie)
+      : // Naskenovaný výpis — text v ňom nie je, musí sa čítať z obrazu.
+        await aiVision(bajty.toString("base64"), "application/pdf", POKYN, nastavenie);
 
     const vypis = normalizujVypis(odpovedNaJson(odpoved));
     if (!vypis.pohyby.length) {
@@ -131,7 +91,6 @@ export const nacitajBankovyVypisFn = createServerFn({ method: "POST" })
     }
     return { ...vypis, zdroj: maTextovuVrstvu ? "text" : "sken", stran };
   });
-
 
 /**
  * Potvrdené pohyby do XML pre Pohodu.

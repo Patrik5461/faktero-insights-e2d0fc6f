@@ -42,44 +42,8 @@ POVINNÉ PRAVIDLÁ:
 FORMÁT ODPOVEDE - VÝHRADNE JSON objekt, žiadny iný text:
 {"supplier":"názov dodávateľa alebo null","delivery_number":"číslo alebo null","items":[{"name":"presný názov","code":"kód alebo null","quantity":číslo,"unit":"ks/kg/m/l/bal","unit_price":číslo alebo null,"total_price":číslo alebo null}]}`;
 
-    const geminiKey = process.env.GEMINI_API_KEY;
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (!geminiKey && !openaiKey) throw new Error("ai_not_configured");
-
-    let content = "[]";
-    if (geminiKey) {
-      const { geminiVision } = await import("@/lib/faktero/gemini.server");
-      content = await geminiVision(base64, mt, prompt);
-    } else {
-      const isPdf = mt === "application/pdf";
-      const dataUrl = `data:${mt};base64,${base64}`;
-      const userContent: any[] = [
-        { type: "text", text: "Extrahuj položky z tohto dodacieho listu." },
-      ];
-      if (isPdf)
-        userContent.push({
-          type: "file",
-          file: { filename: "dodaci-list.pdf", file_data: dataUrl },
-        });
-      else userContent.push({ type: "image_url", image_url: { url: dataUrl } });
-      const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
-        body: JSON.stringify({
-          model: process.env.OPENAI_VISION_MODEL || "gpt-4o",
-          messages: [
-            { role: "system", content: prompt },
-            { role: "user", content: userContent },
-          ],
-          response_format: { type: "json_object" },
-          max_tokens: 4000,
-        }),
-      });
-      if (!resp.ok)
-        throw new Error(`ai_error ${resp.status}: ${(await resp.text()).slice(0, 300)}`);
-      const j = await resp.json();
-      content = j.choices?.[0]?.message?.content ?? "[]";
-    }
+    const { aiVision } = await import("@/lib/faktero/ai.server");
+    const content = await aiVision(base64, mt, prompt, { json: true, maxOutputTokens: 4000 });
 
     const { debugLog } = await import("@/lib/faktero/debug.server");
     debugLog("parse", "ai raw response (first 300):", (content || "").slice(0, 300));

@@ -40,12 +40,13 @@ export async function ocrBlocek(imageDataUrl: string): Promise<OcrBlocek | null>
 
   let text = "";
   if (geminiKey) {
-    const { geminiVision, splitDataUrl } = await import("./gemini.server");
+    const { splitDataUrl } = await import("./gemini.server");
+    const { aiVision } = await import("./ai.server");
     const { base64, mimeType } = splitDataUrl(
       imageDataUrl,
       jePdf ? "application/pdf" : "image/jpeg",
     );
-    text = await geminiVision(base64, mimeType, PROMPT);
+    text = await aiVision(base64, mimeType, PROMPT);
   } else {
     const model = process.env.OPENAI_VISION_MODEL || process.env.OPENAI_MODEL || "gpt-4o";
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
