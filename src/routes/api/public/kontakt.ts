@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
+import { sCors } from "@/lib/mobile/cors-appky.server";
 
 /**
  * Odoslanie kontaktného formulára z verejného webu cez Resend.
@@ -56,26 +57,41 @@ function escapeHtml(s: string): string {
     .replaceAll('"', "&quot;");
 }
 
-function odpoved(telo: unknown, status: number) {
-  return new Response(JSON.stringify(telo), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+/**
+ * Diagnostiku z mobilnej appky posiela ten istý endpoint ako formulár na webe.
+ * Appka je ale cudzí pôvod (`capacitor://localhost`), takže bez hlavičiek CORS
+ * prehliadač vo WebView požiadavku neodošle a tlačidlo hlási len „Load failed".
+ */
+function odpoved(telo: unknown, status: number, origin: string | null = null) {
+  return sCors(
+    new Response(JSON.stringify(telo), {
+      status,
+      headers: { "Content-Type": "application/json" },
+    }),
+    origin,
+  );
 }
 
 export const Route = createFileRoute("/api/public/kontakt")({
   server: {
     handlers: {
+      // Predletová požiadavka appky — bez nej sa POST z telefónu ani nepošle.
+      OPTIONS: async ({ request }) =>
+        sCors(new Response(null, { status: 204 }), request.headers.get("origin")),
       POST: async ({ request }) => {
+        const origin = request.headers.get("origin");
         const ip =
           request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
           request.headers.get("x-real-ip") ||
           "neznama";
         if (prekrocenyLimit(ip)) {
-          return new Response(JSON.stringify({ error: "rate_limited" }), {
-            status: 429,
-            headers: { "Content-Type": "application/json", "Retry-After": "600" },
-          });
+          return sCors(
+            new Response(JSON.stringify({ error: "rate_limited" }), {
+              status: 429,
+              headers: { "Content-Type": "application/json", "Retry-After": "600" },
+            }),
+            origin,
+          );
         }
 
         let data;
@@ -83,15 +99,15 @@ export const Route = createFileRoute("/api/public/kontakt")({
           data = Body.parse(await request.json());
         } catch (e: any) {
           const sprava = e?.issues?.[0]?.message ?? "Skontrolujte vyplnené údaje.";
-          return odpoved({ error: "invalid_input", message: sprava }, 400);
+          return odpoved({ error: "invalid_input", message: sprava }, 400, origin);
         }
 
         // Robot vyplnil skryté pole. Tvárime sa, že je všetko v poriadku —
         // odosielateľ tak nezistí, podľa čoho ho odmietame.
-        if (data.website && data.website.trim()) return odpoved({ ok: true }, 200);
+        if (data.website && data.website.trim()) return odpoved({ ok: true }, 200, origin);
 
         const apiKey = process.env.RESEND_API_KEY;
-        if (!apiKey) return odpoved({ error: "email_unavailable" }, 503);
+        if (!apiKey) return odpoved({ error: "email_unavailable" }, 503, origin);
 
         zapisPokus(ip);
 
@@ -132,14 +148,14 @@ export const Route = createFileRoute("/api/public/kontakt")({
           if (!res.ok) {
             const detail = await res.text();
             console.error("[kontakt] Resend odmietol správu", res.status, detail.slice(0, 300));
-            return odpoved({ error: "send_failed" }, 502);
+            return odpoved({ error: "send_failed" }, 502, origin);
           }
         } catch (e) {
           console.error("[kontakt] odoslanie zlyhalo", e);
-          return odpoved({ error: "send_failed" }, 502);
+          return odpoved({ error: "send_failed" }, 502, origin);
         }
 
-        return odpoved({ ok: true }, 200);
+        return odpoved({ ok: true }, 200, origin);
       },
     },
   },

@@ -8,34 +8,7 @@ import { createFileRoute } from "@tanstack/react-router";
  * logiky. Prihlásenie sa nikde neduplikuje: middleware serverovej funkcie si
  * hlavičku `authorization` prečíta z tejto istej požiadavky.
  */
-/**
- * Zabalená appka beží na vlastnom pôvode (`capacitor://localhost`, na Androide
- * `https://localhost`), takže volanie na `www.faktero.sk` je cudzí pôvod a
- * prehliadač ho bez týchto hlavičiek zablokuje.
- *
- * Púšťajú sa len pôvody našej appky a lokálneho vývoja. Cookies sa neposielajú —
- * prihlásenie ide tokenom v hlavičke, takže cudzia stránka by z adresy nič
- * nezískala.
- */
-function povolenyPovod(origin: string | null): string | null {
-  if (!origin) return null;
-  if (/^(capacitor|ionic):\/\/localhost$/.test(origin)) return origin;
-  if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return origin;
-  if (/^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) return origin;
-  return null;
-}
-
-function sCors(odpoved: Response, origin: string | null): Response {
-  const povoleny = povolenyPovod(origin);
-  if (!povoleny) return odpoved;
-  const h = new Headers(odpoved.headers);
-  h.set("access-control-allow-origin", povoleny);
-  h.set("vary", "origin");
-  h.set("access-control-allow-headers", "authorization, content-type");
-  h.set("access-control-allow-methods", "POST, OPTIONS");
-  h.set("access-control-max-age", "86400");
-  return new Response(odpoved.body, { status: odpoved.status, headers: h });
-}
+import { sCors } from "@/lib/mobile/cors-appky.server";
 
 async function vybav(request: Request, operacia: string): Promise<Response> {
   const origin = request.headers.get("origin");
