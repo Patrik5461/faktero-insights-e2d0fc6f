@@ -38,6 +38,15 @@ ODPOVEDZ VÝHRADNE JSON objektom v tomto tvare:
 const STROP_ZNAKOV = 60_000;
 const STROP_SUBORU = 15 * 1024 * 1024;
 
+/** Koľko riadkov model vrátil, ešte pred kontrolou dátumov a súm. */
+function pocetRiadkov(odpoved: unknown): number {
+  const o = (odpoved ?? {}) as Record<string, unknown>;
+  for (const k of ["pohyby", "transactions"]) {
+    if (Array.isArray(o[k])) return (o[k] as unknown[]).length;
+  }
+  return Array.isArray(odpoved) ? (odpoved as unknown[]).length : 0;
+}
+
 function odpovedNaJson(odpoved: string): unknown {
   let s = (odpoved ?? "").trim();
   const blok = /^```(?:json)?\s*([\s\S]*?)\s*```$/.exec(s);
@@ -104,18 +113,52 @@ async function precitajVypis(data: {
     }
 
     const { aiText, aiVision } = await import("./ai.server");
-    const nastavenie = { json: true, maxOutputTokens: 30000 };
-    const odpoved = maTextovuVrstvu
-      ? await aiText(`${POKYN}\n\nTEXT VÝPISU:\n${text}`, nastavenie)
-      : // Naskenovaný výpis — text v ňom nie je, musí sa čítať z obrazu.
-        await aiVision(bajty.toString("base64"), "application/pdf", POKYN, nastavenie);
+    const nastavenie = { json: true, maxOutputTokens: 12000 };
 
-    const vypis = normalizujVypis(odpovedNaJson(odpoved));
+    let vypis: Vypis;
+    let surovych = 0;
+    if (maTextovuVrstvu) {
+      /*
+        Dlhý výpis sa číta po kusoch a **súbežne** — pri stovke pohybov by
+        jedno volanie písalo odpoveď aj niekoľko minút a človek by na ňu
+        pozeral. Takto sa čaká len na najpomalší kus.
+      */
+      const casti = await Promise.all(
+        rozdelVypis(text).map(async (kus) => {
+          const o = odpovedNaJson(await aiText(`${POKYN}\n\nTEXT VÝPISU:\n${kus}`, nastavenie));
+          return { vypis: normalizujVypis(o), surovych: pocetRiadkov(o) };
+        }),
+      );
+      vypis = zlejVypisy(casti.map((c) => c.vypis));
+      surovych = casti.reduce((n, c) => n + c.surovych, 0);
+    } else {
+      // Naskenovaný výpis — text v ňom nie je, musí sa čítať z obrazu.
+      const o = odpovedNaJson(
+        await aiVision(bajty.toString("base64"), "application/pdf", POKYN, nastavenie),
+      );
+      vypis = normalizujVypis(o);
+      surovych = pocetRiadkov(o);
+    }
+
+    /*
+      Rozdiel medzi „model nič nevrátil" a „všetko sme zahodili" je pri hľadaní
+      príčiny to jediné podstatné — v prvom prípade sedí text zle, v druhom je
+      prísna kontrola dátumov a súm. Do logu ide len počet, nie obsah výpisu.
+    */
+    console.warn(
+      `[vypis] text ${text.length} znakov (${stran} str.), model vrátil ${surovych} riadkov, po kontrole ostalo ${vypis.pohyby.length}`,
+    );
+
     if (!vypis.pohyby.length) {
+      if (!maTextovuVrstvu) {
+        throw new Error(
+          "PDF nemá textovú vrstvu a z obrazu sa nič nevyčítalo. Skúste výpis stiahnuť z banky priamo ako PDF.",
+        );
+      }
       throw new Error(
-        maTextovuVrstvu
-          ? "Vo výpise sa nenašiel ani jeden pohyb. Skontrolujte, či je to naozaj bankový výpis."
-          : "PDF nemá textovú vrstvu a z obrazu sa nič nevyčítalo. Skúste výpis stiahnuť z banky priamo ako PDF.",
+        surovych > 0
+          ? `Z výpisu sa načítalo ${surovych} riadkov, ale ani jeden nemal použiteľný dátum a sumu. Pošlite nám tento výpis, prosím — treba doplniť tvar, v ktorom ho vaša banka píše.`
+          : "Vo výpise sa nenašiel ani jeden pohyb. Skontrolujte, či je to naozaj bankový výpis — a ak áno, pošlite nám ho, prosím.",
       );
     }
     return { ...vypis, zdroj: maTextovuVrstvu ? "text" : "sken", stran };
