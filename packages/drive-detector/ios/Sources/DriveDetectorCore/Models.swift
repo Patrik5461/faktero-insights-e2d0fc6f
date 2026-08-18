@@ -122,8 +122,15 @@ public struct DetectorConfig: Equatable {
     public var stopAfterSeconds: Double = 300
     public var distanceFilterMeters: Double = 30
 
-    /// Strop overovania. Po ňom sa presná poloha vypína, nech to dopadne akokoľvek.
+    /// Ako dlho po poslednom meraní nad prahom sa overovanie ešte drží. Keď
+    /// dovtedy nič nepríde, presná poloha sa vypína.
     public var verificationWindowSeconds: Double = 90
+    /// Tvrdý strop jedného overovania — poistka pre batériu, keby prah držal
+    /// niekto, kto nesedí v aute (vlak, autobus).
+    public var verificationMaxSeconds: Double = 600
+    /// Väčšia diera medzi dvoma meraniami sa do času nad prahom nepočíta —
+    /// v nej sa mohlo aj stáť.
+    public var maxGapSeconds: Double = 30
     /// Skrátené držanie prahu, keď pohybové senzory hlásia jazdu autom.
     public var automotiveSustainedSeconds: Double = 30
 

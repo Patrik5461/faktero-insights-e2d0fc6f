@@ -15,11 +15,28 @@ public final class DriveDetectionEngine {
     /// Dokedy sa detekcia nespúšťa po zamietnutí jazdy.
     public private(set) var debounceUntil: TimeInterval?
 
+    /// Koľko sekúnd nad prahom už overovanie nazbieralo a koľko ich potrebuje.
+    /// Je to jediné, čo zvonku prezradí, prečo sa jazda (ne)potvrdila.
+    public var sekundyNadPrahom: Double { aboveTotal }
+    public var potrebnychSekund: Double { requiredSustained }
+
     /// Body zbierané od prebudenia. Keď prah prejde, jazda ich zdedí aj s
     /// úsekom pred potvrdením; keď neprejde, zahodia sa.
     private var pending: [TripPoint] = []
     private var verifyStartedAt: TimeInterval?
-    private var aboveSince: TimeInterval?
+    /// Koľko sekúnd sme počas tohto overovania dokopy videli nad prahom.
+    ///
+    /// Zámerne súčet, nie súvislý úsek. Prvá verzia vyžadovala minútu bez
+    /// jediného poklesu — semafor, kruhový objazd či odbočka počítanie
+    /// vynulovali a v meste sa jazda nepotvrdila prakticky nikdy.
+    private var aboveTotal: Double = 0
+    /// Posledné použiteľné meranie a či bolo nad prahom — z toho sa počíta,
+    /// koľko času sa má prirátať.
+    private var lastFixAt: TimeInterval?
+    private var predchadzajuciBolNadPrahom = false
+    /// Posledné meranie nad prahom. Nenuluje sa pri poklese — drží okno
+    /// overovania otvorené, kým sa zjavne jazdí.
+    private var lastAboveAt: TimeInterval?
     private var consecutive = 0
     private var automotive = false
     /// Kedy sa naposledy hýbalo. Nie je to to isté ako čas posledného merania:
@@ -74,7 +91,10 @@ public final class DriveDetectionEngine {
         state = .verifying
         verifyStartedAt = now
         pending = []
-        aboveSince = nil
+        aboveTotal = 0
+        lastFixAt = nil
+        lastAboveAt = nil
+        predchadzajuciBolNadPrahom = false
         consecutive = 0
         automotive = false
         return [.startPreciseUpdates, .startMotionUpdates]
@@ -98,7 +118,7 @@ public final class DriveDetectionEngine {
         case .idle:
             return []
         case .verifying:
-            guard let od = verifyStartedAt, now - od >= config.verificationWindowSeconds else { return [] }
+            guard jeCasVzdatOverovanie(at: now) else { return [] }
             return abortVerification()
         case .driving:
             guard trip?.manual == false else { return [] }
@@ -116,7 +136,7 @@ public final class DriveDetectionEngine {
         trip = jazda
         state = .driving
         pending = []
-        verifyStartedAt = nil
+        vycistiOverovanie()
         lastMovingAt = now
         return [.startPreciseUpdates, .tripStarted(jazda, notify: false)]
     }
@@ -138,9 +158,7 @@ public final class DriveDetectionEngine {
         }
         trip = nil
         pending = []
-        aboveSince = nil
-        consecutive = 0
-        verifyStartedAt = nil
+        vycistiOverovanie()
         lastMovingAt = nil
         state = .idle
         return [.stopPreciseUpdates, .stopMotionUpdates, .bufferDiscarded]
@@ -168,13 +186,24 @@ public final class DriveDetectionEngine {
         fix.accuracy >= 0 && fix.accuracy < config.maxAccuracyMeters
     }
 
+    /// Okno overovania sa neráta od prebudenia, ale od posledného merania nad
+    /// prahom. Pevné okno od prebudenia znamenalo, že jazda musela prah udržať
+    /// takmer bez prestávky hneď v prvej minúte — a keď to nestihla, presná
+    /// poloha sa vypla a čakalo sa na ďalšie prebudenie, ktoré príde až po
+    /// stovkách metrov. Strop je poistka pre batériu.
+    private func jeCasVzdatOverovanie(at now: TimeInterval) -> Bool {
+        guard let zaciatok = verifyStartedAt else { return false }
+        if now - zaciatok >= config.verificationMaxSeconds { return true }
+        return now - (lastAboveAt ?? zaciatok) >= config.verificationWindowSeconds
+    }
+
     private func ingestWhileVerifying(_ fix: Fix, at now: TimeInterval) -> [DetectorEffect] {
-        if let od = verifyStartedAt, now - od >= config.verificationWindowSeconds {
+        if jeCasVzdatOverovanie(at: now) {
             return abortVerification()
         }
         guard isUsable(fix) else {
             consecutive = 0
-            aboveSince = nil
+            predchadzajuciBolNadPrahom = false
             return []
         }
         // Rýchlosť sa nedá určiť — meranie sa zahadzuje, ale sériu nepretŕha.
@@ -183,16 +212,23 @@ public final class DriveDetectionEngine {
         pending.append(TripPoint(fix: fix))
 
         if fix.speedKmh >= config.speedThresholdKmh {
+            // Čas sa prirátava medzi dvoma meraniami nad prahom. Po výpadku
+            // signálu by sa inak prirátala celá diera, v ktorej sa mohlo aj stáť.
+            if predchadzajuciBolNadPrahom, let predchadzajuce = lastFixAt {
+                let medzera = fix.timestamp - predchadzajuce
+                if medzera > 0, medzera <= config.maxGapSeconds { aboveTotal += medzera }
+            }
             consecutive += 1
-            if aboveSince == nil { aboveSince = fix.timestamp }
+            lastAboveAt = fix.timestamp
+            predchadzajuciBolNadPrahom = true
         } else {
             consecutive = 0
-            aboveSince = nil
+            predchadzajuciBolNadPrahom = false
         }
+        lastFixAt = fix.timestamp
 
         guard consecutive >= config.minConsecutiveFixes,
-              let od = aboveSince,
-              now - od >= requiredSustained
+              aboveTotal >= requiredSustained
         else { return [] }
 
         return confirmTrip(at: now)
@@ -234,9 +270,7 @@ public final class DriveDetectionEngine {
         trip = jazda
         state = .driving
         pending = []
-        aboveSince = nil
-        consecutive = 0
-        verifyStartedAt = nil
+        vycistiOverovanie()
         lastMovingAt = now
 
         // Pohybové senzory už netreba — svoju úlohu (skrátenie držania prahu)
@@ -247,11 +281,18 @@ public final class DriveDetectionEngine {
     private func abortVerification() -> [DetectorEffect] {
         state = .idle
         pending = []
-        aboveSince = nil
-        consecutive = 0
-        verifyStartedAt = nil
+        vycistiOverovanie()
         automotive = false
         return [.stopPreciseUpdates, .stopMotionUpdates, .bufferDiscarded]
+    }
+
+    private func vycistiOverovanie() {
+        aboveTotal = 0
+        lastFixAt = nil
+        lastAboveAt = nil
+        predchadzajuciBolNadPrahom = false
+        consecutive = 0
+        verifyStartedAt = nil
     }
 
     private func finishTrip(at now: TimeInterval) -> [DetectorEffect] {

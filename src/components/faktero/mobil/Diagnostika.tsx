@@ -187,6 +187,42 @@ async function zisti(): Promise<Riadok[]> {
         co: "rozpoznané jazdy čakajúce v telefóne",
         hodnota: d.nevybavene ? `${d.nevybavene}` : "žiadne",
       });
+
+      /*
+        Denník detekcie. Bez neho sa „notifikácia neprišla" nedá posunúť ďalej:
+        nevie sa, či systém detekciu vôbec zobudil, alebo zobudil a jazda
+        neprešla prahom rýchlosti.
+      */
+      if (d.dennik) {
+        const cas = (ms?: number) => (ms ? new Date(ms).toLocaleString("sk-SK") : null);
+        r.push({
+          co: "prebudenia detekcie",
+          hodnota: d.dennik.prebudeni
+            ? `${d.dennik.prebudeni}× , posledné ${cas(d.dennik.poslednePrebudenie) ?? "?"}`
+            : "žiadne — systém detekciu ešte nezobudil",
+          zle: d.zapnuta && d.dennik.prebudeni === 0,
+        });
+        r.push({
+          co: "overenia bez jazdy",
+          hodnota: d.dennik.neuspesnychOvereni
+            ? `${d.dennik.neuspesnychOvereni}× , najvyššia videná rýchlosť ${Math.round(
+                d.dennik.najvyssiaRychlost,
+              )} km/h`
+            : "žiadne",
+        });
+        r.push({
+          co: "naposledy rozpoznaná jazda",
+          hodnota: cas(d.dennik.poslednaJazda) ?? "zatiaľ žiadna",
+        });
+        if (d.dennik.stav === "overuje") {
+          r.push({
+            co: "práve overuje",
+            hodnota: `${Math.round(d.dennik.sekundyNadPrahom)} z ${Math.round(
+              d.dennik.potrebnychSekund,
+            )} s nad prahom rýchlosti`,
+          });
+        }
+      }
     }
   } catch (e: any) {
     r.push({ co: "detekcia jázd", hodnota: String(e?.message ?? e), zle: true });

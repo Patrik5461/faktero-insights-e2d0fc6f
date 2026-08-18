@@ -105,6 +105,62 @@ final class DriveDetectionEngineTests: XCTestCase {
         XCTAssertNil(motor.trip)
     }
 
+    /// Kvôli tomuto sa počítanie menilo: pôvodne musel prah držať minútu bez
+    /// jediného poklesu a okno sa rátalo od prebudenia. V meste to znamenalo,
+    /// že sa jazda nepotvrdila prakticky nikdy — stačil jeden semafor.
+    func testMestskaJazdaSoSemaformiSaPotvrdi() {
+        let motor = engine()
+        _ = motor.wake(at: start)
+        jazdi(motor, od: start, po: start + 25)
+        jazdi(motor, od: start + 30, po: start + 70, speed: 3)
+        jazdi(motor, od: start + 75, po: start + 95)
+        jazdi(motor, od: start + 100, po: start + 115, speed: 12)
+        let ukony = jazdi(motor, od: start + 120, po: start + 145)
+
+        XCTAssertNotNil(zaciatokJazdy(ukony))
+        XCTAssertEqual(motor.state, .driving)
+    }
+
+    /// Okno sa počíta od posledného merania nad prahom, nie od prebudenia —
+    /// inak by dlhšia jazda vypadla uprostred.
+    func testOknoDrziKymChodiaMeraniaNadPrahom() {
+        let motor = engine { $0.sustainedSeconds = 300 }
+        _ = motor.wake(at: start)
+        jazdi(motor, od: start, po: start + 200)
+
+        XCTAssertEqual(motor.state, .verifying)
+        XCTAssertTrue(motor.tick(at: start + 250).isEmpty)
+    }
+
+    /// Po výpadku signálu sa nesmie prirátať celá diera — v nej sa mohlo aj stáť.
+    func testDieraMedziMeraniamiSaDoCasuNadPrahomNepocita() {
+        let motor = engine()
+        _ = motor.wake(at: start)
+        jazdi(motor, od: start, po: start + 20)
+        _ = motor.ingest(fix(start + 60, speed: 60), at: start + 60)
+
+        XCTAssertEqual(motor.sekundyNadPrahom, 20)
+        XCTAssertNil(motor.trip)
+    }
+
+    /// Poistka pre batériu: overovanie sa nesmie natiahnuť donekonečna len
+    /// preto, že merania nad prahom stále chodia.
+    func testOverovanieMaTvrdyStrop() {
+        let motor = engine()
+        _ = motor.wake(at: start)
+        // Striedavo nad a pod prahom — séria troch sa nenazbiera nikdy,
+        // ale okno by sa bez stropu obnovovalo stále.
+        var t = start
+        while t <= start + 700 {
+            let rychlost: Double = t.truncatingRemainder(dividingBy: 10) == 0 ? 60 : 5
+            _ = motor.ingest(fix(t, speed: rychlost), at: t)
+            t += 5
+        }
+
+        XCTAssertEqual(motor.state, .idle)
+        XCTAssertNil(motor.trip)
+    }
+
     func testZapornaRychlostSeriuNepretrhne() {
         let motor = engine()
         _ = motor.wake(at: start)

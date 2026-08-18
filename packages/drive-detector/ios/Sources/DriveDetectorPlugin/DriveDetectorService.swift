@@ -25,6 +25,7 @@ public final class DriveDetectorService: NSObject {
     private static let metaConfig = "config"
     private static let metaNotification = "notification"
     private static let metaDebounce = "debounceUntil"
+    private static let metaDennik = "dennik"
     /// Ukončené jazdy sa držia týždeň — appka si ich medzitým vyzdvihne.
     private static let retention: TimeInterval = 7 * 24 * 3600
     private static let tripUpdateThrottle: TimeInterval = 10
@@ -49,6 +50,51 @@ public final class DriveDetectorService: NSObject {
     private var lastTripUpdateAt: TimeInterval = 0
     private var permissionCallbacks: [() -> Void] = []
     private var seenAuthorization: CLAuthorizationStatus?
+
+    /// Denník detekcie — jediné, čo po neúspešnej jazde vie povedať, kde sa to
+    /// zaseklo. Musí prežiť zabitie appky: detekcia beží aj vtedy, keď appka
+    /// nebeží, takže počítadlá v pamäti by sa do Diagnostiky nikdy nedostali.
+    private var dennik = Dennik()
+    private var dennikZapisanyO: TimeInterval = 0
+    /// Zamietnutie jazdy človekom nie je neúspešné overovanie — a do pluginu
+    /// prichádza tým istým úkonom.
+    private var zamietaClovek = false
+
+    struct Dennik {
+        var prebudeni = 0
+        var poslednePrebudenie: TimeInterval?
+        var neuspesnychOvereni = 0
+        var posledneNeuspesne: TimeInterval?
+        var poslednaJazda: TimeInterval?
+        /// Najvyššia rýchlosť videná počas posledného overovania.
+        var najvyssiaRychlost: Double = 0
+        var poslednyFix: TimeInterval?
+
+        var dictionary: [String: Any] {
+            var d: [String: Any] = [
+                "prebudeni": prebudeni,
+                "neuspesnychOvereni": neuspesnychOvereni,
+                "najvyssiaRychlost": najvyssiaRychlost
+            ]
+            if let v = poslednePrebudenie { d["poslednePrebudenie"] = v }
+            if let v = posledneNeuspesne { d["posledneNeuspesne"] = v }
+            if let v = poslednaJazda { d["poslednaJazda"] = v }
+            if let v = poslednyFix { d["poslednyFix"] = v }
+            return d
+        }
+
+        init() {}
+
+        init(dictionary d: [String: Any]) {
+            prebudeni = (d["prebudeni"] as? NSNumber)?.intValue ?? 0
+            neuspesnychOvereni = (d["neuspesnychOvereni"] as? NSNumber)?.intValue ?? 0
+            najvyssiaRychlost = (d["najvyssiaRychlost"] as? NSNumber)?.doubleValue ?? 0
+            poslednePrebudenie = (d["poslednePrebudenie"] as? NSNumber)?.doubleValue
+            posledneNeuspesne = (d["posledneNeuspesne"] as? NSNumber)?.doubleValue
+            poslednaJazda = (d["poslednaJazda"] as? NSNumber)?.doubleValue
+            poslednyFix = (d["poslednyFix"] as? NSNumber)?.doubleValue
+        }
+    }
 
     private var now: TimeInterval { Date().timeIntervalSince1970 }
 
@@ -110,7 +156,31 @@ public final class DriveDetectorService: NSObject {
     }
 
     @objc private func flushStore() {
+        zapisDennik(force: true)
         store.flush()
+    }
+
+    /// Denník sa zapisuje škrtene — merania chodia počas jazdy každú sekundu
+    /// a zápis pri každom by budil flash pamäť zbytočne.
+    private func zapisDennik(force: Bool = false) {
+        let teraz = now
+        guard force || teraz - dennikZapisanyO >= 30 else { return }
+        dennikZapisanyO = teraz
+        store.setMeta(Self.metaDennik, json(dennik.dictionary))
+    }
+
+    /// Čo detekcia naozaj robila — pre obrazovku Diagnostika.
+    var diagnostika: [String: Any] {
+        bootstrap()
+        var d = dennik.dictionary
+        // V úložisku sú sekundy, JavaScript počíta v milisekundách.
+        for kluc in ["poslednePrebudenie", "posledneNeuspesne", "poslednaJazda", "poslednyFix"] {
+            if let v = d[kluc] as? Double { d[kluc] = (v * 1000).rounded() }
+        }
+        d["stav"] = engine.trip != nil ? "jazdi" : (preciseOn ? "overuje" : "caka")
+        d["sekundyNadPrahom"] = engine.sekundyNadPrahom
+        d["potrebnychSekund"] = engine.potrebnychSekund
+        return d
     }
 
     private func loadPersistedSettings() {
@@ -123,6 +193,9 @@ public final class DriveDetectorService: NSObject {
         }
         if let raw = store.meta(Self.metaDebounce), let hodnota = Double(raw) {
             engine.setDebounce(until: hodnota)
+        }
+        if let raw = store.meta(Self.metaDennik), let d = jsonObject(raw) {
+            dennik = Dennik(dictionary: d)
         }
         engine.update(config: config)
     }
@@ -206,7 +279,9 @@ public final class DriveDetectorService: NSObject {
     func discardTrip(tripId: String) {
         bootstrap()
         notifications.remove(tripId: tripId)
+        zamietaClovek = true
         apply(engine.discard(tripId: tripId, at: now))
+        zamietaClovek = false
         store.setStatus(tripId: tripId, status: .discarded)
         if let dokedy = engine.debounceUntil {
             store.setMeta(Self.metaDebounce, String(dokedy))
@@ -344,6 +419,8 @@ public final class DriveDetectorService: NSObject {
                 motion.stop()
 
             case .tripStarted(let jazda, let notify):
+                dennik.poslednaJazda = now
+                zapisDennik(force: true)
                 store.insert(trip: jazda, status: .active)
                 if notify, let t = texts {
                     notifications.fire(tripId: jazda.id, texts: t)
@@ -365,7 +442,11 @@ public final class DriveDetectorService: NSObject {
                 // Rozpracovaný buffer overovania nebol nikde uložený — jazda
                 // vzniká až potvrdením prahu. Zamietnutie už uloženej jazdy
                 // rieši `discardTrip(tripId:)`.
-                break
+                if !zamietaClovek {
+                    dennik.neuspesnychOvereni += 1
+                    dennik.posledneNeuspesne = now
+                    zapisDennik(force: true)
+                }
             }
         }
     }
@@ -448,8 +529,22 @@ extension DriveDetectorService: CLLocationManagerDelegate {
 
             // Prebudenie: prišla poloha a nič nebeží — začína sa overovanie.
             if engine.state == .idle, monitoring {
-                apply(engine.wake(at: teraz))
+                let ukony = engine.wake(at: teraz)
+                if !ukony.isEmpty {
+                    dennik.prebudeni += 1
+                    dennik.poslednePrebudenie = teraz
+                    // Rýchlosť sa meria za jedno overovanie — inak by po prvej
+                    // diaľnici ostalo v denníku číslo, ktoré s ničím nesúvisí.
+                    dennik.najvyssiaRychlost = 0
+                    zapisDennik(force: true)
+                }
+                apply(ukony)
             }
+            dennik.poslednyFix = fix.timestamp
+            if engine.state == .verifying, fix.speedKmh > dennik.najvyssiaRychlost {
+                dennik.najvyssiaRychlost = fix.speedKmh
+            }
+            zapisDennik()
             apply(engine.ingest(fix, at: teraz))
         }
     }

@@ -78,9 +78,35 @@ export interface DriveDetectorPermissions {
   motion: PermissionState;
 }
 
+/**
+ * Čo detekcia naozaj robila. Prežije zabitie appky — detekcia beží aj vtedy,
+ * keď appka nebeží, takže bez uloženia by v Diagnostike nebolo nikdy nič.
+ *
+ * Časy sú v milisekundách.
+ */
+export interface DriveDetectorDiagnostics {
+  /** `caka` = nič nebeží, `overuje` = zapnutá presná poloha, `jazdi` = jazda beží. */
+  stav: "caka" | "overuje" | "jazdi";
+  /** Koľkokrát systém detekciu zobudil väčším presunom. */
+  prebudeni: number;
+  poslednePrebudenie?: number;
+  /** Prebudenia, po ktorých sa jazda nepotvrdila. */
+  neuspesnychOvereni: number;
+  posledneNeuspesne?: number;
+  poslednaJazda?: number;
+  /** Najvyššia rýchlosť videná počas posledného overovania. */
+  najvyssiaRychlost: number;
+  poslednyFix?: number;
+  /** Koľko sekúnd nad prahom už overovanie nazbieralo a koľko ich treba. */
+  sekundyNadPrahom: number;
+  potrebnychSekund: number;
+}
+
 export interface DriveDetectorState {
   monitoring: boolean;
   activeTrip: BufferedTrip | null;
+  /** Chýba v starších binárkach — appka sa bez neho musí zaobísť. */
+  diagnostika?: DriveDetectorDiagnostics;
 }
 
 export interface DriveDetectedEvent {

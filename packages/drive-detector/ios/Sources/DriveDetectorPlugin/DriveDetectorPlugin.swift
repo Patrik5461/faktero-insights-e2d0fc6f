@@ -63,9 +63,21 @@ public class DriveDetectorPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func getState(_ call: CAPPluginCall) {
         onMain {
             let aktivna: JSValue = self.service.activeTrip.map { $0.jsObject as JSValue } ?? NSNull()
+            var diagnostika = JSObject()
+            for (kluc, hodnota) in self.service.diagnostika {
+                switch hodnota {
+                // Všetko číselné ide ako Double — JavaScript iné čísla nepozná
+                // a `Int` by tu závisel od toho, čo má Capacitor v `JSValue`.
+                case let v as Int: diagnostika[kluc] = Double(v)
+                case let v as Double: diagnostika[kluc] = v
+                case let v as String: diagnostika[kluc] = v
+                default: break
+                }
+            }
             call.resolve([
                 "monitoring": self.service.isMonitoring,
-                "activeTrip": aktivna
+                "activeTrip": aktivna,
+                "diagnostika": diagnostika
             ])
         }
     }

@@ -2,7 +2,11 @@
  * Práca s pluginom a databázou pre automaticky rozpoznané jazdy. Čistá logika
  * je vedľa v `auto-jazdy.ts`, aby sa dala testovať bez telefónu.
  */
-import type { BufferedTrip, Classification } from "@faktero/drive-detector";
+import type {
+  BufferedTrip,
+  Classification,
+  DriveDetectorDiagnostics,
+} from "@faktero/drive-detector";
 import { supabase } from "@/integrations/supabase/client";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { jePrikratka, riadokZJazdy } from "./auto-jazdy";
@@ -77,10 +81,18 @@ export async function diagnostikaDetekcie(): Promise<{
   povolenia: { location: string; background: string; motion: string } | null;
   aktivna: boolean;
   nevybavene: number;
+  dennik: DriveDetectorDiagnostics | null;
 }> {
   const p = await plugin();
   if (!p) {
-    return { dostupna: false, zapnuta: false, povolenia: null, aktivna: false, nevybavene: 0 };
+    return {
+      dostupna: false,
+      zapnuta: false,
+      povolenia: null,
+      aktivna: false,
+      nevybavene: 0,
+      dennik: null,
+    };
   }
   try {
     const [stav, povolenia, jazdy] = await Promise.all([
@@ -97,9 +109,18 @@ export async function diagnostikaDetekcie(): Promise<{
       povolenia,
       aktivna: Boolean(stav.activeTrip),
       nevybavene: jazdy.length,
+      // V staršej binárke denník nie je — obrazovka ho vtedy vynechá.
+      dennik: stav.diagnostika ?? null,
     };
   } catch {
-    return { dostupna: true, zapnuta: false, povolenia: null, aktivna: false, nevybavene: 0 };
+    return {
+      dostupna: true,
+      zapnuta: false,
+      povolenia: null,
+      aktivna: false,
+      nevybavene: 0,
+      dennik: null,
+    };
   }
 }
 
