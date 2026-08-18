@@ -4,6 +4,8 @@ import {
   buildPohodaInvoiceXml,
   buildPohodaExpensesXml,
   buildPohodaCashXml,
+  buildPohodaBankXml,
+  rozdelUcet,
   buildOmegaTxt,
   buildMoneyS3Xml,
   EXPORT_STRATEGIES,
@@ -659,5 +661,132 @@ describe("stratégie", () => {
     expect(EXPORT_STRATEGIES.omega_txt.build(vstup).fileName).toMatch(/\.txt$/);
     expect(EXPORT_STRATEGIES.money_s3_xml.build(vstup).fileName).toMatch(/\.xml$/);
     expect(EXPORT_STRATEGIES.pohoda_xml.build(vstup).fileName).toMatch(/\.xml$/);
+  });
+});
+
+
+describe("bankový výpis do Pohody", () => {
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@",
+    removeNSPrefix: true,
+    parseTagValue: false,
+  });
+  const firmaSk = { ico: "12345678", default_currency: "EUR" } as any;
+  const pohyby = [
+    {
+      datum: "2026-01-15",
+      suma: 123.45,
+      smer: "prijem" as const,
+      popis: "Úhrada faktúry 2026001",
+      protistrana: "Odberateľ s.r.o.",
+      protiucet: "SK3111000000002612345678",
+      vs: "2026001",
+      ks: "0308",
+    },
+    {
+      datum: "2026-01-20",
+      suma: 58.9,
+      smer: "vydaj" as const,
+      popis: "Poplatok za vedenie účtu",
+      protiucet: "1234567890/1100",
+    },
+    { datum: "2026-01-22", suma: 12, smer: "vydaj" as const },
+  ];
+  const posli = (navyse?: Record<string, unknown>) =>
+    parser.parse(
+      buildPohodaBankXml({
+        company: firmaSk,
+        pohyby,
+        cisloVypisu: "8",
+        datumVypisu: "2026-01-31",
+        ...navyse,
+      }),
+    ).dataPack;
+
+  it("je to platné XML a jeden pohyb = jeden doklad", () => {
+    const xml = buildPohodaBankXml({ company: firmaSk, pohyby, cisloVypisu: "8" });
+    expect(XMLValidator.validate(xml)).toBe(true);
+    expect(posli().dataPackItem).toHaveLength(3);
+  });
+
+  it("smer nesie typ dokladu, nie znamienko", () => {
+    // Záporná suma s `receipt` by v Pohode urobila príjem mínus — tichá chyba.
+    const polozky = posli().dataPackItem;
+    expect(polozky.map((x: any) => x.bank.bankHeader.bankType)).toEqual([
+      "receipt",
+      "expense",
+      "expense",
+    ]);
+    const sumy = polozky.map((x: any) => x.bank.bankSummary.homeCurrency.priceNone);
+    expect(sumy).toEqual(["123.45", "58.90", "12.00"]);
+    expect(sumy.some((s: string) => s.startsWith("-"))).toBe(false);
+  });
+
+  it("číslo výpisu a poradie pohybu sa zmestia do desiatich znakov", () => {
+    const kratke = posli().dataPackItem[2].bank.bankHeader.statementNumber;
+    expect(kratke.statementNumber).toBe("8");
+    expect(kratke.numberMovement).toBe("3");
+
+    // Desaťznakové číslo výpisu už na poradie miesto nenechá.
+    const dlhe = posli({ cisloVypisu: "2026000123" }).dataPackItem[0].bank.bankHeader
+      .statementNumber;
+    expect(dlhe.statementNumber).toBe("2026000123");
+    expect(dlhe.numberMovement).toBeUndefined();
+  });
+
+  it("protiúčet sa zapíše len celý — číslo aj kód banky", () => {
+    const polozky = posli().dataPackItem;
+    expect(polozky[0].bank.bankHeader.paymentAccount).toEqual({
+      accountNo: "SK3111000000002612345678",
+      bankCode: "1100",
+    });
+    expect(polozky[1].bank.bankHeader.paymentAccount).toEqual({
+      accountNo: "1234567890",
+      bankCode: "1100",
+    });
+    // Pohyb bez protiúčtu ho nesmie mať prázdny — import by spadol.
+    expect(polozky[2].bank.bankHeader.paymentAccount).toBeUndefined();
+  });
+
+  it("prázdne symboly a protistrana sa nezapisujú", () => {
+    const h = posli().dataPackItem[2].bank.bankHeader;
+    expect(h.symVar).toBeUndefined();
+    expect(h.symConst).toBeUndefined();
+    expect(h.partnerIdentity).toBeUndefined();
+    // Bez popisu musí ostať aspoň niečo, inak je doklad vo výpise bezmenný.
+    expect(h.text).toBe("Platba z účtu");
+  });
+
+  it("účet a predkontácia sa doplnia, len keď sú nastavené", () => {
+    expect(posli().dataPackItem[0].bank.bankHeader.account).toBeUndefined();
+    const s = posli({ nastavenia: { banka: "TB", predkontaciaBanka: "2Bv" } }).dataPackItem[0].bank
+      .bankHeader;
+    expect(s.account.ids).toBe("TB");
+    expect(s.accounting.ids).toBe("2Bv");
+  });
+});
+
+describe("rozdelUcet", () => {
+  it("rozpozná slovenský aj český IBAN a domáci tvar s lomkou", () => {
+    expect(rozdelUcet("SK31 1100 0000 0026 1234 5678")).toEqual({
+      cislo: "SK3111000000002612345678",
+      kodBanky: "1100",
+    });
+    expect(rozdelUcet("CZ6508000000192000145399")).toEqual({
+      cislo: "CZ6508000000192000145399",
+      kodBanky: "0800",
+    });
+    expect(rozdelUcet("19-2000145399/0800")).toEqual({
+      cislo: "19-2000145399",
+      kodBanky: "0800",
+    });
+  });
+
+  it("čomu nerozumie, to radšej nevyplní", () => {
+    // Polovičný protiúčet zhodí celý import, tak radšej žiadny.
+    expect(rozdelUcet("DE89370400440532013000")).toBeNull();
+    expect(rozdelUcet("bez čísla")).toBeNull();
+    expect(rozdelUcet("")).toBeNull();
   });
 });

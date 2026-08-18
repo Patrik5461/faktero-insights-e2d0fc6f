@@ -12,6 +12,27 @@ export async function geminiVision(
     json?: boolean;
   },
 ): Promise<string> {
+  return volaj([{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } }], nastavenie);
+}
+
+/**
+ * To isté, ale nad obyčajným textom.
+ *
+ * Keď má PDF textovú vrstvu (a bankový výpis ju má takmer vždy), je poslať
+ * text rýchlejšie aj lacnejšie než celý súbor — a hlavne sa to stihne, kým
+ * nginx požiadavku po tridsiatich sekundách nepretne.
+ */
+export async function geminiText(
+  prompt: string,
+  nastavenie?: { maxOutputTokens?: number; json?: boolean },
+): Promise<string> {
+  return volaj([{ text: prompt }], nastavenie);
+}
+
+async function volaj(
+  parts: unknown[],
+  nastavenie?: { maxOutputTokens?: number; json?: boolean },
+): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
 
@@ -27,11 +48,7 @@ export async function geminiVision(
         "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } }],
-          },
-        ],
+        contents: [{ parts }],
         ...(nastavenie
           ? {
               generationConfig: {
@@ -67,9 +84,9 @@ export async function geminiVision(
   }
   // Modely s uvažovaním vracajú viac častí a odpoveď nemusí byť tá prvá —
   // `parts[0].text` z nich vytiahne prázdno alebo úvahu namiesto výsledku.
-  const parts = data.candidates?.[0]?.content?.parts;
-  if (!Array.isArray(parts)) return "";
-  return parts
+  const casti = data.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(casti)) return "";
+  return casti
     .filter((p: any) => typeof p?.text === "string" && !p?.thought)
     .map((p: any) => p.text)
     .join("")

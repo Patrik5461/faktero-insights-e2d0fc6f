@@ -1,0 +1,356 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { nacitajBankovyVypisFn, vypisDoPohodyFn } from "@/lib/faktero/vypis-pdf.functions";
+import type { VypisPohyb } from "@/lib/faktero/vypis-pohyby";
+import { Download, FileUp, Loader2, Trash2 } from "lucide-react";
+
+export const Route = createFileRoute("/_authenticated/uctovnictvo/vypis-do-pohody")({
+  head: () => ({ meta: [{ title: "Bankový výpis do Pohody — Faktero" }] }),
+  component: VypisDoPohodyPage,
+});
+
+/** Skratka účtu a predkontácia sa medzi výpismi nemenia — nech sa nepíšu stále dokola. */
+const PAMAT = "faktero.vypis-pohoda";
+
+function zPamate(): { banka: string; predkontacia: string } {
+  try {
+    const raw = localStorage.getItem(PAMAT);
+    if (raw) return { banka: "", predkontacia: "", ...JSON.parse(raw) };
+  } catch {
+    /* súkromný režim — políčka ostanú prázdne */
+  }
+  return { banka: "", predkontacia: "" };
+}
+
+function suborNaBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = () => reject(new Error("Súbor sa nepodarilo prečítať."));
+    r.onload = () => {
+      const v = String(r.result ?? "");
+      resolve(v.slice(v.indexOf(",") + 1));
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+function eur(n: number): string {
+  return n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+type Riadok = VypisPohyb & { vyviezt: boolean };
+
+function VypisDoPohodyPage() {
+  const precitaj = useServerFn(nacitajBankovyVypisFn);
+  const doXml = useServerFn(vypisDoPohodyFn);
+
+  const cid = useMemo(() => getActiveCompanyId(), []);
+  const [nacitavam, setNacitavam] = useState(false);
+  const [vyvazam, setVyvazam] = useState(false);
+  const [chyba, setChyba] = useState<string | null>(null);
+  const [zdroj, setZdroj] = useState<string | null>(null);
+
+  const [cisloVypisu, setCisloVypisu] = useState("");
+  const [datumVypisu, setDatumVypisu] = useState("");
+  const [ucet, setUcet] = useState<string | null>(null);
+  const [mena, setMena] = useState<string | null>(null);
+  const [riadky, setRiadky] = useState<Riadok[]>([]);
+
+  const [nastavenia, setNastavenia] = useState(zPamate);
+
+  function zapamataj(zmena: Partial<typeof nastavenia>) {
+    const nove = { ...nastavenia, ...zmena };
+    setNastavenia(nove);
+    try {
+      localStorage.setItem(PAMAT, JSON.stringify(nove));
+    } catch {
+      /* nevadí, len sa to nabudúce nepredvyplní */
+    }
+  }
+
+  async function nahraj(file: File | null) {
+    if (!file) return;
+    setChyba(null);
+    setNacitavam(true);
+    try {
+      const v = await precitaj({ data: { pdf: await suborNaBase64(file) } });
+      setCisloVypisu(v.cisloVypisu ?? "");
+      setDatumVypisu(v.datumVypisu ?? "");
+      setUcet(v.ucet);
+      setMena(v.mena);
+      setRiadky(v.pohyby.map((p) => ({ ...p, vyviezt: true })));
+      setZdroj(
+        v.zdroj === "sken"
+          ? `PDF nemá textovú vrstvu, čítalo sa z obrazu (${v.stran} str.) — prejdite riadky pozornejšie.`
+          : `Prečítané z textu PDF (${v.stran} str.).`,
+      );
+    } catch (e: any) {
+      setChyba(e?.message ?? "Výpis sa nepodarilo prečítať.");
+      setRiadky([]);
+    } finally {
+      setNacitavam(false);
+    }
+  }
+
+  function uprav(i: number, zmena: Partial<Riadok>) {
+    setRiadky((r) => r.map((x, idx) => (idx === i ? { ...x, ...zmena } : x)));
+  }
+
+  const vybrane = riadky.filter((r) => r.vyviezt);
+  const prijmy = vybrane.filter((r) => r.smer === "prijem").reduce((s, r) => s + r.suma, 0);
+  const vydaje = vybrane.filter((r) => r.smer === "vydaj").reduce((s, r) => s + r.suma, 0);
+
+  async function stiahni() {
+    if (!cid) return setChyba("Najprv vyberte firmu.");
+    setChyba(null);
+    setVyvazam(true);
+    try {
+      const r = await doXml({
+        data: {
+          company_id: cid,
+          // Pomocný príznak do XML nepatrí.
+          pohyby: vybrane.map(({ vyviezt: _vyviezt, ...p }) => p),
+          cisloVypisu: cisloVypisu || null,
+          datumVypisu: datumVypisu || null,
+          banka: nastavenia.banka || null,
+          predkontacia: nastavenia.predkontacia || null,
+        },
+      });
+      const blob = new Blob([r.content], { type: "application/xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = r.fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setChyba(e?.message ?? "XML sa nepodarilo vyrobiť.");
+    } finally {
+      setVyvazam(false);
+    }
+  }
+
+  const vstup = "w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm";
+
+  return (
+    <>
+      <PageHeader
+        title="Bankový výpis do Pohody"
+        description="Z PDF výpisu vyrobí XML, ktoré POHODA načíta ako bankové doklady."
+      />
+      <PageBody>
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-border/70 bg-card p-5">
+            <label className="flex cursor-pointer flex-col items-center gap-3 rounded-xl border border-dashed border-border px-4 py-8 text-center">
+              {nacitavam ? (
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              ) : (
+                <FileUp className="h-6 w-6 text-primary" />
+              )}
+              <span className="text-sm font-medium">
+                {nacitavam ? "Čítam výpis…" : "Vyberte PDF bankového výpisu"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Výpis stiahnutý z internetbankingu. Naskenovaný sa prečíta tiež, len menej isto.
+              </span>
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                className="hidden"
+                disabled={nacitavam}
+                onChange={(e) => void nahraj(e.target.files?.[0] ?? null)}
+              />
+            </label>
+            {zdroj && <p className="mt-3 text-xs text-muted-foreground">{zdroj}</p>}
+            {chyba && <p className="mt-3 text-sm text-destructive">{chyba}</p>}
+          </div>
+
+          {riadky.length > 0 && (
+            <>
+              <div className="grid gap-4 rounded-2xl border border-border/70 bg-card p-5 sm:grid-cols-2 lg:grid-cols-4">
+                <label className="block">
+                  <span className="mb-1 block text-xs text-muted-foreground">Číslo výpisu</span>
+                  <input
+                    className={vstup}
+                    value={cisloVypisu}
+                    onChange={(e) => setCisloVypisu(e.target.value)}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-muted-foreground">Dátum výpisu</span>
+                  <input
+                    type="date"
+                    className={vstup}
+                    value={datumVypisu}
+                    onChange={(e) => setDatumVypisu(e.target.value)}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-muted-foreground">
+                    Skratka účtu v Pohode
+                  </span>
+                  <input
+                    className={vstup}
+                    placeholder="napr. TB"
+                    value={nastavenia.banka}
+                    onChange={(e) => zapamataj({ banka: e.target.value })}
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs text-muted-foreground">Predkontácia</span>
+                  <input
+                    className={vstup}
+                    placeholder="napr. 2Bv"
+                    value={nastavenia.predkontacia}
+                    onChange={(e) => zapamataj({ predkontacia: e.target.value })}
+                  />
+                </label>
+                <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-4">
+                  Skratka účtu hovorí, do ktorého bankového účtu v Pohode doklady patria; bez nej
+                  ich POHODA priradí sama a účtovník ich prepisuje ručne.
+                  {ucet ? ` Výpis je k účtu ${ucet}.` : ""}
+                  {mena && mena !== "EUR" ? ` Pozor, výpis je v mene ${mena}.` : ""}
+                </p>
+              </div>
+
+              <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card">
+                <table className="w-full min-w-[900px] text-sm">
+                  <thead className="border-b border-border/70 text-left text-xs text-muted-foreground">
+                    <tr>
+                      <th className="p-2"></th>
+                      <th className="p-2">Dátum</th>
+                      <th className="p-2">Smer</th>
+                      <th className="p-2 text-right">Suma</th>
+                      <th className="p-2">Popis</th>
+                      <th className="p-2">Protistrana</th>
+                      <th className="p-2">Protiúčet</th>
+                      <th className="p-2">VS</th>
+                      <th className="p-2">KS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {riadky.map((r, i) => (
+                      <tr
+                        key={i}
+                        className={`border-b border-border/50 last:border-0 ${
+                          r.vyviezt ? "" : "opacity-40"
+                        }`}
+                      >
+                        <td className="p-2">
+                          <input
+                            type="checkbox"
+                            checked={r.vyviezt}
+                            onChange={(e) => uprav(i, { vyviezt: e.target.checked })}
+                            aria-label="Vyviezť tento pohyb"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="date"
+                            className={vstup}
+                            value={r.datum}
+                            onChange={(e) => uprav(i, { datum: e.target.value })}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <select
+                            className={vstup}
+                            value={r.smer}
+                            onChange={(e) =>
+                              uprav(i, { smer: e.target.value as VypisPohyb["smer"] })
+                            }
+                          >
+                            <option value="prijem">príjem</option>
+                            <option value="vydaj">výdaj</option>
+                          </select>
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            className={`${vstup} text-right`}
+                            value={r.suma}
+                            onChange={(e) => uprav(i, { suma: Number(e.target.value) })}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            className={vstup}
+                            value={r.popis ?? ""}
+                            onChange={(e) => uprav(i, { popis: e.target.value })}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            className={vstup}
+                            value={r.protistrana ?? ""}
+                            onChange={(e) => uprav(i, { protistrana: e.target.value })}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            className={vstup}
+                            value={r.protiucet ?? ""}
+                            onChange={(e) => uprav(i, { protiucet: e.target.value })}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            className={`${vstup} w-24`}
+                            value={r.vs ?? ""}
+                            onChange={(e) => uprav(i, { vs: e.target.value })}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            className={`${vstup} w-16`}
+                            value={r.ks ?? ""}
+                            onChange={(e) => uprav(i, { ks: e.target.value })}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-5">
+                <div className="text-sm">
+                  <span className="font-medium">{vybrane.length}</span> z {riadky.length} pohybov ·
+                  príjmy <span className="font-medium">{eur(prijmy)}</span> · výdavky{" "}
+                  <span className="font-medium">{eur(vydaje)}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setRiadky([]);
+                      setZdroj(null);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm"
+                  >
+                    <Trash2 className="h-4 w-4" /> Zahodiť
+                  </button>
+                  <button
+                    onClick={() => void stiahni()}
+                    disabled={vyvazam || !vybrane.length}
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  >
+                    {vyvazam ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    Stiahnuť XML pre Pohodu
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </PageBody>
+    </>
+  );
+}

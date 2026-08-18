@@ -231,9 +231,22 @@ faktúry. Vymyslená sadzba by bola tichá chyba v priznaní, takže celá suma 
 nulovej priehradky. Výdavok sa nezapisuje záporne — o smere hovorí `voucherType`
 (`receipt` / `expense`).
 
-**Banka sa zámerne nevyváža.** Účtovníčka si výpis načíta priamo z banky (a
-Faktero jej vie vyrobiť camt.053), takže náš export by v Pohode vyrobil druhý
-komplet bankových dokladov.
+**Banka sa z konektora zámerne nevyváža.** Účtovníčka si výpis načíta priamo
+z banky (a Faktero jej vie vyrobiť camt.053), takže náš automatický export by
+v Pohode vyrobil druhý komplet bankových dokladov.
+
+**Ručný prevodník PDF výpisu je niečo iné** — *Účtovníctvo → Bankový výpis do
+Pohody* (`/uctovnictvo/vypis-do-pohody`). Je na výpisy z bánk, ktoré v Faktere
+pripojené nie sú a prídu len ako PDF; nič sa neposiela samo, človek riadky
+prejde a stiahne si XML. Duplicita preto nehrozí — do Pohody ide len to, čo tam
+z banky nechodí.
+
+Vyváža sa agendou `bank.xsd` (`bnk:`), jeden pohyb = jeden doklad. `bankHeaderType`
+je `xsd:all`, takže na poradí prvkov nezáleží; čo záleží: **suma je vždy kladná
+a o smere hovorí `bankType`** (rovnako ako v pokladni), celá ide do nulovej
+priehradky (`typ:priceNone`), protiúčet sa zapisuje **len celý** — `accountNo`
+aj `bankCode`, lebo `typ:myGroupOfAccount` chce obidve a polovičný zhodí import.
+Číslo výpisu spolu s poradím pohybu smie mať najviac desať znakov.
 
 Pri prijatom doklade sa zapisuje **len súhrn po sadzbách, nie položky**. Bloček
 z pokladne má položky v cenách s daňou a býva ich aj dvadsať („Záloh plech");

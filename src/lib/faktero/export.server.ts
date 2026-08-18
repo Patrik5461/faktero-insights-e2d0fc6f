@@ -132,6 +132,10 @@ export type PohodaNastavenia = {
   predkontaciaPokladna?: string | null;
   /** Členenie skladu v Pohode (`storage`); bez neho sa skladová karta nezaloží. */
   sklad?: string | null;
+  /** Skratka bankového účtu v Pohode — do ktorého účtu pohyby z výpisu patria. */
+  banka?: string | null;
+  /** Predkontácia pre bankový doklad. */
+  predkontaciaBanka?: string | null;
 };
 
 function domacaMenaFirmy(company: CompanyRow): string {
@@ -151,6 +155,7 @@ const ID_BALIKA = "FAKTERO";
 
 const SCHEMY: Record<string, string> = {
   inv: "invoice.xsd",
+  bnk: "bank.xsd",
   vch: "voucher.xsd",
   adb: "addressbook.xsd",
   stk: "stock.xsd",
@@ -584,6 +589,156 @@ export function polozkyPokladne(opts: {
         </vch:homeCurrency>
       </vch:voucherSummary>
     </vch:voucher>
+  </dat:dataPackItem>`;
+    })
+    .join("");
+}
+
+/* ---------------- Bankový výpis ---------------- */
+
+/**
+ * Jeden pohyb z bankového výpisu — tak, ako ho človek potvrdí na obrazovke.
+ *
+ * Suma je vždy **kladná**; o smere hovorí `smer`, rovnako ako v pokladni.
+ * Záporná suma s `receipt` by v Pohode urobila príjem mínus, čo je tichá chyba.
+ */
+export type VypisPohyb = {
+  /** Dátum pripísania/odpísania, `YYYY-MM-DD`. */
+  datum: string;
+  suma: number;
+  smer: "prijem" | "vydaj";
+  popis?: string | null;
+  /** Názov protistrany, ak ho výpis uvádza. */
+  protistrana?: string | null;
+  /** Protiúčet — IBAN alebo číslo účtu. */
+  protiucet?: string | null;
+  vs?: string | null;
+  ks?: string | null;
+  ss?: string | null;
+};
+
+/**
+ * Protiúčet rozdelený na číslo a kód banky.
+ *
+ * Pohoda ich chce oddelene a **obidve naraz** (`typ:myGroupOfAccount`), takže
+ * keď sa kód banky nedá zistiť, protiúčet sa nezapíše vôbec — polovičný by celý
+ * import zhodil. Zo slovenského IBAN je kód banky na 5.–8. znaku, český má
+ * kód za lomkou.
+ */
+export function rozdelUcet(ucet: unknown): { cislo: string; kodBanky: string } | null {
+  const s = String(ucet ?? "")
+    .replace(/\s+/g, "")
+    .toUpperCase();
+  if (!s) return null;
+
+  const lomka = /^([0-9-]{1,20})\/([0-9]{4})$/.exec(s);
+  if (lomka) return { cislo: lomka[1], kodBanky: lomka[2] };
+
+  const iban = /^(SK|CZ)\d{2}(\d{4})[0-9A-Z]{6,20}$/.exec(s);
+  if (iban) return { cislo: s, kodBanky: iban[2] };
+
+  return null;
+}
+
+/**
+ * Bankový výpis do Pohody.
+ *
+ * Pohoda drží pohyby ako samostatné doklady, nie ako jeden výpis, takže sa
+ * vyváža riadok po riadku. Číslo výpisu a poradie pohybu idú do
+ * `statementNumber` — podľa nich účtovník pozná, z ktorého výpisu doklad je,
+ * a spolu smú mať najviac desať znakov.
+ */
+export function buildPohodaBankXml(opts: {
+  company: CompanyRow;
+  pohyby: VypisPohyb[];
+  /** Číslo výpisu z papiera, napr. `8` alebo `2026001`. */
+  cisloVypisu?: string | null;
+  /** Dátum výpisu; keď chýba, berie sa dátum posledného pohybu. */
+  datumVypisu?: string | null;
+  nastavenia?: PohodaNastavenia;
+}): string {
+  return obalka({
+    ico: opts.company?.ico,
+    note: "Bankový výpis z Faktero",
+    prefixy: ["bnk"],
+    entries: polozkyBankovehoVypisu(opts),
+  });
+}
+
+/** Položky `dataPackItem` s pohybmi z výpisu — bez obálky. */
+export function polozkyBankovehoVypisu(opts: {
+  company: CompanyRow;
+  pohyby: VypisPohyb[];
+  cisloVypisu?: string | null;
+  datumVypisu?: string | null;
+  nastavenia?: PohodaNastavenia;
+}): string {
+  const { pohyby, nastavenia } = opts;
+  const cislo = skrat(opts.cisloVypisu, 10);
+  const datumVypisu = String(opts.datumVypisu ?? "").trim();
+
+  return pohyby
+    .map((p, idx) => {
+      const druh = p.smer === "prijem" ? "receipt" : "expense";
+      const suma = Math.abs(Number(p.suma ?? 0));
+      const poradie = String(idx + 1);
+      const ucet = rozdelUcet(p.protiucet);
+
+      // Číslo výpisu a poradie pohybu sa spolu musia zmestiť do desiatich
+      // znakov; keď je číslo výpisu dlhé, poradie sa vynechá.
+      const cisloVypisuXml =
+        cislo || poradie
+          ? `
+        <bnk:statementNumber>${el("bnk:statementNumber", cislo, "          ")}${
+          cislo.length + poradie.length <= 10 ? el("bnk:numberMovement", poradie, "          ") : ""
+        }
+        </bnk:statementNumber>`
+          : "";
+
+      const popis = skrat(p.popis, 96);
+
+      return `
+  <dat:dataPackItem id="${esc(`VYPIS${cislo ? `-${cislo}` : ""}-${poradie}`)}" version="2.0">
+    <bnk:bank version="2.0">
+      <bnk:bankHeader>
+        <bnk:bankType>${druh}</bnk:bankType>${
+          nastavenia?.banka
+            ? `\n        <bnk:account><typ:ids>${esc(nastavenia.banka)}</typ:ids></bnk:account>`
+            : ""
+        }${cisloVypisuXml}${el("bnk:symVar", skrat(p.vs, 20), "        ")}${el(
+          "bnk:dateStatement",
+          datumVypisu,
+          "        ",
+        )}
+        <bnk:datePayment>${esc(p.datum)}</bnk:datePayment>${
+          nastavenia?.predkontaciaBanka
+            ? `\n        <bnk:accounting><typ:ids>${esc(nastavenia.predkontaciaBanka)}</typ:ids></bnk:accounting>`
+            : ""
+        }${el("bnk:text", popis || (druh === "receipt" ? "Príjem na účet" : "Platba z účtu"), "        ")}${
+          p.protistrana
+            ? `
+        <bnk:partnerIdentity>
+          <typ:address>
+            <typ:company>${esc(skrat(p.protistrana, 96))}</typ:company>
+          </typ:address>
+        </bnk:partnerIdentity>`
+            : ""
+        }${
+          ucet
+            ? `
+        <bnk:paymentAccount>
+          <typ:accountNo>${esc(ucet.cislo)}</typ:accountNo>
+          <typ:bankCode>${esc(ucet.kodBanky)}</typ:bankCode>
+        </bnk:paymentAccount>`
+            : ""
+        }${el("bnk:symConst", skrat(p.ks, 4), "        ")}${el("bnk:symSpec", skrat(p.ss, 16), "        ")}
+      </bnk:bankHeader>
+      <bnk:bankSummary>
+        <bnk:homeCurrency>
+          <typ:priceNone>${fixed2(suma)}</typ:priceNone>
+        </bnk:homeCurrency>
+      </bnk:bankSummary>
+    </bnk:bank>
   </dat:dataPackItem>`;
     })
     .join("");
