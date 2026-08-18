@@ -61,7 +61,14 @@ async function cezOpenAi(
         { role: "user", content: obsah },
       ],
       ...(nastavenie?.json ? { response_format: { type: "json_object" } } : {}),
-      max_tokens: nastavenie?.maxOutputTokens ?? 8000,
+      /*
+        Strop odpovede sa musí orezať na to, čo model unesie: `gpt-4o` berie
+        najviac 16 384 tokenov a väčšie číslo odmietne celé volanie
+        (`400 max_tokens is too large`). Gemini pritom znesie oveľa viac, takže
+        hodnota, ktorá je pre neho v poriadku, tu zhodí náhradnú cestu — a to
+        práve vtedy, keď na ňu dôjde.
+      */
+      max_tokens: Math.min(nastavenie?.maxOutputTokens ?? 8000, 16000),
       temperature: 0,
     }),
   });

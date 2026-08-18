@@ -47,6 +47,18 @@ describe("výber poskytovateľa", () => {
     expect(telo.messages[1].content[1].type).toBe("file");
   });
 
+  it("strop odpovede sa oreže na to, čo OpenAI unesie", async () => {
+    // `gpt-4o` berie najviac 16 384 tokenov; väčšie číslo odmietne celé
+    // volanie a náhradná cesta padne práve vtedy, keď na ňu dôjde.
+    geminiVision.mockRejectedValueOnce(new Error("Gemini 429"));
+    const { aiVision } = await import("./ai.server");
+
+    await aiVision("base64", "image/png", "pokyn", { maxOutputTokens: 30000 });
+
+    const telo = JSON.parse((fetchMock.mock.calls[0] as any)[1].body);
+    expect(telo.max_tokens).toBeLessThanOrEqual(16384);
+  });
+
   it("odrezaná odpoveď sa u druhého neopakuje", async () => {
     // Dokument je dlhý; druhý model ho neprečíta lepšie, len sa zaplatí dvakrát.
     geminiText.mockRejectedValueOnce(new Error("Odpoveď modelu sa nezmestila — rozdeľte ho."));

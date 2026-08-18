@@ -25,6 +25,26 @@ function zPamate(): { banka: string; predkontacia: string } {
   return { banka: "", predkontacia: "" };
 }
 
+/**
+ * Text z PDF ešte v prehliadači.
+ *
+ * Zmyslom je nemusieť posielať celý súbor: v požiadavke ide ako base64, čo ho
+ * nafúkne o tretinu, a väčší výpis tak spadne ešte na sieti — v prehliadači to
+ * vyzerá ako holé „Failed to fetch". Keď sa čítanie nepodarí (alebo je výpis
+ * naskenovaný), pošle sa súbor a prečíta ho server.
+ */
+async function textZPdf(file: File): Promise<{ text: string; stran: number } | null> {
+  try {
+    const { getDocumentProxy, extractText } = await import("unpdf");
+    const doc = await getDocumentProxy(new Uint8Array(await file.arrayBuffer()));
+    const r = await extractText(doc, { mergePages: true });
+    const text = String(r.text ?? "").trim();
+    return text.length >= 200 ? { text, stran: doc.numPages } : null;
+  } catch {
+    return null;
+  }
+}
+
 function suborNaBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
@@ -76,7 +96,10 @@ function VypisDoPohodyPage() {
     setChyba(null);
     setNacitavam(true);
     try {
-      const v = await precitaj({ data: { pdf: await suborNaBase64(file) } });
+      const zPrehliadaca = await textZPdf(file);
+      const v = await precitaj({
+        data: zPrehliadaca ?? { pdf: await suborNaBase64(file) },
+      });
       setCisloVypisu(v.cisloVypisu ?? "");
       setDatumVypisu(v.datumVypisu ?? "");
       setUcet(v.ucet);

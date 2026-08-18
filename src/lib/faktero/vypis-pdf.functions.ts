@@ -49,25 +49,44 @@ function odpovedNaJson(odpoved: string): unknown {
 
 export const nacitajBankovyVypisFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: { pdf: string }) => input)
+  .validator((input: { pdf?: string; text?: string; stran?: number }) => input)
   .handler(async ({ data }): Promise<Vypis & { zdroj: "text" | "sken"; stran: number }> => {
-    const bajty = Buffer.from(String(data.pdf ?? ""), "base64");
-    if (!bajty.length) throw new Error("Súbor sa nepodarilo prečítať.");
-    if (bajty.length > STROP_SUBORU) throw new Error("Súbor je väčší než 15 MB.");
+    /*
+      Text si vie vytiahnuť už prehliadač a vtedy sa sem posiela **len text**.
+      Je to rozdiel medzi pár kilobajtmi a niekoľkými megabajtmi: PDF sa do
+      požiadavky vkladá ako base64, čo ho nafúkne o tretinu, a nad dvadsať
+      megabajtov ho nepustí ani nginx — v prehliadači sa to prejaví ako holé
+      „Failed to fetch" bez akéhokoľvek vysvetlenia.
 
-    const { extractText, getDocumentProxy } = await import("unpdf");
-    let text = "";
-    let stran = 0;
-    try {
-      const doc = await getDocumentProxy(new Uint8Array(bajty));
-      stran = doc.numPages;
-      const r = await extractText(doc, { mergePages: true });
-      text = String(r.text ?? "").trim();
-    } catch {
-      throw new Error("Toto nevyzerá na PDF — súbor sa nedá otvoriť.");
+      Súbor sa posiela len vtedy, keď textová vrstva chýba (naskenovaný výpis)
+      alebo keď sa čítanie v prehliadači nepodarilo.
+    */
+    let text = String(data.text ?? "").trim();
+    let stran = Number(data.stran ?? 0);
+    let bajty = Buffer.alloc(0);
+
+    if (!text) {
+      bajty = Buffer.from(String(data.pdf ?? ""), "base64");
+      if (!bajty.length) throw new Error("Súbor sa nepodarilo prečítať.");
+      if (bajty.length > STROP_SUBORU) throw new Error("Súbor je väčší než 15 MB.");
+
+      const { extractText, getDocumentProxy } = await import("unpdf");
+      try {
+        const doc = await getDocumentProxy(new Uint8Array(bajty));
+        stran = doc.numPages;
+        const r = await extractText(doc, { mergePages: true });
+        text = String(r.text ?? "").trim();
+      } catch {
+        throw new Error("Toto nevyzerá na PDF — súbor sa nedá otvoriť.");
+      }
     }
 
     const maTextovuVrstvu = text.length >= 200;
+    if (!maTextovuVrstvu && !bajty.length) {
+      throw new Error(
+        "PDF nemá textovú vrstvu. Naskenovaný výpis vieme prečítať z obrazu, ale súbor musí mať do 15 MB.",
+      );
+    }
     if (maTextovuVrstvu && text.length > STROP_ZNAKOV) {
       throw new Error(
         `Výpis má ${stran} strán a na jedno spracovanie je príliš dlhý. Rozdeľte ho a nahrajte po častiach.`,
