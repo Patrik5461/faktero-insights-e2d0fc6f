@@ -172,6 +172,16 @@ export const Route = createFileRoute("/api/v1/sklad/parse-delivery-note")({
           if (!storage_path) return json(400, { error: "missing_storage_path" });
           if (!company_id) return json(400, { error: "missing_company_id" });
 
+          /*
+            Súbor sťahuje `supabaseAdmin`, ktorý politiky úložiska obchádza —
+            bez tejto kontroly by stačilo poslať cestu do priečinka cudzej firmy
+            a doklad by sa prečítal aj tak. Rovnaká podmienka stráži fotky
+            produktov v `stock.functions.ts`.
+          */
+          if (!storage_path.startsWith(`${company_id}/`)) {
+            return json(403, { error: "cudzia_cesta" });
+          }
+
           // Verify caller is a member of company
           const { data: member } = await supabase
             .from("company_users")

@@ -20,8 +20,32 @@ export type AiNastavenie = {
   json?: boolean;
 };
 
+/**
+ * Ako dlho sa Gemini po vyčerpaní kreditu preskakuje.
+ *
+ * Kľúč ostáva nastavený aj vtedy, keď kredit dôjde, takže sa naň chodilo pri
+ * každom volaní znova — a pri výpise rozdelenom na desať kusov to bolo desať
+ * zaručene neúspešných kôl navyše, každé so svojím čakaním. Prvé odmietnutie
+ * preto Gemini na chvíľu umlčí a ide sa rovno na OpenAI.
+ */
+const TICHO_MS = 10 * 60_000;
+let geminiTichoDo = 0;
+
+/** Odmietnutie pre vyčerpaný kredit alebo kvótu — nie výpadok, opakovať netreba. */
+function jeVycerpanyKredit(e: unknown): boolean {
+  return /429|RESOURCE_EXHAUSTED|quota|credits/i.test(String((e as Error)?.message ?? e));
+}
+
 function maGemini(): boolean {
-  return Boolean(process.env.GEMINI_API_KEY?.trim());
+  if (!process.env.GEMINI_API_KEY?.trim()) return false;
+  if (Date.now() < geminiTichoDo) return false;
+  return true;
+}
+
+function umlcGemini(e: unknown): void {
+  if (!jeVycerpanyKredit(e)) return;
+  geminiTichoDo = Date.now() + TICHO_MS;
+  console.warn(`[ai] Gemini nemá kredit, ${TICHO_MS / 60_000} minút sa naň nechodí.`);
 }
 
 function maOpenAi(): boolean {
@@ -43,12 +67,26 @@ function opravitelna(e: unknown): boolean {
   return !/nezmestila/i.test(s);
 }
 
+const POKUSOV = 3;
+
+/**
+ * Odmietnutie, ktoré prejde samo.
+ *
+ * Dlhý výpis sa číta po kusoch a súbežne, takže na strop požiadaviek za minútu
+ * sa naráža ľahko. Bez opakovania stačilo jedno `429` a zhodilo celé čítanie —
+ * aj keď ostatných deväť kusov prešlo.
+ */
+function preskocDoChvile(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
 async function cezOpenAi(
   pokyn: string,
   obsah: unknown[],
   nastavenie?: AiNastavenie,
   /** Obrázok a PDF potrebujú model, ktorý vidí; na text stačí ten rýchlejší. */
   vidiaci = true,
+  pokus = 1,
 ): Promise<string> {
   const kluc = process.env.OPENAI_API_KEY?.trim();
   if (!kluc) bezPoskytovatela();
@@ -78,6 +116,15 @@ async function cezOpenAi(
   });
   if (!res.ok) {
     const telo = await res.text();
+    if (preskocDoChvile(res.status) && pokus < POKUSOV) {
+      // `retry-after` chodí v sekundách; keď nechodí, čaká sa dvakrát dlhšie
+      // s každým pokusom.
+      const povedane = Number(res.headers?.get?.("retry-after") ?? "");
+      const cakaj = Number.isFinite(povedane) && povedane > 0 ? povedane * 1000 : 2000 * pokus;
+      console.warn(`[ai] OpenAI ${res.status}, ${pokus}. pokus, čakám ${cakaj} ms`);
+      await new Promise((r) => setTimeout(r, Math.min(cakaj, 20_000)));
+      return cezOpenAi(pokyn, obsah, nastavenie, vidiaci, pokus + 1);
+    }
     throw new Error(`OpenAI ${res.status}: ${telo.slice(0, 300)}`);
   }
   const j: any = await res.json();
@@ -118,6 +165,7 @@ export async function aiVision(
     const { geminiVision } = await import("./gemini.server");
     return await geminiVision(base64, mimeType, pokyn, nastavenie);
   } catch (e) {
+    umlcGemini(e);
     if (!maOpenAi() || !opravitelna(e)) throw e;
     console.warn(
       "[ai] Gemini zlyhal, skúšam OpenAI:",
@@ -140,6 +188,7 @@ export async function aiText(pokyn: string, nastavenie?: AiNastavenie): Promise<
     const { geminiText } = await import("./gemini.server");
     return await geminiText(pokyn, nastavenie);
   } catch (e) {
+    umlcGemini(e);
     if (!maOpenAi() || !opravitelna(e)) throw e;
     console.warn(
       "[ai] Gemini zlyhal, skúšam OpenAI:",

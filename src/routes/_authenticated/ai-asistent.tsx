@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -365,7 +365,8 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
             title: "Faktúry po splatnosti",
             value: data.overdueCount,
             hint: `${data.unpaidTotal.toFixed(2)} € nezaplatených`,
-            to: "/faktury?status=overdue",
+            to: "/faktury",
+            search: { poSplatnosti: true as const },
           },
           {
             icon: Webhook,
@@ -410,7 +411,8 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               title: "Faktúry po splatnosti",
               value: data.overdueCount,
               hint: `${data.unpaidTotal.toFixed(2)} € nezaplatených`,
-              to: "/faktury?status=overdue",
+              to: "/faktury",
+              search: { poSplatnosti: true as const },
             },
             {
               icon: RefreshCw,
@@ -442,7 +444,8 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
               title: "Neodoslané faktúry",
               value: data.unsentInvoices,
               hint: `Koncepty: ${data.draftInvoices}`,
-              to: "/faktury?status=issued",
+              to: "/faktury",
+              search: { status: "issued" as const },
             },
             {
               icon: TrendingUp,
@@ -456,10 +459,17 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/*
+        Karty vedú cez `Link` a filter ide v `search`. Kým to bolo `<a href>`
+        s parametrom v adrese, prekreslila sa celá appka — a `validateSearch`
+        na druhej strane parameter aj tak zahodila, takže sa otvoril
+        nefiltrovaný zoznam a karta klamala.
+      */}
       {cards.map((c) => (
-        <a
+        <Link
           key={c.title}
-          href={c.to}
+          to={c.to}
+          search={("search" in c ? c.search : {}) as never}
           className="group rounded-xl border border-border bg-card p-5 transition hover:border-primary/40 hover:shadow-md"
         >
           <div className="flex items-start justify-between">
@@ -468,7 +478,7 @@ function RecommendationsView({ companyId, mode }: { companyId: string; mode: Tab
           </div>
           <div className="mt-3 text-sm font-semibold">{c.title}</div>
           <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.hint}</div>
-        </a>
+        </Link>
       ))}
     </div>
   );

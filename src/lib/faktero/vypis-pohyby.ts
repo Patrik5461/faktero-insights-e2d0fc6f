@@ -73,20 +73,38 @@ export function normalizujSumu(v: unknown): number | null {
   return zaporne ? -n : n;
 }
 
-/** `15.1.2026`, `15. 01. 2026`, `15/01/2026`, `2026-01-15` aj `15.01.26`. */
-export function normalizujDatum(v: unknown): string | null {
+/**
+ * `15.1.2026`, `15. 01. 2026`, `15/01/2026`, `2026-01-15` aj `15.01.26`.
+ *
+ * A tiež `15.08.` — **bez roka**. Veľa bánk píše rok len raz v hlavičke a pri
+ * jednotlivých pohyboch nechá deň s mesiacom; kým sa taký dátum zahadzoval,
+ * z celého výpisu nezostal ani jeden riadok. Rok sa preto dá dodať zvonka
+ * (`hlavicka` je dátum výpisu v tvare `RRRR-MM-DD`).
+ */
+export function normalizujDatum(v: unknown, hlavicka?: string | null): string | null {
   const s = String(v ?? "").trim();
   if (!s) return null;
 
   let d: number, m: number, r: number;
   const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
   const nas = /^(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{2,4})/.exec(s);
+  const bezRoku = /^(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]?\s*$/.exec(s);
+  const zHlavicky = /^(\d{4})-(\d{2})-\d{2}$/.exec(String(hlavicka ?? ""));
   if (iso) {
     [r, m, d] = [Number(iso[1]), Number(iso[2]), Number(iso[3])];
   } else if (nas) {
     [d, m, r] = [Number(nas[1]), Number(nas[2]), Number(nas[3])];
     // Dvojciferný rok je vždy tento vek — bankový výpis z roku 1926 neexistuje.
     if (r < 100) r += 2000;
+  } else if (bezRoku && zHlavicky) {
+    [d, m, r] = [Number(bezRoku[1]), Number(bezRoku[2]), Number(zHlavicky[1])];
+    /*
+      Januárový výpis nesie aj pohyby z konca decembra. Rok z hlavičky by im
+      pridal dvanásť mesiacov navyše — pohyb by skončil v budúcnosti a
+      v účtovníctve v zlom období. Opačný smer nastať nemôže: výpis nikdy
+      neobsahuje pohyby, ktoré sa ešte nestali.
+    */
+    if (m - Number(zHlavicky[2]) > 6) r -= 1;
   } else {
     return null;
   }
@@ -131,8 +149,8 @@ function symbol(v: unknown, max: number): string | null {
 }
 
 /** Jeden riadok výpisu. Vráti `null`, keď z neho nie je doklad — chýba dátum alebo suma. */
-export function normalizujPohyb(r: SurovyPohyb): VypisPohyb | null {
-  const datum = normalizujDatum(r.datum ?? r.date ?? r.datum_uctovania);
+export function normalizujPohyb(r: SurovyPohyb, hlavicka?: string | null): VypisPohyb | null {
+  const datum = normalizujDatum(r.datum ?? r.date ?? r.datum_uctovania, hlavicka);
   const suma = normalizujSumu(r.suma ?? r.amount ?? r.ciastka);
   if (!datum || suma == null || suma === 0) return null;
 
@@ -175,8 +193,14 @@ export function normalizujVypis(surove: unknown): Vypis {
         ? (surove as unknown[])
         : [];
 
+  /*
+    Dátum výpisu sa číta ako prvý — nie kvôli hlavičke, ale kvôli riadkom:
+    keď pri pohyboch chýba rok, berie sa práve odtiaľto.
+  */
+  const datumHlavicky = normalizujDatum(o.datumVypisu ?? o.dateStatement ?? o.datum_vypisu);
+
   const pohyby = riadky
-    .map((x) => normalizujPohyb((x ?? {}) as SurovyPohyb))
+    .map((x) => normalizujPohyb((x ?? {}) as SurovyPohyb, datumHlavicky))
     .filter((x): x is VypisPohyb => x !== null)
     .sort((a, b) => a.datum.localeCompare(b.datum));
 
@@ -185,9 +209,7 @@ export function normalizujVypis(surove: unknown): Vypis {
     cisloVypisu: text(o.cisloVypisu ?? o.statementNumber ?? o.cislo, 10),
     ucet: text(o.ucet ?? o.account ?? o.iban, 40),
     mena: mena ? mena.toUpperCase() : null,
-    datumVypisu:
-      normalizujDatum(o.datumVypisu ?? o.dateStatement ?? o.datum_vypisu) ??
-      (pohyby.length ? pohyby[pohyby.length - 1].datum : null),
+    datumVypisu: datumHlavicky ?? (pohyby.length ? pohyby[pohyby.length - 1].datum : null),
     pohyby,
   };
 }

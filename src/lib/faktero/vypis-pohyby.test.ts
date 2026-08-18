@@ -57,6 +57,24 @@ describe("dátum z výpisu", () => {
     expect(normalizujDatum("15.13.2026")).toBeNull();
     expect(normalizujDatum("hocičo")).toBeNull();
   });
+
+  it("rok bez roka doplní hlavička výpisu", () => {
+    // Veľa bánk píše rok len raz hore a pri pohyboch nechá deň s mesiacom.
+    expect(normalizujDatum("15.08.", "2026-08-31")).toBe("2026-08-15");
+    expect(normalizujDatum("15.8", "2026-08-31")).toBe("2026-08-15");
+    expect(normalizujDatum("15/08/", "2026-08-31")).toBe("2026-08-15");
+  });
+
+  it("december na januárovom výpise patrí do minulého roka", () => {
+    // Rok z hlavičky by pohyb posunul o dvanásť mesiacov do budúcnosti.
+    expect(normalizujDatum("28.12.", "2026-01-05")).toBe("2025-12-28");
+    expect(normalizujDatum("03.01.", "2026-01-05")).toBe("2026-01-03");
+  });
+
+  it("bez hlavičky sa dátum bez roka zahodí", () => {
+    // Rok si nemá odkiaľ domyslieť — hádať ho je horšie než riadok vynechať.
+    expect(normalizujDatum("15.08.")).toBeNull();
+  });
 });
 
 describe("smer pohybu", () => {
@@ -126,6 +144,22 @@ describe("celý výpis", () => {
     expect(normalizujVypis({ ...surove, datumVypisu: "31.1.2026" }).datumVypisu).toBe("2026-01-31");
   });
 
+  it("pohyby bez roka doplní dátum výpisu", () => {
+    /*
+      Toto zhodilo celý výpis: banka písala rok len v hlavičke a pri riadkoch
+      nechala „15.08.“ — každý pohyb sa zahodil a človek dostal hlášku, že to
+      asi nie je bankový výpis.
+    */
+    const v = normalizujVypis({
+      datumVypisu: "31.08.2026",
+      pohyby: [
+        { datum: "15.08.", suma: "12,50", smer: "vydaj" },
+        { datum: "20.08.", suma: "100,00", smer: "prijem" },
+      ],
+    });
+    expect(v.pohyby.map((p) => p.datum)).toEqual(["2026-08-15", "2026-08-20"]);
+  });
+
   it("mena ide veľkými a prázdny výpis nespadne", () => {
     expect(normalizujVypis(surove).mena).toBe("EUR");
     expect(normalizujVypis(null).pohyby).toEqual([]);
@@ -141,10 +175,12 @@ describe("jeden riadok", () => {
   });
 });
 
-
 describe("delenie dlhého výpisu", () => {
   const hlavicka = ["Banka a.s. VYPIS c. 3", "Ucet: SK89 0900 0000 0051 2345 6789", "Mena: EUR"];
-  const pohyby = Array.from({ length: 60 }, (_, i) => `0${(i % 9) + 1}.02.2026  ${i}0,00  Platba ${i}`);
+  const pohyby = Array.from(
+    { length: 60 },
+    (_, i) => `0${(i % 9) + 1}.02.2026  ${i}0,00  Platba ${i}`,
+  );
   const text = [...hlavicka, ...pohyby].join("\n");
 
   it("krátky výpis sa nedelí", () => {

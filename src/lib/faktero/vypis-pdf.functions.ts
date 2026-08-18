@@ -26,6 +26,7 @@ PRAVIDLÁ:
 - Súčtové a zostatkové riadky (počiatočný zostatok, konečný zostatok, obraty
   spolu, prevedený zostatok) NIE sú pohyby — tie vynechaj.
 - Sumu opíš presne tak, ako je na výpise, aj so znamienkom a oddeľovačmi.
+- Keď je pri pohybe len deň a mesiac (napr. "15.08."), doplň rok z hlavičky výpisu.
 - "smer" je "prijem" pri pripísaní na účet a "vydaj" pri odpísaní.
 - "protiucet" je účet protistrany (IBAN alebo číslo s kódom banky), nie účet,
   ktorého je toto výpis.
@@ -34,9 +35,38 @@ PRAVIDLÁ:
 ODPOVEDZ VÝHRADNE JSON objektom v tomto tvare:
 {"cisloVypisu":"číslo výpisu alebo null","ucet":"IBAN účtu výpisu alebo null","mena":"EUR","datumVypisu":"dátum výpisu alebo null","pohyby":[{"datum":"dátum pohybu","suma":"suma","smer":"prijem|vydaj","popis":"popis platby alebo null","protistrana":"názov protistrany alebo null","protiucet":"účet protistrany alebo null","vs":"variabilný symbol alebo null","ks":"konštantný symbol alebo null","ss":"špecifický symbol alebo null"}]}`;
 
-/** Nad týmto sa už do tridsiatich sekúnd neodpovie — výpis treba rozdeliť. */
-const STROP_ZNAKOV = 60_000;
+/**
+ * Strop dĺžky výpisu.
+ *
+ * Šesťdesiat tisíc znakov tu ostalo z čias, keď sa výpis posielal na model
+ * vcelku a dlhšia požiadavka sa nestihla. Odvtedy sa delí na kusy, takže ide
+ * o cenu a nie o čas — hranica je preto v počte kusov nižšie.
+ */
+const STROP_ZNAKOV = 250_000;
+const STROP_KUSOV = 40;
 const STROP_SUBORU = 15 * 1024 * 1024;
+
+/**
+ * Koľko kusov ide na model naraz.
+ *
+ * Bez obmedzenia išli všetky súbežne a pri dlhom výpise sa narazilo na strop
+ * požiadaviek za minútu. Štyri sú kompromis: čítanie ostáva rýchle a `429`
+ * takmer nechodí — a keď príde, `ai.server` ho ešte raz zopakuje.
+ */
+const SUCASNE = 4;
+
+/** Práca po dávkach, nech ich naraz nebeží viac než `sucasne`. */
+async function podavkach<T, V>(
+  veci: T[],
+  sucasne: number,
+  praca: (vec: T) => Promise<V>,
+): Promise<V[]> {
+  const vysledky: V[] = [];
+  for (let i = 0; i < veci.length; i += sucasne) {
+    vysledky.push(...(await Promise.all(veci.slice(i, i + sucasne).map(praca))));
+  }
+  return vysledky;
+}
 
 /** Koľko riadkov model vrátil, ešte pred kontrolou dátumov a súm. */
 function pocetRiadkov(odpoved: unknown): number {
@@ -47,7 +77,15 @@ function pocetRiadkov(odpoved: unknown): number {
   return Array.isArray(odpoved) ? (odpoved as unknown[]).length : 0;
 }
 
-function odpovedNaJson(odpoved: string): unknown {
+/**
+ * Odpoveď modelu ako JSON — a keď sa to nepodarí, treba to vedieť.
+ *
+ * Predtým sa pri neplatnom JSON vrátil prázdny objekt a stratila sa tým celá
+ * príčina: navonok to vyzeralo rovnako, ako keby model nenašiel ani jeden
+ * pohyb, a človek dostal radu „skontrolujte, či je to naozaj bankový výpis",
+ * hoci výpis bol v poriadku a len sa orezala odpoveď.
+ */
+function odpovedNaJson(odpoved: string): { hodnota: unknown; zlyhalo: boolean } {
   let s = (odpoved ?? "").trim();
   const blok = /^```(?:json)?\s*([\s\S]*?)\s*```$/.exec(s);
   if (blok) s = blok[1].trim();
@@ -56,9 +94,17 @@ function odpovedNaJson(odpoved: string): unknown {
     if (i >= 0) s = s.slice(i);
   }
   try {
-    return JSON.parse(s);
+    return { hodnota: JSON.parse(s), zlyhalo: false };
   } catch {
-    return {};
+    /*
+      Do logu ide len dĺžka a to, či odpoveď vôbec končí zátvorkou — orezanú
+      odpoveď to prezradí a obsah výpisu sa pritom nikam nezapíše.
+    */
+    console.warn(
+      `[vypis] odpoveď modelu sa nedá prečítať ako JSON: ${s.length} znakov, ` +
+        `${s.trimEnd().endsWith("}") ? "uzavretá" : "neuzavretá (orezaná odpoveď)"}`,
+    );
+    return { hodnota: {}, zlyhalo: true };
   }
 }
 
@@ -108,7 +154,7 @@ async function precitajVypis(data: {
     }
     if (maTextovuVrstvu && text.length > STROP_ZNAKOV) {
       throw new Error(
-        `Výpis má ${stran} strán a na jedno spracovanie je príliš dlhý. Rozdeľte ho a nahrajte po častiach.`,
+        `Výpis má ${stran} strán a na jedno spracovanie je príliš dlhý. Rozdeľte ho a nahrajte po mesiacoch.`,
       );
     }
 
@@ -117,39 +163,63 @@ async function precitajVypis(data: {
 
     let vypis: Vypis;
     let surovych = 0;
+    let kusov = 1;
+    let necitatelnych = 0;
     if (maTextovuVrstvu) {
       /*
-        Dlhý výpis sa číta po kusoch a **súbežne** — pri stovke pohybov by
+        Dlhý výpis sa číta po kusoch a po štyroch naraz — pri stovke pohybov by
         jedno volanie písalo odpoveď aj niekoľko minút a človek by na ňu
-        pozeral. Takto sa čaká len na najpomalší kus.
+        pozeral. Naraz sa ich ale púšťať nesmie koľkokoľvek: pri desiatich
+        kusoch narazí OpenAI na strop požiadaviek za minútu.
       */
-      const casti = await Promise.all(
-        rozdelVypis(text).map(async (kus) => {
-          const o = odpovedNaJson(await aiText(`${POKYN}\n\nTEXT VÝPISU:\n${kus}`, nastavenie));
-          return { vypis: normalizujVypis(o), surovych: pocetRiadkov(o) };
-        }),
-      );
+      const kusy = rozdelVypis(text);
+      kusov = kusy.length;
+      if (kusov > STROP_KUSOV) {
+        throw new Error(
+          `Výpis má ${stran} strán a rozpadol by sa na ${kusov} častí. Rozdeľte ho a nahrajte po mesiacoch.`,
+        );
+      }
+      const casti = await podavkach(kusy, SUCASNE, async (kus) => {
+        const o = odpovedNaJson(await aiText(`${POKYN}\n\nTEXT VÝPISU:\n${kus}`, nastavenie));
+        return {
+          vypis: normalizujVypis(o.hodnota),
+          surovych: pocetRiadkov(o.hodnota),
+          zlyhalo: o.zlyhalo,
+        };
+      });
       vypis = zlejVypisy(casti.map((c) => c.vypis));
       surovych = casti.reduce((n, c) => n + c.surovych, 0);
+      necitatelnych = casti.filter((c) => c.zlyhalo).length;
     } else {
       // Naskenovaný výpis — text v ňom nie je, musí sa čítať z obrazu.
       const o = odpovedNaJson(
         await aiVision(bajty.toString("base64"), "application/pdf", POKYN, nastavenie),
       );
-      vypis = normalizujVypis(o);
-      surovych = pocetRiadkov(o);
+      vypis = normalizujVypis(o.hodnota);
+      surovych = pocetRiadkov(o.hodnota);
+      necitatelnych = o.zlyhalo ? 1 : 0;
     }
 
     /*
-      Rozdiel medzi „model nič nevrátil" a „všetko sme zahodili" je pri hľadaní
-      príčiny to jediné podstatné — v prvom prípade sedí text zle, v druhom je
-      prísna kontrola dátumov a súm. Do logu ide len počet, nie obsah výpisu.
+      Pri hľadaní príčiny sú podstatné tri prípady a navonok vyzerajú rovnako:
+      model odpovedal nezmyslom (odpoveď sa nedá prečítať), model nenašiel nič
+      (zle vytiahnutý text) alebo sme všetko zahodili (prísna kontrola dátumov
+      a súm). Do logu ide len počet, nie obsah výpisu.
     */
     console.warn(
-      `[vypis] text ${text.length} znakov (${stran} str.), model vrátil ${surovych} riadkov, po kontrole ostalo ${vypis.pohyby.length}`,
+      `[vypis] text ${text.length} znakov (${stran} str.) v ${kusov} kusoch, ` +
+        `${necitatelnych} nečitateľných odpovedí, model vrátil ${surovych} riadkov, ` +
+        `po kontrole ostalo ${vypis.pohyby.length}`,
     );
 
     if (!vypis.pohyby.length) {
+      if (necitatelnych) {
+        throw new Error(
+          necitatelnych === kusov
+            ? "Model odpovedal tak, že sa jeho odpoveď nedala prečítať — obvykle je to príliš dlhý výpis. Skúste ho rozdeliť a nahrať po častiach."
+            : `Z ${kusov} častí výpisu sa ${necitatelnych} nepodarilo prečítať. Skúste to ešte raz; ak sa to zopakuje, rozdeľte výpis na kratšie kusy.`,
+        );
+      }
       if (!maTextovuVrstvu) {
         throw new Error(
           "PDF nemá textovú vrstvu a z obrazu sa nič nevyčítalo. Skúste výpis stiahnuť z banky priamo ako PDF.",
@@ -232,11 +302,24 @@ export const stavCitaniaVypisuFn = createServerFn({ method: "POST" })
       // z priečinka cudzej firmy.
       if (!/^[0-9a-f-]{36}$/i.test(data.id)) throw new Error("Neplatné čítanie.");
 
-      const { data: subor } = await ctx.supabase.storage
-        .from(KOS)
-        .download(cestaVysledku(data.company_id, data.id));
+      const cesta = cestaVysledku(data.company_id, data.id);
+      const { data: subor } = await ctx.supabase.storage.from(KOS).download(cesta);
       if (!subor) return { hotovo: false };
-      return { hotovo: true, ...JSON.parse(await subor.text()) };
+      const vysledok = JSON.parse(await subor.text());
+
+      /*
+        Výsledok je odovzdaný, tak nemá prečo ležať ďalej v koši. Je v ňom celý
+        výpis — sumy, protistrany aj variabilné symboly — a prevodník je
+        jednorazová vec, nie archív. Mazať musí `supabaseAdmin`: kôš `imports`
+        má politiku na čítanie a zápis, na mazanie nie. Členstvo aj cesta sú
+        overené vyššie a keď sa zmazať nepodarí, čítanie to zhodiť nesmie.
+      */
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: chybaMazania } = await supabaseAdmin.storage.from(KOS).remove([cesta]);
+      if (chybaMazania)
+        console.warn("[vypis] výsledok sa nepodarilo zmazať:", chybaMazania.message);
+
+      return { hotovo: true, ...vysledok };
     },
   );
 

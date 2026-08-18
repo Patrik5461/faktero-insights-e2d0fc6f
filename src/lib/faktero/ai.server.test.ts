@@ -21,6 +21,9 @@ const fetchMock = vi.fn(async () => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Umlčanie Gemini si modul pamätá medzi volaniami, takže bez čistého
+  // načítania by jeden test rozhodoval o výsledku ďalších.
+  vi.resetModules();
   vi.stubGlobal("fetch", fetchMock);
   process.env.GEMINI_API_KEY = "g";
   process.env.OPENAI_API_KEY = "o";
@@ -74,6 +77,65 @@ describe("výber poskytovateľa", () => {
 
     expect(await aiText("pokyn")).toBe('{"z":"openai"}');
     expect(geminiText).not.toHaveBeenCalled();
+  });
+
+  it("po vyčerpanom kredite sa na Gemini chvíľu nechodí", async () => {
+    // Dlhý výpis ide na model po kusoch. Bez tohto by každý kus najprv
+    // zaplatil zaručene neúspešné kolo na Gemini.
+    geminiText.mockRejectedValueOnce(new Error("Gemini 429: RESOURCE_EXHAUSTED"));
+    const { aiText } = await import("./ai.server");
+
+    await aiText("prvý kus");
+    await aiText("druhý kus");
+    await aiText("tretí kus");
+
+    expect(geminiText).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("výpadok Gemini kľúč neumlčí — skúsi sa nabudúce znova", async () => {
+    geminiText.mockRejectedValueOnce(new Error("Gemini 503: service unavailable"));
+    const { aiText } = await import("./ai.server");
+
+    await aiText("prvý");
+    await aiText("druhý");
+
+    expect(geminiText).toHaveBeenCalledTimes(2);
+  });
+
+  it("na 429 od OpenAI sa počká a skúsi znova", async () => {
+    // Kusy výpisu idú súbežne, takže na strop za minútu sa naráža ľahko;
+    // jedno odmietnutie nesmie zhodiť celé čítanie.
+    delete process.env.GEMINI_API_KEY;
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        headers: { get: () => "0" },
+        text: async () => "rate limit",
+      } as never)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ choices: [{ message: { content: '{"z":"openai"}' } }] }),
+      } as never);
+    const { aiText } = await import("./ai.server");
+
+    expect(await aiText("pokyn")).toBe('{"z":"openai"}');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("400 sa neopakuje — zlá požiadavka sa druhýkrát nespraví lepšou", async () => {
+    delete process.env.GEMINI_API_KEY;
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      headers: { get: () => null },
+      text: async () => "max_tokens is too large",
+    } as never);
+    const { aiText } = await import("./ai.server");
+
+    await expect(aiText("pokyn")).rejects.toThrow(/400/);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("keď zlyhá Gemini a OpenAI kľúč nie je, ozve sa pôvodná chyba", async () => {

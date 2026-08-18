@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { znamienkoDokladu } from "@/lib/faktero/faktury-sumy";
@@ -294,7 +295,13 @@ function DphPage() {
 
   function exportPdf() {
     const win = window.open("", "_blank");
-    if (!win) return;
+    // Bez tejto hlášky tlačidlo pri zablokovanom vyskakovacom okne len ticho
+    // nič neurobí a človek nemá ako zistiť prečo. Rovnako to rieši aj vývoz
+    // knihy jázd.
+    if (!win) {
+      toast.error("Prehliadač zablokoval nové okno. Povoľte ho a skúste znova.");
+      return;
+    }
     const row = (label: string, b: Bucket) =>
       `<tr><td>${label}</td><td style="text-align:right">${fmt(b.base)}</td><td style="text-align:right">${fmt(b.vat)}</td><td style="text-align:right">${b.count}</td></tr>`;
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>DPH prehľad ${period.label}</title>

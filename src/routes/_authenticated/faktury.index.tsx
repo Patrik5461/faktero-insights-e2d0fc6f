@@ -54,26 +54,60 @@ const ZORADENIE_FAKTUR: MoznostZoradenia[] = [
   { label: "Naposledy pridané", column: "created_at" },
 ];
 
-/** Filtre z menu (Dobropisy, Koncepty) a `q` z vyhľadávania v hlavičke. */
-type InvoiceSearch = { type?: "credit"; status?: "draft"; q?: string };
+/**
+ * Filtre z menu (Dobropisy, Koncepty), z AI asistenta (po splatnosti,
+ * neodoslané) a `q` z vyhľadávania v hlavičke.
+ *
+ * Čo tu nie je vymenované, to sa z adresy zahodí — takže odkaz s parametrom,
+ * ktorý tu chýba, otvorí nefiltrovaný zoznam a nikde sa to neohlási. Presne to
+ * robili karty v AI asistentovi s `?status=overdue`.
+ */
+type InvoiceSearch = {
+  type?: "credit";
+  status?: "draft" | "issued";
+  poSplatnosti?: true;
+  q?: string;
+};
+
+type Splatnost = {
+  id?: string;
+  status?: string | null;
+  due_date?: string | null;
+  paid_at?: string | null;
+};
+
+/**
+ * „Po splatnosti" nie je stav v databáze — nikto ho tam nezapisuje. Je to
+ * výpočet z dátumu splatnosti a úhrady, takže sa filtruje až nad načítanými
+ * riadkami a nie cez `equals`.
+ */
+function jePoSplatnosti(r: Splatnost, dnes: string): boolean {
+  return (
+    (r.status === "issued" || r.status === "sent") &&
+    !!r.due_date &&
+    r.due_date < dnes &&
+    !r.paid_at
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/faktury/")({
   head: () => ({ meta: [{ title: "Faktúry — Faktero" }] }),
   validateSearch: (s: Record<string, unknown>): InvoiceSearch => ({
     type: s.type === "credit" ? "credit" : undefined,
-    status: s.status === "draft" ? "draft" : undefined,
+    status: s.status === "draft" || s.status === "issued" ? s.status : undefined,
+    poSplatnosti: s.poSplatnosti === true || s.poSplatnosti === "1" ? true : undefined,
     q: typeof s.q === "string" && s.q.trim() ? s.q : undefined,
   }),
   component: InvoicesPage,
 });
 
 function InvoicesPage() {
-  const { type, status, q } = Route.useSearch();
+  const { type, status, poSplatnosti, q } = Route.useSearch();
   // V databáze je dobropis `credit_note`; v adrese je kratšie `credit`.
   const equals = useMemo(
     () => ({
       ...(type === "credit" ? { type: "credit_note" } : {}),
-      ...(status === "draft" ? { status: "draft" } : {}),
+      ...(status ? { status } : {}),
     }),
     [type, status],
   );
@@ -156,16 +190,15 @@ function InvoicesPage() {
 
   const today = new Date().toISOString().slice(0, 10);
   const visibleRows = useMemo(() => {
-    if (!overdueNoReminder) return list.rows;
-    return list.rows.filter(
-      (r: any) =>
-        (r.status === "issued" || r.status === "sent") &&
-        r.due_date &&
-        r.due_date < today &&
-        !r.paid_at &&
-        !reminderMap[r.id],
-    );
-  }, [list.rows, overdueNoReminder, reminderMap, today]);
+    let riadky = list.rows;
+    if (poSplatnosti) riadky = riadky.filter((r: Splatnost) => jePoSplatnosti(r, today));
+    if (overdueNoReminder) {
+      riadky = riadky.filter(
+        (r: Splatnost) => jePoSplatnosti(r, today) && !reminderMap[r.id as string],
+      );
+    }
+    return riadky;
+  }, [list.rows, poSplatnosti, overdueNoReminder, reminderMap, today]);
 
   async function cloneRow(invoiceId: string) {
     try {
@@ -482,19 +515,33 @@ function InvoicesPage() {
   return (
     <>
       <PageHeader
-        title={type === "credit" ? "Dobropisy" : status === "draft" ? "Koncepty" : "Faktúry"}
+        title={
+          type === "credit"
+            ? "Dobropisy"
+            : poSplatnosti
+              ? "Faktúry po splatnosti"
+              : status === "draft"
+                ? "Koncepty"
+                : status === "issued"
+                  ? "Vystavené faktúry"
+                  : "Faktúry"
+        }
         description={
           q
             ? `Výsledky hľadania „${q}“.`
             : type === "credit"
               ? "Vystavené dobropisy."
-              : status === "draft"
-                ? "Rozpracované faktúry, ktoré ešte neboli vystavené."
-                : "Všetky vystavené faktúry, koncepty aj stornované."
+              : poSplatnosti
+                ? "Vystavené a odoslané faktúry, ktorým uplynula splatnosť a nie sú uhradené."
+                : status === "draft"
+                  ? "Rozpracované faktúry, ktoré ešte neboli vystavené."
+                  : status === "issued"
+                    ? "Faktúry vo vystavenom stave — ešte neodoslané odberateľovi."
+                    : "Všetky vystavené faktúry, koncepty aj stornované."
         }
         action={
           <div className="flex flex-wrap gap-2">
-            {(type || status || q) && (
+            {(type || status || poSplatnosti || q) && (
               <Link
                 to="/faktury"
                 search={{} as any}
