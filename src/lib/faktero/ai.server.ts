@@ -47,6 +47,8 @@ async function cezOpenAi(
   pokyn: string,
   obsah: unknown[],
   nastavenie?: AiNastavenie,
+  /** Obrázok a PDF potrebujú model, ktorý vidí; na text stačí ten rýchlejší. */
+  vidiaci = true,
 ): Promise<string> {
   const kluc = process.env.OPENAI_API_KEY?.trim();
   if (!kluc) bezPoskytovatela();
@@ -55,7 +57,9 @@ async function cezOpenAi(
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${kluc}` },
     body: JSON.stringify({
-      model: process.env.OPENAI_VISION_MODEL || "gpt-4o",
+      model: vidiaci
+        ? process.env.OPENAI_VISION_MODEL || "gpt-4o"
+        : process.env.OPENAI_MODEL || "gpt-4o-mini",
       messages: [
         { role: "system", content: pokyn },
         { role: "user", content: obsah },
@@ -125,7 +129,7 @@ export async function aiVision(
 
 /** To isté nad obyčajným textom — keď dokument textovú vrstvu má. */
 export async function aiText(pokyn: string, nastavenie?: AiNastavenie): Promise<string> {
-  const naOpenAi = () => cezOpenAi(pokyn, [{ type: "text", text: "Pokračuj." }], nastavenie);
+  const naOpenAi = () => cezOpenAi(pokyn, [{ type: "text", text: "Pokračuj." }], nastavenie, false);
 
   if (!maGemini()) {
     if (!maOpenAi()) bezPoskytovatela();

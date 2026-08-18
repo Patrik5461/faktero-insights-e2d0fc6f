@@ -191,3 +191,68 @@ export function normalizujVypis(surove: unknown): Vypis {
     pohyby,
   };
 }
+
+
+/**
+ * Rozdelenie textu výpisu na kusy, ktoré model stihne prečítať naraz.
+ *
+ * Jedno volanie nad štyridsiatimi pohybmi píše odpoveď aj niekoľko minút a
+ * požiadavka sa medzitým pretrhne — v prehliadači z toho ostane „Failed to
+ * fetch". Kusy sa preto čítajú súbežne a čakať treba len na ten najpomalší.
+ *
+ * Delí sa **po riadkoch**, nikdy uprostred; hlavička (prvé riadky s číslom
+ * výpisu a účtom) ide do každého kusa, inak by druhý kus nevedel, čí výpis to je.
+ */
+export function rozdelVypis(text: string, maxZnakov = 6000, hlavickaRiadkov = 6): string[] {
+  const riadky = text.split(/\r?\n/);
+  if (text.length <= maxZnakov) return [text];
+
+  const hlavicka = riadky.slice(0, hlavickaRiadkov).join("\n");
+  const kusy: string[] = [];
+  let teraz: string[] = [];
+  let dlzka = 0;
+
+  for (const r of riadky.slice(hlavickaRiadkov)) {
+    if (dlzka + r.length > maxZnakov && teraz.length) {
+      kusy.push(`${hlavicka}\n${teraz.join("\n")}`);
+      teraz = [];
+      dlzka = 0;
+    }
+    teraz.push(r);
+    dlzka += r.length + 1;
+  }
+  if (teraz.length) kusy.push(`${hlavicka}\n${teraz.join("\n")}`);
+  return kusy;
+}
+
+/**
+ * Zliatie výsledkov z jednotlivých kusov.
+ *
+ * Hlavička je v každom kuse tá istá, takže sa berie prvá vyplnená. Pohyby sa
+ * spájajú a **zhodné sa zahadzujú** — hlavička sa kusom opakuje a model z nej
+ * občas vyrobí pohyb druhýkrát.
+ */
+export function zlejVypisy(casti: Vypis[]): Vypis {
+  const prve = (vyber: (v: Vypis) => string | null) =>
+    casti.map(vyber).find((x) => x != null && x !== "") ?? null;
+
+  const videne = new Set<string>();
+  const pohyby: VypisPohyb[] = [];
+  for (const c of casti) {
+    for (const p of c.pohyby) {
+      const kluc = [p.datum, p.suma, p.smer, p.vs ?? "", p.popis ?? ""].join("|");
+      if (videne.has(kluc)) continue;
+      videne.add(kluc);
+      pohyby.push(p);
+    }
+  }
+  pohyby.sort((a, b) => a.datum.localeCompare(b.datum));
+
+  return {
+    cisloVypisu: prve((v) => v.cisloVypisu),
+    ucet: prve((v) => v.ucet),
+    mena: prve((v) => v.mena),
+    datumVypisu: prve((v) => v.datumVypisu) ?? (pohyby.length ? pohyby[pohyby.length - 1].datum : null),
+    pohyby,
+  };
+}

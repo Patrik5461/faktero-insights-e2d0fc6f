@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { normalizujVypis, type Vypis, type VypisPohyb } from "./vypis-pohyby";
+import {
+  normalizujVypis,
+  rozdelVypis,
+  zlejVypisy,
+  type Vypis,
+  type VypisPohyb,
+} from "./vypis-pohyby";
 
 /**
  * Prečítanie bankového výpisu z PDF.
