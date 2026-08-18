@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { jeZapnute } from "@/lib/faktero/search-parametre";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
 import {
@@ -95,7 +96,10 @@ export const Route = createFileRoute("/_authenticated/faktury/")({
   validateSearch: (s: Record<string, unknown>): InvoiceSearch => ({
     type: s.type === "credit" ? "credit" : undefined,
     status: s.status === "draft" || s.status === "issued" ? s.status : undefined,
-    poSplatnosti: s.poSplatnosti === true || s.poSplatnosti === "1" ? true : undefined,
+    // Smerovač si hodnotu z adresy rozparsuje sám: `=true` je `true`, `=1` je
+    // číslo `1`. Porovnanie s reťazcom `"1"` preto neplatilo nikdy a odkaz
+    // napísaný ručne otvoril nefiltrovaný zoznam — presne to, čo tu opravujeme.
+    poSplatnosti: jeZapnute(s.poSplatnosti) ? true : undefined,
     q: typeof s.q === "string" && s.q.trim() ? s.q : undefined,
   }),
   component: InvoicesPage,
