@@ -93,7 +93,7 @@ export function QrSkener({
 
       <div
         className="absolute inset-x-0 top-0 flex items-center justify-between px-4 py-3"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.75rem)" }}
+        style={{ paddingTop: "calc(var(--safe-top) + 0.75rem)" }}
       >
         <span className="text-sm font-medium text-white">Namierte na QR kód</span>
         <button
@@ -108,7 +108,7 @@ export function QrSkener({
       {chyba && (
         <div
           className="absolute inset-x-0 bottom-0 bg-card p-4 text-sm"
-          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
+          style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}
         >
           <p className="mb-3">{chyba}</p>
           <button

@@ -125,6 +125,7 @@ import {
   overBiometriu,
 } from "@/lib/mobile/biometric";
 import {
+  AppHeader,
   HlavneTlacidlo,
   MobilObrazovka,
   PasHore,
@@ -722,8 +723,8 @@ function Prihlasenie({ onHotovo }: { onHotovo: () => void }) {
     <div
       className="flex min-h-[100dvh] flex-col justify-center bg-background px-6"
       style={{
-        paddingTop: "calc(env(safe-area-inset-top) + 2rem)",
-        paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)",
+        paddingTop: "calc(var(--safe-top) + 2rem)",
+        paddingBottom: "calc(var(--safe-bottom) + 2rem)",
       }}
     >
       <div className="mx-auto w-full max-w-sm">
@@ -802,7 +803,7 @@ function Zamok({ onOdomknute, onOdhlasit }: { onOdomknute: () => void; onOdhlasi
   return (
     <div
       className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-background px-8"
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      style={{ paddingTop: "var(--safe-top)" }}
     >
       <div className="grid h-20 w-20 place-items-center rounded-3xl bg-primary/10 text-primary">
         <Lock className="h-9 w-9" />
@@ -957,48 +958,52 @@ function Domov({
         odíde hore a s ňou aj údaj o tom, za ktorú firmu sa práve pracuje —
         pod ním sa objaví holé pozadie a horný pás stratí farbu.
       */}
-      <header
-        className="sticky top-0 z-20 text-primary-foreground"
-        style={{
-          backgroundColor: ZELENA_HORE,
-          paddingTop: "env(safe-area-inset-top)",
-        }}
-      >
-        <div
-          className="px-5 pb-6 pt-3"
-          style={{
-            backgroundImage: `linear-gradient(180deg, ${ZELENA_HORE} 0%, ${ZELENA_HORE} 30%, ${ZELENA_DOLE} 100%)`,
-          }}
-        >
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={onPanel}
-              aria-label="Nastavenia"
-              className="-ml-2 rounded-full bg-white/15 p-2.5 active:bg-white/25"
-            >
-              <Menu className="h-[20px] w-[20px]" />
-            </button>
-            <h1 className="min-w-0 truncate text-[20px] font-semibold leading-tight">
-              Faktúry a doklady
-            </h1>
-          </div>
-
+      <AppHeader
+        variant="root"
+        title="Faktúry a doklady"
+        subtitle={firma?.name ?? "Bez firmy"}
+        left={
           <button
-            onClick={viacFiriem ? onZmenitFirmu : undefined}
-            className={`mt-4 flex w-full items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5 text-left ${
-              viacFiriem ? "active:bg-white/25" : "cursor-default"
-            }`}
+            onClick={onPanel}
+            aria-label="Nastavenia"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-white/20"
           >
-            <Building2 className="h-4 w-4 shrink-0" />
-            <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
-              {firma?.name ?? "Bez firmy"}
-            </span>
-            {viacFiriem && (
-              <span className="shrink-0 text-[12px] text-primary-foreground/80">zmeniť</span>
-            )}
+            <Menu className="h-[20px] w-[20px]" />
           </button>
-        </div>
-      </header>
+        }
+        pod={
+          /*
+            Za ktorú firmu sa práve skenuje, hovorí podnadpis. Tento pruh je
+            **prepínač** — pri jedinej firme by len zopakoval to, čo je o riadok
+            vyššie, tak sa nekreslí. Presvetlenie smerom dole je až tu, pod
+            lištou: keby prechod začínal hore, v oblasti výrezu by bol o odtieň
+            iný pruh než spoločný pás nad ním.
+          */
+          viacFiriem ? (
+          <div
+            className="px-4 pb-5 pt-1"
+            style={{
+              backgroundImage: `linear-gradient(180deg, ${ZELENA_HORE} 0%, ${ZELENA_HORE} 30%, ${ZELENA_DOLE} 100%)`,
+            }}
+          >
+            <button
+              onClick={viacFiriem ? onZmenitFirmu : undefined}
+              className={`flex w-full items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5 text-left ${
+                viacFiriem ? "active:bg-white/25" : "cursor-default"
+              }`}
+            >
+              <Building2 className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
+                {firma?.name ?? "Bez firmy"}
+              </span>
+              {viacFiriem && (
+                <span className="shrink-0 text-[12px] text-primary-foreground/80">zmeniť</span>
+              )}
+            </button>
+          </div>
+          ) : null
+        }
+      />
 
       {/*
         Appka robí dve veci: vystavuje faktúry a zbiera prijaté doklady. Sú to
@@ -1078,7 +1083,7 @@ function Domov({
         />
       </main>
 
-      <div style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }} />
+      <div style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }} />
     </div>
   );
 }

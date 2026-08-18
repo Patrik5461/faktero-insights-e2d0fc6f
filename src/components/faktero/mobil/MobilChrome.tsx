@@ -21,7 +21,7 @@ export function PasHore() {
     <div
       aria-hidden
       className="pointer-events-none fixed inset-x-0 top-0 z-[60]"
-      style={{ height: "env(safe-area-inset-top)", backgroundColor: ZELENA_HORE }}
+      style={{ height: "var(--safe-top)", backgroundColor: ZELENA_HORE }}
     />
   );
 }
@@ -112,6 +112,83 @@ function useSwipeSpat(onSpat?: () => void) {
   return { posun, pusta };
 }
 
+/**
+ * Horná lišta appky — jedna pre všetky obrazovky.
+ *
+ * Dovtedy si ju kreslila každá obrazovka sama: domov mala zelenú s hamburgerom,
+ * podstránky bielu so šípkou, panel tretiu variantu. Líšili sa výškou, farbou
+ * aj typografiou, takže pri prechode medzi obrazovkami titulok poskočil — a
+ * `env(safe-area-inset-top)` bolo rozpísané v ôsmich súboroch, čo znamená, že
+ * pri deviatej obrazovke sa naň raz zabudne a text vlezie pod hodiny.
+ *
+ * Zelený pás pre výrez je súčasťou tohto komponentu. Obsah lišty má **pevnú
+ * výšku** nezávisle od toho, či je podnadpis — inak by sa lišta pri prepnutí
+ * z domovskej obrazovky na podstránku natiahla.
+ */
+const VYSKA_LISTY = 52;
+
+export function AppHeader({
+  title,
+  subtitle,
+  onBack,
+  left,
+  right,
+  pod,
+  variant = "sub",
+}: {
+  title: string;
+  subtitle?: string;
+  onBack?: () => void;
+  /** Prvok vľavo namiesto šípky späť — domovská obrazovka má hamburger. */
+  left?: ReactNode;
+  right?: ReactNode;
+  /** Obsah pod lištou v tom istom zelenom bloku (výber firmy na domove). */
+  pod?: ReactNode;
+  variant?: "root" | "sub";
+}) {
+  return (
+    <header
+      className={`sticky top-0 text-white ${variant === "root" ? "z-20" : "z-10"}`}
+      style={{ backgroundColor: ZELENA_HORE, paddingTop: "var(--safe-top)" }}
+    >
+      <div className="flex items-center gap-1 px-2" style={{ minHeight: VYSKA_LISTY }}>
+        {left ??
+          (onBack ? (
+            <button
+              onClick={onBack}
+              aria-label="Späť"
+              // 44 px je najmenší cieľ, ktorý sa dá palcom trafiť na prvý raz.
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white active:bg-white/20"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          ) : null)}
+        <div className="min-w-0 flex-1 px-2">
+          <h1 className="truncate text-[17px] font-semibold leading-tight tracking-tight">
+            {title}
+          </h1>
+          {/*
+            Riadok podnadpisu je tu **vždy**, aj keď je prázdny. Bez neho sa
+            titulok na obrazovke bez podnadpisu vycentruje inde a pri prepnutí
+            medzi obrazovkami poskočí o osem bodov — presne ten skok, ktorý je
+            na prepínaní vidieť.
+          */}
+          <p
+            className="truncate text-[13px] leading-tight"
+            // Nie `text-white/80`: na zelenej má len 3,9:1. Pri 0,92 je to
+            // 4,6:1, teda nad hranicou pre bežne veľký text.
+            style={{ color: "rgba(255,255,255,0.92)" }}
+          >
+            {subtitle ?? "\u00A0"}
+          </p>
+        </div>
+        {right}
+      </div>
+      {pod}
+    </header>
+  );
+}
+
 export function MobilObrazovka({
   title,
   subtitle,
@@ -119,7 +196,6 @@ export function MobilObrazovka({
   children,
   footer,
   akcia,
-  variant = "default",
 }: {
   title: string;
   subtitle?: string;
@@ -127,18 +203,8 @@ export function MobilObrazovka({
   children: ReactNode;
   footer?: ReactNode;
   akcia?: ReactNode;
-  /**
-   * `green` = hlavička v značkovej zelenej, rovnako ako domovská obrazovka.
-   *
-   * Používajú ju kroky vystavenia faktúry: bez nej bola pod zeleným pásom biela
-   * hlavička a na styku bola vidieť hrana. Pozadie je **plná** {@link ZELENA_HORE}
-   * bez prechodu — jednak nie je vidieť predel voči pásu nad ňou, jednak biely
-   * text na svetlejšom konci prechodu nemá dosť kontrastu (4,15:1).
-   */
-  variant?: "default" | "green";
 }) {
   const { posun, pusta } = useSwipeSpat(onBack);
-  const zelena = variant === "green";
 
   return (
     <div
@@ -149,56 +215,14 @@ export function MobilObrazovka({
         boxShadow: posun ? "-12px 0 32px rgba(0,0,0,0.18)" : undefined,
       }}
     >
-      <header
-        className={
-          zelena
-            ? "sticky top-0 z-10 text-white"
-            : "sticky top-0 z-10 border-b border-border/70 bg-card/95 backdrop-blur"
-        }
-        style={{
-          paddingTop: "env(safe-area-inset-top)",
-          backgroundColor: zelena ? ZELENA_HORE : undefined,
-        }}
-      >
-        <div className="flex items-center gap-1 px-3 py-2.5">
-          {onBack && (
-            <button
-              onClick={onBack}
-              aria-label="Späť"
-              className={`-ml-1 rounded-full p-2 ${
-                zelena ? "text-white active:bg-white/20" : "text-primary active:bg-secondary"
-              }`}
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-          )}
-          <div className={`min-w-0 flex-1 ${onBack ? "" : "px-1"}`}>
-            <h1 className="truncate text-[17px] font-semibold leading-tight tracking-tight">
-              {title}
-            </h1>
-            {subtitle && (
-              <p
-                className={`truncate text-[13px] leading-tight ${
-                  zelena ? "" : "text-muted-foreground"
-                }`}
-                // Nie `text-white/80`: na zelenej má len 3,9:1. Pri 0,92 je to
-                // 4,6:1, teda nad hranicou pre bežne veľký text.
-                style={zelena ? { color: "rgba(255,255,255,0.92)" } : undefined}
-              >
-                {subtitle}
-              </p>
-            )}
-          </div>
-          {akcia}
-        </div>
-      </header>
+      <AppHeader title={title} subtitle={subtitle} onBack={onBack} right={akcia} />
 
       <main className="flex-1 px-4 pb-6 pt-4">{children}</main>
 
       {footer && (
         <footer
           className="sticky bottom-0 border-t border-border/70 bg-card/95 px-4 pt-3 backdrop-blur"
-          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+          style={{ paddingBottom: "calc(var(--safe-bottom) + 0.75rem)" }}
         >
           {footer}
         </footer>

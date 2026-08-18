@@ -442,7 +442,7 @@ function KrokOdberatel({
   }
 
   return (
-    <MobilObrazovka title="Komu fakturujete?" subtitle="Krok 1 z 3" onBack={onSpat} variant="green">
+    <MobilObrazovka title="Komu fakturujete?" subtitle="Krok 1 z 3" onBack={onSpat}>
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
@@ -699,7 +699,6 @@ function KrokPolozky({
         title="Za čo fakturujete?"
         subtitle={`Krok 2 z 3 · ${odberatel.name}`}
         onBack={onSpat}
-        variant="green"
         footer={
           <div className="space-y-2">
             <div className="flex items-baseline justify-between text-[15px]">
@@ -906,7 +905,7 @@ function VyberProduktu({
       <div
         onClick={(e) => e.stopPropagation()}
         className="max-h-[80dvh] overflow-hidden rounded-t-3xl bg-card"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        style={{ paddingBottom: "var(--safe-bottom)" }}
       >
         <div className="flex items-center gap-2 border-b border-border/70 px-4 py-3">
           <h2 className="flex-1 text-[16px] font-semibold">Cenník</h2>
@@ -1000,7 +999,6 @@ function KrokSuhrn({
       title="Skontrolujte faktúru"
       subtitle="Krok 3 z 3"
       onBack={onSpat}
-      variant="green"
       footer={<HlavneTlacidlo onClick={onUloz}>Vystaviť faktúru</HlavneTlacidlo>}
     >
       <div className="space-y-4">
@@ -1127,7 +1125,7 @@ function Odlozena({
   onHotovo: () => void;
 }) {
   return (
-    <MobilObrazovka title="Bez pripojenia" variant="green">
+    <MobilObrazovka title="Bez pripojenia">
       <div className="space-y-4 pt-2 text-center">
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-secondary">
           <CloudOff className="h-8 w-8 text-muted-foreground" />

@@ -12,6 +12,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "sonner";
+import { ODSADENIE_TOASTOV } from "@/components/ui/sonner";
 import { MobilnaApka } from "@/components/faktero/mobil/MobilApp";
 import "@/styles.css";
 
@@ -36,7 +37,18 @@ async function spusti() {
   createRoot(koren!).render(
     <StrictMode>
       <MobilnaApka />
-      <Toaster position="top-center" richColors closeButton />
+      {/*
+        Odsadenie je spoločné s webom — pod hodinami sa musí zmestiť výrez.
+        `richColors` je dôvod, prečo tu je `Sonner` priamo a nie obálka
+        z `ui/sonner`: tá farby prebíja triedami.
+      */}
+      <Toaster
+        position="top-center"
+        richColors
+        closeButton
+        offset={ODSADENIE_TOASTOV}
+        mobileOffset={ODSADENIE_TOASTOV}
+      />
     </StrictMode>,
   );
 }
