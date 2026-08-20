@@ -54,6 +54,43 @@ function ulozisko() {
   }
 }
 
+/**
+ * Ako dlho sa čaká na zámok prihlásenia, kým sa naň vykašle.
+ *
+ * Supabase si prihlásenie zamyká cez `navigator.locks`, aby si ho neprepísali
+ * dve karty. Zámok ale nemá strop čakania: keď ho iná karta drží a neuvoľní —
+ * uspatý notebook, karta bez signálu, karta, ktorú prehliadač zmrazil —
+ * `signInWithPassword()` **neodpovie vôbec**. Nie chybou, tichom. Navonok to
+ * vyzerá tak, že sa tlačidlo točí a nič nenapíše, a človek sa nemá ako dostať
+ * dnu, aj keď má správne heslo.
+ *
+ * Po piatich sekundách sa preto pokračuje bez zámku. Dve karty, ktoré si
+ * naraz obnovujú prihlásenie, sú menšie zlo než karta, ktorá sa netočí do
+ * skonania sveta.
+ */
+const CAKANIE_NA_ZAMOK_MS = 5000;
+
+async function zamokSoStropom<R>(
+  meno: string,
+  _cakaj: number,
+  praca: () => Promise<R>,
+): Promise<R> {
+  const zamky = typeof navigator !== "undefined" ? navigator.locks : undefined;
+  if (!zamky?.request) return praca();
+
+  const ovladac = new AbortController();
+  const cas = setTimeout(() => ovladac.abort(), CAKANIE_NA_ZAMOK_MS);
+  try {
+    return await zamky.request(meno, { mode: "exclusive", signal: ovladac.signal }, () => praca());
+  } catch (e) {
+    if ((e as Error)?.name !== "AbortError") throw e;
+    console.warn(`[auth] zámok „${meno}" sa neuvoľnil do 5 s — pokračujem bez neho`);
+    return praca();
+  } finally {
+    clearTimeout(cas);
+  }
+}
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
@@ -76,7 +113,7 @@ function createSupabaseClient() {
       storage: ulozisko(),
       persistSession: true,
       autoRefreshToken: true,
-      ...(jeVlastnaSchema() ? { lock: processLock } : {}),
+      lock: jeVlastnaSchema() ? processLock : zamokSoStropom,
     },
   });
 }

@@ -40,17 +40,64 @@ function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /*
+    Kto je už prihlásený, nemá čo stáť pred dverami. Stávalo sa to práve vtedy,
+    keď sa prihlásenie zaseklo: relácia v prehliadači platná bola, ale
+    obrazovka o nej nevedela a človek dookola skúšal heslo.
+  */
+  useEffect(() => {
+    let zrusene = false;
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!zrusene && data.session)
+          navigate({ to: landingPathFor(getActiveProduct() ?? "invoicing") as never });
+      })
+      .catch(() => {});
+    return () => {
+      zrusene = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function chooseProduct(p: ActiveProduct) {
     setProduct(p);
     setActiveProduct(p);
+  }
+
+  /*
+    Prihlásenie sa nesmie točiť donekonečna.
+
+    Zámok prihlásenia už síce má strop (viď `client.ts`), ale ticho vie prísť
+    aj odinakiaľ — z vypadnutej siete alebo zo zamrznutej karty. Bez tejto
+    poistky sa tlačidlo točí a človek nemá ani čo skúsiť.
+  */
+  const CAKANIE_MS = 20000;
+
+  async function sPoistkou<T>(praca: Promise<T>): Promise<T | "ticho"> {
+    let cas: ReturnType<typeof setTimeout> | undefined;
+    const strop = new Promise<"ticho">((vyries) => {
+      cas = setTimeout(() => vyries("ticho"), CAKANIE_MS);
+    });
+    try {
+      return await Promise.race([praca, strop]);
+    } finally {
+      if (cas) clearTimeout(cas);
+    }
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setActiveProduct(product);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const vysledok = await sPoistkou(supabase.auth.signInWithPassword({ email, password }));
     setLoading(false);
+    if (vysledok === "ticho") {
+      return toast.error(
+        "Prihlásenie neodpovedalo. Zatvorte ostatné otvorené okná Faktera a skúste to znova.",
+      );
+    }
+    const { error } = vysledok;
     if (error) {
       /*
        * Supabase hlási po anglicky. Pri prvom prihlásení je cudzia veta to
