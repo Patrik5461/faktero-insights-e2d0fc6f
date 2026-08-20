@@ -612,6 +612,8 @@ export type VypisPohyb = {
   protistrana?: string | null;
   /** Protiúčet — IBAN alebo číslo účtu. */
   protiucet?: string | null;
+  /** Zostatok na účte po tomto pohybe. Do Pohody nejde, slúži na kontrolu. */
+  zostatok?: number | null;
   vs?: string | null;
   ks?: string | null;
   ss?: string | null;

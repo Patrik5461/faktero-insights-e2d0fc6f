@@ -3,6 +3,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   normalizujVypis,
   rozdelVypis,
+  rozlepStlpce,
+  skontrolujZostatky,
   zlejVypisy,
   type Vypis,
   type VypisPohyb,
@@ -25,6 +27,11 @@ PRAVIDLÁ:
 - Vyber každý pohyb, vrátane poplatkov, úrokov a daní z úrokov.
 - Súčtové a zostatkové riadky (počiatočný zostatok, konečný zostatok, obraty
   spolu, prevedený zostatok) NIE sú pohyby — tie vynechaj.
+- Pri platbe, ktorá neprešla (časť "Nezrealizované transakcie", poznámka
+  "Nedostatočné krytie na účte", zamietnutá či odmietnutá platba), daj
+  "nezrealizovany": true. Z účtu neodišla.
+- Keď je ten istý pohyb na výpise viackrát (napr. tri výbery po 4 000 v jeden
+  deň), vypíš ho toľkokrát, koľkokrát tam je. Nezlučuj ich do jedného.
 - Sumu opíš presne tak, ako je na výpise, aj so znamienkom a oddeľovačmi.
 - Keď je pri pohybe len deň a mesiac (napr. "15.08."), doplň rok z hlavičky výpisu.
 - "smer" je "prijem" pri pripísaní na účet a "vydaj" pri odpísaní.
@@ -34,10 +41,12 @@ PRAVIDLÁ:
   "Miesto" (ČSOB), inde "Obchodník" alebo "Terminál" — napr. z
   "Platba kartou, Miesto: BOLT.EU" daj do "protistrana" hodnotu "BOLT.EU".
   Celý text pohybu nechaj aj v "popis".
+- "zostatok" je zostatok na účte po tomto pohybe, keď ho výpis pri riadku
+  uvádza (stĺpec "priebežný zostatok" alebo "zostatok po transakcii").
 - Čo na výpise nie je, daj null. Nič si nedomýšľaj.
 
 ODPOVEDZ VÝHRADNE JSON objektom v tomto tvare:
-{"cisloVypisu":"číslo výpisu alebo null","ucet":"IBAN účtu výpisu alebo null","mena":"EUR","datumVypisu":"dátum výpisu alebo null","pohyby":[{"datum":"dátum pohybu","suma":"suma","smer":"prijem|vydaj","popis":"popis platby alebo null","protistrana":"názov protistrany alebo null","protiucet":"účet protistrany alebo null","vs":"variabilný symbol alebo null","ks":"konštantný symbol alebo null","ss":"špecifický symbol alebo null"}]}`;
+{"cisloVypisu":"číslo výpisu alebo null","ucet":"IBAN účtu výpisu alebo null","mena":"EUR","datumVypisu":"dátum výpisu alebo null","pohyby":[{"datum":"dátum pohybu","suma":"suma","smer":"prijem|vydaj","popis":"popis platby alebo null","nezrealizovany":false,"protistrana":"názov protistrany alebo null","protiucet":"účet protistrany alebo null","zostatok":"zostatok na účte po tomto pohybe alebo null","vs":"variabilný symbol alebo null","ks":"konštantný symbol alebo null","ss":"špecifický symbol alebo null"}]}`;
 
 /**
  * Strop dĺžky výpisu.
@@ -112,7 +121,12 @@ function odpovedNaJson(odpoved: string): { hodnota: unknown; zlyhalo: boolean } 
   }
 }
 
-type PrecitanyVypis = Vypis & { zdroj: "text" | "sken"; stran: number };
+type PrecitanyVypis = Vypis & {
+  zdroj: "text" | "sken";
+  stran: number;
+  /** Vyplnené, keď reťaz zostatkov nesedí — pravdepodobne chýba pohyb. */
+  varovanie?: string;
+};
 
 async function precitajVypis(data: {
   pdf?: string;
@@ -176,7 +190,7 @@ async function precitajVypis(data: {
         pozeral. Naraz sa ich ale púšťať nesmie koľkokoľvek: pri desiatich
         kusoch narazí OpenAI na strop požiadaviek za minútu.
       */
-      const kusy = rozdelVypis(text);
+      const kusy = rozdelVypis(rozlepStlpce(text));
       kusov = kusy.length;
       if (kusov > STROP_KUSOV) {
         throw new Error(
@@ -235,7 +249,18 @@ async function precitajVypis(data: {
           : "Vo výpise sa nenašiel ani jeden pohyb. Skontrolujte, či je to naozaj bankový výpis — a ak áno, pošlite nám ho, prosím.",
       );
     }
-    return { ...vypis, zdroj: maTextovuVrstvu ? "text" : "sken", stran };
+    /*
+      Zostatky sa kontrolujú až tu, nad zliatym výpisom: keď medzi dvoma
+      pohybmi nesedí zostatok, jeden riadok sa nenačítal. Čítanie sa preto
+      nezastaví — pohyby, ktoré máme, sú v poriadku — ale človek to musí
+      vedieť skôr, než výpis pošle do Pohody.
+    */
+    const kontrola = skontrolujZostatky(vypis.pohyby);
+    const varovanie = kontrola.medzier
+      ? `Zostatky na výpise nesedia na ${kontrola.medzier} ${kontrola.medzier === 1 ? "mieste" : "miestach"} (spolu ${kontrola.spolu.toFixed(2)} €). Pravdepodobne sa nejaký pohyb nenačítal — porovnajte riadky s výpisom, prosím.`
+      : undefined;
+
+    return { ...vypis, zdroj: maTextovuVrstvu ? "text" : "sken", stran, varovanie };
   }
 }
 

@@ -77,6 +77,7 @@ function VypisDoPohodyPage() {
   const [vyvazam, setVyvazam] = useState(false);
   const [chyba, setChyba] = useState<string | null>(null);
   const [zdroj, setZdroj] = useState<string | null>(null);
+  const [varovanie, setVarovanie] = useState<string | null>(null);
 
   const [cisloVypisu, setCisloVypisu] = useState("");
   const [datumVypisu, setDatumVypisu] = useState("");
@@ -126,6 +127,7 @@ function VypisDoPohodyPage() {
       setUcet(v.ucet);
       setMena(v.mena);
       setRiadky(v.pohyby.map((p: VypisPohyb) => ({ ...p, vyviezt: true })));
+      setVarovanie(v.varovanie ?? null);
       setZdroj(
         v.zdroj === "sken"
           ? `PDF nemá textovú vrstvu, čítalo sa z obrazu (${v.stran} str.) — prejdite riadky pozornejšie.`
@@ -133,6 +135,7 @@ function VypisDoPohodyPage() {
       );
     } catch (e: any) {
       setChyba(e?.message ?? "Výpis sa nepodarilo prečítať.");
+      setVarovanie(null);
       setRiadky([]);
     } finally {
       setNacitavam(false);
@@ -209,6 +212,11 @@ function VypisDoPohodyPage() {
               />
             </label>
             {zdroj && <p className="mt-3 text-xs text-muted-foreground">{zdroj}</p>}
+            {varovanie && (
+              <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+                {varovanie}
+              </p>
+            )}
             {chyba && <p className="mt-3 text-sm text-destructive">{chyba}</p>}
           </div>
 

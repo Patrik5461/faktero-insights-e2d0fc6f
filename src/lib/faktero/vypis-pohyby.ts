@@ -143,6 +143,14 @@ function text(v: unknown, max = 200): string | null {
   return s.slice(0, max);
 }
 
+/** Popis končí tam, kde začínajú štítky dopísané v `rozlepStlpce`. */
+function bezStlpcov(s: string | null): string | null {
+  if (!s) return null;
+  const i = s.search(/\s*\|\s*(?:suma|zostatok)\b/i);
+  const orezany = (i >= 0 ? s.slice(0, i) : s).trim();
+  return orezany || null;
+}
+
 function symbol(v: unknown, max: number): string | null {
   const s = String(v ?? "").replace(/\D/g, "");
   return s ? s.slice(0, max) : null;
@@ -175,13 +183,48 @@ export function protistranaZPopisu(popis: unknown): string | null {
   return s ? s.slice(0, 96) : null;
 }
 
+/*
+  ČSOB má v textovej vrstve stĺpce zlepené do jedného slova:
+  „31.07 Bonus 45,548,5331.07" je zostatok 45,54, suma 8,53 a valuta 31.07.
+  Model z toho raz prečíta 8,53 a inokedy 48,53 — a v Pohode ten rozdiel už
+  nikto neuvidí. Riadok tohto tvaru sa preto rozlepí ešte pred odoslaním.
+*/
+const ZLEPENY_RIADOK =
+  /^(\d{2}\.\d{2})\s+(.+?)\s*(-?\d[\d ]*,\d{2})(-?\d[\d ]*,\d{2})(\d{2}\.\d{2})\s*$/;
+
+/*
+  Valuta sa do rozlepeného riadka nedopisuje zámerne. Doklad má jeden dátum —
+  ten, ktorým banka pohyb zaúčtovala, a to je ten prvý v riadku. Keď tam valuta
+  bola, model si spomedzi dvoch dátumov vyberal a pohyby z 29. a 30. júla
+  skončili oba na 28.
+*/
+
+/** Rozlepenie stĺpcov v riadkoch, kde ich textová vrstva zliala do seba. */
+export function rozlepStlpce(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .map((r) => {
+      const m = ZLEPENY_RIADOK.exec(r);
+      // Čo tvar nemá, ostáva nedotknuté — iné banky si stĺpce oddeľujú samy.
+      return m ? `${m[1]} ${m[2]} | suma ${m[4]} | zostatok po transakcii ${m[3]}` : r;
+    })
+    .join("\n");
+}
+
 /** Jeden riadok výpisu. Vráti `null`, keď z neho nie je doklad — chýba dátum alebo suma. */
 export function normalizujPohyb(r: SurovyPohyb, hlavicka?: string | null): VypisPohyb | null {
+  /*
+    Platba, ktorá neprešla, na výpise je (SLSP jej dáva vlastnú časť
+    „Nezrealizované transakcie"), ale z účtu neodišla. Ako doklad by z nej
+    vznikla úhrada faktúry, ktorá sa nikdy nestala.
+  */
+  if (r.nezrealizovany === true || r.unrealized === true) return null;
+
   const datum = normalizujDatum(r.datum ?? r.date ?? r.datum_uctovania, hlavicka);
   const suma = normalizujSumu(r.suma ?? r.amount ?? r.ciastka);
   if (!datum || suma == null || suma === 0) return null;
 
-  const popis = text(r.popis ?? r.description ?? r.text, 200);
+  const popis = bezStlpcov(text(r.popis ?? r.description ?? r.text, 200));
 
   return {
     datum,
@@ -192,6 +235,7 @@ export function normalizujPohyb(r: SurovyPohyb, hlavicka?: string | null): Vypis
       text(r.protistrana ?? r.partner ?? r.counterparty ?? r.miesto ?? r.obchodnik, 96) ??
       protistranaZPopisu(popis),
     protiucet: text(r.protiucet ?? r.ucet ?? r.account, 40),
+    zostatok: normalizujSumu(r.zostatok ?? r.balance ?? r.zostatokPoTransakcii),
     vs: symbol(r.vs ?? r.variabilny_symbol ?? r.variableSymbol, 20),
     ks: symbol(r.ks ?? r.konstantny_symbol ?? r.constantSymbol, 4),
     ss: symbol(r.ss ?? r.specificky_symbol ?? r.specificSymbol, 16),
@@ -280,24 +324,51 @@ export function rozdelVypis(text: string, maxZnakov = 6000, hlavickaRiadkov = 6)
 /**
  * Zliatie výsledkov z jednotlivých kusov.
  *
- * Hlavička je v každom kuse tá istá, takže sa berie prvá vyplnená. Pohyby sa
- * spájajú a **zhodné sa zahadzujú** — hlavička sa kusom opakuje a model z nej
- * občas vyrobí pohyb druhýkrát.
+ * Hlavička je v každom kuse tá istá, takže sa berie prvá vyplnená.
+ *
+ * Pohyby sa spájajú **podľa počtu, nie podľa jedinečnosti**: z každého kusa sa
+ * vezme, koľkokrát sa ten istý pohyb v ňom vyskytol, a naprieč kusmi platí to
+ * najväčšie číslo. Zahadzovanie zhodných riadkov vyzeralo bezpečne, ale tri
+ * výbery po 4 000 € v jeden deň sú tri výbery — a z výpisu takto ticho zmizlo
+ * 14 000 €. Kus, ktorý sa čítal dvakrát (hlavička je v každom), pritom pridá
+ * nanajvýš toľko, koľko ich naozaj bolo.
  */
 export function zlejVypisy(casti: Vypis[]): Vypis {
   const prve = (vyber: (v: Vypis) => string | null) =>
     casti.map(vyber).find((x) => x != null && x !== "") ?? null;
 
-  const videne = new Set<string>();
+  const kluc = (p: VypisPohyb) =>
+    [p.datum, p.suma, p.smer, p.vs ?? "", p.popis ?? ""].join("|");
+
+  const najviac = new Map<string, number>();
+  for (const c of casti) {
+    const vKuse = new Map<string, number>();
+    for (const p of c.pohyby) {
+      const k = kluc(p);
+      vKuse.set(k, (vKuse.get(k) ?? 0) + 1);
+    }
+    for (const [k, kolko] of vKuse) {
+      if ((najviac.get(k) ?? 0) < kolko) najviac.set(k, kolko);
+    }
+  }
+
+  /*
+    Vypisuje sa v poradí, v akom pohyby prišli — nie po skupinách. Kontrola
+    zostatkov nižšie ide riadok po riadku a preskupené pohyby v rámci jedného
+    dňa by jej reťaz roztrhli.
+  */
+  const vydane = new Map<string, number>();
   const pohyby: VypisPohyb[] = [];
   for (const c of casti) {
     for (const p of c.pohyby) {
-      const kluc = [p.datum, p.suma, p.smer, p.vs ?? "", p.popis ?? ""].join("|");
-      if (videne.has(kluc)) continue;
-      videne.add(kluc);
+      const k = kluc(p);
+      const kolko = vydane.get(k) ?? 0;
+      if (kolko >= (najviac.get(k) ?? 0)) continue;
+      vydane.set(k, kolko + 1);
       pohyby.push(p);
     }
   }
+  // Triedenie je stabilné, takže poradie v rámci dňa ostáva zachované.
   pohyby.sort((a, b) => a.datum.localeCompare(b.datum));
 
   return {
@@ -308,4 +379,36 @@ export function zlejVypisy(casti: Vypis[]): Vypis {
       prve((v) => v.datumVypisu) ?? (pohyby.length ? pohyby[pohyby.length - 1].datum : null),
     pohyby,
   };
+}
+
+/**
+ * Kontrola reťaze zostatkov.
+ *
+ * Zostatok po pohybe je jediné miesto, kde výpis sám o sebe prezradí, že sa
+ * niektorý riadok nenačítal: keď medzi dvoma pohybmi nesedí, jeden chýba.
+ * Model to robí najmä tam, kde sa medzi riadkami zopakuje hlavička strany, a
+ * navonok to nevidno — v Pohode je o pohyb menej a nikto nevie o ktorý.
+ *
+ * Riadky bez zostatku sa preskakujú; kontrola je pomôcka, nie podmienka.
+ */
+export function skontrolujZostatky(pohyby: VypisPohyb[]): { medzier: number; spolu: number } {
+  let medzier = 0;
+  let spolu = 0;
+  let predchadzajuci: number | null = null;
+
+  for (const p of pohyby) {
+    const z = p.zostatok ?? null;
+    if (z != null && predchadzajuci != null) {
+      const so = p.smer === "vydaj" ? -p.suma : p.suma;
+      const rozdiel = z - (predchadzajuci + so);
+      // Halier tolerancie: zaokrúhľovanie pri prevode na desatinné číslo.
+      if (Math.abs(rozdiel) >= 0.015) {
+        medzier += 1;
+        spolu += Math.abs(rozdiel);
+      }
+    }
+    if (z != null) predchadzajuci = z;
+  }
+
+  return { medzier, spolu: Math.round(spolu * 100) / 100 };
 }

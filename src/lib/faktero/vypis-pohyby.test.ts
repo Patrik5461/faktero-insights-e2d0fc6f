@@ -8,6 +8,8 @@ import {
   normalizujSumu,
   normalizujVypis,
   protistranaZPopisu,
+  rozlepStlpce,
+  skontrolujZostatky,
 } from "./vypis-pohyby";
 
 describe("suma z výpisu", () => {
@@ -232,6 +234,70 @@ describe("delenie dlhého výpisu", () => {
   });
 });
 
+describe("zlepené stĺpce", () => {
+  it("rozdelí zostatok, sumu a valutu z jedného slova", () => {
+    expect(rozlepStlpce("31.07 Bonus 45,548,5331.07")).toBe(
+      "31.07 Bonus | suma 8,53 | zostatok po transakcii 45,54",
+    );
+    expect(rozlepStlpce("01.07 Odoslaná okamžitá platba 20 831,98-1 000,0001.07")).toBe(
+      "01.07 Odoslaná okamžitá platba | suma -1 000,00 | zostatok po transakcii 20 831,98",
+    );
+  });
+
+  it("riadok iného tvaru ostáva nedotknutý", () => {
+    const inak = "24.07.2026  28.07.2026  SEPA platba  14,00 EUR";
+    expect(rozlepStlpce(inak)).toBe(inak);
+    expect(rozlepStlpce("Karta: *8399 Miesto: BOLT.EU")).toBe("Karta: *8399 Miesto: BOLT.EU");
+  });
+
+  it("štítky sa do popisu pohybu nedostanú", () => {
+    const p = normalizujPohyb({
+      datum: "2026-07-31",
+      suma: "8,53",
+      popis: "Bonus | suma 8,53 | zostatok po transakcii 45,54",
+    });
+    expect(p?.popis).toBe("Bonus");
+  });
+});
+
+describe("platba, ktorá neprešla", () => {
+  it("z nezrealizovanej platby doklad nie je", () => {
+    const r = { datum: "2026-07-24", suma: "-14,00", popis: "SEPA platba trvalým príkazom" };
+    expect(normalizujPohyb(r)).not.toBeNull();
+    expect(normalizujPohyb({ ...r, nezrealizovany: true })).toBeNull();
+  });
+});
+
+describe("kontrola zostatkov", () => {
+  const pohyb = (suma: number, zostatok: number) => ({
+    datum: "2026-07-02",
+    suma: Math.abs(suma),
+    smer: suma < 0 ? ("vydaj" as const) : ("prijem" as const),
+    zostatok,
+  });
+
+  it("súvislá reťaz je bez medzery", () => {
+    expect(skontrolujZostatky([pohyb(-1000, 20831.98), pohyb(-4000, 16831.98)])).toEqual({
+      medzier: 0,
+      spolu: 0,
+    });
+  });
+
+  it("vynechaný pohyb sa prezradí aj so sumou", () => {
+    // Medzi nimi chýba výber 2 000.
+    expect(skontrolujZostatky([pohyb(-4000, 14831.98), pohyb(-4000, 8831.98)])).toEqual({
+      medzier: 1,
+      spolu: 2000,
+    });
+  });
+
+  it("riadky bez zostatku kontrolu nespustia", () => {
+    expect(skontrolujZostatky([pohyb(-1000, 20831.98), { ...pohyb(-4000, 0), zostatok: null }])).toEqual(
+      { medzier: 0, spolu: 0 },
+    );
+  });
+});
+
 describe("zlievanie kusov", () => {
   const kus = (cislo: string | null, pohyby: any[]) => ({
     cisloVypisu: cislo,
@@ -242,6 +308,18 @@ describe("zlievanie kusov", () => {
   });
   const a = { datum: "2026-02-01", suma: 10, smer: "prijem" as const, popis: "A", vs: null };
   const b = { datum: "2026-02-05", suma: 20, smer: "vydaj" as const, popis: "B", vs: null };
+
+  it("tri rovnaké výbery v jeden deň ostanú tri", () => {
+    const vyber = { datum: "2026-07-02", suma: 4000, smer: "vydaj" as const, popis: "Výber" };
+    const kus = { cisloVypisu: null, ucet: null, mena: null, datumVypisu: null };
+    // Ten istý kus prečítaný dvakrát nesmie počet zdvojiť ani znížiť.
+    expect(
+      zlejVypisy([
+        { ...kus, pohyby: [vyber, vyber, vyber] },
+        { ...kus, pohyby: [vyber, vyber, vyber] },
+      ]).pohyby.length,
+    ).toBe(3);
+  });
 
   it("zhodné pohyby sa nezdvojujú a zvyšok sa zoradí", () => {
     // Hlavička sa kusom opakuje a model z nej občas vyrobí pohyb druhýkrát.
