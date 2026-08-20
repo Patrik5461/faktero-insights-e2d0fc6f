@@ -37,12 +37,52 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+/*
+  Ako dlho smie prehliadač držať odpoveď.
+
+  Doteraz sme neposielali nič a prehliadač si potom hádal sám: HTML bez
+  `Cache-Control` a bez validátora si pokojne nechá aj hodiny. Lenže v HTML sú
+  názvy kúskov stránky s odtlačkom obsahu a tie po nasadení už neexistujú —
+  z uloženej kópie sa načíta stránka, ktorá si nemá odkiaľ dotiahnuť zvyšok.
+  Navonok to vyzerá tak, že sa stránka otvorí, ale tlačidlo sa len točí a nič
+  nenapíše; a obnovenie nepomôže, lebo príde tá istá uložená kópia.
+
+  HTML preto ide s `no-cache` — odložiť sa smie, ale zakaždým sa treba spýtať,
+  či ešte platí. Kúsky stránky naopak môžu ležať v pamäti rok: ich názov sa mení
+  s obsahom, takže sa nikdy nezmenia pod rukami.
+
+  Je to tu, a nie v middleware `startInstance`: cez tento súbor prejde **každá**
+  odpoveď vrátane statických súborov, ktoré si Nitro obsluhuje samo a k
+  middleware sa vôbec nedostanú.
+*/
+function sPlatnostou(request: Request, response: Response): Response {
+  const cesta = new URL(request.url).pathname;
+  const jeKusok = cesta.startsWith("/assets/") || cesta.startsWith("/_build/");
+  const jeHtml = (response.headers.get("content-type") ?? "").includes("text/html");
+  if (!jeKusok && !jeHtml) return response;
+
+  const hodnota = jeKusok ? "public, max-age=31536000, immutable" : "no-cache";
+  try {
+    response.headers.set("cache-control", hodnota);
+    return response;
+  } catch {
+    // Odpoveď z fetchu má hlavičky uzamknuté — vtedy sa poskladá nová.
+    const hlavicky = new Headers(response.headers);
+    hlavicky.set("cache-control", hodnota);
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: hlavicky,
+    });
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return sPlatnostou(request, await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
