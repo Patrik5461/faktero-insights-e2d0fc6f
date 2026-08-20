@@ -227,14 +227,45 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "vypis",
+    title: "Bankový výpis z banky do Pohody",
+    body: (
+      <>
+        <p>
+          <Link to="/uctovnictvo/vypis-do-pohody">Účtovníctvo → Bankový výpis do Pohody</Link> vezme
+          výpis stiahnutý z internetbankingu a vyrobí z neho súbor, ktorý POHODA načíta ako bankové
+          doklady.
+        </p>
+        <p>
+          <strong>Keď banka ponúka XML, nahrajte XML</strong> — v internetbankingu mu hovoria{" "}
+          <em>SEPA XML</em> alebo <em>camt.053</em>. Suma, variabilný symbol aj protistrana sú v ňom
+          vlastnými poľami, takže sa nič nerozpoznáva a nič sa nemôže prečítať zle; načíta sa hneď,
+          bez čakania. <strong>PDF</strong> zvládne tiež, aj naskenované, ale riadky z neho treba
+          prejsť očami.
+        </p>
+        <p>
+          Popis, protistranu aj symboly si viete pred vývozom prepísať — doklad potom v Pohode rovno
+          sedí a účtovník ho neopravuje. Odčiarknutý riadok sa nevyvezie.
+        </p>
+        <p>
+          Von idú dva súbory a každý patrí inam. <strong>SEPA XML (camt.053)</strong> do{" "}
+          <em>Banka → Načítanie výpisov</em>: Pohoda ho vezme ako výpis od banky a platby si spáruje
+          podľa variabilného symbolu. <strong>XML pre Pohodu</strong> je dávka dokladov do{" "}
+          <em>Súbor → Dátová komunikácia → XML import</em>. Keď sa zamenia, Pohoda odpovie jedinou
+          vetou — že súbor nezodpovedá stanovenej štruktúre formátu SEPA XML.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "co-nechodi",
     title: "Čo do Pohody zámerne nechodí",
     body: (
       <>
         <p>
-          <strong>Banka.</strong> Účtovníčka si výpis načíta priamo z banky (a Faktero jej vie
-          vyrobiť súbor camt.053), takže náš export by v Pohode vyrobil druhý komplet bankových
-          dokladov.
+          <strong>Banka.</strong> Účtovníčka si výpis načíta priamo z banky (a Faktero jej z neho
+          vie vyrobiť súbor pre Pohodu — sekcia vyššie), takže náš export by v Pohode vyrobil druhý
+          komplet bankových dokladov.
         </p>
         <p>
           <strong>Množstvá na skladovej karte.</strong> Karta ide bez stavu — ten v Pohode vzniká
