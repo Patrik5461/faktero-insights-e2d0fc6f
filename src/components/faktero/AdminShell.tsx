@@ -15,6 +15,7 @@ import {
   HeartPulse,
   Wallet,
   Search,
+  Handshake,
   Receipt,
 } from "lucide-react";
 
@@ -31,6 +32,7 @@ const NAV = [
   { to: "/admin/audit-log", label: "Audit log", icon: ScrollText },
   { to: "/admin/legal", label: "Právne dokumenty", icon: FileText },
   { to: "/admin/seo", label: "SEO", icon: Search },
+  { to: "/admin/partneri", label: "Partneri", icon: Handshake },
 ];
 
 function isActive(pathname: string, to: string, exact?: boolean) {

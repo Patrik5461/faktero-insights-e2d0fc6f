@@ -52,6 +52,7 @@ import { Route as AdminGopayRouteImport } from './routes/admin.gopay'
 import { Route as AdminHealthRouteImport } from './routes/admin.health'
 import { Route as AdminIntegrationsRouteImport } from './routes/admin.integrations'
 import { Route as AdminLegalRouteImport } from './routes/admin.legal'
+import { Route as AdminPartneriRouteImport } from './routes/admin.partneri'
 import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.payment-providers'
 import { Route as AdminPlatformInvoicesRouteImport } from './routes/admin.platform-invoices'
 import { Route as AdminSeoRouteImport } from './routes/admin.seo'
@@ -467,6 +468,11 @@ const AdminIntegrationsRoute = AdminIntegrationsRouteImport.update({
 const AdminLegalRoute = AdminLegalRouteImport.update({
   id: '/legal',
   path: '/legal',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPartneriRoute = AdminPartneriRouteImport.update({
+  id: '/partneri',
+  path: '/partneri',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPaymentProvidersRoute = AdminPaymentProvidersRouteImport.update({
@@ -1593,6 +1599,7 @@ export interface FileRoutesByFullPath {
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
+  '/admin/partneri': typeof AdminPartneriRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
@@ -1826,6 +1833,7 @@ export interface FileRoutesByTo {
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
+  '/admin/partneri': typeof AdminPartneriRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
@@ -2068,6 +2076,7 @@ export interface FileRoutesById {
   '/admin/health': typeof AdminHealthRoute
   '/admin/integrations': typeof AdminIntegrationsRoute
   '/admin/legal': typeof AdminLegalRoute
+  '/admin/partneri': typeof AdminPartneriRoute
   '/admin/payment-providers': typeof AdminPaymentProvidersRoute
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
@@ -2311,6 +2320,7 @@ export interface FileRouteTypes {
     | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
+    | '/admin/partneri'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
     | '/admin/seo'
@@ -2544,6 +2554,7 @@ export interface FileRouteTypes {
     | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
+    | '/admin/partneri'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
     | '/admin/seo'
@@ -2785,6 +2796,7 @@ export interface FileRouteTypes {
     | '/admin/health'
     | '/admin/integrations'
     | '/admin/legal'
+    | '/admin/partneri'
     | '/admin/payment-providers'
     | '/admin/platform-invoices'
     | '/admin/seo'
@@ -3387,6 +3399,13 @@ declare module '@tanstack/react-router' {
       path: '/legal'
       fullPath: '/admin/legal'
       preLoaderRoute: typeof AdminLegalRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/partneri': {
+      id: '/admin/partneri'
+      path: '/partneri'
+      fullPath: '/admin/partneri'
+      preLoaderRoute: typeof AdminPartneriRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/payment-providers': {
@@ -5044,6 +5063,7 @@ interface AdminRouteChildren {
   AdminHealthRoute: typeof AdminHealthRoute
   AdminIntegrationsRoute: typeof AdminIntegrationsRoute
   AdminLegalRoute: typeof AdminLegalRoute
+  AdminPartneriRoute: typeof AdminPartneriRoute
   AdminPaymentProvidersRoute: typeof AdminPaymentProvidersRoute
   AdminPlatformInvoicesRoute: typeof AdminPlatformInvoicesRoute
   AdminSeoRoute: typeof AdminSeoRoute
@@ -5062,6 +5082,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminHealthRoute: AdminHealthRoute,
   AdminIntegrationsRoute: AdminIntegrationsRoute,
   AdminLegalRoute: AdminLegalRoute,
+  AdminPartneriRoute: AdminPartneriRoute,
   AdminPaymentProvidersRoute: AdminPaymentProvidersRoute,
   AdminPlatformInvoicesRoute: AdminPlatformInvoicesRoute,
   AdminSeoRoute: AdminSeoRoute,

@@ -55,8 +55,23 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { track } from "@/lib/faktero/track";
+import { PartneriPas } from "@/components/faktero/PartneriPas";
+import { zoznamPartnerovPublic } from "@/lib/partneri.functions";
 
 export const Route = createFileRoute("/")({
+  /*
+    Partneri sa načítajú pri vykresľovaní stránky, nie až v prehliadači —
+    hlavná stránka sa vykresľuje na serveri a pás, ktorý dobehne až potom, by
+    obsah poskakoval. Keď načítanie zlyhá, sekcia sa jednoducho nevykreslí;
+    kvôli zoznamu partnerov nemá padnúť celá stránka.
+  */
+  loader: async () => {
+    try {
+      return { partneri: await zoznamPartnerovPublic() };
+    } catch {
+      return { partneri: [] };
+    }
+  },
   head: () => ({
     meta: [
       { title: "Faktero — Fakturácia pre moderné firmy. API a eFaktúra v jednom." },
@@ -328,6 +343,7 @@ function Landing() {
       <main>
         <Hero />
         <TrustRow />
+        <PartneriSection />
         <ScreenshotShowcase />
         <HowItWorks />
         <FeatureGrid />
@@ -688,6 +704,12 @@ function MiniApiStatusCard() {
 /* -------------------------------------------------------------------------- */
 /* Trust row                                                                  */
 /* -------------------------------------------------------------------------- */
+
+/** Pás partnerov. Čo je v ňom, spravuje admin v Nastaveniach → Partneri. */
+function PartneriSection() {
+  const { partneri } = Route.useLoaderData();
+  return <PartneriPas partneri={partneri} />;
+}
 
 function TrustRow() {
   return (

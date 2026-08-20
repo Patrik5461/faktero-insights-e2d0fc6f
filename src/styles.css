@@ -274,3 +274,39 @@
   height: 22px !important;
   width: 22px !important;
 }
+
+/*
+ * Pás partnerov na hlavnej stránke.
+ *
+ * Zoznam sa vykresľuje dvakrát za sebou a posúva sa presne o polovicu — v tom
+ * okamihu vyzerá druhá kópia rovnako ako prvá na začiatku, takže sa animácia
+ * môže vrátiť na nulu a nikto si toho nevšimne. Bez tej druhej kópie by pás na
+ * konci preskočil.
+ *
+ * Rýchlosť si nastavuje komponent cez `--pas-trvanie` podľa počtu partnerov,
+ * aby pás nešiel s pribúdajúcimi menami rýchlejšie.
+ */
+@keyframes faktero-pas {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.faktero-pas {
+  animation: faktero-pas var(--pas-trvanie, 40s) linear infinite;
+}
+
+/* Pri prechode myšou pás zastane — nech sa dá logo prečítať aj kliknúť naň. */
+.faktero-pas-obal:hover .faktero-pas {
+  animation-play-state: paused;
+}
+
+/* Kto má v systéme vypnuté animácie, dostane obyčajný zoznam. */
+@media (prefers-reduced-motion: reduce) {
+  .faktero-pas {
+    animation: none;
+  }
+}
