@@ -11,6 +11,7 @@ import {
   rozlepStlpce,
   skontrolujZostatky,
   zostatkyVypisu,
+  zostatkyNaExport,
   poradieVypisu,
 } from "./vypis-pohyby";
 
@@ -318,6 +319,24 @@ describe("zostatky výpisu", () => {
   it("bez zostatkov sa nič nevymýšľa", () => {
     expect(zostatkyVypisu([p(-1000, null), p(-4000, null)])).toBeNull();
     expect(zostatkyVypisu([])).toBeNull();
+  });
+
+  it("na vývoz sa konečný zostatok dopočíta z vyvezených pohybov", () => {
+    // Celý výpis: vyjde to isté, čo hovorí banka.
+    expect(zostatkyNaExport([p(-1000, 20831.98), p(-4000, 16831.98)])).toEqual({
+      pociatocny: 21831.98,
+      konecny: 16831.98,
+    });
+
+    /*
+      Keď človek druhý pohyb odčiarkne, konečný zostatok banky by v súbore
+      nesedel s jeho vlastnými riadkami — camt musí sedieť sám so sebou.
+    */
+    expect(zostatkyNaExport([p(-1000, 20831.98)])).toEqual({
+      pociatocny: 21831.98,
+      konecny: 20831.98,
+    });
+    expect(zostatkyNaExport([])).toBeNull();
   });
 
   it("preskočí riadky, pri ktorých zostatok chýba", () => {

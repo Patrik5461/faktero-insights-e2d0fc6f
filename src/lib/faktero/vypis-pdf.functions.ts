@@ -6,7 +6,7 @@ import {
   rozdelVypis,
   rozlepStlpce,
   skontrolujZostatky,
-  zostatkyVypisu,
+  zostatkyNaExport,
   poradieVypisu,
   zlejVypisy,
   type Vypis,
@@ -423,7 +423,7 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
       const { buildCamt053 } = await import("./bank-statements-own.server");
       const c = company as Record<string, string | null>;
       const zoradene = [...data.pohyby].sort((a, b) => a.datum.localeCompare(b.datum));
-      const zostatky = zostatkyVypisu(zoradene);
+      const zostatky = zostatkyNaExport(zoradene);
       const mena = data.mena || (c.default_currency ?? "EUR");
 
       const obsah = buildCamt053({
@@ -457,6 +457,8 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
         /*
           Bez zostatkov ide do výpisu nula. Vymyslieť ich sa nedá a Pohoda ich
           v camt.053 vyžaduje; človek to uvidí na obrazovke ako upozornenie.
+          Konečný zostatok sa dopočítava z vyvezených pohybov — viď
+          `zostatkyNaExport`.
         */
         opening: zostatky?.pociatocny ?? 0,
         closing: zostatky?.konecny ?? 0,

@@ -446,6 +446,25 @@ export function zostatkyVypisu(
 }
 
 /**
+ * Zostatky pre vývoz do camt.053.
+ *
+ * Počiatočný je z výpisu, **konečný sa dopočíta z vyvezených pohybov**. Keď je
+ * vyvezené všetko, vyjde to isté číslo, aké má výpis od banky. Keď človek
+ * niektorý pohyb odčiarkne, už nie — a to je zámer: súbor musí sedieť sám so
+ * sebou (počiatočný + obraty = konečný), inak ho účtovný program odmietne
+ * alebo si doň zapíše zostatok, ktorý z jeho vlastných riadkov nevychádza.
+ */
+export function zostatkyNaExport(
+  pohyby: VypisPohyb[],
+): { pociatocny: number; konecny: number } | null {
+  const z = zostatkyVypisu(pohyby);
+  if (!z) return null;
+
+  const obrat = pohyby.reduce((s, p) => s + (p.smer === "vydaj" ? -p.suma : p.suma), 0);
+  return { pociatocny: z.pociatocny, konecny: Math.round((z.pociatocny + obrat) * 100) / 100 };
+}
+
+/**
  * Poradové číslo výpisu z toho, ako ho píše papier.
  *
  * Banky ho spájajú s rokom a každá inak: ČSOB píše `2026/7`, SLSP `7/2026`.

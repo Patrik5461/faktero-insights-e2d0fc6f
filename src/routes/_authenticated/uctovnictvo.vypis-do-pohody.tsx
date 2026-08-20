@@ -143,6 +143,19 @@ function VypisDoPohodyPage() {
       });
   }, [cid]);
 
+  /*
+    Prevodník si nič neukladá — obnovenie stránky prejdené riadky zahodí. Kým
+    je na obrazovke rozpracovaný výpis, prehliadač sa preto spýta; pri
+    štyridsiatich ručne opravených riadkoch je to rozdiel medzi „ups" a hodinou
+    práce. Vnútri aplikácie sa to nespúšťa, len pri obnovení či zatvorení okna.
+  */
+  useEffect(() => {
+    if (!riadky.length) return;
+    const opytajSa = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", opytajSa);
+    return () => window.removeEventListener("beforeunload", opytajSa);
+  }, [riadky.length]);
+
   /** Mapa bez prázdnych hodnôt; prázdna mapa je `null`. */
   function ocisti(m: Nastavenia["predkontacie"]): Record<string, string> | null {
     const z = Object.entries(m)
@@ -629,6 +642,13 @@ function VypisDoPohodyPage() {
                   že súbor nezodpovedá stanovenej štruktúre formátu SEPA XML.{" "}
                   <strong>Označenie platby</strong> ide do Pohody ako poznámka dokladu a do SEPA XML
                   ako účel platby (<code>Purp</code>).
+                  {vybrane.length < riadky.length && maZostatky && (
+                    <>
+                      {" "}
+                      Vynechané pohyby menia zostatok: konečný zostatok v SEPA XML sa dopočíta z
+                      vyvezených pohybov, takže nebude sedieť s výpisom od banky.
+                    </>
+                  )}
                   {!maZostatky && (
                     <>
                       {" "}
