@@ -318,7 +318,7 @@ function VypisDoPohodyPage() {
               </div>
 
               <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card">
-                <table className="w-full min-w-[900px] text-sm">
+                <table className="w-full min-w-[1180px] text-sm">
                   <thead className="border-b border-border/70 text-left text-xs text-muted-foreground">
                     <tr>
                       <th className="p-2"></th>
@@ -359,7 +359,7 @@ function VypisDoPohodyPage() {
                         </td>
                         <td className="p-2">
                           <select
-                            className={vstup}
+                            className={`${vstup} min-w-[100px]`}
                             value={r.smer}
                             onChange={(e) =>
                               uprav(i, { smer: e.target.value as VypisPohyb["smer"] })
