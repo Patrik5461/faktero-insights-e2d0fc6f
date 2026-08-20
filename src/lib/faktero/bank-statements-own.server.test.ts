@@ -119,6 +119,27 @@ describe("buildCamt053", () => {
     expect(buildCamt053(input())).toContain("<AddtlStmtInf>Tento výpis zostavilo Faktero");
   });
 
+  it("IBAN ide bez medzier, aj keď príde po štvoriciach", () => {
+    const i = input();
+    const xml = buildCamt053({
+      ...i,
+      account: { ...i.account, iban: "SK03 7500 0000 0040 3280 9427" },
+    });
+    expect(xml).toContain("<IBAN>SK0375000000004032809427</IBAN>");
+    expect(xml).not.toContain("SK03 7500");
+  });
+
+  it("poznámku aj poradové číslo si volá ten, kto výpis zostavuje", () => {
+    const xml = buildCamt053({ ...input(), note: "Prepis PDF výpisu z banky.", sequenceNumber: 7 });
+    expect(xml).toContain("<AddtlStmtInf>Prepis PDF výpisu z banky.</AddtlStmtInf>");
+    expect(xml).not.toContain("Tento výpis zostavilo Faktero");
+    expect(xml).toContain("<ElctrncSeqNb>7</ElctrncSeqNb>");
+  });
+
+  it("bez poradového čísla ostáva nula", () => {
+    expect(buildCamt053(input())).toContain("<ElctrncSeqNb>0</ElctrncSeqNb>");
+  });
+
   it("neprepustí do XML nebezpečné znaky", () => {
     const xml = buildCamt053(input({ transactions: [tx({ description: 'A & B <"x">' })] }));
     expect(xml).toContain("<Ustrd>A &amp; B &lt;&quot;x&quot;&gt;</Ustrd>");

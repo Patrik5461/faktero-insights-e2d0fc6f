@@ -166,8 +166,7 @@ const ZA_STITKOM =
   /(?:^|[\n;,]|\s)(?:miesto|obchodn[ií]k|termin[áa]l|predajca|merchant|location)\s*[:–-]\s*([^\n;]+)/i;
 
 /** Ďalší stĺpec či štítok názov ukončuje — inak by sa doň zliala suma aj kurz. */
-const KONIEC_NAZVU =
-  /\s{2,}|\s(?:d[áa]tum|suma|[čc]iastka|kurz|karta|ref|vs|ks|ss|iban)\s*[:–-]/i;
+const KONIEC_NAZVU = /\s{2,}|\s(?:d[áa]tum|suma|[čc]iastka|kurz|karta|ref|vs|ks|ss|iban)\s*[:–-]/i;
 
 /**
  * Protistrana vytiahnutá z popisu, keď ju výpis ako pole neuvádza.
@@ -337,8 +336,7 @@ export function zlejVypisy(casti: Vypis[]): Vypis {
   const prve = (vyber: (v: Vypis) => string | null) =>
     casti.map(vyber).find((x) => x != null && x !== "") ?? null;
 
-  const kluc = (p: VypisPohyb) =>
-    [p.datum, p.suma, p.smer, p.vs ?? "", p.popis ?? ""].join("|");
+  const kluc = (p: VypisPohyb) => [p.datum, p.suma, p.smer, p.vs ?? "", p.popis ?? ""].join("|");
 
   const najviac = new Map<string, number>();
   for (const c of casti) {
@@ -411,4 +409,45 @@ export function skontrolujZostatky(pohyby: VypisPohyb[]): { medzier: number; spo
   }
 
   return { medzier, spolu: Math.round(spolu * 100) / 100 };
+}
+
+/**
+ * Počiatočný a konečný zostatok výpisu.
+ *
+ * Do camt.053 patria obidva a v PDF výpise sú v hlavičke, kam sa rozpoznávanie
+ * nedostane. Dopočítať sa ale dajú zo zostatkov pri pohyboch: konečný je ten
+ * pri poslednom pohybe, počiatočný je ten pri prvom mínus jeho suma. Keď
+ * zostatky nemáme, vracia sa `null` — vymyslený zostatok je horší než žiadny,
+ * lebo v účtovníctve vyzerá ako fakt.
+ */
+export function zostatkyVypisu(
+  pohyby: VypisPohyb[],
+): { pociatocny: number; konecny: number } | null {
+  const prvy = pohyby.find((p) => p.zostatok != null);
+  const posledny = [...pohyby].reverse().find((p) => p.zostatok != null);
+  if (!prvy || !posledny) return null;
+
+  const so = prvy.smer === "vydaj" ? -prvy.suma : prvy.suma;
+  return {
+    pociatocny: Math.round(((prvy.zostatok as number) - so) * 100) / 100,
+    konecny: posledny.zostatok as number,
+  };
+}
+
+/**
+ * Poradové číslo výpisu z toho, ako ho píše papier.
+ *
+ * Banky ho spájajú s rokom a každá inak: ČSOB píše `2026/7`, SLSP `7/2026`.
+ * Holé odstránenie nečíslic by z toho urobilo výpis číslo 20267.
+ */
+export function poradieVypisu(cislo: unknown): number | null {
+  const casti = String(cislo ?? "")
+    .split(/\D+/)
+    .filter(Boolean);
+  if (!casti.length) return null;
+
+  const jeRok = (c: string) => c.length === 4 && Number(c) >= 1900 && Number(c) <= 2999;
+  const bezRoku = casti.filter((c) => !jeRok(c));
+  const vybrane = Number(bezRoku[0] ?? casti[casti.length - 1]);
+  return Number.isFinite(vybrane) && vybrane > 0 ? vybrane : null;
 }

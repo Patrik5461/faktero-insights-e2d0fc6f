@@ -56,6 +56,14 @@ export type OwnStatementInput = {
   closing: number;
   /** Pevný čas vzniku dokumentu; vlastný parameter kvôli testovateľnosti. */
   createdAt?: string;
+  /**
+   * Poznámka na výpise. Vlastné mesačné výpisy musia povedať, že ich nevydala
+   * banka; výpis prepísaný z PDF je opačný prípad — vydala ho banka a človek
+   * ho len prepísal, takže si žiada vlastnú vetu.
+   */
+  note?: string | null;
+  /** Poradové číslo výpisu z papiera. Bez neho ide do `ElctrncSeqNb` nula. */
+  sequenceNumber?: number | null;
 };
 
 /* ------------------------------------------------------------------ výpočty */
@@ -161,7 +169,12 @@ export function buildCamt053(input: OwnStatementInput): string {
   const { company, account, periodStart, periodEnd, transactions } = input;
   const ccy = account.currency || "EUR";
   const created = input.createdAt ?? new Date().toISOString();
-  const iban = account.iban ?? "";
+  /*
+    IBAN ide do camt.053 bez medzier — schéma ich nepripúšťa a program, ktorý
+    výpis načíta, by účet nespároval. Z výpisu aj z papiera pritom chodí
+    zapísaný po štvoriciach.
+  */
+  const iban = (account.iban ?? "").replace(/\s+/g, "").toUpperCase();
   const msgId = `FAKTERO-${iban || "UCET"}-${periodStart.slice(0, 7).replace("-", "")}`;
 
   const net = cents(input.closing - input.opening);
@@ -184,7 +197,7 @@ export function buildCamt053(input: OwnStatementInput): string {
     `<MsgRcpt>${tag("Nm", company.name)}</MsgRcpt></GrpHdr>` +
     "<Stmt>" +
     tag("Id", `${iban || "UCET"}-FAKTERO-${periodStart.slice(0, 7).replace("-", "")}`) +
-    "<ElctrncSeqNb>0</ElctrncSeqNb>" +
+    `<ElctrncSeqNb>${Number(input.sequenceNumber) > 0 ? Math.trunc(Number(input.sequenceNumber)) : 0}</ElctrncSeqNb>` +
     `<CreDtTm>${created}</CreDtTm>` +
     `<FrToDt><FrDtTm>${periodStart}T00:00:00</FrDtTm><ToDtTm>${periodEnd}T23:59:59</ToDtTm></FrToDt>` +
     "<Acct><Id>" +
@@ -201,7 +214,7 @@ export function buildCamt053(input: OwnStatementInput): string {
     `<TtlDbtNtries><NbOfNtries>${transactions.filter((t) => t.amount < 0).length}</NbOfNtries><Sum>${debits.toFixed(2)}</Sum></TtlDbtNtries>` +
     "</TxsSummry>" +
     transactions.map((t) => entry(t, ccy)).join("") +
-    tag("AddtlStmtInf", DISCLAIMER) +
+    tag("AddtlStmtInf", input.note === undefined ? DISCLAIMER : input.note) +
     "</Stmt></BkToCstmrStmt></Document>"
   );
 }

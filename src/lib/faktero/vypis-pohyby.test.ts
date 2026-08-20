@@ -10,6 +10,8 @@ import {
   protistranaZPopisu,
   rozlepStlpce,
   skontrolujZostatky,
+  zostatkyVypisu,
+  poradieVypisu,
 } from "./vypis-pohyby";
 
 describe("suma z výpisu", () => {
@@ -295,6 +297,49 @@ describe("kontrola zostatkov", () => {
     expect(skontrolujZostatky([pohyb(-1000, 20831.98), { ...pohyb(-4000, 0), zostatok: null }])).toEqual(
       { medzier: 0, spolu: 0 },
     );
+  });
+});
+
+describe("zostatky výpisu", () => {
+  const p = (suma: number, zostatok: number | null) => ({
+    datum: "2026-07-02",
+    suma: Math.abs(suma),
+    smer: suma < 0 ? ("vydaj" as const) : ("prijem" as const),
+    zostatok,
+  });
+
+  it("počiatočný sa dopočíta z prvého pohybu, konečný je posledný", () => {
+    expect(zostatkyVypisu([p(-1000, 20831.98), p(-4000, 16831.98)])).toEqual({
+      pociatocny: 21831.98,
+      konecny: 16831.98,
+    });
+  });
+
+  it("bez zostatkov sa nič nevymýšľa", () => {
+    expect(zostatkyVypisu([p(-1000, null), p(-4000, null)])).toBeNull();
+    expect(zostatkyVypisu([])).toBeNull();
+  });
+
+  it("preskočí riadky, pri ktorých zostatok chýba", () => {
+    expect(zostatkyVypisu([p(-1000, null), p(-1000, 100), p(500, null)])).toEqual({
+      pociatocny: 1100,
+      konecny: 100,
+    });
+  });
+});
+
+describe("poradové číslo výpisu", () => {
+  it("rok z čísla vyhodí, nech ho v obidvoch poradiach píšu akokoľvek", () => {
+    expect(poradieVypisu("2026/7")).toBe(7); // ČSOB
+    expect(poradieVypisu("7/2026")).toBe(7); // SLSP
+    expect(poradieVypisu("č. 7/2026")).toBe(7);
+    expect(poradieVypisu("8")).toBe(8);
+  });
+
+  it("bez čísla nič nevymýšľa", () => {
+    expect(poradieVypisu(null)).toBeNull();
+    expect(poradieVypisu("výpis")).toBeNull();
+    expect(poradieVypisu("0")).toBeNull();
   });
 });
 

@@ -74,7 +74,7 @@ function VypisDoPohodyPage() {
 
   const cid = useMemo(() => getActiveCompanyId(), []);
   const [nacitavam, setNacitavam] = useState(false);
-  const [vyvazam, setVyvazam] = useState(false);
+  const [vyvazam, setVyvazam] = useState<"pohoda" | "sepa" | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
   const [zdroj, setZdroj] = useState<string | null>(null);
   const [varovanie, setVarovanie] = useState<string | null>(null);
@@ -147,13 +147,15 @@ function VypisDoPohodyPage() {
   }
 
   const vybrane = riadky.filter((r) => r.vyviezt);
+  // Bez zostatkov sa camt.053 zostaviť dá, ale s nulovými zostatkami účtu.
+  const maZostatky = vybrane.some((r) => r.zostatok != null);
   const prijmy = vybrane.filter((r) => r.smer === "prijem").reduce((s, r) => s + r.suma, 0);
   const vydaje = vybrane.filter((r) => r.smer === "vydaj").reduce((s, r) => s + r.suma, 0);
 
-  async function stiahni() {
+  async function stiahni(format: "pohoda" | "sepa") {
     if (!cid) return setChyba("Najprv vyberte firmu.");
     setChyba(null);
-    setVyvazam(true);
+    setVyvazam(format);
     try {
       const r = await doXml({
         data: {
@@ -164,6 +166,9 @@ function VypisDoPohodyPage() {
           datumVypisu: datumVypisu || null,
           banka: nastavenia.banka || null,
           predkontacia: nastavenia.predkontacia || null,
+          ucet,
+          mena,
+          format,
         },
       });
       const blob = new Blob([r.content], { type: "application/xml;charset=utf-8" });
@@ -176,7 +181,7 @@ function VypisDoPohodyPage() {
     } catch (e: any) {
       setChyba(e?.message ?? "XML sa nepodarilo vyrobiť.");
     } finally {
-      setVyvazam(false);
+      setVyvazam(null);
     }
   }
 
@@ -386,18 +391,46 @@ function VypisDoPohodyPage() {
                     <Trash2 className="h-4 w-4" /> Zahodiť
                   </button>
                   <button
-                    onClick={() => void stiahni()}
-                    disabled={vyvazam || !vybrane.length}
-                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                    onClick={() => void stiahni("sepa")}
+                    disabled={!!vyvazam || !vybrane.length}
+                    title="Banka → Načítanie výpisov (homebanking, formát SEPA XML)"
+                    className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm disabled:opacity-50"
                   >
-                    {vyvazam ? (
+                    {vyvazam === "sepa" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Download className="h-4 w-4" />
                     )}
-                    Stiahnuť XML pre Pohodu
+                    SEPA XML (camt.053)
+                  </button>
+                  <button
+                    onClick={() => void stiahni("pohoda")}
+                    disabled={!!vyvazam || !vybrane.length}
+                    title="Súbor → Dátová komunikácia → XML import"
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  >
+                    {vyvazam === "pohoda" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    XML pre Pohodu
                   </button>
                 </div>
+                <p className="w-full text-xs text-muted-foreground">
+                  <strong>SEPA XML (camt.053)</strong> patrí do <em>Banka → Načítanie výpisov</em> —
+                  Pohoda ho vezme ako výpis od banky a platby si spáruje podľa variabilného symbolu.{" "}
+                  <strong>XML pre Pohodu</strong> je dávka dokladov do{" "}
+                  <em>Súbor → Dátová komunikácia → XML import</em>. Keď sa zamenia, Pohoda odpovie,
+                  že súbor nezodpovedá stanovenej štruktúre formátu SEPA XML.
+                  {!maZostatky && (
+                    <>
+                      {" "}
+                      Pozor: tento výpis nemá pri pohyboch zostatky, takže v SEPA XML budú
+                      počiatočný aj konečný zostatok nulové — dopíšte ich v Pohode.
+                    </>
+                  )}
+                </p>
               </div>
             </>
           )}

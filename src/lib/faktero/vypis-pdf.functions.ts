@@ -5,6 +5,8 @@ import {
   rozdelVypis,
   rozlepStlpce,
   skontrolujZostatky,
+  zostatkyVypisu,
+  poradieVypisu,
   zlejVypisy,
   type Vypis,
   type VypisPohyb,
@@ -360,6 +362,11 @@ export const stavCitaniaVypisuFn = createServerFn({ method: "POST" })
  * predkontácia sa pýtajú na obrazovke — hovoria, do ktorého účtu v Pohode
  * výpis patrí, a to je vec toho konkrétneho výpisu, nie firmy.
  */
+/** `/VS1234/SS5/KS0308` — zápis symbolov, aký do textu platby dávajú banky. */
+function symbolyDoTextu(p: VypisPohyb): string {
+  return [p.vs ? `/VS${p.vs}` : "", p.ss ? `/SS${p.ss}` : "", p.ks ? `/KS${p.ks}` : ""].join("");
+}
+
 export const vypisDoPohodyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(
@@ -370,6 +377,15 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
       datumVypisu?: string | null;
       banka?: string | null;
       predkontacia?: string | null;
+      ucet?: string | null;
+      mena?: string | null;
+      /*
+        Dva formáty, dva rôzne dialógy v Pohode. `pohoda` je dávka do
+        *Súbor → Dátová komunikácia → XML import*; `sepa` je camt.053 do
+        *Banka → Načítanie výpisov*, kde Pohoda čaká výpis od banky a na dávku
+        odpovie „XML nezodpovedá stanovenej štruktúre formátu SEPA XML".
+      */
+      format?: "pohoda" | "sepa";
     }) => input,
   )
   .handler(async ({ data, context }): Promise<{ fileName: string; content: string }> => {
@@ -394,11 +410,60 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
 
     const { data: company, error } = await supabaseAdmin
       .from("companies")
-      .select("ico, default_currency")
+      .select("name, ico, street, zip, city, country, default_currency")
       .eq("id", data.company_id)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!company) throw new Error("Firma sa nenašla.");
+
+    if (data.format === "sepa") {
+      const { buildCamt053 } = await import("./bank-statements-own.server");
+      const c = company as Record<string, string | null>;
+      const zoradene = [...data.pohyby].sort((a, b) => a.datum.localeCompare(b.datum));
+      const zostatky = zostatkyVypisu(zoradene);
+      const mena = data.mena || (c.default_currency ?? "EUR");
+
+      const obsah = buildCamt053({
+        company: {
+          name: c.name ?? "",
+          ico: c.ico,
+          street: c.street,
+          zip: c.zip,
+          city: c.city,
+          country: c.country,
+        },
+        account: { iban: data.ucet ?? null, account_name: null, currency: mena },
+        periodStart: zoradene[0].datum,
+        periodEnd: zoradene[zoradene.length - 1].datum,
+        transactions: zoradene.map((p) => ({
+          booking_date: p.datum,
+          amount: p.smer === "vydaj" ? -p.suma : p.suma,
+          currency: mena,
+          variable_symbol: p.vs ?? null,
+          counterparty: p.protistrana ?? null,
+          /*
+            camt.053 má pre symbol jediné pole (`EndToEndId`), takže konštantný
+            a špecifický by sa stratili. Slovenské banky ich píšu do textu
+            platby ako `/VS1234/SS5/KS0308` a účtovné programy ich odtiaľ
+            čítajú — ide to teda tou istou cestou.
+          */
+          description: [p.popis, symbolyDoTextu(p)].filter(Boolean).join(" ") || null,
+          transaction_reference: null,
+        })),
+        /*
+          Bez zostatkov ide do výpisu nula. Vymyslieť ich sa nedá a Pohoda ich
+          v camt.053 vyžaduje; človek to uvidí na obrazovke ako upozornenie.
+        */
+        opening: zostatky?.pociatocny ?? 0,
+        closing: zostatky?.konecny ?? 0,
+        sequenceNumber: poradieVypisu(data.cisloVypisu),
+        note: "Prepis PDF výpisu z banky, zostavilo Faktero.",
+      });
+
+      const znackaSepa =
+        (data.cisloVypisu ?? data.datumVypisu ?? "").replace(/[^\w-]/g, "") || "vypis";
+      return { fileName: `sepa-vypis-${znackaSepa}.xml`, content: obsah };
+    }
 
     const { buildPohodaBankXml } = await import("./export.server");
     const content = buildPohodaBankXml({
