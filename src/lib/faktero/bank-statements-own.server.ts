@@ -121,9 +121,28 @@ export function escapeXml(s: string): string {
   );
 }
 
-function tag(name: string, value: string | null | undefined): string {
+/*
+  Schéma camt.053 má na väčšine textových polí hornú hranicu dĺžky a prekročiť
+  ju znamená neplatný súbor — POHODA na taký odpovie, že „nezodpovedá stanovenej
+  štruktúre formátu SEPA XML", a viac nepovie. Dĺžka sa preto oreže tu, na
+  jednom mieste, nie pri každom volaní.
+*/
+function tag(name: string, value: string | null | undefined, max = 140): string {
   if (value === null || value === undefined || value === "") return "";
-  return `<${name}>${escapeXml(String(value))}</${name}>`;
+  return `<${name}>${escapeXml(String(value).slice(0, max))}</${name}>`;
+}
+
+/** Identifikátor smie mať 35 znakov. Orezáva sa zľava — koniec nesie obdobie. */
+function id35(s: string): string {
+  return s.length <= 35 ? s : s.slice(-35);
+}
+
+/** `Ctry` je dvojpísmenový kód krajiny; „Slovensko" schéma neprijme. */
+function kodKrajiny(v: string | null | undefined): string {
+  const s = String(v ?? "")
+    .trim()
+    .toUpperCase();
+  return /^[A-Z]{2}$/.test(s) ? s : "SK";
 }
 
 function amt(n: number, ccy: string): string {
@@ -145,13 +164,13 @@ function entry(t: OwnStatementTx, ccy: string): string {
     ? `<RltdPties>${credit ? "<Dbtr>" : "<Cdtr>"}${tag("Nm", t.counterparty)}${credit ? "</Dbtr>" : "</Cdtr>"}</RltdPties>`
     : "";
   const refs = t.variable_symbol
-    ? `<Refs>${tag("EndToEndId", t.variable_symbol)}</Refs>`
+    ? `<Refs>${tag("EndToEndId", t.variable_symbol, 35)}</Refs>`
     : `<Refs><EndToEndId>NOTPROVIDED</EndToEndId></Refs>`;
-  const rmt = t.description ? `<RmtInf>${tag("Ustrd", t.description)}</RmtInf>` : "";
+  const rmt = t.description ? `<RmtInf>${tag("Ustrd", t.description, 140)}</RmtInf>` : "";
   const details = `<NtryDtls><TxDtls>${refs}${party}${rmt}</TxDtls></NtryDtls>`;
   return (
     "<Ntry>" +
-    tag("NtryRef", t.transaction_reference) +
+    tag("NtryRef", t.transaction_reference, 35) +
     amt(t.amount, t.currency || ccy) +
     `<CdtDbtInd>${credit ? "CRDT" : "DBIT"}</CdtDbtInd>` +
     "<Sts>BOOK</Sts>" +
@@ -175,7 +194,8 @@ export function buildCamt053(input: OwnStatementInput): string {
     zapísaný po štvoriciach.
   */
   const iban = (account.iban ?? "").replace(/\s+/g, "").toUpperCase();
-  const msgId = `FAKTERO-${iban || "UCET"}-${periodStart.slice(0, 7).replace("-", "")}`;
+  const obdobie = periodStart.slice(0, 7).replace("-", "");
+  const msgId = id35(`FAK-${iban || "UCET"}-${obdobie}`);
 
   const net = cents(input.closing - input.opening);
   const credits = cents(transactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0));
@@ -183,10 +203,10 @@ export function buildCamt053(input: OwnStatementInput): string {
 
   const addr =
     company.street || company.city || company.zip
-      ? `<PstlAdr>${tag("StrtNm", company.street)}${tag("PstCd", company.zip)}${tag("TwnNm", company.city)}${tag("Ctry", company.country || "SK")}</PstlAdr>`
+      ? `<PstlAdr>${tag("StrtNm", company.street, 70)}${tag("PstCd", company.zip, 16)}${tag("TwnNm", company.city, 35)}<Ctry>${kodKrajiny(company.country)}</Ctry></PstlAdr>`
       : "";
   const orgId = company.ico
-    ? `<Id><OrgId><Othr>${tag("Id", company.ico)}<SchmeNm><Prtry>ICO</Prtry></SchmeNm></Othr></OrgId></Id>`
+    ? `<Id><OrgId><Othr>${tag("Id", company.ico, 35)}<SchmeNm><Prtry>ICO</Prtry></SchmeNm></Othr></OrgId></Id>`
     : "";
 
   return (
@@ -196,7 +216,7 @@ export function buildCamt053(input: OwnStatementInput): string {
     `<GrpHdr>${tag("MsgId", msgId)}<CreDtTm>${created}</CreDtTm>` +
     `<MsgRcpt>${tag("Nm", company.name)}</MsgRcpt></GrpHdr>` +
     "<Stmt>" +
-    tag("Id", `${iban || "UCET"}-FAKTERO-${periodStart.slice(0, 7).replace("-", "")}`) +
+    tag("Id", id35(`${iban || "UCET"}-${obdobie}`)) +
     `<ElctrncSeqNb>${Number(input.sequenceNumber) > 0 ? Math.trunc(Number(input.sequenceNumber)) : 0}</ElctrncSeqNb>` +
     `<CreDtTm>${created}</CreDtTm>` +
     `<FrToDt><FrDtTm>${periodStart}T00:00:00</FrDtTm><ToDtTm>${periodEnd}T23:59:59</ToDtTm></FrToDt>` +
