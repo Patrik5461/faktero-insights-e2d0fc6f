@@ -973,6 +973,9 @@ export type Database = {
           pohoda_predkontacia: string | null
           pohoda_predkontacia_dobropis: string | null
           pohoda_predkontacia_pokladna: string | null
+          pohoda_banka: string | null
+          pohoda_predkontacia_banka: string | null
+          pohoda_predkontacie_oznaceni: Json | null
           pohoda_predkontacia_prijata: string | null
           pohoda_predkontacia_zaloha: string | null
           pohoda_sklad: string | null
@@ -1035,6 +1038,9 @@ export type Database = {
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
           pohoda_predkontacia_pokladna?: string | null
+          pohoda_banka?: string | null
+          pohoda_predkontacia_banka?: string | null
+          pohoda_predkontacie_oznaceni?: Json | null
           pohoda_predkontacia_prijata?: string | null
           pohoda_predkontacia_zaloha?: string | null
           pohoda_sklad?: string | null
@@ -1097,6 +1103,9 @@ export type Database = {
           pohoda_predkontacia?: string | null
           pohoda_predkontacia_dobropis?: string | null
           pohoda_predkontacia_pokladna?: string | null
+          pohoda_banka?: string | null
+          pohoda_predkontacia_banka?: string | null
+          pohoda_predkontacie_oznaceni?: Json | null
           pohoda_predkontacia_prijata?: string | null
           pohoda_predkontacia_zaloha?: string | null
           pohoda_sklad?: string | null

@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { supabase } from "@/integrations/supabase/client";
 import {
   spustiCitanieVypisuFn,
   stavCitaniaVypisuFn,
@@ -17,7 +18,14 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/vypis-do-pohod
   component: VypisDoPohodyPage,
 });
 
-/** Skratka účtu a predkontácia sa medzi výpismi nemenia — nech sa nepíšu stále dokola. */
+/**
+ * Záloha nastavenia v prehliadači.
+ *
+ * Skratka účtu a predkontácie patria **firme** — vyplní ich jeden človek a majú
+ * ich všetci. Do firmy ich ale smie zapísať len jej správca, tak si ich
+ * prehliadač zároveň drží u seba: účtovník bez práv o ne neprde a keď firemné
+ * nastavenie pribudne, prebije to miestne.
+ */
 const PAMAT = "faktero.vypis-pohoda";
 
 type Nastavenia = {
@@ -108,6 +116,59 @@ function VypisDoPohodyPage() {
   const [riadky, setRiadky] = useState<Riadok[]>([]);
 
   const [nastavenia, setNastavenia] = useState(zPamate);
+  /** `null` = ešte sa neukladalo; `false` = na zápis do firmy nemá práva. */
+  const [voFirme, setVoFirme] = useState<boolean | null>(null);
+  const ulozenie = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!cid) return;
+    void supabase
+      .from("companies")
+      .select("pohoda_banka, pohoda_predkontacia_banka, pohoda_predkontacie_oznaceni")
+      .eq("id", cid)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        /*
+          Prázdne firemné pole nechá to, čo si pamätá prehliadač — inak by
+          presun nastavenia do firmy zmazal ľuďom to, čo mali vyplnené.
+        */
+        setNastavenia((teraz) => ({
+          banka: data.pohoda_banka ?? teraz.banka,
+          predkontacia: data.pohoda_predkontacia_banka ?? teraz.predkontacia,
+          predkontacie:
+            (data.pohoda_predkontacie_oznaceni as Nastavenia["predkontacie"] | null) ??
+            teraz.predkontacie,
+        }));
+      });
+  }, [cid]);
+
+  /** Mapa bez prázdnych hodnôt; prázdna mapa je `null`. */
+  function ocisti(m: Nastavenia["predkontacie"]): Record<string, string> | null {
+    const z = Object.entries(m)
+      .map(([k, v]) => [k, String(v ?? "").trim()] as const)
+      .filter(([, v]) => v);
+    return z.length ? Object.fromEntries(z) : null;
+  }
+
+  async function ulozDoFirmy(n: Nastavenia) {
+    if (!cid) return;
+    /*
+      Bez `select` sa nedá zistiť, či sa naozaj zapísalo: keď človek nie je
+      správcom firmy, RLS riadok nenájde a `update` skončí bez chyby — len
+      neurobí nič.
+    */
+    const { data, error } = await supabase
+      .from("companies")
+      .update({
+        pohoda_banka: n.banka.trim() || null,
+        pohoda_predkontacia_banka: n.predkontacia.trim() || null,
+        pohoda_predkontacie_oznaceni: ocisti(n.predkontacie),
+      })
+      .eq("id", cid)
+      .select("id");
+    setVoFirme(!error && (data?.length ?? 0) > 0);
+  }
 
   function zapamataj(zmena: Partial<Nastavenia>) {
     const nove = { ...nastavenia, ...zmena };
@@ -117,6 +178,9 @@ function VypisDoPohodyPage() {
     } catch {
       /* nevadí, len sa to nabudúce nepredvyplní */
     }
+    // Do firmy až keď človek dopísal — nie po každom znaku.
+    if (ulozenie.current) clearTimeout(ulozenie.current);
+    ulozenie.current = setTimeout(() => void ulozDoFirmy(nove), 800);
   }
 
   function prevezmi(v: Vypis) {
@@ -346,8 +410,18 @@ function VypisDoPohodyPage() {
                   <p className="mt-1 text-xs text-muted-foreground">
                     Poplatok, daň a úhrada faktúry sa účtujú každé inam. Keď sem napíšete
                     predkontácie z Pohody, doklad príde rovno zaúčtovaný; čo necháte prázdne,
-                    dostane spoločnú predkontáciu vyššie. Pamätá si ich prehliadač, takže sa píšu
-                    raz.
+                    dostane spoločnú predkontáciu vyššie.{" "}
+                    {voFirme === false ? (
+                      <>
+                        Zapísať ich k firme môže len jej správca — zatiaľ si ich pamätá len tento
+                        prehliadač. Natrvalo patria do <em>Účtovníctvo → Prepojenie s Pohodou</em>.
+                      </>
+                    ) : (
+                      <>
+                        Ukladajú sa k firme, takže ich má každý; nastaviť sa dajú aj v{" "}
+                        <em>Účtovníctvo → Prepojenie s Pohodou</em>.
+                      </>
+                    )}
                   </p>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {pouziteOznacenia.map((o) => (
