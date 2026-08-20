@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { ucelCamt } from "./vypis-oznacenie";
+import { kodOznacenia, ucelCamt } from "./vypis-oznacenie";
 import {
   normalizujVypis,
   rozdelVypis,
@@ -378,6 +378,8 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
       datumVypisu?: string | null;
       banka?: string | null;
       predkontacia?: string | null;
+      /** Predkontácia pre jednotlivé označenia platby; kľúč je kód označenia. */
+      predkontacie?: Record<string, string> | null;
       ucet?: string | null;
       mena?: string | null;
       /*
@@ -473,7 +475,19 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
       pohyby: data.pohyby,
       cisloVypisu: data.cisloVypisu ?? null,
       datumVypisu: data.datumVypisu ?? null,
-      nastavenia: { banka: data.banka ?? null, predkontaciaBanka: data.predkontacia ?? null },
+      nastavenia: {
+        banka: data.banka ?? null,
+        predkontaciaBanka: data.predkontacia ?? null,
+        /*
+          Kľúče chodia z prehliadača, tak sa prepustia len tie, ktoré poznáme —
+          čokoľvek iné by skončilo v XML ako predkontácia, ktorá v Pohode nie je.
+        */
+        predkontacieOznaceni: Object.fromEntries(
+          Object.entries(data.predkontacie ?? {})
+            .map(([k, v]) => [kodOznacenia(k), String(v ?? "").trim()])
+            .filter(([k, v]) => k && v),
+        ),
+      },
     });
 
     const znacka = (data.cisloVypisu ?? data.datumVypisu ?? "").replace(/[^\w-]/g, "") || "vypis";

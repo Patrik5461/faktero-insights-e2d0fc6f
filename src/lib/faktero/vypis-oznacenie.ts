@@ -110,6 +110,13 @@ export function odhadniOznacenie(
   },
   kodBanky?: string | null,
 ): KodOznacenia | null {
+  /*
+    Popis začínajúci `UZF` je splátka úveru alebo leasingu — takto ich značí
+    banka a v texte za tým už nie je nič, čo by to prezradilo. Ide to pred
+    všetkým ostatným, lebo je to istota, nie odhad.
+  */
+  if (/^\s*uzf/.test(holy(p.popis))) return "splatka";
+
   const zBanky = kodBanky ? zKoduBanky(String(kodBanky)) : null;
   if (zBanky) return zBanky;
 

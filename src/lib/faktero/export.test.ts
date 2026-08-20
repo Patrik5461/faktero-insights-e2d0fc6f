@@ -766,6 +766,34 @@ describe("bankový výpis do Pohody", () => {
     expect(polozky[2].bank.bankHeader.note).toBeUndefined();
   });
 
+  it("predkontácia sa berie podľa označenia, inak spoločná", () => {
+    const polozky = posli({
+      pohyby: [
+        { ...pohyby[0], oznacenie: "faktura" as const },
+        { ...pohyby[1], oznacenie: "poplatok" as const },
+        pohyby[2],
+      ],
+      nastavenia: {
+        predkontaciaBanka: "2Bv",
+        predkontacieOznaceni: { poplatok: "3Bv", dan: "5Bv" },
+      },
+    }).dataPackItem;
+
+    expect(polozky[0].bank.bankHeader.accounting.ids).toBe("2Bv");
+    expect(polozky[1].bank.bankHeader.accounting.ids).toBe("3Bv");
+    // Pohyb bez označenia dostane spoločnú.
+    expect(polozky[2].bank.bankHeader.accounting.ids).toBe("2Bv");
+  });
+
+  it("bez akejkoľvek predkontácie sa element nezapíše", () => {
+    // Prázdna predkontácia je v Pohode chyba importu, nie prázdne pole.
+    const polozky = posli({
+      pohyby: [{ ...pohyby[0], oznacenie: "faktura" as const }, pohyby[2]],
+      nastavenia: { predkontacieOznaceni: { faktura: "  " } },
+    }).dataPackItem;
+    expect(polozky[0].bank.bankHeader.accounting).toBeUndefined();
+  });
+
   it("prázdne symboly a protistrana sa nezapisujú", () => {
     const h = posli().dataPackItem[2].bank.bankHeader;
     expect(h.symVar).toBeUndefined();

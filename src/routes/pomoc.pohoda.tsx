@@ -254,6 +254,12 @@ const sections: HelpSection[] = [
           Pohody ide ako <em>poznámka dokladu</em>, do SEPA XML ako účel platby.
         </p>
         <p>
+          A hlavne: ku každému označeniu si viete zadať <strong>vlastnú predkontáciu</strong> z
+          Pohody. Poplatok, daň a úhrada faktúry sa účtujú každé inam, takže doklad potom príde
+          rovno zaúčtovaný a účtovník ho nepredkontováva. Čo necháte prázdne, dostane spoločnú
+          predkontáciu. Predkontácie si pamätá prehliadač — píšu sa raz, nie ku každému výpisu.
+        </p>
+        <p>
           Von idú dva súbory a každý patrí inam. <strong>SEPA XML (camt.053)</strong> do{" "}
           <em>Banka → Načítanie výpisov</em>: Pohoda ho vezme ako výpis od banky a platby si spáruje
           podľa variabilného symbolu. <strong>XML pre Pohodu</strong> je dávka dokladov do{" "}

@@ -20,14 +20,23 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/vypis-do-pohod
 /** Skratka účtu a predkontácia sa medzi výpismi nemenia — nech sa nepíšu stále dokola. */
 const PAMAT = "faktero.vypis-pohoda";
 
-function zPamate(): { banka: string; predkontacia: string } {
+type Nastavenia = {
+  banka: string;
+  predkontacia: string;
+  /** Predkontácia pre jednotlivé označenia platby; kľúč je kód označenia. */
+  predkontacie: Partial<Record<KodOznacenia, string>>;
+};
+
+const PRAZDNE: Nastavenia = { banka: "", predkontacia: "", predkontacie: {} };
+
+function zPamate(): Nastavenia {
   try {
     const raw = localStorage.getItem(PAMAT);
-    if (raw) return { banka: "", predkontacia: "", ...JSON.parse(raw) };
+    if (raw) return { ...PRAZDNE, ...JSON.parse(raw) };
   } catch {
     /* súkromný režim — políčka ostanú prázdne */
   }
-  return { banka: "", predkontacia: "" };
+  return PRAZDNE;
 }
 
 /**
@@ -100,7 +109,7 @@ function VypisDoPohodyPage() {
 
   const [nastavenia, setNastavenia] = useState(zPamate);
 
-  function zapamataj(zmena: Partial<typeof nastavenia>) {
+  function zapamataj(zmena: Partial<Nastavenia>) {
     const nove = { ...nastavenia, ...zmena };
     setNastavenia(nove);
     try {
@@ -188,6 +197,17 @@ function VypisDoPohodyPage() {
     setRiadky((r) => r.map((x, idx) => (idx === i ? { ...x, ...zmena } : x)));
   }
 
+  /*
+    Predkontácie sa pýtajú len na označenia, ktoré v tomto výpise naozaj sú —
+    jedenásť prázdnych políčok by z obrazovky spravilo formulár, ktorý nikto
+    nevyplní. Čo už raz vyplnené je, ostáva vidieť.
+  */
+  const pocetPodlaOznacenia = (kod: KodOznacenia) =>
+    riadky.filter((r) => r.oznacenie === kod).length;
+  const pouziteOznacenia = OZNACENIA.filter(
+    (o) => pocetPodlaOznacenia(o.kod) > 0 || nastavenia.predkontacie[o.kod],
+  );
+
   const vybrane = riadky.filter((r) => r.vyviezt);
   // Bez zostatkov sa camt.053 zostaviť dá, ale s nulovými zostatkami účtu.
   const maZostatky = vybrane.some((r) => r.zostatok != null);
@@ -208,6 +228,7 @@ function VypisDoPohodyPage() {
           datumVypisu: datumVypisu || null,
           banka: nastavenia.banka || null,
           predkontacia: nastavenia.predkontacia || null,
+          predkontacie: nastavenia.predkontacie as Record<string, string>,
           ucet,
           mena,
           format,
@@ -301,7 +322,9 @@ function VypisDoPohodyPage() {
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs text-muted-foreground">Predkontácia</span>
+                  <span className="mb-1 block text-xs text-muted-foreground">
+                    Predkontácia (spoločná)
+                  </span>
                   <input
                     className={vstup}
                     placeholder="napr. 2Bv"
@@ -316,6 +339,41 @@ function VypisDoPohodyPage() {
                   {mena && mena !== "EUR" ? ` Pozor, výpis je v mene ${mena}.` : ""}
                 </p>
               </div>
+
+              {pouziteOznacenia.length > 0 && (
+                <div className="rounded-2xl border border-border/70 bg-card p-5">
+                  <div className="text-sm font-medium">Predkontácie podľa označenia platby</div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Poplatok, daň a úhrada faktúry sa účtujú každé inam. Keď sem napíšete
+                    predkontácie z Pohody, doklad príde rovno zaúčtovaný; čo necháte prázdne,
+                    dostane spoločnú predkontáciu vyššie. Pamätá si ich prehliadač, takže sa píšu
+                    raz.
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {pouziteOznacenia.map((o) => (
+                      <label key={o.kod} className="block">
+                        <span className="mb-1 block text-xs text-muted-foreground">
+                          {o.nazov}
+                          <span className="ml-1 opacity-70">({pocetPodlaOznacenia(o.kod)}×)</span>
+                        </span>
+                        <input
+                          className={vstup}
+                          placeholder={nastavenia.predkontacia || "napr. 2Bv"}
+                          value={nastavenia.predkontacie[o.kod] ?? ""}
+                          onChange={(e) =>
+                            zapamataj({
+                              predkontacie: {
+                                ...nastavenia.predkontacie,
+                                [o.kod]: e.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card">
                 <table className="w-full min-w-[1180px] text-sm">

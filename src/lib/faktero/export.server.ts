@@ -137,6 +137,11 @@ export type PohodaNastavenia = {
   banka?: string | null;
   /** Predkontácia pre bankový doklad. */
   predkontaciaBanka?: string | null;
+  /**
+   * Predkontácia podľa označenia platby — poplatok, daň a úhrada faktúry sa
+   * účtujú každé inam. Čo tu nie je, dostane `predkontaciaBanka`.
+   */
+  predkontacieOznaceni?: Partial<Record<KodOznacenia, string | null>> | null;
 };
 
 function domacaMenaFirmy(company: CompanyRow): string {
@@ -702,6 +707,16 @@ export function polozkyBankovehoVypisu(opts: {
 
       const popis = skrat(p.popis, 96);
 
+      /*
+        Predkontácia podľa označenia platby má prednosť pred spoločnou —
+        kvôli tomu sa označenie pýta. Prázdna hodnota v číselníku nie je
+        predkontácia, tak sa berie tá spoločná.
+      */
+      const podlaOznacenia = p.oznacenie
+        ? (nastavenia?.predkontacieOznaceni?.[p.oznacenie] ?? "")
+        : "";
+      const predkontacia = String(podlaOznacenia || nastavenia?.predkontaciaBanka || "").trim();
+
       return `
   <dat:dataPackItem id="${esc(`VYPIS${cislo ? `-${cislo}` : ""}-${poradie}`)}" version="2.0">
     <bnk:bank version="2.0">
@@ -716,8 +731,8 @@ export function polozkyBankovehoVypisu(opts: {
           "        ",
         )}
         <bnk:datePayment>${esc(p.datum)}</bnk:datePayment>${
-          nastavenia?.predkontaciaBanka
-            ? `\n        <bnk:accounting><typ:ids>${esc(nastavenia.predkontaciaBanka)}</typ:ids></bnk:accounting>`
+          predkontacia
+            ? `\n        <bnk:accounting><typ:ids>${esc(predkontacia)}</typ:ids></bnk:accounting>`
             : ""
         }${el("bnk:text", popis || (druh === "receipt" ? "Príjem na účet" : "Platba z účtu"), "        ")}${
           p.protistrana

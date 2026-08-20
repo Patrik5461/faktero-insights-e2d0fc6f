@@ -26,6 +26,15 @@ describe("označenie platby", () => {
     expect(odhadniOznacenie({ popis: "Dan z uroku" })).toBe("dan");
   });
 
+  it("popis začínajúci UZF je splátka úveru alebo leasingu", () => {
+    expect(odhadniOznacenie({ popis: "UZF 12345678 splatka" })).toBe("splatka");
+    expect(odhadniOznacenie({ popis: "uzf0012345 /VS123", vs: "123" })).toBe("splatka");
+    // Aj keď kód banky hovorí niečo iné — `UZF` je istota, nie odhad.
+    expect(odhadniOznacenie({ popis: "UZF 998877" }, "PMNT/CCRD/POSD")).toBe("splatka");
+    // Uprostred textu to značka banky nie je.
+    expect(odhadniOznacenie({ popis: "Platba za UZF materiál" })).toBeNull();
+  });
+
   it("keď v texte nie je nič, rozhodne variabilný symbol", () => {
     expect(odhadniOznacenie({ popis: "Prevodny prikaz", vs: "2026041" })).toBe("faktura");
     expect(odhadniOznacenie({ popis: "Prevodny prikaz" })).toBeNull();
