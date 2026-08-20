@@ -26,7 +26,11 @@ const FARBA: Record<NotificationSeverity, string> = {
 /** Ako často sa zvonček sám prezrie. Notifikácie nie sú nič, čo horí na sekundy. */
 const OBNOVA_MS = 5 * 60 * 1000;
 
-export function NotificationBell() {
+/**
+ * `className` sa pridáva k tlačidlu, nie nahrádza — na zelenej lište v telefóne
+ * musí byť zvonček biely a sivá farba by sa na nej stratila.
+ */
+export function NotificationBell({ className = "" }: { className?: string } = {}) {
   const nacitaj = useServerFn(listNotifications);
   const oznac = useServerFn(markNotificationsRead);
   const [items, setItems] = useState<AppNotification[]>([]);
@@ -92,7 +96,7 @@ export function NotificationBell() {
     >
       <DropdownMenuTrigger
         aria-label={unread > 0 ? `Notifikácie (${unread} neprečítaných)` : "Notifikácie"}
-        className="relative grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-secondary"
+        className={`relative grid h-8 w-8 place-items-center rounded-full text-muted-foreground hover:bg-secondary ${className}`}
       >
         <Bell className="h-4 w-4" />
         {unread > 0 && (

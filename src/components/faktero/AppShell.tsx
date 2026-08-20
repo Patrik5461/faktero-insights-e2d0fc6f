@@ -466,13 +466,20 @@ export function AppShell({
             : "border-b border-transparent bg-card"
         }`}
       >
-        {/* Row 1 — identity, context, actions (48px) */}
-        <div className="flex h-12 items-center gap-2.5 px-4">
+        {/*
+          Na telefóne je pruh zelený — rovnako ako v appke, aby to bol na oko
+          jeden program. Na počítači ostáva tichý: dva riadky s desiatimi
+          kategóriami nad hustými tabuľkami by v sýtej farbe pretlačili to,
+          kvôli čomu tam človek je, a zelená by prestala znamenať „daj sa
+          kliknúť". Farba je na vnútornom riadku, nie na hlavičke — tá si pri
+          rolovaní mení pozadie a zelená by sa s ňou prala.
+        */}
+        <div className="flex h-12 items-center gap-2.5 px-4 max-md:bg-primary max-md:text-primary-foreground">
           {/* Mobile menu trigger */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <button
-                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-secondary lg:hidden"
+                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-secondary max-md:text-primary-foreground max-md:hover:bg-white/15 lg:hidden"
                 aria-label="Menu"
               >
                 <Menu className="h-5 w-5" />
@@ -501,8 +508,8 @@ export function AppShell({
 
           {/* Logo */}
           <Link to={homePath as any} className="flex shrink-0 items-center" aria-label="Faktero">
-            <Logo variant="icon" className="h-7 w-7 sm:hidden" />
-            <Logo className="hidden h-7 sm:block" />
+            <Logo variant="icon" className="h-7 w-7 max-md:brightness-0 max-md:invert sm:hidden" />
+            <Logo className="hidden h-7 max-md:brightness-0 max-md:invert sm:block" />
           </Link>
 
           {/* Hairline divider */}
@@ -612,12 +619,12 @@ export function AppShell({
 
           {/* Right cluster */}
           <div className="ml-auto flex items-center gap-1.5">
-            <NotificationBell />
+            <NotificationBell className="max-md:text-primary-foreground max-md:hover:bg-white/15" />
 
             {/* Quick create — the only filled element */}
             {view !== "logbook" && (
               <DropdownMenu>
-                <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-[12px] font-medium text-primary-foreground hover:opacity-90">
+                <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-[12px] font-medium text-primary-foreground hover:opacity-90 max-md:bg-white max-md:text-primary">
                   <Plus className="h-3.5 w-3.5" />{" "}
                   <span className="hidden sm:inline">Vytvoriť</span>
                 </DropdownMenuTrigger>
@@ -638,7 +645,7 @@ export function AppShell({
 
             {/* Profile avatar */}
             <DropdownMenu>
-              <DropdownMenuTrigger className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-[12px] font-semibold text-primary ring-1 ring-border hover:ring-primary/40">
+              <DropdownMenuTrigger className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-[12px] font-semibold text-primary ring-1 ring-border hover:ring-primary/40 max-md:from-white/25 max-md:to-white/10 max-md:text-primary-foreground max-md:ring-white/40">
                 {(active?.name?.[0] ?? "U").toUpperCase()}
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-60">
