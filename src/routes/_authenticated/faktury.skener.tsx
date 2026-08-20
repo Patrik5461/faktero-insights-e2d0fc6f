@@ -28,11 +28,12 @@ function ScannerPage() {
   const [result, setResult] = useState<BlocekVysledok | null>(null);
   /*
    * Spôsob úhrady bloček nesie len zriedka — pokladnica ho do eKasy posielať
-   * nemusí a väčšina ho neposiela. Keď príde, predvolí sa; inak rozhoduje
-   * používateľ. Nie je to kozmetika: hotovostný doklad uberá z pokladne,
-   * kartový nie.
+   * nemusí a väčšina ho neposiela. Keď príde, predvolí sa; inak si ho musí
+   * vybrať človek — predvolená hotovosť bola tichá pasca: kartová platba
+   * uložená ako hotovostná ubrala zo stavu pokladne a nikto si to nevšimol.
+   * Rovnako to je aj v appke (`MobilApp`, obrazovka Potvrdenie).
    */
-  const [uhrada, setUhrada] = useState<Uhrada>("hotovost");
+  const [uhrada, setUhrada] = useState<Uhrada | null>(null);
 
   async function spracuj(qr?: string, dataUrl?: string) {
     setLoading(true);
@@ -40,7 +41,7 @@ function ScannerPage() {
     try {
       const r = (await nacitaj({ data: { qr, image_data_url: dataUrl } })) as BlocekVysledok;
       setResult(r);
-      setUhrada(r.payment_method ?? "hotovost");
+      setUhrada(r.payment_method ?? null);
       if (r.zdroj === "ekasa") toast.success("Doklad načítaný z Finančnej správy");
       else if (r.zdroj === "nic") toast.error(r.poznamka ?? "Nepodarilo sa prečítať nič");
     } catch (e: any) {
@@ -183,8 +184,18 @@ function ScannerPage() {
               <div>
                 <div className="mb-1.5 text-xs uppercase tracking-wide text-muted-foreground">
                   Spôsob úhrady
+                  {!uhrada && (
+                    <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+                      Povinné
+                    </span>
+                  )}
                   {result.payment_method && " · prečítané z dokladu"}
                 </div>
+                {!uhrada && (
+                  <p className="mb-2 text-xs text-primary">
+                    Vyberte jednu z možností — bez nej sa doklad uložiť nedá.
+                  </p>
+                )}
                 <div className="grid grid-cols-3 gap-2">
                   {(
                     [
@@ -199,7 +210,9 @@ function ScannerPage() {
                       className={`rounded-md border px-3 py-2 text-sm ${
                         uhrada === id
                           ? "border-primary bg-primary/10 font-medium text-primary"
-                          : "border-border hover:bg-secondary"
+                          : uhrada
+                            ? "border-border hover:bg-secondary"
+                            : "border-primary/40 font-medium hover:bg-secondary"
                       }`}
                     >
                       {label}
@@ -239,9 +252,10 @@ function ScannerPage() {
 
               <button
                 onClick={vytvorVydavok}
-                className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                disabled={!uhrada}
+                className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                Uložiť ako výdavok
+                {uhrada ? "Uložiť ako výdavok" : "Vyberte spôsob úhrady"}
               </button>
             </div>
           )}

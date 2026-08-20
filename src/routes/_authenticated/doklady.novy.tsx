@@ -34,7 +34,8 @@ type Form = {
   supplier_ic_dph: string;
   document_number: string;
   issue_date: string;
-  payment_method: "hotovost" | "karta" | "prevod";
+  /** Prázdne, kým si človek nevyberie — z predvolenej hotovosti ubúdalo v pokladni. */
+  payment_method: "" | "hotovost" | "karta" | "prevod";
   total_amount: string;
   vat_amount: string;
   net_amount: string;
@@ -50,8 +51,13 @@ const EMPTY: Form = {
   supplier_ic_dph: "",
   document_number: "",
   issue_date: new Date().toISOString().slice(0, 10),
-  // Do stavu pokladne vstupujú len doklady platené hotovosťou.
-  payment_method: "hotovost" as "hotovost" | "karta" | "prevod",
+  /*
+    Do stavu pokladne vstupujú len doklady platené hotovosťou, a práve preto
+    sa tu nič nepredvolí. Kým tu bola hotovosť, kartová platba sa uložila ako
+    hotovostná, pokladňa sa o ňu ukrátila a nikto to nehľadal. Rovnako to je
+    v skeneri aj v appke.
+  */
+  payment_method: "" as "" | "hotovost" | "karta" | "prevod",
   total_amount: "",
   vat_amount: "",
   net_amount: "",
@@ -114,7 +120,7 @@ function NovyDokladPage() {
         net_amount: data.net_amount?.toString() ?? "",
         vat_rate: data.vat_rate?.toString() ?? "23",
         currency: data.currency ?? "EUR",
-        payment_method: (data.payment_method ?? "hotovost") as "hotovost" | "karta" | "prevod",
+        payment_method: (data.payment_method ?? "") as "" | "hotovost" | "karta" | "prevod",
         category: data.category ?? "",
         note: data.note ?? "",
       });
@@ -336,6 +342,12 @@ function NovyDokladPage() {
       toast.error("Vyberte firmu");
       return;
     }
+    // Tlačidlo je bez toho zamknuté; toto je poistka pre klávesnicu a doplnky.
+    const uhrada = form.payment_method;
+    if (!uhrada) {
+      toast.error("Vyberte spôsob úhrady — hotovosť uberá zo stavu pokladne.");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -357,7 +369,7 @@ function NovyDokladPage() {
         file_path: uploadedFile?.path ?? null,
         file_mime: uploadedFile?.mime ?? null,
         file_size: uploadedFile?.size ?? null,
-        payment_method: form.payment_method,
+        payment_method: uhrada,
         qr_raw: qrRaw,
         // Položky a rozpis DPH z bločku sa ukladajú tak, ako prišli — z nich
         // je vidieť, za čo sa platilo, aj keď je doklad len jedna suma.
@@ -599,16 +611,33 @@ function NovyDokladPage() {
               />
               {/* Rozhoduje o stave pokladne: kartou ani prevodom hotovosť neubudne. */}
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Platené</label>
+                <label className="mb-1 block text-xs text-muted-foreground">
+                  Platené
+                  {!form.payment_method && (
+                    <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+                      Povinné
+                    </span>
+                  )}
+                </label>
                 <select
                   value={form.payment_method}
                   onChange={(e) => updateForm("payment_method", e.target.value as never)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  className={`w-full rounded-md border bg-background px-3 py-2 text-sm ${
+                    form.payment_method
+                      ? "border-border"
+                      : "border-primary/60 ring-2 ring-primary/15"
+                  }`}
                 >
+                  <option value="">Vyberte…</option>
                   <option value="hotovost">Hotovosťou</option>
                   <option value="karta">Kartou</option>
                   <option value="prevod">Prevodom</option>
                 </select>
+                {!form.payment_method && (
+                  <p className="mt-1 text-xs text-primary">
+                    Bez toho sa doklad uložiť nedá — hotovosť uberá zo stavu pokladne.
+                  </p>
+                )}
               </div>
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-xs text-muted-foreground">Poznámka</label>
@@ -629,10 +658,11 @@ function NovyDokladPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || !form.payment_method}
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >
-                <Save className="h-4 w-4" /> Uložiť doklad
+                <Save className="h-4 w-4" />{" "}
+                {form.payment_method ? "Uložiť doklad" : "Vyberte spôsob úhrady"}
               </button>
             </div>
           </div>
