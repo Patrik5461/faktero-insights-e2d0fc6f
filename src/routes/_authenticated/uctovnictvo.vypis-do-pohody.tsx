@@ -9,6 +9,7 @@ import {
   vypisDoPohodyFn,
 } from "@/lib/faktero/vypis-pdf.functions";
 import type { Vypis, VypisPohyb } from "@/lib/faktero/vypis-pohyby";
+import { OZNACENIA, type KodOznacenia } from "@/lib/faktero/vypis-oznacenie";
 import { Download, FileUp, Loader2, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/vypis-do-pohody")({
@@ -325,6 +326,7 @@ function VypisDoPohodyPage() {
                       <th className="p-2">Smer</th>
                       <th className="p-2 text-right">Suma</th>
                       <th className="p-2">Popis</th>
+                      <th className="p-2">Označenie platby</th>
                       <th className="p-2">Protistrana</th>
                       <th className="p-2">Protiúčet</th>
                       <th className="p-2">VS</th>
@@ -384,6 +386,30 @@ function VypisDoPohodyPage() {
                             title={r.popis ?? ""}
                             onChange={(e) => uprav(i, { popis: e.target.value })}
                           />
+                        </td>
+                        <td className="p-2">
+                          {/*
+                            Výpis hovorí koľko a komu, nie čo to bolo — a práve
+                            podľa toho sa účtuje. Predvyplní sa odhad, človek ho
+                            prepíše.
+                          */}
+                          <select
+                            className={`${vstup} min-w-[170px]`}
+                            value={r.oznacenie ?? ""}
+                            onChange={(e) =>
+                              uprav(i, {
+                                oznacenie: (e.target.value || null) as KodOznacenia | null,
+                              })
+                            }
+                            aria-label="Označenie platby"
+                          >
+                            <option value="">—</option>
+                            {OZNACENIA.map((o) => (
+                              <option key={o.kod} value={o.kod}>
+                                {o.nazov}
+                              </option>
+                            ))}
+                          </select>
                         </td>
                         <td className="p-2">
                           <input
@@ -468,7 +494,9 @@ function VypisDoPohodyPage() {
                   Pohoda ho vezme ako výpis od banky a platby si spáruje podľa variabilného symbolu.{" "}
                   <strong>XML pre Pohodu</strong> je dávka dokladov do{" "}
                   <em>Súbor → Dátová komunikácia → XML import</em>. Keď sa zamenia, Pohoda odpovie,
-                  že súbor nezodpovedá stanovenej štruktúre formátu SEPA XML.
+                  že súbor nezodpovedá stanovenej štruktúre formátu SEPA XML.{" "}
+                  <strong>Označenie platby</strong> ide do Pohody ako poznámka dokladu a do SEPA XML
+                  ako účel platby (<code>Purp</code>).
                   {!maZostatky && (
                     <>
                       {" "}

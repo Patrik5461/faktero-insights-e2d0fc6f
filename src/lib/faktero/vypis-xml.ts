@@ -188,6 +188,20 @@ function zNtry(n: Uzol): ZPohybu | null {
 
   const zdrojSymbolov = [popis ?? "", ...refs.map((r) => hodnota(r.EndToEndId) ?? "")].join(" ");
 
+  /*
+    `BkTxCd` je kód banky o druhu operácie (`PMNT/CCRD/POSD` je platba kartou).
+    Je to jediný údaj o povahe platby, ktorý nie je text — z neho sa predvyplní
+    označenie platby.
+  */
+  const kodBanky = [
+    hodnota(n.BkTxCd?.Domn?.Cd),
+    hodnota(n.BkTxCd?.Domn?.Fmly?.Cd),
+    hodnota(n.BkTxCd?.Domn?.Fmly?.SubFmlyCd),
+    hodnota(n.BkTxCd?.Prtry?.Cd),
+  ]
+    .filter(Boolean)
+    .join("/");
+
   return {
     suma: vydaj ? -Math.abs(cislo) : Math.abs(cislo),
     davka: podrobnosti.length > 1,
@@ -203,6 +217,7 @@ function zNtry(n: Uzol): ZPohybu | null {
         ? (ucetStrany(strany.CdtrAcct) ?? ucetStrany(strany.DbtrAcct))
         : (ucetStrany(strany.DbtrAcct) ?? ucetStrany(strany.CdtrAcct)),
       ...symboly(zdrojSymbolov, refs),
+      kodBanky,
     },
   };
 }

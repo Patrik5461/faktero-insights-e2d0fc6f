@@ -110,6 +110,24 @@ describe("camt.053 proti schéme", () => {
     expect(overSchemou(xml)).toBeNull();
   });
 
+  it("účel platby prejde ako kód aj ako vlastné označenie", () => {
+    const i = vstup();
+    const xml = buildCamt053({
+      ...i,
+      transactions: [
+        { ...i.transactions[0], purpose: { cd: "SUPP" } },
+        { ...i.transactions[1], purpose: { prtry: "POPLATOK" } },
+      ],
+    });
+
+    expect(xml).toContain("<Purp><Cd>SUPP</Cd></Purp>");
+    expect(xml).toContain("<Purp><Prtry>POPLATOK</Prtry></Purp>");
+    // `Purp` stojí v schéme medzi stranami platby a textom — inak je to chyba.
+    expect(xml.indexOf("<Purp>")).toBeGreaterThan(xml.indexOf("<RltdPties>"));
+    expect(xml.indexOf("<Purp>")).toBeLessThan(xml.indexOf("<RmtInf>"));
+    expect(overSchemou(xml)).toBeNull();
+  });
+
   it("výpis bez pohybov a bez IBAN-u ostáva platný", () => {
     const i = vstup();
     const xml = buildCamt053({

@@ -37,6 +37,11 @@ export type OwnStatementTx = {
   counterparty: string | null;
   description: string | null;
   transaction_reference: string | null;
+  /**
+   * Účel platby (`Purp`) — čím platba je. ISO 20022 má na to vlastné pole;
+   * `cd` je kód z číselníka, `prtry` vlastné označenie tam, kde kód neexistuje.
+   */
+  purpose?: { cd?: string; prtry?: string } | null;
 };
 
 export type OwnStatementInput = {
@@ -167,7 +172,13 @@ function entry(t: OwnStatementTx, ccy: string): string {
     ? `<Refs>${tag("EndToEndId", t.variable_symbol, 35)}</Refs>`
     : `<Refs><EndToEndId>NOTPROVIDED</EndToEndId></Refs>`;
   const rmt = t.description ? `<RmtInf>${tag("Ustrd", t.description, 140)}</RmtInf>` : "";
-  const details = `<NtryDtls><TxDtls>${refs}${party}${rmt}</TxDtls></NtryDtls>`;
+  // V schéme stojí `Purp` medzi stranami platby a textom — na poradí záleží.
+  const purp = t.purpose?.cd
+    ? `<Purp>${tag("Cd", t.purpose.cd, 4)}</Purp>`
+    : t.purpose?.prtry
+      ? `<Purp>${tag("Prtry", t.purpose.prtry, 35)}</Purp>`
+      : "";
+  const details = `<NtryDtls><TxDtls>${refs}${party}${purp}${rmt}</TxDtls></NtryDtls>`;
   return (
     "<Ntry>" +
     tag("NtryRef", t.transaction_reference, 35) +

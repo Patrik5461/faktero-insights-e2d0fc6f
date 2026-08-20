@@ -6,6 +6,7 @@
  * dvojciferný rok) a takto sa dajú prejsť testom, nie odhadom nad PDF.
  */
 import type { VypisPohyb } from "./export.server";
+import { kodOznacenia, odhadniOznacenie } from "./vypis-oznacenie";
 
 export type { VypisPohyb };
 
@@ -224,20 +225,30 @@ export function normalizujPohyb(r: SurovyPohyb, hlavicka?: string | null): Vypis
   if (!datum || suma == null || suma === 0) return null;
 
   const popis = bezStlpcov(text(r.popis ?? r.description ?? r.text, 200));
+  const protistrana =
+    text(r.protistrana ?? r.partner ?? r.counterparty ?? r.miesto ?? r.obchodnik, 96) ??
+    protistranaZPopisu(popis);
+  const smer = normalizujSmer(r.smer ?? r.typ ?? r.direction, suma);
+  const vs = symbol(r.vs ?? r.variabilny_symbol ?? r.variableSymbol, 20);
 
   return {
     datum,
     suma: Math.abs(suma),
-    smer: normalizujSmer(r.smer ?? r.typ ?? r.direction, suma),
+    smer,
     popis,
-    protistrana:
-      text(r.protistrana ?? r.partner ?? r.counterparty ?? r.miesto ?? r.obchodnik, 96) ??
-      protistranaZPopisu(popis),
+    protistrana,
     protiucet: text(r.protiucet ?? r.ucet ?? r.account, 40),
     zostatok: normalizujSumu(r.zostatok ?? r.balance ?? r.zostatokPoTransakcii),
-    vs: symbol(r.vs ?? r.variabilny_symbol ?? r.variableSymbol, 20),
+    vs,
     ks: symbol(r.ks ?? r.konstantny_symbol ?? r.constantSymbol, 4),
     ss: symbol(r.ss ?? r.specificky_symbol ?? r.specificSymbol, 16),
+    /*
+      Označenie z požiadavky má prednosť — človek ho na obrazovke prepísal a
+      jeho voľba je viac než náš odhad. Odhad sa robí až vtedy, keď žiadne nie je.
+    */
+    oznacenie:
+      kodOznacenia(r.oznacenie) ??
+      odhadniOznacenie({ popis, protistrana, smer, vs }, text(r.kodBanky, 40)),
   };
 }
 

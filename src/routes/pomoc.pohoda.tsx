@@ -248,6 +248,12 @@ const sections: HelpSection[] = [
           sedí a účtovník ho neopravuje. Odčiarknutý riadok sa nevyvezie.
         </p>
         <p>
+          <strong>Označenie platby</strong> hovorí, čím ten pohyb je — bankový poplatok, daň, mzda,
+          úhrada faktúry, platba kartou… Výpis to sám nepovie a pritom práve podľa toho sa účtuje.
+          Predvyplní sa odhadom (pri XML aj podľa kódu operácie od banky) a vy ho prepíšete. Do
+          Pohody ide ako <em>poznámka dokladu</em>, do SEPA XML ako účel platby.
+        </p>
+        <p>
           Von idú dva súbory a každý patrí inam. <strong>SEPA XML (camt.053)</strong> do{" "}
           <em>Banka → Načítanie výpisov</em>: Pohoda ho vezme ako výpis od banky a platby si spáruje
           podľa variabilného symbolu. <strong>XML pre Pohodu</strong> je dávka dokladov do{" "}

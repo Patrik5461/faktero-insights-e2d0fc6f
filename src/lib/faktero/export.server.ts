@@ -1,5 +1,6 @@
 // Server-only helpers for accounting exports.
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
+import { nazovOznacenia, type KodOznacenia } from "./vypis-oznacenie";
 
 type InvoiceRow = any;
 type ItemRow = any;
@@ -617,6 +618,8 @@ export type VypisPohyb = {
   vs?: string | null;
   ks?: string | null;
   ss?: string | null;
+  /** Čím ten pohyb je — poplatok, daň, úhrada faktúry… Viď `vypis-oznacenie.ts`. */
+  oznacenie?: KodOznacenia | null;
 };
 
 /**
@@ -733,7 +736,11 @@ export function polozkyBankovehoVypisu(opts: {
           <typ:bankCode>${esc(ucet.kodBanky)}</typ:bankCode>
         </bnk:paymentAccount>`
             : ""
-        }${el("bnk:symConst", skrat(p.ks, 4), "        ")}${el("bnk:symSpec", skrat(p.ss, 16), "        ")}
+        }${el("bnk:symConst", skrat(p.ks, 4), "        ")}${el("bnk:symSpec", skrat(p.ss, 16), "        ")}${el(
+          "bnk:note",
+          nazovOznacenia(p.oznacenie) ?? "",
+          "        ",
+        )}
       </bnk:bankHeader>
       <bnk:bankSummary>
         <bnk:homeCurrency>

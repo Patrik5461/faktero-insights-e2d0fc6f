@@ -749,6 +749,23 @@ describe("bankový výpis do Pohody", () => {
     expect(polozky[2].bank.bankHeader.paymentAccount).toBeUndefined();
   });
 
+  it("označenie platby ide do poznámky dokladu", () => {
+    // V Pohode je to jediné pole, kam sa dá napísať čokoľvek a nemusí to
+    // najprv existovať v číselníku — štítok ani stredisko by import odmietol.
+    const polozky = posli({
+      pohyby: [
+        { ...pohyby[0], oznacenie: "faktura" as const },
+        { ...pohyby[1], oznacenie: "poplatok" as const },
+        pohyby[2],
+      ],
+    }).dataPackItem;
+
+    expect(polozky[0].bank.bankHeader.note).toBe("Úhrada faktúry");
+    expect(polozky[1].bank.bankHeader.note).toBe("Bankový poplatok");
+    // Bez označenia sa prázdna poznámka nezapisuje.
+    expect(polozky[2].bank.bankHeader.note).toBeUndefined();
+  });
+
   it("prázdne symboly a protistrana sa nezapisujú", () => {
     const h = posli().dataPackItem[2].bank.bankHeader;
     expect(h.symVar).toBeUndefined();

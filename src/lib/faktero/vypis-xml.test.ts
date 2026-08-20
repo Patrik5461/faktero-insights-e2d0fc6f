@@ -141,6 +141,15 @@ describe("čítanie výpisu z XML", () => {
     expect(karta.popis).toContain("Platba kartou");
   });
 
+  it("označenie platby predvyplní z kódu banky aj z textu", () => {
+    const [faktura, prijem, karta] = citajBankoveXml(vypis()).vypis.pohyby;
+
+    expect(faktura.oznacenie).toBe("faktura");
+    expect(prijem.oznacenie).toBe("faktura");
+    // `PMNT/CCRD/POSD` je platba kartou — to vie banka lepšie než text.
+    expect(karta.oznacenie).toBe("karta");
+  });
+
   it("dopočíta zostatok po každom pohybe z počiatočného", () => {
     const { vypis: v } = citajBankoveXml(vypis());
 

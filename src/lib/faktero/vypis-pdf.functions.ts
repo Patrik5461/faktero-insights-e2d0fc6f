@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { ucelCamt } from "./vypis-oznacenie";
 import {
   normalizujVypis,
   rozdelVypis,
@@ -449,6 +450,7 @@ export const vypisDoPohodyFn = createServerFn({ method: "POST" })
           */
           description: [p.popis, symbolyDoTextu(p)].filter(Boolean).join(" ") || null,
           transaction_reference: null,
+          purpose: ucelCamt(p.oznacenie, p.smer),
         })),
         /*
           Bez zostatkov ide do výpisu nula. Vymyslieť ich sa nedá a Pohoda ich
