@@ -148,18 +148,49 @@ function symbol(v: unknown, max: number): string | null {
   return s ? s.slice(0, max) : null;
 }
 
+/*
+  Platba kartou samostatné pole s protistranou nemá — obchodník je len v popise
+  za štítkom. ČSOB mu hovorí „Miesto", iné banky „Obchodník" alebo „Terminál".
+  Kým sa to nečítalo, každá karta skončila v Pohode ako pohyb bez firmy
+  a účtovník ju dopisoval ručne.
+*/
+const ZA_STITKOM =
+  /(?:^|[\n;,]|\s)(?:miesto|obchodn[ií]k|termin[áa]l|predajca|merchant|location)\s*[:–-]\s*([^\n;]+)/i;
+
+/** Ďalší stĺpec či štítok názov ukončuje — inak by sa doň zliala suma aj kurz. */
+const KONIEC_NAZVU =
+  /\s{2,}|\s(?:d[áa]tum|suma|[čc]iastka|kurz|karta|ref|vs|ks|ss|iban)\s*[:–-]/i;
+
+/**
+ * Protistrana vytiahnutá z popisu, keď ju výpis ako pole neuvádza.
+ *
+ * Napr. z „Platba kartou, Miesto: BOLT.EU BUDAPEST" ostane `BOLT.EU BUDAPEST`.
+ */
+export function protistranaZPopisu(popis: unknown): string | null {
+  const m = ZA_STITKOM.exec(String(popis ?? ""));
+  if (!m) return null;
+  const koniec = KONIEC_NAZVU.exec(m[1]);
+  // Bodku na konci nechávam — „s.r.o." je celý názov, nie preklep.
+  const s = (koniec ? m[1].slice(0, koniec.index) : m[1]).trim().replace(/[,;]+$/, "");
+  return s ? s.slice(0, 96) : null;
+}
+
 /** Jeden riadok výpisu. Vráti `null`, keď z neho nie je doklad — chýba dátum alebo suma. */
 export function normalizujPohyb(r: SurovyPohyb, hlavicka?: string | null): VypisPohyb | null {
   const datum = normalizujDatum(r.datum ?? r.date ?? r.datum_uctovania, hlavicka);
   const suma = normalizujSumu(r.suma ?? r.amount ?? r.ciastka);
   if (!datum || suma == null || suma === 0) return null;
 
+  const popis = text(r.popis ?? r.description ?? r.text, 200);
+
   return {
     datum,
     suma: Math.abs(suma),
     smer: normalizujSmer(r.smer ?? r.typ ?? r.direction, suma),
-    popis: text(r.popis ?? r.description ?? r.text, 200),
-    protistrana: text(r.protistrana ?? r.partner ?? r.counterparty, 96),
+    popis,
+    protistrana:
+      text(r.protistrana ?? r.partner ?? r.counterparty ?? r.miesto ?? r.obchodnik, 96) ??
+      protistranaZPopisu(popis),
     protiucet: text(r.protiucet ?? r.ucet ?? r.account, 40),
     vs: symbol(r.vs ?? r.variabilny_symbol ?? r.variableSymbol, 20),
     ks: symbol(r.ks ?? r.konstantny_symbol ?? r.constantSymbol, 4),

@@ -7,6 +7,7 @@ import {
   normalizujSmer,
   normalizujSumu,
   normalizujVypis,
+  protistranaZPopisu,
 } from "./vypis-pohyby";
 
 describe("suma z výpisu", () => {
@@ -172,6 +173,39 @@ describe("jeden riadok", () => {
     expect(normalizujPohyb({ suma: "10" })).toBeNull();
     expect(normalizujPohyb({ datum: "1.1.2026" })).toBeNull();
     expect(normalizujPohyb({ datum: "1.1.2026", suma: "0" })).toBeNull();
+  });
+});
+
+describe("protistrana z popisu", () => {
+  it("kartu podľa Miesta na ČSOB výpise", () => {
+    expect(protistranaZPopisu("Platba kartou, Miesto: BOLT.EU")).toBe("BOLT.EU");
+    expect(protistranaZPopisu("Platba kartou\nMiesto: BOLT.EU BUDAPEST HU")).toBe(
+      "BOLT.EU BUDAPEST HU",
+    );
+    expect(protistranaZPopisu("Obchodník: Kaufland SK  Suma: 12,30 EUR")).toBe("Kaufland SK");
+  });
+
+  it("bez štítku sa nič nedomýšľa", () => {
+    expect(protistranaZPopisu("Prevod na účet")).toBeNull();
+    expect(protistranaZPopisu(null)).toBeNull();
+    expect(protistranaZPopisu("Miesto:   ")).toBeNull();
+  });
+
+  it("do pohybu sa doplní, len keď pole chýba", () => {
+    const zPopisu = normalizujPohyb({
+      datum: "2026-08-15",
+      suma: "-12,30",
+      popis: "Platba kartou, Miesto: BOLT.EU",
+    });
+    expect(zPopisu?.protistrana).toBe("BOLT.EU");
+
+    const zPola = normalizujPohyb({
+      datum: "2026-08-15",
+      suma: "-12,30",
+      popis: "Platba kartou, Miesto: BOLT.EU",
+      protistrana: "Bolt Operations OÜ",
+    });
+    expect(zPola?.protistrana).toBe("Bolt Operations OÜ");
   });
 });
 

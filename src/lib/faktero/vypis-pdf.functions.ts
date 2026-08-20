@@ -30,6 +30,10 @@ PRAVIDLÁ:
 - "smer" je "prijem" pri pripísaní na účet a "vydaj" pri odpísaní.
 - "protiucet" je účet protistrany (IBAN alebo číslo s kódom banky), nie účet,
   ktorého je toto výpis.
+- Pri platbe kartou je protistranou obchodník. Výpis ho píše za štítok
+  "Miesto" (ČSOB), inde "Obchodník" alebo "Terminál" — napr. z
+  "Platba kartou, Miesto: BOLT.EU" daj do "protistrana" hodnotu "BOLT.EU".
+  Celý text pohybu nechaj aj v "popis".
 - Čo na výpise nie je, daj null. Nič si nedomýšľaj.
 
 ODPOVEDZ VÝHRADNE JSON objektom v tomto tvare:
