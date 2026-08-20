@@ -257,7 +257,9 @@ const sections: HelpSection[] = [
           A hlavne: ku každému označeniu si viete zadať <strong>vlastnú predkontáciu</strong> z
           Pohody. Poplatok, daň a úhrada faktúry sa účtujú každé inam, takže doklad potom príde
           rovno zaúčtovaný a účtovník ho nepredkontováva. Čo necháte prázdne, dostane spoločnú
-          predkontáciu. Predkontácie si pamätá prehliadač — píšu sa raz, nie ku každému výpisu.
+          predkontáciu. Predkontácie patria firme — vyplní ich jeden človek a majú ich všetci;
+          nastavujú sa aj tu na tejto stránke, v sekcii <em>Predkontácie podľa označenia platby</em>
+          .
         </p>
         <p>
           Von idú dva súbory a každý patrí inam. <strong>SEPA XML (camt.053)</strong> do{" "}
