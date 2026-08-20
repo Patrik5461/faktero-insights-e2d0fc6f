@@ -506,10 +506,24 @@ export function AppShell({
             </SheetContent>
           </Sheet>
 
-          {/* Logo */}
-          <Link to={homePath as any} className="flex shrink-0 items-center" aria-label="Faktero">
-            <Logo variant="icon" className="h-7 w-7 max-md:brightness-0 max-md:invert sm:hidden" />
-            <Logo className="hidden h-7 max-md:brightness-0 max-md:invert sm:block" />
+          {/*
+            Na zelenej lište ostáva zo značky len znak — nápis „Faktero" je
+            tmavozelený a na zelenej by zanikol; obeliť ho filtrom sa nedá,
+            logo má vlastnú dlaždicu a z tej by ostal biely štvorec. Vedľa
+            znaku je meno firmy, presne ako v appke: v telefóne je to
+            užitočnejšie než nápis, v ktorom programe človek je — a prepínač
+            firiem je aj tak v menu.
+          */}
+          <Link
+            to={homePath as any}
+            className="flex min-w-0 shrink items-center gap-2"
+            aria-label="Faktero"
+          >
+            <Logo variant="icon" className="h-7 w-7 shrink-0 md:hidden" />
+            <Logo className="hidden h-7 shrink-0 md:block" />
+            {active && (
+              <span className="truncate text-[13px] font-semibold md:hidden">{active.name}</span>
+            )}
           </Link>
 
           {/* Hairline divider */}
