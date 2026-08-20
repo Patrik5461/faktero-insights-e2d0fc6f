@@ -596,7 +596,7 @@ function VypisDoPohodyPage() {
                   príjmy <span className="font-medium">{eur(prijmy)}</span> · výdavky{" "}
                   <span className="font-medium">{eur(vydaje)}</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => {
                       setRiadky([]);
