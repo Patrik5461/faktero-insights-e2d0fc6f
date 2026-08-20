@@ -46,6 +46,8 @@ PRAVIDLÁ:
   Celý text pohybu nechaj aj v "popis".
 - "zostatok" je zostatok na účte po tomto pohybe, keď ho výpis pri riadku
   uvádza (stĺpec "priebežný zostatok" alebo "zostatok po transakcii").
+- "datumVypisu" je deň, ku ktorému je výpis zostavený. Keď výpis uvádza obdobie
+  (napr. "Obdobie: 01.07.2026 - 31.07.2026"), je to jeho KONIEC, nie začiatok.
 - Čo na výpise nie je, daj null. Nič si nedomýšľaj.
 
 ODPOVEDZ VÝHRADNE JSON objektom v tomto tvare:
