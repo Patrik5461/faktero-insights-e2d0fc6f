@@ -111,9 +111,9 @@ describe("čítanie výpisu z XML", () => {
     ]);
   });
 
-  it("čakajúca platba je vynechaná a povie sa to", () => {
-    const { varovanie } = citajBankoveXml(vypis());
-    expect(varovanie).toContain("nezaúčtovaných");
+  it("čakajúca platba je vynechaná a povie sa to po slovensky", () => {
+    // Jeden riadok nie je „1 nezaúčtovaných riadkov".
+    expect(citajBankoveXml(vypis()).varovanie).toContain("1 nezaúčtovaný riadok");
   });
 
   it("symboly vytiahne z EndToEndId aj z vlastného poľa", () => {

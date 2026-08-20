@@ -336,9 +336,13 @@ export function citajBankoveXml(xml: string): CitanieXml {
       );
     }
   }
-  if (vynechanych) {
+  if (vynechanych === 1) {
+    varovania.push("Vynechal sa 1 nezaúčtovaný riadok (čakajúca platba) — z účtu ešte neodišla.");
+  } else if (vynechanych > 1) {
     varovania.push(
-      `Vynechalo sa ${vynechanych} nezaúčtovaných riadkov (čakajúce platby) — z účtu ešte neodišli.`,
+      vynechanych < 5
+        ? `Vynechali sa ${vynechanych} nezaúčtované riadky (čakajúce platby) — z účtu ešte neodišli.`
+        : `Vynechalo sa ${vynechanych} nezaúčtovaných riadkov (čakajúce platby) — z účtu ešte neodišli.`,
     );
   }
   if (surove.some((p) => p.davka)) {

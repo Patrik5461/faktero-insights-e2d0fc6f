@@ -126,9 +126,10 @@ function VypisDoPohodyPage() {
       if (!vypis.pohyby.length) throw new Error("Vo výpise nie je ani jeden zaúčtovaný pohyb.");
       prevezmi(vypis);
       setVarovanie(v);
+      const n = vypis.pohyby.length;
       setZdroj(
-        `Prečítané priamo z XML (${format}) — ${vypis.pohyby.length} ${
-          vypis.pohyby.length === 1 ? "pohyb" : "pohybov"
+        `Prečítané priamo z XML (${format}) — ${n} ${
+          n === 1 ? "pohyb" : n < 5 ? "pohyby" : "pohybov"
         }. Sumy, symboly aj protistrany sú od banky, nič sa nerozpoznávalo.`,
       );
     } catch (e: any) {
