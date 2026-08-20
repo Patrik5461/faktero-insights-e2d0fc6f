@@ -29,6 +29,7 @@ import {
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem } from "./MobilChrome";
+import { PrebiehaJazda } from "./PrebiehaJazda";
 import { HistoriaJazd } from "./HistoriaJazd";
 
 /**
@@ -404,6 +405,12 @@ export function Jazda({
       }
     >
       <div className="space-y-4">
+        {/*
+          Jazda rozpoznaná detekciou beží mimo tejto obrazovky — bez pruhu by
+          tu stálo „meranie zatiaľ nebeží", hoci telefón práve nahráva.
+        */}
+        {!bezi && <PrebiehaJazda />}
+
         <div className="grid place-items-center rounded-2xl border border-border/70 bg-card px-4 py-8 shadow-[var(--shadow-card)]">
           <div className="text-[56px] font-semibold leading-none tabular-nums">
             {km.toFixed(1)}

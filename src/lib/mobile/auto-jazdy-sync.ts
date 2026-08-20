@@ -322,3 +322,40 @@ export async function odosliCakajuceJazdy(
   }
   return { ulozene, cakajuce };
 }
+
+/** Čo appka potrebuje vedieť o jazde, ktorá práve beží. */
+export type BeziacaJazda = {
+  id: string;
+  /** Kedy sa začala, v milisekundách. */
+  zaciatok: number;
+  km: number;
+  /** `true`, keď ju spustil človek tlačidlom — nie detekcia. */
+  rucna: boolean;
+};
+
+/**
+ * Jazda, ktorá práve beží. `null`, keď nič nebeží alebo appka nie je v telefóne.
+ *
+ * Detekcia si o jazde povie notifikáciou raz, v momente rozpoznania. Kto ju
+ * prehliadne — telefón vo vrecku, režim sústredenia počas šoférovania —
+ * nemá sa už ako dozvedieť, či sa jazda vôbec nahráva. Odtiaľto to appka vie
+ * povedať kedykoľvek.
+ */
+export async function beziacaJazda(): Promise<BeziacaJazda | null> {
+  const p = await plugin();
+  if (!p) return null;
+  try {
+    const stav = await p.getState();
+    const j = stav.activeTrip;
+    // `activeTrip` ostáva vyplnené aj po skončení, kým si ho appka neprevezme.
+    if (!j || j.endedAt != null) return null;
+    return {
+      id: j.id,
+      zaciatok: j.startedAt,
+      km: j.distanceMeters / 1000,
+      rucna: Boolean(j.manual),
+    };
+  } catch {
+    return null;
+  }
+}

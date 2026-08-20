@@ -9,6 +9,7 @@ import { Jazda } from "./Jazda";
 import { Banka } from "./Banka";
 import { MobilPanel } from "./MobilPanel";
 import { StavPushu } from "./StavPushu";
+import { PruhJazdy } from "./PrebiehaJazda";
 
 /**
  * Že sa obrazovka vôbec vykreslí.
@@ -88,5 +89,36 @@ describe("poistka pri načítaní obrazovky", () => {
     const html = renderToString(<MobilnaApka />);
     expect(html).toContain("Spúšťam Faktero");
     expect(html).not.toContain("Otváram…");
+  });
+});
+
+/**
+ * Pruh „Nahrávam jazdu" — to jediné, čo počas jazdy prezradí, že sa naozaj
+ * nahráva. Notifikácia príde raz a v aute sa ľahko prehliadne.
+ */
+describe("pruh prebiehajúcej jazdy", () => {
+  const zaciatok = Date.UTC(2026, 7, 20, 11, 42);
+
+  it("povie kilometre, čas začiatku aj ako dlho beží", () => {
+    const html = renderToString(
+      <PruhJazdy
+        jazda={{ id: "t1", zaciatok, km: 12.44, rucna: false }}
+        teraz={zaciatok + 75 * 60_000}
+      />,
+    );
+    expect(html).toContain("Nahrávam jazdu");
+    // Vykreslenie na serveri kúsky textu oddeľuje značkami, preto po častiach.
+    expect(html).toContain("12.4");
+    expect(html).toContain("km · od");
+    expect(html).toContain("1 h 15 min");
+    expect(html).not.toContain("ručne");
+  });
+
+  it("ručne spustenú jazdu odlíši", () => {
+    const html = renderToString(
+      <PruhJazdy jazda={{ id: "t1", zaciatok, km: 0, rucna: true }} teraz={zaciatok} />,
+    );
+    expect(html).toContain("spustená ručne");
+    expect(html).toContain("0 min");
   });
 });

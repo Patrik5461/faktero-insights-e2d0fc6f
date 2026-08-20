@@ -7,6 +7,7 @@
  */
 import { Component, lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useOperacia } from "@/lib/mobile/server-most";
+import { PrebiehaJazda } from "./PrebiehaJazda";
 import { toast } from "sonner";
 import {
   ArrowUp,
@@ -1012,6 +1013,12 @@ function Domov({
         rovnakých tlačidlách ľahko ťukne vedľa a doklad skončí v zlej agende.
       */}
       <main className="flex-1 space-y-3 px-4 pt-5">
+        {/*
+          Kým jazda beží, je to prvé, čo je na obrazovke vidieť. Notifikácia
+          o rozpoznaní príde len raz a v aute sa ľahko prehliadne.
+        */}
+        <PrebiehaJazda onOtvor={onJazda} />
+
         {zrusiSa && (
           <button
             onClick={onUcet}
