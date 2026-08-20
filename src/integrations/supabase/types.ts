@@ -4000,15 +4000,15 @@ export type Database = {
           id: string
           invoice_number: string
           issue_date: string
-          items?: Json | null
+          items: Json | null
           job_id: string | null
           note: string | null
           payment_date: string | null
           payment_method: string | null
           pdf_url: string | null
           received_date: string
-          specific_symbol: string | null
           source: string
+          specific_symbol: string | null
           status: string
           supplier_dic: string | null
           supplier_iban: string | null
@@ -4042,8 +4042,8 @@ export type Database = {
           payment_method?: string | null
           pdf_url?: string | null
           received_date?: string
-          specific_symbol?: string | null
           source?: string
+          specific_symbol?: string | null
           status?: string
           supplier_dic?: string | null
           supplier_iban?: string | null
@@ -4077,8 +4077,8 @@ export type Database = {
           payment_method?: string | null
           pdf_url?: string | null
           received_date?: string
-          specific_symbol?: string | null
           source?: string
+          specific_symbol?: string | null
           status?: string
           supplier_dic?: string | null
           supplier_iban?: string | null
