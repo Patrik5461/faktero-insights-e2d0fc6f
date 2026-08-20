@@ -426,6 +426,11 @@ public final class DriveDetectorService: NSObject {
                     notifications.fire(tripId: jazda.id, texts: t)
                 }
                 delegate?.driveDetected(tripId: jazda.id, startedAt: jazda.startedAt)
+                oznam(.fakteroDriveStarted, [
+                    DriveEventKey.tripId: jazda.id,
+                    DriveEventKey.startedAt: jazda.startedAt,
+                    DriveEventKey.manual: jazda.manual
+                ])
 
             case .pointAppended(let tripId, let bod):
                 store.append(point: bod, tripId: tripId)
@@ -437,6 +442,10 @@ public final class DriveDetectorService: NSObject {
                 store.update(trip: jazda, status: jazda.classification == nil ? .ended : .confirmed)
                 store.flush()
                 delegate?.tripEnded(jazda)
+                oznam(.fakteroDriveEnded, [
+                    DriveEventKey.tripId: jazda.id,
+                    DriveEventKey.distanceMeters: jazda.distanceMeters
+                ])
 
             case .bufferDiscarded:
                 // Rozpracovaný buffer overovania nebol nikde uložený — jazda
@@ -457,6 +466,20 @@ public final class DriveDetectorService: NSObject {
         guard teraz - lastTripUpdateAt >= Self.tripUpdateThrottle else { return }
         lastTripUpdateAt = teraz
         delegate?.tripUpdated(jazda)
+        oznam(.fakteroDriveUpdated, [
+            DriveEventKey.tripId: jazda.id,
+            DriveEventKey.startedAt: jazda.startedAt,
+            DriveEventKey.distanceMeters: jazda.distanceMeters,
+            DriveEventKey.manual: jazda.manual
+        ])
+    }
+
+    /// Ohlásenie do appky. Vždy na hlavnom vlákne — na druhom konci je
+    /// kreslenie a ActivityKit, a tie inam nepatria.
+    private func oznam(_ meno: Notification.Name, _ udaje: [String: Any]) {
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: meno, object: nil, userInfo: udaje)
+        }
     }
 
     // MARK: - Nastavenia ako slovník

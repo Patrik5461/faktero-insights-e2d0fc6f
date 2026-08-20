@@ -57,6 +57,10 @@
 	<string>Aby sa jazda zapísala aj vtedy, keď máte telefón vo vrecku, potrebujeme polohu aj na pozadí. Presnú polohu zapíname len počas jazdy autom.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Pohybové senzory nám pomôžu rozoznať jazdu autom od chôdze, aby sme nezaznamenávali cesty, ktoré do knihy jázd nepatria.</string>
+	<!-- Prúžok „Nahrávam jazdu" na uzamknutej obrazovke. Bez tohto kľúča
+	     ActivityKit prúžok odmietne zapnúť a nepovie prečo. -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

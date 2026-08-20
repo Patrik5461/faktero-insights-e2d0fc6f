@@ -14,6 +14,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // polohy vytvoreného — čakať na WebView (ktorý sa na pozadí nemusí
         // načítať vôbec, lebo ťahá stránku zo siete) by znamenalo stratiť ju.
         DriveDetectorService.shared.applicationLaunched(options: launchOptions)
+        // Počúva ohlásenia z detekcie a podľa nich zapína a zhasína prúžok na
+        // uzamknutej obrazovke. Musí to byť tu z toho istého dôvodu ako riadok
+        // vyššie — pri prebudení na pozadí iný náš kód nebeží.
+        DriveLiveActivity.shared.zacniPocuvat()
         return true
     }
 

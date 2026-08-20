@@ -175,3 +175,20 @@ zariadení. Detekcia bez senzorov beží normálne, len pomalšie.
 - nezapisuje do trasy merania s horšou presnosťou ako `maxAccuracyMeters`
 - nespúšťa druhú detekciu počas jazdy
 - neukončuje sama ručne spustenú jazdu (kto ju spustil, ten ju ukončí)
+
+## Ohlásenia do aplikácie (`Notification.Name.fakteroDrive*`)
+
+Plugin okrem mostu do JavaScriptu ohlasuje jazdu aj natívne — cez
+`NotificationCenter`, s kľúčmi v `DriveEventKey`:
+
+| Ohlásenie              | Kedy                       | `userInfo`                                        |
+| ---------------------- | -------------------------- | ------------------------------------------------- |
+| `fakteroDriveStarted`  | jazda začala               | `tripId`, `startedAt`, `manual`                    |
+| `fakteroDriveUpdated`  | pribudli kilometre (škrtené) | `tripId`, `startedAt`, `distanceMeters`, `manual` |
+| `fakteroDriveEnded`    | jazda skončila             | `tripId`, `distanceMeters`                         |
+
+Je to zámerne hlúpy kanál: plugin nevie, čo s tým appka urobí, a nemá vedieť.
+Dnes z toho appka kreslí prúžok „Nahrávam jazdu" na uzamknutej obrazovke
+(`ios/App/App/DriveLiveActivity.swift` + rozšírenie `FakteroDriveActivity`).
+JavaScript sa na tento kanál nedostane a nemá prečo — pri prebudení na pozadí
+žiadny nebeží, kým natívna časť appky beží vždy.
