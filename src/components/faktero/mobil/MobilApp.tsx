@@ -9,6 +9,7 @@ import { Component, lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import {
+  ArrowUp,
   Building2,
   Camera,
   Menu,
@@ -980,27 +981,27 @@ function Domov({
             iný pruh než spoločný pás nad ním.
           */
           viacFiriem ? (
-          <div
-            className="px-4 pb-5 pt-1"
-            style={{
-              backgroundImage: `linear-gradient(180deg, ${ZELENA_HORE} 0%, ${ZELENA_HORE} 30%, ${ZELENA_DOLE} 100%)`,
-            }}
-          >
-            <button
-              onClick={viacFiriem ? onZmenitFirmu : undefined}
-              className={`flex w-full items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5 text-left ${
-                viacFiriem ? "active:bg-white/25" : "cursor-default"
-              }`}
+            <div
+              className="px-4 pb-5 pt-1"
+              style={{
+                backgroundImage: `linear-gradient(180deg, ${ZELENA_HORE} 0%, ${ZELENA_HORE} 30%, ${ZELENA_DOLE} 100%)`,
+              }}
             >
-              <Building2 className="h-4 w-4 shrink-0" />
-              <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
-                {firma?.name ?? "Bez firmy"}
-              </span>
-              {viacFiriem && (
-                <span className="shrink-0 text-[12px] text-primary-foreground/80">zmeniť</span>
-              )}
-            </button>
-          </div>
+              <button
+                onClick={viacFiriem ? onZmenitFirmu : undefined}
+                className={`flex w-full items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5 text-left ${
+                  viacFiriem ? "active:bg-white/25" : "cursor-default"
+                }`}
+              >
+                <Building2 className="h-4 w-4 shrink-0" />
+                <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
+                  {firma?.name ?? "Bez firmy"}
+                </span>
+                {viacFiriem && (
+                  <span className="shrink-0 text-[12px] text-primary-foreground/80">zmeniť</span>
+                )}
+              </button>
+            </div>
           ) : null
         }
       />
@@ -1391,7 +1392,18 @@ function Potvrdenie({
       onBack={onSpat}
       footer={
         <HlavneTlacidlo onClick={onUloz} disabled={!uhrada}>
-          {uhrada ? "Uložiť doklad" : "Vyberte spôsob úhrady"}
+          {uhrada ? (
+            "Uložiť doklad"
+          ) : (
+            /*
+              Šípka nahor je tu naschvál: tlačidlo drží spodok obrazovky a
+              výber úhrady môže byť odrolovaný mimo dohľadu. Bez nej človek
+              číta „vyberte spôsob úhrady" a nevie kde.
+            */
+            <span className="inline-flex items-center gap-1.5">
+              <ArrowUp className="h-4 w-4" /> Vyberte spôsob úhrady
+            </span>
+          )}
         </HlavneTlacidlo>
       }
     >
@@ -1424,15 +1436,34 @@ function Potvrdenie({
           eKasy posielať nemusí. Pýtame sa hneď, lebo z pokladne uberá len
           doklad platený hotovosťou.
         */}
-        <div>
-          <div className="mb-2 text-sm font-medium">
+        {/*
+          Kým nie je vybraté, celý blok si pýta pozornosť. Predtým sa od zvyšku
+          obrazovky ničím nelíšil, tlačidlo dole bolo len zošednuté a človek
+          hľadal, prečo sa doklad nedá uložiť.
+        */}
+        <div
+          className={`rounded-2xl transition-colors ${
+            uhrada ? "" : "border border-primary/50 bg-primary/5 p-3 ring-4 ring-primary/10"
+          }`}
+        >
+          <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
             Ako ste platili?
+            {!uhrada && (
+              <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+                Povinné
+              </span>
+            )}
             {vysledok.payment_method && (
-              <span className="ml-1 text-xs font-normal text-muted-foreground">
+              <span className="text-xs font-normal text-muted-foreground">
                 (prečítané z dokladu)
               </span>
             )}
           </div>
+          {!uhrada && (
+            <p className="mb-2 text-xs text-primary">
+              Vyberte jednu z možností — bez nej sa doklad uložiť nedá.
+            </p>
+          )}
           <div className="grid grid-cols-3 gap-2">
             {(
               [
@@ -1447,7 +1478,9 @@ function Potvrdenie({
                 className={`rounded-2xl border py-3.5 text-[14px] transition active:scale-[0.98] ${
                   uhrada === id
                     ? "border-primary bg-primary/10 font-semibold text-primary"
-                    : "border-border/70 bg-card text-foreground"
+                    : uhrada
+                      ? "border-border/70 bg-card text-foreground"
+                      : "border-primary/40 bg-card font-medium text-foreground"
                 }`}
               >
                 {label}
