@@ -8,7 +8,7 @@ import {
   stavCitaniaVypisuFn,
   vypisDoPohodyFn,
 } from "@/lib/faktero/vypis-pdf.functions";
-import type { VypisPohyb } from "@/lib/faktero/vypis-pohyby";
+import type { Vypis, VypisPohyb } from "@/lib/faktero/vypis-pohyby";
 import { Download, FileUp, Loader2, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/vypis-do-pohody")({
@@ -61,6 +61,18 @@ function suborNaBase64(file: File): Promise<string> {
   });
 }
 
+/**
+ * Výpis v XML sa nikam neposiela — prečíta sa rovno v prehliadači.
+ *
+ * Je to jediný rozdiel oproti PDF a je zásadný: v XML je suma číslom a symboly
+ * vlastnými poľami, takže netreba model, netreba čakať a nedá sa to prečítať
+ * zle. Súbor pritom neopustí počítač.
+ */
+const jeXml = (f: File) => /\.xml$/i.test(f.name) || /xml/i.test(f.type);
+
+/** Výpis za dvadsať megabajtov XML nie je — to je omylom nahratý iný súbor. */
+const STROP_XML = 20 * 1024 * 1024;
+
 function eur(n: number): string {
   return n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -97,10 +109,42 @@ function VypisDoPohodyPage() {
     }
   }
 
+  function prevezmi(v: Vypis) {
+    setCisloVypisu(v.cisloVypisu ?? "");
+    setDatumVypisu(v.datumVypisu ?? "");
+    setUcet(v.ucet);
+    setMena(v.mena);
+    setRiadky(v.pohyby.map((p) => ({ ...p, vyviezt: true })));
+  }
+
+  async function nahrajXml(file: File) {
+    setNacitavam(true);
+    try {
+      if (file.size > STROP_XML) throw new Error("Súbor je väčší než 20 MB — je to naozaj výpis?");
+      const { citajBankoveXml } = await import("@/lib/faktero/vypis-xml");
+      const { vypis, varovanie: v, format } = citajBankoveXml(await file.text());
+      if (!vypis.pohyby.length) throw new Error("Vo výpise nie je ani jeden zaúčtovaný pohyb.");
+      prevezmi(vypis);
+      setVarovanie(v);
+      setZdroj(
+        `Prečítané priamo z XML (${format}) — ${vypis.pohyby.length} ${
+          vypis.pohyby.length === 1 ? "pohyb" : "pohybov"
+        }. Sumy, symboly aj protistrany sú od banky, nič sa nerozpoznávalo.`,
+      );
+    } catch (e: any) {
+      setChyba(e?.message ?? "Výpis sa nepodarilo prečítať.");
+      setVarovanie(null);
+      setRiadky([]);
+    } finally {
+      setNacitavam(false);
+    }
+  }
+
   async function nahraj(file: File | null) {
     if (!file) return;
-    if (!cid) return setChyba("Najprv vyberte firmu.");
     setChyba(null);
+    if (jeXml(file)) return void (await nahrajXml(file));
+    if (!cid) return setChyba("Najprv vyberte firmu.");
     setNacitavam(true);
     try {
       const zPrehliadaca = await textZPdf(file);
@@ -122,11 +166,7 @@ function VypisDoPohodyPage() {
       if (!odpoved.ok || !odpoved.vypis)
         throw new Error(odpoved.chyba ?? "Výpis sa nepodarilo prečítať.");
       const v = odpoved.vypis;
-      setCisloVypisu(v.cisloVypisu ?? "");
-      setDatumVypisu(v.datumVypisu ?? "");
-      setUcet(v.ucet);
-      setMena(v.mena);
-      setRiadky(v.pohyby.map((p: VypisPohyb) => ({ ...p, vyviezt: true })));
+      prevezmi(v);
       setVarovanie(v.varovanie ?? null);
       setZdroj(
         v.zdroj === "sken"
@@ -191,7 +231,7 @@ function VypisDoPohodyPage() {
     <>
       <PageHeader
         title="Bankový výpis do Pohody"
-        description="Z PDF výpisu vyrobí XML, ktoré POHODA načíta ako bankové doklady."
+        description="Z výpisu z banky (XML aj PDF) vyrobí XML, ktoré POHODA načíta ako bankové doklady."
       />
       <PageBody>
         <div className="space-y-6">
@@ -203,14 +243,16 @@ function VypisDoPohodyPage() {
                 <FileUp className="h-6 w-6 text-primary" />
               )}
               <span className="text-sm font-medium">
-                {nacitavam ? "Čítam výpis…" : "Vyberte PDF bankového výpisu"}
+                {nacitavam ? "Čítam výpis…" : "Vyberte výpis — XML alebo PDF"}
               </span>
               <span className="text-xs text-muted-foreground">
-                Výpis stiahnutý z internetbankingu. Naskenovaný sa prečíta tiež, len menej isto.
+                <strong>XML z internetbankingu</strong> (banky mu hovoria SEPA XML alebo camt.053)
+                je presné — sumy, symboly aj protistrany sú priamo od banky a prečíta sa hneď. PDF
+                sa rozpoznáva, naskenované ešte aj z obrazu, takže riadky treba prejsť.
               </span>
               <input
                 type="file"
-                accept="application/pdf,.pdf"
+                accept="application/pdf,.pdf,application/xml,text/xml,.xml"
                 className="hidden"
                 disabled={nacitavam}
                 onChange={(e) => void nahraj(e.target.files?.[0] ?? null)}
@@ -333,10 +375,12 @@ function VypisDoPohodyPage() {
                             onChange={(e) => uprav(i, { suma: Number(e.target.value) })}
                           />
                         </td>
-                        <td className="p-2">
+                        <td className="min-w-[320px] p-2">
+                          {/* Popis z XML býva dlhý a práve ten sa najviac upravuje. */}
                           <input
                             className={vstup}
                             value={r.popis ?? ""}
+                            title={r.popis ?? ""}
                             onChange={(e) => uprav(i, { popis: e.target.value })}
                           />
                         </td>
@@ -385,6 +429,7 @@ function VypisDoPohodyPage() {
                     onClick={() => {
                       setRiadky([]);
                       setZdroj(null);
+                      setVarovanie(null);
                     }}
                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm"
                   >
