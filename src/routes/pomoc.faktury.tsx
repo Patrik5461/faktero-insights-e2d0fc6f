@@ -49,12 +49,9 @@ const sections: HelpSection[] = [
           ho vytvorí automaticky a uloží do priloženého úložiska.
         </p>
         <p>
-          PDF obsahuje vaše logo, IBAN, QR kód pre bankový prevod a — ak ste vytvorili platobný
-          odkaz — aj blok <em>Zaplatiť online</em> cez GoPay.
-        </p>
-        <p>
-          <strong>Tip:</strong> Po vytvorení platobného odkazu sa cached PDF zruší a pri ďalšom
-          stiahnutí sa vygeneruje s aktuálnym odkazom.
+          PDF obsahuje vaše logo, IBAN, variabilný symbol a{" "}
+          <strong>QR kód na platbu prevodom</strong>. Zákazník ho naskenuje v mobilnom bankovníctve
+          a nemusí prepisovať čísla.
         </p>
       </>
     ),
@@ -72,8 +69,8 @@ const sections: HelpSection[] = [
           <li>Faktero priloží PDF a odošle správu cez Resend.</li>
         </ol>
         <p>
-          Ak je pre faktúru aktívny platobný odkaz, do tela emailu sa automaticky doplní tlačidlo{" "}
-          <em>Zaplatiť online</em>.
+          V PDF je aj <strong>QR kód na platbu</strong>, takže zákazník nemusí prepisovať IBAN ani
+          variabilný symbol — naskenuje ho v mobilnom bankovníctve.
         </p>
       </>
     ),
@@ -86,11 +83,13 @@ const sections: HelpSection[] = [
         <p>Existujú tri spôsoby:</p>
         <ul>
           <li>
-            <strong>Automaticky:</strong> ak zákazník zaplatí cez GoPay, faktúra sa označí ako
-            uhradená v okamihu prijatia notifikácie.
+            <strong>Sama z banky:</strong> keď je banka pripojená, platba sa spáruje podľa
+            variabilného symbolu a sumy a faktúra sa označí za uhradenú (
+            <Link to="/pomoc/banka">párovanie úhrad</Link>).
           </li>
           <li>
-            <strong>Cez bankovú integráciu:</strong> spárovaním platby s variabilným symbolom.
+            <strong>Z bankového výpisu:</strong> nahratý výpis sa spáruje rovnako ako živé
+            transakcie.
           </li>
           <li>
             <strong>Manuálne:</strong> na detaile faktúry → <em>Pridať platbu</em> alebo{" "}
@@ -101,26 +100,25 @@ const sections: HelpSection[] = [
     ),
   },
   {
-    id: "gopay-link",
-    title: "Ako funguje GoPay platobný odkaz",
+    id: "uhrada-od-zakaznika",
+    title: "Ako od zákazníka dostať peniaze",
     body: (
       <>
         <p>
-          Po pripojení GoPay účtu (
-          <Link to="/nastavenia/online-platby">Nastavenia → Online platby</Link>) sa na detaile
-          faktúry objaví tlačidlo <strong>Vytvoriť platobný odkaz</strong>.
+          Faktúra ide zákazníkovi s{" "}
+          <strong>IBAN-om, variabilným symbolom a QR kódom na platbu</strong>, takže si ju v
+          mobilnom bankovníctve naskenuje a neprepisuje čísla ručne.
         </p>
-        <ul>
-          <li>
-            Odkaz má tvar <code>https://www.faktero.sk/pay/{`{token}`}</code>.
-          </li>
-          <li>
-            Skopírujte ho zákazníkovi, vložte do emailu alebo nechajte automaticky priložiť v PDF.
-          </li>
-          <li>Peniaze idú priamo na váš GoPay účet, Faktero si neúčtuje províziu.</li>
-        </ul>
         <p>
-          Viac v <Link to="/pomoc/online-platby/gopay">návode pre GoPay</Link>.
+          Keď peniaze prídu, <Link to="/bankove-ucty/transakcie">párovanie úhrad z banky</Link>{" "}
+          faktúru označí za uhradenú samo — netreba to preklikávať. Ak platba dorazila inak
+          (hotovosť, iný účet), označíte ju ručne na detaile faktúry.
+        </p>
+        <p>
+          <strong>Platby kartou pre vašich zákazníkov Faktero neponúka.</strong> Aby firma mohla
+          prijímať karty pod vlastným účtom, potrebuje poskytovateľ platobnej brány zmluvu, ktorá to
+          na spoločnej doméne umožňuje — kým ju nemáme, funkciu nesľubujeme. Netýka sa to platenia{" "}
+          <Link to="/pomoc/predplatne">predplatného za Faktero</Link>, to cez bránu funguje bežne.
         </p>
       </>
     ),
