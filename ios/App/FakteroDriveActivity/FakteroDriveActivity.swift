@@ -14,6 +14,9 @@ import WidgetKit
  by slovenčina nemala čo hľadať, tu je na mieste rovnako ako v storyboarde.
  */
 
+/// Zelená Faktera — `--primary` zo `styles.css` (`#007e46`).
+private let FAKTERO_ZELENA = Color(red: 0.0, green: 0.494, blue: 0.275)
+
 @main
 struct FakteroDriveActivityBundle: WidgetBundle {
     var body: some Widget {
@@ -28,10 +31,11 @@ struct DriveActivityWidget: Widget {
             HStack(spacing: 12) {
                 Image(systemName: "car.fill")
                     .font(.title3)
-                    .foregroundColor(.green)
+                    .foregroundColor(.white)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Nahrávam jazdu")
                         .font(.headline)
+                        .foregroundColor(.white)
                     HStack(spacing: 6) {
                         // Čas beží sám — `style: .timer` si prekresľuje systém,
                         // takže sa naň nemíňajú obnovenia z denného stropu.
@@ -41,15 +45,25 @@ struct DriveActivityWidget: Widget {
                         Text(popis(rucna: kontext.attributes.rucna))
                     }
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.white.opacity(0.85))
                 }
                 Spacer()
                 Text(kilometre(kontext.state.kilometre))
                     .font(.title2.monospacedDigit())
                     .fontWeight(.semibold)
+                    .foregroundColor(.white)
             }
             .padding()
-            .activityBackgroundTint(Color.black.opacity(0.75))
+            /*
+              Farby sa píšu natvrdo, lebo pozadie si určujeme sami.
+
+              Predtým tu bola čierna s priesvitnosťou a texty ostali v
+              systémovej „primary" — na telefóne vo svetlom režime teda čierne
+              na tmavom, čiže nečitateľné. Zelená je naša (`--primary`,
+              `#007e46`) a všetko na nej je biele, nech to vyzerá rovnako v
+              oboch režimoch.
+            */
+            .activityBackgroundTint(FAKTERO_ZELENA)
             .activitySystemActionForegroundColor(.white)
 
         } dynamicIsland: { kontext in

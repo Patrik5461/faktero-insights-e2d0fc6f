@@ -66,3 +66,16 @@ v zdrojoch oboch cieľov.
 Na Macu sa prúžok dá vyskúšať bez auta: `startTrip()` (ručná jazda) ho zapne
 rovnako ako detekcia — v ohlásení je `manual: true`, takže na prúžku bude
 „spustená ručne".
+
+## Farby prúžku
+
+Pozadie si prúžok určuje sám (`activityBackgroundTint`), **texty preto musia mať
+farbu napísanú natvrdo**. Prvá verzia mala čierne priesvitné pozadie a texty
+nechala v systémovej `primary` — na telefóne vo svetlom režime to bolo čierne na
+tmavom a nedalo sa to prečítať. Odteraz je pozadie zelené (`#007e46`, to isté
+`--primary` ako web) a všetko na ňom biele.
+
+Keby sa niekedy chcel natívny vzhľad namiesto zelenej, stačí riadok
+`.activityBackgroundTint(FAKTERO_ZELENA)` vymazať — systém potom nakreslí
+pozadie sám a farby textov sa musia vrátiť na `.primary`/`.secondary`.
+
