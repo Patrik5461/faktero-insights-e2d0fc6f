@@ -493,8 +493,10 @@ function ObsahApky() {
 
     // Odhlásenie odvoláva token na serveri, takže bez signálu zlyhá. Relácia v
     // telefóne sa musí zmazať tak či tak — na požičanom telefóne by inak ostala.
+    // `scope: "local"` odhlási len tento telefón; bez neho by Supabase odvolal
+    // všetky tokeny účtu a vyhodil človeka aj z webu na počítači.
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
     } catch {
       /* bez siete sa token odvolať nedá; lokálne ho zabudneme nižšie */
     }

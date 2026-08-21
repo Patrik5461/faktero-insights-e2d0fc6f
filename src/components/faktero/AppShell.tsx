@@ -410,8 +410,16 @@ export function AppShell({
   const activeGroup = nav.find((g) => isPathActive(pathname, g));
   const activeKey = activeGroup ? activeChildKey(activeGroup.children, pathname, locSearch) : null;
 
+  /*
+    `scope: "local"` odhlási **toto** zariadenie, nie účet všade.
+
+    Supabase má bez neho `scope: "global"`, čiže odhlásenie na webe odvolá
+    všetky tokeny účtu — a človeka to vyhodí aj z appky v telefóne, hoci sa jej
+    ani nedotkol. Relácia sa tu maže z prehliadača; telefón si tú svoju drží
+    ďalej.
+  */
   async function signOut() {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     window.location.href = "/prihlasenie";
   }
 
