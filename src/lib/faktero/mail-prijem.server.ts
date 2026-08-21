@@ -12,8 +12,16 @@ import {
   jePrilohaDoklad,
   zostavPrijatuFakturu,
   podomenaDokladov,
+  celaAdresa,
   PODOMENA_DOKLADOV,
 } from "./mail-prijem";
+import {
+  poskytovatelPotvrdenia,
+  overPravostPotvrdenia,
+  potvrdenieZMailu,
+  rozbalTelo,
+  type OdosielatelPotvrdeni,
+} from "./mail-potvrdenie";
 
 /** Koľko príloh z jedného mailu spracujeme a aká veľká smie byť. */
 const MAX_PRILOH = 5;
@@ -93,6 +101,22 @@ export async function precitajDoklad(
   }
 }
 
+/**
+ * Celý prijatý mail vrátane tela a hlavičiek. Webhook nesie len metadáta —
+ * text, HTML ani `Authentication-Results` v ňom nie sú, a práve tie treba na
+ * potvrdenie preposielania a na overenie, že mail je naozaj od Googlu.
+ */
+async function obsahMailu(emailId: string, apiKey: string): Promise<Record<string, any>> {
+  const r = await fetch(`https://api.resend.com/emails/receiving/${emailId}`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!r.ok) {
+    const telo = (await r.text()).slice(0, 200);
+    throw new Error(`Resend obsah mailu: ${r.status} ${telo}`);
+  }
+  return (await r.json()) as Record<string, any>;
+}
+
 async function prilohyMailu(emailId: string, apiKey: string): Promise<ResendPrilohaMeta[]> {
   const r = await fetch(`https://api.resend.com/emails/receiving/${emailId}/attachments`, {
     headers: { Authorization: `Bearer ${apiKey}` },
@@ -120,10 +144,71 @@ export type PrijatyMail = {
 };
 
 export type VysledokPrijmu = {
-  stav: "hotovo" | "bez_prilohy" | "neznama_adresa" | "chyba";
+  stav: "hotovo" | "bez_prilohy" | "neznama_adresa" | "potvrdenie" | "chyba";
   vytvorenych: number;
   detail?: string;
 };
+
+/**
+ * Potvrdenie preposielania (dnes Gmail).
+ *
+ * Uloží sa z neho **len** kód, odkaz a schránka, z ktorej sa preposiela — telo
+ * mailu nikam neputuje. Mail, ktorý neprejde overením pravosti, sa zahodí:
+ * inak by stačilo poslať firme mail „od Googlu" s vlastným odkazom a používateľ
+ * by si odklikol cudzie preposielanie.
+ */
+async function ulozPotvrdeniePreposielania(args: {
+  supabaseAdmin: any;
+  companyId: string;
+  emailId: string;
+  apiKey: string;
+  predmet: string | null;
+  poskytovatel: OdosielatelPotvrdeni;
+  naseAdresy: (string | null | undefined)[];
+}): Promise<string> {
+  const obsah = await obsahMailu(args.emailId, args.apiKey);
+
+  const pravost = overPravostPotvrdenia({
+    headers: obsah.headers ?? null,
+    spf: obsah.spf,
+    dkim: obsah.dkim,
+    domena: args.poskytovatel.domena,
+  });
+  if (!pravost.ok) {
+    // Do logu ide len zoznam názvov hlavičiek — podľa neho sa dá zistiť, či ich
+    // Resend vôbec posiela, a pritom sa nikam nevypíše obsah cudzieho mailu.
+    console.warn(
+      `[mail-prijem] potvrdenie od ${args.poskytovatel.adresa} zahodené: ${pravost.dovod}` +
+        ` (hlavičky: ${Object.keys(obsah.headers ?? {}).join(", ") || "žiadne"})`,
+    );
+    return `Potvrdenie preposielania zahodené — ${pravost.dovod}.`;
+  }
+
+  const udaje = potvrdenieZMailu({
+    provider: args.poskytovatel.provider,
+    predmet: args.predmet,
+    text: rozbalTelo(obsah.text),
+    html: rozbalTelo(obsah.html),
+    naseAdresy: args.naseAdresy,
+  });
+
+  if (!udaje.code && !udaje.confirm_url) {
+    console.warn("[mail-prijem] v potvrdení nebol kód ani odkaz");
+    return "Potvrdenie preposielania prišlo, ale kód ani odkaz sa v ňom nenašli.";
+  }
+
+  const { error } = await args.supabaseAdmin.from("inbox_verifications").insert({
+    company_id: args.companyId,
+    provider: udaje.provider,
+    source_email: udaje.source_email,
+    code: udaje.code,
+    confirm_url: udaje.confirm_url,
+  });
+  if (error) throw new Error(`zápis potvrdenia zlyhal: ${error.message}`);
+
+  const odkial = udaje.source_email ? ` z ${udaje.source_email}` : "";
+  return `Potvrdenie preposielania${odkial} — kód ${udaje.code ?? "sa nenašiel, použite odkaz"}.`;
+}
 
 /**
  * Spracuje jeden prijatý mail: nájde firmu podľa adresy, stiahne prílohy, uloží ich
@@ -190,6 +275,30 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
      */
     const apiKey = (process.env.RESEND_INBOUND_API_KEY || process.env.RESEND_API_KEY)?.trim();
     if (!apiKey) throw new Error("RESEND_INBOUND_API_KEY ani RESEND_API_KEY nie je nastavený");
+
+    /*
+      Potvrdenie preposielania od poskytovateľa pošty ide vlastnou cestou a
+      **nesmie** sa dostať do bežného spracovania: nie je to doklad a jeho telo
+      nemá čo skončiť v prijatých faktúrach.
+    */
+    const poskytovatel = poskytovatelPotvrdenia(odosielatel);
+    if (poskytovatel) {
+      const detail = await ulozPotvrdeniePreposielania({
+        supabaseAdmin,
+        companyId: adresa.company_id,
+        emailId: mail.email_id,
+        apiKey,
+        predmet,
+        poskytovatel,
+        naseAdresy: [
+          celaAdresa(localPart, podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA)),
+          ...(mail.to ?? []),
+          ...(mail.received_for ?? []),
+        ],
+      });
+      await doprav("potvrdenie", detail, 0, []);
+      return { stav: "potvrdenie", vytvorenych: 0, detail };
+    }
 
     const vsetky = await prilohyMailu(mail.email_id, apiKey);
     const doklady = vsetky.filter((p) => jePrilohaDoklad(p.content_type, p.filename));

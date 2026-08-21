@@ -2600,6 +2600,50 @@ export type Database = {
           },
         ]
       }
+      inbox_verifications: {
+        Row: {
+          code: string | null
+          company_id: string
+          confirm_url: string | null
+          confirmed_at: string | null
+          expires_at: string
+          id: string
+          provider: string
+          received_at: string
+          source_email: string | null
+        }
+        Insert: {
+          code?: string | null
+          company_id: string
+          confirm_url?: string | null
+          confirmed_at?: string | null
+          expires_at?: string
+          id?: string
+          provider?: string
+          received_at?: string
+          source_email?: string | null
+        }
+        Update: {
+          code?: string | null
+          company_id?: string
+          confirm_url?: string | null
+          confirmed_at?: string | null
+          expires_at?: string
+          id?: string
+          provider?: string
+          received_at?: string
+          source_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_verifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_count_items: {
         Row: {
           counted_quantity: number | null
