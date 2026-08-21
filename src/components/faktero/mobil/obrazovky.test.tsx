@@ -43,7 +43,7 @@ describe("mobilné obrazovky sa vykreslia", () => {
 
   it("vystavené faktúry", () => {
     expect(
-      renderToString(<VystaveneFaktury firma={firma} onSpat={nic} onNova={nic} />),
+      renderToString(<VystaveneFaktury firma={firma} onSpat={nic} onNova={nic} onUprav={nic} />),
     ).toBeTruthy();
   });
 

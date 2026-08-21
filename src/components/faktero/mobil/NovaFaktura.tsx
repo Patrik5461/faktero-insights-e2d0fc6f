@@ -24,6 +24,7 @@ import { friendlyError } from "@/lib/faktero/plan-error";
 import { POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import type { OdlozenaFaktura } from "@/lib/mobile/faktury-fronta";
+import { riadkyNaZapis, suctyFaktury } from "@/lib/mobile/faktura-uprava";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 
 /**
@@ -114,11 +115,20 @@ export function NovaFaktura({
   firma,
   onSpat,
   onHotovo,
+  upravuje,
 }: {
   firma: { id: string; name: string };
   onSpat: () => void;
   /** Po vystavení vedieme človeka do zoznamu — nech vidí, že faktúra existuje. */
   onHotovo: () => void;
+  /**
+   * Oprava už vystavenej faktúry.
+   *
+   * Je to tá istá obrazovka zámerne: keby mala oprava vlastnú, museli by sa v
+   * nej znova napísať položky, cenník aj súčty — a rozišli by sa. Odberateľ sa
+   * pritom nemení (rovnako ako na webe), takže sa začína rovno položkami.
+   */
+  upravuje?: { id: string; invoice_number: string };
 }) {
   const nacitajPodklady = useOperacia("faktura-podklady");
   const nacitajCennik = useOperacia("cennik-kontext");
@@ -197,6 +207,60 @@ export function NovaFaktura({
     // eslint-disable-next-line
   }, [firma.id]);
 
+  /*
+    Oprava: doťahujú sa hlavička aj položky. Ide to cez `supabase` a nie cez
+    serverovú operáciu — čítanie stráži RLS a appka tu nepotrebuje nič navyše.
+  */
+  useEffect(() => {
+    if (!upravuje || !podklady) return;
+    let zrusene = false;
+    (async () => {
+      const [{ data: f, error: chybaF }, { data: polozky }] = await Promise.all([
+        supabase
+          .from("invoices")
+          .select("customer_id, issue_date, due_date, payment_method, notes, status")
+          .eq("id", upravuje.id)
+          .single(),
+        supabase
+          .from("invoice_items")
+          .select("name, quantity, unit, unit_price, vat_rate, product_id")
+          .eq("invoice_id", upravuje.id)
+          .order("position"),
+      ]);
+      if (zrusene) return;
+      if (chybaF || !f) {
+        toast.error("Faktúru sa nepodarilo načítať.");
+        onSpat();
+        return;
+      }
+      const o =
+        podklady.odberatelia.find((x) => x.id === f.customer_id) ??
+        ({ id: f.customer_id, name: "Odberateľ" } as Odberatel);
+      setOdberatel(o);
+      setVystavenie(f.issue_date ?? dnes());
+      setSplatnost(f.due_date ?? oDni(dnes(), 14));
+      setUhrada((f.payment_method as typeof uhrada) ?? "bank_transfer");
+      setPoznamka(f.notes ?? "");
+      setRiadky(
+        (polozky ?? []).map((r: any) => ({
+          key: Math.random().toString(36).slice(2),
+          name: r.name ?? "",
+          quantity: String(r.quantity ?? 1).replace(".", ","),
+          unit: r.unit || "ks",
+          unit_price: String(r.unit_price ?? 0).replace(".", ","),
+          vat_rate: Number(r.vat_rate ?? 0),
+          product_id: r.product_id ?? null,
+          dovod: null,
+        })),
+      );
+      setKrok("polozky");
+    })();
+    return () => {
+      zrusene = true;
+    };
+    // eslint-disable-next-line
+  }, [upravuje?.id, podklady]);
+
   /* Cenník sa načíta až keď je známy odberateľ — dohodnuté ceny a zľavy sú jeho. */
   async function vyberOdberatela(o: Odberatel) {
     setOdberatel(o);
@@ -270,10 +334,79 @@ export function NovaFaktura({
 
   const pouzitelne = riadky.filter((r) => r.name.trim() && cislo(r.quantity) > 0);
 
+  /**
+   * Uloženie opravy.
+   *
+   * Položky sa nezlučujú, ale prepíšu — je to to isté, čo robí web, a pri
+   * dvoch rovnakých riadkoch je to jediné, čo dá predvídateľný výsledok.
+   * Súčty počíta appka, aby sedeli s tým, čo mal človek pred očami.
+   */
+  async function ulozUpravu() {
+    if (!upravuje) return;
+    const vstupy = pouzitelne.map((x) => ({
+      name: x.name,
+      quantity: cislo(x.quantity),
+      unit: x.unit || "ks",
+      unit_price: cislo(x.unit_price),
+      vat_rate: platca ? x.vat_rate : 0,
+      product_id: x.product_id,
+    }));
+    const s = suctyFaktury(vstupy);
+
+    setUkladam(true);
+    try {
+      const { error: chybaHlavicky } = await supabase
+        .from("invoices")
+        .update({
+          issue_date: vystavenie,
+          due_date: splatnost,
+          payment_method: uhrada,
+          notes: poznamka.trim() || null,
+          subtotal: s.subtotal,
+          vat_total: s.vat_total,
+          total: s.total,
+        })
+        .eq("id", upravuje.id);
+      if (chybaHlavicky) throw new Error(chybaHlavicky.message);
+
+      const { error: chybaMazania } = await supabase
+        .from("invoice_items")
+        .delete()
+        .eq("invoice_id", upravuje.id);
+      if (chybaMazania) throw new Error(chybaMazania.message);
+
+      const { error: chybaZapisu } = await supabase
+        .from("invoice_items")
+        .insert(riadkyNaZapis(upravuje.id, vstupy));
+      if (chybaZapisu) throw new Error(chybaZapisu.message);
+
+      toast.success(`Faktúra ${upravuje.invoice_number} opravená`);
+      onHotovo();
+    } catch (e: any) {
+      toast.error(friendlyError(e, "Zmeny sa nepodarilo uložiť."));
+    } finally {
+      setUkladam(false);
+    }
+  }
+
   async function uloz() {
     if (!odberatel || pouzitelne.length === 0) return;
     if (splatnost < vystavenie) {
       toast.error("Splatnosť nemôže byť skôr ako vystavenie.");
+      return;
+    }
+    /*
+      Oprava nemá offline vetvu: mení sa doklad, ktorý už existuje na serveri,
+      a odkladať takú zmenu do fronty by znamenalo prepisovať niečo, čo medzitým
+      mohol zmeniť niekto iný.
+    */
+    if (upravuje) {
+      const { isOnline } = await import("@/lib/mobile/offline-queue");
+      if (!(await isOnline())) {
+        toast.error("Na opravu faktúry treba pripojenie.");
+        return;
+      }
+      await ulozUpravu();
       return;
     }
     const vstup = {
@@ -335,7 +468,7 @@ export function NovaFaktura({
   }
 
   if (!podklady) return <Pracujem text="Načítavam odberateľov…" />;
-  if (ukladam) return <Pracujem text="Vystavujem faktúru…" />;
+  if (ukladam) return <Pracujem text={upravuje ? "Ukladám zmeny…" : "Vystavujem faktúru…"} />;
 
   if (krok === "hotovo" && hotova) {
     return <Vystavena faktura={hotova} onHotovo={onHotovo} />;
@@ -369,7 +502,7 @@ export function NovaFaktura({
         platca={platca}
         mena={mena}
         sucty={sucty}
-        onSpat={() => setKrok("odberatel")}
+        onSpat={() => (upravuje ? onSpat() : setKrok("odberatel"))}
         onPridajProdukt={pridajProdukt}
         onPridajVlastnu={() => setRiadky((r) => [...r, prazdnyRiadok(zakladnaSadzba)])}
         posledna={posledna}

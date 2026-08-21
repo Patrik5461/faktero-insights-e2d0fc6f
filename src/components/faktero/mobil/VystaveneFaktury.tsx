@@ -8,8 +8,10 @@ import {
   ExternalLink,
   FileText,
   Mail,
+  Pencil,
   Search,
   Share2,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FAKTURY, sPoctom } from "@/lib/faktero/mnozne";
@@ -17,12 +19,16 @@ import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import { datum } from "./PrijateDoklady";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 import type { OdlozenaFaktura } from "@/lib/mobile/faktury-fronta";
+import { moznoUpravit } from "@/lib/mobile/faktura-uprava";
 
 /**
  * Vystavené faktúry v telefóne.
  *
- * Zoznam je zámerne len na čítanie a tri akcie: PDF, odoslať, označiť za
- * uhradenú. Opravovať faktúru na telefóne nemá zmysel — na to je web.
+ * Okrem PDF, odoslania a označenia úhrady sa dá faktúra aj **opraviť** a
+ * **zmazať** — preklep sa nájde aj vtedy, keď je človek u zákazníka a počítač
+ * je ďaleko. Platia rovnaké pravidlá ako na webe (`lib/mobile/faktura-uprava`):
+ * stornovaná sa neopravuje, mazanie je mäkké a faktúra hýbuca skladom patrí na
+ * počítač.
  */
 
 type Faktura = {
@@ -76,10 +82,13 @@ export function VystaveneFaktury({
   firma,
   onSpat,
   onNova,
+  onUprav,
 }: {
   firma: { id: string; name: string };
   onSpat: () => void;
   onNova: () => void;
+  /** Otvorí opravu faktúry — obrazovku vlastní `MobilApp`, nie tento zoznam. */
+  onUprav: (faktura: { id: string; invoice_number: string }) => void;
 }) {
   const nacitaj = useOperacia("faktury-zoznam");
   const [faktury, setFaktury] = useState<Faktura[] | null>(null);
@@ -182,6 +191,7 @@ export function VystaveneFaktury({
       <DetailFaktury
         faktura={otvorena}
         onSpat={() => setOtvorena(null)}
+        onUprav={onUprav}
         onZmena={async () => {
           setOtvorena(null);
           setFaktury(null);
@@ -324,10 +334,12 @@ function DetailFaktury({
   faktura,
   onSpat,
   onZmena,
+  onUprav,
 }: {
   faktura: Faktura;
   onSpat: () => void;
   onZmena: () => void;
+  onUprav: (faktura: { id: string; invoice_number: string }) => void;
 }) {
   const pdfFn = useOperacia("faktura-pdf");
   const mailFn = useOperacia("faktura-email");
@@ -336,6 +348,10 @@ function DetailFaktury({
   /* Koľká upomienka je na rade — text sa s každou ďalšou pritvrdzuje. */
   const [poslanych, setPoslanych] = useState(0);
 
+  /** Má faktúra položky viazané na sklad? Vtedy sa opravuje na počítači. */
+  const [skladove, setSkladove] = useState<boolean | null>(null);
+  const [mazem, setMazem] = useState(false);
+
   useEffect(() => {
     supabase
       .from("invoice_reminders")
@@ -343,8 +359,41 @@ function DetailFaktury({
       .eq("invoice_id", faktura.id)
       .eq("status", "sent")
       .then(({ data }) => setPoslanych(Math.max(0, ...(data ?? []).map((r) => r.reminder_number))));
+    supabase
+      .from("invoice_items")
+      .select("stock_item_id")
+      .eq("invoice_id", faktura.id)
+      .then(({ data, error }) =>
+        // Bez signálu to nevieme; vtedy sa oprava radšej neponúka, než by mala
+        // rozhádzať sklad.
+        setSkladove(error ? true : (data ?? []).some((r) => r.stock_item_id)),
+      );
   }, [faktura.id]);
-  const [busy, setBusy] = useState<"pdf" | "mail" | "paid" | "zdielam" | "upomienka" | null>(null);
+  const [busy, setBusy] = useState<
+    "pdf" | "mail" | "paid" | "zdielam" | "upomienka" | "mazem" | null
+  >(null);
+
+  /**
+   * Mäkké zmazanie — presne ako na webe. Doklad nezmizne z histórie a jeho
+   * číslo ostáva obsadené, takže v číselnom rade nevznikne diera.
+   */
+  async function zmaz() {
+    setBusy("mazem");
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", faktura.id);
+      if (error) throw new Error(error.message);
+      toast.success(`Faktúra ${faktura.invoice_number} zmazaná`);
+      onZmena();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Faktúru sa nepodarilo zmazať.");
+    } finally {
+      setBusy(null);
+      setMazem(false);
+    }
+  }
 
   const mena = faktura.currency ?? "EUR";
   const s = stav(faktura);
@@ -492,7 +541,65 @@ function DetailFaktury({
               onClick={oznacUhradenu}
             />
           )}
+
+          {/*
+            Oprava a zmazanie. Pravidlá sú spoločné s webom, preto sedia v
+            `faktura-uprava` a nie tu — obrazovka len ukáže, čo z nich vyšlo.
+          */}
+          {(() => {
+            const moze = moznoUpravit({
+              status: faktura.status,
+              maSkladovePolozky: skladove ?? true,
+            });
+            if (moze.ok)
+              return (
+                <VelkeTlacidlo
+                  icon={Pencil}
+                  label="Upraviť faktúru"
+                  hint="Položky, dátumy aj poznámka"
+                  onClick={() =>
+                    onUprav({ id: faktura.id, invoice_number: faktura.invoice_number })
+                  }
+                />
+              );
+            // Keď sa ešte len zisťuje, či faktúra hýbe skladom, netreba o tom
+            // písať — dôvod sa objaví až vtedy, keď je naozaj známy.
+            return skladove === null ? null : (
+              <p className="px-1 pt-1 text-[13px] text-muted-foreground">{moze.dovod}</p>
+            );
+          })()}
         </div>
+
+        {mazem ? (
+          <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
+            <p className="text-sm font-medium">Naozaj zmazať faktúru {faktura.invoice_number}?</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Zmizne zo zoznamu, ale číslo ostáva obsadené — v číselnom rade nevznikne diera.
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setMazem(false)}
+                className="rounded-xl border border-border px-4 py-2.5 text-sm"
+              >
+                Ponechať
+              </button>
+              <button
+                onClick={zmaz}
+                disabled={busy === "mazem"}
+                className="rounded-xl bg-destructive px-4 py-2.5 text-sm font-medium text-destructive-foreground disabled:opacity-50"
+              >
+                {busy === "mazem" ? "Mažem…" : "Zmazať"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setMazem(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm text-muted-foreground"
+          >
+            <Trash2 className="h-4 w-4" /> Zmazať faktúru
+          </button>
+        )}
       </div>
     </MobilObrazovka>
   );

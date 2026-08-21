@@ -155,6 +155,7 @@ type Krok =
   | "zachyt"
   | "doklady"
   | "novaFaktura"
+  | "upravaFaktury"
   | "faktury"
   | "jazda"
   | "banka"
@@ -177,6 +178,8 @@ export function MobilnaApka() {
 
 function ObsahApky() {
   const [krok, setKrok] = useState<Krok>("nacitavam");
+  /** Ktorá faktúra sa práve opravuje — obrazovku vlastní appka, nie zoznam. */
+  const [upravovana, setUpravovana] = useState<{ id: string; invoice_number: string } | null>(null);
   const [firmy, setFirmy] = useState<Firma[]>([]);
   const [firma, setFirma] = useState<Firma | null>(null);
   const [faza, setFaza] = useState("štart");
@@ -585,6 +588,20 @@ function ObsahApky() {
         />
       </Obrazovka>
     );
+  if (krok === "upravaFaktury" && firma && upravovana)
+    return (
+      <Obrazovka onSpat={() => setKrok("faktury")}>
+        <NovaFaktura
+          firma={firma}
+          upravuje={upravovana}
+          onSpat={() => setKrok("faktury")}
+          onHotovo={() => {
+            setUpravovana(null);
+            setKrok("faktury");
+          }}
+        />
+      </Obrazovka>
+    );
   if (krok === "jazda" && firma)
     return (
       <Obrazovka onSpat={() => setKrok("domov")}>
@@ -623,6 +640,10 @@ function ObsahApky() {
           firma={firma}
           onSpat={() => setKrok("domov")}
           onNova={() => setKrok("novaFaktura")}
+          onUprav={(f) => {
+            setUpravovana(f);
+            setKrok("upravaFaktury");
+          }}
         />
       </Obrazovka>
     );
