@@ -38,7 +38,9 @@ async function posliMailom(args: {
 }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
-  const prijemca = process.env.CONTACT_TO_EMAIL || "info@faktero.sk";
+  // Hlásenia chodia na servisnú adresu, nie na tú, kam píšu záujemcovia z webu —
+  // inak sa chyba stratí medzi dopytmi.
+  const prijemca = process.env.FEEDBACK_TO_EMAIL || "servis@faktero.sk";
   const odosielatel = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
   const nadpis = args.kind === "chyba" ? "Nahlásená chyba" : "Návrh na zlepšenie";
 
