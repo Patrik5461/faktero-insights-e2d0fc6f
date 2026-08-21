@@ -6,9 +6,43 @@ import { Check, ChevronRight, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-const DropdownMenu = DropdownMenuPrimitive.Root;
+/*
+  Rozbaľovacia ponuka nie je dialóg — nemá dôvod zamykať posúvanie stránky.
+  Kým ho zamykala (`modal` je v Radixe štandardne zapnuté), pri každom otvorení
+  zmizol posuvník a Radix to dorovnal odsadením `<body>`; celý obsah pritom
+  poskočil o jeho šírku do strany. Preto je tu `modal={false}` ako východisko
+  pre celú appku. Kto ho naozaj potrebuje, prepíše si ho v mieste použitia.
 
-const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+  Skutočné dialógy (`Dialog`, `AlertDialog`, `Sheet`) sa tým neriadia — tie
+  posúvanie zamykať majú.
+*/
+const DropdownMenu = ({
+  modal = false,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Root>) => (
+  <DropdownMenuPrimitive.Root modal={modal} {...props} />
+);
+DropdownMenu.displayName = "DropdownMenu";
+
+/*
+  Tlačidlo ponuky je holé `<button>`, takže bez zásahu ho prehliadač po kliknutí
+  obkreslí čiernym oválom a dvojklik označí jeho text na modro. Prstenec ostáva
+  len pre ovládanie klávesnicou (`focus-visible`) a v našej zelenej.
+*/
+const DropdownMenuTrigger = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Trigger>
+>(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.Trigger
+    ref={ref}
+    className={cn(
+      "select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+      className,
+    )}
+    {...props}
+  />
+));
+DropdownMenuTrigger.displayName = DropdownMenuPrimitive.Trigger.displayName;
 
 const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 

@@ -723,12 +723,7 @@ export function AppShell({
                 );
               }
               return (
-                /*
-                  `modal={false}`: hlavná ponuka nemá dôvod zamykať posúvanie
-                  stránky. Kým ho zamykala, Radix schoval posuvník a dorovnal to
-                  odsadením `<body>` — obsah pri každom otvorení poskočil.
-                */
-                <DropdownMenu key={g.key} modal={false}>
+                <DropdownMenu key={g.key}>
                   <DropdownMenuTrigger
                     className={`${base} ${otvorena} ${g.key === "viac" ? "ml-auto" : ""}`}
                   >
