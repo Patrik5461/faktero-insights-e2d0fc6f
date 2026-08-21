@@ -1,4 +1,5 @@
 import "./lib/error-capture";
+import "./lib/sucet-presne";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
