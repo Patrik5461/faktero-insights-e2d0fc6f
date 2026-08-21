@@ -202,6 +202,63 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "gmail",
+    title: "Automatické preposielanie z Gmailu",
+    body: (
+      <>
+        <p>
+          Prepošlite si doklady <strong>raz a navždy</strong>: Gmail vie posielať kópiu pošty na inú
+          adresu sám. Nastavíte to v Gmaile v{" "}
+          <strong>Nastavenia → Preposielanie a POP/IMAP → Pridať adresu na preposielanie</strong>,
+          kam vložíte svoju adresu z <Link to="/doklady/mailom">Doklady → Doklady e-mailom</Link>.
+        </p>
+        <p>
+          Google si to musí overiť, a preto pošle <strong>potvrdzovací mail</strong> — lenže pošle
+          ho na tú novú adresu, teda k nám. Preto ho <strong>Faktero zachytí a ukáže vám ho</strong>
+          : na stránke Doklady e-mailom sa objaví žltý pruh „Google žiada potvrdenie preposielania“.
+          Objaví sa sám, netreba obnovovať stránku.
+        </p>
+        <p>V pruhu je to, čo od vás Google chce:</p>
+        <ul>
+          <li>
+            tlačidlo <strong>Potvrdiť preposielanie</strong> — odkaz od Googlu. Funguje len v
+            prehliadači, kde ste prihlásený do <strong>tej istej</strong> schránky;
+          </li>
+          <li>
+            <strong>kód</strong>, keď ho Google poslal — dá sa skopírovať a vložiť priamo v Gmaile
+            vedľa tlačidla „Overiť“. Google ho ale posiela len niekedy, väčšinou príde iba odkaz;
+          </li>
+          <li>
+            tlačidlo <strong>Už som potvrdil</strong>, ktorým pruh odpracete — Google nám o
+            potvrdení nedá vedieť, takže sám nezmizne.
+          </li>
+        </ul>
+        <p>
+          Potom sa vráťte do Gmailu, zapnite{" "}
+          <strong>„Preposielať kópiu doručenej pošty na…“</strong> a uložte. Samotné overenie
+          preposielanie ešte nezapne.
+        </p>
+        <p>
+          <strong>Odporúčame nepreposielať všetko.</strong> V Gmaile si radšej spravte filter (
+          <em>Vyhľadávanie → Vytvoriť filter → Preposlať na</em>) napríklad na maily s prílohou
+          alebo na konkrétnych dodávateľov. Inak sa Faktero pokúsi spraviť doklad z každého mailu,
+          čo vám príde, a denník sa zaplní hláškami „bez prílohy“.
+        </p>
+        <p>
+          Potvrdenie platí <strong>sedem dní</strong>. Keď ho prešvihnete, jednoducho pridajte
+          adresu v Gmaile znova — príde nové.
+        </p>
+        <p>
+          <strong>Prečo je to bezpečné.</strong> Potvrdzovací mail prijmeme len od skutočnej adresy
+          Googlu a len vtedy, keď sedí jeho elektronický podpis (SPF a DKIM domény{" "}
+          <code>google.com</code>). Podvrhnutý mail „od Googlu“ s cudzím odkazom zahodíme. Z mailu
+          si navyše necháme iba kód, odkaz a adresu schránky, z ktorej sa preposiela —{" "}
+          <strong>obsah mailu sa nikam neukladá</strong>.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "mobil",
     title: "V telefóne",
     body: (

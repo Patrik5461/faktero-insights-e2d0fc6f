@@ -106,6 +106,18 @@ const sections: HelpSection[] = [
           Cez <Link to="/jazdy/integracie">Integrácie</Link> sa dajú jazdy sťahovať automaticky z
           jednotky Commander GPS alebo z vozidla Tesla.
         </p>
+        <p>
+          <strong>V mobilnej aplikácii si jazdu všimne telefón sám.</strong> Keď rozpozná, že idete
+          autom, začne merať a spýta sa až na konci — jazdu potom buď potvrdíte, alebo zahodíte. Kým
+          meranie beží, je to vidieť: v aplikácii svieti pruh „Nahrávam jazdu“ a{" "}
+          <strong>na uzamknutej obrazovke</strong> beží čas a narastajúce kilometre, takže sa
+          nemusíte prepínať do aplikácie ani ju nechať otvorenú. Potrebuje to iPhone s iOS 16.1
+          alebo novším.
+        </p>
+        <p>
+          Automatické rozpoznávanie sa dá vypnúť priamo na obrazovke <strong>Jazda</strong>{" "}
+          prepínačom „Rozpoznávať jazdy automaticky“; vtedy sa meranie spúšťa ručne tlačidlom.
+        </p>
       </>
     ),
   },
