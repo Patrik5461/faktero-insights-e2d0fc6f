@@ -183,6 +183,40 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "oprava-v-mobile",
+    title: "Oprava a zmazanie faktúry v mobile",
+    body: (
+      <>
+        <p>
+          Preklep sa nájde aj vtedy, keď je počítač ďaleko. V aplikácii otvorte{" "}
+          <strong>Vystavené faktúry</strong>, ťuknite na faktúru a dole sú{" "}
+          <strong>Upraviť faktúru</strong> a <strong>Zmazať faktúru</strong>. Opraviť sa dajú
+          položky, dátumy, spôsob úhrady aj poznámka; <strong>odberateľ sa nemení</strong> — na to
+          je web, rovnako ako pri oprave na počítači.
+        </p>
+        <p>
+          <strong>Zmazanie je mäkké.</strong> Faktúra zmizne zo zoznamu, ale ostáva v histórii a jej
+          číslo je ďalej obsadené, takže v číselnom rade nevznikne diera.
+        </p>
+        <p>Dve veci aplikácia neurobí a povie to:</p>
+        <ul>
+          <li>
+            <strong>Stornovanú faktúru</strong> už neopraví — tá sa len archivuje.
+          </li>
+          <li>
+            <strong>Faktúru s položkami zo skladu</strong> pošle na počítač. Pri nich totiž treba
+            dopočítať rozdiel v zásobách a to sa na malej obrazovke robiť nemá.
+          </li>
+        </ul>
+        <p>
+          Oprava potrebuje pripojenie — na rozdiel od vystavenia sa <strong>neodkladá</strong> do
+          telefónu. Menili by sme doklad, ktorý už na serveri žije, a prepísali by sme aj to, čo
+          medzitým zmenil kolega.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {
