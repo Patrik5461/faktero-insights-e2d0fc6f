@@ -20,6 +20,7 @@ import {
   X,
   Sparkles,
   Shield,
+  Bug,
   Warehouse,
   Landmark,
   Car,
@@ -42,6 +43,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { CreateCompanyDialog } from "@/components/faktero/CreateCompanyDialog";
 import { FloatingAIButton } from "@/components/faktero/FloatingAIButton";
 import { NotificationBell } from "@/components/faktero/NotificationBell";
+import { NahlasitChybu } from "@/components/faktero/NahlasitChybu";
 import { getMyAdminRole } from "@/lib/faktero/admin.functions";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { useIsNative } from "@/hooks/useIsNative";
@@ -407,6 +409,9 @@ export function AppShell({
     };
   }, []);
 
+  /* Okno na nahlásenie chyby má stav tu — otvára sa z ponuky pod avatarom. */
+  const [nahlasenieOtvorene, setNahlasenieOtvorene] = useState(false);
+
   const activeGroup = nav.find((g) => isPathActive(pathname, g));
   const activeKey = activeGroup ? activeChildKey(activeGroup.children, pathname, locSearch) : null;
 
@@ -688,6 +693,15 @@ export function AppShell({
                     <HelpCircle className="mr-2 h-3.5 w-3.5" /> Pomoc
                   </Link>
                 </DropdownMenuItem>
+                {/* Nahlásiť sa dá z každej stránky — chyba sa nájde tam, kde človek pracuje. */}
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setNahlasenieOtvorene(true);
+                  }}
+                >
+                  <Bug className="mr-2 h-3.5 w-3.5" /> Nahlásiť chybu alebo návrh
+                </DropdownMenuItem>
                 {adminRole && (
                   <DropdownMenuItem asChild>
                     <Link to={"/admin" as any}>
@@ -776,6 +790,7 @@ export function AppShell({
       </main>
       <CreateCompanyDialog open={createOpen} onOpenChange={setCreateOpen} />
       <FloatingAIButton />
+      <NahlasitChybu otvorene={nahlasenieOtvorene} onZavri={() => setNahlasenieOtvorene(false)} />
       <NativeShellExtras />
     </div>
   );
