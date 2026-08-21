@@ -178,6 +178,10 @@
 
   html {
     max-width: 100%;
+    /* Miesto pre posuvník je rezervované vždy. Bez toho stačí, aby niečo
+       posuvník na chvíľu schovalo (napr. otvorená ponuka), a celý obsah
+       poskočí o jeho šírku do strany. */
+    scrollbar-gutter: stable;
     /* `clip` namiesto `hidden`: obe zabránia vodorovnému posúvaniu, ale
        `hidden` spraví z prvku posuvnú oblasť a tým **zabije `position: sticky`
        vo všetkom pod ním** — lepivé hlavičky sa potom pri posúvaní odsúvajú

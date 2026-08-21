@@ -701,11 +701,20 @@ export function AppShell({
           <nav className="flex h-9 items-center gap-1 overflow-x-auto px-3 pb-2">
             {nav.map((g) => {
               const isActive = isPathActive(pathname, g);
-              const base = `inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-[5px] text-[12.5px] transition-colors ${
+              /*
+                `select-none`, lebo kliknutie do ponuky označovalo text kategórie
+                na modro. Čierny ovál okolo tlačidla je prehliadačový `outline` —
+                nahrádza ho jemný zelený prstenec, a to len pri ovládaní
+                klávesnicou (`focus-visible`), nech myš po sebe nič nenecháva.
+              */
+              const base = `inline-flex shrink-0 select-none items-center gap-1 rounded-full px-3 py-[5px] text-[12.5px] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                 isActive
                   ? "bg-primary/10 font-medium text-primary"
                   : "text-muted-foreground hover:bg-muted/70"
               }`;
+              // Otvorená kategória vyzerá rovnako ako tá, na ktorej človek stojí.
+              const otvorena =
+                "data-[state=open]:bg-primary/10 data-[state=open]:font-medium data-[state=open]:text-primary data-[state=open]:hover:bg-primary/10";
               if (g.children.length === 0) {
                 return (
                   <Link key={g.key} to={g.match[0]} className={base}>
@@ -714,8 +723,15 @@ export function AppShell({
                 );
               }
               return (
-                <DropdownMenu key={g.key}>
-                  <DropdownMenuTrigger className={`${base} ${g.key === "viac" ? "ml-auto" : ""}`}>
+                /*
+                  `modal={false}`: hlavná ponuka nemá dôvod zamykať posúvanie
+                  stránky. Kým ho zamykala, Radix schoval posuvník a dorovnal to
+                  odsadením `<body>` — obsah pri každom otvorení poskočil.
+                */
+                <DropdownMenu key={g.key} modal={false}>
+                  <DropdownMenuTrigger
+                    className={`${base} ${otvorena} ${g.key === "viac" ? "ml-auto" : ""}`}
+                  >
                     {g.label}
                     <ChevronDown className="h-3 w-3 opacity-60" />
                   </DropdownMenuTrigger>
