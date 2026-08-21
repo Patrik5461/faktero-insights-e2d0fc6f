@@ -21,6 +21,7 @@ import {
   isBiometricEnabled,
 } from "@/lib/mobile/biometric";
 import { VERZIA_APKY, ZELENA_DOLE, ZELENA_HORE } from "@/lib/mobile/brand";
+import { mojaPeciatka } from "@/lib/mobile/verzia";
 import { AppHeader } from "@/components/faktero/mobil/MobilChrome";
 
 /**
@@ -302,8 +303,17 @@ export function MobilPanel({
             <span className="text-[15px] font-medium">Odhlásiť sa</span>
           </button>
 
-          <p className="pt-2 text-center text-[12px] text-muted-foreground">
+          {/* Pečiatka balíčka je jediné, čím sa dva buildy rozoznajú — číslo
+              verzie sa medzi nimi nemení. Bez nej sa človek nemá ako spýtať
+              „mám už tú opravu?" inak než hľadaním v Diagnostike. */}
+          <p className="pt-2 text-center text-[12px] leading-5 text-muted-foreground">
             Faktero v{VERZIA_APKY}
+            {mojaPeciatka() ? (
+              <>
+                <br />
+                <span className="text-[11px]">balíček {mojaPeciatka()}</span>
+              </>
+            ) : null}
           </p>
         </div>
       </aside>

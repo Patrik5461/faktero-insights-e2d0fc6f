@@ -62,6 +62,26 @@ else
   echo "▸ Node nainštalovaný: $(node -v), npm $(npm -v)"
 fi
 
+# ── Číslo buildu ─────────────────────────────────────────────────────────────
+# V projekte je `CURRENT_PROJECT_VERSION = 1` a nikto ho ručne nedvíha, takže
+# každý build by sa volal „1.2 (1)". App Store Connect druhé nahratie s tým
+# istým `CFBundleVersion` odmietne — build prejde a padne až na konci, pri
+# odovzdaní. Xcode Cloud čísluje svoje behy sám, tak sa jeho číslo zapíše do
+# projektu; mení sa len kópia v CI, v gite ostáva jednotka.
+#
+# Prepisujú sa **všetky štyri** výskyty — appka aj rozšírenie pre živú aktivitu,
+# každé v ladiacej aj ostrej konfigurácii. Keby sa čísla rozišli, Apple odmietne
+# celý balík s tým, že verzia rozšírenia nesedí s verziou appky.
+if [ -n "${CI_BUILD_NUMBER:-}" ]; then
+  echo "▸ Číslo buildu: ${CI_BUILD_NUMBER}"
+  perl -pi -e "s/CURRENT_PROJECT_VERSION = [^;]+;/CURRENT_PROJECT_VERSION = ${CI_BUILD_NUMBER};/g" \
+    ios/App/App.xcodeproj/project.pbxproj
+  grep -c "CURRENT_PROJECT_VERSION = ${CI_BUILD_NUMBER};" ios/App/App.xcodeproj/project.pbxproj \
+    | xargs -I{} echo "▸ prepísané výskyty: {} (očakávajú sa 4)"
+else
+  echo "▸ CI_BUILD_NUMBER nie je nastavené — číslo buildu ostáva z projektu."
+fi
+
 # ── Závislosti ───────────────────────────────────────────────────────────────
 # `npm ci` a nie `npm install`: verzie majú sedieť s package-lock.json.
 # V repozitári je aj bun.lock, ale ten sa tu zámerne nepoužíva — package-lock
