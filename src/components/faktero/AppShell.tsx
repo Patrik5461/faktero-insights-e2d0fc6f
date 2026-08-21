@@ -407,24 +407,6 @@ export function AppShell({
     };
   }, []);
 
-  /*
-    Ktorá kategória je rozbalená. Predtým tu bola plávajúca ponuka, ktorá
-    zmizla pri prvom kliknutí — položky sa teda nedali porovnať a človek
-    kategóriu otváral znova a znova. Rozbalený riadok ostáva pod lištou, kým
-    ho sám nezavrie, takže vidno aj to, kde v skupine práve je.
-  */
-  const [otvorenaKategoria, setOtvorenaKategoria] = useState<string | null>(null);
-  const otvorenaSkupina = nav.find((g) => g.key === otvorenaKategoria) ?? null;
-
-  useEffect(() => {
-    if (!otvorenaKategoria) return;
-    const naEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOtvorenaKategoria(null);
-    };
-    window.addEventListener("keydown", naEscape);
-    return () => window.removeEventListener("keydown", naEscape);
-  }, [otvorenaKategoria]);
-
   const activeGroup = nav.find((g) => isPathActive(pathname, g));
   const activeKey = activeGroup ? activeChildKey(activeGroup.children, pathname, locSearch) : null;
 
@@ -726,62 +708,38 @@ export function AppShell({
               }`;
               if (g.children.length === 0) {
                 return (
-                  <Link
-                    key={g.key}
-                    to={g.match[0]}
-                    className={base}
-                    onClick={() => setOtvorenaKategoria(null)}
-                  >
+                  <Link key={g.key} to={g.match[0]} className={base}>
                     {g.label}
                   </Link>
                 );
               }
-              const jeOtvorena = otvorenaKategoria === g.key;
               return (
-                <button
-                  key={g.key}
-                  type="button"
-                  aria-expanded={jeOtvorena}
-                  aria-controls="podmenu-kategorie"
-                  onClick={() => setOtvorenaKategoria(jeOtvorena ? null : g.key)}
-                  className={`${base} ${jeOtvorena ? "bg-muted font-medium text-foreground" : ""} ${
-                    g.key === "viac" ? "ml-auto" : ""
-                  }`}
-                >
-                  {g.label}
-                  <ChevronDown
-                    className={`h-3 w-3 opacity-60 transition-transform ${jeOtvorena ? "rotate-180" : ""}`}
-                  />
-                </button>
+                <DropdownMenu key={g.key}>
+                  <DropdownMenuTrigger className={`${base} ${g.key === "viac" ? "ml-auto" : ""}`}>
+                    {g.label}
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align={g.key === "viac" ? "end" : "start"} className="w-56">
+                    {g.children.map((c) => {
+                      const isChildActive =
+                        activeKey === c.to + c.label && activeGroup?.key === g.key;
+                      return (
+                        <DropdownMenuItem key={c.to + c.label} asChild>
+                          <Link
+                            to={c.to as any}
+                            search={c.search as any}
+                            className={isChildActive ? "font-medium text-primary" : ""}
+                          >
+                            {c.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               );
             })}
           </nav>
-
-          {/* Riadok 3 — položky otvorenej kategórie. Je tu, len kým je otvorená. */}
-          {otvorenaSkupina && (
-            <div id="podmenu-kategorie" className="border-t border-border bg-muted/40 px-3 py-2">
-              <div className="flex flex-wrap items-center gap-1">
-                {otvorenaSkupina.children.map((c) => {
-                  const isChildActive =
-                    activeKey === c.to + c.label && activeGroup?.key === otvorenaSkupina.key;
-                  return (
-                    <Link
-                      key={c.to + c.label}
-                      to={c.to as any}
-                      search={c.search as any}
-                      className={`shrink-0 rounded-full px-3 py-[5px] text-[12.5px] transition-colors ${
-                        isChildActive
-                          ? "bg-primary/10 font-medium text-primary"
-                          : "text-muted-foreground hover:bg-background hover:text-foreground"
-                      }`}
-                    >
-                      {c.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
       </header>
 
