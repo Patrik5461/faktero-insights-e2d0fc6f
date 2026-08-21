@@ -90,7 +90,7 @@ function Stranka() {
               <strong>vymeniť za novú</strong> — stará prestane prijímať.
             </li>
             <li>
-              Nechce sa vám prepošielať každý mail ručne? <strong>Gmail to vie robiť sám</strong> —
+              Nechce sa vám preposielať každý mail ručne? <strong>Gmail to vie robiť sám</strong> —
               potvrdenie, ktoré Google pošle na túto adresu, zachytíme a ukážeme vám ho tu ako žltý
               pruh. Postup je v{" "}
               <Link to="/pomoc/doklady" hash="gmail" className="text-primary underline">
