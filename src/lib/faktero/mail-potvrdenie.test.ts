@@ -68,6 +68,44 @@ describe("potvrdenie preposielania z Gmailu", () => {
     ).toBe("https://mail-settings.google.com/mail/vf-ABC-123");
   });
 
+  /* Presne to, čo prišlo 21. 8. 2026 na paliera@doklady.faktero.sk — Gmail
+     v tejto podobe kód neposiela vôbec, potvrdzuje sa len odkazom. */
+  const TEXT_BEZ_KODU = `ekonom@paliera.sk has requested to automatically forward mail to your email
+address paliera@doklady.faktero.sk.
+
+To allow ekonom@paliera.sk to automatically forward mail to your address,
+please click the link below to confirm the request:
+
+https://mail-settings.google.com/mail/vf-%5BANGjdJ-n2m4LU%5D-4dSaS7yfzqfgIQKRW14PCTgNg_0
+
+To learn more about why you might have received this message, please
+visit: http://support.google.com/mail/bin/answer.py?answer=184973.`;
+
+  it("mail bez kódu: nevymyslí si číslo z odkazu v pätičke", () => {
+    const v = potvrdenieZMailu({
+      provider: "gmail",
+      predmet: "(PALIERA s.r.o. Forwarding Confirmation - Receive Mail from ekonom@paliera.sk",
+      text: TEXT_BEZ_KODU,
+      naseAdresy: ["paliera@doklady.faktero.sk"],
+    });
+    expect(v.code).toBeNull();
+    expect(v.confirm_url).toBe(
+      "https://mail-settings.google.com/mail/vf-%5BANGjdJ-n2m4LU%5D-4dSaS7yfzqfgIQKRW14PCTgNg_0",
+    );
+    expect(v.source_email).toBe("ekonom@paliera.sk");
+  });
+
+  it("kód nájde aj vtedy, keď je pri slove a nie v predmete", () => {
+    expect(kodPotvrdenia("Potvrdenie preposielania", "Confirmation code: 123456789")).toBe(
+      "123456789",
+    );
+    expect(kodPotvrdenia("Potvrdenie", "Potvrdzovací kód: 55443322")).toBe("55443322");
+    // Číslo v odkaze kódom nie je.
+    expect(
+      kodPotvrdenia("Potvrdenie", "visit http://support.google.com/x?answer=123456789"),
+    ).toBeNull();
+  });
+
   it("nájde schránku, z ktorej sa preposiela, a nepomýli si ju s našou", () => {
     expect(
       zdrojovaSchranka({

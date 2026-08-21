@@ -131,14 +131,28 @@ function bezZnaciek(html: string): string {
 }
 
 /**
- * Potvrdzovací kód. Gmail ho dáva do predmetu v tvare `(#123456789)`; keď ho tam
- * niekedy nedá, hľadá sa deväťmiestne číslo v texte.
+ * Potvrdzovací kód.
+ *
+ * Gmail ho dáva do predmetu v tvare `(#123456789)`, ale **nie vždy**: v maile,
+ * ktorý reálne prišiel na `doklady.faktero.sk`, bol v zátvorke názov účtu a kód
+ * v ňom nebol vôbec — potvrdzovalo sa iba odkazom. Preto sa hľadá aj pri slove
+ * „code"/„kód" a až nakoniec voľné deväťmiestne číslo.
+ *
+ * Z textu sa najprv vyhodia odkazy: v pätičke býva `answer=184973` a podobné
+ * čísla, ktoré s kódom nemajú nič spoločné.
  */
 export function kodPotvrdenia(predmet?: string | null, telo?: string | null): string | null {
   const zPredmetu = String(predmet ?? "").match(/\(#(\d{6,12})\)/);
   if (zPredmetu) return zPredmetu[1]!;
-  const zTela = String(telo ?? "").match(/\b(\d{9})\b/);
-  return zTela ? zTela[1]! : null;
+
+  const bezOdkazov = String(telo ?? "").replace(/https?:\/\/\S+/gi, " ");
+  const priSlove = bezOdkazov.match(
+    /(?:confirmation code|verification code|potvrdzovac\w*\s+k[oó]d|overovac\w*\s+k[oó]d|k[oó]d|code)\D{0,20}(\d{6,12})/i,
+  );
+  if (priSlove) return priSlove[1]!;
+
+  const volne = bezOdkazov.match(/\b(\d{9})\b/);
+  return volne ? volne[1]! : null;
 }
 
 /** Odkaz, ktorým sa preposielanie potvrdí. */

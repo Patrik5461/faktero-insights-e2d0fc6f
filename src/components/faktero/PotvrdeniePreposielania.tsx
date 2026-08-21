@@ -103,6 +103,9 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
             {p.source_email ? ` z ${p.source_email}` : ""}
           </div>
 
+          {/* Google posiela dve podoby mailu: s kódom a — častejšie — len s
+              odkazom. Keď kód neprišiel, nemá sa o ňom nikde písať, inak človek
+              hľadá niečo, čo v maile vôbec nebolo. */}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {p.code ? (
               <>
@@ -121,11 +124,7 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
                   {skopirovany === p.id ? "Skopírované" : "Kopírovať kód"}
                 </button>
               </>
-            ) : (
-              <span className="text-sm">
-                Kód sa v maile nenašiel — použite odkaz alebo si ho odpíšte priamo z Gmailu.
-              </span>
-            )}
+            ) : null}
 
             {p.confirm_url && (
               <a
@@ -148,8 +147,10 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
           </div>
 
           <p className="mt-2 text-xs">
-            Kód sa dá zadať aj ručne v Gmaile → Nastavenia → Preposielanie a POP/IMAP. Odkaz funguje
-            len v prehliadači prihlásenom do tej istej schránky.
+            {p.code
+              ? "Kód sa dá zadať aj ručne v Gmaile → Nastavenia → Preposielanie a POP/IMAP. "
+              : ""}
+            Odkaz funguje len v prehliadači prihlásenom do tej istej schránky.
           </p>
         </div>
       ))}
