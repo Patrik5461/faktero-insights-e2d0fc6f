@@ -13,6 +13,7 @@ import {
   UserX,
   X,
   Stethoscope,
+  Bug,
 } from "lucide-react";
 import {
   disableBiometric,
@@ -23,6 +24,7 @@ import {
 import { VERZIA_APKY, ZELENA_DOLE, ZELENA_HORE } from "@/lib/mobile/brand";
 import { mojaPeciatka } from "@/lib/mobile/verzia";
 import { AppHeader } from "@/components/faktero/mobil/MobilChrome";
+import { NahlasitChybu } from "@/components/faktero/NahlasitChybu";
 
 /**
  * Vysúvací panel s nastaveniami.
@@ -57,6 +59,8 @@ export function MobilPanel({
   onUcet: () => void;
   onOdhlasit: () => void;
 }) {
+  /* Okno na nahlásenie chyby — otvára sa z tohto panela. */
+  const [nahlasenie, setNahlasenie] = useState(false);
   const [biometriaMozna, setBiometriaMozna] = useState(false);
   const [biometriaZapnuta, setBiometriaZapnuta] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -260,6 +264,13 @@ export function MobilPanel({
             hint="Ako sa čítajú doklady z eKasy"
             onClick={() => otvorNaWebe("/pomoc/pokladna")}
           />
+          {/* Nahlásiť sa dá aj z telefónu — chyba sa nájde najčastejšie tam. */}
+          <Polozka
+            icon={Bug}
+            label="Nahlásiť chybu alebo návrh"
+            hint="Napíšte nám, čo nefunguje alebo čo by pomohlo"
+            onClick={() => setNahlasenie(true)}
+          />
           <Polozka
             icon={Globe}
             label="Otvoriť Faktero na webe"
@@ -317,6 +328,8 @@ export function MobilPanel({
           </p>
         </div>
       </aside>
+
+      <NahlasitChybu otvorene={nahlasenie} onZavri={() => setNahlasenie(false)} />
     </>
   );
 }

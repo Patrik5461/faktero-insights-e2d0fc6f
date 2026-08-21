@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
+import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import { Bug, Lightbulb, X } from "lucide-react";
-import { posliSpatnuVazbu } from "@/lib/faktero/spatna-vazba.functions";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 
 /**
@@ -11,6 +10,8 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
  * Otvára sa z ponuky pod avatarom, takže je poruke z každej stránky. Adresu
  * stránky a prehliadač si berie samo — to sú prvé dve otázky, ktoré by sme sa
  * aj tak museli pýtať, a človek, ktorý našiel chybu, ich nemá dôvod poznať.
+ *
+ * To isté okno používa web (ponuka pod avatarom) aj appka (bočný panel).
  *
  * Kreslené je ručne, nie cez `Dialog`: v appke aj na webe stačí jednoduché
  * okno a takto sa dá zavrieť Escapom aj kliknutím vedľa
@@ -21,7 +22,11 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
   const [text, setText] = useState("");
   const [posielam, setPosielam] = useState(false);
   const poleRef = useRef<HTMLTextAreaElement | null>(null);
-  const posli = useServerFn(posliSpatnuVazbu);
+  /*
+    Cez most, nie priamo: v zabalenej appke beží stránka na `capacitor://localhost`
+    a serverová funkcia volaná relatívnou adresou by mierila do prázdna.
+  */
+  const posli = useOperacia("spatna-vazba");
 
   useEffect(() => {
     if (!otvorene) return;
