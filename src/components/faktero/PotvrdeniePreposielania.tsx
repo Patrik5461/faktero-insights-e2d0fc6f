@@ -6,12 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Banner s potvrdením preposielania z Gmailu.
  *
- * Google pošle kód na adresu, na ktorú sa má preposielať — teda na tú našu.
- * Používateľ sa k nemu inak nedostane a preposielanie nikdy nezapne.
+ * Google posiela žiadosť o potvrdenie na adresu, na ktorú sa má preposielať —
+ * teda na tú našu. Používateľ sa k nej inak nedostane a preposielanie nikdy
+ * nezapne.
  *
- * Kód je tu **vždy aj textom**, nielen ako odkaz: odkaz vie vypršať a otvoriť
- * sa v inom profile prehliadača, kde je človek prihlásený pod iným Googlom.
- * Vtedy sa dá kód opísať priamo v Gmaile.
+ * Mail má dve podoby a **častejšia je tá bez kódu**, len s odkazom. Keď kód
+ * príde, je tu aj textom: odkaz vie vypršať a otvoriť sa v inom profile
+ * prehliadača, kde je človek prihlásený pod iným Googlom — vtedy sa dá kód
+ * opísať priamo v Gmaile. Keď nepríde, o kóde sa mlčí.
  */
 
 type Potvrdenie = {
