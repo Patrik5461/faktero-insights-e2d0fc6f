@@ -496,6 +496,7 @@ export function NovaFaktura({
   if (krok === "polozky") {
     return (
       <KrokPolozky
+        uprava={upravuje}
         odberatel={odberatel!}
         produkty={podklady.produkty}
         riadky={riadky}
@@ -517,6 +518,7 @@ export function NovaFaktura({
 
   return (
     <KrokSuhrn
+      uprava={upravuje}
       odberatel={odberatel!}
       mena={mena}
       platca={platca}
@@ -792,6 +794,7 @@ function Pole({
 /* ------------------------- Krok 2: položky ------------------------- */
 
 function KrokPolozky({
+  uprava,
   odberatel,
   produkty,
   riadky,
@@ -823,6 +826,8 @@ function KrokPolozky({
   pocetPouzitelnych: number;
   posledna: { invoice_number: string; issue_date: string } | null;
   onZopakuj: () => void;
+  /** Keď sa opravuje už vystavená faktúra, kroky sa nečíslujú — je len jeden. */
+  uprava?: { invoice_number: string };
 }) {
   const [cennikOtvoreny, setCennikOtvoreny] = useState(false);
 
@@ -830,7 +835,11 @@ function KrokPolozky({
     <>
       <MobilObrazovka
         title="Za čo fakturujete?"
-        subtitle={`Krok 2 z 3 · ${odberatel.name}`}
+        subtitle={
+          uprava
+            ? `Oprava ${uprava.invoice_number} · ${odberatel.name}`
+            : `Krok 2 z 3 · ${odberatel.name}`
+        }
         onBack={onSpat}
         footer={
           <div className="space-y-2">
@@ -1088,6 +1097,7 @@ function VyberProduktu({
 /* ------------------------- Krok 3: súhrn ------------------------- */
 
 function KrokSuhrn({
+  uprava,
   odberatel,
   mena,
   platca,
@@ -1121,6 +1131,7 @@ function KrokSuhrn({
   maIban: boolean;
   onSpat: () => void;
   onUloz: () => void;
+  uprava?: { invoice_number: string };
 }) {
   const dni = Math.round(
     (new Date(`${splatnost}T00:00:00`).getTime() - new Date(`${vystavenie}T00:00:00`).getTime()) /
@@ -1130,9 +1141,13 @@ function KrokSuhrn({
   return (
     <MobilObrazovka
       title="Skontrolujte faktúru"
-      subtitle="Krok 3 z 3"
+      subtitle={uprava ? `Faktúra ${uprava.invoice_number}` : "Krok 3 z 3"}
       onBack={onSpat}
-      footer={<HlavneTlacidlo onClick={onUloz}>Vystaviť faktúru</HlavneTlacidlo>}
+      footer={
+        <HlavneTlacidlo onClick={onUloz}>
+          {uprava ? "Uložiť zmeny" : "Vystaviť faktúru"}
+        </HlavneTlacidlo>
+      }
     >
       <div className="space-y-4">
         <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
