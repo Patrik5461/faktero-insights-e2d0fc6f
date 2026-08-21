@@ -32,6 +32,36 @@ type Jazdenka = {
   route: string | null;
 };
 
+/*
+  Koľko jázd sa naťahuje naraz. Vozidlo s GPS jednotkou ich má aj dvetisíc a
+  všetky by sa do telefónu ťahali dlho — staršie si človek dopýta tlačidlom.
+*/
+const STRANA = 200;
+
+function dotazJazd(companyId: string, vehicleId: string, od: number) {
+  return supabase
+    .from("trips")
+    .select(
+      "id, trip_date, start_location, end_location, purpose, distance_km, duration_seconds, driver_name, start_time, external_source, route",
+    )
+    .eq("company_id", companyId)
+    .eq("vehicle_id", vehicleId)
+    // Tri stĺpce: GPS jednotka pošle za deň aj desať jázd, samotný dátum ich
+    // nezoradí — a bez poslednej istoty by sa pri dopytovaní staršej strany
+    // mohli rovnaké dvojice preskupiť a jazda vypadnúť alebo prísť dvakrát.
+    .order("trip_date", { ascending: false })
+    .order("start_time", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false })
+    .range(od, od + STRANA - 1);
+}
+
+function naJazdenky(data: { distance_km: number | string | null }[]): Jazdenka[] {
+  return data.map((t) => ({
+    ...t,
+    distance_km: t.distance_km === null ? null : Number(t.distance_km),
+  })) as Jazdenka[];
+}
+
 const ZDROJE: Record<string, string> = {
   commander: "Commander",
   tesla: "Tesla",
@@ -73,22 +103,15 @@ export function HistoriaJazd({
   onSpat: () => void;
 }) {
   const [jazdy, setJazdy] = useState<Jazdenka[] | null>(null);
+  /* Či je na serveri ešte niečo staršie, než čo držíme v ruke. */
+  const [jeVsetko, setJeVsetko] = useState(true);
+  const [nacitavamStarsie, setNacitavamStarsie] = useState(false);
   /* Mapa sa otvára ťuknutím na jazdu — na malej obrazovke sa nezmestia obe naraz. */
   const [otvorena, setOtvorena] = useState<string | null>(null);
 
   useEffect(() => {
     let zrusene = false;
-    supabase
-      .from("trips")
-      .select(
-        "id, trip_date, start_location, end_location, purpose, distance_km, duration_seconds, driver_name, start_time, external_source, route",
-      )
-      .eq("company_id", firma.id)
-      .eq("vehicle_id", vozidlo.id)
-      // Dva stĺpce: GPS jednotka pošle za deň aj desať jázd a samotný dátum ich nezoradí.
-      .order("trip_date", { ascending: false })
-      .order("start_time", { ascending: false, nullsFirst: false })
-      .limit(200)
+    dotazJazd(firma.id, vozidlo.id, 0)
       // Bez siete dotaz vyhodí výnimku; bez tohto by sa história nikdy nedočkala.
       .then(
         (r) => r,
@@ -112,19 +135,19 @@ export function HistoriaJazd({
           if (zrusene) return;
           if (zalozne.length === 0 && error) toast.error(error.message);
           setJazdy(zoradJazdy(zalozne as any) as unknown as Jazdenka[]);
+          // Z telefónu je to všetko, čo máme; dopytovať sa nie je kde.
+          setJeVsetko(true);
           return;
         }
 
-        const jazdenky = data.map((t) => ({
-          ...t,
-          distance_km: t.distance_km === null ? null : Number(t.distance_km),
-        })) as Jazdenka[];
+        const jazdenky = naJazdenky(data);
         setJazdy(jazdenky);
+        setJeVsetko(jazdenky.length < STRANA);
         // Do natívneho úložiska ide skrátený zoznam — prehliadačové úložiská
         // vo WebView reštart appky neprežili.
         void ulozDoPamate(
           kluc,
-          jazdenky.slice(0, 200).map((j: any) => ({
+          jazdenky.slice(0, STRANA).map((j: any) => ({
             ...j,
             company_id: firma.id,
             vehicle_id: vozidlo.id,
@@ -144,6 +167,37 @@ export function HistoriaJazd({
       zrusene = true;
     };
   }, [firma.id, vozidlo.id]);
+
+  async function nacitajStarsie() {
+    if (nacitavamStarsie || !jazdy) return;
+    setNacitavamStarsie(true);
+    const { data, error } = await dotazJazd(firma.id, vozidlo.id, jazdy.length).then(
+      (r) => r,
+      (e) => ({ data: null, error: e as { message?: string } }),
+    );
+    setNacitavamStarsie(false);
+    if (error || !data) {
+      toast.error(error?.message ?? "Staršie jazdy sa nepodarilo načítať.");
+      return;
+    }
+    const dalsie = naJazdenky(data);
+    setJeVsetko(dalsie.length < STRANA);
+    /* Zhoda podľa `id`: keď medzitým pribudne jazda, strany sa o riadok posunú. */
+    setJazdy((s) => {
+      const uz = new Set((s ?? []).map((j) => j.id));
+      return [...(s ?? []), ...dalsie.filter((j) => !uz.has(j.id))];
+    });
+    const { ulozJazdy } = await import("@/lib/mobile/jazdy-lokalne");
+    void ulozJazdy(
+      firma.id,
+      dalsie.map((j: any) => ({
+        ...j,
+        company_id: firma.id,
+        vehicle_id: vozidlo.id,
+        distance_km: Number(j.distance_km ?? 0),
+      })),
+    );
+  }
 
   const mesiace = useMemo(() => {
     const mapa = new Map<string, Jazdenka[]>();
@@ -178,7 +232,7 @@ export function HistoriaJazd({
         <>
           <div className="mb-4 rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
             <div className="text-[13px] text-muted-foreground">
-              Spolu {jazdy.length === 200 ? "za posledných 200 jázd" : "za celú históriu"}
+              Spolu {jeVsetko ? "za celú históriu" : `za posledných ${jazdy.length} jázd`}
             </div>
             <div className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums">
               {km(spolu)}
@@ -261,6 +315,19 @@ export function HistoriaJazd({
               );
             })}
           </div>
+
+          {/* Kým je na serveri ešte niečo staršie, treba to vedieť dopýtať —
+              inak sa zoznam tvári úplný a pritom končí na dvestej jazde. */}
+          {!jeVsetko && (
+            <button
+              type="button"
+              onClick={nacitajStarsie}
+              disabled={nacitavamStarsie}
+              className="mt-5 w-full select-none rounded-2xl border border-border/70 bg-card py-3 text-[14px] font-medium text-primary shadow-[var(--shadow-card)] disabled:opacity-60"
+            >
+              {nacitavamStarsie ? "Načítavam…" : "Načítať staršie jazdy"}
+            </button>
+          )}
         </>
       )}
     </MobilObrazovka>
