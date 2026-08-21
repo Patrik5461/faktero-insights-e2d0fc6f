@@ -959,6 +959,7 @@ const MANUALY: { prefix: string; to: string }[] = [
   { prefix: "/api-playground", to: "/pomoc/api" },
   { prefix: "/webhooky", to: "/pomoc/api" },
   { prefix: "/predplatne", to: "/pomoc/predplatne" },
+  { prefix: "/ai-asistent", to: "/pomoc/ai-asistent" },
 ];
 
 export function manualPre(pathname: string): string | null {

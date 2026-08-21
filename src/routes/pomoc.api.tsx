@@ -132,12 +132,20 @@ const sections: HelpSection[] = [
   },
   {
     id: "dokumentacia",
-    title: "Kompletná dokumentácia",
+    title: "Kompletná dokumentácia a skúšanie",
     body: (
-      <p>
-        Úplný zoznam endpointov, parametrov a chybových kódov nájdete v{" "}
-        <Link to="/docs/api">API dokumentácii</Link>.
-      </p>
+      <>
+        <p>
+          Úplný zoznam endpointov, parametrov a chybových kódov nájdete v{" "}
+          <Link to="/docs/api">API dokumentácii</Link>.
+        </p>
+        <p>
+          Volania si viete vyskúšať bez písania kódu v{" "}
+          <Link to="/api-playground">API playgrounde</Link> — vyberiete endpoint, doplníte parametre
+          a hneď vidíte odpoveď servera aj hotový príkaz pre <code>curl</code>. Playground volá{" "}
+          <strong>ostré dáta vašej firmy</strong>, takže zápisové volania naozaj vytvárajú doklady.
+        </p>
+      </>
     ),
   },
 ];

@@ -126,6 +126,29 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "zalohove",
+    title: "Zálohové faktúry (proforma)",
+    body: (
+      <>
+        <p>
+          Zálohová faktúra je <strong>výzva na zaplatenie preddavku</strong>, nie daňový doklad.
+          Vystavíte ju v <Link to="/zalohove">Zálohové faktúry → Nová zálohová faktúra</Link>.
+        </p>
+        <p>
+          Má <strong>vlastnú číselnú radu</strong> (<code>ZF…</code>), aby v rade riadnych faktúr
+          nevznikali diery. Do <strong>obratu ani do DPH</strong> sa nepočíta — plnenie nastáva až
+          riadnou faktúrou.
+        </p>
+        <p>
+          Keď zákazník zálohu zaplatí, vystavíte <strong>riadnu faktúru</strong> a v nej zálohu
+          odpočítate: v novej faktúre je na to voľba <em>Pridať zálohovú faktúru</em>. Zaplatená
+          časť sa odráta, takže zákazník doplatí len rozdiel a tá istá suma nie je vo výnosoch
+          dvakrát. V zozname zálohových faktúr potom vidno, ktoré sú už zúčtované.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "opakovane",
     title: "Ako fungujú opakované faktúry",
     body: (

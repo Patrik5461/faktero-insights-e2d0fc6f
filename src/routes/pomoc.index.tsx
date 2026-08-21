@@ -22,6 +22,7 @@ import {
   Plug,
   ScanLine,
   Banknote,
+  Sparkles,
 } from "lucide-react";
 
 export const Route = createFileRoute("/pomoc/")({
@@ -235,6 +236,22 @@ const CATS: Cat[] = [
     label: "API a webhooky",
     desc: "Napojenie vlastného systému na Faktero.",
     icon: Code2,
+    available: true,
+    skupina: "Účet a vývoj",
+  },
+  {
+    to: "/pomoc/online-platby/gopay",
+    label: "Platba kartou (GoPay)",
+    desc: "Tlačidlo Zaplatiť na faktúre a čo sa deje po zaplatení.",
+    icon: CreditCard,
+    available: true,
+    skupina: "Fakturácia",
+  },
+  {
+    to: "/pomoc/ai-asistent",
+    label: "Faktero AI",
+    desc: "Otázky nad vlastnými dátami — kto dlží, čo je po splatnosti, čo poslať účtovníčke.",
+    icon: Sparkles,
     available: true,
     skupina: "Účet a vývoj",
   },
