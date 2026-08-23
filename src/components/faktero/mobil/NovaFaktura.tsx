@@ -1448,9 +1448,6 @@ function VyberZalohy({
     };
   }, [firmaId, odberatelId]);
 
-  // Kým odberateľ nemá ani jednu nezúčtovanú zálohu, netreba o tom hovoriť.
-  if (!zoznam?.length && !zaloha) return null;
-
   if (zaloha) {
     return (
       <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-4">
@@ -1471,6 +1468,11 @@ function VyberZalohy({
   }
 
   if (!otvorene) {
+    /*
+      Tlačidlo je tu vždy, aj keď odberateľ zálohu nemá. Keď sa skrývalo,
+      človek nemal ako zistiť, že sa to v appke vôbec dá — hľadal funkciu,
+      ktorá tam bola, len neviditeľná.
+    */
     return (
       <button
         onClick={() => setOtvorene(true)}
@@ -1481,12 +1483,30 @@ function VyberZalohy({
     );
   }
 
+  if (zoznam && zoznam.length === 0) {
+    return (
+      <div className="rounded-2xl border border-border/70 bg-card p-4">
+        <div className="text-[14px] font-medium">Žiadna zálohová faktúra na zúčtovanie</div>
+        <p className="mt-1 text-[13px] leading-snug text-muted-foreground">
+          Tento odberateľ nemá zálohovú faktúru, ktorá by ešte nebola zúčtovaná. Vystavíte ju tak,
+          že v prvom kroku novej faktúry vyberiete <strong>Zálohová</strong>.
+        </p>
+        <button
+          onClick={() => setOtvorene(false)}
+          className="mt-3 w-full rounded-xl border border-border px-3 py-2 text-[13px]"
+        >
+          Zavrieť
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-3">
       <div className="px-1 text-[13px] text-muted-foreground">
-        Nezúčtované zálohy tohto odberateľa
+        {zoznam === null ? "Hľadám zálohy…" : "Nezúčtované zálohy tohto odberateľa"}
       </div>
-      {zoznam!.map((z) => (
+      {(zoznam ?? []).map((z) => (
         <button
           key={z.id}
           onClick={() => {

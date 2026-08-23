@@ -10,7 +10,6 @@ import {
   LogOut,
   Receipt,
   ShieldCheck,
-  UserX,
   X,
   Stethoscope,
   Bug,
@@ -242,14 +241,17 @@ export function MobilPanel({
 
           <Skupina nazov="Pomoc" />
           {/*
-            Diagnostika sa dovtedy dala otvoriť len cez položku „Zrušenie účtu",
-            lebo obidve vedú na tú istú obrazovku. Keď sa niečo pokazí, nikto ju
-            tam hľadať nebude — a práve vtedy je potrebná.
+            Jedna položka, nie dve. „Účet a diagnostika" a „Zrušenie účtu" viedli
+            na tú istú obrazovku, takže panel ponúkal tú istú vec dvakrát — a
+            diagnostiku, ktorá je potrebná práve keď sa niečo pokazí, nikto pod
+            zrušením účtu hľadať nebude. Zrušenie účtu musí ostať dostupné
+            z appky kvôli pravidlám App Store; je na tej obrazovke a spomína ho
+            aj popis, aby sa dalo nájsť.
           */}
           <Polozka
             icon={Stethoscope}
-            label="Účet a diagnostika"
-            hint="Čo appka v telefóne vidí — pamäť, pripojenie, verzia"
+            label="Nastavenie aplikácie"
+            hint="Účet a jeho zrušenie, pamäť, pripojenie, verzia"
             onClick={onUcet}
           />
           <Polozka
@@ -278,25 +280,17 @@ export function MobilPanel({
             onClick={() => otvorNaWebe("/dashboard")}
           />
 
-          {/* App Store vyžaduje, aby sa účet dal zrušiť z appky, nie len mailom na podporu. */}
-          <Polozka
-            icon={UserX}
-            label="Zrušenie účtu"
-            hint="S 14-dňovým odkladom, dá sa odvolať"
-            onClick={onUcet}
-          />
-
-          {/* App Store vyžaduje, aby sa k podmienkam a k ochrane údajov dalo dostať priamo z appky. */}
-          <Skupina nazov="Právne" />
+          {/*
+            Jeden odkaz namiesto dvoch. App Store vyžaduje, aby sa k podmienkam
+            a k ochrane údajov dalo dostať priamo z appky — prehľad na webe ich
+            má všetky, vrátane tých, ktoré sa sem nezmestili (reklamačný
+            poriadok, cookies, opakované platby).
+          */}
           <Polozka
             icon={ShieldCheck}
-            label="Ochrana osobných údajov"
-            onClick={() => otvorNaWebe("/pravne/gdpr")}
-          />
-          <Polozka
-            icon={FileText}
-            label="Obchodné podmienky"
-            onClick={() => otvorNaWebe("/pravne/obchodne-podmienky")}
+            label="Právne dokumenty"
+            hint="Podmienky, ochrana údajov a ostatné — otvorí sa v prehliadači"
+            onClick={() => otvorNaWebe("/pravne")}
           />
         </nav>
 
