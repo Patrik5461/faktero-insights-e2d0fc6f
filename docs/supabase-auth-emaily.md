@@ -8,6 +8,27 @@ a slabú doručiteľnosť. Nastavenie je v dashboarde, cez SQL sa meniť nedá.
 Doména `faktero.sk` je v Resende overená už teraz — faktúry aj pozvánky z nej
 odchádzajú, takže po prepnutí netreba nič v DNS.
 
+## Stav k 23. 8. 2026
+
+**Prepnuté to stále nie je.** V zozname odoslaných e-mailov v Resende nie je
+ani jeden potvrdzovací e-mail z registrácie — sú tam len faktúry, hlásenia chýb
+a maily z iných projektov. Auth teda naďalej posiela cez testovací server
+Supabase. `mailer_autoconfirm` je `false`, takže **bez toho e-mailu sa nový
+človek do aplikácie nedostane** — týka sa to aj registrácie v mobilnej appke.
+
+**Prihlasovacie údaje nižšie som overil naostro**: SMTP na `smtp.resend.com`
+prijalo `RESEND_API_KEY` (odpoveď `235`) a skúšobná správa bola doručená do
+dvoch sekúnd. Ostáva teda naozaj len prepnúť to v dashboarde.
+
+Dve poznámky z toho overovania:
+
+- Z nášho servera je **port 465 zavretý**, prejde len 587 so STARTTLS. Supabase
+  sa pripája zo svojej infraštruktúry, takže na 465 to vadiť nemá; keby sa
+  niekedy skúšalo posielanie priamo zo servera, treba 587.
+- Účet v Resende **zdieľajú aj iné projekty**. Odrazený e-mail preto zhorší
+  povesť odosielateľa všetkým naraz a adresa sa navyše umlčí — ďalšie pokusy
+  potom vracajú 200 a nedoručí sa nič. Kontroluje sa to v *Suppressions*.
+
 ---
 
 ## 1. SMTP (Authentication → Emails → SMTP Settings)
@@ -163,5 +184,11 @@ select event_message from logs
  order by timestamp desc limit 5;
 ```
 
-Rovnaký e-mail sa dá poslať aj z Resendu — v jeho prehľade *Emails* sa
-po prepnutí objavia aj potvrdzovacie správy z registrácie, nielen faktúry.
+Spoľahlivejšie než logy je pozrieť sa do Resendu: v prehľade *Emails* (alebo
+`GET https://api.resend.com/emails`) sa po prepnutí objavia aj potvrdzovacie
+správy z registrácie, nielen faktúry. Kým tam nie sú, prepnuté to nie je.
+
+Naostro sa to dá skúsiť aj bez cudzej schránky — zaregistrovať sa na adresu
+v tvare `<čokoľvek>@doklady.faktero.sk`. Tá pošta chodí nám, e-mail sa dá
+prečítať cez `GET /emails/receiving`, a keďže nemá prílohu, v prijatých
+dokladoch z nej nič nevznikne (stav `bez_prilohy`).
