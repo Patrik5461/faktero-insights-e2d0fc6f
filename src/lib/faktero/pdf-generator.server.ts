@@ -287,6 +287,26 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     return top - headerH;
   };
 
+  /*
+    Text nad položkami. Kreslí sa tesne pred hlavičkou tabuľky, takže sa naň
+    vzťahuje to isté zalamovanie strán — dlhý text posunie tabuľku, nie ju
+    prekryje. `notes` ostáva pod položkami, tieto dva texty sa nemiešajú.
+  */
+  if (invoice.intro_note) {
+    const introLines = wrapLines(String(invoice.intro_note), font, 9.5, innerW);
+    // Zalomenie rieši rovnako ako riadky položiek — `ensureSpace` je definované
+    // až nižšie a hlavička tabuľky sa musí kresliť až po tomto texte.
+    if (y - (introLines.length * 12 + 10) - 40 < BOTTOM_LIMIT) {
+      cur = newDocPage();
+      y = height - margin;
+    }
+    introLines.forEach((ln) => {
+      cur.drawText(ln, { x: margin, y, size: 9.5, font, color: sub });
+      y -= 12;
+    });
+    y -= 10;
+  }
+
   y = drawTableHeader(cur, y);
 
   // Pre-wrap name + description per item to compute row height

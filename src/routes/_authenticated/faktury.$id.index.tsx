@@ -859,6 +859,12 @@ function InvoiceDetail() {
               </div>
             </div>
 
+            {inv.intro_note && (
+              <div className="whitespace-pre-wrap rounded-xl border border-border bg-card p-5 text-sm">
+                {inv.intro_note}
+              </div>
+            )}
+
             <div className="overflow-hidden rounded-xl border border-border bg-card">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">

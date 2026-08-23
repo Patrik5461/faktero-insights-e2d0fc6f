@@ -3116,6 +3116,7 @@ export type Database = {
           id: string
           import_source: string | null
           imported_at: string | null
+          intro_note: string | null
           invoice_number: string
           issue_date: string
           job_id: string | null
@@ -3177,6 +3178,7 @@ export type Database = {
           id?: string
           import_source?: string | null
           imported_at?: string | null
+          intro_note?: string | null
           invoice_number: string
           issue_date?: string
           job_id?: string | null
@@ -3238,6 +3240,7 @@ export type Database = {
           id?: string
           import_source?: string | null
           imported_at?: string | null
+          intro_note?: string | null
           invoice_number?: string
           issue_date?: string
           job_id?: string | null

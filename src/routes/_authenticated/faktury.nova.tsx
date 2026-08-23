@@ -145,6 +145,7 @@ function NewInvoice() {
     advance_amount: 0,
     job_id: "",
     notes: "",
+    intro_note: "",
   });
   const [items, setItems] = useState<Item[]>(() => {
     // Predvyplnenie zo skenera dokladov. Suma ide ako jedna položka za 1 ks —
@@ -551,6 +552,7 @@ function NewInvoice() {
           vat_total: Number(totals.vat_total.toFixed(2)),
           total: Number(totals.total.toFixed(2)),
           notes: form.notes,
+          intro_note: form.intro_note.trim() || null,
         })
         .select()
         .single();
@@ -973,6 +975,26 @@ function NewInvoice() {
                 )}
               </div>
             </div>
+          </section>
+
+          {/*
+            Text nad položkami — čoho sa dodávka týka, číslo objednávky,
+            obdobie. Bez neho ľudia píšu tieto vety do názvu prvej položky,
+            kde potom kazia súčty aj export do účtovníctva.
+          */}
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <label className="block">
+              <span className="text-xs font-medium text-muted-foreground">
+                Poznámka nad položkami
+              </span>
+              <textarea
+                rows={2}
+                value={form.intro_note}
+                onChange={(e) => setForm({ ...form, intro_note: e.target.value })}
+                placeholder="Napríklad: Fakturujeme vám práce podľa objednávky č. 2026/114 za obdobie 1. – 31. 8. 2026."
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </label>
           </section>
 
           {/* SECTION 2 — items */}

@@ -55,6 +55,7 @@ function EditInvoice() {
     payment_method: "bank_transfer",
     job_id: "",
     notes: "",
+    intro_note: "",
   });
 
   useEffect(() => {
@@ -85,6 +86,7 @@ function EditInvoice() {
         payment_method: i.payment_method ?? "bank_transfer",
         job_id: i.job_id ?? "",
         notes: i.notes ?? "",
+        intro_note: i.intro_note ?? "",
       });
       setItems(
         (its ?? []).map((r: any) => ({
@@ -169,6 +171,7 @@ function EditInvoice() {
           payment_method: form.payment_method,
           job_id: form.job_id || null,
           notes: form.notes,
+          intro_note: form.intro_note.trim() || null,
           subtotal: Number(totals.subtotal.toFixed(2)),
           vat_total: Number(totals.vat_total.toFixed(2)),
           total: Number(totals.total.toFixed(2)),
@@ -311,6 +314,19 @@ function EditInvoice() {
                 companyId={inv?.company_id ?? null}
               />
             </div>
+          </section>
+
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">
+              Poznámka nad položkami
+            </h3>
+            <textarea
+              rows={2}
+              value={form.intro_note}
+              onChange={(e) => setForm({ ...form, intro_note: e.target.value })}
+              placeholder="Text, ktorý sa vytlačí nad tabuľkou položiek"
+              className={inputCls}
+            />
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-5">
