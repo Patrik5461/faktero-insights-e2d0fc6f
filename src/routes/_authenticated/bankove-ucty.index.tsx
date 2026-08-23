@@ -9,6 +9,11 @@ import {
   disconnectBank,
   renewBankConsent,
 } from "@/lib/faktero/tatrabanka.functions";
+import {
+  odpojWise,
+  synchronizujWiseUcty,
+  synchronizujWisePohyby,
+} from "@/lib/faktero/wise.functions";
 import { toast } from "sonner";
 import { zostatkyPodlaMien, formatujSumu, zobrazitZauctovany } from "@/lib/faktero/zostatky";
 import {
@@ -34,6 +39,9 @@ function fmtMoney(n: number, c = "EUR") {
 function BankAccountsPage() {
   const list = useServerFn(listBankData);
   const syncAcc = useServerFn(syncBankAccounts);
+  const wiseUcty = useServerFn(synchronizujWiseUcty);
+  const wisePohyby = useServerFn(synchronizujWisePohyby);
+  const wiseOdpoj = useServerFn(odpojWise);
   const disconnect = useServerFn(disconnectBank);
   const renew = useServerFn(renewBankConsent);
   const [data, setData] = useState<{ connections: any[]; accounts: any[] } | null>(null);
@@ -52,6 +60,34 @@ function BankAccountsPage() {
     if (url.searchParams.size) window.history.replaceState({}, "", url.pathname);
     reload();
   }, []);
+
+  /** Wise: zostatky, pohyby a odpojenie. Súhlas sa tu neobnovuje — nie je aký. */
+  async function onWise(connId: string, co: "ucty" | "pohyby" | "odpojit") {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setBusy(connId);
+    try {
+      if (co === "ucty") {
+        const r: any = await wiseUcty({ data: { company_id: cid } });
+        toast.success(`Načítaných zostatkov: ${r.pocet}`);
+      } else if (co === "pohyby") {
+        const r: any = await wisePohyby({ data: { company_id: cid } });
+        toast.success(
+          r.problemy?.length
+            ? `Načítaných pohybov: ${r.vlozenych}. Nepodarilo sa: ${r.problemy.join(", ")}`
+            : `Načítaných pohybov: ${r.vlozenych}`,
+        );
+      } else {
+        await wiseOdpoj({ data: { company_id: cid } });
+        toast.success("Wise odpojený.");
+      }
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa to.");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function onSync(connId: string) {
     const cid = getActiveCompanyId();
@@ -185,28 +221,64 @@ function BankAccountsPage() {
                       : "Ešte nesynchronizované"}
                   </div>
                 </div>
-                <button
-                  onClick={() => onSync(c.id)}
-                  disabled={busy === c.id}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
-                  Načítať účty
-                </button>
-                <button
-                  onClick={() => onRenew(c.id)}
-                  disabled={busy === c.id}
-                  title="Prihlásite sa znova do banky. Účty, transakcie ani výpisy sa nezmažú."
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" /> Obnoviť súhlas
-                </button>
-                <button
-                  onClick={() => onDisconnect(c.id)}
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-3.5 w-3.5" /> Odpojiť
-                </button>
+                {/*
+                  Tlačidlá podľa poskytovateľa. Kým tu bola len Tatra banka,
+                  volali sa jej funkcie napevno — po pripojení Wise potom
+                  „Načítať účty" siahalo do Tatra banky a vracalo jej 401,
+                  hoci s Wise nemá nič spoločné. Wise nemá ani súhlas, ktorý by
+                  sa dal obnovovať.
+                */}
+                {c.provider === "wise" ? (
+                  <>
+                    <button
+                      onClick={() => onWise(c.id, "ucty")}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
+                      Načítať zostatky
+                    </button>
+                    <button
+                      onClick={() => onWise(c.id, "pohyby")}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                    >
+                      <ArrowRight className="h-3.5 w-3.5" /> Stiahnuť pohyby
+                    </button>
+                    <button
+                      onClick={() => onWise(c.id, "odpojit")}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Odpojiť
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => onSync(c.id)}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
+                      Načítať účty
+                    </button>
+                    <button
+                      onClick={() => onRenew(c.id)}
+                      disabled={busy === c.id}
+                      title="Prihlásite sa znova do banky. Účty, transakcie ani výpisy sa nezmažú."
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5" /> Obnoviť súhlas
+                    </button>
+                    <button
+                      onClick={() => onDisconnect(c.id)}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Odpojiť
+                    </button>
+                  </>
+                )}
               </div>
               <div className="mt-3 grid gap-2 md:grid-cols-2">
                 {data.accounts
