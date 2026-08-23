@@ -519,6 +519,7 @@ export type Database = {
           currency: string
           description: string | null
           id: string
+          matched_expense_id: string | null
           matched_installment_id: string | null
           matched_invoice_id: string | null
           transaction_reference: string | null
@@ -534,6 +535,7 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
+          matched_expense_id?: string | null
           matched_installment_id?: string | null
           matched_invoice_id?: string | null
           transaction_reference?: string | null
@@ -549,6 +551,7 @@ export type Database = {
           currency?: string
           description?: string | null
           id?: string
+          matched_expense_id?: string | null
           matched_installment_id?: string | null
           matched_invoice_id?: string | null
           transaction_reference?: string | null

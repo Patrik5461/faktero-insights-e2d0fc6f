@@ -39,6 +39,12 @@ import {
 } from "@/lib/faktero/ucet-zrusenie.functions";
 import { posliSpatnuVazbu } from "@/lib/faktero/spatna-vazba.functions";
 import { recordLegalAcceptance } from "@/lib/legal.functions";
+import {
+  navrhniParovanieDokladov,
+  potvrdParovanieDokladu,
+  uhradyDokladov,
+  zrusParovanieDokladu,
+} from "@/lib/faktero/doklad-parovanie.functions";
 import type { Operacia } from "./operacie";
 
 /** Jediné miesto, kde sa kľúč operácie stretáva so serverovou funkciou. */
@@ -70,6 +76,10 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "ucet-odvolaj-zrusenie": odvolajZrusenieUctuFn,
   "spatna-vazba": posliSpatnuVazbu,
   "pravne-suhlasy": recordLegalAcceptance,
+  "doklady-navrhy-parovania": navrhniParovanieDokladov,
+  "doklad-sparuj": potvrdParovanieDokladu,
+  "doklad-zrus-parovanie": zrusParovanieDokladu,
+  "doklady-uhrady": uhradyDokladov,
 };
 
 export function useOperacia<T = any>(kluc: Operacia): (vstup: { data: any }) => Promise<T> {

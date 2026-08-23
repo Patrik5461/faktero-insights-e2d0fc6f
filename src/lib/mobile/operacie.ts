@@ -40,6 +40,10 @@ export const OPERACIE = [
   "ucet-odvolaj-zrusenie",
   "spatna-vazba",
   "pravne-suhlasy",
+  "doklady-navrhy-parovania",
+  "doklad-sparuj",
+  "doklad-zrus-parovanie",
+  "doklady-uhrady",
 ] as const;
 
 export type Operacia = (typeof OPERACIE)[number];

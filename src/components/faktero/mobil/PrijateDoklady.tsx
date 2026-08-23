@@ -93,6 +93,13 @@ export function PrijateDoklady({
   onSpat: () => void;
 }) {
   const nacitaj = useOperacia("vydavky-zoznam");
+  const navrhyFn = useOperacia("doklady-navrhy-parovania");
+  const sparujFn = useOperacia("doklad-sparuj");
+  const uhradyFn = useOperacia("doklady-uhrady");
+  /** Ktorý doklad je uhradený z účtu a kedy — kľúč je id dokladu. */
+  const [uhrady, setUhrady] = useState<Record<string, string>>({});
+  const [navrhy, setNavrhy] = useState<any[]>([]);
+  const [parujem, setParujem] = useState<string | null>(null);
   const citajBlocek = useOperacia("blocek-precitaj");
   const vytvorDoklad = useOperacia("vydavok-uloz");
   const [doklady, setDoklady] = useState<Doklad[] | null>(null);
@@ -108,6 +115,21 @@ export function PrijateDoklady({
     try {
       const rows = (await nacitaj({ data: { company_id: firma.id } })) as Doklad[];
       setDoklady(rows);
+      /*
+        Úhrady a návrhy sú príjemné, nie nutné — keď zlyhajú, zoznam dokladov
+        sa aj tak ukáže. Preto zvlášť a ticho.
+      */
+      void (async () => {
+        try {
+          const ids = (rows ?? []).map((r: any) => r.id).slice(0, 200);
+          const u = (await uhradyFn({ data: { company_id: firma.id, ids } })) as any;
+          setUhrady(u?.uhrady ?? {});
+          const n = (await navrhyFn({ data: { company_id: firma.id } })) as any;
+          setNavrhy(n?.zhody ?? []);
+        } catch {
+          /* párovanie je nadstavba — bez neho zoznam funguje ďalej */
+        }
+      })();
     } catch (e: any) {
       // Bez signálu je prázdny zoznam očakávaný stav, nie chyba — hlásenie
       // „Failed to fetch" by tu človeka len postrašilo.
@@ -253,6 +275,64 @@ export function PrijateDoklady({
         </div>
       )}
 
+      {/*
+        Návrhy na spárovanie s bankou. Hotovosť sa sem nedostane — v banke sa
+        neobjaví. Nič sa nepáruje potichu, aj „isté" dvojice čakajú na ťuknutie.
+      */}
+      {navrhy.length > 0 && (
+        <div className="mb-4 overflow-hidden rounded-2xl border border-primary/40 bg-primary/5">
+          <div className="px-4 py-3 text-[14px] font-medium">
+            Našli sme platby k dokladom ({navrhy.length})
+          </div>
+          {navrhy.map((z) => (
+            <div key={z.transactionId} className="border-t border-primary/20 px-4 py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
+                  {z.doklad?.supplier_name ?? "Doklad"}
+                </span>
+                <span className="shrink-0 text-[14px] tabular-nums">
+                  {suma(z.doklad?.total_amount, z.doklad?.currency ?? "EUR")}
+                </span>
+              </div>
+              <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
+                {datum(z.pohyb?.booking_date)} · {z.dovody.join(" · ")}
+              </p>
+              <div className="mt-2 flex gap-2">
+                <button
+                  disabled={parujem === z.transactionId}
+                  onClick={async () => {
+                    setParujem(z.transactionId);
+                    try {
+                      await sparujFn({
+                        data: { transaction_id: z.transactionId, expense_id: z.expenseId },
+                      });
+                      setUhrady((u) => ({ ...u, [z.expenseId]: z.pohyb?.booking_date }));
+                      setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId));
+                      toast.success("Doklad označený za uhradený z účtu.");
+                    } catch (e: any) {
+                      toast.error(e?.message ?? "Spárovať sa to nepodarilo.");
+                    } finally {
+                      setParujem(null);
+                    }
+                  }}
+                  className="flex-1 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-medium text-primary disabled:opacity-60"
+                >
+                  {z.istota === "auto" ? "Spárovať" : "Áno, patrí k sebe"}
+                </button>
+                <button
+                  onClick={() =>
+                    setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId))
+                  }
+                  className="rounded-xl border border-border px-3 py-2 text-[13px] text-muted-foreground"
+                >
+                  Nie
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {najdene.length === 0 ? (
         <div className="grid place-items-center py-16 text-center">
           <Receipt className="mb-3 h-10 w-10 text-muted-foreground/50" />
@@ -310,6 +390,7 @@ export function PrijateDoklady({
                         <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
                           {datum(d.issue_date)}
                           {d.payment_method ? ` · ${UHRADY[d.payment_method]}` : ""}
+                          {uhrady[d.id] ? ` · uhradené z účtu ${datum(uhrady[d.id])}` : ""}
                         </span>
                       </span>
                       <span className="shrink-0 text-[15px] font-semibold tabular-nums">
