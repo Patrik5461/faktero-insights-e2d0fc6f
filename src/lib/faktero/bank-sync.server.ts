@@ -188,7 +188,7 @@ export async function stiahniTransakcieUctu(
  * `upsert` sa použiť nedá: index je čiastočný (`where transaction_reference is
  * not null`) a taký sa ako cieľ `on conflict` cez PostgREST vybrať nedá.
  */
-async function vlozPohyby(supabaseAdmin: any, riadky: any[]): Promise<number> {
+export async function vlozPohyby(supabaseAdmin: any, riadky: any[]): Promise<number> {
   const DAVKA = 500;
   let vlozenych = 0;
   for (let od = 0; od < riadky.length; od += DAVKA) {

@@ -105,7 +105,7 @@ function BankAccountsPage() {
     <>
       <PageHeader
         title="Bankové účty"
-        description="Tatra banka Premium API. Zostatky a transakcie sa načítavajú automaticky, iba na čítanie."
+        description="Tatra banka a Wise. Zostatky a pohyby sa načítavajú automaticky, iba na čítanie."
         action={
           <Link
             to="/bankove-ucty/pripojit"
@@ -155,7 +155,7 @@ function BankAccountsPage() {
               to="/bankove-ucty/pripojit"
               className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700"
             >
-              <Plus className="h-4 w-4" /> Pripojiť Tatra banku
+              <Plus className="h-4 w-4" /> Pripojiť banku
             </Link>
           </div>
         )}
