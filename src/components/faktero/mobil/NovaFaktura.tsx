@@ -144,6 +144,18 @@ export function NovaFaktura({
   const [splatnost, setSplatnost] = useState(oDni(dnes(), 14));
   const [uhrada, setUhrada] = useState<"bank_transfer" | "cash" | "card">("bank_transfer");
   const [poznamka, setPoznamka] = useState("");
+  const [poznamkaNad, setPoznamkaNad] = useState("");
+  /*
+    Zálohová faktúra nie je daňový doklad a má vlastnú radu čísel. Dobropis
+    v telefóne nerobíme — ten opravuje konkrétnu faktúru a patrí na web.
+  */
+  const [druh, setDruh] = useState<"regular" | "proforma">("regular");
+  /** Zúčtovaná záloha — ktorá zálohová faktúra sa od tejto odpočíta. */
+  const [zaloha, setZaloha] = useState<{
+    id: string;
+    invoice_number: string;
+    total: number;
+  } | null>(null);
   /* Posledná faktúra toho istého odberateľa — ponúkne sa na zopakovanie. */
   const [posledna, setPosledna] = useState<{
     invoice_number: string;
@@ -218,7 +230,7 @@ export function NovaFaktura({
       const [{ data: f, error: chybaF }, { data: polozky }] = await Promise.all([
         supabase
           .from("invoices")
-          .select("customer_id, issue_date, due_date, payment_method, notes, status")
+          .select("customer_id, issue_date, due_date, payment_method, notes, intro_note, status")
           .eq("id", upravuje.id)
           .single(),
         supabase
@@ -241,6 +253,7 @@ export function NovaFaktura({
       setSplatnost(f.due_date ?? oDni(dnes(), 14));
       setUhrada((f.payment_method as typeof uhrada) ?? "bank_transfer");
       setPoznamka(f.notes ?? "");
+      setPoznamkaNad((f as any).intro_note ?? "");
       setRiadky(
         (polozky ?? []).map((r: any) => ({
           key: Math.random().toString(36).slice(2),
@@ -362,6 +375,7 @@ export function NovaFaktura({
           due_date: splatnost,
           payment_method: uhrada,
           notes: poznamka.trim() || null,
+          intro_note: poznamkaNad.trim() || null,
           subtotal: s.subtotal,
           vat_total: s.vat_total,
           total: s.total,
@@ -417,6 +431,10 @@ export function NovaFaktura({
       payment_method: uhrada,
       currency: mena,
       notes: poznamka.trim() || null,
+      intro_note: poznamkaNad.trim() || null,
+      type: druh,
+      advance_invoice_id: zaloha?.id ?? null,
+      advance_amount: zaloha ? zaloha.total : null,
       items: pouzitelne.map((x) => ({
         name: x.name.trim(),
         quantity: cislo(x.quantity),
@@ -446,6 +464,16 @@ export function NovaFaktura({
     try {
       const { isOnline } = await import("@/lib/mobile/offline-queue");
       if (!(await isOnline())) {
+        /*
+          Odložiť sa dá len bežná faktúra. Zálohová má vlastnú radu čísel a
+          rezervované čísla sú z tej bežnej — odložená zálohová by si buď vzala
+          cudzie číslo, alebo by ostala visieť bez neho.
+        */
+        if (druh === "proforma") {
+          setUkladam(false);
+          toast.error("Zálohovú faktúru sa bez pripojenia vystaviť nedá.");
+          return;
+        }
         await odloz();
         return;
       }
@@ -482,6 +510,8 @@ export function NovaFaktura({
     return (
       <KrokOdberatel
         firma={firma}
+        druh={druh}
+        setDruh={setDruh}
         odberatelia={podklady.odberatelia}
         onSpat={onSpat}
         onVyber={vyberOdberatela}
@@ -530,6 +560,12 @@ export function NovaFaktura({
       setSplatnost={setSplatnost}
       uhrada={uhrada}
       setUhrada={setUhrada}
+      druh={druh}
+      firmaId={firma.id}
+      zaloha={zaloha}
+      setZaloha={setZaloha}
+      poznamkaNad={poznamkaNad}
+      setPoznamkaNad={setPoznamkaNad}
       poznamka={poznamka}
       setPoznamka={setPoznamka}
       maIban={podklady.firma.maIban}
@@ -543,12 +579,16 @@ export function NovaFaktura({
 
 function KrokOdberatel({
   firma,
+  druh,
+  setDruh,
   odberatelia,
   onSpat,
   onVyber,
   onPridany,
 }: {
   firma: { id: string; name: string };
+  druh: "regular" | "proforma";
+  setDruh: (v: "regular" | "proforma") => void;
   odberatelia: Odberatel[];
   onSpat: () => void;
   onVyber: (o: Odberatel) => void;
@@ -577,7 +617,43 @@ function KrokOdberatel({
   }
 
   return (
-    <MobilObrazovka title="Komu fakturujete?" subtitle="Krok 1 z 3" onBack={onSpat}>
+    <MobilObrazovka
+      title="Komu fakturujete?"
+      subtitle={druh === "proforma" ? "Krok 1 z 3 · zálohová" : "Krok 1 z 3"}
+      onBack={onSpat}
+    >
+      {/*
+        Druh dokladu patrí na začiatok — mení celý doklad, nielen jeho text.
+        Zálohová faktúra nie je daňový doklad a číslo dostane z vlastnej rady,
+        takže sa to nedá prepnúť až na konci.
+      */}
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        {(
+          [
+            ["regular", "Faktúra"],
+            ["proforma", "Zálohová"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setDruh(id)}
+            className={`rounded-2xl border py-3 text-[14px] transition active:scale-[0.98] ${
+              druh === id
+                ? "border-primary bg-primary/10 font-semibold text-primary"
+                : "border-border/70 bg-card"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {druh === "proforma" && (
+        <p className="mb-4 rounded-xl bg-secondary px-3 py-2 text-[12px] leading-snug text-muted-foreground">
+          Zálohová faktúra je výzva na platbu, nie daňový doklad — nevstupuje do DPH a dostane číslo
+          z vlastnej rady. Po zaplatení na ňu vystavíte bežnú faktúru a zálohu na nej zúčtujete.
+        </p>
+      )}
+
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
@@ -1111,6 +1187,12 @@ function KrokSuhrn({
   setUhrada,
   poznamka,
   setPoznamka,
+  poznamkaNad,
+  setPoznamkaNad,
+  druh,
+  firmaId,
+  zaloha,
+  setZaloha,
   maIban,
   onSpat,
   onUloz,
@@ -1128,6 +1210,12 @@ function KrokSuhrn({
   setUhrada: (v: "bank_transfer" | "cash" | "card") => void;
   poznamka: string;
   setPoznamka: (v: string) => void;
+  poznamkaNad: string;
+  setPoznamkaNad: (v: string) => void;
+  druh: "regular" | "proforma";
+  firmaId: string;
+  zaloha: { id: string; invoice_number: string; total: number } | null;
+  setZaloha: (v: { id: string; invoice_number: string; total: number } | null) => void;
   maIban: boolean;
   onSpat: () => void;
   onUloz: () => void;
@@ -1140,12 +1228,16 @@ function KrokSuhrn({
 
   return (
     <MobilObrazovka
-      title="Skontrolujte faktúru"
+      title={druh === "proforma" ? "Skontrolujte zálohovú" : "Skontrolujte faktúru"}
       subtitle={uprava ? `Faktúra ${uprava.invoice_number}` : "Krok 3 z 3"}
       onBack={onSpat}
       footer={
         <HlavneTlacidlo onClick={onUloz}>
-          {uprava ? "Uložiť zmeny" : "Vystaviť faktúru"}
+          {uprava
+            ? "Uložiť zmeny"
+            : druh === "proforma"
+              ? "Vystaviť zálohovú faktúru"
+              : "Vystaviť faktúru"}
         </HlavneTlacidlo>
       }
     >
@@ -1160,6 +1252,19 @@ function KrokSuhrn({
           {platca && (
             <div className="mt-1 text-[12px] text-muted-foreground">
               základ {suma(sucty.zaklad, mena)} · DPH {suma(sucty.dph, mena)}
+            </div>
+          )}
+          {zaloha && (
+            /* Celková suma ostáva, mení sa len to, čo má zákazník doplatiť. */
+            <div className="mt-2 border-t border-border/70 pt-2 text-[13px]">
+              <div className="flex justify-between text-muted-foreground">
+                <span>Zúčtovaná záloha {zaloha.invoice_number}</span>
+                <span>− {suma(zaloha.total, mena)}</span>
+              </div>
+              <div className="mt-1 flex justify-between font-semibold">
+                <span>Na úhradu</span>
+                <span>{suma(+(sucty.spolu - zaloha.total).toFixed(2), mena)}</span>
+              </div>
             </div>
           )}
         </div>
@@ -1237,9 +1342,32 @@ function KrokSuhrn({
           )}
         </div>
 
+        {druh === "regular" && !uprava && (
+          <VyberZalohy
+            firmaId={firmaId}
+            odberatelId={odberatel.id}
+            mena={mena}
+            zaloha={zaloha}
+            setZaloha={setZaloha}
+          />
+        )}
+
         <label className="block">
           <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
-            Poznámka na faktúre
+            Poznámka nad položkami
+          </span>
+          <textarea
+            value={poznamkaNad}
+            onChange={(e) => setPoznamkaNad(e.target.value)}
+            rows={2}
+            placeholder="Napríklad: podľa objednávky č. 2026/114"
+            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+            Poznámka pod položkami
           </span>
           <textarea
             value={poznamka}
@@ -1250,6 +1378,137 @@ function KrokSuhrn({
         </label>
       </div>
     </MobilObrazovka>
+  );
+}
+
+/* ------------------------- Zúčtovanie zálohy ------------------------- */
+
+/**
+ * Výber zálohovej faktúry, ktorá sa od tejto odpočíta.
+ *
+ * Ponúkajú sa len zálohové faktúry toho istého odberateľa, ktoré ešte neboli
+ * zúčtované na inej faktúre — inak by sa tá istá záloha odpočítala dvakrát.
+ * Číta sa cez `supabase`, teda pod RLS; server si to isté overuje znova.
+ */
+function VyberZalohy({
+  firmaId,
+  odberatelId,
+  mena,
+  zaloha,
+  setZaloha,
+}: {
+  firmaId: string;
+  odberatelId: string;
+  mena: string;
+  zaloha: { id: string; invoice_number: string; total: number } | null;
+  setZaloha: (v: { id: string; invoice_number: string; total: number } | null) => void;
+}) {
+  const [zoznam, setZoznam] = useState<
+    { id: string; invoice_number: string; total: number; issue_date: string }[] | null
+  >(null);
+  const [otvorene, setOtvorene] = useState(false);
+
+  useEffect(() => {
+    let zrusene = false;
+    (async () => {
+      const [{ data: zalohy }, { data: uzPouzite }] = await Promise.all([
+        supabase
+          .from("invoices")
+          .select("id, invoice_number, total, issue_date")
+          .eq("company_id", firmaId)
+          .eq("customer_id", odberatelId)
+          .eq("type", "proforma")
+          .is("deleted_at", null)
+          .order("issue_date", { ascending: false })
+          .limit(20),
+        supabase
+          .from("invoices")
+          .select("advance_invoice_id")
+          .eq("company_id", firmaId)
+          .not("advance_invoice_id", "is", null)
+          .is("deleted_at", null),
+      ]);
+      if (zrusene) return;
+      const pouzite = new Set(
+        ((uzPouzite as any[]) ?? []).map((r) => r.advance_invoice_id as string),
+      );
+      setZoznam(
+        ((zalohy as any[]) ?? [])
+          .filter((z) => !pouzite.has(z.id))
+          .map((z) => ({
+            id: z.id,
+            invoice_number: z.invoice_number,
+            total: Number(z.total),
+            issue_date: z.issue_date,
+          })),
+      );
+    })();
+    return () => {
+      zrusene = true;
+    };
+  }, [firmaId, odberatelId]);
+
+  // Kým odberateľ nemá ani jednu nezúčtovanú zálohu, netreba o tom hovoriť.
+  if (!zoznam?.length && !zaloha) return null;
+
+  if (zaloha) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-4">
+        <div className="min-w-0">
+          <div className="text-[14px] font-medium">Záloha {zaloha.invoice_number}</div>
+          <div className="text-[13px] text-muted-foreground">
+            odpočíta sa {suma(zaloha.total, mena)}
+          </div>
+        </div>
+        <button
+          onClick={() => setZaloha(null)}
+          className="shrink-0 rounded-xl border border-border px-3 py-2 text-[13px]"
+        >
+          Zrušiť
+        </button>
+      </div>
+    );
+  }
+
+  if (!otvorene) {
+    return (
+      <button
+        onClick={() => setOtvorene(true)}
+        className="w-full rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-[14px] font-medium text-primary active:bg-primary/10"
+      >
+        Pridať zálohovú faktúru
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-3">
+      <div className="px-1 text-[13px] text-muted-foreground">
+        Nezúčtované zálohy tohto odberateľa
+      </div>
+      {zoznam!.map((z) => (
+        <button
+          key={z.id}
+          onClick={() => {
+            setZaloha({ id: z.id, invoice_number: z.invoice_number, total: z.total });
+            setOtvorene(false);
+          }}
+          className="flex w-full items-center justify-between gap-3 rounded-xl border border-border/70 px-3 py-2.5 text-left active:bg-secondary"
+        >
+          <span className="min-w-0">
+            <span className="block text-[14px] font-medium">{z.invoice_number}</span>
+            <span className="block text-[12px] text-muted-foreground">{datumSk(z.issue_date)}</span>
+          </span>
+          <span className="shrink-0 text-[14px] tabular-nums">{suma(z.total, mena)}</span>
+        </button>
+      ))}
+      <button
+        onClick={() => setOtvorene(false)}
+        className="w-full py-2 text-center text-[13px] text-muted-foreground"
+      >
+        Zavrieť
+      </button>
+    </div>
   );
 }
 

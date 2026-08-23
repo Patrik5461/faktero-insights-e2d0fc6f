@@ -35,6 +35,17 @@ const NovaFaktura = z.object({
   payment_method: z.enum(["bank_transfer", "cash", "card"]).default("bank_transfer"),
   currency: z.string().length(3).default("EUR"),
   notes: z.string().max(2000).nullable().optional(),
+  /** Text nad tabuľkou položiek — čoho sa dodávka týka. `notes` ostáva pod nimi. */
+  intro_note: z.string().max(2000).nullable().optional(),
+  /**
+   * Zálohová faktúra nie je daňový doklad a má vlastnú radu čísel (ZF…), aby
+   * v rade daňových dokladov neostávali diery. Dobropis sem nepatrí — ten
+   * opravuje konkrétnu faktúru a to je práca pre web.
+   */
+  type: z.enum(["regular", "proforma"]).default("regular"),
+  /** Zúčtovanie zálohy: ktorá zálohová faktúra sa od tejto odpočíta. */
+  advance_invoice_id: z.string().uuid().nullable().optional(),
+  advance_amount: z.number().nonnegative().max(10_000_000).nullable().optional(),
   // Rýchla faktúra zakladá návrh, mobil vystavuje rovno. Ďalšie stavy sem
   // nepatria — tie vznikajú až životom faktúry (odoslaná, uhradená).
   status: z.enum(["draft", "issued"]).default("issued"),
@@ -90,6 +101,11 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       }
     }
 
+    if (data.type === "proforma" && data.reserved_number) {
+      // Rezervované čísla sú z radu bežných faktúr; zálohová má vlastnú.
+      throw new Error("Zálohovú faktúru nemožno vystaviť na rezervované číslo.");
+    }
+
     const { data: odberatel } = await supabase
       .from("customers")
       .select("id, name, email, ico, dic, ic_dph, street, city, zip, country")
@@ -130,9 +146,35 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       invoice_number = r.invoice_number;
       sequence_number = r.sequence_number;
     } else {
-      const dalsie = await nextInvoiceNumberDetailed(data.company_id, data.issue_date);
+      const dalsie = await nextInvoiceNumberDetailed(data.company_id, data.issue_date, data.type);
       invoice_number = dalsie.invoice_number;
       sequence_number = dalsie.sequence_number;
+    }
+
+    /*
+      Zúčtovanie zálohy sa overuje tu, nie na klientovi: musí ísť o zálohovú
+      faktúru tej istej firmy a toho istého odberateľa, inak by sa dala
+      odpočítať cudzia záloha. Suma sa zároveň zastropuje jej celkom — viac,
+      než záloha bola, sa odpočítať nedá.
+    */
+    let zaloha: { id: string; suma: number } | null = null;
+    if (data.advance_invoice_id) {
+      if (data.type !== "regular") {
+        throw new Error("Zálohu možno zúčtovať len na bežnej faktúre.");
+      }
+      const { data: zf } = await supabase
+        .from("invoices")
+        .select("id, total, type, customer_id")
+        .eq("id", data.advance_invoice_id)
+        .eq("company_id", data.company_id)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (!zf || zf.type !== "proforma") throw new Error("Zálohová faktúra sa nenašla.");
+      if (zf.customer_id !== odberatel.id) {
+        throw new Error("Zálohová faktúra patrí inému odberateľovi.");
+      }
+      const ziadana = data.advance_amount ?? Number(zf.total);
+      zaloha = { id: zf.id, suma: Math.min(Number(ziadana), Number(zf.total)) };
     }
 
     const { data: faktura, error: chyba } = await supabase
@@ -141,7 +183,7 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
         company_id: data.company_id,
         created_by: userId,
         customer_id: odberatel.id,
-        type: "regular" as const,
+        type: data.type,
         status: data.status,
         invoice_number,
         sequence_number,
@@ -166,6 +208,9 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
         vat_total: sucty.vat_total,
         total: sucty.total,
         notes: data.notes || null,
+        intro_note: data.intro_note || null,
+        advance_invoice_id: zaloha?.id ?? null,
+        advance_amount: zaloha?.suma ?? null,
         external_id: data.external_id || null,
       })
       .select("id, invoice_number, total, currency, status, customer_id, external_id")
