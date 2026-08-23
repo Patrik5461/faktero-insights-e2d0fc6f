@@ -1,26 +1,26 @@
 # Prepnutie e-mailov z Auth na Resend
 
-Potvrdzovacie e-maily z registrácie zatiaľ odchádzajú z testovacieho servera
-Supabase (`noreply@mail.app.supabase.io`). Overené 12. 8. 2026 v Auth logoch.
-Znamená to limit rádovo jednotiek e-mailov za hodinu, cudzieho odosielateľa
-a slabú doručiteľnosť. Nastavenie je v dashboarde, cez SQL sa meniť nedá.
+Potvrdzovacie e-maily z registrácie odchádzali z testovacieho servera Supabase
+(`noreply@mail.app.supabase.io`) — cudzí odosielateľ, limit rádovo jednotiek
+e-mailov za hodinu a slabá doručiteľnosť. Od 23. 8. 2026 idú cez Resend
+z `noreply@faktero.sk`. Nastavenie je v dashboarde, cez SQL sa meniť nedá,
+takže tento návod ostáva ako popis toho, čo je kde nastavené.
 
 Doména `faktero.sk` je v Resende overená už teraz — faktúry aj pozvánky z nej
 odchádzajú, takže po prepnutí netreba nič v DNS.
 
-## Stav k 23. 8. 2026
+## Stav k 23. 8. 2026 — prepnuté a overené
 
-**Prepnuté to stále nie je.** V zozname odoslaných e-mailov v Resende nie je
-ani jeden potvrdzovací e-mail z registrácie — sú tam len faktúry, hlásenia chýb
-a maily z iných projektov. Auth teda naďalej posiela cez testovací server
-Supabase. `mailer_autoconfirm` je `false`, takže **bez toho e-mailu sa nový
-človek do aplikácie nedostane** — týka sa to aj registrácie v mobilnej appke.
+**Hotovo.** SMTP je nastavené podľa tabuľky nižšie a celá registrácia prešla
+naostro: účet založený z mobilnej appky → potvrdzovací e-mail odišiel
+z `noreply@faktero.sk` cez Resend a bol doručený do dvoch sekúnd → odkaz z neho
+účet potvrdil a doviedol na založenie firmy. `mailer_autoconfirm` ostáva
+`false`, čiže bez toho e-mailu sa dnu nedá — o to viac záleží na tom, že chodí.
 
-**Prihlasovacie údaje nižšie som overil naostro**: SMTP na `smtp.resend.com`
-prijalo `RESEND_API_KEY` (odpoveď `235`) a skúšobná správa bola doručená do
-dvoch sekúnd. Ostáva teda naozaj len prepnúť to v dashboarde.
+**Čo ešte ostáva:** šablóny v kroku 3 sú stále v angličtine („Confirm your
+email address"). Pošta chodí, ale znie ako z cudzej aplikácie.
 
-Dve poznámky z toho overovania:
+Dve poznámky z overovania:
 
 - Z nášho servera je **port 465 zavretý**, prejde len 587 so STARTTLS. Supabase
   sa pripája zo svojej infraštruktúry, takže na 465 to vadiť nemá; keby sa
