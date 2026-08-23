@@ -14,6 +14,11 @@ import {
   synchronizujWiseUcty,
   synchronizujWisePohyby,
 } from "@/lib/faktero/wise.functions";
+import {
+  odpojWallester,
+  synchronizujWallesterUcty,
+  synchronizujWallesterPohyby,
+} from "@/lib/faktero/wallester.functions";
 import { toast } from "sonner";
 import { zostatkyPodlaMien, formatujSumu, zobrazitZauctovany } from "@/lib/faktero/zostatky";
 import {
@@ -42,6 +47,9 @@ function BankAccountsPage() {
   const wiseUcty = useServerFn(synchronizujWiseUcty);
   const wisePohyby = useServerFn(synchronizujWisePohyby);
   const wiseOdpoj = useServerFn(odpojWise);
+  const walUcty = useServerFn(synchronizujWallesterUcty);
+  const walPohyby = useServerFn(synchronizujWallesterPohyby);
+  const walOdpoj = useServerFn(odpojWallester);
   const disconnect = useServerFn(disconnectBank);
   const renew = useServerFn(renewBankConsent);
   const [data, setData] = useState<{ connections: any[]; accounts: any[] } | null>(null);
@@ -60,6 +68,34 @@ function BankAccountsPage() {
     if (url.searchParams.size) window.history.replaceState({}, "", url.pathname);
     reload();
   }, []);
+
+  /** Wallester: kartové účty, pohyby a odpojenie. Súhlas tiež nemá. */
+  async function onWallester(connId: string, co: "ucty" | "pohyby" | "odpojit") {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setBusy(connId);
+    try {
+      if (co === "ucty") {
+        const r: any = await walUcty({ data: { company_id: cid } });
+        toast.success(`Načítaných kartových účtov: ${r.pocet}`);
+      } else if (co === "pohyby") {
+        const r: any = await walPohyby({ data: { company_id: cid } });
+        toast.success(
+          r.problemy?.length
+            ? `Načítaných pohybov: ${r.vlozenych}. Nepodarilo sa: ${r.problemy.join(", ")}`
+            : `Načítaných pohybov: ${r.vlozenych}`,
+        );
+      } else {
+        await walOdpoj({ data: { company_id: cid } });
+        toast.success("Wallester odpojený.");
+      }
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa to.");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   /** Wise: zostatky, pohyby a odpojenie. Súhlas sa tu neobnovuje — nie je aký. */
   async function onWise(connId: string, co: "ucty" | "pohyby" | "odpojit") {
@@ -141,7 +177,7 @@ function BankAccountsPage() {
     <>
       <PageHeader
         title="Bankové účty"
-        description="Tatra banka a Wise. Zostatky a pohyby sa načítavajú automaticky, iba na čítanie."
+        description="Tatra banka, Wise a Wallester. Zostatky a pohyby sa načítavajú automaticky, iba na čítanie."
         action={
           <Link
             to="/bankove-ucty/pripojit"
@@ -228,7 +264,32 @@ function BankAccountsPage() {
                   hoci s Wise nemá nič spoločné. Wise nemá ani súhlas, ktorý by
                   sa dal obnovovať.
                 */}
-                {c.provider === "wise" ? (
+                {c.provider === "wallester" ? (
+                  <>
+                    <button
+                      onClick={() => onWallester(c.id, "ucty")}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
+                      Načítať účty
+                    </button>
+                    <button
+                      onClick={() => onWallester(c.id, "pohyby")}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                    >
+                      <ArrowRight className="h-3.5 w-3.5" /> Stiahnuť pohyby
+                    </button>
+                    <button
+                      onClick={() => onWallester(c.id, "odpojit")}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Odpojiť
+                    </button>
+                  </>
+                ) : c.provider === "wise" ? (
                   <>
                     <button
                       onClick={() => onWise(c.id, "ucty")}

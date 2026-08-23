@@ -50,6 +50,64 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "wise",
+    title: "Wise",
+    body: (
+      <>
+        <p>
+          Wise sa nepripája prihlásením ako banka, ale <strong>osobným tokenom</strong>. Vo Wise
+          otvorte <em>Settings → API tokens</em>, vytvorte token na čítanie a vložte ho do Faktera.
+        </p>
+        <p>
+          Potom je ešte jeden krok, na ktorý sa ľahko zabudne:{" "}
+          <strong>výpisy vo Wise chráni podpis</strong>. Faktero vám ukáže verejný kľúč — stiahnite
+          si ho ako súbor a nahrajte ho vo Wise k tomu istému tokenu. Kým to nespravíte, zostatky sa
+          načítajú, ale pohyby nie.
+        </p>
+        <p>
+          Každá mena je vo Fakteri samostatný účet, pretože tak ich vedie aj Wise. Sumy v rôznych
+          menách sa nikdy nesčítavajú.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "wallester",
+    title: "Wallester",
+    body: (
+      <>
+        <p>
+          Wallester vydáva firemné karty a jeho pohyby sú platby kartou — teda presne to, čo sa dá
+          spárovať s naskenovanými bločkami podľa mena obchodníka.
+        </p>
+        <p>
+          Prístup k ich rozhraniu <strong>nie je samoobslužný</strong>: treba oň požiadať Wallester
+          (podpora alebo váš kontakt). Postup je potom takýto:
+        </p>
+        <ol>
+          <li>
+            V <Link to="/bankove-ucty/pripojit">Pripojiť banku</Link> kliknite na{" "}
+            <em>Vyrobiť verejný kľúč</em> a stiahnite si ho ako súbor.
+          </li>
+          <li>Pošlite ten súbor Wallesteru.</li>
+          <li>
+            Oni vám vrátia <strong>issuer ID</strong>, <strong>audience ID</strong>, kód produktu a
+            maximálnu platnosť tokenu.
+          </li>
+          <li>Tie štyri údaje doplňte vo Fakteri a dokončite pripojenie.</li>
+        </ol>
+        <p>
+          Súkromný kľúč ostáva u nás zašifrovaný a nikam sa neposiela; Wallesteru ide len tá verejná
+          polovica. Pripojenie sa hneď skúsi, takže o preklepe v údajoch viete okamžite.
+        </p>
+        <p>
+          Wallester nie je bežný účet s IBAN-om — je to kartový účet, takže pri ňom neuvidíte číslo
+          účtu ani variabilné symboly.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "transakcie",
     title: "Transakcie a párovanie",
     body: (
