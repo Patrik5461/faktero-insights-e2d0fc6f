@@ -5,6 +5,13 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { startBankConnect } from "@/lib/faktero/tatrabanka.functions";
 import {
+  zacniRevolut,
+  ulozClientIdRevolut,
+  stavRevolut,
+  synchronizujRevolutUcty,
+  synchronizujRevolutPohyby,
+} from "@/lib/faktero/revolut.functions";
+import {
   zacniWallester,
   dokonciWallester,
   stavWallester,
@@ -18,7 +25,15 @@ import {
   synchronizujWisePohyby,
 } from "@/lib/faktero/wise.functions";
 import { toast } from "sonner";
-import { Building2, ArrowLeft, ExternalLink, Wallet, Download, CreditCard } from "lucide-react";
+import {
+  Building2,
+  ArrowLeft,
+  ExternalLink,
+  Wallet,
+  Download,
+  CreditCard,
+  Landmark,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/pripojit")({
   head: () => ({ meta: [{ title: "Pripojiť banku — Faktero" }] }),
@@ -99,6 +114,7 @@ function ConnectPage() {
         </div>
         <WisePripojenie />
         <WallesterPripojenie />
+        <RevolutPripojenie />
       </PageBody>
     </>
   );
@@ -472,6 +488,209 @@ function WallesterPripojenie() {
                   "ucty",
                   () => uctyFn({ data: { company_id: cid! } }),
                   (r) => `Načítaných kartových účtov: ${r.pocet}`,
+                )
+              }
+              className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              {busy === "ucty" ? "Načítavam…" : "Načítať účty"}
+            </button>
+            <button
+              disabled={busy !== null}
+              onClick={() =>
+                sprav(
+                  "pohyby",
+                  () => pohybyFn({ data: { company_id: cid! } }),
+                  (r) =>
+                    r.problemy?.length
+                      ? `Načítaných pohybov: ${r.vlozenych}. Nepodarilo sa: ${r.problemy.join(", ")}`
+                      : `Načítaných pohybov: ${r.vlozenych}`,
+                )
+              }
+              className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              {busy === "pohyby" ? "Sťahujem…" : "Stiahnuť pohyby"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Pripojenie Revolut Business.
+ *
+ * Trojkrokové, lebo Revolut to tak vyžaduje: certifikát → client ID (vydá ho
+ * až po nahratí certifikátu) → potvrdenie v prehliadači. Obrazovka ukazuje
+ * vždy len ten ďalší krok, aby človek nemusel držať poradie v hlave.
+ */
+function RevolutPripojenie() {
+  const zacni = useServerFn(zacniRevolut);
+  const ulozId = useServerFn(ulozClientIdRevolut);
+  const stavFn = useServerFn(stavRevolut);
+  const uctyFn = useServerFn(synchronizujRevolutUcty);
+  const pohybyFn = useServerFn(synchronizujRevolutPohyby);
+  const [stav, setStav] = useState<any>(null);
+  const [clientId, setClientId] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const cid = getActiveCompanyId();
+
+  useEffect(() => {
+    if (!cid) return;
+    stavFn({ data: { company_id: cid } })
+      .then(setStav)
+      .catch(() => setStav(null));
+  }, [stavFn, cid]);
+
+  async function sprav(co: string, akcia: () => Promise<any>, hlaska: (r: any) => string) {
+    if (!cid) return;
+    setBusy(co);
+    try {
+      const r = await akcia();
+      toast.success(hlaska(r));
+      setStav(await stavFn({ data: { company_id: cid } }));
+      return r;
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa to.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const navratova = stav?.redirect_uri ?? "";
+
+  return (
+    <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="grid h-12 w-12 place-items-center rounded-xl bg-black text-white">
+          <Landmark className="h-6 w-6" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold">Revolut Business</h2>
+          <p className="text-sm text-muted-foreground">
+            Účty a pohyby, iba na čítanie. Súhlas platí 90 dní.
+          </p>
+        </div>
+      </div>
+
+      {stav?.stav !== "pripojene" && (
+        <ol className="mt-6 space-y-1 text-sm text-foreground/80">
+          <li>1. Nižšie si vyrobte certifikát a stiahnite ho.</li>
+          <li>
+            2. V Revolut Business otvorte <em>Settings → APIs → Business API</em>, nahrajte
+            certifikát a ako návratovú adresu zadajte presne túto:
+          </li>
+          <li className="break-all rounded-md bg-secondary px-2 py-1 font-mono text-xs">
+            {navratova || "…"}
+          </li>
+          <li>3. Portál vám ukáže client ID — vložte ho sem a potvrďte prístup.</li>
+        </ol>
+      )}
+
+      {(!stav || stav.stav === "ziadne") && (
+        <button
+          disabled={busy !== null}
+          onClick={() =>
+            sprav(
+              "cert",
+              () => zacni({ data: { company_id: cid!, prostredie: "produkcia" } }),
+              () => "Certifikát vyrobený. Nahrajte ho v Revolute.",
+            )
+          }
+          className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+        >
+          {busy === "cert" ? "Vyrábam certifikát…" : "Vyrobiť certifikát"}
+        </button>
+      )}
+
+      {stav?.certifikat && stav.stav !== "pripojene" && (
+        <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
+          <p className="text-sm font-medium">Certifikát pre Revolut</p>
+          <textarea
+            readOnly
+            value={stav.certifikat}
+            rows={5}
+            onFocus={(e) => e.currentTarget.select()}
+            className="mt-2 w-full rounded-md border border-input bg-background p-2 font-mono text-[11px]"
+          />
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              onClick={() => stiahniKluc(stav.certifikat, "faktero-revolut-certificate.cer")}
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+            >
+              <Download className="h-4 w-4" /> Stiahnuť ako súbor
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(stav.certifikat);
+                  toast.success("Certifikát skopírovaný.");
+                } catch {
+                  toast.error("Skopírovať sa nepodarilo, označte text a použite Ctrl+C.");
+                }
+              }}
+              className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary"
+            >
+              Kopírovať
+            </button>
+          </div>
+        </div>
+      )}
+
+      {stav && stav.stav !== "pripojene" && stav.stav !== "ziadne" && (
+        <div className="mt-4 flex flex-wrap items-end gap-2">
+          <label className="block flex-1">
+            <span className="text-xs font-medium text-muted-foreground">Client ID z portálu</span>
+            <input
+              value={clientId || stav.client_id || ""}
+              onChange={(e) => setClientId(e.target.value)}
+              autoComplete="off"
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <button
+            disabled={busy !== null}
+            onClick={async () => {
+              const r = await sprav(
+                "clientid",
+                () =>
+                  ulozId({
+                    data: {
+                      company_id: cid!,
+                      client_id: (clientId || stav.client_id || "").trim(),
+                    },
+                  }),
+                () => "Otvárame potvrdenie v Revolute.",
+              );
+              if (r?.adresa) window.open(r.adresa, "_blank", "noopener");
+            }}
+            className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          >
+            <ExternalLink className="h-4 w-4" />
+            {busy === "clientid" ? "Pripravujem…" : "Potvrdiť prístup"}
+          </button>
+        </div>
+      )}
+
+      {stav?.stav === "pripojene" && (
+        <>
+          <p className="mt-6 text-sm">
+            Pripojené
+            {stav.consent_until
+              ? ` · súhlas platí do ${new Date(stav.consent_until).toLocaleDateString("sk-SK")}`
+              : ""}
+            {stav.last_synced_at
+              ? ` · naposledy ${new Date(stav.last_synced_at).toLocaleString("sk-SK")}`
+              : ""}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              disabled={busy !== null}
+              onClick={() =>
+                sprav(
+                  "ucty",
+                  () => uctyFn({ data: { company_id: cid! } }),
+                  (r) => `Načítaných účtov: ${r.pocet}`,
                 )
               }
               className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary disabled:opacity-50"

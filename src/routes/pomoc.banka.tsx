@@ -108,6 +108,41 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "revolut",
+    title: "Revolut Business",
+    body: (
+      <>
+        <p>
+          Revolut sa pripája certifikátom a potvrdením v prehliadači. Postup má tri kroky, v takomto
+          poradí ich vyžaduje Revolut:
+        </p>
+        <ol>
+          <li>
+            V <Link to="/bankove-ucty/pripojit">Pripojiť banku</Link> kliknite na{" "}
+            <em>Vyrobiť certifikát</em> a stiahnite si ho.
+          </li>
+          <li>
+            V Revolut Business otvorte <em>Settings → APIs → Business API</em>, nahrajte certifikát
+            a ako návratovú adresu zadajte <strong>presne tú</strong>, ktorú Faktero na obrazovke
+            ukazuje. Musí sedieť na znak.
+          </li>
+          <li>
+            Portál vám ukáže <strong>client ID</strong>. Vložte ho do Faktera, kliknite na{" "}
+            <em>Potvrdiť prístup</em> a v Revolute potvrďte, čo Fakteru dovolíte. Stačí čítanie.
+          </li>
+        </ol>
+        <p>
+          <strong>Súhlas platí približne 90 dní.</strong> Keď vyprší, sťahovanie prestane a
+          potvrdenie treba zopakovať — je to tá istá cesta, len bez vyrábania certifikátu.
+        </p>
+        <p>
+          Prevod medzi vlastnými menami je v Revolute jedna transakcia, ktorá sa dotýka dvoch účtov.
+          Faktero ju preto zapíše na oba — z jedného odíde, na druhý príde.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "transakcie",
     title: "Transakcie a párovanie",
     body: (

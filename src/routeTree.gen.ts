@@ -107,6 +107,7 @@ import { Route as VyvojariIndexRouteImport } from './routes/vyvojari.index'
 import { Route as VyvojariSlugRouteImport } from './routes/vyvojari.$slug'
 import { Route as AuthenticatedBankoveUctyIndexRouteImport } from './routes/_authenticated/bankove-ucty.index'
 import { Route as AuthenticatedBankoveUctyPripojitRouteImport } from './routes/_authenticated/bankove-ucty.pripojit'
+import { Route as AuthenticatedBankoveUctyRevolutRouteImport } from './routes/_authenticated/bankove-ucty.revolut'
 import { Route as AuthenticatedBankoveUctyTransakcieRouteImport } from './routes/_authenticated/bankove-ucty.transakcie'
 import { Route as AuthenticatedBankoveUctyVypisyRouteImport } from './routes/_authenticated/bankove-ucty.vypisy'
 import { Route as AuthenticatedCenyIndexRouteImport } from './routes/_authenticated/ceny.index'
@@ -749,6 +750,12 @@ const AuthenticatedBankoveUctyPripojitRoute =
   AuthenticatedBankoveUctyPripojitRouteImport.update({
     id: '/bankove-ucty/pripojit',
     path: '/bankove-ucty/pripojit',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBankoveUctyRevolutRoute =
+  AuthenticatedBankoveUctyRevolutRouteImport.update({
+    id: '/bankove-ucty/revolut',
+    path: '/bankove-ucty/revolut',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedBankoveUctyTransakcieRoute =
@@ -1666,6 +1673,7 @@ export interface FileRoutesByFullPath {
   '/uctovnici/': typeof UctovniciIndexRoute
   '/vyvojari/': typeof VyvojariIndexRoute
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
+  '/bankove-ucty/revolut': typeof AuthenticatedBankoveUctyRevolutRoute
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
   '/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
   '/ceny/akcie': typeof AuthenticatedCenyAkcieRoute
@@ -1902,6 +1910,7 @@ export interface FileRoutesByTo {
   '/uctovnici': typeof UctovniciIndexRoute
   '/vyvojari': typeof VyvojariIndexRoute
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
+  '/bankove-ucty/revolut': typeof AuthenticatedBankoveUctyRevolutRoute
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
   '/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
   '/ceny/akcie': typeof AuthenticatedCenyAkcieRoute
@@ -2147,6 +2156,7 @@ export interface FileRoutesById {
   '/uctovnici/': typeof UctovniciIndexRoute
   '/vyvojari/': typeof VyvojariIndexRoute
   '/_authenticated/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
+  '/_authenticated/bankove-ucty/revolut': typeof AuthenticatedBankoveUctyRevolutRoute
   '/_authenticated/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
   '/_authenticated/bankove-ucty/vypisy': typeof AuthenticatedBankoveUctyVypisyRoute
   '/_authenticated/ceny/akcie': typeof AuthenticatedCenyAkcieRoute
@@ -2393,6 +2403,7 @@ export interface FileRouteTypes {
     | '/uctovnici/'
     | '/vyvojari/'
     | '/bankove-ucty/pripojit'
+    | '/bankove-ucty/revolut'
     | '/bankove-ucty/transakcie'
     | '/bankove-ucty/vypisy'
     | '/ceny/akcie'
@@ -2629,6 +2640,7 @@ export interface FileRouteTypes {
     | '/uctovnici'
     | '/vyvojari'
     | '/bankove-ucty/pripojit'
+    | '/bankove-ucty/revolut'
     | '/bankove-ucty/transakcie'
     | '/bankove-ucty/vypisy'
     | '/ceny/akcie'
@@ -2873,6 +2885,7 @@ export interface FileRouteTypes {
     | '/uctovnici/'
     | '/vyvojari/'
     | '/_authenticated/bankove-ucty/pripojit'
+    | '/_authenticated/bankove-ucty/revolut'
     | '/_authenticated/bankove-ucty/transakcie'
     | '/_authenticated/bankove-ucty/vypisy'
     | '/_authenticated/ceny/akcie'
@@ -3809,6 +3822,13 @@ declare module '@tanstack/react-router' {
       path: '/bankove-ucty/pripojit'
       fullPath: '/bankove-ucty/pripojit'
       preLoaderRoute: typeof AuthenticatedBankoveUctyPripojitRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/bankove-ucty/revolut': {
+      id: '/_authenticated/bankove-ucty/revolut'
+      path: '/bankove-ucty/revolut'
+      fullPath: '/bankove-ucty/revolut'
+      preLoaderRoute: typeof AuthenticatedBankoveUctyRevolutRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/bankove-ucty/transakcie': {
@@ -4945,6 +4965,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedWebhookyRoute: typeof AuthenticatedWebhookyRoute
   AuthenticatedWebhookyLogyRoute: typeof AuthenticatedWebhookyLogyRoute
   AuthenticatedBankoveUctyPripojitRoute: typeof AuthenticatedBankoveUctyPripojitRoute
+  AuthenticatedBankoveUctyRevolutRoute: typeof AuthenticatedBankoveUctyRevolutRoute
   AuthenticatedBankoveUctyTransakcieRoute: typeof AuthenticatedBankoveUctyTransakcieRoute
   AuthenticatedBankoveUctyVypisyRoute: typeof AuthenticatedBankoveUctyVypisyRoute
   AuthenticatedCenyAkcieRoute: typeof AuthenticatedCenyAkcieRoute
@@ -5024,6 +5045,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedWebhookyRoute: AuthenticatedWebhookyRoute,
   AuthenticatedWebhookyLogyRoute: AuthenticatedWebhookyLogyRoute,
   AuthenticatedBankoveUctyPripojitRoute: AuthenticatedBankoveUctyPripojitRoute,
+  AuthenticatedBankoveUctyRevolutRoute: AuthenticatedBankoveUctyRevolutRoute,
   AuthenticatedBankoveUctyTransakcieRoute:
     AuthenticatedBankoveUctyTransakcieRoute,
   AuthenticatedBankoveUctyVypisyRoute: AuthenticatedBankoveUctyVypisyRoute,

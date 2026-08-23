@@ -19,6 +19,11 @@ import {
   synchronizujWallesterUcty,
   synchronizujWallesterPohyby,
 } from "@/lib/faktero/wallester.functions";
+import {
+  odpojRevolut,
+  synchronizujRevolutUcty,
+  synchronizujRevolutPohyby,
+} from "@/lib/faktero/revolut.functions";
 import { toast } from "sonner";
 import { zostatkyPodlaMien, formatujSumu, zobrazitZauctovany } from "@/lib/faktero/zostatky";
 import {
@@ -50,6 +55,9 @@ function BankAccountsPage() {
   const walUcty = useServerFn(synchronizujWallesterUcty);
   const walPohyby = useServerFn(synchronizujWallesterPohyby);
   const walOdpoj = useServerFn(odpojWallester);
+  const revUcty = useServerFn(synchronizujRevolutUcty);
+  const revPohyby = useServerFn(synchronizujRevolutPohyby);
+  const revOdpoj = useServerFn(odpojRevolut);
   const disconnect = useServerFn(disconnectBank);
   const renew = useServerFn(renewBankConsent);
   const [data, setData] = useState<{ connections: any[]; accounts: any[] } | null>(null);
@@ -68,6 +76,34 @@ function BankAccountsPage() {
     if (url.searchParams.size) window.history.replaceState({}, "", url.pathname);
     reload();
   }, []);
+
+  /** Revolut: účty, pohyby a odpojenie. Súhlas sa obnovuje potvrdením. */
+  async function onRevolut(connId: string, co: "ucty" | "pohyby" | "odpojit") {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setBusy(connId);
+    try {
+      if (co === "ucty") {
+        const r: any = await revUcty({ data: { company_id: cid } });
+        toast.success(`Načítaných účtov: ${r.pocet}`);
+      } else if (co === "pohyby") {
+        const r: any = await revPohyby({ data: { company_id: cid } });
+        toast.success(
+          r.problemy?.length
+            ? `Načítaných pohybov: ${r.vlozenych}. Nepodarilo sa: ${r.problemy.join(", ")}`
+            : `Načítaných pohybov: ${r.vlozenych}`,
+        );
+      } else {
+        await revOdpoj({ data: { company_id: cid } });
+        toast.success("Revolut odpojený.");
+      }
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa to.");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   /** Wallester: kartové účty, pohyby a odpojenie. Súhlas tiež nemá. */
   async function onWallester(connId: string, co: "ucty" | "pohyby" | "odpojit") {
@@ -177,7 +213,7 @@ function BankAccountsPage() {
     <>
       <PageHeader
         title="Bankové účty"
-        description="Tatra banka, Wise a Wallester. Zostatky a pohyby sa načítavajú automaticky, iba na čítanie."
+        description="Tatra banka, Wise, Wallester a Revolut. Zostatky a pohyby sa načítavajú automaticky, iba na čítanie."
         action={
           <Link
             to="/bankove-ucty/pripojit"
@@ -264,7 +300,32 @@ function BankAccountsPage() {
                   hoci s Wise nemá nič spoločné. Wise nemá ani súhlas, ktorý by
                   sa dal obnovovať.
                 */}
-                {c.provider === "wallester" ? (
+                {c.provider === "revolut" ? (
+                  <>
+                    <button
+                      onClick={() => onRevolut(c.id, "ucty")}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${busy === c.id ? "animate-spin" : ""}`} />{" "}
+                      Načítať účty
+                    </button>
+                    <button
+                      onClick={() => onRevolut(c.id, "pohyby")}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs hover:bg-secondary disabled:opacity-50"
+                    >
+                      <ArrowRight className="h-3.5 w-3.5" /> Stiahnuť pohyby
+                    </button>
+                    <button
+                      onClick={() => onRevolut(c.id, "odpojit")}
+                      disabled={busy === c.id}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Odpojiť
+                    </button>
+                  </>
+                ) : c.provider === "wallester" ? (
                   <>
                     <button
                       onClick={() => onWallester(c.id, "ucty")}
