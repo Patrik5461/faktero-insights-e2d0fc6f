@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import { useOperacia } from "@/lib/mobile/server-most";
@@ -37,6 +37,7 @@ export function RegistraciaUctu({
   const [busy, setBusy] = useState(false);
   const [cakaNaPotvrdenie, setCakaNaPotvrdenie] = useState(false);
   const [posielamZnova, setPosielamZnova] = useState(false);
+  const [overujem, setOverujem] = useState(false);
   const zapisSuhlasy = useOperacia("pravne-suhlasy");
 
   const presmerovanie = adresaPotvrdenia(
@@ -75,6 +76,77 @@ export function RegistraciaUctu({
     }
   }
 
+  /*
+   * Po ťuknutí na odkaz v e-maile sa potvrdenie odohrá v prehliadači — appka
+   * o ňom sama nevie a človek by pred ňou ostal stáť. Skúsime sa teda prihlásiť
+   * údajmi, ktoré pred chvíľou napísal: keď je už účet potvrdený, prejde to a
+   * appka pokračuje k firme.
+   */
+  const skusPrihlasit = async (ticho: boolean) => {
+    if (!ticho) setOverujem(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: heslo,
+      });
+      if (error) {
+        if (!ticho) {
+          const p = prelozAuthChybu(error.message);
+          toast.error(
+            p.nepotvrdeny
+              ? "Zatiaľ to nie je potvrdené. Otvorte odkaz z e-mailu a skúste to znova."
+              : p.sprava,
+          );
+        }
+        return false;
+      }
+      await zapisOdlozeneSuhlasy(zapisSuhlasy);
+      onHotovo();
+      return true;
+    } finally {
+      if (!ticho) setOverujem(false);
+    }
+  };
+
+  /*
+    Cez odkaz, nie cez závislosť efektu: `useOperacia` vracia pri každom
+    prekreslení novú funkciu a časovač by sa tým donekonečna zakladal odznova.
+  */
+  const posledny = useRef(skusPrihlasit);
+  posledny.current = skusPrihlasit;
+
+  /*
+   * Návrat z prehliadača je presne tá chvíľa, keď je potvrdenie hotové —
+   * skúsime to teda samo, bez ťukania. Na webe plugin nie je, tam to zachytí
+   * opakovaný pokus nižšie.
+   */
+  useEffect(() => {
+    if (!cakaNaPotvrdenie) return;
+    let odstran: (() => void) | undefined;
+    void (async () => {
+      try {
+        const { App } = await import("@capacitor/app");
+        const h = await App.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) void posledny.current(true);
+        });
+        odstran = () => h.remove();
+      } catch {
+        /* mimo appky plugin neexistuje */
+      }
+    })();
+    // Poistka pre web a pre prípad, že sa potvrdzuje na inom zariadení.
+    // Riedko, nech sa neklope na server zbytočne — a nie donekonečna.
+    let zostava = 30;
+    const casovac = setInterval(() => {
+      if (zostava-- <= 0) return clearInterval(casovac);
+      void posledny.current(true);
+    }, 10_000);
+    return () => {
+      odstran?.();
+      clearInterval(casovac);
+    };
+  }, [cakaNaPotvrdenie]);
+
   async function posliZnova() {
     setPosielamZnova(true);
     const { error } = await supabase.auth.resend({
@@ -103,16 +175,24 @@ export function RegistraciaUctu({
           <h1 className="text-2xl font-semibold tracking-tight">Potvrďte si e-mail</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Účet <strong className="text-foreground">{email.trim()}</strong> je vytvorený. Poslali
-            sme naň odkaz — otvorte ho v telefóne a potom sa sem vráťte prihlásiť. Bez potvrdenia sa
-            prihlásiť nedá.
+            sme naň odkaz — otvorte ho a vráťte sa sem. Appka si potvrdenia všimne sama; keby nie,
+            je tu tlačidlo nižšie. Bez potvrdenia sa prihlásiť nedá.
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
             Ak e-mail do pár minút nepríde, pozrite sa do nevyžiadanej pošty.
           </p>
           <button
+            onClick={() => skusPrihlasit(false)}
+            disabled={overujem}
+            style={overujem ? undefined : { backgroundImage: "var(--brand-gradient)" }}
+            className="mt-6 w-full rounded-xl px-4 py-3 text-base font-medium text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground"
+          >
+            {overujem ? "Overujem…" : "Už som potvrdil, pokračovať"}
+          </button>
+          <button
             onClick={posliZnova}
             disabled={posielamZnova}
-            className="mt-6 w-full rounded-xl border border-border px-4 py-3 text-base disabled:opacity-60"
+            className="mt-3 w-full rounded-xl border border-border px-4 py-3 text-base disabled:opacity-60"
           >
             {posielamZnova ? "Posielam…" : "Poslať e-mail znova"}
           </button>
