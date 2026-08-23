@@ -350,6 +350,16 @@ export function Jazda({
         fuel_consumption: spotreba,
         fuel_price: cenaPaliva.current,
         route: trasaDoPolyline(vysledok.points),
+        /*
+          Čas a rýchlosti sem appka dosiaľ nedávala vôbec, takže jazda z telefónu
+          bola v knihe jázd bez trvania aj bez rýchlosti — a web ich má kde
+          ukazovať. Priemer je za čas jazdy bez páuz; státie by ho inak zrazilo.
+        */
+        start_time: vysledok.start ? new Date(vysledok.start.ts).toISOString() : null,
+        end_time: vysledok.end ? new Date(vysledok.end.ts).toISOString() : null,
+        duration_seconds: vysledok.duration_sec,
+        average_speed_kmh: vysledok.avg_speed_kmh,
+        max_speed_kmh: vysledok.max_speed_kmh,
         note: `GPS: ${vysledok.duration_min} min, ${vysledok.points.length} bodov`,
       };
 

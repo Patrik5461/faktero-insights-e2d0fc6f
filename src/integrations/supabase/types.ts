@@ -5972,6 +5972,7 @@ export type Database = {
           id: string
           imported_at: string | null
           job_id: string | null
+          max_speed_kmh: number | null
           note: string | null
           purpose: string | null
           raw_provider_data: Json | null
@@ -6002,6 +6003,7 @@ export type Database = {
           id?: string
           imported_at?: string | null
           job_id?: string | null
+          max_speed_kmh?: number | null
           note?: string | null
           purpose?: string | null
           raw_provider_data?: Json | null
@@ -6032,6 +6034,7 @@ export type Database = {
           id?: string
           imported_at?: string | null
           job_id?: string | null
+          max_speed_kmh?: number | null
           note?: string | null
           purpose?: string | null
           raw_provider_data?: Json | null

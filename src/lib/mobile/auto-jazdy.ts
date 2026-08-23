@@ -72,6 +72,9 @@ export function riadokZJazdy(args: {
     end_time: jazda.endedAt ? new Date(jazda.endedAt).toISOString() : null,
     duration_seconds: trvanieSekundy,
     average_speed_kmh: zaokruhli(jazda.avgSpeedKmh, 1),
+    // Najvyššia rýchlosť má odteraz vlastný stĺpec; v poznámke ostáva pre ľudí,
+    // ktorí si jazdu čítajú, ale hľadať a exportovať sa dá až takto.
+    max_speed_kmh: zaokruhli(jazda.maxSpeedKmh, 1),
     route: trasaDoPolyline(jazda.points),
     external_source: ZDROJ,
     external_id: jazda.id,

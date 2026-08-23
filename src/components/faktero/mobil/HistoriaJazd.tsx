@@ -26,6 +26,8 @@ type Jazdenka = {
   purpose: string | null;
   distance_km: number | null;
   duration_seconds: number | null;
+  average_speed_kmh: number | null;
+  max_speed_kmh: number | null;
   driver_name: string | null;
   start_time: string | null;
   external_source: string | null;
@@ -39,20 +41,22 @@ type Jazdenka = {
 const STRANA = 200;
 
 function dotazJazd(companyId: string, vehicleId: string, od: number) {
-  return supabase
-    .from("trips")
-    .select(
-      "id, trip_date, start_location, end_location, purpose, distance_km, duration_seconds, driver_name, start_time, external_source, route",
-    )
-    .eq("company_id", companyId)
-    .eq("vehicle_id", vehicleId)
-    // Tri stĺpce: GPS jednotka pošle za deň aj desať jázd, samotný dátum ich
-    // nezoradí — a bez poslednej istoty by sa pri dopytovaní staršej strany
-    // mohli rovnaké dvojice preskupiť a jazda vypadnúť alebo prísť dvakrát.
-    .order("trip_date", { ascending: false })
-    .order("start_time", { ascending: false, nullsFirst: false })
-    .order("id", { ascending: false })
-    .range(od, od + STRANA - 1);
+  return (
+    supabase
+      .from("trips")
+      .select(
+        "id, trip_date, start_location, end_location, purpose, distance_km, duration_seconds, average_speed_kmh, max_speed_kmh, driver_name, start_time, external_source, route",
+      )
+      .eq("company_id", companyId)
+      .eq("vehicle_id", vehicleId)
+      // Tri stĺpce: GPS jednotka pošle za deň aj desať jázd, samotný dátum ich
+      // nezoradí — a bez poslednej istoty by sa pri dopytovaní staršej strany
+      // mohli rovnaké dvojice preskupiť a jazda vypadnúť alebo prísť dvakrát.
+      .order("trip_date", { ascending: false })
+      .order("start_time", { ascending: false, nullsFirst: false })
+      .order("id", { ascending: false })
+      .range(od, od + STRANA - 1)
+  );
 }
 
 function naJazdenky(data: { distance_km: number | string | null }[]): Jazdenka[] {
@@ -70,6 +74,20 @@ const ZDROJE: Record<string, string> = {
 function km(v: number | null): string {
   if (v === null || !Number.isFinite(v)) return "—";
   return `${new Intl.NumberFormat("sk-SK", { maximumFractionDigits: 1 }).format(v)} km`;
+}
+
+/**
+ * Rýchlosť do riadku jazdy — priemer a v zátvorke maximum.
+ *
+ * Ručne zapísaná jazda rýchlosť nemá a nikdy mať nebude; vtedy sa nepíše nič,
+ * aby v knihe jázd nestálo „0 km/h" pri ceste, ktorá sa naozaj šla.
+ */
+function rychlost(priemer: number | null, max: number | null): string | null {
+  const p = priemer === null ? null : Number(priemer);
+  const m = max === null ? null : Number(max);
+  if (!p && !m) return null;
+  if (p && m) return `Ø ${Math.round(p)} km/h (max ${Math.round(m)})`;
+  return p ? `Ø ${Math.round(p)} km/h` : `max ${Math.round(m!)} km/h`;
 }
 
 function nazovMesiaca(kluc: string): string {
@@ -259,6 +277,9 @@ export function HistoriaJazd({
                         den(j.trip_date),
                         cas(j.start_time),
                         trvanieJazdy(j.duration_seconds),
+                        // Rýchlosť len keď ju jazda naozaj má — dopisovať „0 km/h"
+                        // k ručne zapísanej jazde by bola nepravda.
+                        rychlost(j.average_speed_kmh, j.max_speed_kmh),
                         j.driver_name?.trim() || null,
                       ]
                         .filter(Boolean)

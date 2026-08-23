@@ -31,7 +31,13 @@ let nativePoll: ReturnType<typeof setInterval> | null = null;
  * spustí nový úsek a na konci sa všetky sčítajú. Pre človeka je to jedna jazda,
  * pre telefón niekoľko meraní za sebou.
  */
-type Usek = { distance_km: number; points: Point[] };
+type Usek = {
+  distance_km: number;
+  points: Point[];
+  /** Čas skutočnej jazdy, bez páuz — z neho sa počíta priemerná rýchlosť. */
+  trvanie_ms: number;
+  max_kmh: number;
+};
 let useky: Usek[] = [];
 let pauzaOd: number | null = null;
 /** Kedy sa začal prvý úsek — trvanie jazdy sa počíta odtiaľ, nie od poslednej pauzy. */
@@ -39,6 +45,31 @@ let jazdaOd: number | null = null;
 
 /** Na „vždy" sa pýtame až po prvom skutočnom meraní, nie pri štarte appky. */
 const KLUC_ESKALACIE = "faktero.gps.background_asked";
+
+/**
+ * Nad touto rýchlosťou to už nie je jazda, ale skok polohy.
+ *
+ * GPS v meste, v tuneli alebo pri chytaní signálu občas hodí polohu o stovky
+ * metrov vedľa. Taký úsek sa nesmie započítať ani do najvyššej rýchlosti, ani
+ * do kilometrov — inak kniha jázd tvrdí, že auto prešlo cestu, ktorú nešlo.
+ */
+const MAX_ROZUMNA_KMH = 250;
+
+/** Je úsek medzi dvoma bodmi vôbec možný? */
+function verohodny(a: Point, b: Point): boolean {
+  const sekundy = (b.ts - a.ts) / 1000;
+  if (sekundy <= 0) return true; // bez času sa to posúdiť nedá, radšej započítať
+  return (haversineKm(a, b) / sekundy) * 3600 <= MAX_ROZUMNA_KMH;
+}
+
+/** Vzdialenosť trasy bez skokov polohy. */
+function vzdialenostKm(body: Point[]): number {
+  let d = 0;
+  for (let i = 1; i < body.length; i++) {
+    if (verohodny(body[i - 1], body[i])) d += haversineKm(body[i - 1], body[i]);
+  }
+  return d;
+}
 
 function haversineKm(a: Point, b: Point): number {
   const R = 6371;
@@ -132,10 +163,34 @@ async function spustiUsek(): Promise<{ ok: boolean; error?: string }> {
 export type VysledokMerania = {
   distance_km: number;
   duration_min: number;
+  /** Presné trvanie. `duration_min` je len na text, do knihy jázd patria sekundy. */
+  duration_sec: number;
+  /** Priemer sa počíta z času jazdy bez páuz — inak by státie zrážalo rýchlosť. */
+  avg_speed_kmh: number | null;
+  max_speed_kmh: number | null;
   start: Point | null;
   end: Point | null;
   points: Point[];
 };
+
+/**
+ * Najvyššia rýchlosť z bodov trasy.
+ *
+ * Zámerne konzervatívne: úseky kratšie než dve sekundy sa preskakujú (medzi
+ * dvoma blízkymi bodmi vychádzajú nezmysly) a hodnoty nad 250 km/h sa zahodia
+ * — to už nie je auto, ale skok polohy, aký GPS v meste alebo v tuneli robí.
+ */
+function maxRychlost(body: Point[]): number {
+  let max = 0;
+  for (let i = 1; i < body.length; i++) {
+    const sekundy = (body[i].ts - body[i - 1].ts) / 1000;
+    if (sekundy < 2) continue;
+    const kmh = (haversineKm(body[i - 1], body[i]) / sekundy) * 3600;
+    if (kmh > MAX_ROZUMNA_KMH) continue;
+    if (kmh > max) max = kmh;
+  }
+  return Math.round(max * 10) / 10;
+}
 
 /**
  * Ukončí jazdu a vráti ju celú — teda aj úseky spred páuz.
@@ -154,9 +209,14 @@ export async function stopTracking(): Promise<VysledokMerania> {
 
   const body = vsetky.flatMap((u) => u.points);
   const km = vsetky.reduce((s, u) => s + u.distance_km, 0);
+  const jazdaMs = vsetky.reduce((s, u) => s + u.trvanie_ms, 0);
+  const max = vsetky.reduce((m, u) => Math.max(m, u.max_kmh), 0);
   return {
     distance_km: Math.round(km * 100) / 100,
     duration_min: zaciatok ? Math.round((Date.now() - zaciatok) / 60000) : 0,
+    duration_sec: zaciatok ? Math.round((Date.now() - zaciatok) / 1000) : 0,
+    avg_speed_kmh: jazdaMs > 1000 ? Math.round((km / (jazdaMs / 3_600_000)) * 10) / 10 : null,
+    max_speed_kmh: max > 0 ? max : null,
     start: body[0] ?? null,
     end: body[body.length - 1] ?? null,
     points: body,
@@ -196,8 +256,21 @@ export function trackingStartedAt(): number | null {
 /** Ukončí prebiehajúci úsek. `null`, keď žiadny nebežal. */
 async function ukonciUsek(): Promise<Usek | null> {
   if (!isTracking()) return null;
+  const od = startedAt ?? Date.now();
   const r = nativeTripId ? await stopNative() : stopWeb();
-  return { distance_km: r.distance_km, points: r.points };
+  /*
+    Trvanie úseku radšej z časových značiek bodov než z hodín telefónu: keď
+    appka na chvíľu zaspí alebo sa poloha prestane hlásiť, hodiny bežia ďalej
+    a priemerná rýchlosť by vyšla nižšia, než sa naozaj išlo.
+  */
+  const zBodov = r.points.length >= 2 ? r.points[r.points.length - 1].ts - r.points[0].ts : 0;
+  return {
+    distance_km: r.distance_km,
+    points: r.points,
+    trvanie_ms: zBodov > 0 ? zBodov : Math.max(0, Date.now() - od),
+    // Plugin hlási svoje maximum, prehliadač si ho spočítame z trasy sami.
+    max_kmh: r.max_speed_kmh ?? maxRychlost(r.points),
+  };
 }
 
 function stopWeb(): VysledokMerania {
@@ -209,14 +282,17 @@ function stopWeb(): VysledokMerania {
     // watch už mohol byť zrušený systémom — cieľom je len uvoľniť ho
   }
   webWatchId = null;
-  let distance = 0;
-  for (let i = 1; i < points.length; i++) distance += haversineKm(points[i - 1], points[i]);
+  const distance = vzdialenostKm(points);
   const start = points[0] ?? null;
   const end = points[points.length - 1] ?? null;
   const duration_min = startedAt ? Math.round((Date.now() - startedAt) / 60000) : 0;
-  const result = {
+  const result: VysledokMerania = {
     distance_km: Math.round(distance * 100) / 100,
     duration_min,
+    duration_sec: startedAt ? Math.round((Date.now() - startedAt) / 1000) : 0,
+    // Priemer za celú jazdu skladá `stopTracking`; jeden úsek ho nepozná.
+    avg_speed_kmh: null,
+    max_speed_kmh: maxRychlost(points) || null,
     start,
     end,
     points: [...points],
@@ -226,20 +302,24 @@ function stopWeb(): VysledokMerania {
   return result;
 }
 
-async function stopNative() {
+async function stopNative(): Promise<VysledokMerania> {
   if (nativePoll) clearInterval(nativePoll);
   nativePoll = null;
 
-  let vzdialenostKm = nativeDistanceKm;
+  let kmSpolu = nativeDistanceKm;
   let trasa: Point[] = [];
   let od = startedAt ?? Date.now();
   let doKedy = Date.now();
+  let maxKmh = 0;
 
   try {
     const { DriveDetector } = await import("@faktero/drive-detector");
     const jazda = await DriveDetector.endTrip();
     if (jazda) {
-      vzdialenostKm = jazda.distanceMeters / 1000;
+      kmSpolu = jazda.distanceMeters / 1000;
+      // Plugin meria rýchlosť priamo z GPS, nie dopočtom z bodov — je to
+      // presnejšie, tak sa použije jeho hodnota, keď ju dá.
+      maxKmh = Number(jazda.maxSpeedKmh) || 0;
       trasa = jazda.points.map((b) => ({ lat: b.lat, lng: b.lng, ts: b.timestamp }));
       od = jazda.startedAt;
       doKedy = jazda.endedAt ?? Date.now();
@@ -258,9 +338,13 @@ async function stopNative() {
   nativeDistanceKm = 0;
   startedAt = null;
 
+  const max = maxKmh || maxRychlost(trasa);
   return {
-    distance_km: Math.round(vzdialenostKm * 100) / 100,
+    distance_km: Math.round(kmSpolu * 100) / 100,
     duration_min: Math.round((doKedy - od) / 60000),
+    duration_sec: Math.round((doKedy - od) / 1000),
+    avg_speed_kmh: null,
+    max_speed_kmh: max > 0 ? Math.round(max * 10) / 10 : null,
     start: trasa[0] ?? null,
     end: trasa[trasa.length - 1] ?? null,
     points: trasa,
@@ -292,7 +376,5 @@ export function getCurrentDistanceKm(): number {
   // Úseky spred páuz sa počítajú tiež — inak by počítadlo po pauze spadlo na nulu.
   const zUsekov = useky.reduce((s, u) => s + u.distance_km, 0);
   if (nativeTripId) return Math.round((zUsekov + nativeDistanceKm) * 100) / 100;
-  let d = 0;
-  for (let i = 1; i < points.length; i++) d += haversineKm(points[i - 1], points[i]);
-  return Math.round((zUsekov + d) * 100) / 100;
+  return Math.round((zUsekov + vzdialenostKm(points)) * 100) / 100;
 }
