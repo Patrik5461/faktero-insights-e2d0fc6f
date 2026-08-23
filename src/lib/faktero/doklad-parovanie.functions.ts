@@ -123,7 +123,12 @@ export const zrusParovanieDokladu = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Ktoré doklady zo zoznamu sú uhradené z účtu — na štítok v prehľade. */
+/**
+ * Ktoré doklady zo zoznamu sú uhradené z účtu.
+ *
+ * Vracia aj identifikátor pohybu, nielen dátum — bez neho by sa párovanie
+ * nedalo zrušiť odtiaľ, kde je vidieť.
+ */
 export const uhradyDokladov = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) =>
@@ -132,15 +137,18 @@ export const uhradyDokladov = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ context, data }) => {
-    if (!data.ids.length) return { uhrady: {} as Record<string, string> };
+    if (!data.ids.length) {
+      return { uhrady: {} as Record<string, { datum: string; transactionId: string }> };
+    }
     const { data: rows } = await context.supabase
       .from("bank_transactions")
-      .select("matched_expense_id, booking_date")
+      .select("id, matched_expense_id, booking_date")
       .eq("company_id", data.company_id)
       .in("matched_expense_id", data.ids);
-    const uhrady: Record<string, string> = {};
-    for (const r of (rows as { matched_expense_id: string; booking_date: string }[]) ?? []) {
-      uhrady[r.matched_expense_id] = r.booking_date;
+    const uhrady: Record<string, { datum: string; transactionId: string }> = {};
+    for (const r of (rows as { id: string; matched_expense_id: string; booking_date: string }[]) ??
+      []) {
+      uhrady[r.matched_expense_id] = { datum: r.booking_date, transactionId: r.id };
     }
     return { uhrady };
   });

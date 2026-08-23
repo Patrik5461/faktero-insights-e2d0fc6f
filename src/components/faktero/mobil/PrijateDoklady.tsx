@@ -96,8 +96,10 @@ export function PrijateDoklady({
   const navrhyFn = useOperacia("doklady-navrhy-parovania");
   const sparujFn = useOperacia("doklad-sparuj");
   const uhradyFn = useOperacia("doklady-uhrady");
-  /** Ktorý doklad je uhradený z účtu a kedy — kľúč je id dokladu. */
-  const [uhrady, setUhrady] = useState<Record<string, string>>({});
+  /** Ktorý doklad je uhradený z účtu, kedy a ktorým pohybom. Kľúč je id dokladu. */
+  const [uhrady, setUhrady] = useState<Record<string, { datum: string; transactionId: string }>>(
+    {},
+  );
   const [navrhy, setNavrhy] = useState<any[]>([]);
   const [parujem, setParujem] = useState<string | null>(null);
   const citajBlocek = useOperacia("blocek-precitaj");
@@ -200,6 +202,14 @@ export function PrijateDoklady({
   if (otvoreny) {
     return (
       <DetailDokladu
+        uhrada={uhrady[otvoreny.id] ?? null}
+        onRozparovane={() =>
+          setUhrady((u) => {
+            const kopia = { ...u };
+            delete kopia[otvoreny.id];
+            return kopia;
+          })
+        }
         doklad={otvoreny}
         firmaId={firma.id}
         onSpat={() => setOtvoreny(null)}
@@ -306,7 +316,13 @@ export function PrijateDoklady({
                       await sparujFn({
                         data: { transaction_id: z.transactionId, expense_id: z.expenseId },
                       });
-                      setUhrady((u) => ({ ...u, [z.expenseId]: z.pohyb?.booking_date }));
+                      setUhrady((u) => ({
+                        ...u,
+                        [z.expenseId]: {
+                          datum: z.pohyb?.booking_date,
+                          transactionId: z.transactionId,
+                        },
+                      }));
                       setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId));
                       toast.success("Doklad označený za uhradený z účtu.");
                     } catch (e: any) {
@@ -390,7 +406,7 @@ export function PrijateDoklady({
                         <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
                           {datum(d.issue_date)}
                           {d.payment_method ? ` · ${UHRADY[d.payment_method]}` : ""}
-                          {uhrady[d.id] ? ` · uhradené z účtu ${datum(uhrady[d.id])}` : ""}
+                          {uhrady[d.id] ? ` · uhradené z účtu ${datum(uhrady[d.id].datum)}` : ""}
                         </span>
                       </span>
                       <span className="shrink-0 text-[15px] font-semibold tabular-nums">
@@ -415,13 +431,20 @@ function DetailDokladu({
   firmaId,
   onSpat,
   onZmena,
+  uhrada: uhradaZUctu,
+  onRozparovane,
 }: {
   doklad: Doklad;
   firmaId: string;
   onSpat: () => void;
   onZmena: () => void;
+  /** Pohyb, ktorým je doklad uhradený. `null`, keď spárovaný nie je. */
+  uhrada: { datum: string; transactionId: string } | null;
+  onRozparovane: () => void;
 }) {
   const urlFn = useOperacia("vydavok-subor");
+  const rozparujFn = useOperacia("doklad-zrus-parovanie");
+  const [rozparujem, setRozparujem] = useState(false);
   const updateFn = useOperacia("vydavok-uprav");
   const deleteFn = useOperacia("vydavok-zmaz");
 
@@ -507,6 +530,38 @@ function DetailDokladu({
             </div>
           )}
         </div>
+
+        {/*
+          Úhrada z účtu. Zrušiť sa dá tu, kde je vidieť — nie na inej obrazovke:
+          keď človek zistí, že sa doklad spároval s cudzou platbou, je práve pri
+          ňom a nemá to kde hľadať.
+        */}
+        {uhradaZUctu && (
+          <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/5 p-4">
+            <BadgeCheck className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-300" />
+            <span className="min-w-0 flex-1 text-[14px]">
+              Uhradené z účtu {datum(uhradaZUctu.datum)}
+            </span>
+            <button
+              disabled={rozparujem}
+              onClick={async () => {
+                setRozparujem(true);
+                try {
+                  await rozparujFn({ data: { transaction_id: uhradaZUctu.transactionId } });
+                  onRozparovane();
+                  toast.success("Párovanie zrušené.");
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Zrušiť sa to nepodarilo.");
+                } finally {
+                  setRozparujem(false);
+                }
+              }}
+              className="shrink-0 rounded-xl border border-border px-3 py-2 text-[13px] disabled:opacity-60"
+            >
+              Zrušiť
+            </button>
+          </div>
+        )}
 
         <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-4 text-[14px] shadow-[var(--shadow-card)]">
           <Riadok label="IČO" value={doklad.supplier_ico ?? "—"} />
