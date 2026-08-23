@@ -1,9 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Car, ChevronRight, Play, Plus, Square } from "lucide-react";
+import { Car, ChevronRight, Pause, Play, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
-import { getCurrentDistanceKm, startTracking, stopTracking } from "@/lib/mobile/gps-tracker";
+import {
+  getCurrentDistanceKm,
+  isPaused,
+  isTracking,
+  pauseTracking,
+  resumeTracking,
+  startTracking,
+  stopTracking,
+  trackingStartedAt,
+} from "@/lib/mobile/gps-tracker";
 import {
   nacitajRozpoznaneJazdy,
   prepniDetekciu,
@@ -65,6 +74,7 @@ export function Jazda({
   const [vozidloId, setVozidloId] = useState("");
   const [ucel, setUcel] = useState("");
   const [bezi, setBezi] = useState(false);
+  const [pauza, setPauza] = useState(false);
   const [typJazdy, setTypJazdy] = useState<Classification>("business");
   const [km, setKm] = useState(0);
   const [odkedy, setOdkedy] = useState<number | null>(null);
@@ -123,6 +133,21 @@ export function Jazda({
     nacitajVozidla();
     // eslint-disable-next-line
   }, [firma.id]);
+
+  /*
+    Z obrazovky sa dá odísť aj počas jazdy a meranie beží ďalej — vlastní ho
+    modul, nie táto obrazovka. Po návrate sa preto stav prevezme od neho; inak
+    by tu stálo „meranie zatiaľ nebeží", hoci telefón práve nahráva.
+  */
+  useEffect(() => {
+    const merania = isTracking();
+    const pozastavene = isPaused();
+    if (!merania && !pozastavene) return;
+    setBezi(merania);
+    setPauza(pozastavene);
+    setKm(getCurrentDistanceKm());
+    setOdkedy(trackingStartedAt());
+  }, []);
 
   /* Cena z posledného tankovania — bez nej nemá jazda náklad. */
   useEffect(() => {
@@ -253,12 +278,33 @@ export function Jazda({
     setKm(0);
     setOdkedy(Date.now());
     setBezi(true);
+    setPauza(false);
+  }
+
+  /**
+   * Pauza a pokračovanie.
+   *
+   * Meranie sa naozaj zastaví — státie v kolóne či obed sa do trasy nezapíše.
+   * Namerané kilometre ostávajú a po pokračovaní sa pripočítavajú ďalej.
+   */
+  async function prepniPauzu() {
+    if (pauza) {
+      const r = await resumeTracking();
+      if (!r.ok) return toast.error(r.error ?? "V meraní sa nepodarilo pokračovať.");
+      setPauza(false);
+      setBezi(true);
+      return;
+    }
+    setKm(await pauseTracking());
+    setBezi(false);
+    setPauza(true);
   }
 
   async function stop() {
     setUkladam(true);
     const vysledok = await stopTracking();
     setBezi(false);
+    setPauza(false);
 
     // Jazda bez jediného použiteľného merania nie je jazda. Predtým sa taká
     // uložila ako 0 km bez trasy a v knihe jázd ostal riadok, ktorý nič
@@ -393,11 +439,17 @@ export function Jazda({
 
   return (
     <MobilObrazovka
-      title={bezi ? "Jazda beží" : "Nová jazda"}
+      title={bezi ? "Jazda beží" : pauza ? "Jazda pozastavená" : "Nová jazda"}
       subtitle={firma.name}
-      onBack={bezi ? undefined : onSpat}
+      /*
+        Odísť sa dá aj počas jazdy. Meranie vlastní modul, nie táto obrazovka,
+        takže beží ďalej a na domovskej obrazovke ho vidno v zelenom pruhu.
+        Kým tu bolo `undefined`, človek ostal v knihe jázd zamknutý až do konca
+        jazdy a nedostal sa ani do ponuky.
+      */
+      onBack={onSpat}
       footer={
-        bezi ? (
+        bezi || pauza ? (
           <HlavneTlacidlo onClick={stop}>Ukončiť a uložiť jazdu</HlavneTlacidlo>
         ) : (
           <HlavneTlacidlo onClick={start}>Začať jazdu</HlavneTlacidlo>
@@ -409,7 +461,7 @@ export function Jazda({
           Jazda rozpoznaná detekciou beží mimo tejto obrazovky — bez pruhu by
           tu stálo „meranie zatiaľ nebeží", hoci telefón práve nahráva.
         */}
-        {!bezi && <PrebiehaJazda />}
+        {!bezi && !pauza && <PrebiehaJazda />}
 
         <div className="grid place-items-center rounded-2xl border border-border/70 bg-card px-4 py-8 shadow-[var(--shadow-card)]">
           <div className="text-[56px] font-semibold leading-none tabular-nums">
@@ -417,15 +469,32 @@ export function Jazda({
             <span className="ml-2 text-[20px] font-normal text-muted-foreground">km</span>
           </div>
           <div className="mt-2 text-[14px] text-muted-foreground">
-            {bezi && odkedy ? `beží ${trvanie(odkedy)}` : "meranie zatiaľ nebeží"}
+            {pauza
+              ? "pozastavené — pohyb sa nezapočítava"
+              : bezi && odkedy
+                ? `beží ${trvanie(odkedy)}`
+                : "meranie zatiaľ nebeží"}
           </div>
-          <div
-            className={`mt-4 grid h-16 w-16 place-items-center rounded-full ${
+          {/*
+            Kruh je tlačidlo, nie obrázok. Vyzeral ako ovládanie a ľudia naň
+            klikali — a nič sa nedialo. Teraz spustí meranie, počas jazdy ho
+            pozastaví a po pauze v ňom pokračuje; jazdu ukončí až tlačidlo dole,
+            aby sa ťuknutím vedľa nedala omylom zavrieť.
+          */}
+          <button
+            onClick={bezi || pauza ? prepniPauzu : start}
+            aria-label={bezi ? "Pozastaviť meranie" : pauza ? "Pokračovať v meraní" : "Začať jazdu"}
+            className={`mt-4 grid h-16 w-16 place-items-center rounded-full transition active:scale-95 ${
               bezi ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
             }`}
           >
-            {bezi ? <Square className="h-7 w-7" /> : <Play className="h-7 w-7" />}
-          </div>
+            {bezi ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
+          </button>
+          {(bezi || pauza) && (
+            <p className="mt-2 text-[12px] text-muted-foreground">
+              {bezi ? "Ťuknutím pozastavíte" : "Ťuknutím budete pokračovať"}
+            </p>
+          )}
         </div>
 
         {cakajuce.length > 0 && (

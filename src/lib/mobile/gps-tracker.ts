@@ -23,6 +23,20 @@ let nativeTripId: string | null = null;
 let nativeDistanceKm = 0;
 let nativePoll: ReturnType<typeof setInterval> | null = null;
 
+/**
+ * Dokončené úseky jednej jazdy — čo sa nameralo pred pauzami.
+ *
+ * Pauzu nevie ani natívny plugin, ani prehliadač: meranie sa dá len spustiť a
+ * ukončiť. Pauza je preto ukončenie úseku a jeho odloženie bokom; pokračovanie
+ * spustí nový úsek a na konci sa všetky sčítajú. Pre človeka je to jedna jazda,
+ * pre telefón niekoľko meraní za sebou.
+ */
+type Usek = { distance_km: number; points: Point[] };
+let useky: Usek[] = [];
+let pauzaOd: number | null = null;
+/** Kedy sa začal prvý úsek — trvanie jazdy sa počíta odtiaľ, nie od poslednej pauzy. */
+let jazdaOd: number | null = null;
+
 /** Na „vždy" sa pýtame až po prvom skutočnom meraní, nie pri štarte appky. */
 const KLUC_ESKALACIE = "faktero.gps.background_asked";
 
@@ -50,6 +64,7 @@ function startWeb(): { ok: boolean; error?: string } {
   }
   points = [];
   startedAt = Date.now();
+  jazdaOd = jazdaOd ?? startedAt;
   webWatchId = navigator.geolocation.watchPosition(
     (pos) => {
       points.push({
@@ -67,6 +82,15 @@ function startWeb(): { ok: boolean; error?: string } {
 }
 
 export async function startTracking(): Promise<{ ok: boolean; error?: string }> {
+  // Čerstvý štart, nie pokračovanie po pauze — predchádzajúce úseky sem nepatria.
+  useky = [];
+  pauzaOd = null;
+  jazdaOd = null;
+  return spustiUsek();
+}
+
+/** Spustí jeden úsek merania. Volá sa pri štarte aj pri pokračovaní po pauze. */
+async function spustiUsek(): Promise<{ ok: boolean; error?: string }> {
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return startWeb();
@@ -85,6 +109,7 @@ export async function startTracking(): Promise<{ ok: boolean; error?: string }> 
     nativeTripId = jazda.id;
     nativeDistanceKm = 0;
     startedAt = jazda.startedAt;
+    jazdaOd = jazdaOd ?? jazda.startedAt;
     points = [];
 
     // Priebeh z pluginu chodí najviac raz za 10 sekúnd, čo je na počítadlo
@@ -104,15 +129,78 @@ export async function startTracking(): Promise<{ ok: boolean; error?: string }> 
   }
 }
 
-export async function stopTracking(): Promise<{
+export type VysledokMerania = {
   distance_km: number;
   duration_min: number;
   start: Point | null;
   end: Point | null;
   points: Point[];
-}> {
-  if (nativeTripId) return stopNative();
+};
 
+/**
+ * Ukončí jazdu a vráti ju celú — teda aj úseky spred páuz.
+ *
+ * Trvanie sa počíta od začiatku prvého úseku, takže zahŕňa aj čas státia. To
+ * je zámer: jazda s prestávkou trvala aj tú prestávku a ľudia si podľa času
+ * kontrolujú, či sedí to, čo si pamätajú.
+ */
+export async function stopTracking(): Promise<VysledokMerania> {
+  const posledny = await ukonciUsek();
+  const vsetky = [...useky, ...(posledny ? [posledny] : [])];
+  const zaciatok = jazdaOd;
+  useky = [];
+  pauzaOd = null;
+  jazdaOd = null;
+
+  const body = vsetky.flatMap((u) => u.points);
+  const km = vsetky.reduce((s, u) => s + u.distance_km, 0);
+  return {
+    distance_km: Math.round(km * 100) / 100,
+    duration_min: zaciatok ? Math.round((Date.now() - zaciatok) / 60000) : 0,
+    start: body[0] ?? null,
+    end: body[body.length - 1] ?? null,
+    points: body,
+  };
+}
+
+/**
+ * Pozastaví meranie. Namerané ostáva, ďalší pohyb sa nezapočíta.
+ *
+ * Vracia, koľko je zatiaľ nameraných kilometrov — obrazovka nemá odkiaľ inak
+ * zistiť, že sa počítadlo po pauze nemá vynulovať.
+ */
+export async function pauseTracking(): Promise<number> {
+  if (!isTracking()) return getCurrentDistanceKm();
+  const usek = await ukonciUsek();
+  if (usek) useky.push(usek);
+  pauzaOd = Date.now();
+  return getCurrentDistanceKm();
+}
+
+/** Pokračovanie po pauze — nový úsek tej istej jazdy. */
+export async function resumeTracking(): Promise<{ ok: boolean; error?: string }> {
+  pauzaOd = null;
+  return spustiUsek();
+}
+
+/** Je jazda rozmeraná, ale práve pozastavená? */
+export function isPaused(): boolean {
+  return pauzaOd !== null;
+}
+
+/** Kedy sa jazda začala — po návrate na obrazovku sa inak nedá zistiť. */
+export function trackingStartedAt(): number | null {
+  return jazdaOd;
+}
+
+/** Ukončí prebiehajúci úsek. `null`, keď žiadny nebežal. */
+async function ukonciUsek(): Promise<Usek | null> {
+  if (!isTracking()) return null;
+  const r = nativeTripId ? await stopNative() : stopWeb();
+  return { distance_km: r.distance_km, points: r.points };
+}
+
+function stopWeb(): VysledokMerania {
   try {
     if (webWatchId !== null && typeof navigator !== "undefined") {
       navigator.geolocation.clearWatch(webWatchId);
@@ -201,8 +289,10 @@ export function isTracking(): boolean {
 }
 
 export function getCurrentDistanceKm(): number {
-  if (nativeTripId) return Math.round(nativeDistanceKm * 100) / 100;
+  // Úseky spred páuz sa počítajú tiež — inak by počítadlo po pauze spadlo na nulu.
+  const zUsekov = useky.reduce((s, u) => s + u.distance_km, 0);
+  if (nativeTripId) return Math.round((zUsekov + nativeDistanceKm) * 100) / 100;
   let d = 0;
   for (let i = 1; i < points.length; i++) d += haversineKm(points[i - 1], points[i]);
-  return Math.round(d * 100) / 100;
+  return Math.round((zUsekov + d) * 100) / 100;
 }
