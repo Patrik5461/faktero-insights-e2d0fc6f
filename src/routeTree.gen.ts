@@ -58,7 +58,6 @@ import { Route as AdminPlatformInvoicesRouteImport } from './routes/admin.platfo
 import { Route as AdminSeoRouteImport } from './routes/admin.seo'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as DanovyDokladTokenRouteImport } from './routes/danovy-doklad.$token'
@@ -177,6 +176,8 @@ import { Route as AuthenticatedZakazkyNovaRouteImport } from './routes/_authenti
 import { Route as AuthenticatedZalohoveIndexRouteImport } from './routes/_authenticated/zalohove.index'
 import { Route as AdminCompaniesIndexRouteImport } from './routes/admin.companies.index'
 import { Route as AdminCompaniesIdRouteImport } from './routes/admin.companies.$id'
+import { Route as AdminUsersIndexRouteImport } from './routes/admin.users.index'
+import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
 import { Route as ApiAdminMigrationExportRouteImport } from './routes/api/admin/migration-export'
 import { Route as ApiMobilOperaciaRouteImport } from './routes/api/mobil/$operacia'
 import { Route as ApiPublicKontaktRouteImport } from './routes/api/public/kontakt'
@@ -499,11 +500,6 @@ const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
 const AdminUsageRoute = AdminUsageRouteImport.update({
   id: '/usage',
   path: '/usage',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
@@ -1157,6 +1153,16 @@ const AdminCompaniesIdRoute = AdminCompaniesIdRouteImport.update({
   path: '/companies/$id',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersIdRoute = AdminUsersIdRouteImport.update({
+  id: '/users/$id',
+  path: '/users/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const ApiAdminMigrationExportRoute = ApiAdminMigrationExportRouteImport.update({
   id: '/api/admin/migration-export',
   path: '/api/admin/migration-export',
@@ -1611,7 +1617,6 @@ export interface FileRoutesByFullPath {
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
-  '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
@@ -1714,6 +1719,7 @@ export interface FileRoutesByFullPath {
   '/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
@@ -1746,6 +1752,7 @@ export interface FileRoutesByFullPath {
   '/zakazky/': typeof AuthenticatedZakazkyIndexRoute
   '/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
+  '/admin/users/': typeof AdminUsersIndexRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
@@ -1846,7 +1853,6 @@ export interface FileRoutesByTo {
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
-  '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
@@ -1948,6 +1954,7 @@ export interface FileRoutesByTo {
   '/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
@@ -1980,6 +1987,7 @@ export interface FileRoutesByTo {
   '/zakazky': typeof AuthenticatedZakazkyIndexRoute
   '/zalohove': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies': typeof AdminCompaniesIndexRoute
+  '/admin/users': typeof AdminUsersIndexRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
@@ -2090,7 +2098,6 @@ export interface FileRoutesById {
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
-  '/admin/users': typeof AdminUsersRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
@@ -2193,6 +2200,7 @@ export interface FileRoutesById {
   '/_authenticated/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/_authenticated/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
@@ -2225,6 +2233,7 @@ export interface FileRoutesById {
   '/_authenticated/zakazky/': typeof AuthenticatedZakazkyIndexRoute
   '/_authenticated/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
+  '/admin/users/': typeof AdminUsersIndexRoute
   '/_authenticated/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/_authenticated/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
   '/_authenticated/jazdy/integracie/tesla': typeof AuthenticatedJazdyIntegracieTeslaRoute
@@ -2335,7 +2344,6 @@ export interface FileRouteTypes {
     | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
-    | '/admin/users'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
     | '/docs/api'
@@ -2438,6 +2446,7 @@ export interface FileRouteTypes {
     | '/zakazky/$id'
     | '/zakazky/nova'
     | '/admin/companies/$id'
+    | '/admin/users/$id'
     | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
     | '/api/public/kontakt'
@@ -2470,6 +2479,7 @@ export interface FileRouteTypes {
     | '/zakazky/'
     | '/zalohove/'
     | '/admin/companies/'
+    | '/admin/users/'
     | '/faktury/$id/upravit'
     | '/jazdy/integracie/commander'
     | '/jazdy/integracie/tesla'
@@ -2570,7 +2580,6 @@ export interface FileRouteTypes {
     | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
-    | '/admin/users'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
     | '/docs/api'
@@ -2672,6 +2681,7 @@ export interface FileRouteTypes {
     | '/zakazky/$id'
     | '/zakazky/nova'
     | '/admin/companies/$id'
+    | '/admin/users/$id'
     | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
     | '/api/public/kontakt'
@@ -2704,6 +2714,7 @@ export interface FileRouteTypes {
     | '/zakazky'
     | '/zalohove'
     | '/admin/companies'
+    | '/admin/users'
     | '/faktury/$id/upravit'
     | '/jazdy/integracie/commander'
     | '/jazdy/integracie/tesla'
@@ -2813,7 +2824,6 @@ export interface FileRouteTypes {
     | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
-    | '/admin/users'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
     | '/docs/api'
@@ -2916,6 +2926,7 @@ export interface FileRouteTypes {
     | '/_authenticated/zakazky/$id'
     | '/_authenticated/zakazky/nova'
     | '/admin/companies/$id'
+    | '/admin/users/$id'
     | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
     | '/api/public/kontakt'
@@ -2948,6 +2959,7 @@ export interface FileRouteTypes {
     | '/_authenticated/zakazky/'
     | '/_authenticated/zalohove/'
     | '/admin/companies/'
+    | '/admin/users/'
     | '/_authenticated/faktury/$id/upravit'
     | '/_authenticated/jazdy/integracie/commander'
     | '/_authenticated/jazdy/integracie/tesla'
@@ -3454,13 +3466,6 @@ declare module '@tanstack/react-router' {
       path: '/usage'
       fullPath: '/admin/usage'
       preLoaderRoute: typeof AdminUsageRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
     '/blog/': {
@@ -4289,6 +4294,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCompaniesIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/users/': {
+      id: '/admin/users/'
+      path: '/users'
+      fullPath: '/admin/users/'
+      preLoaderRoute: typeof AdminUsersIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users/$id': {
+      id: '/admin/users/$id'
+      path: '/users/$id'
+      fullPath: '/admin/users/$id'
+      preLoaderRoute: typeof AdminUsersIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/api/admin/migration-export': {
       id: '/api/admin/migration-export'
       path: '/api/admin/migration-export'
@@ -5089,10 +5108,11 @@ interface AdminRouteChildren {
   AdminSeoRoute: typeof AdminSeoRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
   AdminUsageRoute: typeof AdminUsageRoute
-  AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCompaniesIdRoute: typeof AdminCompaniesIdRoute
+  AdminUsersIdRoute: typeof AdminUsersIdRoute
   AdminCompaniesIndexRoute: typeof AdminCompaniesIndexRoute
+  AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -5108,10 +5128,11 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSeoRoute: AdminSeoRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
   AdminUsageRoute: AdminUsageRoute,
-  AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminCompaniesIdRoute: AdminCompaniesIdRoute,
+  AdminUsersIdRoute: AdminUsersIdRoute,
   AdminCompaniesIndexRoute: AdminCompaniesIndexRoute,
+  AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

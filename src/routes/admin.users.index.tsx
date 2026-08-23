@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Search } from "lucide-react";
@@ -6,7 +6,7 @@ import { AdminPageHeader, AdminPageBody } from "@/components/faktero/AdminShell"
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { listAdminUsers } from "@/lib/faktero/admin.functions";
 
-export const Route = createFileRoute("/admin/users")({
+export const Route = createFileRoute("/admin/users/")({
   head: () => ({ meta: [{ title: "Admin · Používatelia — Faktero" }] }),
   component: AdminUsersPage,
 });
@@ -20,6 +20,18 @@ function fmtDate(s: string | null | undefined) {
   } catch {
     return "—";
   }
+}
+
+/** Jedno slovo o účte — po ňom sa v zozname hľadá najčastejšie. */
+function StavUctu({ row }: { row: any }) {
+  const [text, trieda] = row.zakazane
+    ? ["Zakázaný", "bg-destructive/10 text-destructive"]
+    : row.deletion_scheduled_for
+      ? ["Ruší sa", "bg-amber-500/10 text-amber-700 dark:text-amber-400"]
+      : !row.email_potvrdeny
+        ? ["Nepotvrdený", "bg-muted text-muted-foreground"]
+        : ["Aktívny", "bg-primary/10 text-primary"];
+  return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${trieda}`}>{text}</span>;
 }
 
 function AdminUsersPage() {
@@ -94,20 +106,22 @@ function AdminUsersPage() {
                     <th className="px-3 py-2">Meno</th>
                     <th className="px-3 py-2">Firmy</th>
                     <th className="px-3 py-2">Roly</th>
+                    <th className="px-3 py-2">Stav</th>
                     <th className="px-3 py-2">Registrovaný</th>
-                    <th className="px-3 py-2">Aktualizovaný</th>
+                    <th className="px-3 py-2">Naposledy dnu</th>
+                    <th className="px-3 py-2"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading && rows.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
                         Načítavam…
                       </td>
                     </tr>
                   ) : rows.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
                         Žiadni používatelia.
                       </td>
                     </tr>
@@ -126,8 +140,22 @@ function AdminUsersPage() {
                             ? Array.from(new Set(r.companies.map((m: any) => m.role))).join(", ")
                             : "—"}
                         </td>
+                        <td className="px-3 py-2">
+                          <StavUctu row={r} />
+                        </td>
                         <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.created_at)}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{fmtDate(r.updated_at)}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {fmtDate(r.posledne_prihlasenie)}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <Link
+                            to="/admin/users/$id"
+                            params={{ id: r.id }}
+                            className="rounded-md border border-border px-2.5 py-1 text-xs hover:bg-secondary"
+                          >
+                            Spravovať
+                          </Link>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -136,11 +164,16 @@ function AdminUsersPage() {
             </div>
           }
           mobileCard={(r: any) => (
-            <MobileListCard
-              title={r.email ?? "—"}
-              subtitle={r.full_name ?? "—"}
-              meta={`${r.companies?.length ?? 0} firiem · od ${fmtDate(r.created_at)}`}
-            />
+            <Link to="/admin/users/$id" params={{ id: r.id }} className="block">
+              <MobileListCard
+                title={r.email ?? "—"}
+                subtitle={r.full_name ?? "—"}
+                meta={`${r.companies?.length ?? 0} firiem · naposledy dnu ${fmtDate(
+                  r.posledne_prihlasenie,
+                )}`}
+                status={<StavUctu row={r} />}
+              />
+            </Link>
           )}
         />
 
@@ -167,11 +200,6 @@ function AdminUsersPage() {
             </div>
           </div>
         )}
-
-        <p className="mt-6 text-xs text-muted-foreground">
-          Posledné prihlásenie nie je dostupné v `profiles`; zobrazujeme registráciu a poslednú
-          aktualizáciu profilu.
-        </p>
       </AdminPageBody>
     </>
   );

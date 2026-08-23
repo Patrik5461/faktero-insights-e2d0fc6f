@@ -349,7 +349,9 @@ export const listAdminUsers = createServerFn({ method: "POST" })
     const to = from + data.pageSize - 1;
     let q = supabaseAdmin
       .from("profiles")
-      .select("id, email, full_name, created_at, updated_at", { count: "exact" })
+      .select("id, email, full_name, created_at, updated_at, deletion_scheduled_for", {
+        count: "exact",
+      })
       .order("created_at", { ascending: false })
       .range(from, to);
     if (data.q.trim()) {
@@ -371,11 +373,29 @@ export const listAdminUsers = createServerFn({ method: "POST" })
       list.push({ company_id: m.companies?.id, name: m.companies?.name, role: m.role });
       membershipMap.set(m.user_id, list);
     });
+
+    /*
+     * Posledné prihlásenie a zákaz prihlásenia sú v schéme `auth`, do ktorej
+     * PostgREST nevidí — preto cez funkciu, ktorú smie volať len servisná rola.
+     * Stránka to dovtedy nevedela a čestne to priznávala poznámkou pod tabuľkou.
+     */
+    const { data: stavy } = ids.length
+      ? await (supabaseAdmin as any).rpc("faktero_stav_prihlaseni", { _ids: ids })
+      : { data: [] as any[] };
+    const stavMap = new Map<string, any>(((stavy as any[]) ?? []).map((s) => [s.id, s]));
+
+    const teraz = Date.now();
     return {
-      rows: (rows ?? []).map((r: any) => ({
-        ...r,
-        companies: membershipMap.get(r.id) ?? [],
-      })),
+      rows: (rows ?? []).map((r: any) => {
+        const s = stavMap.get(r.id) ?? {};
+        return {
+          ...r,
+          companies: membershipMap.get(r.id) ?? [],
+          posledne_prihlasenie: s.last_sign_in_at ?? null,
+          email_potvrdeny: !!s.email_confirmed_at,
+          zakazane: !!s.banned_until && new Date(s.banned_until).getTime() > teraz,
+        };
+      }),
       total: count ?? 0,
     };
   });
