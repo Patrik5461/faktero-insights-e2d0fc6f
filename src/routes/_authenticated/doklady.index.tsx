@@ -4,6 +4,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
+  navrhniParovanieDokladov,
+  potvrdParovanieDokladu,
+  uhradyDokladov,
+  zrusParovanieDokladu,
+} from "@/lib/faktero/doklad-parovanie.functions";
+import {
   listExpensesFn,
   deleteExpenseFn,
   exportExpensesZipFn,
@@ -42,6 +48,16 @@ function DokladyPage() {
   const deleteFn = useServerFn(deleteExpenseFn);
   const exportFn = useServerFn(exportExpensesZipFn);
   const urlFn = useServerFn(getExpenseFileUrlFn);
+  const navrhyFn = useServerFn(navrhniParovanieDokladov);
+  const sparujFn = useServerFn(potvrdParovanieDokladu);
+  const rozparujFn = useServerFn(zrusParovanieDokladu);
+  const uhradyFn = useServerFn(uhradyDokladov);
+  /** Ktorý doklad je uhradený z účtu, kedy a ktorým pohybom. */
+  const [uhrady, setUhrady] = useState<Record<string, { datum: string; transactionId: string }>>(
+    {},
+  );
+  const [navrhy, setNavrhy] = useState<any[]>([]);
+  const [parujem, setParujem] = useState<string | null>(null);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("all");
@@ -52,12 +68,58 @@ function DokladyPage() {
   const [exporting, setExporting] = useState(false);
   const cid = getActiveCompanyId();
 
+  async function sparuj(z: any) {
+    setParujem(z.transactionId);
+    try {
+      await sparujFn({ data: { transaction_id: z.transactionId, expense_id: z.expenseId } });
+      setUhrady((u) => ({
+        ...u,
+        [z.expenseId]: { datum: z.pohyb?.booking_date, transactionId: z.transactionId },
+      }));
+      setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId));
+      toast.success("Doklad označený za uhradený z účtu.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Spárovať sa to nepodarilo.");
+    } finally {
+      setParujem(null);
+    }
+  }
+
+  async function rozparuj(expenseId: string, transactionId: string) {
+    try {
+      await rozparujFn({ data: { transaction_id: transactionId } });
+      setUhrady((u) => {
+        const kopia = { ...u };
+        delete kopia[expenseId];
+        return kopia;
+      });
+      toast.success("Párovanie zrušené.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Zrušiť sa to nepodarilo.");
+    }
+  }
+
   async function refresh() {
     if (!cid) return;
     setLoading(true);
     try {
       const data = await listFn({ data: { company_id: cid, status, month: month || null } });
       setRows(data ?? []);
+      /*
+        Párovanie s bankou je nadstavba nad zoznamom — keď zlyhá, doklady sa aj
+        tak ukážu. Preto zvlášť a ticho.
+      */
+      void (async () => {
+        try {
+          const ids = (data ?? []).map((r: any) => r.id).slice(0, 200);
+          const u: any = await uhradyFn({ data: { company_id: cid, ids } });
+          setUhrady(u?.uhrady ?? {});
+          const n: any = await navrhyFn({ data: { company_id: cid } });
+          setNavrhy(n?.zhody ?? []);
+        } catch {
+          /* bez párovania zoznam funguje ďalej */
+        }
+      })();
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba pri načítaní");
     } finally {
@@ -226,6 +288,54 @@ function DokladyPage() {
           s Pohodou.
         </p>
 
+        {/*
+          Návrhy na spárovanie s platbami na účte. Hotovosť sa sem nedostane —
+          v banke sa neobjaví. Nič sa nepáruje potichu, aj istá dvojica čaká na
+          potvrdenie: zle priradený náklad sa v účtovníctve hľadá ťažko.
+        */}
+        {navrhy.length > 0 && (
+          <div className="mb-4 overflow-hidden rounded-xl border border-primary/40 bg-primary/5">
+            <div className="px-4 py-3 text-sm font-medium">
+              Našli sme platby k dokladom ({navrhy.length})
+            </div>
+            {navrhy.map((z) => (
+              <div
+                key={z.transactionId}
+                className="flex flex-wrap items-center gap-3 border-t border-primary/20 px-4 py-3 text-sm"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">
+                    {z.doklad?.supplier_name ?? "Doklad"}{" "}
+                    <span className="tabular-nums">
+                      {z.doklad?.total_amount != null
+                        ? `${Number(z.doklad.total_amount).toFixed(2)} ${z.doklad.currency ?? "EUR"}`
+                        : ""}
+                    </span>
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {z.pohyb?.booking_date} · {z.dovody.join(" · ")}
+                  </span>
+                </span>
+                <button
+                  disabled={parujem === z.transactionId}
+                  onClick={() => sparuj(z)}
+                  className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary disabled:opacity-60"
+                >
+                  {z.istota === "auto" ? "Spárovať" : "Áno, patrí k sebe"}
+                </button>
+                <button
+                  onClick={() =>
+                    setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId))
+                  }
+                  className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground"
+                >
+                  Nie
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="mb-4 grid grid-cols-3 gap-3">
           <SummaryCard label="Základ" value={totals.net} />
           <SummaryCard label="DPH" value={totals.vat} />
@@ -265,6 +375,7 @@ function DokladyPage() {
                   <th className="px-3 py-2 text-right">Celkom</th>
                   <th className="px-3 py-2 text-left">Stav</th>
                   <th className="px-3 py-2 text-left">Zdroj</th>
+                  <th className="px-3 py-2 text-left">Úhrada z účtu</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
@@ -308,6 +419,27 @@ function DokladyPage() {
                       </span>
                     </td>
                     <td className="px-3 py-2 text-xs text-muted-foreground">{r.source}</td>
+                    <td className="px-3 py-2 text-xs whitespace-nowrap">
+                      {uhrady[r.id] ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="text-emerald-700 dark:text-emerald-400">
+                            {uhrady[r.id].datum}
+                          </span>
+                          <button
+                            onClick={() => rozparuj(r.id, uhrady[r.id].transactionId)}
+                            title="Zrušiť párovanie s platbou"
+                            className="text-muted-foreground hover:underline"
+                          >
+                            zrušiť
+                          </button>
+                        </span>
+                      ) : r.payment_method === "hotovost" ? (
+                        // Hotovosť v banke nikdy nebude — pomlčka by tu vyzerala ako chýbajúci údaj.
+                        <span className="text-muted-foreground">hotovosť</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-right">
                       {r.file_path && (
                         <button
