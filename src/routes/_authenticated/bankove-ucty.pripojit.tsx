@@ -11,7 +11,7 @@ import {
   synchronizujWisePohyby,
 } from "@/lib/faktero/wise.functions";
 import { toast } from "sonner";
-import { Building2, ArrowLeft, ExternalLink, Wallet } from "lucide-react";
+import { Building2, ArrowLeft, ExternalLink, Wallet, Download } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/pripojit")({
   head: () => ({ meta: [{ title: "Pripojiť banku — Faktero" }] }),
@@ -94,6 +94,25 @@ function ConnectPage() {
       </PageBody>
     </>
   );
+}
+
+/**
+ * Verejný kľúč ako súbor.
+ *
+ * Wise ho pri nahrávaní pýta ako súbor, nie ako text z schránky — bez tohto
+ * tlačidla by si ho človek musel sám vložiť do editora a uložiť s príponou
+ * `.pem`, čo je presne to miesto, kde sa nastavenie prestane robiť.
+ */
+function stiahniKluc(pem: string) {
+  const url = URL.createObjectURL(new Blob([pem], { type: "application/x-pem-file" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "faktero-wise-public-key.pem";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Bez uvoľnenia by odkaz na obsah ostal v pamäti až do zatvorenia karty.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /**
@@ -201,6 +220,27 @@ function WisePripojenie() {
                 onFocus={(e) => e.currentTarget.select()}
                 className="mt-2 w-full rounded-md border border-input bg-background p-2 font-mono text-[11px]"
               />
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  onClick={() => stiahniKluc(stav.verejnyKluc)}
+                  className="inline-flex h-9 items-center gap-2 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+                >
+                  <Download className="h-4 w-4" /> Stiahnuť ako súbor
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(stav.verejnyKluc);
+                      toast.success("Kľúč skopírovaný.");
+                    } catch {
+                      toast.error("Skopírovať sa nepodarilo, označte text a použite Ctrl+C.");
+                    }
+                  }}
+                  className="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm hover:bg-secondary"
+                >
+                  Kopírovať
+                </button>
+              </div>
             </div>
           )}
 
