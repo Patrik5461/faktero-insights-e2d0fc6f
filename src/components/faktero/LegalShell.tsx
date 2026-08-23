@@ -57,7 +57,7 @@ export function LegalShell({
   );
 }
 
-export const LEGAL_VERSION = "1.0";
+export { LEGAL_VERSION } from "@/lib/faktero/legal-verzia";
 export const LEGAL_UPDATED = "13.06.2026";
 export const LEGAL_COMPANY = {
   name: "Tobify s. r. o.",

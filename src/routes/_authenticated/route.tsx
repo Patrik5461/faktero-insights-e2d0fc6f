@@ -14,6 +14,8 @@ import {
   fetchMyCompanies,
 } from "@/lib/faktero/active-company";
 import { PlanGateBanner } from "@/components/faktero/PlanGateBanner";
+import { zapisOdlozeneSuhlasy } from "@/lib/faktero/pravne-suhlasy";
+import { recordLegalAcceptance } from "@/lib/legal.functions";
 import { ZrusenieBanner } from "@/components/faktero/ZrusenieBanner";
 import { ProductModePicker } from "@/components/faktero/ProductModePicker";
 import {
@@ -75,6 +77,16 @@ function AuthedLayout() {
       window.removeEventListener("storage", sync);
       window.removeEventListener(ACTIVE_PRODUCT_EVENT, sync);
     };
+  }, []);
+
+  /*
+    Súhlasy udelené pri registrácii, ktorá vtedy ešte nemala reláciu — cez
+    Google alebo pri registrácii čakajúcej na potvrdenie e-mailu. Zapíšu sa tu,
+    lebo toto je prvé miesto, kde je isté, že je kto prihlásený. Keď nič
+    nečaká, funkcia sa nespýta servera na nič.
+  */
+  useEffect(() => {
+    void zapisOdlozeneSuhlasy(recordLegalAcceptance);
   }, []);
 
   useEffect(() => {

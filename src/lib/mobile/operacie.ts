@@ -39,6 +39,7 @@ export const OPERACIE = [
   "ucet-poziadaj-o-zrusenie",
   "ucet-odvolaj-zrusenie",
   "spatna-vazba",
+  "pravne-suhlasy",
 ] as const;
 
 export type Operacia = (typeof OPERACIE)[number];

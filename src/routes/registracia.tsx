@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 import { recordLegalAcceptance } from "@/lib/legal.functions";
-import { LEGAL_VERSION } from "@/components/faktero/LegalShell";
+import { odlozSuhlasy, zapisOdlozeneSuhlasy } from "@/lib/faktero/pravne-suhlasy";
 import { Logo } from "@/components/faktero/Logo";
 import { MailCheck } from "lucide-react";
 
@@ -49,22 +49,6 @@ function RegisterPage() {
   const [cakaNaPotvrdenie, setCakaNaPotvrdenie] = useState(false);
   const [posielamZnova, setPosielamZnova] = useState(false);
 
-  async function persistAcceptances() {
-    try {
-      await recordLegalAcceptance({
-        data: {
-          documents: [
-            { document_type: "obchodne-podmienky", version: LEGAL_VERSION },
-            { document_type: "gdpr", version: LEGAL_VERSION },
-            { document_type: "cookies", version: LEGAL_VERSION },
-          ],
-        },
-      });
-    } catch (e) {
-      console.warn("legal acceptance log failed", e);
-    }
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!acceptTerms || !acceptGdpr) {
@@ -82,7 +66,13 @@ function RegisterPage() {
     });
     setLoading(false);
     if (error) return toast.error(prelozAuthChybu(error.message).sprava);
-    if (data.user?.id && data.session) await persistAcceptances();
+    /*
+      Súhlas sa odloží vždy a zapíše sa hneď, ako je relácia. Bez potvrdeného
+      e-mailu ju Supabase nevydá, takže zápis by inak spadol do prázdna —
+      dovtedy počká a vybaví ho prvé prihlásenie.
+    */
+    odlozSuhlasy();
+    if (data.session) await zapisOdlozeneSuhlasy(recordLegalAcceptance);
     stashPlan();
 
     /*
@@ -105,11 +95,7 @@ function RegisterPage() {
       toast.error("Pre pokračovanie potvrďte obidva súhlasy.");
       return;
     }
-    try {
-      sessionStorage.setItem("faktero_legal_pending", LEGAL_VERSION);
-    } catch {
-      // sessionStorage môže byť zakázané — súhlas sa potom zapíše až po prihlásení
-    }
+    odlozSuhlasy();
     stashPlan();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",

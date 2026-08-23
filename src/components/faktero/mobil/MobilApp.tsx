@@ -27,10 +27,12 @@ import {
   AlertTriangle,
   Landmark,
   Lock,
+  Plus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { nacitajUlozenuRelaciu } from "@/lib/mobile/relacia";
 import { vyberFirmy } from "@/lib/mobile/start";
+import { zapisOdlozeneSuhlasy } from "@/lib/faktero/pravne-suhlasy";
 import {
   fetchMyCompanies,
   getActiveCompanyId,
@@ -120,6 +122,8 @@ import { ZrusenieUctu } from "@/components/faktero/ZrusenieUctu";
 import { dniDoZrusenia, terminSlovom } from "@/lib/faktero/ucet-zrusenie";
 import { DNI, FAKTURY, sPoctom } from "@/lib/faktero/mnozne";
 import { MobilPanel } from "@/components/faktero/mobil/MobilPanel";
+import { RegistraciaUctu } from "@/components/faktero/mobil/RegistraciaUctu";
+import { VytvorFirmu } from "@/components/faktero/mobil/VytvorFirmu";
 import {
   isBiometricAvailable,
   isBiometricEnabled,
@@ -150,7 +154,9 @@ type Uhrada = "hotovost" | "karta" | "prevod";
 type Krok =
   | "nacitavam"
   | "prihlasenie"
+  | "registracia"
   | "firma"
+  | "novaFirma"
   | "domov"
   | "zachyt"
   | "doklady"
@@ -192,6 +198,11 @@ function ObsahApky() {
   const [zamknute, setZamknute] = useState(false);
   const [zrusiSa, setZrusiSa] = useState<string | null>(null);
   const [novsia, setNovsia] = useState<{ peciatka: string; odkaz: string } | null>(null);
+  /*
+    Súhlasy z registrácie v telefóne sa zapisujú až po prihlásení: pri
+    registrácii relácia ešte nie je a bez nej ich server neprijme.
+  */
+  const zapisSuhlasy = useOperacia("pravne-suhlasy");
 
   /*
    * Povolenie na notifikácie sa pýta až tu: na domovskej obrazovke, teda po
@@ -246,6 +257,7 @@ function ObsahApky() {
       setZamknute(true);
     }
     setEmail(relacia.user?.email ?? null);
+    void zapisOdlozeneSuhlasy(zapisSuhlasy);
     // Token na push mohol doraziť skôr, než bol používateľ prihlásený.
     void import("@/lib/mobile/push").then((m) => m.dorucCakajuciPushToken());
     // Naplánované zrušenie účtu musí byť vidieť aj v telefóne — kto oň požiadal
@@ -557,7 +569,25 @@ function ObsahApky() {
       </div>
     );
   }
-  if (krok === "prihlasenie") return <Prihlasenie onHotovo={() => zisti()} />;
+  if (krok === "prihlasenie")
+    return <Prihlasenie onHotovo={() => zisti()} onRegistracia={() => setKrok("registracia")} />;
+  if (krok === "registracia")
+    return <RegistraciaUctu onHotovo={() => zisti()} onSpat={() => setKrok("prihlasenie")} />;
+  if (krok === "novaFirma")
+    return (
+      <VytvorFirmu
+        prve={firmy.length === 0}
+        // Bez jedinej firmy sa niet kam vrátiť — späť by viedlo na prázdny zoznam.
+        onSpat={firmy.length > 0 ? () => setKrok("firma") : undefined}
+        onHotovo={() => {
+          // Zoznam firiem aj predzásobenie sa robia v `zisti()`; nová firma sa
+          // medzitým stala vybranou, takže sa appka otvorí rovno na nej.
+          setChybaStartu(null);
+          setKrok("nacitavam");
+          void zisti();
+        }}
+      />
+    );
   if (krok === "firma")
     return (
       <VyberFirmy
@@ -569,6 +599,9 @@ function ObsahApky() {
           setActiveCompanyId(f.id);
           setKrok("domov");
         }}
+        onNovaFirma={() => setKrok("novaFirma")}
+        // Bez pripojenia by sa firma nezaložila a chyba by prišla až po vyplnení.
+        firmaSaNeda={!!chybaStartu}
         onOdhlasit={odhlas}
       />
     );
@@ -711,7 +744,13 @@ function ObsahApky() {
 
 /* ------------------------- Prihlásenie ------------------------- */
 
-function Prihlasenie({ onHotovo }: { onHotovo: () => void }) {
+function Prihlasenie({
+  onHotovo,
+  onRegistracia,
+}: {
+  onHotovo: () => void;
+  onRegistracia: () => void;
+}) {
   const [email, setEmail] = useState("");
   const [heslo, setHeslo] = useState("");
   const [busy, setBusy] = useState(false);
@@ -798,8 +837,14 @@ function Prihlasenie({ onHotovo }: { onHotovo: () => void }) {
           )}
         </div>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Zabudnuté heslo alebo nový účet vybavíte na faktero.sk.
+        <button
+          onClick={onRegistracia}
+          className="mt-6 w-full py-2 text-center text-sm text-muted-foreground"
+        >
+          Nemáte účet? <span className="font-medium text-primary">Zaregistrujte sa</span>
+        </button>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Zabudnuté heslo si obnovíte na faktero.sk.
         </p>
       </div>
     </div>
@@ -862,6 +907,8 @@ function VyberFirmy({
   onOdhlasit,
   poznamka,
   onDiagnostika,
+  onNovaFirma,
+  firmaSaNeda,
 }: {
   firmy: Firma[];
   onVyber: (f: Firma) => void;
@@ -869,18 +916,41 @@ function VyberFirmy({
   /** Prečo je zoznam prázdny — bez toho by appka tvrdila nepravdu. */
   poznamka?: string | null;
   onDiagnostika?: () => void;
+  onNovaFirma?: () => void;
+  /** Zoznam sa nenačítal, takže o firmách nevieme nič — zakladať sa nedá. */
+  firmaSaNeda?: boolean;
 }) {
   return (
     <MobilObrazovka title="Vyberte firmu" subtitle="Doklady sa uložia do vybranej firmy">
       {firmy.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {poznamka ?? "K tomuto účtu nie je pripojená žiadna firma. Vytvorte ju na faktero.sk."}
-        </p>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {poznamka ??
+              "K tomuto účtu zatiaľ nepatrí žiadna firma. Bez nej nemajú doklady kam ísť — založte si ju rovno tu."}
+          </p>
+          {onNovaFirma && !firmaSaNeda && (
+            <VelkeTlacidlo
+              icon={Plus}
+              variant="primary"
+              label="Vytvoriť firmu"
+              hint="Stačí názov, ostatné sa dá doplniť neskôr"
+              onClick={onNovaFirma}
+            />
+          )}
+        </div>
       ) : (
         <div className="space-y-2">
           {firmy.map((f) => (
             <VelkeTlacidlo key={f.id} icon={Building2} label={f.name} onClick={() => onVyber(f)} />
           ))}
+          {onNovaFirma && !firmaSaNeda && (
+            <button
+              onClick={onNovaFirma}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border px-4 py-3.5 text-[14px] text-muted-foreground"
+            >
+              <Plus className="h-4 w-4" /> Pridať ďalšiu firmu
+            </button>
+          )}
         </div>
       )}
       <button
