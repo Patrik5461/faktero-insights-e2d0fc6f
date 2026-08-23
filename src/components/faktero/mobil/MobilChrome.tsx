@@ -217,12 +217,23 @@ export function MobilObrazovka({
     >
       <AppHeader title={title} subtitle={subtitle} onBack={onBack} right={akcia} />
 
-      <main className="flex-1 px-4 pb-6 pt-4">{children}</main>
+      {/* Odsadenie dole kvôli spodnej lište — bez neho ostane posledná
+          položka zoznamu schovaná za ňou. Mimo záložiek je premenná prázdna. */}
+      <main
+        className="flex-1 px-4 pt-4"
+        style={{ paddingBottom: "calc(1.5rem + var(--spodna-lista, 0px))" }}
+      >
+        {children}
+      </main>
 
       {footer && (
         <footer
-          className="sticky bottom-0 border-t border-border/70 bg-card/95 px-4 pt-3 backdrop-blur"
-          style={{ paddingBottom: "calc(var(--safe-bottom) + 0.75rem)" }}
+          className="sticky border-t border-border/70 bg-card/95 px-4 pt-3 backdrop-blur"
+          /* Nad spodnou lištou, nie pod ňou — inak ju hlavné tlačidlo prekryje. */
+          style={{
+            bottom: "var(--spodna-lista, 0px)",
+            paddingBottom: "calc(var(--safe-bottom) + 0.75rem)",
+          }}
         >
           {footer}
         </footer>

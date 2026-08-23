@@ -7,6 +7,7 @@ import {
   FileText,
   Fingerprint,
   Globe,
+  LayoutGrid,
   LogOut,
   Receipt,
   ShieldCheck,
@@ -42,6 +43,7 @@ export function MobilPanel({
   firma,
   viacFiriem,
   onZmenitFirmu,
+  onPrehlad,
   onDoklady,
   onFaktury,
   onUcet,
@@ -53,6 +55,8 @@ export function MobilPanel({
   firma: Firma | null;
   viacFiriem: boolean;
   onZmenitFirmu: () => void;
+  /** Pôvodná domovská obrazovka. V skener-first režime sa na ňu chodí odtiaľto. */
+  onPrehlad?: () => void;
   onDoklady: () => void;
   onFaktury: () => void;
   onUcet: () => void;
@@ -237,6 +241,20 @@ export function MobilPanel({
             <p className="px-3 py-2 text-[13px] text-muted-foreground">
               Biometria na tomto zariadení nie je dostupná.
             </p>
+          )}
+
+          {/*
+            Prehľad agend, ktorý bol pred skener-first režimom úvodnou
+            obrazovkou. Ostáva dostupný — sú v ňom veci, ktoré sa do piatich
+            záložiek nezmestili, a nikto neprišiel o cestu, na ktorú bol zvyknutý.
+          */}
+          {onPrehlad && (
+            <Polozka
+              icon={LayoutGrid}
+              label="Prehľad agend"
+              hint="Všetko, čo appka vie, na jednej obrazovke"
+              onClick={onPrehlad}
+            />
           )}
 
           <Skupina nazov="Pomoc" />

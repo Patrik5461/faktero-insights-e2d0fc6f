@@ -5,7 +5,8 @@
  * samostatného balíčka v telefóne (`src/mobile/main.tsx`), aby appka fungovala
  * aj bez pripojenia. Preto tu nie je nič z routera — obrazovky prepína stav.
  */
-import { Component, lazy, Suspense, useEffect, useRef, useState } from "react";
+import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { PrebiehaJazda } from "./PrebiehaJazda";
 import { toast } from "sonner";
@@ -123,6 +124,12 @@ import { dniDoZrusenia, terminSlovom } from "@/lib/faktero/ucet-zrusenie";
 import { DNI, FAKTURY, sPoctom } from "@/lib/faktero/mnozne";
 import { MobilPanel } from "@/components/faktero/mobil/MobilPanel";
 import { RegistraciaUctu } from "@/components/faktero/mobil/RegistraciaUctu";
+import {
+  Skener,
+  vychodzieNastavenie,
+  type NastavenieDokladu,
+} from "@/components/faktero/mobil/Skener";
+import { TabBar, type Zalozka } from "@/components/faktero/mobil/TabBar";
 import { VytvorFirmu } from "@/components/faktero/mobil/VytvorFirmu";
 import {
   isBiometricAvailable,
@@ -155,6 +162,7 @@ type Krok =
   | "nacitavam"
   | "prihlasenie"
   | "registracia"
+  | "skener"
   | "firma"
   | "novaFirma"
   | "domov"
@@ -203,6 +211,26 @@ function ObsahApky() {
     registrácii relácia ešte nie je a bez nej ich server neprijme.
   */
   const zapisSuhlasy = useOperacia("pravne-suhlasy");
+  /*
+    Skener-first režim. V appke je úvodnou obrazovkou kamera; na webe ostáva
+    pôvodná domovská obrazovka, aby sa `/app` v prehliadači nezmenil.
+    `?skener=1` je jediná výnimka — bez nej sa nová obrazovka nedá overiť inak
+    než na telefóne.
+  */
+  const skenerPrvy = useMemo(() => {
+    try {
+      if (Capacitor.isNativePlatform()) return true;
+      return new URLSearchParams(window.location.search).has("skener");
+    } catch {
+      return false;
+    }
+  }, []);
+  /** Kam vedie „späť" z agend — do skenera v appke, na prehľad na webe. */
+  const DOMOV: Krok = skenerPrvy ? "skener" : "domov";
+  const [nastavenieDokladu, setNastavenieDokladu] =
+    useState<NastavenieDokladu>(vychodzieNastavenie);
+  /** Kód prečítaný na skeneri, ktorý čaká na spracovanie v toku dokladu. */
+  const [qrZoSkenera, setQrZoSkenera] = useState<string | null>(null);
 
   /*
    * Povolenie na notifikácie sa pýta až tu: na domovskej obrazovke, teda po
@@ -307,7 +335,7 @@ function ObsahApky() {
       if (vybrana) {
         setFirma(vybrana);
         setActiveCompanyId(vybrana.id);
-        setKrok("domov");
+        setKrok(skenerPrvy ? "skener" : "domov");
         // Jazdy, ktoré telefón nahral, kým bola appka zavretá, netreba držať
         // v telefóne do chvíle, kým sa človek preklikne na obrazovku Jazda.
 
@@ -597,7 +625,7 @@ function ObsahApky() {
         onVyber={(f) => {
           setFirma(f);
           setActiveCompanyId(f.id);
-          setKrok("domov");
+          setKrok(DOMOV);
         }}
         onNovaFirma={() => setKrok("novaFirma")}
         // Bez pripojenia by sa firma nezaložila a chyba by prišla až po vyplnení.
@@ -605,21 +633,110 @@ function ObsahApky() {
         onOdhlasit={odhlas}
       />
     );
+  /** Spodná lišta prepína agendy; „Vytvoriť" otvára rovno novú faktúru. */
+  function prepniZalozku(z: Zalozka) {
+    if (z === "skener") return setKrok("skener");
+    if (z === "faktury") return setKrok("faktury");
+    if (z === "vytvorit") return setKrok("novaFaktura");
+    if (z === "banka") return setKrok("banka");
+    setKrok("jazda");
+  }
+
+  /*
+    Skener-first. Kamera je celá obrazovka, takže hlavička aj spodná lišta sú
+    tu priamo — `MobilObrazovka` počíta s obsahom, ktorý sa roluje, a tu sa
+    rolovať nemá nič.
+  */
+  if (krok === "skener" && firma)
+    return (
+      <div className="flex h-[100dvh] flex-col bg-black">
+        <AppHeader
+          variant="root"
+          title={firma.name}
+          subtitle="Skener dokladov"
+          left={
+            <button
+              onClick={() => setPanel(true)}
+              aria-label="Nastavenia"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-white/20"
+            >
+              <Menu className="h-[20px] w-[20px]" />
+            </button>
+          }
+          right={
+            firmy.length > 1 ? (
+              <button
+                onClick={() => setKrok("firma")}
+                aria-label="Zmeniť firmu"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-white/20"
+              >
+                <Building2 className="h-[20px] w-[20px]" />
+              </button>
+            ) : undefined
+          }
+        />
+        <Skener
+          nastavenie={nastavenieDokladu}
+          onNastavenie={setNastavenieDokladu}
+          onQr={(raw) => {
+            setQrZoSkenera(raw);
+            setZachyt("blocek");
+            setKrok("zachyt");
+          }}
+          onOdfotit={() => {
+            setQrZoSkenera(null);
+            setZachyt("blocek");
+            setKrok("zachyt");
+          }}
+          onZGalerie={() => {
+            setQrZoSkenera(null);
+            setZachyt("pdf");
+            setKrok("zachyt");
+          }}
+          onViacstranovy={() => {
+            setQrZoSkenera(null);
+            setZachyt("strany");
+            setKrok("zachyt");
+          }}
+          onPrijateDoklady={() => setKrok("doklady")}
+        />
+        <TabBar aktivna="skener" onPrepni={prepniZalozku} />
+        <MobilPanel
+          otvoreny={panel}
+          onZavri={() => setPanel(false)}
+          firma={firma}
+          email={email}
+          viacFiriem={firmy.length > 1}
+          onZmenitFirmu={() => setKrok("firma")}
+          onPrehlad={() => setKrok("domov")}
+          onDoklady={() => setKrok("doklady")}
+          onFaktury={() => setKrok("faktury")}
+          onUcet={() => {
+            setPanel(false);
+            setKrok("ucet");
+          }}
+          onOdhlasit={odhlas}
+        />
+      </div>
+    );
+
   if (krok === "doklady" && firma)
     return (
-      <Obrazovka onSpat={() => setKrok("domov")}>
-        <PrijateDoklady firma={firma} onSpat={() => setKrok("domov")} />
+      <Obrazovka onSpat={() => setKrok(DOMOV)}>
+        <PrijateDoklady firma={firma} onSpat={() => setKrok(DOMOV)} />
       </Obrazovka>
     );
   if (krok === "novaFaktura" && firma)
     return (
-      <Obrazovka onSpat={() => setKrok("domov")}>
-        <NovaFaktura
-          firma={firma}
-          onSpat={() => setKrok("domov")}
-          onHotovo={() => setKrok("faktury")}
-        />
-      </Obrazovka>
+      <SoSpodnouListou zobrazit={skenerPrvy} aktivna="vytvorit" onPrepni={prepniZalozku}>
+        <Obrazovka onSpat={() => setKrok(DOMOV)}>
+          <NovaFaktura
+            firma={firma}
+            onSpat={() => setKrok(DOMOV)}
+            onHotovo={() => setKrok("faktury")}
+          />
+        </Obrazovka>
+      </SoSpodnouListou>
     );
   if (krok === "upravaFaktury" && firma && upravovana)
     return (
@@ -637,19 +754,23 @@ function ObsahApky() {
     );
   if (krok === "jazda" && firma)
     return (
-      <Obrazovka onSpat={() => setKrok("domov")}>
-        <Jazda firma={firma} onSpat={() => setKrok("domov")} />
-      </Obrazovka>
+      <SoSpodnouListou zobrazit={skenerPrvy} aktivna="jazda" onPrepni={prepniZalozku}>
+        <Obrazovka onSpat={() => setKrok(DOMOV)}>
+          <Jazda firma={firma} onSpat={() => setKrok(DOMOV)} />
+        </Obrazovka>
+      </SoSpodnouListou>
     );
   if (krok === "banka" && firma)
     return (
-      <Obrazovka onSpat={() => setKrok("domov")}>
-        <Banka firma={firma} onSpat={() => setKrok("domov")} />
-      </Obrazovka>
+      <SoSpodnouListou zobrazit={skenerPrvy} aktivna="banka" onPrepni={prepniZalozku}>
+        <Obrazovka onSpat={() => setKrok(DOMOV)}>
+          <Banka firma={firma} onSpat={() => setKrok(DOMOV)} />
+        </Obrazovka>
+      </SoSpodnouListou>
     );
   if (krok === "ucet")
     return (
-      <MobilObrazovka title="Účet" subtitle={email ?? undefined} onBack={() => setKrok("domov")}>
+      <MobilObrazovka title="Účet" subtitle={email ?? undefined} onBack={() => setKrok(DOMOV)}>
         <div className="space-y-4">
           <StavPushu />
           {firma && <CislaDopredu firma={firma} />}
@@ -668,24 +789,28 @@ function ObsahApky() {
     );
   if (krok === "faktury" && firma)
     return (
-      <Obrazovka onSpat={() => setKrok("domov")}>
-        <VystaveneFaktury
-          firma={firma}
-          onSpat={() => setKrok("domov")}
-          onNova={() => setKrok("novaFaktura")}
-          onUprav={(f) => {
-            setUpravovana(f);
-            setKrok("upravaFaktury");
-          }}
-        />
-      </Obrazovka>
+      <SoSpodnouListou zobrazit={skenerPrvy} aktivna="faktury" onPrepni={prepniZalozku}>
+        <Obrazovka onSpat={() => setKrok(DOMOV)}>
+          <VystaveneFaktury
+            firma={firma}
+            onSpat={() => setKrok(DOMOV)}
+            onNova={() => setKrok("novaFaktura")}
+            onUprav={(f) => {
+              setUpravovana(f);
+              setKrok("upravaFaktury");
+            }}
+          />
+        </Obrazovka>
+      </SoSpodnouListou>
     );
   if (krok === "zachyt" && firma)
     return (
       <ZachytDokladu
         druh={zachyt}
         firma={firma}
-        onSpat={() => setKrok("domov")}
+        prednastavene={skenerPrvy ? nastavenieDokladu : undefined}
+        hotovyQr={qrZoSkenera}
+        onSpat={() => setKrok(DOMOV)}
         // Po uložení ukážeme zoznam — inak doklad zmizne a nedá sa overiť,
         // či sa vôbec uložil.
         onUlozene={() => setKrok("doklady")}
@@ -739,6 +864,38 @@ function ObsahApky() {
         onOdhlasit={odhlas}
       />
     </>
+  );
+}
+
+/**
+ * Obal agend, nad ktorými má byť spodná lišta.
+ *
+ * Obrazovky sú vysoké na celý displej (`min-h-[100dvh]`), takže by pod nimi
+ * lišta vytvorila kúsok rolovania navyše — preto prvému dieťaťu uberieme jej
+ * výšku. `--spodna-lista` číta `MobilObrazovka`: jej lepivá pätka sa musí
+ * zastaviť nad lištou, nie pod ňou, a posledná položka zoznamu nesmie ostať
+ * schovaná za lištou.
+ */
+function SoSpodnouListou({
+  zobrazit,
+  aktivna,
+  onPrepni,
+  children,
+}: {
+  zobrazit: boolean;
+  aktivna: Zalozka;
+  onPrepni: (z: Zalozka) => void;
+  children: React.ReactNode;
+}) {
+  if (!zobrazit) return <>{children}</>;
+  return (
+    <div
+      className="flex min-h-[100dvh] flex-col [&>*:first-child]:min-h-[calc(100dvh-var(--spodna-lista))]"
+      style={{ ["--spodna-lista" as any]: "calc(3.5rem + var(--safe-bottom))" }}
+    >
+      {children}
+      <TabBar aktivna={aktivna} onPrepni={onPrepni} />
+    </div>
   );
 }
 
@@ -1210,18 +1367,24 @@ function ZachytDokladu({
   firma,
   onSpat,
   onUlozene,
+  prednastavene,
+  hotovyQr,
 }: {
   druh: Zachyt;
   firma: Firma;
   onSpat: () => void;
   onUlozene: () => void;
+  /** Úhrada a kategória vybrané na skeneri — človek ich už nemusí klikať znova. */
+  prednastavene?: NastavenieDokladu;
+  /** QR prečítaný už na úvodnej obrazovke; čítanie sa nespúšťa druhý raz. */
+  hotovyQr?: string | null;
 }) {
   const nacitaj = useOperacia<BlocekVysledok>("blocek-precitaj");
   const uloz = useOperacia("vydavok-uloz");
 
   const [stav, setStav] = useState<"start" | "citam" | "potvrdenie" | "ukladam">("start");
   const [vysledok, setVysledok] = useState<BlocekVysledok | null>(null);
-  const [uhrada, setUhrada] = useState<Uhrada | null>(null);
+  const [uhrada, setUhrada] = useState<Uhrada | null>(prednastavene?.uhrada ?? null);
   const [foto, setFoto] = useState<string | null>(null);
   const [strany, setStrany] = useState<string[]>([]);
   const [skenujem, setSkenujem] = useState(false);
@@ -1261,6 +1424,19 @@ function ZachytDokladu({
       setStav("start");
     }
   }
+
+  /*
+    Kód prečítaný už na úvodnej obrazovke. Čítanie sa spúšťa raz — keby sa
+    obrazovka prekreslila, doklad by sa načítaval znova a človek by videl
+    „Čítam doklad…" dokola.
+  */
+  const spustene = useRef(false);
+  useEffect(() => {
+    if (!hotovyQr || spustene.current) return;
+    spustene.current = true;
+    void precitaj({ qr: hotovyQr });
+    // eslint-disable-next-line
+  }, [hotovyQr]);
 
   /* --- Bloček: najprv QR, potom sa pýtame na úhradu a fotku --- */
   async function precitajQr(raw: string) {
@@ -1343,7 +1519,15 @@ function ZachytDokladu({
     try {
       const priloha = foto ? await nahrajPrilohu(firma.id, foto) : null;
       if (foto && !priloha) toast.error("Prílohu sa nepodarilo nahrať, doklad uložím bez nej.");
-      await uloz({ data: dokladNaZaznam(firma.id, vysledok, uhrada, priloha) as any });
+      await uloz({
+        data: dokladNaZaznam(
+          firma.id,
+          vysledok,
+          uhrada,
+          priloha,
+          prednastavene?.kategoria ?? null,
+        ) as any,
+      });
       toast.success("Doklad uložený");
       onUlozene();
     } catch (e: any) {

@@ -59,6 +59,8 @@ export function dokladNaZaznam(
   r: BlocekVysledok,
   uhrada: "hotovost" | "karta" | "prevod",
   priloha: { path: string; mime: string; size: number } | null,
+  /** Kategória nákladu vybraná pri skenovaní. Prázdna znamená nezaradené. */
+  kategoria?: string | null,
 ) {
   const spolu = r.total ?? null;
   const dph = r.vat_amount ?? null;
@@ -79,6 +81,7 @@ export function dokladNaZaznam(
     vat_rate: r.vat_rate ?? null,
     currency: r.currency ?? "EUR",
     payment_method: uhrada,
+    category: kategoria?.trim() ? kategoria.trim() : null,
     file_path: priloha?.path ?? null,
     file_mime: priloha?.mime ?? null,
     file_size: priloha?.size ?? null,
