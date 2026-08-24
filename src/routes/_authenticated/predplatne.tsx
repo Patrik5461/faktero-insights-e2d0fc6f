@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
+  BookOpen,
   Check,
   CreditCard,
   Crown,
@@ -293,7 +294,20 @@ function PredplatnePage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Predplatné</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight">Predplatné</h1>
+          {/* Vlastná hlavička znamená, že odkaz na manuál, ktorý `PageHeader`
+              pridáva sám, tu chýbal — hoci mapovanie ho sľubuje. */}
+          <a
+            href="/pomoc/predplatne"
+            target="_blank"
+            rel="noreferrer"
+            title="Otvoriť manuál v novom okne"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+          >
+            <BookOpen className="h-3 w-3" /> Manuál
+          </a>
+        </div>
         <p className="text-sm text-muted-foreground">Spravujte plán a fakturáciu vašej firmy.</p>
       </header>
 

@@ -318,9 +318,9 @@ function Dashboard() {
         action={
           <div className="flex flex-wrap gap-2">
             <QuickAction to="/faktury/nova" icon={Plus} label="Nová faktúra" primary />
-            <QuickAction to="/odberatelia" icon={Users} label="Nový odberateľ" />
+            <QuickAction to="/odberatelia" search={{ new: "1" }} icon={Users} label="Nový odberateľ" />
             <QuickAction to="/ponuky/nova" icon={FilePlus2} label="Nová ponuka" />
-            <QuickAction to="/faktury" icon={Repeat} label="Opakovaná faktúra" />
+            <QuickAction to="/opakovane/nova" icon={Repeat} label="Opakovaná faktúra" />
           </div>
         }
       />
@@ -814,11 +814,15 @@ function Dashboard() {
 
 function QuickAction({
   to,
+  search,
   icon: Icon,
   label,
   primary,
 }: {
   to: string;
+  /* Bez parametrov otvorí „Nový odberateľ" iba zoznam odberateľov — formulár
+     sa otvára až na `?new=1`, rovnako ako z menu. */
+  search?: Record<string, string>;
   icon: any;
   label: string;
   primary?: boolean;
@@ -826,6 +830,7 @@ function QuickAction({
   return (
     <Link
       to={to}
+      search={search as any}
       className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition ${
         primary
           ? "bg-primary text-primary-foreground hover:opacity-90"
@@ -920,6 +925,7 @@ function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
         meta={
           <Link
             to="/faktury"
+            search={{ neuhradene: true } as any}
             className="inline-flex items-center gap-1 text-primary hover:underline"
           >
             Zobraziť pohľadávky <ArrowUpRight className="h-3 w-3" />

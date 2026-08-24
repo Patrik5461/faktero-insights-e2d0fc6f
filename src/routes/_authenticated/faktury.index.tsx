@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { jeZapnute } from "@/lib/faktero/search-parametre";
+import { jeOtvorena } from "@/lib/faktero/faktury-sumy";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
 import {
@@ -67,6 +68,12 @@ type InvoiceSearch = {
   type?: "credit";
   status?: "draft" | "issued";
   poSplatnosti?: true;
+  /**
+   * Neuhradené — teda pohľadávky. Nie je to stav v databáze: faktúra môže byť
+   * `issued` aj `sent` a obe sú neuhradené, kým nemajú úhradu. Preto vlastný
+   * parameter a nie `status`.
+   */
+  neuhradene?: true;
   q?: string;
 };
 
@@ -100,13 +107,14 @@ export const Route = createFileRoute("/_authenticated/faktury/")({
     // číslo `1`. Porovnanie s reťazcom `"1"` preto neplatilo nikdy a odkaz
     // napísaný ručne otvoril nefiltrovaný zoznam — presne to, čo tu opravujeme.
     poSplatnosti: jeZapnute(s.poSplatnosti) ? true : undefined,
+    neuhradene: jeZapnute(s.neuhradene) ? true : undefined,
     q: typeof s.q === "string" && s.q.trim() ? s.q : undefined,
   }),
   component: InvoicesPage,
 });
 
 function InvoicesPage() {
-  const { type, status, poSplatnosti, q } = Route.useSearch();
+  const { type, status, poSplatnosti, neuhradene, q } = Route.useSearch();
   // V databáze je dobropis `credit_note`; v adrese je kratšie `credit`.
   const equals = useMemo(
     () => ({
@@ -196,13 +204,16 @@ function InvoicesPage() {
   const visibleRows = useMemo(() => {
     let riadky = list.rows;
     if (poSplatnosti) riadky = riadky.filter((r: Splatnost) => jePoSplatnosti(r, today));
+    // Rovnaká definícia ako v prehľade, inak by dlaždica a zoznam ukazovali
+    // dve rôzne čísla a človek by nevedel, ktorému veriť.
+    if (neuhradene) riadky = riadky.filter((r: any) => jeOtvorena(r));
     if (overdueNoReminder) {
       riadky = riadky.filter(
         (r: Splatnost) => jePoSplatnosti(r, today) && !reminderMap[r.id as string],
       );
     }
     return riadky;
-  }, [list.rows, poSplatnosti, overdueNoReminder, reminderMap, today]);
+  }, [list.rows, poSplatnosti, neuhradene, overdueNoReminder, reminderMap, today]);
 
   async function cloneRow(invoiceId: string) {
     try {
@@ -524,6 +535,8 @@ function InvoicesPage() {
             ? "Dobropisy"
             : poSplatnosti
               ? "Faktúry po splatnosti"
+              : neuhradene
+                ? "Neuhradené faktúry"
               : status === "draft"
                 ? "Koncepty"
                 : status === "issued"
@@ -537,6 +550,8 @@ function InvoicesPage() {
               ? "Vystavené dobropisy."
               : poSplatnosti
                 ? "Vystavené a odoslané faktúry, ktorým uplynula splatnosť a nie sú uhradené."
+                : neuhradene
+                  ? "Faktúry, ktoré vám zákazníci ešte nezaplatili."
                 : status === "draft"
                   ? "Rozpracované faktúry, ktoré ešte neboli vystavené."
                   : status === "issued"
@@ -545,7 +560,7 @@ function InvoicesPage() {
         }
         action={
           <div className="flex flex-wrap gap-2">
-            {(type || status || poSplatnosti || q) && (
+            {(type || status || poSplatnosti || neuhradene || q) && (
               <Link
                 to="/faktury"
                 search={{} as any}

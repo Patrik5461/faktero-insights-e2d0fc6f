@@ -973,6 +973,9 @@ const MANUALY: { prefix: string; to: string }[] = [
   { prefix: "/api-dokumentacia", to: "/pomoc/api" },
   { prefix: "/api-playground", to: "/pomoc/api" },
   { prefix: "/webhooky", to: "/pomoc/api" },
+  // Zhoda je na presnú cestu alebo `predpona/`; `/webhooky-logy` preto pod
+  // `/webhooky` nespadá a bez vlastného riadku by ostalo bez manuálu.
+  { prefix: "/webhooky-logy", to: "/pomoc/api" },
   { prefix: "/predplatne", to: "/pomoc/predplatne" },
   { prefix: "/ai-asistent", to: "/pomoc/ai-asistent" },
 ];

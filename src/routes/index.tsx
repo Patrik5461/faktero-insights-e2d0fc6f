@@ -1464,6 +1464,9 @@ function SiteFooter() {
           {
             title: "Firma",
             links: [
+              // Návody boli dosiahnuteľné len zvnútra aplikácie a cez Google.
+              // Kto sa ešte len rozhoduje, nemal ako zistiť, že vôbec sú.
+              ["Návody a pomoc", "/pomoc"],
               ["Prihlásenie", "/prihlasenie"],
               ["Registrácia", "/registracia"],
               ["Kontakt", "/kontakt"],

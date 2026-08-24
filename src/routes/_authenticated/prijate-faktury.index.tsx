@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -70,6 +70,7 @@ function monthOptions(): { value: string; label: string }[] {
 }
 
 function PurchaseInvoicesPage() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("");
@@ -424,7 +425,18 @@ function PurchaseInvoicesPage() {
                 </tr>
               )}
               {rows.map((r) => (
-                <tr key={r.id} className="hover:bg-muted/30">
+                /*
+                  Otvárať detail vedeli len dve bunky z deviatich a robili to
+                  cez `window.location`, teda celým znovunačítaním stránky.
+                  Ťuknutie na dátum, sumu či stav neurobilo nič — a nebolo to
+                  na riadku nijako vidieť. Zvyšok aplikácie má preklikateľný
+                  celý riadok, tak nech to tu funguje rovnako.
+                */
+                <tr
+                  key={r.id}
+                  className="cursor-pointer hover:bg-muted/30"
+                  onClick={() => navigate({ to: "/prijate-faktury/$id", params: { id: r.id } })}
+                >
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
@@ -432,18 +444,8 @@ function PurchaseInvoicesPage() {
                       onChange={() => toggle(r.id)}
                     />
                   </td>
-                  <td
-                    className="p-3 font-medium cursor-pointer"
-                    onClick={() => (window.location.href = `/prijate-faktury/${r.id}`)}
-                  >
-                    {r.invoice_number}
-                  </td>
-                  <td
-                    className="p-3 cursor-pointer"
-                    onClick={() => (window.location.href = `/prijate-faktury/${r.id}`)}
-                  >
-                    {r.supplier_name}
-                  </td>
+                  <td className="p-3 font-medium">{r.invoice_number}</td>
+                  <td className="p-3">{r.supplier_name}</td>
                   <td className="p-3 tabular-nums text-muted-foreground">
                     {r.variable_symbol || "—"}
                   </td>

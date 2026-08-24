@@ -78,7 +78,6 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/pomoc/pohoda", priority: 0.6 },
           { path: "/pomoc/jazdy", priority: 0.6 },
           { path: "/pomoc/role", priority: 0.6 },
-          { path: "/pomoc/online-platby/gopay", priority: 0.5 },
           { path: "/pomoc/api", priority: 0.6 },
           { path: "/pomoc/predplatne", priority: 0.6 },
         ];

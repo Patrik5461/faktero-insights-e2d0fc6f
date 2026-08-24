@@ -90,6 +90,9 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
               <Link to="/blog" className="hover:text-foreground">
                 Blog
               </Link>
+              <Link to="/pomoc" className="hover:text-foreground">
+                Návody
+              </Link>
               <Link to="/kontakt" className="hover:text-foreground">
                 Kontakt
               </Link>
