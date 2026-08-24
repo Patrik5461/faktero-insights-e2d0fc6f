@@ -253,7 +253,13 @@ export function MobilPanel({
               icon={LayoutGrid}
               label="Prehľad agend"
               hint="Všetko, čo appka vie, na jednej obrazovke"
-              onClick={onPrehlad}
+              /* Zatvoriť treba rovnako ako pri ostatných položkách. Bez toho
+                 ostal panel otvorený nad obrazovkou, na ktorú človek práve
+                 ťukol — a vyzeralo to, že sa nestalo nič. */
+              onClick={() => {
+                onZavri();
+                onPrehlad();
+              }}
             />
           )}
 
