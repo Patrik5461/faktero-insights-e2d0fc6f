@@ -92,3 +92,40 @@ export function cakaNaCloveka(jazda: BufferedTrip): boolean {
 export function jePrikratka(jazda: BufferedTrip): boolean {
   return jazda.distanceMeters < MIN_VZDIALENOST_M;
 }
+
+/**
+ * Prečo detekcia nemôže fungovať, hoci je zapnutá.
+ *
+ * Toto je tá časť, ktorá v appke chýbala: iOS na žiadosť o polohu „Vždy" hneď
+ * po „Počas používania" spravidla nezobrazí nič a odpoveď odloží. Prepínač sa
+ * potom zapol, appka poďakovala — a detekcia nemala ako bežať, lebo významnú
+ * zmenu polohy systém na pozadí doručuje len s „Vždy". To isté platí pre
+ * zníženú presnosť: merania vtedy chodia s odchýlkou v kilometroch, všetky sa
+ * zahodia a jazda sa nepotvrdí nikdy.
+ *
+ * Vracia prvú prekážku, nie zoznam — človek aj tak vie naraz prepnúť jednu vec.
+ */
+export type ProblemPovolenia = "poloha" | "pozadie" | "presnost";
+
+export function prekazkaDetekcie(povolenia: {
+  location?: string;
+  background?: string;
+  /** Chýba v starších binárkach — vtedy sa presnosť neposudzuje. */
+  precise?: string;
+}): ProblemPovolenia | null {
+  if (povolenia.location !== "granted") return "poloha";
+  if (povolenia.background !== "granted") return "pozadie";
+  if (povolenia.precise != null && povolenia.precise !== "granted") return "presnost";
+  return null;
+}
+
+/** Čo s tým má človek spraviť. Cesta je iOS-ová, appka je zatiaľ len tam. */
+export const TEXT_PREKAZKY: Record<ProblemPovolenia, string> = {
+  poloha: "Poloha je zakázaná — bez nej detekcia nefunguje. Nastavenia → Faktero → Poloha.",
+  pozadie:
+    "Poloha je povolená len „Počas používania“. So zamknutým telefónom sa nemeria nič — " +
+    "prepnite ju v Nastavenia → Faktero → Poloha na „Vždy“.",
+  presnost:
+    "Presná poloha je vypnutá. Merania sú vtedy mimo o stovky metrov a jazda sa nerozpozná — " +
+    "zapnite ju v Nastavenia → Faktero → Poloha.",
+};

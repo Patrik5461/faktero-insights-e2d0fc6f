@@ -175,6 +175,23 @@ async function zisti(): Promise<Riadok[]> {
         zle: poloha !== "granted" || pozadie !== "granted",
       });
 
+      /*
+        Znížená presnosť je jediná príčina, ktorú nevidno nikde inde: povolenia
+        vyzerajú v poriadku, detekcia je zapnutá — a merania chodia s odchýlkou
+        v kilometroch, takže sa všetky zahodia a jazda sa nepotvrdí nikdy.
+      */
+      const presna = d.povolenia?.precise;
+      if (presna) {
+        r.push({
+          co: "presná poloha",
+          hodnota:
+            presna === "granted"
+              ? "zapnutá"
+              : "VYPNUTÁ — merania sú mimo o stovky metrov a jazda sa nerozpozná",
+          zle: presna !== "granted",
+        });
+      }
+
       r.push({
         co: "pohybové senzory",
         hodnota:

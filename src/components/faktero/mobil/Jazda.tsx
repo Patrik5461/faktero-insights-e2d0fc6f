@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Car, ChevronRight, Pause, Play, Plus } from "lucide-react";
+import { Car, ChevronRight, Pause, Play, Plus, TriangleAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import {
@@ -81,7 +81,12 @@ export function Jazda({
   const [ukladam, setUkladam] = useState(false);
   const [pridavam, setPridavam] = useState(false);
   const [historia, setHistoria] = useState<Vozidlo | null>(null);
-  const [detekcia, setDetekcia] = useState({ dostupna: false, zapnuta: false });
+  const [detekcia, setDetekcia] = useState<{
+    dostupna: boolean;
+    zapnuta: boolean;
+    /** Prečo detekcia nemôže bežať, hoci je zapnutá. */
+    prekazka?: string | null;
+  }>({ dostupna: false, zapnuta: false, prekazka: null });
   // Autá, ktorých jazdy ťahá Commander — tie telefón merať nemá, prišli by dvakrát.
   const [commander, setCommander] = useState<Set<string>>(new Set());
   const [cakajuce, setCakajuce] = useState<BufferedTrip[]>([]);
@@ -163,6 +168,22 @@ export function Jazda({
 
   useEffect(() => {
     stavDetekcie().then(setDetekcia);
+    /*
+      Povolenie sa mení v systémových nastaveniach, teda mimo appky. Bez
+      prečítania pri návrate by varovanie o chýbajúcom „Vždy" svietilo ďalej
+      aj potom, čo ho človek práve prepol — a vyzeralo by to, že to nepomohlo.
+    */
+    let odhlas: (() => void) | null = null;
+    (async () => {
+      const { Capacitor } = await import("@capacitor/core");
+      if (!Capacitor.isNativePlatform()) return;
+      const { App } = await import("@capacitor/app");
+      const h = await App.addListener("appStateChange", ({ isActive }) => {
+        if (isActive) void stavDetekcie().then(setDetekcia);
+      });
+      odhlas = () => void h.remove();
+    })();
+    return () => odhlas?.();
   }, []);
 
   useEffect(() => {
@@ -649,13 +670,33 @@ export function Jazda({
                   chce,
                   vozidla?.find((v) => v.id === vozidloId)?.name ?? null,
                 );
-                setDetekcia((s) => ({ ...s, zapnuta: r.zapnuta }));
+                setDetekcia((s) => ({ ...s, zapnuta: r.zapnuta, prekazka: r.prekazka }));
                 if (r.chyba) toast.error(r.chyba);
+                // Zapnutá detekcia bez povolenia „Vždy" nič nerozpozná. Tešiť sa
+                // z toho by znamenalo, že sa človek o chybe dozvie až tým, že
+                // po týždni nemá v knihe jázd ani jednu jazdu.
+                else if (r.prekazka) toast.warning(r.prekazka, { duration: 10000 });
                 else if (r.zapnuta) toast.success("Detekcia jázd je zapnutá");
               }}
               className="mt-0.5 h-5 w-5 shrink-0"
             />
           </label>
+        )}
+
+        {/*
+          Zapnutý prepínač ešte neznamená, že detekcia beží. Bez polohy „Vždy"
+          systém appku na pozadí nezobudí a bez presnej polohy sú merania
+          nepoužiteľné — v oboch prípadoch sa nerozpozná ani jedna jazda a
+          zvonku to vyzerá ako pokazená appka.
+        */}
+        {detekcia.dostupna && detekcia.zapnuta && detekcia.prekazka && (
+          <div className="flex items-start gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="min-w-0">
+              <div className="text-sm font-medium">Detekcia je zapnutá, ale nemá ako bežať</div>
+              <div className="mt-1 text-xs text-muted-foreground">{detekcia.prekazka}</div>
+            </div>
+          </div>
         )}
 
         <div>

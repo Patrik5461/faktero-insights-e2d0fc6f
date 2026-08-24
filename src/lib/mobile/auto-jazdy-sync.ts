@@ -9,7 +9,7 @@ import type {
 } from "@faktero/drive-detector";
 import { supabase } from "@/integrations/supabase/client";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
-import { jePrikratka, riadokZJazdy } from "./auto-jazdy";
+import { TEXT_PREKAZKY, jePrikratka, prekazkaDetekcie, riadokZJazdy } from "./auto-jazdy";
 import { vozidloPreRozpoznanuJazdu } from "./moje-vozidlo";
 
 /**
@@ -56,14 +56,26 @@ async function plugin() {
   return DriveDetector;
 }
 
-export async function stavDetekcie(): Promise<{ dostupna: boolean; zapnuta: boolean }> {
+export async function stavDetekcie(): Promise<{
+  dostupna: boolean;
+  zapnuta: boolean;
+  /** Čo detekcii bráni, hoci je zapnutá — `null`, keď je všetko v poriadku. */
+  prekazka?: string | null;
+}> {
   const p = await plugin();
-  if (!p) return { dostupna: false, zapnuta: false };
+  if (!p) return { dostupna: false, zapnuta: false, prekazka: null };
   try {
-    const stav = await p.getState();
-    return { dostupna: true, zapnuta: stav.monitoring };
+    const [stav, povolenia] = await Promise.all([p.getState(), p.checkPermissions()]);
+    // Prekážka sa hlási len pri zapnutej detekcii. Pri vypnutej je „chýba
+    // povolenie" zbytočné strašenie — nič sa o ňu ešte ani nepokúšalo.
+    const prekazka = stav.monitoring ? prekazkaDetekcie(povolenia) : null;
+    return {
+      dostupna: true,
+      zapnuta: stav.monitoring,
+      prekazka: prekazka ? TEXT_PREKAZKY[prekazka] : null,
+    };
   } catch {
-    return { dostupna: false, zapnuta: false };
+    return { dostupna: false, zapnuta: false, prekazka: null };
   }
 }
 
@@ -78,7 +90,8 @@ export async function stavDetekcie(): Promise<{ dostupna: boolean; zapnuta: bool
 export async function diagnostikaDetekcie(): Promise<{
   dostupna: boolean;
   zapnuta: boolean;
-  povolenia: { location: string; background: string; motion: string } | null;
+  /** `precise` chýba v starších binárkach — obrazovka ho vtedy vynechá. */
+  povolenia: { location: string; background: string; motion: string; precise?: string } | null;
   aktivna: boolean;
   nevybavene: number;
   dennik: DriveDetectorDiagnostics | null;
@@ -131,14 +144,14 @@ export async function diagnostikaDetekcie(): Promise<{
 export async function prepniDetekciu(
   zapnut: boolean,
   vozidlo?: string | null,
-): Promise<{ zapnuta: boolean; chyba?: string }> {
+): Promise<{ zapnuta: boolean; chyba?: string; prekazka?: string | null }> {
   const p = await plugin();
   if (!p) return { zapnuta: false, chyba: "Detekcia jázd je len v mobilnej aplikácii." };
 
   try {
     if (!zapnut) {
       await p.stop();
-      return { zapnuta: false };
+      return { zapnuta: false, prekazka: null };
     }
     await p.configure(nastavenie(vozidlo));
     const povolenie = await p.requestPermissions();
@@ -150,7 +163,15 @@ export async function prepniDetekciu(
       // Bez „vždy" beží detekcia len v popredí, čo je na knihu jázd málo.
       await p.requestBackgroundPermission();
     }
-    return { zapnuta: true };
+    /*
+      Výsledok sa musí prečítať znova a povedať nahlas. iOS žiadosť o „Vždy"
+      hneď po „Počas používania" spravidla nezobrazí a odloží ju — appka
+      dovtedy hlásila „Detekcia je zapnutá", pritom systém ju na pozadí nemal
+      ako zobudiť a nerozpoznala sa ani jedna jazda.
+    */
+    const konecne = await p.checkPermissions();
+    const prekazka = prekazkaDetekcie(konecne);
+    return { zapnuta: true, prekazka: prekazka ? TEXT_PREKAZKY[prekazka] : null };
   } catch (e: any) {
     return { zapnuta: false, chyba: e?.message ?? "Detekciu sa nepodarilo prepnúť." };
   }

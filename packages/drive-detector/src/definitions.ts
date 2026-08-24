@@ -76,6 +76,12 @@ export interface DriveDetectorPermissions {
   background: PermissionState;
   /** Pohybové senzory — len pomocné potvrdenie, detekcia beží aj bez nich. */
   motion: PermissionState;
+  /**
+   * Presná poloha (iOS „Precise Location"). Pri zníženej presnosti chodia
+   * merania s odchýlkou v kilometroch a bez rýchlosti — detekcia z nich
+   * nerozpozná nikdy nič. Chýba v starších binárkach.
+   */
+  precise?: PermissionState;
 }
 
 /**

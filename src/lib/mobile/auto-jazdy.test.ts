@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { BufferedTrip } from "@faktero/drive-detector";
-import { cakaNaCloveka, jePrikratka, miestnyDatum, riadokZJazdy } from "./auto-jazdy";
+import {
+  cakaNaCloveka,
+  jePrikratka,
+  miestnyDatum,
+  prekazkaDetekcie,
+  riadokZJazdy,
+} from "./auto-jazdy";
 import { dekoduj } from "@/lib/faktero/polyline";
 
 function jazda(zmeny: Partial<BufferedTrip> = {}): BufferedTrip {
@@ -148,5 +154,33 @@ describe("čo sa nemá ukladať", () => {
   it("jazda bez zaradenia čaká na človeka", () => {
     expect(cakaNaCloveka(jazda())).toBe(true);
     expect(cakaNaCloveka(jazda({ classification: "business" }))).toBe(false);
+  });
+});
+
+describe("prečo detekcia nebeží", () => {
+  it("povolená poloha „Vždy“ a presná poloha znamenajú, že jej nič nebráni", () => {
+    expect(
+      prekazkaDetekcie({ location: "granted", background: "granted", precise: "granted" }),
+    ).toBeNull();
+  });
+
+  it("zakázaná poloha je prvá prekážka", () => {
+    expect(prekazkaDetekcie({ location: "denied", background: "denied" })).toBe("poloha");
+  });
+
+  // Toto je ten prípad, ktorý appka celý čas hlásila ako „zapnuté“: iOS
+  // odpoveď na „Vždy“ odloží a ostane „Počas používania".
+  it("poloha len počas používania sa nepovažuje za zapnutú detekciu", () => {
+    expect(prekazkaDetekcie({ location: "granted", background: "prompt" })).toBe("pozadie");
+  });
+
+  it("znížená presnosť je prekážka aj s povolením „Vždy“", () => {
+    expect(
+      prekazkaDetekcie({ location: "granted", background: "granted", precise: "denied" }),
+    ).toBe("presnost");
+  });
+
+  it("staršia binárka bez údaja o presnosti sa neposudzuje", () => {
+    expect(prekazkaDetekcie({ location: "granted", background: "granted" })).toBeNull();
   });
 });

@@ -333,7 +333,17 @@ public final class DriveDetectorService: NSObject {
         default: pohyb = MotionActivityProvider.isAvailable ? "prompt" : "denied"
         }
 
-        return ["location": poloha, "background": pozadie, "motion": pohyb]
+        // Znížená presnosť je tichý zabijak detekcie: merania chodia s
+        // odchýlkou v kilometroch, `isUsable` ich zahodí všetky a jazda sa
+        // nepotvrdí nikdy. Zvonku sa to nedá rozoznať od vypnutej detekcie.
+        let presna = manager.accuracyAuthorization == .fullAccuracy ? "granted" : "denied"
+
+        return [
+            "location": poloha,
+            "background": pozadie,
+            "motion": pohyb,
+            "precise": presna
+        ]
     }
 
     /// Najprv „počas používania". Na „vždy" sa eskaluje až samostatným
