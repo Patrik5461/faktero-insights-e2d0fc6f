@@ -20,7 +20,7 @@ export interface DriveNotificationTexts {
 
 export interface DriveDetectorConfig {
   /** Nad touto rýchlosťou sa pohyb považuje za jazdu autom. */
-  speedThresholdKmh: number; // default 32
+  speedThresholdKmh: number; // default 15
   /** Ako dlho musí rýchlosť súvisle držať nad prahom. */
   sustainedSeconds: number; // default 60
   /** Koľko platných meraní za sebou musí prísť, kým sa jazda potvrdí. */

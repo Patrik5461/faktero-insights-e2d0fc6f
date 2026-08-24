@@ -21,6 +21,7 @@ import {
   zahodRozpoznanuJazdu,
   vozidlaSCommanderom,
   nastavVozidloVNotifikacii,
+  zosuladNastavenie,
 } from "@/lib/mobile/auto-jazdy-sync";
 import type { BufferedTrip, Classification } from "@faktero/drive-detector";
 import { trasaDoPolyline } from "@/lib/faktero/polyline";
@@ -165,6 +166,15 @@ export function Jazda({
       zrusene = true;
     };
   }, [firma.id, vozidloId]);
+
+  /*
+    Prahy detekcie si telefón pamätá od posledného zapnutia. Zmena v appke by
+    sa preto k zapnutej detekcii nedostala a v telefóne by ticho platilo staré
+    číslo — pošleme ich pri otvorení obrazovky znova.
+  */
+  useEffect(() => {
+    void zosuladNastavenie(vozidla?.find((v) => v.id === vozidloId)?.name ?? null);
+  }, [vozidla, vozidloId]);
 
   useEffect(() => {
     stavDetekcie().then(setDetekcia);

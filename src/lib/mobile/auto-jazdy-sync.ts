@@ -29,7 +29,13 @@ function nastavenie(vozidlo?: string | null) {
 }
 
 const ZAKLAD = {
-  speedThresholdKmh: 32,
+  /*
+    Prah je zámerne nízky. Pri 32 km/h sa jazda po meste nepotvrdila prakticky
+    nikdy — v kolóne, na svetlách a v obytnej zóne sa toľko nejde a minúta nad
+    prahom sa nenazbierala. Proti chodcovi a poskočeniu na parkovisku chráni
+    `sustainedSeconds` a `minConsecutiveFixes`, nie výška prahu.
+  */
+  speedThresholdKmh: 15,
   sustainedSeconds: 60,
   minConsecutiveFixes: 3,
   maxAccuracyMeters: 50,
@@ -185,6 +191,27 @@ export async function prepniDetekciu(
  * Prepíše text notifikácie, keď sa zmení auto, ktorým sa z telefónu jazdí.
  * Posiela sa celé nastavenie — plugin si prahy nepamätá zvlášť od textov.
  */
+/**
+ * Pošle bežiacej detekcii aktuálne prahy.
+ *
+ * Plugin si nastavenie pamätá vo vlastnej databáze a po reštarte ho načíta
+ * spred appky. Zmena prahu v tomto súbore by sa preto k zapnutej detekcii
+ * nedostala, kým ju človek ručne nevypne a nezapne — a nikto by nevedel, že
+ * v telefóne stále platí staré číslo. Pri vypnutej detekcii sa neposiela nič,
+ * tá si nastavenie prevezme pri zapnutí.
+ */
+export async function zosuladNastavenie(vozidlo?: string | null): Promise<void> {
+  const p = await plugin();
+  if (!p) return;
+  try {
+    const stav = await p.getState();
+    if (!stav.monitoring) return;
+    await p.configure(nastavenie(vozidlo));
+  } catch {
+    /* nastavenie prahov nie je nič, kvôli čomu by mala appka hlásiť chybu */
+  }
+}
+
 export async function nastavVozidloVNotifikacii(vozidlo: string | null): Promise<void> {
   const p = await plugin();
   if (!p) return;

@@ -113,7 +113,7 @@ public struct BufferedTrip: Equatable {
 }
 
 public struct DetectorConfig: Equatable {
-    public var speedThresholdKmh: Double = 32
+    public var speedThresholdKmh: Double = 15
     public var sustainedSeconds: Double = 60
     public var minConsecutiveFixes: Int = 3
     public var maxAccuracyMeters: Double = 50
