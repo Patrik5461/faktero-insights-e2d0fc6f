@@ -72,7 +72,7 @@ function ConnectPage() {
     <>
       <PageHeader
         title="Pripojiť banku"
-        description="Tatra banka cez Premium API, Wise cez osobný token. Obe iba na čítanie."
+        description="Tatra banka, Wise, Wallester a Revolut Business. Všetky iba na čítanie."
         action={
           <Link
             to="/bankove-ucty"
@@ -83,38 +83,57 @@ function ConnectPage() {
         }
       />
       <PageBody>
-        <div className="mx-auto max-w-2xl rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-8 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-600 text-white">
-              <Building2 className="h-6 w-6" />
+        {/* Dva a dva vedľa seba: štyri panely pod sebou pôsobili rozhádzane. */}
+        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-8 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-600 text-white">
+                <Building2 className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">
+                  Tatra banka <span className="font-normal text-muted-foreground">a ďalšie</span>
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Premium API. Cez multibanking aj účty vedené v iných bankách.
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-semibold">Tatra banka</h2>
-              <p className="text-sm text-muted-foreground">Premium API Accounts v3.2.1 (sandbox)</p>
+            <ul className="mt-6 space-y-2 text-sm text-foreground/80">
+              <li>• Načítanie zoznamu účtov a aktuálnych zostatkov</li>
+              <li>• Načítanie transakcií za posledných 90 dní</li>
+              <li>• Automatické párovanie platieb s faktúrami</li>
+              <li>• Bez platobných príkazov, iba na čítanie</li>
+            </ul>
+            {/*
+              Najčastejšia otázka na tejto obrazovke: „a čo keď mám inú banku?".
+              Z názvu panela to nikto neuhádne, tak je to napísané rovno pod ním.
+            */}
+            <div className="mt-4 rounded-xl border border-emerald-300/60 bg-white/70 p-4 text-sm">
+              <p className="font-medium">Máte inú banku?</p>
+              <p className="mt-1 text-foreground/80">
+                Ak ju máte v internetbankingu Tatra banky pripojenú cez multibanking (Slovenská
+                sporiteľňa, VÚB, ČSOB a ďalšie), natiahnu sa aj tieto účty — zostatky aj pohyby.
+                Oficiálne výpisy na stiahnutie vydá banka len pre účty vedené v TB.
+              </p>
             </div>
+            <button
+              onClick={connect}
+              disabled={busy}
+              className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              <ExternalLink className="h-4 w-4" />
+              {busy ? "Presmerovanie…" : "Pripojiť cez Tatra banku"}
+            </button>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Po pripojení vás presmerujeme späť do Faktera. Prístupové tokeny sa ukladajú bezpečne
+              na serveri a nikdy nie sú dostupné v prehliadači.
+            </p>
           </div>
-          <ul className="mt-6 space-y-2 text-sm text-foreground/80">
-            <li>• Načítanie zoznamu účtov a aktuálnych zostatkov</li>
-            <li>• Načítanie transakcií za posledných 90 dní</li>
-            <li>• Príprava na automatický párovanie platieb s faktúrami</li>
-            <li>• Bez platobných príkazov, iba na čítanie</li>
-          </ul>
-          <button
-            onClick={connect}
-            disabled={busy}
-            className="mt-6 inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-          >
-            <ExternalLink className="h-4 w-4" />
-            {busy ? "Presmerovanie…" : "Pripojiť cez Tatra banku"}
-          </button>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Po pripojení vás presmerujeme späť do Faktera. Prístupové tokeny sa ukladajú bezpečne na
-            serveri a nikdy nie sú dostupné v prehliadači.
-          </p>
+          <WisePripojenie />
+          <WallesterPripojenie />
+          <RevolutPripojenie />
         </div>
-        <WisePripojenie />
-        <WallesterPripojenie />
-        <RevolutPripojenie />
       </PageBody>
     </>
   );
@@ -180,7 +199,7 @@ function WisePripojenie() {
   }
 
   return (
-    <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-border bg-card p-8 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
       <div className="flex items-center gap-3">
         <div className="grid h-12 w-12 place-items-center rounded-xl bg-[#163300] text-white">
           <Wallet className="h-6 w-6" />
@@ -351,7 +370,7 @@ function WallesterPripojenie() {
   }
 
   return (
-    <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-border bg-card p-8 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
       <div className="flex items-center gap-3">
         <div className="grid h-12 w-12 place-items-center rounded-xl bg-[#1b1b3a] text-white">
           <CreditCard className="h-6 w-6" />
@@ -560,7 +579,7 @@ function RevolutPripojenie() {
   const navratova = stav?.redirect_uri ?? "";
 
   return (
-    <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-border bg-card p-8 shadow-sm">
+    <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
       <div className="flex items-center gap-3">
         <div className="grid h-12 w-12 place-items-center rounded-xl bg-black text-white">
           <Landmark className="h-6 w-6" />

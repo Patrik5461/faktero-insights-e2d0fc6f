@@ -44,6 +44,13 @@ const sections: HelpSection[] = [
           obnoviť, Faktero na to upozorní.
         </p>
         <p>
+          <strong>Ktoré banky.</strong> Priamo Tatra banka, ďalej Wise, Wallester a Revolut
+          Business. Ak máte účet v inej banke a v internetbankingu Tatra banky ho máte pripojený cez{" "}
+          <strong>multibanking</strong> (Slovenská sporiteľňa, VÚB, ČSOB a ďalšie), natiahne sa
+          spolu s ostatnými — zostatky aj pohyby. Oficiálne výpisy na stiahnutie ale banka vydá len
+          pre účty vedené v Tatra banke.
+        </p>
+        <p>
           Účet sa dá viesť aj <strong>bez pripojenia</strong>, len ako číslo účtu na faktúrach.
         </p>
       </>
