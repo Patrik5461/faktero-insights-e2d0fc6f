@@ -12,8 +12,9 @@
  * naše zdieľané tajomstvo nepozná — nikdy sme jej ho nemali ako odovzdať. Všetky
  * volania preto padali na 401 a nezostala po nich žiadna stopa okrem riadku v logu.
  * Odmietnutú notifikáciu teraz uložíme ako diagnostiku (`error_message` vyplnené,
- * `processed = false`), aby bolo z čoho zistiť, čím sa banka autentizuje. Stále
- * vraciame 401 a stále z obsahu nič neodvodzujeme.
+ * `processed = false`), aby bolo z čoho zistiť, čím sa banka autentizuje — z
+ * hlavičky `Authorization` si necháme **len schému** (`Basic`, `Bearer`), nikdy
+ * samotný údaj. Stále vraciame 401 a stále z obsahu nič neodvodzujeme.
  */
 
 const MAX_BODY_BYTES = 64 * 1024;
@@ -42,11 +43,38 @@ const CITLIVE_HLAVICKY = [
   "x-webhook-secret",
 ];
 
+/**
+ * Zo `Authorization` sa uloží **len schéma** — teda slovo `Basic` alebo
+ * `Bearer`, nikdy to, čo za ním nasleduje.
+ *
+ * Bez toho sa nedá zistiť, čím sa banka vlastne autentizuje: v tabuľke bolo
+ * vidieť len to, že hlavička prišla. Schéma je verejná časť hlavičky (posiela
+ * ju každý server v `WWW-Authenticate`), údaj za ňou nie — preto sa berie iba
+ * prvé slovo, a aj to len keď za ním naozaj niečo je a vyzerá ako názov
+ * schémy. Hlavička bez medzery je celá jeden údaj a nesmie sa z nej uložiť nič.
+ */
+const SCHEMA = /^[A-Za-z][A-Za-z0-9._-]{0,20}$/;
+
+export function schemaAutorizacie(hodnota: string): string | null {
+  const medzera = hodnota.indexOf(" ");
+  if (medzera <= 0) return null;
+  const slovo = hodnota.slice(0, medzera);
+  if (!SCHEMA.test(slovo)) return null;
+  // Za schémou musí byť aj samotný údaj — inak je „slovo" celá hodnota.
+  if (!hodnota.slice(medzera + 1).trim()) return null;
+  return slovo;
+}
+
 function pickHeaders(request: Request): Record<string, string> {
   const out: Record<string, string> = {};
   request.headers.forEach((value, name) => {
     const kluc = name.toLowerCase();
-    out[kluc] = CITLIVE_HLAVICKY.includes(kluc) ? "(vynechané)" : value.slice(0, 500);
+    if (!CITLIVE_HLAVICKY.includes(kluc)) {
+      out[kluc] = value.slice(0, 500);
+      return;
+    }
+    const schema = kluc.endsWith("authorization") ? schemaAutorizacie(value) : null;
+    out[kluc] = schema ? `${schema} (vynechané)` : "(vynechané)";
   });
   return out;
 }

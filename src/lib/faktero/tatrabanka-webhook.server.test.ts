@@ -19,7 +19,7 @@ vi.mock("@/integrations/supabase/client.server", () => ({
   },
 }));
 
-const { handleTatraWebhook } = await import("./tatrabanka-webhook.server");
+const { handleTatraWebhook, schemaAutorizacie } = await import("./tatrabanka-webhook.server");
 
 const CESTA = "/api/public/tatrabanka/webhook";
 const TELO = JSON.stringify({ event: "ACCOUNT_UPDATED", iban: "SK0011000000002600000000" });
@@ -73,14 +73,30 @@ describe("prijímač notifikácií Tatra banky", () => {
     expect(vlozene[0].raw_body).toBe(TELO);
   });
 
-  it("hodnoty prihlasovacích hlavičiek neukladá, len ich prítomnosť", async () => {
+  it("hodnoty prihlasovacích hlavičiek neukladá, len ich prítomnosť a schému", async () => {
     await handleTatraWebhook(
       poziadavka("?s=zle", { authorization: "Bearer velmi-tajny-token", cookie: "a=b" }),
       CESTA,
     );
-    expect(vlozene[0].headers.authorization).toBe("(vynechané)");
+    // Schéma je to jediné, čo potrebujeme vedieť — a to jediné, čo sa uloží.
+    expect(vlozene[0].headers.authorization).toBe("Bearer (vynechané)");
     expect(vlozene[0].headers.cookie).toBe("(vynechané)");
     expect(JSON.stringify(vlozene[0].headers)).not.toContain("velmi-tajny-token");
+  });
+
+  it("hlavička bez medzery je celá údaj — neuloží sa z nej nič", async () => {
+    await handleTatraWebhook(poziadavka("?s=zle", { authorization: "abc123tajne" }), CESTA);
+    expect(vlozene[0].headers.authorization).toBe("(vynechané)");
+    expect(JSON.stringify(vlozene[0].headers)).not.toContain("abc123tajne");
+  });
+
+  it("tajomstvo v hlavičke x-webhook-secret sa neukladá nikdy", async () => {
+    await handleTatraWebhook(
+      poziadavka("", { "x-webhook-secret": "Basic nie-je-to-schema" }),
+      CESTA,
+    );
+    expect(vlozene[0].headers["x-webhook-secret"]).toBe("(vynechané)");
+    expect(JSON.stringify(vlozene[0])).not.toContain("nie-je-to-schema");
   });
 
   it("cesta sa ukladá bez query — tajomstvo z URL sa nesmie dostať do tabuľky", async () => {
@@ -101,5 +117,24 @@ describe("prijímač notifikácií Tatra banky", () => {
     const r = await handleTatraWebhook(poziadavka(""), CESTA);
     expect(r.status).toBe(200);
     expect(vlozene).toHaveLength(0);
+  });
+});
+
+describe("schéma z hlavičky Authorization", () => {
+  it("vezme prvé slovo, keď za ním je údaj", () => {
+    expect(schemaAutorizacie("Basic dXNlcjpoZXNsbw==")).toBe("Basic");
+    expect(schemaAutorizacie("Bearer eyJhbGciOi")).toBe("Bearer");
+  });
+
+  it("nevezme nič, keď je hodnota jeden kus", () => {
+    expect(schemaAutorizacie("dXNlcjpoZXNsbw==")).toBeNull();
+    expect(schemaAutorizacie("Bearer")).toBeNull();
+    expect(schemaAutorizacie("Bearer   ")).toBeNull();
+    expect(schemaAutorizacie(" tajne")).toBeNull();
+  });
+
+  it("nevezme nič, keď prvé slovo nevyzerá ako názov schémy", () => {
+    expect(schemaAutorizacie("dXNlcjpo=ZXNsbw== a")).toBeNull();
+    expect(schemaAutorizacie("aaaaaaaaaaaaaaaaaaaaaaaaaaa tajne")).toBeNull();
   });
 });
