@@ -183,4 +183,54 @@ describe("prečo detekcia nebeží", () => {
   it("staršia binárka bez údaja o presnosti sa neposudzuje", () => {
     expect(prekazkaDetekcie({ location: "granted", background: "granted" })).toBeNull();
   });
+
+  // Rovnaká trieda príčiny ako znížená presnosť: v nastaveniach appky svieti
+  // všetko zeleno, ale systém ju pri presune vôbec nespustí.
+  it("vypnuté obnovovanie na pozadí je prekážka, hoci povolenia sedia", () => {
+    expect(
+      prekazkaDetekcie({
+        location: "granted",
+        background: "granted",
+        precise: "granted",
+        backgroundRefresh: "denied",
+      }),
+    ).toBe("obnovovanie");
+  });
+
+  it("režim nízkej spotreby sa hlási ako posledný", () => {
+    expect(
+      prekazkaDetekcie({
+        location: "granted",
+        background: "granted",
+        precise: "granted",
+        backgroundRefresh: "granted",
+        lowPower: "on",
+      }),
+    ).toBe("uspora");
+  });
+
+  it("vypnutý režim nízkej spotreby nič neblokuje", () => {
+    expect(
+      prekazkaDetekcie({
+        location: "granted",
+        background: "granted",
+        precise: "granted",
+        backgroundRefresh: "granted",
+        lowPower: "off",
+      }),
+    ).toBeNull();
+  });
+
+  // Prekážky sa hlásia po jednej a v poradí, v akom sa dajú odstrániť —
+  // poslať človeka vypínať úsporu, kým nemá povolenú polohu, nemá zmysel.
+  it("chýbajúce povolenie prebíja obnovovanie aj úsporu", () => {
+    expect(
+      prekazkaDetekcie({
+        location: "granted",
+        background: "prompt",
+        backgroundRefresh: "denied",
+        lowPower: "on",
+      }),
+    ).toBe("pozadie");
+  });
 });

@@ -97,7 +97,14 @@ export async function diagnostikaDetekcie(): Promise<{
   dostupna: boolean;
   zapnuta: boolean;
   /** `precise` chýba v starších binárkach — obrazovka ho vtedy vynechá. */
-  povolenia: { location: string; background: string; motion: string; precise?: string } | null;
+  povolenia: {
+    location: string;
+    background: string;
+    motion: string;
+    precise?: string;
+    backgroundRefresh?: string;
+    lowPower?: string;
+  } | null;
   aktivna: boolean;
   nevybavene: number;
   dennik: DriveDetectorDiagnostics | null;

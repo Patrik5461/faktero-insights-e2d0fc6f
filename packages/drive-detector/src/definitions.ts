@@ -82,6 +82,17 @@ export interface DriveDetectorPermissions {
    * nerozpozná nikdy nič. Chýba v starších binárkach.
    */
   precise?: PermissionState;
+  /**
+   * Obnovovanie obsahu na pozadí. Keď je vypnuté, systém appku pri väčšom
+   * presune nezobudí a detekcia sa nemá ako spustiť — povolenia pritom
+   * vyzerajú v poriadku. Chýba v starších binárkach.
+   */
+  backgroundRefresh?: PermissionState;
+  /**
+   * Režim nízkej spotreby. Nie je to povolenie, ale prácu na pozadí obmedzuje
+   * rovnako účinne. Chýba v starších binárkach.
+   */
+  lowPower?: "on" | "off";
 }
 
 /**

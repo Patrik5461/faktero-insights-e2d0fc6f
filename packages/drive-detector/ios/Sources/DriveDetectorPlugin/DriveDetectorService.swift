@@ -338,12 +338,36 @@ public final class DriveDetectorService: NSObject {
         // nepotvrdí nikdy. Zvonku sa to nedá rozoznať od vypnutej detekcie.
         let presna = manager.accuracyAuthorization == .fullAccuracy ? "granted" : "denied"
 
+        /*
+          Obnovovanie na pozadí je druhý tichý zabijak. Keď ho má človek
+          vypnuté, systém appku pri väčšom presune vôbec nespustí — lacné
+          prebudenie nepríde, presná poloha sa nezapne a nerozpozná sa nič.
+          V nastaveniach appky pritom všetky povolenia svietia zeleno, takže
+          zvonku to vyzerá ako pokazená detekcia.
+         */
+        let obnovovanie: String
+        switch Self.backgroundRefresh() {
+        case .available: obnovovanie = "granted"
+        case .denied, .restricted: obnovovanie = "denied"
+        @unknown default: obnovovanie = "prompt"
+        }
+
         return [
             "location": poloha,
             "background": pozadie,
             "motion": pohyb,
-            "precise": presna
+            "precise": presna,
+            "backgroundRefresh": obnovovanie,
+            // Nie je to povolenie, ale prácu na pozadí obmedzuje rovnako.
+            "lowPower": ProcessInfo.processInfo.isLowPowerModeEnabled ? "on" : "off"
         ]
+    }
+
+    /// `UIApplication` sa smie čítať len z hlavného vlákna a metódy pluginu
+    /// bežia na vlastnom fronte — bez tohto by to bolo tiché porušenie UIKitu.
+    private static func backgroundRefresh() -> UIBackgroundRefreshStatus {
+        if Thread.isMainThread { return UIApplication.shared.backgroundRefreshStatus }
+        return DispatchQueue.main.sync { UIApplication.shared.backgroundRefreshStatus }
     }
 
     /// Najprv „počas používania". Na „vždy" sa eskaluje až samostatným

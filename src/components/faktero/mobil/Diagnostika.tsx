@@ -192,6 +192,33 @@ async function zisti(): Promise<Riadok[]> {
         });
       }
 
+      /*
+        Obnovovanie na pozadí je tá istá trieda príčiny ako znížená presnosť:
+        povolenia svietia zeleno, detekcia je zapnutá — a systém appku pri
+        presune nespustí, takže sa nezačne ani overovať.
+      */
+      const obnovovanie = d.povolenia?.backgroundRefresh;
+      if (obnovovanie) {
+        r.push({
+          co: "obnovovanie na pozadí",
+          hodnota:
+            obnovovanie === "granted"
+              ? "zapnuté"
+              : "VYPNUTÉ — systém appku pri presune nezobudí a jazda sa nezačne nahrávať",
+          zle: obnovovanie !== "granted",
+        });
+      }
+
+      const uspora = d.povolenia?.lowPower;
+      if (uspora) {
+        r.push({
+          co: "režim nízkej spotreby",
+          hodnota:
+            uspora === "on" ? "ZAPNUTÝ — obmedzuje prácu na pozadí" : "vypnutý",
+          zle: uspora === "on",
+        });
+      }
+
       r.push({
         co: "pohybové senzory",
         hodnota:

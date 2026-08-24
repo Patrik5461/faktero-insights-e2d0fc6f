@@ -105,17 +105,24 @@ export function jePrikratka(jazda: BufferedTrip): boolean {
  *
  * Vracia prvú prekážku, nie zoznam — človek aj tak vie naraz prepnúť jednu vec.
  */
-export type ProblemPovolenia = "poloha" | "pozadie" | "presnost";
+export type ProblemPovolenia = "poloha" | "pozadie" | "presnost" | "obnovovanie" | "uspora";
 
 export function prekazkaDetekcie(povolenia: {
   location?: string;
   background?: string;
   /** Chýba v starších binárkach — vtedy sa presnosť neposudzuje. */
   precise?: string;
+  /** Obnovovanie na pozadí. Chýba v starších binárkach. */
+  backgroundRefresh?: string;
+  /** Režim nízkej spotreby. Nie je to povolenie, ale bráni rovnako. */
+  lowPower?: string;
 }): ProblemPovolenia | null {
   if (povolenia.location !== "granted") return "poloha";
   if (povolenia.background !== "granted") return "pozadie";
   if (povolenia.precise != null && povolenia.precise !== "granted") return "presnost";
+  if (povolenia.backgroundRefresh != null && povolenia.backgroundRefresh !== "granted")
+    return "obnovovanie";
+  if (povolenia.lowPower === "on") return "uspora";
   return null;
 }
 
@@ -128,4 +135,10 @@ export const TEXT_PREKAZKY: Record<ProblemPovolenia, string> = {
   presnost:
     "Presná poloha je vypnutá. Merania sú vtedy mimo o stovky metrov a jazda sa nerozpozná — " +
     "zapnite ju v Nastavenia → Faktero → Poloha.",
+  obnovovanie:
+    "Obnovovanie na pozadí je vypnuté. Systém vtedy appku pri presune nezobudí a jazda sa " +
+    "nezačne nahrávať — zapnite ho v Nastavenia → Faktero → Obnovovanie obsahu na pozadí.",
+  uspora:
+    "Zapnutý je Režim nízkej spotreby. Ten prácu na pozadí obmedzuje a jazda sa nemusí " +
+    "zaznamenať — na cestu ho vypnite v Nastavenia → Batéria.",
 };
