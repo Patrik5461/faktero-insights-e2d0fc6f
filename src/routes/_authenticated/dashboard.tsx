@@ -2,7 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { jeOtvorena, jePoSplatnosti, sucetDokladov } from "@/lib/faktero/faktury-sumy";
+import {
+  jeOtvorena,
+  jePoSplatnosti,
+  jeZapocitatelny,
+  sucetDokladov,
+  znamienkoDokladu,
+} from "@/lib/faktero/faktury-sumy";
 import { FAKTURY, ODBERATELIA, sPoctom } from "@/lib/faktero/mnozne";
 import { useServerFn } from "@tanstack/react-start";
 import { getRecurringWidgetStats } from "@/lib/faktero/recurring.functions";
@@ -318,7 +324,12 @@ function Dashboard() {
         action={
           <div className="flex flex-wrap gap-2">
             <QuickAction to="/faktury/nova" icon={Plus} label="Nová faktúra" primary />
-            <QuickAction to="/odberatelia" search={{ new: "1" }} icon={Users} label="Nový odberateľ" />
+            <QuickAction
+              to="/odberatelia"
+              search={{ new: "1" }}
+              icon={Users}
+              label="Nový odberateľ"
+            />
             <QuickAction to="/ponuky/nova" icon={FilePlus2} label="Nová ponuka" />
             <QuickAction to="/opakovane/nova" icon={Repeat} label="Opakovaná faktúra" />
           </div>
@@ -1122,23 +1133,31 @@ function computeMetrics(invoices: any[], payments: any[], customers: any[]) {
   };
 }
 
+/*
+  Graf počítal po svojom a v troch veciach inak než dlaždice nad ním:
+  zálohovú faktúru pripočítal k výnosom (to isté plnenie druhýkrát), dobropis
+  tiež pripočítal namiesto odpočtu, a červená čiara „Po splatnosti" vychádzala
+  zo stavu `overdue`, ktorý do databázy nikto nezapisuje — bola teda vždy na
+  nule aj pri kope nezaplatených faktúr. Pravidlá sú v `faktury-sumy`.
+*/
 function buildRevenueChart(invoices: any[]) {
   const buckets: Record<string, { month: string; issued: number; paid: number; overdue: number }> =
     {};
   const now = new Date();
+  const dnesISO = now.toISOString().slice(0, 10);
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const k = monthKey(d);
     buckets[k] = { month: monthLabel(k), issued: 0, paid: 0, overdue: 0 };
   }
   invoices.forEach((inv) => {
+    if (!jeZapocitatelny(inv)) return;
     const k = monthKey(new Date(inv.issue_date));
     if (!buckets[k]) return;
-    const total = Number(inv.total ?? 0);
-    if (inv.status === "cancelled") return;
+    const total = znamienkoDokladu(inv.type) * Number(inv.total ?? 0);
     buckets[k].issued += total;
-    if (inv.status === "paid") buckets[k].paid += total;
-    if (inv.status === "overdue") buckets[k].overdue += total;
+    if (inv.status === "paid" || inv.paid_at) buckets[k].paid += total;
+    if (jePoSplatnosti(inv, dnesISO)) buckets[k].overdue += Number(inv.total ?? 0);
   });
   return Object.values(buckets);
 }
@@ -1152,8 +1171,12 @@ function buildStatusDistribution(invoices: any[]) {
     overdue: 0,
     cancelled: 0,
   };
+  const dnesISO = new Date().toISOString().slice(0, 10);
   invoices.forEach((i) => {
-    counts[i.status] = (counts[i.status] ?? 0) + 1;
+    // `overdue` je stav, ktorý nikto nezapisuje — bez tohto ostal výsek grafu
+    // navždy prázdny. Po splatnosti sa počíta z dátumu.
+    const kluc = jePoSplatnosti(i, dnesISO) ? "overdue" : i.status;
+    counts[kluc] = (counts[kluc] ?? 0) + 1;
   });
   return Object.entries(counts).map(([k, v]) => ({
     name: STATUS_LABEL[k] ?? k,
@@ -1164,12 +1187,12 @@ function buildStatusDistribution(invoices: any[]) {
 
 function buildTopDebtors(invoices: any[]) {
   const map = new Map<string, number>();
-  invoices
-    .filter((i) => ["issued", "sent", "overdue"].includes(i.status))
-    .forEach((i) => {
-      const name = i.customer_name || "Neznámy";
-      map.set(name, (map.get(name) ?? 0) + Number(i.total ?? 0));
-    });
+  // Podľa stavu sa to filtrovať nedá: zálohová faktúra býva tiež „sent" a
+  // zaplatená faktúra so `paid_at` môže stav ešte niesť starý.
+  invoices.filter(jeOtvorena).forEach((i) => {
+    const name = i.customer_name || "Neznámy";
+    map.set(name, (map.get(name) ?? 0) + Number(i.total ?? 0));
+  });
   return [...map.entries()]
     .map(([name, amount]) => ({ name, amount }))
     .sort((a, b) => b.amount - a.amount)
@@ -1286,10 +1309,9 @@ function computeApiStats(logs: any[]) {
 type AgingBucket = { key: string; label: string; count: number; amount: number; tone: string };
 
 function buildAging(rows: any[], kind: "receivable" | "payable"): AgingBucket[] {
-  const openStatuses =
-    kind === "receivable"
-      ? new Set(["issued", "sent", "overdue"])
-      : new Set(["received", "booked"]);
+  // Pohľadávky si stav neriešia, tie idú cez `jeOtvorena`; toto je len pre
+  // prijaté faktúry, kde vlastné pravidlo nemáme.
+  const openStatuses = new Set(["received", "booked"]);
   const amountField = kind === "receivable" ? "total" : "amount_total";
 
   const today = new Date();
@@ -1327,9 +1349,9 @@ function buildAging(rows: any[], kind: "receivable" | "payable"): AgingBucket[] 
   ];
 
   rows.forEach((r) => {
-    if (!openStatuses.has(r.status)) return;
-    // Zálohová faktúra ani dobropis nie sú pohľadávka po splatnosti.
-    if (kind === "receivable" && (r.type === "proforma" || r.type === "credit_note")) return;
+    // Pohľadávky majú vlastné pravidlo — okrem typu dokladu pozerá aj na
+    // `paid_at`, ktorý stav nemusí stíhať.
+    if (kind === "receivable" ? !jeOtvorena(r) : !openStatuses.has(r.status)) return;
     if (!r.due_date) return;
     const due = new Date(r.due_date);
     due.setHours(0, 0, 0, 0);
@@ -1371,7 +1393,6 @@ type ForecastRow = {
 function buildCashflowForecast(invoices: any[], purchases: any[]): ForecastRow[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const openInv = new Set(["issued", "sent", "overdue"]);
   const openPur = new Set(["received", "booked"]);
   const rows: ForecastRow[] = [];
   for (let w = 0; w < 4; w++) {
@@ -1382,8 +1403,10 @@ function buildCashflowForecast(invoices: any[], purchases: any[]): ForecastRow[]
       const x = new Date(d).getTime();
       return x >= start.getTime() && x < end.getTime();
     };
+    // Zálohová faktúra do očakávaných príjmov nepatrí — plnenie príde až
+    // s ostrou faktúrou a inak by sa tá istá suma čakala dvakrát.
     const income = invoices
-      .filter((i) => openInv.has(i.status) && inRange(i.due_date))
+      .filter((i) => jeOtvorena(i) && inRange(i.due_date))
       .reduce((a, i) => a + Number(i.total ?? 0), 0);
     const expense = purchases
       .filter((p) => openPur.has(p.status) && inRange(p.due_date))

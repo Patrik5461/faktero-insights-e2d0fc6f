@@ -49,6 +49,12 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [nacitavam, setNacitavam] = useState(Boolean(id));
+  /*
+    Doklad, ktorý sa nenačítal. Bez tohto sa vykreslil prázdny formulár
+    „Úprava prijatej faktúry" — chybová bublina zmizla, na obrazovke ostalo
+    18 prázdnych polí a nič nenaznačovalo, že sa upravuje neexistujúci doklad.
+  */
+  const [nenajdene, setNenajdene] = useState(false);
   /** Príloha, ktorá je na faktúre už uložená — nová ju nahradí. */
   const [prilohaCesta, setPrilohaCesta] = useState<string | null>(null);
 
@@ -68,6 +74,7 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
       if (zrusene) return;
       if (error || !data) {
         toast.error("Prijatú faktúru sa nepodarilo načítať.");
+        setNenajdene(true);
         setNacitavam(false);
         return;
       }
@@ -202,6 +209,22 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
       <PageBody>
         <div className="text-sm text-muted-foreground">Načítavam…</div>
       </PageBody>
+    );
+  }
+
+  if (nenajdene) {
+    return (
+      <>
+        <PageHeader title="Prijatá faktúra sa nenašla" />
+        <PageBody>
+          <div className="rounded-md border border-border p-6 text-sm text-muted-foreground">
+            Doklad neexistuje alebo patrí inej firme.{" "}
+            <Link to="/prijate-faktury" className="text-primary hover:underline">
+              Späť na prijaté faktúry
+            </Link>
+          </div>
+        </PageBody>
+      </>
     );
   }
 

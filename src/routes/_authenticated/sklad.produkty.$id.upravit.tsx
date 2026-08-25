@@ -36,6 +36,12 @@ function EditStockProduct() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+    Karta, ktorá sa nenačítala. Predtým sa vykreslil celý prázdny formulár
+    s červeným pásikom navrchu — vyzeralo to ako karta bez vyplnených údajov,
+    nie ako neexistujúci produkt.
+  */
+  const [nenajdene, setNenajdene] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -79,6 +85,7 @@ function EditStockProduct() {
         setSuppliers(sups ?? []);
         const p = detail.product;
         const si = detail.stockItem;
+        if (!p && !si) setNenajdene(true);
         setPhotoPreview(detail.photoSignedUrl ?? null);
         setForm({
           name: p?.name ?? "",
@@ -101,7 +108,10 @@ function EditStockProduct() {
           active: p?.active ?? true,
         });
       })
-      .catch((e) => setError(e?.message ?? "Chyba načítania"))
+      .catch((e) => {
+        setError(e?.message ?? "Chyba načítania");
+        setNenajdene(true);
+      })
       .finally(() => setLoading(false));
   }, [cid, id, fetchDetail, fetchCategories, fetchSuppliers]);
 
@@ -178,6 +188,17 @@ function EditStockProduct() {
     return (
       <PageBody>
         <div className="text-sm text-muted-foreground">Načítavam…</div>
+      </PageBody>
+    );
+  if (nenajdene)
+    return (
+      <PageBody>
+        <div className="rounded-md border border-border p-6 text-sm text-muted-foreground">
+          Skladová karta sa nenašla. Možno bola zmazaná alebo patrí inej firme.{" "}
+          <Link to="/sklad/produkty" className="text-primary hover:underline">
+            Späť na produkty
+          </Link>
+        </div>
       </PageBody>
     );
   if (!canManage)

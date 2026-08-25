@@ -40,6 +40,7 @@ function TransferDetailPage() {
       setData(res);
     } catch (e: any) {
       toast.error(e?.message ?? "Nepodarilo sa načítať presun.");
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -49,12 +50,32 @@ function TransferDetailPage() {
     load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */
   }, [id]);
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <>
         <PageHeader title="Detail presunu" />
         <PageBody>
           <div className="rounded-md border p-6 text-sm text-muted-foreground">Načítavam…</div>
+        </PageBody>
+      </>
+    );
+  }
+  /*
+    Načítanie a nenájdený presun sa musia rozlíšiť. Kým to bola jedna vetva,
+    zostala na neexistujúcom presune navždy hláška „Načítavam…" — chybová
+    bublina medzitým zmizla a človek čakal na niečo, čo už neprišlo.
+  */
+  if (!data?.transfer) {
+    return (
+      <>
+        <PageHeader title="Detail presunu" />
+        <PageBody>
+          <div className="rounded-md border p-6 text-sm text-muted-foreground">
+            Presun sa nenašiel. Možno bol zrušený alebo patrí inej firme.{" "}
+            <Link to="/sklad/presuny" className="text-primary hover:underline">
+              Späť na presuny
+            </Link>
+          </div>
         </PageBody>
       </>
     );
