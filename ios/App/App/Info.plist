@@ -55,6 +55,14 @@
 	<string>Polohu potrebujeme na odmeranie kilometrov jazdy do knihy jázd.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Aby sa jazda zapísala aj vtedy, keď máte telefón vo vrecku, potrebujeme polohu aj na pozadí. Presnú polohu zapíname len počas jazdy autom.</string>
+	<!-- Bez tohto kľúča sa `requestTemporaryFullAccuracyAuthorization` ticho
+	     odmietne a appka nemá ako o presnú polohu požiadať. Kľúč `KnihaJazd`
+	     musí sedieť s tým, ktorý posiela plugin. -->
+	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
+	<dict>
+		<key>KnihaJazd</key>
+		<string>So zníženou presnosťou vieme len približnú oblasť, nie trasu. Kilometre do knihy jázd by boli mimo o stovky metrov.</string>
+	</dict>
 	<key>NSMotionUsageDescription</key>
 	<string>Pohybové senzory nám pomôžu rozoznať jazdu autom od chôdze, aby sme nezaznamenávali cesty, ktoré do knihy jázd nepatria.</string>
 	<!-- Prúžok „Nahrávam jazdu" na uzamknutej obrazovke. Bez tohto kľúča

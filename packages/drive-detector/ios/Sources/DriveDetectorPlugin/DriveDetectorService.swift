@@ -380,6 +380,26 @@ public final class DriveDetectorService: NSObject {
         manager.requestWhenInUseAuthorization()
     }
 
+    /// Kľúč z `NSLocationTemporaryUsageDescriptionDictionary`. Keď v Info.plist
+    /// chýba, iOS žiadosť ticho zahodí — nič sa neopýta a nič sa nevráti ako
+    /// chyba.
+    static let ucelPresnejPolohy = "KnihaJazd"
+
+    /// Zníženú presnosť si človek nastaví raz a appka o nej vie len z hlásenia
+    /// v diagnostike. Požiadať sa dá len dočasne — trvalé zapnutie je v
+    /// Nastaveniach a odtiaľ ho appka nevypýta.
+    func requestPrecise(completion: @escaping () -> Void) {
+        bootstrap()
+        guard manager.accuracyAuthorization == .reducedAccuracy else { return completion() }
+        guard manager.authorizationStatus == .authorizedAlways
+            || manager.authorizationStatus == .authorizedWhenInUse
+        else { return completion() }
+        manager.requestTemporaryFullAccuracyAuthorization(withPurposeKey: Self.ucelPresnejPolohy) {
+            _ in
+            DispatchQueue.main.async(execute: completion)
+        }
+    }
+
     func requestAlways(completion: @escaping () -> Void) {
         bootstrap()
         guard manager.authorizationStatus == .authorizedWhenInUse else { return completion() }

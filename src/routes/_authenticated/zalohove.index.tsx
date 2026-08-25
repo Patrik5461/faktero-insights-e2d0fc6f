@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -21,6 +21,7 @@ export const Route = createFileRoute("/_authenticated/zalohove/")({
 });
 
 function ProformaListPage() {
+  const navigate = useNavigate();
   const list = usePagedList({
     resource: "invoices",
     searchColumns: ["invoice_number", "customer_name", "customer_ico"],
@@ -125,7 +126,7 @@ function ProformaListPage() {
             const s = statusFor(i);
             return (
               <MobileListCard
-                onClick={() => (window.location.href = `/faktury/${i.id}`)}
+                onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
                 title={i.invoice_number}
                 subtitle={i.customer_name ?? "—"}
                 status={<ProformaStatus value={s} settled={settledMap[i.id]} />}
@@ -194,41 +195,28 @@ function ProformaListPage() {
                     const s = statusFor(i);
                     const link = settledMap[i.id];
                     return (
-                      <tr key={i.id} className="hover:bg-muted/30">
-                        <td
-                          className="p-3 font-medium cursor-pointer"
-                          onClick={() => (window.location.href = `/faktury/${i.id}`)}
-                        >
-                          {i.invoice_number}
-                        </td>
-                        <td
-                          className="p-3 cursor-pointer"
-                          onClick={() => (window.location.href = `/faktury/${i.id}`)}
-                        >
-                          {i.customer_name ?? "—"}
-                        </td>
-                        <td
-                          className="p-3 cursor-pointer"
-                          onClick={() => (window.location.href = `/faktury/${i.id}`)}
-                        >
-                          {i.issue_date}
-                        </td>
-                        <td
-                          className="p-3 cursor-pointer"
-                          onClick={() => (window.location.href = `/faktury/${i.id}`)}
-                        >
-                          {i.due_date}
-                        </td>
-                        <td
-                          className="p-3 text-right cursor-pointer"
-                          onClick={() => (window.location.href = `/faktury/${i.id}`)}
-                        >
+                      /*
+                        Detail otvárali jednotlivé bunky a celým znovunačítaním
+                        stránky. Stav ani odkaz na zúčtovanú faktúru na ťuknutie
+                        nereagovali. Klikateľný je po novom celý riadok cez
+                        router; bunka s odkazom a akciami si kliknutie ponechá.
+                      */
+                      <tr
+                        key={i.id}
+                        className="cursor-pointer hover:bg-muted/30"
+                        onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
+                      >
+                        <td className="p-3 font-medium">{i.invoice_number}</td>
+                        <td className="p-3">{i.customer_name ?? "—"}</td>
+                        <td className="p-3">{i.issue_date}</td>
+                        <td className="p-3">{i.due_date}</td>
+                        <td className="p-3 text-right">
                           {Number(i.total).toFixed(2)} {i.currency}
                         </td>
                         <td className="p-3">
                           <ProformaStatus value={s} settled={link} />
                         </td>
-                        <td className="p-3">
+                        <td className="p-3" onClick={(e) => e.stopPropagation()}>
                           {link ? (
                             <Link
                               to="/faktury/$id"
@@ -241,7 +229,7 @@ function ProformaListPage() {
                             <span className="text-muted-foreground">—</span>
                           )}
                         </td>
-                        <td className="p-3 text-right">
+                        <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                           {list.showDeleted ? (
                             <button
                               title="Obnoviť"

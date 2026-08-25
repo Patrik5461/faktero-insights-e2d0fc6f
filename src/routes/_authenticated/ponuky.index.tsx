@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Plus, Trash2, RotateCcw } from "lucide-react";
@@ -35,6 +35,7 @@ const STATUS_CLS: Record<string, string> = {
 };
 
 function QuotesPage() {
+  const navigate = useNavigate();
   const list = usePagedList({
     resource: "quotes",
     searchColumns: ["quote_number", "customer_name"],
@@ -159,7 +160,17 @@ function QuotesPage() {
                 </tr>
               )}
               {list.rows.map((q) => (
-                <tr key={q.id} className="hover:bg-muted/30">
+                /*
+                  Detail otvárali jednotlivé bunky a robili to cez
+                  `window.location`, teda celým znovunačítaním stránky. Stav
+                  ani akcie na ťuknutie nereagovali. Preklikateľný je po novom
+                  celý riadok a ide to cez router — rovnako ako inde.
+                */
+                <tr
+                  key={q.id}
+                  className="cursor-pointer hover:bg-muted/30"
+                  onClick={() => navigate({ to: "/ponuky/$id", params: { id: q.id } })}
+                >
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
@@ -167,34 +178,11 @@ function QuotesPage() {
                       onChange={(e) => list.toggleSelect(q.id, e.target.checked)}
                     />
                   </td>
-                  <td
-                    className="p-3 font-medium cursor-pointer"
-                    onClick={() => (window.location.href = `/ponuky/${q.id}`)}
-                  >
-                    {q.quote_number}
-                  </td>
-                  <td
-                    className="p-3 cursor-pointer"
-                    onClick={() => (window.location.href = `/ponuky/${q.id}`)}
-                  >
-                    {q.customer_name ?? "—"}
-                  </td>
-                  <td
-                    className="p-3 cursor-pointer"
-                    onClick={() => (window.location.href = `/ponuky/${q.id}`)}
-                  >
-                    {q.issue_date}
-                  </td>
-                  <td
-                    className="p-3 cursor-pointer"
-                    onClick={() => (window.location.href = `/ponuky/${q.id}`)}
-                  >
-                    {q.valid_until}
-                  </td>
-                  <td
-                    className="p-3 text-right cursor-pointer"
-                    onClick={() => (window.location.href = `/ponuky/${q.id}`)}
-                  >
+                  <td className="p-3 font-medium">{q.quote_number}</td>
+                  <td className="p-3">{q.customer_name ?? "—"}</td>
+                  <td className="p-3">{q.issue_date}</td>
+                  <td className="p-3">{q.valid_until}</td>
+                  <td className="p-3 text-right">
                     {Number(q.total).toFixed(2)} {q.currency}
                   </td>
                   <td className="p-3">
@@ -204,7 +192,7 @@ function QuotesPage() {
                       {STATUS_LABEL[q.status] ?? q.status}
                     </span>
                   </td>
-                  <td className="p-3 text-right">
+                  <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                     {list.showDeleted ? (
                       <button
                         onClick={async () => {

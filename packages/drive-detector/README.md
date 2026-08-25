@@ -104,6 +104,8 @@ nebeží a nemal by ich kto dodať.
 
 - `NSLocationWhenInUseUsageDescription`
 - `NSLocationAlwaysAndWhenInUseUsageDescription`
+- `NSLocationTemporaryUsageDescriptionDictionary` s kľúčom `KnihaJazd` — bez
+  neho `requestPrecisePermission()` nič nezobrazí a ticho sa vráti
 - `NSMotionUsageDescription`
 - `UIBackgroundModes` → `location`
 

@@ -22,7 +22,8 @@ public class DriveDetectorPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "endTrip", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "checkPermissions", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "requestPermissions", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "requestBackgroundPermission", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "requestBackgroundPermission", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "requestPrecisePermission", returnType: CAPPluginReturnPromise)
     ]
 
     private let service = DriveDetectorService.shared
@@ -168,6 +169,14 @@ public class DriveDetectorPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func requestBackgroundPermission(_ call: CAPPluginCall) {
         onMain {
             self.service.requestAlways {
+                call.resolve(self.povolenia())
+            }
+        }
+    }
+
+    @objc func requestPrecisePermission(_ call: CAPPluginCall) {
+        onMain {
+            self.service.requestPrecise {
                 call.resolve(self.povolenia())
             }
         }

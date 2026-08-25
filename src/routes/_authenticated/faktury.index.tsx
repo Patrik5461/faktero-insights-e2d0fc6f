@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { jeZapnute } from "@/lib/faktero/search-parametre";
@@ -114,6 +114,7 @@ export const Route = createFileRoute("/_authenticated/faktury/")({
 });
 
 function InvoicesPage() {
+  const navigate = useNavigate();
   const { type, status, poSplatnosti, neuhradene, q } = Route.useSearch();
   // V databáze je dobropis `credit_note`; v adrese je kratšie `credit`.
   const equals = useMemo(
@@ -219,7 +220,7 @@ function InvoicesPage() {
     try {
       const r = await cloneFn({ data: { invoiceId } });
       toast.success("Faktúra bola skopírovaná");
-      window.location.href = `/faktury/${r.id}/upravit`;
+      navigate({ to: "/faktury/$id/upravit", params: { id: r.id } });
     } catch (e: any) {
       toast.error(e?.message ?? "Klonovanie zlyhalo");
     }
@@ -537,11 +538,11 @@ function InvoicesPage() {
               ? "Faktúry po splatnosti"
               : neuhradene
                 ? "Neuhradené faktúry"
-              : status === "draft"
-                ? "Koncepty"
-                : status === "issued"
-                  ? "Vystavené faktúry"
-                  : "Faktúry"
+                : status === "draft"
+                  ? "Koncepty"
+                  : status === "issued"
+                    ? "Vystavené faktúry"
+                    : "Faktúry"
         }
         description={
           q
@@ -552,11 +553,11 @@ function InvoicesPage() {
                 ? "Vystavené a odoslané faktúry, ktorým uplynula splatnosť a nie sú uhradené."
                 : neuhradene
                   ? "Faktúry, ktoré vám zákazníci ešte nezaplatili."
-                : status === "draft"
-                  ? "Rozpracované faktúry, ktoré ešte neboli vystavené."
-                  : status === "issued"
-                    ? "Faktúry vo vystavenom stave — ešte neodoslané odberateľovi."
-                    : "Všetky vystavené faktúry, koncepty aj stornované."
+                  : status === "draft"
+                    ? "Rozpracované faktúry, ktoré ešte neboli vystavené."
+                    : status === "issued"
+                      ? "Faktúry vo vystavenom stave — ešte neodoslané odberateľovi."
+                      : "Všetky vystavené faktúry, koncepty aj stornované."
         }
         action={
           <div className="flex flex-wrap gap-2">
@@ -713,7 +714,7 @@ function InvoicesPage() {
           emptyText={list.showDeleted ? "Žiadne vymazané faktúry." : "Žiadne faktúry."}
           mobileCard={(i: any) => (
             <MobileListCard
-              onClick={() => (window.location.href = `/faktury/${i.id}`)}
+              onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
               title={
                 <span className="inline-flex items-center gap-2">
                   {i.invoice_number}
@@ -799,7 +800,16 @@ function InvoicesPage() {
                     </tr>
                   )}
                   {visibleRows.map((i) => (
-                    <tr key={i.id} className="hover:bg-muted/30">
+                    /*
+                      Detail otvárali jednotlivé bunky a robili to celým
+                      znovunačítaním stránky. Klikateľný je po novom celý
+                      riadok cez router; výber a akcie si kliknutie ponechajú.
+                    */
+                    <tr
+                      key={i.id}
+                      className="cursor-pointer hover:bg-muted/30"
+                      onClick={() => navigate({ to: "/faktury/$id", params: { id: i.id } })}
+                    >
                       <td className="p-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
@@ -807,10 +817,7 @@ function InvoicesPage() {
                           onChange={(e) => list.toggleSelect(i.id, e.target.checked)}
                         />
                       </td>
-                      <td
-                        className="p-3 font-medium cursor-pointer"
-                        onClick={() => (window.location.href = `/faktury/${i.id}`)}
-                      >
+                      <td className="p-3 font-medium">
                         <span className="inline-flex items-center gap-2">
                           {i.invoice_number}
                           {reminderMap[i.id] ? (
@@ -824,37 +831,16 @@ function InvoicesPage() {
                         </span>
                       </td>
 
-                      <td
-                        className="p-3 cursor-pointer"
-                        onClick={() => (window.location.href = `/faktury/${i.id}`)}
-                      >
-                        {i.customer_name ?? "—"}
-                      </td>
-                      <td
-                        className="p-3 cursor-pointer"
-                        onClick={() => (window.location.href = `/faktury/${i.id}`)}
-                      >
-                        {i.issue_date}
-                      </td>
-                      <td
-                        className="p-3 cursor-pointer"
-                        onClick={() => (window.location.href = `/faktury/${i.id}`)}
-                      >
-                        {i.due_date}
-                      </td>
-                      <td
-                        className="p-3 text-right cursor-pointer"
-                        onClick={() => (window.location.href = `/faktury/${i.id}`)}
-                      >
+                      <td className="p-3">{i.customer_name ?? "—"}</td>
+                      <td className="p-3">{i.issue_date}</td>
+                      <td className="p-3">{i.due_date}</td>
+                      <td className="p-3 text-right">
                         {Number(i.total).toFixed(2)} {i.currency}
                       </td>
-                      <td
-                        className="p-3 cursor-pointer"
-                        onClick={() => (window.location.href = `/faktury/${i.id}`)}
-                      >
+                      <td className="p-3">
                         <StatusBadge status={i.status} />
                       </td>
-                      <td className="p-3 text-right">
+                      <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                         {list.showDeleted ? (
                           <button
                             title="Obnoviť"

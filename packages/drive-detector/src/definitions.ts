@@ -173,6 +173,13 @@ export interface DriveDetectorPlugin {
    */
   requestPermissions(): Promise<DriveDetectorPermissions>;
   requestBackgroundPermission(): Promise<DriveDetectorPermissions>;
+  /**
+   * Dočasne pýta presnú polohu. Trvalé zapnutie je len v Nastaveniach — iOS
+   * appke povolí požiadať iba o výnimku na túto reláciu, a to len keď už má
+   * polohu povolenú a zníženú presnosť. Inak sa nespýta nič a vráti sa
+   * nezmenený stav.
+   */
+  requestPrecisePermission(): Promise<DriveDetectorPermissions>;
 
   addListener(
     eventName: "driveDetected",

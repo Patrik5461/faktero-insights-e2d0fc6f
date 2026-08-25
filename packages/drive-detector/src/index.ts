@@ -43,6 +43,8 @@ const DriveDetector: DriveDetectorPlugin = {
   requestPermissions: (): Promise<DriveDetectorPermissions> => nativny.requestPermissions(),
   requestBackgroundPermission: (): Promise<DriveDetectorPermissions> =>
     nativny.requestBackgroundPermission(),
+  requestPrecisePermission: (): Promise<DriveDetectorPermissions> =>
+    nativny.requestPrecisePermission(),
   addListener: ((
     eventName: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

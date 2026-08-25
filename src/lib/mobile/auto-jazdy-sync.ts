@@ -177,6 +177,15 @@ export async function prepniDetekciu(
       await p.requestBackgroundPermission();
     }
     /*
+      Zníženú presnosť appka dovtedy vedela iba ohlásiť v diagnostike a poslať
+      človeka do Nastavení. Požiadať o ňu smie — len dočasne, na túto reláciu —
+      a je to jediný moment, keď to dáva zmysel: detekciu práve zapol. Staršie
+      buildy presnosť nehlásia vôbec, tam sa `precise` nevyplní a nepýta sa nič.
+    */
+    if (povolenie.precise != null && povolenie.precise !== "granted") {
+      await p.requestPrecisePermission();
+    }
+    /*
       Výsledok sa musí prečítať znova a povedať nahlas. iOS žiadosť o „Vždy"
       hneď po „Počas používania" spravidla nezobrazí a odloží ju — appka
       dovtedy hlásila „Detekcia je zapnutá", pritom systém ju na pozadí nemal

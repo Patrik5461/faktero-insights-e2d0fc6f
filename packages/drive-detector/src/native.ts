@@ -28,6 +28,7 @@ export interface NativeDriveDetectorPlugin {
   checkPermissions(): Promise<DriveDetectorPermissions>;
   requestPermissions(): Promise<DriveDetectorPermissions>;
   requestBackgroundPermission(): Promise<DriveDetectorPermissions>;
+  requestPrecisePermission(): Promise<DriveDetectorPermissions>;
   // Typované prekrytie je v `DriveDetectorPlugin`; tu musí sedieť s tým, čo
   // predpisuje `WebPlugin`.
   addListener(
