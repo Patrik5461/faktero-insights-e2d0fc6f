@@ -19,7 +19,8 @@ vi.mock("@/integrations/supabase/client.server", () => ({
   },
 }));
 
-const { handleTatraWebhook, schemaAutorizacie } = await import("./tatrabanka-webhook.server");
+const { handleTatraWebhook, schemaAutorizacie, odtlacokTajomstva } =
+  await import("./tatrabanka-webhook.server");
 
 const CESTA = "/api/public/tatrabanka/webhook";
 const TELO = JSON.stringify({ event: "ACCOUNT_UPDATED", iban: "SK0011000000002600000000" });
@@ -78,15 +79,16 @@ describe("prijímač notifikácií Tatra banky", () => {
       poziadavka("?s=zle", { authorization: "Bearer velmi-tajny-token", cookie: "a=b" }),
       CESTA,
     );
-    // Schéma je to jediné, čo potrebujeme vedieť — a to jediné, čo sa uloží.
-    expect(vlozene[0].headers.authorization).toBe("Bearer (vynechané)");
-    expect(vlozene[0].headers.cookie).toBe("(vynechané)");
+    // Uloží sa schéma a popis tvaru — nikdy nič z hodnoty samotnej.
+    expect(vlozene[0].headers.authorization).toMatch(/^Bearer \(vynechané; dĺžka 17,/);
+    expect(vlozene[0].headers.cookie).toMatch(/^\(vynechané; /);
     expect(JSON.stringify(vlozene[0].headers)).not.toContain("velmi-tajny-token");
   });
 
   it("hlavička bez medzery je celá údaj — neuloží sa z nej nič", async () => {
     await handleTatraWebhook(poziadavka("?s=zle", { authorization: "abc123tajne" }), CESTA);
-    expect(vlozene[0].headers.authorization).toBe("(vynechané)");
+    // Bez medzery nie je čo brať ako schému; ostane len popis tvaru.
+    expect(vlozene[0].headers.authorization).toMatch(/^\(vynechané; dĺžka 11, bez medzery/);
     expect(JSON.stringify(vlozene[0].headers)).not.toContain("abc123tajne");
   });
 
@@ -95,7 +97,8 @@ describe("prijímač notifikácií Tatra banky", () => {
       poziadavka("", { "x-webhook-secret": "Basic nie-je-to-schema" }),
       CESTA,
     );
-    expect(vlozene[0].headers["x-webhook-secret"]).toBe("(vynechané)");
+    // Schéma sa číta len z `authorization`; tu sa popíše celá hodnota.
+    expect(vlozene[0].headers["x-webhook-secret"]).toMatch(/^\(vynechané; /);
     expect(JSON.stringify(vlozene[0])).not.toContain("nie-je-to-schema");
   });
 
@@ -136,5 +139,42 @@ describe("schéma z hlavičky Authorization", () => {
   it("nevezme nič, keď prvé slovo nevyzerá ako názov schémy", () => {
     expect(schemaAutorizacie("dXNlcjpo=ZXNsbw== a")).toBeNull();
     expect(schemaAutorizacie("aaaaaaaaaaaaaaaaaaaaaaaaaaa tajne")).toBeNull();
+  });
+});
+
+describe("odtlacokTajomstva", () => {
+  it("z hodnoty nezverejní ani znak", () => {
+    const tajomstvo = "supertajneheslo123";
+    const o = odtlacokTajomstva(tajomstvo);
+    expect(o).not.toContain("super");
+    expect(o).not.toContain("heslo");
+    expect(o).toContain("dĺžka 18");
+  });
+
+  it("rozozná Basic poslaný bez slova Basic", () => {
+    // Presne toto potrebujeme vedieť: banka posiela hodnotu bez schémy.
+    const base64 = Buffer.from("pouzivatel:heslo").toString("base64");
+    const o = odtlacokTajomstva(base64);
+    expect(o).toContain("Basic bez slova Basic");
+    expect(o).not.toContain("pouzivatel");
+  });
+
+  it("rozozná JWT", () => {
+    expect(odtlacokTajomstva("aaa.bbb.ccc")).toContain("JWT");
+  });
+
+  it("rozozná hex a UUID", () => {
+    expect(odtlacokTajomstva("a".repeat(64))).toContain("hex");
+    expect(odtlacokTajomstva("badd7a56-f225-40b9-a663-123eb4018768")).toContain("UUID");
+  });
+
+  it("popíše aj hodnotu, ktorá do žiadneho tvaru nesadne", () => {
+    const o = odtlacokTajomstva("Ab3!x@");
+    expect(o).toContain("dĺžka 6");
+    expect(o).toContain("aj iné znaky");
+  });
+
+  it("prázdnu hodnotu nevydáva za tvar", () => {
+    expect(odtlacokTajomstva("   ")).toBe("prázdne");
   });
 });

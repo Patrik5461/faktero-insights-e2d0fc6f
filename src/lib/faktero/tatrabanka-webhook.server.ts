@@ -65,6 +65,59 @@ export function schemaAutorizacie(hodnota: string): string | null {
   return slovo;
 }
 
+/**
+ * Popis tvaru tajomstva — bez tajomstva samotného.
+ *
+ * Zo záznamov bolo vidieť len to, že `Authorization` prišla, a keďže nemá tvar
+ * `Schéma Údaj`, nedala sa z nej prečítať ani schéma. Bez toho sa nedá povedať,
+ * čo vlastne overovať. Odtlačok hovorí, ako hodnota vyzerá — dĺžka a trieda
+ * znakov — a nič z nej nezverejňuje.
+ *
+ * Dĺžka sa ukladá presná zámerne: bez nej sa nerozozná 32-znakový hex od JWT
+ * a práve to potrebujeme vedieť. Sú to naše vlastné diagnostické záznamy,
+ * do ktorých sa dostane len správca.
+ */
+export function odtlacokTajomstva(hodnota: string): string {
+  const h = hodnota.trim();
+  if (!h) return "prázdne";
+  const medzery = (h.match(/ /g) ?? []).length;
+  return [`dĺžka ${h.length}`, medzery ? `medzier ${medzery}` : "bez medzery", tvarHodnoty(h)].join(
+    ", ",
+  );
+}
+
+function tvarHodnoty(h: string): string {
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(h)) return "UUID";
+  if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$/.test(h)) return "JWT";
+  if (/^[0-9a-fA-F]+$/.test(h) && h.length % 2 === 0) return "hex";
+  if (/^[A-Za-z0-9+/]+={0,2}$/.test(h) && h.length % 4 === 0) {
+    /*
+      Base64, v ktorom je po dekódovaní dvojbodka, je takmer isto `meno:heslo`
+      — teda Basic poslaný bez slova „Basic". To je odpoveď na otázku, čím sa
+      banka autentizuje, a dá sa zistiť bez toho, aby sa čokoľvek z obsahu
+      uložilo.
+    */
+    try {
+      const dekodovane = Buffer.from(h, "base64").toString("utf8");
+      const citatelne = /^[\x20-\x7e]+$/.test(dekodovane);
+      if (citatelne && dekodovane.includes(":")) {
+        return "base64 s dvojbodkou (vyzerá ako Basic bez slova Basic)";
+      }
+      if (citatelne) return "base64 (čitateľný text)";
+    } catch {
+      /* nedekódovateľné je stále base64-tvar, viac vedieť netreba */
+    }
+    return "base64";
+  }
+  const triedy = [
+    /[a-z]/.test(h) && "malé",
+    /[A-Z]/.test(h) && "veľké",
+    /[0-9]/.test(h) && "číslice",
+    /[^A-Za-z0-9]/.test(h) && "aj iné znaky",
+  ].filter(Boolean);
+  return triedy.length ? triedy.join("+") : "neznámy tvar";
+}
+
 function pickHeaders(request: Request): Record<string, string> {
   const out: Record<string, string> = {};
   request.headers.forEach((value, name) => {
@@ -74,7 +127,10 @@ function pickHeaders(request: Request): Record<string, string> {
       return;
     }
     const schema = kluc.endsWith("authorization") ? schemaAutorizacie(value) : null;
-    out[kluc] = schema ? `${schema} (vynechané)` : "(vynechané)";
+    // Keď schéma je, odtlačok sa robí z toho, čo za ňou nasleduje — inak
+    // z celej hodnoty, lebo celá je vtedy jeden údaj.
+    const zvysok = schema ? value.slice(schema.length + 1) : value;
+    out[kluc] = `${schema ? `${schema} ` : ""}(vynechané; ${odtlacokTajomstva(zvysok)})`;
   });
   return out;
 }
