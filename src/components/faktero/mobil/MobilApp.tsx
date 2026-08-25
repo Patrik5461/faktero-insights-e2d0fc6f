@@ -276,7 +276,33 @@ function ObsahApky() {
     // Keď overenie nestihlo odpovedať, ešte sa pozrieme, či relácia v telefóne
     // je — inak by sme prihláseného človeka posielali prihlásiť sa znova pri
     // každom pomalom štarte.
-    const relacia = data.session ?? nacitajUlozenuRelaciu();
+    let relacia = data.session ?? nacitajUlozenuRelaciu();
+
+    /*
+      Ani jedno z toho vyššie nečíta Keychain priamo — obe siahajú do pamäte,
+      ktorú napĺňa `pripravUlozisko()`. Tá sa pri štarte púšťa s trojsekundovým
+      stropom, aby zaseknuté úložisko nenechalo appku pod logom; keď sa doň
+      nestihne načítať (studený štart, telefón po reštarte, pomalý Keychain),
+      je pamäť prázdna a **platná relácia vyzerá ako žiadna**. Presne tak sa
+      appka „sama odhlasovala": server ju neodhlásil, len sme sa jej spýtali
+      skôr, než mala odkiaľ odpovedať.
+
+      Preto sa pred vyhlásením „nie je prihlásený" počká, kým sa úložisko
+      dočíta, a otázka sa položí znova.
+    */
+    if (!relacia) {
+      setFaza("úložisko");
+      const { pripravUlozisko } = await import("@/lib/mobile/trvale-ulozisko");
+      await Promise.race([
+        pripravUlozisko().catch(() => {}),
+        new Promise((res) => setTimeout(res, 7000)),
+      ]);
+      const { data: znova } = (await supabase.auth
+        .getSession()
+        .catch(() => ({ data: { session: null } }))) as { data: { session: any } };
+      relacia = znova.session ?? nacitajUlozenuRelaciu();
+    }
+
     if (!relacia) {
       setKrok("prihlasenie");
       return;

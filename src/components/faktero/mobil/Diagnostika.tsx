@@ -213,8 +213,7 @@ async function zisti(): Promise<Riadok[]> {
       if (uspora) {
         r.push({
           co: "režim nízkej spotreby",
-          hodnota:
-            uspora === "on" ? "ZAPNUTÝ — obmedzuje prácu na pozadí" : "vypnutý",
+          hodnota: uspora === "on" ? "ZAPNUTÝ — obmedzuje prácu na pozadí" : "vypnutý",
           zle: uspora === "on",
         });
       }
@@ -319,16 +318,15 @@ async function zisti(): Promise<Riadok[]> {
 /**
  * Odošle diagnostiku na podporu.
  *
- * Dovtedy sa dala poslať len ako snímka obrazovky — čo znamená, že sa väčšinou
- * neposlala vôbec. Ide to cez ten istý kontaktný endpoint ako formulár na webe,
- * takže netreba novú tabuľku ani obrazovku v admine.
+ * Chodilo to na verejný kontaktný endpoint, ktorý **len pošle e-mail a nikam
+ * nič neuloží**. Odoslaná diagnostika tak skončila v schránke a pri hľadaní
+ * príčiny sa k nej nedalo dostať inak než preposlaním. Ide preto cez tú istú
+ * cestu ako nahlásenie chyby (`spatna-vazba`): zapíše sa do `feedback`
+ * a e-mail odíde tiež.
  */
 async function posli(riadky: Riadok[]): Promise<void> {
-  const { supabase } = await import("@/integrations/supabase/client");
-  const { data } = await supabase.auth
-    .getSession()
-    .catch(() => ({ data: { session: null } }) as any);
-  const email = data?.session?.user?.email ?? "appka@faktero.sk";
+  const { volajOperaciu } = await import("@/lib/mobile/server-most-volanie");
+  const { getActiveCompanyId } = await import("@/lib/faktero/active-company");
 
   const sprava = [
     "Diagnostika z mobilnej aplikácie:",
@@ -336,12 +334,13 @@ async function posli(riadky: Riadok[]): Promise<void> {
     ...riadky.map((r) => `${r.co}: ${r.hodnota}${r.zle ? "  <-- problém" : ""}`),
   ].join("\n");
 
-  const odpoved = await fetch("https://www.faktero.sk/api/public/kontakt", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ name: "Diagnostika z appky", email, message: sprava }),
+  await volajOperaciu("spatna-vazba", {
+    kind: "chyba",
+    message: sprava.slice(0, 4000),
+    url: "app://diagnostika",
+    user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 400) : undefined,
+    company_id: getActiveCompanyId() ?? undefined,
   });
-  if (!odpoved.ok) throw new Error(`server odpovedal ${odpoved.status}`);
 }
 
 export function Diagnostika({ onSpat }: { onSpat: () => void }) {
