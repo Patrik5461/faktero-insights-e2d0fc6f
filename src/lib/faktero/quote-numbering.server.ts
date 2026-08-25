@@ -1,18 +1,17 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { dalsieCisloDokladu } from "./cislovanie";
+import { nacitajPouziteCisla } from "./cislovanie-nacitanie";
 
 export async function nextQuoteNumber(company_id: string): Promise<string> {
   const prefix = `Q${new Date().getFullYear()}`;
-  const { data: rows } = await supabaseAdmin
-    .from("quotes")
-    .select("quote_number")
-    .eq("company_id", company_id)
-    .like("quote_number", `${prefix}%`)
-    .limit(5000);
-  return dalsieCisloDokladu(
+  const rows = await nacitajPouziteCisla(
+    supabaseAdmin,
+    "quotes",
+    "quote_number",
+    company_id,
     prefix,
-    (rows ?? []).map((r) => r.quote_number),
   );
+  return dalsieCisloDokladu(prefix, rows);
 }
 
 export function computeQuoteTotals(

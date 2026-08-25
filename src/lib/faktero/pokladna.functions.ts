@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { dalsieCisloDokladu } from "./cislovanie";
 import { priebehPokladne, stavPokladne } from "./pokladna";
+import { nacitajPouziteCisla } from "./cislovanie-nacitanie";
 
 /**
  * Pokladňa. Všetko ide cez klienta prihláseného používateľa, takže cudziu
@@ -14,16 +15,14 @@ const CompanyScoped = z.object({ company_id: z.string().uuid() });
 /** Číslovanie PD{rok}{poradie}, rovnaký tvar ako ostatné doklady. */
 async function dalsieCislo(supabase: any, companyId: string): Promise<string> {
   const prefix = `PD${new Date().getFullYear()}`;
-  const { data: rows } = await supabase
-    .from("cash_entries")
-    .select("entry_number")
-    .eq("company_id", companyId)
-    .like("entry_number", `${prefix}%`)
-    .limit(5000);
-  return dalsieCisloDokladu(
+  const rows = await nacitajPouziteCisla(
+    supabase,
+    "cash_entries",
+    "entry_number",
+    companyId,
     prefix,
-    (rows ?? []).map((r: any) => r.entry_number),
   );
+  return dalsieCisloDokladu(prefix, rows);
 }
 
 export const getCashBook = createServerFn({ method: "POST" })

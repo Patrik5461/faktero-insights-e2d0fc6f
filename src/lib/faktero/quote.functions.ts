@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { nacitajPouziteCisla } from "./cislovanie-nacitanie";
 
 const Input = z.object({ quoteId: z.string().uuid() });
 
@@ -22,18 +23,14 @@ export const nextQuoteNumberFn = createServerFn({ method: "POST" })
     const prefix = `Q${new Date().getFullYear()}`;
     // Ide to cez klienta prihláseného používateľa, takže cudziu firmu
     // odfiltruje RLS — `supabaseAdmin` tu netreba.
-    const { data: rows } = await context.supabase
-      .from("quotes")
-      .select("quote_number")
-      .eq("company_id", data.company_id)
-      .like("quote_number", `${prefix}%`)
-      .limit(5000);
-    return {
-      quote_number: dalsieCisloDokladu(
-        prefix,
-        (rows ?? []).map((r) => r.quote_number),
-      ),
-    };
+    const rows = await nacitajPouziteCisla(
+      context.supabase,
+      "quotes",
+      "quote_number",
+      data.company_id,
+      prefix,
+    );
+    return { quote_number: dalsieCisloDokladu(prefix, rows) };
   });
 
 /**

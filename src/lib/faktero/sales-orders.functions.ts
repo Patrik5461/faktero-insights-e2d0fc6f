@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { dalsieCisloDokladu } from "./cislovanie";
+import { nacitajPouziteCisla } from "./cislovanie-nacitanie";
 import {
   centy,
   cislo,
@@ -38,16 +39,14 @@ const Polozka = z.object({
 /** Číslovanie OBJ{rok}{poradie} — rovnaký tvar ako ponuky a zákazky. */
 async function dalsieCislo(supabase: any, companyId: string, rok: number): Promise<string> {
   const prefix = `OBJ${rok}`;
-  const { data: rows } = await supabase
-    .from("sales_orders")
-    .select("order_number")
-    .eq("company_id", companyId)
-    .like("order_number", `${prefix}%`)
-    .limit(5000);
-  return dalsieCisloDokladu(
+  const rows = await nacitajPouziteCisla(
+    supabase,
+    "sales_orders",
+    "order_number",
+    companyId,
     prefix,
-    (rows ?? []).map((r: any) => r.order_number),
   );
+  return dalsieCisloDokladu(prefix, rows);
 }
 
 async function nacitajObjednavku(supabase: any, companyId: string, id: string) {

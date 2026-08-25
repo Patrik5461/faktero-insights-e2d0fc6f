@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { dalsieCisloDokladu } from "./cislovanie";
 import { vyhodnotZakazku, type Vyhodnotenie } from "./zakazky";
+import { nacitajPouziteCisla } from "./cislovanie-nacitanie";
 
 /**
  * Zákazky. Rovnako ako objednávky u dodávateľov ide všetko cez klienta viazaný
@@ -32,16 +33,8 @@ async function nacitajZakazku(supabase: any, companyId: string, id: string) {
 /** Číslovanie ZAK{rok}{poradie} — rovnaký tvar ako ponuky a objednávky. */
 async function dalsieCislo(supabase: any, companyId: string): Promise<string> {
   const prefix = `ZAK${new Date().getFullYear()}`;
-  const { data: rows } = await supabase
-    .from("jobs")
-    .select("job_number")
-    .eq("company_id", companyId)
-    .like("job_number", `${prefix}%`)
-    .limit(5000);
-  return dalsieCisloDokladu(
-    prefix,
-    (rows ?? []).map((r: any) => r.job_number),
-  );
+  const rows = await nacitajPouziteCisla(supabase, "jobs", "job_number", companyId, prefix);
+  return dalsieCisloDokladu(prefix, rows);
 }
 
 /**

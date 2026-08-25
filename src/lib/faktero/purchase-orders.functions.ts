@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { dalsieCisloDokladu } from "./cislovanie";
+import { nacitajPouziteCisla } from "./cislovanie-nacitanie";
 import {
   jeOtvorena,
   stavPodlaPrijatia,
@@ -37,18 +38,14 @@ async function nacitajObjednavku(supabase: any, companyId: string, id: string) {
 /** Číslovanie OBJ{rok}{poradie} — rovnaký tvar ako pri cenových ponukách. */
 async function dalsieCislo(supabase: any, companyId: string): Promise<string> {
   const prefix = `OBJ${new Date().getFullYear()}`;
-  // Berieme všetky čísla daného roka, nie len prvé zoradené — reťazcové
-  // poradie by pri rôzne dlhých číslach vybralo nesprávne maximum.
-  const { data: rows } = await supabase
-    .from("purchase_orders")
-    .select("order_number")
-    .eq("company_id", companyId)
-    .like("order_number", `${prefix}%`)
-    .limit(5000);
-  return dalsieCisloDokladu(
+  const rows = await nacitajPouziteCisla(
+    supabase,
+    "purchase_orders",
+    "order_number",
+    companyId,
     prefix,
-    (rows ?? []).map((r: any) => r.order_number),
   );
+  return dalsieCisloDokladu(prefix, rows);
 }
 
 export const listPurchaseOrders = createServerFn({ method: "POST" })
