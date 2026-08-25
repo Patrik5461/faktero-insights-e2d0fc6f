@@ -11,6 +11,7 @@ import { navrhniTrasu, type NavrhTrasy } from "@/lib/faktero/trasa.server";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { Map as MapIcon } from "lucide-react";
 import { PoleAdresy } from "@/components/faktero/PoleAdresy";
+import { PoleOdberatela, adresaOdberatela } from "@/components/faktero/PoleOdberatela";
 
 /**
  * Tá istá stránka zakladá aj upravuje. Kniha jázd je účtovný záznam a preklep v
@@ -50,6 +51,8 @@ function NewTripPage() {
     average_speed_kmh: "60",
     duration_min: "",
     job_id: "",
+    customer_id: "",
+    customer_name: "",
     note: "",
     classification: "business",
   });
@@ -109,6 +112,8 @@ function NewTripPage() {
           end_odometer: data.end_odometer == null ? "" : String(data.end_odometer),
           fuel_price: data.fuel_price == null ? "" : String(data.fuel_price),
           job_id: data.job_id ?? "",
+          customer_id: data.customer_id ?? "",
+          customer_name: data.customer_name ?? "",
           note: data.note ?? "",
           classification: data.classification === "private" ? "private" : "business",
           // Pri úprave sa berú uložené čísla, nie prepočet — inak by sa jazde
@@ -248,6 +253,9 @@ function NewTripPage() {
       fuel_price: form.fuel_price ? Number(form.fuel_price) : null,
       fuel_consumption: consumption,
       job_id: form.job_id || null,
+      customer_id: form.customer_id || null,
+      // Odtlačok mena, nie odkaz — odberateľa možno premenovať aj zmazať.
+      customer_name: form.customer_name || null,
       note: form.note || null,
       classification: form.classification,
       average_speed_kmh: form.average_speed_kmh ? Number(form.average_speed_kmh) : null,
@@ -493,9 +501,30 @@ function NewTripPage() {
                 {Number.isFinite(distance) ? distance.toFixed(1) : "—"} km
               </div>
             </Field>
+            {/*
+              Odberateľ a zákazka vedľa seba: „za kým" a „na čom". Zákazka to
+              nenahradí — nie každá cesta k odberateľovi patrí na zákazku, a
+              nie každá zákazka má odberateľa.
+            */}
+            <PoleOdberatela
+              value={form.customer_id}
+              napoveda={'Doplní sa aj do poľa „Kam", keď je prázdne.'}
+              onChange={(id, odberatel) =>
+                setForm((p) => ({
+                  ...p,
+                  customer_id: id,
+                  customer_name: odberatel?.name ?? "",
+                  // Vypísané „Kam" sa neprepisuje — človek ho mohol zadať
+                  // presnejšie než je adresa v kartotéke.
+                  end_location: p.end_location.trim()
+                    ? p.end_location
+                    : adresaOdberatela(odberatel),
+                }))
+              }
+            />
             <JobPicker
-              className="sm:col-span-2"
               value={form.job_id}
+              customerId={form.customer_id || null}
               onChange={(v) => setForm((p) => ({ ...p, job_id: v }))}
             />
             <label className="sm:col-span-2 block">

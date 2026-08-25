@@ -179,7 +179,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    /*
+      `suppressHydrationWarning` kvôli motívu: skript v hlavičke nastaví na
+      `<html>` triedu a `color-scheme` ešte pred hydratáciou, takže sa server
+      a prehliadač na tomto prvku nikdy nezhodnú. Je to zámer, nie nesúlad —
+      bez potlačenia by React hlásil chybu pri každom načítaní stránky.
+    */
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
         {/*

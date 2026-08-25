@@ -5962,6 +5962,8 @@ export type Database = {
           company_id: string
           created_at: string
           created_by: string | null
+          customer_id: string | null
+          customer_name: string | null
           distance_km: number
           driver_name: string | null
           duration_seconds: number | null
@@ -5993,6 +5995,8 @@ export type Database = {
           company_id: string
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
           distance_km: number
           driver_name?: string | null
           duration_seconds?: number | null
@@ -6024,6 +6028,8 @@ export type Database = {
           company_id?: string
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
           distance_km?: number
           driver_name?: string | null
           duration_seconds?: number | null

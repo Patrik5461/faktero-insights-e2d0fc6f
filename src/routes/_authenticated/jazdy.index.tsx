@@ -24,6 +24,8 @@ type Trip = {
   start_location: string | null;
   end_location: string | null;
   purpose: string | null;
+  customer_name: string | null;
+  job_id: string | null;
   distance_km: number;
   vehicle_id: string;
   note: string | null;
@@ -162,6 +164,7 @@ function TripsPage() {
                     <th className="p-3">Vodič</th>
                     <th className="p-3">Odkiaľ</th>
                     <th className="p-3">Kam</th>
+                    <th className="p-3">Za kým</th>
                     <th className="p-3 text-right">Počet km</th>
                     <th className="p-3 text-right">Priemerná rýchlosť</th>
                     <th className="p-3 text-right">Trvanie jazdy</th>
@@ -183,6 +186,11 @@ function TripsPage() {
                       <td className="p-3">{r.driver_name ?? "—"}</td>
                       <td className="p-3">{r.start_location ?? "—"}</td>
                       <td className="p-3">{r.end_location ?? "—"}</td>
+                      {/* Odberateľ je to, čo z jazdy robí služobnú cestu —
+                          v knihe jázd patrí do prehľadu, nie len do detailu. */}
+                      <td className="p-3">
+                        {r.customer_name ?? <span className="text-muted-foreground">—</span>}
+                      </td>
                       <td className="p-3 text-right tabular-nums font-medium">
                         {Number(r.distance_km).toFixed(1)}
                       </td>
