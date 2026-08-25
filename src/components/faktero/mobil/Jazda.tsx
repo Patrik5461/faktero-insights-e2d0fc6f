@@ -88,6 +88,8 @@ export function Jazda({
     /** Prečo detekcia nemôže bežať, hoci je zapnutá. */
     prekazka?: string | null;
   }>({ dostupna: false, zapnuta: false, prekazka: null });
+  /** Rozbalené vysvetlenie pod „?" pri prepínači detekcie. */
+  const [popisDetekcie, setPopisDetekcie] = useState(false);
   // Autá, ktorých jazdy ťahá Commander — tie telefón merať nemá, prišli by dvakrát.
   const [commander, setCommander] = useState<Set<string>>(new Set());
   const [cakajuce, setCakajuce] = useState<BufferedTrip[]>([]);
@@ -497,46 +499,66 @@ export function Jazda({
         )
       }
     >
-      <div className="space-y-4">
+      {/* `space-y-3` namiesto `space-y-4`: pri šiestich blokoch pod sebou to
+          na 6,1" displeji robilo celú obrazovku rolovania navyše. */}
+      <div className="space-y-3">
         {/*
           Jazda rozpoznaná detekciou beží mimo tejto obrazovky — bez pruhu by
           tu stálo „meranie zatiaľ nebeží", hoci telefón práve nahráva.
         */}
         {!bezi && !pauza && <PrebiehaJazda />}
 
-        <div className="grid place-items-center rounded-2xl border border-border/70 bg-card px-4 py-8 shadow-[var(--shadow-card)]">
-          <div className="text-[56px] font-semibold leading-none tabular-nums">
-            {km.toFixed(1)}
-            <span className="ml-2 text-[20px] font-normal text-muted-foreground">km</span>
+        {/*
+          Karta mala 56px číslo a pod ním kruh — na jednu hodnotu zabrala takmer
+          polovicu displeja a formulár pod ňou sa dal nájsť až rolovaním. Teraz
+          je to jeden riadok: hodnota vľavo, stav pod ňou, ovládanie vpravo.
+        */}
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-[var(--shadow-card)]">
+          <div className="min-w-0">
+            <div className="text-[34px] font-semibold leading-none tabular-nums">
+              {km.toFixed(1)}
+              <span className="ml-1.5 text-[15px] font-normal text-muted-foreground">km</span>
+            </div>
+            <div className="mt-1.5 text-[12px] text-muted-foreground">
+              {pauza
+                ? "pozastavené — pohyb sa nezapočítava"
+                : bezi && odkedy
+                  ? `beží ${trvanie(odkedy)}`
+                  : "meranie zatiaľ nebeží"}
+            </div>
           </div>
-          <div className="mt-2 text-[14px] text-muted-foreground">
-            {pauza
-              ? "pozastavené — pohyb sa nezapočítava"
-              : bezi && odkedy
-                ? `beží ${trvanie(odkedy)}`
-                : "meranie zatiaľ nebeží"}
-          </div>
+
           {/*
-            Kruh je tlačidlo, nie obrázok. Vyzeral ako ovládanie a ľudia naň
-            klikali — a nič sa nedialo. Teraz spustí meranie, počas jazdy ho
-            pozastaví a po pauze v ňom pokračuje; jazdu ukončí až tlačidlo dole,
-            aby sa ťuknutím vedľa nedala omylom zavrieť.
+            Kruh je ovládanie len počas jazdy — vtedy je to jediná pauza, lebo
+            tlačidlo dole už hovorí „Ukončiť a uložiť". Kým jazda nebeží, štart
+            robí spodné tlačidlo a kruh by ho len zdvojoval; ostáva z neho
+            statický znak stavu. Nesmie pritom vyzerať ako gombík: presne to tu
+            už raz bolo a ľudia naň klikali, hoci sa nič nedialo.
           */}
-          <button
-            onClick={bezi || pauza ? prepniPauzu : start}
-            aria-label={bezi ? "Pozastaviť meranie" : pauza ? "Pokračovať v meraní" : "Začať jazdu"}
-            className={`mt-4 grid h-16 w-16 place-items-center rounded-full transition active:scale-95 ${
-              bezi ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
-            }`}
-          >
-            {bezi ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
-          </button>
-          {(bezi || pauza) && (
-            <p className="mt-2 text-[12px] text-muted-foreground">
-              {bezi ? "Ťuknutím pozastavíte" : "Ťuknutím budete pokračovať"}
-            </p>
+          {bezi || pauza ? (
+            <button
+              onClick={prepniPauzu}
+              aria-label={bezi ? "Pozastaviť meranie" : "Pokračovať v meraní"}
+              className={`grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full transition active:scale-95 ${
+                bezi ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+              }`}
+            >
+              {bezi ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+            </button>
+          ) : (
+            <span
+              aria-hidden
+              className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full border border-dashed border-border/70 text-muted-foreground/50"
+            >
+              <Car className="h-5 w-5" />
+            </span>
           )}
         </div>
+        {(bezi || pauza) && (
+          <p className="text-[12px] text-muted-foreground">
+            {bezi ? "Ťuknutím na kruh pozastavíte meranie" : "Ťuknutím na kruh budete pokračovať"}
+          </p>
+        )}
 
         {cakajuce.length > 0 && (
           <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
@@ -643,54 +665,74 @@ export function Jazda({
         )}
 
         {detekcia.dostupna && (
-          <label className="flex items-start justify-between gap-3 rounded-2xl border border-border/70 bg-card p-4">
-            <span className="min-w-0">
-              <span className="block text-sm font-medium">Rozpoznávať jazdy automaticky</span>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                Appka si jazdu všimne sama a spýta sa notifikáciou, či bola služobná. Potrebuje na
-                to povolenú polohu „Vždy".
-                {vozidloId && commander.has(vozidloId) ? (
-                  <>
-                    {" "}
-                    <span className="font-medium text-foreground">
-                      Jazdy tohto auta ťahá Commander
-                    </span>
-                    , takže ich telefón merať nemusí — vyber iné auto, alebo nechaj detekciu
-                    vypnutú.
-                  </>
-                ) : vozidla && vozidla.length > 1 && vozidloId ? (
+          /*
+            Popis mal štyri riadky a rozťahoval kartu cez štvrtinu obrazovky,
+            hoci ho človek prečíta raz — pri zapínaní. Nadpis a prepínač preto
+            ostávajú v riadku a zvyšok je pod „?". Varovanie o Commanderi sa
+            neskrýva: keď platí, telefón by tú istú jazdu zapísal druhýkrát.
+          */
+          <div className="rounded-2xl border border-border/70 bg-card p-4">
+            <div className="flex items-center gap-3">
+              <label htmlFor="detekcia-jazd" className="min-w-0 flex-1 text-sm font-medium">
+                Rozpoznávať jazdy automaticky
+              </label>
+              <button
+                type="button"
+                onClick={() => setPopisDetekcie((v) => !v)}
+                aria-expanded={popisDetekcie}
+                aria-label="Ako rozpoznávanie funguje"
+                className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-border text-[12px] font-medium text-muted-foreground active:bg-secondary"
+              >
+                ?
+              </button>
+              <input
+                id="detekcia-jazd"
+                type="checkbox"
+                checked={detekcia.zapnuta}
+                disabled={bezi}
+                onChange={async (e) => {
+                  const chce = e.target.checked;
+                  const r = await prepniDetekciu(
+                    chce,
+                    vozidla?.find((v) => v.id === vozidloId)?.name ?? null,
+                  );
+                  setDetekcia((s) => ({ ...s, zapnuta: r.zapnuta, prekazka: r.prekazka }));
+                  if (r.chyba) toast.error(r.chyba);
+                  // Zapnutá detekcia bez povolenia „Vždy" nič nerozpozná. Tešiť sa
+                  // z toho by znamenalo, že sa človek o chybe dozvie až tým, že
+                  // po týždni nemá v knihe jázd ani jednu jazdu.
+                  else if (r.prekazka) toast.warning(r.prekazka, { duration: 10000 });
+                  else if (r.zapnuta) toast.success("Detekcia jázd je zapnutá");
+                }}
+                className="h-5 w-5 shrink-0"
+              />
+            </div>
+
+            <p className="mt-1 text-xs text-muted-foreground">Vyžaduje polohu „Vždy".</p>
+
+            {vozidloId && commander.has(vozidloId) && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Jazdy tohto auta ťahá Commander</span>
+                , takže ich telefón merať nemusí — vyber iné auto, alebo nechaj detekciu vypnutú.
+              </p>
+            )}
+
+            {popisDetekcie && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Appka si jazdu všimne sama a spýta sa notifikáciou, či bola služobná.
+                {vozidla && vozidla.length > 1 && vozidloId ? (
                   <>
                     {" "}
                     Ukladá sa na{" "}
                     <span className="font-medium text-foreground">
                       {vozidla.find((v) => v.id === vozidloId)?.name}
                     </span>{" "}
-                    — zmeníš výberom vozidla vyššie.
+                    — zmeníš výberom vozidla nižšie.
                   </>
                 ) : null}
-              </span>
-            </span>
-            <input
-              type="checkbox"
-              checked={detekcia.zapnuta}
-              disabled={bezi}
-              onChange={async (e) => {
-                const chce = e.target.checked;
-                const r = await prepniDetekciu(
-                  chce,
-                  vozidla?.find((v) => v.id === vozidloId)?.name ?? null,
-                );
-                setDetekcia((s) => ({ ...s, zapnuta: r.zapnuta, prekazka: r.prekazka }));
-                if (r.chyba) toast.error(r.chyba);
-                // Zapnutá detekcia bez povolenia „Vždy" nič nerozpozná. Tešiť sa
-                // z toho by znamenalo, že sa človek o chybe dozvie až tým, že
-                // po týždni nemá v knihe jázd ani jednu jazdu.
-                else if (r.prekazka) toast.warning(r.prekazka, { duration: 10000 });
-                else if (r.zapnuta) toast.success("Detekcia jázd je zapnutá");
-              }}
-              className="mt-0.5 h-5 w-5 shrink-0"
-            />
-          </label>
+              </p>
+            )}
+          </div>
         )}
 
         {/*
@@ -710,8 +752,12 @@ export function Jazda({
         )}
 
         <div>
-          <div className="mb-2 text-sm font-medium">Vozidlo</div>
-          <div className="space-y-2">
+          {/* Rovnaký štýl ako „Účel cesty" a „Typ jazdy" — predtým bol väčší
+              a s väčším odstupom, takže sekcie pôsobili ako tri rôzne veci. */}
+          <span className="mb-1.5 block text-[13px] font-medium text-muted-foreground">
+            Vozidlo
+          </span>
+          <div className="space-y-1.5">
             {vozidla.map((v) => (
               /*
                * Dve akcie v jednom riadku: ťuknutie vyberá auto pre novú jazdu,
@@ -776,7 +822,7 @@ export function Jazda({
         </div>
 
         <label className="block">
-          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+          <span className="mb-1.5 block text-[13px] font-medium text-muted-foreground">
             Účel cesty
           </span>
           <input
@@ -792,7 +838,7 @@ export function Jazda({
             spustená sa ticho ukladala ako služobná podľa predvolenej hodnoty
             v databáze. Prepnúť sa dá aj počas jazdy — človek to často vie až cestou. */}
         <div>
-          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+          <span className="mb-1.5 block text-[13px] font-medium text-muted-foreground">
             Typ jazdy
           </span>
           <div className="grid grid-cols-2 gap-2">

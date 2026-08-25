@@ -892,7 +892,14 @@ function SoSpodnouListou({
   return (
     <div
       className="flex min-h-[100dvh] flex-col [&>*:first-child]:min-h-[calc(100dvh-var(--spodna-lista))]"
-      style={{ ["--spodna-lista" as any]: "calc(3.5rem + var(--safe-bottom))" }}
+      style={
+        {
+          "--spodna-lista": "calc(3.5rem + var(--safe-bottom))",
+          // Lišta bezpečnú zónu už drží; keby si ju pripočítala aj lepivá
+          // pätka, ostala by nad lištou prázdna medzera na výšku palca.
+          "--patka-spodok": "0px",
+        } as React.CSSProperties
+      }
     >
       {children}
       <TabBar aktivna={aktivna} onPrepni={onPrepni} />

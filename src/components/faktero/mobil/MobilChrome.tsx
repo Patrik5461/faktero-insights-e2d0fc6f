@@ -205,6 +205,28 @@ export function MobilObrazovka({
   akcia?: ReactNode;
 }) {
   const { posun, pusta } = useSwipeSpat(onBack);
+  const patka = useRef<HTMLElement>(null);
+  const [vyskaPatky, setVyskaPatky] = useState(0);
+
+  /*
+    Lepivá pätka je `position: sticky`, takže si vo flexe nerezervuje miesto a
+    prekryje koniec obsahu — na „Novej jazde" rezala sekciu „Typ jazdy" a na
+    ostatných obrazovkách poslednú položku. Výška sa preto zmeria a pripočíta
+    k odsadeniu obsahu. `ResizeObserver` kvôli tomu, že tlačidlo v pätke mení
+    počas jazdy text, a tým aj výšku.
+  */
+  useEffect(() => {
+    const el = patka.current;
+    if (!el) {
+      setVyskaPatky(0);
+      return;
+    }
+    const zmer = () => setVyskaPatky(el.offsetHeight);
+    zmer();
+    const sledovac = new ResizeObserver(zmer);
+    sledovac.observe(el);
+    return () => sledovac.disconnect();
+  }, [footer]);
 
   return (
     <div
@@ -217,22 +239,28 @@ export function MobilObrazovka({
     >
       <AppHeader title={title} subtitle={subtitle} onBack={onBack} right={akcia} />
 
-      {/* Odsadenie dole kvôli spodnej lište — bez neho ostane posledná
-          položka zoznamu schovaná za ňou. Mimo záložiek je premenná prázdna. */}
+      {/* Odsadenie dole kvôli spodnej lište a lepivej pätke — bez neho ostane
+          koniec obsahu schovaný za nimi. Mimo záložiek je premenná prázdna. */}
       <main
         className="flex-1 px-4 pt-4"
-        style={{ paddingBottom: "calc(1.5rem + var(--spodna-lista, 0px))" }}
+        style={{ paddingBottom: `calc(1rem + ${vyskaPatky}px + var(--spodna-lista, 0px))` }}
       >
         {children}
       </main>
 
       {footer && (
         <footer
-          className="sticky border-t border-border/70 bg-card/95 px-4 pt-3 backdrop-blur"
-          /* Nad spodnou lištou, nie pod ňou — inak ju hlavné tlačidlo prekryje. */
+          ref={patka}
+          className="sticky border-t border-border/70 bg-card/95 px-4 pt-2 backdrop-blur"
+          /*
+            Nad spodnou lištou, nie pod ňou — inak ju hlavné tlačidlo prekryje.
+            Keď lišta je, `--spodna-lista` už bezpečnú zónu obsahuje a pätka si
+            ju nesmie prirátať druhýkrát; obal jej preto `--patka-spodok`
+            vynuluje. Bez lišty ostáva pôvodná hodnota.
+          */
           style={{
             bottom: "var(--spodna-lista, 0px)",
-            paddingBottom: "calc(var(--safe-bottom) + 0.75rem)",
+            paddingBottom: "calc(var(--patka-spodok, var(--safe-bottom)) + 0.5rem)",
           }}
         >
           {footer}
