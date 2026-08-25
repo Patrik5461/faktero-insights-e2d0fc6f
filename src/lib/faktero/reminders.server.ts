@@ -230,6 +230,15 @@ export async function runOverdueReminders() {
     .is("paid_at", null)
     .is("deleted_at", null)
     .eq("reminders_enabled", true)
+    /*
+      Upomínať sa dá len ostrá faktúra. Dobropis je peniaz, ktorý firma dlhuje
+      zákazníkovi — výzva na zaplatenie po splatnosti by mu prišla naopak.
+      Zálohová faktúra zase v celej aplikácii nie je pohľadávka (`jeOtvorena`
+      ju vynecháva), takže ju nemá čo upomínať ani cron. `reminders_enabled`
+      je v databáze štandardne zapnuté, takže bez tohto filtra by sa oboje
+      odoslalo samo, hneď ako by taký doklad prešiel splatnosťou.
+    */
+    .or("type.is.null,type.eq.regular")
     .limit(1000);
   if (error) throw new Error(error.message);
 

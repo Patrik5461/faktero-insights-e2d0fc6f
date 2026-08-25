@@ -46,6 +46,9 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
         .in("status", ["sent", "overdue", "issued"])
         .lt("due_date", today)
         .is("deleted_at", null)
+        // Zálohová faktúra ani dobropis nie sú pohľadávka po splatnosti —
+        // asistent by inak radil vymáhať niečo, čo sa vymáhať nemá.
+        .or("type.is.null,type.eq.regular")
         .limit(50),
       supabase
         .from("invoices")
@@ -65,6 +68,7 @@ async function buildCompanyContext(supabase: any, companyId: string): Promise<Ct
         .eq("company_id", companyId)
         .in("status", ["sent", "overdue", "issued"])
         .is("deleted_at", null)
+        .or("type.is.null,type.eq.regular")
         .limit(500),
       supabase
         .from("webhook_delivery_logs")

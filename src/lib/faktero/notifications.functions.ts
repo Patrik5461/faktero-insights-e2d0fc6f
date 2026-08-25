@@ -36,6 +36,9 @@ async function zozbierajSignaly(companyId: string): Promise<NotificationInput> {
       .in("status", ["sent", "issued", "overdue"])
       .lt("due_date", today)
       .is("deleted_at", null)
+      // Zvonček hlási pohľadávky po splatnosti. Zálohová faktúra ani dobropis
+      // medzi ne nepatria — rovnaké pravidlo ako `jeOtvorena`.
+      .or("type.is.null,type.eq.regular")
       .order("due_date", { ascending: true })
       .limit(LIMIT),
     supabaseAdmin
