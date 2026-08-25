@@ -16,10 +16,22 @@ vi.mock("@capacitor/core", () => ({
 /** Body, ktoré „prehliadač" nahlási po spustení sledovania. */
 let davka: { lat: number; lng: number }[] = [];
 let hlas: ((p: unknown) => void) | null = null;
+/*
+  Vlastné hodiny, nie `Date.now()`.
+
+  Tracker zahadzuje úseky nad 250 km/h ako skok GPS. Dva body 1,1 km od seba
+  s časom z `Date.now()` sú od seba nula alebo jednu milisekundu — teda buď
+  „bez času" (a započítajú sa), alebo štyri milióny km/h (a zahodia sa).
+  Test tak prechádzal len vtedy, keď obe volania padli do tej istej
+  milisekundy, čo je zhruba raz z pätnástich behov.
+*/
+const KROK_MS = 60_000;
+let cas = 0;
 
 beforeEach(() => {
   davka = [];
   hlas = null;
+  cas = Date.UTC(2026, 7, 25, 8, 0, 0);
   vi.stubGlobal("navigator", {
     geolocation: {
       watchPosition: (ok: (p: unknown) => void) => {
@@ -31,10 +43,11 @@ beforeEach(() => {
   });
 });
 
-/** Nahlási jeden bod tak, ako to robí prehliadač. */
+/** Nahlási jeden bod tak, ako to robí prehliadač — vždy o minútu neskôr. */
 function poloha(lat: number, lng: number) {
   davka.push({ lat, lng });
-  hlas?.({ coords: { latitude: lat, longitude: lng }, timestamp: Date.now() });
+  cas += KROK_MS;
+  hlas?.({ coords: { latitude: lat, longitude: lng }, timestamp: cas });
 }
 
 async function tracker() {
