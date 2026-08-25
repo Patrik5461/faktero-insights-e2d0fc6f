@@ -11,6 +11,7 @@ import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 import { suctyObjednavky } from "@/lib/faktero/objednavky-odberatel";
 import { SK_VAT_RATES, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/objednavky/nova")({
   head: () => ({ meta: [{ title: "Nová objednávka — Faktero" }] }),
@@ -54,9 +55,7 @@ function dnesLokalne(): string {
 }
 
 function suma(n: unknown) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(
-    Number(n) || 0,
-  );
+  return formatovacMeny("EUR", "sk-SK")(Number(n) || 0);
 }
 
 function NewOrder() {

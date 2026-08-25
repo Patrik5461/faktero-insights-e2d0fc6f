@@ -18,6 +18,7 @@ import {
 } from "@/lib/faktero/objednavky-odberatel";
 import { ArrowLeft, FileText, Pencil, Trash2, Ban, Check } from "lucide-react";
 import { toast } from "sonner";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/objednavky/$id")({
   head: () => ({ meta: [{ title: "Objednávka — Faktero" }] }),
@@ -33,9 +34,7 @@ const FARBA: Record<StavPrijatejObjednavky, string> = {
 };
 
 function suma(n: unknown) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(
-    Number(n) || 0,
-  );
+  return formatovacMeny("EUR", "sk-SK")(Number(n) || 0);
 }
 
 function dnesLokalne(): string {

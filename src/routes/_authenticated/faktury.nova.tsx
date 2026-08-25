@@ -42,6 +42,7 @@ import { findCustomerByIcoFn } from "@/lib/faktero/company-lookup.functions";
 import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombobox";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { DEFAULT_VAT_RATE, SK_VAT_RATES } from "@/lib/faktero/vat-rates";
+import { MENY } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
@@ -261,16 +262,6 @@ function NewInvoice() {
       }),
     );
   }, [podklady, products]);
-
-  const CURRENCIES: { code: string; symbol: string; flag: string; name: string }[] = [
-    { code: "EUR", symbol: "€", flag: "🇪🇺", name: "Euro" },
-    { code: "CZK", symbol: "Kč", flag: "🇨🇿", name: "Česká koruna" },
-    { code: "USD", symbol: "$", flag: "🇺🇸", name: "US dolár" },
-    { code: "GBP", symbol: "£", flag: "🇬🇧", name: "Libra" },
-    { code: "PLN", symbol: "zł", flag: "🇵🇱", name: "Zlotý" },
-    { code: "HUF", symbol: "Ft", flag: "🇭🇺", name: "Forint" },
-    { code: "CHF", symbol: "₣", flag: "🇨🇭", name: "Frank" },
-  ];
 
   useEffect(() => {
     const cid = getActiveCompanyId();
@@ -776,7 +767,7 @@ function NewInvoice() {
                   onChange={(e) => setForm({ ...form, currency: e.target.value })}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  {CURRENCIES.map((c) => (
+                  {MENY.map((c) => (
                     <option key={c.code} value={c.code}>
                       {c.flag} {c.code} {c.symbol} — {c.name}
                     </option>

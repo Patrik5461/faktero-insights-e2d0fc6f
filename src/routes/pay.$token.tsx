@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getPaymentLinkPublic, startPaymentPublic } from "@/lib/faktero/payments.functions";
 import { CheckCircle2, ShieldCheck } from "lucide-react";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/pay/$token")({
   head: () => ({ meta: [{ title: "Platba faktúry — Faktero" }] }),
@@ -10,13 +11,7 @@ export const Route = createFileRoute("/pay/$token")({
 });
 
 function fmt(amountCents: number, currency: string) {
-  try {
-    return new Intl.NumberFormat("sk-SK", { style: "currency", currency }).format(
-      amountCents / 100,
-    );
-  } catch {
-    return `${(amountCents / 100).toFixed(2)} ${currency}`;
-  }
+  return formatujMenu(amountCents / 100, currency);
 }
 
 function PayPage() {

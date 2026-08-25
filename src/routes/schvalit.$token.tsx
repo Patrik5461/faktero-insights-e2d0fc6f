@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getApprovalInvoice, respondToApproval } from "@/lib/faktero/invoice-approval.functions";
 import { CheckCircle2, XCircle, Loader2, FileText } from "lucide-react";
+import { formatujMenu } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/schvalit/$token")({
   head: () => ({
@@ -14,8 +15,8 @@ export const Route = createFileRoute("/schvalit/$token")({
   component: ApprovalPage,
 });
 
-function fmt(n: number, currency = "EUR") {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency }).format(n);
+function fmt(n: number, currency: string | null | undefined = "EUR") {
+  return formatujMenu(n, currency);
 }
 
 function ApprovalPage() {

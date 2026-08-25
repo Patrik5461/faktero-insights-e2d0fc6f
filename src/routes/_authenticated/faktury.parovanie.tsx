@@ -19,6 +19,7 @@ import {
   potvrdParovanie,
   sparujAutomaticky,
 } from "@/lib/faktero/parovanie.functions";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/faktury/parovanie")({
   head: () => ({ meta: [{ title: "Párovanie platieb — Faktero" }] }),
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/faktury/parovanie")({
 });
 
 function fmt(n: number, c = "EUR") {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: c }).format(n);
+  return formatovacMeny(c, "sk-SK")(n);
 }
 
 type Zhoda = {

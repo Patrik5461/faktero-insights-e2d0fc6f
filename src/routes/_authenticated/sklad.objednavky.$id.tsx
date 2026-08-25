@@ -13,6 +13,7 @@ import {
 } from "@/lib/faktero/purchase-orders.functions";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { ArrowLeft, PackageCheck, Send, Trash2, X } from "lucide-react";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/$id")({
   head: () => ({ meta: [{ title: "Objednávka — Faktero" }] }),
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/sklad/objednavky/$id")({
 });
 
 function suma(n: number, mena = "EUR") {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n || 0);
+  return formatovacMeny(mena, "sk-SK")(n || 0);
 }
 
 function PurchaseOrderDetail() {

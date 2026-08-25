@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Landmark, RefreshCw } from "lucide-react";
 import { zostatkyPodlaMien } from "@/lib/faktero/zostatky";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 /**
  * Bankové pohyby v telefóne.
@@ -39,7 +40,7 @@ type Pohyb = {
 };
 
 function suma(v: number, mena = "EUR"): string {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(v);
+  return formatovacMeny(mena, "sk-SK")(v);
 }
 
 /** Z IBAN-u stačí koniec — celý sa do riadka nezmestí a nič nehovorí. */

@@ -48,6 +48,7 @@ import { QrSkener } from "@/components/faktero/mobil/QrSkener";
 import { StavPushu } from "@/components/faktero/mobil/StavPushu";
 import { CislaDopredu } from "@/components/faktero/mobil/CislaDopredu";
 import { datum } from "@/components/faktero/mobil/PrijateDoklady";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 /**
  * Obrazovky sa načítajú až keď na ne človek klikne.
@@ -1664,10 +1665,7 @@ function Potvrdenie({
   onSpat: () => void;
 }) {
   const mena = vysledok.currency ?? "EUR";
-  const suma = (n?: number) =>
-    n == null
-      ? "—"
-      : new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n);
+  const suma = (n?: number) => (n == null ? "—" : formatovacMeny(mena, "sk-SK")(n));
 
   return (
     <MobilObrazovka

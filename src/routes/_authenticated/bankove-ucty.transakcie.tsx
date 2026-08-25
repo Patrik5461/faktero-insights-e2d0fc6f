@@ -16,6 +16,7 @@ import { zrusParovanie } from "@/lib/faktero/parovanie.functions";
 import { usePagedLogs } from "@/hooks/usePagedLogs";
 import { EmptyState, ListFooter, LogsToolbar } from "@/components/faktero/ListControls";
 import { Landmark } from "lucide-react";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/transakcie")({
   head: () => ({ meta: [{ title: "Bankové transakcie — Faktero" }] }),
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/bankove-ucty/transakcie")(
 });
 
 function fmtMoney(n: number, c = "EUR") {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: c }).format(n);
+  return formatovacMeny(c, "sk-SK")(n);
 }
 
 /** Popis obdobia nad súčtom — bez neho nie je jasné, za čo to číslo je. */

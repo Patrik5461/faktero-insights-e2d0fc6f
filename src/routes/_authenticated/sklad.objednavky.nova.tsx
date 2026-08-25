@@ -16,6 +16,7 @@ import { suctyObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { vatRateOptions } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { ArrowLeft, Plus, Sparkles, Trash2 } from "lucide-react";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/nova")({
   head: () => ({ meta: [{ title: "Nová objednávka — Faktero" }] }),
@@ -41,7 +42,7 @@ const PRAZDNY: Riadok = {
 };
 
 function suma(n: number) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(n || 0);
+  return formatovacMeny("EUR", "sk-SK")(n || 0);
 }
 
 function NewPurchaseOrder() {

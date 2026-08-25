@@ -9,6 +9,7 @@ import { STAV_ZAKAZKY_POPIS, nakladZJazdy, type StavZakazky } from "@/lib/fakter
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { pohybNazov } from "@/lib/faktero/stock-pohyb";
 import { ArrowLeft, Lock, Unlock, Pencil, Trash2 } from "lucide-react";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/zakazky/$id")({
   head: () => ({ meta: [{ title: "Zákazka — Faktero" }] }),
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/zakazky/$id")({
 });
 
 function suma(n: number) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(n || 0);
+  return formatovacMeny("EUR", "sk-SK")(n || 0);
 }
 
 function Karta({

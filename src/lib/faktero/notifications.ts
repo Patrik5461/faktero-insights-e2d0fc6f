@@ -10,6 +10,8 @@
  * inak by sa prečítaná notifikácia vrátila ako nová.
  */
 
+import { formatujMenu } from "./mena";
+
 export type NotificationSeverity = "info" | "warning" | "danger";
 
 export type AppNotification = {
@@ -74,16 +76,9 @@ export type NotificationInput = {
 const SEVERITY_ORDER: Record<NotificationSeverity, number> = { danger: 0, warning: 1, info: 2 };
 
 export function formatMoney(amount: number | null, currency: string | null): string {
-  const value = Number.isFinite(Number(amount)) ? Number(amount) : 0;
-  try {
-    return new Intl.NumberFormat("sk-SK", {
-      style: "currency",
-      currency: currency || "EUR",
-    }).format(value);
-  } catch {
-    // Neznámy kód meny by Intl zhodil — radšej surové číslo než prázdny zvonček.
-    return `${value.toFixed(2)} ${currency ?? ""}`.trim();
-  }
+  // Neznámy kód meny rieši `formatujMenu` — vypíše číslo a kód vedľa neho
+  // namiesto toho, aby `Intl` vyhodil výnimku a zvonček ostal prázdny.
+  return formatujMenu(amount, currency || "EUR");
 }
 
 /** Počet celých dní medzi dvoma dátumami v tvare YYYY-MM-DD. */

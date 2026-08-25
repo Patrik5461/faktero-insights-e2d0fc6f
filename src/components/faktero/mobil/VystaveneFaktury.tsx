@@ -20,6 +20,7 @@ import { datum } from "./PrijateDoklady";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 import type { OdlozenaFaktura } from "@/lib/mobile/faktury-fronta";
 import { moznoUpravit } from "@/lib/mobile/faktura-uprava";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 /**
  * Vystavené faktúry v telefóne.
@@ -49,7 +50,7 @@ type Faktura = {
 function suma(v: unknown, mena = "EUR"): string {
   const n = Number(v);
   if (!Number.isFinite(n)) return "—";
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n);
+  return formatovacMeny(mena, "sk-SK")(n);
 }
 
 function nazovMesiaca(kluc: string): string {

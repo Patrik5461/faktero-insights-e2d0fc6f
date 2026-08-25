@@ -12,6 +12,7 @@ import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
+import { MENY } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ponuky/nova")({
   head: () => ({ meta: [{ title: "Nová cenová ponuka — Faktero" }] }),
@@ -289,11 +290,25 @@ function NewQuote() {
               value={form.valid_until}
               onChange={(v) => setForm({ ...form, valid_until: v })}
             />
-            <In
-              label="Mena"
-              value={form.currency}
-              onChange={(v) => setForm({ ...form, currency: v })}
-            />
+            {/*
+              Mena bola voľný text, takže sa do databázy dalo napísať čokoľvek
+              — a nezmyselný kód potom zhodil formátovanie na každej stránke,
+              kde sa taká ponuka objavila. Rovnaký výber ako na faktúre.
+            */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Mena</label>
+              <select
+                value={form.currency}
+                onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {MENY.map((m) => (
+                  <option key={m.code} value={m.code}>
+                    {m.flag} {m.code} {m.symbol} — {m.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex items-center justify-between">

@@ -18,6 +18,7 @@ import { DOKLADY, sPoctom } from "@/lib/faktero/mnozne";
 import { fronta, zmazZFronty, type CakajuciDoklad } from "@/lib/mobile/doklady-fronta";
 import { odosliCakajuce } from "@/lib/mobile/doklady-odoslanie";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 /**
  * Prijaté doklady v mobilnej aplikácii.
@@ -67,7 +68,7 @@ function cislo(v: unknown): number | null {
 function suma(v: unknown, mena = "EUR"): string {
   const n = cislo(v);
   if (n == null) return "—";
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n);
+  return formatovacMeny(mena, "sk-SK")(n);
 }
 
 /** „2026-08-09" → „9. 8. 2026". Zápis v ISO nikto nečíta ako dátum. */

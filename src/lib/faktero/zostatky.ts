@@ -7,6 +7,8 @@
  * odhad a účtovník potrebuje to, čo je naozaj na účte.
  */
 
+import { formatovacMeny } from "./mena";
+
 export type UcetSoZostatkom = {
   currency?: string | null;
   balance?: unknown;
@@ -48,7 +50,7 @@ export function zostatkyPodlaMien(ucty: UcetSoZostatkom[] | null | undefined): Z
 export function formatujSumu(suma: number, mena: string | null | undefined): string {
   const m = normalizujMenu(mena);
   try {
-    return new Intl.NumberFormat("sk-SK", { style: "currency", currency: m }).format(suma);
+    return formatovacMeny(m, "sk-SK")(suma);
   } catch {
     return `${new Intl.NumberFormat("sk-SK", { minimumFractionDigits: 2 }).format(suma)} ${m}`;
   }

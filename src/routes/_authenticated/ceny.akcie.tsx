@@ -10,6 +10,7 @@ import { ArrowLeft, Plus, Pencil, Trash2, X } from "lucide-react";
 import { PRODUKTY, sPoctom } from "@/lib/faktero/mnozne";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ceny/akcie")({
   head: () => ({ meta: [{ title: "Cenové akcie — Faktero" }] }),
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/ceny/akcie")({
 });
 
 function suma(n: unknown) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(cislo(n));
+  return formatovacMeny("EUR", "sk-SK")(cislo(n));
 }
 
 /** Dnešok v miestnom čase. `toISOString()` by po polnoci vrátil včerajšok. */

@@ -306,7 +306,10 @@ describe("buildNotifications", () => {
         },
       ],
     });
-    expect(n.title).toContain("12.30");
+    // Slovenské formátovanie používa desatinnú čiarku; podstatné je, že sa
+    // suma vypíše aj s nezmyselným kódom a nič sa nezhodí.
+    expect(n.title).toContain("12,30");
+    expect(n.title).toContain("XYZ!");
   });
 });
 

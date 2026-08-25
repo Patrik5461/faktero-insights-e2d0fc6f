@@ -16,6 +16,7 @@ import { cislo } from "@/lib/faktero/ceny";
 import { Plus, Pencil, Trash2, Tag, Percent } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ceny/")({
   head: () => ({ meta: [{ title: "Cenník — Faktero" }] }),
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/ceny/")({
 });
 
 function suma(n: unknown) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(cislo(n));
+  return formatovacMeny("EUR", "sk-SK")(cislo(n));
 }
 
 const pole = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";

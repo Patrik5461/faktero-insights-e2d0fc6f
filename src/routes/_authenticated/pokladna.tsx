@@ -6,6 +6,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createCashEntry, deleteCashEntry, getCashBook } from "@/lib/faktero/pokladna.functions";
 import { formatujDatum } from "@/lib/faktero/uzavierka";
 import { Wallet, Plus, Trash2, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/pokladna")({
   head: () => ({ meta: [{ title: "Pokladňa — Faktero" }] }),
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/pokladna")({
 });
 
 function suma(n: number) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(n || 0);
+  return formatovacMeny("EUR", "sk-SK")(n || 0);
 }
 
 function tentoMesiac() {

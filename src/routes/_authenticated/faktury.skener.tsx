@@ -7,6 +7,7 @@ import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Camera, Loader2, QrCode, BadgeCheck, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 type Uhrada = "hotovost" | "karta" | "prevod";
 
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/_authenticated/faktury/skener")({
 
 function fmt(n?: number, mena = "EUR") {
   if (n == null) return "—";
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n);
+  return formatovacMeny(mena, "sk-SK")(n);
 }
 
 function ScannerPage() {

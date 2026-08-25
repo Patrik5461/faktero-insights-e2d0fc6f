@@ -6,6 +6,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listJobs } from "@/lib/faktero/jobs.functions";
 import { STAV_ZAKAZKY_POPIS, prekrocenyRozpocet, type StavZakazky } from "@/lib/faktero/zakazky";
 import { Plus, HardHat } from "lucide-react";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/zakazky/")({
   head: () => ({ meta: [{ title: "Zákazky — Faktero" }] }),
@@ -19,7 +20,7 @@ const FARBA_STAVU: Record<StavZakazky, string> = {
 };
 
 function suma(n: number) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(n || 0);
+  return formatovacMeny("EUR", "sk-SK")(n || 0);
 }
 
 function JobsPage() {

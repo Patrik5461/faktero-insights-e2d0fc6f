@@ -19,6 +19,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { toast } from "sonner";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: () => ({ meta: [{ title: "Prijaté faktúry — Faktero" }] }),
@@ -51,7 +52,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function fmtMoney(n: number, c = "EUR") {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: c }).format(n);
+  return formatovacMeny(c, "sk-SK")(n);
 }
 
 function monthOptions(): { value: string; label: string }[] {

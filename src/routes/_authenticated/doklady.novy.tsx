@@ -14,6 +14,7 @@ import {
 } from "@/lib/faktero/expenses.functions";
 import { Camera, Loader2, QrCode, Save, Upload as UploadIcon } from "lucide-react";
 import { toast } from "sonner";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: () => ({ meta: [{ title: "Nový doklad — Faktero" }] }),
@@ -512,17 +513,14 @@ function NovyDokladPage() {
                       <td className="px-5 py-2">{p.name || "—"}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                         {p.quantity} ×{" "}
-                        {new Intl.NumberFormat("sk-SK", {
-                          style: "currency",
-                          currency: form.currency || "EUR",
-                        }).format(p.unit_price)}
+                        {formatovacMeny(form.currency || "EUR", "sk-SK")(p.unit_price)}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">{p.vat_rate} %</td>
                       <td className="px-5 py-2 text-right tabular-nums font-medium">
-                        {new Intl.NumberFormat("sk-SK", {
-                          style: "currency",
-                          currency: form.currency || "EUR",
-                        }).format(p.total ?? p.quantity * p.unit_price)}
+                        {formatovacMeny(
+                          form.currency || "EUR",
+                          "sk-SK",
+                        )(p.total ?? p.quantity * p.unit_price)}
                       </td>
                     </tr>
                   ))}

@@ -6,6 +6,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listPurchaseOrders } from "@/lib/faktero/purchase-orders.functions";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { Plus, Truck } from "lucide-react";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/")({
   head: () => ({ meta: [{ title: "Objednávky u dodávateľov — Faktero" }] }),
@@ -21,9 +22,7 @@ const FARBA_STAVU: Record<StavObjednavky, string> = {
 };
 
 function suma(n: number, mena: string) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena || "EUR" }).format(
-    n || 0,
-  );
+  return formatovacMeny(mena || "EUR", "sk-SK")(n || 0);
 }
 
 function PurchaseOrdersPage() {

@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Pencil,
 } from "lucide-react";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
   ACTC: "Pripravená na podpis",
@@ -66,7 +67,7 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 function fmt(n: number, c = "EUR") {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: c }).format(n);
+  return formatovacMeny(c, "sk-SK")(n);
 }
 
 function PurchaseInvoiceDetail() {
@@ -529,9 +530,7 @@ function Row({ label, value }: { label: string; value: string | number }) {
 function PolozkyDokladu({ items, mena }: { items: unknown; mena?: string | null }) {
   if (!Array.isArray(items) || items.length === 0) return null;
   const cena = (n: unknown) =>
-    typeof n === "number" && Number.isFinite(n)
-      ? new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena || "EUR" }).format(n)
-      : "—";
+    typeof n === "number" && Number.isFinite(n) ? formatovacMeny(mena || "EUR", "sk-SK")(n) : "—";
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">

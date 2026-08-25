@@ -14,6 +14,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getRecurringWidgetStats } from "@/lib/faktero/recurring.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { BankWidget } from "@/components/faktero/BankWidget";
+import { formatujMenu } from "@/lib/faktero/mena";
 import {
   Plus,
   FileText,
@@ -59,8 +60,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-function fmt(n: number, currency = "EUR") {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency }).format(n);
+function fmt(n: number, currency: string | null | undefined = "EUR") {
+  return formatujMenu(n, currency);
 }
 
 function fmtCompact(n: number) {
@@ -205,6 +206,9 @@ function Dashboard() {
             .from("quotes")
             .select("id, quote_number, customer_name, total, currency, valid_until, status")
             .eq("company_id", companyId)
+            // Zmazaná ponuka na prehľade nemá čo robiť. Bez tohto tam visela
+            // aj po vymazaní zo zoznamu ponúk.
+            .is("deleted_at", null)
             .in("status", ["draft", "sent"])
             .order("created_at", { ascending: false })
             .limit(5),

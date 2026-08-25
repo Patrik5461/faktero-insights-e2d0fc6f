@@ -26,6 +26,7 @@ import { HlavneTlacidlo, MobilObrazovka, Pracujem, VelkeTlacidlo } from "./Mobil
 import type { OdlozenaFaktura } from "@/lib/mobile/faktury-fronta";
 import { riadkyNaZapis, suctyFaktury } from "@/lib/mobile/faktura-uprava";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 /**
  * Vystavenie faktúry v telefóne.
@@ -80,7 +81,7 @@ function cislo(v: string): number {
 }
 
 function suma(n: number, mena = "EUR"): string {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: mena }).format(n);
+  return formatovacMeny(mena, "sk-SK")(n);
 }
 
 /** „2026-08-11" → „11. 8. 2026" — ISO tvar nikto nečíta ako dátum. */

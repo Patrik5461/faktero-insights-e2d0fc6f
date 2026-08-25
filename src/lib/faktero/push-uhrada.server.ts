@@ -9,6 +9,8 @@
  * odoslanie zlyhá, platba je aj tak zapísaná a to je to podstatné.
  */
 
+import { formatovacMeny } from "./mena";
+
 export type UhradenaFaktura = {
   id: string;
   invoice_number: string;
@@ -18,10 +20,7 @@ export type UhradenaFaktura = {
 };
 
 function suma(n: number, mena?: string | null): string {
-  return new Intl.NumberFormat("sk-SK", {
-    style: "currency",
-    currency: mena || "EUR",
-  }).format(Number(n) || 0);
+  return formatovacMeny(mena || "EUR", "sk-SK")(Number(n) || 0);
 }
 
 export async function oznamUhradu(

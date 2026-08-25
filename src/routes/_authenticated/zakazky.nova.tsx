@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { createJob } from "@/lib/faktero/jobs.functions";
 import { ArrowLeft } from "lucide-react";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/zakazky/nova")({
   head: () => ({ meta: [{ title: "Nová zákazka — Faktero" }] }),
@@ -187,10 +188,7 @@ function NewJob() {
                     planovanyZisk < 0 ? "text-destructive" : "text-emerald-600"
                   }`}
                 >
-                  {new Intl.NumberFormat("sk-SK", {
-                    style: "currency",
-                    currency: "EUR",
-                  }).format(planovanyZisk)}
+                  {formatovacMeny("EUR", "sk-SK")(planovanyZisk)}
                 </span>
               </div>
             )}

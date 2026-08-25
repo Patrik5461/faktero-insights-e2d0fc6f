@@ -11,6 +11,7 @@ import {
   type StavPrijatejObjednavky,
 } from "@/lib/faktero/objednavky-odberatel";
 import { Plus, ClipboardList, AlertTriangle } from "lucide-react";
+import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/objednavky/")({
   head: () => ({ meta: [{ title: "Prijaté objednávky — Faktero" }] }),
@@ -26,9 +27,7 @@ const FARBA: Record<StavPrijatejObjednavky, string> = {
 };
 
 function suma(n: unknown) {
-  return new Intl.NumberFormat("sk-SK", { style: "currency", currency: "EUR" }).format(
-    Number(n) || 0,
-  );
+  return formatovacMeny("EUR", "sk-SK")(Number(n) || 0);
 }
 
 /** Dnešok v miestnom čase — `toISOString()` by po polnoci vrátil včerajšok. */
