@@ -270,10 +270,21 @@ async function zisti(): Promise<Riadok[]> {
             d.dennik.najlepsiaPresnost != null
               ? `, najlepšia presnosť ${Math.round(d.dennik.najlepsiaPresnost)} m`
               : "";
+          /*
+            Počítadlá sa nulujú pri každom prebudení a začínajú od nuly aj po
+            aktualizácii. Nula preto sama osebe nič nehovorí — kým neprebehlo
+            overovanie, nie je čo hodnotiť. Bez tohto rozlíšenia hlásila
+            diagnostika problém aj vtedy, keď sa po aktualizácii ešte nejazdilo.
+          */
+          const nemerane = d.dennik.fixovVOvereni === 0;
           r.push({
             co: "merania pri poslednom overovaní",
-            hodnota: `${d.dennik.fixovVOvereni} prišlo, ${d.dennik.pouzitelnychVOvereni} dosť presných${presnost}`,
-            zle: d.zapnuta && d.dennik.prebudeni > 0 && d.dennik.pouzitelnychVOvereni === 0,
+            hodnota: nemerane
+              ? "zatiaľ žiadne — číslo tu bude po najbližšej jazde"
+              : `${d.dennik.fixovVOvereni} prišlo, ${d.dennik.pouzitelnychVOvereni} dosť presných${presnost}`,
+            // Za problém sa berie len to, keď merania prišli a ani jedno
+            // nebolo dosť presné — vtedy GPS naozaj nechytila.
+            zle: !nemerane && d.dennik.pouzitelnychVOvereni === 0,
           });
         }
         r.push({
