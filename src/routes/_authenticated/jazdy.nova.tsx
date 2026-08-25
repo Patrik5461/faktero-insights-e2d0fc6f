@@ -6,6 +6,10 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { navrhniTrasu, type NavrhTrasy } from "@/lib/faktero/trasa.server";
+import { MapaTrasy } from "@/components/faktero/MapaTrasy";
+import { Map as MapIcon } from "lucide-react";
 
 /**
  * Tá istá stránka zakladá aj upravuje. Kniha jázd je účtovný záznam a preklep v
@@ -41,6 +45,13 @@ function NewTripPage() {
     classification: "business",
   });
   const [saving, setSaving] = useState(false);
+  /*
+    Navrhnutá trasa. Zámerne sa nikam nezapisuje sama: mapa je pomôcka,
+    záväzné sú kilometre z tachometra. Do dokladu ide až vtedy, keď človek
+    navrhnuté kilometre naozaj použije.
+  */
+  const [trasa, setTrasa] = useState<NavrhTrasy | null>(null);
+  const [hladamTrasu, setHladamTrasu] = useState(false);
   // Doplnená cena sa smie prepísať ďalším vozidlom, ručne zadaná nikdy.
   const [cenaDoplnena, setCenaDoplnena] = useState(false);
 
@@ -122,6 +133,37 @@ function NewTripPage() {
   const vozidloBezSpotreby =
     !!form.vehicle_id && !vehicles.find((v) => v.id === form.vehicle_id)?.consumption_l_100km;
 
+  const navrhni = useServerFn(navrhniTrasu);
+
+  async function navrhniTrasuPreFormular() {
+    if (!form.start_location.trim() || !form.end_location.trim()) {
+      return toast.error("Vyplňte Odkiaľ aj Kam.");
+    }
+    setHladamTrasu(true);
+    try {
+      const t = await navrhni({
+        data: { odkial: form.start_location.trim(), kam: form.end_location.trim() },
+      });
+      setTrasa(t);
+    } catch (e: any) {
+      setTrasa(null);
+      toast.error(e?.message ?? "Trasu sa nepodarilo navrhnúť.");
+    } finally {
+      setHladamTrasu(false);
+    }
+  }
+
+  /** Doplní tachometer tak, aby vyšla navrhnutá vzdialenosť. */
+  function pouziKilometre() {
+    if (!trasa) return;
+    const zaciatok = Number(form.start_odometer || 0);
+    setForm((f) => ({
+      ...f,
+      end_odometer: (zaciatok + trasa.vzdialenost_km).toFixed(1),
+    }));
+    toast.success(`Doplnených ${trasa.vzdialenost_km} km — skontrolujte podľa tachometra.`);
+  }
+
   const start = Number(form.start_odometer || 0);
   const end = Number(form.end_odometer || 0);
   const distance = end - start;
@@ -152,6 +194,8 @@ function NewTripPage() {
       job_id: form.job_id || null,
       note: form.note || null,
       classification: form.classification,
+      // Trasa z mapy sa uloží, len keď si ju človek naozaj vyžiadal.
+      ...(trasa ? { route: trasa.route } : {}),
     };
     const { error } = id
       ? await supabase.from("trips").update(riadok).eq("company_id", cid).eq("id", id)
@@ -248,6 +292,53 @@ function NewTripPage() {
                 className="input"
               />
             </Field>
+            {/*
+              Trasa sa počíta až na požiadanie. Automaticky pri písaní by sa
+              dopyt spustil z každej nedokončenej adresy a míňal by kvótu na
+              preklepoch.
+            */}
+            <div className="sm:col-span-2">
+              <button
+                type="button"
+                onClick={navrhniTrasuPreFormular}
+                disabled={hladamTrasu}
+                className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-60"
+              >
+                <MapIcon className="h-4 w-4" />
+                {hladamTrasu ? "Hľadám trasu…" : "Navrhnúť trasu"}
+              </button>
+
+              {trasa && (
+                <div className="mt-3 rounded-xl border border-border bg-card p-3">
+                  <div className="text-sm">
+                    <span className="font-medium">{trasa.vzdialenost_km} km</span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · približne {trasa.trvanie_min} min
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {trasa.odkial.nazov} → {trasa.kam.nazov}
+                  </div>
+                  <div className="mt-3">
+                    <MapaTrasy route={trasa.route} vyska={260} />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={pouziKilometre}
+                    className="mt-3 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  >
+                    Doplniť {trasa.vzdialenost_km} km do tachometra
+                  </button>
+                  {/* Kilometre z mapy sú najkratšia cesta po cestách, nie to,
+                      čo auto naozaj prešlo. Pred úradom platí tachometer. */}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Je to najkratšia cesta po cestách — obchádzky ani hľadanie parkovania v nej nie
+                    sú. Pre knihu jázd je rozhodujúci tachometer.
+                  </p>
+                </div>
+              )}
+            </div>
             <Field label="Tachometer začiatok (km) *">
               <input
                 type="number"
