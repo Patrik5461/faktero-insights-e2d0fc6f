@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { jeZapnute } from "@/lib/faktero/search-parametre";
 import { jeOtvorena } from "@/lib/faktero/faktury-sumy";
+import { DNI_PAROVANIA, MAX_PAROVANIA } from "@/lib/faktero/parovanie-limity";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { StatusBadge } from "./dashboard";
 import {
@@ -170,13 +171,20 @@ function InvoicesPage() {
       .select("id", { count: "exact", head: true })
       .eq("company_id", cid)
       .then(({ count }) => setMaBanku((count ?? 0) > 0));
+    /*
+      Odznak musí počítať to isté, s čím párovacia stránka pracuje. Bez okna
+      hlásil MaxiTicketu 7 987 platieb, pritom stránka berie len posledných
+      400 dní a najviac 2 000 — číslo, na ktoré sa nedalo nikdy dostať.
+    */
+    const od = new Date(Date.now() - DNI_PAROVANIA * 86400000).toISOString().slice(0, 10);
     supabase
       .from("bank_transactions")
       .select("id", { count: "exact", head: true })
       .eq("company_id", cid)
       .is("matched_invoice_id", null)
       .gt("amount", 0)
-      .then(({ count }) => setCakaNaParovanie(count ?? 0));
+      .gte("booking_date", od)
+      .then(({ count }) => setCakaNaParovanie(Math.min(count ?? 0, MAX_PAROVANIA)));
   }, []);
 
   useEffect(() => {

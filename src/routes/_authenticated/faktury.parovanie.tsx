@@ -65,6 +65,9 @@ function ParovaniePage() {
     navrhy: Zhoda[];
     bezZhody: number;
     otvorenychFaktur: number;
+    orezane?: boolean;
+    stropPlatieb?: number;
+    dniDozadu?: number;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -189,6 +192,16 @@ function ParovaniePage() {
               <Dlazdica label="Bez zhody" value={data.bezZhody} />
               <Dlazdica label="Otvorené faktúry" value={data.otvorenychFaktur} />
             </div>
+
+            {/* Odrezaný zoznam vyzeral ako celý. Pri tisíckach pohybov to
+                znamenalo, že staršie platby nikto nikdy neuvidel. */}
+            {data.orezane && (
+              <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                Platieb je viac, než sa dá spracovať naraz. Načítaných je{" "}
+                {data.stropPlatieb ?? 2000} najnovších za posledných {data.dniDozadu ?? 400} dní.
+                Spárujte ich a zvyšok sa načíta po obnovení stránky.
+              </div>
+            )}
 
             {vsetky.length === 0 ? (
               <EmptyState

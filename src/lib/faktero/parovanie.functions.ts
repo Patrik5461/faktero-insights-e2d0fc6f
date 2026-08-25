@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { sparuj, type Doklad, type Pohyb, type Zhoda } from "./parovanie";
+import { DNI_PAROVANIA, MAX_PAROVANIA } from "./parovanie-limity";
 
 /**
  * Párovanie bankových platieb s faktúrami — serverová časť.
@@ -11,9 +12,6 @@ import { sparuj, type Doklad, type Pohyb, type Zhoda } from "./parovanie";
  * mení stav faktúry, a robí sa cez `bank_transaction_id`, takže druhé spustenie
  * tú istú platbu nezapíše dvakrát.
  */
-
-/** Koľko dozadu má zmysel hľadať. Staršie pohyby už banka ani nevydá. */
-const DNI_DOZADU = 400;
 
 async function overClena(ctx: any, companyId: string) {
   const { data } = await ctx.supabase.rpc("is_company_member", {
@@ -30,7 +28,7 @@ function cislo(v: unknown): number {
 
 /** Podklady na párovanie: nespárované príchodzie platby a otvorené faktúry. */
 async function podklady(supabase: any, companyId: string) {
-  const od = new Date(Date.now() - DNI_DOZADU * 86400000).toISOString().slice(0, 10);
+  const od = new Date(Date.now() - DNI_PAROVANIA * 86400000).toISOString().slice(0, 10);
 
   const [{ data: txs }, { data: invs }] = await Promise.all([
     supabase
@@ -43,7 +41,7 @@ async function podklady(supabase: any, companyId: string) {
       .gt("amount", 0)
       .gte("booking_date", od)
       .order("booking_date", { ascending: false })
-      .limit(2000),
+      .limit(MAX_PAROVANIA),
     supabase
       .from("invoices")
       .select(
@@ -94,7 +92,12 @@ async function podklady(supabase: any, companyId: string) {
     customer_name: f.customer_name,
   }));
 
-  return { pohyby, doklady, txs: txs ?? [], faktury };
+  /*
+    Keď sa zoznam odrezal na strope, treba to povedať. Kým sa mlčalo, stránka
+    vyzerala ako celý zoznam platieb, hoci ich bola len časť — a nikto nemal
+    ako zistiť, že zvyšok existuje.
+  */
+  return { pohyby, doklady, txs: txs ?? [], faktury, orezane: (txs ?? []).length >= MAX_PAROVANIA };
 }
 
 /** Zhoda doplnená o údaje, ktoré potrebuje stránka, aby sa dala prečítať. */
@@ -128,7 +131,10 @@ export const navrhniParovanie = createServerFn({ method: "POST" })
   .validator((d: unknown) => z.object({ companyId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await overClena(context, data.companyId);
-    const { pohyby, doklady, txs, faktury } = await podklady(context.supabase, data.companyId);
+    const { pohyby, doklady, txs, faktury, orezane } = await podklady(
+      context.supabase,
+      data.companyId,
+    );
     const { auto, navrhy } = sparuj(pohyby, doklady);
     return {
       auto: auto.map((z) => obohat(z, txs, faktury)),
@@ -136,6 +142,10 @@ export const navrhniParovanie = createServerFn({ method: "POST" })
       /** Koľko platieb sa nepodarilo priradiť k ničomu. */
       bezZhody: pohyby.length - auto.length - navrhy.length,
       otvorenychFaktur: doklady.length,
+      /** Zoznam narazil na strop — zobrazená je len časť platieb. */
+      orezane,
+      stropPlatieb: MAX_PAROVANIA,
+      dniDozadu: DNI_PAROVANIA,
     };
   });
 
