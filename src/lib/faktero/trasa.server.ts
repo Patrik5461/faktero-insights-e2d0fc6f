@@ -120,6 +120,41 @@ async function najdi(adresa: string): Promise<{ nazov: string; lat: number; lng:
   return miestoZOdpovede(await zavolaj(`/geocode/search?${q}`), adresa);
 }
 
+/**
+ * Napovedanie adries počas písania.
+ *
+ * Vlastný endpoint (`/geocode/autocomplete`), nie hľadanie — je stavaný na
+ * rozpísaný text a odpovedá rýchlejšie. Obmedzené na Slovensko: kniha jázd sa
+ * píše po slovensky a „Hlavná" je inak v každej druhej krajine.
+ */
+export const napovedzAdresu = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ text: z.string().trim().min(2).max(120) }).parse(d))
+  .handler(async ({ data }): Promise<string[]> => {
+    const q = new URLSearchParams({
+      text: data.text,
+      size: "6",
+      "boundary.country": "SK",
+      "focus.point.lat": String(STRED_SK.lat),
+      "focus.point.lon": String(STRED_SK.lng),
+    });
+    const odpoved = await zavolaj(`/geocode/autocomplete?${q}`);
+    return navrhyZOdpovede(odpoved);
+  });
+
+/** Z odpovede napovedania spraví zoznam názvov bez opakovania. */
+export function navrhyZOdpovede(data: unknown): string[] {
+  const prvky = ((data as any)?.features ?? []) as any[];
+  const von: string[] = [];
+  for (const f of prvky) {
+    const nazov = f?.properties?.label;
+    // Rovnaká adresa chodí aj viackrát (ulica a bod na nej) — v zozname na
+    // výber by dva rovnaké riadky vyzerali ako chyba.
+    if (typeof nazov === "string" && nazov && !von.includes(nazov)) von.push(nazov);
+  }
+  return von;
+}
+
 export const navrhniTrasu = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => Vstup.parse(d))

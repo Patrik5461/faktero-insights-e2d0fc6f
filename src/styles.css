@@ -168,6 +168,34 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+/*
+  Zámerne mimo `@layer`: nezaradené pravidlá majú v kaskáde prednosť pred
+  všetkými vrstvami, takže ich preflight (`border: 0` na všetkom) neprebije.
+  Vo vrstve `components` sa výška aj zaoblenie prejavili, ale rámik nie.
+*/
+/*
+    Trieda `.input` sa v projekte používala na 42 miestach v piatich
+    formulároch — a **nebola definovaná nikde**. Polia sa preto vykresľovali
+    ako holý text bez rámika: v knihe jázd nebolo vidieť, že „Odkiaľ" a „Kam"
+    sú vôbec políčka. Vzhľad je zhodný s komponentom `ui/input.tsx`, nech sa
+    formuláre nerozchádzajú.
+  */
+.input {
+  @apply flex h-9 w-full rounded-md bg-transparent px-3 py-1 text-base shadow-sm transition-colors;
+  border: 1px solid var(--color-input);
+  @apply placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring;
+  @apply disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
+}
+
+/* Viacriadkový text a výber majú vlastnú výšku — inak by sa `h-9` bila
+   s obsahom. */
+textarea.input {
+  @apply h-auto min-h-20 py-2;
+}
+select.input {
+  @apply py-0;
+}
+
 @layer base {
   *,
   *::before,

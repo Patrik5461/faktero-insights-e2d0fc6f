@@ -10,6 +10,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { navrhniTrasu, type NavrhTrasy } from "@/lib/faktero/trasa.server";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { Map as MapIcon } from "lucide-react";
+import { PoleAdresy } from "@/components/faktero/PoleAdresy";
 
 /**
  * Tá istá stránka zakladá aj upravuje. Kniha jázd je účtovný záznam a preklep v
@@ -40,6 +41,14 @@ function NewTripPage() {
     start_odometer: "",
     end_odometer: "",
     fuel_price: "",
+    /*
+      Priemerná rýchlosť a trvanie sa dopočítavajú zo vzdialenosti navzájom:
+      úprava jedného prepíše druhé. Predvolených 60 km/h je bežný priemer
+      zmiešanej jazdy — kto ide iba po diaľnici alebo iba po meste, si to
+      prepíše a jeho číslo sa už samo nemení.
+    */
+    average_speed_kmh: "60",
+    duration_min: "",
     job_id: "",
     note: "",
     classification: "business",
@@ -102,6 +111,13 @@ function NewTripPage() {
           job_id: data.job_id ?? "",
           note: data.note ?? "",
           classification: data.classification === "private" ? "private" : "business",
+          // Pri úprave sa berú uložené čísla, nie prepočet — inak by sa jazde
+          // zmerané trvanie prepísalo odhadom z priemeru.
+          average_speed_kmh: data.average_speed_kmh == null ? "60" : String(data.average_speed_kmh),
+          duration_min:
+            data.duration_seconds == null
+              ? ""
+              : String(Math.round(Number(data.duration_seconds) / 60)),
         });
       });
   }, [id, navigate]);
@@ -164,9 +180,49 @@ function NewTripPage() {
     toast.success(`Doplnených ${trasa.vzdialenost_km} km — skontrolujte podľa tachometra.`);
   }
 
+  /** Trvanie v minútach zo vzdialenosti a priemeru; prázdne, keď sa nedá. */
+  function trvanieZPriemeru(km: number, priemer: number): string {
+    if (!(km > 0) || !(priemer > 0)) return "";
+    return String(Math.round((km / priemer) * 60));
+  }
+
+  function nastavPriemer(hodnota: string) {
+    setForm((f) => {
+      const km = Number(f.end_odometer || 0) - Number(f.start_odometer || 0);
+      return {
+        ...f,
+        average_speed_kmh: hodnota,
+        duration_min: trvanieZPriemeru(km, Number(hodnota)),
+      };
+    });
+  }
+
+  /** Úprava trvania prepočíta priemer, nech si tie dve čísla neodporujú. */
+  function nastavTrvanie(hodnota: string) {
+    setForm((f) => {
+      const km = Number(f.end_odometer || 0) - Number(f.start_odometer || 0);
+      const minuty = Number(hodnota);
+      const priemer =
+        km > 0 && minuty > 0
+          ? String(Math.round((km / minuty) * 60 * 10) / 10)
+          : f.average_speed_kmh;
+      return { ...f, duration_min: hodnota, average_speed_kmh: priemer };
+    });
+  }
+
   const start = Number(form.start_odometer || 0);
   const end = Number(form.end_odometer || 0);
   const distance = end - start;
+
+  /*
+    Keď sa zmení vzdialenosť, prepočíta sa trvanie podľa zvoleného priemeru —
+    nie naopak. Rýchlosť je to, čo o jazde vie človek; trvanie z nej vyplýva.
+  */
+  useEffect(() => {
+    const nove = trvanieZPriemeru(distance, Number(form.average_speed_kmh));
+    if (nove !== form.duration_min) setForm((f) => ({ ...f, duration_min: nove }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [distance]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -194,6 +250,8 @@ function NewTripPage() {
       job_id: form.job_id || null,
       note: form.note || null,
       classification: form.classification,
+      average_speed_kmh: form.average_speed_kmh ? Number(form.average_speed_kmh) : null,
+      duration_seconds: form.duration_min ? Math.round(Number(form.duration_min) * 60) : null,
       // Trasa z mapy sa uloží, len keď si ju človek naozaj vyžiadal.
       ...(trasa ? { route: trasa.route } : {}),
     };
@@ -278,20 +336,28 @@ function NewTripPage() {
                 <option value="private">Súkromná</option>
               </select>
             </Field>
-            <Field label="Odkiaľ">
-              <input
-                value={form.start_location}
-                onChange={(e) => setForm({ ...form, start_location: e.target.value })}
-                className="input"
-              />
-            </Field>
-            <Field label="Kam">
-              <input
-                value={form.end_location}
-                onChange={(e) => setForm({ ...form, end_location: e.target.value })}
-                className="input"
-              />
-            </Field>
+            {/*
+              Odkiaľ a Kam patria vedľa seba — sú to dve polovice jednej veci.
+              V mriežke boli oddelené a „Odkiaľ" sedelo vedľa charakteru jazdy,
+              takže sa spolu nečítali. Vlastný riadok ich drží pri sebe bez
+              ohľadu na to, čo je nad nimi.
+            */}
+            <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+              <Field label="Odkiaľ">
+                <PoleAdresy
+                  hodnota={form.start_location}
+                  onZmena={(v) => setForm({ ...form, start_location: v })}
+                  placeholder="napr. Trnava, Hlavná 12"
+                />
+              </Field>
+              <Field label="Kam">
+                <PoleAdresy
+                  hodnota={form.end_location}
+                  onZmena={(v) => setForm({ ...form, end_location: v })}
+                  placeholder="napr. Bratislava, Einsteinova 5"
+                />
+              </Field>
+            </div>
             {/*
               Trasa sa počíta až na požiadanie. Automaticky pri písaní by sa
               dopyt spustil z každej nedokončenej adresy a míňal by kvótu na
@@ -388,6 +454,40 @@ function NewTripPage() {
                 </div>
               )}
             </Field>
+            {/*
+              Priemer a trvanie sú dve strany tej istej mince: úprava jedného
+              prepočíta druhé podľa vzdialenosti. Obe sa dajú prepísať ručne —
+              odhad je len východisko, nie tvrdenie o tom, ako sa jazdilo.
+            */}
+            <Field label="Priemerná rýchlosť (km/h)">
+              <input
+                type="number"
+                step="1"
+                min="1"
+                value={form.average_speed_kmh}
+                onChange={(e) => nastavPriemer(e.target.value)}
+                className="input"
+              />
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Z nej sa dopočíta trvanie. Prepíšte ju, ak ste išli prevažne po diaľnici alebo po
+                meste.
+              </span>
+            </Field>
+            <Field label="Trvanie jazdy (min)">
+              <input
+                type="number"
+                step="1"
+                min="0"
+                value={form.duration_min}
+                onChange={(e) => nastavTrvanie(e.target.value)}
+                className="input"
+              />
+              <span className="mt-1 block text-xs text-muted-foreground">
+                {form.duration_min && Number(form.duration_min) >= 60
+                  ? `${Math.floor(Number(form.duration_min) / 60)} h ${Number(form.duration_min) % 60} min — úpravou sa prepočíta priemer.`
+                  : "Úpravou sa prepočíta priemerná rýchlosť."}
+              </span>
+            </Field>
             <Field label="Vzdialenosť (auto)">
               <div className="input bg-muted/40 tabular-nums">
                 {Number.isFinite(distance) ? distance.toFixed(1) : "—"} km
@@ -425,7 +525,6 @@ function NewTripPage() {
             </div>
           </form>
         )}
-        <style>{`.input{display:block;width:100%;border-radius:0.375rem;border:1px solid hsl(var(--input));background:hsl(var(--background));padding:0.5rem 0.75rem;font-size:0.875rem}`}</style>
       </PageBody>
     </>
   );

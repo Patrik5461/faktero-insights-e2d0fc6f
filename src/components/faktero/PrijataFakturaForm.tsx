@@ -476,18 +476,6 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
             </button>
           </div>
         </form>
-
-        <style>{`
-          .input {
-            height: 2.25rem; width: 100%;
-            border-radius: 0.375rem;
-            border: 1px solid hsl(var(--input));
-            background: hsl(var(--background));
-            padding: 0 0.75rem;
-            font-size: 0.875rem;
-          }
-          textarea.input { height: auto; padding: 0.5rem 0.75rem; }
-        `}</style>
       </PageBody>
     </>
   );

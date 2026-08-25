@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chybaSluzby, miestoZOdpovede, trasaZOdpovede } from "./trasa.server";
+import { chybaSluzby, miestoZOdpovede, navrhyZOdpovede, trasaZOdpovede } from "./trasa.server";
 
 describe("návrh trasy", () => {
   it("z odpovede spraví kilometre na desatiny a celé minúty", () => {
@@ -32,6 +32,23 @@ describe("návrh trasy", () => {
     expect(m.lat).toBe(48.37);
     expect(m.lng).toBe(17.58);
     expect(m.nazov).toBe("Trnava");
+  });
+
+  it("napovedanie nevráti tú istú adresu dvakrát", () => {
+    const von = navrhyZOdpovede({
+      features: [
+        { properties: { label: "Hlavná, Trnava, Slovensko" } },
+        { properties: { label: "Hlavná, Trnava, Slovensko" } },
+        { properties: { label: "Hlavná, Nitra, Slovensko" } },
+        { properties: {} },
+      ],
+    });
+    expect(von).toEqual(["Hlavná, Trnava, Slovensko", "Hlavná, Nitra, Slovensko"]);
+  });
+
+  it("prázdna odpoveď napovedania nie je chyba", () => {
+    expect(navrhyZOdpovede({})).toEqual([]);
+    expect(navrhyZOdpovede({ features: [] })).toEqual([]);
   });
 
   it("chyby služby majú vetu, nie len číslo", () => {
