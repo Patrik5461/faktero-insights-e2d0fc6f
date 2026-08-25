@@ -68,14 +68,36 @@ public final class DriveDetectorService: NSObject {
         var poslednaJazda: TimeInterval?
         /// Najvyššia rýchlosť videná počas posledného overovania.
         var najvyssiaRychlost: Double = 0
+        /*
+          Najvyššia rýchlosť za celý čas. `najvyssiaRychlost` sa pri každom
+          prebudení nuluje, takže sama o sebe nepovie nič o tom, či detekcia
+          niekedy nejakú jazdu videla — a vedľa počtu overovaní to zvádza
+          čítať, že za sto pokusov nevidela nikdy nič.
+        */
+        var najvyssiaRychlostVobec: Double = 0
+        /*
+          Koľko meraní počas posledného overovania prišlo a koľko z nich malo
+          dosť dobrú presnosť. Toto rozlíši tri celkom rôzne príčiny, ktoré
+          zvonku vyzerajú rovnako: iOS po prebudení nedodá nič, dodá len hrubé
+          sieťové polohy (GPS sa nezapne), alebo dodá dobré merania a auto
+          naozaj stálo.
+        */
+        var fixovVOvereni = 0
+        var pouzitelnychVOvereni = 0
+        /// Najlepšia (najmenšia) presnosť videná počas posledného overovania.
+        var najlepsiaPresnost: Double?
         var poslednyFix: TimeInterval?
 
         var dictionary: [String: Any] {
             var d: [String: Any] = [
                 "prebudeni": prebudeni,
                 "neuspesnychOvereni": neuspesnychOvereni,
-                "najvyssiaRychlost": najvyssiaRychlost
+                "najvyssiaRychlost": najvyssiaRychlost,
+                "najvyssiaRychlostVobec": najvyssiaRychlostVobec,
+                "fixovVOvereni": fixovVOvereni,
+                "pouzitelnychVOvereni": pouzitelnychVOvereni
             ]
+            if let v = najlepsiaPresnost { d["najlepsiaPresnost"] = v }
             if let v = poslednePrebudenie { d["poslednePrebudenie"] = v }
             if let v = posledneNeuspesne { d["posledneNeuspesne"] = v }
             if let v = poslednaJazda { d["poslednaJazda"] = v }
@@ -89,6 +111,10 @@ public final class DriveDetectorService: NSObject {
             prebudeni = (d["prebudeni"] as? NSNumber)?.intValue ?? 0
             neuspesnychOvereni = (d["neuspesnychOvereni"] as? NSNumber)?.intValue ?? 0
             najvyssiaRychlost = (d["najvyssiaRychlost"] as? NSNumber)?.doubleValue ?? 0
+            najvyssiaRychlostVobec = (d["najvyssiaRychlostVobec"] as? NSNumber)?.doubleValue ?? 0
+            fixovVOvereni = (d["fixovVOvereni"] as? NSNumber)?.intValue ?? 0
+            pouzitelnychVOvereni = (d["pouzitelnychVOvereni"] as? NSNumber)?.intValue ?? 0
+            najlepsiaPresnost = (d["najlepsiaPresnost"] as? NSNumber)?.doubleValue
             poslednePrebudenie = (d["poslednePrebudenie"] as? NSNumber)?.doubleValue
             posledneNeuspesne = (d["posledneNeuspesne"] as? NSNumber)?.doubleValue
             poslednaJazda = (d["poslednaJazda"] as? NSNumber)?.doubleValue
@@ -613,13 +639,30 @@ extension DriveDetectorService: CLLocationManagerDelegate {
                     // Rýchlosť sa meria za jedno overovanie — inak by po prvej
                     // diaľnici ostalo v denníku číslo, ktoré s ničím nesúvisí.
                     dennik.najvyssiaRychlost = 0
+                    dennik.fixovVOvereni = 0
+                    dennik.pouzitelnychVOvereni = 0
+                    dennik.najlepsiaPresnost = nil
                     zapisDennik(force: true)
                 }
                 apply(ukony)
             }
             dennik.poslednyFix = fix.timestamp
-            if engine.state == .verifying, fix.speedKmh > dennik.najvyssiaRychlost {
-                dennik.najvyssiaRychlost = fix.speedKmh
+            if engine.state == .verifying {
+                dennik.fixovVOvereni += 1
+                // Rovnaká podmienka, akú používa motor — meranie s horšou
+                // presnosťou sa do trasy nedostane a sériu prerušuje.
+                if fix.accuracy >= 0, fix.accuracy < config.maxAccuracyMeters {
+                    dennik.pouzitelnychVOvereni += 1
+                }
+                if fix.accuracy >= 0, dennik.najlepsiaPresnost.map({ fix.accuracy < $0 }) ?? true {
+                    dennik.najlepsiaPresnost = fix.accuracy
+                }
+                if fix.speedKmh > dennik.najvyssiaRychlost {
+                    dennik.najvyssiaRychlost = fix.speedKmh
+                }
+                if fix.speedKmh > dennik.najvyssiaRychlostVobec {
+                    dennik.najvyssiaRychlostVobec = fix.speedKmh
+                }
             }
             zapisDennik()
             apply(engine.ingest(fix, at: teraz))

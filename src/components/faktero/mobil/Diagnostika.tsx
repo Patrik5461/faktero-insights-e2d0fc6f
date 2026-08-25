@@ -245,14 +245,37 @@ async function zisti(): Promise<Riadok[]> {
             : "žiadne — systém detekciu ešte nezobudil",
           zle: d.zapnuta && d.dennik.prebudeni === 0,
         });
+        /*
+          Rýchlosť sa pri každom prebudení nuluje, takže vedľa počtu overovaní
+          zvádzala čítať, že za sto pokusov detekcia nevidela nikdy nič. Číslo
+          z posledného overovania a číslo za celý čas sú preto oddelené.
+        */
         r.push({
           co: "overenia bez jazdy",
-          hodnota: d.dennik.neuspesnychOvereni
-            ? `${d.dennik.neuspesnychOvereni}× , najvyššia videná rýchlosť ${Math.round(
-                d.dennik.najvyssiaRychlost,
-              )} km/h`
-            : "žiadne",
+          hodnota: d.dennik.neuspesnychOvereni ? `${d.dennik.neuspesnychOvereni}×` : "žiadne",
         });
+        r.push({
+          co: "najvyššia videná rýchlosť",
+          hodnota: `${Math.round(d.dennik.najvyssiaRychlost)} km/h pri poslednom overovaní, ${Math.round(
+            d.dennik.najvyssiaRychlostVobec ?? 0,
+          )} km/h za celý čas`,
+        });
+        /*
+          Toto rozlíši tri príčiny, ktoré zvonku vyzerajú rovnako: systém po
+          prebudení nedodá žiadne meranie, dodá len hrubé sieťové polohy
+          (GPS sa nezapne), alebo dodá dobré merania a auto naozaj stálo.
+        */
+        if (d.dennik.fixovVOvereni != null) {
+          const presnost =
+            d.dennik.najlepsiaPresnost != null
+              ? `, najlepšia presnosť ${Math.round(d.dennik.najlepsiaPresnost)} m`
+              : "";
+          r.push({
+            co: "merania pri poslednom overovaní",
+            hodnota: `${d.dennik.fixovVOvereni} prišlo, ${d.dennik.pouzitelnychVOvereni} dosť presných${presnost}`,
+            zle: d.zapnuta && d.dennik.prebudeni > 0 && d.dennik.pouzitelnychVOvereni === 0,
+          });
+        }
         r.push({
           co: "naposledy rozpoznaná jazda",
           hodnota: cas(d.dennik.poslednaJazda) ?? "zatiaľ žiadna",

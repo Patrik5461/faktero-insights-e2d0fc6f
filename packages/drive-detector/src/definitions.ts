@@ -113,6 +113,20 @@ export interface DriveDetectorDiagnostics {
   poslednaJazda?: number;
   /** Najvyššia rýchlosť videná počas posledného overovania. */
   najvyssiaRychlost: number;
+  /**
+   * Najvyššia rýchlosť za celý čas. `najvyssiaRychlost` sa pri každom
+   * prebudení nuluje, takže sama nepovie, či detekcia niekedy jazdu videla.
+   */
+  najvyssiaRychlostVobec?: number;
+  /**
+   * Merania počas posledného overovania: koľko ich prišlo a koľko z nich malo
+   * dosť dobrú presnosť. Rozlíši „systém nedodal nič" od „dodal len hrubé
+   * sieťové polohy" a od „merania boli dobré, auto stálo".
+   */
+  fixovVOvereni?: number;
+  pouzitelnychVOvereni?: number;
+  /** Najlepšia (najmenšia) presnosť v metroch počas posledného overovania. */
+  najlepsiaPresnost?: number;
   poslednyFix?: number;
   /** Koľko sekúnd nad prahom už overovanie nazbieralo a koľko ich treba. */
   sekundyNadPrahom: number;
