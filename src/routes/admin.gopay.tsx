@@ -343,7 +343,7 @@ function AdminGopayPage() {
                 </div>
 
                 {!allConfigured && (
-                  <div className="mt-4 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+                  <div className="mt-4 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
                     <AlertTriangle className="h-4 w-4 mt-0.5" />
                     <span>
                       Niektoré hodnoty chýbajú. Predplatné cez GoPay nebude fungovať, kým nebudú
@@ -456,7 +456,7 @@ function AdminGopayPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="mt-3 text-xs text-amber-700">Najprv nastavte APP_PUBLIC_URL.</div>
+                  <div className="mt-3 text-xs text-amber-700 dark:text-amber-300">Najprv nastavte APP_PUBLIC_URL.</div>
                 )}
               </section>
 
@@ -509,11 +509,11 @@ function AdminGopayPage() {
                     <dd className="font-mono">{stats.total}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-emerald-700">Zaplatené</dt>
+                    <dt className="text-emerald-700 dark:text-emerald-300">Zaplatené</dt>
                     <dd className="font-mono">{stats.paid}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-amber-700">Čakajúce</dt>
+                    <dt className="text-amber-700 dark:text-amber-300">Čakajúce</dt>
                     <dd className="font-mono">{stats.pending}</dd>
                   </div>
                   <div className="flex justify-between">
@@ -526,7 +526,7 @@ function AdminGopayPage() {
                   </div>
                 </dl>
               </div>
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 text-sm text-emerald-900">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 text-sm text-emerald-900 dark:text-emerald-100 dark:border-emerald-900/40">
                 <p className="font-semibold">Pozn.</p>
                 <p className="mt-2">
                   Toto sú platby Faktera za predplatné. Platby koncových zákazníkov firiem idú cez

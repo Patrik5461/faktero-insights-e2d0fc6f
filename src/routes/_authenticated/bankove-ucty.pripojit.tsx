@@ -85,7 +85,7 @@ function ConnectPage() {
       <PageBody>
         {/* Dva a dva vedľa seba: štyri panely pod sebou pôsobili rozhádzane. */}
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-8 shadow-sm">
+          <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-card p-8 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-600 text-white">
                 <Building2 className="h-6 w-6" />
@@ -109,7 +109,7 @@ function ConnectPage() {
               Najčastejšia otázka na tejto obrazovke: „a čo keď mám inú banku?".
               Z názvu panela to nikto neuhádne, tak je to napísané rovno pod ním.
             */}
-            <div className="mt-4 rounded-xl border border-emerald-300/60 bg-white/70 p-4 text-sm">
+            <div className="mt-4 rounded-xl border border-emerald-300/60 bg-white/70 p-4 text-sm dark:border-emerald-900/40 dark:bg-card/70">
               <p className="font-medium">Máte inú banku?</p>
               <p className="mt-1 text-foreground/80">
                 Ak ju máte v internetbankingu Tatra banky pripojenú cez multibanking (Slovenská

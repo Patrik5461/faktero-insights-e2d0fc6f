@@ -1088,7 +1088,7 @@ function NewInvoice() {
                       <td className="py-2 pl-3">
                         {form.reverse_charge ? (
                           <span
-                            className="inline-block rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900"
+                            className="inline-block rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900 dark:text-amber-100"
                             title="Prenesenie daňovej povinnosti"
                           >
                             PDP
@@ -1152,7 +1152,7 @@ function NewInvoice() {
                       onChange={(v) => setItem(idx, { unit_price: v, _cena_rucne: true })}
                     />
                     {form.reverse_charge ? (
-                      <span className="inline-flex items-center justify-center rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900">
+                      <span className="inline-flex items-center justify-center rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900 dark:text-amber-100">
                         PDP
                       </span>
                     ) : (

@@ -20,7 +20,7 @@ export function HelpArticle({
       <div className="mx-auto max-w-6xl px-4 py-12 lg:py-16">
         <div className="lg:grid lg:grid-cols-[1fr_220px] lg:gap-10">
           <article className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+            <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
               {category}
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight">{title}</h1>

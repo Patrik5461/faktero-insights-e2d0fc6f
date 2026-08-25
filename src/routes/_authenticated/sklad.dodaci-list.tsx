@@ -525,7 +525,7 @@ function DeliveryNoteScanPage() {
                     ))}
                   </select>
                   {warehouses.length === 0 && (
-                    <span className="mt-2 block rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
+                    <span className="mt-2 block rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
                       Firma zatiaľ nemá sklad, tovar by nemal kam prísť.
                       <button
                         type="button"

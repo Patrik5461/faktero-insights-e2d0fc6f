@@ -48,6 +48,7 @@ import { getMyAdminRole } from "@/lib/faktero/admin.functions";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { useIsNative } from "@/hooks/useIsNative";
 import { initNativePlatform } from "@/lib/mobile/native-init";
+import { PrepinacMotivu } from "@/components/faktero/PrepinacMotivu";
 
 type Company = { id: string; name: string; logo_url?: string | null; role: string };
 
@@ -710,6 +711,19 @@ export function AppShell({
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
+                {/*
+                  Prepínač je v ponuke, nie v hlavičke: vzhľad si človek zvolí
+                  raz a potom naň nesiaha, takže by v lište len zaberal miesto.
+                  `onSelect` s `preventDefault` drží ponuku otvorenú — inak by
+                  sa zavrela pri prvom kliknutí a zmenu by nebolo vidieť.
+                */}
+                <div className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
+                  <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Vzhľad
+                  </div>
+                  <PrepinacMotivu />
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={signOut}>
                   <LogOut className="mr-2 h-3.5 w-3.5" /> Odhlásiť
                 </DropdownMenuItem>
@@ -780,7 +794,7 @@ export function AppShell({
         {/* Účtovník doklady zapisuje aj mení. Nedostane sa len k tomu, čo je
             správa firmy — nech to vie skôr, než to začne hľadať. */}
         {active?.role === "accountant" && (
-          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 sm:px-6 lg:px-8">
+          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 sm:px-6 lg:px-8 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
             Ste vo firme <strong>{active.name}</strong> ako účtovník — doklady vediete v plnom
             rozsahu. Napojenie banky, platby, API kľúče a správu používateľov má na starosti majiteľ
             alebo administrátor.

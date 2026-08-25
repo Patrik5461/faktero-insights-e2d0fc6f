@@ -295,7 +295,7 @@ function ProformaStatus({
 }) {
   if (settled || value === "settled") {
     return (
-      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-200">
         Zúčtovaná
       </span>
     );

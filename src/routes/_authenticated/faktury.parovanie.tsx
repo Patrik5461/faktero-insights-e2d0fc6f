@@ -275,7 +275,7 @@ function ParovaniePage() {
                           <td className="px-3 py-3 text-right tabular-nums font-medium">
                             {fmt(z.suma, z.transakcia?.currency)}
                             {z.ciastocna && (
-                              <div className="text-xs font-normal text-amber-700">
+                              <div className="text-xs font-normal text-amber-700 dark:text-amber-300">
                                 faktúra ostane otvorená
                               </div>
                             )}

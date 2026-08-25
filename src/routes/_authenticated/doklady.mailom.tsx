@@ -48,7 +48,7 @@ function Stranka() {
             return (
               <div key={k.nadpis} className="rounded-xl border border-border bg-card p-4">
                 <div className="flex items-center gap-2">
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-emerald-50 text-emerald-700">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
                     <Icon className="h-4 w-4" />
                   </span>
                   <div className="text-sm font-medium">

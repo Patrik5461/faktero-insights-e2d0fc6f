@@ -271,7 +271,7 @@ function TxPage() {
                     <dt className="text-muted-foreground">
                       Prijaté <span className="text-xs">({s.pocetPrijatych})</span>
                     </dt>
-                    <dd className="tabular-nums font-medium text-emerald-700">
+                    <dd className="tabular-nums font-medium text-emerald-700 dark:text-emerald-300">
                       {fmtMoney(s.prijate, s.currency)}
                     </dd>
                   </div>

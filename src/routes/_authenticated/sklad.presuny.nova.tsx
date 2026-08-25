@@ -262,7 +262,7 @@ function NewTransferPage() {
                       ))}
                     </select>
                     {targetWarehouses.length === 0 && (
-                      <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                      <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
                         Cieľová firma zatiaľ nemá žiadny sklad — presun by nemal kam prísť.
                         <button
                           type="button"
@@ -298,7 +298,7 @@ function NewTransferPage() {
           </div>
 
           {companies.length === 0 && mode === "company" && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
               Nemáte prístup k žiadnej ďalšej firme. Pridajte sa do inej firmy pre presuny medzi
               firmami.
             </div>
@@ -357,12 +357,12 @@ function NewTransferPage() {
                       {mode === "company" && it.source_stock_item_id && m && (
                         <div className="mt-1 text-xs">
                           {m.matched_target_id ? (
-                            <span className="text-emerald-700">
+                            <span className="text-emerald-700 dark:text-emerald-300">
                               ✓ Nájdená v cieľovej firme (
                               {m.matched_by === "sku" ? "podľa SKU" : "podľa čiarového kódu"})
                             </span>
                           ) : (
-                            <span className="text-amber-700">
+                            <span className="text-amber-700 dark:text-amber-300">
                               Nie je v cieľovej firme — pri dokončení sa vytvorí nová.
                             </span>
                           )}

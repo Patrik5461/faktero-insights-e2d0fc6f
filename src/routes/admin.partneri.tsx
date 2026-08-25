@@ -252,7 +252,7 @@ function Formular({
             <img
               src={hodnota.logo_url}
               alt=""
-              className="h-9 w-16 rounded border border-border bg-white object-contain p-1"
+              className="h-9 w-16 rounded border border-border bg-white object-contain p-1 dark:bg-card"
             />
           )}
           <button

@@ -336,7 +336,7 @@ function DphPage() {
     <>
       <PageHeader title="DPH prehľad" description="Informatívny prehľad DPH na výstupe a vstupe" />
       <PageBody>
-        <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 flex gap-2 items-start">
+        <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 flex gap-2 items-start dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
           <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
           <div className="text-sm">
             <b>Upozornenie:</b> Toto je informatívny prehľad. Pre podanie DPH priznania použite

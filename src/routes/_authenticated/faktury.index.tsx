@@ -727,7 +727,7 @@ function InvoicesPage() {
                 <span className="inline-flex items-center gap-2">
                   {i.invoice_number}
                   {reminderMap[i.id] ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200">
                       <Bell className="h-3 w-3" /> Upomienka #{reminderMap[i.id]}
                     </span>
                   ) : null}
@@ -830,7 +830,7 @@ function InvoicesPage() {
                           {i.invoice_number}
                           {reminderMap[i.id] ? (
                             <span
-                              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800"
+                              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200"
                               title="Upomienka bola odoslaná"
                             >
                               <Bell className="h-3 w-3" /> #{reminderMap[i.id]}

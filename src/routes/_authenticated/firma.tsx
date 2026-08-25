@@ -481,7 +481,7 @@ function TeamSection({ companyId }: { companyId: string }) {
       </form>
 
       {odkaz && (
-        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
           <div className="font-medium">Odkaz na pozvánku</div>
           <div className="mt-1 break-all font-mono text-xs">{odkaz}</div>
           <button
@@ -490,7 +490,7 @@ function TeamSection({ companyId }: { companyId: string }) {
               navigator.clipboard?.writeText(odkaz);
               toast.success("Odkaz skopírovaný");
             }}
-            className="mt-2 rounded-md border border-amber-300 px-2 py-1 text-xs hover:bg-amber-100"
+            className="mt-2 rounded-md border border-amber-300 px-2 py-1 text-xs hover:bg-amber-100 dark:border-amber-900/40"
           >
             Skopírovať
           </button>

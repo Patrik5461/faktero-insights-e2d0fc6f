@@ -128,7 +128,7 @@ function PurchaseOrderDetail() {
             </div>
           )}
           {sprava && (
-            <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-700">
+            <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">
               {sprava}
             </div>
           )}

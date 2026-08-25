@@ -400,8 +400,8 @@ function PurchaseInvoiceDetail() {
             </div>
 
             {accounts.length > 0 && row.status !== "cancelled" && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-emerald-800">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 dark:border-emerald-900/40">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
                   <Landmark className="h-3.5 w-3.5" /> Zaplatiť cez banku
                 </div>
 
@@ -470,7 +470,7 @@ function PurchaseInvoiceDetail() {
                 )}
 
                 {payments.length > 0 && (
-                  <div className="mt-4 border-t border-emerald-200 pt-3">
+                  <div className="mt-4 border-t border-emerald-200 pt-3 dark:border-emerald-900/40">
                     <div className="text-xs uppercase tracking-wide text-muted-foreground">
                       História platieb
                     </div>

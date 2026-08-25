@@ -516,9 +516,9 @@ function StatCard({
 }) {
   const toneCls =
     tone === "amber"
-      ? "border-amber-200 bg-amber-50 text-amber-900"
+      ? "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100"
       : tone === "rose"
-        ? "border-rose-200 bg-rose-50 text-rose-900"
+        ? "border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-100"
         : "border-border bg-card";
   return (
     <div className={`rounded-xl border p-4 ${toneCls}`}>

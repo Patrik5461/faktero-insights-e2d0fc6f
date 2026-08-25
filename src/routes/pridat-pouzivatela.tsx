@@ -153,7 +153,7 @@ function AcceptInvitationPage() {
           </label>
         )}
         {emailMismatch && (
-          <p className="rounded-md bg-amber-50 p-3 text-xs text-amber-800">
+          <p className="rounded-md bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
             Ste prihlásený ako <strong>{userEmail}</strong>. Pozvánka je pre {inv.email} — buď sa
             odhláste a prijmite ju pod správnym účtom, alebo pokračujte a pripojte túto firmu k
             svojmu súčasnému účtu.

@@ -103,7 +103,7 @@ function UzavierkaPage() {
           </div>
         )}
         {sprava && (
-          <div className="mb-4 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700">
+          <div className="mb-4 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
             {sprava}
           </div>
         )}

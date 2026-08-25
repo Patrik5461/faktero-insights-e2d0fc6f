@@ -942,13 +942,13 @@ function InvoiceDetail() {
               </div>
             </div>
             {inv.status === "paid" ? (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900">
-                <div className="text-xs uppercase tracking-wide text-emerald-700">Uhradené</div>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100 dark:border-emerald-900/40">
+                <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Uhradené</div>
                 <div className="mt-2">
                   Dátum úhrady: {inv.paid_at ? String(inv.paid_at).slice(0, 10) : "—"}
                 </div>
                 <div>Forma úhrady: {paymentMethodLabel(inv.payment_method)}</div>
-                <div className="mt-2 text-xs text-emerald-700">
+                <div className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">
                   Platobné údaje sa nezobrazujú — faktúra je zaplatená.
                 </div>
               </div>
@@ -991,7 +991,7 @@ function InvoiceDetail() {
                 </div>
                 {settledIn ? (
                   <div className="mt-2 space-y-1">
-                    <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                    <div className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-200">
                       Zúčtovaná
                     </div>
                     <div>

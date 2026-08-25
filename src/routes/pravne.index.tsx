@@ -53,7 +53,7 @@ function Page() {
   return (
     <MarketingShell>
       <div className="mx-auto max-w-4xl px-4 py-16">
-        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Právne</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Právne</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Právne dokumenty</h1>
         <p className="mt-2 text-muted-foreground">
           Všetky pravidlá, ktorými sa riadi používanie Faktera.

@@ -83,7 +83,7 @@ function PayPage() {
           </div>
 
           {paid ? (
-            <div className="rounded-lg bg-emerald-50 text-emerald-900 p-4 flex items-center gap-2">
+            <div className="rounded-lg bg-emerald-50 text-emerald-900 p-4 flex items-center gap-2 dark:bg-emerald-950/30 dark:text-emerald-100">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
               <span className="text-sm font-medium">Faktúra je už uhradená. Ďakujeme!</span>
             </div>
@@ -109,7 +109,7 @@ function PayPage() {
               </button>
               {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
               {data.link.sandbox && (
-                <p className="mt-3 text-center text-xs text-amber-700">
+                <p className="mt-3 text-center text-xs text-amber-700 dark:text-amber-300">
                   Testovací režim — žiadne skutočné peniaze sa neúčtujú.
                 </p>
               )}

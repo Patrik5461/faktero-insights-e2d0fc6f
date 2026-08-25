@@ -97,7 +97,7 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
       {potvrdenia.map((p) => (
         <div
           key={p.id}
-          className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900"
+          className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40"
         >
           <div className="flex items-center gap-2 text-sm font-medium">
             <ShieldCheck className="h-4 w-4" />
@@ -111,12 +111,12 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {p.code ? (
               <>
-                <code className="rounded-md border border-amber-300 bg-white px-3 py-2 text-lg font-semibold tracking-wider tabular-nums">
+                <code className="rounded-md border border-amber-300 bg-white px-3 py-2 text-lg font-semibold tracking-wider tabular-nums dark:bg-card dark:border-amber-900/40">
                   {p.code}
                 </code>
                 <button
                   onClick={() => kopiruj(p)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm hover:bg-amber-100"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-white px-3 py-2 text-sm hover:bg-amber-100 dark:bg-card dark:border-amber-900/40"
                 >
                   {skopirovany === p.id ? (
                     <Check className="h-4 w-4" />
@@ -142,7 +142,7 @@ export function PotvrdeniePreposielania({ companyId }: { companyId: string | nul
             <button
               disabled={pracuje}
               onClick={() => uzPotvrdene(p)}
-              className="ml-auto rounded-md border border-amber-300 px-3 py-2 text-sm hover:bg-amber-100 disabled:opacity-60"
+              className="ml-auto rounded-md border border-amber-300 px-3 py-2 text-sm hover:bg-amber-100 disabled:opacity-60 dark:border-amber-900/40"
             >
               Už som potvrdil
             </button>

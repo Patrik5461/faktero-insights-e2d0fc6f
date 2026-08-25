@@ -15,6 +15,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { CookieConsentBanner } from "@/components/faktero/cookie-consent";
 import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
 import { listSeoPagesPublic } from "@/lib/seo.functions";
+import { SKRIPT_DO_HLAVICKY } from "@/lib/faktero/motiv";
 
 function NotFoundComponent() {
   return (
@@ -181,6 +182,12 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        {/*
+          Motív sa nasadzuje pred prvým vykreslením, inak by tmavý režim začal
+          bielym bliknutím. Preto je to obyčajný skript v hlavičke a nie efekt
+          v komponente — ten beží až po prvom kresle.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: SKRIPT_DO_HLAVICKY }} />
       </head>
       <body>
         {children}

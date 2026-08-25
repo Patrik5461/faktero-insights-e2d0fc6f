@@ -81,7 +81,7 @@ function AdminPaymentProviders() {
                     <td className="px-3 py-2">{r.provider}</td>
                     <td className="px-3 py-2">
                       {r.enabled ? (
-                        <span className="text-emerald-700">Aktívny</span>
+                        <span className="text-emerald-700 dark:text-emerald-300">Aktívny</span>
                       ) : (
                         <span className="text-muted-foreground">Vypnutý</span>
                       )}

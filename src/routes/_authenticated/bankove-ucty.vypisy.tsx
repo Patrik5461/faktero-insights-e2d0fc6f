@@ -175,7 +175,7 @@ function BankStatementsPage() {
                           <span className="font-medium">{ucet?.account_name ?? "Účet"}</span>
                           {vlastny && (
                             <span
-                              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-200"
                               title="Banka pre tento účet výpis nevydáva, zostavilo ho Faktero z načítaných transakcií."
                             >
                               <Sparkles className="h-3 w-3" /> Zostavené Fakterom
@@ -199,7 +199,7 @@ function BankStatementsPage() {
                               disabled={busy === s.id}
                               className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm hover:bg-secondary disabled:opacity-50"
                             >
-                              <Ikona className="h-4 w-4 text-emerald-700" />
+                              <Ikona className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
                               {typ}
                               <span className="text-xs text-muted-foreground">
                                 {fmtVelkost(s.file_size)}
@@ -238,10 +238,10 @@ function BankStatementsPage() {
         })}
 
         {maVlastne && (
-          <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+          <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/40">
             <div className="flex gap-2">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-              <div className="text-sm text-amber-900">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
+              <div className="text-sm text-amber-900 dark:text-amber-100">
                 <p className="font-medium">Výpisy označené „Zostavené Fakterom“</p>
                 <p className="mt-1">
                   Pre účty vedené v inej banke Tatra banka výpis nevydáva, preto ho zostavíme z

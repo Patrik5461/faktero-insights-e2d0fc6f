@@ -261,7 +261,7 @@ function Page() {
   return (
     <MarketingShell>
       <div className="mx-auto max-w-5xl px-4 py-16">
-        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Pomoc</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Pomoc</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Centrum pomoci</h1>
         <p className="mt-2 text-muted-foreground max-w-2xl">
           Vyberte si oblasť, s ktorou potrebujete poradiť. Ak hľadáte konkrétnu odpoveď, napíšte nám
@@ -284,7 +284,7 @@ function Page() {
                     className={`h-full rounded-xl border p-5 transition ${c.available ? "border-border bg-card hover:border-emerald-500/50 hover:shadow-sm" : "border-dashed border-border bg-card/40 opacity-70"}`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-emerald-50 text-emerald-700">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
                         <Icon className="h-5 w-5" />
                       </span>
                       <div className="font-semibold">{c.label}</div>

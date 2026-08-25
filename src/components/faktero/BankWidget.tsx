@@ -27,14 +27,14 @@ export function BankWidget() {
   }, null);
 
   return (
-    <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4">
+    <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-card p-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
           <Landmark className="h-3.5 w-3.5" /> Bankový účet
         </div>
         <Link
           to="/bankove-ucty"
-          className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline"
+          className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 hover:underline"
         >
           Detail <ArrowRight className="h-3 w-3" />
         </Link>
@@ -44,14 +44,14 @@ export function BankWidget() {
       ) : accounts.length === 0 ? (
         <div className="mt-3 text-sm text-muted-foreground">
           Žiadny bankový účet.{" "}
-          <Link to="/bankove-ucty/pripojit" className="text-emerald-700 hover:underline">
+          <Link to="/bankove-ucty/pripojit" className="text-emerald-700 dark:text-emerald-300 hover:underline">
             Pripojiť banku
           </Link>
         </div>
       ) : (
         <>
           {zostatky.map((z) => (
-            <div key={z.mena} className="mt-2 text-2xl font-semibold tabular-nums text-emerald-900">
+            <div key={z.mena} className="mt-2 text-2xl font-semibold tabular-nums text-emerald-900 dark:text-emerald-100">
               {formatujSumu(z.suma, z.mena)}
             </div>
           ))}

@@ -225,17 +225,17 @@ function BankAccountsPage() {
       />
       <PageBody>
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4">
-            <div className="text-xs uppercase tracking-wide text-emerald-700">
+          <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-card p-4">
+            <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
               Celkový zostatok{zostatky.length > 1 ? " po menách" : ""}
             </div>
             {zostatky.length === 0 ? (
-              <div className="mt-1 text-2xl font-semibold text-emerald-900">{fmtMoney(0)}</div>
+              <div className="mt-1 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">{fmtMoney(0)}</div>
             ) : (
               zostatky.map((z) => (
                 <div
                   key={z.mena}
-                  className="mt-1 text-2xl font-semibold tabular-nums text-emerald-900"
+                  className="mt-1 text-2xl font-semibold tabular-nums text-emerald-900 dark:text-emerald-100"
                 >
                   {fmtMoney(z.suma, z.mena)}
                 </div>
@@ -271,18 +271,18 @@ function BankAccountsPage() {
           {data?.connections.map((c) => (
             <div key={c.id} className="rounded-xl border border-border bg-card p-4">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-100 text-emerald-700">
+                <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-100 text-emerald-700 dark:text-emerald-300">
                   <Building2 className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 font-medium capitalize">
                     {c.provider}
                     {c.status === "connected" ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                         <CheckCircle2 className="h-3 w-3" /> Pripojené
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
                         <AlertCircle className="h-3 w-3" /> {c.status}
                       </span>
                     )}
@@ -432,7 +432,7 @@ function BankAccountsPage() {
                           <Link
                             to="/bankove-ucty/transakcie"
                             search={{ account: a.id } as any}
-                            className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline"
+                            className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300 hover:underline"
                           >
                             Transakcie <ArrowRight className="h-3 w-3" />
                           </Link>
