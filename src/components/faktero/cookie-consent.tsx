@@ -169,7 +169,13 @@ export function CookieConsentBanner() {
         aria-live="polite"
         aria-label="Cookies súhlas"
         ref={bannerRef}
-        className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80"
+        /*
+          Vyššie než plávajúca pomoc (`z-[60]`). Tá sedí v pravom dolnom rohu a
+          na notebooku 1300×900 aj na mobile prekrývala tlačidlo „Prijať
+          všetko“ — súhlas sa jednoducho nedal odkliknúť. Lišta drží stránku,
+          kým sa neodpovie, takže musí byť nad všetkým ostatným.
+        */
+        className="fixed inset-x-0 bottom-0 z-[70] border-t bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80"
       >
         <div className="mx-auto flex max-w-7xl flex-col items-start gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <div className="flex items-start gap-3">
