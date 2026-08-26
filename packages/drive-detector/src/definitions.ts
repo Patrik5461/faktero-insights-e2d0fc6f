@@ -123,6 +123,12 @@ export interface DriveDetectorDiagnostics {
    * dosť dobrú presnosť. Rozlíši „systém nedodal nič" od „dodal len hrubé
    * sieťové polohy" a od „merania boli dobré, auto stálo".
    */
+  /**
+   * Koľkokrát sa proces appky spustil a koľko meraní odvtedy prišlo.
+   * Rozlíši „systém appku po každom prebudení spúšťa nanovo" od „len ju uspáva".
+   */
+  spusteniProcesu?: number;
+  fixovOdSpustenia?: number;
   fixovVOvereni?: number;
   pouzitelnychVOvereni?: number;
   /** Najlepšia (najmenšia) presnosť v metroch počas posledného overovania. */

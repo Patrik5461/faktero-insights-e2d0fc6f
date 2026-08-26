@@ -287,6 +287,12 @@ async function zisti(): Promise<Riadok[]> {
             zle: !nemerane && d.dennik.pouzitelnychVOvereni === 0,
           });
         }
+        if (d.dennik.spusteniProcesu != null) {
+          r.push({
+            co: "spustení appky na pozadí",
+            hodnota: `${d.dennik.spusteniProcesu}×, meraní od posledného spustenia ${d.dennik.fixovOdSpustenia ?? 0}`,
+          });
+        }
         r.push({
           co: "naposledy rozpoznaná jazda",
           hodnota: cas(d.dennik.poslednaJazda) ?? "zatiaľ žiadna",

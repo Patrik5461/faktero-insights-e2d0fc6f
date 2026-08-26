@@ -82,6 +82,14 @@ public final class DriveDetectorService: NSObject {
           sieťové polohy (GPS sa nezapne), alebo dodá dobré merania a auto
           naozaj stálo.
         */
+        /*
+          Koľkokrát sa proces spustil a koľko meraní odvtedy prišlo. Rozlíši
+          dve veci, ktoré zvonku vyzerajú rovnako: systém appku po každom
+          prebudení spúšťa nanovo (vtedy sa počítadlo spustení blíži počtu
+          prebudení), alebo ju len uspáva (spustení je málo, meraní tiež).
+        */
+        var spusteniProcesu = 0
+        var fixovOdSpustenia = 0
         var fixovVOvereni = 0
         var pouzitelnychVOvereni = 0
         /// Najlepšia (najmenšia) presnosť videná počas posledného overovania.
@@ -94,6 +102,8 @@ public final class DriveDetectorService: NSObject {
                 "neuspesnychOvereni": neuspesnychOvereni,
                 "najvyssiaRychlost": najvyssiaRychlost,
                 "najvyssiaRychlostVobec": najvyssiaRychlostVobec,
+                "spusteniProcesu": spusteniProcesu,
+                "fixovOdSpustenia": fixovOdSpustenia,
                 "fixovVOvereni": fixovVOvereni,
                 "pouzitelnychVOvereni": pouzitelnychVOvereni
             ]
@@ -112,6 +122,7 @@ public final class DriveDetectorService: NSObject {
             neuspesnychOvereni = (d["neuspesnychOvereni"] as? NSNumber)?.intValue ?? 0
             najvyssiaRychlost = (d["najvyssiaRychlost"] as? NSNumber)?.doubleValue ?? 0
             najvyssiaRychlostVobec = (d["najvyssiaRychlostVobec"] as? NSNumber)?.doubleValue ?? 0
+            spusteniProcesu = (d["spusteniProcesu"] as? NSNumber)?.intValue ?? 0
             fixovVOvereni = (d["fixovVOvereni"] as? NSNumber)?.intValue ?? 0
             pouzitelnychVOvereni = (d["pouzitelnychVOvereni"] as? NSNumber)?.intValue ?? 0
             najlepsiaPresnost = (d["najlepsiaPresnost"] as? NSNumber)?.doubleValue
@@ -123,6 +134,44 @@ public final class DriveDetectorService: NSObject {
     }
 
     private var now: TimeInterval { Date().timeIntervalSince1970 }
+
+    /*
+      Držanie procesu pri živote počas overovania.
+
+      Keď appku zobudí významná zmena polohy, iOS jej dá len pár sekúnd behu.
+      Samotné `startUpdatingLocation()` na jej udržanie nestačilo: z Patrikovej
+      diagnostiky prišlo počas celej rannej jazdy **jediné meranie na jedno
+      overovanie**, hoci GPS merala s presnosťou 14 m a rýchlosť videla 52 km/h.
+      Motor pritom potrebuje tri merania po sebe a desiatky sekúnd nad prahom —
+      s jedným sa jazda nepotvrdí nikdy.
+
+      Táto značka povie systému, že práca ešte nie je hotová, a kúpi čas na to,
+      aby sa prúd meraní rozbehol. Musí sa vždy ukončiť, inak ju systém ukončí
+      sám a appku potrestá.
+    */
+    private var drzanieProcesu: UIBackgroundTaskIdentifier = .invalid
+
+    private func zacniDrzatProces() {
+        guard drzanieProcesu == .invalid else { return }
+        let zacni = {
+            self.drzanieProcesu = UIApplication.shared.beginBackgroundTask(
+                withName: "faktero.detekcia-jazdy"
+            ) { [weak self] in
+                // Systém dochádza s trpezlivosťou — značku treba pustiť sám,
+                // inak appku zabije.
+                self?.prestanDrzatProces()
+            }
+        }
+        if Thread.isMainThread { zacni() } else { DispatchQueue.main.sync(execute: zacni) }
+    }
+
+    private func prestanDrzatProces() {
+        let znacka = drzanieProcesu
+        guard znacka != .invalid else { return }
+        drzanieProcesu = .invalid
+        let skonci = { UIApplication.shared.endBackgroundTask(znacka) }
+        if Thread.isMainThread { skonci() } else { DispatchQueue.main.async(execute: skonci) }
+    }
 
     /// Bez `location` v `UIBackgroundModes` vyhodí `allowsBackgroundLocationUpdates`
     /// výnimku a zhodí celú appku. Radšej beží detekcia len v popredí, než by
@@ -223,6 +272,8 @@ public final class DriveDetectorService: NSObject {
         if let raw = store.meta(Self.metaDennik), let d = jsonObject(raw) {
             dennik = Dennik(dictionary: d)
         }
+        // `fixovOdSpustenia` sa zámerne neobnovuje — patrí k tomuto behu.
+        dennik.spusteniProcesu += 1
         engine.update(config: config)
     }
 
@@ -451,6 +502,8 @@ public final class DriveDetectorService: NSObject {
             manager.allowsBackgroundLocationUpdates = true
         }
         manager.startUpdatingLocation()
+        // Bez toho appku systém uspí skôr, než sa prúd meraní rozbehne.
+        zacniDrzatProces()
         startTimer()
     }
 
@@ -462,6 +515,7 @@ public final class DriveDetectorService: NSObject {
             manager.allowsBackgroundLocationUpdates = false
         }
         stopTimer()
+        prestanDrzatProces()
         store.flush()
     }
 
@@ -647,6 +701,7 @@ extension DriveDetectorService: CLLocationManagerDelegate {
                 apply(ukony)
             }
             dennik.poslednyFix = fix.timestamp
+            dennik.fixovOdSpustenia += 1
             if engine.state == .verifying {
                 dennik.fixovVOvereni += 1
                 // Rovnaká podmienka, akú používa motor — meranie s horšou
