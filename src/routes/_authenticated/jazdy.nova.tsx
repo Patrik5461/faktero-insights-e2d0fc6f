@@ -64,6 +64,11 @@ function NewTripPage() {
   */
   const [trasa, setTrasa] = useState<NavrhTrasy | null>(null);
   const [hladamTrasu, setHladamTrasu] = useState(false);
+  /* Trasa zapísaná pri jazde. Doteraz sa dala vidieť len z knihy jázd cez
+     ikonku mapy — po otvorení jazdy zmizla, hoci práve tam sa hodí najviac. */
+  const [ulozenaTrasa, setUlozenaTrasa] = useState<string | null>(null);
+  /* Čerstvo navrhnutá trasa prebíja zapísanú — človek ju práve prepočítal. */
+  const zobrazenaTrasa = trasa?.route ?? ulozenaTrasa;
   // Doplnená cena sa smie prepísať ďalším vozidlom, ručne zadaná nikdy.
   const [cenaDoplnena, setCenaDoplnena] = useState(false);
 
@@ -101,6 +106,7 @@ function NewTripPage() {
           return navigate({ to: "/jazdy" });
         }
         setCenaDoplnena(false);
+        setUlozenaTrasa((data as any).route ?? null);
         setForm({
           vehicle_id: data.vehicle_id ?? "",
           trip_date: data.trip_date ?? new Date().toISOString().slice(0, 10),
@@ -294,7 +300,8 @@ function NewTripPage() {
             .
           </div>
         ) : (
-          <form onSubmit={submit} className="grid max-w-3xl gap-4 sm:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
             <Field label="Dátum *">
               <input
                 type="date"
@@ -365,53 +372,6 @@ function NewTripPage() {
                   placeholder="napr. Bratislava, Einsteinova 5"
                 />
               </Field>
-            </div>
-            {/*
-              Trasa sa počíta až na požiadanie. Automaticky pri písaní by sa
-              dopyt spustil z každej nedokončenej adresy a míňal by kvótu na
-              preklepoch.
-            */}
-            <div className="sm:col-span-2">
-              <button
-                type="button"
-                onClick={navrhniTrasuPreFormular}
-                disabled={hladamTrasu}
-                className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary disabled:opacity-60"
-              >
-                <MapIcon className="h-4 w-4" />
-                {hladamTrasu ? "Hľadám trasu…" : "Navrhnúť trasu"}
-              </button>
-
-              {trasa && (
-                <div className="mt-3 rounded-xl border border-border bg-card p-3">
-                  <div className="text-sm">
-                    <span className="font-medium">{trasa.vzdialenost_km} km</span>
-                    <span className="text-muted-foreground">
-                      {" "}
-                      · približne {trasa.trvanie_min} min
-                    </span>
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {trasa.odkial.nazov} → {trasa.kam.nazov}
-                  </div>
-                  <div className="mt-3">
-                    <MapaTrasy route={trasa.route} vyska={260} />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={pouziKilometre}
-                    className="mt-3 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-                  >
-                    Doplniť {trasa.vzdialenost_km} km do tachometra
-                  </button>
-                  {/* Kilometre z mapy sú najkratšia cesta po cestách, nie to,
-                      čo auto naozaj prešlo. Pred úradom platí tachometer. */}
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Je to najkratšia cesta po cestách — obchádzky ani hľadanie parkovania v nej nie
-                    sú. Pre knihu jázd je rozhodujúci tachometer.
-                  </p>
-                </div>
-              )}
             </div>
             <Field label="Tachometer začiatok (km) *">
               <input
@@ -553,6 +513,78 @@ function NewTripPage() {
               </button>
             </div>
           </form>
+
+          {/*
+            Mapa vedľa formulára, nie pod ním. Pri otvorenej jazde je trasa to
+            prvé, čo človek chce vidieť — dovtedy sa dala zobraziť len ikonkou
+            v knihe jázd a po otvorení jazdy zmizla. Na úzkej obrazovke sa
+            stĺpce poskladajú pod seba a mapa ide nakoniec.
+          */}
+          <aside className="lg:sticky lg:top-4 lg:self-start">
+            <div className="rounded-xl border border-border bg-card p-3">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-medium">Trasa na mape</h2>
+                {/*
+                  Trasa sa počíta až na požiadanie. Automaticky pri písaní by sa
+                  dopyt spustil z každej nedokončenej adresy a míňal by kvótu na
+                  preklepoch.
+                */}
+                <button
+                  type="button"
+                  onClick={navrhniTrasuPreFormular}
+                  disabled={hladamTrasu}
+                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-60"
+                >
+                  <MapIcon className="h-3.5 w-3.5" />
+                  {hladamTrasu ? "Hľadám…" : zobrazenaTrasa ? "Prepočítať" : "Navrhnúť trasu"}
+                </button>
+              </div>
+
+              {trasa && (
+                <div className="mt-2 text-sm">
+                  <span className="font-medium">{trasa.vzdialenost_km} km</span>
+                  <span className="text-muted-foreground">
+                    {" "}
+                    · približne {trasa.trvanie_min} min
+                  </span>
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    {trasa.odkial.nazov} → {trasa.kam.nazov}
+                  </div>
+                </div>
+              )}
+
+              {zobrazenaTrasa ? (
+                <div className="mt-3">
+                  <MapaTrasy route={zobrazenaTrasa} vyska={300} />
+                </div>
+              ) : (
+                <p className="mt-3 rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
+                  {upravujem
+                    ? "Táto jazda nemá zapísanú trasu. Doplňte odkiaľ a kam a dajte Navrhnúť trasu."
+                    : "Vyplňte odkiaľ a kam a dajte Navrhnúť trasu."}
+                </p>
+              )}
+
+              {trasa && (
+                <>
+                  <button
+                    type="button"
+                    onClick={pouziKilometre}
+                    className="mt-3 w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                  >
+                    Doplniť {trasa.vzdialenost_km} km do tachometra
+                  </button>
+                  {/* Kilometre z mapy sú najkratšia cesta po cestách, nie to,
+                      čo auto naozaj prešlo. Pred úradom platí tachometer. */}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Je to najkratšia cesta po cestách — obchádzky ani hľadanie parkovania v nej nie
+                    sú. Pre knihu jázd je rozhodujúci tachometer.
+                  </p>
+                </>
+              )}
+            </div>
+          </aside>
+          </div>
         )}
       </PageBody>
     </>
