@@ -77,10 +77,22 @@ function BankAccountsPage() {
     reload();
   }, []);
 
+  /**
+   * Odpojenie sa nedá vziať späť jedným klikom — Tatra banka chce celý súhlas
+   * znova, ostatné aspoň prihlásenie. Preto sa pýta.
+   */
+  function potvrdOdpojenie(nazov: string): boolean {
+    return window.confirm(
+      `Naozaj odpojiť ${nazov}?\n\nZostatky sa prestanú aktualizovať a pripojenie budete musieť nastaviť znova. Už stiahnuté pohyby ostanú.`,
+    );
+  }
+
   /** Revolut: účty, pohyby a odpojenie. Súhlas sa obnovuje potvrdením. */
   async function onRevolut(connId: string, co: "ucty" | "pohyby" | "odpojit") {
     const cid = getActiveCompanyId();
     if (!cid) return;
+    // Pýtame sa pred zaneprázdnením tlačidla — inak sa točí, kým človek číta.
+    if (co === "odpojit" && !potvrdOdpojenie("Revolut")) return;
     setBusy(connId);
     try {
       if (co === "ucty") {
@@ -109,6 +121,8 @@ function BankAccountsPage() {
   async function onWallester(connId: string, co: "ucty" | "pohyby" | "odpojit") {
     const cid = getActiveCompanyId();
     if (!cid) return;
+    // Pýtame sa pred zaneprázdnením tlačidla — inak sa točí, kým človek číta.
+    if (co === "odpojit" && !potvrdOdpojenie("Wallester")) return;
     setBusy(connId);
     try {
       if (co === "ucty") {
@@ -137,6 +151,8 @@ function BankAccountsPage() {
   async function onWise(connId: string, co: "ucty" | "pohyby" | "odpojit") {
     const cid = getActiveCompanyId();
     if (!cid) return;
+    // Pýtame sa pred zaneprázdnením tlačidla — inak sa točí, kým človek číta.
+    if (co === "odpojit" && !potvrdOdpojenie("Wise")) return;
     setBusy(connId);
     try {
       if (co === "ucty") {
@@ -230,7 +246,9 @@ function BankAccountsPage() {
               Celkový zostatok{zostatky.length > 1 ? " po menách" : ""}
             </div>
             {zostatky.length === 0 ? (
-              <div className="mt-1 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">{fmtMoney(0)}</div>
+              <div className="mt-1 text-2xl font-semibold text-emerald-900 dark:text-emerald-100">
+                {fmtMoney(0)}
+              </div>
             ) : (
               zostatky.map((z) => (
                 <div

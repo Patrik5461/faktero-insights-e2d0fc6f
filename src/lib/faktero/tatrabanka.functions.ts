@@ -76,6 +76,13 @@ export const listBankData = createServerFn({ method: "POST" })
       .from("bank_connections")
       .select("id, provider, status, consent_id, last_synced_at, token_expires_at, created_at")
       .eq("company_id", data.company_id)
+      /*
+        Odpojené pripojenie do zoznamu nepatrí. Riadok v databáze ostáva kvôli
+        histórii, ale odpojenie ho len prepínalo na `disconnected` — karta
+        potom ostala aj s tlačidlami a zmenil sa len malý štítok, takže
+        ťuknutie na „Odpojiť" vyzeralo, že neurobilo nič.
+      */
+      .neq("status", "disconnected")
       .order("created_at", { ascending: false });
     const { data: accounts } = await context.supabase
       .from("bank_accounts")
