@@ -300,7 +300,16 @@ export async function sendEfaktura(
     )
     .select()
     .single();
-  if (docErr) throw docErr;
+  /*
+    Faktúra je v tejto chvíli **už u odberateľa** — zlyhal len náš zápis. Holá
+    databázová chyba tu tvrdila, že odoslanie zlyhalo, a človek to skúšal znova.
+    (Duplikát u odberateľa nevznikne, `idempotencyKey` je číslo faktúry, ale
+    hlásenie aj tak klamalo.)
+  */
+  if (docErr)
+    throw new Error(
+      `Faktúra bola odoslaná odberateľovi, ale nepodarilo sa ju zapísať do evidencie: ${docErr.message}. Neodosielajte ju znova — nahláste to, prosím, na servis@faktero.sk.`,
+    );
 
   await supabaseAdmin.from("efaktura_deliveries").insert({
     company_id: invoice.company_id,

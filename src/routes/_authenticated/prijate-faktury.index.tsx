@@ -13,6 +13,7 @@ import {
   Trash2,
   Mail,
   ScanLine,
+  FileCode,
   User,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
@@ -490,6 +491,12 @@ function Zapisal({ zdroj, autor }: { zdroj?: string | null; autor?: string | nul
     return (
       <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
         <Mail className="h-3.5 w-3.5" /> E-mailom
+      </span>
+    );
+  if (zdroj === "efaktura")
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        <FileCode className="h-3.5 w-3.5" /> Z eFaktúry
       </span>
     );
   if (zdroj === "doklad")
