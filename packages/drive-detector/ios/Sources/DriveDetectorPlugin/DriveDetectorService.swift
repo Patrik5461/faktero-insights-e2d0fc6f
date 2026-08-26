@@ -60,6 +60,9 @@ public final class DriveDetectorService: NSObject {
     /// prichádza tým istým úkonom.
     private var zamietaClovek = false
 
+    /// Či prebudenie už započítal kruh alebo odchod z miesta.
+    private var zdrojZapocitany = false
+
     struct Dennik {
         var prebudeni = 0
         var poslednePrebudenie: TimeInterval?
@@ -88,6 +91,16 @@ public final class DriveDetectorService: NSObject {
           prebudení spúšťa nanovo (vtedy sa počítadlo spustení blíži počtu
           prebudení), alebo ju len uspáva (spustení je málo, meraní tiež).
         */
+        /*
+          Odkiaľ prišlo prebudenie. Z Patrikovej jazdy 26. 8. vyšlo, že za tri
+          hodiny vrátane diaľnice sa appka zobudila štyrikrát — významná zmena
+          polohy je na začiatok jazdy pririedka. Pribudol kruh okolo poslednej
+          polohy a sledovanie odchodu z miesta; bez tohto rozpočtu by sa nedalo
+          povedať, ktorý z tých troch mechanizmov naozaj robí prácu.
+        */
+        var prebudeniVyznamna = 0
+        var prebudeniKruh = 0
+        var prebudeniOdchod = 0
         var spusteniProcesu = 0
         var fixovOdSpustenia = 0
         var fixovVOvereni = 0
@@ -102,6 +115,9 @@ public final class DriveDetectorService: NSObject {
                 "neuspesnychOvereni": neuspesnychOvereni,
                 "najvyssiaRychlost": najvyssiaRychlost,
                 "najvyssiaRychlostVobec": najvyssiaRychlostVobec,
+                "prebudeniVyznamna": prebudeniVyznamna,
+                "prebudeniKruh": prebudeniKruh,
+                "prebudeniOdchod": prebudeniOdchod,
                 "spusteniProcesu": spusteniProcesu,
                 "fixovOdSpustenia": fixovOdSpustenia,
                 "fixovVOvereni": fixovVOvereni,
@@ -122,6 +138,9 @@ public final class DriveDetectorService: NSObject {
             neuspesnychOvereni = (d["neuspesnychOvereni"] as? NSNumber)?.intValue ?? 0
             najvyssiaRychlost = (d["najvyssiaRychlost"] as? NSNumber)?.doubleValue ?? 0
             najvyssiaRychlostVobec = (d["najvyssiaRychlostVobec"] as? NSNumber)?.doubleValue ?? 0
+            prebudeniVyznamna = (d["prebudeniVyznamna"] as? NSNumber)?.intValue ?? 0
+            prebudeniKruh = (d["prebudeniKruh"] as? NSNumber)?.intValue ?? 0
+            prebudeniOdchod = (d["prebudeniOdchod"] as? NSNumber)?.intValue ?? 0
             spusteniProcesu = (d["spusteniProcesu"] as? NSNumber)?.intValue ?? 0
             fixovVOvereni = (d["fixovVOvereni"] as? NSNumber)?.intValue ?? 0
             pouzitelnychVOvereni = (d["pouzitelnychVOvereni"] as? NSNumber)?.intValue ?? 0
@@ -312,6 +331,8 @@ public final class DriveDetectorService: NSObject {
         // Rozpracovanú jazdu neututláme — ukončí sa a appka ju dostane.
         apply(engine.endTrip(at: now))
         manager.stopMonitoringSignificantLocationChanges()
+        manager.stopMonitoringVisits()
+        zrusKruh()
         stopPrecise()
         motion.stop()
     }
@@ -489,6 +510,59 @@ public final class DriveDetectorService: NSObject {
     private func startSignificantChanges() {
         guard CLLocationManager.significantLocationChangeMonitoringAvailable() else { return }
         manager.startMonitoringSignificantLocationChanges()
+        // Odchod z miesta je presne začiatok jazdy a systém ho hlási spoľahlivejšie
+        // než významnú zmenu polohy. Stojí to nič navyše — obe idú z tej istej
+        // hrubej polohy, ktorú si systém vedie tak či tak.
+        manager.startMonitoringVisits()
+    }
+
+    /*
+      Kruh okolo poslednej známej polohy.
+
+      Významná zmena polohy sa hlási, až keď telefón preskočí medzi vysielačmi —
+      z Patrikovej rannej jazdy prišli za tri hodiny štyri prebudenia. Motor
+      pritom potrebuje tri merania po sebe a desiatky sekúnd nad prahom, takže
+      s jedným prebudením za tri štvrte hodiny sa jazda nepotvrdí nikdy.
+
+      Opustenie kruhu systém sleduje sám a appku kvôli nemu zobudí, aj keď je
+      dávno uspatá. Kruh sa po každom meraní prekladá na aktuálne miesto, takže
+      počas jazdy budí opakovane. Polomer je kompromis: menší budí častejšie,
+      ale pod presnosť polohy sa ísť nedá, inak sa hranica „prekračuje" aj pri
+      stojacom aute.
+    */
+    private static let polomerKruhu: CLLocationDistance = 150
+    private static let kruhId = "faktero.detekcia.kruh"
+    private var kruhStred: CLLocationCoordinate2D?
+
+    private func prelozKruh(na poloha: CLLocation) {
+        guard monitoring else { return }
+        guard CLLocationManager.isMonitoringAvailable(for: CLCircularRegion.self) else { return }
+        guard manager.authorizationStatus == .authorizedAlways else { return }
+        // Prekladať kruh pri každom meraní by znamenalo registrovať oblasť
+        // desaťkrát za minútu; stačí, keď sa stred posunul o kus.
+        if let stred = kruhStred {
+            let vzdialenost = CLLocation(latitude: stred.latitude, longitude: stred.longitude)
+                .distance(from: poloha)
+            if vzdialenost < Self.polomerKruhu / 2 { return }
+        }
+        for oblast in manager.monitoredRegions where oblast.identifier == Self.kruhId {
+            manager.stopMonitoring(for: oblast)
+        }
+        let kruh = CLCircularRegion(
+            center: poloha.coordinate,
+            radius: Self.polomerKruhu,
+            identifier: Self.kruhId)
+        kruh.notifyOnEntry = false
+        kruh.notifyOnExit = true
+        manager.startMonitoring(for: kruh)
+        kruhStred = poloha.coordinate
+    }
+
+    private func zrusKruh() {
+        for oblast in manager.monitoredRegions where oblast.identifier == Self.kruhId {
+            manager.stopMonitoring(for: oblast)
+        }
+        kruhStred = nil
     }
 
     private func startPrecise() {
@@ -689,6 +763,9 @@ extension DriveDetectorService: CLLocationManagerDelegate {
                 let ukony = engine.wake(at: teraz)
                 if !ukony.isEmpty {
                     dennik.prebudeni += 1
+                    // Kruh a odchod si svoje prebudenie započítali sami; čo
+                    // ostane, prišlo významnou zmenou polohy.
+                    if !zdrojZapocitany { dennik.prebudeniVyznamna += 1 }
                     dennik.poslednePrebudenie = teraz
                     // Rýchlosť sa meria za jedno overovanie — inak by po prvej
                     // diaľnici ostalo v denníku číslo, ktoré s ničím nesúvisí.
@@ -700,8 +777,13 @@ extension DriveDetectorService: CLLocationManagerDelegate {
                 }
                 apply(ukony)
             }
+            // Príznak platí len pre prebudenie, ktoré po ňom prišlo — inak by
+            // sa ďalšia významná zmena polohy započítala kruhu.
+            zdrojZapocitany = false
             dennik.poslednyFix = fix.timestamp
             dennik.fixovOdSpustenia += 1
+            // Kruh ide s autom — inak by po prvom opustení už nebolo čo prekročiť.
+            prelozKruh(na: poloha)
             if engine.state == .verifying {
                 dennik.fixovVOvereni += 1
                 // Rovnaká podmienka, akú používa motor — meranie s horšou
@@ -726,6 +808,35 @@ extension DriveDetectorService: CLLocationManagerDelegate {
 
     public func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         // Jednotlivé zlyhanie merania jazdu nezhadzuje; systém pošle ďalšie.
+    }
+
+    /*
+      Opustenie kruhu okolo posledného miesta. Systém kvôli tomu appku zobudí aj
+      z uspatia — a na rozdiel od významnej zmeny polohy sa to počas jazdy deje
+      opakovane, lebo kruh sa prekladá za autom.
+    */
+    public func locationManager(
+        _ manager: CLLocationManager, didExitRegion region: CLRegion
+    ) {
+        guard region.identifier == Self.kruhId, monitoring else { return }
+        dennik.prebudeniKruh += 1
+        zdrojZapocitany = true
+        zapisDennik(force: true)
+        // Samotné prebudenie polohu neprináša — treba si ju vypýtať, a až tá
+        // rozbehne overovanie v `didUpdateLocations`. Keď už presné merania
+        // bežia, pýtať sa netreba a dvojitá požiadavka by len zavadzala.
+        if !preciseOn { manager.requestLocation() }
+    }
+
+    /// Odchod z miesta. Príchod má `departureDate` v ďalekej budúcnosti a ten
+    /// nás nezaujíma — jazda sa začína odchodom.
+    public func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
+        guard monitoring else { return }
+        guard visit.departureDate != Date.distantFuture else { return }
+        dennik.prebudeniOdchod += 1
+        zdrojZapocitany = true
+        zapisDennik(force: true)
+        if !preciseOn { manager.requestLocation() }
     }
 
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {

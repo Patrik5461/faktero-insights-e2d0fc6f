@@ -175,7 +175,17 @@ function TripsPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {rows.map((r) => (
-                    <tr key={r.id} className="hover:bg-muted/30">
+                    /*
+                      Jazdu otvára celý riadok, nielen ceruzka. Rovnako sa
+                      správa kniha faktúr — malá ikonka na kraji riadku je na
+                      dotyk aj myšou zbytočne úzky cieľ. Akcie si kliknutie
+                      ponechávajú pre seba.
+                    */
+                    <tr
+                      key={r.id}
+                      className="cursor-pointer hover:bg-muted/30"
+                      onClick={() => navigate({ to: "/jazdy/nova", search: { id: r.id } })}
+                    >
                       <td className="p-3 whitespace-nowrap">{r.trip_date}</td>
                       <td className="p-3">
                         {vehicles[r.vehicle_id]?.name ?? "—"}{" "}
@@ -212,7 +222,10 @@ function TripsPage() {
                       <td className="p-3 text-xs text-muted-foreground">
                         {sourceLabel(r.external_source)}
                       </td>
-                      <td className="p-3 text-right whitespace-nowrap">
+                      <td
+                        className="p-3 text-right whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {r.route && (
                           <button
                             onClick={() => setTrasa(r)}
@@ -247,7 +260,19 @@ function TripsPage() {
             {/* Mobile cards */}
             <div className="space-y-2 md:hidden">
               {rows.map((r) => (
-                <div key={r.id} className="rounded-xl border border-border bg-card p-3 shadow-sm">
+                <div
+                  key={r.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate({ to: "/jazdy/nova", search: { id: r.id } })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      navigate({ to: "/jazdy/nova", search: { id: r.id } });
+                    }
+                  }}
+                  className="cursor-pointer rounded-xl border border-border bg-card p-3 shadow-sm"
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold">
@@ -268,7 +293,7 @@ function TripsPage() {
                         )}
                       </div>
                     </div>
-                    <div className="shrink-0 text-right">
+                    <div className="shrink-0 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="text-sm font-bold tabular-nums">
                         {Number(r.distance_km).toFixed(1)} km
                       </div>

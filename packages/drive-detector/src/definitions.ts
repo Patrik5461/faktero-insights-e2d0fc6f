@@ -106,6 +106,10 @@ export interface DriveDetectorDiagnostics {
   stav: "caka" | "overuje" | "jazdi";
   /** Koľkokrát systém detekciu zobudil väčším presunom. */
   prebudeni: number;
+  /** Rozpad prebudení podľa toho, čo appku zobudilo. */
+  prebudeniVyznamna?: number;
+  prebudeniKruh?: number;
+  prebudeniOdchod?: number;
   poslednePrebudenie?: number;
   /** Prebudenia, po ktorých sa jazda nepotvrdila. */
   neuspesnychOvereni: number;

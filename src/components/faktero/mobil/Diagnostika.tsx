@@ -132,6 +132,18 @@ async function zisti(): Promise<Riadok[]> {
           /* pokazený záznam nemá zhodiť celú diagnostiku */
         }
       }
+      /*
+        Z relácií na serveri vidno, že token sa obnovil úspešne a appka aj tak
+        pýtala heslo. Bez tohto riadku sa nedá rozoznať, ktorá vetva štartu to
+        rozhodla — a všetky vyzerajú zvonku rovnako.
+      */
+      const { nacitajStopu, popisStopy } = await import("@/lib/mobile/stopa-prihlasenia");
+      const stopa = nacitajStopu();
+      r.push({
+        co: "posledné rozhodnutie o prihlásení",
+        hodnota: popisStopy(stopa),
+        zle: stopa?.vysledok === "poslaná na prihlásenie",
+      });
       r.push({
         co: "faktúry čakajúce na signál",
         hodnota: cakajuce ? `${cakajuce}` : "žiadne — všetko je odoslané",
@@ -244,6 +256,20 @@ async function zisti(): Promise<Riadok[]> {
             ? `${d.dennik.prebudeni}× , posledné ${cas(d.dennik.poslednePrebudenie) ?? "?"}`
             : "žiadne — systém detekciu ešte nezobudil",
           zle: d.zapnuta && d.dennik.prebudeni === 0,
+        });
+        /*
+          Čím bola appka zobudená. Významná zmena polohy je na začiatok jazdy
+          pririedka — za tri hodiny vrátane diaľnice zobudila appku štyrikrát.
+          Pribudol kruh okolo posledného miesta a odchod z miesta; tento rozpad
+          povie, ktorý z nich prácu naozaj robí.
+        */
+        r.push({
+          co: "čím bola detekcia zobudená",
+          hodnota: [
+            `zmena polohy ${d.dennik.prebudeniVyznamna ?? 0}×`,
+            `opustenie kruhu ${d.dennik.prebudeniKruh ?? 0}×`,
+            `odchod z miesta ${d.dennik.prebudeniOdchod ?? 0}×`,
+          ].join(", "),
         });
         /*
           Rýchlosť sa pri každom prebudení nuluje, takže vedľa počtu overovaní

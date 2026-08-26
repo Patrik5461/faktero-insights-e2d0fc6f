@@ -193,6 +193,10 @@ export function MobilnaApka() {
 
 function ObsahApky() {
   const [krok, setKrok] = useState<Krok>("nacitavam");
+  /* Neskoro dobehnutá relácia sa rozhoduje mimo renderu — `krok` v uzávere je
+     v tej chvíli už zastaraný. */
+  const krokRef = useRef<Krok>("nacitavam");
+  krokRef.current = krok;
   /** Ktorá faktúra sa práve opravuje — obrazovku vlastní appka, nie zoznam. */
   const [upravovana, setUpravovana] = useState<{ id: string; invoice_number: string } | null>(null);
   const [firmy, setFirmy] = useState<Firma[]>([]);
@@ -268,15 +272,35 @@ function ObsahApky() {
     // Overenie relácie v telefóne občas neodpovie vôbec (nie chybou, ale tichom).
     // Bez stropu by appka ostala navždy na úvodnej obrazovke, tak radšej po
     // šiestich sekundách pokračujeme a človek sa prihlási znova.
-    const { data } = (await Promise.race([
-      supabase.auth.getSession().catch(() => ({ data: { session: null } })),
-      new Promise((res) => setTimeout(() => res({ data: { session: null } }), 6000)),
-    ])) as { data: { session: any } };
+    /*
+      Ticho a prázdno sa musia rozlíšiť. Keď `getSession()` mlčí, môže na
+      pozadí práve obnovovať token — a tá obnova na serveri **prejde**. Keby
+      sme mlčanie brali ako „nie je prihlásený", pošleme človeka zadávať heslo
+      pár sekúnd predtým, než mu platná relácia dobehne. Presne to sa dialo.
+    */
+    const STROP = Symbol("strop");
+    const dotaz = supabase.auth
+      .getSession()
+      .catch((e: any) => ({ data: { session: null }, chyba: String(e?.message ?? e) }));
+    const vysledok = (await Promise.race([
+      dotaz,
+      new Promise((res) => setTimeout(() => res(STROP), 6000)),
+    ])) as any;
+    const stroplo = vysledok === STROP;
+    const data = stroplo ? { session: null } : (vysledok.data as { session: any });
+    let overenie = stroplo
+      ? "strop 6 s — odpoveď neprišla"
+      : vysledok.chyba
+        ? `chyba: ${vysledok.chyba}`
+        : data.session
+          ? "relácia"
+          : "prázdno";
 
     // Keď overenie nestihlo odpovedať, ešte sa pozrieme, či relácia v telefóne
     // je — inak by sme prihláseného človeka posielali prihlásiť sa znova pri
     // každom pomalom štarte.
     let relacia = data.session ?? nacitajUlozenuRelaciu();
+    let druhyPokus: string | undefined;
 
     /*
       Ani jedno z toho vyššie nečíta Keychain priamo — obe siahajú do pamäte,
@@ -301,10 +325,39 @@ function ObsahApky() {
         .getSession()
         .catch(() => ({ data: { session: null } }))) as { data: { session: any } };
       relacia = znova.session ?? nacitajUlozenuRelaciu();
+      druhyPokus = znova.session ? "relácia" : relacia ? "relácia z úložiska" : "prázdno";
     }
 
     if (!relacia) {
+      const { zapisStopu } = await import("@/lib/mobile/stopa-prihlasenia");
+      zapisStopu({
+        kedy: Date.now(),
+        overenie,
+        druhyPokus,
+        ulozisko: nacitajUlozenuRelaciu() ? "kľúč je" : "kľúč chýba",
+        vysledok: "poslaná na prihlásenie",
+      });
       setKrok("prihlasenie");
+      /*
+        Prihlasovacia obrazovka nie je koniec. Keď obnova tokenu dobehne až
+        teraz, appka to má prijať a pustiť človeka dnu — nie čakať, kým odklepe
+        heslo, ktoré vôbec nepotreboval.
+      */
+      if (stroplo) {
+        void dotaz.then(async (neskoro: any) => {
+          if (!neskoro?.data?.session) return;
+          const { zapisStopu: zapisZnova } = await import("@/lib/mobile/stopa-prihlasenia");
+          zapisZnova({
+            kedy: Date.now(),
+            overenie,
+            druhyPokus,
+            ulozisko: "kľúč je",
+            vysledok: "dobehla neskôr",
+          });
+          // Kto medzitým stihol zadať heslo, je už dnu — nerušiť ho.
+          if (krokRef.current === "prihlasenie") void zisti(false);
+        });
+      }
       return;
     }
     setFaza("odomknutie");
