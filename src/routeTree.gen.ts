@@ -64,6 +64,7 @@ import { Route as DanovyDokladTokenRouteImport } from './routes/danovy-doklad.$t
 import { Route as DocsApiRouteImport } from './routes/docs.api'
 import { Route as EfakturaciaIndexRouteImport } from './routes/efakturacia.index'
 import { Route as EfakturaciaSlugRouteImport } from './routes/efakturacia.$slug'
+import { Route as FakturaTokenRouteImport } from './routes/faktura.$token'
 import { Route as FunkcieIndexRouteImport } from './routes/funkcie.index'
 import { Route as FunkcieSlugRouteImport } from './routes/funkcie.$slug'
 import { Route as PayTokenRouteImport } from './routes/pay.$token'
@@ -534,6 +535,11 @@ const EfakturaciaSlugRoute = EfakturaciaSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => EfakturaciaRoute,
+} as any)
+const FakturaTokenRoute = FakturaTokenRouteImport.update({
+  id: '/faktura/$token',
+  path: '/faktura/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const FunkcieIndexRoute = FunkcieIndexRouteImport.update({
   id: '/',
@@ -1642,6 +1648,7 @@ export interface FileRoutesByFullPath {
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
+  '/faktura/$token': typeof FakturaTokenRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
@@ -1881,6 +1888,7 @@ export interface FileRoutesByTo {
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
+  '/faktura/$token': typeof FakturaTokenRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
@@ -2129,6 +2137,7 @@ export interface FileRoutesById {
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
   '/efakturacia/$slug': typeof EfakturaciaSlugRoute
+  '/faktura/$token': typeof FakturaTokenRoute
   '/funkcie/$slug': typeof FunkcieSlugRoute
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
@@ -2378,6 +2387,7 @@ export interface FileRouteTypes {
     | '/danovy-doklad/$token'
     | '/docs/api'
     | '/efakturacia/$slug'
+    | '/faktura/$token'
     | '/funkcie/$slug'
     | '/pay/$token'
     | '/pomoc/ai-asistent'
@@ -2617,6 +2627,7 @@ export interface FileRouteTypes {
     | '/danovy-doklad/$token'
     | '/docs/api'
     | '/efakturacia/$slug'
+    | '/faktura/$token'
     | '/funkcie/$slug'
     | '/pay/$token'
     | '/pomoc/ai-asistent'
@@ -2864,6 +2875,7 @@ export interface FileRouteTypes {
     | '/danovy-doklad/$token'
     | '/docs/api'
     | '/efakturacia/$slug'
+    | '/faktura/$token'
     | '/funkcie/$slug'
     | '/pay/$token'
     | '/pomoc/ai-asistent'
@@ -3081,6 +3093,7 @@ export interface RootRouteChildren {
   VyvojariRoute: typeof VyvojariRouteWithChildren
   DanovyDokladTokenRoute: typeof DanovyDokladTokenRoute
   DocsApiRoute: typeof DocsApiRoute
+  FakturaTokenRoute: typeof FakturaTokenRoute
   PayTokenRoute: typeof PayTokenRoute
   PomocAiAsistentRoute: typeof PomocAiAsistentRoute
   PomocApiRoute: typeof PomocApiRoute
@@ -3549,6 +3562,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/efakturacia/$slug'
       preLoaderRoute: typeof EfakturaciaSlugRouteImport
       parentRoute: typeof EfakturaciaRoute
+    }
+    '/faktura/$token': {
+      id: '/faktura/$token'
+      path: '/faktura/$token'
+      fullPath: '/faktura/$token'
+      preLoaderRoute: typeof FakturaTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/funkcie/': {
       id: '/funkcie/'
@@ -5408,6 +5428,7 @@ const rootRouteChildren: RootRouteChildren = {
   VyvojariRoute: VyvojariRouteWithChildren,
   DanovyDokladTokenRoute: DanovyDokladTokenRoute,
   DocsApiRoute: DocsApiRoute,
+  FakturaTokenRoute: FakturaTokenRoute,
   PayTokenRoute: PayTokenRoute,
   PomocAiAsistentRoute: PomocAiAsistentRoute,
   PomocApiRoute: PomocApiRoute,

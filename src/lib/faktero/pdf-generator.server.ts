@@ -1,6 +1,7 @@
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import QRCode from "qrcode";
+import { textQrPlatby } from "./qr-platba";
 import { RobotoRegularBase64 } from "./fonts/Roboto-Regular";
 import { RobotoBoldBase64 } from "./fonts/Roboto-Bold";
 import { paymentMethodLabel } from "./payment-method";
@@ -46,6 +47,11 @@ export type InvoicePdfInput = {
   numberLabel?: string;
   /** Optional public URL where the customer can pay this invoice online (e.g. GoPay). */
   paymentLinkUrl?: string | null;
+  /**
+   * Verejný odkaz na faktúru pre QR na doklade. Odberateľ ho naskenuje a
+   * doklad sa mu otvorí — nemusí hľadať prílohu v e-maile ani nič prepisovať.
+   */
+  verejnyOdkaz?: string | null;
 };
 
 function fmt(n: number, currency = "EUR") {
@@ -55,24 +61,6 @@ function fmt(n: number, currency = "EUR") {
   const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
   const sign = v < 0 ? "-" : "";
   return `${sign}${grouped},${decPart}\u00A0${currency}`;
-}
-
-function spaydString(opts: {
-  iban: string;
-  amount: number;
-  currency: string;
-  vs?: string | null;
-  msg?: string | null;
-}) {
-  const parts = [
-    "SPD*1.0",
-    `ACC:${opts.iban.replace(/\s+/g, "")}`,
-    `AM:${opts.amount.toFixed(2)}`,
-    `CC:${opts.currency}`,
-  ];
-  if (opts.vs) parts.push(`X-VS:${opts.vs}`);
-  if (opts.msg) parts.push(`MSG:${opts.msg.slice(0, 60)}`);
-  return parts.join("*");
 }
 
 // Unicode-safe — Roboto TTF embedded via fontkit supports full Slovak/Czech diacritics.
@@ -605,14 +593,25 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     // QR on the right with a clear gap from data column
     if (company.iban) {
       try {
-        const qrText = spaydString({
-          iban: company.iban,
-          amount: naUhradu,
-          currency: invoice.currency,
-          vs: invoice.variable_symbol,
-          msg: `Faktura ${invoice.invoice_number}`,
-        });
-        const dataUrl = await QRCode.toDataURL(qrText, { margin: 0, width: 240 });
+        /*
+          Formát podľa krajiny firmy: slovenská banka číta PAY by square,
+          česká SPD. Dovtedy sa aj slovenským firmám kreslil český SPD, takže
+          QR vyzeral funkčne a banka ho prečítať nemusela.
+        */
+        const qr = await textQrPlatby(
+          {
+            iban: company.iban,
+            suma: naUhradu,
+            mena: invoice.currency,
+            vs: invoice.variable_symbol,
+            sprava: `Faktura ${invoice.invoice_number}`,
+            splatnost: invoice.due_date,
+            prijemca: company.name,
+          },
+          company.country,
+        );
+        if (!qr) throw new Error("bez QR");
+        const dataUrl = await QRCode.toDataURL(qr.text, { margin: 0, width: 240 });
         const png = await doc.embedPng(dataUrl);
         const qrX = payX + payW - qrSize - 16;
         const qrY = payY - payH + (payH - qrSize) / 2;
@@ -631,6 +630,65 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     y = payY - payH - 24;
 
     // ── GoPay online payment card (only when a payment link is available) ──
+    /*
+      QR na otvorenie faktúry. Malý pás pod platobnými údajmi — je to iná vec
+      než platobný QR nad ním: ten predvyplní platbu v banke, tento otvorí
+      samotný doklad. Preto sú oba popísané, nech si ich nikto nepomýli.
+    */
+    if (input.verejnyOdkaz) {
+      const vH = 92;
+      ensureSpace(vH + 12);
+      const vX = margin;
+      const vY = y;
+      const vQR = 68;
+      cur.drawRectangle({
+        x: vX,
+        y: vY - vH,
+        width: innerW,
+        height: vH,
+        color: white,
+        borderColor: hairline,
+        borderWidth: 0.7,
+      });
+      cur.drawText("FAKTÚRA ONLINE", {
+        x: vX + 16,
+        y: vY - 22,
+        size: 8,
+        font: bold,
+        color: muted,
+      });
+      cur.drawText("Naskenujte kód a faktúra sa otvorí v prehliadači.", {
+        x: vX + 16,
+        y: vY - 42,
+        size: 9,
+        font,
+        color: ink,
+      });
+      cur.drawText(ellipsize(String(input.verejnyOdkaz), font, 8.5, innerW - vQR - 64), {
+        x: vX + 16,
+        y: vY - 58,
+        size: 8.5,
+        font: bold,
+        color: primaryDark,
+      });
+      try {
+        const dataUrl = await QRCode.toDataURL(String(input.verejnyOdkaz), {
+          margin: 0,
+          width: 200,
+        });
+        const png = await doc.embedPng(dataUrl);
+        cur.drawImage(png, {
+          x: vX + innerW - vQR - 16,
+          y: vY - vH + (vH - vQR) / 2,
+          width: vQR,
+          height: vQR,
+        });
+      } catch {
+        /* bez QR ostane aspoň odkaz napísaný textom */
+      }
+      y -= vH + 12;
+    }
+
     if (input.paymentLinkUrl) {
       const gpH = 130;
       ensureSpace(gpH + 12);

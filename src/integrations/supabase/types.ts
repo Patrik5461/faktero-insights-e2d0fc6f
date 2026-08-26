@@ -3124,6 +3124,7 @@ export type Database = {
           imported_at: string | null
           intro_note: string | null
           invoice_number: string
+          public_token: string | null
           issue_date: string
           job_id: string | null
           notes: string | null
@@ -3186,6 +3187,7 @@ export type Database = {
           imported_at?: string | null
           intro_note?: string | null
           invoice_number: string
+          public_token?: string | null
           issue_date?: string
           job_id?: string | null
           notes?: string | null
@@ -3248,6 +3250,7 @@ export type Database = {
           imported_at?: string | null
           intro_note?: string | null
           invoice_number?: string
+          public_token?: string | null
           issue_date?: string
           job_id?: string | null
           notes?: string | null

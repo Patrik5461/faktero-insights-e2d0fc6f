@@ -105,6 +105,32 @@ export async function ensureInvoicePdf(
     /* ignore */
   }
 
+  /*
+    Verejný odkaz na faktúru pre QR na doklade. Token vzniká až tu, pri prvom
+    PDF — faktúra, ktorú nikto nevytlačil ani neposlal, žiadny verejný odkaz
+    mať nemusí. 32 znakov z kryptografického zdroja: odkaz sa nedá uhádnuť a
+    sprístupňuje výhradne ten jeden doklad.
+  */
+  let verejnyOdkaz: string | null = null;
+  try {
+    let token = (invoice as any).public_token as string | null;
+    if (!token) {
+      const { randomBytes } = await import("crypto");
+      token = randomBytes(16).toString("hex");
+      const { error } = await supabaseAdmin
+        .from("invoices")
+        .update({ public_token: token })
+        .eq("id", invoice.id);
+      if (error) token = null;
+    }
+    if (token) {
+      const base = (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").replace(/\/+$/, "");
+      verejnyOdkaz = `${base}/faktura/${token}`;
+    }
+  } catch {
+    /* bez odkazu sa PDF vyrobí ďalej — faktúra bez QR je stále platná faktúra */
+  }
+
   const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
   const bytes = await generateInvoicePdfBytes({
     company,
@@ -113,6 +139,7 @@ export async function ensureInvoicePdf(
     logoBytes,
     logoMime,
     paymentLinkUrl,
+    verejnyOdkaz,
   });
 
   // Drop the stale cached object before writing the fresh one.
