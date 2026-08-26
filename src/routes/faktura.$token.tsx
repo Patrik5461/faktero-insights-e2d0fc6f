@@ -20,7 +20,7 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     const { data: f } = await supabaseAdmin
       .from("invoices")
       .select(
-        "id, company_id, invoice_number, type, status, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, note, reverse_charge, deleted_at",
+        "id, company_id, invoice_number, type, status, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, deleted_at",
       )
       .eq("public_token", data.token)
       .maybeSingle();
@@ -206,7 +206,7 @@ function VerejnaFaktura() {
         <Riadok k="IBAN" v={firma?.iban} />
       </div>
 
-      {doklad.note && <p className="mt-4 text-sm text-muted-foreground">{doklad.note}</p>}
+      {doklad.notes && <p className="mt-4 text-sm text-muted-foreground">{doklad.notes}</p>}
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
         Vystavené cez <span className="font-medium">Faktero</span>
