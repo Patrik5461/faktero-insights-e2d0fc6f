@@ -99,6 +99,22 @@ type FetchOpts = {
   query?: Record<string, string | number | undefined>;
 };
 
+/**
+ * Stiahne UBL ako čistý text.
+ *
+ * `epostakFetch` odpoveď rozoberá ako JSON, čo by na XML spadlo — a odkaz na
+ * UBL chodí ako celá adresa, nie ako cesta.
+ */
+async function epostakFetchText(url: string, firmId: string): Promise<string> {
+  const jwt = await getEPostakToken();
+  const r = await fetch(url, {
+    headers: { authorization: `Bearer ${jwt}`, "X-Firm-Id": firmId },
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!r.ok) throw new Error(`UBL sa nepodarilo stiahnuť (${r.status}).`);
+  return await r.text();
+}
+
 async function epostakFetch<T>(path: string, opts: FetchOpts = {}): Promise<T> {
   const { baseUrl } = getConfig();
   const url = new URL(`${baseUrl}${path}`);
@@ -546,4 +562,100 @@ export function najdiFirmuPodlaIco(
   const hladane = (ico ?? "").replace(/\s/g, "");
   if (!hladane) return null;
   return firmy.find((f) => (f.ico ?? "").replace(/\s/g, "") === hladane) ?? null;
+}
+
+/* ─── Prijímanie ─────────────────────────────────────────────────────────── */
+
+type PrijatyDokument = {
+  id: string;
+  received_at?: string;
+  peppol_message_id?: string;
+  sender?: { peppol_id?: string; name?: string };
+  ubl_url?: string;
+  metadata?: { invoice_number?: string };
+};
+
+/**
+ * Stiahne eFaktúry doručené firme a uloží ich.
+ *
+ * Ich API vracia zoznam s metadátami a odkazom na UBL; samotné XML sa doťahuje
+ * zvlášť. Parsovanie a zápis rieši `ingestIncoming` — tu ide len o prenos.
+ *
+ * Doklad, ktorý už uložený je, sa preskočí. Poznáva sa podľa
+ * `peppol_message_id`: ich `id` je id doručenia, ale to isté podanie môže
+ * doraziť znova a v prijatých faktúrach by potom bola tá istá faktúra dvakrát.
+ */
+export async function stiahniPrijate(
+  companyId: string,
+  firmEpostakId: string,
+): Promise<{ novych: number; preskocenych: number; problemy: string[] }> {
+  const odpoved = await epostakFetch<{ documents?: PrijatyDokument[] }>(
+    "/api/v1/inbound/documents",
+    { method: "GET", firmId: firmEpostakId },
+  );
+  const dokumenty = odpoved.documents ?? [];
+  if (!dokumenty.length) return { novych: 0, preskocenych: 0, problemy: [] };
+
+  const znacky = dokumenty.map((d) => d.peppol_message_id ?? d.id).filter(Boolean) as string[];
+  const { data: uzMame } = await supabaseAdmin
+    .from("efaktura_received_documents")
+    .select("parsed_data")
+    .eq("company_id", companyId)
+    .limit(2000);
+  const znameZnacky = new Set(
+    ((uzMame ?? []) as any[])
+      .map((r) => r?.parsed_data?.providerMessageId)
+      .filter(Boolean) as string[],
+  );
+
+  const { ingestIncoming } = await import("./inbound.server");
+  let novych = 0;
+  let preskocenych = 0;
+  const problemy: string[] = [];
+
+  for (const d of dokumenty) {
+    const znacka = d.peppol_message_id ?? d.id;
+    if (znacka && znameZnacky.has(znacka)) {
+      preskocenych += 1;
+      continue;
+    }
+    if (!d.ubl_url) {
+      problemy.push(`${d.metadata?.invoice_number ?? d.id}: chýba odkaz na UBL`);
+      continue;
+    }
+    try {
+      const xml = await epostakFetchText(d.ubl_url, firmEpostakId);
+      await ingestIncoming(
+        {
+          companyId,
+          channel: "peppol",
+          xml,
+          providerMessageId: znacka,
+          sender: {
+            participantId: d.sender?.peppol_id,
+            scheme: d.sender?.peppol_id?.split(":")[0],
+          },
+          receivedAt: d.received_at,
+        },
+        async (row) => {
+          const { data, error } = await supabaseAdmin
+            .from("efaktura_received_documents")
+            .insert({
+              ...row,
+              // Značka podania sa ukladá k rozobratým údajom — vlastný stĺpec
+              // na ňu tabuľka nemá a bez nej by sa doklad natiahol znova.
+              parsed_data: { ...row.parsed_data, providerMessageId: znacka } as any,
+            } as any)
+            .select("id")
+            .single();
+          if (error) throw new Error(error.message);
+          return { id: data.id };
+        },
+      );
+      novych += 1;
+    } catch (e: any) {
+      problemy.push(`${d.metadata?.invoice_number ?? d.id}: ${e?.message ?? "nepodarilo sa"}`);
+    }
+  }
+  return { novych, preskocenych, problemy };
 }

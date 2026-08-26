@@ -436,3 +436,56 @@ export const posliEfakturuFn = createServerFn({ method: "POST" })
     // v `efaktura_deliveries.raw_response` a v prehliadači nemá čo robiť.
     return { documentId: vysledok.documentId, status: vysledok.status };
   });
+
+/**
+ * Stiahne eFaktúry doručené firme.
+ *
+ * Prijímanie dovtedy neexistovalo vôbec — tabuľka aj parsovanie boli hotové,
+ * ale nič ich neplnilo, takže stránka „Prijaté eFaktúry" vždy hlásila prázdno.
+ */
+export const stiahniPrijateEfakturyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string };
+    if (!v?.company_id) throw new Error("Chýba company_id.");
+    return { company_id: v.company_id };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+
+    const { data: profil } = await supabase
+      .from("efaktura_profiles")
+      .select("epostak_firm_id")
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!profil?.epostak_firm_id) {
+      throw new Error("Firma nie je spárovaná s ePoštákom — spárujte ju na prehľade eFaktúry.");
+    }
+
+    const { stiahniPrijate } = await import("./epostak.server");
+    return await stiahniPrijate(data.company_id, profil.epostak_firm_id);
+  });
+
+/** Zoznam prijatých eFaktúr. */
+export const listPrijateEfakturyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string };
+    if (!v?.company_id) throw new Error("Chýba company_id.");
+    return { company_id: v.company_id };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+    const { data: riadky, error } = await supabase
+      .from("efaktura_received_documents")
+      .select(
+        "id, sender_name, sender_participant_id, document_number, issue_date, due_date, currency, total, vat_total, status, received_at, matched_supplier_invoice_id",
+      )
+      .eq("company_id", data.company_id)
+      .order("received_at", { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    return riadky ?? [];
+  });
