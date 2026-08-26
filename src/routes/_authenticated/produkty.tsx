@@ -249,6 +249,8 @@ function ProductsPage() {
                     )}
                     {list.showDeleted ? (
                       <button
+                        aria-label="Obnoviť"
+                        title="Obnoviť"
                         onClick={async () => {
                           try {
                             await list.restore([p.id]);

@@ -195,6 +195,8 @@ function QuotesPage() {
                   <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                     {list.showDeleted ? (
                       <button
+                        aria-label="Obnoviť"
+                        title="Obnoviť"
                         onClick={async () => {
                           try {
                             await list.restore([q.id]);
