@@ -252,9 +252,20 @@ function InvoiceDetail() {
     setIsdocBusy(true);
     try {
       const r: any = await stiahniIsdoc({ data: { company_id: inv.company_id, invoice_id: id } });
+      /*
+        Nie `triggerBrowserDownload`: tá otvára okno a spolieha sa na to, že
+        hlavičku `Content-Disposition` pošle úložisko. Pri blobe žiadny server
+        nie je, takže by sa XML len zobrazilo v novej karte a názov súboru by
+        sa stratil. Meno prílohy vie povedať jedine atribút `download`.
+      */
       const blob = new Blob([r.xml], { type: "application/xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
-      triggerBrowserDownload(url, r.nazovSuboru);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = r.nazovSuboru;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
       // Adresa blobu drží súbor v pamäti, kým sa neuvoľní.
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (e) {
