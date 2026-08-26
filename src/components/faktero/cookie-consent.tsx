@@ -19,6 +19,7 @@ import { recordLegalAcceptance } from "@/lib/legal.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "@tanstack/react-router";
 
+import { oznamSuhlas } from "@/lib/faktero/gtm";
 const STORAGE_KEY = "faktero-cookie-consent";
 const LEGAL_VERSION = "1.0";
 
@@ -43,6 +44,12 @@ function getStoredConsent(): CookieConsent | null {
 
 function saveConsent(consent: CookieConsent) {
   if (typeof window === "undefined") return;
+  /*
+    Google Tag Manager sa o novej voľbe musí dozvedieť hneď. Bez toho by sa
+    prejavila až po obnovení stránky — človek klikne „Prijať všetko" a meranie
+    sa aj tak nespustí, kým niekam neprejde.
+  */
+  oznamSuhlas(consent.analytics, consent.marketing);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(consent));
   } catch {

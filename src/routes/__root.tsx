@@ -16,6 +16,7 @@ import { CookieConsentBanner } from "@/components/faktero/cookie-consent";
 import { NativeRouteGuard } from "@/components/mobile/NativeRouteGuard";
 import { listSeoPagesPublic } from "@/lib/seo.functions";
 import { SKRIPT_DO_HLAVICKY } from "@/lib/faktero/motiv";
+import { SKRIPT_SUHLASU, SKRIPT_GTM, GTM_NOSCRIPT_SRC } from "@/lib/faktero/gtm";
 
 function NotFoundComponent() {
   return (
@@ -194,8 +195,24 @@ function RootShell({ children }: { children: ReactNode }) {
           v komponente — ten beží až po prvom kresle.
         */}
         <script dangerouslySetInnerHTML={{ __html: SKRIPT_DO_HLAVICKY }} />
+        {/*
+          Google Tag Manager. Režim súhlasu musí byť v dataLayer **pred**
+          kontajnerom — keby prišiel po ňom, značky by sa medzitým stihli
+          spustiť aj tomu, kto v našej lište klikol „Iba nevyhnutné".
+        */}
+        <script dangerouslySetInnerHTML={{ __html: SKRIPT_SUHLASU }} />
+        <script dangerouslySetInnerHTML={{ __html: SKRIPT_GTM }} />
       </head>
       <body>
+        {/* GTM pre prehliadače bez JavaScriptu — musí byť hneď za <body>. */}
+        <noscript>
+          <iframe
+            src={GTM_NOSCRIPT_SRC}
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          />
+        </noscript>
         {children}
         <Scripts />
       </body>
