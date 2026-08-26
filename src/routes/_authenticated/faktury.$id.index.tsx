@@ -57,6 +57,8 @@ import { adresaRiadky } from "@/lib/faktero/adresa";
 import { cloneInvoiceFn } from "@/lib/faktero/invoice-clone.functions";
 import { sendReminderFn, previewReminderFn } from "@/lib/faktero/reminders.functions";
 
+import { isdocFakturyFn } from "@/lib/faktero/isdoc.functions";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 export const Route = createFileRoute("/_authenticated/faktury/$id/")({
   head: () => ({ meta: [{ title: "Detail faktúry — Faktero" }] }),
   component: InvoiceDetail,
@@ -202,6 +204,9 @@ function InvoiceDetail() {
   const getXml = useServerFn(getEfakturaXmlUrlFn);
   const getDocFn = useServerFn(getInvoiceEfakturaDocFn);
   const [xmlBusy, setXmlBusy] = useState(false);
+  const [isdocBusy, setIsdocBusy] = useState(false);
+  const stiahniIsdoc = useServerFn(isdocFakturyFn);
+  const krajina = useKrajinaDane();
   const efakturaQuery = useQuery({
     queryKey: ["efaktura-doc", id, inv?.company_id],
     queryFn: () => getDocFn({ data: { companyId: inv!.company_id, invoiceId: id } }),
@@ -234,6 +239,28 @@ function InvoiceDetail() {
       toast.error((e as Error).message);
     } finally {
       setXmlBusy(false);
+    }
+  }
+
+  /*
+    ISDOC je český národný formát a voči štátu je v Česku povinný od 2016.
+    Ponúka sa preto len českej firme — slovenskej by len pribudla položka,
+    ktorú nikdy nepoužije.
+  */
+  async function handleIsdoc() {
+    if (!inv?.company_id) return;
+    setIsdocBusy(true);
+    try {
+      const r: any = await stiahniIsdoc({ data: { company_id: inv.company_id, invoice_id: id } });
+      const blob = new Blob([r.xml], { type: "application/xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      triggerBrowserDownload(url, r.nazovSuboru);
+      // Adresa blobu drží súbor v pamäti, kým sa neuvoľní.
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setIsdocBusy(false);
     }
   }
 
@@ -779,6 +806,12 @@ function InvoiceDetail() {
                 {efakturaDoc && (
                   <DropdownMenuItem onClick={handleDownloadXml} disabled={xmlBusy}>
                     <Download className="mr-2 h-4 w-4" /> Stiahnuť eFaktúru XML
+                  </DropdownMenuItem>
+                )}
+                {krajina === "CZ" && (
+                  <DropdownMenuItem onClick={handleIsdoc} disabled={isdocBusy}>
+                    <Download className="mr-2 h-4 w-4" />
+                    {isdocBusy ? "Pripravujem…" : "Stiahnuť ISDOC"}
                   </DropdownMenuItem>
                 )}
                 {/*
