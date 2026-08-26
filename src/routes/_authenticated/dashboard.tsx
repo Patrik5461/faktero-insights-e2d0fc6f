@@ -15,6 +15,7 @@ import { getRecurringWidgetStats } from "@/lib/faktero/recurring.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { BankWidget } from "@/components/faktero/BankWidget";
 import { formatujMenu } from "@/lib/faktero/mena";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import {
   Plus,
   FileText,
@@ -113,6 +114,8 @@ function useCountdown(target: Date) {
 }
 
 function Dashboard() {
+  /* Slovenské povinnosti sa českej firme neponúkajú. */
+  const krajina = useKrajinaDane();
   const [allInvoices, setAllInvoices] = useState<any[]>([]);
   const [activeRecurring, setActiveRecurring] = useState<any[]>([]);
   const [recurringStats, setRecurringStats] = useState<{
@@ -568,47 +571,54 @@ function Dashboard() {
 
         {/* THIRD ROW */}
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6">
-            <div className="absolute -right-12 -top-12 h-44 w-44 rounded-full bg-primary/20 blur-3xl" />
-            <div className="relative">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">eFaktúra 2027</h3>
-                </div>
-                <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
-                  Pripravujeme
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">Povinná eFaktúra od 1.1.2027</p>
-              <div className="mt-5 grid grid-cols-4 gap-2">
-                {[
-                  { v: countdown.days, l: "dní" },
-                  { v: countdown.hours, l: "hod" },
-                  { v: countdown.mins, l: "min" },
-                  { v: countdown.secs, l: "sek" },
-                ].map((x) => (
-                  <div
-                    key={x.l}
-                    className="rounded-xl border border-border bg-card/60 px-2 py-3 text-center backdrop-blur"
-                  >
-                    <div className="text-2xl font-bold tabular-nums">
-                      {String(x.v).padStart(2, "0")}
-                    </div>
-                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      {x.l}
-                    </div>
+          {/*
+            Odpočet do 1. 1. 2027 je slovenská povinnosť a odkaz vedie na
+            eFaktúru cez slovenskú schému Peppol. Českej firme by sľuboval
+            niečo, čo sa jej netýka a čo jej ani nepôjde použiť.
+          */}
+          {krajina === "SK" && (
+            <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6">
+              <div className="absolute -right-12 -top-12 h-44 w-44 rounded-full bg-primary/20 blur-3xl" />
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">eFaktúra 2027</h3>
                   </div>
-                ))}
+                  <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                    Pripravujeme
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">Povinná eFaktúra od 1.1.2027</p>
+                <div className="mt-5 grid grid-cols-4 gap-2">
+                  {[
+                    { v: countdown.days, l: "dní" },
+                    { v: countdown.hours, l: "hod" },
+                    { v: countdown.mins, l: "min" },
+                    { v: countdown.secs, l: "sek" },
+                  ].map((x) => (
+                    <div
+                      key={x.l}
+                      className="rounded-xl border border-border bg-card/60 px-2 py-3 text-center backdrop-blur"
+                    >
+                      <div className="text-2xl font-bold tabular-nums">
+                        {String(x.v).padStart(2, "0")}
+                      </div>
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {x.l}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Link
+                  to="/efaktura"
+                  className="mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                >
+                  Zobraziť eFaktúru <ArrowUpRight className="h-4 w-4" />
+                </Link>
               </div>
-              <Link
-                to="/efaktura"
-                className="mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-              >
-                Zobraziť eFaktúru <ArrowUpRight className="h-4 w-4" />
-              </Link>
             </div>
-          </div>
+          )}
 
           <Panel title="API & integrácie" icon={KeyRound}>
             <div className="grid grid-cols-2 gap-3">
