@@ -217,6 +217,7 @@ import { Route as ApiPublicHooksBankStatementsRouteImport } from './routes/api/p
 import { Route as ApiPublicHooksBankStatementsRestoreRouteImport } from './routes/api/public/hooks/bank-statements-restore'
 import { Route as ApiPublicHooksBankSyncRouteImport } from './routes/api/public/hooks/bank-sync'
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
+import { Route as ApiPublicHooksEfakturaSyncRouteImport } from './routes/api/public/hooks/efaktura-sync'
 import { Route as ApiPublicHooksOdovzdanieMesacneRouteImport } from './routes/api/public/hooks/odovzdanie-mesacne'
 import { Route as ApiPublicHooksPohodaStrazcaRouteImport } from './routes/api/public/hooks/pohoda-strazca'
 import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
@@ -1380,6 +1381,12 @@ const ApiPublicHooksCommanderSyncRoute =
     path: '/api/public/hooks/commander-sync',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksEfakturaSyncRoute =
+  ApiPublicHooksEfakturaSyncRouteImport.update({
+    id: '/api/public/hooks/efaktura-sync',
+    path: '/api/public/hooks/efaktura-sync',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksOdovzdanieMesacneRoute =
   ApiPublicHooksOdovzdanieMesacneRouteImport.update({
     id: '/api/public/hooks/odovzdanie-mesacne',
@@ -1777,6 +1784,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -2013,6 +2021,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -2260,6 +2269,7 @@ export interface FileRoutesById {
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
   '/api/public/hooks/bank-sync': typeof ApiPublicHooksBankSyncRoute
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
+  '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
@@ -2507,6 +2517,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/push-overdue'
@@ -2743,6 +2754,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/push-overdue'
@@ -2989,6 +3001,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/bank-statements-restore'
     | '/api/public/hooks/bank-sync'
     | '/api/public/hooks/commander-sync'
+    | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/push-overdue'
@@ -3112,6 +3125,7 @@ export interface RootRouteChildren {
   ApiPublicHooksBankStatementsRestoreRoute: typeof ApiPublicHooksBankStatementsRestoreRoute
   ApiPublicHooksBankSyncRoute: typeof ApiPublicHooksBankSyncRoute
   ApiPublicHooksCommanderSyncRoute: typeof ApiPublicHooksCommanderSyncRoute
+  ApiPublicHooksEfakturaSyncRoute: typeof ApiPublicHooksEfakturaSyncRoute
   ApiPublicHooksOdovzdanieMesacneRoute: typeof ApiPublicHooksOdovzdanieMesacneRoute
   ApiPublicHooksPohodaStrazcaRoute: typeof ApiPublicHooksPohodaStrazcaRoute
   ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
@@ -4594,6 +4608,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksCommanderSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/efaktura-sync': {
+      id: '/api/public/hooks/efaktura-sync'
+      path: '/api/public/hooks/efaktura-sync'
+      fullPath: '/api/public/hooks/efaktura-sync'
+      preLoaderRoute: typeof ApiPublicHooksEfakturaSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/odovzdanie-mesacne': {
       id: '/api/public/hooks/odovzdanie-mesacne'
       path: '/api/public/hooks/odovzdanie-mesacne'
@@ -5423,6 +5444,7 @@ const rootRouteChildren: RootRouteChildren = {
     ApiPublicHooksBankStatementsRestoreRoute,
   ApiPublicHooksBankSyncRoute: ApiPublicHooksBankSyncRoute,
   ApiPublicHooksCommanderSyncRoute: ApiPublicHooksCommanderSyncRoute,
+  ApiPublicHooksEfakturaSyncRoute: ApiPublicHooksEfakturaSyncRoute,
   ApiPublicHooksOdovzdanieMesacneRoute: ApiPublicHooksOdovzdanieMesacneRoute,
   ApiPublicHooksPohodaStrazcaRoute: ApiPublicHooksPohodaStrazcaRoute,
   ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,
