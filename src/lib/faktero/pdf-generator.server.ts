@@ -630,65 +630,6 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     y = payY - payH - 24;
 
     // ── GoPay online payment card (only when a payment link is available) ──
-    /*
-      QR na otvorenie faktúry. Malý pás pod platobnými údajmi — je to iná vec
-      než platobný QR nad ním: ten predvyplní platbu v banke, tento otvorí
-      samotný doklad. Preto sú oba popísané, nech si ich nikto nepomýli.
-    */
-    if (input.verejnyOdkaz) {
-      const vH = 92;
-      ensureSpace(vH + 12);
-      const vX = margin;
-      const vY = y;
-      const vQR = 68;
-      cur.drawRectangle({
-        x: vX,
-        y: vY - vH,
-        width: innerW,
-        height: vH,
-        color: white,
-        borderColor: hairline,
-        borderWidth: 0.7,
-      });
-      cur.drawText("FAKTÚRA ONLINE", {
-        x: vX + 16,
-        y: vY - 22,
-        size: 8,
-        font: bold,
-        color: muted,
-      });
-      cur.drawText("Naskenujte kód a faktúra sa otvorí v prehliadači.", {
-        x: vX + 16,
-        y: vY - 42,
-        size: 9,
-        font,
-        color: ink,
-      });
-      cur.drawText(ellipsize(String(input.verejnyOdkaz), font, 8.5, innerW - vQR - 64), {
-        x: vX + 16,
-        y: vY - 58,
-        size: 8.5,
-        font: bold,
-        color: primaryDark,
-      });
-      try {
-        const dataUrl = await QRCode.toDataURL(String(input.verejnyOdkaz), {
-          margin: 0,
-          width: 200,
-        });
-        const png = await doc.embedPng(dataUrl);
-        cur.drawImage(png, {
-          x: vX + innerW - vQR - 16,
-          y: vY - vH + (vH - vQR) / 2,
-          width: vQR,
-          height: vQR,
-        });
-      } catch {
-        /* bez QR ostane aspoň odkaz napísaný textom */
-      }
-      y -= vH + 12;
-    }
-
     if (input.paymentLinkUrl) {
       const gpH = 130;
       ensureSpace(gpH + 12);
@@ -819,6 +760,69 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   }
 
   // ── Footer on every page ──
+  /*
+    QR na otvorenie faktúry.
+
+    Zámerne **mimo** platobného bloku: ten sa na uhradenej faktúre nekreslí
+    vôbec, a otvorenie dokladu s platením nesúvisí — odberateľ si ho chce
+    pozrieť aj potom, čo zaplatil. Je to iná vec než platobný QR: ten
+    predvyplní platbu v banke, tento otvorí samotný doklad. Preto sú oba
+    popísané, nech si ich nikto nepomýli.
+  */
+  if (input.verejnyOdkaz) {
+    const vH = 92;
+    ensureSpace(vH + 12);
+    const vX = margin;
+    const vY = y;
+    const vQR = 68;
+    cur.drawRectangle({
+      x: vX,
+      y: vY - vH,
+      width: innerW,
+      height: vH,
+      color: white,
+      borderColor: hairline,
+      borderWidth: 0.7,
+    });
+    cur.drawText("FAKTÚRA ONLINE", {
+      x: vX + 16,
+      y: vY - 22,
+      size: 8,
+      font: bold,
+      color: muted,
+    });
+    cur.drawText("Naskenujte kód a faktúra sa otvorí v prehliadači.", {
+      x: vX + 16,
+      y: vY - 42,
+      size: 9,
+      font,
+      color: ink,
+    });
+    cur.drawText(ellipsize(String(input.verejnyOdkaz), font, 8.5, innerW - vQR - 64), {
+      x: vX + 16,
+      y: vY - 58,
+      size: 8.5,
+      font: bold,
+      color: primaryDark,
+    });
+    try {
+      const dataUrl = await QRCode.toDataURL(String(input.verejnyOdkaz), {
+        margin: 0,
+        width: 200,
+      });
+      const png = await doc.embedPng(dataUrl);
+      cur.drawImage(png, {
+        x: vX + innerW - vQR - 16,
+        y: vY - vH + (vH - vQR) / 2,
+        width: vQR,
+        height: vQR,
+      });
+    } catch {
+      /* bez QR ostane aspoň odkaz napísaný textom */
+    }
+    y -= vH + 12;
+  }
+
   const footerText = company.invoice_footer ?? "Vystavené cez Faktero — faktero.app";
   pages.forEach((p, i) => {
     p.drawLine({
