@@ -489,3 +489,77 @@ export const listPrijateEfakturyFn = createServerFn({ method: "POST" })
     if (error) throw error;
     return riadky ?? [];
   });
+
+/**
+ * Zaeviduje prijatú eFaktúru ako prijatú faktúru.
+ *
+ * Bez tohto je zoznam doručených eFaktúr len na pozeranie — doklad by sa
+ * musel prepísať ručne, hoci všetky údaje sú v ňom rozobraté.
+ *
+ * Väzba sa ukladá do `matched_supplier_invoice_id`, takže druhé kliknutie
+ * nevyrobí druhú faktúru. Sumy, ktoré v doklade chýbajú, sa nedopĺňajú
+ * odhadom — nula je v účtovníctve tvrdenie a to sa vymýšľať nemá; človek ich
+ * doplní na prijatej faktúre, kde ich aj vidí.
+ */
+export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string; received_id?: string };
+    if (!v?.company_id || !v?.received_id) throw new Error("Chýba company_id alebo received_id.");
+    return { company_id: v.company_id, received_id: v.received_id };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+
+    const { data: doklad, error } = await supabase
+      .from("efaktura_received_documents")
+      .select("*")
+      .eq("id", data.received_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!doklad) throw new Error("Prijatá eFaktúra sa nenašla.");
+    if (doklad.matched_supplier_invoice_id) {
+      return { invoiceId: doklad.matched_supplier_invoice_id, uzExistovala: true as const };
+    }
+
+    const dnes = new Date().toISOString().slice(0, 10);
+    const spolu = Number(doklad.total ?? 0);
+    const dph = Number(doklad.vat_total ?? 0);
+
+    const { data: faktura, error: chybaZapisu } = await supabase
+      .from("purchase_invoices")
+      .insert({
+        company_id: data.company_id,
+        supplier_name: doklad.sender_name ?? "Neznámy dodávateľ",
+        supplier_ic_dph: doklad.sender_vat_id ?? null,
+        invoice_number: doklad.document_number ?? `EF-${data.received_id.slice(0, 8)}`,
+        issue_date: doklad.issue_date ?? dnes,
+        // Za dátum prijatia berieme, kedy eFaktúra naozaj dorazila.
+        received_date: (doklad.received_at ?? dnes).slice(0, 10),
+        due_date: doklad.due_date ?? doklad.issue_date ?? dnes,
+        amount_without_vat: Math.round((spolu - dph) * 100) / 100,
+        vat_amount: dph,
+        amount_total: spolu,
+        currency: doklad.currency ?? "EUR",
+        status: "received",
+        source: "efaktura",
+        note: "Prijaté cez eFaktúru (Peppol).",
+      } as TablesInsert<"purchase_invoices">)
+      .select("id")
+      .single();
+    if (chybaZapisu) throw new Error(chybaZapisu.message);
+
+    await supabase
+      .from("efaktura_received_documents")
+      .update({
+        matched_supplier_invoice_id: faktura.id,
+        // `matched` je stav pre doklad, ktorý už má svoju prijatú faktúru.
+        status: "matched",
+        processed_at: new Date().toISOString(),
+      } as TablesUpdate<"efaktura_received_documents">)
+      .eq("id", data.received_id);
+
+    return { invoiceId: faktura.id, uzExistovala: false as const };
+  });

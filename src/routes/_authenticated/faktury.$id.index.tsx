@@ -42,6 +42,7 @@ import {
   generateEfakturaXmlFn,
   getEfakturaXmlUrlFn,
   getInvoiceEfakturaDocFn,
+  posliEfakturuFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
 import {
   deriveEfakturaUiStatus,
@@ -170,6 +171,34 @@ function InvoiceDetail() {
     }
   }
   const genXml = useServerFn(generateEfakturaXmlFn);
+  const posliEfakturu = useServerFn(posliEfakturuFn);
+  const [efakturaBusy, setEfakturaBusy] = useState(false);
+
+  /**
+   * Odoslanie faktúry cez Peppol.
+   *
+   * XML sa v prípade potreby vygeneruje samo — človek, ktorý chce faktúru
+   * poslať, nemá dôvod vedieť, že najprv musí kliknúť na „Vygenerovať".
+   */
+  async function handleSendEfaktura() {
+    if (!inv?.company_id) return;
+    if (
+      !window.confirm(
+        `Odoslať faktúru ${inv.invoice_number ?? ""} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.`,
+      )
+    )
+      return;
+    setEfakturaBusy(true);
+    try {
+      const r: any = await posliEfakturu({ data: { company_id: inv.company_id, invoice_id: id } });
+      toast.success(`Odoslané cez eFaktúru — stav ${r.status}.`);
+      efakturaQuery.refetch();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setEfakturaBusy(false);
+    }
+  }
   const getXml = useServerFn(getEfakturaXmlUrlFn);
   const getDocFn = useServerFn(getInvoiceEfakturaDocFn);
   const [xmlBusy, setXmlBusy] = useState(false);
@@ -752,6 +781,15 @@ function InvoiceDetail() {
                     <Download className="mr-2 h-4 w-4" /> Stiahnuť eFaktúru XML
                   </DropdownMenuItem>
                 )}
+                {/*
+                  Odoslanie patrí sem, k faktúre — nie len do zoznamu odoslaných
+                  eFaktúr. Ten je prázdny, kým sa XML nevygeneruje, takže tam
+                  tlačidlo nemal kto nájsť.
+                */}
+                <DropdownMenuItem onClick={handleSendEfaktura} disabled={efakturaBusy}>
+                  <Send className="mr-2 h-4 w-4" />
+                  {efakturaBusy ? "Odosielam…" : "Odoslať cez eFaktúru"}
+                </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel>Ostatné</DropdownMenuLabel>
@@ -943,7 +981,9 @@ function InvoiceDetail() {
             </div>
             {inv.status === "paid" ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100 dark:border-emerald-900/40">
-                <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Uhradené</div>
+                <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                  Uhradené
+                </div>
                 <div className="mt-2">
                   Dátum úhrady: {inv.paid_at ? String(inv.paid_at).slice(0, 10) : "—"}
                 </div>

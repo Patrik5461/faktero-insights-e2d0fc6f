@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Inbox, RefreshCw } from "lucide-react";
+import { Inbox, RefreshCw, FileInput, ExternalLink } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   listPrijateEfakturyFn,
   stiahniPrijateEfakturyFn,
+  zaevidujPrijatuEfakturuFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
 
 export const Route = createFileRoute("/_authenticated/efaktura/prijate")({
@@ -39,6 +40,28 @@ function ReceivedPage() {
 
   const listFn = useServerFn(listPrijateEfakturyFn);
   const stiahni = useServerFn(stiahniPrijateEfakturyFn);
+  const zaeviduj = useServerFn(zaevidujPrijatuEfakturuFn);
+  const [evidujem, setEvidujem] = useState<string | null>(null);
+
+  /** Z prijatej eFaktúry spraví prijatú faktúru — inak by sa prepisovala ručne. */
+  async function zaevidujDoklad(receivedId: string) {
+    if (!companyId) return;
+    setEvidujem(receivedId);
+    try {
+      const r: any = await zaeviduj({ data: { company_id: companyId, received_id: receivedId } });
+      toast.success(
+        r.uzExistovala
+          ? "Táto eFaktúra už zaevidovaná je — otváram ju."
+          : "Zaevidované ako prijatá faktúra. Skontrolujte sumy a dátumy.",
+      );
+      q.refetch();
+      window.open(`/prijate-faktury/${r.invoiceId}`, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setEvidujem(null);
+    }
+  }
 
   const q = useQuery({
     queryKey: ["efaktura-prijate", companyId],
@@ -111,12 +134,13 @@ function ReceivedPage() {
                   <th className="p-3">Splatnosť</th>
                   <th className="p-3 text-right">Suma</th>
                   <th className="p-3">Stav</th>
+                  <th className="p-3 text-right">Akcie</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {q.isLoading && (
                   <tr>
-                    <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                    <td colSpan={8} className="p-6 text-center text-muted-foreground">
                       Načítavam…
                     </td>
                   </tr>
@@ -140,6 +164,27 @@ function ReceivedPage() {
                     <td className="p-3 text-right tabular-nums">{suma(r.total, r.currency)}</td>
                     <td className="p-3">
                       <StavDokladu stav={r.status} />
+                    </td>
+                    <td className="p-3">
+                      <div className="flex justify-end">
+                        {r.matched_supplier_invoice_id ? (
+                          <a
+                            href={`/prijate-faktury/${r.matched_supplier_invoice_id}`}
+                            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" /> Otvoriť doklad
+                          </a>
+                        ) : (
+                          <button
+                            onClick={() => zaevidujDoklad(r.id)}
+                            disabled={evidujem === r.id}
+                            className="inline-flex items-center gap-1 rounded-md bg-primary px-2 py-1 text-xs text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                          >
+                            <FileInput className="h-3.5 w-3.5" />{" "}
+                            {evidujem === r.id ? "Evidujem…" : "Zaevidovať"}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
