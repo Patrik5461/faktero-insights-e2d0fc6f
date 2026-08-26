@@ -44,14 +44,20 @@ export function BankWidget() {
       ) : accounts.length === 0 ? (
         <div className="mt-3 text-sm text-muted-foreground">
           Žiadny bankový účet.{" "}
-          <Link to="/bankove-ucty/pripojit" className="text-emerald-700 dark:text-emerald-300 hover:underline">
+          <Link
+            to="/bankove-ucty/pripojit"
+            className="text-emerald-700 dark:text-emerald-300 hover:underline"
+          >
             Pripojiť banku
           </Link>
         </div>
       ) : (
         <>
           {zostatky.map((z) => (
-            <div key={z.mena} className="mt-2 text-2xl font-semibold tabular-nums text-emerald-900 dark:text-emerald-100">
+            <div
+              key={z.mena}
+              className="mt-2 text-2xl font-semibold tabular-nums text-emerald-900 dark:text-emerald-100"
+            >
               {formatujSumu(z.suma, z.mena)}
             </div>
           ))}

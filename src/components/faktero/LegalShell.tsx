@@ -26,7 +26,9 @@ export function LegalShell({
     <MarketingShell>
       <div className="mx-auto max-w-6xl px-4 py-12 grid gap-10 md:grid-cols-[220px_1fr]">
         <aside className="md:sticky md:top-24 md:self-start">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Právne</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+            Právne
+          </p>
           <nav className="mt-3 space-y-1 text-sm">
             {LINKS.map((l) => (
               <Link

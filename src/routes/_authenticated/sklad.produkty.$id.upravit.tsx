@@ -16,6 +16,7 @@ import { ArrowLeft, Save, Upload, X } from "lucide-react";
 import { vatRateOptions } from "@/lib/faktero/vat-rates";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/upravit")({
   head: () => ({ meta: [{ title: "Upraviť skladovú kartu — Faktero" }] }),
   component: EditStockProduct,
@@ -60,7 +61,7 @@ function EditStockProduct() {
     sku: "",
     barcode: "",
     unit: "ks",
-    vat_rate: 23,
+    vat_rate: zakladnaSadzba(krajina),
     sale_price: 0,
     purchase_price: 0,
     min_stock: 0,
@@ -100,7 +101,7 @@ function EditStockProduct() {
           sku: si?.sku ?? "",
           barcode: si?.barcode ?? "",
           unit: si?.unit ?? p?.unit ?? "ks",
-          vat_rate: Number(si?.vat_rate ?? p?.vat_rate ?? 23),
+          vat_rate: Number(si?.vat_rate ?? p?.vat_rate ?? zakladnaSadzba(krajina)),
           sale_price: Number(si?.sale_price ?? p?.unit_price ?? 0),
           purchase_price: Number(si?.purchase_price ?? 0),
           min_stock: Number(si?.min_stock ?? 0),

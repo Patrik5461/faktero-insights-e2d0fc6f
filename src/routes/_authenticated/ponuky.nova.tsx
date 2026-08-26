@@ -14,6 +14,8 @@ import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 import { MENY } from "@/lib/faktero/mena";
 
+import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 export const Route = createFileRoute("/_authenticated/ponuky/nova")({
   head: () => ({ meta: [{ title: "Nová cenová ponuka — Faktero" }] }),
   component: NewQuote,
@@ -36,6 +38,8 @@ const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate
 
 function NewQuote() {
   const navigate = useNavigate();
+  /* Sadzby DPH podľa krajiny registrácie firmy. */
+  const krajina = useKrajinaDane();
   const [customers, setCustomers] = useState<any[]>([]);
   const [form, setForm] = useState({
     customer_id: "",
@@ -46,6 +50,15 @@ function NewQuote() {
     job_id: "",
   });
   const [items, setItems] = useState<Item[]>([{ ...EMPTY }]);
+  useEffect(() => {
+    const z = zakladnaSadzba(krajina);
+    setItems((a) =>
+      a.some((it) => it.vat_rate !== z && !it.name)
+        ? a.map((it) => (it.name ? it : { ...it, vat_rate: z }))
+        : a,
+    );
+  }, [krajina]);
+  const novaPolozka = () => ({ ...EMPTY, vat_rate: zakladnaSadzba(krajina) });
   const [produkty, setProdukty] = useState<any[]>([]);
   const [podklady, setPodklady] = useState<Podklady | null>(null);
   const nacitajCennik = useServerFn(getPriceContext);
@@ -125,7 +138,7 @@ function NewQuote() {
       quantity: 1,
       unit: p.unit ?? "ks",
       unit_price: r ? r.cena : Number(p.unit_price),
-      vat_rate: Number(p.vat_rate ?? 23),
+      vat_rate: Number(p.vat_rate ?? zakladnaSadzba(krajina)),
       product_id: p.id,
       _dovod: r && r.zdroj !== "zakladna" ? r.dovod : undefined,
     };
@@ -332,7 +345,7 @@ function NewQuote() {
                 )}
                 <button
                   type="button"
-                  onClick={() => setItems([...items, { ...EMPTY }])}
+                  onClick={() => setItems([...items, novaPolozka()])}
                   className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
                 >
                   <Plus className="h-3.5 w-3.5" /> Pridať

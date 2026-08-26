@@ -118,9 +118,7 @@ export function NahratieZmluvy({
           kind: r.kind ?? "leasing",
           // Názov v zmluve nebýva — nech je aspoň podľa čoho ju v zozname spoznať.
           name:
-            [r.provider_name, r.contract_number].filter(Boolean).join(" ") ||
-            subory[0]?.name ||
-            "",
+            [r.provider_name, r.contract_number].filter(Boolean).join(" ") || subory[0]?.name || "",
           provider_name: r.provider_name,
           contract_number: r.contract_number,
           variable_symbol: r.variable_symbol,

@@ -7,6 +7,8 @@ import { Plus, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
 
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
 export const Route = createFileRoute("/_authenticated/opakovane/nova")({
   head: () => ({ meta: [{ title: "Nová opakovaná faktúra — Faktero" }] }),
   component: NewRecurring,
@@ -36,7 +38,17 @@ function NewRecurring() {
     notes: "",
     active: true,
   });
+  /* Sadzby DPH podľa krajiny registrácie firmy. */
+  const krajina = useKrajinaDane();
   const [items, setItems] = useState<Item[]>([{ ...EMPTY }]);
+  useEffect(() => {
+    const z = zakladnaSadzba(krajina);
+    setItems((a) =>
+      a.some((it) => !it.name && it.vat_rate !== z)
+        ? a.map((it) => (it.name ? it : { ...it, vat_rate: z }))
+        : a,
+    );
+  }, [krajina]);
   const [newCustOpen, setNewCustOpen] = useState(false);
 
   useEffect(() => {
@@ -214,7 +226,9 @@ function NewRecurring() {
               <h3 className="font-semibold">Položky</h3>
               <button
                 type="button"
-                onClick={() => setItems([...items, { ...EMPTY }])}
+                onClick={() =>
+                  setItems([...items, { ...EMPTY, vat_rate: zakladnaSadzba(krajina) }])
+                }
                 className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
               >
                 <Plus className="h-3.5 w-3.5" /> Pridať

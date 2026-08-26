@@ -13,7 +13,7 @@ import {
   listStockItemsForOrder,
 } from "@/lib/faktero/purchase-orders.functions";
 import { suctyObjednavky } from "@/lib/faktero/objednavky-dodavatel";
-import { vatRateOptions } from "@/lib/faktero/vat-rates";
+import { vatRateOptions, zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { ArrowLeft, Plus, Sparkles, Trash2 } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
@@ -31,6 +31,8 @@ type Riadok = {
   quantity: number;
   unit_price: number;
   vat_rate: number;
+  /** Sadzbu vybral človek — režim krajiny ju už neprepíše. */
+  _dph_rucne?: boolean;
 };
 
 const PRAZDNY: Riadok = {
@@ -71,6 +73,19 @@ function NewPurchaseOrder() {
   const [jobId, setJobId] = useState("");
   const [note, setNote] = useState("");
   const [items, setItems] = useState<Riadok[]>([{ ...PRAZDNY }]);
+  /*
+    Krajina firmy dobehne až po načítaní, takže prvé vykreslenie nesie
+    slovenskú predvolenú sadzbu. Českej firme tak v zozname prebliklo 23 % —
+    sadzba, ktorú vôbec neuplatňuje. Ručne vybranú sadzbu to neprepisuje.
+  */
+  useEffect(() => {
+    const zakl = zakladnaSadzba(krajina);
+    setItems((arr) =>
+      arr.some((it) => !it._dph_rucne && it.vat_rate !== zakl)
+        ? arr.map((it) => (it._dph_rucne ? it : { ...it, vat_rate: zakl }))
+        : arr,
+    );
+  }, [krajina]);
 
   const cid = useMemo(() => getActiveCompanyId(), []);
 
@@ -123,7 +138,8 @@ function NewPurchaseOrder() {
             unit: r.unit ?? z?.unit ?? "ks",
             quantity: r.order_qty,
             unit_price: z?.purchase_price ?? 0,
-            vat_rate: z?.vat_rate ?? 23,
+            vat_rate: z?.vat_rate ?? zakladnaSadzba(krajina),
+            _dph_rucne: z?.vat_rate != null,
           };
         }),
       );
@@ -312,7 +328,9 @@ function NewPurchaseOrder() {
                   />
                   <select
                     value={it.vat_rate}
-                    onChange={(e) => uprav(i, { vat_rate: Number(e.target.value) })}
+                    onChange={(e) =>
+                      uprav(i, { vat_rate: Number(e.target.value), _dph_rucne: true })
+                    }
                     className="input"
                   >
                     {vatRateOptions(krajina, it.vat_rate).map((r) => (
