@@ -95,7 +95,15 @@ function CompanyPage() {
           <VyberKrajiny hodnota={c.country} onZmena={f("country")} />
           <In label="Telefón" value={c.phone ?? ""} onChange={f("phone")} />
           <In label="Web" value={c.website ?? ""} onChange={f("website")} />
-          <In label="IBAN" value={c.iban ?? ""} onChange={f("iban")} />
+          <div>
+            <In label="IBAN" value={c.iban ?? ""} onChange={f("iban")} />
+            {/* Bez IBAN-u sa na faktúre nevykreslia platobné údaje ani QR platba. */}
+            {!c.iban && (
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+                Bez IBAN-u nebude na faktúrach číslo účtu ani QR platba.
+              </p>
+            )}
+          </div>
           <In label="SWIFT/BIC" value={c.swift ?? ""} onChange={f("swift")} />
           <In label="Mena" value={c.default_currency ?? "EUR"} onChange={f("default_currency")} />
           <div>

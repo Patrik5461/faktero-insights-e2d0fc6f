@@ -27,6 +27,7 @@ import {
   Clock as ClockIcon,
   MoreHorizontal,
   Ban,
+  AlertTriangle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -898,6 +899,24 @@ function InvoiceDetail() {
             <div className="mt-1 text-xs text-muted-foreground">
               Odoslané {new Date(inv.approval_requested_at).toLocaleString("sk-SK")} · odkaz platí 7
               dní
+            </div>
+          </div>
+        )}
+        {/*
+          Bez IBAN-u sa na faktúre nevykreslia platobné údaje ani QR platba —
+          a doteraz sa to nikde nepovedalo. Doklad vyzeral hotovo a odberateľ
+          nemal kam zaplatiť.
+        */}
+        {company && !company.iban && (
+          <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
+            <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
+              <AlertTriangle className="h-4 w-4" /> Faktúra nemá platobné údaje
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Firma nemá vyplnený IBAN, takže na doklade nebude číslo účtu ani QR platba.{" "}
+              <Link to="/firma" className="font-medium text-primary hover:underline">
+                Doplniť v nastaveniach firmy
+              </Link>
             </div>
           </div>
         )}
