@@ -50,6 +50,8 @@ import { useIsNative } from "@/hooks/useIsNative";
 import { initNativePlatform } from "@/lib/mobile/native-init";
 import { PrepinacMotivu } from "@/components/faktero/PrepinacMotivu";
 
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import type { KrajinaDane } from "@/lib/faktero/vat-rates";
 type Company = { id: string; name: string; logo_url?: string | null; role: string };
 
 /** `companyAdminOnly`: skryté pre bežných členov firmy — server tie dáta owner/adminovi
@@ -319,12 +321,33 @@ function resolveView(productMode: ProductMode, activeProduct: ActiveProduct): Ac
   return activeProduct;
 }
 
-function filterNav(view: ActiveProduct, isCompanyAdmin: boolean): NavGroup[] {
+/*
+  Položky viazané na slovenský štát. eKasa je slovenská evidencia tržieb (v
+  Česku EET zrušili) a eFaktúra ide cez slovenskú Peppol schému — českej firme
+  by ani jedno nefungovalo. Ponúkať jej ich by bola pasca: klikla by a narazila.
+*/
+const LEN_SK = ["/pokladna", "/efaktura"];
+
+function filterNav(
+  view: ActiveProduct,
+  isCompanyAdmin: boolean,
+  krajina: KrajinaDane = "SK",
+): NavGroup[] {
   const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
   // "viac" je spoločné pre oba produkty a vždy ide na koniec lišty
-  return NAV.filter((g) => allowed.has(g.key) || g.key === "viac").map((g) =>
-    isCompanyAdmin ? g : { ...g, children: g.children.filter((c) => !c.companyAdminOnly) },
-  );
+  return NAV.filter((g) => allowed.has(g.key) || g.key === "viac")
+    .map((g) =>
+      isCompanyAdmin ? g : { ...g, children: g.children.filter((c) => !c.companyAdminOnly) },
+    )
+    .map((g) =>
+      krajina === "SK"
+        ? g
+        : {
+            ...g,
+            children: g.children.filter((c) => !LEN_SK.some((x) => String(c.to).startsWith(x))),
+          },
+    )
+    .filter((g) => g.children.length > 0);
 }
 
 export function AppShell({
@@ -371,9 +394,10 @@ export function AppShell({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const krajina = useKrajinaDane();
   const view = resolveView(productMode, activeProduct);
   const isCompanyAdmin = active?.role === "owner" || active?.role === "admin";
-  const nav = filterNav(view, isCompanyAdmin);
+  const nav = filterNav(view, isCompanyAdmin, krajina);
   const homePath = landingPathFor(view);
   const canSwitch = productMode === "both";
 

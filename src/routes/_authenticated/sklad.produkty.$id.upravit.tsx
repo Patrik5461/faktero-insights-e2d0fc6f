@@ -15,6 +15,7 @@ import { useStockPermissions } from "@/hooks/useStockPermissions";
 import { ArrowLeft, Save, Upload, X } from "lucide-react";
 import { vatRateOptions } from "@/lib/faktero/vat-rates";
 
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/upravit")({
   head: () => ({ meta: [{ title: "Upraviť skladovú kartu — Faktero" }] }),
   component: EditStockProduct,
@@ -31,6 +32,10 @@ function EditStockProduct() {
   const fetchCategories = useServerFn(listStockCategories);
   const addCategory = useServerFn(createStockCategory);
   const fetchSuppliers = useServerFn(listSuppliers);
+
+  /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
+
+  const krajina = useKrajinaDane();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -373,7 +378,7 @@ function EditStockProduct() {
                   onChange={(e) => set("vat_rate", Number(e.target.value))}
                   className="input"
                 >
-                  {vatRateOptions(form.vat_rate).map((r) => (
+                  {vatRateOptions(krajina, form.vat_rate).map((r) => (
                     <option key={r} value={r}>
                       {r}%
                     </option>

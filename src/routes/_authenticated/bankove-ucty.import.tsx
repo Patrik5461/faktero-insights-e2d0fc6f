@@ -7,10 +7,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
 import { formatujMenu } from "@/lib/faktero/mena";
-import {
-  rozberVypisFn,
-  importujVypisFn,
-} from "@/lib/faktero/import-vypisu.functions";
+import { rozberVypisFn, importujVypisFn } from "@/lib/faktero/import-vypisu.functions";
 
 export const Route = createFileRoute("/_authenticated/bankove-ucty/import")({
   head: () => ({ meta: [{ title: "Nahrať výpis — Faktero" }] }),
@@ -205,8 +202,7 @@ function ImportVypisuPage() {
                 {zapisujem ? "Nahrávam…" : `Nahrať ${nahlad.pocet} pohybov`}
               </button>
               <p className="mt-2 text-xs text-muted-foreground">
-                Ten istý výpis sa dá nahrať znova — pohyby, ktoré už v evidencii sú, sa
-                nezdvoja.
+                Ten istý výpis sa dá nahrať znova — pohyby, ktoré už v evidencii sú, sa nezdvoja.
               </p>
             </div>
           )}

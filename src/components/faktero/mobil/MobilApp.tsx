@@ -288,7 +288,7 @@ function ObsahApky() {
     ])) as any;
     const stroplo = vysledok === STROP;
     const data = stroplo ? { session: null } : (vysledok.data as { session: any });
-    let overenie = stroplo
+    const overenie = stroplo
       ? "strop 6 s — odpoveď neprišla"
       : vysledok.chyba
         ? `chyba: ${vysledok.chyba}`

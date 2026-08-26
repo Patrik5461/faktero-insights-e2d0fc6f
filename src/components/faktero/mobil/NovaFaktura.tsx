@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cenaZPodkladov, PRAZDNE_PODKLADY, type Podklady } from "@/lib/faktero/ceny";
-import { SK_VAT_RATES, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
+import { sadzbyKrajiny, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
@@ -28,6 +28,7 @@ import { riadkyNaZapis, suctyFaktury } from "@/lib/mobile/faktura-uprava";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 /**
  * Vystavenie faktúry v telefóne.
  *
@@ -136,6 +137,10 @@ export function NovaFaktura({
   const nacitajPoslednu = useOperacia("faktura-posledna");
   const vystav = useOperacia("faktura-vystav");
 
+  /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
+
+  const krajina = useKrajinaDane();
+
   const [podklady, setPodklady] = useState<Podkladove | null>(null);
   const [krok, setKrok] = useState<Krok>("odberatel");
   const [odberatel, setOdberatel] = useState<Odberatel | null>(null);
@@ -183,7 +188,7 @@ export function NovaFaktura({
 
   const platca = podklady?.firma.platcaDph ?? true;
   const mena = podklady?.firma.mena ?? "EUR";
-  const zakladnaSadzba = platca ? DEFAULT_VAT_RATE : 0;
+  const zakladnaSadzba = platca ? sadzbyKrajiny(krajina)[0] : 0;
 
   useEffect(() => {
     (async () => {
@@ -1029,6 +1034,8 @@ function RiadokPolozky({
   onZmen: (patch: Partial<Riadok>) => void;
   onZmaz: () => void;
 }) {
+  // Vlastný hook aj tu: odpoveď je zapamätaná, takže to nie je dotaz navyše.
+  const krajina = useKrajinaDane();
   const zaklad = +(cislo(riadok.quantity) * cislo(riadok.unit_price)).toFixed(2);
   const celkom = +(zaklad * (1 + riadok.vat_rate / 100)).toFixed(2);
 
@@ -1082,7 +1089,7 @@ function RiadokPolozky({
               onChange={(e) => onZmen({ vat_rate: Number(e.target.value) })}
               className="w-full rounded-xl border border-input bg-background px-2 py-2.5 text-[16px]"
             >
-              {SK_VAT_RATES.map((r) => (
+              {sadzbyKrajiny(krajina).map((r) => (
                 <option key={r} value={r}>
                   {r} %
                 </option>

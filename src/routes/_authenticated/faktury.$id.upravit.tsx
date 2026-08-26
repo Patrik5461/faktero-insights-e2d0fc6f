@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { DEFAULT_VAT_RATE, vatRateOptions } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
 
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 export const Route = createFileRoute("/_authenticated/faktury/$id/upravit")({
   head: () => ({ meta: [{ title: "Upraviť faktúru — Faktero" }] }),
   component: EditInvoice,
@@ -39,6 +40,8 @@ const EMPTY: Item = {
 function EditInvoice() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
+  const krajina = useKrajinaDane();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [inv, setInv] = useState<any>(null);
@@ -394,7 +397,7 @@ function EditInvoice() {
                           onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                           className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                         >
-                          {vatRateOptions(it.vat_rate).map((r) => (
+                          {vatRateOptions(krajina, it.vat_rate).map((r) => (
                             <option key={r} value={r}>
                               {r}%
                             </option>
@@ -467,7 +470,7 @@ function EditInvoice() {
                       onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                     >
-                      {vatRateOptions(it.vat_rate).map((r) => (
+                      {vatRateOptions(krajina, it.vat_rate).map((r) => (
                         <option key={r} value={r}>
                           {r}%
                         </option>

@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   SK_VAT_RATES,
-  LEGACY_SK_VAT_RATES,
+  krajinaDane,
+  sadzbyKrajiny,
+  sadzbyKuDnu,
+  zakladnaSadzba,
   najblizsiaSadzba,
   vatBucketKey,
   vatBucketLabel,
@@ -19,9 +22,57 @@ describe("sadzby platné v SR", () => {
   });
 
   it("historickú sadzbu na doklade ponechá, ale neponúka ju nanovo", () => {
-    expect(vatRateOptions(20)).toEqual([23, 20, 19, 5, 0]);
-    expect(vatRateOptions()).not.toContain(20);
-    expect([...LEGACY_SK_VAT_RATES]).toEqual([20, 10]);
+    expect(vatRateOptions("SK", 20)).toEqual([23, 20, 19, 5, 0]);
+    expect(vatRateOptions("SK")).not.toContain(20);
+  });
+});
+
+/*
+  Režim sa nikde nezapína ručne — vyplýva z krajiny registrácie firmy. Toto je
+  jadro tej zmeny: česká firma nesmie dostať slovenské sadzby ani naopak.
+*/
+describe("režim podľa krajiny firmy", () => {
+  it("české sadzby sú od 2024 21, 12 a 0", () => {
+    expect(sadzbyKrajiny("CZ")).toEqual([21, 12, 0]);
+    expect(zakladnaSadzba("CZ")).toBe(21);
+  });
+
+  it("slovenskú 19 % česká firma neponúka a naopak", () => {
+    expect(sadzbyKrajiny("CZ")).not.toContain(19);
+    expect(sadzbyKrajiny("SK")).not.toContain(21);
+  });
+
+  it("krajinu rozozná aj z voľného textu, neznáme necháva na Slovensku", () => {
+    for (const v of ["CZ", "cz", "Česko", "Cesko", "CZE", "Czech Republic"])
+      expect(krajinaDane(v)).toBe("CZ");
+    for (const v of ["SK", "Slovensko", "", null, undefined, "AT"])
+      expect(krajinaDane(v)).toBe("SK");
+  });
+
+  /*
+    Opravný doklad k plneniu spred zmeny nesie sadzbu, ktorá vtedy platila.
+    Bez tabuľky podľa dňa by sa český dobropis z roku 2023 prepočítal na 12 %.
+  */
+  it("k staršiemu dňu dá sadzby, ktoré vtedy platili", () => {
+    expect(sadzbyKuDnu("CZ", "2023-06-30")).toEqual({ high: 21, low: 15, third: 10 });
+    expect(sadzbyKuDnu("CZ", "2024-01-01")).toEqual({ high: 21, low: 12, third: null });
+    expect(sadzbyKuDnu("SK", "2024-12-31")).toEqual({ high: 20, low: 10, third: null });
+    expect(sadzbyKuDnu("SK", "2025-01-01")).toEqual({ high: 23, low: 19, third: 5 });
+  });
+
+  it("prehľad DPH má české riadky pomenované po česky správne", () => {
+    expect(vatBucketOrder(["exempt"], "CZ")).toEqual(["21", "12", "0", "exempt", "pdp"]);
+    expect(vatBucketLabel("21", "CZ")).toBe("21 % (základná)");
+    expect(vatBucketLabel("12", "CZ")).toBe("12 % (znížená)");
+    // Slovenská sadzba je pre českú firmu historická, nie znížená.
+    expect(vatBucketLabel("19", "CZ")).toBe("19 % (historická)");
+  });
+
+  it("dopočítanú sadzbu prilepí k sadzbe vlastnej krajiny", () => {
+    expect(najblizsiaSadzba(20.9, "CZ")).toBe(21);
+    expect(najblizsiaSadzba(11.8, "CZ")).toBe(12);
+    // 12 % na Slovensku nikdy neplatilo — nesmie sa prilepiť k ničomu.
+    expect(najblizsiaSadzba(11.8, "SK")).toBe(11.8);
   });
 });
 

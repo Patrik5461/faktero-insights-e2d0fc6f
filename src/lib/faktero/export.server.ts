@@ -2,6 +2,11 @@
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
 import { nazovOznacenia, type KodOznacenia } from "./vypis-oznacenie";
 
+import {
+  sadzbyKuDnu as sadzbyKrajinyKuDnu,
+  krajinaDane,
+  type KrajinaDane,
+} from "./vat-rates";
 type InvoiceRow = any;
 type ItemRow = any;
 type CompanyRow = any;
@@ -41,10 +46,16 @@ type KodSadzby = Priehradka | "historyLow" | "historyHigh" | "historyThird";
  * prekladať tou istou tabuľkou, akú má program pre daný deň — inak by sa
  * doklad z roku 2024 s 20 % zaúčtoval na 23 %.
  */
-function sadzbyKuDnu(den: string): { high: number; low: number; third: number | null } {
-  const d = String(den ?? "");
-  // Sadzby platné od 1. 1. 2025; predtým platili 20 % a 10 %.
-  return d >= "2025-01-01" ? { high: 23, low: 19, third: 5 } : { high: 20, low: 10, third: null };
+/*
+  Priehradky berie Pohoda podľa krajiny firmy, nie natvrdo slovenské. České
+  21 % by pri slovenskej tabuľke spadlo do priehradky „historyHigh" a doklad by
+  sa zaúčtoval do cudzieho riadku — ticho, bez hlásenia.
+*/
+function sadzbyKuDnu(
+  den: string,
+  krajina: KrajinaDane = "SK",
+): { high: number; low: number; third: number | null } {
+  return sadzbyKrajinyKuDnu(krajina, String(den ?? ""));
 }
 
 function kodSadzby(sadzba: number, tab: ReturnType<typeof sadzbyKuDnu>): KodSadzby {
@@ -310,7 +321,7 @@ export function polozkyFaktur(opts: {
       const zn = typ === "credit_note" ? -1 : 1;
 
       const denPlnenia = String(invoice.delivery_date ?? invoice.issue_date ?? "");
-      const tab = sadzbyKuDnu(denPlnenia);
+      const tab = sadzbyKuDnu(denPlnenia, krajinaDane(company.country));
 
       const kody = items.map((it) => kodSadzby(Number(it.vat_rate), tab));
       const kosik = (p: Priehradka) => items.filter((_, i) => priehradka(kody[i]) === p);
@@ -827,7 +838,7 @@ export function polozkyDokladov(opts: {
 
   return doklady
     .map((d, idx) => {
-      const tab = sadzbyKuDnu(String(d?.issue_date ?? ""));
+      const tab = sadzbyKuDnu(String(d?.issue_date ?? ""), krajinaDane(company.country));
       const rozpis = rozpisDokladu(d);
       const zaSadzbu = (p: Priehradka) =>
         rozpis.filter((x) => priehradka(kodSadzby(x.sadzba, tab)) === p);
@@ -1022,6 +1033,8 @@ export function polozkyAdresara(opts: { zakaznici: DokladRow[] }): string {
 export function polozkySkladu(opts: {
   zasoby: DokladRow[];
   nastavenia?: PohodaNastavenia;
+  /** Krajina firmy — určuje priehradky sadzieb. Bez nej slovenské, ako doteraz. */
+  krajina?: KrajinaDane;
 }): string {
   const sklad = opts.nastavenia?.sklad;
   if (!sklad) return "";
@@ -1030,7 +1043,7 @@ export function polozkySkladu(opts: {
     .map((s) => {
       const nazov = skrat(s?.nazov ?? s?.name, 90);
       if (!nazov) return "";
-      const tab = sadzbyKuDnu(new Date().toISOString().slice(0, 10));
+      const tab = sadzbyKuDnu(new Date().toISOString().slice(0, 10), opts.krajina ?? "SK");
       const sadzba = kodSadzby(Number(s?.vat_rate ?? 0), tab);
 
       return `
@@ -1181,6 +1194,8 @@ export function zoskupPohyby(pohyby: DokladRow[]): SkupinaPohybov[] {
 export function polozkySkladovychPohybov(opts: {
   skupiny: SkupinaPohybov[];
   nastavenia?: PohodaNastavenia;
+  /** Krajina firmy — určuje priehradky sadzieb. Bez nej slovenské, ako doteraz. */
+  krajina?: KrajinaDane;
 }): string {
   const sklad = opts.nastavenia?.sklad;
   if (!sklad) return "";
@@ -1190,7 +1205,7 @@ export function polozkySkladovychPohybov(opts: {
       const prijem = s.smer === "prijem";
       const p = prijem ? "pri" : "vyd";
       const agenda = prijem ? "prijemka" : "vydejka";
-      const tab = sadzbyKuDnu(s.datum);
+      const tab = sadzbyKuDnu(s.datum, opts.krajina ?? "SK");
 
       const polozky = s.pohyby
         .map((m) => {
@@ -1243,7 +1258,7 @@ export function buildPohodaMovementsXml(opts: {
     ico: opts.company?.ico,
     note: "Skladové pohyby z Faktero",
     prefixy: ["pri", "vyd"],
-    entries: polozkySkladovychPohybov(opts),
+    entries: polozkySkladovychPohybov({ ...opts, krajina: krajinaDane(opts.company?.country) }),
   });
 }
 
@@ -1283,7 +1298,7 @@ export function buildPohodaStockXml(opts: {
     ico: opts.company?.ico,
     note: "Skladové karty z Faktero",
     prefixy: ["stk", "ftr"],
-    entries: polozkySkladu(opts),
+    entries: polozkySkladu({ ...opts, krajina: krajinaDane(opts.company?.country) }),
   });
 }
 
@@ -1313,13 +1328,20 @@ export function buildPohodaDavkaXml(opts: {
   // než sa na ne odvolá faktúra.
   const entries = [
     opts.zakaznici?.length ? polozkyAdresara({ zakaznici: opts.zakaznici }) : "",
-    opts.zasoby?.length ? polozkySkladu({ zasoby: opts.zasoby, nastavenia: opts.nastavenia }) : "",
+    opts.zasoby?.length
+      ? polozkySkladu({
+          zasoby: opts.zasoby,
+          nastavenia: opts.nastavenia,
+          krajina: krajinaDane(opts.company?.country),
+        })
+      : "",
     opts.zakazkyNove?.length ? polozkyZakaziek({ zakazky: opts.zakazkyNove }) : "",
     // Pohyby až po kartách — položka sa na kartu odvoláva a tá musí existovať.
     opts.skupinyPohybov?.length
       ? polozkySkladovychPohybov({
           skupiny: opts.skupinyPohybov,
           nastavenia: opts.nastavenia,
+          krajina: krajinaDane(opts.company?.country),
         })
       : "",
     polozkyFaktur(opts),

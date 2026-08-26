@@ -8,6 +8,8 @@ import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocomplete";
 import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 
+import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
+import { zabudniKrajinuDane } from "@/lib/faktero/krajina-firmy";
 export const Route = createFileRoute("/_authenticated/firma")({
   head: () => ({ meta: [{ title: "Firma — Faktero" }] }),
   component: CompanyPage,
@@ -32,6 +34,9 @@ function CompanyPage() {
     const { id, created_at, updated_at, created_by, ...patch } = c;
     const { error } = await supabase.from("companies").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
+    // Krajina určuje sadzby DPH a formuláre si ju pamätajú — po zmene sa musí
+    // zabudnúť, inak by faktúra ďalej ponúkala sadzby predchádzajúcej krajiny.
+    zabudniKrajinuDane(id);
     toast.success("Uložené");
   }
 
@@ -86,7 +91,8 @@ function CompanyPage() {
           <In full label="Ulica" value={c.street ?? ""} onChange={f("street")} />
           <In label="Mesto" value={c.city ?? ""} onChange={f("city")} />
           <In label="PSČ" value={c.zip ?? ""} onChange={f("zip")} />
-          <In label="Krajina" value={c.country ?? ""} onChange={f("country")} />
+          {/* Krajina prepína režim sadzieb DPH, tak sa vyberá, nepíše. */}
+          <VyberKrajiny hodnota={c.country} onZmena={f("country")} />
           <In label="Telefón" value={c.phone ?? ""} onChange={f("phone")} />
           <In label="Web" value={c.website ?? ""} onChange={f("website")} />
           <In label="IBAN" value={c.iban ?? ""} onChange={f("iban")} />

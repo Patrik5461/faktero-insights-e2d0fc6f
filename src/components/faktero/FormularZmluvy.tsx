@@ -4,8 +4,9 @@ import { toast } from "sonner";
 import { ulozZmluvuFn } from "@/lib/faktero/financovanie.functions";
 import { kalendar, suhrn, type Zmluva } from "@/lib/faktero/financovanie";
 import { formatujSumu } from "@/lib/faktero/zostatky";
-import { SK_VAT_RATES } from "@/lib/faktero/vat-rates";
+import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
 
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -81,6 +82,10 @@ export function FormularZmluvy({
   onZrusit?: () => void;
 }) {
   const uloz = useServerFn(ulozZmluvuFn);
+
+  /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
+
+  const krajina = useKrajinaDane();
 
   const [kind, setKind] = useState<"leasing" | "uver">(zmluva?.kind ?? "leasing");
   const [name, setName] = useState(text(zmluva?.name));
@@ -367,11 +372,13 @@ export function FormularZmluvy({
             <label className={popis}>DPH v splátke</label>
             <select className={pole} value={vat} onChange={(e) => setVat(Number(e.target.value))}>
               <option value={0}>bez DPH</option>
-              {SK_VAT_RATES.filter((r) => r > 0).map((r) => (
-                <option key={r} value={r}>
-                  {r} %
-                </option>
-              ))}
+              {sadzbyKrajiny(krajina)
+                .filter((r) => r > 0)
+                .map((r) => (
+                  <option key={r} value={r}>
+                    {r} %
+                  </option>
+                ))}
             </select>
           </div>
         </div>

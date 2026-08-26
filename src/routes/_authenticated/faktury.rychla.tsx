@@ -5,10 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
-import { DEFAULT_VAT_RATE, SK_VAT_RATES } from "@/lib/faktero/vat-rates";
+import { DEFAULT_VAT_RATE, sadzbyKrajiny, zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { vystavFakturuFn } from "@/lib/faktero/faktura-vystavenie.functions";
 import { friendlyError } from "@/lib/faktero/plan-error";
 
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 export const Route = createFileRoute("/_authenticated/faktury/rychla")({
   head: () => ({ meta: [{ title: "Rýchla faktúra — Faktero" }] }),
   component: QuickInvoicePage,
@@ -17,12 +18,23 @@ export const Route = createFileRoute("/_authenticated/faktury/rychla")({
 function QuickInvoicePage() {
   const navigate = useNavigate();
   const vystav = useServerFn(vystavFakturuFn);
+  /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
+  const krajina = useKrajinaDane();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("Služby");
   const [vatRate, setVatRate] = useState<number>(DEFAULT_VAT_RATE);
+  const [dphRucne, setDphRucne] = useState(false);
+  /*
+    Krajina firmy dobehne až po načítaní, takže prvé vykreslenie nesie
+    slovenskú predvolenú sadzbu. Českej firme by tak v poli ostalo 23 % —
+    sadzba, ktorú vôbec neuplatňuje. Kto si sadzbu vybral sám, ten má prednosť.
+  */
+  useEffect(() => {
+    if (!dphRucne) setVatRate(zakladnaSadzba(krajina));
+  }, [krajina, dphRucne]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -145,10 +157,13 @@ function QuickInvoicePage() {
                 DPH
                 <select
                   value={vatRate}
-                  onChange={(e) => setVatRate(Number(e.target.value))}
+                  onChange={(e) => {
+                    setVatRate(Number(e.target.value));
+                    setDphRucne(true);
+                  }}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  {SK_VAT_RATES.map((r) => (
+                  {sadzbyKrajiny(krajina).map((r) => (
                     <option key={r} value={r}>
                       {r} %
                     </option>

@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertTriangle, Download, FileText, Loader2 } from "lucide-react";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import {
   najblizsiaSadzba,
   vatBucketKey,
@@ -124,6 +125,8 @@ function sucet(b: Record<string, Bucket>, pole: "base" | "vat"): number {
 
 function DphPage() {
   const now = new Date();
+  /* Priehradky aj názvy sadzieb patria krajine registrácie firmy. */
+  const krajina = useKrajinaDane();
   const [year, setYear] = useState(now.getFullYear());
   const [mode, setMode] = useState<Mode>("month");
   const [periodIdx, setPeriodIdx] = useState(now.getMonth());
@@ -215,7 +218,7 @@ function DphPage() {
       // preto sa hodnota prilepí k najbližšej platnej sadzbe (do 0,5 p. b.).
       let key = "exempt";
       if (base > 0 && vat > 0) {
-        key = vatBucketKey(najblizsiaSadzba((vat / base) * 100));
+        key = vatBucketKey(najblizsiaSadzba((vat / base) * 100, krajina));
       } else if (vat === 0 && base > 0) {
         key = "0";
       }
@@ -226,12 +229,14 @@ function DphPage() {
     }
     for (const r of Object.keys(b)) b[r].count = b[r].docs.size;
     return b;
-  }, [purchases]);
+    // Krajina prichádza až po načítaní firmy — bez nej v závislostiach by
+    // prijaté faktúry ostali priradené k sadzbám tej predchádzajúcej.
+  }, [purchases, krajina]);
 
   // Spoločné poradie riadkov pre obe tabuľky, nech sa dajú porovnávať vedľa seba.
   const rateOrder = useMemo(
-    () => vatBucketOrder([...Object.keys(output), ...Object.keys(input)]),
-    [output, input],
+    () => vatBucketOrder([...Object.keys(output), ...Object.keys(input)], krajina),
+    [output, input, krajina],
   );
 
   // Súčty idú cez všetky vedierka, nie cez poradie zobrazenia — inak by sadzba,
@@ -251,7 +256,9 @@ function DphPage() {
     lines.push("Sadzba;Základ dane;DPH;Počet faktúr");
     for (const r of rateOrder) {
       const v = riadok(output, r);
-      lines.push(`${vatBucketLabel(r)};${v.base.toFixed(2)};${v.vat.toFixed(2)};${v.count}`);
+      lines.push(
+        `${vatBucketLabel(r, krajina)};${v.base.toFixed(2)};${v.vat.toFixed(2)};${v.count}`,
+      );
     }
     lines.push(`SPOLU;${totalOutputBase.toFixed(2)};${totalOutputVat.toFixed(2)};`);
     lines.push("");
@@ -259,7 +266,9 @@ function DphPage() {
     lines.push("Sadzba;Základ dane;DPH;Počet faktúr");
     for (const r of rateOrder) {
       const v = riadok(input, r);
-      lines.push(`${vatBucketLabel(r)};${v.base.toFixed(2)};${v.vat.toFixed(2)};${v.count}`);
+      lines.push(
+        `${vatBucketLabel(r, krajina)};${v.base.toFixed(2)};${v.vat.toFixed(2)};${v.count}`,
+      );
     }
     lines.push(`SPOLU;${totalInputBase.toFixed(2)};${totalInputVat.toFixed(2)};`);
     lines.push("");
@@ -311,11 +320,11 @@ function DphPage() {
 <div class="note"><b>Upozornenie:</b> Toto je informatívny prehľad. Pre podanie DPH priznania použite certifikovaný účtovný softvér alebo kontaktujte účtovníka.</div>
 <h2>DPH na výstupe (vystavené faktúry)</h2>
 <table><thead><tr><th>Sadzba DPH</th><th style="text-align:right">Základ dane</th><th style="text-align:right">Suma DPH</th><th style="text-align:right">Počet faktúr</th></tr></thead>
-<tbody>${rateOrder.map((r) => row(vatBucketLabel(r), riadok(output, r))).join("")}
+<tbody>${rateOrder.map((r) => row(vatBucketLabel(r, krajina), riadok(output, r))).join("")}
 <tr class="tot"><td>SPOLU</td><td style="text-align:right">${fmt(totalOutputBase)}</td><td style="text-align:right">${fmt(totalOutputVat)}</td><td></td></tr></tbody></table>
 <h2>DPH na vstupe (prijaté faktúry)</h2>
 <table><thead><tr><th>Sadzba DPH</th><th style="text-align:right">Základ dane</th><th style="text-align:right">Suma DPH</th><th style="text-align:right">Počet faktúr</th></tr></thead>
-<tbody>${rateOrder.map((r) => row(vatBucketLabel(r), riadok(input, r))).join("")}
+<tbody>${rateOrder.map((r) => row(vatBucketLabel(r, krajina), riadok(input, r))).join("")}
 <tr class="tot"><td>SPOLU</td><td style="text-align:right">${fmt(totalInputBase)}</td><td style="text-align:right">${fmt(totalInputVat)}</td><td></td></tr></tbody></table>
 <h2>Rozdiel (odvod / nadmerný odpočet)</h2>
 <table><tr class="tot"><td>${rozdiel >= 0 ? "Odvod DPH" : "Nadmerný odpočet"}</td><td style="text-align:right">${fmt(Math.abs(rozdiel))}</td></tr></table>
@@ -451,7 +460,7 @@ function DphPage() {
                 <TableBody>
                   {rateOrder.map((r) => (
                     <TableRow key={r}>
-                      <TableCell>{vatBucketLabel(r)}</TableCell>
+                      <TableCell>{vatBucketLabel(r, krajina)}</TableCell>
                       <TableCell className="text-right">{fmt(riadok(output, r).base)}</TableCell>
                       <TableCell className="text-right">{fmt(riadok(output, r).vat)}</TableCell>
                       <TableCell className="text-right">{riadok(output, r).count}</TableCell>
@@ -481,7 +490,7 @@ function DphPage() {
                 <TableBody>
                   {rateOrder.map((r) => (
                     <TableRow key={r}>
-                      <TableCell>{vatBucketLabel(r)}</TableCell>
+                      <TableCell>{vatBucketLabel(r, krajina)}</TableCell>
                       <TableCell className="text-right">{fmt(riadok(input, r).base)}</TableCell>
                       <TableCell className="text-right">{fmt(riadok(input, r).vat)}</TableCell>
                       <TableCell className="text-right">{riadok(input, r).count}</TableCell>

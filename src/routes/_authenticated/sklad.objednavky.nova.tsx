@@ -18,6 +18,7 @@ import { JobPicker } from "@/components/faktero/JobPicker";
 import { ArrowLeft, Plus, Sparkles, Trash2 } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/nova")({
   head: () => ({ meta: [{ title: "Nová objednávka — Faktero" }] }),
   component: NewPurchaseOrder,
@@ -52,6 +53,10 @@ function NewPurchaseOrder() {
   const fetchLow = useServerFn(getLowStockReport);
   const doCreate = useServerFn(createPurchaseOrder);
   const fetchZasoby = useServerFn(listStockItemsForOrder);
+
+  /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
+
+  const krajina = useKrajinaDane();
 
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
@@ -310,7 +315,7 @@ function NewPurchaseOrder() {
                     onChange={(e) => uprav(i, { vat_rate: Number(e.target.value) })}
                     className="input"
                   >
-                    {vatRateOptions(it.vat_rate).map((r) => (
+                    {vatRateOptions(krajina, it.vat_rate).map((r) => (
                       <option key={r} value={r}>
                         {r}%
                       </option>

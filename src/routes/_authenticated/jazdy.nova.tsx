@@ -301,289 +301,289 @@ function NewTripPage() {
           </div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-            <Field label="Dátum *">
-              <input
-                type="date"
-                required
-                value={form.trip_date}
-                onChange={(e) => setForm({ ...form, trip_date: e.target.value })}
-                className="input"
-              />
-            </Field>
-            <Field label="Vozidlo *">
-              <select
-                required
-                value={form.vehicle_id}
-                onChange={(e) => setForm({ ...form, vehicle_id: e.target.value })}
-                className="input"
-              >
-                {vehicles.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name} {v.license_plate ? `(${v.license_plate})` : ""}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Vodič">
-              <input
-                value={form.driver_name}
-                onChange={(e) => setForm({ ...form, driver_name: e.target.value })}
-                className="input"
-              />
-            </Field>
-            <Field label="Účel cesty">
-              <input
-                value={form.purpose}
-                onChange={(e) => setForm({ ...form, purpose: e.target.value })}
-                className="input"
-              />
-            </Field>
-            {/* Súkromná jazda firemným autom patrí do knihy jázd, ale musí byť
+            <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
+              <Field label="Dátum *">
+                <input
+                  type="date"
+                  required
+                  value={form.trip_date}
+                  onChange={(e) => setForm({ ...form, trip_date: e.target.value })}
+                  className="input"
+                />
+              </Field>
+              <Field label="Vozidlo *">
+                <select
+                  required
+                  value={form.vehicle_id}
+                  onChange={(e) => setForm({ ...form, vehicle_id: e.target.value })}
+                  className="input"
+                >
+                  {vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name} {v.license_plate ? `(${v.license_plate})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Vodič">
+                <input
+                  value={form.driver_name}
+                  onChange={(e) => setForm({ ...form, driver_name: e.target.value })}
+                  className="input"
+                />
+              </Field>
+              <Field label="Účel cesty">
+                <input
+                  value={form.purpose}
+                  onChange={(e) => setForm({ ...form, purpose: e.target.value })}
+                  className="input"
+                />
+              </Field>
+              {/* Súkromná jazda firemným autom patrí do knihy jázd, ale musí byť
                 v nej označená — do exportu pre účtovníčku ide ako súkromná. */}
-            <Field label="Charakter jazdy">
-              <select
-                value={form.classification}
-                onChange={(e) => setForm({ ...form, classification: e.target.value })}
-                className="input"
-              >
-                <option value="business">Služobná</option>
-                <option value="private">Súkromná</option>
-              </select>
-            </Field>
-            {/*
+              <Field label="Charakter jazdy">
+                <select
+                  value={form.classification}
+                  onChange={(e) => setForm({ ...form, classification: e.target.value })}
+                  className="input"
+                >
+                  <option value="business">Služobná</option>
+                  <option value="private">Súkromná</option>
+                </select>
+              </Field>
+              {/*
               Odkiaľ a Kam patria vedľa seba — sú to dve polovice jednej veci.
               V mriežke boli oddelené a „Odkiaľ" sedelo vedľa charakteru jazdy,
               takže sa spolu nečítali. Vlastný riadok ich drží pri sebe bez
               ohľadu na to, čo je nad nimi.
             */}
-            <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
-              <Field label="Odkiaľ">
-                <PoleAdresy
-                  hodnota={form.start_location}
-                  onZmena={(v) => setForm({ ...form, start_location: v })}
-                  placeholder="napr. Trnava, Hlavná 12"
+              <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+                <Field label="Odkiaľ">
+                  <PoleAdresy
+                    hodnota={form.start_location}
+                    onZmena={(v) => setForm({ ...form, start_location: v })}
+                    placeholder="napr. Trnava, Hlavná 12"
+                  />
+                </Field>
+                <Field label="Kam">
+                  <PoleAdresy
+                    hodnota={form.end_location}
+                    onZmena={(v) => setForm({ ...form, end_location: v })}
+                    placeholder="napr. Bratislava, Einsteinova 5"
+                  />
+                </Field>
+              </div>
+              <Field label="Tachometer začiatok (km) *">
+                <input
+                  type="number"
+                  step="0.1"
+                  required
+                  value={form.start_odometer}
+                  onChange={(e) => setForm({ ...form, start_odometer: e.target.value })}
+                  className="input"
                 />
               </Field>
-              <Field label="Kam">
-                <PoleAdresy
-                  hodnota={form.end_location}
-                  onZmena={(v) => setForm({ ...form, end_location: v })}
-                  placeholder="napr. Bratislava, Einsteinova 5"
+              <Field label="Tachometer koniec (km) *">
+                <input
+                  type="number"
+                  step="0.1"
+                  required
+                  value={form.end_odometer}
+                  onChange={(e) => setForm({ ...form, end_odometer: e.target.value })}
+                  className="input"
                 />
               </Field>
-            </div>
-            <Field label="Tachometer začiatok (km) *">
-              <input
-                type="number"
-                step="0.1"
-                required
-                value={form.start_odometer}
-                onChange={(e) => setForm({ ...form, start_odometer: e.target.value })}
-                className="input"
-              />
-            </Field>
-            <Field label="Tachometer koniec (km) *">
-              <input
-                type="number"
-                step="0.1"
-                required
-                value={form.end_odometer}
-                onChange={(e) => setForm({ ...form, end_odometer: e.target.value })}
-                className="input"
-              />
-            </Field>
-            <Field label="Cena PHM (€/l)">
-              <input
-                type="number"
-                step="0.001"
-                value={form.fuel_price}
-                onChange={(e) => {
-                  setCenaDoplnena(false);
-                  setForm({ ...form, fuel_price: e.target.value });
-                }}
-                className="input"
-              />
-              <span className="mt-1 block text-xs text-muted-foreground">
-                {cenaDoplnena
-                  ? "Doplnené z posledného tankovania."
-                  : "Bez ceny nemá jazda náklad a vo vyhodnotení zákazky vyjde doprava nula."}
-              </span>
-            </Field>
-            {/* Spotreba vozidla je druhá polovica výpočtu. Bez nej sa do jazdy
+              <Field label="Cena PHM (€/l)">
+                <input
+                  type="number"
+                  step="0.001"
+                  value={form.fuel_price}
+                  onChange={(e) => {
+                    setCenaDoplnena(false);
+                    setForm({ ...form, fuel_price: e.target.value });
+                  }}
+                  className="input"
+                />
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {cenaDoplnena
+                    ? "Doplnené z posledného tankovania."
+                    : "Bez ceny nemá jazda náklad a vo vyhodnotení zákazky vyjde doprava nula."}
+                </span>
+              </Field>
+              {/* Spotreba vozidla je druhá polovica výpočtu. Bez nej sa do jazdy
                 neuloží počet litrov a náklad vyjde nula aj s cenou paliva. */}
-            <Field label="">
-              {vozidloBezSpotreby && (
-                <div className="rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-200">
-                  Vozidlo nemá zadanú spotrebu, takže jazda nebude mať náklad.{" "}
-                  <a href="/jazdy/vozidla" className="underline">
-                    Doplniť spotrebu
-                  </a>
-                </div>
-              )}
-            </Field>
-            {/*
+              <Field label="">
+                {vozidloBezSpotreby && (
+                  <div className="rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/30 dark:text-amber-200">
+                    Vozidlo nemá zadanú spotrebu, takže jazda nebude mať náklad.{" "}
+                    <a href="/jazdy/vozidla" className="underline">
+                      Doplniť spotrebu
+                    </a>
+                  </div>
+                )}
+              </Field>
+              {/*
               Priemer a trvanie sú dve strany tej istej mince: úprava jedného
               prepočíta druhé podľa vzdialenosti. Obe sa dajú prepísať ručne —
               odhad je len východisko, nie tvrdenie o tom, ako sa jazdilo.
             */}
-            <Field label="Priemerná rýchlosť (km/h)">
-              <input
-                type="number"
-                step="1"
-                min="1"
-                value={form.average_speed_kmh}
-                onChange={(e) => nastavPriemer(e.target.value)}
-                className="input"
-              />
-              <span className="mt-1 block text-xs text-muted-foreground">
-                Z nej sa dopočíta trvanie. Prepíšte ju, ak ste išli prevažne po diaľnici alebo po
-                meste.
-              </span>
-            </Field>
-            <Field label="Trvanie jazdy (min)">
-              <input
-                type="number"
-                step="1"
-                min="0"
-                value={form.duration_min}
-                onChange={(e) => nastavTrvanie(e.target.value)}
-                className="input"
-              />
-              <span className="mt-1 block text-xs text-muted-foreground">
-                {form.duration_min && Number(form.duration_min) >= 60
-                  ? `${Math.floor(Number(form.duration_min) / 60)} h ${Number(form.duration_min) % 60} min — úpravou sa prepočíta priemer.`
-                  : "Úpravou sa prepočíta priemerná rýchlosť."}
-              </span>
-            </Field>
-            <Field label="Vzdialenosť (auto)">
-              <div className="input bg-muted/40 tabular-nums">
-                {Number.isFinite(distance) ? distance.toFixed(1) : "—"} km
-              </div>
-            </Field>
-            {/*
+              <Field label="Priemerná rýchlosť (km/h)">
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={form.average_speed_kmh}
+                  onChange={(e) => nastavPriemer(e.target.value)}
+                  className="input"
+                />
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Z nej sa dopočíta trvanie. Prepíšte ju, ak ste išli prevažne po diaľnici alebo po
+                  meste.
+                </span>
+              </Field>
+              <Field label="Trvanie jazdy (min)">
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={form.duration_min}
+                  onChange={(e) => nastavTrvanie(e.target.value)}
+                  className="input"
+                />
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {form.duration_min && Number(form.duration_min) >= 60
+                    ? `${Math.floor(Number(form.duration_min) / 60)} h ${Number(form.duration_min) % 60} min — úpravou sa prepočíta priemer.`
+                    : "Úpravou sa prepočíta priemerná rýchlosť."}
+                </span>
+              </Field>
+              <Field label="Vzdialenosť (auto)">
+                <div className="input bg-muted/40 tabular-nums">
+                  {Number.isFinite(distance) ? distance.toFixed(1) : "—"} km
+                </div>
+              </Field>
+              {/*
               Odberateľ a zákazka vedľa seba: „za kým" a „na čom". Zákazka to
               nenahradí — nie každá cesta k odberateľovi patrí na zákazku, a
               nie každá zákazka má odberateľa.
             */}
-            <PoleOdberatela
-              value={form.customer_id}
-              napoveda={'Doplní sa aj do poľa „Kam", keď je prázdne.'}
-              onChange={(id, odberatel) =>
-                setForm((p) => ({
-                  ...p,
-                  customer_id: id,
-                  customer_name: odberatel?.name ?? "",
-                  // Vypísané „Kam" sa neprepisuje — človek ho mohol zadať
-                  // presnejšie než je adresa v kartotéke.
-                  end_location: p.end_location.trim()
-                    ? p.end_location
-                    : adresaOdberatela(odberatel),
-                }))
-              }
-            />
-            <JobPicker
-              value={form.job_id}
-              customerId={form.customer_id || null}
-              onChange={(v) => setForm((p) => ({ ...p, job_id: v }))}
-            />
-            <label className="sm:col-span-2 block">
-              <span className="text-sm font-medium">Poznámka</span>
-              <textarea
-                rows={2}
-                value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
-                className="input mt-1"
+              <PoleOdberatela
+                value={form.customer_id}
+                napoveda={'Doplní sa aj do poľa „Kam", keď je prázdne.'}
+                onChange={(id, odberatel) =>
+                  setForm((p) => ({
+                    ...p,
+                    customer_id: id,
+                    customer_name: odberatel?.name ?? "",
+                    // Vypísané „Kam" sa neprepisuje — človek ho mohol zadať
+                    // presnejšie než je adresa v kartotéke.
+                    end_location: p.end_location.trim()
+                      ? p.end_location
+                      : adresaOdberatela(odberatel),
+                  }))
+                }
               />
-            </label>
-            <div className="sm:col-span-2 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => navigate({ to: "/jazdy" })}
-                className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
-              >
-                Zrušiť
-              </button>
-              <button
-                disabled={saving}
-                type="submit"
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
-              >
-                {saving ? "Ukladám…" : "Uložiť jazdu"}
-              </button>
-            </div>
-          </form>
+              <JobPicker
+                value={form.job_id}
+                customerId={form.customer_id || null}
+                onChange={(v) => setForm((p) => ({ ...p, job_id: v }))}
+              />
+              <label className="sm:col-span-2 block">
+                <span className="text-sm font-medium">Poznámka</span>
+                <textarea
+                  rows={2}
+                  value={form.note}
+                  onChange={(e) => setForm({ ...form, note: e.target.value })}
+                  className="input mt-1"
+                />
+              </label>
+              <div className="sm:col-span-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate({ to: "/jazdy" })}
+                  className="rounded-md border border-border bg-card px-4 py-2 text-sm hover:bg-secondary"
+                >
+                  Zrušiť
+                </button>
+                <button
+                  disabled={saving}
+                  type="submit"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                >
+                  {saving ? "Ukladám…" : "Uložiť jazdu"}
+                </button>
+              </div>
+            </form>
 
-          {/*
+            {/*
             Mapa vedľa formulára, nie pod ním. Pri otvorenej jazde je trasa to
             prvé, čo človek chce vidieť — dovtedy sa dala zobraziť len ikonkou
             v knihe jázd a po otvorení jazdy zmizla. Na úzkej obrazovke sa
             stĺpce poskladajú pod seba a mapa ide nakoniec.
           */}
-          <aside className="lg:sticky lg:top-4 lg:self-start">
-            <div className="rounded-xl border border-border bg-card p-3">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-medium">Trasa na mape</h2>
-                {/*
+            <aside className="lg:sticky lg:top-4 lg:self-start">
+              <div className="rounded-xl border border-border bg-card p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-sm font-medium">Trasa na mape</h2>
+                  {/*
                   Trasa sa počíta až na požiadanie. Automaticky pri písaní by sa
                   dopyt spustil z každej nedokončenej adresy a míňal by kvótu na
                   preklepoch.
                 */}
-                <button
-                  type="button"
-                  onClick={navrhniTrasuPreFormular}
-                  disabled={hladamTrasu}
-                  className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-60"
-                >
-                  <MapIcon className="h-3.5 w-3.5" />
-                  {hladamTrasu ? "Hľadám…" : zobrazenaTrasa ? "Prepočítať" : "Navrhnúť trasu"}
-                </button>
-              </div>
-
-              {trasa && (
-                <div className="mt-2 text-sm">
-                  <span className="font-medium">{trasa.vzdialenost_km} km</span>
-                  <span className="text-muted-foreground">
-                    {" "}
-                    · približne {trasa.trvanie_min} min
-                  </span>
-                  <div className="mt-0.5 text-xs text-muted-foreground">
-                    {trasa.odkial.nazov} → {trasa.kam.nazov}
-                  </div>
-                </div>
-              )}
-
-              {zobrazenaTrasa ? (
-                <div className="mt-3">
-                  <MapaTrasy route={zobrazenaTrasa} vyska={300} />
-                </div>
-              ) : (
-                <p className="mt-3 rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
-                  {upravujem
-                    ? "Táto jazda nemá zapísanú trasu. Doplňte odkiaľ a kam a dajte Navrhnúť trasu."
-                    : "Vyplňte odkiaľ a kam a dajte Navrhnúť trasu."}
-                </p>
-              )}
-
-              {trasa && (
-                <>
                   <button
                     type="button"
-                    onClick={pouziKilometre}
-                    className="mt-3 w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                    onClick={navrhniTrasuPreFormular}
+                    disabled={hladamTrasu}
+                    className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-60"
                   >
-                    Doplniť {trasa.vzdialenost_km} km do tachometra
+                    <MapIcon className="h-3.5 w-3.5" />
+                    {hladamTrasu ? "Hľadám…" : zobrazenaTrasa ? "Prepočítať" : "Navrhnúť trasu"}
                   </button>
-                  {/* Kilometre z mapy sú najkratšia cesta po cestách, nie to,
-                      čo auto naozaj prešlo. Pred úradom platí tachometer. */}
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Je to najkratšia cesta po cestách — obchádzky ani hľadanie parkovania v nej nie
-                    sú. Pre knihu jázd je rozhodujúci tachometer.
+                </div>
+
+                {trasa && (
+                  <div className="mt-2 text-sm">
+                    <span className="font-medium">{trasa.vzdialenost_km} km</span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · približne {trasa.trvanie_min} min
+                    </span>
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      {trasa.odkial.nazov} → {trasa.kam.nazov}
+                    </div>
+                  </div>
+                )}
+
+                {zobrazenaTrasa ? (
+                  <div className="mt-3">
+                    <MapaTrasy route={zobrazenaTrasa} vyska={300} />
+                  </div>
+                ) : (
+                  <p className="mt-3 rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
+                    {upravujem
+                      ? "Táto jazda nemá zapísanú trasu. Doplňte odkiaľ a kam a dajte Navrhnúť trasu."
+                      : "Vyplňte odkiaľ a kam a dajte Navrhnúť trasu."}
                   </p>
-                </>
-              )}
-            </div>
-          </aside>
+                )}
+
+                {trasa && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={pouziKilometre}
+                      className="mt-3 w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                    >
+                      Doplniť {trasa.vzdialenost_km} km do tachometra
+                    </button>
+                    {/* Kilometre z mapy sú najkratšia cesta po cestách, nie to,
+                      čo auto naozaj prešlo. Pred úradom platí tachometer. */}
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Je to najkratšia cesta po cestách — obchádzky ani hľadanie parkovania v nej
+                      nie sú. Pre knihu jázd je rozhodujúci tachometer.
+                    </p>
+                  </>
+                )}
+              </div>
+            </aside>
           </div>
         )}
       </PageBody>

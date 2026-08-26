@@ -41,9 +41,10 @@ import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { findCustomerByIcoFn } from "@/lib/faktero/company-lookup.functions";
 import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombobox";
 import { JobPicker } from "@/components/faktero/JobPicker";
-import { DEFAULT_VAT_RATE, SK_VAT_RATES } from "@/lib/faktero/vat-rates";
+import { DEFAULT_VAT_RATE, sadzbyKrajiny, zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { MENY } from "@/lib/faktero/mena";
 
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
   /**
@@ -94,6 +95,8 @@ type Item = {
   _zakladna?: number;
   /** Cenu prepísal používateľ ručne — cenník ju už prepisovať nesmie. */
   _cena_rucne?: boolean;
+  /** Sadzbu vybral človek — režim krajiny ju už neprepíše. */
+  _dph_rucne?: boolean;
 };
 const EMPTY_ITEM: Item = {
   name: "",
@@ -115,6 +118,8 @@ function NewInvoice() {
   const search = Route.useSearch();
   const triggerEvt = useServerFn(triggerEventFn);
   const aiParse = useServerFn(aiParseInvoiceFn);
+  /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
+  const krajina = useKrajinaDane();
   const [customers, setCustomers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [stockByProduct, setStockByProduct] = useState<Record<string, StockMeta>>({});
@@ -148,6 +153,12 @@ function NewInvoice() {
     notes: "",
     intro_note: "",
   });
+  /*
+    Krajina firmy dobehne až po načítaní. Prvé vykreslenie preto nesie
+    slovenskú predvolenú sadzbu a českej firme by v položke ostalo 23 % —
+    sadzba, ktorú vôbec neuplatňuje. Riadky, ktorých sa človek nedotkol, sa
+    prepnú na základnú sadzbu jeho krajiny; ručne vybranú sadzbu neprepisujeme.
+  */
   const [items, setItems] = useState<Item[]>(() => {
     // Predvyplnenie zo skenera dokladov. Suma ide ako jedna položka za 1 ks —
     // rozpis položiek z dokladu nemáme, len celkovú sumu.
@@ -161,6 +172,14 @@ function NewInvoice() {
       },
     ];
   });
+  useEffect(() => {
+    const zakl = zakladnaSadzba(krajina);
+    setItems((rs) =>
+      rs.some((r) => !r._dph_rucne && r.vat_rate !== zakl)
+        ? rs.map((r) => (r._dph_rucne ? r : { ...r, vat_rate: zakl }))
+        : rs,
+    );
+  }, [krajina]);
   const [pickerOpen, setPickerOpen] = useState<null | "copy" | "advance" | "opravuje">(null);
 
   /**
@@ -1096,10 +1115,12 @@ function NewInvoice() {
                         ) : (
                           <select
                             value={it.vat_rate}
-                            onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
+                            onChange={(e) =>
+                              setItem(idx, { vat_rate: Number(e.target.value), _dph_rucne: true })
+                            }
                             className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                           >
-                            {SK_VAT_RATES.map((r) => (
+                            {sadzbyKrajiny(krajina).map((r) => (
                               <option key={r} value={r}>
                                 {r}%
                               </option>
@@ -1158,10 +1179,12 @@ function NewInvoice() {
                     ) : (
                       <select
                         value={it.vat_rate}
-                        onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
+                        onChange={(e) =>
+                          setItem(idx, { vat_rate: Number(e.target.value), _dph_rucne: true })
+                        }
                         className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                       >
-                        {SK_VAT_RATES.map((r) => (
+                        {sadzbyKrajiny(krajina).map((r) => (
                           <option key={r} value={r}>
                             {r}%
                           </option>

@@ -8,6 +8,7 @@ import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocom
 import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { PLAN_PENDING_KEY } from "@/routes/registracia";
 
+import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({ meta: [{ title: "Nastavenie firmy — Faktero" }] }),
   component: Onboarding,
@@ -151,7 +152,7 @@ function Onboarding() {
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Mesto" value={form.city} onChange={(v) => set("city", v)} />
           <Field label="PSČ" value={form.zip} onChange={(v) => set("zip", v)} />
-          <Field label="Krajina" value={form.country} onChange={(v) => set("country", v)} />
+          <VyberKrajiny hodnota={form.country} onZmena={(v) => set("country", v)} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Email" type="email" value={form.email} onChange={(v) => set("email", v)} />

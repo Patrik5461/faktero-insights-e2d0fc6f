@@ -151,6 +151,31 @@ describe("Pohoda XML", () => {
     expect(r[0].invoice_number).toBe("20250001");
   });
 
+  /*
+    Priehradku určuje krajina firmy. Pri slovenskej tabuľke by české 21 %
+    nesedelo na `high` (23) ani na `low` (19) a spadlo by do „historyHigh" —
+    doklad by sa v Pohode zaúčtoval do cudzieho riadku, ticho a bez hlásenia.
+  */
+  it("česká firma dostane 21 % do základnej priehradky, nie medzi historické", () => {
+    const ceske = [
+      { name: "Práce", quantity: 1, unit: "h", unit_price: 100, vat_rate: 21, subtotal: 100, vat_amount: 21, total: 121 },
+      { name: "Kniha", quantity: 1, unit: "ks", unit_price: 100, vat_rate: 12, subtotal: 100, vat_amount: 12, total: 112 },
+    ];
+    const cz = buildPohodaInvoiceXml({
+      company: { ico: "12345678", country: "CZ" },
+      invoices: [{ invoice: faktura, items: ceske }],
+    });
+    expect(cz).toContain('<inv:rateVAT>high</inv:rateVAT>');
+    expect(cz).toContain('<inv:rateVAT>low</inv:rateVAT>');
+    expect(cz).not.toContain("historyHigh");
+    expect(cz).not.toContain("historyLow");
+  });
+
+  it("slovenskej firme ostávajú slovenské priehradky", () => {
+    expect(XML).toContain('<inv:rateVAT>high</inv:rateVAT>');
+    expect(XML).not.toContain("historyHigh");
+  });
+
   it("dobropis sa označí ako dobropis", () => {
     const d = buildPohodaInvoiceXml({
       company: {},
