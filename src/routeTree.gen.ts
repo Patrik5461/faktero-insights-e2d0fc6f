@@ -106,6 +106,7 @@ import { Route as UctovniciSlugRouteImport } from './routes/uctovnici.$slug'
 import { Route as VyvojariIndexRouteImport } from './routes/vyvojari.index'
 import { Route as VyvojariSlugRouteImport } from './routes/vyvojari.$slug'
 import { Route as AuthenticatedBankoveUctyIndexRouteImport } from './routes/_authenticated/bankove-ucty.index'
+import { Route as AuthenticatedBankoveUctyImportRouteImport } from './routes/_authenticated/bankove-ucty.import'
 import { Route as AuthenticatedBankoveUctyPripojitRouteImport } from './routes/_authenticated/bankove-ucty.pripojit'
 import { Route as AuthenticatedBankoveUctyRevolutRouteImport } from './routes/_authenticated/bankove-ucty.revolut'
 import { Route as AuthenticatedBankoveUctyTransakcieRouteImport } from './routes/_authenticated/bankove-ucty.transakcie'
@@ -745,6 +746,12 @@ const AuthenticatedBankoveUctyIndexRoute =
   AuthenticatedBankoveUctyIndexRouteImport.update({
     id: '/bankove-ucty/',
     path: '/bankove-ucty/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBankoveUctyImportRoute =
+  AuthenticatedBankoveUctyImportRouteImport.update({
+    id: '/bankove-ucty/import',
+    path: '/bankove-ucty/import',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedBankoveUctyPripojitRoute =
@@ -1679,6 +1686,7 @@ export interface FileRoutesByFullPath {
   '/pravne/': typeof PravneIndexRoute
   '/uctovnici/': typeof UctovniciIndexRoute
   '/vyvojari/': typeof VyvojariIndexRoute
+  '/bankove-ucty/import': typeof AuthenticatedBankoveUctyImportRoute
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/bankove-ucty/revolut': typeof AuthenticatedBankoveUctyRevolutRoute
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
@@ -1917,6 +1925,7 @@ export interface FileRoutesByTo {
   '/pravne': typeof PravneIndexRoute
   '/uctovnici': typeof UctovniciIndexRoute
   '/vyvojari': typeof VyvojariIndexRoute
+  '/bankove-ucty/import': typeof AuthenticatedBankoveUctyImportRoute
   '/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/bankove-ucty/revolut': typeof AuthenticatedBankoveUctyRevolutRoute
   '/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
@@ -2164,6 +2173,7 @@ export interface FileRoutesById {
   '/pravne/': typeof PravneIndexRoute
   '/uctovnici/': typeof UctovniciIndexRoute
   '/vyvojari/': typeof VyvojariIndexRoute
+  '/_authenticated/bankove-ucty/import': typeof AuthenticatedBankoveUctyImportRoute
   '/_authenticated/bankove-ucty/pripojit': typeof AuthenticatedBankoveUctyPripojitRoute
   '/_authenticated/bankove-ucty/revolut': typeof AuthenticatedBankoveUctyRevolutRoute
   '/_authenticated/bankove-ucty/transakcie': typeof AuthenticatedBankoveUctyTransakcieRoute
@@ -2412,6 +2422,7 @@ export interface FileRouteTypes {
     | '/pravne/'
     | '/uctovnici/'
     | '/vyvojari/'
+    | '/bankove-ucty/import'
     | '/bankove-ucty/pripojit'
     | '/bankove-ucty/revolut'
     | '/bankove-ucty/transakcie'
@@ -2650,6 +2661,7 @@ export interface FileRouteTypes {
     | '/pravne'
     | '/uctovnici'
     | '/vyvojari'
+    | '/bankove-ucty/import'
     | '/bankove-ucty/pripojit'
     | '/bankove-ucty/revolut'
     | '/bankove-ucty/transakcie'
@@ -2896,6 +2908,7 @@ export interface FileRouteTypes {
     | '/pravne/'
     | '/uctovnici/'
     | '/vyvojari/'
+    | '/_authenticated/bankove-ucty/import'
     | '/_authenticated/bankove-ucty/pripojit'
     | '/_authenticated/bankove-ucty/revolut'
     | '/_authenticated/bankove-ucty/transakcie'
@@ -3829,6 +3842,13 @@ declare module '@tanstack/react-router' {
       path: '/bankove-ucty'
       fullPath: '/bankove-ucty/'
       preLoaderRoute: typeof AuthenticatedBankoveUctyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/bankove-ucty/import': {
+      id: '/_authenticated/bankove-ucty/import'
+      path: '/bankove-ucty/import'
+      fullPath: '/bankove-ucty/import'
+      preLoaderRoute: typeof AuthenticatedBankoveUctyImportRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/bankove-ucty/pripojit': {
@@ -4985,6 +5005,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSkladRoute: typeof AuthenticatedSkladRouteWithChildren
   AuthenticatedWebhookyRoute: typeof AuthenticatedWebhookyRoute
   AuthenticatedWebhookyLogyRoute: typeof AuthenticatedWebhookyLogyRoute
+  AuthenticatedBankoveUctyImportRoute: typeof AuthenticatedBankoveUctyImportRoute
   AuthenticatedBankoveUctyPripojitRoute: typeof AuthenticatedBankoveUctyPripojitRoute
   AuthenticatedBankoveUctyRevolutRoute: typeof AuthenticatedBankoveUctyRevolutRoute
   AuthenticatedBankoveUctyTransakcieRoute: typeof AuthenticatedBankoveUctyTransakcieRoute
@@ -5065,6 +5086,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSkladRoute: AuthenticatedSkladRouteWithChildren,
   AuthenticatedWebhookyRoute: AuthenticatedWebhookyRoute,
   AuthenticatedWebhookyLogyRoute: AuthenticatedWebhookyLogyRoute,
+  AuthenticatedBankoveUctyImportRoute: AuthenticatedBankoveUctyImportRoute,
   AuthenticatedBankoveUctyPripojitRoute: AuthenticatedBankoveUctyPripojitRoute,
   AuthenticatedBankoveUctyRevolutRoute: AuthenticatedBankoveUctyRevolutRoute,
   AuthenticatedBankoveUctyTransakcieRoute:

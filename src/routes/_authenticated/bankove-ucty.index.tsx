@@ -29,6 +29,7 @@ import { zostatkyPodlaMien, formatujSumu, zobrazitZauctovany } from "@/lib/fakte
 import {
   Building2,
   Plus,
+  Upload,
   RefreshCw,
   Trash2,
   ArrowRight,
@@ -231,12 +232,22 @@ function BankAccountsPage() {
         title="Bankové účty"
         description="Tatra banka, Wise, Wallester a Revolut. Zostatky a pohyby sa načítavajú automaticky, iba na čítanie."
         action={
-          <Link
-            to="/bankove-ucty/pripojit"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700"
-          >
-            <Plus className="h-4 w-4" /> Pripojiť banku
-          </Link>
+          <div className="flex items-center gap-2">
+            {/* Banky bez priameho pripojenia (Akcenta a spol.) sa dostanú dnu
+                nahratým výpisom — inak by pre ne nebola žiadna cesta. */}
+            <Link
+              to="/bankove-ucty/import"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+            >
+              <Upload className="h-4 w-4" /> Nahrať výpis
+            </Link>
+            <Link
+              to="/bankove-ucty/pripojit"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700"
+            >
+              <Plus className="h-4 w-4" /> Pripojiť banku
+            </Link>
+          </div>
         }
       />
       <PageBody>
