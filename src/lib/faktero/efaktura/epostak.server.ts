@@ -18,6 +18,7 @@ import {
   type DeliveryResult,
   type LookupResult,
 } from "./peppol-provider.server";
+import { peppolId, schemaZId } from "./peppol-id";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -201,16 +202,39 @@ export async function sendEfaktura(
   if (compErr) throw compErr;
   if (!company) throw new Error("Firma nenájdená.");
 
-  const receiverPeppolId =
-    (invoice as any).customer_peppol_id ??
-    ((invoice as any).customer_ic_dph ? `9944:${(invoice as any).customer_ic_dph}` : null);
+  /*
+    Adresovanie príjemcu. Predtým sa skladalo `9944:<IČ DPH>` — overené proti
+    ePoštákovi to nenájde nikoho (`not_registered`), zatiaľ čo `0245:<DIČ>` je
+    `sendable`. Chybné adresovanie by sa pritom prejavilo až tým, že faktúra
+    nikam nedorazí, tak je výpočet na jednom mieste a otestovaný.
+  */
+  const receiverPeppolId = peppolId({
+    zadane: (invoice as any).customer_peppol_id,
+    dic: (invoice as any).customer_dic,
+    icDph: (invoice as any).customer_ic_dph,
+  });
   if (!receiverPeppolId) {
-    throw new Error("Odberateľ nemá Peppol ID ani IČ DPH — nemožno odoslať.");
+    throw new Error("Odberateľ nemá DIČ ani IČ DPH — bez nich sa eFaktúra nemá kam poslať.");
   }
 
   // 2) Send to ePošták
+  /*
+    Povinné polia podľa EN 16931, overené proti sandboxu ePoštáka — bez nich
+    vráti 422 a faktúra neodíde:
+
+      receiverName    BT-44, pravidlo BR-06
+      buyerReference  BT-10 (alebo objednávka BT-13), PEPPOL-EN16931-R003
+
+    Ako referenciu berieme číslo objednávky odberateľa, keď ho na faktúre má;
+    inak variabilný symbol a nakoniec číslo faktúry. Prázdna byť nesmie.
+  */
+  const buyerReference =
+    (invoice as any).order_number || (invoice as any).variable_symbol || invoice.invoice_number;
+
   const body = {
     receiverPeppolId,
+    receiverName: (invoice as any).customer_name ?? undefined,
+    buyerReference,
     invoiceNumber: invoice.invoice_number,
     issueDate: invoice.issue_date,
     dueDate: invoice.due_date,
@@ -269,7 +293,7 @@ export async function sendEfaktura(
     provider: "epostak",
     provider_message_id: providerMessageId,
     recipient_participant_id: receiverPeppolId,
-    recipient_scheme: receiverPeppolId.split(":")[0] ?? null,
+    recipient_scheme: schemaZId(receiverPeppolId),
     status: mapTransportStatus(transportStatus),
     sent_at: new Date().toISOString(),
     raw_response: response as any,
@@ -467,3 +491,59 @@ export const ePostakProvider: EfakturaProvider = {
 };
 
 registerEfakturaProvider(ePostakProvider);
+
+/** Firma tak, ako ju vedie ePošták. */
+export type EPostakFirma = {
+  id: string;
+  name: string;
+  ico: string | null;
+  peppolId: string | null;
+  peppolStatus: string | null;
+};
+
+/**
+ * Firmy zaregistrované pod naším integrátorským kľúčom.
+ *
+ * Bez tohto zoznamu sa nedá odoslať nič — ich API chce `X-Firm-Id` pri každom
+ * volaní viazanom na firmu a to id nemal kto zistiť.
+ */
+export async function nacitajEPostakFirmy(): Promise<EPostakFirma[]> {
+  const odpoved = await epostakFetch<{ firms?: EPostakFirma[] }>("/api/v1/firms", {
+    method: "GET",
+  });
+  return odpoved.firms ?? [];
+}
+
+/**
+ * Overí, či sa príjemcovi dá doručiť.
+ *
+ * ePošták vracia `nextAction`: `sendable` znamená, že je v Peppole a prijme
+ * doklad. Čokoľvek iné je dôvod neodosielať — faktúra by odišla do prázdna.
+ */
+export async function overPrijemcuUEPostaka(
+  id: string,
+  firmEpostakId: string,
+): Promise<{ id: string; dostupny: boolean; dovod?: string; stav?: string }> {
+  try {
+    const r = await epostakFetch<{ nextAction?: string; participant?: { peppolId?: string } }>(
+      `/api/v1/peppol/participants/resolve?peppolId=${encodeURIComponent(id)}`,
+      { method: "GET", firmId: firmEpostakId },
+    );
+    const stav = r.nextAction ?? "unknown";
+    return stav === "sendable"
+      ? { id, dostupny: true, stav }
+      : { id, dostupny: false, stav, dovod: "Odberateľ nie je zaregistrovaný v Peppole." };
+  } catch (e: any) {
+    return { id, dostupny: false, dovod: e?.message ?? "Overenie zlyhalo." };
+  }
+}
+
+/** Nájde firmu podľa IČO. Porovnáva sa bez medzier — inak sa „12 345 678" nikdy netrafí. */
+export function najdiFirmuPodlaIco(
+  firmy: EPostakFirma[],
+  ico: string | null | undefined,
+): EPostakFirma | null {
+  const hladane = (ico ?? "").replace(/\s/g, "");
+  if (!hladane) return null;
+  return firmy.find((f) => (f.ico ?? "").replace(/\s/g, "") === hladane) ?? null;
+}

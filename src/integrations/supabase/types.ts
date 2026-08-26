@@ -1698,6 +1698,7 @@ export type Database = {
           default_document_format: Database["public"]["Enums"]["efaktura_doc_format"]
           digitalny_postar_id: string | null
           enabled: boolean
+          epostak_firm_id: string | null
           id: string
           notes: string | null
           peppol_endpoint_url: string | null
@@ -1718,6 +1719,7 @@ export type Database = {
           default_document_format?: Database["public"]["Enums"]["efaktura_doc_format"]
           digitalny_postar_id?: string | null
           enabled?: boolean
+          epostak_firm_id?: string | null
           id?: string
           notes?: string | null
           peppol_endpoint_url?: string | null
@@ -1738,6 +1740,7 @@ export type Database = {
           default_document_format?: Database["public"]["Enums"]["efaktura_doc_format"]
           digitalny_postar_id?: string | null
           enabled?: boolean
+          epostak_firm_id?: string | null
           id?: string
           notes?: string | null
           peppol_endpoint_url?: string | null

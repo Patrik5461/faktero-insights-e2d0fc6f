@@ -297,3 +297,142 @@ export const listEfakturaDeliveriesFn = createServerFn({ method: "POST" })
     if (error) throw error;
     return rows ?? [];
   });
+
+/* ─── Odosielanie cez ePoštáka ──────────────────────────────────────────── */
+
+/**
+ * Spáruje firmu s jej záznamom u ePoštáka a uloží `epostak_firm_id`.
+ *
+ * Ich API chce `X-Firm-Id` pri každom volaní viazanom na firmu. Doteraz to id
+ * nemal kto zistiť — kód ho čakal v metadátach, ale nič ho nezískalo, takže sa
+ * odoslať nedalo nič. Páruje sa podľa IČO; keď firma u nich nie je, povie sa to
+ * rovno, nie až pri prvom neúspešnom odoslaní.
+ */
+export const sparujEpostakFirmuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string };
+    if (!v?.company_id) throw new Error("Chýba company_id.");
+    return { company_id: v.company_id };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+
+    const { data: firma, error: chybaFirmy } = await supabase
+      .from("companies")
+      .select("ico, name")
+      .eq("id", data.company_id)
+      .maybeSingle();
+    if (chybaFirmy) throw chybaFirmy;
+    if (!firma?.ico) throw new Error("Firma nemá vyplnené IČO — bez neho sa spárovať nedá.");
+
+    const { nacitajEPostakFirmy, najdiFirmuPodlaIco } = await import("./epostak.server");
+    const firmy = await nacitajEPostakFirmy();
+    const najdena = najdiFirmuPodlaIco(firmy, firma.ico);
+
+    if (!najdena) {
+      return {
+        sparovane: false as const,
+        ico: firma.ico,
+        // Nech je vidieť, čo tam je — inak sa hádа, prečo sa nič nenašlo.
+        dostupne: firmy.map((f) => ({ name: f.name, ico: f.ico })),
+      };
+    }
+
+    const { error: chybaZapisu } = await supabase.from("efaktura_profiles").upsert(
+      {
+        company_id: data.company_id,
+        epostak_firm_id: najdena.id,
+        peppol_provider: "epostak",
+        peppol_participant_id: najdena.peppolId,
+        peppol_scheme: najdena.peppolId?.split(":")[0] ?? null,
+      } as EfakturaProfileInsert,
+      { onConflict: "company_id" },
+    );
+    if (chybaZapisu) throw chybaZapisu;
+
+    return {
+      sparovane: true as const,
+      firmId: najdena.id,
+      name: najdena.name,
+      peppolId: najdena.peppolId,
+      peppolStatus: najdena.peppolStatus,
+    };
+  });
+
+/**
+ * Overí, či sa odberateľovi dá eFaktúra vôbec doručiť.
+ *
+ * Robí sa to pred odoslaním zámerne: keď príjemca v Peppole nie je, faktúra by
+ * odišla do prázdna a zistilo by sa to až tým, že nikdy nedorazí.
+ */
+export const overPrijemcuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string; dic?: string | null; ic_dph?: string | null };
+    if (!v?.company_id) throw new Error("Chýba company_id.");
+    return { company_id: v.company_id, dic: v.dic ?? null, ic_dph: v.ic_dph ?? null };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+
+    const { peppolId } = await import("./peppol-id");
+    const id = peppolId({ dic: data.dic, icDph: data.ic_dph });
+    if (!id) return { id: null, dostupny: false as const, dovod: "Odberateľ nemá DIČ ani IČ DPH." };
+
+    const { data: profil } = await supabase
+      .from("efaktura_profiles")
+      .select("epostak_firm_id")
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!profil?.epostak_firm_id) {
+      return { id, dostupny: false as const, dovod: "Firma nie je spárovaná s ePoštákom." };
+    }
+
+    const { overPrijemcuUEPostaka } = await import("./epostak.server");
+    return await overPrijemcuUEPostaka(id, profil.epostak_firm_id);
+  });
+
+/**
+ * Odošle faktúru ako eFaktúru.
+ *
+ * Samotné odoslanie aj zápis doručenia rieši `sendEfaktura`; tu sa overuje,
+ * že človek k firme patrí a že je s čím odosielať.
+ */
+export const posliEfakturuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => {
+    const v = d as { company_id?: string; invoice_id?: string };
+    if (!v?.company_id || !v?.invoice_id) throw new Error("Chýba company_id alebo invoice_id.");
+    return { company_id: v.company_id, invoice_id: v.invoice_id };
+  })
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as { supabase: Sb; userId: string };
+    await assertCompanyMember(supabase, data.company_id, userId);
+
+    // Cudzia faktúra sa nesmie odoslať ani omylom.
+    const { data: faktura } = await supabase
+      .from("invoices")
+      .select("id")
+      .eq("id", data.invoice_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!faktura) throw new Error("Faktúra nepatrí tejto firme.");
+
+    const { data: profil } = await supabase
+      .from("efaktura_profiles")
+      .select("epostak_firm_id, enabled")
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!profil?.epostak_firm_id) {
+      throw new Error("Firma nie je spárovaná s ePoštákom — spárujte ju v nastavení eFaktúry.");
+    }
+
+    const { sendEfaktura } = await import("./epostak.server");
+    const vysledok = await sendEfaktura(data.invoice_id, profil.epostak_firm_id);
+    // Surová odpoveď poskytovateľa sa neposiela do stránky — je uložená
+    // v `efaktura_deliveries.raw_response` a v prehliadači nemá čo robiť.
+    return { documentId: vysledok.documentId, status: vysledok.status };
+  });
