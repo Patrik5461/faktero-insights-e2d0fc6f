@@ -5,9 +5,82 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { CheckCircle2, Circle, Clock, Info, Mail, AlertTriangle } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Info, Mail, AlertTriangle, Link2 } from "lucide-react";
 import { toast } from "sonner";
-import { getEfakturaReadinessFn } from "@/lib/faktero/efaktura/efaktura.functions";
+import {
+  getEfakturaReadinessFn,
+  sparujEpostakFirmuFn,
+} from "@/lib/faktero/efaktura/efaktura.functions";
+
+/**
+ * Spárovanie firmy s jej záznamom u ePoštáka.
+ *
+ * Páruje sa podľa IČO. Keď firma u nich nie je, povie sa to rovno aj so
+ * zoznamom toho, čo tam je — inak sa len háda, prečo sa nič nenašlo.
+ */
+function SparovanieSPostakom({ companyId }: { companyId: string | null }) {
+  const sparuj = useServerFn(sparujEpostakFirmuFn);
+  const [stav, setStav] = useState<any>(null);
+  const [bezi, setBezi] = useState(false);
+
+  async function spusti() {
+    if (!companyId) return;
+    setBezi(true);
+    try {
+      const r: any = await sparuj({ data: { company_id: companyId } });
+      setStav(r);
+      if (r.sparovane) toast.success(`Spárované s ${r.name}.`);
+      else toast.error("Vaša firma u ePoštáka nie je — treba ju tam najprv zaregistrovať.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBezi(false);
+    }
+  }
+
+  return (
+    <div className="mb-6 rounded-xl border border-border bg-card p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Odosielanie cez ePoštáka</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Bez spárovania sa eFaktúra nemá ako odoslať. Páruje sa podľa IČO vašej firmy.
+          </p>
+        </div>
+        <button
+          onClick={spusti}
+          disabled={bezi || !companyId}
+          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+        >
+          <Link2 className="h-4 w-4" /> {bezi ? "Overujem…" : "Spárovať"}
+        </button>
+      </div>
+
+      {stav?.sparovane && (
+        <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+          Spárované s <span className="font-medium">{stav.name}</span>
+          {stav.peppolId ? (
+            <>
+              {" "}
+              · Peppol <span className="font-mono text-xs">{stav.peppolId}</span> (
+              {stav.peppolStatus})
+            </>
+          ) : null}
+        </div>
+      )}
+      {stav && !stav.sparovane && (
+        <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+          Firmu s IČO <span className="font-mono">{stav.ico}</span> ePošták nepozná.
+          {stav.dostupne?.length ? (
+            <div className="mt-1 text-xs text-muted-foreground">
+              Registrované sú: {stav.dostupne.map((f: any) => `${f.name} (${f.ico})`).join(", ")}
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/efaktura/")({
   head: () => ({ meta: [{ title: "eFaktúra — Faktero" }] }),
@@ -114,6 +187,12 @@ function EFakturaPage() {
         description="Pripravte sa na povinnú elektronickú fakturáciu od 1.1.2027."
       />
       <PageBody>
+        {/*
+          Spárovanie s ePoštákom je prvá vec, bez ktorej sa neodošle nič —
+          ich API chce identifikátor firmy pri každom volaní. Preto je nad
+          skóre pripravenosti, nie zapadnuté v nastaveniach.
+        */}
+        <SparovanieSPostakom companyId={companyId} />
         {readinessQuery.data && (
           <div className="mb-6 rounded-xl border border-border bg-card p-6">
             <div className="flex items-center justify-between gap-4">

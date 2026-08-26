@@ -3,13 +3,15 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Download, RefreshCw, Eye } from "lucide-react";
+import { Download, RefreshCw, Eye, Send } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   listEfakturaDocumentsFn,
   getEfakturaXmlUrlFn,
   generateEfakturaXmlFn,
+  posliEfakturuFn,
+  listEfakturaDeliveriesFn,
 } from "@/lib/faktero/efaktura/efaktura.functions";
 import {
   deriveEfakturaUiStatus,
@@ -29,12 +31,52 @@ function SentPage() {
   const listFn = useServerFn(listEfakturaDocumentsFn);
   const getUrl = useServerFn(getEfakturaXmlUrlFn);
   const regen = useServerFn(generateEfakturaXmlFn);
+  const posli = useServerFn(posliEfakturuFn);
+  const listDorucenia = useServerFn(listEfakturaDeliveriesFn);
+  const [odosielam, setOdosielam] = useState<string | null>(null);
 
   const q = useQuery({
     queryKey: ["efaktura-documents", companyId],
     queryFn: () => listFn({ data: { companyId: companyId! } }),
     enabled: !!companyId,
   });
+
+  /*
+    Doručenia zvlášť od dokladov: vygenerované XML ešte neznamená odoslané a
+    odoslané neznamená doručené. Kým sa zobrazoval len stav XML, nebolo z tejto
+    stránky vidieť, či faktúra k odberateľovi vôbec dorazila.
+  */
+  const qd = useQuery({
+    queryKey: ["efaktura-deliveries", companyId],
+    queryFn: () => listDorucenia({ data: { companyId: companyId! } }),
+    enabled: !!companyId,
+  });
+  const dorucenia = new Map<string, any>();
+  for (const d of (qd.data ?? []) as any[]) {
+    // Posledné doručenie na doklad — staršie pokusy sú história.
+    if (!dorucenia.has(d.document_id)) dorucenia.set(d.document_id, d);
+  }
+
+  async function odosli(invoiceId: string, cislo: string) {
+    if (!companyId) return;
+    if (
+      !window.confirm(
+        `Odoslať faktúru ${cislo} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.`,
+      )
+    )
+      return;
+    setOdosielam(invoiceId);
+    try {
+      const r: any = await posli({ data: { company_id: companyId, invoice_id: invoiceId } });
+      toast.success(`Odoslané — stav ${r.status}.`);
+      q.refetch();
+      qd.refetch();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setOdosielam(null);
+    }
+  }
 
   async function handleDownload(invoiceId: string) {
     try {
@@ -75,6 +117,7 @@ function SentPage() {
                 <th className="p-3">Typ</th>
                 <th className="p-3">Stav XML</th>
                 <th className="p-3">Validácia</th>
+                <th className="p-3">Doručenie</th>
                 <th className="p-3">Vytvorené</th>
                 <th className="p-3 text-right">Akcie</th>
               </tr>
@@ -82,14 +125,14 @@ function SentPage() {
             <tbody className="divide-y divide-border">
               {q.isLoading && (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="p-6 text-center text-muted-foreground">
                     Načítavam…
                   </td>
                 </tr>
               )}
               {q.data && q.data.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="p-6 text-center text-muted-foreground">
                     Zatiaľ žiadne vygenerované eFaktúry.
                   </td>
                 </tr>
@@ -130,6 +173,22 @@ function SentPage() {
                         </ul>
                       )}
                     </td>
+                    <td className="p-3">
+                      {(() => {
+                        const d = dorucenia.get(row.id);
+                        if (!d)
+                          return <span className="text-xs text-muted-foreground">neodoslané</span>;
+                        return (
+                          <span
+                            className={`text-xs ${d.status === "failed" ? "text-destructive" : "text-primary"}`}
+                            title={d.error_message ?? undefined}
+                          >
+                            {d.status}
+                            {d.sent_at ? ` · ${new Date(d.sent_at).toLocaleString("sk-SK")}` : ""}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     <td className="p-3 text-xs text-muted-foreground">
                       {new Date(row.created_at).toLocaleString("sk-SK")}
                     </td>
@@ -148,6 +207,18 @@ function SentPage() {
                           className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary"
                         >
                           <RefreshCw className="h-3.5 w-3.5" /> Validovať
+                        </button>
+                        {/* Odoslanie je nevratné, tak je až za validáciou a pýta sa. */}
+                        <button
+                          disabled={odosielam === row.invoice_id}
+                          onClick={() =>
+                            row.invoice_id &&
+                            odosli(row.invoice_id, row.document_number ?? row.invoice_id)
+                          }
+                          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50"
+                        >
+                          <Send className="h-3.5 w-3.5" />{" "}
+                          {odosielam === row.invoice_id ? "Odosielam…" : "Odoslať"}
                         </button>
                         <button
                           onClick={() => row.invoice_id && handleDownload(row.invoice_id)}
