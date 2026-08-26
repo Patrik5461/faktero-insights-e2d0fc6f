@@ -97,10 +97,22 @@ export function uuidDokladu(invoice: Riadok): string {
 
 function strana(o: Riadok, meno: string): string {
   const ulica = String(o.street ?? "").trim();
+  /*
+    `PartyIdentification` je povinná a `ID` (IČO) v nej takisto — prázdny prvok
+    ju zneplatní, ale prázdny **obsah** schéma pripúšťa. Odberateľ bez IČO je
+    bežný (fyzická osoba), tak `ID` ostane prázdne a pridá sa naše číslo
+    záznamu ako „uživatelské číslo firmy", nech je doklad k niečomu priradený.
+
+    Vyšlo to najavo až na skutočnej faktúre — v teste mali obe strany IČO.
+  */
+  const ico = String(o.ico ?? "").trim();
+  const identifikacia = ico
+    ? `<ID>${esc(ico)}</ID>`
+    : `<UserID>${esc(String(o.id ?? o.name ?? "").slice(0, 32))}</UserID><ID></ID>`;
   return `
   <${meno}>
    <Party>
-    <PartyIdentification>${tag("ID", o.ico)}</PartyIdentification>
+    <PartyIdentification>${identifikacia}</PartyIdentification>
     <PartyName>${tag("Name", o.name)}</PartyName>
     <PostalAddress>
      <StreetName>${esc(ulica)}</StreetName>
@@ -157,6 +169,13 @@ export function buildIsdoc(opts: {
   customer?: Riadok | null;
 }): string {
   const { invoice, items, company } = opts;
+  /*
+    Doklad bez IČO dodávateľa je v Česku neplatný sám o sebe — podateľňa ho
+    odmietne. Lepšie to povedať tu než vydať súbor, ktorý nikde neprejde.
+  */
+  if (!String(company?.ico ?? "").trim()) {
+    throw new Error("Firma nemá vyplnené IČO. Doplňte ho v nastaveniach firmy — bez neho ISDOC neprejde.");
+  }
   const dobropis = String(invoice.type ?? "") === "credit_note";
   const mena = String(invoice.currency ?? company.default_currency ?? "CZK").toUpperCase();
   const domaca = krajinaDane(company.country) === "CZ" ? "CZK" : "EUR";

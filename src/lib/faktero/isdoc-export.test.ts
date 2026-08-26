@@ -143,6 +143,42 @@ describe("ISDOC vývoz", () => {
     expect(riadky[0].customer_name).toBe("Odběratel a.s.");
   });
 
+  /*
+    Toto minul prvý beh testov: obe strany mali IČO, takže prázdna
+    `PartyIdentification` sa ukázala až na skutočnej faktúre a schéma ju
+    odmietla.
+  */
+  it("odberateľ bez IČO doklad nezneplatní", () => {
+    const x = buildIsdoc({
+      invoice: { ...faktura, customer_ico: null, customer_ic_dph: null },
+      items: polozky,
+      company: firma,
+      customer: { id: "c-123", name: "Jan Novák", city: "Praha", zip: "11000", country: "CZ" },
+    });
+    expect(x).toContain("<UserID>c-123</UserID>");
+    const doc = XmlDocument.fromString(x);
+    expect(() => validator.validate(doc)).not.toThrow();
+    doc.dispose();
+  });
+
+  it("firma bez IČO to povie zrozumiteľne, nevydá neplatný súbor", () => {
+    expect(() =>
+      buildIsdoc({ invoice: faktura, items: polozky, company: { ...firma, ico: "" } }),
+    ).toThrow(/IČO/);
+  });
+
+  it("firma bez IBAN-u vynechá platobné údaje celé, nie čiastočne", () => {
+    const x = buildIsdoc({
+      invoice: faktura,
+      items: polozky,
+      company: { ...firma, iban: null },
+    });
+    expect(x).not.toContain("PaymentMeans");
+    const doc = XmlDocument.fromString(x);
+    expect(() => validator.validate(doc)).not.toThrow();
+    doc.dispose();
+  });
+
   it("znaky, ktoré by rozbili XML, sú ošetrené", () => {
     const x = buildIsdoc({
       invoice: faktura,
