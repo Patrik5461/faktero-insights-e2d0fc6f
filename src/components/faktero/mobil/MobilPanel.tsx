@@ -332,31 +332,30 @@ export function MobilPanel({
           />
         </nav>
 
+        {/*
+          Pätička je zámerne nízka. Odhlásenie je vec, ktorú človek spraví raz
+          za čas — nepotrebuje rovnako veľký riadok ako agendy, do ktorých
+          chodí denne, a spolu s verziou zaberalo celé dno panela.
+        */}
         <div
-          className="border-t border-border/70 px-3 py-3"
-          style={{ paddingBottom: "calc(var(--safe-bottom) + 0.75rem)" }}
+          className="flex items-center justify-between gap-2 border-t border-border/70 px-3 py-2"
+          style={{ paddingBottom: "calc(var(--safe-bottom) + 0.5rem)" }}
         >
           <button
             onClick={onOdhlasit}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-destructive active:bg-destructive/10"
+            className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-destructive active:bg-destructive/10"
           >
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-destructive/10">
-              <LogOut className="h-[18px] w-[18px]" />
-            </span>
-            <span className="text-[15px] font-medium">Odhlásiť sa</span>
+            <LogOut className="h-4 w-4" />
+            <span className="text-[13px] font-medium">Odhlásiť sa</span>
           </button>
 
           {/* Pečiatka balíčka je jediné, čím sa dva buildy rozoznajú — číslo
               verzie sa medzi nimi nemení. Bez nej sa človek nemá ako spýtať
-              „mám už tú opravu?" inak než hľadaním v Diagnostike. */}
-          <p className="pt-2 text-center text-[12px] leading-5 text-muted-foreground">
-            Faktero v{VERZIA_APKY}
-            {mojaPeciatka() ? (
-              <>
-                <br />
-                <span className="text-[11px]">balíček {mojaPeciatka()}</span>
-              </>
-            ) : null}
+              „mám už tú opravu?" inak než hľadaním v Diagnostike. Na jednom
+              riadku vedľa odhlásenia, nie pod ním. */}
+          <p className="truncate text-right text-[11px] leading-4 text-muted-foreground">
+            v{VERZIA_APKY}
+            {mojaPeciatka() ? <span className="ml-1">· {mojaPeciatka()}</span> : null}
           </p>
         </div>
       </aside>
