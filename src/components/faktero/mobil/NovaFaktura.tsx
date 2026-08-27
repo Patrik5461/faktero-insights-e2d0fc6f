@@ -29,6 +29,7 @@ import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 /**
  * Vystavenie faktúry v telefóne.
  *
@@ -132,6 +133,7 @@ export function NovaFaktura({
    */
   upravuje?: { id: string; invoice_number: string };
 }) {
+  const { t } = usePreklad();
   const nacitajPodklady = useOperacia("faktura-podklady");
   const nacitajCennik = useOperacia("cennik-kontext");
   const nacitajPoslednu = useOperacia("faktura-posledna");
@@ -207,7 +209,7 @@ export function NovaFaktura({
         const zapamatane = await zPamate<Podkladove>(kluc);
         if (zapamatane?.hodnota?.odberatelia?.length) {
           setPodklady(zapamatane.hodnota);
-          toast.message("Bez pripojenia — pracujem s naposledy načítanými údajmi.", {
+          toast.message(t("nf.bezPripojenia"), {
             description: new Date(zapamatane.kedy).toLocaleString("sk-SK"),
           });
           return;
@@ -215,8 +217,8 @@ export function NovaFaktura({
         const { isOnline } = await import("@/lib/mobile/offline-queue");
         toast.error(
           (await isOnline())
-            ? (e?.message ?? "Podklady sa nepodarilo načítať.")
-            : "Bez pripojenia a bez uložených odberateľov sa faktúra vystaviť nedá. Otvorte túto obrazovku raz s internetom.",
+            ? (e?.message ?? t("nf.chybaPodkladov"))
+            : t("nf.bezPripojeniaVystavit"),
           { duration: 7000 },
         );
         onSpat();
@@ -247,7 +249,7 @@ export function NovaFaktura({
       ]);
       if (zrusene) return;
       if (chybaF || !f) {
-        toast.error("Faktúru sa nepodarilo načítať.");
+        toast.error(t("nf.chybaNacitania"));
         onSpat();
         return;
       }
@@ -403,7 +405,7 @@ export function NovaFaktura({
       toast.success(`Faktúra ${upravuje.invoice_number} opravená`);
       onHotovo();
     } catch (e: any) {
-      toast.error(friendlyError(e, "Zmeny sa nepodarilo uložiť."));
+      toast.error(friendlyError(e, t("nf.chybaZmien")));
     } finally {
       setUkladam(false);
     }
@@ -412,7 +414,7 @@ export function NovaFaktura({
   async function uloz() {
     if (!odberatel || pouzitelne.length === 0) return;
     if (splatnost < vystavenie) {
-      toast.error("Splatnosť nemôže byť skôr ako vystavenie.");
+      toast.error(t("nf.splatnostSkor"));
       return;
     }
     /*
@@ -423,7 +425,7 @@ export function NovaFaktura({
     if (upravuje) {
       const { isOnline } = await import("@/lib/mobile/offline-queue");
       if (!(await isOnline())) {
-        toast.error("Na opravu faktúry treba pripojenie.");
+        toast.error(t("nf.opravaBezPripojenia"));
         return;
       }
       await ulozUpravu();
@@ -477,7 +479,7 @@ export function NovaFaktura({
         */
         if (druh === "proforma") {
           setUkladam(false);
-          toast.error("Zálohovú faktúru sa bez pripojenia vystaviť nedá.");
+          toast.error(t("nf.zalohovaBezPripojenia"));
           return;
         }
         await odloz();
@@ -494,15 +496,15 @@ export function NovaFaktura({
       if (!(await isOnline())) {
         await odloz();
       } else {
-        toast.error(friendlyError(e, "Faktúru sa nepodarilo vystaviť."));
+        toast.error(friendlyError(e, t("nf.chybaVystavenia")));
       }
     } finally {
       setUkladam(false);
     }
   }
 
-  if (!podklady) return <Pracujem text="Načítavam odberateľov…" />;
-  if (ukladam) return <Pracujem text={upravuje ? "Ukladám zmeny…" : "Vystavujem faktúru…"} />;
+  if (!podklady) return <Pracujem text={t("nf.nacitavamOdberatelov")} />;
+  if (ukladam) return <Pracujem text={upravuje ? t("nf.ukladamZmeny") : t("nf.vystavujem")} />;
 
   if (krok === "hotovo" && hotova) {
     return <Vystavena faktura={hotova} onHotovo={onHotovo} />;
@@ -600,6 +602,7 @@ function KrokOdberatel({
   onVyber: (o: Odberatel) => void;
   onPridany: (o: Odberatel) => void;
 }) {
+  const { t } = usePreklad();
   const [hladanie, setHladanie] = useState("");
   const [novy, setNovy] = useState(false);
 
@@ -624,8 +627,8 @@ function KrokOdberatel({
 
   return (
     <MobilObrazovka
-      title="Komu fakturujete?"
-      subtitle={druh === "proforma" ? "Krok 1 z 3 · zálohová" : "Krok 1 z 3"}
+      title={t("nf.komuFakturujete")}
+      subtitle={druh === "proforma" ? t("nf.krokZalohova") : "Krok 1 z 3"}
       onBack={onSpat}
     >
       {/*
@@ -665,7 +668,7 @@ function KrokOdberatel({
         <input
           value={hladanie}
           onChange={(e) => setHladanie(e.target.value)}
-          placeholder="Hľadať odberateľa"
+          placeholder={t("nf.hladatOdberatela")}
           className="w-full rounded-2xl border border-border/70 bg-card py-3 pl-9 pr-3 text-[15px] shadow-[var(--shadow-card)]"
         />
       </div>
@@ -682,7 +685,7 @@ function KrokOdberatel({
 
       {najdene.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted-foreground">
-          {hladanie ? "Nič sa nenašlo." : "Zatiaľ nemáte žiadneho odberateľa."}
+          {hladanie ? t("nf.nicSaNenaslo") : t("nf.ziadnyOdberatel")}
         </p>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
@@ -726,6 +729,7 @@ export function NovyOdberatel({
   onSpat: () => void;
   onPridany: (o: Odberatel) => void;
 }) {
+  const { t } = usePreklad();
   const lookup = useOperacia("firma-podla-ica");
   const [f, setF] = useState({
     name: predvyplneneMeno,
@@ -763,7 +767,7 @@ export function NovyOdberatel({
           city: p.city || d.city || "",
           zip: p.zip || d.zip || "",
         }));
-        toast.success("Údaje doplnené z registra");
+        toast.success(t("nf.udajeDoplnene"));
       })
       .catch(() => {})
       .finally(() => setHladam(false));
@@ -771,7 +775,7 @@ export function NovyOdberatel({
   }, [f.ico]);
 
   async function uloz() {
-    if (!f.name.trim()) return toast.error("Zadajte názov odberateľa.");
+    if (!f.name.trim()) return toast.error(t("nf.zadajteNazov"));
     setUkladam(true);
     // Bez siete zápis vyhodí; nezachytené by to nechalo tlačidlo navždy
     // v stave „ukladám".
@@ -798,19 +802,18 @@ export function NovyOdberatel({
         (e) => ({ data: null, error: e as any }),
       );
     setUkladam(false);
-    if (error || !data)
-      return toast.error(friendlyError(error, "Odberateľa sa nepodarilo uložiť."));
-    toast.success("Odberateľ pridaný");
+    if (error || !data) return toast.error(friendlyError(error, t("nf.chybaOdberatela")));
+    toast.success(t("nf.odberatelPridany"));
     onPridany(data as Odberatel);
   }
 
   return (
     <MobilObrazovka
-      title="Nový odberateľ"
+      title={t("nf.novyOdberatel")}
       onBack={onSpat}
       footer={
         <HlavneTlacidlo onClick={uloz} disabled={ukladam || !f.name.trim()}>
-          {ukladam ? "Ukladám…" : "Uložiť a pokračovať"}
+          {ukladam ? t("nf.ukladam") : t("nf.ulozitPokracovat")}
         </HlavneTlacidlo>
       }
     >
@@ -820,7 +823,7 @@ export function NovyOdberatel({
           value={f.ico}
           onChange={(v) => setF({ ...f, ico: v })}
           inputMode="numeric"
-          hint={hladam ? "Hľadám v registri…" : "Podľa IČO sa doplní názov aj adresa"}
+          hint={hladam ? t("nf.hladamVRegistri") : t("nf.podlaIco")}
         />
         <Pole label="Názov" value={f.name} onChange={(v) => setF({ ...f, name: v })} />
         <Pole label="Ulica" value={f.street} onChange={(v) => setF({ ...f, street: v })} />
@@ -837,7 +840,7 @@ export function NovyOdberatel({
           value={f.email}
           onChange={(v) => setF({ ...f, email: v })}
           inputMode="email"
-          hint="Na tento e-mail sa dá faktúra hneď odoslať"
+          hint={t("nf.email")}
         />
       </div>
     </MobilObrazovka>
@@ -911,12 +914,13 @@ function KrokPolozky({
   /** Keď sa opravuje už vystavená faktúra, kroky sa nečíslujú — je len jeden. */
   uprava?: { invoice_number: string };
 }) {
+  const { t } = usePreklad();
   const [cennikOtvoreny, setCennikOtvoreny] = useState(false);
 
   return (
     <>
       <MobilObrazovka
-        title="Za čo fakturujete?"
+        title={t("nf.zaCoFakturujete")}
         subtitle={
           uprava
             ? `Oprava ${uprava.invoice_number} · ${odberatel.name}`
@@ -932,7 +936,7 @@ function KrokPolozky({
               </span>
             </div>
             <HlavneTlacidlo onClick={onDalej} disabled={pocetPouzitelnych === 0}>
-              {pocetPouzitelnych === 0 ? "Pridajte položku" : "Ďalej"}
+              {pocetPouzitelnych === 0 ? t("nf.pridajtePolozku") : "Ďalej"}
             </HlavneTlacidlo>
           </div>
         }
@@ -1034,6 +1038,7 @@ export function RiadokPolozky({
   onZmen: (patch: Partial<Riadok>) => void;
   onZmaz: () => void;
 }) {
+  const { t } = usePreklad();
   // Vlastný hook aj tu: odpoveď je zapamätaná, takže to nie je dotaz navyše.
   const krajina = useKrajinaDane();
   const zaklad = +(cislo(riadok.quantity) * cislo(riadok.unit_price)).toFixed(2);
@@ -1045,13 +1050,13 @@ export function RiadokPolozky({
         <input
           value={riadok.name}
           onChange={(e) => onZmen({ name: e.target.value })}
-          placeholder="Názov položky"
+          placeholder={t("nf.nazovPolozky")}
           className="min-w-0 flex-1 rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
         />
         {!jediny && (
           <button
             onClick={onZmaz}
-            aria-label="Odstrániť položku"
+            aria-label={t("nf.odstranitPolozku")}
             className="mt-0.5 rounded-xl p-2.5 text-muted-foreground active:bg-secondary"
           >
             <Trash2 className="h-[18px] w-[18px]" />
@@ -1120,6 +1125,7 @@ function VyberProduktu({
   onZavri: () => void;
   onVyber: (p: Produkt) => void;
 }) {
+  const { t } = usePreklad();
   const [q, setQ] = useState("");
   const najdene = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -1147,7 +1153,7 @@ function VyberProduktu({
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Hľadať položku"
+            placeholder={t("nf.hladatPolozku")}
             className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
           />
         </div>
@@ -1229,6 +1235,7 @@ function KrokSuhrn({
   onUloz: () => void;
   uprava?: { invoice_number: string };
 }) {
+  const { t } = usePreklad();
   const dni = Math.round(
     (new Date(`${splatnost}T00:00:00`).getTime() - new Date(`${vystavenie}T00:00:00`).getTime()) /
       86400000,
@@ -1236,16 +1243,16 @@ function KrokSuhrn({
 
   return (
     <MobilObrazovka
-      title={druh === "proforma" ? "Skontrolujte zálohovú" : "Skontrolujte faktúru"}
+      title={druh === "proforma" ? t("nf.skontrolujteZalohovu") : t("nf.skontrolujte")}
       subtitle={uprava ? `Faktúra ${uprava.invoice_number}` : "Krok 3 z 3"}
       onBack={onSpat}
       footer={
         <HlavneTlacidlo onClick={onUloz}>
           {uprava
-            ? "Uložiť zmeny"
+            ? t("nf.ulozitZmeny")
             : druh === "proforma"
-              ? "Vystaviť zálohovú faktúru"
-              : "Vystaviť faktúru"}
+              ? t("nf.vystavitZalohovu")
+              : t("nf.vystavit")}
         </HlavneTlacidlo>
       }
     >
@@ -1325,7 +1332,7 @@ function KrokSuhrn({
             {(
               [
                 ["bank_transfer", "Prevodom"],
-                ["cash", "Hotovosť"],
+                ["cash", t("nf.hotovost")],
                 ["card", "Kartou"],
               ] as const
             ).map(([id, label]) => (
@@ -1368,7 +1375,7 @@ function KrokSuhrn({
             value={poznamkaNad}
             onChange={(e) => setPoznamkaNad(e.target.value)}
             rows={2}
-            placeholder="Napríklad: podľa objednávky č. 2026/114"
+            placeholder={t("nf.priklad")}
             className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
           />
         </label>
@@ -1411,6 +1418,7 @@ function VyberZalohy({
   zaloha: { id: string; invoice_number: string; total: number } | null;
   setZaloha: (v: { id: string; invoice_number: string; total: number } | null) => void;
 }) {
+  const { t } = usePreklad();
   const [zoznam, setZoznam] = useState<
     { id: string; invoice_number: string; total: number; issue_date: string }[] | null
   >(null);
@@ -1512,7 +1520,7 @@ function VyberZalohy({
   return (
     <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-3">
       <div className="px-1 text-[13px] text-muted-foreground">
-        {zoznam === null ? "Hľadám zálohy…" : "Nezúčtované zálohy tohto odberateľa"}
+        {zoznam === null ? t("nf.hladamZalohy") : t("nf.zalohy")}
       </div>
       {(zoznam ?? []).map((z) => (
         <button
@@ -1624,6 +1632,7 @@ function Vystavena({
   };
   onHotovo: () => void;
 }) {
+  const { t } = usePreklad();
   const pdfFn = useOperacia("faktura-pdf");
   const mailFn = useOperacia("faktura-email");
   const [busy, setBusy] = useState<"pdf" | "mail" | "zdielam" | null>(null);
@@ -1634,7 +1643,7 @@ function Vystavena({
     try {
       await otvorPdfFaktury(() => pdfFn({ data: { invoiceId: faktura.id } }) as any);
     } catch (e: any) {
-      toast.error(e?.message ?? "PDF sa nepodarilo pripraviť.");
+      toast.error(e?.message ?? t("nf.chybaPdf"));
     } finally {
       setBusy(null);
     }
@@ -1649,7 +1658,7 @@ function Vystavena({
         `Faktúra ${faktura.invoice_number} na ${suma(faktura.total, faktura.currency)}.`,
       );
     } catch (e: any) {
-      toast.error(e?.message ?? "Zdieľanie zlyhalo.");
+      toast.error(e?.message ?? t("nf.chybaZdielania"));
     } finally {
       setBusy(null);
     }
@@ -1671,12 +1680,12 @@ function Vystavena({
     }
   }
 
-  if (busy === "mail") return <Pracujem text="Odosielam faktúru…" />;
+  if (busy === "mail") return <Pracujem text={t("nf.odosielam")} />;
   if (busy === "pdf" || busy === "zdielam") return <Pracujem text="Pripravujem PDF…" />;
 
   return (
     <MobilObrazovka
-      title="Faktúra vystavená"
+      title={t("nf.vystavena")}
       footer={<HlavneTlacidlo onClick={onHotovo}>Hotovo</HlavneTlacidlo>}
     >
       <div className="space-y-4">
@@ -1692,7 +1701,7 @@ function Vystavena({
           {faktura.customer_email && (
             <VelkeTlacidlo
               icon={odoslane ? Check : Mail}
-              label={odoslane ? "Odoslané" : "Poslať e-mailom"}
+              label={odoslane ? "Odoslané" : t("nf.poslatEmailom")}
               hint={faktura.customer_email}
               variant={odoslane ? "default" : "primary"}
               disabled={odoslane}
@@ -1701,14 +1710,14 @@ function Vystavena({
           )}
           <VelkeTlacidlo
             icon={Share2}
-            label="Zdieľať faktúru"
-            hint="Pošlite ju cez WhatsApp, Messenger alebo uložte do súborov"
+            label={t("nf.zdielat")}
+            hint={t("nf.zdielatPopis")}
             onClick={zdielaj}
           />
           <VelkeTlacidlo
             icon={ExternalLink}
-            label="Otvoriť PDF"
-            hint="Faktúra na prezretie"
+            label={t("nf.otvoritPdf")}
+            hint={t("nf.naPrezretie")}
             onClick={otvorPdf}
           />
         </div>
