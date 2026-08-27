@@ -63,9 +63,9 @@ export async function dorucCakajuciPushToken(): Promise<void> {
  * nepýta a zapnúť sa to dá už len v nastaveniach telefónu. Pýta sa preto až
  * domovská obrazovka, teda po prihlásení.
  */
-export async function registerPushNotifications(
-  { pytatPovolenie = true }: { pytatPovolenie?: boolean } = {},
-): Promise<{
+export async function registerPushNotifications({
+  pytatPovolenie = true,
+}: { pytatPovolenie?: boolean } = {}): Promise<{
   ok: boolean;
   token?: string;
   error?: string;

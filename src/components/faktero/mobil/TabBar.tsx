@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { Car, FilePlus2, FileText, Landmark, ScanLine } from "lucide-react";
 import { ZELENA_HORE } from "@/lib/mobile/brand";
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 
 /**
  * Spodná navigácia mobilnej aplikácie.
@@ -16,12 +17,17 @@ import { ZELENA_HORE } from "@/lib/mobile/brand";
  */
 export type Zalozka = "skener" | "faktury" | "vytvorit" | "banka" | "jazda";
 
-const POLOZKY: { kod: Zalozka; label: string; icon: ComponentType<{ className?: string }> }[] = [
-  { kod: "skener", label: "Skener", icon: ScanLine },
-  { kod: "faktury", label: "Faktúry", icon: FileText },
-  { kod: "vytvorit", label: "Vytvoriť", icon: FilePlus2 },
-  { kod: "banka", label: "Banka", icon: Landmark },
-  { kod: "jazda", label: "Kniha jázd", icon: Car },
+/* Popisy sa prekladajú — kľúč je tu, znenie v slovníku. */
+const POLOZKY: {
+  kod: Zalozka;
+  kluc: "tab.skener" | "tab.faktury" | "tab.vytvorit" | "tab.banka" | "tab.jazda";
+  icon: ComponentType<{ className?: string }>;
+}[] = [
+  { kod: "skener", kluc: "tab.skener", icon: ScanLine },
+  { kod: "faktury", kluc: "tab.faktury", icon: FileText },
+  { kod: "vytvorit", kluc: "tab.vytvorit", icon: FilePlus2 },
+  { kod: "banka", kluc: "tab.banka", icon: Landmark },
+  { kod: "jazda", kluc: "tab.jazda", icon: Car },
 ];
 
 export function TabBar({
@@ -31,16 +37,18 @@ export function TabBar({
   aktivna: Zalozka;
   onPrepni: (z: Zalozka) => void;
 }) {
+  const { t } = usePreklad();
   return (
     <nav
       className="sticky bottom-0 z-30 border-t border-border/70 bg-card/95 backdrop-blur"
       /* Bez odsadenia dole by na iPhone posledný riadok ikon padol pod
          systémový indikátor a nedal by sa trafiť. */
       style={{ paddingBottom: "var(--safe-bottom)" }}
-      aria-label="Hlavná navigácia"
+      aria-label={t("tab.navigacia")}
     >
       <ul className="flex">
-        {POLOZKY.map(({ kod, label, icon: Icon }) => {
+        {POLOZKY.map(({ kod, kluc, icon: Icon }) => {
+          const label = t(kluc);
           const je = kod === aktivna;
           return (
             <li key={kod} className="flex-1">

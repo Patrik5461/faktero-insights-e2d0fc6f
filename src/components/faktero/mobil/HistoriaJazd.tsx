@@ -7,6 +7,7 @@ import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
 
 import { jeSukromna } from "@/lib/faktero/trip-format";
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 /**
  * História jázd jedného vozidla.
  *
@@ -129,6 +130,7 @@ export function HistoriaJazd({
   const [jeVsetko, setJeVsetko] = useState(true);
   const [nacitavamStarsie, setNacitavamStarsie] = useState(false);
   /* Mapa sa otvára ťuknutím na jazdu — na malej obrazovke sa nezmestia obe naraz. */
+  const { t } = usePreklad();
   const [otvorena, setOtvorena] = useState<string | null>(null);
   /** Ktorej jazde sa práve prepisuje charakter — nech sa nedá ťuknúť dvakrát. */
   const [meni, setMeni] = useState<string | null>(null);
@@ -158,7 +160,8 @@ export function HistoriaJazd({
       toast.error(error.message);
       return;
     }
-    toast.success(na === "private" ? "Označená ako súkromná." : "Označená ako služobná.");
+    const hlaska = t(na === "private" ? "jazdy.oznacenaSukromna" : "jazdy.oznacenaSluzobna");
+    toast.success(hlaska);
   }
 
   useEffect(() => {
@@ -329,7 +332,7 @@ export function HistoriaJazd({
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5">
                                 <span className="truncate text-[15px] font-medium leading-tight">
-                                  {kam ?? j.purpose?.trim() ?? "Jazda"}
+                                  {kam ?? j.purpose?.trim() ?? t("jazdy.jazda")}
                                 </span>
                                 {j.external_source && (
                                   <Satellite
@@ -341,7 +344,7 @@ export function HistoriaJazd({
                                     stav a odznak pri každej jazde by nič nepovedal. */}
                                 {jeSukromna(j.classification) && (
                                   <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                                    Súkromná
+                                    {t("jazdy.sukromna")}
                                   </span>
                                 )}
                               </div>
@@ -367,13 +370,13 @@ export function HistoriaJazd({
                             <div className="space-y-3 px-4 pb-3.5">
                               <div>
                                 <div className="mb-1.5 text-[12px] text-muted-foreground">
-                                  Charakter jazdy
+                                  {t("jazdy.charakter")}
                                 </div>
                                 <div className="inline-flex rounded-xl border border-border p-0.5">
                                   {(
                                     [
-                                      ["business", "Služobná"],
-                                      ["private", "Súkromná"],
+                                      ["business", t("jazdy.sluzobna")],
+                                      ["private", t("jazdy.sukromna")],
                                     ] as const
                                   ).map(([kod, popis]) => {
                                     const je = jeSukromna(j.classification)

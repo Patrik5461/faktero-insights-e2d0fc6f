@@ -76,8 +76,7 @@ export function moznoUpravit(f: {
   status: string | null;
   maSkladovePolozky?: boolean;
 }): MoznostUpravy {
-  if (f.status === "cancelled")
-    return { ok: false, dovod: "Stornovaná faktúra sa už neopravuje." };
+  if (f.status === "cancelled") return { ok: false, dovod: "Stornovaná faktúra sa už neopravuje." };
   if (f.maSkladovePolozky)
     return {
       ok: false,

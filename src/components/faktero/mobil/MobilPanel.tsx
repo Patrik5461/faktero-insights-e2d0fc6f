@@ -27,6 +27,8 @@ import { mojaPeciatka } from "@/lib/mobile/verzia";
 import { AppHeader } from "@/components/faktero/mobil/MobilChrome";
 import { NahlasitChybu } from "@/components/faktero/NahlasitChybu";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { JAZYKY } from "@/lib/mobile/jazyk";
 /**
  * Vysúvací panel s nastaveniami.
  *
@@ -66,6 +68,7 @@ export function MobilPanel({
   onUcet: () => void;
   onOdhlasit: () => void;
 }) {
+  const { t, jazyk, nastavJazyk } = usePreklad();
   /* Okno na nahlásenie chyby — otvára sa z tohto panela. */
   const [nahlasenie, setNahlasenie] = useState(false);
   const [biometriaMozna, setBiometriaMozna] = useState(false);
@@ -155,7 +158,7 @@ export function MobilPanel({
           right={
             <button
               onClick={onZavri}
-              aria-label="Zavrieť"
+              aria-label={t("panel.zavriet")}
               className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-white/20"
             >
               <X className="h-[18px] w-[18px]" />
@@ -184,7 +187,7 @@ export function MobilPanel({
         />
 
         <nav className="flex-1 overflow-y-auto px-3 py-3">
-          <Skupina nazov="Firma" />
+          <Skupina nazov={t("panel.firma")} />
           {viacFiriem && (
             <Polozka
               icon={Building2}
@@ -197,7 +200,7 @@ export function MobilPanel({
           )}
           <Polozka
             icon={FileText}
-            label="Vystavené faktúry"
+            label={t("panel.vystaveneFaktury")}
             onClick={() => {
               onZavri();
               onFaktury();
@@ -206,7 +209,7 @@ export function MobilPanel({
           {onPonuky && (
             <Polozka
               icon={FileSignature}
-              label="Cenové ponuky"
+              label={t("panel.cenovePonuky")}
               onClick={() => {
                 onZavri();
                 onPonuky();
@@ -215,14 +218,14 @@ export function MobilPanel({
           )}
           <Polozka
             icon={Receipt}
-            label="Prijaté doklady"
+            label={t("panel.prijateDoklady")}
             onClick={() => {
               onZavri();
               onDoklady();
             }}
           />
 
-          <Skupina nazov="Nastavenia" />
+          <Skupina nazov={t("panel.nastavenia")} />
           {biometriaMozna ? (
             <button
               onClick={prepniBiometriu}
@@ -277,7 +280,7 @@ export function MobilPanel({
             />
           )}
 
-          <Skupina nazov="Pomoc" />
+          <Skupina nazov={t("panel.pomoc")} />
           {/*
             Jedna položka, nie dve. „Účet a diagnostika" a „Zrušenie účtu" viedli
             na tú istú obrazovku, takže panel ponúkal tú istú vec dvakrát — a
@@ -333,6 +336,27 @@ export function MobilPanel({
         </nav>
 
         {/*
+          Jazyk appky. Hlásenia zo servera ostávajú zatiaľ slovenské — vznikajú
+          v spoločnom kóde s webom. Je to vedomý dlh, nie prehliadnutie.
+        */}
+        <div className="border-t border-border/70 px-3 py-2">
+          <label className="block">
+            <span className="mb-1 block text-[12px] text-muted-foreground">{t("panel.jazyk")}</span>
+            <select
+              value={jazyk}
+              onChange={(e) => nastavJazyk(e.target.value as (typeof JAZYKY)[number]["kod"])}
+              className="min-h-[44px] w-full rounded-xl border border-input bg-background px-3 text-[15px]"
+            >
+              {JAZYKY.map((j) => (
+                <option key={j.kod} value={j.kod}>
+                  {j.nazov}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {/*
           Pätička je zámerne nízka. Odhlásenie je vec, ktorú človek spraví raz
           za čas — nepotrebuje rovnako veľký riadok ako agendy, do ktorých
           chodí denne, a spolu s verziou zaberalo celé dno panela.
@@ -349,7 +373,7 @@ export function MobilPanel({
             className="flex min-h-[44px] items-center gap-2 rounded-lg px-2 text-destructive active:bg-destructive/10"
           >
             <LogOut className="h-4 w-4" />
-            <span className="text-[13px] font-medium">Odhlásiť sa</span>
+            <span className="text-[13px] font-medium">{t("panel.odhlasit")}</span>
           </button>
 
           {/* Pečiatka balíčka je jediné, čím sa dva buildy rozoznajú — číslo
