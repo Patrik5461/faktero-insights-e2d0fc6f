@@ -10,6 +10,7 @@ import { Logo } from "@/components/faktero/Logo";
 import { toast } from "sonner";
 import { ArrowLeft, MailCheck } from "lucide-react";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 /**
  * Registrácia účtu priamo v telefóne.
  *
@@ -29,6 +30,7 @@ export function RegistraciaUctu({
   onHotovo: () => void;
   onSpat: () => void;
 }) {
+  const { t } = usePreklad();
   const [meno, setMeno] = useState("");
   const [email, setEmail] = useState("");
   const [heslo, setHeslo] = useState("");
@@ -48,7 +50,7 @@ export function RegistraciaUctu({
 
   async function registruj() {
     const chyba = overRegistraciu({ meno, email, heslo, podmienky, gdpr });
-    if (chyba) return toast.error(chyba);
+    if (chyba) return toast.error(t(chyba));
     setBusy(true);
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -64,13 +66,13 @@ export function RegistraciaUctu({
       odlozSuhlasy();
       if (data.session) {
         await zapisOdlozeneSuhlasy(zapisSuhlasy);
-        toast.success("Účet je vytvorený.");
+        toast.success(t("reg.ucetJeVytvoreny"));
         onHotovo();
         return;
       }
       setCakaNaPotvrdenie(true);
     } catch (e: any) {
-      toast.error(e?.message ?? "Registrácia zlyhala.");
+      toast.error(e?.message ?? t("reg.registraciaZlyhala"));
     } finally {
       setBusy(false);
     }
@@ -94,7 +96,7 @@ export function RegistraciaUctu({
           const p = prelozAuthChybu(error.message);
           toast.error(
             p.nepotvrdeny
-              ? "Zatiaľ to nie je potvrdené. Otvorte odkaz z e-mailu a skúste to znova."
+              ? t("reg.nepotvrdene")
               : p.sprava,
           );
         }
@@ -156,7 +158,7 @@ export function RegistraciaUctu({
     });
     setPosielamZnova(false);
     if (error) return toast.error(prelozAuthChybu(error.message).sprava);
-    toast.success("E-mail sme poslali znova.");
+    toast.success(t("reg.emailPoslanyZnova"));
   }
 
   const ramec = "flex min-h-[100dvh] flex-col justify-center bg-background px-6";
@@ -172,14 +174,12 @@ export function RegistraciaUctu({
           <div className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary">
             <MailCheck className="h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Potvrďte si e-mail</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("reg.potvrdteEmail")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Účet <strong className="text-foreground">{email.trim()}</strong> je vytvorený. Poslali
-            sme naň odkaz — otvorte ho a vráťte sa sem. Appka si potvrdenia všimne sama; keby nie,
-            je tu tlačidlo nižšie. Bez potvrdenia sa prihlásiť nedá.
+            {t("reg.potvrdenieText", { email: email.trim() })}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Ak e-mail do pár minút nepríde, pozrite sa do nevyžiadanej pošty.
+            {t("reg.spamPriecinok")}
           </p>
           <button
             onClick={() => skusPrihlasit(false)}
@@ -187,17 +187,17 @@ export function RegistraciaUctu({
             style={overujem ? undefined : { backgroundImage: "var(--brand-gradient)" }}
             className="mt-6 w-full rounded-xl px-4 py-3 text-base font-medium text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground"
           >
-            {overujem ? "Overujem…" : "Už som potvrdil, pokračovať"}
+            {overujem ? t("reg.overujem") : t("reg.uzSomPotvrdil")}
           </button>
           <button
             onClick={posliZnova}
             disabled={posielamZnova}
             className="mt-3 w-full rounded-xl border border-border px-4 py-3 text-base disabled:opacity-60"
           >
-            {posielamZnova ? "Posielam…" : "Poslať e-mail znova"}
+            {posielamZnova ? t("reg.posielam") : t("reg.poslatZnova")}
           </button>
           <button onClick={onSpat} className="mt-3 w-full py-2 text-center text-sm text-primary">
-            Späť na prihlásenie
+            {t("reg.spatNaPrihlasenie")}
           </button>
         </div>
       </div>
@@ -208,16 +208,16 @@ export function RegistraciaUctu({
     <div className={ramec} style={odsadenie}>
       <div className="mx-auto w-full max-w-sm">
         <Logo variant="header" className="mb-8 h-9" />
-        <h1 className="text-2xl font-semibold tracking-tight">Vytvorte si účet</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("reg.vytvorteSiUcet")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          30 dní zadarmo na pláne Premium. Bez platobnej karty.
+          {t("reg.zadarmo")}
         </p>
 
         <div className="mt-6 space-y-3">
           <input
             type="text"
             autoComplete="name"
-            placeholder="Meno a priezvisko"
+            placeholder={t("reg.meno")}
             value={meno}
             onChange={(e) => setMeno(e.target.value)}
             className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base"
@@ -228,7 +228,7 @@ export function RegistraciaUctu({
             autoCapitalize="none"
             autoCorrect="off"
             autoComplete="email"
-            placeholder="E-mail"
+            placeholder={t("reg.email")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base"
@@ -236,7 +236,7 @@ export function RegistraciaUctu({
           <input
             type="password"
             autoComplete="new-password"
-            placeholder="Heslo (aspoň 8 znakov)"
+            placeholder={t("reg.heslo")}
             value={heslo}
             onChange={(e) => setHeslo(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && registruj()}
@@ -246,12 +246,14 @@ export function RegistraciaUctu({
 
         <div className="mt-4 space-y-3">
           <Suhlas checked={podmienky} onChange={setPodmienky}>
-            Súhlasím s{" "}
-            <OdkazNaWeb cesta="/pravne/obchodne-podmienky">Obchodnými podmienkami</OdkazNaWeb>.
+            <SOdkazom text={t("reg.suhlasPodmienky")} cesta="/pravne/obchodne-podmienky">
+              {t("reg.obchodnePodmienky")}
+            </SOdkazom>
           </Suhlas>
           <Suhlas checked={gdpr} onChange={setGdpr}>
-            Beriem na vedomie{" "}
-            <OdkazNaWeb cesta="/pravne/gdpr">Spracúvanie osobných údajov</OdkazNaWeb>.
+            <SOdkazom text={t("reg.suhlasGdpr")} cesta="/pravne/gdpr">
+              {t("reg.spracuvanieUdajov")}
+            </SOdkazom>
           </Suhlas>
         </div>
 
@@ -261,14 +263,14 @@ export function RegistraciaUctu({
           style={busy ? undefined : { backgroundImage: "var(--brand-gradient)" }}
           className="mt-5 w-full rounded-xl px-4 py-3 text-base font-medium text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground"
         >
-          {busy ? "Vytváram…" : "Vytvoriť účet"}
+          {busy ? t("reg.vytvaram") : t("reg.vytvoritUcet")}
         </button>
 
         <button
           onClick={onSpat}
           className="mt-4 flex w-full items-center justify-center gap-2 py-2 text-sm text-muted-foreground"
         >
-          <ArrowLeft className="h-4 w-4" /> Už mám účet, prihlásiť sa
+          <ArrowLeft className="h-4 w-4" /> {t("reg.uzMamUcet")}
         </button>
       </div>
     </div>
@@ -302,6 +304,31 @@ function Suhlas({
  * Právne dokumenty žijú na webe. V zabalenej appke ich otvorí systémový
  * prehliadač, takže sa človek nestratí mimo appky a späť sa vráti jedným ťuknutím.
  */
+/**
+ * Veta so vloženým odkazom.
+ *
+ * Text nie je poskladaný z kúskov: v každom jazyku stojí odkaz inde vo vete
+ * („Ich stimme den AGB zu."), takže sa vkladá do miesta označeného `{odkaz}`.
+ */
+function SOdkazom({
+  text,
+  cesta,
+  children,
+}: {
+  text: string;
+  cesta: string;
+  children: React.ReactNode;
+}) {
+  const [pred, po = ""] = text.split("{odkaz}");
+  return (
+    <>
+      {pred}
+      <OdkazNaWeb cesta={cesta}>{children}</OdkazNaWeb>
+      {po}
+    </>
+  );
+}
+
 function OdkazNaWeb({ cesta, children }: { cesta: string; children: React.ReactNode }) {
   return (
     <button

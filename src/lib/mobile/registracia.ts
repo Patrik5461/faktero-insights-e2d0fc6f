@@ -5,6 +5,7 @@
  * vyplnený formulár skúša ťažko a chybná podmienka sa prejaví až tým, že
  * tlačidlo nič nespraví.
  */
+import type { Kluc } from "./preklady";
 
 /** Kam má viesť odkaz z potvrdzovacieho e-mailu. */
 export function adresaPotvrdenia(nativna: boolean, origin: string | null, server: string): string {
@@ -25,14 +26,17 @@ export type VstupRegistracie = {
   gdpr: boolean;
 };
 
-/** Vráti dôvod, prečo sa registrovať nedá — alebo `null`, keď je všetko v poriadku. */
-export function overRegistraciu(v: VstupRegistracie): string | null {
-  if (!v.meno.trim()) return "Zadajte meno a priezvisko.";
+/**
+ * Vráti kľúč hlášky, prečo sa registrovať nedá — alebo `null`, keď je všetko
+ * v poriadku. Kľúč, nie vetu: obrazovka ju preloží do jazyka appky.
+ */
+export function overRegistraciu(v: VstupRegistracie): Kluc | null {
+  if (!v.meno.trim()) return "reg.chyba.meno";
   const email = v.email.trim();
   // Nie na overenie e-mailu (to vie len doručenie), ale na preklep bez odoslania.
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return "Zadajte platný e-mail.";
-  if (v.heslo.length < 8) return "Heslo musí mať aspoň 8 znakov.";
-  if (!v.podmienky || !v.gdpr) return "Potvrďte obidva súhlasy.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return "reg.chyba.email";
+  if (v.heslo.length < 8) return "reg.chyba.heslo";
+  if (!v.podmienky || !v.gdpr) return "reg.chyba.suhlasy";
   return null;
 }
 
@@ -44,14 +48,14 @@ export type VstupFirmy = {
 };
 
 /** To isté pre založenie firmy. Povinný je len názov — zvyšok sa dá doplniť neskôr. */
-export function overFirmu(v: VstupFirmy): string | null {
-  if (!v.name.trim()) return "Zadajte názov firmy.";
+export function overFirmu(v: VstupFirmy): Kluc | null {
+  if (!v.name.trim()) return "vf.chyba.nazov";
   const ico = (v.ico ?? "").replace(/\s+/g, "");
-  if (ico && !/^\d{6,8}$/.test(ico)) return "IČO má 6 až 8 číslic.";
+  if (ico && !/^\d{6,8}$/.test(ico)) return "vf.chyba.ico";
   const email = (v.email ?? "").trim();
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return "Zadajte platný e-mail firmy.";
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return "vf.chyba.email";
   const iban = (v.iban ?? "").replace(/\s+/g, "").toUpperCase();
-  if (iban && !/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(iban)) return "IBAN nemá správny tvar.";
+  if (iban && !/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(iban)) return "vf.chyba.iban";
   return null;
 }
 

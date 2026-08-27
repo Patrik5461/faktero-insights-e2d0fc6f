@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 /**
  * Kamera, ktorá číta QR kód.
  *
@@ -20,6 +21,7 @@ export function useKameraQr({
   /** Kým je `false`, kamera nebeží — nesvieti kontrolka a nežerie batériu. */
   aktivne?: boolean;
 }) {
+  const { t } = usePreklad();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [chyba, setChyba] = useState<string | null>(null);
   const [bezi, setBezi] = useState(false);
@@ -86,8 +88,8 @@ export function useKameraQr({
         setBezi(false);
         setChyba(
           e?.name === "NotAllowedError"
-            ? "Prístup ku kamere je zamietnutý. Povoľte ho v nastaveniach telefónu."
-            : "Kameru sa nepodarilo spustiť. Skúste doklad odfotiť.",
+            ? t("qr.kameraZamietnuta")
+            : t("qr.kameraNejde"),
         );
       }
     })();

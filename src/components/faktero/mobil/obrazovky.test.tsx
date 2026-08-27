@@ -159,19 +159,19 @@ describe("stav cenovej ponuky", () => {
 
   it("vyfakturovaná prebíja všetko ostatné", () => {
     expect(
-      stavPonuky({ ...zaklad, converted_invoice_id: "x", valid_until: "2020-01-01" }).text,
-    ).toBe("Vyfakturovaná");
+      stavPonuky({ ...zaklad, converted_invoice_id: "x", valid_until: "2020-01-01" }).kluc,
+    ).toBe("ponuky.stav.vyfakturovana");
   });
 
   it("prepadnutú platnosť pozná z dátumu", () => {
-    expect(stavPonuky({ ...zaklad, valid_until: "2020-01-01" }).text).toBe("Po platnosti");
-    expect(stavPonuky({ ...zaklad, valid_until: "2099-01-01" }).text).toBe("Návrh");
+    expect(stavPonuky({ ...zaklad, valid_until: "2020-01-01" }).kluc).toBe("ponuky.stav.poPlatnosti");
+    expect(stavPonuky({ ...zaklad, valid_until: "2099-01-01" }).kluc).toBe("ponuky.stav.navrh");
   });
 
   it("odoslaná a prijatá sa nezamenia", () => {
-    expect(stavPonuky({ ...zaklad, sent_at: "2026-01-02" }).text).toBe("Odoslaná");
-    expect(stavPonuky({ ...zaklad, status: "accepted" }).text).toBe("Prijatá");
-    expect(stavPonuky({ ...zaklad, status: "rejected" }).text).toBe("Zamietnutá");
+    expect(stavPonuky({ ...zaklad, sent_at: "2026-01-02" }).kluc).toBe("ponuky.stav.odoslana");
+    expect(stavPonuky({ ...zaklad, status: "accepted" }).kluc).toBe("ponuky.stav.prijata");
+    expect(stavPonuky({ ...zaklad, status: "rejected" }).kluc).toBe("ponuky.stav.zamietnuta");
   });
 });
 

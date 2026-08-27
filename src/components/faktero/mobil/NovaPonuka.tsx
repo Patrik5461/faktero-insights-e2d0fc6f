@@ -6,6 +6,7 @@ import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { MobilObrazovka, Pracujem, HlavneTlacidlo } from "./MobilChrome";
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
   RiadokPolozky,
   NovyOdberatel,
@@ -44,6 +45,7 @@ export function NovaPonuka({
   onSpat: () => void;
   onHotovo: () => void;
 }) {
+  const { t } = usePreklad();
   const nacitajPodklady = useOperacia("faktura-podklady");
   const vystav = useOperacia("ponuka-vystav");
   const krajina = useKrajinaDane();
@@ -96,11 +98,11 @@ export function NovaPonuka({
   }, [hladanie, podklady]);
 
   async function uloz() {
-    if (!odberatel) return toast.error("Vyberte odberateľa.");
+    if (!odberatel) return toast.error(t("ponuky.vyberteOdberatela"));
     const pouzitelne = riadky.filter((r) => r.name.trim() && cislo(r.quantity) > 0);
-    if (!pouzitelne.length) return toast.error("Doplňte aspoň jednu položku.");
+    if (!pouzitelne.length) return toast.error(t("ponuky.doplntePolozku"));
     // Platnosť pred vystavením je preklep — ponuka by bola neplatná hneď.
-    if (platiDo && platiDo < vystavena) return toast.error("Platnosť nemôže byť pred vystavením.");
+    if (platiDo && platiDo < vystavena) return toast.error(t("ponuky.platnostPredVystavenim"));
 
     setUkladam(true);
     try {
@@ -125,14 +127,14 @@ export function NovaPonuka({
       toast.success(`Ponuka ${r.quote_number} vytvorená.`);
       onHotovo();
     } catch (e) {
-      toast.error(friendlyError(e, "Ponuku sa nepodarilo vytvoriť."));
+      toast.error(friendlyError(e, t("ponuky.nepodariloVytvorit")));
     } finally {
       setUkladam(false);
     }
   }
 
-  if (!podklady) return <Pracujem text="Načítavam odberateľov…" />;
-  if (ukladam) return <Pracujem text="Vytváram ponuku…" />;
+  if (!podklady) return <Pracujem text={t("nf.nacitavamOdberatelov")} />;
+  if (ukladam) return <Pracujem text={t("ponuky.vytvaram")} />;
 
   /* Ten istý formulár ako pri faktúre — vrátane dohľadania podľa IČO. */
   if (pridavam) {
@@ -152,7 +154,7 @@ export function NovaPonuka({
 
   return (
     <MobilObrazovka
-      title="Nová cenová ponuka"
+      title={t("ponuky.novaDlha")}
       subtitle={firma.name}
       onBack={onSpat}
       footer={
@@ -163,7 +165,7 @@ export function NovaPonuka({
     >
       <section className="space-y-2">
         <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Odberateľ
+          {t("ponuky.odberatel")}
         </h2>
         {odberatel ? (
           <button
@@ -172,14 +174,14 @@ export function NovaPonuka({
           >
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="min-w-0 flex-1 truncate text-sm font-medium">{odberatel.name}</span>
-            <span className="text-xs text-muted-foreground">zmeniť</span>
+            <span className="text-xs text-muted-foreground">{t("ponuky.zmenit")}</span>
           </button>
         ) : (
           <>
             <input
               value={hladanie}
               onChange={(e) => setHladanie(e.target.value)}
-              placeholder="Hľadať odberateľa…"
+              placeholder={t("ponuky.hladatOdberatela")}
               className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
             />
             {najdene.length > 0 && (
@@ -198,13 +200,13 @@ export function NovaPonuka({
               </ul>
             )}
             {hladanie.trim() && najdene.length === 0 && (
-              <p className="px-1 py-1 text-xs text-muted-foreground">Nikto sa nenašiel.</p>
+              <p className="px-1 py-1 text-xs text-muted-foreground">{t("ponuky.nikNenajdeny")}</p>
             )}
             <button
               onClick={() => setPridavam(true)}
               className="flex w-full items-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-3 py-2.5 text-sm font-medium text-primary active:bg-primary/10"
             >
-              <UserPlus className="h-4 w-4" /> Nový odberateľ
+              <UserPlus className="h-4 w-4" /> {t("ponuky.novyOdberatel")}
             </button>
           </>
         )}
@@ -212,7 +214,7 @@ export function NovaPonuka({
 
       <section className="mt-5 space-y-2">
         <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Položky
+          {t("ponuky.polozky")}
         </h2>
         {riadky.map((r, i) => (
           <RiadokPolozky
@@ -231,13 +233,13 @@ export function NovaPonuka({
           onClick={() => setRiadky((xs) => [...xs, prazdnyRiadok(zakladnaSadzba)])}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border px-3 py-2.5 text-sm active:bg-secondary"
         >
-          <Plus className="h-4 w-4" /> Pridať položku
+          <Plus className="h-4 w-4" /> {t("ponuky.pridajPolozku")}
         </button>
       </section>
 
       <section className="mt-5 grid grid-cols-2 gap-3">
         <label className="block">
-          <span className="mb-1 block text-[12px] text-muted-foreground">Vystavená</span>
+          <span className="mb-1 block text-[12px] text-muted-foreground">{t("ponuky.vystavena")}</span>
           <input
             type="date"
             value={vystavena}
@@ -246,7 +248,7 @@ export function NovaPonuka({
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-[12px] text-muted-foreground">Platí do</span>
+          <span className="mb-1 block text-[12px] text-muted-foreground">{t("ponuky.platiDo")}</span>
           <input
             type="date"
             value={platiDo}
@@ -257,7 +259,7 @@ export function NovaPonuka({
       </section>
 
       <label className="mt-4 block">
-        <span className="mb-1 block text-[12px] text-muted-foreground">Poznámka</span>
+        <span className="mb-1 block text-[12px] text-muted-foreground">{t("ponuky.poznamka")}</span>
         <textarea
           rows={3}
           value={poznamka}
@@ -267,10 +269,10 @@ export function NovaPonuka({
       </label>
 
       <div className="mt-5 rounded-2xl border border-border bg-card p-3 text-sm">
-        <Riadok k="Základ" v={suma(sucty.zaklad, mena)} />
-        {platca && <Riadok k="DPH" v={suma(sucty.dan, mena)} />}
+        <Riadok k={t("ponuky.zaklad")} v={suma(sucty.zaklad, mena)} />
+        {platca && <Riadok k={t("ponuky.dph")} v={suma(sucty.dan, mena)} />}
         <div className="mt-1 flex justify-between border-t border-border pt-2 font-semibold">
-          <span>Spolu</span>
+          <span>{t("jazdy.spolu")}</span>
           <span className="tabular-nums">{suma(sucty.spolu, mena)}</span>
         </div>
       </div>

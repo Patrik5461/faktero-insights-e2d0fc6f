@@ -33,7 +33,7 @@ export function jeNaZrusenie(termin: string | null | undefined, teraz: Date = ne
 }
 
 /** „14. augusta 2026" — do vety, nie do tabuľky. */
-export function terminSlovom(termin: string | Date): string {
+export function terminSlovom(termin: string | Date, locale = "sk-SK"): string {
   const t = typeof termin === "string" ? new Date(termin) : termin;
-  return t.toLocaleDateString("sk-SK", { day: "numeric", month: "long", year: "numeric" });
+  return t.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric" });
 }

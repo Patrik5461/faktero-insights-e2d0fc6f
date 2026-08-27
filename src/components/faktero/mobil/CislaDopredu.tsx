@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Hash, Loader2 } from "lucide-react";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 /**
  * Vydávanie faktúr bez signálu rovno s číslom.
  *
@@ -15,6 +16,7 @@ import { Hash, Loader2 } from "lucide-react";
  * voľné číslo, takže dieru samo zaplní.
  */
 export function CislaDopredu({ firma }: { firma: { id: string; name: string } }) {
+  const { t } = usePreklad();
   const [zapnute, setZapnute] = useState(false);
   const [volnych, setVolnych] = useState(0);
   const [pracujem, setPracujem] = useState(false);
@@ -47,23 +49,23 @@ export function CislaDopredu({ firma }: { firma: { id: string; name: string } })
           await volajOperaciu("cisla-uvolni", { company_id: firma.id, numbers: cisla });
         }
         zabudniRezervacie(firma.id);
-        toast.success("Vypnuté. Nepoužité čísla sa vrátili do radu.");
+        toast.success(t("cisla.vypnute"));
       } else {
         if (!(await isOnline())) {
-          toast.error("Na zapnutie treba pripojenie — čísla si vypýta appka od servera.");
+          toast.error(t("cisla.trebaPripojenie"));
           return;
         }
         nastavCislovanieDopredu(firma.id, true);
         const kolko = await doplnCisla(firma.id);
         if (kolko === 0) {
           nastavCislovanieDopredu(firma.id, false);
-          toast.error("Čísla sa nepodarilo vypýtať. Skúste to o chvíľu.");
+          toast.error(t("cisla.nepodariloVypytat"));
           return;
         }
-        toast.success(`Zapnuté. Appka má ${kolko} čísel pripravených.`);
+        toast.success(t("cisla.zapnute", { pocet: kolko }));
       }
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Nepodarilo sa to prepnúť.");
+      toast.error(e instanceof Error ? e.message : t("cisla.nepodariloPrepnut"));
     } finally {
       setPracujem(false);
       await nacitaj();
@@ -75,11 +77,11 @@ export function CislaDopredu({ firma }: { firma: { id: string; name: string } })
       <div className="flex items-start gap-3">
         <Hash className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">Vystavovať bez signálu rovno s číslom</p>
+          <p className="text-sm font-medium">{t("cisla.nazov")}</p>
           <p className="mt-1 text-xs leading-snug text-muted-foreground">
             {zapnute
-              ? `Pripravených čísel: ${volnych}. Faktúra vystavená bez signálu dostane číslo hneď, takže sa dá odovzdať na mieste.`
-              : "Bez toho sa faktúra bez signálu odloží a vystaví sa sama po pripojení — číslo dostane až vtedy."}
+              ? t("cisla.zapnutePopis", { pocet: volnych })
+              : t("cisla.vypnutePopis")}
           </p>
         </div>
       </div>
@@ -89,7 +91,7 @@ export function CislaDopredu({ firma }: { firma: { id: string; name: string } })
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-medium active:opacity-80 disabled:opacity-60"
       >
         {pracujem && <Loader2 className="h-4 w-4 animate-spin" />}
-        {zapnute ? "Vypnúť" : "Zapnúť"}
+        {zapnute ? t("cisla.vypnut") : t("cisla.zapnut")}
       </button>
     </div>
   );

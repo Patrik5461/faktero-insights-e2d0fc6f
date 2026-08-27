@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { Car } from "lucide-react";
 import { beziacaJazda, type BeziacaJazda } from "@/lib/mobile/auto-jazdy-sync";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 /** Ako často sa appka pýta pluginu. Kilometre pribúdajú pomaly, stačí to. */
 const OBNOVA_MS = 10_000;
 
@@ -43,6 +44,7 @@ export function PruhJazdy({
   teraz: number;
   onOtvor?: () => void;
 }) {
+  const { t } = usePreklad();
   const obsah = (
     <>
       <span className="relative mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
@@ -50,10 +52,10 @@ export function PruhJazdy({
         <Car className="relative h-4 w-4 text-primary" />
       </span>
       <span className="min-w-0 text-left text-[13px]">
-        <span className="block font-medium text-primary">Nahrávam jazdu</span>
+        <span className="block font-medium text-primary">{t("jz.nahravamJazdu")}</span>
         <span className="block text-muted-foreground">
           {jazda.km.toFixed(1)} km · od {cas(jazda.zaciatok)} ({trvanie(jazda.zaciatok, teraz)})
-          {jazda.rucna ? " · spustená ručne" : ""}
+          {jazda.rucna ? ` · ${t("jz.spustenaRucne")}` : ""}
         </span>
       </span>
     </>
@@ -63,7 +65,7 @@ export function PruhJazdy({
     "flex w-full items-start gap-2 rounded-xl border border-primary/40 bg-primary/5 px-4 py-3";
 
   return onOtvor ? (
-    <button onClick={onOtvor} className={styl} aria-label="Otvoriť prebiehajúcu jazdu">
+    <button onClick={onOtvor} className={styl} aria-label={t("jz.otvoritPrebiehajucu")}>
       {obsah}
     </button>
   ) : (

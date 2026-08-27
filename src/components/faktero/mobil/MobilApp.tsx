@@ -93,7 +93,7 @@ const Banka = lazy(() =>
  * by ostala biela obrazovka bez slova a bez cesty späť.
  */
 class PoistkaObrazovky extends Component<
-  { children: React.ReactNode; onSpat: () => void },
+  { children: React.ReactNode; onSpat: () => void; nadpis: string; spat: string },
   { chyba: string | null }
 > {
   state = { chyba: null as string | null };
@@ -106,13 +106,13 @@ class PoistkaObrazovky extends Component<
     if (this.state.chyba === null) return this.props.children;
     return (
       <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-[15px]">Túto obrazovku sa nepodarilo otvoriť.</p>
+        <p className="text-[15px]">{this.props.nadpis}</p>
         <p className="text-[12px] text-muted-foreground">{this.state.chyba}</p>
         <button
           onClick={this.props.onSpat}
           className="rounded-xl border border-border px-4 py-3 text-[15px]"
         >
-          Späť
+          {this.props.spat}
         </button>
       </div>
     );
@@ -120,15 +120,15 @@ class PoistkaObrazovky extends Component<
 }
 
 function Obrazovka({ children, onSpat }: { children: React.ReactNode; onSpat: () => void }) {
+  const { t } = usePreklad();
   return (
-    <PoistkaObrazovky onSpat={onSpat}>
-      <Suspense fallback={<Pracujem text="Otváram…" />}>{children}</Suspense>
+    <PoistkaObrazovky onSpat={onSpat} nadpis={t("app.chybaObrazovky")} spat={t("spolocne.spat")}>
+      <Suspense fallback={<Pracujem text={t("app.otvaram")} />}>{children}</Suspense>
     </PoistkaObrazovky>
   );
 }
 import { ZrusenieUctu } from "@/components/faktero/ZrusenieUctu";
 import { dniDoZrusenia, terminSlovom } from "@/lib/faktero/ucet-zrusenie";
-import { DNI, FAKTURY, sPoctom } from "@/lib/faktero/mnozne";
 import { MobilPanel } from "@/components/faktero/mobil/MobilPanel";
 import { RegistraciaUctu } from "@/components/faktero/mobil/RegistraciaUctu";
 import {
@@ -156,6 +156,7 @@ import { Logo } from "@/components/faktero/Logo";
 import { ZELENA_DOLE, ZELENA_HORE } from "@/lib/mobile/brand";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import type { Kluc } from "@/lib/mobile/preklady";
 /**
  * Mobilná aplikácia — prihlásenie, výber firmy a skenovanie dokladov.
  *
@@ -201,6 +202,7 @@ export function MobilnaApka() {
 }
 
 function ObsahApky() {
+  const { t, mnozne } = usePreklad();
   const [krok, setKrok] = useState<Krok>("nacitavam");
   /* Neskoro dobehnutá relácia sa rozhoduje mimo renderu — `krok` v uzávere je
      v tej chvíli už zastaraný. */
@@ -398,10 +400,10 @@ function ObsahApky() {
         // Keď telefón vie, že signál nie je, nemá zmysel čakať na vypršanie —
         // ideme rovno po tom, čo je uložené. Inak strop osem sekúnd.
         const { isOnline } = await import("@/lib/mobile/offline-queue");
-        if (!(await isOnline())) throw new Error("bez pripojenia");
+        if (!(await isOnline())) throw new Error(t("app.bezPripojeniaKratke"));
         zoznam = (await Promise.race([
           fetchMyCompanies(),
-          new Promise((_, zamietni) => setTimeout(() => zamietni(new Error("bez odpovede")), 8000)),
+          new Promise((_, zamietni) => setTimeout(() => zamietni(new Error(t("app.bezOdpovede"))), 8000)),
         ])) as Firma[];
         void ulozDoPamate(klucFiriem, zoznam);
       } catch (e) {
@@ -410,7 +412,7 @@ function ObsahApky() {
           // Bez siete a bez zapamätaného zoznamu sa nedá povedať nič iné, než
           // ako to je. Tvrdiť, že k účtu nepatrí firma, by bola nepravda.
           setChybaStartu(
-            "Bez pripojenia a v telefóne zatiaľ nie je uložený zoznam firiem. Otvorte appku raz s internetom.",
+            t("app.bezPripojeniaFirmy"),
           );
           setKrok("firma");
           return;
@@ -442,7 +444,7 @@ function ObsahApky() {
             if (odoslane > 0) {
               toast.success(
                 odoslane === 1
-                  ? "Faktúra vystavená bez signálu je odoslaná."
+                  ? t("app.fakturaOdoslana")
                   : `Odoslaných odložených faktúr: ${odoslane}.`,
               );
             }
@@ -464,7 +466,7 @@ function ObsahApky() {
             if (ulozene > 0) {
               toast.success(
                 ulozene === 1
-                  ? "Rozpoznaná jazda uložená"
+                  ? t("app.jazdaUlozena")
                   : `Uložených ${ulozene} rozpoznaných jázd`,
               );
             }
@@ -613,7 +615,13 @@ function ObsahApky() {
         const zostava = pocetCakajucichFaktur(firma.id);
         if (zostava > 0) {
           toast.error(
-            `V telefóne čaká ${sPoctom(zostava, FAKTURY)} na odoslanie. Pripojte sa a otvorte Vystavené faktúry — potom sa dá odhlásiť.`,
+            t("app.cakajuceFaktury", {
+              pocet: `${zostava} ${mnozne(zostava, {
+                one: t("spolocne.faktura1"),
+                few: t("spolocne.faktura2"),
+                other: t("spolocne.faktura5"),
+              })}`,
+            }),
             { duration: 8000 },
           );
           return;
@@ -657,7 +665,7 @@ function ObsahApky() {
         <div className="space-y-3">
           <p className="text-sm font-medium">Štart sa zasekol na kroku „{faza}".</p>
           <p className="text-[13px] text-muted-foreground">
-            Býva to slabým pripojením. Skúste to znova, alebo sa prihláste nanovo.
+            {t("app.slabePripojenie")}
           </p>
           {chybaStartu && (
             <p className="rounded-lg bg-destructive/10 p-2 text-[12px] text-destructive">
@@ -673,13 +681,13 @@ function ObsahApky() {
               }}
               className="rounded-xl bg-primary px-4 py-3 text-[15px] font-medium text-primary-foreground"
             >
-              Skúsiť znova
+              {t("app.skusitZnova")}
             </button>
             <button
               onClick={odhlas}
               className="rounded-xl border border-border px-4 py-3 text-[15px]"
             >
-              Prihlásiť sa nanovo
+              {t("app.prihlasitNanovo")}
             </button>
           </div>
         </div>
@@ -742,11 +750,11 @@ function ObsahApky() {
         <AppHeader
           variant="root"
           title={firma.name}
-          subtitle="Skener dokladov"
+          subtitle={t("app.skenerDokladov")}
           left={
             <button
               onClick={() => setPanel(true)}
-              aria-label="Nastavenia"
+              aria-label={t("panel.nastavenia")}
               className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-white/20"
             >
               <Menu className="h-[20px] w-[20px]" />
@@ -756,7 +764,7 @@ function ObsahApky() {
             firmy.length > 1 ? (
               <button
                 onClick={() => setKrok("firma")}
-                aria-label="Zmeniť firmu"
+                aria-label={t("panel.zmenitFirmu")}
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-white/20"
               >
                 <Building2 className="h-[20px] w-[20px]" />
@@ -860,7 +868,7 @@ function ObsahApky() {
     );
   if (krok === "ucet")
     return (
-      <MobilObrazovka title="Účet" subtitle={email ?? undefined} onBack={() => setKrok(DOMOV)}>
+      <MobilObrazovka title={t("app.ucet")} subtitle={email ?? undefined} onBack={() => setKrok(DOMOV)}>
         <div className="space-y-4">
           <StavPushu />
           {firma && <CislaDopredu firma={firma} />}
@@ -868,9 +876,9 @@ function ObsahApky() {
             onClick={() => setDiagnostika(true)}
             className="w-full rounded-2xl border border-border/70 p-4 text-left text-sm"
           >
-            Diagnostika
+            {t("app.diagnostika")}
             <span className="mt-1 block text-xs text-muted-foreground">
-              Čo appka v telefóne vidí — balíček, pamäť, pripojenie.
+              {t("app.diagnostikaPopis")}
             </span>
           </button>
           <ZrusenieUctu onZrusene={() => zisti()} />
@@ -942,7 +950,7 @@ function ObsahApky() {
           }}
           className="w-full bg-primary/10 px-4 py-2 text-left text-[13px] text-primary"
         >
-          Je dostupná novšia verzia aplikácie — ťuknite na aktualizáciu
+          {t("app.novaVerzia")}
         </button>
       )}
       <Domov
@@ -1030,6 +1038,7 @@ function Prihlasenie({
   onHotovo: () => void;
   onRegistracia: () => void;
 }) {
+  const { t } = usePreklad();
   const [email, setEmail] = useState("");
   const [heslo, setHeslo] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1040,7 +1049,7 @@ function Prihlasenie({
   }, []);
 
   async function prihlas() {
-    if (!email.trim() || !heslo) return toast.error("Vyplňte e-mail aj heslo.");
+    if (!email.trim() || !heslo) return toast.error(t("app.vyplnteEmailHeslo"));
     setBusy(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -1050,7 +1059,7 @@ function Prihlasenie({
       if (error) throw new Error(error.message);
       onHotovo();
     } catch (e: any) {
-      toast.error(e?.message ?? "Prihlásenie zlyhalo.");
+      toast.error(e?.message ?? t("app.prihlasenieZlyhalo"));
     } finally {
       setBusy(false);
     }
@@ -1072,9 +1081,9 @@ function Prihlasenie({
     >
       <div className="mx-auto w-full max-w-sm">
         <Logo variant="header" className="mb-8 h-9" />
-        <h1 className="text-2xl font-semibold tracking-tight">Prihlásenie</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("app.prihlasenie")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Prihláste sa do svojho účtu vo Faktere.
+          {t("app.prihlasteSa")}
         </p>
 
         <div className="mt-6 space-y-3">
@@ -1084,7 +1093,7 @@ function Prihlasenie({
             autoCapitalize="none"
             autoCorrect="off"
             autoComplete="username"
-            placeholder="E-mail"
+            placeholder={t("app.email")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base"
@@ -1092,7 +1101,7 @@ function Prihlasenie({
           <input
             type="password"
             autoComplete="current-password"
-            placeholder="Heslo"
+            placeholder={t("app.heslo")}
             value={heslo}
             onChange={(e) => setHeslo(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && prihlas()}
@@ -1103,7 +1112,7 @@ function Prihlasenie({
             disabled={busy}
             className="w-full rounded-xl bg-primary px-4 py-3 text-base font-medium text-primary-foreground disabled:opacity-50"
           >
-            {busy ? "Prihlasujem…" : "Prihlásiť sa"}
+            {busy ? t("app.prihlasujem") : t("app.prihlasitSa")}
           </button>
 
           {biometria && (
@@ -1111,7 +1120,7 @@ function Prihlasenie({
               onClick={odomkni}
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-base"
             >
-              <Fingerprint className="h-5 w-5" /> Odomknúť biometriou
+              <Fingerprint className="h-5 w-5" /> {t("app.odomknutBiometriou")}
             </button>
           )}
         </div>
@@ -1120,10 +1129,11 @@ function Prihlasenie({
           onClick={onRegistracia}
           className="mt-6 w-full py-2 text-center text-sm text-muted-foreground"
         >
-          Nemáte účet? <span className="font-medium text-primary">Zaregistrujte sa</span>
+          {t("app.nemateUcet")}{" "}
+          <span className="font-medium text-primary">{t("app.zaregistrujteSa")}</span>
         </button>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          Zabudnuté heslo si obnovíte na faktero.sk.
+          {t("app.zabudnuteHeslo")}
         </p>
       </div>
     </div>
@@ -1133,6 +1143,7 @@ function Prihlasenie({
 /* ------------------------- Zámok ------------------------- */
 
 function Zamok({ onOdomknute, onOdhlasit }: { onOdomknute: () => void; onOdhlasit: () => void }) {
+  const { t } = usePreklad();
   const [busy, setBusy] = useState(false);
 
   async function odomkni() {
@@ -1158,9 +1169,9 @@ function Zamok({ onOdomknute, onOdhlasit }: { onOdomknute: () => void; onOdhlasi
         <Lock className="h-9 w-9" />
       </div>
       <div className="text-center">
-        <p className="text-[17px] font-semibold">Faktero je zamknuté</p>
+        <p className="text-[17px] font-semibold">{t("app.zamknute")}</p>
         <p className="mt-1 text-[14px] text-muted-foreground">
-          Odomknite ho biometriou a pokračujte tam, kde ste skončili.
+          {t("app.odomknitePokracujte")}
         </p>
       </div>
       <button
@@ -1169,10 +1180,10 @@ function Zamok({ onOdomknute, onOdhlasit }: { onOdomknute: () => void; onOdhlasi
         className="w-full max-w-xs rounded-2xl px-4 py-3.5 text-[15px] font-semibold text-primary-foreground disabled:opacity-60"
         style={{ backgroundImage: "var(--brand-gradient)" }}
       >
-        {busy ? "Odomykám…" : "Odomknúť"}
+        {busy ? t("app.odomykam") : t("app.odomknut")}
       </button>
       <button onClick={onOdhlasit} className="text-[14px] text-muted-foreground">
-        Odhlásiť sa
+        {t("panel.odhlasit")}
       </button>
     </div>
   );
@@ -1199,20 +1210,21 @@ function VyberFirmy({
   /** Zoznam sa nenačítal, takže o firmách nevieme nič — zakladať sa nedá. */
   firmaSaNeda?: boolean;
 }) {
+  const { t } = usePreklad();
   return (
-    <MobilObrazovka title="Vyberte firmu" subtitle="Doklady sa uložia do vybranej firmy">
+    <MobilObrazovka title={t("app.vyberteFirmu")} subtitle={t("app.doVybranejFirmy")}>
       {firmy.length === 0 ? (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
             {poznamka ??
-              "K tomuto účtu zatiaľ nepatrí žiadna firma. Bez nej nemajú doklady kam ísť — založte si ju rovno tu."}
+              t("app.bezFirmy")}
           </p>
           {onNovaFirma && !firmaSaNeda && (
             <VelkeTlacidlo
               icon={Plus}
               variant="primary"
-              label="Vytvoriť firmu"
-              hint="Stačí názov, ostatné sa dá doplniť neskôr"
+              label={t("vf.vytvoritFirmu")}
+              hint={t("app.staciNazov")}
               onClick={onNovaFirma}
             />
           )}
@@ -1227,7 +1239,7 @@ function VyberFirmy({
               onClick={onNovaFirma}
               className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border px-4 py-3.5 text-[14px] text-muted-foreground"
             >
-              <Plus className="h-4 w-4" /> Pridať ďalšiu firmu
+              <Plus className="h-4 w-4" /> {t("app.pridatDalsiuFirmu")}
             </button>
           )}
         </div>
@@ -1236,7 +1248,7 @@ function VyberFirmy({
         onClick={onOdhlasit}
         className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground"
       >
-        <LogOut className="h-4 w-4" /> Odhlásiť sa
+        <LogOut className="h-4 w-4" /> {t("panel.odhlasit")}
       </button>
       {onDiagnostika && (
         // Práve tu sa človek zasekne, keď sa zoznam nenačíta — nech má odkiaľ
@@ -1245,7 +1257,7 @@ function VyberFirmy({
           onClick={onDiagnostika}
           className="mt-2 w-full py-2 text-center text-[13px] text-muted-foreground underline"
         >
-          Diagnostika
+          {t("app.diagnostika")}
         </button>
       )}
     </MobilObrazovka>
@@ -1281,7 +1293,7 @@ function Domov({
   onPanel: () => void;
   zrusiSa: string | null;
 }) {
-  const { t } = usePreklad();
+  const { t, mnozne, locale: loc } = usePreklad();
   /*
    * Panel sa otvára aj potiahnutím od ľavého okraja. Na ostatných obrazovkách
    * to isté gesto znamená „späť" — tu späť nie je kam, tak je voľné.
@@ -1335,12 +1347,12 @@ function Domov({
       */}
       <AppHeader
         variant="root"
-        title="Faktúry a doklady"
+        title={t("app.fakturyADoklady")}
         subtitle={firma?.name ?? "Bez firmy"}
         left={
           <button
             onClick={onPanel}
-            aria-label="Nastavenia"
+            aria-label={t("panel.nastavenia")}
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-white/20"
           >
             <Menu className="h-[20px] w-[20px]" />
@@ -1372,7 +1384,9 @@ function Domov({
                   {firma?.name ?? "Bez firmy"}
                 </span>
                 {viacFiriem && (
-                  <span className="shrink-0 text-[12px] text-primary-foreground/80">zmeniť</span>
+                  <span className="shrink-0 text-[12px] text-primary-foreground/80">
+                    {t("ponuky.zmenit")}
+                  </span>
                 )}
               </button>
             </div>
@@ -1399,9 +1413,15 @@ function Domov({
           >
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
             <span className="min-w-0 text-[13px]">
-              Účet je naplánovaný na zrušenie {terminSlovom(zrusiSa)} — o{" "}
-              {sPoctom(dniDoZrusenia(zrusiSa), DNI)}.
-              <span className="block font-medium text-primary">Odvolať žiadosť</span>
+              {t("app.zrusenieNaplanovane", {
+                termin: terminSlovom(zrusiSa, loc),
+                dni: `${dniDoZrusenia(zrusiSa)} ${mnozne(dniDoZrusenia(zrusiSa), {
+                  one: t("spolocne.den1"),
+                  few: t("spolocne.den2"),
+                  other: t("spolocne.den5"),
+                })}`,
+              })}
+              <span className="block font-medium text-primary">{t("app.odvolatZiadost")}</span>
             </span>
           </button>
         )}
@@ -1470,6 +1490,7 @@ function Domov({
 }
 
 function Skupina({ nazov }: { nazov: string }) {
+  const { t } = usePreklad();
   return (
     <p className="px-1 pb-0.5 pt-3 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
       {nazov}
@@ -1479,10 +1500,10 @@ function Skupina({ nazov }: { nazov: string }) {
 
 /* ------------------------- Zachytenie dokladu ------------------------- */
 
-const NAZVY: Record<Zachyt, string> = {
-  blocek: "Bloček s QR kódom",
-  pdf: "Faktúra v PDF",
-  strany: "Viacstranový doklad",
+const NAZVY: Record<Zachyt, Kluc> = {
+  blocek: "app.blocekQr",
+  pdf: "app.fakturaPdf",
+  strany: "app.viacstranovyDoklad",
 };
 
 function ZachytDokladu({
@@ -1502,6 +1523,7 @@ function ZachytDokladu({
   /** QR prečítaný už na úvodnej obrazovke; čítanie sa nespúšťa druhý raz. */
   hotovyQr?: string | null;
 }) {
+  const { t } = usePreklad();
   const nacitaj = useOperacia<BlocekVysledok>("blocek-precitaj");
   const uloz = useOperacia("vydavok-uloz");
 
@@ -1520,7 +1542,7 @@ function ZachytDokladu({
     setUhrada(r.payment_method ?? null);
     if (prilozene) setFoto(prilozene);
     setStav("potvrdenie");
-    if (r.zdroj === "nic") toast.error(r.poznamka ?? "Doklad sa nepodarilo prečítať.");
+    if (r.zdroj === "nic") toast.error(r.poznamka ?? t("app.nepodariloPrecitat"));
   }
 
   /*
@@ -1543,7 +1565,7 @@ function ZachytDokladu({
         prijmi(nedostupnyDoklad(vstup.qr), prilozene);
         return;
       }
-      toast.error(e?.message ?? "Čítanie zlyhalo.");
+      toast.error(e?.message ?? t("app.citanieZlyhalo"));
       setStav("start");
     }
   }
@@ -1606,7 +1628,7 @@ function ZachytDokladu({
     try {
       pdf = await stranyDoPdf(strany);
     } catch (e: any) {
-      toast.error(e?.message ?? "Spojenie strán zlyhalo.");
+      toast.error(e?.message ?? t("app.spojenieStranZlyhalo"));
       setStav("start");
       return;
     }
@@ -1635,13 +1657,13 @@ function ZachytDokladu({
 
     const { isOnline } = await import("@/lib/mobile/offline-queue");
     if (!(await isOnline())) {
-      await odlozDoklad("Bez signálu — doklad sa odošle sám, keď bude pripojenie.");
+      await odlozDoklad(t("app.bezSignaluOdosleSa"));
       return;
     }
 
     try {
       const priloha = foto ? await nahrajPrilohu(firma.id, foto) : null;
-      if (foto && !priloha) toast.error("Prílohu sa nepodarilo nahrať, doklad uložím bez nej.");
+      if (foto && !priloha) toast.error(t("app.prilohaNenahrata"));
       await uloz({
         data: dokladNaZaznam(
           firma.id,
@@ -1651,7 +1673,7 @@ function ZachytDokladu({
           prednastavene?.kategoria ?? null,
         ) as any,
       });
-      toast.success("Doklad uložený");
+      toast.success(t("app.dokladUlozeny"));
       onUlozene();
     } catch (e: any) {
       /*
@@ -1659,17 +1681,17 @@ function ZachytDokladu({
        * ani tu — odloží sa a odošle neskôr; človek už fotí ďalší.
        */
       if (!(await isOnline())) {
-        await odlozDoklad("Spojenie vypadlo — doklad sa odošle sám neskôr.");
+        await odlozDoklad(t("app.spojenieVypadlo"));
         return;
       }
-      toast.error(e?.message ?? "Uloženie zlyhalo.");
+      toast.error(e?.message ?? t("app.ulozenieZlyhalo"));
       setStav("potvrdenie");
     }
   }
 
   if (skenujem) return <QrSkener onNajdene={precitajQr} onZrusit={() => setSkenujem(false)} />;
-  if (stav === "citam") return <Pracujem text="Čítam doklad…" />;
-  if (stav === "ukladam") return <Pracujem text="Ukladám doklad…" />;
+  if (stav === "citam") return <Pracujem text={t("app.citamDoklad")} />;
+  if (stav === "ukladam") return <Pracujem text={t("app.ukladamDoklad")} />;
 
   if (stav === "potvrdenie" && vysledok) {
     return (
@@ -1694,20 +1716,20 @@ function ZachytDokladu({
   }
 
   return (
-    <MobilObrazovka title={NAZVY[druh]} subtitle={firma.name} onBack={onSpat}>
+    <MobilObrazovka title={t(NAZVY[druh])} subtitle={firma.name} onBack={onSpat}>
       {druh === "blocek" && (
         <div className="space-y-3">
           <VelkeTlacidlo
             icon={ScanLine}
-            label="Nasnímať QR kód"
-            hint="Namierte na QR kód na bločku"
+            label={t("app.nasnimatQr")}
+            hint={t("app.namierteNaBlocek")}
             variant="primary"
             onClick={nasnimajQr}
           />
           <VelkeTlacidlo
             icon={Camera}
-            label="Odfotiť celý bloček"
-            hint="QR sa nájde aj na fotke"
+            label={t("app.odfotitBlocek")}
+            hint={t("app.qrNaFotke")}
             onClick={odfotDoklad}
           />
         </div>
@@ -1717,13 +1739,13 @@ function ZachytDokladu({
         <div className="space-y-3">
           <VelkeTlacidlo
             icon={FileText}
-            label="Vybrať súbor"
-            hint="PDF alebo obrázok faktúry"
+            label={t("app.vybratSubor")}
+            hint={t("app.pdfAleboObrazok")}
             variant="primary"
             onClick={vyberPdf}
           />
           <p className="text-xs text-muted-foreground">
-            Z faktúry sa prečíta dodávateľ, dátum, suma aj DPH. Údaje pred uložením skontrolujte.
+            {t("app.zFakturyPrecita")}
           </p>
         </div>
       )}
@@ -1732,8 +1754,8 @@ function ZachytDokladu({
         <div className="space-y-3">
           <VelkeTlacidlo
             icon={Camera}
-            label={strany.length === 0 ? "Odfotiť prvú stranu" : "Pridať ďalšiu stranu"}
-            hint={strany.length > 0 ? `Zatiaľ ${strany.length} strán` : "Doklad odfoťte celý"}
+            label={strany.length === 0 ? t("app.odfotitPrvuStranu") : t("app.pridatDalsiuStranu")}
+            hint={strany.length > 0 ? `Zatiaľ ${strany.length} strán` : t("app.dokladOdfotteCely")}
             variant="primary"
             onClick={pridajStranu}
           />
@@ -1746,7 +1768,7 @@ function ZachytDokladu({
                     <button
                       onClick={() => setStrany((p) => p.filter((_, j) => j !== i))}
                       className="absolute right-1 top-1 rounded-full bg-black/60 px-2 text-xs text-white"
-                      aria-label={`Odstrániť stranu ${i + 1}`}
+                      aria-label={t("app.odstranitStranu", { n: i + 1 })}
                     >
                       ×
                     </button>
@@ -1756,7 +1778,7 @@ function ZachytDokladu({
               <VelkeTlacidlo
                 icon={Check}
                 label={`Hotovo — ${strany.length} strán`}
-                hint="Strany sa spoja do jedného PDF"
+                hint={t("app.stranySaSpoja")}
                 onClick={dokonciStrany}
               />
             </>
@@ -1786,18 +1808,19 @@ function Potvrdenie({
   onUloz: () => void;
   onSpat: () => void;
 }) {
+  const { t } = usePreklad();
   const mena = vysledok.currency ?? "EUR";
   const suma = (n?: number) => (n == null ? "—" : formatovacMeny(mena, "sk-SK")(n));
 
   return (
     <MobilObrazovka
-      title="Skontrolujte doklad"
-      subtitle={vysledok.zdroj === "ekasa" ? "Z Finančnej správy" : "Prečítané z dokladu"}
+      title={t("app.skontrolujteDoklad")}
+      subtitle={vysledok.zdroj === "ekasa" ? t("pd.zFinancnejSpravy") : t("app.precitaneZDokladu")}
       onBack={onSpat}
       footer={
         <HlavneTlacidlo onClick={onUloz} disabled={!uhrada}>
           {uhrada ? (
-            "Uložiť doklad"
+            t("app.ulozitDoklad")
           ) : (
             /*
               Šípka nahor je tu naschvál: tlačidlo drží spodok obrazovky a
@@ -1805,7 +1828,7 @@ function Potvrdenie({
               číta „vyberte spôsob úhrady" a nevie kde.
             */
             <span className="inline-flex items-center gap-1.5">
-              <ArrowUp className="h-4 w-4" /> Vyberte spôsob úhrady
+              <ArrowUp className="h-4 w-4" /> {t("app.vyberteUhradu")}
             </span>
           )}
         </HlavneTlacidlo>
@@ -1817,12 +1840,12 @@ function Potvrdenie({
             {suma(vysledok.total)}
           </div>
           <div className="mt-2 text-[14px] text-muted-foreground">
-            {vysledok.supplier ?? "Neznámy predajca"}
+            {vysledok.supplier ?? t("app.neznamyPredajca")}
             {vysledok.date ? ` · ${datum(vysledok.date)}` : ""}
           </div>
           {vysledok.vat_amount != null && (
             <div className="mt-2 text-xs text-muted-foreground">
-              z toho DPH {suma(vysledok.vat_amount)}
+              {t("app.zTohoDph", { suma: suma(vysledok.vat_amount) })}
               {vysledok.vat_breakdown?.length
                 ? ` (${vysledok.vat_breakdown.map((s) => `${s.sadzba} %`).join(" + ")})`
                 : ""}
@@ -1854,7 +1877,7 @@ function Potvrdenie({
             Ako ste platili?
             {!uhrada && (
               <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
-                Povinné
+                {t("app.povinne")}
               </span>
             )}
             {vysledok.payment_method && (
@@ -1865,7 +1888,7 @@ function Potvrdenie({
           </div>
           {!uhrada && (
             <p className="mb-2 text-xs text-primary">
-              Vyberte jednu z možností — bez nej sa doklad uložiť nedá.
+              {t("app.vyberteMoznost")}
             </p>
           )}
           <div className="grid grid-cols-3 gap-2">
@@ -1893,19 +1916,19 @@ function Potvrdenie({
           </div>
           {uhrada === "hotovost" && (
             <p className="mt-1.5 text-xs text-muted-foreground">
-              Hotovostný doklad uberie zo stavu pokladne.
+              {t("app.hotovostnyDoklad")}
             </p>
           )}
         </div>
 
         <div>
-          <div className="mb-2 text-sm font-medium">Fotka dokladu</div>
+          <div className="mb-2 text-sm font-medium">{t("app.fotkaDokladu")}</div>
           {foto ? (
             <div className="space-y-2">
               <div className="overflow-hidden rounded-xl border border-border">
                 {foto.startsWith("data:application/pdf") ? (
                   <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-                    <FileText className="h-5 w-5" /> Priložené PDF
+                    <FileText className="h-5 w-5" /> {t("app.prilozenePdf")}
                   </div>
                 ) : (
                   <img src={foto} alt="doklad" className="max-h-56 w-full object-contain" />
@@ -1915,14 +1938,14 @@ function Potvrdenie({
                 onClick={onOdfotit}
                 className="w-full rounded-xl border border-border px-4 py-2.5 text-sm"
               >
-                Odfotiť znova
+                {t("app.odfotitZnova")}
               </button>
             </div>
           ) : (
             <VelkeTlacidlo
               icon={Camera}
-              label="Odfotiť doklad"
-              hint="Papierový doklad si treba odložiť aj tak — fotka ho nahradí"
+              label={t("app.odfotitDoklad")}
+              hint={t("app.papierovyDoklad")}
               onClick={onOdfotit}
             />
           )}

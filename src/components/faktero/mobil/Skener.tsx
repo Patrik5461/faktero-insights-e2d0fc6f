@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Camera, Files, FileText, Image as ImageIcon, Receipt } from "lucide-react";
 import { useKameraQr } from "./KameraQr";
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
   KATEGORIE_VYDAVKOV,
   poslednaKategoria,
@@ -38,6 +39,7 @@ export function Skener({
   nastavenie: NastavenieDokladu;
   onNastavenie: (n: NastavenieDokladu) => void;
 }) {
+  const { t } = usePreklad();
   /*
     Kamera beží len vtedy, keď je appka vpredu. Bez toho by po prepnutí do inej
     aplikácie ostal prúd otvorený — na iPhone svieti kontrolka kamery a batéria
@@ -87,16 +89,16 @@ export function Skener({
           style={{ border: "2px solid rgba(255,255,255,0.85)" }}
         />
         <p className="mt-4 text-[15px] font-medium text-white drop-shadow">
-          Naskenujte QR kód bločku
+          {t("sken.naskenujte")}
         </p>
-        <p className="mt-1 text-[13px] text-white/80 drop-shadow">alebo odfoťte doklad</p>
+        <p className="mt-1 text-[13px] text-white/80 drop-shadow">{t("sken.aleboOdfotte")}</p>
       </div>
 
       {chyba && (
         <div className="absolute inset-x-4 top-[12vh] rounded-2xl bg-card/95 p-4 text-[13px] shadow-lg">
           <p>{chyba}</p>
           <p className="mt-1 text-muted-foreground">
-            Doklad sa dá aj tak odfotiť alebo vybrať zo súborov — tlačidlá nižšie fungujú.
+            {t("sken.kameraNejde")}
           </p>
         </div>
       )}
@@ -114,24 +116,24 @@ export function Skener({
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[15px] font-semibold text-primary-foreground active:scale-[0.99]"
             style={{ backgroundImage: "var(--brand-gradient)" }}
           >
-            <Camera className="h-[18px] w-[18px]" /> Odfotiť
+            <Camera className="h-[18px] w-[18px]" /> {t("sken.odfotit")}
           </button>
           <button
             onClick={onZGalerie}
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-border/70 px-4 py-3 text-[15px] font-medium active:bg-secondary"
           >
-            <ImageIcon className="h-[18px] w-[18px]" /> Z galérie
+            <ImageIcon className="h-[18px] w-[18px]" /> {t("sken.zGalerie")}
           </button>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-3">
           <div>
-            <span className="mb-1 block text-[12px] font-medium text-muted-foreground">Úhrada</span>
+            <span className="mb-1 block text-[12px] font-medium text-muted-foreground">{t("sken.uhrada")}</span>
             <div className="flex overflow-hidden rounded-xl border border-border/70">
               {(
                 [
-                  ["hotovost", "Hotovosť"],
-                  ["karta", "Karta"],
+                  ["hotovost", t("pd.hotovost")],
+                  ["karta", t("sken.karta")],
                 ] as const
               ).map(([kod, label]) => (
                 <button
@@ -151,14 +153,14 @@ export function Skener({
           </div>
           <label className="block">
             <span className="mb-1 block text-[12px] font-medium text-muted-foreground">
-              Kategória nákladu
+              {t("sken.kategoria")}
             </span>
             <select
               value={nastavenie.kategoria}
               onChange={(e) => nastav({ kategoria: e.target.value })}
               className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[15px]"
             >
-              <option value="">Nezaradené</option>
+              <option value="">{t("sken.nezaradene")}</option>
               {KATEGORIE_VYDAVKOV.map((k) => (
                 <option key={k.kod} value={k.kod}>
                   {k.nazov}
@@ -174,9 +176,9 @@ export function Skener({
           dostať doklad do Faktera.
         */}
         <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/70 pt-3">
-          <MalyOdkaz icon={FileText} label="PDF súbor" onClick={onZGalerie} />
-          <MalyOdkaz icon={Files} label="Viacstranový" onClick={onViacstranovy} />
-          <MalyOdkaz icon={Receipt} label="Prijaté doklady" onClick={onPrijateDoklady} />
+          <MalyOdkaz icon={FileText} label={t("sken.pdfSubor")} onClick={onZGalerie} />
+          <MalyOdkaz icon={Files} label={t("sken.viacstranovy")} onClick={onViacstranovy} />
+          <MalyOdkaz icon={Receipt} label={t("pd.nazov")} onClick={onPrijateDoklady} />
         </div>
       </div>
     </div>

@@ -45,6 +45,7 @@ import { HlavneTlacidlo, MobilObrazovka, Pracujem } from "./MobilChrome";
 import { PrebiehaJazda } from "./PrebiehaJazda";
 import { HistoriaJazd } from "./HistoriaJazd";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 /**
  * Záznam jazdy v telefóne.
  *
@@ -72,6 +73,7 @@ export function Jazda({
   firma: { id: string; name: string };
   onSpat: () => void;
 }) {
+  const { t, locale: loc } = usePreklad();
   const [vozidla, setVozidla] = useState<Vozidlo[] | null>(null);
   /** Zoznam vozidiel sa nedal zistiť — nie je signál a v telefóne nič nie je. */
   const [nezistene, setNezistene] = useState(false);
@@ -241,8 +243,8 @@ export function Jazda({
         if (pocet > 0) {
           toast.success(
             pocet === 1
-              ? "Jazda zapísaná bez signálu je odoslaná"
-              : `Odoslaných ${pocet} jázd zapísaných bez signálu`,
+              ? t("jz.bezSignaluOdoslana")
+              : t("jz.odoslanychJazd", { pocet }),
           );
         }
       })
@@ -278,9 +280,10 @@ export function Jazda({
           });
           if (r.ok) {
             toast.success(
-              `Rozpoznaná jazda uložená — ${(jazda.distanceMeters / 1000).toFixed(1)} km, ${
-                vozidla.find((v) => v.id === auto)?.name ?? ""
-              }`,
+              t("jz.rozpoznanaUlozena", {
+                km: (jazda.distanceMeters / 1000).toFixed(1),
+                auto: vozidla.find((v) => v.id === auto)?.name ?? "",
+              }),
             );
             continue;
           }
@@ -301,7 +304,7 @@ export function Jazda({
 
   async function vybav(jazda: BufferedTrip, classification: Classification) {
     const vehicleId = autoPre(jazda);
-    if (!vehicleId) return toast.error("Vyberte vozidlo.");
+    if (!vehicleId) return toast.error(t("jz.vyberteVozidlo"));
     setVybavujem(jazda.id);
     const r = await ulozRozpoznanuJazdu({
       jazda,
@@ -310,11 +313,11 @@ export function Jazda({
       classification,
     });
     setVybavujem(null);
-    if (!r.ok) return toast.error(r.chyba ?? "Jazdu sa nepodarilo uložiť.");
+    if (!r.ok) return toast.error(r.chyba ?? t("jz.chybaUlozenia"));
     setCakajuce((z) => z.filter((j) => j.id !== jazda.id));
     const vozidlo = vozidla?.find((v) => v.id === vehicleId);
     toast.success(
-      `${classification === "business" ? "Uložené ako služobná" : "Uložené ako súkromná"}${
+      `${classification === "business" ? t("jz.ulozeneSluzobna") : t("jz.ulozeneSukromna")}${
         vozidlo ? ` — ${vozidlo.name}` : ""
       }`,
     );
@@ -335,9 +338,9 @@ export function Jazda({
   }, [bezi]);
 
   async function start() {
-    if (!vozidloId) return toast.error("Vyberte vozidlo.");
+    if (!vozidloId) return toast.error(t("jz.vyberteVozidlo"));
     const r = await startTracking();
-    if (!r.ok) return toast.error(r.error ?? "GPS sa nepodarilo spustiť.");
+    if (!r.ok) return toast.error(r.error ?? t("jz.chybaGps"));
     setKm(0);
     setOdkedy(Date.now());
     setBezi(true);
@@ -353,7 +356,7 @@ export function Jazda({
   async function prepniPauzu() {
     if (pauza) {
       const r = await resumeTracking();
-      if (!r.ok) return toast.error(r.error ?? "V meraní sa nepodarilo pokračovať.");
+      if (!r.ok) return toast.error(r.error ?? t("jz.chybaPokracovania"));
       setPauza(false);
       setBezi(true);
       return;
@@ -377,7 +380,7 @@ export function Jazda({
       setKm(0);
       setOdkedy(null);
       toast.error(
-        `Nenamerali sme žiadnu polohu, jazdu som neuložil. Skúste to vonku — v budove je poloha nepresná — a polohu povoľte na „Vždy“.`,
+        t("jz.bezPolohy"),
         { duration: 8000 },
       );
       return;
@@ -449,26 +452,26 @@ export function Jazda({
           chyba: error.message,
         });
         toast.success(
-          `Jazda uložená v telefóne — ${vysledok.distance_km} km. Odošle sa po pripojení.`,
+          t("jz.ulozenaVTelefone", { km: vysledok.distance_km }),
           { duration: 6000 },
         );
       } else {
         toast.success(
-          `Jazda uložená — ${vysledok.distance_km} km${vozidlo ? `, ${vozidlo.name}` : ""}`,
+          `${t("jz.ulozenaKm", { km: vysledok.distance_km })}${vozidlo ? `, ${vozidlo.name}` : ""}`,
         );
       }
       setUcel("");
       setKm(0);
       setOdkedy(null);
     } catch (e: any) {
-      toast.error(e?.message ?? "Jazdu sa nepodarilo uložiť.");
+      toast.error(e?.message ?? t("jz.chybaUlozenia"));
     } finally {
       setUkladam(false);
     }
   }
 
-  if (vozidla === null) return <Pracujem text="Načítavam vozidlá…" />;
-  if (ukladam) return <Pracujem text="Ukladám jazdu…" />;
+  if (vozidla === null) return <Pracujem text={t("jz.nacitavamVozidla")} />;
+  if (ukladam) return <Pracujem text={t("jz.ukladamJazdu")} />;
 
   if (historia) {
     return <HistoriaJazd firma={firma} vozidlo={historia} onSpat={() => setHistoria(null)} />;
@@ -490,20 +493,20 @@ export function Jazda({
   if (vozidla.length === 0) {
     return (
       <MobilObrazovka
-        title="Jazda"
+        title={t("jazdy.jazda")}
         subtitle={firma.name}
         onBack={onSpat}
-        footer={<HlavneTlacidlo onClick={() => setPridavam(true)}>Pridať vozidlo</HlavneTlacidlo>}
+        footer={<HlavneTlacidlo onClick={() => setPridavam(true)}>{t("jz.pridatVozidlo")}</HlavneTlacidlo>}
       >
         <div className="grid place-items-center py-16 text-center">
           <Car className="mb-3 h-10 w-10 text-muted-foreground/50" />
           <p className="text-sm font-medium">
-            {nezistene ? "Bez pripojenia sa vozidlá nedajú načítať" : "Firma nemá žiadne vozidlo"}
+            {nezistene ? t("jz.bezPripojenia") : t("jz.bezVozidla")}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {nezistene
-              ? "V telefóne zatiaľ nie je uložený zoznam. Otvorte túto obrazovku raz s internetom."
-              : "Pridajte ho tu — stačí názov a značka, zvyšok sa dá doplniť na webe."}
+              ? t("jz.bezZoznamu")
+              : t("jz.pridajteHo")}
           </p>
         </div>
       </MobilObrazovka>
@@ -512,7 +515,7 @@ export function Jazda({
 
   return (
     <MobilObrazovka
-      title={bezi ? "Jazda beží" : pauza ? "Jazda pozastavená" : "Nová jazda"}
+      title={bezi ? t("jz.jazdaBezi") : pauza ? t("jz.jazdaPozastavena") : t("jz.novaJazda")}
       subtitle={firma.name}
       /*
         Odísť sa dá aj počas jazdy. Meranie vlastní modul, nie táto obrazovka,
@@ -523,9 +526,9 @@ export function Jazda({
       onBack={onSpat}
       footer={
         bezi || pauza ? (
-          <HlavneTlacidlo onClick={stop}>Ukončiť a uložiť jazdu</HlavneTlacidlo>
+          <HlavneTlacidlo onClick={stop}>{t("jz.ukoncitAUlozit")}</HlavneTlacidlo>
         ) : (
-          <HlavneTlacidlo onClick={start}>Začať jazdu</HlavneTlacidlo>
+          <HlavneTlacidlo onClick={start}>{t("jz.zacatJazdu")}</HlavneTlacidlo>
         )
       }
     >
@@ -551,10 +554,10 @@ export function Jazda({
             </div>
             <div className="mt-1.5 text-[12px] text-muted-foreground">
               {pauza
-                ? "pozastavené — pohyb sa nezapočítava"
+                ? t("jz.pozastavene")
                 : bezi && odkedy
                   ? `beží ${trvanie(odkedy)}`
-                  : "meranie zatiaľ nebeží"}
+                  : t("jz.meranieNebezi")}
             </div>
           </div>
 
@@ -568,7 +571,7 @@ export function Jazda({
           {bezi || pauza ? (
             <button
               onClick={prepniPauzu}
-              aria-label={bezi ? "Pozastaviť meranie" : "Pokračovať v meraní"}
+              aria-label={bezi ? t("jz.pozastavitMeranie") : t("jz.pokracovatVMerani")}
               className={`grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full transition active:scale-95 ${
                 bezi ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
               }`}
@@ -586,7 +589,7 @@ export function Jazda({
         </div>
         {(bezi || pauza) && (
           <p className="text-[12px] text-muted-foreground">
-            {bezi ? "Ťuknutím na kruh pozastavíte meranie" : "Ťuknutím na kruh budete pokračovať"}
+            {bezi ? t("jz.tuknutimPozastavite") : t("jz.tuknutimPokracujete")}
           </p>
         )}
 
@@ -598,18 +601,18 @@ export function Jazda({
         {rozpoznana && !rozpoznana.rucna && (
           <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-medium text-primary">Prebieha rozpoznaná jazda</span>
+              <span className="text-sm font-medium text-primary">{t("jz.rozpoznanaBezi")}</span>
               <span className="text-[17px] font-semibold tabular-nums">
                 {rozpoznana.km.toFixed(1)} km
               </span>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Od{" "}
-              {new Date(rozpoznana.zaciatok).toLocaleTimeString("sk-SK", {
-                hour: "2-digit",
-                minute: "2-digit",
+              {t("jz.odCasu", {
+                cas: new Date(rozpoznana.zaciatok).toLocaleTimeString(loc, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
               })}
-              . Keď ste dojazdili, ukončite ju — inak sa zastaví sama až po piatich minútach státia.
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button
@@ -621,31 +624,31 @@ export function Jazda({
                     setRozpoznana(null);
                     // Ukončená jazda sa hneď ponúkne na zaradenie nižšie.
                     if (j) setCakajuce((xs) => (xs.some((x) => x.id === j.id) ? xs : [...xs, j]));
-                    toast.success("Jazda ukončená — zaraďte ju nižšie.");
+                    toast.success(t("jz.ukoncena"));
                   } finally {
                     setUkoncujem(false);
                   }
                 }}
                 className="rounded-xl bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground active:scale-95 disabled:opacity-60"
               >
-                {ukoncujem ? "Ukončujem…" : "Ukončiť jazdu"}
+                {ukoncujem ? t("jz.ukoncujem") : t("jz.ukoncitJazdu")}
               </button>
               <button
                 disabled={ukoncujem}
                 onClick={async () => {
-                  if (!window.confirm("Zahodiť túto jazdu? Do knihy jázd sa nezapíše.")) return;
+                  if (!window.confirm(t("jz.zahoditOtazka"))) return;
                   setUkoncujem(true);
                   try {
                     await zahodRozpoznanuJazdu(rozpoznana.id);
                     setRozpoznana(null);
-                    toast.success("Jazda zahodená.");
+                    toast.success(t("jz.zahodena"));
                   } finally {
                     setUkoncujem(false);
                   }
                 }}
                 className="rounded-xl border border-border px-3 py-2.5 text-sm active:scale-95 disabled:opacity-60"
               >
-                Zahodiť
+                {t("jz.zahodit")}
               </button>
             </div>
           </div>
@@ -654,10 +657,12 @@ export function Jazda({
         {cakajuce.length > 0 && (
           <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
             <div className="text-sm font-medium">
-              Appka rozpoznala {cakajuce.length === 1 ? "jazdu" : `jazdy (${cakajuce.length})`}
+              {cakajuce.length === 1
+                ? t("jz.rozpoznalaJazdu")
+                : t("jz.rozpoznalaJazdy", { pocet: cakajuce.length })}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Telefón nevie, do ktorého auta ste sadli — skontrolujte ho pri každej jazde.
+              {t("jz.telefonNevie")}
             </p>
             <div className="mt-3 space-y-2">
               {cakajuce.map((j) => (
@@ -680,7 +685,7 @@ export function Jazda({
                     value={autoPre(j)}
                     disabled={vybavujem === j.id}
                     onChange={(e) => setVyberAuta((v) => ({ ...v, [j.id]: e.target.value }))}
-                    aria-label="Vozidlo pre rozpoznanú jazdu"
+                    aria-label={t("jz.vozidloPreJazdu")}
                     className="mt-2 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px] disabled:opacity-60"
                   >
                     {(vozidla ?? []).map((v) => (
@@ -695,7 +700,7 @@ export function Jazda({
                     onClick={() => setTrasaOtvorena((t) => (t === j.id ? null : j.id))}
                     className="mt-2 text-[13px] text-primary underline-offset-2 hover:underline"
                   >
-                    {trasaOtvorena === j.id ? "Skryť trasu" : "Ukázať trasu"}
+                    {trasaOtvorena === j.id ? t("jz.skrytTrasu") : t("jz.ukazatTrasu")}
                   </button>
                   {trasaOtvorena === j.id && (
                     <div className="mt-2">
@@ -707,21 +712,21 @@ export function Jazda({
                     // Zaradenie prišlo z notifikácie, ostáva potvrdiť auto.
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span className="rounded-full bg-muted px-2 py-1 text-[13px]">
-                        {j.classification === "business" ? "Služobná" : "Súkromná"}
+                        {t(j.classification === "business" ? "jazdy.sluzobna" : "jazdy.sukromna")}
                       </span>
                       <button
                         disabled={vybavujem === j.id}
                         onClick={() => vybav(j, j.classification!)}
                         className="rounded-lg bg-primary px-3 py-2 text-[14px] font-medium text-primary-foreground disabled:opacity-60"
                       >
-                        Uložiť
+                        {t("spolocne.ulozit")}
                       </button>
                       <button
                         disabled={vybavujem === j.id}
                         onClick={() => zahod(j)}
                         className="ml-auto rounded-lg px-3 py-2 text-[14px] text-muted-foreground disabled:opacity-60"
                       >
-                        Zahodiť
+                        {t("jz.zahodit")}
                       </button>
                     </div>
                   ) : (
@@ -731,21 +736,21 @@ export function Jazda({
                         onClick={() => vybav(j, "business")}
                         className="rounded-lg bg-primary px-3 py-2 text-[14px] font-medium text-primary-foreground disabled:opacity-60"
                       >
-                        Služobná
+                        {t("jazdy.sluzobna")}
                       </button>
                       <button
                         disabled={vybavujem === j.id}
                         onClick={() => vybav(j, "private")}
                         className="rounded-lg border border-border px-3 py-2 text-[14px] disabled:opacity-60"
                       >
-                        Súkromná
+                        {t("jazdy.sukromna")}
                       </button>
                       <button
                         disabled={vybavujem === j.id}
                         onClick={() => zahod(j)}
                         className="ml-auto rounded-lg px-3 py-2 text-[14px] text-muted-foreground disabled:opacity-60"
                       >
-                        Zahodiť
+                        {t("jz.zahodit")}
                       </button>
                     </div>
                   )}
@@ -765,13 +770,13 @@ export function Jazda({
           <div className="rounded-2xl border border-border/70 bg-card p-4">
             <div className="flex items-center gap-3">
               <label htmlFor="detekcia-jazd" className="min-w-0 flex-1 text-sm font-medium">
-                Rozpoznávať jazdy automaticky
+                {t("jz.rozpoznavat")}
               </label>
               <button
                 type="button"
                 onClick={() => setPopisDetekcie((v) => !v)}
                 aria-expanded={popisDetekcie}
-                aria-label="Ako rozpoznávanie funguje"
+                aria-label={t("jz.akoFunguje")}
                 className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-border text-[12px] font-medium text-muted-foreground active:bg-secondary"
               >
                 ?
@@ -793,24 +798,24 @@ export function Jazda({
                   // z toho by znamenalo, že sa človek o chybe dozvie až tým, že
                   // po týždni nemá v knihe jázd ani jednu jazdu.
                   else if (r.prekazka) toast.warning(r.prekazka, { duration: 10000 });
-                  else if (r.zapnuta) toast.success("Detekcia jázd je zapnutá");
+                  else if (r.zapnuta) toast.success(t("jz.detekciaZapnuta"));
                 }}
                 className="h-5 w-5 shrink-0"
               />
             </div>
 
-            <p className="mt-1 text-xs text-muted-foreground">Vyžaduje polohu „Vždy".</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("jz.vyzadujePolohu")}</p>
 
             {vozidloId && commander.has(vozidloId) && (
               <p className="mt-1 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">Jazdy tohto auta ťahá Commander</span>
-                , takže ich telefón merať nemusí — vyber iné auto, alebo nechaj detekciu vypnutú.
+                <span className="font-medium text-foreground">{t("jz.commander")}</span>
+                {t("jz.commanderZvysok")}
               </p>
             )}
 
             {popisDetekcie && (
               <p className="mt-2 text-xs text-muted-foreground">
-                Appka si jazdu všimne sama a spýta sa notifikáciou, či bola služobná.
+                {t("jz.vsimneSi")}
                 {vozidla && vozidla.length > 1 && vozidloId ? (
                   <>
                     {" "}
@@ -836,7 +841,7 @@ export function Jazda({
           <div className="flex items-start gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div className="min-w-0">
-              <div className="text-sm font-medium">Detekcia je zapnutá, ale nemá ako bežať</div>
+              <div className="text-sm font-medium">{t("jz.detekciaNemaAkoBezat")}</div>
               <div className="mt-1 text-xs text-muted-foreground">{detekcia.prekazka}</div>
             </div>
           </div>
@@ -846,7 +851,7 @@ export function Jazda({
           {/* Rovnaký štýl ako „Účel cesty" a „Typ jazdy" — predtým bol väčší
               a s väčším odstupom, takže sekcie pôsobili ako tri rôzne veci. */}
           <span className="mb-1.5 block text-[13px] font-medium text-muted-foreground">
-            Vozidlo
+            {t("jz.vozidlo")}
           </span>
           <div className="space-y-1.5">
             {vozidla.map((v) => (
@@ -893,10 +898,10 @@ export function Jazda({
                 </button>
                 <button
                   onClick={() => setHistoria(v)}
-                  aria-label={`História jázd — ${v.name}`}
+                  aria-label={t("jz.historiaVozidla", { auto: v.name })}
                   className="flex shrink-0 items-center gap-0.5 self-stretch rounded-r-2xl px-3 text-[13px] text-muted-foreground active:bg-secondary"
                 >
-                  história
+                  {t("jz.historia")}
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
@@ -907,19 +912,19 @@ export function Jazda({
               className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border px-4 py-3 text-left text-muted-foreground disabled:opacity-60"
             >
               <Plus className="h-4 w-4 shrink-0" />
-              <span className="text-[15px]">Pridať vozidlo</span>
+              <span className="text-[15px]">{t("jz.pridatVozidlo")}</span>
             </button>
           </div>
         </div>
 
         <label className="block">
           <span className="mb-1.5 block text-[13px] font-medium text-muted-foreground">
-            Účel cesty
+            {t("jz.ucelCesty")}
           </span>
           <input
             value={ucel}
             onChange={(e) => setUcel(e.target.value)}
-            placeholder="napr. servis u odberateľa"
+            placeholder={t("jz.ucelPriklad")}
             disabled={bezi}
             className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px] disabled:opacity-60"
           />
@@ -930,29 +935,27 @@ export function Jazda({
             v databáze. Prepnúť sa dá aj počas jazdy — človek to často vie až cestou. */}
         <div>
           <span className="mb-1.5 block text-[13px] font-medium text-muted-foreground">
-            Typ jazdy
+            {t("jz.typJazdy")}
           </span>
           <div className="grid grid-cols-2 gap-2">
-            {(["business", "private"] as const).map((t) => (
+            {(["business", "private"] as const).map((typ) => (
               <button
-                key={t}
-                onClick={() => setTypJazdy(t)}
+                key={typ}
+                onClick={() => setTypJazdy(typ)}
                 className={`rounded-xl border px-3 py-2.5 text-[15px] ${
-                  typJazdy === t
+                  typJazdy === typ
                     ? "border-primary bg-primary/10 font-semibold text-primary"
                     : "border-input bg-background text-muted-foreground"
                 }`}
               >
-                {t === "business" ? "Služobná" : "Súkromná"}
+                {t(typ === "business" ? "jazdy.sluzobna" : "jazdy.sukromna")}
               </button>
             ))}
           </div>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Ak ste polohu povolili len „počas používania", nechajte appku otvorenú — po zhasnutí
-          displeja telefón meranie zastaví a kilometre by sa doratali nesprávne. S povolením „Vždy"
-          beží meranie aj vo vrecku.
+          {t("jz.lenPocasPouzivania")}
         </p>
       </div>
     </MobilObrazovka>
@@ -980,13 +983,14 @@ function NoveVozidlo({
   onSpat: () => void;
   onPridane: (id: string) => void;
 }) {
+  const { t } = usePreklad();
   const [nazov, setNazov] = useState("");
   const [spz, setSpz] = useState("");
   const [spotreba, setSpotreba] = useState("");
   const [ukladam, setUkladam] = useState(false);
 
   async function uloz() {
-    if (!nazov.trim()) return toast.error("Zadajte názov vozidla.");
+    if (!nazov.trim()) return toast.error(t("jz.zadajteNazovVozidla"));
     setUkladam(true);
     const cislo = Number(spotreba.replace(",", "."));
     // Bez siete zápis vyhodí; nezachytené by to nechalo tlačidlo navždy v
@@ -1009,38 +1013,38 @@ function NoveVozidlo({
     setUkladam(false);
     if (error || !data) {
       // Vozidlo smie zakladať len správca firmy — bežnému členovi to odmietne RLS.
-      return toast.error(friendlyError(error, "Vozidlo sa nepodarilo pridať."));
+      return toast.error(friendlyError(error, t("jz.chybaVozidla")));
     }
-    toast.success("Vozidlo pridané");
+    toast.success(t("jz.vozidloPridane"));
     onPridane(data.id);
   }
 
-  if (ukladam) return <Pracujem text="Ukladám vozidlo…" />;
+  if (ukladam) return <Pracujem text={t("jz.ukladamVozidlo")} />;
 
   return (
     <MobilObrazovka
-      title="Nové vozidlo"
+      title={t("jz.noveVozidlo")}
       subtitle={firma.name}
       onBack={onSpat}
       footer={
         <HlavneTlacidlo onClick={uloz} disabled={!nazov.trim()}>
-          Pridať vozidlo
+          {t("jz.pridatVozidlo")}
         </HlavneTlacidlo>
       }
     >
       <div className="space-y-3">
         <label className="block">
-          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">Názov</span>
+          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">{t("jz.nazovVozidla")}</span>
           <input
             value={nazov}
             onChange={(e) => setNazov(e.target.value)}
-            placeholder="napr. Škoda Octavia"
+            placeholder={t("jz.nazovVozidlaPriklad")}
             className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
           />
         </label>
         <label className="block">
           <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
-            Evidenčné číslo
+            {t("jz.evidencneCislo")}
           </span>
           <input
             value={spz}
@@ -1052,17 +1056,17 @@ function NoveVozidlo({
         </label>
         <label className="block">
           <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
-            Spotreba (l/100 km)
+            {t("jz.spotreba")}
           </span>
           <input
             value={spotreba}
             onChange={(e) => setSpotreba(e.target.value)}
             inputMode="decimal"
-            placeholder="napr. 6,5"
+            placeholder={t("jz.spotrebaPriklad")}
             className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
           />
           <span className="mt-1 block text-[12px] text-muted-foreground">
-            Nepovinné, ale bez nej vyjde náklad na jazdu nula.
+            {t("jz.nepovinneCena")}
           </span>
         </label>
       </div>

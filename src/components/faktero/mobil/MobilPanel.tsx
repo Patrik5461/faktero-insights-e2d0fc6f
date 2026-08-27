@@ -99,12 +99,12 @@ export function MobilPanel({
       if (biometriaZapnuta) {
         await disableBiometric();
         setBiometriaZapnuta(false);
-        toast.success("Rýchle prihlásenie vypnuté");
+        toast.success(t("panel.rychleVypnute"));
       } else {
         const r = await enableBiometric();
-        if (!r.ok) throw new Error(r.error ?? "Nepodarilo sa zapnúť");
+        if (!r.ok) throw new Error(r.error ?? t("panel.nepodariloZapnut"));
         setBiometriaZapnuta(true);
-        toast.success("Rýchle prihlásenie zapnuté");
+        toast.success(t("panel.rychleZapnute"));
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Zmena zlyhala");
@@ -130,7 +130,7 @@ export function MobilPanel({
 
       <aside
         role="dialog"
-        aria-label="Panel nastavení"
+        aria-label={t("panel.nadpis")}
         onTouchStart={(e) => {
           start.current = e.touches[0]?.clientX ?? null;
           setPusta(false);
@@ -154,7 +154,7 @@ export function MobilPanel({
       >
         <AppHeader
           title={email ?? "—"}
-          subtitle="Prihlásený ako"
+          subtitle={t("panel.prihlasenyAko")}
           right={
             <button
               onClick={onZavri}
@@ -191,7 +191,7 @@ export function MobilPanel({
           {viacFiriem && (
             <Polozka
               icon={Building2}
-              label="Zmeniť firmu"
+              label={t("panel.zmenitFirmu")}
               onClick={() => {
                 onZavri();
                 onZmenitFirmu();
@@ -236,9 +236,9 @@ export function MobilPanel({
                 <Fingerprint className="h-[18px] w-[18px]" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-medium">Prihlásenie biometriou</span>
+                <span className="block text-[15px] font-medium">{t("panel.biometria")}</span>
                 <span className="block text-[13px] text-muted-foreground">
-                  {biometriaZapnuta ? "Pýta sa pri spustení appky" : "Vypnuté"}
+                  {biometriaZapnuta ? t("panel.biometriaZapnuta") : t("panel.biometriaVypnuta")}
                 </span>
               </span>
               {/* Prepínač: stav musí byť vidieť na prvý pohľad, nie až po ťuknutí. */}
@@ -256,7 +256,7 @@ export function MobilPanel({
             </button>
           ) : (
             <p className="px-3 py-2 text-[13px] text-muted-foreground">
-              Biometria na tomto zariadení nie je dostupná.
+              {t("panel.biometriaNedostupna")}
             </p>
           )}
 
@@ -268,8 +268,8 @@ export function MobilPanel({
           {onPrehlad && (
             <Polozka
               icon={LayoutGrid}
-              label="Prehľad agend"
-              hint="Všetko, čo appka vie, na jednej obrazovke"
+              label={t("panel.prehladAgend")}
+              hint={t("panel.vsetkoNaJednej")}
               /* Zatvoriť treba rovnako ako pri ostatných položkách. Bez toho
                  ostal panel otvorený nad obrazovkou, na ktorú človek práve
                  ťukol — a vyzeralo to, že sa nestalo nič. */
@@ -291,33 +291,33 @@ export function MobilPanel({
           */}
           <Polozka
             icon={Stethoscope}
-            label="Nastavenie aplikácie"
-            hint="Účet a jeho zrušenie, pamäť, pripojenie, verzia"
+            label={t("panel.nastavenieAplikacie")}
+            hint={t("panel.ucetPamat")}
             onClick={onUcet}
           />
           <Polozka
             icon={BookOpen}
-            label="Návody k Fakteru"
-            hint="Otvorí sa v prehliadači"
+            label={t("panel.navody")}
+            hint={t("panel.otvoriVPrehliadaci")}
             onClick={() => otvorNaWebe("/pomoc")}
           />
           <Polozka
             icon={Receipt}
-            label="Bločky a pokladňa"
-            hint="Ako sa čítajú doklady z eKasy"
+            label={t("panel.blocky")}
+            hint={t("panel.ekasaPopis")}
             onClick={() => otvorNaWebe("/pomoc/pokladna")}
           />
           {/* Nahlásiť sa dá aj z telefónu — chyba sa nájde najčastejšie tam. */}
           <Polozka
             icon={Bug}
-            label="Nahlásiť chybu alebo návrh"
-            hint="Napíšte nám, čo nefunguje alebo čo by pomohlo"
+            label={t("panel.nahlasitChybu")}
+            hint={t("panel.napisteNam")}
             onClick={() => setNahlasenie(true)}
           />
           <Polozka
             icon={Globe}
-            label="Otvoriť Faktero na webe"
-            hint="Faktúry, sklad a zvyšok aplikácie"
+            label={t("panel.otvoritNaWebe")}
+            hint={t("panel.zvysokAplikacie")}
             onClick={() => otvorNaWebe("/dashboard")}
           />
 
@@ -329,8 +329,8 @@ export function MobilPanel({
           */}
           <Polozka
             icon={ShieldCheck}
-            label="Právne dokumenty"
-            hint="Podmienky, ochrana údajov a ostatné — otvorí sa v prehliadači"
+            label={t("panel.pravne")}
+            hint={t("panel.pravnePopis")}
             onClick={() => otvorNaWebe("/pravne")}
           />
         </nav>

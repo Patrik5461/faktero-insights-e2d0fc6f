@@ -6,6 +6,8 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { MobilObrazovka } from "./MobilChrome";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
+import type { Kluc } from "@/lib/mobile/preklady";
 /**
  * Cenové ponuky v telefóne.
  *
@@ -37,10 +39,10 @@ function suma(v: unknown, mena = "EUR"): string {
   return formatovacMeny(mena, "sk-SK")(n);
 }
 
-function den(d?: string | null): string {
+function den(d: string | null | undefined, loc: string): string {
   if (!d) return "—";
   const x = new Date(d);
-  return Number.isNaN(x.getTime()) ? "—" : x.toLocaleDateString("sk-SK");
+  return Number.isNaN(x.getTime()) ? "—" : x.toLocaleDateString(loc);
 }
 
 /**
@@ -50,19 +52,22 @@ function den(d?: string | null): string {
  * neprepisuje, takže prepadnutá ponuka by sa tvárila ako živá. Prevedená na
  * faktúru má prednosť pred všetkým: vtedy už na platnosti nezáleží.
  */
-export function stavPonuky(p: Ponuka): { text: string; trieda: string } {
+export function stavPonuky(p: Ponuka): { kluc: Kluc; trieda: string } {
   if (p.converted_invoice_id) {
-    return { text: "Vyfakturovaná", trieda: "bg-primary/10 text-primary" };
+    return { kluc: "ponuky.stav.vyfakturovana", trieda: "bg-primary/10 text-primary" };
   }
   if (p.status === "rejected")
-    return { text: "Zamietnutá", trieda: "bg-destructive/10 text-destructive" };
+    return { kluc: "ponuky.stav.zamietnuta", trieda: "bg-destructive/10 text-destructive" };
   if (p.status === "accepted")
-    return { text: "Prijatá", trieda: "bg-emerald-500/10 text-emerald-600" };
+    return { kluc: "ponuky.stav.prijata", trieda: "bg-emerald-500/10 text-emerald-600" };
   if (p.valid_until && p.valid_until < new Date().toISOString().slice(0, 10)) {
-    return { text: "Po platnosti", trieda: "bg-amber-500/15 text-amber-700 dark:text-amber-400" };
+    return {
+      kluc: "ponuky.stav.poPlatnosti",
+      trieda: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
+    };
   }
-  if (p.sent_at) return { text: "Odoslaná", trieda: "bg-sky-500/10 text-sky-600" };
-  return { text: "Návrh", trieda: "bg-muted text-muted-foreground" };
+  if (p.sent_at) return { kluc: "ponuky.stav.odoslana", trieda: "bg-sky-500/10 text-sky-600" };
+  return { kluc: "ponuky.stav.navrh", trieda: "bg-muted text-muted-foreground" };
 }
 
 export function Ponuky({
@@ -77,6 +82,7 @@ export function Ponuky({
   /** Po prevode vedieme človeka do faktúr — nech vidí, že doklad existuje. */
   onFakturaVytvorena: () => void;
 }) {
+  const { t, locale: loc } = usePreklad();
   const zoznamFn = useOperacia("ponuky-zoznam");
   const pdfFn = useOperacia("ponuka-pdf");
   const mailFn = useOperacia("ponuka-email");
@@ -120,14 +126,15 @@ export function Ponuky({
 
   async function posli(p: Ponuka) {
     if (!p.customer_email) {
-      toast.error("Odberateľ nemá e-mail. Doplňte ho na jeho karte.");
+      toast.error(t("ponuky.bezEmailu"));
       return;
     }
-    if (!window.confirm(`Odoslať ponuku ${p.quote_number} na ${p.customer_email}?`)) return;
+    if (!window.confirm(t("ponuky.odoslatOtazka", { cislo: p.quote_number, email: p.customer_email })))
+      return;
     setPracujem(p.id);
     try {
       await mailFn({ data: { quoteId: p.id, recipient_email: p.customer_email } });
-      toast.success("Ponuka odoslaná.");
+      toast.success(t("ponuky.odoslana"));
       await nacitaj();
     } catch (e) {
       toast.error((e as Error).message);
@@ -138,14 +145,14 @@ export function Ponuky({
 
   async function naFakturu(p: Ponuka) {
     if (p.converted_invoice_id) {
-      toast.info("Z tejto ponuky už faktúra vznikla.");
+      toast.info(t("ponuky.uzFakturovana"));
       return;
     }
-    if (!window.confirm(`Vytvoriť faktúru z ponuky ${p.quote_number}?`)) return;
+    if (!window.confirm(t("ponuky.naFakturuOtazka", { cislo: p.quote_number }))) return;
     setPracujem(p.id);
     try {
       await prevodFn({ data: { quoteId: p.id } });
-      toast.success("Faktúra vytvorená.");
+      toast.success(t("ponuky.fakturaVytvorena"));
       onFakturaVytvorena();
     } catch (e) {
       toast.error((e as Error).message);
@@ -156,13 +163,13 @@ export function Ponuky({
 
   return (
     <MobilObrazovka
-      title="Cenové ponuky"
+      title={t("ponuky.nazov")}
       subtitle={firma.name}
       onBack={onSpat}
       akcia={
         <button
           onClick={onNova}
-          aria-label="Nová ponuka"
+          aria-label={t("ponuky.nova")}
           className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground active:scale-95"
         >
           <Plus className="h-5 w-5" />
@@ -175,20 +182,19 @@ export function Ponuky({
         </p>
       )}
 
-      {ponuky === null && <p className="text-sm text-muted-foreground">Načítavam…</p>}
+      {ponuky === null && <p className="text-sm text-muted-foreground">{t("spolocne.nacitavam")}</p>}
 
       {ponuky?.length === 0 && !chyba && (
         <div className="rounded-2xl border border-dashed border-border p-6 text-center">
-          <p className="text-sm font-medium">Zatiaľ žiadna cenová ponuka</p>
+          <p className="text-sm font-medium">{t("ponuky.ziadne")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Ponuku spravíte rovnako ako faktúru — a keď ju zákazník prijme, jedným ťuknutím z nej
-            faktúra vznikne.
+            {t("ponuky.ziadnePopis2")}
           </p>
           <button
             onClick={onNova}
             className="mt-4 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground active:scale-95"
           >
-            Vytvoriť ponuku
+            {t("ponuky.vytvorit")}
           </button>
         </div>
       )}
@@ -206,8 +212,10 @@ export function Ponuky({
                     {p.customer_name ?? "—"}
                   </div>
                   <div className="mt-1 text-[11px] text-muted-foreground">
-                    {den(p.issue_date)}
-                    {p.valid_until ? ` · platí do ${den(p.valid_until)}` : ""}
+                    {den(p.issue_date, loc)}
+                    {p.valid_until
+                      ? ` · ${t("ponuky.platiDoSkratka", { den: den(p.valid_until, loc) })}`
+                      : ""}
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
@@ -217,18 +225,18 @@ export function Ponuky({
                   <span
                     className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${s.trieda}`}
                   >
-                    {s.text}
+                    {t(s.kluc)}
                   </span>
                 </div>
               </div>
 
               <div className="mt-3 grid grid-cols-4 gap-2">
                 <Akcia icon={FileText} label="PDF" onClick={() => pdf(p, false)} disabled={busy} />
-                <Akcia icon={Share2} label="Zdieľať" onClick={() => pdf(p, true)} disabled={busy} />
-                <Akcia icon={Mail} label="Odoslať" onClick={() => posli(p)} disabled={busy} />
+                <Akcia icon={Share2} label={t("ponuky.zdielat")} onClick={() => pdf(p, true)} disabled={busy} />
+                <Akcia icon={Mail} label={t("ponuky.odoslat")} onClick={() => posli(p)} disabled={busy} />
                 <Akcia
                   icon={ArrowRightLeft}
-                  label="Na faktúru"
+                  label={t("ponuky.naFakturu")}
                   onClick={() => naFakturu(p)}
                   disabled={busy || !!p.converted_invoice_id}
                 />

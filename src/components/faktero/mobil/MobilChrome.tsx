@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { ZELENA_HORE } from "@/lib/mobile/brand";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 /**
  * Zelený pás pod hodinami — jedna vrstva pre celú appku.
  *
@@ -146,6 +147,7 @@ export function AppHeader({
   pod?: ReactNode;
   variant?: "root" | "sub";
 }) {
+  const { t } = usePreklad();
   return (
     <header
       className={`sticky top-0 text-white ${variant === "root" ? "z-20" : "z-10"}`}
@@ -156,7 +158,7 @@ export function AppHeader({
           (onBack ? (
             <button
               onClick={onBack}
-              aria-label="Späť"
+              aria-label={t("spolocne.spat")}
               // 44 px je najmenší cieľ, ktorý sa dá palcom trafiť na prvý raz.
               className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white active:bg-white/20"
             >

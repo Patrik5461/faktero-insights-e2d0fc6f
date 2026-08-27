@@ -658,8 +658,7 @@ function KrokOdberatel({
       </div>
       {druh === "proforma" && (
         <p className="mb-4 rounded-xl bg-secondary px-3 py-2 text-[12px] leading-snug text-muted-foreground">
-          Zálohová faktúra je výzva na platbu, nie daňový doklad — nevstupuje do DPH a dostane číslo
-          z vlastnej rady. Po zaplatení na ňu vystavíte bežnú faktúru a zálohu na nej zúčtujete.
+          {t("nf.zalohovaVysvetlenie")}
         </p>
       )}
 
@@ -680,7 +679,7 @@ function KrokOdberatel({
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
           <UserPlus className="h-[18px] w-[18px]" />
         </span>
-        <span className="text-[15px] font-medium text-primary">Nový odberateľ</span>
+        <span className="text-[15px] font-medium text-primary">{t("nf.novyOdberatel")}</span>
       </button>
 
       {najdene.length === 0 ? (
@@ -819,24 +818,24 @@ export function NovyOdberatel({
     >
       <div className="space-y-3">
         <Pole
-          label="IČO"
+          label={t("nf.ico")}
           value={f.ico}
           onChange={(v) => setF({ ...f, ico: v })}
           inputMode="numeric"
           hint={hladam ? t("nf.hladamVRegistri") : t("nf.podlaIco")}
         />
-        <Pole label="Názov" value={f.name} onChange={(v) => setF({ ...f, name: v })} />
-        <Pole label="Ulica" value={f.street} onChange={(v) => setF({ ...f, street: v })} />
+        <Pole label={t("nf.nazov")} value={f.name} onChange={(v) => setF({ ...f, name: v })} />
+        <Pole label={t("nf.ulica")} value={f.street} onChange={(v) => setF({ ...f, street: v })} />
         <div className="grid grid-cols-2 gap-3">
-          <Pole label="PSČ" value={f.zip} onChange={(v) => setF({ ...f, zip: v })} />
-          <Pole label="Mesto" value={f.city} onChange={(v) => setF({ ...f, city: v })} />
+          <Pole label={t("nf.psc")} value={f.zip} onChange={(v) => setF({ ...f, zip: v })} />
+          <Pole label={t("nf.mesto")} value={f.city} onChange={(v) => setF({ ...f, city: v })} />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Pole label="DIČ" value={f.dic} onChange={(v) => setF({ ...f, dic: v })} />
-          <Pole label="IČ DPH" value={f.ic_dph} onChange={(v) => setF({ ...f, ic_dph: v })} />
+          <Pole label={t("nf.dic")} value={f.dic} onChange={(v) => setF({ ...f, dic: v })} />
+          <Pole label={t("nf.icDph")} value={f.ic_dph} onChange={(v) => setF({ ...f, ic_dph: v })} />
         </div>
         <Pole
-          label="E-mail"
+          label={t("nf.emailPole")}
           value={f.email}
           onChange={(v) => setF({ ...f, email: v })}
           inputMode="email"
@@ -930,7 +929,7 @@ function KrokPolozky({
         footer={
           <div className="space-y-2">
             <div className="flex items-baseline justify-between text-[15px]">
-              <span className="text-muted-foreground">Spolu</span>
+              <span className="text-muted-foreground">{t("nf.spolu")}</span>
               <span className="text-[20px] font-semibold tabular-nums">
                 {suma(sucty.spolu, mena)}
               </span>
@@ -968,7 +967,7 @@ function KrokPolozky({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] font-medium text-primary">
-                  Zopakovať poslednú faktúru
+                  {t("nf.zopakovatPoslednu")}
                 </span>
                 <span className="block truncate text-[13px] text-muted-foreground">
                   {posledna.invoice_number} · {datumSk(posledna.issue_date)}
@@ -983,24 +982,24 @@ function KrokPolozky({
               disabled={produkty.length === 0}
               className="flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-card px-3 py-3 text-[14px] font-medium shadow-[var(--shadow-card)] active:bg-secondary disabled:opacity-50"
             >
-              <Package className="h-4 w-4" /> Z cenníka
+              <Package className="h-4 w-4" /> {t("nf.zCennika")}
             </button>
             <button
               onClick={onPridajVlastnu}
               className="flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-card px-3 py-3 text-[14px] font-medium shadow-[var(--shadow-card)] active:bg-secondary"
             >
-              <Plus className="h-4 w-4" /> Vlastná
+              <Plus className="h-4 w-4" /> {t("nf.vlastna")}
             </button>
           </div>
 
           {platca && (
             <div className="rounded-2xl border border-border/70 bg-card p-4 text-[14px] shadow-[var(--shadow-card)]">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Základ</span>
+                <span className="text-muted-foreground">{t("nf.zaklad")}</span>
                 <span className="tabular-nums">{suma(sucty.zaklad, mena)}</span>
               </div>
               <div className="mt-1 flex justify-between">
-                <span className="text-muted-foreground">DPH</span>
+                <span className="text-muted-foreground">{t("nf.dph")}</span>
                 <span className="tabular-nums">{suma(sucty.dph, mena)}</span>
               </div>
             </div>
@@ -1066,7 +1065,7 @@ export function RiadokPolozky({
 
       <div className={`mt-2 grid gap-2 ${platca ? "grid-cols-3" : "grid-cols-2"}`}>
         <label className="block">
-          <span className="mb-1 block text-[12px] text-muted-foreground">Množstvo</span>
+          <span className="mb-1 block text-[12px] text-muted-foreground">{t("nf.mnozstvo")}</span>
           <input
             value={riadok.quantity}
             onChange={(e) => onZmen({ quantity: e.target.value })}
@@ -1088,7 +1087,7 @@ export function RiadokPolozky({
         </label>
         {platca && (
           <label className="block">
-            <span className="mb-1 block text-[12px] text-muted-foreground">DPH</span>
+            <span className="mb-1 block text-[12px] text-muted-foreground">{t("nf.dph")}</span>
             <select
               value={riadok.vat_rate}
               onChange={(e) => onZmen({ vat_rate: Number(e.target.value) })}
@@ -1140,10 +1139,10 @@ function VyberProduktu({
         style={{ paddingBottom: "var(--safe-bottom)" }}
       >
         <div className="flex items-center gap-2 border-b border-border/70 px-4 py-3">
-          <h2 className="flex-1 text-[16px] font-semibold">Cenník</h2>
+          <h2 className="flex-1 text-[16px] font-semibold">{t("nf.cennik")}</h2>
           <button
             onClick={onZavri}
-            aria-label="Zavrieť"
+            aria-label={t("nf.zavriet")}
             className="rounded-full p-2 active:bg-secondary"
           >
             <X className="h-5 w-5" />
@@ -1176,7 +1175,7 @@ function VyberProduktu({
             </button>
           ))}
           {najdene.length === 0 && (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nič sa nenašlo.</p>
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("nf.nicSaNenaslo")}</p>
           )}
         </div>
       </div>
@@ -1277,7 +1276,7 @@ function KrokSuhrn({
                 <span>− {suma(zaloha.total, mena)}</span>
               </div>
               <div className="mt-1 flex justify-between font-semibold">
-                <span>Na úhradu</span>
+                <span>{t("nf.naUhradu")}</span>
                 <span>{suma(+(sucty.spolu - zaloha.total).toFixed(2), mena)}</span>
               </div>
             </div>
@@ -1298,7 +1297,7 @@ function KrokSuhrn({
           </label>
           <label className="block">
             <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
-              Splatnosť
+              {t("nf.splatnost")}
             </span>
             <input
               type="date"
@@ -1327,7 +1326,7 @@ function KrokSuhrn({
         </div>
 
         <div>
-          <div className="mb-2 text-sm font-medium">Spôsob úhrady</div>
+          <div className="mb-2 text-sm font-medium">{t("nf.sposobUhrady")}</div>
           <div className="grid grid-cols-3 gap-2">
             {(
               [
@@ -1351,8 +1350,7 @@ function KrokSuhrn({
           </div>
           {uhrada === "bank_transfer" && !maIban && (
             <p className="mt-1.5 text-xs text-destructive">
-              Firma nemá vyplnený IBAN — na faktúre nebude kam zaplatiť. Doplňte ho na webe v
-              nastaveniach firmy.
+              {t("nf.bezIbanu")}
             </p>
           )}
         </div>
@@ -1369,7 +1367,7 @@ function KrokSuhrn({
 
         <label className="block">
           <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
-            Poznámka nad položkami
+            {t("nf.poznamkaNad")}
           </span>
           <textarea
             value={poznamkaNad}
@@ -1382,7 +1380,7 @@ function KrokSuhrn({
 
         <label className="block">
           <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
-            Poznámka pod položkami
+            {t("nf.poznamkaPod")}
           </span>
           <textarea
             value={poznamka}
@@ -1477,7 +1475,7 @@ function VyberZalohy({
           onClick={() => setZaloha(null)}
           className="shrink-0 rounded-xl border border-border px-3 py-2 text-[13px]"
         >
-          Zrušiť
+          {t("nf.zrusit")}
         </button>
       </div>
     );
@@ -1494,7 +1492,7 @@ function VyberZalohy({
         onClick={() => setOtvorene(true)}
         className="w-full rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-[14px] font-medium text-primary active:bg-primary/10"
       >
-        Pridať zálohovú faktúru
+        {t("nf.pridatZalohovu")}
       </button>
     );
   }
@@ -1502,16 +1500,15 @@ function VyberZalohy({
   if (zoznam && zoznam.length === 0) {
     return (
       <div className="rounded-2xl border border-border/70 bg-card p-4">
-        <div className="text-[14px] font-medium">Žiadna zálohová faktúra na zúčtovanie</div>
+        <div className="text-[14px] font-medium">{t("nf.ziadnaZaloha")}</div>
         <p className="mt-1 text-[13px] leading-snug text-muted-foreground">
-          Tento odberateľ nemá zálohovú faktúru, ktorá by ešte nebola zúčtovaná. Vystavíte ju tak,
-          že v prvom kroku novej faktúry vyberiete <strong>Zálohová</strong>.
+          {t("nf.ziadnaZalohaPopis", { zalohova: t("nf.zalohova") })}
         </p>
         <button
           onClick={() => setOtvorene(false)}
           className="mt-3 w-full rounded-xl border border-border px-3 py-2 text-[13px]"
         >
-          Zavrieť
+          {t("nf.zavriet")}
         </button>
       </div>
     );
@@ -1542,7 +1539,7 @@ function VyberZalohy({
         onClick={() => setOtvorene(false)}
         className="w-full py-2 text-center text-[13px] text-muted-foreground"
       >
-        Zavrieť
+        {t("nf.zavriet")}
       </button>
     </div>
   );
@@ -1567,8 +1564,9 @@ function Odlozena({
   mena: string;
   onHotovo: () => void;
 }) {
+  const { t } = usePreklad();
   return (
-    <MobilObrazovka title="Bez pripojenia">
+    <MobilObrazovka title={t("nf.bezPripojeniaNadpis")}>
       <div className="space-y-4 pt-2 text-center">
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-secondary">
           <CloudOff className="h-8 w-8 text-muted-foreground" />
@@ -1577,34 +1575,31 @@ function Odlozena({
         {faktura.cislo ? (
           <>
             <div>
-              <p className="text-[13px] text-muted-foreground">Faktúra má pridelené číslo</p>
+              <p className="text-[13px] text-muted-foreground">{t("nf.maCislo")}</p>
               <p className="mt-1 text-[30px] font-semibold leading-none tabular-nums">
                 {faktura.cislo}
               </p>
             </div>
             <p className="text-[14px] leading-snug text-muted-foreground">
-              Číslo je vaše a nikomu inému sa nepridelí — pokojne ho odovzdajte zákazníkovi. PDF sa
-              vytvorí a faktúra odošle sama, len čo bude signál.
+              {t("nf.cisloJeVase")}
             </p>
           </>
         ) : (
           <>
-            <p className="text-[17px] font-semibold">Faktúra je odložená v telefóne</p>
+            <p className="text-[17px] font-semibold">{t("nf.odlozena")}</p>
             <p className="text-[14px] leading-snug text-muted-foreground">
-              Vystaví sa aj s číslom sama, len čo bude signál. Číslo zatiaľ nemá, takže sa
-              zákazníkovi nedá nadiktovať — ak to potrebujete, zapnite si v nastaveniach vydávanie s
-              číslom dopredu.
+              {t("nf.odlozenaPopis")}
             </p>
           </>
         )}
 
         <div className="rounded-2xl border border-border/70 bg-card p-4 text-left">
           <div className="flex items-baseline justify-between">
-            <span className="text-[14px] text-muted-foreground">Odberateľ</span>
+            <span className="text-[14px] text-muted-foreground">{t("nf.odberatel")}</span>
             <span className="text-[15px] font-medium">{faktura.odberatel}</span>
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-[14px] text-muted-foreground">Spolu</span>
+            <span className="text-[14px] text-muted-foreground">{t("nf.spolu")}</span>
             <span className="text-[17px] font-semibold tabular-nums">
               {suma(faktura.spolu, mena)}
             </span>
@@ -1613,7 +1608,7 @@ function Odlozena({
       </div>
 
       <div className="pt-6">
-        <HlavneTlacidlo onClick={onHotovo}>Hotovo</HlavneTlacidlo>
+        <HlavneTlacidlo onClick={onHotovo}>{t("nf.hotovo")}</HlavneTlacidlo>
       </div>
     </MobilObrazovka>
   );
@@ -1681,12 +1676,12 @@ function Vystavena({
   }
 
   if (busy === "mail") return <Pracujem text={t("nf.odosielam")} />;
-  if (busy === "pdf" || busy === "zdielam") return <Pracujem text="Pripravujem PDF…" />;
+  if (busy === "pdf" || busy === "zdielam") return <Pracujem text={t("nf.pripravujemPdf")} />;
 
   return (
     <MobilObrazovka
       title={t("nf.vystavena")}
-      footer={<HlavneTlacidlo onClick={onHotovo}>Hotovo</HlavneTlacidlo>}
+      footer={<HlavneTlacidlo onClick={onHotovo}>{t("nf.hotovo")}</HlavneTlacidlo>}
     >
       <div className="space-y-4">
         <div className="grid place-items-center rounded-2xl border border-border/70 bg-card px-4 py-8 text-center shadow-[var(--shadow-card)]">
@@ -1724,7 +1719,7 @@ function Vystavena({
 
         {!faktura.customer_email && (
           <p className="text-xs text-muted-foreground">
-            Odberateľ nemá e-mail, tak sa faktúra nedá odoslať. Doplňte ho v karte odberateľa.
+            {t("nf.bezEmailu")}
           </p>
         )}
       </div>

@@ -123,7 +123,9 @@ export function VystaveneFaktury({
       const odoslane = await posliFaktury(firma.id);
       if (odoslane > 0) {
         toast.success(
-          odoslane === 1 ? t("faktury.odlozenaVystavena") : `Vystavených faktúr: ${odoslane}.`,
+          odoslane === 1
+            ? t("faktury.odlozenaVystavena")
+            : t("faktury.vystavenychPocet", { pocet: odoslane }),
         );
       }
     } catch {
@@ -220,7 +222,7 @@ export function VystaveneFaktury({
     <MobilObrazovka title={t("faktury.nazov")} subtitle={firma.name} onBack={onSpat}>
       {dlznici.pocet > 0 && (
         <div className="mb-4 rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
-          <div className="text-[13px] text-muted-foreground">Neuhradené</div>
+          <div className="text-[13px] text-muted-foreground">{t("faktury.neuhradene")}</div>
           <div className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums">
             {suma(dlznici.spolu, dlznici.mena)}
           </div>
@@ -250,7 +252,7 @@ export function VystaveneFaktury({
             ))}
           </div>
           <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
-            Odošlú sa samy, len čo bude signál. Netreba na to myslieť.
+            {t("faktury.odosluSaSamy2")}
           </p>
         </div>
       )}
@@ -277,13 +279,12 @@ export function VystaveneFaktury({
           </p>
           {nedostupne && !hladanie && (
             <p className="mt-2 max-w-[16rem] text-[13px] text-muted-foreground">
-              V telefóne zatiaľ nie je uložený žiadny zoznam. Otvorte túto obrazovku raz s
-              internetom a potom bude dostupná aj bez neho.
+              {t("faktury.bezZoznamu")}
             </p>
           )}
           {!hladanie && !nedostupne && (
             <button onClick={onNova} className="mt-3 text-sm font-medium text-primary">
-              Vystaviť prvú faktúru
+              {t("faktury.vystavPrvu")}
             </button>
           )}
         </div>
@@ -508,10 +509,10 @@ function DetailFaktury({
         </div>
 
         <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-4 text-[14px] shadow-[var(--shadow-card)]">
-          <Riadok label="Vystavená" value={datum(faktura.issue_date)} />
-          <Riadok label="Splatná" value={datum(faktura.due_date)} />
-          {faktura.paid_at && <Riadok label="Uhradená" value={datum(faktura.paid_at)} />}
-          {faktura.sent_at && <Riadok label="Odoslaná" value={datum(faktura.sent_at)} />}
+          <Riadok label={t("faktury.vystavena")} value={datum(faktura.issue_date)} />
+          <Riadok label={t("faktury.splatna")} value={datum(faktura.due_date)} />
+          {faktura.paid_at && <Riadok label={t("faktury.uhradena")} value={datum(faktura.paid_at)} />}
+          {faktura.sent_at && <Riadok label={t("faktury.odoslana")} value={datum(faktura.sent_at)} />}
         </div>
 
         <div className="space-y-2">
@@ -588,14 +589,14 @@ function DetailFaktury({
           <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
             <p className="text-sm font-medium">Naozaj zmazať faktúru {faktura.invoice_number}?</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Zmizne zo zoznamu, ale číslo ostáva obsadené — v číselnom rade nevznikne diera.
+              {t("faktury.cisloOstava")}
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button
                 onClick={() => setMazem(false)}
                 className="rounded-xl border border-border px-4 py-2.5 text-sm"
               >
-                Ponechať
+                {t("faktury.ponechat")}
               </button>
               <button
                 onClick={zmaz}
@@ -611,7 +612,7 @@ function DetailFaktury({
             onClick={() => setMazem(true)}
             className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm text-muted-foreground"
           >
-            <Trash2 className="h-4 w-4" /> Zmazať faktúru
+            <Trash2 className="h-4 w-4" /> {t("faktury.zmazat")}
           </button>
         )}
       </div>

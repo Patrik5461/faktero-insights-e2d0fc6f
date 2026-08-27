@@ -273,7 +273,7 @@ export function PrijateDoklady({
                 </span>
                 <span className="block truncate text-[12px] text-muted-foreground">
                   {new Date(d.ts).toLocaleString("sk-SK")}
-                  {d.chyba ? ` · ${d.chyba}` : d.qr_raw ? " · s QR kódom" : ""}
+                  {d.chyba ? ` · ${d.chyba}` : d.qr_raw ? ` · ${t("pd.sQrKodom")}` : ""}
                 </span>
               </span>
               <button
@@ -529,7 +529,7 @@ function DetailDokladu({
           )}
           {doklad.source === "qr" && (
             <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-              <BadgeCheck className="h-3.5 w-3.5" /> Z Finančnej správy
+              <BadgeCheck className="h-3.5 w-3.5" /> {t("pd.zFinancnejSpravy")}
             </div>
           )}
         </div>
@@ -561,20 +561,20 @@ function DetailDokladu({
               }}
               className="shrink-0 rounded-xl border border-border px-3 py-2 text-[13px] disabled:opacity-60"
             >
-              Zrušiť
+              {t("pd.zrusit")}
             </button>
           </div>
         )}
 
         <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-4 text-[14px] shadow-[var(--shadow-card)]">
-          <Riadok label="IČO" value={doklad.supplier_ico ?? "—"} />
-          <Riadok label="IČ DPH" value={doklad.supplier_ic_dph ?? "—"} />
+          <Riadok label={t("pd.ico")} value={doklad.supplier_ico ?? "—"} />
+          <Riadok label={t("pd.icDph")} value={doklad.supplier_ic_dph ?? "—"} />
           <Riadok label={t("pd.cisloDokladu")} value={doklad.document_number ?? "—"} />
           {doklad.note && <Riadok label={t("pd.poznamka")} value={doklad.note} />}
         </div>
 
         <div>
-          <div className="mb-2 text-sm font-medium">Spôsob úhrady</div>
+          <div className="mb-2 text-sm font-medium">{t("pd.sposobUhrady")}</div>
           <div className="grid grid-cols-3 gap-2">
             {(Object.keys(UHRADY) as Uhrada[]).map((id) => (
               <button
@@ -621,7 +621,7 @@ function DetailDokladu({
 
         {doklad.file_path && (
           <div>
-            <div className="mb-2 text-sm font-medium">Doklad</div>
+            <div className="mb-2 text-sm font-medium">{t("pd.doklad")}</div>
             {priloha ? (
               doklad.file_mime === "application/pdf" ? (
                 <a
@@ -630,7 +630,7 @@ function DetailDokladu({
                   rel="noreferrer"
                   className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm"
                 >
-                  <ExternalLink className="h-4 w-4" /> Otvoriť PDF
+                  <ExternalLink className="h-4 w-4" /> {t("pd.otvoritPdf")}
                 </a>
               ) : (
                 <a href={priloha} target="_blank" rel="noreferrer">
@@ -642,7 +642,7 @@ function DetailDokladu({
                 </a>
               )
             ) : (
-              <p className="text-xs text-muted-foreground">Načítavam prílohu…</p>
+              <p className="text-xs text-muted-foreground">{t("pd.nacitavamPrilohu")}</p>
             )}
           </div>
         )}
@@ -659,21 +659,21 @@ function DetailDokladu({
 
         {mazem ? (
           <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
-            <p className="text-sm font-medium">Naozaj zmazať tento doklad?</p>
-            <p className="mt-1 text-xs text-muted-foreground">Vrátiť sa to nedá.</p>
+            <p className="text-sm font-medium">{t("pd.naozajZmazat")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("pd.nedaSaVratit")}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button
                 onClick={() => setMazem(false)}
                 className="rounded-xl border border-border px-4 py-2.5 text-sm"
               >
-                Ponechať
+                {t("pd.ponechat")}
               </button>
               <button
                 onClick={zmaz}
                 disabled={busy}
                 className="rounded-xl bg-destructive px-4 py-2.5 text-sm font-medium text-destructive-foreground disabled:opacity-50"
               >
-                Zmazať
+                {t("pd.zmazatKratke")}
               </button>
             </div>
           </div>
@@ -682,7 +682,7 @@ function DetailDokladu({
             onClick={() => setMazem(true)}
             className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm text-muted-foreground"
           >
-            <Trash2 className="h-4 w-4" /> Zmazať doklad
+            <Trash2 className="h-4 w-4" /> {t("pd.zmazat")}
           </button>
         )}
       </div>

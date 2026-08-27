@@ -232,7 +232,7 @@ export function HistoriaJazd({
     );
     setNacitavamStarsie(false);
     if (error || !data) {
-      toast.error(error?.message ?? "Staršie jazdy sa nepodarilo načítať.");
+      toast.error(error?.message ?? t("jazdy.chybaStarsich"));
       return;
     }
     const dalsie = naJazdenky(data);
@@ -266,7 +266,7 @@ export function HistoriaJazd({
 
   const spolu = useMemo(() => (jazdy ?? []).reduce((s, j) => s + (j.distance_km ?? 0), 0), [jazdy]);
 
-  if (jazdy === null) return <Pracujem text="Načítavam jazdy…" />;
+  if (jazdy === null) return <Pracujem text={t("jazdy.nacitavam")} />;
 
   return (
     <MobilObrazovka
@@ -277,17 +277,18 @@ export function HistoriaJazd({
       {jazdy.length === 0 ? (
         <div className="grid place-items-center py-16 text-center">
           <RouteIcon className="mb-3 h-10 w-10 text-muted-foreground/50" />
-          <p className="text-sm font-medium">Zatiaľ žiadne jazdy</p>
+          <p className="text-sm font-medium">{t("jazdy.ziadne")}</p>
           <p className="mt-1 max-w-xs text-[13px] text-muted-foreground">
-            Prvá pribudne po ukončení merania — alebo sa natiahne z GPS jednotky, keď je vozidlo
-            prepojené.
+            {t("jazdy.prvaPribudne")}
           </p>
         </div>
       ) : (
         <>
           <div className="mb-4 rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
             <div className="text-[13px] text-muted-foreground">
-              Spolu {jeVsetko ? "za celú históriu" : `za posledných ${jazdy.length} jázd`}
+              {jeVsetko
+                ? t("jazdy.spoluCelaHistoria")
+                : t("jazdy.spoluPoslednych", { pocet: jazdy.length })}
             </div>
             <div className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums">
               {km(spolu)}
@@ -424,7 +425,7 @@ export function HistoriaJazd({
               disabled={nacitavamStarsie}
               className="mt-5 w-full select-none rounded-2xl border border-border/70 bg-card py-3 text-[14px] font-medium text-primary shadow-[var(--shadow-card)] disabled:opacity-60"
             >
-              {nacitavamStarsie ? "Načítavam…" : "Načítať staršie jazdy"}
+              {nacitavamStarsie ? t("spolocne.nacitavam") : t("jazdy.nacitatStarsie")}
             </button>
           )}
         </>

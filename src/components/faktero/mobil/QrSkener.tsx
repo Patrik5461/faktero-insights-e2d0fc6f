@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { useKameraQr } from "./KameraQr";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 /**
  * Živý skener QR kódu na celú obrazovku.
  *
@@ -16,6 +17,7 @@ export function QrSkener({
   onNajdene: (raw: string) => void;
   onZrusit: () => void;
 }) {
+  const { t } = usePreklad();
   const { videoRef, chyba } = useKameraQr({ onNajdene });
 
   return (
@@ -31,10 +33,10 @@ export function QrSkener({
         className="absolute inset-x-0 top-0 flex items-center justify-between px-4 py-3"
         style={{ paddingTop: "calc(var(--safe-top) + 0.75rem)" }}
       >
-        <span className="text-sm font-medium text-white">Namierte na QR kód</span>
+        <span className="text-sm font-medium text-white">{t("qr.namierte")}</span>
         <button
           onClick={onZrusit}
-          aria-label="Zrušiť skenovanie"
+          aria-label={t("qr.zrusitSkenovanie")}
           className="rounded-full bg-white/20 p-2 text-white"
         >
           <X className="h-5 w-5" />
@@ -51,7 +53,7 @@ export function QrSkener({
             onClick={onZrusit}
             className="w-full rounded-xl border border-border px-4 py-2.5 text-sm"
           >
-            Späť
+            {t("spolocne.spat")}
           </button>
         </div>
       )}

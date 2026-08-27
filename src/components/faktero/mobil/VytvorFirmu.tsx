@@ -7,6 +7,7 @@ import { MobilObrazovka, HlavneTlacidlo } from "./MobilChrome";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 /**
  * Založenie firmy priamo v telefóne.
  *
@@ -29,6 +30,7 @@ export function VytvorFirmu({
   /** Prvá firma po registrácii — vtedy sa nedá vycúvať nikam inam. */
   prve?: boolean;
 }) {
+  const { t } = usePreklad();
   const [f, setF] = useState({
     name: "",
     ico: "",
@@ -72,7 +74,7 @@ export function VytvorFirmu({
           zip: p.zip || d.zip || "",
           country: p.country || d.country || "SK",
         }));
-        toast.success("Údaje doplnené z registra");
+        toast.success(t("nf.udajeDoplnene"));
       })
       .catch(() => {
         /* register nie je podmienka — údaje sa dajú vypísať ručne */
@@ -83,78 +85,77 @@ export function VytvorFirmu({
 
   async function uloz() {
     const chyba = overFirmu({ name: f.name, ico: f.ico, email: f.email, iban: f.iban });
-    if (chyba) return toast.error(chyba);
+    if (chyba) return toast.error(t(chyba));
 
     // Firma vzniká na serveri, odložiť sa nedá — bez signálu radšej rovno
     // povieme prečo, než nechať tlačidlo točiť sa do vypršania.
     const { isOnline } = await import("@/lib/mobile/offline-queue");
     if (!(await isOnline())) {
-      return toast.error("Na založenie firmy treba pripojenie. Skúste to, keď bude signál.");
+      return toast.error(t("vf.trebaPripojenie"));
     }
 
     setUkladam(true);
     try {
       const { data, error } = await supabase.rpc("create_company_with_owner", firmaNaZapis(f));
-      if (error || !data) throw new Error(error?.message ?? "Firmu sa nepodarilo vytvoriť.");
+      if (error || !data) throw new Error(error?.message ?? t("vf.nepodariloVytvorit"));
       const id = data as string;
       setActiveCompanyId(id);
-      toast.success("Firma je vytvorená.");
+      toast.success(t("vf.vytvorena"));
       onHotovo({ id, name: f.name.trim() });
     } catch (e: any) {
-      toast.error(e?.message ?? "Firmu sa nepodarilo vytvoriť.");
+      toast.error(e?.message ?? t("vf.nepodariloVytvorit"));
       setUkladam(false);
     }
   }
 
   return (
     <MobilObrazovka
-      title={prve ? "Vytvorte si firmu" : "Pridať firmu"}
-      subtitle="Tieto údaje sa zobrazia na faktúrach"
+      title={prve ? t("vf.vytvorteSiFirmu") : t("vf.pridatFirmu")}
+      subtitle={t("vf.podnadpis")}
       onBack={onSpat}
       footer={
         <HlavneTlacidlo onClick={uloz} disabled={ukladam || !f.name.trim()}>
-          {ukladam ? "Vytváram…" : "Vytvoriť firmu"}
+          {ukladam ? t("vf.vytvaram") : t("vf.vytvoritFirmu")}
         </HlavneTlacidlo>
       }
     >
       <p className="mb-4 text-[13px] leading-snug text-muted-foreground">
-        Stačí názov — ostatné sa dá doplniť kedykoľvek neskôr v nastaveniach. Keď zadáte IČO, adresu
-        aj daňové čísla si natiahneme z registra.
+        {t("vf.uvod")}
       </p>
 
       <div className="space-y-3">
-        <Pole label="Názov firmy" value={f.name} onChange={(v) => set("name", v)} povinne />
+        <Pole label={t("vf.nazovFirmy")} value={f.name} onChange={(v) => set("name", v)} povinne />
         <Pole
-          label="IČO"
+          label={t("vf.ico")}
           value={f.ico}
           onChange={(v) => set("ico", v)}
           inputMode="numeric"
-          hint={hladam ? "Hľadám v registri…" : undefined}
+          hint={hladam ? t("vf.hladamVRegistri") : undefined}
           pracuje={hladam}
         />
         <div className="grid grid-cols-2 gap-3">
-          <Pole label="DIČ" value={f.dic} onChange={(v) => set("dic", v)} inputMode="numeric" />
-          <Pole label="IČ DPH" value={f.ic_dph} onChange={(v) => set("ic_dph", v)} />
+          <Pole label={t("vf.dic")} value={f.dic} onChange={(v) => set("dic", v)} inputMode="numeric" />
+          <Pole label={t("vf.icDph")} value={f.ic_dph} onChange={(v) => set("ic_dph", v)} />
         </div>
-        <Pole label="Ulica a číslo" value={f.street} onChange={(v) => set("street", v)} />
+        <Pole label={t("vf.ulica")} value={f.street} onChange={(v) => set("street", v)} />
         <div className="grid grid-cols-2 gap-3">
-          <Pole label="Mesto" value={f.city} onChange={(v) => set("city", v)} />
-          <Pole label="PSČ" value={f.zip} onChange={(v) => set("zip", v)} inputMode="numeric" />
+          <Pole label={t("vf.mesto")} value={f.city} onChange={(v) => set("city", v)} />
+          <Pole label={t("vf.psc")} value={f.zip} onChange={(v) => set("zip", v)} inputMode="numeric" />
         </div>
         <Pole
-          label="IBAN"
+          label={t("vf.iban")}
           value={f.iban}
           onChange={(v) => set("iban", v)}
-          hint="Zákazník podľa neho zaplatí — pokojne aj neskôr."
+          hint={t("vf.ibanHint")}
         />
         <div className="grid grid-cols-2 gap-3">
           <Pole
-            label="E-mail"
+            label={t("vf.email")}
             value={f.email}
             onChange={(v) => set("email", v)}
             inputMode="email"
           />
-          <Pole label="Telefón" value={f.phone} onChange={(v) => set("phone", v)} inputMode="tel" />
+          <Pole label={t("vf.telefon")} value={f.phone} onChange={(v) => set("phone", v)} inputMode="tel" />
         </div>
       </div>
     </MobilObrazovka>

@@ -41,15 +41,15 @@ type Pohyb = {
   faktura: string | null;
 };
 
-function suma(v: number, mena = "EUR"): string {
-  return formatovacMeny(mena, "sk-SK")(v);
+function suma(v: number, mena: string | null | undefined, loc: string): string {
+  return formatovacMeny(mena ?? "EUR", loc)(v);
 }
 
 /** Z IBAN-u stačí koniec — celý sa do riadka nezmestí a nič nehovorí. */
-function koniecIbanu(iban: string | null): string {
-  if (!iban) return "účet";
-  const t = iban.replace(/\s+/g, "");
-  return `…${t.slice(-4)}`;
+function koniecIbanu(iban: string | null, nazovBezIbanu: string): string {
+  if (!iban) return nazovBezIbanu;
+  const cistý = iban.replace(/\s+/g, "");
+  return `…${cistý.slice(-4)}`;
 }
 
 /**
@@ -59,13 +59,13 @@ function koniecIbanu(iban: string | null): string {
  * rovnako a prepínač by bol na nerozoznanie. Rozlišuje ich koniec IBAN-u —
  * podľa neho ich pozná aj človek.
  */
-function nazovUctu(u: Ucet): string {
-  return koniecIbanu(u.iban);
+function nazovUctu(u: Ucet, nazovBezIbanu: string): string {
+  return koniecIbanu(u.iban, nazovBezIbanu);
 }
 
 /** IBAN po štvoriciach — inak sa v ňom oko stratí. */
-function ibanCitatelne(iban: string | null): string {
-  if (!iban) return "Účet";
+function ibanCitatelne(iban: string | null, nazovBezIbanu: string): string {
+  if (!iban) return nazovBezIbanu;
   return iban
     .replace(/\s+/g, "")
     .replace(/(.{4})/g, "$1 ")
@@ -239,7 +239,7 @@ export function Banka({
 
   if (!ucty.length) {
     return (
-      <MobilObrazovka title="Banka" subtitle={firma.name} onBack={onSpat}>
+      <MobilObrazovka title={t("banka.nazov")} subtitle={firma.name} onBack={onSpat}>
         <div className="grid place-items-center py-16 text-center">
           <Landmark className="mb-3 h-10 w-10 text-muted-foreground/50" />
           <p className="text-sm font-medium">
@@ -255,7 +255,7 @@ export function Banka({
 
   return (
     <MobilObrazovka
-      title="Banka"
+      title={t("banka.nazov")}
       subtitle={firma.name}
       onBack={onSpat}
       akcia={
@@ -271,7 +271,9 @@ export function Banka({
     >
       <div className="mb-4 rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
         <div className="text-[13px] text-muted-foreground">
-          {vybrany ? ibanCitatelne(ucty.find((u) => u.id === vybrany)!.iban) : "Zostatok spolu"}
+          {vybrany
+            ? ibanCitatelne(ucty.find((u) => u.id === vybrany)!.iban, t("banka.ucetVelke"))
+            : t("banka.zostatokSpolu")}
         </div>
         {zostatky.length === 0 ? (
           <div className="mt-0.5 text-[26px] font-semibold leading-none">—</div>
@@ -281,7 +283,7 @@ export function Banka({
               key={z.mena}
               className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums"
             >
-              {suma(z.suma, z.mena)}
+              {suma(z.suma, z.mena, locale)}
             </div>
           ))
         )}
@@ -293,11 +295,11 @@ export function Banka({
       {ucty.length > 1 && (
         <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
           <Chip aktivny={!vybrany} onClick={() => setVybrany(null)}>
-            Všetky
+            {t("banka.vsetkyUcty")}
           </Chip>
           {ucty.map((u) => (
             <Chip key={u.id} aktivny={vybrany === u.id} onClick={() => setVybrany(u.id)}>
-              {nazovUctu(u)}
+              {nazovUctu(u, t("banka.ucetSkratka"))}
             </Chip>
           ))}
         </div>
@@ -306,7 +308,7 @@ export function Banka({
       {vidno.length === 0 ? (
         <div className="grid place-items-center py-14 text-center">
           <Landmark className="mb-3 h-10 w-10 text-muted-foreground/50" />
-          <p className="text-sm font-medium">Zatiaľ žiadne pohyby</p>
+          <p className="text-sm font-medium">{t("banka.ziadnePohyby")}</p>
         </div>
       ) : (
         <div className="space-y-5">
@@ -339,7 +341,7 @@ export function Banka({
                       }`}
                     >
                       {p.suma > 0 ? "+" : ""}
-                      {suma(p.suma, p.mena)}
+                      {suma(p.suma, p.mena, locale)}
                     </div>
                   </div>
                 ))}
