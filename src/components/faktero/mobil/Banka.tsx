@@ -6,6 +6,8 @@ import { zostatkyPodlaMien } from "@/lib/faktero/zostatky";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
+import type { Kluc } from "@/lib/mobile/preklady";
 /**
  * Bankové pohyby v telefóne.
  *
@@ -84,43 +86,47 @@ function rovnakeMeno(a: string | null | undefined, b: string | null | undefined)
  * **samotného majiteľa účtu** — vypísať vlastný názov firmy na každý druhý
  * riadok nehovorí nič, kým popis („Transakčná daň") hovorí všetko.
  */
-function nadpisPohybu(p: Pohyb, firma: string): string {
+/* `t` prichádza ako vstup — funkcia je mimo komponentu a hook tam nepatrí. */
+function nadpisPohybu(p: Pohyb, firma: string, t: (k: Kluc) => string): string {
   const protistrana = p.protistrana?.trim();
   const popis = p.popis?.trim();
   if (protistrana && !rovnakeMeno(protistrana, firma)) return protistrana;
-  return popis || protistrana || (p.suma > 0 ? "Prijatá platba" : "Odchádzajúca platba");
+  return (
+    popis || protistrana || (p.suma > 0 ? t("banka.prijataPlatba") : t("banka.odchadzajucaPlatba"))
+  );
 }
 
-function podnadpisPohybu(p: Pohyb, firma: string): string | null {
+function podnadpisPohybu(p: Pohyb, firma: string, t: (k: Kluc) => string): string | null {
   const popis = p.popis?.trim();
   const casti = [
     p.faktura ? `k faktúre ${p.faktura}` : null,
     p.vs ? `VS ${p.vs}` : null,
     // Popis len vtedy, keď nie je už v nadpise.
-    popis && popis !== nadpisPohybu(p, firma) ? popis : null,
+    popis && popis !== nadpisPohybu(p, firma, t) ? popis : null,
   ].filter(Boolean);
   return casti.length ? casti.join(" · ") : null;
 }
 
-function denNazov(iso: string): string {
+/* Aj tu `t` ako vstup — a locale, aby sa dátum písal v jazyku appky. */
+function denNazov(iso: string, t: (k: Kluc) => string, loc: string): string {
   const dnes = new Date().toISOString().slice(0, 10);
-  if (iso === dnes) return "Dnes";
+  if (iso === dnes) return t("banka.dnes");
   const v = new Date();
   v.setDate(v.getDate() - 1);
-  if (iso === v.toISOString().slice(0, 10)) return "Včera";
+  if (iso === v.toISOString().slice(0, 10)) return t("banka.vcera");
   const [r, m, d] = iso.split("-").map(Number);
-  return new Date(r, (m || 1) - 1, d || 1).toLocaleDateString("sk-SK", {
+  return new Date(r, (m || 1) - 1, d || 1).toLocaleDateString(loc, {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-function ked(iso: string | null): string {
-  if (!iso) return "zatiaľ nesynchronizované";
+function ked(iso: string | null, t: (k: Kluc) => string, loc: string): string {
+  if (!iso) return t("banka.nesynchronizovane");
   const d = new Date(iso);
-  return `${d.toLocaleDateString("sk-SK", { day: "numeric", month: "numeric" })} ${d.toLocaleTimeString(
-    "sk-SK",
+  return `${d.toLocaleDateString(loc, { day: "numeric", month: "numeric" })} ${d.toLocaleTimeString(
+    loc,
     { hour: "2-digit", minute: "2-digit" },
   )}`;
 }
@@ -132,6 +138,7 @@ export function Banka({
   firma: { id: string; name: string };
   onSpat: () => void;
 }) {
+  const { t, locale } = usePreklad();
   const nacitaj = useOperacia("banka-prehlad");
   const stiahni = useOperacia("banka-stiahni");
   const [ucty, setUcty] = useState<Ucet[] | null>(null);
@@ -155,7 +162,7 @@ export function Banka({
       const { isOnline } = await import("@/lib/mobile/offline-queue");
       const online = await isOnline();
       setNedostupne(!online);
-      if (online) toast.error(e?.message ?? "Pohyby sa nepodarilo načítať.");
+      if (online) toast.error(e?.message ?? t("banka.chybaNacitania"));
       setUcty([]);
     }
   }
@@ -185,9 +192,9 @@ export function Banka({
     }
     await obnov();
     setTahame(false);
-    if (zlyhalo && !nove) toast.error("Banka teraz neodpovedala. Skúste to o chvíľu.");
+    if (zlyhalo && !nove) toast.error(t("banka.neodpovedala"));
     else if (nove) toast.success(nove === 1 ? "Pribudol 1 pohyb." : `Pribudlo ${nove} pohybov.`);
-    else toast.success("Žiadne nové pohyby.");
+    else toast.success(t("banka.ziadneNove"));
   }
 
   const vidno = useMemo(
@@ -228,7 +235,7 @@ export function Banka({
     );
   }, [ucty, vybrany]);
 
-  if (ucty === null) return <Pracujem text="Načítavam pohyby…" />;
+  if (ucty === null) return <Pracujem text={t("banka.nacitavam")} />;
 
   if (!ucty.length) {
     return (
@@ -236,14 +243,10 @@ export function Banka({
         <div className="grid place-items-center py-16 text-center">
           <Landmark className="mb-3 h-10 w-10 text-muted-foreground/50" />
           <p className="text-sm font-medium">
-            {nedostupne
-              ? "Bez pripojenia sa účty nedajú načítať"
-              : "Firma nemá pripojený bankový účet"}
+            {nedostupne ? t("banka.bezPripojenia") : t("banka.bezUctu")}
           </p>
           <p className="mt-1 max-w-xs text-[13px] text-muted-foreground">
-            {nedostupne
-              ? "Zostatky a pohyby sa dajú pozrieť, len keď je signál — z telefónu sa nikam neukladajú."
-              : "Účet sa pripája na webe — banka pri tom vyžaduje prihlásenie a súhlas, ktorý sa v telefóne dobre vybaviť nedá."}
+            {nedostupne ? t("banka.lenSoSignalom") : t("banka.pripojenieNaWebe")}
           </p>
         </div>
       </MobilObrazovka>
@@ -259,7 +262,7 @@ export function Banka({
         <button
           onClick={zBanky}
           disabled={tahame}
-          aria-label="Stiahnuť z banky"
+          aria-label={t("banka.stiahnut")}
           className="grid h-9 w-9 place-items-center rounded-full active:bg-secondary disabled:opacity-50"
         >
           <RefreshCw className={`h-[18px] w-[18px] ${tahame ? "animate-spin" : ""}`} />
@@ -283,7 +286,7 @@ export function Banka({
           ))
         )}
         <div className="mt-1.5 text-[12px] text-muted-foreground">
-          {tahame ? "Sťahujem z banky…" : `Aktualizované ${ked(naposledy)}`}
+          {tahame ? t("banka.stahujem") : `Aktualizované ${ked(naposledy, t, locale)}`}
         </div>
       </div>
 
@@ -310,7 +313,7 @@ export function Banka({
           {dni.map(([den, riadky]) => (
             <div key={den}>
               <div className="mb-2 px-1 text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {denNazov(den)}
+                {denNazov(den, t, locale)}
               </div>
               <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
                 {riadky.map((p, i) => (
@@ -322,11 +325,11 @@ export function Banka({
                   >
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[15px] font-medium leading-tight">
-                        {nadpisPohybu(p, firma.name)}
+                        {nadpisPohybu(p, firma.name, t)}
                       </div>
-                      {podnadpisPohybu(p, firma.name) && (
+                      {podnadpisPohybu(p, firma.name, t) && (
                         <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
-                          {podnadpisPohybu(p, firma.name)}
+                          {podnadpisPohybu(p, firma.name, t)}
                         </div>
                       )}
                     </div>

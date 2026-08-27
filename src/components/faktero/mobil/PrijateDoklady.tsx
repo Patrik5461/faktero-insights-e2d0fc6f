@@ -20,6 +20,8 @@ import { odosliCakajuce } from "@/lib/mobile/doklady-odoslanie";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
+import type { Kluc } from "@/lib/mobile/preklady";
 /**
  * Prijaté doklady v mobilnej aplikácii.
  *
@@ -53,10 +55,12 @@ type Doklad = {
 
 type Uhrada = "hotovost" | "karta" | "prevod";
 
-const UHRADY: Record<Uhrada, string> = {
-  hotovost: "Hotovosť",
-  karta: "Kartou",
-  prevod: "Prevodom",
+/* Kľúče, nie hotové texty — konštanta je mimo komponentu a preklad tam
+   nedosiahne. Prekladá sa až tam, kde sa spôsob úhrady vypisuje. */
+const UHRADY: Record<Uhrada, Kluc> = {
+  hotovost: "pd.hotovost",
+  karta: "pd.kartou",
+  prevod: "pd.prevodom",
 };
 
 function cislo(v: unknown): number | null {
@@ -93,6 +97,7 @@ export function PrijateDoklady({
   firma: { id: string; name: string };
   onSpat: () => void;
 }) {
+  const { t } = usePreklad();
   const nacitaj = useOperacia("vydavky-zoznam");
   const navrhyFn = useOperacia("doklady-navrhy-parovania");
   const sparujFn = useOperacia("doklad-sparuj");
@@ -141,7 +146,7 @@ export function PrijateDoklady({
       // „Zatiaľ žiadne doklady" je tvrdenie, ktoré bez signálu nemáme čím
       // podložiť — a človek by si myslel, že o naskenované bločky prišiel.
       setNedostupne(!online);
-      if (online) toast.error(e?.message ?? "Doklady sa nepodarilo načítať.");
+      if (online) toast.error(e?.message ?? t("pd.chybaNacitania"));
       setDoklady([]);
     }
   }
@@ -156,7 +161,7 @@ export function PrijateDoklady({
     try {
       const r = await odosliCakajuce(firma.id, citajBlocek as any, vytvorDoklad as any);
       if (r.odoslane > 0) toast.success(`Odoslané doklady: ${r.odoslane}`);
-      else if (nahlas && r.zostalo > 0) toast.error("Zatiaľ bez signálu — skúsim to znova sám.");
+      else if (nahlas && r.zostalo > 0) toast.error(t("pd.bezSignalu"));
       if (r.odoslane > 0) await obnov();
       else setCakajuce(await fronta(firma.id));
     } finally {
@@ -223,16 +228,16 @@ export function PrijateDoklady({
     );
   }
 
-  if (doklady === null) return <Pracujem text="Načítavam doklady…" />;
+  if (doklady === null) return <Pracujem text={t("pd.nacitavam")} />;
 
   return (
-    <MobilObrazovka title="Prijaté doklady" subtitle={firma.name} onBack={onSpat}>
+    <MobilObrazovka title={t("pd.nazov")} subtitle={firma.name} onBack={onSpat}>
       <div className="relative mb-4">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
           value={hladanie}
           onChange={(e) => setHladanie(e.target.value)}
-          placeholder="Hľadať dodávateľa alebo číslo"
+          placeholder={t("pd.hladat")}
           className="w-full rounded-2xl border border-border/70 bg-card py-3 pl-9 pr-3 text-[15px] shadow-[var(--shadow-card)]"
         />
       </div>
@@ -254,7 +259,7 @@ export function PrijateDoklady({
               className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1.5 text-[13px] font-medium text-amber-900 disabled:opacity-60 dark:text-amber-100"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${odosielam ? "animate-spin" : ""}`} />
-              {odosielam ? "Odosielam…" : "Odoslať"}
+              {odosielam ? "Odosielam…" : t("pd.odoslat")}
             </button>
           </div>
           {cakajuce.map((d) => (
@@ -264,7 +269,7 @@ export function PrijateDoklady({
             >
               <span className="min-w-0 flex-1">
                 <span className="block truncate">
-                  {d.vysledok?.supplier ?? "Neprečítaný doklad"}
+                  {d.vysledok?.supplier ?? t("pd.neprecitany")}
                 </span>
                 <span className="block truncate text-[12px] text-muted-foreground">
                   {new Date(d.ts).toLocaleString("sk-SK")}
@@ -276,7 +281,7 @@ export function PrijateDoklady({
                   await zmazZFronty(d.id);
                   setCakajuce(await fronta(firma.id));
                 }}
-                aria-label="Zahodiť odložený doklad"
+                aria-label={t("pd.zahodit")}
                 className="rounded-xl p-2 text-muted-foreground active:bg-secondary"
               >
                 <Trash2 className="h-4 w-4" />
@@ -325,16 +330,16 @@ export function PrijateDoklady({
                         },
                       }));
                       setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId));
-                      toast.success("Doklad označený za uhradený z účtu.");
+                      toast.success(t("pd.uhradenyZUctu"));
                     } catch (e: any) {
-                      toast.error(e?.message ?? "Spárovať sa to nepodarilo.");
+                      toast.error(e?.message ?? t("pd.chybaParovania"));
                     } finally {
                       setParujem(null);
                     }
                   }}
                   className="flex-1 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-medium text-primary disabled:opacity-60"
                 >
-                  {z.istota === "auto" ? "Spárovať" : "Áno, patrí k sebe"}
+                  {z.istota === "auto" ? t("pd.sparovat") : t("pd.anoPatriKSebe")}
                 </button>
                 <button
                   onClick={() =>
@@ -354,18 +359,14 @@ export function PrijateDoklady({
         <div className="grid place-items-center py-16 text-center">
           <Receipt className="mb-3 h-10 w-10 text-muted-foreground/50" />
           <p className="text-sm font-medium">
-            {hladanie
-              ? "Nič sa nenašlo"
-              : nedostupne
-                ? "Bez pripojenia sa doklady nedajú načítať"
-                : "Zatiaľ žiadne doklady"}
+            {hladanie ? t("pd.nicSaNenaslo") : nedostupne ? t("pd.bezPripojenia") : t("pd.ziadne")}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {hladanie
-              ? "Skúste hľadať inak."
+              ? t("pd.skusteInak")
               : nedostupne
-                ? "Odložené bločky sa odošlú samy, len čo sa vráti signál."
-                : "Naskenované bločky a faktúry sa objavia tu."}
+                ? t("pd.odlozeneOdoslu")
+                : t("pd.ziadnePopis")}
           </p>
         </div>
       ) : (
@@ -402,11 +403,11 @@ export function PrijateDoklady({
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[15px] font-medium leading-tight">
-                          {d.supplier_name ?? "Bez dodávateľa"}
+                          {d.supplier_name ?? t("pd.bezDodavatela")}
                         </span>
                         <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
                           {datum(d.issue_date)}
-                          {d.payment_method ? ` · ${UHRADY[d.payment_method]}` : ""}
+                          {d.payment_method ? ` · ${t(UHRADY[d.payment_method])}` : ""}
                           {uhrady[d.id] ? ` · uhradené z účtu ${datum(uhrady[d.id].datum)}` : ""}
                         </span>
                       </span>
@@ -443,6 +444,7 @@ function DetailDokladu({
   uhrada: { datum: string; transactionId: string } | null;
   onRozparovane: () => void;
 }) {
+  const { t } = usePreklad();
   const urlFn = useOperacia("vydavok-subor");
   const rozparujFn = useOperacia("doklad-zrus-parovanie");
   const [rozparujem, setRozparujem] = useState(false);
@@ -474,7 +476,7 @@ function DetailDokladu({
     setBusy(true);
     try {
       await updateFn({ data: { id: doklad.id, patch: { payment_method: u } } });
-      toast.success("Spôsob úhrady zmenený");
+      toast.success(t("pd.sposobZmeneny"));
     } catch (e: any) {
       setUhrada(doklad.payment_method ?? null);
       toast.error(e?.message ?? "Zmena zlyhala.");
@@ -488,7 +490,7 @@ function DetailDokladu({
     try {
       const { volajOperaciu } = await import("@/lib/mobile/server-most-volanie");
       await volajOperaciu("doklad-presun", { company_id: firmaId, id: doklad.id });
-      toast.success("Doklad je medzi prijatými faktúrami.");
+      toast.success(t("pd.presunuty"));
       onZmena();
     } catch (e: any) {
       toast.error(e?.message ?? "Presun sa nepodaril.");
@@ -500,7 +502,7 @@ function DetailDokladu({
     setBusy(true);
     try {
       await deleteFn({ data: { id: doklad.id } });
-      toast.success("Doklad zmazaný");
+      toast.success(t("pd.zmazany"));
       onZmena();
     } catch (e: any) {
       toast.error(e?.message ?? "Mazanie zlyhalo.");
@@ -550,9 +552,9 @@ function DetailDokladu({
                 try {
                   await rozparujFn({ data: { transaction_id: uhradaZUctu.transactionId } });
                   onRozparovane();
-                  toast.success("Párovanie zrušené.");
+                  toast.success(t("pd.parovanieZrusene"));
                 } catch (e: any) {
-                  toast.error(e?.message ?? "Zrušiť sa to nepodarilo.");
+                  toast.error(e?.message ?? t("pd.chybaZrusenia"));
                 } finally {
                   setRozparujem(false);
                 }
@@ -567,8 +569,8 @@ function DetailDokladu({
         <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-4 text-[14px] shadow-[var(--shadow-card)]">
           <Riadok label="IČO" value={doklad.supplier_ico ?? "—"} />
           <Riadok label="IČ DPH" value={doklad.supplier_ic_dph ?? "—"} />
-          <Riadok label="Číslo dokladu" value={doklad.document_number ?? "—"} />
-          {doklad.note && <Riadok label="Poznámka" value={doklad.note} />}
+          <Riadok label={t("pd.cisloDokladu")} value={doklad.document_number ?? "—"} />
+          {doklad.note && <Riadok label={t("pd.poznamka")} value={doklad.note} />}
         </div>
 
         <div>
@@ -585,7 +587,7 @@ function DetailDokladu({
                     : "border-border/70 bg-card"
                 }`}
               >
-                {UHRADY[id]}
+                {t(UHRADY[id])}
               </button>
             ))}
           </div>
@@ -652,7 +654,7 @@ function DetailDokladu({
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm disabled:opacity-50"
         >
           <FileInput className="h-4 w-4" />
-          {presuvam ? "Presúvam…" : "Presunúť medzi prijaté faktúry"}
+          {presuvam ? t("pd.presuvam") : t("pd.presunut")}
         </button>
 
         {mazem ? (
