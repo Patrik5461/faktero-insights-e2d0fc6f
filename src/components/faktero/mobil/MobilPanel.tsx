@@ -338,12 +338,15 @@ export function MobilPanel({
           chodí denne, a spolu s verziou zaberalo celé dno panela.
         */}
         <div
-          className="flex items-center justify-between gap-2 border-t border-border/70 px-3 py-2"
-          style={{ paddingBottom: "calc(var(--safe-bottom) + 0.5rem)" }}
+          className="flex items-center justify-between gap-2 border-t border-border/70 px-3 py-1"
+          style={{ paddingBottom: "calc(var(--safe-bottom) + 0.25rem)" }}
         >
           <button
             onClick={onOdhlasit}
-            className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-destructive active:bg-destructive/10"
+            /* Nízke, ale nie neťukateľné: 44 px je najmenší cieľ, ktorý sa dá
+               na telefóne trafiť spoľahlivo. Výšku nesie tlačidlo, nie okraje
+               pätičky — inak by sa priestor vrátil. */
+            className="flex min-h-[44px] items-center gap-2 rounded-lg px-2 text-destructive active:bg-destructive/10"
           >
             <LogOut className="h-4 w-4" />
             <span className="text-[13px] font-medium">Odhlásiť sa</span>
