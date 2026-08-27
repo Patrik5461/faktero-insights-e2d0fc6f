@@ -1,0 +1,83 @@
+OK   OK    Fakturácia → Faktúry → /faktury
+OK   OK    Fakturácia → Nová faktúra → /faktury/nova
+OK   OK    Fakturácia → Rýchla faktúra → /faktury/rychla
+OK   OK    Fakturácia → Zálohové faktúry → /zalohove
+OK   OK    Fakturácia → Cenové ponuky → /ponuky
+OK   OK    Fakturácia → Prijaté objednávky → /objednavky
+OK   OK    Fakturácia → Nová objednávka → /objednavky/nova
+OK   OK    Fakturácia → Opakované faktúry → /opakovane
+OK   OK    Fakturácia → Dobropisy → /faktury?type=credit
+OK   OK    Fakturácia → Prijaté faktúry → /prijate-faktury
+OK   OK    Fakturácia → Koncepty → /faktury?status=draft
+OK   OK    Fakturácia → Skener dokladov → /faktury/skener
+OK   OK    Doklady → Prehľad dokladov → /doklady
+OK   OK    Doklady → Nový doklad (foto/QR/upload) → /doklady/novy
+OK   OK    Doklady → Doklady e-mailom → /doklady/mailom
+OK   OK    Doklady → Prehľad eFaktúry → /efaktura
+OK   OK    Doklady → Odoslané eFaktúry → /efaktura/odoslane
+OK   OK    Doklady → Prijaté eFaktúry → /efaktura/prijate
+OK   OK    Doklady → Doručenia eFaktúr → /efaktura/dorucenia
+OK   OK    Kontakty → Odberatelia → /odberatelia
+OK   OK    Kontakty → Nový odberateľ → /odberatelia?new=1
+OK   OK    Zákazky → Prehľad zákaziek → /zakazky
+OK   OK    Zákazky → Nová zákazka → /zakazky/nova
+OK   OK    Sklad → Prehľad → /sklad
+OK   OK    Sklad → Produkty a služby → /produkty
+OK   OK    Sklad → Cenník a zľavy → /ceny
+OK   OK    Sklad → Cenové akcie → /ceny/akcie
+OK   OK    Sklad → Skladové položky → /sklad/produkty
+OK   OK    Sklad → Kategórie → /sklad/kategorie
+OK   OK    Sklad → Pohyby → /sklad/pohyby
+OK   OK    Sklad → Objednávky u dodávateľov → /sklad/objednavky
+OK   OK    Sklad → Pod minimom → /sklad/minimum
+OK   OK    Sklad → Inventúra → /sklad/inventura
+OK   OK    Banka → Bankové účty → /bankove-ucty
+OK   OK    Banka → Bankové transakcie → /bankove-ucty/transakcie
+OK   OK    Banka → Bankové výpisy → /bankove-ucty/vypisy
+OK   OK    Banka → Leasingy a úvery → /financovanie
+OK   OK    Banka → Nová zmluva o financovaní → /financovanie/nova
+OK   OK    Banka → Pripojiť banku → /bankove-ucty/pripojit
+OK   OK    Účtovníctvo → Pokladňa → /pokladna
+OK   OK    Účtovníctvo → DPH prehľad → /uctovnictvo/dph
+OK   OK    Účtovníctvo → Uzávierka → /uctovnictvo/uzavierka
+OK   OK    Účtovníctvo → Účtovné exporty → /exporty
+OK   OK    Účtovníctvo → História exportov → /exporty?tab=history
+OK   OK    Účtovníctvo → Prepojenie s Pohodou → /uctovnictvo/pohoda
+OK   OK    Účtovníctvo → Bankový výpis do Pohody → /uctovnictvo/vypis-do-pohody
+OK   OK    Účtovníctvo → Import zo SuperFaktúry → /importy/superfaktura
+OK   OK    Účtovníctvo → Import z Pohody a mPohody → /importy/pohoda
+OK   OK    Účtovníctvo → Import z Money S3 → /importy/money-s3
+OK   OK    Účtovníctvo → Import z Omega → /importy/omega
+OK   OK    Účtovníctvo → Import z iDoklad → /importy/idoklad
+OK   OK    Účtovníctvo → Import z KROS → /importy/kros
+OK   OK    Účtovníctvo → História importov → /importy
+OK   OK    Jazdy → Jazdy → /jazdy
+OK   OK    Jazdy → Nová jazda → /jazdy/nova
+OK   OK    Jazdy → Export → /jazdy/export
+OK   OK    Vozidlá → Vozidlá a tankovanie → /jazdy/vozidla
+OK   OK    Integrácie → Prehľad integrácií → /jazdy/integracie
+OK   OK    Integrácie → Commander GPS → /jazdy/integracie/commander
+OK   OK    Integrácie → Tesla Fleet API → /jazdy/integracie/tesla
+OK   OK    Viac → Faktero AI → /ai-asistent
+OK   OK    Viac → Správa firiem → /firmy
+OK   OK    Viac → Predplatné → /predplatne
+OK   OK    Viac → Diagnostika → /diagnostika
+OK   OK    Účet → Nastavenia → Firma → /firma
+OK   OK    Účet → Nastavenia → Vzhľad faktúry → /nastavenia/vzhlad-faktury
+OK   OK    Účet → Nastavenia → Email šablóny → /nastavenia/email-sablony
+OK   OK    Účet → Nastavenia → Nastavenia systému → /nastavenia
+OK   OK    Účet → API → API kľúče → /api-kluce
+OK   OK    Účet → API → API dokumentácia → /api-dokumentacia
+OK   OK    Účet → API → API playground → /api-playground
+OK   OK    Účet → API → Webhooky → /webhooky
+OK   OK    Účet → API → Webhook delivery logy → /webhooky-logy
+OK   OK    Tlačidlo „Vytvoriť“ → Nová faktúra → /faktury/nova
+OK   OK    Tlačidlo „Vytvoriť“ → Rýchla faktúra → /faktury/rychla
+OK   OK    Tlačidlo „Vytvoriť“ → Nová cenová ponuka → /ponuky/nova
+OK   OK    Tlačidlo „Vytvoriť“ → Nový odberateľ → /odberatelia?new=1
+OK   OK    Tlačidlo „Vytvoriť“ → Nový produkt → /produkty?new=1
+OK   OK    Tlačidlo „Vytvoriť“ → Nová opakovaná faktúra → /opakovane/nova
+OK   OK    Ďalšie odkazy v ponuke pod avatarom → Profil → /nastavenia
+OK   OK    Ďalšie odkazy v ponuke pod avatarom → Predplatné → /predplatne
+OK   OK    Ďalšie odkazy v ponuke pod avatarom → Pomoc → /pomoc
+podm podm  Ďalšie odkazy v ponuke pod avatarom → Platform Admin → /admin
