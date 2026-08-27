@@ -14,7 +14,6 @@ import {
   ExternalLink,
   FileInput,
 } from "lucide-react";
-import { DOKLADY, sPoctom } from "@/lib/faktero/mnozne";
 import { fronta, zmazZFronty, type CakajuciDoklad } from "@/lib/mobile/doklady-fronta";
 import { odosliCakajuce } from "@/lib/mobile/doklady-odoslanie";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
@@ -69,25 +68,26 @@ function cislo(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function suma(v: unknown, mena = "EUR"): string {
+function suma(v: unknown, mena = "EUR", loc = "sk-SK"): string {
   const n = cislo(v);
   if (n == null) return "—";
-  return formatovacMeny(mena, "sk-SK")(n);
+  return formatovacMeny(mena, loc)(n);
 }
 
 /** „2026-08-09" → „9. 8. 2026". Zápis v ISO nikto nečíta ako dátum. */
-export function datum(v?: string | null): string {
+export function datum(v?: string | null, loc = "sk-SK"): string {
   if (!v) return "—";
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
   if (!m) return v;
-  return `${Number(m[3])}. ${Number(m[2])}. ${m[1]}`;
+  /* Poradie dňa a mesiaca je v každom jazyku iné — nechávame ho na systéme. */
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toLocaleDateString(loc);
 }
 
 /** „2026-08" → „august 2026" — mesiac sa v zozname používa ako predel. */
-function nazovMesiaca(kluc: string): string {
+function nazovMesiaca(kluc: string, loc: string): string {
   const [r, m] = kluc.split("-").map(Number);
   const d = new Date(r, (m || 1) - 1, 1);
-  return d.toLocaleDateString("sk-SK", { month: "long", year: "numeric" });
+  return d.toLocaleDateString(loc, { month: "long", year: "numeric" });
 }
 
 export function PrijateDoklady({
@@ -97,7 +97,7 @@ export function PrijateDoklady({
   firma: { id: string; name: string };
   onSpat: () => void;
 }) {
-  const { t } = usePreklad();
+  const { t, mnozne, locale: loc } = usePreklad();
   const nacitaj = useOperacia("vydavky-zoznam");
   const navrhyFn = useOperacia("doklady-navrhy-parovania");
   const sparujFn = useOperacia("doklad-sparuj");
@@ -160,7 +160,7 @@ export function PrijateDoklady({
     setOdosielam(true);
     try {
       const r = await odosliCakajuce(firma.id, citajBlocek as any, vytvorDoklad as any);
-      if (r.odoslane > 0) toast.success(`Odoslané doklady: ${r.odoslane}`);
+      if (r.odoslane > 0) toast.success(t("pd.odoslaneDoklady", { pocet: r.odoslane }));
       else if (nahlas && r.zostalo > 0) toast.error(t("pd.bezSignalu"));
       if (r.odoslane > 0) await obnov();
       else setCakajuce(await fronta(firma.id));
@@ -251,7 +251,13 @@ export function PrijateDoklady({
           <div className="flex items-center gap-2 px-4 py-3">
             <CloudOff className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
             <span className="flex-1 text-[14px] font-medium text-amber-800 dark:text-amber-200">
-              Čaká na odoslanie: {sPoctom(cakajuce.length, DOKLADY)}
+              {t("pd.cakaNaOdoslanie", {
+                pocet: `${cakajuce.length} ${mnozne(cakajuce.length, {
+                  one: t("spolocne.doklad1"),
+                  few: t("spolocne.doklad2"),
+                  other: t("spolocne.doklad5"),
+                })}`,
+              })}
             </span>
             <button
               onClick={() => posliFrontu(true)}
@@ -272,7 +278,7 @@ export function PrijateDoklady({
                   {d.vysledok?.supplier ?? t("pd.neprecitany")}
                 </span>
                 <span className="block truncate text-[12px] text-muted-foreground">
-                  {new Date(d.ts).toLocaleString("sk-SK")}
+                  {new Date(d.ts).toLocaleString(loc)}
                   {d.chyba ? ` · ${d.chyba}` : d.qr_raw ? ` · ${t("pd.sQrKodom")}` : ""}
                 </span>
               </span>
@@ -298,7 +304,7 @@ export function PrijateDoklady({
       {navrhy.length > 0 && (
         <div className="mb-4 overflow-hidden rounded-2xl border border-primary/40 bg-primary/5">
           <div className="px-4 py-3 text-[14px] font-medium">
-            Našli sme platby k dokladom ({navrhy.length})
+            {t("pd.najdenePlatby", { pocet: navrhy.length })}
           </div>
           {navrhy.map((z) => (
             <div key={z.transactionId} className="border-t border-primary/20 px-4 py-3">
@@ -307,11 +313,11 @@ export function PrijateDoklady({
                   {z.doklad?.supplier_name ?? t("pd.doklad")}
                 </span>
                 <span className="shrink-0 text-[14px] tabular-nums">
-                  {suma(z.doklad?.total_amount, z.doklad?.currency ?? "EUR")}
+                  {suma(z.doklad?.total_amount, z.doklad?.currency ?? "EUR", loc)}
                 </span>
               </div>
               <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
-                {datum(z.pohyb?.booking_date)} · {z.dovody.join(" · ")}
+                {datum(z.pohyb?.booking_date, loc)} · {z.dovody.join(" · ")}
               </p>
               <div className="mt-2 flex gap-2">
                 <button
@@ -377,10 +383,10 @@ export function PrijateDoklady({
               <div key={kluc}>
                 <div className="mb-2 flex items-baseline justify-between px-1">
                   <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {nazovMesiaca(kluc)}
+                    {nazovMesiaca(kluc, loc)}
                   </h2>
                   <span className="text-[13px] font-medium tabular-nums text-muted-foreground">
-                    {riadky.length} × · {suma(spolu, riadky[0]?.currency ?? "EUR")}
+                    {riadky.length} × · {suma(spolu, riadky[0]?.currency ?? "EUR", loc)}
                   </span>
                 </div>
                 <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
@@ -406,13 +412,15 @@ export function PrijateDoklady({
                           {d.supplier_name ?? t("pd.bezDodavatela")}
                         </span>
                         <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
-                          {datum(d.issue_date)}
+                          {datum(d.issue_date, loc)}
                           {d.payment_method ? ` · ${t(UHRADY[d.payment_method])}` : ""}
-                          {uhrady[d.id] ? ` · uhradené z účtu ${datum(uhrady[d.id].datum)}` : ""}
+                          {uhrady[d.id]
+                            ? ` · ${t("pd.uhradeneSkratka", { den: datum(uhrady[d.id].datum, loc) })}`
+                            : ""}
                         </span>
                       </span>
                       <span className="shrink-0 text-[15px] font-semibold tabular-nums">
-                        {suma(d.total_amount, d.currency ?? "EUR")}
+                        {suma(d.total_amount, d.currency ?? "EUR", loc)}
                       </span>
                     </button>
                   ))}
@@ -444,7 +452,7 @@ function DetailDokladu({
   uhrada: { datum: string; transactionId: string } | null;
   onRozparovane: () => void;
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const urlFn = useOperacia("vydavok-subor");
   const rozparujFn = useOperacia("doklad-zrus-parovanie");
   const [rozparujem, setRozparujem] = useState(false);
@@ -513,17 +521,20 @@ function DetailDokladu({
   return (
     <MobilObrazovka
       title={doklad.supplier_name ?? t("pd.doklad")}
-      subtitle={doklad.issue_date ? datum(doklad.issue_date) : undefined}
+      subtitle={doklad.issue_date ? datum(doklad.issue_date, loc) : undefined}
       onBack={onSpat}
     >
       <div className="space-y-4">
         <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
           <div className="text-[32px] font-semibold leading-none tabular-nums">
-            {suma(doklad.total_amount, mena)}
+            {suma(doklad.total_amount, mena, loc)}
           </div>
           {cislo(doklad.vat_amount) != null && (
             <div className="mt-2 text-[13px] text-muted-foreground">
-              základ {suma(doklad.net_amount, mena)} · DPH {suma(doklad.vat_amount, mena)}
+              {t("nf.zakladDph", {
+                zaklad: suma(doklad.net_amount, mena, loc),
+                dph: suma(doklad.vat_amount, mena, loc),
+              })}
               {rozpis.length > 1 ? ` (${rozpis.map((s) => `${s.sadzba} %`).join(" + ")})` : ""}
             </div>
           )}
@@ -543,7 +554,7 @@ function DetailDokladu({
           <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/5 p-4">
             <BadgeCheck className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-300" />
             <span className="min-w-0 flex-1 text-[14px]">
-              Uhradené z účtu {datum(uhradaZUctu.datum)}
+              {t("pd.uhradeneZUctuDna", { den: datum(uhradaZUctu.datum, loc) })}
             </span>
             <button
               disabled={rozparujem}
@@ -596,7 +607,7 @@ function DetailDokladu({
         {polozky.length > 0 && (
           <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
             <div className="border-b border-border/70 px-4 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Položky ({polozky.length})
+              {t("pd.polozkyPocet", { pocet: polozky.length })}
             </div>
             {polozky.map((p, i) => (
               <div
@@ -608,11 +619,11 @@ function DetailDokladu({
                 <span className="min-w-0">
                   <span className="block">{p.name || "—"}</span>
                   <span className="block text-xs text-muted-foreground">
-                    {p.quantity} × {suma(p.unit_price, mena)} · {p.vat_rate} %
+                    {p.quantity} × {suma(p.unit_price, mena, loc)} · {p.vat_rate} %
                   </span>
                 </span>
                 <span className="shrink-0 tabular-nums">
-                  {suma(p.total ?? p.quantity * p.unit_price, mena)}
+                  {suma(p.total ?? p.quantity * p.unit_price, mena, loc)}
                 </span>
               </div>
             ))}

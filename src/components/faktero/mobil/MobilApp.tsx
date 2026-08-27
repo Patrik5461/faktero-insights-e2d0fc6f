@@ -445,7 +445,7 @@ function ObsahApky() {
               toast.success(
                 odoslane === 1
                   ? t("app.fakturaOdoslana")
-                  : `Odoslaných odložených faktúr: ${odoslane}.`,
+                  : t("app.odoslanychOdlozenych", { pocet: odoslane }),
               );
             }
             await doplnCisla(vybrana.id);
@@ -467,7 +467,7 @@ function ObsahApky() {
               toast.success(
                 ulozene === 1
                   ? t("app.jazdaUlozena")
-                  : `Uložených ${ulozene} rozpoznaných jázd`,
+                  : t("app.jazdUlozenych", { pocet: ulozene }),
               );
             }
           })
@@ -659,11 +659,11 @@ function ObsahApky() {
   if (krok === "nacitavam") {
     const peciatka = typeof __PECIATKA__ === "string" ? __PECIATKA__ : "web";
     if (!dlho && !chybaStartu)
-      return <Pracujem text={`Spúšťam Faktero… (${faza}) · ${peciatka}`} />;
+      return <Pracujem text={t("app.spustam", { faza, balicek: peciatka })} />;
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-background p-6 text-center">
         <div className="space-y-3">
-          <p className="text-sm font-medium">Štart sa zasekol na kroku „{faza}".</p>
+          <p className="text-sm font-medium">{t("app.startZasekol", { faza })}</p>
           <p className="text-[13px] text-muted-foreground">
             {t("app.slabePripojenie")}
           </p>
@@ -672,7 +672,7 @@ function ObsahApky() {
               {chybaStartu}
             </p>
           )}
-          <p className="text-[11px] text-muted-foreground">balíček {peciatka}</p>
+          <p className="text-[11px] text-muted-foreground">{t("app.balicek", { peciatka })}</p>
           <div className="flex flex-col gap-2 pt-2">
             <button
               onClick={() => {
@@ -1755,7 +1755,7 @@ function ZachytDokladu({
           <VelkeTlacidlo
             icon={Camera}
             label={strany.length === 0 ? t("app.odfotitPrvuStranu") : t("app.pridatDalsiuStranu")}
-            hint={strany.length > 0 ? `Zatiaľ ${strany.length} strán` : t("app.dokladOdfotteCely")}
+            hint={strany.length > 0 ? t("app.zatialStran", { pocet: strany.length }) : t("app.dokladOdfotteCely")}
             variant="primary"
             onClick={pridajStranu}
           />
@@ -1777,7 +1777,7 @@ function ZachytDokladu({
               </div>
               <VelkeTlacidlo
                 icon={Check}
-                label={`Hotovo — ${strany.length} strán`}
+                label={t("app.hotovoStran", { pocet: strany.length })}
                 hint={t("app.stranySaSpoja")}
                 onClick={dokonciStrany}
               />
@@ -1808,9 +1808,9 @@ function Potvrdenie({
   onUloz: () => void;
   onSpat: () => void;
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const mena = vysledok.currency ?? "EUR";
-  const suma = (n?: number) => (n == null ? "—" : formatovacMeny(mena, "sk-SK")(n));
+  const suma = (n?: number) => (n == null ? "—" : formatovacMeny(mena, loc)(n));
 
   return (
     <MobilObrazovka
@@ -1841,7 +1841,7 @@ function Potvrdenie({
           </div>
           <div className="mt-2 text-[14px] text-muted-foreground">
             {vysledok.supplier ?? t("app.neznamyPredajca")}
-            {vysledok.date ? ` · ${datum(vysledok.date)}` : ""}
+            {vysledok.date ? ` · ${datum(vysledok.date, loc)}` : ""}
           </div>
           {vysledok.vat_amount != null && (
             <div className="mt-2 text-xs text-muted-foreground">
@@ -1853,7 +1853,7 @@ function Potvrdenie({
           )}
           {vysledok.items.length > 0 && (
             <div className="mt-2 text-xs text-muted-foreground">
-              {vysledok.items.length} položiek z dokladu
+              {t("app.poloziekZDokladu", { pocet: vysledok.items.length })}
             </div>
           )}
         </div>
@@ -1882,7 +1882,7 @@ function Potvrdenie({
             )}
             {vysledok.payment_method && (
               <span className="text-xs font-normal text-muted-foreground">
-                (prečítané z dokladu)
+                {t("app.zDokladuZatvorka")}
               </span>
             )}
           </div>

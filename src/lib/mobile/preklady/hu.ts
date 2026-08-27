@@ -629,6 +629,51 @@ export const hu: Partial<Record<Kluc, string>> = {
   "faktury.pripravujemPdf": "PDF előkészítése…",
   "pd.odosielam": "Küldés…",
 
+  /* vystavené faktúry */
+  "faktury.cakaNaOdoslanie": "Küldésre vár: {pocet}",
+
+  /* prijaté doklady — úhrada */
+  "pd.uhradeneZUctuDna": "Számláról fizetve: {den}",
+  "pd.uhradeneSkratka": "számláról fizetve: {den}",
+
+  /* súhrny */
+  "nf.zakladDph": "nettó {zaklad} · áfa {dph}",
+  "nf.odpocitaSa": "levonásra kerül: {suma}",
+
+  /* šablónové texty */
+  "banka.kFakture": "{cislo} számlához",
+  "banka.aktualizovane": "Frissítve: {ked}",
+  "jz.bezi": "fut {trvanie}",
+  "jz.ukladaSaNa": "A(z) {auto} járműre mentjük — lentebb másik járművet választhat.",
+  "app.spustam": "A Faktero indítása… ({faza}) · {balicek}",
+  "app.startZasekol": "Az indítás elakadt a(z) „{faza}” lépésnél.",
+  "app.balicek": "csomag {peciatka}",
+  "app.hotovoStran": "Kész — {pocet} oldal",
+  "app.poloziekZDokladu": "{pocet} tétel a bizonylatról",
+  "nf.zFaktury": "{cislo} számláról",
+  "nf.polozkyZFaktury": "Tételek a(z) {cislo} számláról",
+  "nf.opravena": "{cislo} számla javítva",
+  "nf.icoS": "Cégjegyzékszám: {ico}",
+  "nf.zuctovanaZaloha": "Elszámolt előleg: {cislo}",
+  "nf.dni": "{d} nap",
+  "nf.zalohaCislo": "Előleg {cislo}",
+  "nf.odoslaneNa": "Elküldve ide: {email}",
+  "ponuky.vytvorena": "{cislo} árajánlat létrehozva.",
+  "ponuky.vytvoritSuma": "Árajánlat létrehozása · {suma}",
+  "ponuky.nazovSuboru": "{cislo} árajánlat",
+  "pd.odoslaneDoklady": "Elküldött bizonylatok: {pocet}",
+  "pd.cakaNaOdoslanie": "Küldésre vár: {pocet}",
+  "spolocne.doklad1": "bizonylat",
+  "spolocne.doklad2": "bizonylat",
+  "spolocne.doklad5": "bizonylat",
+  "pd.najdenePlatby": "Találtunk fizetéseket a bizonylatokhoz ({pocet})",
+  "pd.polozkyPocet": "Tételek ({pocet})",
+  "faktury.zmazana": "{cislo} számla törölve",
+  "faktury.upomienkaOdoslana": "{n}. emlékeztető elküldve",
+  "faktury.poslatUpomienku": "{n}. emlékeztető küldése",
+  "faktury.zatialOdoslane": "Eddig elküldve: {pocet}",
+  "faktury.naozajZmazat": "Biztosan törli a(z) {cislo} számlát?",
+
   "spolocne.spat": "Vissza",
   "spolocne.ulozit": "Mentés",
   "spolocne.zrusit": "Mégse",

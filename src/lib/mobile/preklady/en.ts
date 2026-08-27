@@ -634,6 +634,51 @@ export const en: Partial<Record<Kluc, string>> = {
   "faktury.pripravujemPdf": "Preparing the PDF…",
   "pd.odosielam": "Sending…",
 
+  /* vystavené faktúry */
+  "faktury.cakaNaOdoslanie": "Waiting to be sent: {pocet}",
+
+  /* prijaté doklady — úhrada */
+  "pd.uhradeneZUctuDna": "Paid from the account on {den}",
+  "pd.uhradeneSkratka": "paid from the account on {den}",
+
+  /* súhrny */
+  "nf.zakladDph": "net {zaklad} · VAT {dph}",
+  "nf.odpocitaSa": "{suma} will be deducted",
+
+  /* šablónové texty */
+  "banka.kFakture": "for invoice {cislo}",
+  "banka.aktualizovane": "Updated {ked}",
+  "jz.bezi": "running {trvanie}",
+  "jz.ukladaSaNa": "It is saved to {auto} — change it by picking another vehicle below.",
+  "app.spustam": "Starting Faktero… ({faza}) · {balicek}",
+  "app.startZasekol": "Startup got stuck at step “{faza}”.",
+  "app.balicek": "bundle {peciatka}",
+  "app.hotovoStran": "Done — {pocet} pages",
+  "app.poloziekZDokladu": "{pocet} items from the receipt",
+  "nf.zFaktury": "From invoice {cislo}",
+  "nf.polozkyZFaktury": "Items from invoice {cislo}",
+  "nf.opravena": "Invoice {cislo} corrected",
+  "nf.icoS": "Company ID {ico}",
+  "nf.zuctovanaZaloha": "Deposit settled {cislo}",
+  "nf.dni": "{d} days",
+  "nf.zalohaCislo": "Deposit {cislo}",
+  "nf.odoslaneNa": "Sent to {email}",
+  "ponuky.vytvorena": "Quote {cislo} created.",
+  "ponuky.vytvoritSuma": "Create quote · {suma}",
+  "ponuky.nazovSuboru": "Quote {cislo}",
+  "pd.odoslaneDoklady": "Receipts sent: {pocet}",
+  "pd.cakaNaOdoslanie": "Waiting to be sent: {pocet}",
+  "spolocne.doklad1": "receipt",
+  "spolocne.doklad2": "receipts",
+  "spolocne.doklad5": "receipts",
+  "pd.najdenePlatby": "We found payments for receipts ({pocet})",
+  "pd.polozkyPocet": "Items ({pocet})",
+  "faktury.zmazana": "Invoice {cislo} deleted",
+  "faktury.upomienkaOdoslana": "Reminder {n} sent",
+  "faktury.poslatUpomienku": "Send reminder {n}",
+  "faktury.zatialOdoslane": "Sent so far: {pocet}",
+  "faktury.naozajZmazat": "Really delete invoice {cislo}?",
+
   "spolocne.spat": "Back",
   "spolocne.ulozit": "Save",
   "spolocne.zrusit": "Cancel",

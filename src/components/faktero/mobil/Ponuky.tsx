@@ -33,10 +33,10 @@ export type Ponuka = {
   sent_at: string | null;
 };
 
-function suma(v: unknown, mena = "EUR"): string {
+function suma(v: unknown, mena = "EUR", loc = "sk-SK"): string {
   const n = Number(v);
   if (!Number.isFinite(n)) return "—";
-  return formatovacMeny(mena, "sk-SK")(n);
+  return formatovacMeny(mena, loc)(n);
 }
 
 function den(d: string | null | undefined, loc: string): string {
@@ -115,7 +115,7 @@ export function Ponuky({
         return { signedUrl: r.signedUrl ?? r.url };
       };
       if (zdielat)
-        await zdielajPdfFaktury(ziskaj, p.quote_number, `Cenová ponuka ${p.quote_number}`);
+        await zdielajPdfFaktury(ziskaj, p.quote_number, t("ponuky.nazovSuboru", { cislo: p.quote_number }));
       else await otvorPdfFaktury(ziskaj);
     } catch (e) {
       toast.error((e as Error).message);
@@ -220,7 +220,7 @@ export function Ponuky({
                 </div>
                 <div className="shrink-0 text-right">
                   <div className="text-sm font-bold tabular-nums">
-                    {suma(p.total, p.currency ?? "EUR")}
+                    {suma(p.total, p.currency ?? "EUR", loc)}
                   </div>
                   <span
                     className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${s.trieda}`}

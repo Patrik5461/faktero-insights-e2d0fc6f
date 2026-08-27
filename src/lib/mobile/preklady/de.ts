@@ -628,6 +628,51 @@ export const de: Partial<Record<Kluc, string>> = {
   "faktury.pripravujemPdf": "PDF wird vorbereitet…",
   "pd.odosielam": "Wird gesendet…",
 
+  /* vystavené faktúry */
+  "faktury.cakaNaOdoslanie": "Wartet auf Versand: {pocet}",
+
+  /* prijaté doklady — úhrada */
+  "pd.uhradeneZUctuDna": "Vom Konto bezahlt am {den}",
+  "pd.uhradeneSkratka": "vom Konto bezahlt am {den}",
+
+  /* súhrny */
+  "nf.zakladDph": "netto {zaklad} · USt. {dph}",
+  "nf.odpocitaSa": "{suma} wird abgezogen",
+
+  /* šablónové texty */
+  "banka.kFakture": "zu Rechnung {cislo}",
+  "banka.aktualizovane": "Aktualisiert {ked}",
+  "jz.bezi": "läuft {trvanie}",
+  "jz.ukladaSaNa": "Sie wird auf {auto} gebucht — ändern Sie es durch Auswahl eines anderen Fahrzeugs unten.",
+  "app.spustam": "Faktero wird gestartet… ({faza}) · {balicek}",
+  "app.startZasekol": "Der Start hängt beim Schritt „{faza}“.",
+  "app.balicek": "Paket {peciatka}",
+  "app.hotovoStran": "Fertig — {pocet} Seiten",
+  "app.poloziekZDokladu": "{pocet} Positionen aus dem Beleg",
+  "nf.zFaktury": "Aus Rechnung {cislo}",
+  "nf.polozkyZFaktury": "Positionen aus Rechnung {cislo}",
+  "nf.opravena": "Rechnung {cislo} korrigiert",
+  "nf.icoS": "Firmennummer {ico}",
+  "nf.zuctovanaZaloha": "Verrechnete Anzahlung {cislo}",
+  "nf.dni": "{d} Tage",
+  "nf.zalohaCislo": "Anzahlung {cislo}",
+  "nf.odoslaneNa": "Gesendet an {email}",
+  "ponuky.vytvorena": "Angebot {cislo} erstellt.",
+  "ponuky.vytvoritSuma": "Angebot erstellen · {suma}",
+  "ponuky.nazovSuboru": "Angebot {cislo}",
+  "pd.odoslaneDoklady": "Gesendete Belege: {pocet}",
+  "pd.cakaNaOdoslanie": "Wartet auf Versand: {pocet}",
+  "spolocne.doklad1": "Beleg",
+  "spolocne.doklad2": "Belege",
+  "spolocne.doklad5": "Belege",
+  "pd.najdenePlatby": "Wir haben Zahlungen zu Belegen gefunden ({pocet})",
+  "pd.polozkyPocet": "Positionen ({pocet})",
+  "faktury.zmazana": "Rechnung {cislo} gelöscht",
+  "faktury.upomienkaOdoslana": "{n}. Mahnung gesendet",
+  "faktury.poslatUpomienku": "{n}. Mahnung senden",
+  "faktury.zatialOdoslane": "Bisher gesendet: {pocet}",
+  "faktury.naozajZmazat": "Rechnung {cislo} wirklich löschen?",
+
   "spolocne.spat": "Zurück",
   "spolocne.ulozit": "Speichern",
   "spolocne.zrusit": "Abbrechen",

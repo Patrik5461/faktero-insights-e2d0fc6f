@@ -14,7 +14,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { FAKTURY, sPoctom } from "@/lib/faktero/mnozne";
 import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import { datum } from "./PrijateDoklady";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
@@ -49,15 +48,15 @@ type Faktura = {
   sent_at: string | null;
 };
 
-function suma(v: unknown, mena = "EUR"): string {
+function suma(v: unknown, mena = "EUR", loc = "sk-SK"): string {
   const n = Number(v);
   if (!Number.isFinite(n)) return "—";
-  return formatovacMeny(mena, "sk-SK")(n);
+  return formatovacMeny(mena, loc)(n);
 }
 
-function nazovMesiaca(kluc: string): string {
+function nazovMesiaca(kluc: string, loc: string): string {
   const [r, m] = kluc.split("-").map(Number);
-  return new Date(r, (m || 1) - 1, 1).toLocaleDateString("sk-SK", {
+  return new Date(r, (m || 1) - 1, 1).toLocaleDateString(loc, {
     month: "long",
     year: "numeric",
   });
@@ -102,7 +101,7 @@ export function VystaveneFaktury({
   /** Otvorí opravu faktúry — obrazovku vlastní `MobilApp`, nie tento zoznam. */
   onUprav: (faktura: { id: string; invoice_number: string }) => void;
 }) {
-  const { t } = usePreklad();
+  const { t, mnozne, locale: loc } = usePreklad();
   const nacitaj = useOperacia("faktury-zoznam");
   const [faktury, setFaktury] = useState<Faktura[] | null>(null);
   const [hladanie, setHladanie] = useState("");
@@ -150,7 +149,7 @@ export function VystaveneFaktury({
       if (zapamatane?.hodnota?.length) {
         setFaktury(zapamatane.hodnota);
         toast.message(t("faktury.bezPripojenia"), {
-          description: new Date(zapamatane.kedy).toLocaleString("sk-SK"),
+          description: new Date(zapamatane.kedy).toLocaleString(loc),
         });
       } else {
         // Tvrdiť „zatiaľ žiadne faktúry" by bola nepravda — vieme len to, že
@@ -224,10 +223,14 @@ export function VystaveneFaktury({
         <div className="mb-4 rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
           <div className="text-[13px] text-muted-foreground">{t("faktury.neuhradene")}</div>
           <div className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums">
-            {suma(dlznici.spolu, dlznici.mena)}
+            {suma(dlznici.spolu, dlznici.mena, loc)}
           </div>
           <div className="mt-1 text-[13px] text-muted-foreground">
-            {sPoctom(dlznici.pocet, FAKTURY)}
+            {`${dlznici.pocet} ${mnozne(dlznici.pocet, {
+              one: t("spolocne.faktura1"),
+              few: t("spolocne.faktura2"),
+              other: t("spolocne.faktura5"),
+            })}`}
           </div>
         </div>
       )}
@@ -236,7 +239,13 @@ export function VystaveneFaktury({
         <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
           <div className="flex items-center gap-2 text-[14px] font-medium">
             <CloudOff className="h-4 w-4 shrink-0" />
-            Čaká na odoslanie: {sPoctom(cakajuce.length, FAKTURY)}
+            {t("faktury.cakaNaOdoslanie", {
+              pocet: `${cakajuce.length} ${mnozne(cakajuce.length, {
+                one: t("spolocne.faktura1"),
+                few: t("spolocne.faktura2"),
+                other: t("spolocne.faktura5"),
+              })}`,
+            })}
           </div>
           <div className="mt-2 space-y-1.5">
             {cakajuce.map((f) => (
@@ -247,7 +256,7 @@ export function VystaveneFaktury({
                   {f.cislo ? `${f.cislo} · ` : ""}
                   {f.odberatel}
                 </span>
-                <span className="shrink-0 tabular-nums">{suma(f.spolu, dlznici.mena)}</span>
+                <span className="shrink-0 tabular-nums">{suma(f.spolu, dlznici.mena, loc)}</span>
               </div>
             ))}
           </div>
@@ -296,10 +305,10 @@ export function VystaveneFaktury({
               <div key={kluc}>
                 <div className="mb-2 flex items-baseline justify-between px-1">
                   <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {nazovMesiaca(kluc)}
+                    {nazovMesiaca(kluc, loc)}
                   </h2>
                   <span className="text-[13px] font-medium tabular-nums text-muted-foreground">
-                    {riadky.length} × · {suma(spolu, riadky[0]?.currency ?? "EUR")}
+                    {riadky.length} × · {suma(spolu, riadky[0]?.currency ?? "EUR", loc)}
                   </span>
                 </div>
                 <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
@@ -327,7 +336,7 @@ export function VystaveneFaktury({
                           </span>
                         </span>
                         <span className="shrink-0 text-[15px] font-semibold tabular-nums">
-                          {suma(f.total, f.currency ?? "EUR")}
+                          {suma(f.total, f.currency ?? "EUR", loc)}
                         </span>
                       </button>
                     );
@@ -355,7 +364,7 @@ function DetailFaktury({
   onZmena: () => void;
   onUprav: (faktura: { id: string; invoice_number: string }) => void;
 }) {
-  const { t } = usePreklad();
+  const { t, mnozne, locale: loc } = usePreklad();
   const pdfFn = useOperacia("faktura-pdf");
   const mailFn = useOperacia("faktura-email");
   const paidFn = useOperacia("faktury-uhradene");
@@ -400,7 +409,7 @@ function DetailFaktury({
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", faktura.id);
       if (error) throw new Error(error.message);
-      toast.success(`Faktúra ${faktura.invoice_number} zmazaná`);
+      toast.success(t("faktury.zmazana", { cislo: faktura.invoice_number }));
       onZmena();
     } catch (e: any) {
       toast.error(e?.message ?? t("faktury.chybaMazania"));
@@ -430,7 +439,7 @@ function DetailFaktury({
       await zdielajPdfFaktury(
         () => pdfFn({ data: { invoiceId: faktura.id } }) as any,
         faktura.invoice_number,
-        `Faktúra ${faktura.invoice_number} na ${suma(faktura.total, mena)}.`,
+        `${t("nf.fakturaCislo", { cislo: faktura.invoice_number })} — ${suma(faktura.total, mena, loc)}.`,
       );
     } catch (e: any) {
       toast.error(e?.message ?? t("faktury.chybaZdielania"));
@@ -444,7 +453,7 @@ function DetailFaktury({
     setBusy("mail");
     try {
       await mailFn({ data: { invoiceId: faktura.id, recipient_email: faktura.customer_email } });
-      toast.success(`Odoslané na ${faktura.customer_email}`);
+      toast.success(t("nf.odoslaneNa", { email: faktura.customer_email ?? "" }));
       onZmena();
     } catch (e: any) {
       toast.error(e?.message ?? "Odoslanie zlyhalo.");
@@ -465,7 +474,7 @@ function DetailFaktury({
         },
       });
       setPoslanych(cislo);
-      toast.success(`${cislo}. upomienka odoslaná`);
+      toast.success(t("faktury.upomienkaOdoslana", { n: cislo }));
     } catch (e: any) {
       toast.error(e?.message ?? t("faktury.chybaUpomienky"));
     } finally {
@@ -505,7 +514,7 @@ function DetailFaktury({
       <div className="space-y-4">
         <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
           <div className="text-[32px] font-semibold leading-none tabular-nums">
-            {suma(faktura.total, mena)}
+            {suma(faktura.total, mena, loc)}
           </div>
           <div
             className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[12px] font-medium ${s.trieda}`}
@@ -515,10 +524,10 @@ function DetailFaktury({
         </div>
 
         <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-4 text-[14px] shadow-[var(--shadow-card)]">
-          <Riadok label={t("faktury.vystavena")} value={datum(faktura.issue_date)} />
-          <Riadok label={t("faktury.splatna")} value={datum(faktura.due_date)} />
-          {faktura.paid_at && <Riadok label={t("faktury.uhradena")} value={datum(faktura.paid_at)} />}
-          {faktura.sent_at && <Riadok label={t("faktury.odoslana")} value={datum(faktura.sent_at)} />}
+          <Riadok label={t("faktury.vystavena")} value={datum(faktura.issue_date, loc)} />
+          <Riadok label={t("faktury.splatna")} value={datum(faktura.due_date, loc)} />
+          {faktura.paid_at && <Riadok label={t("faktury.uhradena")} value={datum(faktura.paid_at, loc)} />}
+          {faktura.sent_at && <Riadok label={t("faktury.odoslana")} value={datum(faktura.sent_at, loc)} />}
         </div>
 
         <div className="space-y-2">
@@ -549,8 +558,10 @@ function DetailFaktury({
           {s.kluc === "faktury.stav.poSplatnosti" && faktura.customer_email && poslanych < 3 && (
             <VelkeTlacidlo
               icon={BellRing}
-              label={`Poslať ${Math.min(3, poslanych + 1)}. upomienku`}
-              hint={poslanych ? `Zatiaľ odoslané: ${poslanych}` : faktura.customer_email}
+              label={t("faktury.poslatUpomienku", { n: Math.min(3, poslanych + 1) })}
+              hint={
+                poslanych ? t("faktury.zatialOdoslane", { pocet: poslanych }) : faktura.customer_email
+              }
               onClick={posliUpomienku}
             />
           )}
@@ -593,7 +604,9 @@ function DetailFaktury({
 
         {mazem ? (
           <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
-            <p className="text-sm font-medium">Naozaj zmazať faktúru {faktura.invoice_number}?</p>
+            <p className="text-sm font-medium">
+              {t("faktury.naozajZmazat", { cislo: faktura.invoice_number })}
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {t("faktury.cisloOstava")}
             </p>

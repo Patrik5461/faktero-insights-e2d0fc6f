@@ -124,7 +124,7 @@ export function NovaPonuka({
           })),
         },
       });
-      toast.success(`Ponuka ${r.quote_number} vytvorená.`);
+      toast.success(t("ponuky.vytvorena", { cislo: r.quote_number }));
       onHotovo();
     } catch (e) {
       toast.error(friendlyError(e, t("ponuky.nepodariloVytvorit")));
@@ -159,7 +159,7 @@ export function NovaPonuka({
       onBack={onSpat}
       footer={
         <HlavneTlacidlo onClick={() => void uloz()}>
-          Vytvoriť ponuku · {suma(sucty.spolu, mena)}
+          {t("ponuky.vytvoritSuma", { suma: suma(sucty.spolu, mena) })}
         </HlavneTlacidlo>
       }
     >

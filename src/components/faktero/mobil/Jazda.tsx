@@ -556,7 +556,7 @@ export function Jazda({
               {pauza
                 ? t("jz.pozastavene")
                 : bezi && odkedy
-                  ? `beží ${trvanie(odkedy)}`
+                  ? t("jz.bezi", { trvanie: trvanie(odkedy) })
                   : t("jz.meranieNebezi")}
             </div>
           </div>
@@ -672,7 +672,7 @@ export function Jazda({
                       {(j.distanceMeters / 1000).toFixed(1)} km
                     </span>
                     <span className="text-[12px] text-muted-foreground">
-                      {new Date(j.startedAt).toLocaleString("sk-SK", {
+                      {new Date(j.startedAt).toLocaleString(loc, {
                         day: "numeric",
                         month: "numeric",
                         hour: "2-digit",
@@ -816,16 +816,11 @@ export function Jazda({
             {popisDetekcie && (
               <p className="mt-2 text-xs text-muted-foreground">
                 {t("jz.vsimneSi")}
-                {vozidla && vozidla.length > 1 && vozidloId ? (
-                  <>
-                    {" "}
-                    Ukladá sa na{" "}
-                    <span className="font-medium text-foreground">
-                      {vozidla.find((v) => v.id === vozidloId)?.name}
-                    </span>{" "}
-                    — zmeníš výberom vozidla nižšie.
-                  </>
-                ) : null}
+                {vozidla && vozidla.length > 1 && vozidloId
+                  ? ` ${t("jz.ukladaSaNa", {
+                      auto: vozidla.find((v) => v.id === vozidloId)?.name ?? "",
+                    })}`
+                  : null}
               </p>
             )}
           </div>

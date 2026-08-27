@@ -19,8 +19,8 @@ import { usePreklad } from "@/lib/mobile/preklady/hook";
 /** Ako často sa appka pýta pluginu. Kilometre pribúdajú pomaly, stačí to. */
 const OBNOVA_MS = 10_000;
 
-function cas(ms: number): string {
-  return new Date(ms).toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" });
+function cas(ms: number, loc: string): string {
+  return new Date(ms).toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
 }
 
 function trvanie(odKedy: number, teraz: number): string {
@@ -44,7 +44,7 @@ export function PruhJazdy({
   teraz: number;
   onOtvor?: () => void;
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const obsah = (
     <>
       <span className="relative mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
@@ -54,7 +54,7 @@ export function PruhJazdy({
       <span className="min-w-0 text-left text-[13px]">
         <span className="block font-medium text-primary">{t("jz.nahravamJazdu")}</span>
         <span className="block text-muted-foreground">
-          {jazda.km.toFixed(1)} km · od {cas(jazda.zaciatok)} ({trvanie(jazda.zaciatok, teraz)})
+          {jazda.km.toFixed(1)} km · od {cas(jazda.zaciatok, loc)} ({trvanie(jazda.zaciatok, teraz)})
           {jazda.rucna ? ` · ${t("jz.spustenaRucne")}` : ""}
         </span>
       </span>

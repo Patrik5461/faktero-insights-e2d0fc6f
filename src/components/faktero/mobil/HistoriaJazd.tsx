@@ -76,9 +76,9 @@ const ZDROJE: Record<string, string> = {
   tesla: "Tesla",
 };
 
-function km(v: number | null): string {
+function km(v: number | null, loc: string): string {
   if (v === null || !Number.isFinite(v)) return "—";
-  return `${new Intl.NumberFormat("sk-SK", { maximumFractionDigits: 1 }).format(v)} km`;
+  return `${new Intl.NumberFormat(loc, { maximumFractionDigits: 1 }).format(v)} km`;
 }
 
 /**
@@ -95,25 +95,25 @@ function rychlost(priemer: number | null, max: number | null): string | null {
   return p ? `Ø ${Math.round(p)} km/h` : `max ${Math.round(m!)} km/h`;
 }
 
-function nazovMesiaca(kluc: string): string {
+function nazovMesiaca(kluc: string, loc: string): string {
   const [r, m] = kluc.split("-").map(Number);
-  return new Date(r, (m || 1) - 1, 1).toLocaleDateString("sk-SK", {
+  return new Date(r, (m || 1) - 1, 1).toLocaleDateString(loc, {
     month: "long",
     year: "numeric",
   });
 }
 
-function den(iso: string): string {
+function den(iso: string, loc: string): string {
   const [r, m, d] = iso.split("-").map(Number);
-  return new Date(r, (m || 1) - 1, d || 1).toLocaleDateString("sk-SK", {
+  return new Date(r, (m || 1) - 1, d || 1).toLocaleDateString(loc, {
     day: "numeric",
     month: "numeric",
   });
 }
 
-function cas(iso: string | null): string | null {
+function cas(iso: string | null, loc: string): string | null {
   if (!iso) return null;
-  return new Date(iso).toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
 }
 
 export function HistoriaJazd({
@@ -130,7 +130,7 @@ export function HistoriaJazd({
   const [jeVsetko, setJeVsetko] = useState(true);
   const [nacitavamStarsie, setNacitavamStarsie] = useState(false);
   /* Mapa sa otvára ťuknutím na jazdu — na malej obrazovke sa nezmestia obe naraz. */
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const [otvorena, setOtvorena] = useState<string | null>(null);
   /** Ktorej jazde sa práve prepisuje charakter — nech sa nedá ťuknúť dvakrát. */
   const [meni, setMeni] = useState<string | null>(null);
@@ -291,7 +291,7 @@ export function HistoriaJazd({
                 : t("jazdy.spoluPoslednych", { pocet: jazdy.length })}
             </div>
             <div className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums">
-              {km(spolu)}
+              {km(spolu, loc)}
             </div>
           </div>
 
@@ -302,18 +302,18 @@ export function HistoriaJazd({
                 <div key={kluc}>
                   <div className="mb-2 flex items-baseline justify-between px-1">
                     <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      {nazovMesiaca(kluc)}
+                      {nazovMesiaca(kluc, loc)}
                     </h2>
                     <span className="text-[13px] font-medium tabular-nums text-muted-foreground">
-                      {km(suma)}
+                      {km(suma, loc)}
                     </span>
                   </div>
                   <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
                     {riadky.map((j, i) => {
                       const kam = trasa(j.start_location, j.end_location);
                       const podnadpis = [
-                        den(j.trip_date),
-                        cas(j.start_time),
+                        den(j.trip_date, loc),
+                        cas(j.start_time, loc),
                         trvanieJazdy(j.duration_seconds),
                         // Rýchlosť len keď ju jazda naozaj má — dopisovať „0 km/h"
                         // k ručne zapísanej jazde by bola nepravda.
@@ -360,7 +360,7 @@ export function HistoriaJazd({
                             </div>
                             <div className="shrink-0 text-right">
                               <div className="text-[15px] font-semibold tabular-nums">
-                                {km(j.distance_km)}
+                                {km(j.distance_km, loc)}
                               </div>
                               {j.route && (
                                 <MapIcon className="ml-auto mt-1 h-3.5 w-3.5 text-muted-foreground" />

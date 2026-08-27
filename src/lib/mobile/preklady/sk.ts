@@ -645,6 +645,51 @@ export const sk = {
   "faktury.pripravujemPdf": "Pripravujem PDF…",
   "pd.odosielam": "Odosielam…",
 
+  /* vystavené faktúry */
+  "faktury.cakaNaOdoslanie": "Čaká na odoslanie: {pocet}",
+
+  /* prijaté doklady — úhrada */
+  "pd.uhradeneZUctuDna": "Uhradené z účtu {den}",
+  "pd.uhradeneSkratka": "uhradené z účtu {den}",
+
+  /* súhrny */
+  "nf.zakladDph": "základ {zaklad} · DPH {dph}",
+  "nf.odpocitaSa": "odpočíta sa {suma}",
+
+  /* šablónové texty */
+  "banka.kFakture": "k faktúre {cislo}",
+  "banka.aktualizovane": "Aktualizované {ked}",
+  "jz.bezi": "beží {trvanie}",
+  "jz.ukladaSaNa": "Ukladá sa na {auto} — zmeníš výberom vozidla nižšie.",
+  "app.spustam": "Spúšťam Faktero… ({faza}) · {balicek}",
+  "app.startZasekol": "Štart sa zasekol na kroku „{faza}“.",
+  "app.balicek": "balíček {peciatka}",
+  "app.hotovoStran": "Hotovo — {pocet} strán",
+  "app.poloziekZDokladu": "{pocet} položiek z dokladu",
+  "nf.zFaktury": "Z faktúry {cislo}",
+  "nf.polozkyZFaktury": "Položky z faktúry {cislo}",
+  "nf.opravena": "Faktúra {cislo} opravená",
+  "nf.icoS": "IČO {ico}",
+  "nf.zuctovanaZaloha": "Zúčtovaná záloha {cislo}",
+  "nf.dni": "{d} dní",
+  "nf.zalohaCislo": "Záloha {cislo}",
+  "nf.odoslaneNa": "Odoslané na {email}",
+  "ponuky.vytvorena": "Ponuka {cislo} vytvorená.",
+  "ponuky.vytvoritSuma": "Vytvoriť ponuku · {suma}",
+  "ponuky.nazovSuboru": "Cenová ponuka {cislo}",
+  "pd.odoslaneDoklady": "Odoslané doklady: {pocet}",
+  "pd.cakaNaOdoslanie": "Čaká na odoslanie: {pocet}",
+  "spolocne.doklad1": "doklad",
+  "spolocne.doklad2": "doklady",
+  "spolocne.doklad5": "dokladov",
+  "pd.najdenePlatby": "Našli sme platby k dokladom ({pocet})",
+  "pd.polozkyPocet": "Položky ({pocet})",
+  "faktury.zmazana": "Faktúra {cislo} zmazaná",
+  "faktury.upomienkaOdoslana": "{n}. upomienka odoslaná",
+  "faktury.poslatUpomienku": "Poslať {n}. upomienku",
+  "faktury.zatialOdoslane": "Zatiaľ odoslané: {pocet}",
+  "faktury.naozajZmazat": "Naozaj zmazať faktúru {cislo}?",
+
   /* spoločné */
   "spolocne.spat": "Späť",
   "spolocne.ulozit": "Uložiť",

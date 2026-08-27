@@ -633,6 +633,51 @@ export const cs: Partial<Record<Kluc, string>> = {
   "faktury.pripravujemPdf": "Připravuji PDF…",
   "pd.odosielam": "Odesílám…",
 
+  /* vystavené faktúry */
+  "faktury.cakaNaOdoslanie": "Čeká na odeslání: {pocet}",
+
+  /* prijaté doklady — úhrada */
+  "pd.uhradeneZUctuDna": "Uhrazeno z účtu {den}",
+  "pd.uhradeneSkratka": "uhrazeno z účtu {den}",
+
+  /* súhrny */
+  "nf.zakladDph": "základ {zaklad} · DPH {dph}",
+  "nf.odpocitaSa": "odečte se {suma}",
+
+  /* šablónové texty */
+  "banka.kFakture": "k faktuře {cislo}",
+  "banka.aktualizovane": "Aktualizováno {ked}",
+  "jz.bezi": "běží {trvanie}",
+  "jz.ukladaSaNa": "Ukládá se na {auto} — změníš výběrem vozidla níže.",
+  "app.spustam": "Spouštím Faktero… ({faza}) · {balicek}",
+  "app.startZasekol": "Start se zasekl na kroku „{faza}“.",
+  "app.balicek": "balíček {peciatka}",
+  "app.hotovoStran": "Hotovo — {pocet} stran",
+  "app.poloziekZDokladu": "{pocet} položek z dokladu",
+  "nf.zFaktury": "Z faktury {cislo}",
+  "nf.polozkyZFaktury": "Položky z faktury {cislo}",
+  "nf.opravena": "Faktura {cislo} opravena",
+  "nf.icoS": "IČO {ico}",
+  "nf.zuctovanaZaloha": "Zúčtovaná záloha {cislo}",
+  "nf.dni": "{d} dní",
+  "nf.zalohaCislo": "Záloha {cislo}",
+  "nf.odoslaneNa": "Odesláno na {email}",
+  "ponuky.vytvorena": "Nabídka {cislo} vytvořena.",
+  "ponuky.vytvoritSuma": "Vytvořit nabídku · {suma}",
+  "ponuky.nazovSuboru": "Cenová nabídka {cislo}",
+  "pd.odoslaneDoklady": "Odeslané doklady: {pocet}",
+  "pd.cakaNaOdoslanie": "Čeká na odeslání: {pocet}",
+  "spolocne.doklad1": "doklad",
+  "spolocne.doklad2": "doklady",
+  "spolocne.doklad5": "dokladů",
+  "pd.najdenePlatby": "Našli jsme platby k dokladům ({pocet})",
+  "pd.polozkyPocet": "Položky ({pocet})",
+  "faktury.zmazana": "Faktura {cislo} smazána",
+  "faktury.upomienkaOdoslana": "{n}. upomínka odeslána",
+  "faktury.poslatUpomienku": "Poslat {n}. upomínku",
+  "faktury.zatialOdoslane": "Zatím odesláno: {pocet}",
+  "faktury.naozajZmazat": "Opravdu smazat fakturu {cislo}?",
+
   "spolocne.spat": "Zpět",
   "spolocne.ulozit": "Uložit",
   "spolocne.zrusit": "Zrušit",

@@ -82,8 +82,8 @@ export function cislo(v: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export function suma(n: number, mena = "EUR"): string {
-  return formatovacMeny(mena, "sk-SK")(n);
+export function suma(n: number, mena = "EUR", loc = "sk-SK"): string {
+  return formatovacMeny(mena, loc)(n);
 }
 
 /** „2026-08-11" → „11. 8. 2026" — ISO tvar nikto nečíta ako dátum. */
@@ -133,7 +133,7 @@ export function NovaFaktura({
    */
   upravuje?: { id: string; invoice_number: string };
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const nacitajPodklady = useOperacia("faktura-podklady");
   const nacitajCennik = useOperacia("cennik-kontext");
   const nacitajPoslednu = useOperacia("faktura-posledna");
@@ -210,7 +210,7 @@ export function NovaFaktura({
         if (zapamatane?.hodnota?.odberatelia?.length) {
           setPodklady(zapamatane.hodnota);
           toast.message(t("nf.bezPripojenia"), {
-            description: new Date(zapamatane.kedy).toLocaleString("sk-SK"),
+            description: new Date(zapamatane.kedy).toLocaleString(loc),
           });
           return;
         }
@@ -332,10 +332,10 @@ export function NovaFaktura({
         unit_price: String(p.unit_price).replace(".", ","),
         vat_rate: platca ? Number(p.vat_rate) : 0,
         product_id: p.product_id,
-        dovod: `Z faktúry ${posledna.invoice_number}`,
+        dovod: t("nf.zFaktury", { cislo: posledna.invoice_number }),
       })),
     );
-    toast.success(`Položky z faktúry ${posledna.invoice_number}`);
+    toast.success(t("nf.polozkyZFaktury", { cislo: posledna.invoice_number }));
   }
 
   function zmen(key: string, patch: Partial<Riadok>) {
@@ -402,7 +402,7 @@ export function NovaFaktura({
         .insert(riadkyNaZapis(upravuje.id, vstupy));
       if (chybaZapisu) throw new Error(chybaZapisu.message);
 
-      toast.success(`Faktúra ${upravuje.invoice_number} opravená`);
+      toast.success(t("nf.opravena", { cislo: upravuje.invoice_number }));
       onHotovo();
     } catch (e: any) {
       toast.error(friendlyError(e, t("nf.chybaZmien")));
@@ -602,7 +602,7 @@ function KrokOdberatel({
   onVyber: (o: Odberatel) => void;
   onPridany: (o: Odberatel) => void;
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const [hladanie, setHladanie] = useState("");
   const [novy, setNovy] = useState(false);
 
@@ -704,7 +704,7 @@ function KrokOdberatel({
                   {o.name}
                 </span>
                 <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
-                  {[o.ico ? `IČO ${o.ico}` : null, o.city].filter(Boolean).join(" · ") || "—"}
+                  {[o.ico ? t("nf.icoS", { ico: o.ico }) : null, o.city].filter(Boolean).join(" · ") || "—"}
                 </span>
               </span>
             </button>
@@ -728,7 +728,7 @@ export function NovyOdberatel({
   onSpat: () => void;
   onPridany: (o: Odberatel) => void;
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const lookup = useOperacia("firma-podla-ica");
   const [f, setF] = useState({
     name: predvyplneneMeno,
@@ -913,7 +913,7 @@ function KrokPolozky({
   /** Keď sa opravuje už vystavená faktúra, kroky sa nečíslujú — je len jeden. */
   uprava?: { invoice_number: string };
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const [cennikOtvoreny, setCennikOtvoreny] = useState(false);
 
   return (
@@ -931,7 +931,7 @@ function KrokPolozky({
             <div className="flex items-baseline justify-between text-[15px]">
               <span className="text-muted-foreground">{t("nf.spolu")}</span>
               <span className="text-[20px] font-semibold tabular-nums">
-                {suma(sucty.spolu, mena)}
+                {suma(sucty.spolu, mena, loc)}
               </span>
             </div>
             <HlavneTlacidlo onClick={onDalej} disabled={pocetPouzitelnych === 0}>
@@ -996,11 +996,11 @@ function KrokPolozky({
             <div className="rounded-2xl border border-border/70 bg-card p-4 text-[14px] shadow-[var(--shadow-card)]">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("nf.zaklad")}</span>
-                <span className="tabular-nums">{suma(sucty.zaklad, mena)}</span>
+                <span className="tabular-nums">{suma(sucty.zaklad, mena, loc)}</span>
               </div>
               <div className="mt-1 flex justify-between">
                 <span className="text-muted-foreground">{t("nf.dph")}</span>
-                <span className="tabular-nums">{suma(sucty.dph, mena)}</span>
+                <span className="tabular-nums">{suma(sucty.dph, mena, loc)}</span>
               </div>
             </div>
           )}
@@ -1037,7 +1037,7 @@ export function RiadokPolozky({
   onZmen: (patch: Partial<Riadok>) => void;
   onZmaz: () => void;
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   // Vlastný hook aj tu: odpoveď je zapamätaná, takže to nie je dotaz navyše.
   const krajina = useKrajinaDane();
   const zaklad = +(cislo(riadok.quantity) * cislo(riadok.unit_price)).toFixed(2);
@@ -1107,7 +1107,7 @@ export function RiadokPolozky({
         <span className="text-[12px] text-muted-foreground">
           {riadok.dovod ? riadok.dovod : `${riadok.unit || "ks"}`}
         </span>
-        <span className="text-[15px] font-semibold tabular-nums">{suma(celkom, mena)}</span>
+        <span className="text-[15px] font-semibold tabular-nums">{suma(celkom, mena, loc)}</span>
       </div>
     </div>
   );
@@ -1124,7 +1124,7 @@ function VyberProduktu({
   onZavri: () => void;
   onVyber: (p: Produkt) => void;
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const [q, setQ] = useState("");
   const najdene = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -1170,7 +1170,7 @@ function VyberProduktu({
                 </span>
               </span>
               <span className="shrink-0 text-[15px] font-medium tabular-nums">
-                {suma(Number(p.unit_price), mena)}
+                {suma(Number(p.unit_price), mena, loc)}
               </span>
             </button>
           ))}
@@ -1234,7 +1234,7 @@ function KrokSuhrn({
   onUloz: () => void;
   uprava?: { invoice_number: string };
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const dni = Math.round(
     (new Date(`${splatnost}T00:00:00`).getTime() - new Date(`${vystavenie}T00:00:00`).getTime()) /
       86400000,
@@ -1260,26 +1260,29 @@ function KrokSuhrn({
       <div className="space-y-4">
         <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
           <div className="text-[32px] font-semibold leading-none tabular-nums">
-            {suma(sucty.spolu, mena)}
+            {suma(sucty.spolu, mena, loc)}
           </div>
           <div className="mt-2 text-[14px] text-muted-foreground">
             {odberatel.name} · {sPoctom(pocetPoloziek, POLOZKY)}
           </div>
           {platca && (
             <div className="mt-1 text-[12px] text-muted-foreground">
-              základ {suma(sucty.zaklad, mena)} · DPH {suma(sucty.dph, mena)}
+              {t("nf.zakladDph", {
+                zaklad: suma(sucty.zaklad, mena, loc),
+                dph: suma(sucty.dph, mena, loc),
+              })}
             </div>
           )}
           {zaloha && (
             /* Celková suma ostáva, mení sa len to, čo má zákazník doplatiť. */
             <div className="mt-2 border-t border-border/70 pt-2 text-[13px]">
               <div className="flex justify-between text-muted-foreground">
-                <span>Zúčtovaná záloha {zaloha.invoice_number}</span>
-                <span>− {suma(zaloha.total, mena)}</span>
+                <span>{t("nf.zuctovanaZaloha", { cislo: zaloha.invoice_number })}</span>
+                <span>− {suma(zaloha.total, mena, loc)}</span>
               </div>
               <div className="mt-1 flex justify-between font-semibold">
                 <span>{t("nf.naUhradu")}</span>
-                <span>{suma(+(sucty.spolu - zaloha.total).toFixed(2), mena)}</span>
+                <span>{suma(+(sucty.spolu - zaloha.total).toFixed(2), mena, loc)}</span>
               </div>
             </div>
           )}
@@ -1322,7 +1325,7 @@ function KrokSuhrn({
                   : "border-border/70 bg-card"
               }`}
             >
-              {d} dní
+              {t("nf.dni", { d })}
             </button>
           ))}
         </div>
@@ -1418,7 +1421,7 @@ function VyberZalohy({
   zaloha: { id: string; invoice_number: string; total: number } | null;
   setZaloha: (v: { id: string; invoice_number: string; total: number } | null) => void;
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const [zoznam, setZoznam] = useState<
     { id: string; invoice_number: string; total: number; issue_date: string }[] | null
   >(null);
@@ -1468,9 +1471,9 @@ function VyberZalohy({
     return (
       <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-4">
         <div className="min-w-0">
-          <div className="text-[14px] font-medium">Záloha {zaloha.invoice_number}</div>
+          <div className="text-[14px] font-medium">{t("nf.zalohaCislo", { cislo: zaloha.invoice_number })}</div>
           <div className="text-[13px] text-muted-foreground">
-            odpočíta sa {suma(zaloha.total, mena)}
+            {t("nf.odpocitaSa", { suma: suma(zaloha.total, mena, loc) })}
           </div>
         </div>
         <button
@@ -1534,7 +1537,7 @@ function VyberZalohy({
             <span className="block text-[14px] font-medium">{z.invoice_number}</span>
             <span className="block text-[12px] text-muted-foreground">{datumSk(z.issue_date)}</span>
           </span>
-          <span className="shrink-0 text-[14px] tabular-nums">{suma(z.total, mena)}</span>
+          <span className="shrink-0 text-[14px] tabular-nums">{suma(z.total, mena, loc)}</span>
         </button>
       ))}
       <button
@@ -1566,7 +1569,7 @@ function Odlozena({
   mena: string;
   onHotovo: () => void;
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   return (
     <MobilObrazovka title={t("nf.bezPripojeniaNadpis")}>
       <div className="space-y-4 pt-2 text-center">
@@ -1603,7 +1606,7 @@ function Odlozena({
           <div className="mt-2 flex items-baseline justify-between">
             <span className="text-[14px] text-muted-foreground">{t("nf.spolu")}</span>
             <span className="text-[17px] font-semibold tabular-nums">
-              {suma(faktura.spolu, mena)}
+              {suma(faktura.spolu, mena, loc)}
             </span>
           </div>
         </div>
@@ -1629,7 +1632,7 @@ function Vystavena({
   };
   onHotovo: () => void;
 }) {
-  const { t } = usePreklad();
+  const { t, locale: loc } = usePreklad();
   const pdfFn = useOperacia("faktura-pdf");
   const mailFn = useOperacia("faktura-email");
   const [busy, setBusy] = useState<"pdf" | "mail" | "zdielam" | null>(null);
@@ -1652,7 +1655,7 @@ function Vystavena({
       await zdielajPdfFaktury(
         () => pdfFn({ data: { invoiceId: faktura.id } }) as any,
         faktura.invoice_number,
-        `Faktúra ${faktura.invoice_number} na ${suma(faktura.total, faktura.currency)}.`,
+        `${t("nf.fakturaCislo", { cislo: faktura.invoice_number })} — ${suma(faktura.total, faktura.currency, loc)}.`,
       );
     } catch (e: any) {
       toast.error(e?.message ?? t("nf.chybaZdielania"));
@@ -1669,7 +1672,7 @@ function Vystavena({
         data: { invoiceId: faktura.id, recipient_email: faktura.customer_email },
       });
       setOdoslane(true);
-      toast.success(`Odoslané na ${faktura.customer_email}`);
+      toast.success(t("nf.odoslaneNa", { email: faktura.customer_email ?? "" }));
     } catch (e: any) {
       toast.error(e?.message ?? "Odoslanie zlyhalo.");
     } finally {
@@ -1690,7 +1693,7 @@ function Vystavena({
           <CheckCircle2 className="mb-3 h-12 w-12 text-primary" />
           <div className="text-[15px] text-muted-foreground">{faktura.invoice_number}</div>
           <div className="mt-1 text-[32px] font-semibold leading-none tabular-nums">
-            {suma(faktura.total, faktura.currency)}
+            {suma(faktura.total, faktura.currency, loc)}
           </div>
         </div>
 

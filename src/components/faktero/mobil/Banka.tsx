@@ -87,7 +87,7 @@ function rovnakeMeno(a: string | null | undefined, b: string | null | undefined)
  * riadok nehovorí nič, kým popis („Transakčná daň") hovorí všetko.
  */
 /* `t` prichádza ako vstup — funkcia je mimo komponentu a hook tam nepatrí. */
-function nadpisPohybu(p: Pohyb, firma: string, t: (k: Kluc) => string): string {
+function nadpisPohybu(p: Pohyb, firma: string, t: (k: Kluc, p?: Record<string, string | number>) => string): string {
   const protistrana = p.protistrana?.trim();
   const popis = p.popis?.trim();
   if (protistrana && !rovnakeMeno(protistrana, firma)) return protistrana;
@@ -96,10 +96,10 @@ function nadpisPohybu(p: Pohyb, firma: string, t: (k: Kluc) => string): string {
   );
 }
 
-function podnadpisPohybu(p: Pohyb, firma: string, t: (k: Kluc) => string): string | null {
+function podnadpisPohybu(p: Pohyb, firma: string, t: (k: Kluc, p?: Record<string, string | number>) => string): string | null {
   const popis = p.popis?.trim();
   const casti = [
-    p.faktura ? `k faktúre ${p.faktura}` : null,
+    p.faktura ? t("banka.kFakture", { cislo: p.faktura }) : null,
     p.vs ? `VS ${p.vs}` : null,
     // Popis len vtedy, keď nie je už v nadpise.
     popis && popis !== nadpisPohybu(p, firma, t) ? popis : null,
@@ -108,7 +108,7 @@ function podnadpisPohybu(p: Pohyb, firma: string, t: (k: Kluc) => string): strin
 }
 
 /* Aj tu `t` ako vstup — a locale, aby sa dátum písal v jazyku appky. */
-function denNazov(iso: string, t: (k: Kluc) => string, loc: string): string {
+function denNazov(iso: string, t: (k: Kluc, p?: Record<string, string | number>) => string, loc: string): string {
   const dnes = new Date().toISOString().slice(0, 10);
   if (iso === dnes) return t("banka.dnes");
   const v = new Date();
@@ -122,7 +122,7 @@ function denNazov(iso: string, t: (k: Kluc) => string, loc: string): string {
   });
 }
 
-function ked(iso: string | null, t: (k: Kluc) => string, loc: string): string {
+function ked(iso: string | null, t: (k: Kluc, p?: Record<string, string | number>) => string, loc: string): string {
   if (!iso) return t("banka.nesynchronizovane");
   const d = new Date(iso);
   return `${d.toLocaleDateString(loc, { day: "numeric", month: "numeric" })} ${d.toLocaleTimeString(
@@ -288,7 +288,7 @@ export function Banka({
           ))
         )}
         <div className="mt-1.5 text-[12px] text-muted-foreground">
-          {tahame ? t("banka.stahujem") : `Aktualizované ${ked(naposledy, t, locale)}`}
+          {tahame ? t("banka.stahujem") : t("banka.aktualizovane", { ked: ked(naposledy, t, locale) })}
         </div>
       </div>
 
