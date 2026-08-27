@@ -65,6 +65,25 @@
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
   --color-primary-hover: var(--primary-hover);
+
+  /*
+    Mobilná appka. Vlastná sada zámerne: web a appka majú od redizajnu iný
+    vzhľad a miešať im tokeny by znamenalo, že zmena v appke potichu prekreslí
+    web. Utility `bg-app-*` na webe nikto nepoužíva.
+  */
+  --color-app-pozadie: var(--app-pozadie);
+  --color-app-karta: var(--app-karta);
+  --color-app-ramik: var(--app-ramik);
+  --color-app-zelena: var(--app-zelena);
+  --color-app-zelena-jemna: var(--app-zelena-jemna);
+  --color-app-text: var(--app-text);
+  --color-app-text-2: var(--app-text-2);
+  --color-app-text-3: var(--app-text-3);
+  --color-app-chyba: var(--app-chyba);
+  --color-app-chyba-jemna: var(--app-chyba-jemna);
+  --radius-app: var(--app-radius);
+  --radius-app-sm: var(--app-radius-sm);
+  --shadow-app: var(--app-tien);
 }
 
 :root {
@@ -137,6 +156,29 @@
     radial-gradient(55% 50% at 95% 5%, oklch(0.56 0.15 62 / 0.1), transparent 70%),
     radial-gradient(40% 40% at 50% 110%, oklch(0.52 0.13 155 / 0.08), transparent 70%);
   --gradient-dark: linear-gradient(180deg, oklch(0.22 0.02 155), oklch(0.14 0.02 155));
+
+  /*
+    Mobilná appka — svetlý „bankový" vzhľad.
+
+    Zelená je značková (`--primary`, tá istá ako na webe a v `brand.ts`), nie
+    zelená z návrhu: appka, web a ikona v obchode musia mať jednu farbu.
+    Zvyšok sú neutrály z návrhu, zámerne v hex — v tomto tvare prišli a v tom
+    sa dajú porovnať s predlohou.
+  */
+  --app-pozadie: #f5f6f5;
+  --app-karta: #ffffff;
+  --app-ramik: #eceeec;
+  --app-zelena: var(--primary);
+  --app-zelena-jemna: #e8f5ee;
+  --app-text: #101513;
+  --app-text-2: #6b7280;
+  --app-text-3: #9ca3af;
+  --app-chyba: #dc2626;
+  --app-chyba-jemna: #fdeaea;
+  --app-radius: 16px;
+  --app-radius-sm: 12px;
+  /* Tieň skoro žiadny — karty oddeľuje rámik, nie vrstvenie. */
+  --app-tien: 0 1px 2px rgb(16 21 19 / 0.04);
 }
 
 .dark {
@@ -174,6 +216,23 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+
+  /*
+    Appka v tme. Prevrátené rovnako ako `--page` vyššie: stránka je najtmavšia,
+    karta o stupeň svetlejšia. Zelená sa musí rozsvietiť, inak na tmavom
+    podklade zmizne.
+  */
+  --app-pozadie: oklch(0.155 0.012 160);
+  --app-karta: oklch(0.205 0.014 160);
+  --app-ramik: oklch(1 0 0 / 10%);
+  --app-zelena: oklch(0.72 0.15 158);
+  --app-zelena-jemna: oklch(0.28 0.04 160);
+  --app-text: oklch(0.97 0.004 160);
+  --app-text-2: oklch(0.72 0.02 160);
+  --app-text-3: oklch(0.6 0.02 160);
+  --app-chyba: oklch(0.7 0.19 22);
+  --app-chyba-jemna: oklch(0.3 0.07 22);
+  --app-tien: 0 1px 2px rgb(0 0 0 / 0.3);
 }
 
 /*

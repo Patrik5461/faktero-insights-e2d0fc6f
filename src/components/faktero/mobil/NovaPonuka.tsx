@@ -164,17 +164,17 @@ export function NovaPonuka({
       }
     >
       <section className="space-y-2">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 className="text-xs font-medium uppercase tracking-wide text-app-text-2">
           {t("ponuky.odberatel")}
         </h2>
         {odberatel ? (
           <button
             onClick={() => setOdberatel(null)}
-            className="flex w-full items-center gap-2 rounded-xl border border-border bg-card px-3 py-3 text-left active:scale-[0.99]"
+            className="flex w-full items-center gap-2 rounded-app-sm border border-app-ramik bg-app-karta px-3 py-3 text-left active:scale-[0.99]"
           >
-            <User className="h-4 w-4 text-muted-foreground" />
+            <User className="h-4 w-4 text-app-text-2" />
             <span className="min-w-0 flex-1 truncate text-sm font-medium">{odberatel.name}</span>
-            <span className="text-xs text-muted-foreground">{t("ponuky.zmenit")}</span>
+            <span className="text-xs text-app-text-2">{t("ponuky.zmenit")}</span>
           </button>
         ) : (
           <>
@@ -182,7 +182,7 @@ export function NovaPonuka({
               value={hladanie}
               onChange={(e) => setHladanie(e.target.value)}
               placeholder={t("ponuky.hladatOdberatela")}
-              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+              className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
             />
             {najdene.length > 0 && (
               <ul className="space-y-1">
@@ -190,21 +190,21 @@ export function NovaPonuka({
                   <li key={o.id}>
                     <button
                       onClick={() => setOdberatel(o)}
-                      className="w-full rounded-xl border border-border px-3 py-2.5 text-left text-sm active:bg-secondary"
+                      className="w-full rounded-app-sm border border-app-ramik px-3 py-2.5 text-left text-sm active:bg-app-pozadie"
                     >
                       <span className="font-medium">{o.name}</span>
-                      {o.ico && <span className="ml-2 text-xs text-muted-foreground">{o.ico}</span>}
+                      {o.ico && <span className="ml-2 text-xs text-app-text-2">{o.ico}</span>}
                     </button>
                   </li>
                 ))}
               </ul>
             )}
             {hladanie.trim() && najdene.length === 0 && (
-              <p className="px-1 py-1 text-xs text-muted-foreground">{t("ponuky.nikNenajdeny")}</p>
+              <p className="px-1 py-1 text-xs text-app-text-2">{t("ponuky.nikNenajdeny")}</p>
             )}
             <button
               onClick={() => setPridavam(true)}
-              className="flex w-full items-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-3 py-2.5 text-sm font-medium text-primary active:bg-primary/10"
+              className="flex w-full items-center gap-2 rounded-app-sm border border-dashed border-app-zelena/40 bg-app-zelena-jemna px-3 py-2.5 text-sm font-medium text-app-zelena active:bg-app-zelena-jemna"
             >
               <UserPlus className="h-4 w-4" /> {t("ponuky.novyOdberatel")}
             </button>
@@ -213,7 +213,7 @@ export function NovaPonuka({
       </section>
 
       <section className="mt-5 space-y-2">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <h2 className="text-xs font-medium uppercase tracking-wide text-app-text-2">
           {t("ponuky.polozky")}
         </h2>
         {riadky.map((r, i) => (
@@ -231,7 +231,7 @@ export function NovaPonuka({
         ))}
         <button
           onClick={() => setRiadky((xs) => [...xs, prazdnyRiadok(zakladnaSadzba)])}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border px-3 py-2.5 text-sm active:bg-secondary"
+          className="flex w-full items-center justify-center gap-2 rounded-app-sm border border-dashed border-app-ramik px-3 py-2.5 text-sm active:bg-app-pozadie"
         >
           <Plus className="h-4 w-4" /> {t("ponuky.pridajPolozku")}
         </button>
@@ -239,39 +239,39 @@ export function NovaPonuka({
 
       <section className="mt-5 grid grid-cols-2 gap-3">
         <label className="block">
-          <span className="mb-1 block text-[12px] text-muted-foreground">{t("ponuky.vystavena")}</span>
+          <span className="mb-1 block text-[12px] text-app-text-2">{t("ponuky.vystavena")}</span>
           <input
             type="date"
             value={vystavena}
             onChange={(e) => setVystavena(e.target.value)}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-[12px] text-muted-foreground">{t("ponuky.platiDo")}</span>
+          <span className="mb-1 block text-[12px] text-app-text-2">{t("ponuky.platiDo")}</span>
           <input
             type="date"
             value={platiDo}
             onChange={(e) => setPlatiDo(e.target.value)}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
           />
         </label>
       </section>
 
       <label className="mt-4 block">
-        <span className="mb-1 block text-[12px] text-muted-foreground">{t("ponuky.poznamka")}</span>
+        <span className="mb-1 block text-[12px] text-app-text-2">{t("ponuky.poznamka")}</span>
         <textarea
           rows={3}
           value={poznamka}
           onChange={(e) => setPoznamka(e.target.value)}
-          className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+          className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
         />
       </label>
 
-      <div className="mt-5 rounded-2xl border border-border bg-card p-3 text-sm">
+      <div className="mt-5 rounded-app border border-app-ramik bg-app-karta p-3 text-sm">
         <Riadok k={t("ponuky.zaklad")} v={suma(sucty.zaklad, mena)} />
         {platca && <Riadok k={t("ponuky.dph")} v={suma(sucty.dan, mena)} />}
-        <div className="mt-1 flex justify-between border-t border-border pt-2 font-semibold">
+        <div className="mt-1 flex justify-between border-t border-app-ramik pt-2 font-semibold">
           <span>{t("jazdy.spolu")}</span>
           <span className="tabular-nums">{suma(sucty.spolu, mena)}</span>
         </div>
@@ -283,7 +283,7 @@ export function NovaPonuka({
 function Riadok({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex justify-between py-0.5">
-      <span className="text-muted-foreground">{k}</span>
+      <span className="text-app-text-2">{k}</span>
       <span className="tabular-nums">{v}</span>
     </div>
   );

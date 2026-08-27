@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Camera, Files, FileText, Image as ImageIcon, Receipt } from "lucide-react";
+import { Files, FileText, Image as ImageIcon, Receipt, SlidersHorizontal } from "lucide-react";
 import { useKameraQr } from "./KameraQr";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
@@ -11,11 +11,12 @@ import {
 export type NastavenieDokladu = { uhrada: "hotovost" | "karta"; kategoria: string };
 
 /**
- * Úvodná obrazovka appky — kamera, ktorá čaká na QR kód bločku.
+ * Skener dokladu.
  *
- * Appka sa otvára tam, kde sa najčastejšie používa: pri pokladni, s dokladom
- * v ruke. Predtým bola prvá obrazovka zoznam veľkých tlačidiel a skenovanie
- * bolo dve ťuknutia ďaleko.
+ * Celá obrazovka je tmavá a jediné svetlé miesto je to, kam sa má mieriť —
+ * na kameru sa pozerá inak než na zoznam a svetlé pozadie okolo obrazu z
+ * kamery oslepuje. Preto tu tokeny appky neplatia: čierna je súčasť
+ * funkcie, nie štýlu.
  *
  * Čítanie kódu ani ukladanie dokladu tu nie je — kód sa odovzdá ďalej do
  * existujúceho toku (`Zachyt`), ktorý ho prečíta cez `blocek-precitaj` a uloží
@@ -40,6 +41,15 @@ export function Skener({
   onNastavenie: (n: NastavenieDokladu) => void;
 }) {
   const { t } = usePreklad();
+  /*
+    Dva režimy jednej kamery. Kód sa číta v oboch — nájsť ho na fotke bločku
+    je výhoda, nie prekážka. Líšia sa tým, čo obrazovka ponúka: pri doklade
+    spúšť a nastavenie, pri kóde len zameriavač, aby nič neodvádzalo od toho,
+    že stačí namieriť.
+  */
+  const [rezim, setRezim] = useState<"doklad" | "qr">("doklad");
+  const [nastaveniaOtvorene, setNastaveniaOtvorene] = useState(false);
+
   /*
     Kamera beží len vtedy, keď je appka vpredu. Bez toho by po prepnutí do inej
     aplikácie ostal prúd otvorený — na iPhone svieti kontrolka kamery a batéria
@@ -82,106 +92,186 @@ export function Skener({
         muted
       />
 
-      {/* Rámik, kam mieriť. Bez neho ľudia mieria na celý bloček. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 grid place-items-center pt-[12vh]">
+      {/* Prepínač režimu. Hore, aby nezavadzal palcu pri spúšti. */}
+      <div
+        className="absolute inset-x-0 top-0 flex justify-center px-4 pb-2 pt-3"
+        style={{ paddingTop: "calc(var(--safe-top) + 0.5rem)" }}
+      >
         <div
-          className="aspect-square w-[70%] rounded-[14px]"
-          style={{ border: "2px solid rgba(255,255,255,0.85)" }}
-        />
-        <p className="mt-4 text-[15px] font-medium text-white drop-shadow">
-          {t("sken.naskenujte")}
-        </p>
-        <p className="mt-1 text-[13px] text-white/80 drop-shadow">{t("sken.aleboOdfotte")}</p>
+          role="group"
+          aria-label={t("sken.nastavenie")}
+          className="flex gap-1 rounded-full bg-black/45 p-1 backdrop-blur"
+        >
+          {(
+            [
+              ["doklad", t("sken.doklad")],
+              ["qr", t("sken.qrKod")],
+            ] as const
+          ).map(([kod, popis]) => (
+            <button
+              key={kod}
+              onClick={() => setRezim(kod)}
+              aria-pressed={rezim === kod}
+              className={`min-h-[36px] rounded-full px-4 text-[14px] font-medium transition ${
+                rezim === kod ? "bg-app-zelena text-white" : "text-white/85"
+              }`}
+            >
+              {popis}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/*
+        Zameriavač. Štyri rohy, nie celý rámik: rohy hovoria „sem to zmestite"
+        a pritom nezakrývajú doklad, ktorý sa pod nimi rovná.
+      */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 grid place-items-center pt-[15vh]">
+        <div
+          className={`relative ${
+            rezim === "qr" ? "h-56 w-56" : "h-[42vh] w-[68%] max-w-[19rem]"
+          }`}
+        >
+          {(
+            [
+              "left-0 top-0 border-l-2 border-t-2 rounded-tl-lg",
+              "right-0 top-0 border-r-2 border-t-2 rounded-tr-lg",
+              "left-0 bottom-0 border-b-2 border-l-2 rounded-bl-lg",
+              "right-0 bottom-0 border-b-2 border-r-2 rounded-br-lg",
+            ] as const
+          ).map((roh) => (
+            <span key={roh} className={`absolute h-8 w-8 border-white/90 ${roh}`} />
+          ))}
+        </div>
       </div>
 
       {chyba && (
-        <div className="absolute inset-x-4 top-[12vh] rounded-2xl bg-card/95 p-4 text-[13px] shadow-lg">
+        <div className="absolute inset-x-4 top-[14vh] rounded-app bg-app-karta p-4 text-[13px] text-app-text shadow-lg">
           <p>{chyba}</p>
-          <p className="mt-1 text-muted-foreground">
-            {t("sken.kameraNejde")}
-          </p>
+          <p className="mt-1 text-app-text-2">{t("sken.kameraNejde")}</p>
         </div>
       )}
 
       {/*
-        Spodný panel. Nesmie zasahovať do rámika, preto je rámik odsadený zhora
-        a panel drží pri spodnej hrane; medzi nimi ostáva tmavý obraz z kamery.
+        Spodok. Priehľadný prechod, nie panel: obraz z kamery má ísť až po
+        okraj, inak vyzerá skener ako okno v aplikácii, nie ako hľadáčik.
       */}
-      <div className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-card p-4 pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.25)]">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
+      <div
+        className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/60 to-transparent px-4 pt-10"
+        style={{ paddingBottom: "calc(var(--safe-bottom) + 0.75rem)" }}
+      >
+        {nastaveniaOtvorene && rezim === "doklad" && (
+          <div className="mb-4 grid grid-cols-2 gap-3 rounded-app bg-black/55 p-3 backdrop-blur">
+            <div>
+              <span className="mb-1 block text-[12px] font-medium text-white/70">
+                {t("sken.uhrada")}
+              </span>
+              <div className="flex overflow-hidden rounded-app-sm border border-white/25">
+                {(
+                  [
+                    ["hotovost", t("pd.hotovost")],
+                    ["karta", t("sken.karta")],
+                  ] as const
+                ).map(([kod, label]) => (
+                  <button
+                    key={kod}
+                    onClick={() => nastav({ uhrada: kod })}
+                    aria-pressed={nastavenie.uhrada === kod}
+                    className={`min-h-[40px] flex-1 text-[14px] ${
+                      nastavenie.uhrada === kod
+                        ? "bg-app-zelena font-semibold text-white"
+                        : "text-white/75"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label className="block">
+              <span className="mb-1 block text-[12px] font-medium text-white/70">
+                {t("sken.kategoria")}
+              </span>
+              <select
+                value={nastavenie.kategoria}
+                onChange={(e) => nastav({ kategoria: e.target.value })}
+                className="min-h-[40px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[15px] text-white"
+              >
+                <option value="">{t("sken.nezaradene")}</option>
+                {KATEGORIE_VYDAVKOV.map((k) => (
+                  <option key={k.kod} value={k.kod}>
+                    {k.nazov}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
 
-        <div className="flex gap-2">
-          <button
-            onClick={onOdfotit}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-[15px] font-semibold text-primary-foreground active:scale-[0.99]"
-            style={{ backgroundImage: "var(--brand-gradient)" }}
-          >
-            <Camera className="h-[18px] w-[18px]" /> {t("sken.odfotit")}
-          </button>
-          <button
-            onClick={onZGalerie}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-border/70 px-4 py-3 text-[15px] font-medium active:bg-secondary"
-          >
-            <ImageIcon className="h-[18px] w-[18px]" /> {t("sken.zGalerie")}
-          </button>
-        </div>
+        <p className="text-center text-[15px] font-medium text-white">
+          {rezim === "qr" ? t("sken.namierteQr") : t("sken.naskenujteDoklad")}
+        </p>
+        <p className="mt-0.5 text-center text-[13px] text-white/70">
+          {rezim === "qr" ? t("sken.qrSaPrecita") : t("sken.automaticky")}
+        </p>
 
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <div>
-            <span className="mb-1 block text-[12px] font-medium text-muted-foreground">{t("sken.uhrada")}</span>
-            <div className="flex overflow-hidden rounded-xl border border-border/70">
-              {(
-                [
-                  ["hotovost", t("pd.hotovost")],
-                  ["karta", t("sken.karta")],
-                ] as const
-              ).map(([kod, label]) => (
-                <button
-                  key={kod}
-                  onClick={() => nastav({ uhrada: kod })}
-                  aria-pressed={nastavenie.uhrada === kod}
-                  className={`flex-1 py-2.5 text-[14px] ${
-                    nastavenie.uhrada === kod
-                      ? "bg-primary/10 font-semibold text-primary"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+        {rezim === "doklad" && (
+          <div className="mt-4 grid grid-cols-3 items-center">
+            <div className="flex justify-start">
+              <MalyKruh icon={ImageIcon} label={t("sken.zGalerie")} onClick={onZGalerie} />
+            </div>
+            <div className="flex justify-center">
+              <button
+                onClick={onOdfotit}
+                aria-label={t("sken.odfotit")}
+                /* Biely prstenec okolo zelenej spúšte — na tmavom obraze je to
+                   jediné, čo je vidieť za každých svetelných podmienok. */
+                className="grid h-[72px] w-[72px] place-items-center rounded-full border-[3px] border-white bg-app-zelena transition active:scale-95"
+              />
+            </div>
+            <div className="flex justify-end">
+              <MalyKruh
+                icon={Files}
+                label={t("sken.viacstranovy")}
+                onClick={onViacstranovy}
+              />
             </div>
           </div>
-          <label className="block">
-            <span className="mb-1 block text-[12px] font-medium text-muted-foreground">
-              {t("sken.kategoria")}
-            </span>
-            <select
-              value={nastavenie.kategoria}
-              onChange={(e) => nastav({ kategoria: e.target.value })}
-              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[15px]"
-            >
-              <option value="">{t("sken.nezaradene")}</option>
-              {KATEGORIE_VYDAVKOV.map((k) => (
-                <option key={k.kod} value={k.kod}>
-                  {k.nazov}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        )}
 
-        {/*
-          Zvyšok skenovania. Boli to samostatné položky na starej úvodnej
-          obrazovke — sem patria preto, že sú to iné spôsoby toho istého:
-          dostať doklad do Faktera.
-        */}
-        <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/70 pt-3">
+        <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/15 pt-3">
           <MalyOdkaz icon={FileText} label={t("sken.pdfSubor")} onClick={onZGalerie} />
-          <MalyOdkaz icon={Files} label={t("sken.viacstranovy")} onClick={onViacstranovy} />
+          {rezim === "doklad" && (
+            <MalyOdkaz
+              icon={SlidersHorizontal}
+              label={t("sken.nastavenie")}
+              onClick={() => setNastaveniaOtvorene((v) => !v)}
+            />
+          )}
           <MalyOdkaz icon={Receipt} label={t("pd.nazov")} onClick={onPrijateDoklady} />
         </div>
       </div>
     </div>
+  );
+}
+
+function MalyKruh({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      className="grid h-12 w-12 place-items-center rounded-full bg-white/15 text-white transition active:scale-95"
+    >
+      <Icon className="h-5 w-5" />
+    </button>
   );
 }
 
@@ -197,10 +287,10 @@ function MalyOdkaz({
   return (
     <button
       onClick={onClick}
-      className="flex flex-1 flex-col items-center gap-1 rounded-xl py-1.5 text-[12px] text-muted-foreground active:bg-secondary"
+      className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-1 rounded-app-sm text-[12px] text-white/80 active:bg-white/10"
     >
       <Icon className="h-[18px] w-[18px]" />
-      {label}
+      <span className="truncate">{label}</span>
     </button>
   );
 }

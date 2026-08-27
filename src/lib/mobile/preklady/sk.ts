@@ -690,6 +690,67 @@ export const sk = {
   "faktury.zatialOdoslane": "Zatiaľ odoslané: {pocet}",
   "faktury.naozajZmazat": "Naozaj zmazať faktúru {cislo}?",
 
+  /* spodná lišta */
+  "tab.prehlad": "Prehľad",
+  "tab.doklady": "Doklady",
+  "tab.jazdy": "Jazdy",
+
+  /* prehľad a vzhľad */
+  "ph.nazov": "Prehľad",
+  "ph.neuhradene": "Neuhradené",
+  "ph.poSplatnosti": "Po splatnosti",
+  "ph.rychleAkcie": "Rýchle akcie",
+  "ph.faktura": "Faktúra",
+  "ph.skenovat": "Skenovať",
+  "ph.zacatJazdu": "Začať jazdu",
+  "ph.naVybavenie": "Na vybavenie",
+  "ph.poslednaAktivita": "Posledná aktivita",
+  "ph.fakturyPoSplatnosti": "{pocet} po splatnosti",
+  "ph.dokladyNaKontrolu": "{pocet} čaká na kontrolu",
+  "ph.jazdaNeukoncena": "Jazda nie je ukončená",
+  "ph.vsetkoVybavene": "Nič nečaká",
+  "ph.vsetkoVybavenePopis": "Faktúry sú uhradené a doklady skontrolované.",
+  "ph.ziadnaAktivita": "Zatiaľ sa nič nedialo",
+  "ph.ziadnaAktivitaPopis": "Prvá faktúra alebo doklad sa objavia tu.",
+  "ph.fakturaCislo": "Faktúra {cislo}",
+  "ph.doklad": "Prijatý doklad",
+  "ph.dnes": "Dnes",
+  "ph.vcera": "Včera",
+  "ph.vzhlad": "Vzhľad",
+  "ph.svetly": "Svetlý",
+  "ph.tmavy": "Tmavý",
+  "ph.podlaSystemu": "Podľa systému",
+
+  /* filtre faktúr */
+  "faktury.filterVsetky": "Všetky",
+  "faktury.filterNeuhradene": "Neuhradené",
+  "faktury.filterPoSplatnosti": "Po splatnosti",
+  "faktury.filterUhradene": "Uhradené",
+  "faktury.splatnostSkratka": "splatnosť {den}",
+  "faktury.hladatKratke": "Hľadať",
+  "faktury.filtre": "Filtre",
+
+  /* skener — režimy */
+  "sken.doklad": "Doklad",
+  "sken.qrKod": "QR kód",
+  "sken.naskenujteDoklad": "Naskenujte doklad",
+  "sken.automaticky": "Doklad sa naskenuje automaticky",
+  "sken.namierteQr": "Namierte na QR kód",
+  "sken.qrSaPrecita": "Kód sa prečíta sám, netreba nič stláčať",
+  "sken.nastavenie": "Nastavenie dokladu",
+
+  /* banka — párovanie */
+  "banka.sparovane": "Spárované",
+  "banka.sparovat": "Spárovať",
+
+  /* krokovník novej faktúry */
+  "nf.krokOdberatel": "Odberateľ",
+  "nf.krokPolozky": "Položky",
+  "nf.krokKontrola": "Kontrola",
+  "nf.nedavniOdberatelia": "Nedávni odberatelia",
+  "nf.vsetciOdberatelia": "Všetci odberatelia",
+  "nf.pokracovat": "Pokračovať",
+
   /* spoločné */
   "spolocne.spat": "Späť",
   "spolocne.ulozit": "Uložiť",

@@ -48,12 +48,12 @@ export function PruhJazdy({
   const obsah = (
     <>
       <span className="relative mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/40" />
-        <Car className="relative h-4 w-4 text-primary" />
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-app-zelena/40" />
+        <Car className="relative h-4 w-4 text-app-zelena" />
       </span>
       <span className="min-w-0 text-left text-[13px]">
-        <span className="block font-medium text-primary">{t("jz.nahravamJazdu")}</span>
-        <span className="block text-muted-foreground">
+        <span className="block font-medium text-app-zelena">{t("jz.nahravamJazdu")}</span>
+        <span className="block text-app-text-2">
           {jazda.km.toFixed(1)} km · od {cas(jazda.zaciatok, loc)} ({trvanie(jazda.zaciatok, teraz)})
           {jazda.rucna ? ` · ${t("jz.spustenaRucne")}` : ""}
         </span>
@@ -62,7 +62,7 @@ export function PruhJazdy({
   );
 
   const styl =
-    "flex w-full items-start gap-2 rounded-xl border border-primary/40 bg-primary/5 px-4 py-3";
+    "flex w-full items-start gap-2 rounded-app-sm border border-app-zelena/40 bg-app-zelena-jemna px-4 py-3";
 
   return onOtvor ? (
     <button onClick={onOtvor} className={styl} aria-label={t("jz.otvoritPrebiehajucu")}>

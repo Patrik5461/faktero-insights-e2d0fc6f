@@ -679,6 +679,67 @@ export const en: Partial<Record<Kluc, string>> = {
   "faktury.zatialOdoslane": "Sent so far: {pocet}",
   "faktury.naozajZmazat": "Really delete invoice {cislo}?",
 
+  /* spodná lišta */
+  "tab.prehlad": "Overview",
+  "tab.doklady": "Receipts",
+  "tab.jazdy": "Trips",
+
+  /* prehľad a vzhľad */
+  "ph.nazov": "Overview",
+  "ph.neuhradene": "Unpaid",
+  "ph.poSplatnosti": "Overdue",
+  "ph.rychleAkcie": "Quick actions",
+  "ph.faktura": "Invoice",
+  "ph.skenovat": "Scan",
+  "ph.zacatJazdu": "Start a trip",
+  "ph.naVybavenie": "To handle",
+  "ph.poslednaAktivita": "Recent activity",
+  "ph.fakturyPoSplatnosti": "{pocet} overdue",
+  "ph.dokladyNaKontrolu": "{pocet} waiting to be checked",
+  "ph.jazdaNeukoncena": "A trip is not finished",
+  "ph.vsetkoVybavene": "Nothing is waiting",
+  "ph.vsetkoVybavenePopis": "Invoices are paid and receipts are checked.",
+  "ph.ziadnaAktivita": "Nothing has happened yet",
+  "ph.ziadnaAktivitaPopis": "Your first invoice or receipt will appear here.",
+  "ph.fakturaCislo": "Invoice {cislo}",
+  "ph.doklad": "Received receipt",
+  "ph.dnes": "Today",
+  "ph.vcera": "Yesterday",
+  "ph.vzhlad": "Appearance",
+  "ph.svetly": "Light",
+  "ph.tmavy": "Dark",
+  "ph.podlaSystemu": "Match system",
+
+  /* filtre faktúr */
+  "faktury.filterVsetky": "All",
+  "faktury.filterNeuhradene": "Unpaid",
+  "faktury.filterPoSplatnosti": "Overdue",
+  "faktury.filterUhradene": "Paid",
+  "faktury.splatnostSkratka": "due {den}",
+  "faktury.hladatKratke": "Search",
+  "faktury.filtre": "Filters",
+
+  /* skener — režimy */
+  "sken.doklad": "Receipt",
+  "sken.qrKod": "QR code",
+  "sken.naskenujteDoklad": "Scan the receipt",
+  "sken.automaticky": "The receipt is scanned automatically",
+  "sken.namierteQr": "Point at the QR code",
+  "sken.qrSaPrecita": "The code is read on its own, no need to press anything",
+  "sken.nastavenie": "Receipt settings",
+
+  /* banka — párovanie */
+  "banka.sparovane": "Matched",
+  "banka.sparovat": "Match",
+
+  /* krokovník novej faktúry */
+  "nf.krokOdberatel": "Customer",
+  "nf.krokPolozky": "Items",
+  "nf.krokKontrola": "Review",
+  "nf.nedavniOdberatelia": "Recent customers",
+  "nf.vsetciOdberatelia": "All customers",
+  "nf.pokracovat": "Continue",
+
   "spolocne.spat": "Back",
   "spolocne.ulozit": "Save",
   "spolocne.zrusit": "Cancel",

@@ -276,16 +276,16 @@ export function HistoriaJazd({
     >
       {jazdy.length === 0 ? (
         <div className="grid place-items-center py-16 text-center">
-          <RouteIcon className="mb-3 h-10 w-10 text-muted-foreground/50" />
+          <RouteIcon className="mb-3 h-10 w-10 text-app-text-2/50" />
           <p className="text-sm font-medium">{t("jazdy.ziadne")}</p>
-          <p className="mt-1 max-w-xs text-[13px] text-muted-foreground">
+          <p className="mt-1 max-w-xs text-[13px] text-app-text-2">
             {t("jazdy.prvaPribudne")}
           </p>
         </div>
       ) : (
         <>
-          <div className="mb-4 rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
-            <div className="text-[13px] text-muted-foreground">
+          <div className="mb-4 rounded-app border border-app-ramik bg-app-karta p-4 shadow-app">
+            <div className="text-[13px] text-app-text-2">
               {jeVsetko
                 ? t("jazdy.spoluCelaHistoria")
                 : t("jazdy.spoluPoslednych", { pocet: jazdy.length })}
@@ -301,14 +301,14 @@ export function HistoriaJazd({
               return (
                 <div key={kluc}>
                   <div className="mb-2 flex items-baseline justify-between px-1">
-                    <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <h2 className="text-[13px] font-semibold uppercase tracking-wide text-app-text-2">
                       {nazovMesiaca(kluc, loc)}
                     </h2>
-                    <span className="text-[13px] font-medium tabular-nums text-muted-foreground">
+                    <span className="text-[13px] font-medium tabular-nums text-app-text-2">
                       {km(suma, loc)}
                     </span>
                   </div>
-                  <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
+                  <div className="overflow-hidden rounded-app border border-app-ramik bg-app-karta shadow-app">
                     {riadky.map((j, i) => {
                       const kam = trasa(j.start_location, j.end_location);
                       const podnadpis = [
@@ -323,7 +323,7 @@ export function HistoriaJazd({
                         .filter(Boolean)
                         .join(" · ");
                       return (
-                        <div key={j.id} className={i > 0 ? "border-t border-border/70" : ""}>
+                        <div key={j.id} className={i > 0 ? "border-t border-app-ramik" : ""}>
                           <div
                             role="button"
                             aria-expanded={otvorena === j.id}
@@ -337,23 +337,23 @@ export function HistoriaJazd({
                                 </span>
                                 {j.external_source && (
                                   <Satellite
-                                    className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                                    className="h-3.5 w-3.5 shrink-0 text-app-text-2"
                                     aria-label={ZDROJE[j.external_source] ?? j.external_source}
                                   />
                                 )}
                                 {/* Označuje sa len súkromná — služobná je bežný
                                     stav a odznak pri každej jazde by nič nepovedal. */}
                                 {jeSukromna(j.classification) && (
-                                  <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                  <span className="shrink-0 rounded-full bg-app-pozadie px-1.5 py-0.5 text-[10px] font-medium text-app-text-2">
                                     {t("jazdy.sukromna")}
                                   </span>
                                 )}
                               </div>
-                              <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
+                              <div className="mt-0.5 truncate text-[13px] text-app-text-2">
                                 {podnadpis}
                               </div>
                               {kam && j.purpose?.trim() && (
-                                <div className="truncate text-[13px] text-muted-foreground">
+                                <div className="truncate text-[13px] text-app-text-2">
                                   {j.purpose.trim()}
                                 </div>
                               )}
@@ -363,17 +363,17 @@ export function HistoriaJazd({
                                 {km(j.distance_km, loc)}
                               </div>
                               {j.route && (
-                                <MapIcon className="ml-auto mt-1 h-3.5 w-3.5 text-muted-foreground" />
+                                <MapIcon className="ml-auto mt-1 h-3.5 w-3.5 text-app-text-2" />
                               )}
                             </div>
                           </div>
                           {otvorena === j.id && (
                             <div className="space-y-3 px-4 pb-3.5">
                               <div>
-                                <div className="mb-1.5 text-[12px] text-muted-foreground">
+                                <div className="mb-1.5 text-[12px] text-app-text-2">
                                   {t("jazdy.charakter")}
                                 </div>
-                                <div className="inline-flex rounded-xl border border-border p-0.5">
+                                <div className="inline-flex rounded-app-sm border border-app-ramik p-0.5">
                                   {(
                                     [
                                       ["business", t("jazdy.sluzobna")],
@@ -394,8 +394,8 @@ export function HistoriaJazd({
                                         }}
                                         className={`min-h-[36px] rounded-lg px-3 text-[13px] disabled:opacity-60 ${
                                           je
-                                            ? "bg-primary text-primary-foreground font-medium"
-                                            : "text-muted-foreground"
+                                            ? "bg-app-zelena text-white font-medium"
+                                            : "text-app-text-2"
                                         }`}
                                       >
                                         {popis}
@@ -423,7 +423,7 @@ export function HistoriaJazd({
               type="button"
               onClick={nacitajStarsie}
               disabled={nacitavamStarsie}
-              className="mt-5 w-full select-none rounded-2xl border border-border/70 bg-card py-3 text-[14px] font-medium text-primary shadow-[var(--shadow-card)] disabled:opacity-60"
+              className="mt-5 w-full select-none rounded-app border border-app-ramik bg-app-karta py-3 text-[14px] font-medium text-app-zelena shadow-app disabled:opacity-60"
             >
               {nacitavamStarsie ? t("spolocne.nacitavam") : t("jazdy.nacitatStarsie")}
             </button>

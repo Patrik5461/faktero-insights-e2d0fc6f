@@ -674,6 +674,67 @@ export const hu: Partial<Record<Kluc, string>> = {
   "faktury.zatialOdoslane": "Eddig elküldve: {pocet}",
   "faktury.naozajZmazat": "Biztosan törli a(z) {cislo} számlát?",
 
+  /* spodná lišta */
+  "tab.prehlad": "Áttekintés",
+  "tab.doklady": "Bizonylatok",
+  "tab.jazdy": "Utak",
+
+  /* prehľad a vzhľad */
+  "ph.nazov": "Áttekintés",
+  "ph.neuhradene": "Kifizetetlen",
+  "ph.poSplatnosti": "Lejárt",
+  "ph.rychleAkcie": "Gyors műveletek",
+  "ph.faktura": "Számla",
+  "ph.skenovat": "Beolvasás",
+  "ph.zacatJazdu": "Út indítása",
+  "ph.naVybavenie": "Elintézendő",
+  "ph.poslednaAktivita": "Legutóbbi tevékenység",
+  "ph.fakturyPoSplatnosti": "{pocet} lejárt",
+  "ph.dokladyNaKontrolu": "{pocet} ellenőrzésre vár",
+  "ph.jazdaNeukoncena": "Egy út nincs lezárva",
+  "ph.vsetkoVybavene": "Semmi nem vár",
+  "ph.vsetkoVybavenePopis": "A számlák kifizetve, a bizonylatok ellenőrizve.",
+  "ph.ziadnaAktivita": "Eddig nem történt semmi",
+  "ph.ziadnaAktivitaPopis": "Az első számla vagy bizonylat itt jelenik meg.",
+  "ph.fakturaCislo": "{cislo} számla",
+  "ph.doklad": "Beérkezett bizonylat",
+  "ph.dnes": "Ma",
+  "ph.vcera": "Tegnap",
+  "ph.vzhlad": "Megjelenés",
+  "ph.svetly": "Világos",
+  "ph.tmavy": "Sötét",
+  "ph.podlaSystemu": "Rendszer szerint",
+
+  /* filtre faktúr */
+  "faktury.filterVsetky": "Összes",
+  "faktury.filterNeuhradene": "Kifizetetlen",
+  "faktury.filterPoSplatnosti": "Lejárt",
+  "faktury.filterUhradene": "Kifizetve",
+  "faktury.splatnostSkratka": "esedékes: {den}",
+  "faktury.hladatKratke": "Keresés",
+  "faktury.filtre": "Szűrők",
+
+  /* skener — režimy */
+  "sken.doklad": "Bizonylat",
+  "sken.qrKod": "QR-kód",
+  "sken.naskenujteDoklad": "Olvassa be a bizonylatot",
+  "sken.automaticky": "A bizonylat beolvasása automatikus",
+  "sken.namierteQr": "Irányítsa a QR-kódra",
+  "sken.qrSaPrecita": "A kódot magától beolvassa, nem kell megnyomnia semmit",
+  "sken.nastavenie": "Bizonylat beállításai",
+
+  /* banka — párovanie */
+  "banka.sparovane": "Párosítva",
+  "banka.sparovat": "Párosítás",
+
+  /* krokovník novej faktúry */
+  "nf.krokOdberatel": "Ügyfél",
+  "nf.krokPolozky": "Tételek",
+  "nf.krokKontrola": "Ellenőrzés",
+  "nf.nedavniOdberatelia": "Legutóbbi ügyfelek",
+  "nf.vsetciOdberatelia": "Összes ügyfél",
+  "nf.pokracovat": "Tovább",
+
   "spolocne.spat": "Vissza",
   "spolocne.ulozit": "Mentés",
   "spolocne.zrusit": "Mégse",

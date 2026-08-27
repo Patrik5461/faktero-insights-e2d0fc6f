@@ -73,12 +73,12 @@ export function CislaDopredu({ firma }: { firma: { id: string; name: string } })
   }
 
   return (
-    <div className="rounded-2xl border border-border/70 p-4">
+    <div className="rounded-app border border-app-ramik p-4">
       <div className="flex items-start gap-3">
-        <Hash className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+        <Hash className="mt-0.5 h-5 w-5 shrink-0 text-app-text-2" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">{t("cisla.nazov")}</p>
-          <p className="mt-1 text-xs leading-snug text-muted-foreground">
+          <p className="mt-1 text-xs leading-snug text-app-text-2">
             {zapnute
               ? t("cisla.zapnutePopis", { pocet: volnych })
               : t("cisla.vypnutePopis")}
@@ -88,7 +88,7 @@ export function CislaDopredu({ firma }: { firma: { id: string; name: string } })
       <button
         onClick={prepni}
         disabled={pracujem}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-medium active:opacity-80 disabled:opacity-60"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-app-sm bg-app-pozadie px-4 py-2.5 text-sm font-medium active:opacity-80 disabled:opacity-60"
       >
         {pracujem && <Loader2 className="h-4 w-4 animate-spin" />}
         {zapnute ? t("cisla.vypnut") : t("cisla.zapnut")}

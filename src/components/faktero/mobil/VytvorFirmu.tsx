@@ -119,7 +119,7 @@ export function VytvorFirmu({
         </HlavneTlacidlo>
       }
     >
-      <p className="mb-4 text-[13px] leading-snug text-muted-foreground">
+      <p className="mb-4 text-[13px] leading-snug text-app-text-2">
         {t("vf.uvod")}
       </p>
 
@@ -181,9 +181,9 @@ function Pole({
 }) {
   return (
     <label className="block">
-      <span className="text-[13px] font-medium text-muted-foreground">
+      <span className="text-[13px] font-medium text-app-text-2">
         {label}
-        {povinne && <span className="text-destructive"> *</span>}
+        {povinne && <span className="text-app-chyba"> *</span>}
       </span>
       <div className="relative mt-1">
         <input
@@ -192,13 +192,13 @@ function Pole({
           inputMode={inputMode}
           autoCapitalize={inputMode === "email" ? "none" : undefined}
           autoCorrect="off"
-          className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base"
+          className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-4 py-3 text-base"
         />
         {pracuje && (
-          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-app-text-2" />
         )}
       </div>
-      {hint && <span className="mt-1 block text-[12px] text-muted-foreground">{hint}</span>}
+      {hint && <span className="mt-1 block text-[12px] text-app-text-2">{hint}</span>}
     </label>
   );
 }

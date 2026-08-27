@@ -15,6 +15,7 @@ import {
   Building2,
   Camera,
   Menu,
+  ChevronDown,
   Check,
   FileText,
   Files,
@@ -84,6 +85,9 @@ const Jazda = lazy(() =>
 const Banka = lazy(() =>
   import("@/components/faktero/mobil/Banka").then((m) => ({ default: m.Banka })),
 );
+const Prehlad = lazy(() =>
+  import("@/components/faktero/mobil/Prehlad").then((m) => ({ default: m.Prehlad })),
+);
 
 /**
  * Kým sa obrazovka načíta z disku. V telefóne je to zlomok sekundy.
@@ -107,10 +111,10 @@ class PoistkaObrazovky extends Component<
     return (
       <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 p-6 text-center">
         <p className="text-[15px]">{this.props.nadpis}</p>
-        <p className="text-[12px] text-muted-foreground">{this.state.chyba}</p>
+        <p className="text-[12px] text-app-text-2">{this.state.chyba}</p>
         <button
           onClick={this.props.onSpat}
-          className="rounded-xl border border-border px-4 py-3 text-[15px]"
+          className="rounded-app border border-app-ramik px-4 py-3 text-[15px] text-app-text"
         >
           {this.props.spat}
         </button>
@@ -153,7 +157,12 @@ import {
   VelkeTlacidlo,
 } from "@/components/faktero/mobil/MobilChrome";
 import { Logo } from "@/components/faktero/Logo";
-import { ZELENA_DOLE, ZELENA_HORE } from "@/lib/mobile/brand";
+import {
+  VYCHODZI_APKA,
+  nacitajMotiv,
+  nasadMotiv,
+  sledujSystem,
+} from "@/lib/faktero/motiv";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
@@ -171,6 +180,7 @@ type Krok =
   | "nacitavam"
   | "prihlasenie"
   | "registracia"
+  | "prehlad"
   | "skener"
   | "firma"
   | "novaFirma"
@@ -193,6 +203,17 @@ type Zachyt = "blocek" | "pdf" | "strany";
  * inak by sa musel opakovať v každej vetve a raz by sa na niektorú zabudlo.
  */
 export function MobilnaApka() {
+  /*
+    Motív sa nasadzuje tu, nie v AppShelle: appka AppShell nemá, takže bez
+    tohto by ostala navždy svetlá bez ohľadu na voľbu. Predvolený je svetlý —
+    appka je tak navrhnutá a nočný režim telefónu ju prepínať nemá.
+  */
+  useEffect(() => {
+    const volba = nacitajMotiv(VYCHODZI_APKA);
+    nasadMotiv(volba);
+    return sledujSystem(() => nacitajMotiv(VYCHODZI_APKA));
+  }, []);
+
   return (
     <>
       <PasHore />
@@ -202,7 +223,7 @@ export function MobilnaApka() {
 }
 
 function ObsahApky() {
-  const { t, mnozne } = usePreklad();
+  const { t, mnozne, locale } = usePreklad();
   const [krok, setKrok] = useState<Krok>("nacitavam");
   /* Neskoro dobehnutá relácia sa rozhoduje mimo renderu — `krok` v uzávere je
      v tej chvíli už zastaraný. */
@@ -241,8 +262,15 @@ function ObsahApky() {
       return false;
     }
   }, []);
-  /** Kam vedie „späť" z agend — do skenera v appke, na prehľad na webe. */
-  const DOMOV: Krok = skenerPrvy ? "skener" : "domov";
+  /**
+   * Kam vedie „späť" z agend.
+   *
+   * Po redizajne je to všade Prehľad — aj v appke, aj na webe. Skener je
+   * odteraz rovnocenná záložka v spodnej lište, takže úvodnou obrazovkou byť
+   * nemusí; predtým ňou bol preto, že sa inak k nemu nedalo dostať na jedno
+   * ťuknutie.
+   */
+  const DOMOV: Krok = "prehlad";
   const [nastavenieDokladu, setNastavenieDokladu] =
     useState<NastavenieDokladu>(vychodzieNastavenie);
   /** Kód prečítaný na skeneri, ktorý čaká na spracovanie v toku dokladu. */
@@ -426,7 +454,7 @@ function ObsahApky() {
       if (vybrana) {
         setFirma(vybrana);
         setActiveCompanyId(vybrana.id);
-        setKrok(skenerPrvy ? "skener" : "domov");
+        setKrok("prehlad");
         // Jazdy, ktoré telefón nahral, kým bola appka zavretá, netreba držať
         // v telefóne do chvíle, kým sa človek preklikne na obrazovku Jazda.
 
@@ -661,31 +689,31 @@ function ObsahApky() {
     if (!dlho && !chybaStartu)
       return <Pracujem text={t("app.spustam", { faza, balicek: peciatka })} />;
     return (
-      <div className="grid min-h-[100dvh] place-items-center bg-background p-6 text-center">
+      <div className="grid min-h-[100dvh] place-items-center bg-app-pozadie p-6 text-center">
         <div className="space-y-3">
           <p className="text-sm font-medium">{t("app.startZasekol", { faza })}</p>
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-[13px] text-app-text-2">
             {t("app.slabePripojenie")}
           </p>
           {chybaStartu && (
-            <p className="rounded-lg bg-destructive/10 p-2 text-[12px] text-destructive">
+            <p className="rounded-lg bg-app-chyba-jemna p-2 text-[12px] text-app-chyba">
               {chybaStartu}
             </p>
           )}
-          <p className="text-[11px] text-muted-foreground">{t("app.balicek", { peciatka })}</p>
+          <p className="text-[11px] text-app-text-2">{t("app.balicek", { peciatka })}</p>
           <div className="flex flex-col gap-2 pt-2">
             <button
               onClick={() => {
                 setDlho(false);
                 zisti();
               }}
-              className="rounded-xl bg-primary px-4 py-3 text-[15px] font-medium text-primary-foreground"
+              className="rounded-app bg-app-zelena px-4 py-3 text-[15px] font-medium text-white"
             >
               {t("app.skusitZnova")}
             </button>
             <button
               onClick={odhlas}
-              className="rounded-xl border border-border px-4 py-3 text-[15px]"
+              className="rounded-app border border-app-ramik px-4 py-3 text-[15px] text-app-text"
             >
               {t("app.prihlasitNanovo")}
             </button>
@@ -730,14 +758,114 @@ function ObsahApky() {
         onOdhlasit={odhlas}
       />
     );
-  /** Spodná lišta prepína agendy; „Vytvoriť" otvára rovno novú faktúru. */
+  /** Spodná lišta prepína agendy; plavák uprostred otvára novú faktúru. */
   function prepniZalozku(z: Zalozka) {
-    if (z === "skener") return setKrok("skener");
+    if (z === "prehlad") return setKrok("prehlad");
     if (z === "faktury") return setKrok("faktury");
-    if (z === "vytvorit") return setKrok("novaFaktura");
+    if (z === "doklady") return setKrok("doklady");
+    if (z === "skener") return setKrok("skener");
     if (z === "banka") return setKrok("banka");
     setKrok("jazda");
   }
+  const naNovuFakturu = () => setKrok("novaFaktura");
+
+  if (krok === "prehlad" && firma)
+    return (
+      <SoSpodnouListou aktivna="prehlad" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
+        <Obrazovka onSpat={() => setPanel(true)}>
+          <div className="flex min-h-[calc(100dvh-var(--spodna-lista,0px))] flex-col bg-app-pozadie">
+            <AppHeader
+              variant="root"
+              title={firma.name}
+              /*
+                V lište nie je názov obrazovky, ale za koho sa pracuje. Doklad
+                uložený do zlej firmy sa hľadá ťažko, takže to musí byť vidieť
+                stále — a keď je firiem viac, dá sa to odtiaľto rovno prepnúť.
+              */
+              hlavicka={
+                <button
+                  onClick={firmy.length > 1 ? () => setKrok("firma") : undefined}
+                  aria-label={firmy.length > 1 ? t("panel.zmenitFirmu") : undefined}
+                  className={`flex min-h-[44px] w-full items-center gap-1 rounded-app-sm px-2 text-left ${
+                    firmy.length > 1 ? "active:bg-app-ramik" : "cursor-default"
+                  }`}
+                >
+                  <span className="min-w-0 truncate text-[17px] font-semibold tracking-tight">
+                    {firma.name}
+                  </span>
+                  {firmy.length > 1 && (
+                    <ChevronDown className="h-4 w-4 shrink-0 text-app-text-2" />
+                  )}
+                </button>
+              }
+              right={
+                <button
+                  onClick={() => setPanel(true)}
+                  aria-label={t("panel.nastavenia")}
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-app-zelena-jemna text-[14px] font-semibold text-app-zelena active:opacity-80"
+                >
+                  {(email ?? firma.name).trim().charAt(0).toUpperCase() || "?"}
+                </button>
+              }
+            />
+            {novsia && (
+              <button
+                onClick={() => window.open(novsia.odkaz, "_blank")}
+                className="mx-4 mb-2 rounded-app bg-app-zelena-jemna px-3 py-2 text-left text-[13px] text-app-zelena"
+              >
+                {t("app.novaVerzia")}
+              </button>
+            )}
+            {zrusiSa && (
+              <button
+                onClick={() => setKrok("ucet")}
+                className="mx-4 mb-2 flex items-start gap-2 rounded-app border border-app-chyba/40 bg-app-chyba-jemna px-4 py-3 text-left"
+              >
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-app-chyba" />
+                <span className="min-w-0 text-[13px] text-app-text">
+                  {t("app.zrusenieNaplanovane", {
+                    termin: terminSlovom(zrusiSa, locale),
+                    dni: `${dniDoZrusenia(zrusiSa)} ${mnozne(dniDoZrusenia(zrusiSa), {
+                      one: t("spolocne.den1"),
+                      few: t("spolocne.den2"),
+                      other: t("spolocne.den5"),
+                    })}`,
+                  })}
+                  <span className="block font-medium text-app-zelena">
+                    {t("app.odvolatZiadost")}
+                  </span>
+                </span>
+              </button>
+            )}
+            <Prehlad
+              firma={firma}
+              onNovaFaktura={naNovuFakturu}
+              onSkener={() => setKrok("skener")}
+              onJazda={() => setKrok("jazda")}
+              onFaktury={() => setKrok("faktury")}
+              onDoklady={() => setKrok("doklady")}
+            />
+          </div>
+        </Obrazovka>
+        <MobilPanel
+          otvoreny={panel}
+          onZavri={() => setPanel(false)}
+          email={email}
+          firma={firma}
+          viacFiriem={firmy.length > 1}
+          onZmenitFirmu={() => setKrok("firma")}
+          onPrehlad={() => setKrok("domov")}
+          onDoklady={() => setKrok("doklady")}
+          onFaktury={() => setKrok("faktury")}
+          onPonuky={() => setKrok("ponuky")}
+          onUcet={() => {
+            setPanel(false);
+            setKrok("ucet");
+          }}
+          onOdhlasit={odhlas}
+        />
+      </SoSpodnouListou>
+    );
 
   /*
     Skener-first. Kamera je celá obrazovka, takže hlavička aj spodná lišta sú
@@ -747,31 +875,12 @@ function ObsahApky() {
   if (krok === "skener" && firma)
     return (
       <div className="flex h-[100dvh] flex-col bg-black">
-        <AppHeader
-          variant="root"
-          title={firma.name}
-          subtitle={t("app.skenerDokladov")}
-          left={
-            <button
-              onClick={() => setPanel(true)}
-              aria-label={t("panel.nastavenia")}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-white/20"
-            >
-              <Menu className="h-[20px] w-[20px]" />
-            </button>
-          }
-          right={
-            firmy.length > 1 ? (
-              <button
-                onClick={() => setKrok("firma")}
-                aria-label={t("panel.zmenitFirmu")}
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-white/20"
-              >
-                <Building2 className="h-[20px] w-[20px]" />
-              </button>
-            ) : undefined
-          }
-        />
+        {/*
+          Skener nemá hornú lištu. Hľadáčik má ísť od okraja po okraj — svetlý
+          pruh nad ním by z neho spravil okno v aplikácii. Bočný panel sa
+          otvára z Prehľadu, kam vedie prvá záložka.
+        */}
+        <div aria-hidden style={{ paddingTop: "var(--safe-top)" }} className="bg-black" />
         <Skener
           nastavenie={nastavenieDokladu}
           onNastavenie={setNastavenieDokladu}
@@ -797,7 +906,7 @@ function ObsahApky() {
           }}
           onPrijateDoklady={() => setKrok("doklady")}
         />
-        <TabBar aktivna="skener" onPrepni={prepniZalozku} />
+        <TabBar aktivna="skener" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu} />
         <MobilPanel
           otvoreny={panel}
           onZavri={() => setPanel(false)}
@@ -820,13 +929,15 @@ function ObsahApky() {
 
   if (krok === "doklady" && firma)
     return (
-      <Obrazovka onSpat={() => setKrok(DOMOV)}>
-        <PrijateDoklady firma={firma} onSpat={() => setKrok(DOMOV)} />
-      </Obrazovka>
+      <SoSpodnouListou aktivna="doklady" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
+        <Obrazovka onSpat={() => setKrok(DOMOV)}>
+          <PrijateDoklady firma={firma} onSpat={() => setKrok(DOMOV)} />
+        </Obrazovka>
+      </SoSpodnouListou>
     );
   if (krok === "novaFaktura" && firma)
     return (
-      <SoSpodnouListou zobrazit={skenerPrvy} aktivna="vytvorit" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <NovaFaktura
             firma={firma}
@@ -852,7 +963,7 @@ function ObsahApky() {
     );
   if (krok === "jazda" && firma)
     return (
-      <SoSpodnouListou zobrazit={skenerPrvy} aktivna="jazda" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="jazda" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <Jazda firma={firma} onSpat={() => setKrok(DOMOV)} />
         </Obrazovka>
@@ -860,7 +971,7 @@ function ObsahApky() {
     );
   if (krok === "banka" && firma)
     return (
-      <SoSpodnouListou zobrazit={skenerPrvy} aktivna="banka" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="banka" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <Banka firma={firma} onSpat={() => setKrok(DOMOV)} />
         </Obrazovka>
@@ -874,10 +985,10 @@ function ObsahApky() {
           {firma && <CislaDopredu firma={firma} />}
           <button
             onClick={() => setDiagnostika(true)}
-            className="w-full rounded-2xl border border-border/70 p-4 text-left text-sm"
+            className="w-full rounded-app border border-app-ramik p-4 text-left text-sm"
           >
             {t("app.diagnostika")}
-            <span className="mt-1 block text-xs text-muted-foreground">
+            <span className="mt-1 block text-xs text-app-text-2">
               {t("app.diagnostikaPopis")}
             </span>
           </button>
@@ -887,7 +998,7 @@ function ObsahApky() {
     );
   if (krok === "faktury" && firma)
     return (
-      <SoSpodnouListou zobrazit={skenerPrvy} aktivna="faktury" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <VystaveneFaktury
             firma={firma}
@@ -903,7 +1014,7 @@ function ObsahApky() {
     );
   if (krok === "ponuky" && firma)
     return (
-      <SoSpodnouListou zobrazit={skenerPrvy} aktivna="faktury" onPrepni={prepniZalozku}>
+      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <Ponuky
             firma={firma}
@@ -948,7 +1059,7 @@ function ObsahApky() {
             // nie je a kvôli jednému odkazu ho pridávať netreba.
             window.open(novsia.odkaz, "_blank");
           }}
-          className="w-full bg-primary/10 px-4 py-2 text-left text-[13px] text-primary"
+          className="w-full bg-app-zelena-jemna px-4 py-2 text-left text-[13px] text-app-zelena"
         >
           {t("app.novaVerzia")}
         </button>
@@ -1000,23 +1111,22 @@ function ObsahApky() {
  * schovaná za lištou.
  */
 function SoSpodnouListou({
-  zobrazit,
   aktivna,
   onPrepni,
+  onVytvorit,
   children,
 }: {
-  zobrazit: boolean;
   aktivna: Zalozka;
   onPrepni: (z: Zalozka) => void;
+  onVytvorit: () => void;
   children: React.ReactNode;
 }) {
-  if (!zobrazit) return <>{children}</>;
   return (
     <div
       className="flex min-h-[100dvh] flex-col [&>*:first-child]:min-h-[calc(100dvh-var(--spodna-lista))]"
       style={
         {
-          "--spodna-lista": "calc(3.5rem + var(--safe-bottom))",
+          "--spodna-lista": "calc(3.75rem + var(--safe-bottom))",
           // Lišta bezpečnú zónu už drží; keby si ju pripočítala aj lepivá
           // pätka, ostala by nad lištou prázdna medzera na výšku palca.
           "--patka-spodok": "0px",
@@ -1024,7 +1134,7 @@ function SoSpodnouListou({
       }
     >
       {children}
-      <TabBar aktivna={aktivna} onPrepni={onPrepni} />
+      <TabBar aktivna={aktivna} onPrepni={onPrepni} onVytvorit={onVytvorit} />
     </div>
   );
 }
@@ -1073,7 +1183,7 @@ function Prihlasenie({
 
   return (
     <div
-      className="flex min-h-[100dvh] flex-col justify-center bg-background px-6"
+      className="flex min-h-[100dvh] flex-col justify-center bg-app-pozadie px-6"
       style={{
         paddingTop: "calc(var(--safe-top) + 2rem)",
         paddingBottom: "calc(var(--safe-bottom) + 2rem)",
@@ -1082,7 +1192,7 @@ function Prihlasenie({
       <div className="mx-auto w-full max-w-sm">
         <Logo variant="header" className="mb-8 h-9" />
         <h1 className="text-2xl font-semibold tracking-tight">{t("app.prihlasenie")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-app-text-2">
           {t("app.prihlasteSa")}
         </p>
 
@@ -1096,7 +1206,7 @@ function Prihlasenie({
             placeholder={t("app.email")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base"
+            className="w-full rounded-app-sm border border-input bg-app-pozadie px-4 py-3 text-base"
           />
           <input
             type="password"
@@ -1105,12 +1215,12 @@ function Prihlasenie({
             value={heslo}
             onChange={(e) => setHeslo(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && prihlas()}
-            className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base"
+            className="w-full rounded-app-sm border border-input bg-app-pozadie px-4 py-3 text-base"
           />
           <button
             onClick={prihlas}
             disabled={busy}
-            className="w-full rounded-xl bg-primary px-4 py-3 text-base font-medium text-primary-foreground disabled:opacity-50"
+            className="w-full rounded-app bg-app-zelena px-4 py-3 text-base font-medium text-white disabled:opacity-50"
           >
             {busy ? t("app.prihlasujem") : t("app.prihlasitSa")}
           </button>
@@ -1118,7 +1228,7 @@ function Prihlasenie({
           {biometria && (
             <button
               onClick={odomkni}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-base"
+              className="flex w-full items-center justify-center gap-2 rounded-app-sm border border-app-ramik px-4 py-3 text-base"
             >
               <Fingerprint className="h-5 w-5" /> {t("app.odomknutBiometriou")}
             </button>
@@ -1127,12 +1237,12 @@ function Prihlasenie({
 
         <button
           onClick={onRegistracia}
-          className="mt-6 w-full py-2 text-center text-sm text-muted-foreground"
+          className="mt-6 w-full py-2 text-center text-sm text-app-text-2"
         >
           {t("app.nemateUcet")}{" "}
-          <span className="font-medium text-primary">{t("app.zaregistrujteSa")}</span>
+          <span className="font-medium text-app-zelena">{t("app.zaregistrujteSa")}</span>
         </button>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
+        <p className="mt-2 text-center text-xs text-app-text-2">
           {t("app.zabudnuteHeslo")}
         </p>
       </div>
@@ -1162,27 +1272,26 @@ function Zamok({ onOdomknute, onOdhlasit }: { onOdomknute: () => void; onOdhlasi
 
   return (
     <div
-      className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-background px-8"
+      className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-app-pozadie px-8"
       style={{ paddingTop: "var(--safe-top)" }}
     >
-      <div className="grid h-20 w-20 place-items-center rounded-3xl bg-primary/10 text-primary">
+      <div className="grid h-20 w-20 place-items-center rounded-3xl bg-primary/10 text-app-zelena">
         <Lock className="h-9 w-9" />
       </div>
       <div className="text-center">
         <p className="text-[17px] font-semibold">{t("app.zamknute")}</p>
-        <p className="mt-1 text-[14px] text-muted-foreground">
+        <p className="mt-1 text-[14px] text-app-text-2">
           {t("app.odomknitePokracujte")}
         </p>
       </div>
       <button
         onClick={odomkni}
         disabled={busy}
-        className="w-full max-w-xs rounded-2xl px-4 py-3.5 text-[15px] font-semibold text-primary-foreground disabled:opacity-60"
-        style={{ backgroundImage: "var(--brand-gradient)" }}
+        className="w-full max-w-xs rounded-app bg-app-zelena px-4 py-3.5 text-[15px] font-semibold text-white disabled:opacity-60"
       >
         {busy ? t("app.odomykam") : t("app.odomknut")}
       </button>
-      <button onClick={onOdhlasit} className="text-[14px] text-muted-foreground">
+      <button onClick={onOdhlasit} className="text-[14px] text-app-text-2">
         {t("panel.odhlasit")}
       </button>
     </div>
@@ -1215,7 +1324,7 @@ function VyberFirmy({
     <MobilObrazovka title={t("app.vyberteFirmu")} subtitle={t("app.doVybranejFirmy")}>
       {firmy.length === 0 ? (
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-app-text-2">
             {poznamka ??
               t("app.bezFirmy")}
           </p>
@@ -1237,7 +1346,7 @@ function VyberFirmy({
           {onNovaFirma && !firmaSaNeda && (
             <button
               onClick={onNovaFirma}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border px-4 py-3.5 text-[14px] text-muted-foreground"
+              className="flex w-full items-center justify-center gap-2 rounded-app border border-dashed border-app-ramik px-4 py-3.5 text-[14px] text-app-text-2"
             >
               <Plus className="h-4 w-4" /> {t("app.pridatDalsiuFirmu")}
             </button>
@@ -1246,7 +1355,7 @@ function VyberFirmy({
       )}
       <button
         onClick={onOdhlasit}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm text-muted-foreground"
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-app-sm border border-app-ramik px-4 py-3 text-sm text-app-text-2"
       >
         <LogOut className="h-4 w-4" /> {t("panel.odhlasit")}
       </button>
@@ -1255,7 +1364,7 @@ function VyberFirmy({
         // zistiť prečo, bez pripájania telefónu k počítaču.
         <button
           onClick={onDiagnostika}
-          className="mt-2 w-full py-2 text-center text-[13px] text-muted-foreground underline"
+          className="mt-2 w-full py-2 text-center text-[13px] text-app-text-2 underline"
         >
           {t("app.diagnostika")}
         </button>
@@ -1326,7 +1435,7 @@ function Domov({
   }, [onPanel]);
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-background">
+    <div className="flex min-h-[100dvh] flex-col bg-app-pozadie">
       {/*
         Hlavička je jediné farebné miesto v appke — nesie značku a hovorí, za
         ktorú firmu sa práve skenuje. To je údaj, ktorý musí byť vidieť stále:
@@ -1353,7 +1462,7 @@ function Domov({
           <button
             onClick={onPanel}
             aria-label={t("panel.nastavenia")}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-white/20"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-app-ramik"
           >
             <Menu className="h-[20px] w-[20px]" />
           </button>
@@ -1367,24 +1476,19 @@ function Domov({
             iný pruh než spoločný pás nad ním.
           */
           viacFiriem ? (
-            <div
-              className="px-4 pb-5 pt-1"
-              style={{
-                backgroundImage: `linear-gradient(180deg, ${ZELENA_HORE} 0%, ${ZELENA_HORE} 30%, ${ZELENA_DOLE} 100%)`,
-              }}
-            >
+            <div className="px-4 pb-3 pt-1">
               <button
                 onClick={viacFiriem ? onZmenitFirmu : undefined}
-                className={`flex w-full items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5 text-left ${
-                  viacFiriem ? "active:bg-white/25" : "cursor-default"
+                className={`flex w-full items-center gap-2 rounded-app-sm border border-app-ramik bg-app-karta px-3 py-2.5 text-left ${
+                  viacFiriem ? "active:bg-app-pozadie" : "cursor-default"
                 }`}
               >
-                <Building2 className="h-4 w-4 shrink-0" />
-                <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
-                  {firma?.name ?? "Bez firmy"}
+                <Building2 className="h-4 w-4 shrink-0 text-app-text-2" />
+                <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-app-text">
+                  {firma?.name ?? t("panel.bezFirmy")}
                 </span>
                 {viacFiriem && (
-                  <span className="shrink-0 text-[12px] text-primary-foreground/80">
+                  <span className="shrink-0 text-[12px] text-app-text-2">
                     {t("ponuky.zmenit")}
                   </span>
                 )}
@@ -1409,9 +1513,9 @@ function Domov({
         {zrusiSa && (
           <button
             onClick={onUcet}
-            className="flex w-full items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-left"
+            className="flex w-full items-start gap-2 rounded-app-sm border border-app-chyba/40 bg-app-chyba-jemna px-4 py-3 text-left"
           >
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-app-chyba" />
             <span className="min-w-0 text-[13px]">
               {t("app.zrusenieNaplanovane", {
                 termin: terminSlovom(zrusiSa, loc),
@@ -1421,7 +1525,7 @@ function Domov({
                   other: t("spolocne.den5"),
                 })}`,
               })}
-              <span className="block font-medium text-primary">{t("app.odvolatZiadost")}</span>
+              <span className="block font-medium text-app-zelena">{t("app.odvolatZiadost")}</span>
             </span>
           </button>
         )}
@@ -1492,7 +1596,7 @@ function Domov({
 function Skupina({ nazov }: { nazov: string }) {
   const { t } = usePreklad();
   return (
-    <p className="px-1 pb-0.5 pt-3 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+    <p className="px-1 pb-0.5 pt-3 text-[12px] font-semibold uppercase tracking-wide text-app-text-2">
       {nazov}
     </p>
   );
@@ -1744,7 +1848,7 @@ function ZachytDokladu({
             variant="primary"
             onClick={vyberPdf}
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-app-text-2">
             {t("app.zFakturyPrecita")}
           </p>
         </div>
@@ -1763,7 +1867,7 @@ function ZachytDokladu({
             <>
               <div className="grid grid-cols-3 gap-2">
                 {strany.map((s, i) => (
-                  <div key={i} className="relative overflow-hidden rounded-lg border border-border">
+                  <div key={i} className="relative overflow-hidden rounded-lg border border-app-ramik">
                     <img src={s} alt={`strana ${i + 1}`} className="h-24 w-full object-cover" />
                     <button
                       onClick={() => setStrany((p) => p.filter((_, j) => j !== i))}
@@ -1835,16 +1939,16 @@ function Potvrdenie({
       }
     >
       <div className="space-y-4">
-        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
+        <div className="rounded-app border border-app-ramik bg-app-karta p-4 shadow-[var(--shadow-card)]">
           <div className="text-[32px] font-semibold leading-none tabular-nums">
             {suma(vysledok.total)}
           </div>
-          <div className="mt-2 text-[14px] text-muted-foreground">
+          <div className="mt-2 text-[14px] text-app-text-2">
             {vysledok.supplier ?? t("app.neznamyPredajca")}
             {vysledok.date ? ` · ${datum(vysledok.date, loc)}` : ""}
           </div>
           {vysledok.vat_amount != null && (
-            <div className="mt-2 text-xs text-muted-foreground">
+            <div className="mt-2 text-xs text-app-text-2">
               {t("app.zTohoDph", { suma: suma(vysledok.vat_amount) })}
               {vysledok.vat_breakdown?.length
                 ? ` (${vysledok.vat_breakdown.map((s) => `${s.sadzba} %`).join(" + ")})`
@@ -1852,7 +1956,7 @@ function Potvrdenie({
             </div>
           )}
           {vysledok.items.length > 0 && (
-            <div className="mt-2 text-xs text-muted-foreground">
+            <div className="mt-2 text-xs text-app-text-2">
               {t("app.poloziekZDokladu", { pocet: vysledok.items.length })}
             </div>
           )}
@@ -1869,25 +1973,25 @@ function Potvrdenie({
           hľadal, prečo sa doklad nedá uložiť.
         */}
         <div
-          className={`rounded-2xl transition-colors ${
+          className={`rounded-app transition-colors ${
             uhrada ? "" : "border border-primary/50 bg-primary/5 p-3 ring-4 ring-primary/10"
           }`}
         >
           <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
             Ako ste platili?
             {!uhrada && (
-              <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
+              <span className="rounded-full bg-app-zelena px-2 py-0.5 text-[11px] font-semibold text-white">
                 {t("app.povinne")}
               </span>
             )}
             {vysledok.payment_method && (
-              <span className="text-xs font-normal text-muted-foreground">
+              <span className="text-xs font-normal text-app-text-2">
                 {t("app.zDokladuZatvorka")}
               </span>
             )}
           </div>
           {!uhrada && (
-            <p className="mb-2 text-xs text-primary">
+            <p className="mb-2 text-xs text-app-zelena">
               {t("app.vyberteMoznost")}
             </p>
           )}
@@ -1902,12 +2006,12 @@ function Potvrdenie({
               <button
                 key={id}
                 onClick={() => setUhrada(id)}
-                className={`rounded-2xl border py-3.5 text-[14px] transition active:scale-[0.98] ${
+                className={`rounded-app border py-3.5 text-[14px] transition active:scale-[0.98] ${
                   uhrada === id
-                    ? "border-primary bg-primary/10 font-semibold text-primary"
+                    ? "border-primary bg-primary/10 font-semibold text-app-zelena"
                     : uhrada
-                      ? "border-border/70 bg-card text-foreground"
-                      : "border-primary/40 bg-card font-medium text-foreground"
+                      ? "border-app-ramik bg-app-karta text-foreground"
+                      : "border-primary/40 bg-app-karta font-medium text-foreground"
                 }`}
               >
                 {label}
@@ -1915,7 +2019,7 @@ function Potvrdenie({
             ))}
           </div>
           {uhrada === "hotovost" && (
-            <p className="mt-1.5 text-xs text-muted-foreground">
+            <p className="mt-1.5 text-xs text-app-text-2">
               {t("app.hotovostnyDoklad")}
             </p>
           )}
@@ -1925,9 +2029,9 @@ function Potvrdenie({
           <div className="mb-2 text-sm font-medium">{t("app.fotkaDokladu")}</div>
           {foto ? (
             <div className="space-y-2">
-              <div className="overflow-hidden rounded-xl border border-border">
+              <div className="overflow-hidden rounded-app-sm border border-app-ramik">
                 {foto.startsWith("data:application/pdf") ? (
-                  <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 p-4 text-sm text-app-text-2">
                     <FileText className="h-5 w-5" /> {t("app.prilozenePdf")}
                   </div>
                 ) : (
@@ -1936,7 +2040,7 @@ function Potvrdenie({
               </div>
               <button
                 onClick={onOdfotit}
-                className="w-full rounded-xl border border-border px-4 py-2.5 text-sm"
+                className="w-full rounded-app-sm border border-app-ramik px-4 py-2.5 text-sm"
               >
                 {t("app.odfotitZnova")}
               </button>

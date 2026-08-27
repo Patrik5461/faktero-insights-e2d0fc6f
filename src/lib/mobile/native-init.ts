@@ -27,12 +27,17 @@ export async function initNativePlatform(): Promise<void> {
      */
     try {
       const { StatusBar, Style } = await import("@capacitor/status-bar");
-      const { ZELENA_HORE } = await import("./brand");
-      // `Style.Dark` = tmavé pozadie, teda **biele** hodiny a ikony. Znie to
-      // naopak, ale plugin pomenúva pozadie, nie text; `Style.Light` by dal
-      // čierny text a na zelenej by sa stratil.
-      await StatusBar.setStyle({ style: Style.Dark });
-      await StatusBar.setBackgroundColor({ color: ZELENA_HORE });
+      const { POZADIE_APKY, POZADIE_APKY_TMA } = await import("./brand");
+      const { jeTmavy } = await import("@/lib/faktero/motiv");
+      /*
+        Plugin pomenúva **pozadie**, nie text: `Style.Light` znamená svetlé
+        pozadie a teda čierne hodiny. Po redizajne je pás svetlý, takže sa
+        štýl otočil — s pôvodným `Style.Dark` by na svetlom páse boli biele
+        hodiny, teda neviditeľné.
+      */
+      const tma = jeTmavy();
+      await StatusBar.setStyle({ style: tma ? Style.Dark : Style.Light });
+      await StatusBar.setBackgroundColor({ color: tma ? POZADIE_APKY_TMA : POZADIE_APKY });
 
       /*
         Pás kreslí stránka (`PasHore`), preto WebView ide až pod hodiny — ale

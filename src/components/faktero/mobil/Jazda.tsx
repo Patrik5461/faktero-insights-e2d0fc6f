@@ -499,11 +499,11 @@ export function Jazda({
         footer={<HlavneTlacidlo onClick={() => setPridavam(true)}>{t("jz.pridatVozidlo")}</HlavneTlacidlo>}
       >
         <div className="grid place-items-center py-16 text-center">
-          <Car className="mb-3 h-10 w-10 text-muted-foreground/50" />
+          <Car className="mb-3 h-10 w-10 text-app-text-2/50" />
           <p className="text-sm font-medium">
             {nezistene ? t("jz.bezPripojenia") : t("jz.bezVozidla")}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-app-text-2">
             {nezistene
               ? t("jz.bezZoznamu")
               : t("jz.pridajteHo")}
@@ -546,13 +546,13 @@ export function Jazda({
           polovicu displeja a formulár pod ňou sa dal nájsť až rolovaním. Teraz
           je to jeden riadok: hodnota vľavo, stav pod ňou, ovládanie vpravo.
         */}
-        <div className="flex items-center justify-between gap-4 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-[var(--shadow-card)]">
+        <div className="flex items-center justify-between gap-4 rounded-app border border-app-ramik bg-app-karta px-4 py-3 shadow-app">
           <div className="min-w-0">
             <div className="text-[34px] font-semibold leading-none tabular-nums">
               {km.toFixed(1)}
-              <span className="ml-1.5 text-[15px] font-normal text-muted-foreground">km</span>
+              <span className="ml-1.5 text-[15px] font-normal text-app-text-2">km</span>
             </div>
-            <div className="mt-1.5 text-[12px] text-muted-foreground">
+            <div className="mt-1.5 text-[12px] text-app-text-2">
               {pauza
                 ? t("jz.pozastavene")
                 : bezi && odkedy
@@ -573,7 +573,7 @@ export function Jazda({
               onClick={prepniPauzu}
               aria-label={bezi ? t("jz.pozastavitMeranie") : t("jz.pokracovatVMerani")}
               className={`grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full transition active:scale-95 ${
-                bezi ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"
+                bezi ? "bg-app-chyba-jemna text-app-chyba" : "bg-app-zelena-jemna text-app-zelena"
               }`}
             >
               {bezi ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
@@ -581,14 +581,14 @@ export function Jazda({
           ) : (
             <span
               aria-hidden
-              className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full border border-dashed border-border/70 text-muted-foreground/50"
+              className="grid h-[52px] w-[52px] shrink-0 place-items-center rounded-full border border-dashed border-app-ramik text-app-text-2/50"
             >
               <Car className="h-5 w-5" />
             </span>
           )}
         </div>
         {(bezi || pauza) && (
-          <p className="text-[12px] text-muted-foreground">
+          <p className="text-[12px] text-app-text-2">
             {bezi ? t("jz.tuknutimPozastavite") : t("jz.tuknutimPokracujete")}
           </p>
         )}
@@ -599,14 +599,14 @@ export function Jazda({
           horšie než ju neponúknuť. Ukončiť aj zahodiť sa dá.
         */}
         {rozpoznana && !rozpoznana.rucna && (
-          <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
+          <div className="rounded-app border border-app-zelena/40 bg-app-zelena-jemna p-4">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-medium text-primary">{t("jz.rozpoznanaBezi")}</span>
+              <span className="text-sm font-medium text-app-zelena">{t("jz.rozpoznanaBezi")}</span>
               <span className="text-[17px] font-semibold tabular-nums">
                 {rozpoznana.km.toFixed(1)} km
               </span>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-app-text-2">
               {t("jz.odCasu", {
                 cas: new Date(rozpoznana.zaciatok).toLocaleTimeString(loc, {
                   hour: "2-digit",
@@ -629,7 +629,7 @@ export function Jazda({
                     setUkoncujem(false);
                   }
                 }}
-                className="rounded-xl bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground active:scale-95 disabled:opacity-60"
+                className="rounded-app-sm bg-app-zelena px-3 py-2.5 text-sm font-medium text-white active:scale-95 disabled:opacity-60"
               >
                 {ukoncujem ? t("jz.ukoncujem") : t("jz.ukoncitJazdu")}
               </button>
@@ -646,7 +646,7 @@ export function Jazda({
                     setUkoncujem(false);
                   }
                 }}
-                className="rounded-xl border border-border px-3 py-2.5 text-sm active:scale-95 disabled:opacity-60"
+                className="rounded-app-sm border border-app-ramik px-3 py-2.5 text-sm active:scale-95 disabled:opacity-60"
               >
                 {t("jz.zahodit")}
               </button>
@@ -655,23 +655,23 @@ export function Jazda({
         )}
 
         {cakajuce.length > 0 && (
-          <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
+          <div className="rounded-app border border-app-zelena/40 bg-app-zelena-jemna p-4">
             <div className="text-sm font-medium">
               {cakajuce.length === 1
                 ? t("jz.rozpoznalaJazdu")
                 : t("jz.rozpoznalaJazdy", { pocet: cakajuce.length })}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-app-text-2">
               {t("jz.telefonNevie")}
             </p>
             <div className="mt-3 space-y-2">
               {cakajuce.map((j) => (
-                <div key={j.id} className="rounded-xl border border-border/70 bg-card p-3">
+                <div key={j.id} className="rounded-app-sm border border-app-ramik bg-app-karta p-3">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="text-[17px] font-semibold tabular-nums">
                       {(j.distanceMeters / 1000).toFixed(1)} km
                     </span>
-                    <span className="text-[12px] text-muted-foreground">
+                    <span className="text-[12px] text-app-text-2">
                       {new Date(j.startedAt).toLocaleString(loc, {
                         day: "numeric",
                         month: "numeric",
@@ -686,7 +686,7 @@ export function Jazda({
                     disabled={vybavujem === j.id}
                     onChange={(e) => setVyberAuta((v) => ({ ...v, [j.id]: e.target.value }))}
                     aria-label={t("jz.vozidloPreJazdu")}
-                    className="mt-2 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px] disabled:opacity-60"
+                    className="mt-2 w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px] disabled:opacity-60"
                   >
                     {(vozidla ?? []).map((v) => (
                       <option key={v.id} value={v.id}>
@@ -698,7 +698,7 @@ export function Jazda({
 
                   <button
                     onClick={() => setTrasaOtvorena((t) => (t === j.id ? null : j.id))}
-                    className="mt-2 text-[13px] text-primary underline-offset-2 hover:underline"
+                    className="mt-2 text-[13px] text-app-zelena underline-offset-2 hover:underline"
                   >
                     {trasaOtvorena === j.id ? t("jz.skrytTrasu") : t("jz.ukazatTrasu")}
                   </button>
@@ -711,20 +711,20 @@ export function Jazda({
                   {j.classification ? (
                     // Zaradenie prišlo z notifikácie, ostáva potvrdiť auto.
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-muted px-2 py-1 text-[13px]">
+                      <span className="rounded-full bg-app-pozadie px-2 py-1 text-[13px]">
                         {t(j.classification === "business" ? "jazdy.sluzobna" : "jazdy.sukromna")}
                       </span>
                       <button
                         disabled={vybavujem === j.id}
                         onClick={() => vybav(j, j.classification!)}
-                        className="rounded-lg bg-primary px-3 py-2 text-[14px] font-medium text-primary-foreground disabled:opacity-60"
+                        className="rounded-lg bg-app-zelena px-3 py-2 text-[14px] font-medium text-white disabled:opacity-60"
                       >
                         {t("spolocne.ulozit")}
                       </button>
                       <button
                         disabled={vybavujem === j.id}
                         onClick={() => zahod(j)}
-                        className="ml-auto rounded-lg px-3 py-2 text-[14px] text-muted-foreground disabled:opacity-60"
+                        className="ml-auto rounded-lg px-3 py-2 text-[14px] text-app-text-2 disabled:opacity-60"
                       >
                         {t("jz.zahodit")}
                       </button>
@@ -734,21 +734,21 @@ export function Jazda({
                       <button
                         disabled={vybavujem === j.id}
                         onClick={() => vybav(j, "business")}
-                        className="rounded-lg bg-primary px-3 py-2 text-[14px] font-medium text-primary-foreground disabled:opacity-60"
+                        className="rounded-lg bg-app-zelena px-3 py-2 text-[14px] font-medium text-white disabled:opacity-60"
                       >
                         {t("jazdy.sluzobna")}
                       </button>
                       <button
                         disabled={vybavujem === j.id}
                         onClick={() => vybav(j, "private")}
-                        className="rounded-lg border border-border px-3 py-2 text-[14px] disabled:opacity-60"
+                        className="rounded-lg border border-app-ramik px-3 py-2 text-[14px] disabled:opacity-60"
                       >
                         {t("jazdy.sukromna")}
                       </button>
                       <button
                         disabled={vybavujem === j.id}
                         onClick={() => zahod(j)}
-                        className="ml-auto rounded-lg px-3 py-2 text-[14px] text-muted-foreground disabled:opacity-60"
+                        className="ml-auto rounded-lg px-3 py-2 text-[14px] text-app-text-2 disabled:opacity-60"
                       >
                         {t("jz.zahodit")}
                       </button>
@@ -767,7 +767,7 @@ export function Jazda({
             ostávajú v riadku a zvyšok je pod „?". Varovanie o Commanderi sa
             neskrýva: keď platí, telefón by tú istú jazdu zapísal druhýkrát.
           */
-          <div className="rounded-2xl border border-border/70 bg-card p-4">
+          <div className="rounded-app border border-app-ramik bg-app-karta p-4">
             <div className="flex items-center gap-3">
               <label htmlFor="detekcia-jazd" className="min-w-0 flex-1 text-sm font-medium">
                 {t("jz.rozpoznavat")}
@@ -777,7 +777,7 @@ export function Jazda({
                 onClick={() => setPopisDetekcie((v) => !v)}
                 aria-expanded={popisDetekcie}
                 aria-label={t("jz.akoFunguje")}
-                className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-border text-[12px] font-medium text-muted-foreground active:bg-secondary"
+                className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-app-ramik text-[12px] font-medium text-app-text-2 active:bg-app-pozadie"
               >
                 ?
               </button>
@@ -804,17 +804,17 @@ export function Jazda({
               />
             </div>
 
-            <p className="mt-1 text-xs text-muted-foreground">{t("jz.vyzadujePolohu")}</p>
+            <p className="mt-1 text-xs text-app-text-2">{t("jz.vyzadujePolohu")}</p>
 
             {vozidloId && commander.has(vozidloId) && (
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-app-text-2">
                 <span className="font-medium text-foreground">{t("jz.commander")}</span>
                 {t("jz.commanderZvysok")}
               </p>
             )}
 
             {popisDetekcie && (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-xs text-app-text-2">
                 {t("jz.vsimneSi")}
                 {vozidla && vozidla.length > 1 && vozidloId
                   ? ` ${t("jz.ukladaSaNa", {
@@ -833,11 +833,11 @@ export function Jazda({
           zvonku to vyzerá ako pokazená appka.
         */}
         {detekcia.dostupna && detekcia.zapnuta && detekcia.prekazka && (
-          <div className="flex items-start gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <div className="flex items-start gap-3 rounded-app border border-app-ramik bg-app-zelena-jemna p-4">
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div className="min-w-0">
               <div className="text-sm font-medium">{t("jz.detekciaNemaAkoBezat")}</div>
-              <div className="mt-1 text-xs text-muted-foreground">{detekcia.prekazka}</div>
+              <div className="mt-1 text-xs text-app-text-2">{detekcia.prekazka}</div>
             </div>
           </div>
         )}
@@ -845,7 +845,7 @@ export function Jazda({
         <div>
           {/* Rovnaký štýl ako „Účel cesty" a „Typ jazdy" — predtým bol väčší
               a s väčším odstupom, takže sekcie pôsobili ako tri rôzne veci. */}
-          <span className="mb-1.5 block text-[13px] font-medium text-muted-foreground">
+          <span className="mb-1.5 block text-[13px] font-medium text-app-text-2">
             {t("jz.vozidlo")}
           </span>
           <div className="space-y-1.5">
@@ -857,10 +857,10 @@ export function Jazda({
                */
               <div
                 key={v.id}
-                className={`flex w-full items-center rounded-2xl border transition ${
+                className={`flex w-full items-center rounded-app border transition ${
                   vozidloId === v.id
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border/70 bg-card"
+                    ? "border-primary bg-app-zelena-jemna text-app-zelena"
+                    : "border-app-ramik bg-app-karta"
                 } ${bezi ? "opacity-60" : ""}`}
               >
                 <button
@@ -881,12 +881,12 @@ export function Jazda({
                   {/* Jazdy tohto auta chodia z Commanderu — telefón ich merať nemá,
                       inak by tá istá jazda bola v knihe dvakrát. */}
                   {commander.has(v.id) && (
-                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                    <span className="shrink-0 rounded-full bg-app-pozadie px-2 py-0.5 text-[11px] text-app-text-2">
                       Commander
                     </span>
                   )}
                   {v.license_plate && (
-                    <span className="shrink-0 text-[13px] text-muted-foreground">
+                    <span className="shrink-0 text-[13px] text-app-text-2">
                       {v.license_plate}
                     </span>
                   )}
@@ -894,7 +894,7 @@ export function Jazda({
                 <button
                   onClick={() => setHistoria(v)}
                   aria-label={t("jz.historiaVozidla", { auto: v.name })}
-                  className="flex shrink-0 items-center gap-0.5 self-stretch rounded-r-2xl px-3 text-[13px] text-muted-foreground active:bg-secondary"
+                  className="flex shrink-0 items-center gap-0.5 self-stretch rounded-r-2xl px-3 text-[13px] text-app-text-2 active:bg-app-pozadie"
                 >
                   {t("jz.historia")}
                   <ChevronRight className="h-4 w-4" />
@@ -904,7 +904,7 @@ export function Jazda({
             <button
               disabled={bezi}
               onClick={() => setPridavam(true)}
-              className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border px-4 py-3 text-left text-muted-foreground disabled:opacity-60"
+              className="flex w-full items-center gap-3 rounded-app border border-dashed border-app-ramik px-4 py-3 text-left text-app-text-2 disabled:opacity-60"
             >
               <Plus className="h-4 w-4 shrink-0" />
               <span className="text-[15px]">{t("jz.pridatVozidlo")}</span>
@@ -913,7 +913,7 @@ export function Jazda({
         </div>
 
         <label className="block">
-          <span className="mb-1.5 block text-[13px] font-medium text-muted-foreground">
+          <span className="mb-1.5 block text-[13px] font-medium text-app-text-2">
             {t("jz.ucelCesty")}
           </span>
           <input
@@ -921,7 +921,7 @@ export function Jazda({
             onChange={(e) => setUcel(e.target.value)}
             placeholder={t("jz.ucelPriklad")}
             disabled={bezi}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px] disabled:opacity-60"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px] disabled:opacity-60"
           />
         </label>
 
@@ -929,7 +929,7 @@ export function Jazda({
             spustená sa ticho ukladala ako služobná podľa predvolenej hodnoty
             v databáze. Prepnúť sa dá aj počas jazdy — človek to často vie až cestou. */}
         <div>
-          <span className="mb-1.5 block text-[13px] font-medium text-muted-foreground">
+          <span className="mb-1.5 block text-[13px] font-medium text-app-text-2">
             {t("jz.typJazdy")}
           </span>
           <div className="grid grid-cols-2 gap-2">
@@ -937,10 +937,10 @@ export function Jazda({
               <button
                 key={typ}
                 onClick={() => setTypJazdy(typ)}
-                className={`rounded-xl border px-3 py-2.5 text-[15px] ${
+                className={`rounded-app-sm border px-3 py-2.5 text-[15px] ${
                   typJazdy === typ
-                    ? "border-primary bg-primary/10 font-semibold text-primary"
-                    : "border-input bg-background text-muted-foreground"
+                    ? "border-primary bg-app-zelena-jemna font-semibold text-app-zelena"
+                    : "border-app-ramik bg-app-pozadie text-app-text-2"
                 }`}
               >
                 {t(typ === "business" ? "jazdy.sluzobna" : "jazdy.sukromna")}
@@ -949,7 +949,7 @@ export function Jazda({
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-app-text-2">
           {t("jz.lenPocasPouzivania")}
         </p>
       </div>
@@ -1029,16 +1029,16 @@ function NoveVozidlo({
     >
       <div className="space-y-3">
         <label className="block">
-          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">{t("jz.nazovVozidla")}</span>
+          <span className="mb-1 block text-[13px] font-medium text-app-text-2">{t("jz.nazovVozidla")}</span>
           <input
             value={nazov}
             onChange={(e) => setNazov(e.target.value)}
             placeholder={t("jz.nazovVozidlaPriklad")}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+          <span className="mb-1 block text-[13px] font-medium text-app-text-2">
             {t("jz.evidencneCislo")}
           </span>
           <input
@@ -1046,11 +1046,11 @@ function NoveVozidlo({
             onChange={(e) => setSpz(e.target.value.toUpperCase())}
             placeholder="TT123AB"
             autoCapitalize="characters"
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+          <span className="mb-1 block text-[13px] font-medium text-app-text-2">
             {t("jz.spotreba")}
           </span>
           <input
@@ -1058,9 +1058,9 @@ function NoveVozidlo({
             onChange={(e) => setSpotreba(e.target.value)}
             inputMode="decimal"
             placeholder={t("jz.spotrebaPriklad")}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
           />
-          <span className="mt-1 block text-[12px] text-muted-foreground">
+          <span className="mt-1 block text-[12px] text-app-text-2">
             {t("jz.nepovinneCena")}
           </span>
         </label>

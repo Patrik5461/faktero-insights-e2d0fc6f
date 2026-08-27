@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import { ZELENA_HORE } from "@/lib/mobile/brand";
+
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { ScreenHeader } from "./ui";
 /**
- * Zelený pás pod hodinami — jedna vrstva pre celú appku.
+ * Pás pod hodinami — jedna vrstva pre celú appku.
  *
  * Kreslí ho stránka, nie plugin StatusBar: appka beží s `overlaysWebView: true`,
  * takže WebView siaha až pod hodiny a farbu tam určuje toto.
  *
+ * Po redizajne je vo farbe pozadia appky, nie zelený — hlavička je svetlá
+ * a pás nad ňou musí byť s ňou jednoliaty.
+ *
  * Prečo jeden spoločný prvok a nie pás v každej hlavičke: bočný panel leží nad
  * obrazovkou (z-50) a jeho stmavenie cez ňu (z-40). Keby si pás kreslila každá
- * obrazovka sama, pri otvorenom paneli by bol horný pruh na šírku panela zelený
+ * obrazovka sama, pri otvorenom paneli by bol horný pruh na šírku panela iný
  * a vedľa neho stmavený. Tento pás je nad oboma (z-60), takže je vždy celý a
  * vždy rovnaký — nezávisle od toho, čo je pod ním.
  *
@@ -21,8 +25,8 @@ export function PasHore() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-x-0 top-0 z-[60]"
-      style={{ height: "var(--safe-top)", backgroundColor: ZELENA_HORE }}
+      className="pointer-events-none fixed inset-x-0 top-0 z-[60] bg-app-pozadie"
+      style={{ height: "var(--safe-top)" }}
     />
   );
 }
@@ -122,9 +126,11 @@ function useSwipeSpat(onSpat?: () => void) {
  * `env(safe-area-inset-top)` bolo rozpísané v ôsmich súboroch, čo znamená, že
  * pri deviatej obrazovke sa naň raz zabudne a text vlezie pod hodiny.
  *
- * Zelený pás pre výrez je súčasťou tohto komponentu. Obsah lišty má **pevnú
- * výšku** nezávisle od toho, či je podnadpis — inak by sa lišta pri prepnutí
- * z domovskej obrazovky na podstránku natiahla.
+ * Po redizajne je svetlá a bez tieňa — vo farbe pozadia, takže sa pri rolovaní
+ * neoddelí od obsahu. Zelená ostáva akcentom, nie plochou.
+ *
+ * Obsah lišty má **pevnú výšku** nezávisle od toho, či je podnadpis — inak by
+ * sa lišta pri prepnutí z domovskej obrazovky na podstránku natiahla.
  */
 const VYSKA_LISTY = 52;
 
@@ -135,6 +141,7 @@ export function AppHeader({
   left,
   right,
   pod,
+  hlavicka,
   variant = "sub",
 }: {
   title: string;
@@ -143,15 +150,25 @@ export function AppHeader({
   /** Prvok vľavo namiesto šípky späť — domovská obrazovka má hamburger. */
   left?: ReactNode;
   right?: ReactNode;
-  /** Obsah pod lištou v tom istom zelenom bloku (výber firmy na domove). */
+  /** Obsah pod lištou v tom istom bloku (výber firmy na domove). */
   pod?: ReactNode;
+  /**
+   * Náhrada za nadpis a podnadpis.
+   *
+   * Úvodná obrazovka nemá v lište názov obrazovky — ten je až v tele stránky
+   * v 28 px. V lište je namiesto neho prepínač firmy, a ten potrebuje celú
+   * šírku, nie miesto po titulku.
+   */
+  hlavicka?: ReactNode;
   variant?: "root" | "sub";
 }) {
   const { t } = usePreklad();
   return (
     <header
-      className={`sticky top-0 text-white ${variant === "root" ? "z-20" : "z-10"}`}
-      style={{ backgroundColor: ZELENA_HORE, paddingTop: "var(--safe-top)" }}
+      className={`sticky top-0 bg-app-pozadie text-app-text ${
+        variant === "root" ? "z-20" : "z-10"
+      }`}
+      style={{ paddingTop: "var(--safe-top)" }}
     >
       <div className="flex items-center gap-1 px-2" style={{ minHeight: VYSKA_LISTY }}>
         {left ??
@@ -160,30 +177,29 @@ export function AppHeader({
               onClick={onBack}
               aria-label={t("spolocne.spat")}
               // 44 px je najmenší cieľ, ktorý sa dá palcom trafiť na prvý raz.
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white active:bg-white/20"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-app-text active:bg-app-ramik"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
           ) : null)}
-        <div className="min-w-0 flex-1 px-2">
-          <h1 className="truncate text-[17px] font-semibold leading-tight tracking-tight">
-            {title}
-          </h1>
+        {hlavicka ? (
+          <div className="min-w-0 flex-1 px-1">{hlavicka}</div>
+        ) : (
+          <div className="min-w-0 flex-1 px-2">
+            <h1 className="truncate text-[17px] font-semibold leading-tight tracking-tight">
+              {title}
+            </h1>
           {/*
             Riadok podnadpisu je tu **vždy**, aj keď je prázdny. Bez neho sa
             titulok na obrazovke bez podnadpisu vycentruje inde a pri prepnutí
             medzi obrazovkami poskočí o osem bodov — presne ten skok, ktorý je
             na prepínaní vidieť.
           */}
-          <p
-            className="truncate text-[13px] leading-tight"
-            // Nie `text-white/80`: na zelenej má len 3,9:1. Pri 0,92 je to
-            // 4,6:1, teda nad hranicou pre bežne veľký text.
-            style={{ color: "rgba(255,255,255,0.92)" }}
-          >
-            {subtitle ?? "\u00A0"}
-          </p>
-        </div>
+          <p className="truncate text-[13px] leading-tight text-app-text-2">
+              {subtitle ?? "\u00A0"}
+            </p>
+          </div>
+        )}
         {right}
       </div>
       {pod}
@@ -198,6 +214,7 @@ export function MobilObrazovka({
   children,
   footer,
   akcia,
+  velkyNadpis,
 }: {
   title: string;
   subtitle?: string;
@@ -205,6 +222,14 @@ export function MobilObrazovka({
   children: ReactNode;
   footer?: ReactNode;
   akcia?: ReactNode;
+  /**
+   * Nadpis v tele stránky, nie v lište.
+   *
+   * Agendy zo spodnej lišty nemajú kam ísť „späť", takže lišta by nad nimi
+   * niesla len meno obrazovky — a to sa v 28 px číta lepšie hneď nad obsahom.
+   * Podstránky (detail faktúry, nové vozidlo) ostávajú s lištou a šípkou.
+   */
+  velkyNadpis?: boolean;
 }) {
   const { posun, pusta } = useSwipeSpat(onBack);
   const patka = useRef<HTMLElement>(null);
@@ -232,14 +257,19 @@ export function MobilObrazovka({
 
   return (
     <div
-      className="flex min-h-[100dvh] flex-col bg-background"
+      className="flex min-h-[100dvh] flex-col bg-app-pozadie"
       style={{
         transform: posun ? `translateX(${posun}px)` : undefined,
         transition: pusta ? "transform 180ms cubic-bezier(0.32, 0.72, 0, 1)" : undefined,
         boxShadow: posun ? "-12px 0 32px rgba(0,0,0,0.18)" : undefined,
       }}
     >
-      <AppHeader title={title} subtitle={subtitle} onBack={onBack} right={akcia} />
+      {velkyNadpis ? (
+        /* Miesto pre výrez. Lišta tu nie je — nadpis je až v obsahu. */
+        <div aria-hidden style={{ paddingTop: "var(--safe-top)" }} />
+      ) : (
+        <AppHeader title={title} subtitle={subtitle} onBack={onBack} right={akcia} />
+      )}
 
       {/* Odsadenie dole kvôli spodnej lište a lepivej pätke — bez neho ostane
           koniec obsahu schovaný za nimi. Mimo záložiek je premenná prázdna. */}
@@ -247,13 +277,14 @@ export function MobilObrazovka({
         className="flex-1 px-4 pt-4"
         style={{ paddingBottom: `calc(1rem + ${vyskaPatky}px + var(--spodna-lista, 0px))` }}
       >
+        {velkyNadpis && <ScreenHeader title={title} subtitle={subtitle} right={akcia} />}
         {children}
       </main>
 
       {footer && (
         <footer
           ref={patka}
-          className="sticky border-t border-border/70 bg-card/95 px-4 pt-2 backdrop-blur"
+          className="sticky border-t border-app-ramik bg-app-pozadie/95 px-4 pt-2 backdrop-blur"
           /*
             Nad spodnou lištou, nie pod ňou — inak ju hlavné tlačidlo prekryje.
             Keď lišta je, `--spodna-lista` už bezpečnú zónu obsahuje a pätka si
@@ -292,16 +323,15 @@ export function VelkeTlacidlo({
     <button
       onClick={onClick}
       disabled={disabled}
-      style={variant === "primary" ? { backgroundImage: "var(--brand-gradient)" } : undefined}
-      className={`flex w-full items-center gap-3.5 rounded-2xl p-4 text-left transition active:scale-[0.985] disabled:opacity-50 ${
+      className={`flex w-full items-center gap-3.5 rounded-app p-4 text-left transition active:scale-[0.985] disabled:opacity-50 ${
         variant === "primary"
-          ? "text-primary-foreground shadow-[var(--shadow-glow)]"
-          : "border border-border/70 bg-card shadow-[var(--shadow-card)] active:bg-secondary"
+          ? "bg-app-zelena text-white"
+          : "border border-app-ramik bg-app-karta shadow-app active:bg-app-pozadie"
       }`}
     >
       <span
-        className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${
-          variant === "primary" ? "bg-white/20" : "bg-primary/10 text-primary"
+        className={`grid h-12 w-12 shrink-0 place-items-center rounded-app-sm ${
+          variant === "primary" ? "bg-white/20" : "bg-app-zelena-jemna text-app-zelena"
         }`}
       >
         <Icon className="h-[22px] w-[22px]" />
@@ -311,7 +341,7 @@ export function VelkeTlacidlo({
         {hint && (
           <span
             className={`mt-0.5 block text-[13px] leading-snug ${
-              variant === "primary" ? "text-primary-foreground/85" : "text-muted-foreground"
+              variant === "primary" ? "text-white/85" : "text-app-text-2"
             }`}
           >
             {hint}
@@ -324,9 +354,9 @@ export function VelkeTlacidlo({
 
 export function Pracujem({ text }: { text: string }) {
   return (
-    <div className="grid min-h-[100dvh] place-items-center bg-background">
-      <div className="flex flex-col items-center gap-3 text-sm text-muted-foreground">
-        <Loader2 className="h-7 w-7 animate-spin text-primary" />
+    <div className="grid min-h-[100dvh] place-items-center bg-app-pozadie">
+      <div className="flex flex-col items-center gap-3 text-sm text-app-text-2">
+        <Loader2 className="h-7 w-7 animate-spin text-app-zelena" />
         {text}
       </div>
     </div>
@@ -347,11 +377,8 @@ export function HlavneTlacidlo({
     <button
       onClick={onClick}
       disabled={disabled}
-      style={disabled ? undefined : { backgroundImage: "var(--brand-gradient)" }}
-      className={`w-full rounded-2xl px-4 py-3.5 text-[15px] font-semibold transition active:scale-[0.99] ${
-        disabled
-          ? "bg-secondary text-muted-foreground"
-          : "text-primary-foreground shadow-[var(--shadow-glow)]"
+      className={`w-full rounded-app px-4 py-3.5 text-[15px] font-semibold transition active:scale-[0.99] ${
+        disabled ? "bg-app-ramik text-app-text-3" : "bg-app-zelena text-white"
       }`}
     >
       {children}

@@ -26,7 +26,7 @@ export function QrSkener({
 
       {/* Rámik, kam mieriť. Bez neho ľudia mieria na celý bloček. */}
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
-        <div className="h-56 w-56 rounded-2xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]" />
+        <div className="h-56 w-56 rounded-app border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]" />
       </div>
 
       <div
@@ -45,13 +45,13 @@ export function QrSkener({
 
       {chyba && (
         <div
-          className="absolute inset-x-0 bottom-0 bg-card p-4 text-sm"
+          className="absolute inset-x-0 bottom-0 bg-app-karta p-4 text-sm"
           style={{ paddingBottom: "calc(var(--safe-bottom) + 1rem)" }}
         >
           <p className="mb-3">{chyba}</p>
           <button
             onClick={onZrusit}
-            className="w-full rounded-xl border border-border px-4 py-2.5 text-sm"
+            className="w-full rounded-app-sm border border-app-ramik px-4 py-2.5 text-sm"
           >
             {t("spolocne.spat")}
           </button>

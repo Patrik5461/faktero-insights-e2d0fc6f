@@ -17,17 +17,26 @@ export const KLUC_MOTIVU = "faktero.motiv";
 /** Predvolene sa riadime systémom — je to najmenej prekvapivé. */
 export const VYCHODZI: Motiv = "system";
 
+/**
+ * V mobilnej aplikácii je predvolený svetlý režim.
+ *
+ * Appka je navrhnutá ako svetlá — doklady, sumy a stavy sa čítajú na bielom.
+ * Tmavý ostáva k dispozícii, ale zapína sa vedome, nie tým, že má človek
+ * v telefóne nočný režim.
+ */
+export const VYCHODZI_APKA: Motiv = "svetly";
+
 export function jeMotiv(hodnota: unknown): hodnota is Motiv {
   return hodnota === "svetly" || hodnota === "tmavy" || hodnota === "system";
 }
 
 /** Čo si človek zvolil. Nečitateľné úložisko nie je dôvod appku zhodiť. */
-export function nacitajMotiv(): Motiv {
+export function nacitajMotiv(vychodzi: Motiv = VYCHODZI): Motiv {
   try {
     const ulozene = localStorage.getItem(KLUC_MOTIVU);
-    return jeMotiv(ulozene) ? ulozene : VYCHODZI;
+    return jeMotiv(ulozene) ? ulozene : vychodzi;
   } catch {
-    return VYCHODZI;
+    return vychodzi;
   }
 }
 
@@ -65,6 +74,14 @@ export function nasadMotiv(volba: Motiv): void {
   } catch {
     /* bez DOM sa nedá nasadiť nič a nie je to chyba */
   }
+}
+
+/**
+ * Je práve tma? Pre veci mimo CSS — status bar telefónu farbu z triedy
+ * `dark` prečítať nevie a musí ju dostať ako hodnotu.
+ */
+export function jeTmavy(volba: Motiv = nacitajMotiv(VYCHODZI_APKA)): boolean {
+  return vyslednyMotiv(volba, systemChceTmavy()) === "tmavy";
 }
 
 /** Uloží voľbu a hneď ju nasadí. */

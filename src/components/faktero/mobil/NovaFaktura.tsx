@@ -30,6 +30,7 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { SectionHeader, StepIndicator } from "./ui";
 /**
  * Vystavenie faktúry v telefóne.
  *
@@ -631,6 +632,10 @@ function KrokOdberatel({
       subtitle={druh === "proforma" ? t("nf.krokZalohova") : t("nf.krok", { n: 1 })}
       onBack={onSpat}
     >
+      <StepIndicator
+        aktivny={1}
+        kroky={[t("nf.krokOdberatel"), t("nf.krokPolozky"), t("nf.krokKontrola")]}
+      />
       {/*
         Druh dokladu patrí na začiatok — mení celý doklad, nielen jeho text.
         Zálohová faktúra nie je daňový doklad a číslo dostane z vlastnej rady,
@@ -646,10 +651,10 @@ function KrokOdberatel({
           <button
             key={id}
             onClick={() => setDruh(id)}
-            className={`rounded-2xl border py-3 text-[14px] transition active:scale-[0.98] ${
+            className={`rounded-app border py-3 text-[14px] transition active:scale-[0.98] ${
               druh === id
-                ? "border-primary bg-primary/10 font-semibold text-primary"
-                : "border-border/70 bg-card"
+                ? "border-app-zelena bg-app-zelena-jemna font-semibold text-app-zelena"
+                : "border-app-ramik bg-app-karta"
             }`}
           >
             {label}
@@ -657,59 +662,62 @@ function KrokOdberatel({
         ))}
       </div>
       {druh === "proforma" && (
-        <p className="mb-4 rounded-xl bg-secondary px-3 py-2 text-[12px] leading-snug text-muted-foreground">
+        <p className="mb-4 rounded-app-sm bg-app-pozadie px-3 py-2 text-[12px] leading-snug text-app-text-2">
           {t("nf.zalohovaVysvetlenie")}
         </p>
       )}
 
       <div className="relative mb-3">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-2" />
         <input
           value={hladanie}
           onChange={(e) => setHladanie(e.target.value)}
           placeholder={t("nf.hladatOdberatela")}
-          className="w-full rounded-2xl border border-border/70 bg-card py-3 pl-9 pr-3 text-[15px] shadow-[var(--shadow-card)]"
+          className="w-full rounded-app border border-app-ramik bg-app-karta py-3 pl-9 pr-3 text-[15px] shadow-app"
         />
       </div>
 
       <button
         onClick={() => setNovy(true)}
-        className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-left active:bg-primary/10"
+        className="mb-4 flex w-full items-center gap-3 rounded-app border border-dashed border-app-zelena/40 bg-app-zelena-jemna px-4 py-3 text-left active:bg-app-zelena-jemna"
       >
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-app-sm bg-app-zelena-jemna text-app-zelena">
           <UserPlus className="h-[18px] w-[18px]" />
         </span>
-        <span className="text-[15px] font-medium text-primary">{t("nf.novyOdberatel")}</span>
+        <span className="text-[15px] font-medium text-app-zelena">{t("nf.novyOdberatel")}</span>
       </button>
 
       {najdene.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted-foreground">
+        <p className="py-10 text-center text-sm text-app-text-2">
           {hladanie ? t("nf.nicSaNenaslo") : t("nf.ziadnyOdberatel")}
         </p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
+        <>
+        <SectionHeader title={t("nf.vsetciOdberatelia")} />
+        <div className="overflow-hidden rounded-app border border-app-ramik bg-app-karta shadow-app">
           {najdene.map((o, i) => (
             <button
               key={o.id}
               onClick={() => onVyber(o)}
-              className={`flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-secondary ${
-                i > 0 ? "border-t border-border/70" : ""
+              className={`flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-app-pozadie ${
+                i > 0 ? "border-t border-app-ramik" : ""
               }`}
             >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-app-sm bg-app-zelena-jemna text-app-zelena">
                 <Building2 className="h-4 w-4" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[15px] font-medium leading-tight">
                   {o.name}
                 </span>
-                <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
+                <span className="mt-0.5 block truncate text-[13px] text-app-text-2">
                   {[o.ico ? t("nf.icoS", { ico: o.ico }) : null, o.city].filter(Boolean).join(" · ") || "—"}
                 </span>
               </span>
             </button>
           ))}
         </div>
+        </>
       )}
     </MobilObrazovka>
   );
@@ -861,16 +869,16 @@ function Pole({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-[13px] font-medium text-muted-foreground">{label}</span>
+      <span className="mb-1 block text-[13px] font-medium text-app-text-2">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         inputMode={inputMode}
         autoCapitalize={inputMode ? "none" : "sentences"}
         autoCorrect="off"
-        className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+        className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
       />
-      {hint && <span className="mt-1 block text-[12px] text-muted-foreground">{hint}</span>}
+      {hint && <span className="mt-1 block text-[12px] text-app-text-2">{hint}</span>}
     </label>
   );
 }
@@ -929,7 +937,7 @@ function KrokPolozky({
         footer={
           <div className="space-y-2">
             <div className="flex items-baseline justify-between text-[15px]">
-              <span className="text-muted-foreground">{t("nf.spolu")}</span>
+              <span className="text-app-text-2">{t("nf.spolu")}</span>
               <span className="text-[20px] font-semibold tabular-nums">
                 {suma(sucty.spolu, mena, loc)}
               </span>
@@ -960,16 +968,16 @@ function KrokPolozky({
           {posledna && (
             <button
               onClick={onZopakuj}
-              className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-left active:bg-primary/10"
+              className="flex w-full items-center gap-3 rounded-app border border-dashed border-app-zelena/40 bg-app-zelena-jemna px-4 py-3 text-left active:bg-app-zelena-jemna"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-app-sm bg-app-zelena-jemna text-app-zelena">
                 <RotateCcw className="h-[18px] w-[18px]" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-medium text-primary">
+                <span className="block text-[15px] font-medium text-app-zelena">
                   {t("nf.zopakovatPoslednu")}
                 </span>
-                <span className="block truncate text-[13px] text-muted-foreground">
+                <span className="block truncate text-[13px] text-app-text-2">
                   {posledna.invoice_number} · {datumSk(posledna.issue_date)}
                 </span>
               </span>
@@ -980,26 +988,26 @@ function KrokPolozky({
             <button
               onClick={() => setCennikOtvoreny(true)}
               disabled={produkty.length === 0}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-card px-3 py-3 text-[14px] font-medium shadow-[var(--shadow-card)] active:bg-secondary disabled:opacity-50"
+              className="flex items-center justify-center gap-2 rounded-app border border-app-ramik bg-app-karta px-3 py-3 text-[14px] font-medium shadow-app active:bg-app-pozadie disabled:opacity-50"
             >
               <Package className="h-4 w-4" /> {t("nf.zCennika")}
             </button>
             <button
               onClick={onPridajVlastnu}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-border/70 bg-card px-3 py-3 text-[14px] font-medium shadow-[var(--shadow-card)] active:bg-secondary"
+              className="flex items-center justify-center gap-2 rounded-app border border-app-ramik bg-app-karta px-3 py-3 text-[14px] font-medium shadow-app active:bg-app-pozadie"
             >
               <Plus className="h-4 w-4" /> {t("nf.vlastna")}
             </button>
           </div>
 
           {platca && (
-            <div className="rounded-2xl border border-border/70 bg-card p-4 text-[14px] shadow-[var(--shadow-card)]">
+            <div className="rounded-app border border-app-ramik bg-app-karta p-4 text-[14px] shadow-app">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">{t("nf.zaklad")}</span>
+                <span className="text-app-text-2">{t("nf.zaklad")}</span>
                 <span className="tabular-nums">{suma(sucty.zaklad, mena, loc)}</span>
               </div>
               <div className="mt-1 flex justify-between">
-                <span className="text-muted-foreground">{t("nf.dph")}</span>
+                <span className="text-app-text-2">{t("nf.dph")}</span>
                 <span className="tabular-nums">{suma(sucty.dph, mena, loc)}</span>
               </div>
             </div>
@@ -1044,19 +1052,19 @@ export function RiadokPolozky({
   const celkom = +(zaklad * (1 + riadok.vat_rate / 100)).toFixed(2);
 
   return (
-    <div className="rounded-2xl border border-border/70 bg-card p-3.5 shadow-[var(--shadow-card)]">
+    <div className="rounded-app border border-app-ramik bg-app-karta p-3.5 shadow-app">
       <div className="flex items-start gap-2">
         <input
           value={riadok.name}
           onChange={(e) => onZmen({ name: e.target.value })}
           placeholder={t("nf.nazovPolozky")}
-          className="min-w-0 flex-1 rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+          className="min-w-0 flex-1 rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
         />
         {!jediny && (
           <button
             onClick={onZmaz}
             aria-label={t("nf.odstranitPolozku")}
-            className="mt-0.5 rounded-xl p-2.5 text-muted-foreground active:bg-secondary"
+            className="mt-0.5 rounded-app-sm p-2.5 text-app-text-2 active:bg-app-pozadie"
           >
             <Trash2 className="h-[18px] w-[18px]" />
           </button>
@@ -1065,16 +1073,16 @@ export function RiadokPolozky({
 
       <div className={`mt-2 grid gap-2 ${platca ? "grid-cols-3" : "grid-cols-2"}`}>
         <label className="block">
-          <span className="mb-1 block text-[12px] text-muted-foreground">{t("nf.mnozstvo")}</span>
+          <span className="mb-1 block text-[12px] text-app-text-2">{t("nf.mnozstvo")}</span>
           <input
             value={riadok.quantity}
             onChange={(e) => onZmen({ quantity: e.target.value })}
             inputMode="decimal"
-            className="w-full rounded-xl border border-input bg-background px-2.5 py-2 text-[16px] tabular-nums"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-2.5 py-2 text-[16px] tabular-nums"
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-[12px] text-muted-foreground">
+          <span className="mb-1 block text-[12px] text-app-text-2">
             Cena{platca ? " bez DPH" : ""}
           </span>
           <input
@@ -1082,16 +1090,16 @@ export function RiadokPolozky({
             onChange={(e) => onZmen({ unit_price: e.target.value })}
             inputMode="decimal"
             placeholder="0,00"
-            className="w-full rounded-xl border border-input bg-background px-2.5 py-2 text-[16px] tabular-nums"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-2.5 py-2 text-[16px] tabular-nums"
           />
         </label>
         {platca && (
           <label className="block">
-            <span className="mb-1 block text-[12px] text-muted-foreground">{t("nf.dph")}</span>
+            <span className="mb-1 block text-[12px] text-app-text-2">{t("nf.dph")}</span>
             <select
               value={riadok.vat_rate}
               onChange={(e) => onZmen({ vat_rate: Number(e.target.value) })}
-              className="w-full rounded-xl border border-input bg-background px-2 py-2.5 text-[16px]"
+              className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-2 py-2.5 text-[16px]"
             >
               {sadzbyKrajiny(krajina).map((r) => (
                 <option key={r} value={r}>
@@ -1104,7 +1112,7 @@ export function RiadokPolozky({
       </div>
 
       <div className="mt-2 flex items-baseline justify-between">
-        <span className="text-[12px] text-muted-foreground">
+        <span className="text-[12px] text-app-text-2">
           {riadok.dovod ? riadok.dovod : `${riadok.unit || "ks"}`}
         </span>
         <span className="text-[15px] font-semibold tabular-nums">{suma(celkom, mena, loc)}</span>
@@ -1135,15 +1143,15 @@ function VyberProduktu({
     <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40" onClick={onZavri}>
       <div
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[80dvh] overflow-hidden rounded-t-3xl bg-card"
+        className="max-h-[80dvh] overflow-hidden rounded-t-3xl bg-app-karta"
         style={{ paddingBottom: "var(--safe-bottom)" }}
       >
-        <div className="flex items-center gap-2 border-b border-border/70 px-4 py-3">
+        <div className="flex items-center gap-2 border-b border-app-ramik px-4 py-3">
           <h2 className="flex-1 text-[16px] font-semibold">{t("nf.cennik")}</h2>
           <button
             onClick={onZavri}
             aria-label={t("nf.zavriet")}
-            className="rounded-full p-2 active:bg-secondary"
+            className="rounded-full p-2 active:bg-app-pozadie"
           >
             <X className="h-5 w-5" />
           </button>
@@ -1153,7 +1161,7 @@ function VyberProduktu({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={t("nf.hladatPolozku")}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
           />
         </div>
         <div className="max-h-[52dvh] overflow-y-auto pb-2">
@@ -1161,11 +1169,11 @@ function VyberProduktu({
             <button
               key={p.id}
               onClick={() => onVyber(p)}
-              className="flex w-full items-center gap-3 border-t border-border/70 px-4 py-3 text-left active:bg-secondary"
+              className="flex w-full items-center gap-3 border-t border-app-ramik px-4 py-3 text-left active:bg-app-pozadie"
             >
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[15px]">{p.name}</span>
-                <span className="block text-[12px] text-muted-foreground">
+                <span className="block text-[12px] text-app-text-2">
                   {p.unit || "ks"} · {p.vat_rate} % DPH
                 </span>
               </span>
@@ -1175,7 +1183,7 @@ function VyberProduktu({
             </button>
           ))}
           {najdene.length === 0 && (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("nf.nicSaNenaslo")}</p>
+            <p className="px-4 py-8 text-center text-sm text-app-text-2">{t("nf.nicSaNenaslo")}</p>
           )}
         </div>
       </div>
@@ -1258,15 +1266,15 @@ function KrokSuhrn({
       }
     >
       <div className="space-y-4">
-        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
+        <div className="rounded-app border border-app-ramik bg-app-karta p-4 shadow-app">
           <div className="text-[32px] font-semibold leading-none tabular-nums">
             {suma(sucty.spolu, mena, loc)}
           </div>
-          <div className="mt-2 text-[14px] text-muted-foreground">
+          <div className="mt-2 text-[14px] text-app-text-2">
             {odberatel.name} · {sPoctom(pocetPoloziek, POLOZKY)}
           </div>
           {platca && (
-            <div className="mt-1 text-[12px] text-muted-foreground">
+            <div className="mt-1 text-[12px] text-app-text-2">
               {t("nf.zakladDph", {
                 zaklad: suma(sucty.zaklad, mena, loc),
                 dph: suma(sucty.dph, mena, loc),
@@ -1275,8 +1283,8 @@ function KrokSuhrn({
           )}
           {zaloha && (
             /* Celková suma ostáva, mení sa len to, čo má zákazník doplatiť. */
-            <div className="mt-2 border-t border-border/70 pt-2 text-[13px]">
-              <div className="flex justify-between text-muted-foreground">
+            <div className="mt-2 border-t border-app-ramik pt-2 text-[13px]">
+              <div className="flex justify-between text-app-text-2">
                 <span>{t("nf.zuctovanaZaloha", { cislo: zaloha.invoice_number })}</span>
                 <span>− {suma(zaloha.total, mena, loc)}</span>
               </div>
@@ -1290,25 +1298,25 @@ function KrokSuhrn({
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+            <span className="mb-1 block text-[13px] font-medium text-app-text-2">
               Vystavenie
             </span>
             <input
               type="date"
               value={vystavenie}
               onChange={(e) => setVystavenie(e.target.value)}
-              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+              className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+            <span className="mb-1 block text-[13px] font-medium text-app-text-2">
               {t("nf.splatnost")}
             </span>
             <input
               type="date"
               value={splatnost}
               onChange={(e) => setSplatnost(e.target.value)}
-              className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+              className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
             />
           </label>
         </div>
@@ -1319,10 +1327,10 @@ function KrokSuhrn({
             <button
               key={d}
               onClick={() => setSplatnost(oDni(vystavenie, d))}
-              className={`flex-1 rounded-xl border py-2.5 text-[14px] ${
+              className={`flex-1 rounded-app-sm border py-2.5 text-[14px] ${
                 dni === d
-                  ? "border-primary bg-primary/10 font-semibold text-primary"
-                  : "border-border/70 bg-card"
+                  ? "border-app-zelena bg-app-zelena-jemna font-semibold text-app-zelena"
+                  : "border-app-ramik bg-app-karta"
               }`}
             >
               {t("nf.dni", { d })}
@@ -1343,10 +1351,10 @@ function KrokSuhrn({
               <button
                 key={id}
                 onClick={() => setUhrada(id)}
-                className={`rounded-2xl border py-3 text-[14px] transition active:scale-[0.98] ${
+                className={`rounded-app border py-3 text-[14px] transition active:scale-[0.98] ${
                   uhrada === id
-                    ? "border-primary bg-primary/10 font-semibold text-primary"
-                    : "border-border/70 bg-card"
+                    ? "border-app-zelena bg-app-zelena-jemna font-semibold text-app-zelena"
+                    : "border-app-ramik bg-app-karta"
                 }`}
               >
                 {label}
@@ -1354,7 +1362,7 @@ function KrokSuhrn({
             ))}
           </div>
           {uhrada === "bank_transfer" && !maIban && (
-            <p className="mt-1.5 text-xs text-destructive">
+            <p className="mt-1.5 text-xs text-app-chyba">
               {t("nf.bezIbanu")}
             </p>
           )}
@@ -1371,7 +1379,7 @@ function KrokSuhrn({
         )}
 
         <label className="block">
-          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+          <span className="mb-1 block text-[13px] font-medium text-app-text-2">
             {t("nf.poznamkaNad")}
           </span>
           <textarea
@@ -1379,19 +1387,19 @@ function KrokSuhrn({
             onChange={(e) => setPoznamkaNad(e.target.value)}
             rows={2}
             placeholder={t("nf.priklad")}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-[13px] font-medium text-muted-foreground">
+          <span className="mb-1 block text-[13px] font-medium text-app-text-2">
             {t("nf.poznamkaPod")}
           </span>
           <textarea
             value={poznamka}
             onChange={(e) => setPoznamka(e.target.value)}
             rows={2}
-            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
           />
         </label>
       </div>
@@ -1469,16 +1477,16 @@ function VyberZalohy({
 
   if (zaloha) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-4">
+      <div className="flex items-center justify-between gap-3 rounded-app border border-app-ramik bg-app-karta p-4">
         <div className="min-w-0">
           <div className="text-[14px] font-medium">{t("nf.zalohaCislo", { cislo: zaloha.invoice_number })}</div>
-          <div className="text-[13px] text-muted-foreground">
+          <div className="text-[13px] text-app-text-2">
             {t("nf.odpocitaSa", { suma: suma(zaloha.total, mena, loc) })}
           </div>
         </div>
         <button
           onClick={() => setZaloha(null)}
-          className="shrink-0 rounded-xl border border-border px-3 py-2 text-[13px]"
+          className="shrink-0 rounded-app-sm border border-app-ramik px-3 py-2 text-[13px]"
         >
           {t("nf.zrusit")}
         </button>
@@ -1495,7 +1503,7 @@ function VyberZalohy({
     return (
       <button
         onClick={() => setOtvorene(true)}
-        className="w-full rounded-2xl border border-dashed border-primary/40 bg-primary/5 px-4 py-3 text-[14px] font-medium text-primary active:bg-primary/10"
+        className="w-full rounded-app border border-dashed border-app-zelena/40 bg-app-zelena-jemna px-4 py-3 text-[14px] font-medium text-app-zelena active:bg-app-zelena-jemna"
       >
         {t("nf.pridatZalohovu")}
       </button>
@@ -1504,14 +1512,14 @@ function VyberZalohy({
 
   if (zoznam && zoznam.length === 0) {
     return (
-      <div className="rounded-2xl border border-border/70 bg-card p-4">
+      <div className="rounded-app border border-app-ramik bg-app-karta p-4">
         <div className="text-[14px] font-medium">{t("nf.ziadnaZaloha")}</div>
-        <p className="mt-1 text-[13px] leading-snug text-muted-foreground">
+        <p className="mt-1 text-[13px] leading-snug text-app-text-2">
           {t("nf.ziadnaZalohaPopis", { zalohova: t("nf.zalohova") })}
         </p>
         <button
           onClick={() => setOtvorene(false)}
-          className="mt-3 w-full rounded-xl border border-border px-3 py-2 text-[13px]"
+          className="mt-3 w-full rounded-app-sm border border-app-ramik px-3 py-2 text-[13px]"
         >
           {t("nf.zavriet")}
         </button>
@@ -1520,8 +1528,8 @@ function VyberZalohy({
   }
 
   return (
-    <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-3">
-      <div className="px-1 text-[13px] text-muted-foreground">
+    <div className="space-y-2 rounded-app border border-app-ramik bg-app-karta p-3">
+      <div className="px-1 text-[13px] text-app-text-2">
         {zoznam === null ? t("nf.hladamZalohy") : t("nf.zalohy")}
       </div>
       {(zoznam ?? []).map((z) => (
@@ -1531,18 +1539,18 @@ function VyberZalohy({
             setZaloha({ id: z.id, invoice_number: z.invoice_number, total: z.total });
             setOtvorene(false);
           }}
-          className="flex w-full items-center justify-between gap-3 rounded-xl border border-border/70 px-3 py-2.5 text-left active:bg-secondary"
+          className="flex w-full items-center justify-between gap-3 rounded-app-sm border border-app-ramik px-3 py-2.5 text-left active:bg-app-pozadie"
         >
           <span className="min-w-0">
             <span className="block text-[14px] font-medium">{z.invoice_number}</span>
-            <span className="block text-[12px] text-muted-foreground">{datumSk(z.issue_date)}</span>
+            <span className="block text-[12px] text-app-text-2">{datumSk(z.issue_date)}</span>
           </span>
           <span className="shrink-0 text-[14px] tabular-nums">{suma(z.total, mena, loc)}</span>
         </button>
       ))}
       <button
         onClick={() => setOtvorene(false)}
-        className="w-full py-2 text-center text-[13px] text-muted-foreground"
+        className="w-full py-2 text-center text-[13px] text-app-text-2"
       >
         {t("nf.zavriet")}
       </button>
@@ -1573,38 +1581,38 @@ function Odlozena({
   return (
     <MobilObrazovka title={t("nf.bezPripojeniaNadpis")}>
       <div className="space-y-4 pt-2 text-center">
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-secondary">
-          <CloudOff className="h-8 w-8 text-muted-foreground" />
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-app-pozadie">
+          <CloudOff className="h-8 w-8 text-app-text-2" />
         </div>
 
         {faktura.cislo ? (
           <>
             <div>
-              <p className="text-[13px] text-muted-foreground">{t("nf.maCislo")}</p>
+              <p className="text-[13px] text-app-text-2">{t("nf.maCislo")}</p>
               <p className="mt-1 text-[30px] font-semibold leading-none tabular-nums">
                 {faktura.cislo}
               </p>
             </div>
-            <p className="text-[14px] leading-snug text-muted-foreground">
+            <p className="text-[14px] leading-snug text-app-text-2">
               {t("nf.cisloJeVase")}
             </p>
           </>
         ) : (
           <>
             <p className="text-[17px] font-semibold">{t("nf.odlozena")}</p>
-            <p className="text-[14px] leading-snug text-muted-foreground">
+            <p className="text-[14px] leading-snug text-app-text-2">
               {t("nf.odlozenaPopis")}
             </p>
           </>
         )}
 
-        <div className="rounded-2xl border border-border/70 bg-card p-4 text-left">
+        <div className="rounded-app border border-app-ramik bg-app-karta p-4 text-left">
           <div className="flex items-baseline justify-between">
-            <span className="text-[14px] text-muted-foreground">{t("nf.odberatel")}</span>
+            <span className="text-[14px] text-app-text-2">{t("nf.odberatel")}</span>
             <span className="text-[15px] font-medium">{faktura.odberatel}</span>
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-[14px] text-muted-foreground">{t("nf.spolu")}</span>
+            <span className="text-[14px] text-app-text-2">{t("nf.spolu")}</span>
             <span className="text-[17px] font-semibold tabular-nums">
               {suma(faktura.spolu, mena, loc)}
             </span>
@@ -1689,9 +1697,9 @@ function Vystavena({
       footer={<HlavneTlacidlo onClick={onHotovo}>{t("nf.hotovo")}</HlavneTlacidlo>}
     >
       <div className="space-y-4">
-        <div className="grid place-items-center rounded-2xl border border-border/70 bg-card px-4 py-8 text-center shadow-[var(--shadow-card)]">
-          <CheckCircle2 className="mb-3 h-12 w-12 text-primary" />
-          <div className="text-[15px] text-muted-foreground">{faktura.invoice_number}</div>
+        <div className="grid place-items-center rounded-app border border-app-ramik bg-app-karta px-4 py-8 text-center shadow-app">
+          <CheckCircle2 className="mb-3 h-12 w-12 text-app-zelena" />
+          <div className="text-[15px] text-app-text-2">{faktura.invoice_number}</div>
           <div className="mt-1 text-[32px] font-semibold leading-none tabular-nums">
             {suma(faktura.total, faktura.currency, loc)}
           </div>
@@ -1723,7 +1731,7 @@ function Vystavena({
         </div>
 
         {!faktura.customer_email && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-app-text-2">
             {t("nf.bezEmailu")}
           </p>
         )}

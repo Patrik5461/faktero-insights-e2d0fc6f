@@ -233,12 +233,12 @@ export function PrijateDoklady({
   return (
     <MobilObrazovka title={t("pd.nazov")} subtitle={firma.name} onBack={onSpat}>
       <div className="relative mb-4">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-2" />
         <input
           value={hladanie}
           onChange={(e) => setHladanie(e.target.value)}
           placeholder={t("pd.hladat")}
-          className="w-full rounded-2xl border border-border/70 bg-card py-3 pl-9 pr-3 text-[15px] shadow-[var(--shadow-card)]"
+          className="w-full rounded-app border border-app-ramik bg-app-karta py-3 pl-9 pr-3 text-[15px] shadow-app"
         />
       </div>
 
@@ -247,9 +247,9 @@ export function PrijateDoklady({
         neodošlú, nie sú v účtovníctve a človek to musí vidieť na prvý pohľad.
       */}
       {cakajuce.length > 0 && (
-        <div className="mb-4 overflow-hidden rounded-2xl border border-amber-500/40 bg-amber-500/5">
+        <div className="mb-4 overflow-hidden rounded-app border border-app-ramik bg-amber-500/5">
           <div className="flex items-center gap-2 px-4 py-3">
-            <CloudOff className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-300" />
+            <CloudOff className="h-4 w-4 shrink-0 text-app-text-2" />
             <span className="flex-1 text-[14px] font-medium text-amber-800 dark:text-amber-200">
               {t("pd.cakaNaOdoslanie", {
                 pocet: `${cakajuce.length} ${mnozne(cakajuce.length, {
@@ -277,7 +277,7 @@ export function PrijateDoklady({
                 <span className="block truncate">
                   {d.vysledok?.supplier ?? t("pd.neprecitany")}
                 </span>
-                <span className="block truncate text-[12px] text-muted-foreground">
+                <span className="block truncate text-[12px] text-app-text-2">
                   {new Date(d.ts).toLocaleString(loc)}
                   {d.chyba ? ` · ${d.chyba}` : d.qr_raw ? ` · ${t("pd.sQrKodom")}` : ""}
                 </span>
@@ -288,7 +288,7 @@ export function PrijateDoklady({
                   setCakajuce(await fronta(firma.id));
                 }}
                 aria-label={t("pd.zahodit")}
-                className="rounded-xl p-2 text-muted-foreground active:bg-secondary"
+                className="rounded-app-sm p-2 text-app-text-2 active:bg-app-pozadie"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -302,7 +302,7 @@ export function PrijateDoklady({
         neobjaví. Nič sa nepáruje potichu, aj „isté" dvojice čakajú na ťuknutie.
       */}
       {navrhy.length > 0 && (
-        <div className="mb-4 overflow-hidden rounded-2xl border border-primary/40 bg-primary/5">
+        <div className="mb-4 overflow-hidden rounded-app border border-app-zelena/40 bg-app-zelena-jemna">
           <div className="px-4 py-3 text-[14px] font-medium">
             {t("pd.najdenePlatby", { pocet: navrhy.length })}
           </div>
@@ -316,7 +316,7 @@ export function PrijateDoklady({
                   {suma(z.doklad?.total_amount, z.doklad?.currency ?? "EUR", loc)}
                 </span>
               </div>
-              <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">
+              <p className="mt-0.5 text-[12px] leading-snug text-app-text-2">
                 {datum(z.pohyb?.booking_date, loc)} · {z.dovody.join(" · ")}
               </p>
               <div className="mt-2 flex gap-2">
@@ -343,7 +343,7 @@ export function PrijateDoklady({
                       setParujem(null);
                     }
                   }}
-                  className="flex-1 rounded-xl bg-primary/15 px-3 py-2 text-[13px] font-medium text-primary disabled:opacity-60"
+                  className="flex-1 rounded-app-sm bg-app-zelena/15 px-3 py-2 text-[13px] font-medium text-app-zelena disabled:opacity-60"
                 >
                   {z.istota === "auto" ? t("pd.sparovat") : t("pd.anoPatriKSebe")}
                 </button>
@@ -351,7 +351,7 @@ export function PrijateDoklady({
                   onClick={() =>
                     setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId))
                   }
-                  className="rounded-xl border border-border px-3 py-2 text-[13px] text-muted-foreground"
+                  className="rounded-app-sm border border-app-ramik px-3 py-2 text-[13px] text-app-text-2"
                 >
                   Nie
                 </button>
@@ -363,11 +363,11 @@ export function PrijateDoklady({
 
       {najdene.length === 0 ? (
         <div className="grid place-items-center py-16 text-center">
-          <Receipt className="mb-3 h-10 w-10 text-muted-foreground/50" />
+          <Receipt className="mb-3 h-10 w-10 text-app-text-2/50" />
           <p className="text-sm font-medium">
             {hladanie ? t("pd.nicSaNenaslo") : nedostupne ? t("pd.bezPripojenia") : t("pd.ziadne")}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-app-text-2">
             {hladanie
               ? t("pd.skusteInak")
               : nedostupne
@@ -382,23 +382,23 @@ export function PrijateDoklady({
             return (
               <div key={kluc}>
                 <div className="mb-2 flex items-baseline justify-between px-1">
-                  <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <h2 className="text-[13px] font-semibold uppercase tracking-wide text-app-text-2">
                     {nazovMesiaca(kluc, loc)}
                   </h2>
-                  <span className="text-[13px] font-medium tabular-nums text-muted-foreground">
+                  <span className="text-[13px] font-medium tabular-nums text-app-text-2">
                     {riadky.length} × · {suma(spolu, riadky[0]?.currency ?? "EUR", loc)}
                   </span>
                 </div>
-                <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
+                <div className="overflow-hidden rounded-app border border-app-ramik bg-app-karta shadow-app">
                   {riadky.map((d, i) => (
                     <button
                       key={d.id}
                       onClick={() => setOtvoreny(d)}
-                      className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-secondary ${
-                        i > 0 ? "border-t border-border/70" : ""
+                      className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:bg-app-pozadie ${
+                        i > 0 ? "border-t border-app-ramik" : ""
                       }`}
                     >
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-app-sm bg-app-zelena-jemna text-app-zelena">
                         {d.source === "qr" ? (
                           <QrCode className="h-4 w-4" />
                         ) : d.file_mime === "application/pdf" ? (
@@ -411,7 +411,7 @@ export function PrijateDoklady({
                         <span className="block truncate text-[15px] font-medium leading-tight">
                           {d.supplier_name ?? t("pd.bezDodavatela")}
                         </span>
-                        <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
+                        <span className="mt-0.5 block truncate text-[13px] text-app-text-2">
                           {datum(d.issue_date, loc)}
                           {d.payment_method ? ` · ${t(UHRADY[d.payment_method])}` : ""}
                           {uhrady[d.id]
@@ -525,12 +525,12 @@ function DetailDokladu({
       onBack={onSpat}
     >
       <div className="space-y-4">
-        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
+        <div className="rounded-app border border-app-ramik bg-app-karta p-4 shadow-app">
           <div className="text-[32px] font-semibold leading-none tabular-nums">
             {suma(doklad.total_amount, mena, loc)}
           </div>
           {cislo(doklad.vat_amount) != null && (
-            <div className="mt-2 text-[13px] text-muted-foreground">
+            <div className="mt-2 text-[13px] text-app-text-2">
               {t("nf.zakladDph", {
                 zaklad: suma(doklad.net_amount, mena, loc),
                 dph: suma(doklad.vat_amount, mena, loc),
@@ -539,7 +539,7 @@ function DetailDokladu({
             </div>
           )}
           {doklad.source === "qr" && (
-            <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-app-zelena-jemna px-2 py-0.5 text-xs font-medium text-app-zelena">
               <BadgeCheck className="h-3.5 w-3.5" /> {t("pd.zFinancnejSpravy")}
             </div>
           )}
@@ -551,8 +551,8 @@ function DetailDokladu({
           ňom a nemá to kde hľadať.
         */}
         {uhradaZUctu && (
-          <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/5 p-4">
-            <BadgeCheck className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-300" />
+          <div className="flex items-center gap-3 rounded-app border border-emerald-500/40 bg-emerald-500/5 p-4">
+            <BadgeCheck className="h-5 w-5 shrink-0 text-app-zelena" />
             <span className="min-w-0 flex-1 text-[14px]">
               {t("pd.uhradeneZUctuDna", { den: datum(uhradaZUctu.datum, loc) })}
             </span>
@@ -570,14 +570,14 @@ function DetailDokladu({
                   setRozparujem(false);
                 }
               }}
-              className="shrink-0 rounded-xl border border-border px-3 py-2 text-[13px] disabled:opacity-60"
+              className="shrink-0 rounded-app-sm border border-app-ramik px-3 py-2 text-[13px] disabled:opacity-60"
             >
               {t("pd.zrusit")}
             </button>
           </div>
         )}
 
-        <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-4 text-[14px] shadow-[var(--shadow-card)]">
+        <div className="space-y-2 rounded-app border border-app-ramik bg-app-karta p-4 text-[14px] shadow-app">
           <Riadok label={t("pd.ico")} value={doklad.supplier_ico ?? "—"} />
           <Riadok label={t("pd.icDph")} value={doklad.supplier_ic_dph ?? "—"} />
           <Riadok label={t("pd.cisloDokladu")} value={doklad.document_number ?? "—"} />
@@ -592,10 +592,10 @@ function DetailDokladu({
                 key={id}
                 disabled={busy}
                 onClick={() => zmenUhradu(id)}
-                className={`rounded-2xl border py-3 text-[14px] transition active:scale-[0.98] disabled:opacity-60 ${
+                className={`rounded-app border py-3 text-[14px] transition active:scale-[0.98] disabled:opacity-60 ${
                   uhrada === id
-                    ? "border-primary bg-primary/10 font-semibold text-primary"
-                    : "border-border/70 bg-card"
+                    ? "border-primary bg-app-zelena-jemna font-semibold text-app-zelena"
+                    : "border-app-ramik bg-app-karta"
                 }`}
               >
                 {t(UHRADY[id])}
@@ -605,20 +605,20 @@ function DetailDokladu({
         </div>
 
         {polozky.length > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
-            <div className="border-b border-border/70 px-4 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="overflow-hidden rounded-app border border-app-ramik bg-app-karta shadow-app">
+            <div className="border-b border-app-ramik px-4 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-app-text-2">
               {t("pd.polozkyPocet", { pocet: polozky.length })}
             </div>
             {polozky.map((p, i) => (
               <div
                 key={i}
                 className={`flex items-start justify-between gap-3 px-4 py-2.5 text-[14px] ${
-                  i > 0 ? "border-t border-border/70" : ""
+                  i > 0 ? "border-t border-app-ramik" : ""
                 }`}
               >
                 <span className="min-w-0">
                   <span className="block">{p.name || "—"}</span>
-                  <span className="block text-xs text-muted-foreground">
+                  <span className="block text-xs text-app-text-2">
                     {p.quantity} × {suma(p.unit_price, mena, loc)} · {p.vat_rate} %
                   </span>
                 </span>
@@ -639,7 +639,7 @@ function DetailDokladu({
                   href={priloha}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm"
+                  className="flex items-center justify-center gap-2 rounded-app-sm border border-app-ramik px-4 py-3 text-sm"
                 >
                   <ExternalLink className="h-4 w-4" /> {t("pd.otvoritPdf")}
                 </a>
@@ -648,12 +648,12 @@ function DetailDokladu({
                   <img
                     src={priloha}
                     alt="doklad"
-                    className="w-full rounded-xl border border-border object-contain"
+                    className="w-full rounded-app-sm border border-app-ramik object-contain"
                   />
                 </a>
               )
             ) : (
-              <p className="text-xs text-muted-foreground">{t("pd.nacitavamPrilohu")}</p>
+              <p className="text-xs text-app-text-2">{t("pd.nacitavamPrilohu")}</p>
             )}
           </div>
         )}
@@ -662,27 +662,27 @@ function DetailDokladu({
           type="button"
           onClick={doPrijatych}
           disabled={busy || presuvam}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-app-sm border border-app-ramik px-4 py-3 text-sm disabled:opacity-50"
         >
           <FileInput className="h-4 w-4" />
           {presuvam ? t("pd.presuvam") : t("pd.presunut")}
         </button>
 
         {mazem ? (
-          <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
+          <div className="rounded-app border border-app-chyba/40 bg-app-chyba-jemna p-4">
             <p className="text-sm font-medium">{t("pd.naozajZmazat")}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{t("pd.nedaSaVratit")}</p>
+            <p className="mt-1 text-xs text-app-text-2">{t("pd.nedaSaVratit")}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button
                 onClick={() => setMazem(false)}
-                className="rounded-xl border border-border px-4 py-2.5 text-sm"
+                className="rounded-app-sm border border-app-ramik px-4 py-2.5 text-sm"
               >
                 {t("pd.ponechat")}
               </button>
               <button
                 onClick={zmaz}
                 disabled={busy}
-                className="rounded-xl bg-destructive px-4 py-2.5 text-sm font-medium text-destructive-foreground disabled:opacity-50"
+                className="rounded-app-sm bg-destructive px-4 py-2.5 text-sm font-medium text-app-chyba-foreground disabled:opacity-50"
               >
                 {t("pd.zmazatKratke")}
               </button>
@@ -691,7 +691,7 @@ function DetailDokladu({
         ) : (
           <button
             onClick={() => setMazem(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm text-muted-foreground"
+            className="flex w-full items-center justify-center gap-2 rounded-app-sm px-4 py-3 text-sm text-app-text-2"
           >
             <Trash2 className="h-4 w-4" /> {t("pd.zmazat")}
           </button>
@@ -704,7 +704,7 @@ function DetailDokladu({
 function Riadok({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <span className="text-muted-foreground">{label}</span>
+      <span className="text-app-text-2">{label}</span>
       <span className="text-right font-medium">{value}</span>
     </div>
   );

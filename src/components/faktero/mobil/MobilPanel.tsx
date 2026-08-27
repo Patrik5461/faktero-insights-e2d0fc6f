@@ -15,6 +15,9 @@ import {
   Stethoscope,
   Bug,
   FileSignature,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 import {
   disableBiometric,
@@ -22,13 +25,19 @@ import {
   isBiometricAvailable,
   isBiometricEnabled,
 } from "@/lib/mobile/biometric";
-import { VERZIA_APKY, ZELENA_DOLE, ZELENA_HORE } from "@/lib/mobile/brand";
+import { VERZIA_APKY } from "@/lib/mobile/brand";
 import { mojaPeciatka } from "@/lib/mobile/verzia";
 import { AppHeader } from "@/components/faktero/mobil/MobilChrome";
 import { NahlasitChybu } from "@/components/faktero/NahlasitChybu";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { JAZYKY } from "@/lib/mobile/jazyk";
+import {
+  VYCHODZI_APKA,
+  nacitajMotiv,
+  ulozMotiv,
+  type Motiv,
+} from "@/lib/faktero/motiv";
 /**
  * Vysúvací panel s nastaveniami.
  *
@@ -71,6 +80,9 @@ export function MobilPanel({
   const { t, jazyk, nastavJazyk } = usePreklad();
   /* Okno na nahlásenie chyby — otvára sa z tohto panela. */
   const [nahlasenie, setNahlasenie] = useState(false);
+  /* Voľba sa číta až v efekte — na serveri `localStorage` neexistuje. */
+  const [motiv, setMotiv] = useState<Motiv>(VYCHODZI_APKA);
+  useEffect(() => setMotiv(nacitajMotiv(VYCHODZI_APKA)), []);
   const [biometriaMozna, setBiometriaMozna] = useState(false);
   const [biometriaZapnuta, setBiometriaZapnuta] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -146,7 +158,7 @@ export function MobilPanel({
           if (posun < -60) onZavri();
           else setPosun(0);
         }}
-        className="fixed inset-y-0 left-0 z-50 flex w-[84%] max-w-sm flex-col bg-card shadow-2xl"
+        className="fixed inset-y-0 left-0 z-50 flex w-[84%] max-w-sm flex-col bg-app-karta shadow-2xl"
         style={{
           transform: otvoreny ? `translateX(${posun}px)` : `translateX(-100%)`,
           transition: pusta ? "transform 220ms cubic-bezier(0.32, 0.72, 0, 1)" : undefined,
@@ -159,27 +171,17 @@ export function MobilPanel({
             <button
               onClick={onZavri}
               aria-label={t("panel.zavriet")}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-white/20"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-app-ramik"
             >
               <X className="h-[18px] w-[18px]" />
             </button>
           }
           pod={
-            /*
-              Presvetlenie smerom dole je až pod lištou — rovnako ako na domove.
-              Keby prechod začínal hore, v oblasti výrezu by bol o odtieň
-              svetlejší pruh než spoločný pás nad ním a predel by bolo vidieť.
-            */
-            <div
-              className="px-4 pb-5 pt-1"
-              style={{
-                backgroundImage: `linear-gradient(180deg, ${ZELENA_HORE} 0%, ${ZELENA_HORE} 30%, ${ZELENA_DOLE} 100%)`,
-              }}
-            >
-              <div className="flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2.5 text-white">
-                <Building2 className="h-4 w-4 shrink-0" />
-                <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
-                  {firma?.name ?? "Bez firmy"}
+            <div className="px-4 pb-3 pt-1">
+              <div className="flex items-center gap-2 rounded-app-sm border border-app-ramik bg-app-karta px-3 py-2.5">
+                <Building2 className="h-4 w-4 shrink-0 text-app-text-2" />
+                <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-app-text">
+                  {firma?.name ?? t("panel.bezFirmy")}
                 </span>
               </div>
             </div>
@@ -230,14 +232,14 @@ export function MobilPanel({
             <button
               onClick={prepniBiometriu}
               disabled={busy}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left active:bg-secondary disabled:opacity-60"
+              className="flex w-full items-center gap-3 rounded-app-sm px-3 py-3 text-left active:bg-secondary disabled:opacity-60"
             >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-app-sm bg-app-zelena-jemna text-app-zelena">
                 <Fingerprint className="h-[18px] w-[18px]" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] font-medium">{t("panel.biometria")}</span>
-                <span className="block text-[13px] text-muted-foreground">
+                <span className="block text-[13px] text-app-text-2">
                   {biometriaZapnuta ? t("panel.biometriaZapnuta") : t("panel.biometriaVypnuta")}
                 </span>
               </span>
@@ -255,7 +257,7 @@ export function MobilPanel({
               </span>
             </button>
           ) : (
-            <p className="px-3 py-2 text-[13px] text-muted-foreground">
+            <p className="px-3 py-2 text-[13px] text-app-text-2">
               {t("panel.biometriaNedostupna")}
             </p>
           )}
@@ -336,16 +338,55 @@ export function MobilPanel({
         </nav>
 
         {/*
+          Vzhľad. Tri možnosti, nie prepínač áno/nie: „podľa systému" musí byť
+          voľba, inak sa človeku s nočným režimom appka prepne bez opýtania.
+          Predvolený je svetlý — appka je tak navrhnutá.
+        */}
+        <div className="border-t border-app-ramik px-3 py-2">
+          <span className="mb-1 block text-[12px] text-app-text-2">{t("ph.vzhlad")}</span>
+          <div role="group" aria-label={t("ph.vzhlad")} className="flex gap-1">
+            {(
+              [
+                ["svetly", "ph.svetly", Sun],
+                ["tmavy", "ph.tmavy", Moon],
+                ["system", "ph.podlaSystemu", Monitor],
+              ] as const
+            ).map(([kod, kluc, Ikona]) => {
+              const je = motiv === kod;
+              return (
+                <button
+                  key={kod}
+                  type="button"
+                  aria-pressed={je}
+                  onClick={() => {
+                    setMotiv(kod);
+                    ulozMotiv(kod);
+                  }}
+                  className={`flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-app-sm border text-[12px] transition ${
+                    je
+                      ? "border-app-zelena bg-app-zelena-jemna font-medium text-app-zelena"
+                      : "border-app-ramik text-app-text-2"
+                  }`}
+                >
+                  <Ikona className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{t(kluc)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/*
           Jazyk appky. Hlásenia zo servera ostávajú zatiaľ slovenské — vznikajú
           v spoločnom kóde s webom. Je to vedomý dlh, nie prehliadnutie.
         */}
-        <div className="border-t border-border/70 px-3 py-2">
+        <div className="border-t border-app-ramik px-3 py-2">
           <label className="block">
-            <span className="mb-1 block text-[12px] text-muted-foreground">{t("panel.jazyk")}</span>
+            <span className="mb-1 block text-[12px] text-app-text-2">{t("panel.jazyk")}</span>
             <select
               value={jazyk}
               onChange={(e) => nastavJazyk(e.target.value as (typeof JAZYKY)[number]["kod"])}
-              className="min-h-[44px] w-full rounded-xl border border-input bg-background px-3 text-[15px]"
+              className="min-h-[44px] w-full rounded-app-sm border border-input bg-app-pozadie px-3 text-[15px]"
             >
               {JAZYKY.map((j) => (
                 <option key={j.kod} value={j.kod}>
@@ -362,7 +403,7 @@ export function MobilPanel({
           chodí denne, a spolu s verziou zaberalo celé dno panela.
         */}
         <div
-          className="flex items-center justify-between gap-2 border-t border-border/70 px-3 py-1"
+          className="flex items-center justify-between gap-2 border-t border-app-ramik px-3 py-1"
           style={{ paddingBottom: "calc(var(--safe-bottom) + 0.25rem)" }}
         >
           <button
@@ -370,7 +411,7 @@ export function MobilPanel({
             /* Nízke, ale nie neťukateľné: 44 px je najmenší cieľ, ktorý sa dá
                na telefóne trafiť spoľahlivo. Výšku nesie tlačidlo, nie okraje
                pätičky — inak by sa priestor vrátil. */
-            className="flex min-h-[44px] items-center gap-2 rounded-lg px-2 text-destructive active:bg-destructive/10"
+            className="flex min-h-[44px] items-center gap-2 rounded-lg px-2 text-app-chyba active:bg-app-chyba-jemna"
           >
             <LogOut className="h-4 w-4" />
             <span className="text-[13px] font-medium">{t("panel.odhlasit")}</span>
@@ -380,7 +421,7 @@ export function MobilPanel({
               verzie sa medzi nimi nemení. Bez nej sa človek nemá ako spýtať
               „mám už tú opravu?" inak než hľadaním v Diagnostike. Na jednom
               riadku vedľa odhlásenia, nie pod ním. */}
-          <p className="truncate text-right text-[11px] leading-4 text-muted-foreground">
+          <p className="truncate text-right text-[11px] leading-4 text-app-text-2">
             v{VERZIA_APKY}
             {mojaPeciatka() ? <span className="ml-1">· {mojaPeciatka()}</span> : null}
           </p>
@@ -394,7 +435,7 @@ export function MobilPanel({
 
 function Skupina({ nazov }: { nazov: string }) {
   return (
-    <p className="px-3 pb-1 pt-4 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+    <p className="px-3 pb-1 pt-4 text-[12px] font-semibold uppercase tracking-wide text-app-text-2">
       {nazov}
     </p>
   );
@@ -414,16 +455,16 @@ function Polozka({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left active:bg-secondary"
+      className="flex w-full items-center gap-3 rounded-app-sm px-3 py-3 text-left active:bg-secondary"
     >
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-app-sm bg-app-zelena-jemna text-app-zelena">
         <Icon className="h-[18px] w-[18px]" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[15px] font-medium">{label}</span>
-        {hint && <span className="block text-[13px] text-muted-foreground">{hint}</span>}
+        {hint && <span className="block text-[13px] text-app-text-2">{hint}</span>}
       </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-app-text-2" />
     </button>
   );
 }

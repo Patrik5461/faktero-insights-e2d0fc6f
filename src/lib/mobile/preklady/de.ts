@@ -673,6 +673,67 @@ export const de: Partial<Record<Kluc, string>> = {
   "faktury.zatialOdoslane": "Bisher gesendet: {pocet}",
   "faktury.naozajZmazat": "Rechnung {cislo} wirklich löschen?",
 
+  /* spodná lišta */
+  "tab.prehlad": "Übersicht",
+  "tab.doklady": "Belege",
+  "tab.jazdy": "Fahrten",
+
+  /* prehľad a vzhľad */
+  "ph.nazov": "Übersicht",
+  "ph.neuhradene": "Offen",
+  "ph.poSplatnosti": "Überfällig",
+  "ph.rychleAkcie": "Schnellaktionen",
+  "ph.faktura": "Rechnung",
+  "ph.skenovat": "Scannen",
+  "ph.zacatJazdu": "Fahrt starten",
+  "ph.naVybavenie": "Zu erledigen",
+  "ph.poslednaAktivita": "Letzte Aktivität",
+  "ph.fakturyPoSplatnosti": "{pocet} überfällig",
+  "ph.dokladyNaKontrolu": "{pocet} wartet auf Prüfung",
+  "ph.jazdaNeukoncena": "Eine Fahrt ist nicht beendet",
+  "ph.vsetkoVybavene": "Nichts steht an",
+  "ph.vsetkoVybavenePopis": "Die Rechnungen sind bezahlt und die Belege geprüft.",
+  "ph.ziadnaAktivita": "Bisher ist nichts passiert",
+  "ph.ziadnaAktivitaPopis": "Ihre erste Rechnung oder Ihr erster Beleg erscheint hier.",
+  "ph.fakturaCislo": "Rechnung {cislo}",
+  "ph.doklad": "Erhaltener Beleg",
+  "ph.dnes": "Heute",
+  "ph.vcera": "Gestern",
+  "ph.vzhlad": "Erscheinungsbild",
+  "ph.svetly": "Hell",
+  "ph.tmavy": "Dunkel",
+  "ph.podlaSystemu": "Wie das System",
+
+  /* filtre faktúr */
+  "faktury.filterVsetky": "Alle",
+  "faktury.filterNeuhradene": "Offen",
+  "faktury.filterPoSplatnosti": "Überfällig",
+  "faktury.filterUhradene": "Bezahlt",
+  "faktury.splatnostSkratka": "fällig {den}",
+  "faktury.hladatKratke": "Suchen",
+  "faktury.filtre": "Filter",
+
+  /* skener — režimy */
+  "sken.doklad": "Beleg",
+  "sken.qrKod": "QR-Code",
+  "sken.naskenujteDoklad": "Beleg scannen",
+  "sken.automaticky": "Der Beleg wird automatisch gescannt",
+  "sken.namierteQr": "Auf den QR-Code richten",
+  "sken.qrSaPrecita": "Der Code wird von selbst gelesen, Sie müssen nichts drücken",
+  "sken.nastavenie": "Beleg-Einstellungen",
+
+  /* banka — párovanie */
+  "banka.sparovane": "Zugeordnet",
+  "banka.sparovat": "Zuordnen",
+
+  /* krokovník novej faktúry */
+  "nf.krokOdberatel": "Kunde",
+  "nf.krokPolozky": "Positionen",
+  "nf.krokKontrola": "Prüfung",
+  "nf.nedavniOdberatelia": "Letzte Kunden",
+  "nf.vsetciOdberatelia": "Alle Kunden",
+  "nf.pokracovat": "Weiter",
+
   "spolocne.spat": "Zurück",
   "spolocne.ulozit": "Speichern",
   "spolocne.zrusit": "Abbrechen",

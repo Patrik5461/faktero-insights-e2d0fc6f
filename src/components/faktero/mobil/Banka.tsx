@@ -7,6 +7,15 @@ import { MobilObrazovka, Pracujem } from "./MobilChrome";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import {
+  Card,
+  FilterChips,
+  ListCard,
+  ListRow,
+  PrazdnyStav,
+  SectionHeader,
+  StatusBadge,
+} from "./ui";
 import type { Kluc } from "@/lib/mobile/preklady";
 /**
  * Bankové pohyby v telefóne.
@@ -240,21 +249,18 @@ export function Banka({
   if (!ucty.length) {
     return (
       <MobilObrazovka title={t("banka.nazov")} subtitle={firma.name} onBack={onSpat}>
-        <div className="grid place-items-center py-16 text-center">
-          <Landmark className="mb-3 h-10 w-10 text-muted-foreground/50" />
-          <p className="text-sm font-medium">
-            {nedostupne ? t("banka.bezPripojenia") : t("banka.bezUctu")}
-          </p>
-          <p className="mt-1 max-w-xs text-[13px] text-muted-foreground">
-            {nedostupne ? t("banka.lenSoSignalom") : t("banka.pripojenieNaWebe")}
-          </p>
-        </div>
+        <PrazdnyStav
+          icon={Landmark}
+          title={nedostupne ? t("banka.bezPripojenia") : t("banka.bezUctu")}
+          popis={nedostupne ? t("banka.lenSoSignalom") : t("banka.pripojenieNaWebe")}
+        />
       </MobilObrazovka>
     );
   }
 
   return (
     <MobilObrazovka
+      velkyNadpis
       title={t("banka.nazov")}
       subtitle={firma.name}
       onBack={onSpat}
@@ -263,89 +269,72 @@ export function Banka({
           onClick={zBanky}
           disabled={tahame}
           aria-label={t("banka.stiahnut")}
-          className="grid h-9 w-9 place-items-center rounded-full active:bg-secondary disabled:opacity-50"
+          className="grid h-11 w-11 place-items-center rounded-full text-app-text active:bg-app-ramik disabled:opacity-50"
         >
           <RefreshCw className={`h-[18px] w-[18px] ${tahame ? "animate-spin" : ""}`} />
         </button>
       }
     >
-      <div className="mb-4 rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
-        <div className="text-[13px] text-muted-foreground">
+      <Card className="mb-4 p-4">
+        <div className="text-[13px] text-app-text-2">
           {vybrany
             ? ibanCitatelne(ucty.find((u) => u.id === vybrany)!.iban, t("banka.ucetVelke"))
             : t("banka.zostatokSpolu")}
         </div>
         {zostatky.length === 0 ? (
-          <div className="mt-0.5 text-[26px] font-semibold leading-none">—</div>
+          <div className="mt-1.5 text-[30px] font-bold leading-none text-app-text">—</div>
         ) : (
           zostatky.map((z) => (
             <div
               key={z.mena}
-              className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums"
+              className="mt-1.5 text-[30px] font-bold leading-none tabular-nums text-app-text"
             >
               {suma(z.suma, z.mena, locale)}
             </div>
           ))
         )}
-        <div className="mt-1.5 text-[12px] text-muted-foreground">
+        <div className="mt-1.5 text-[13px] text-app-text-2">
           {tahame ? t("banka.stahujem") : t("banka.aktualizovane", { ked: ked(naposledy, t, locale) })}
         </div>
-      </div>
+      </Card>
 
       {ucty.length > 1 && (
-        <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          <Chip aktivny={!vybrany} onClick={() => setVybrany(null)}>
-            {t("banka.vsetkyUcty")}
-          </Chip>
-          {ucty.map((u) => (
-            <Chip key={u.id} aktivny={vybrany === u.id} onClick={() => setVybrany(u.id)}>
-              {nazovUctu(u, t("banka.ucetSkratka"))}
-            </Chip>
-          ))}
+        <div className="mb-4">
+          <FilterChips
+            ariaLabel={t("banka.ucet")}
+            aktivna={vybrany ?? "vsetky"}
+            onZmen={(kod) => setVybrany(kod === "vsetky" ? null : kod)}
+            moznosti={[
+              { kod: "vsetky", popis: t("banka.vsetkyUcty") },
+              ...ucty.map((u) => ({ kod: u.id, popis: nazovUctu(u, t("banka.ucetSkratka")) })),
+            ]}
+          />
         </div>
       )}
 
       {vidno.length === 0 ? (
-        <div className="grid place-items-center py-14 text-center">
-          <Landmark className="mb-3 h-10 w-10 text-muted-foreground/50" />
-          <p className="text-sm font-medium">{t("banka.ziadnePohyby")}</p>
-        </div>
+        <PrazdnyStav icon={Landmark} title={t("banka.ziadnePohyby")} />
       ) : (
         <div className="space-y-5">
           {dni.map(([den, riadky]) => (
             <div key={den}>
-              <div className="mb-2 px-1 text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {denNazov(den, t, locale)}
-              </div>
-              <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
-                {riadky.map((p, i) => (
-                  <div
+              <SectionHeader title={denNazov(den, t, locale)} />
+              <ListCard>
+                {riadky.map((p) => (
+                  <ListRow
                     key={p.id}
-                    className={`flex items-start gap-3 px-4 py-3.5 ${
-                      i > 0 ? "border-t border-border/70" : ""
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-[15px] font-medium leading-tight">
-                        {nadpisPohybu(p, firma.name, t)}
-                      </div>
-                      {podnadpisPohybu(p, firma.name, t) && (
-                        <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
-                          {podnadpisPohybu(p, firma.name, t)}
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className={`shrink-0 text-[15px] font-semibold tabular-nums ${
-                        p.suma > 0 ? "text-emerald-600 dark:text-emerald-400" : ""
-                      }`}
-                    >
-                      {p.suma > 0 ? "+" : ""}
-                      {suma(p.suma, p.mena, locale)}
-                    </div>
-                  </div>
+                    title={nadpisPohybu(p, firma.name, t)}
+                    subtitle={podnadpisPohybu(p, firma.name, t) ?? undefined}
+                    right={`${p.suma > 0 ? "+" : ""}${suma(p.suma, p.mena, locale)}`}
+                    rightTon={p.suma > 0 ? "zelena" : "neutral"}
+                    /* Stav párovania patrí pod sumu — je to vlastnosť platby,
+                       nie samostatný riadok. */
+                    rightSub={
+                      p.faktura ? <StatusBadge text={t("banka.sparovane")} ton="zelena" /> : undefined
+                    }
+                  />
                 ))}
-              </div>
+              </ListCard>
             </div>
           ))}
         </div>
@@ -354,25 +343,3 @@ export function Banka({
   );
 }
 
-function Chip({
-  aktivny,
-  onClick,
-  children,
-}: {
-  aktivny: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[14px] font-medium ${
-        aktivny
-          ? "border-transparent bg-primary text-primary-foreground"
-          : "border-border/70 bg-card text-foreground active:bg-secondary"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}

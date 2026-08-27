@@ -678,6 +678,67 @@ export const cs: Partial<Record<Kluc, string>> = {
   "faktury.zatialOdoslane": "Zatím odesláno: {pocet}",
   "faktury.naozajZmazat": "Opravdu smazat fakturu {cislo}?",
 
+  /* spodná lišta */
+  "tab.prehlad": "Přehled",
+  "tab.doklady": "Doklady",
+  "tab.jazdy": "Jízdy",
+
+  /* prehľad a vzhľad */
+  "ph.nazov": "Přehled",
+  "ph.neuhradene": "Neuhrazené",
+  "ph.poSplatnosti": "Po splatnosti",
+  "ph.rychleAkcie": "Rychlé akce",
+  "ph.faktura": "Faktura",
+  "ph.skenovat": "Skenovat",
+  "ph.zacatJazdu": "Začít jízdu",
+  "ph.naVybavenie": "K vyřízení",
+  "ph.poslednaAktivita": "Poslední aktivita",
+  "ph.fakturyPoSplatnosti": "{pocet} po splatnosti",
+  "ph.dokladyNaKontrolu": "{pocet} čeká na kontrolu",
+  "ph.jazdaNeukoncena": "Jízda není ukončena",
+  "ph.vsetkoVybavene": "Nic nečeká",
+  "ph.vsetkoVybavenePopis": "Faktury jsou uhrazené a doklady zkontrolované.",
+  "ph.ziadnaAktivita": "Zatím se nic nedělo",
+  "ph.ziadnaAktivitaPopis": "První faktura nebo doklad se objeví tady.",
+  "ph.fakturaCislo": "Faktura {cislo}",
+  "ph.doklad": "Přijatý doklad",
+  "ph.dnes": "Dnes",
+  "ph.vcera": "Včera",
+  "ph.vzhlad": "Vzhled",
+  "ph.svetly": "Světlý",
+  "ph.tmavy": "Tmavý",
+  "ph.podlaSystemu": "Podle systému",
+
+  /* filtre faktúr */
+  "faktury.filterVsetky": "Všechny",
+  "faktury.filterNeuhradene": "Neuhrazené",
+  "faktury.filterPoSplatnosti": "Po splatnosti",
+  "faktury.filterUhradene": "Uhrazené",
+  "faktury.splatnostSkratka": "splatnost {den}",
+  "faktury.hladatKratke": "Hledat",
+  "faktury.filtre": "Filtry",
+
+  /* skener — režimy */
+  "sken.doklad": "Doklad",
+  "sken.qrKod": "QR kód",
+  "sken.naskenujteDoklad": "Naskenujte doklad",
+  "sken.automaticky": "Doklad se naskenuje automaticky",
+  "sken.namierteQr": "Namiřte na QR kód",
+  "sken.qrSaPrecita": "Kód se přečte sám, netřeba nic mačkat",
+  "sken.nastavenie": "Nastavení dokladu",
+
+  /* banka — párovanie */
+  "banka.sparovane": "Spárováno",
+  "banka.sparovat": "Spárovat",
+
+  /* krokovník novej faktúry */
+  "nf.krokOdberatel": "Odběratel",
+  "nf.krokPolozky": "Položky",
+  "nf.krokKontrola": "Kontrola",
+  "nf.nedavniOdberatelia": "Nedávní odběratelé",
+  "nf.vsetciOdberatelia": "Všichni odběratelé",
+  "nf.pokracovat": "Pokračovat",
+
   "spolocne.spat": "Zpět",
   "spolocne.ulozit": "Uložit",
   "spolocne.zrusit": "Zrušit",

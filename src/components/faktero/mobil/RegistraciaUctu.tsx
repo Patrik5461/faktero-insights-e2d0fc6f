@@ -161,7 +161,7 @@ export function RegistraciaUctu({
     toast.success(t("reg.emailPoslanyZnova"));
   }
 
-  const ramec = "flex min-h-[100dvh] flex-col justify-center bg-background px-6";
+  const ramec = "flex min-h-[100dvh] flex-col justify-center bg-app-pozadie px-6";
   const odsadenie = {
     paddingTop: "calc(var(--safe-top) + 2rem)",
     paddingBottom: "calc(var(--safe-bottom) + 2rem)",
@@ -171,32 +171,32 @@ export function RegistraciaUctu({
     return (
       <div className={ramec} style={odsadenie}>
         <div className="mx-auto w-full max-w-sm">
-          <div className="mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+          <div className="mb-4 grid h-12 w-12 place-items-center rounded-app bg-app-zelena-jemna text-app-zelena">
             <MailCheck className="h-6 w-6" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">{t("reg.potvrdteEmail")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm text-app-text-2">
             {t("reg.potvrdenieText", { email: email.trim() })}
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-sm text-app-text-2">
             {t("reg.spamPriecinok")}
           </p>
           <button
             onClick={() => skusPrihlasit(false)}
             disabled={overujem}
-            style={overujem ? undefined : { backgroundImage: "var(--brand-gradient)" }}
-            className="mt-6 w-full rounded-xl px-4 py-3 text-base font-medium text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground"
+            
+            className="mt-6 w-full rounded-app bg-app-zelena px-4 py-3 text-base font-medium text-white disabled:bg-app-pozadie disabled:text-app-text-2"
           >
             {overujem ? t("reg.overujem") : t("reg.uzSomPotvrdil")}
           </button>
           <button
             onClick={posliZnova}
             disabled={posielamZnova}
-            className="mt-3 w-full rounded-xl border border-border px-4 py-3 text-base disabled:opacity-60"
+            className="mt-3 w-full rounded-app-sm border border-app-ramik px-4 py-3 text-base disabled:opacity-60"
           >
             {posielamZnova ? t("reg.posielam") : t("reg.poslatZnova")}
           </button>
-          <button onClick={onSpat} className="mt-3 w-full py-2 text-center text-sm text-primary">
+          <button onClick={onSpat} className="mt-3 w-full py-2 text-center text-sm text-app-zelena">
             {t("reg.spatNaPrihlasenie")}
           </button>
         </div>
@@ -209,7 +209,7 @@ export function RegistraciaUctu({
       <div className="mx-auto w-full max-w-sm">
         <Logo variant="header" className="mb-8 h-9" />
         <h1 className="text-2xl font-semibold tracking-tight">{t("reg.vytvorteSiUcet")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-app-text-2">
           {t("reg.zadarmo")}
         </p>
 
@@ -220,7 +220,7 @@ export function RegistraciaUctu({
             placeholder={t("reg.meno")}
             value={meno}
             onChange={(e) => setMeno(e.target.value)}
-            className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-4 py-3 text-base"
           />
           <input
             type="email"
@@ -231,7 +231,7 @@ export function RegistraciaUctu({
             placeholder={t("reg.email")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-4 py-3 text-base"
           />
           <input
             type="password"
@@ -240,7 +240,7 @@ export function RegistraciaUctu({
             value={heslo}
             onChange={(e) => setHeslo(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && registruj()}
-            className="w-full rounded-xl border border-input bg-background px-4 py-3 text-base"
+            className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-4 py-3 text-base"
           />
         </div>
 
@@ -260,15 +260,15 @@ export function RegistraciaUctu({
         <button
           onClick={registruj}
           disabled={busy}
-          style={busy ? undefined : { backgroundImage: "var(--brand-gradient)" }}
-          className="mt-5 w-full rounded-xl px-4 py-3 text-base font-medium text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground"
+          
+          className="mt-5 w-full rounded-app bg-app-zelena px-4 py-3 text-base font-medium text-white disabled:bg-app-pozadie disabled:text-app-text-2"
         >
           {busy ? t("reg.vytvaram") : t("reg.vytvoritUcet")}
         </button>
 
         <button
           onClick={onSpat}
-          className="mt-4 flex w-full items-center justify-center gap-2 py-2 text-sm text-muted-foreground"
+          className="mt-4 flex w-full items-center justify-center gap-2 py-2 text-sm text-app-text-2"
         >
           <ArrowLeft className="h-4 w-4" /> {t("reg.uzMamUcet")}
         </button>
@@ -334,7 +334,7 @@ function OdkazNaWeb({ cesta, children }: { cesta: string; children: React.ReactN
     <button
       type="button"
       onClick={() => window.open(`${SERVER}${cesta}`, "_blank", "noopener")}
-      className="text-primary underline"
+      className="text-app-zelena underline"
     >
       {children}
     </button>

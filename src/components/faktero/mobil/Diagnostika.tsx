@@ -419,22 +419,22 @@ export function Diagnostika({ onSpat }: { onSpat: () => void }) {
   }, []);
 
   return (
-    <div className="min-h-[100dvh] bg-background p-5">
+    <div className="min-h-[100dvh] bg-app-pozadie p-5">
       <h1 className="text-base font-semibold">Diagnostika</h1>
-      <p className="mt-1 text-[13px] text-muted-foreground">
+      <p className="mt-1 text-[13px] text-app-text-2">
         Pošlite ju tlačidlom dole, alebo odfoťte — je v nej všetko podstatné.
       </p>
 
       <div className="mt-4 space-y-2">
         {riadky === null ? (
-          <p className="text-sm text-muted-foreground">Zisťujem…</p>
+          <p className="text-sm text-app-text-2">Zisťujem…</p>
         ) : (
           riadky.map((r) => (
-            <div key={r.co} className="rounded-xl border border-border/70 p-3">
-              <div className="text-[12px] uppercase tracking-wide text-muted-foreground">
+            <div key={r.co} className="rounded-app-sm border border-app-ramik p-3">
+              <div className="text-[12px] uppercase tracking-wide text-app-text-2">
                 {r.co}
               </div>
-              <div className={`text-[15px] ${r.zle ? "text-destructive" : ""}`}>{r.hodnota}</div>
+              <div className={`text-[15px] ${r.zle ? "text-app-chyba" : ""}`}>{r.hodnota}</div>
             </div>
           ))
         )}
@@ -454,14 +454,14 @@ export function Diagnostika({ onSpat }: { onSpat: () => void }) {
             setOdosielam(false);
           }
         }}
-        className="mt-6 w-full rounded-xl bg-primary px-4 py-3 text-[15px] font-medium text-primary-foreground disabled:opacity-50"
+        className="mt-6 w-full rounded-app-sm bg-app-zelena px-4 py-3 text-[15px] font-medium text-white disabled:opacity-50"
       >
         {odoslane ? "Odoslané, ďakujeme" : odosielam ? "Odosielam…" : "Poslať diagnostiku podpore"}
       </button>
 
       <button
         onClick={onSpat}
-        className="mt-2 w-full rounded-xl border border-border px-4 py-3 text-[15px]"
+        className="mt-2 w-full rounded-app-sm border border-app-ramik px-4 py-3 text-[15px]"
       >
         Späť
       </button>

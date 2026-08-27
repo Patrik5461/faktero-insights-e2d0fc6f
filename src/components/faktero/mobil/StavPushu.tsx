@@ -71,13 +71,13 @@ export function StavPushu() {
   const hotovo = stav?.naServeri === true;
 
   return (
-    <div className="rounded-2xl border border-border/70 bg-card p-4">
+    <div className="rounded-app border border-app-ramik bg-app-karta p-4">
       <div className="flex items-center gap-2 text-sm font-medium">
-        <Bell className="h-4 w-4 text-primary" /> {t("push.nazov")}
+        <Bell className="h-4 w-4 text-app-zelena" /> {t("push.nazov")}
       </div>
 
       {stav === null ? (
-        <div className="mt-2 text-[13px] text-muted-foreground">{t("push.zistujem")}</div>
+        <div className="mt-2 text-[13px] text-app-text-2">{t("push.zistujem")}</div>
       ) : (
         <div className="mt-2 space-y-1 text-[13px]">
           <div className="flex items-center gap-2">
@@ -92,17 +92,17 @@ export function StavPushu() {
                 : t("push.neznameZariadenie")}
             </span>
           </div>
-          <div className="text-muted-foreground">
+          <div className="text-app-text-2">
             {t("push.povolenieVTelefone")} <span className="font-medium">{stav.povolenie ?? "?"}</span>
           </div>
-          {stav.chyba && <div className="text-destructive">{t("spolocne.chyba")}: {stav.chyba}</div>}
+          {stav.chyba && <div className="text-app-chyba">{t("spolocne.chyba")}: {stav.chyba}</div>}
         </div>
       )}
 
       <button
         onClick={zopakuj}
         disabled={pracujem}
-        className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-[14px] disabled:opacity-60"
+        className="mt-3 inline-flex items-center gap-2 rounded-app-sm border border-app-ramik px-3 py-2 text-[14px] disabled:opacity-60"
       >
         {pracujem && <Loader2 className="h-4 w-4 animate-spin" />}
         {hotovo ? t("push.zaregistrovatZnova") : t("push.skusitZaregistrovat")}

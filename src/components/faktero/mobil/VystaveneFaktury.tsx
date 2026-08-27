@@ -23,6 +23,17 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
+import {
+  Card,
+  datumKratky,
+  FilterChips,
+  ListCard,
+  ListRow,
+  PrazdnyStav,
+  SectionHeader,
+  StatusBadge,
+  type Ton,
+} from "./ui";
 /**
  * Vystavené faktúry v telefóne.
  *
@@ -71,22 +82,25 @@ function nazovMesiaca(kluc: string, loc: string): string {
  */
 /* Vracia kľúč, nie hotový text — funkcia je mimo komponentu a preklad tam
    nedosiahne. Prekladá sa až tam, kde sa odznak kreslí. */
-function stav(f: Faktura): { kluc: Kluc; trieda: string } {
-  if (f.status === "paid")
-    return {
-      kluc: "faktury.stav.uhradena",
-      trieda: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-    };
-  if (f.status === "cancelled")
-    return { kluc: "faktury.stav.stornovana", trieda: "bg-muted text-muted-foreground" };
-  if (f.status === "draft")
-    return { kluc: "faktury.stav.navrh", trieda: "bg-muted text-muted-foreground" };
+function stav(f: Faktura): { kluc: Kluc; ton: Ton } {
+  if (f.status === "paid") return { kluc: "faktury.stav.uhradena", ton: "zelena" };
+  if (f.status === "cancelled") return { kluc: "faktury.stav.stornovana", ton: "neutral" };
+  if (f.status === "draft") return { kluc: "faktury.stav.navrh", ton: "neutral" };
   if (f.due_date < new Date().toISOString().slice(0, 10))
-    return { kluc: "faktury.stav.poSplatnosti", trieda: "bg-destructive/10 text-destructive" };
-  return {
-    kluc: "faktury.stav.neuhradena",
-    trieda: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  };
+    return { kluc: "faktury.stav.poSplatnosti", ton: "cervena" };
+  return { kluc: "faktury.stav.neuhradena", ton: "neutral" };
+}
+
+/** Filter nad zoznamom. Zodpovedá tomu, na čo sa človek pýta najčastejšie. */
+type Filter = "vsetky" | "neuhradene" | "poSplatnosti" | "uhradene";
+
+function prejdeFiltrom(f: Faktura, filter: Filter): boolean {
+  if (filter === "vsetky") return true;
+  const den = new Date().toISOString().slice(0, 10);
+  if (filter === "uhradene") return f.status === "paid";
+  if (f.status === "paid" || f.status === "cancelled") return false;
+  if (filter === "poSplatnosti") return f.due_date < den;
+  return true;
 }
 
 export function VystaveneFaktury({
@@ -105,6 +119,8 @@ export function VystaveneFaktury({
   const nacitaj = useOperacia("faktury-zoznam");
   const [faktury, setFaktury] = useState<Faktura[] | null>(null);
   const [hladanie, setHladanie] = useState("");
+  const [filter, setFilter] = useState<Filter>("vsetky");
+  const [hladanieOtvorene, setHladanieOtvorene] = useState(false);
   const [otvorena, setOtvorena] = useState<Faktura | null>(null);
   /** Zoznam sa nepodarilo načítať a nebolo z čoho vziať starší. */
   const [nedostupne, setNedostupne] = useState(false);
@@ -170,8 +186,9 @@ export function VystaveneFaktury({
 
   const najdene = useMemo(() => {
     const q = hladanie.trim().toLowerCase();
-    if (!q) return faktury ?? [];
-    return (faktury ?? []).filter((f) =>
+    const podlaFiltra = (faktury ?? []).filter((f) => prejdeFiltrom(f, filter));
+    if (!q) return podlaFiltra;
+    return podlaFiltra.filter((f) =>
       [f.invoice_number, f.customer_name]
         .filter(Boolean)
         .some((x) => String(x).toLowerCase().includes(q)),
@@ -218,25 +235,38 @@ export function VystaveneFaktury({
   if (faktury === null) return <Pracujem text={t("faktury.nacitavam")} />;
 
   return (
-    <MobilObrazovka title={t("faktury.nazov")} subtitle={firma.name} onBack={onSpat}>
-      {dlznici.pocet > 0 && (
-        <div className="mb-4 rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
-          <div className="text-[13px] text-muted-foreground">{t("faktury.neuhradene")}</div>
-          <div className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums">
-            {suma(dlznici.spolu, dlznici.mena, loc)}
-          </div>
-          <div className="mt-1 text-[13px] text-muted-foreground">
-            {`${dlznici.pocet} ${mnozne(dlznici.pocet, {
-              one: t("spolocne.faktura1"),
-              few: t("spolocne.faktura2"),
-              other: t("spolocne.faktura5"),
-            })}`}
-          </div>
-        </div>
-      )}
+    <MobilObrazovka
+      velkyNadpis
+      title={t("tab.faktury")}
+      subtitle={firma.name}
+      onBack={onSpat}
+      akcia={
+        <button
+          onClick={() => setHladanieOtvorene((v) => !v)}
+          aria-label={t("faktury.hladatKratke")}
+          aria-pressed={hladanieOtvorene}
+          className="grid h-11 w-11 place-items-center rounded-full text-app-text active:bg-app-ramik"
+        >
+          <Search className="h-5 w-5" />
+        </button>
+      }
+    >
+      <div className="mb-4">
+        <FilterChips
+          ariaLabel={t("faktury.filtre")}
+          aktivna={filter}
+          onZmen={setFilter}
+          moznosti={[
+            { kod: "vsetky", popis: t("faktury.filterVsetky") },
+            { kod: "neuhradene", popis: t("faktury.filterNeuhradene") },
+            { kod: "poSplatnosti", popis: t("faktury.filterPoSplatnosti") },
+            { kod: "uhradene", popis: t("faktury.filterUhradene") },
+          ]}
+        />
+      </div>
 
       {cakajuce.length > 0 && (
-        <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4">
+        <div className="mb-4 rounded-app border border-app-ramik bg-app-zelena-jemna p-4">
           <div className="flex items-center gap-2 text-[14px] font-medium">
             <CloudOff className="h-4 w-4 shrink-0" />
             {t("faktury.cakaNaOdoslanie", {
@@ -260,88 +290,85 @@ export function VystaveneFaktury({
               </div>
             ))}
           </div>
-          <p className="mt-2 text-[12px] leading-snug text-muted-foreground">
+          <p className="mt-2 text-[12px] leading-snug text-app-text-2">
             {t("faktury.odosluSaSamy2")}
           </p>
         </div>
       )}
 
-      <div className="relative mb-4">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          value={hladanie}
-          onChange={(e) => setHladanie(e.target.value)}
-          placeholder={t("faktury.hladat")}
-          className="w-full rounded-2xl border border-border/70 bg-card py-3 pl-9 pr-3 text-[15px] shadow-[var(--shadow-card)]"
-        />
-      </div>
+      {(hladanieOtvorene || hladanie) && (
+        <div className="relative mb-4">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-text-3" />
+          <input
+            autoFocus
+            value={hladanie}
+            onChange={(e) => setHladanie(e.target.value)}
+            placeholder={t("faktury.hladat")}
+            className="w-full rounded-app border border-app-ramik bg-app-karta py-3 pl-9 pr-3 text-[15px] text-app-text shadow-app"
+          />
+        </div>
+      )}
 
       {najdene.length === 0 ? (
-        <div className="grid place-items-center py-14 text-center">
-          <FileText className="mb-3 h-10 w-10 text-muted-foreground/50" />
-          <p className="text-sm font-medium">
-            {hladanie
+        <PrazdnyStav
+          icon={FileText}
+          title={
+            hladanie
               ? t("faktury.nicSaNenaslo")
               : nedostupne
                 ? t("faktury.bezPripojeniaNacitanie")
-                : t("faktury.ziadne")}
-          </p>
-          {nedostupne && !hladanie && (
-            <p className="mt-2 max-w-[16rem] text-[13px] text-muted-foreground">
-              {t("faktury.bezZoznamu")}
-            </p>
-          )}
-          {!hladanie && !nedostupne && (
-            <button onClick={onNova} className="mt-3 text-sm font-medium text-primary">
-              {t("faktury.vystavPrvu")}
-            </button>
-          )}
-        </div>
+                : t("faktury.ziadne")
+          }
+          popis={nedostupne && !hladanie ? t("faktury.bezZoznamu") : undefined}
+          akcia={
+            !hladanie && !nedostupne ? (
+              <button
+                onClick={onNova}
+                className="text-[15px] font-medium text-app-zelena"
+              >
+                {t("faktury.vystavPrvu")}
+              </button>
+            ) : undefined
+          }
+        />
       ) : (
         <div className="space-y-5">
           {mesiace.map(([kluc, riadky]) => {
             const spolu = riadky.reduce((s, f) => s + Number(f.total || 0), 0);
             return (
               <div key={kluc}>
-                <div className="mb-2 flex items-baseline justify-between px-1">
-                  <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {nazovMesiaca(kluc, loc)}
-                  </h2>
-                  <span className="text-[13px] font-medium tabular-nums text-muted-foreground">
-                    {riadky.length} × · {suma(spolu, riadky[0]?.currency ?? "EUR", loc)}
-                  </span>
-                </div>
-                <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[var(--shadow-card)]">
-                  {riadky.map((f, i) => {
+                <SectionHeader
+                  title={nazovMesiaca(kluc, loc)}
+                  right={`${riadky.length} × · ${suma(spolu, riadky[0]?.currency ?? "EUR", loc)}`}
+                />
+                <ListCard>
+                  {riadky.map((f) => {
                     const s = stav(f);
                     return (
-                      <button
+                      <ListRow
                         key={f.id}
-                        onClick={() => setOtvorena(f)}
-                        className={`flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-secondary ${
-                          i > 0 ? "border-t border-border/70" : ""
-                        }`}
-                      >
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[15px] font-medium leading-tight">
-                            {f.customer_name ?? t("faktury.bezOdberatela")}
-                          </span>
-                          <span className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                        title={f.customer_name ?? t("faktury.bezOdberatela")}
+                        subtitle={
+                          <span className="flex items-center gap-1.5">
                             <span className="truncate">{f.invoice_number}</span>
-                            <span
-                              className={`shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-medium ${s.trieda}`}
-                            >
-                              {t(s.kluc)}
-                            </span>
+                            {/* Uhradenej sa na splatnosť už nikto nepýta. */}
+                            {f.status === "paid" || f.status === "cancelled" ? (
+                              <StatusBadge text={t(s.kluc)} ton={s.ton} />
+                            ) : s.ton === "cervena" ? (
+                              <StatusBadge text={t(s.kluc)} ton="cervena" />
+                            ) : (
+                              <span className="shrink-0">
+                                {t("faktury.splatnostSkratka", { den: datumKratky(f.due_date, loc) })}
+                              </span>
+                            )}
                           </span>
-                        </span>
-                        <span className="shrink-0 text-[15px] font-semibold tabular-nums">
-                          {suma(f.total, f.currency ?? "EUR", loc)}
-                        </span>
-                      </button>
+                        }
+                        right={suma(f.total, f.currency ?? "EUR", loc)}
+                        onClick={() => setOtvorena(f)}
+                      />
                     );
                   })}
-                </div>
+                </ListCard>
               </div>
             );
           })}
@@ -512,18 +539,16 @@ function DetailFaktury({
       onBack={onSpat}
     >
       <div className="space-y-4">
-        <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-[var(--shadow-card)]">
-          <div className="text-[32px] font-semibold leading-none tabular-nums">
+        <Card className="p-4">
+          <div className="text-[30px] font-bold leading-none tabular-nums text-app-text">
             {suma(faktura.total, mena, loc)}
           </div>
-          <div
-            className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[12px] font-medium ${s.trieda}`}
-          >
-            {t(s.kluc)}
+          <div className="mt-2">
+            <StatusBadge text={t(s.kluc)} ton={s.ton} />
           </div>
-        </div>
+        </Card>
 
-        <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-4 text-[14px] shadow-[var(--shadow-card)]">
+        <div className="space-y-2 rounded-app border border-app-ramik bg-app-karta p-4 text-[14px] shadow-app">
           <Riadok label={t("faktury.vystavena")} value={datum(faktura.issue_date, loc)} />
           <Riadok label={t("faktury.splatna")} value={datum(faktura.due_date, loc)} />
           {faktura.paid_at && <Riadok label={t("faktury.uhradena")} value={datum(faktura.paid_at, loc)} />}
@@ -597,30 +622,30 @@ function DetailFaktury({
             // Keď sa ešte len zisťuje, či faktúra hýbe skladom, netreba o tom
             // písať — dôvod sa objaví až vtedy, keď je naozaj známy.
             return skladove === null ? null : (
-              <p className="px-1 pt-1 text-[13px] text-muted-foreground">{moze.dovod}</p>
+              <p className="px-1 pt-1 text-[13px] text-app-text-2">{moze.dovod}</p>
             );
           })()}
         </div>
 
         {mazem ? (
-          <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
+          <div className="rounded-app border border-destructive/40 bg-destructive/5 p-4">
             <p className="text-sm font-medium">
               {t("faktury.naozajZmazat", { cislo: faktura.invoice_number })}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-app-text-2">
               {t("faktury.cisloOstava")}
             </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button
                 onClick={() => setMazem(false)}
-                className="rounded-xl border border-border px-4 py-2.5 text-sm"
+                className="rounded-app-sm border border-app-ramik px-4 py-2.5 text-sm"
               >
                 {t("faktury.ponechat")}
               </button>
               <button
                 onClick={zmaz}
                 disabled={busy === "mazem"}
-                className="rounded-xl bg-destructive px-4 py-2.5 text-sm font-medium text-destructive-foreground disabled:opacity-50"
+                className="rounded-app-sm bg-destructive px-4 py-2.5 text-sm font-medium text-app-chyba-foreground disabled:opacity-50"
               >
                 {busy === "mazem" ? t("faktury.mazem") : t("faktury.zmazatKratke")}
               </button>
@@ -629,7 +654,7 @@ function DetailFaktury({
         ) : (
           <button
             onClick={() => setMazem(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm text-muted-foreground"
+            className="flex w-full items-center justify-center gap-2 rounded-app-sm px-4 py-3 text-sm text-app-text-2"
           >
             <Trash2 className="h-4 w-4" /> {t("faktury.zmazat")}
           </button>
@@ -642,7 +667,7 @@ function DetailFaktury({
 function Riadok({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <span className="text-muted-foreground">{label}</span>
+      <span className="text-app-text-2">{label}</span>
       <span className="text-right font-medium">{value}</span>
     </div>
   );
