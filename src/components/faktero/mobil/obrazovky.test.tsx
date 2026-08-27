@@ -158,9 +158,9 @@ describe("stav cenovej ponuky", () => {
   };
 
   it("vyfakturovaná prebíja všetko ostatné", () => {
-    expect(stavPonuky({ ...zaklad, converted_invoice_id: "x", valid_until: "2020-01-01" }).text).toBe(
-      "Vyfakturovaná",
-    );
+    expect(
+      stavPonuky({ ...zaklad, converted_invoice_id: "x", valid_until: "2020-01-01" }).text,
+    ).toBe("Vyfakturovaná");
   });
 
   it("prepadnutú platnosť pozná z dátumu", () => {
@@ -172,5 +172,42 @@ describe("stav cenovej ponuky", () => {
     expect(stavPonuky({ ...zaklad, sent_at: "2026-01-02" }).text).toBe("Odoslaná");
     expect(stavPonuky({ ...zaklad, status: "accepted" }).text).toBe("Prijatá");
     expect(stavPonuky({ ...zaklad, status: "rejected" }).text).toBe("Zamietnutá");
+  });
+});
+
+/*
+  Rozpoznaná jazda sa dala dovtedy ukončiť jedine tým, že človek prestal
+  chodiť a motor ju po piatich minútach zastavil sám. Obrazovka pritom celý
+  čas hlásila „nahrávam jazdu" a ponúkala len ovládanie ručného merania.
+*/
+describe("prebiehajúca rozpoznaná jazda", () => {
+  /* React medzi textové uzly vkladá `<!-- -->`; bez odstránenia by „12.3 km"
+     nesedelo, hoci na obrazovke je presne to. */
+  const bezZnaciek = (h: string) => h.replace(/<!--[\s\S]*?-->/g, "");
+
+  it("pruh povie, že sa nahráva, aj koľko a odkedy", () => {
+    const html = bezZnaciek(
+      renderToString(
+        <PruhJazdy
+          jazda={{ id: "t1", zaciatok: 1_787_000_000_000, km: 12.34, rucna: false }}
+          teraz={1_787_000_000_000 + 25 * 60_000}
+        />,
+      ),
+    );
+    expect(html).toContain("Nahrávam jazdu");
+    expect(html).toContain("12.3 km");
+    expect(html).toContain("25 min");
+  });
+
+  it("ručne spustenú jazdu odlíši od rozpoznanej", () => {
+    const spolu = { id: "t2", zaciatok: 1_787_000_000_000, km: 1, teraz: 1_787_000_060_000 };
+    const rucna = renderToString(
+      <PruhJazdy jazda={{ ...spolu, rucna: true }} teraz={spolu.teraz} />,
+    );
+    const auto = renderToString(
+      <PruhJazdy jazda={{ ...spolu, rucna: false }} teraz={spolu.teraz} />,
+    );
+    expect(rucna).toContain("spustená ručne");
+    expect(auto).not.toContain("spustená ručne");
   });
 });

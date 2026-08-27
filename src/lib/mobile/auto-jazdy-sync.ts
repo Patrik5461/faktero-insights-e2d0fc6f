@@ -317,6 +317,26 @@ export async function zahodRozpoznanuJazdu(tripId: string): Promise<void> {
 }
 
 /**
+ * Ukončí jazdu, ktorá práve beží — aj tú, ktorú spustila detekcia sama.
+ *
+ * Dovtedy sa dala rozpoznaná jazda ukončiť jedine tým, že človek prestal
+ * chodiť a motor ju po piatich minútach zastavil sám. Kto skončil skôr (nechal
+ * auto a šiel pešo, prehodil sa do vlaku), nemal appke ako povedať, že je
+ * koniec — obrazovka pritom celý čas hlásila „nahrávam jazdu".
+ *
+ * Vráti ukončenú jazdu, aby sa dala hneď zaradiť; `null`, keď nič nebežalo.
+ */
+export async function ukonciBeziacuJazdu(): Promise<BufferedTrip | null> {
+  const p = await plugin();
+  if (!p) return null;
+  try {
+    return (await p.endTrip()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Vozidlá, ktorých jazdy ťahá Commander. Telefón ich merať nemá — tie isté
  * jazdy by prišli druhýkrát a v knihe jázd by boli dvakrát.
  */

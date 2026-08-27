@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, User } from "lucide-react";
+import { Plus, User, UserPlus } from "lucide-react";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { sadzbyKrajiny } from "@/lib/faktero/vat-rates";
@@ -8,6 +8,7 @@ import { friendlyError } from "@/lib/faktero/plan-error";
 import { MobilObrazovka, Pracujem, HlavneTlacidlo } from "./MobilChrome";
 import {
   RiadokPolozky,
+  NovyOdberatel,
   prazdnyRiadok,
   cislo,
   suma,
@@ -55,6 +56,7 @@ export function NovaPonuka({
   const [platiDo, setPlatiDo] = useState(oDni(dnes(), 30));
   const [poznamka, setPoznamka] = useState("");
   const [ukladam, setUkladam] = useState(false);
+  const [pridavam, setPridavam] = useState(false);
 
   const platca = podklady?.firma.platcaDph ?? false;
   const mena = podklady?.firma.mena ?? "EUR";
@@ -81,10 +83,15 @@ export function NovaPonuka({
     return { zaklad: +zaklad.toFixed(2), dan: +dan.toFixed(2), spolu: +(zaklad + dan).toFixed(2) };
   }, [riadky]);
 
+  /*
+    Bez napísaného textu sa nikto nevypisuje. Zoznam „prvých pár" nič nehovorí
+    — kto má odberateľov desiatky, aj tak hľadá, a komu sa náhodou trafí, ten
+    si vyberie zle. Ponuka sa robí u zákazníka, ktorého meno človek pozná.
+  */
   const najdene = useMemo(() => {
     const q = hladanie.trim().toLowerCase();
+    if (!q) return [];
     const zoznam = podklady?.odberatelia ?? [];
-    if (!q) return zoznam.slice(0, 8);
     return zoznam.filter((o) => `${o.name} ${o.ico ?? ""}`.toLowerCase().includes(q)).slice(0, 8);
   }, [hladanie, podklady]);
 
@@ -127,6 +134,22 @@ export function NovaPonuka({
   if (!podklady) return <Pracujem text="Načítavam odberateľov…" />;
   if (ukladam) return <Pracujem text="Vytváram ponuku…" />;
 
+  /* Ten istý formulár ako pri faktúre — vrátane dohľadania podľa IČO. */
+  if (pridavam) {
+    return (
+      <NovyOdberatel
+        companyId={firma.id}
+        predvyplneneMeno={hladanie.trim()}
+        onSpat={() => setPridavam(false)}
+        onPridany={(o) => {
+          setPodklady((p) => (p ? { ...p, odberatelia: [o, ...p.odberatelia] } : p));
+          setOdberatel(o);
+          setPridavam(false);
+        }}
+      />
+    );
+  }
+
   return (
     <MobilObrazovka
       title="Nová cenová ponuka"
@@ -159,24 +182,30 @@ export function NovaPonuka({
               placeholder="Hľadať odberateľa…"
               className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-[16px]"
             />
-            <ul className="space-y-1">
-              {najdene.map((o) => (
-                <li key={o.id}>
-                  <button
-                    onClick={() => setOdberatel(o)}
-                    className="w-full rounded-xl border border-border px-3 py-2.5 text-left text-sm active:bg-secondary"
-                  >
-                    <span className="font-medium">{o.name}</span>
-                    {o.ico && <span className="ml-2 text-xs text-muted-foreground">{o.ico}</span>}
-                  </button>
-                </li>
-              ))}
-              {najdene.length === 0 && (
-                <li className="px-1 py-2 text-xs text-muted-foreground">
-                  Nikto sa nenašiel. Odberateľa pridáte pri vystavení faktúry alebo na webe.
-                </li>
-              )}
-            </ul>
+            {najdene.length > 0 && (
+              <ul className="space-y-1">
+                {najdene.map((o) => (
+                  <li key={o.id}>
+                    <button
+                      onClick={() => setOdberatel(o)}
+                      className="w-full rounded-xl border border-border px-3 py-2.5 text-left text-sm active:bg-secondary"
+                    >
+                      <span className="font-medium">{o.name}</span>
+                      {o.ico && <span className="ml-2 text-xs text-muted-foreground">{o.ico}</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {hladanie.trim() && najdene.length === 0 && (
+              <p className="px-1 py-1 text-xs text-muted-foreground">Nikto sa nenašiel.</p>
+            )}
+            <button
+              onClick={() => setPridavam(true)}
+              className="flex w-full items-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-3 py-2.5 text-sm font-medium text-primary active:bg-primary/10"
+            >
+              <UserPlus className="h-4 w-4" /> Nový odberateľ
+            </button>
           </>
         )}
       </section>

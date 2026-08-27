@@ -15,6 +15,9 @@ import {
 } from "@/lib/mobile/gps-tracker";
 import {
   nacitajRozpoznaneJazdy,
+  beziacaJazda,
+  ukonciBeziacuJazdu,
+  type BeziacaJazda,
   prepniDetekciu,
   stavDetekcie,
   ulozRozpoznanuJazdu,
@@ -93,6 +96,14 @@ export function Jazda({
   // Autá, ktorých jazdy ťahá Commander — tie telefón merať nemá, prišli by dvakrát.
   const [commander, setCommander] = useState<Set<string>>(new Set());
   const [cakajuce, setCakajuce] = useState<BufferedTrip[]>([]);
+  /*
+    Jazda, ktorú spustila detekcia sama. Obrazovka dovtedy čítala len stav
+    ručného merania, takže rozpoznanú jazdu tu nebolo ani vidieť — nedala sa
+    ukončiť ani zahodiť a človeku ostávalo čakať, kým ju motor po piatich
+    minútach státia zastaví sám.
+  */
+  const [rozpoznana, setRozpoznana] = useState<BeziacaJazda | null>(null);
+  const [ukoncujem, setUkoncujem] = useState(false);
   const [vyberAuta, setVyberAuta] = useState<Record<string, string>>({});
   const [vybavujem, setVybavujem] = useState<string | null>(null);
   const [trasaOtvorena, setTrasaOtvorena] = useState<string | null>(null);
@@ -177,6 +188,25 @@ export function Jazda({
   useEffect(() => {
     void zosuladNastavenie(vozidla?.find((v) => v.id === vozidloId)?.name ?? null);
   }, [vozidla, vozidloId]);
+
+  useEffect(() => {
+    let zrusene = false;
+    const pozri = () => {
+      beziacaJazda()
+        .then((j) => !zrusene && setRozpoznana(j))
+        .catch(() => {});
+    };
+    pozri();
+    const t = setInterval(pozri, 10_000);
+    // Po návrate do appky sa nečaká na ďalší tik — človek pozerá práve teraz.
+    const naNavrat = () => document.visibilityState === "visible" && pozri();
+    document.addEventListener("visibilitychange", naNavrat);
+    return () => {
+      zrusene = true;
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", naNavrat);
+    };
+  }, []);
 
   useEffect(() => {
     stavDetekcie().then(setDetekcia);
@@ -558,6 +588,67 @@ export function Jazda({
           <p className="text-[12px] text-muted-foreground">
             {bezi ? "Ťuknutím na kruh pozastavíte meranie" : "Ťuknutím na kruh budete pokračovať"}
           </p>
+        )}
+
+        {/*
+          Rozpoznaná jazda, ktorá práve beží. Pozastaviť sa nedá — motor detekcie
+          pauzu nepozná a predstierať ju tlačidlom, ktoré nič nespraví, by bolo
+          horšie než ju neponúknuť. Ukončiť aj zahodiť sa dá.
+        */}
+        {rozpoznana && !rozpoznana.rucna && (
+          <div className="rounded-2xl border border-primary/40 bg-primary/5 p-4">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-sm font-medium text-primary">Prebieha rozpoznaná jazda</span>
+              <span className="text-[17px] font-semibold tabular-nums">
+                {rozpoznana.km.toFixed(1)} km
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Od{" "}
+              {new Date(rozpoznana.zaciatok).toLocaleTimeString("sk-SK", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+              . Keď ste dojazdili, ukončite ju — inak sa zastaví sama až po piatich minútach státia.
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                disabled={ukoncujem}
+                onClick={async () => {
+                  setUkoncujem(true);
+                  try {
+                    const j = await ukonciBeziacuJazdu();
+                    setRozpoznana(null);
+                    // Ukončená jazda sa hneď ponúkne na zaradenie nižšie.
+                    if (j) setCakajuce((xs) => (xs.some((x) => x.id === j.id) ? xs : [...xs, j]));
+                    toast.success("Jazda ukončená — zaraďte ju nižšie.");
+                  } finally {
+                    setUkoncujem(false);
+                  }
+                }}
+                className="rounded-xl bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground active:scale-95 disabled:opacity-60"
+              >
+                {ukoncujem ? "Ukončujem…" : "Ukončiť jazdu"}
+              </button>
+              <button
+                disabled={ukoncujem}
+                onClick={async () => {
+                  if (!window.confirm("Zahodiť túto jazdu? Do knihy jázd sa nezapíše.")) return;
+                  setUkoncujem(true);
+                  try {
+                    await zahodRozpoznanuJazdu(rozpoznana.id);
+                    setRozpoznana(null);
+                    toast.success("Jazda zahodená.");
+                  } finally {
+                    setUkoncujem(false);
+                  }
+                }}
+                className="rounded-xl border border-border px-3 py-2.5 text-sm active:scale-95 disabled:opacity-60"
+              >
+                Zahodiť
+              </button>
+            </div>
+          </div>
         )}
 
         {cakajuce.length > 0 && (

@@ -715,7 +715,7 @@ function KrokOdberatel({
 
 /* ------------------------- Nový odberateľ ------------------------- */
 
-function NovyOdberatel({
+export function NovyOdberatel({
   companyId,
   predvyplneneMeno,
   onSpat,
