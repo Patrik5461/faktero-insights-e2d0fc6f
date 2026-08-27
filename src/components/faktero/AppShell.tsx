@@ -517,24 +517,6 @@ export function AppShell({
         domov={homePath}
         zbaleny={panelZbaleny}
         onZbal={prepniPanel}
-        pata={
-          canSwitch ? (
-            <button
-              onClick={switchProduct}
-              title={view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
-              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] text-muted-foreground hover:bg-secondary ${
-                panelZbaleny ? "justify-center" : ""
-              }`}
-            >
-              <ArrowRightLeft className="h-4 w-4 shrink-0" />
-              {!panelZbaleny && (
-                <span className="truncate">
-                  {view === "invoicing" ? "Kniha jázd" : "Fakturácia"}
-                </span>
-              )}
-            </button>
-          ) : null
-        }
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -612,8 +594,9 @@ export function AppShell({
               <div
                 role="tablist"
                 aria-label="Produkt"
-                /* Na počítači je prepínač produktu na dne bočného panela. */
-                className="hidden h-7 shrink-0 items-center gap-0.5 rounded-full bg-muted/60 p-[2px] md:inline-flex lg:hidden"
+                /* Naľavo od prepínača firiem — obe sú kontext, v ktorom človek
+                   práve je, tak patria vedľa seba. */
+                className="hidden h-7 shrink-0 items-center gap-0.5 rounded-full bg-muted/60 p-[2px] md:inline-flex"
               >
                 {(
                   [
