@@ -626,6 +626,13 @@ export const cs: Partial<Record<Kluc, string>> = {
   /* ponuky — prázdny zoznam */
   "ponuky.ziadnePopis2": "Nabídku uděláte stejně jako fakturu — a když ji zákazník přijme, jedním klepnutím z ní faktura vznikne.",
 
+  /* drobnosti — kroky a stavy */
+  "nf.oprava": "Oprava {cislo}",
+  "nf.fakturaCislo": "Faktura {cislo}",
+  "faktury.pracujem": "Pracuji…",
+  "faktury.pripravujemPdf": "Připravuji PDF…",
+  "pd.odosielam": "Odesílám…",
+
   "spolocne.spat": "Zpět",
   "spolocne.ulozit": "Uložit",
   "spolocne.zrusit": "Zrušit",

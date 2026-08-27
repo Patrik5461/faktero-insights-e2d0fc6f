@@ -621,6 +621,13 @@ export const de: Partial<Record<Kluc, string>> = {
   /* ponuky — prázdny zoznam */
   "ponuky.ziadnePopis2": "Ein Angebot erstellen Sie wie eine Rechnung — und sobald der Kunde es annimmt, wird mit einem Tippen eine Rechnung daraus.",
 
+  /* drobnosti — kroky a stavy */
+  "nf.oprava": "Korrektur {cislo}",
+  "nf.fakturaCislo": "Rechnung {cislo}",
+  "faktury.pracujem": "Wird bearbeitet…",
+  "faktury.pripravujemPdf": "PDF wird vorbereitet…",
+  "pd.odosielam": "Wird gesendet…",
+
   "spolocne.spat": "Zurück",
   "spolocne.ulozit": "Speichern",
   "spolocne.zrusit": "Abbrechen",

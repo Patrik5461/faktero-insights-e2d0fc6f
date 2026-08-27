@@ -627,6 +627,13 @@ export const en: Partial<Record<Kluc, string>> = {
   /* ponuky — prázdny zoznam */
   "ponuky.ziadnePopis2": "You make a quote the same way as an invoice — and once the customer accepts it, one tap turns it into an invoice.",
 
+  /* drobnosti — kroky a stavy */
+  "nf.oprava": "Editing {cislo}",
+  "nf.fakturaCislo": "Invoice {cislo}",
+  "faktury.pracujem": "Working…",
+  "faktury.pripravujemPdf": "Preparing the PDF…",
+  "pd.odosielam": "Sending…",
+
   "spolocne.spat": "Back",
   "spolocne.ulozit": "Save",
   "spolocne.zrusit": "Cancel",

@@ -638,6 +638,13 @@ export const sk = {
   /* ponuky — prázdny zoznam */
   "ponuky.ziadnePopis2": "Ponuku spravíte rovnako ako faktúru — a keď ju zákazník prijme, jedným ťuknutím z nej faktúra vznikne.",
 
+  /* drobnosti — kroky a stavy */
+  "nf.oprava": "Oprava {cislo}",
+  "nf.fakturaCislo": "Faktúra {cislo}",
+  "faktury.pracujem": "Pracujem…",
+  "faktury.pripravujemPdf": "Pripravujem PDF…",
+  "pd.odosielam": "Odosielam…",
+
   /* spoločné */
   "spolocne.spat": "Späť",
   "spolocne.ulozit": "Uložiť",

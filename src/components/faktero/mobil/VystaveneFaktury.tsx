@@ -487,7 +487,13 @@ function DetailFaktury({
 
   if (busy)
     return (
-      <Pracujem text={busy === "pdf" || busy === "zdielam" ? "Pripravujem PDF…" : "Pracujem…"} />
+      <Pracujem
+        text={
+          busy === "pdf" || busy === "zdielam"
+            ? t("faktury.pripravujemPdf")
+            : t("faktury.pracujem")
+        }
+      />
     );
 
   return (
@@ -603,7 +609,7 @@ function DetailFaktury({
                 disabled={busy === "mazem"}
                 className="rounded-xl bg-destructive px-4 py-2.5 text-sm font-medium text-destructive-foreground disabled:opacity-50"
               >
-                {busy === "mazem" ? t("faktury.mazem") : "Zmazať"}
+                {busy === "mazem" ? t("faktury.mazem") : t("faktury.zmazatKratke")}
               </button>
             </div>
           </div>

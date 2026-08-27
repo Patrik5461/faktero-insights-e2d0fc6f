@@ -255,7 +255,7 @@ export function NovaFaktura({
       }
       const o =
         podklady.odberatelia.find((x) => x.id === f.customer_id) ??
-        ({ id: f.customer_id, name: "Odberateľ" } as Odberatel);
+        ({ id: f.customer_id, name: t("nf.odberatel") } as Odberatel);
       setOdberatel(o);
       setVystavenie(f.issue_date ?? dnes());
       setSplatnost(f.due_date ?? oDni(dnes(), 14));
@@ -628,7 +628,7 @@ function KrokOdberatel({
   return (
     <MobilObrazovka
       title={t("nf.komuFakturujete")}
-      subtitle={druh === "proforma" ? t("nf.krokZalohova") : "Krok 1 z 3"}
+      subtitle={druh === "proforma" ? t("nf.krokZalohova") : t("nf.krok", { n: 1 })}
       onBack={onSpat}
     >
       {/*
@@ -639,8 +639,8 @@ function KrokOdberatel({
       <div className="mb-4 grid grid-cols-2 gap-2">
         {(
           [
-            ["regular", "Faktúra"],
-            ["proforma", "Zálohová"],
+            ["regular", t("nf.faktura")],
+            ["proforma", t("nf.zalohova")],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -922,8 +922,8 @@ function KrokPolozky({
         title={t("nf.zaCoFakturujete")}
         subtitle={
           uprava
-            ? `Oprava ${uprava.invoice_number} · ${odberatel.name}`
-            : `Krok 2 z 3 · ${odberatel.name}`
+            ? `${t("nf.oprava", { cislo: uprava.invoice_number })} · ${odberatel.name}`
+            : `${t("nf.krok", { n: 2 })} · ${odberatel.name}`
         }
         onBack={onSpat}
         footer={
@@ -935,7 +935,7 @@ function KrokPolozky({
               </span>
             </div>
             <HlavneTlacidlo onClick={onDalej} disabled={pocetPouzitelnych === 0}>
-              {pocetPouzitelnych === 0 ? t("nf.pridajtePolozku") : "Ďalej"}
+              {pocetPouzitelnych === 0 ? t("nf.pridajtePolozku") : t("nf.dalej")}
             </HlavneTlacidlo>
           </div>
         }
@@ -1243,7 +1243,9 @@ function KrokSuhrn({
   return (
     <MobilObrazovka
       title={druh === "proforma" ? t("nf.skontrolujteZalohovu") : t("nf.skontrolujte")}
-      subtitle={uprava ? `Faktúra ${uprava.invoice_number}` : "Krok 3 z 3"}
+      subtitle={
+        uprava ? t("nf.fakturaCislo", { cislo: uprava.invoice_number }) : t("nf.krok", { n: 3 })
+      }
       onBack={onSpat}
       footer={
         <HlavneTlacidlo onClick={onUloz}>
@@ -1330,9 +1332,9 @@ function KrokSuhrn({
           <div className="grid grid-cols-3 gap-2">
             {(
               [
-                ["bank_transfer", "Prevodom"],
+                ["bank_transfer", t("pd.prevodom")],
                 ["cash", t("nf.hotovost")],
-                ["card", "Kartou"],
+                ["card", t("pd.kartou")],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -1696,7 +1698,7 @@ function Vystavena({
           {faktura.customer_email && (
             <VelkeTlacidlo
               icon={odoslane ? Check : Mail}
-              label={odoslane ? "Odoslané" : t("nf.poslatEmailom")}
+              label={odoslane ? t("nf.odoslane") : t("nf.poslatEmailom")}
               hint={faktura.customer_email}
               variant={odoslane ? "default" : "primary"}
               disabled={odoslane}

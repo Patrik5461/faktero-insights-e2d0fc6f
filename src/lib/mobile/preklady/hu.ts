@@ -622,6 +622,13 @@ export const hu: Partial<Record<Kluc, string>> = {
   /* ponuky — prázdny zoznam */
   "ponuky.ziadnePopis2": "Az árajánlatot ugyanúgy készíti, mint a számlát — és ha az ügyfél elfogadja, egy koppintással számla lesz belőle.",
 
+  /* drobnosti — kroky a stavy */
+  "nf.oprava": "{cislo} javítása",
+  "nf.fakturaCislo": "{cislo} számla",
+  "faktury.pracujem": "Dolgozom…",
+  "faktury.pripravujemPdf": "PDF előkészítése…",
+  "pd.odosielam": "Küldés…",
+
   "spolocne.spat": "Vissza",
   "spolocne.ulozit": "Mentés",
   "spolocne.zrusit": "Mégse",

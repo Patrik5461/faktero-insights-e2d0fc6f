@@ -1894,9 +1894,9 @@ function Potvrdenie({
           <div className="grid grid-cols-3 gap-2">
             {(
               [
-                ["hotovost", "Hotovosť"],
-                ["karta", "Kartou"],
-                ["prevod", "Prevodom"],
+                ["hotovost", t("pd.hotovost")],
+                ["karta", t("pd.kartou")],
+                ["prevod", t("pd.prevodom")],
               ] as const
             ).map(([id, label]) => (
               <button

@@ -259,7 +259,7 @@ export function PrijateDoklady({
               className="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1.5 text-[13px] font-medium text-amber-900 disabled:opacity-60 dark:text-amber-100"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${odosielam ? "animate-spin" : ""}`} />
-              {odosielam ? "Odosielam…" : t("pd.odoslat")}
+              {odosielam ? t("pd.odosielam") : t("pd.odoslat")}
             </button>
           </div>
           {cakajuce.map((d) => (
@@ -304,7 +304,7 @@ export function PrijateDoklady({
             <div key={z.transactionId} className="border-t border-primary/20 px-4 py-3">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="min-w-0 flex-1 truncate text-[14px] font-medium">
-                  {z.doklad?.supplier_name ?? "Doklad"}
+                  {z.doklad?.supplier_name ?? t("pd.doklad")}
                 </span>
                 <span className="shrink-0 text-[14px] tabular-nums">
                   {suma(z.doklad?.total_amount, z.doklad?.currency ?? "EUR")}
@@ -512,7 +512,7 @@ function DetailDokladu({
 
   return (
     <MobilObrazovka
-      title={doklad.supplier_name ?? "Doklad"}
+      title={doklad.supplier_name ?? t("pd.doklad")}
       subtitle={doklad.issue_date ? datum(doklad.issue_date) : undefined}
       onBack={onSpat}
     >
