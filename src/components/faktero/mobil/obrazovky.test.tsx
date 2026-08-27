@@ -211,3 +211,20 @@ describe("prebiehajúca rozpoznaná jazda", () => {
     expect(auto).not.toContain("spustená ručne");
   });
 });
+
+/*
+  Charakter jazdy sa v histórii mení priamo — je to voľba z dvoch možností,
+  nie prepis čísla. Odznak nosí len súkromná: služobná je bežný stav a odznak
+  pri každej jazde by nič nepovedal.
+*/
+describe("charakter jazdy v histórii", () => {
+  it("súkromná a služobná sa rozlíšia", async () => {
+    const { jeSukromna, charakterJazdy } = await import("@/lib/faktero/trip-format");
+    expect(jeSukromna("private")).toBe(true);
+    expect(jeSukromna("business")).toBe(false);
+    // Staré jazdy vznikali bez hodnoty — tie sú služobné.
+    expect(jeSukromna(null)).toBe(false);
+    expect(charakterJazdy(null)).toBe("Služobná");
+    expect(charakterJazdy("private")).toBe("Súkromná");
+  });
+});

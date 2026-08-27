@@ -6,6 +6,7 @@ import { trasa, trvanieJazdy } from "@/lib/faktero/adresa-jazdy";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
 
+import { jeSukromna } from "@/lib/faktero/trip-format";
 /**
  * História jázd jedného vozidla.
  *
@@ -14,8 +15,10 @@ import { MobilObrazovka, Pracujem } from "./MobilChrome";
  * pre vodiča je to tá istá kniha jázd a odkiaľ záznam prišiel je len poznámka
  * na okraji.
  *
- * Zoznam je na čítanie. Opravovať jazdu treba na webe — na telefóne sa dá
- * ľahko preklepnúť a kniha jázd je podklad pre daňový výdavok.
+ * Opravovať čísla jazdy treba na webe — na telefóne sa dá ľahko preklepnúť a
+ * kniha jázd je podklad pre daňový výdavok. **Služobná/súkromná** je výnimka:
+ * nie je to prepis čísla, ale voľba z dvoch možností, a človek si na ňu
+ * spomenie práve vtedy, keď vystúpi z auta. Preto sa mení priamo tu.
  */
 
 type Jazdenka = {
@@ -32,6 +35,7 @@ type Jazdenka = {
   start_time: string | null;
   external_source: string | null;
   route: string | null;
+  classification: string | null;
 };
 
 /*
@@ -45,7 +49,7 @@ function dotazJazd(companyId: string, vehicleId: string, od: number) {
     supabase
       .from("trips")
       .select(
-        "id, trip_date, start_location, end_location, purpose, distance_km, duration_seconds, average_speed_kmh, max_speed_kmh, driver_name, start_time, external_source, route",
+        "id, trip_date, start_location, end_location, purpose, distance_km, duration_seconds, average_speed_kmh, max_speed_kmh, driver_name, start_time, external_source, route, classification",
       )
       .eq("company_id", companyId)
       .eq("vehicle_id", vehicleId)
@@ -126,6 +130,36 @@ export function HistoriaJazd({
   const [nacitavamStarsie, setNacitavamStarsie] = useState(false);
   /* Mapa sa otvára ťuknutím na jazdu — na malej obrazovke sa nezmestia obe naraz. */
   const [otvorena, setOtvorena] = useState<string | null>(null);
+  /** Ktorej jazde sa práve prepisuje charakter — nech sa nedá ťuknúť dvakrát. */
+  const [meni, setMeni] = useState<string | null>(null);
+
+  /*
+    Zmena charakteru jazdy. Zapisuje sa hneď a zoznam sa prekreslí bez
+    načítania — človek stojí pri aute a čakať na odpoveď servera, aby videl,
+    čo si klikol, nemá dôvod. Keď zápis zlyhá, hodnota sa vráti späť; tichá
+    zmena, ktorá sa neuložila, je pri podklade pre daňový výdavok horšia než
+    hlásenie o chybe.
+  */
+  async function zmenCharakter(id: string, na: "business" | "private") {
+    const povodne = (jazdy ?? []).find((j) => j.id === id)?.classification ?? "business";
+    if (povodne === na) return;
+    setMeni(id);
+    setJazdy((xs) => (xs ?? []).map((j) => (j.id === id ? { ...j, classification: na } : j)));
+    const { error } = await supabase
+      .from("trips")
+      .update({ classification: na })
+      .eq("id", id)
+      .eq("company_id", firma.id);
+    setMeni(null);
+    if (error) {
+      setJazdy((xs) =>
+        (xs ?? []).map((j) => (j.id === id ? { ...j, classification: povodne } : j)),
+      );
+      toast.error(error.message);
+      return;
+    }
+    toast.success(na === "private" ? "Označená ako súkromná." : "Označená ako služobná.");
+  }
 
   useEffect(() => {
     let zrusene = false;
@@ -287,10 +321,9 @@ export function HistoriaJazd({
                       return (
                         <div key={j.id} className={i > 0 ? "border-t border-border/70" : ""}>
                           <div
-                            role={j.route ? "button" : undefined}
-                            onClick={() =>
-                              j.route && setOtvorena((o) => (o === j.id ? null : j.id))
-                            }
+                            role="button"
+                            aria-expanded={otvorena === j.id}
+                            onClick={() => setOtvorena((o) => (o === j.id ? null : j.id))}
                             className="flex items-start gap-3 px-4 py-3.5"
                           >
                             <div className="min-w-0 flex-1">
@@ -303,6 +336,13 @@ export function HistoriaJazd({
                                     className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
                                     aria-label={ZDROJE[j.external_source] ?? j.external_source}
                                   />
+                                )}
+                                {/* Označuje sa len súkromná — služobná je bežný
+                                    stav a odznak pri každej jazde by nič nepovedal. */}
+                                {jeSukromna(j.classification) && (
+                                  <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                    Súkromná
+                                  </span>
                                 )}
                               </div>
                               <div className="mt-0.5 truncate text-[13px] text-muted-foreground">
@@ -324,8 +364,43 @@ export function HistoriaJazd({
                             </div>
                           </div>
                           {otvorena === j.id && (
-                            <div className="px-4 pb-3.5">
-                              <MapaTrasy route={j.route} vyska={220} />
+                            <div className="space-y-3 px-4 pb-3.5">
+                              <div>
+                                <div className="mb-1.5 text-[12px] text-muted-foreground">
+                                  Charakter jazdy
+                                </div>
+                                <div className="inline-flex rounded-xl border border-border p-0.5">
+                                  {(
+                                    [
+                                      ["business", "Služobná"],
+                                      ["private", "Súkromná"],
+                                    ] as const
+                                  ).map(([kod, popis]) => {
+                                    const je = jeSukromna(j.classification)
+                                      ? kod === "private"
+                                      : kod === "business";
+                                    return (
+                                      <button
+                                        key={kod}
+                                        disabled={meni === j.id}
+                                        onClick={(e) => {
+                                          // Bez toho by klik zložil práve otvorený riadok.
+                                          e.stopPropagation();
+                                          void zmenCharakter(j.id, kod);
+                                        }}
+                                        className={`min-h-[36px] rounded-lg px-3 text-[13px] disabled:opacity-60 ${
+                                          je
+                                            ? "bg-primary text-primary-foreground font-medium"
+                                            : "text-muted-foreground"
+                                        }`}
+                                      >
+                                        {popis}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                              {j.route && <MapaTrasy route={j.route} vyska={220} />}
                             </div>
                           )}
                         </div>
