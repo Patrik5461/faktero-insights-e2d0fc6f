@@ -51,6 +51,8 @@ import { initNativePlatform } from "@/lib/mobile/native-init";
 import { PrepinacMotivu } from "@/components/faktero/PrepinacMotivu";
 import {
   BocnyPanel,
+  SekcieNavigacie,
+  useRozbalene,
   jeZbaleny,
   ulozZbalenie,
   type SekciaPanela,
@@ -872,6 +874,20 @@ function MobileNav({
   onClose: () => void;
 }) {
   const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
+  const sekcie: SekciaPanela[] = nav.map((g) => ({
+    key: g.key,
+    label: g.label,
+    icon: g.icon,
+    cesta: g.match[0],
+    polozky: g.children.map((c) => ({ to: c.to, search: c.search, label: c.label })),
+  }));
+  const aktivnaSekcia = nav.find((g) => isPathActive(pathname, g))?.key ?? null;
+  const aktivnaPolozka = (() => {
+    const g = nav.find((x) => isPathActive(pathname, x));
+    return g ? activeChildKey(g.children, pathname, locSearch) : null;
+  })();
+  const { otvorene, prepni } = useRozbalene(aktivnaSekcia);
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
@@ -927,38 +943,16 @@ function MobileNav({
           </button>
         </div>
       )}
+      {/* To isté vykreslenie ako na počítači — položky sa nesmú rozísť. */}
       <nav className="flex-1 overflow-y-auto px-2 py-3">
-        {nav.map((g) => (
-          <div key={g.key} className="mb-3">
-            <div className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {g.label}
-            </div>
-            {g.children.length === 0 ? (
-              <Link
-                to={g.match[0]}
-                onClick={onClose}
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm ${pathname === g.match[0] ? "bg-primary/10 text-primary" : "hover:bg-secondary"}`}
-              >
-                <g.icon className="h-4 w-4" /> {g.label}
-              </Link>
-            ) : (
-              g.children.map((c) => {
-                const isActive = activeChildKey(g.children, pathname, locSearch) === c.to + c.label;
-                return (
-                  <Link
-                    key={c.to + c.label}
-                    to={c.to as any}
-                    search={c.search as any}
-                    onClick={onClose}
-                    className={`block rounded-md px-3 py-2 text-sm ${isActive ? "bg-primary/10 text-primary" : "hover:bg-secondary"}`}
-                  >
-                    {c.label}
-                  </Link>
-                );
-              })
-            )}
-          </div>
-        ))}
+        <SekcieNavigacie
+          sekcie={sekcie}
+          aktivnaSekcia={aktivnaSekcia}
+          aktivnaPolozka={aktivnaPolozka}
+          otvorene={otvorene}
+          onPrepni={prepni}
+          onPrejdi={onClose}
+        />
       </nav>
       <div className="border-t border-border p-3">
         <button

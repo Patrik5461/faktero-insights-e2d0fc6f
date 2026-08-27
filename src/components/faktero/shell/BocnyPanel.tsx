@@ -53,6 +53,142 @@ export function ulozZbalenie(v: boolean): void {
   }
 }
 
+/**
+ * Zoznam sekcií — to isté na počítači aj v mobilnej zásuvke.
+ *
+ * Zdieľané zámerne: keby mala zásuvka vlastné vykreslenie, jedna z nich by pri
+ * ďalšej zmene navigácie zaostala a na telefóne by chýbala položka, o ktorej
+ * by nikto nevedel.
+ */
+export function SekcieNavigacie({
+  sekcie,
+  aktivnaSekcia,
+  aktivnaPolozka,
+  zbaleny = false,
+  otvorene,
+  onPrepni,
+  onPrejdi,
+}: {
+  sekcie: SekciaPanela[];
+  aktivnaSekcia: string | null;
+  aktivnaPolozka: string | null;
+  zbaleny?: boolean;
+  otvorene: Set<string>;
+  onPrepni: (kluc: string) => void;
+  /** Zavretie zásuvky po prechode. Na počítači sa nepoužíva. */
+  onPrejdi?: () => void;
+}) {
+  return (
+    <ul className="space-y-0.5">
+      {sekcie.map((s) => {
+        const aktivna = aktivnaSekcia === s.key;
+        const rozbalena = !zbaleny && otvorene.has(s.key);
+        const Ikona = s.icon;
+
+        if (s.polozky.length === 0) {
+          return (
+            <li key={s.key}>
+              <Link
+                to={s.cesta as any}
+                onClick={onPrejdi}
+                title={zbaleny ? s.label : undefined}
+                className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] ${
+                  zbaleny ? "justify-center" : ""
+                } ${
+                  aktivna
+                    ? "bg-primary/10 font-medium text-primary"
+                    : "text-foreground/80 hover:bg-secondary"
+                }`}
+              >
+                <Ikona className="h-4 w-4 shrink-0" />
+                {!zbaleny && <span className="truncate">{s.label}</span>}
+              </Link>
+            </li>
+          );
+        }
+
+        return (
+          <li key={s.key}>
+            <button
+              onClick={() => onPrepni(s.key)}
+              aria-expanded={rozbalena}
+              title={zbaleny ? s.label : undefined}
+              className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] ${
+                zbaleny ? "justify-center" : ""
+              } ${
+                aktivna
+                  ? "bg-primary/10 font-medium text-primary"
+                  : "text-foreground/80 hover:bg-secondary"
+              }`}
+            >
+              <Ikona className="h-4 w-4 shrink-0" />
+              {!zbaleny && (
+                <>
+                  <span className="min-w-0 flex-1 truncate">{s.label}</span>
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 shrink-0 opacity-60 transition-transform ${
+                      rozbalena ? "rotate-180" : ""
+                    }`}
+                  />
+                </>
+              )}
+            </button>
+
+            {rozbalena && (
+              /* Odsadenie nesie zvislá linka — bez nej sa podpoložky opticky
+                 miešajú s hlavnými sekciami. */
+              <ul className="ml-[19px] mt-0.5 space-y-0.5 border-l border-border pl-2">
+                {s.polozky.map((p) => {
+                  const je = aktivnaPolozka === p.to + p.label;
+                  return (
+                    <li key={p.to + p.label}>
+                      <Link
+                        to={p.to as any}
+                        search={p.search as any}
+                        onClick={onPrejdi}
+                        className={`block truncate rounded-md px-2 py-1.5 text-[13px] ${
+                          je
+                            ? "bg-primary/10 font-medium text-primary"
+                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        }`}
+                      >
+                        {p.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/**
+ * Rozbaľovanie sekcií — spoločný stav pre panel aj zásuvku.
+ *
+ * Sekcia s otvorenou stránkou sa rozbalí sama; pridáva sa, nenahrádza — kto si
+ * rozbalil dve, o druhú prechodom na inú stránku neprišiel.
+ */
+export function useRozbalene(aktivnaSekcia: string | null) {
+  const [otvorene, setOtvorene] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!aktivnaSekcia) return;
+    setOtvorene((s) => (s.has(aktivnaSekcia) ? s : new Set([...s, aktivnaSekcia])));
+  }, [aktivnaSekcia]);
+  function prepni(kluc: string) {
+    setOtvorene((s) => {
+      const n = new Set(s);
+      if (n.has(kluc)) n.delete(kluc);
+      else n.add(kluc);
+      return n;
+    });
+  }
+  return { otvorene, prepni, setOtvorene };
+}
+
 export function BocnyPanel({
   sekcie,
   aktivnaSekcia,
@@ -73,16 +209,7 @@ export function BocnyPanel({
   /** Prepínač produktu a čokoľvek, čo patrí na dno panela. */
   pata?: React.ReactNode;
 }) {
-  const [otvorene, setOtvorene] = useState<Set<string>>(new Set());
-
-  /*
-    Sekcia s otvorenou stránkou sa rozbalí sama. Pridáva sa, nenahrádza — kto
-    si rozbalil dve, o druhú prechodom na inú stránku neprišiel.
-  */
-  useEffect(() => {
-    if (!aktivnaSekcia) return;
-    setOtvorene((s) => (s.has(aktivnaSekcia) ? s : new Set([...s, aktivnaSekcia])));
-  }, [aktivnaSekcia]);
+  const { otvorene, prepni: prepniOtvorene, setOtvorene } = useRozbalene(aktivnaSekcia);
 
   function prepni(kluc: string) {
     // V zbalenom stave nie je kam rozbaliť — panel sa najprv roztiahne.
@@ -91,12 +218,7 @@ export function BocnyPanel({
       setOtvorene((s) => new Set([...s, kluc]));
       return;
     }
-    setOtvorene((s) => {
-      const n = new Set(s);
-      if (n.has(kluc)) n.delete(kluc);
-      else n.add(kluc);
-      return n;
-    });
+    prepniOtvorene(kluc);
   }
 
   return (
@@ -126,88 +248,14 @@ export function BocnyPanel({
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
-        <ul className="space-y-0.5">
-          {sekcie.map((s) => {
-            const aktivna = aktivnaSekcia === s.key;
-            const rozbalena = !zbaleny && otvorene.has(s.key);
-            const Ikona = s.icon;
-
-            if (s.polozky.length === 0) {
-              return (
-                <li key={s.key}>
-                  <Link
-                    to={s.cesta as any}
-                    title={zbaleny ? s.label : undefined}
-                    className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] ${
-                      zbaleny ? "justify-center" : ""
-                    } ${
-                      aktivna
-                        ? "bg-primary/10 font-medium text-primary"
-                        : "text-foreground/80 hover:bg-secondary"
-                    }`}
-                  >
-                    <Ikona className="h-4 w-4 shrink-0" />
-                    {!zbaleny && <span className="truncate">{s.label}</span>}
-                  </Link>
-                </li>
-              );
-            }
-
-            return (
-              <li key={s.key}>
-                <button
-                  onClick={() => prepni(s.key)}
-                  aria-expanded={rozbalena}
-                  title={zbaleny ? s.label : undefined}
-                  className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] ${
-                    zbaleny ? "justify-center" : ""
-                  } ${
-                    aktivna
-                      ? "bg-primary/10 font-medium text-primary"
-                      : "text-foreground/80 hover:bg-secondary"
-                  }`}
-                >
-                  <Ikona className="h-4 w-4 shrink-0" />
-                  {!zbaleny && (
-                    <>
-                      <span className="min-w-0 flex-1 truncate">{s.label}</span>
-                      <ChevronDown
-                        className={`h-3.5 w-3.5 shrink-0 opacity-60 transition-transform ${
-                          rozbalena ? "rotate-180" : ""
-                        }`}
-                      />
-                    </>
-                  )}
-                </button>
-
-                {rozbalena && (
-                  /* Odsadenie nesie zvislá linka — bez nej sa podpoložky
-                     opticky miešajú s hlavnými sekciami. */
-                  <ul className="ml-[19px] mt-0.5 space-y-0.5 border-l border-border pl-2">
-                    {s.polozky.map((p) => {
-                      const je = aktivnaPolozka === p.to + p.label;
-                      return (
-                        <li key={p.to + p.label}>
-                          <Link
-                            to={p.to as any}
-                            search={p.search as any}
-                            className={`block truncate rounded-md px-2 py-1.5 text-[13px] ${
-                              je
-                                ? "bg-primary/10 font-medium text-primary"
-                                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                            }`}
-                          >
-                            {p.label}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <SekcieNavigacie
+          sekcie={sekcie}
+          aktivnaSekcia={aktivnaSekcia}
+          aktivnaPolozka={aktivnaPolozka}
+          zbaleny={zbaleny}
+          otvorene={otvorene}
+          onPrepni={prepni}
+        />
       </nav>
 
       <div className="shrink-0 border-t border-border p-2">
