@@ -27,6 +27,9 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
   --color-background: var(--background);
+  /* Pozadie stránky, na ktorom ležia biele karty. Zámerne vlastný token —
+     `--background` používajú aj polia formulárov a tie stmavnúť nesmú. */
+  --color-page: var(--page);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -80,6 +83,9 @@
   --radius: 0.625rem;
   /* Warm neutral page background (#FAFAF8) */
   --background: oklch(0.985 0.003 90);
+  /* O čosi tmavšie a teplejšie než karty — inak nie je vidieť, kde končí
+     rám aplikácie a začína obsah. */
+  --page: oklch(0.968 0.006 90);
   --foreground: oklch(0.22 0.008 80);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.22 0.008 80);
@@ -135,6 +141,8 @@
 
 .dark {
   --background: oklch(0.129 0.042 264.695);
+  /* V tme je to naopak: stránka je najtmavšia, karty svetlejšie. */
+  --page: oklch(0.108 0.038 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);
   --card-foreground: oklch(0.984 0.003 247.858);

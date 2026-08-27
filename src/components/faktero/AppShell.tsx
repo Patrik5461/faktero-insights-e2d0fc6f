@@ -49,6 +49,12 @@ import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { useIsNative } from "@/hooks/useIsNative";
 import { initNativePlatform } from "@/lib/mobile/native-init";
 import { PrepinacMotivu } from "@/components/faktero/PrepinacMotivu";
+import {
+  BocnyPanel,
+  jeZbaleny,
+  ulozZbalenie,
+  type SekciaPanela,
+} from "@/components/faktero/shell/BocnyPanel";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import type { KrajinaDane } from "@/lib/faktero/vat-rates";
@@ -371,6 +377,15 @@ export function AppShell({
   const active = companies.find((c) => c.id === activeId) ?? companies[0];
   const [search, setSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
+  /* Zbalenie panela si pamätá prehliadač. Čítanie je v efekte, nie v
+     počiatočnom stave — na serveri `localStorage` neexistuje a vykreslenie by
+     sa s prehliadačom nezhodlo. */
+  const [panelZbaleny, setPanelZbaleny] = useState(false);
+  useEffect(() => setPanelZbaleny(jeZbaleny()), []);
+  function prepniPanel(v: boolean) {
+    setPanelZbaleny(v);
+    ulozZbalenie(v);
+  }
   const [createOpen, setCreateOpen] = useState(false);
   const [adminRole, setAdminRole] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -437,6 +452,16 @@ export function AppShell({
   /* Okno na nahlásenie chyby má stav tu — otvára sa z ponuky pod avatarom. */
   const [nahlasenieOtvorene, setNahlasenieOtvorene] = useState(false);
 
+  /* Ten istý zoznam, len v tvare, aký čaká bočný panel. Filtre (produkt,
+     práva, krajina) sa už uplatnili v `filterNav` — tu sa nič nevyberá. */
+  const sekcie: SekciaPanela[] = nav.map((g) => ({
+    key: g.key,
+    label: g.label,
+    icon: g.icon,
+    cesta: g.match[0],
+    polozky: g.children.map((c) => ({ to: c.to, search: c.search, label: c.label })),
+  }));
+
   const activeGroup = nav.find((g) => isPathActive(pathname, g));
   const activeKey = activeGroup ? activeChildKey(activeGroup.children, pathname, locSearch) : null;
 
@@ -477,56 +502,86 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
-      {/* Top header */}
-      <header
-        className={`sticky top-0 z-40 transition-[background-color,box-shadow,backdrop-filter] ${
-          scrolled
-            ? "border-b border-black/[0.06] bg-card/75 backdrop-blur-[8px] dark:border-white/[0.08]"
-            : "border-b border-transparent bg-card"
-        }`}
-      >
-        {/*
-          Na telefóne je pruh zelený — rovnako ako v appke, aby to bol na oko
-          jeden program. Na počítači ostáva tichý: dva riadky s desiatimi
-          kategóriami nad hustými tabuľkami by v sýtej farbe pretlačili to,
-          kvôli čomu tam človek je, a zelená by prestala znamenať „daj sa
-          kliknúť". Farba je na vnútornom riadku, nie na hlavičke — tá si pri
-          rolovaní mení pozadie a zelená by sa s ňou prala.
-        */}
-        <div className="flex h-12 items-center gap-2.5 px-4 max-md:bg-primary max-md:text-primary-foreground">
-          {/* Mobile menu trigger */}
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger asChild>
-              <button
-                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-secondary max-md:text-primary-foreground max-md:hover:bg-white/15 lg:hidden"
-                aria-label="Menu"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 overflow-y-auto p-0">
-              <MobileNav
-                pathname={pathname}
-                active={active}
-                companies={companies}
-                nav={nav}
-                homePath={homePath}
-                view={view}
-                canSwitch={canSwitch}
-                onSwitchProduct={switchProduct}
-                onChangeCompany={onChangeCompany}
-                onSignOut={signOut}
-                onAddCompany={() => {
-                  setMobileOpen(false);
-                  setCreateOpen(true);
-                }}
-                onClose={() => setMobileOpen(false)}
-              />
-            </SheetContent>
-          </Sheet>
+    /*
+      Rám aplikácie je vodorovný: panel vľavo, obsah vpravo. Predtým boli nad
+      obsahom dva riadky navigácie a na notebooku z výšky okna ubrali skoro
+      stovku bodov — pri hustých tabuľkách bolo vidieť o dva riadky menej.
+    */
+    <div className="flex min-h-screen w-full bg-page text-foreground">
+      <BocnyPanel
+        sekcie={sekcie}
+        aktivnaSekcia={activeGroup?.key ?? null}
+        aktivnaPolozka={activeKey}
+        domov={homePath}
+        zbaleny={panelZbaleny}
+        onZbal={prepniPanel}
+        pata={
+          canSwitch ? (
+            <button
+              onClick={switchProduct}
+              title={view === "invoicing" ? "Prepnúť na Knihu jázd" : "Prepnúť na Fakturáciu"}
+              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] text-muted-foreground hover:bg-secondary ${
+                panelZbaleny ? "justify-center" : ""
+              }`}
+            >
+              <ArrowRightLeft className="h-4 w-4 shrink-0" />
+              {!panelZbaleny && (
+                <span className="truncate">
+                  {view === "invoicing" ? "Kniha jázd" : "Fakturácia"}
+                </span>
+              )}
+            </button>
+          ) : null
+        }
+      />
 
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top header */}
+        <header
+          className={`sticky top-0 z-40 border-b border-border transition-[background-color,backdrop-filter] ${
+            scrolled ? "bg-card/80 backdrop-blur-[8px]" : "bg-card"
+          }`}
+        >
           {/*
+          Na telefóne je pruh zelený — rovnako ako v appke, aby to bol na oko
+          jeden program. Na počítači ostáva tichý: zelená tu má znamenať „daj
+          sa kliknúť", a keby ju nosila celá lišta, prestala by to znamenať.
+          Farba je na vnútornom riadku, nie na hlavičke — tá si pri rolovaní
+          mení pozadie a zelená by sa s ňou prala.
+        */}
+          <div className="flex h-14 items-center gap-2.5 px-4 max-md:bg-primary max-md:text-primary-foreground lg:px-6">
+            {/* Mobile menu trigger */}
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <button
+                  className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-secondary max-md:text-primary-foreground max-md:hover:bg-white/15 lg:hidden"
+                  aria-label="Menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80 overflow-y-auto p-0">
+                <MobileNav
+                  pathname={pathname}
+                  active={active}
+                  companies={companies}
+                  nav={nav}
+                  homePath={homePath}
+                  view={view}
+                  canSwitch={canSwitch}
+                  onSwitchProduct={switchProduct}
+                  onChangeCompany={onChangeCompany}
+                  onSignOut={signOut}
+                  onAddCompany={() => {
+                    setMobileOpen(false);
+                    setCreateOpen(true);
+                  }}
+                  onClose={() => setMobileOpen(false)}
+                />
+              </SheetContent>
+            </Sheet>
+
+            {/*
             Na zelenej lište ostáva zo značky len znak — nápis „Faktero" je
             tmavozelený a na zelenej by zanikol; obeliť ho filtrom sa nedá,
             logo má vlastnú dlaždicu a z tej by ostal biely štvorec. Vedľa
@@ -534,298 +589,244 @@ export function AppShell({
             užitočnejšie než nápis, v ktorom programe človek je — a prepínač
             firiem je aj tak v menu.
           */}
-          <Link
-            to={homePath as any}
-            className="flex min-w-0 shrink items-center gap-2"
-            aria-label="Faktero"
-          >
-            <Logo variant="icon" className="h-7 w-7 shrink-0 md:hidden" />
-            <Logo className="hidden h-7 shrink-0 md:block" />
-            {active && (
-              <span className="truncate text-[13px] font-semibold md:hidden">{active.name}</span>
-            )}
-          </Link>
-
-          {/* Hairline divider */}
-          <div className="hidden h-5 w-px bg-black/[0.08] md:block dark:bg-white/[0.12]" />
-
-          {/* Product segmented control — separate axis from company switcher */}
-          {canSwitch && (
-            <div
-              role="tablist"
-              aria-label="Produkt"
-              className="hidden h-7 shrink-0 items-center gap-0.5 rounded-full bg-muted/60 p-[2px] md:inline-flex"
+            {/* Na počítači je logo v bočnom paneli — dvakrát netreba. */}
+            <Link
+              to={homePath as any}
+              className="flex min-w-0 shrink items-center gap-2 lg:hidden"
+              aria-label="Faktero"
             >
-              {(
-                [
-                  { key: "invoicing" as ActiveProduct, label: "Fakturácia", Icon: FileText },
-                  { key: "logbook" as ActiveProduct, label: "Kniha jázd", Icon: Car },
-                ] satisfies { key: ActiveProduct; label: string; Icon: typeof FileText }[]
-              ).map(({ key, label, Icon }) => {
-                const isActive = view === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    aria-label={label}
-                    title={label}
-                    onClick={() => {
-                      if (!isActive) switchProduct();
-                    }}
-                    className={`flex items-center rounded-full px-[11px] py-[4px] text-[12px] leading-none transition ${
-                      isActive
-                        ? "bg-background font-medium text-foreground shadow-sm"
-                        : "bg-transparent text-muted-foreground hover:bg-background/50"
-                    }`}
-                  >
-                    <Icon className="h-3.5 w-3.5 min-[900px]:hidden" />
-                    <span className="hidden min-[900px]:inline">{label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+              <Logo variant="icon" className="h-7 w-7 shrink-0 md:hidden" />
+              <Logo className="hidden h-7 shrink-0 md:block" />
+              {active && (
+                <span className="truncate text-[13px] font-semibold md:hidden">{active.name}</span>
+              )}
+            </Link>
 
-          {/* Company switcher — pill */}
-          {active && (
-            <DropdownMenu>
-              <DropdownMenuTrigger className="hidden min-w-0 items-center gap-1.5 rounded-full border-[0.5px] border-border bg-background py-1 pl-1 pr-2 text-[12px] text-foreground hover:bg-secondary/60 md:inline-flex">
-                <span
-                  className={`grid h-[17px] w-[17px] shrink-0 place-items-center rounded-full bg-gradient-to-br ${avatarGradient(active.name)} text-[9px] font-semibold text-white`}
-                >
-                  {(active.name?.[0] ?? "F").toUpperCase()}
-                </span>
-                <span className="max-w-[160px] truncate font-medium">{active.name}</span>
-                <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64">
-                <DropdownMenuLabel>Firmy</DropdownMenuLabel>
-                {companies.map((c) => (
-                  <DropdownMenuItem
-                    key={c.id}
-                    onClick={() => onChangeCompany(c.id)}
-                    className={c.id === activeId ? "font-semibold" : ""}
-                  >
-                    <span
-                      className={`mr-2 grid h-5 w-5 shrink-0 place-items-center rounded bg-gradient-to-br ${avatarGradient(c.name)} text-[10px] font-semibold text-white`}
+            {/* Hairline divider */}
+            <div className="hidden h-5 w-px bg-black/[0.08] md:block lg:hidden dark:bg-white/[0.12]" />
+
+            {/* Product segmented control — separate axis from company switcher */}
+            {canSwitch && (
+              <div
+                role="tablist"
+                aria-label="Produkt"
+                /* Na počítači je prepínač produktu na dne bočného panela. */
+                className="hidden h-7 shrink-0 items-center gap-0.5 rounded-full bg-muted/60 p-[2px] md:inline-flex lg:hidden"
+              >
+                {(
+                  [
+                    { key: "invoicing" as ActiveProduct, label: "Fakturácia", Icon: FileText },
+                    { key: "logbook" as ActiveProduct, label: "Kniha jázd", Icon: Car },
+                  ] satisfies { key: ActiveProduct; label: string; Icon: typeof FileText }[]
+                ).map(({ key, label, Icon }) => {
+                  const isActive = view === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      aria-label={label}
+                      title={label}
+                      onClick={() => {
+                        if (!isActive) switchProduct();
+                      }}
+                      className={`flex items-center rounded-full px-[11px] py-[4px] text-[12px] leading-none transition ${
+                        isActive
+                          ? "bg-background font-medium text-foreground shadow-sm"
+                          : "bg-transparent text-muted-foreground hover:bg-background/50"
+                      }`}
                     >
-                      {(c.name?.[0] ?? "F").toUpperCase()}
-                    </span>
-                    <span className="truncate">{c.name}</span>
-                    <span className="ml-auto text-xs text-muted-foreground">{c.role}</span>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setCreateOpen(true);
-                  }}
-                >
-                  <Plus className="mr-2 h-3.5 w-3.5" /> Pridať firmu
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          {/* Search — pill, max 400px */}
-          {view !== "logbook" ? (
-            <form onSubmit={submitSearch} className="hidden min-w-0 flex-1 md:block">
-              <div className="relative max-w-[400px]">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  ref={searchRef}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Hľadať"
-                  className="h-8 w-full rounded-full bg-muted/60 pl-8 pr-12 text-[12.5px] placeholder:text-muted-foreground focus:bg-muted focus:outline-none"
-                />
-                <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground">
-                  ⌘K
-                </kbd>
+                      <Icon className="h-3.5 w-3.5 min-[900px]:hidden" />
+                      <span className="hidden min-[900px]:inline">{label}</span>
+                    </button>
+                  );
+                })}
               </div>
-            </form>
-          ) : (
-            <div className="flex-1" />
-          )}
+            )}
 
-          {/* Right cluster */}
-          <div className="ml-auto flex items-center gap-1.5">
-            <NotificationBell className="max-md:text-primary-foreground max-md:hover:bg-white/15" />
-
-            {/* Quick create — the only filled element */}
-            {view !== "logbook" && (
+            {/* Company switcher — pill */}
+            {active && (
               <DropdownMenu>
-                <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-[12px] font-medium text-primary-foreground hover:opacity-90 max-md:bg-white max-md:text-primary">
-                  <Plus className="h-3.5 w-3.5" />{" "}
-                  <span className="hidden sm:inline">Vytvoriť</span>
+                <DropdownMenuTrigger className="hidden min-w-0 items-center gap-1.5 rounded-full border-[0.5px] border-border bg-background py-1 pl-1 pr-2 text-[12px] text-foreground hover:bg-secondary/60 md:inline-flex">
+                  <span
+                    className={`grid h-[17px] w-[17px] shrink-0 place-items-center rounded-full bg-gradient-to-br ${avatarGradient(active.name)} text-[9px] font-semibold text-white`}
+                  >
+                    {(active.name?.[0] ?? "F").toUpperCase()}
+                  </span>
+                  <span className="max-w-[160px] truncate font-medium">{active.name}</span>
+                  <ChevronsUpDown className="h-3 w-3 shrink-0 text-muted-foreground" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="flex items-center gap-1.5 text-xs">
-                    <Sparkles className="h-3 w-3" /> Rýchle vytvorenie
-                  </DropdownMenuLabel>
-                  {QUICK_CREATE.map((c) => (
-                    <DropdownMenuItem key={c.to + c.label} asChild>
-                      <Link to={c.to as any} search={c.search as any}>
-                        {c.label}
-                      </Link>
+                <DropdownMenuContent align="start" className="w-64">
+                  <DropdownMenuLabel>Firmy</DropdownMenuLabel>
+                  {companies.map((c) => (
+                    <DropdownMenuItem
+                      key={c.id}
+                      onClick={() => onChangeCompany(c.id)}
+                      className={c.id === activeId ? "font-semibold" : ""}
+                    >
+                      <span
+                        className={`mr-2 grid h-5 w-5 shrink-0 place-items-center rounded bg-gradient-to-br ${avatarGradient(c.name)} text-[10px] font-semibold text-white`}
+                      >
+                        {(c.name?.[0] ?? "F").toUpperCase()}
+                      </span>
+                      <span className="truncate">{c.name}</span>
+                      <span className="ml-auto text-xs text-muted-foreground">{c.role}</span>
                     </DropdownMenuItem>
                   ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      setCreateOpen(true);
+                    }}
+                  >
+                    <Plus className="mr-2 h-3.5 w-3.5" /> Pridať firmu
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
 
-            {/* Profile avatar */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-[12px] font-semibold text-primary ring-1 ring-border hover:ring-primary/40 max-md:from-white/25 max-md:to-white/10 max-md:text-primary-foreground max-md:ring-white/40">
-                {(active?.name?.[0] ?? "U").toUpperCase()}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-60">
-                <DropdownMenuLabel>Účet</DropdownMenuLabel>
-                <DropdownMenuItem asChild>
-                  <Link to={"/nastavenia" as any}>
-                    <User className="mr-2 h-3.5 w-3.5" /> Profil
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/predplatne">
-                    <CreditCard className="mr-2 h-3.5 w-3.5" /> Predplatné
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Settings className="h-3 w-3" /> Nastavenia
-                </DropdownMenuLabel>
-                {ACCOUNT_SETTINGS_LINKS.map((c) => (
-                  <DropdownMenuItem key={c.to + c.label} asChild>
-                    <Link to={c.to as any}>{c.label}</Link>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <KeyRound className="h-3 w-3" /> API
-                </DropdownMenuLabel>
-                {ACCOUNT_API_LINKS.map((c) => (
-                  <DropdownMenuItem key={c.to + c.label} asChild>
-                    <Link to={c.to as any}>{c.label}</Link>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to={"/pomoc" as any}>
-                    <HelpCircle className="mr-2 h-3.5 w-3.5" /> Pomoc
-                  </Link>
-                </DropdownMenuItem>
-                {/* Nahlásiť sa dá z každej stránky — chyba sa nájde tam, kde človek pracuje. */}
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setNahlasenieOtvorene(true);
-                  }}
-                >
-                  <Bug className="mr-2 h-3.5 w-3.5" /> Nahlásiť chybu alebo návrh
-                </DropdownMenuItem>
-                {adminRole && (
+            {/* Search — pill, max 400px */}
+            {view !== "logbook" ? (
+              <form onSubmit={submitSearch} className="hidden min-w-0 flex-1 md:block">
+                <div className="relative max-w-[400px]">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    ref={searchRef}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Hľadať"
+                    className="h-8 w-full rounded-full bg-muted/60 pl-8 pr-12 text-[12.5px] placeholder:text-muted-foreground focus:bg-muted focus:outline-none"
+                  />
+                  <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] text-muted-foreground">
+                    ⌘K
+                  </kbd>
+                </div>
+              </form>
+            ) : (
+              <div className="flex-1" />
+            )}
+
+            {/* Right cluster */}
+            <div className="ml-auto flex items-center gap-1.5">
+              <NotificationBell className="max-md:text-primary-foreground max-md:hover:bg-white/15" />
+
+              {/* Quick create — the only filled element */}
+              {view !== "logbook" && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-[12px] font-medium text-primary-foreground hover:opacity-90 max-md:bg-white max-md:text-primary">
+                    <Plus className="h-3.5 w-3.5" />{" "}
+                    <span className="hidden sm:inline">Vytvoriť</span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="flex items-center gap-1.5 text-xs">
+                      <Sparkles className="h-3 w-3" /> Rýchle vytvorenie
+                    </DropdownMenuLabel>
+                    {QUICK_CREATE.map((c) => (
+                      <DropdownMenuItem key={c.to + c.label} asChild>
+                        <Link to={c.to as any} search={c.search as any}>
+                          {c.label}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
+              {/* Profile avatar */}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 text-[12px] font-semibold text-primary ring-1 ring-border hover:ring-primary/40 max-md:from-white/25 max-md:to-white/10 max-md:text-primary-foreground max-md:ring-white/40">
+                  {(active?.name?.[0] ?? "U").toUpperCase()}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  <DropdownMenuLabel>Účet</DropdownMenuLabel>
                   <DropdownMenuItem asChild>
-                    <Link to={"/admin" as any}>
-                      <Shield className="mr-2 h-3.5 w-3.5 text-primary" /> Platform Admin
+                    <Link to={"/nastavenia" as any}>
+                      <User className="mr-2 h-3.5 w-3.5" /> Profil
                     </Link>
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                {/*
+                  <DropdownMenuItem asChild>
+                    <Link to="/predplatne">
+                      <CreditCard className="mr-2 h-3.5 w-3.5" /> Predplatné
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Settings className="h-3 w-3" /> Nastavenia
+                  </DropdownMenuLabel>
+                  {ACCOUNT_SETTINGS_LINKS.map((c) => (
+                    <DropdownMenuItem key={c.to + c.label} asChild>
+                      <Link to={c.to as any}>{c.label}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <KeyRound className="h-3 w-3" /> API
+                  </DropdownMenuLabel>
+                  {ACCOUNT_API_LINKS.map((c) => (
+                    <DropdownMenuItem key={c.to + c.label} asChild>
+                      <Link to={c.to as any}>{c.label}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={"/pomoc" as any}>
+                      <HelpCircle className="mr-2 h-3.5 w-3.5" /> Pomoc
+                    </Link>
+                  </DropdownMenuItem>
+                  {/* Nahlásiť sa dá z každej stránky — chyba sa nájde tam, kde človek pracuje. */}
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      setNahlasenieOtvorene(true);
+                    }}
+                  >
+                    <Bug className="mr-2 h-3.5 w-3.5" /> Nahlásiť chybu alebo návrh
+                  </DropdownMenuItem>
+                  {adminRole && (
+                    <DropdownMenuItem asChild>
+                      <Link to={"/admin" as any}>
+                        <Shield className="mr-2 h-3.5 w-3.5 text-primary" /> Platform Admin
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  {/*
                   Prepínač je v ponuke, nie v hlavičke: vzhľad si človek zvolí
                   raz a potom naň nesiaha, takže by v lište len zaberal miesto.
                   `onSelect` s `preventDefault` drží ponuku otvorenú — inak by
                   sa zavrela pri prvom kliknutí a zmenu by nebolo vidieť.
                 */}
-                <div className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
-                  <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
-                    Vzhľad
+                  <div className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
+                    <div className="mb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Vzhľad
+                    </div>
+                    <PrepinacMotivu />
                   </div>
-                  <PrepinacMotivu />
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={signOut}>
-                  <LogOut className="mr-2 h-3.5 w-3.5" /> Odhlásiť
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>
+                    <LogOut className="mr-2 h-3.5 w-3.5" /> Odhlásiť
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-        </div>
+        </header>
 
-        {/* Row 2 — primary navigation (36px) */}
-        <div className="hidden lg:block">
-          <nav className="flex h-9 items-center gap-1 overflow-x-auto px-3 pb-2">
-            {nav.map((g) => {
-              const isActive = isPathActive(pathname, g);
-              /*
-                `select-none`, lebo kliknutie do ponuky označovalo text kategórie
-                na modro. Čierny ovál okolo tlačidla je prehliadačový `outline` —
-                nahrádza ho jemný zelený prstenec, a to len pri ovládaní
-                klávesnicou (`focus-visible`), nech myš po sebe nič nenecháva.
-              */
-              const base = `inline-flex shrink-0 select-none items-center gap-1 rounded-full px-3 py-[5px] text-[12.5px] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                isActive
-                  ? "bg-primary/10 font-medium text-primary"
-                  : "text-muted-foreground hover:bg-muted/70"
-              }`;
-              // Otvorená kategória vyzerá rovnako ako tá, na ktorej človek stojí.
-              const otvorena =
-                "data-[state=open]:bg-primary/10 data-[state=open]:font-medium data-[state=open]:text-primary data-[state=open]:hover:bg-primary/10";
-              if (g.children.length === 0) {
-                return (
-                  <Link key={g.key} to={g.match[0]} className={base}>
-                    {g.label}
-                  </Link>
-                );
-              }
-              return (
-                <DropdownMenu key={g.key}>
-                  <DropdownMenuTrigger
-                    className={`${base} ${otvorena} ${g.key === "viac" ? "ml-auto" : ""}`}
-                  >
-                    {g.label}
-                    <ChevronDown className="h-3 w-3 opacity-60" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align={g.key === "viac" ? "end" : "start"} className="w-56">
-                    {g.children.map((c) => {
-                      const isChildActive =
-                        activeKey === c.to + c.label && activeGroup?.key === g.key;
-                      return (
-                        <DropdownMenuItem key={c.to + c.label} asChild>
-                          <Link
-                            to={c.to as any}
-                            search={c.search as any}
-                            className={isChildActive ? "font-medium text-primary" : ""}
-                          >
-                            {c.label}
-                          </Link>
-                        </DropdownMenuItem>
-                      );
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              );
-            })}
-          </nav>
-        </div>
-      </header>
-
-      <main className="flex min-w-0 flex-1 flex-col">
-        {/* Účtovník doklady zapisuje aj mení. Nedostane sa len k tomu, čo je
+        <main className="flex min-w-0 flex-1 flex-col">
+          {/* Účtovník doklady zapisuje aj mení. Nedostane sa len k tomu, čo je
             správa firmy — nech to vie skôr, než to začne hľadať. */}
-        {active?.role === "accountant" && (
-          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 sm:px-6 lg:px-8 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
-            Ste vo firme <strong>{active.name}</strong> ako účtovník — doklady vediete v plnom
-            rozsahu. Napojenie banky, platby, API kľúče a správu používateľov má na starosti majiteľ
-            alebo administrátor.
-          </div>
-        )}
-        {children}
-      </main>
+          {active?.role === "accountant" && (
+            <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 sm:px-6 lg:px-8 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
+              Ste vo firme <strong>{active.name}</strong> ako účtovník — doklady vediete v plnom
+              rozsahu. Napojenie banky, platby, API kľúče a správu používateľov má na starosti
+              majiteľ alebo administrátor.
+            </div>
+          )}
+          {children}
+        </main>
+      </div>
       <CreateCompanyDialog open={createOpen} onOpenChange={setCreateOpen} />
       <FloatingAIButton />
       <NahlasitChybu otvorene={nahlasenieOtvorene} onZavri={() => setNahlasenieOtvorene(false)} />
@@ -1044,7 +1045,12 @@ export function PageHeader({
   const manual = help === false ? null : (help ?? manualPre(pathname));
 
   return (
-    <div className="flex flex-col gap-3 border-b border-border bg-card/40 px-4 py-4 sm:px-6 sm:py-6 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-4 lg:px-8">
+    /*
+      Šírka je zhora obmedzená spolu s obsahom (`PageBody`) — na širokouhlom
+      monitore by sa nadpis inak tiahol cez celú obrazovku a nesedel by nad
+      kartami, ktoré pod ním končia na 1440 bodoch.
+    */
+    <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-6 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-4 lg:px-6">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
@@ -1068,5 +1074,14 @@ export function PageHeader({
 }
 
 export function PageBody({ children }: { children: ReactNode }) {
-  return <div className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">{children}</div>;
+  /*
+    Obsah má strop 1440 bodov. Bez neho sa tabuľky na širokouhlom monitore
+    roztiahnu tak, že oko medzi prvým a posledným stĺpcom stratí riadok.
+    Medzery medzi sekciami rieši `space-y-6` — 24 bodov, ako všade inde.
+  */
+  return (
+    <div className="mx-auto w-full max-w-[1440px] flex-1 space-y-6 px-4 py-6 sm:px-6 lg:px-6">
+      {children}
+    </div>
+  );
 }
