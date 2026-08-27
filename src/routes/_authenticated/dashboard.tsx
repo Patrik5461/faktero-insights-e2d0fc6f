@@ -328,19 +328,11 @@ function Dashboard() {
       <PageHeader
         title="Prehľad"
         description="Finančný prehľad vašej firmy v reálnom čase."
-        action={
-          <div className="flex flex-wrap gap-2">
-            <QuickAction to="/faktury/nova" icon={Plus} label="Nová faktúra" primary />
-            <QuickAction
-              to="/odberatelia"
-              search={{ new: "1" }}
-              icon={Users}
-              label="Nový odberateľ"
-            />
-            <QuickAction to="/ponuky/nova" icon={FilePlus2} label="Nová ponuka" />
-            <QuickAction to="/opakovane/nova" icon={Repeat} label="Opakovaná faktúra" />
-          </div>
-        }
+        /*
+          Rýchle akcie sú v tlačidle „Vytvoriť" v hornej lište — to isté štyri
+          razy nad každou stránkou nemá kde byť. Zoznam v lište je nadmnožinou
+          tohto: má aj rýchlu faktúru a nový produkt.
+        */
       />
       <PageBody>
         {isEmpty ? (
@@ -351,7 +343,7 @@ function Dashboard() {
             <StatStrip metrics={metrics} loading={loading} />
 
             {/* CRM: Aging + DSO + Forecast */}
-            <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2">
               <AgingPanel
                 title="Aging pohľadávok"
                 icon={HandCoins}
@@ -366,7 +358,7 @@ function Dashboard() {
               />
             </div>
 
-            <div className="mt-6 grid gap-6 lg:grid-cols-3">
+            <div className="grid gap-6 lg:grid-cols-3">
               <DsoCard dso={dso} loading={loading} hasPaid={hasPaidInvoice} />
               <ForecastPanel rows={forecast} loading={loading} className="lg:col-span-2" />
             </div>
@@ -378,7 +370,7 @@ function Dashboard() {
         </div>
 
         {/* MAIN CHARTS */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3">
           <Panel className="lg:col-span-2" title="Obrat (posledných 12 mesiacov)" icon={TrendingUp}>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -499,15 +491,13 @@ function Dashboard() {
         </div>
 
         {/* SECOND ROW */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-4">
+        <div className="grid gap-6 lg:grid-cols-4">
           <Panel title="Pohľadávky" icon={HandCoins}>
             <Row label="Celkové pohľadávky" value={fmt(metrics.receivables)} strong />
             <Row label="Po splatnosti" value={fmt(metrics.overdueAmount)} tone="destructive" />
             <Row label="Priemerná doba úhrady" value={`${metrics.avgPayDays.toFixed(0)} dní`} />
             <div className="mt-3 border-t border-border pt-3">
-              <div className="mb-1.5 text-xs uppercase tracking-wide text-muted-foreground">
-                Najväčší dlžníci
-              </div>
+              <div className="mb-1.5 text-[12px] text-muted-foreground">Najväčší dlžníci</div>
               {topDebtors.length === 0 ? (
                 <div className="text-xs text-muted-foreground">Žiadni dlžníci.</div>
               ) : (
@@ -570,7 +560,7 @@ function Dashboard() {
         </div>
 
         {/* THIRD ROW */}
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2">
           {/*
             Odpočet do 1. 1. 2027 je slovenská povinnosť a odkaz vedie na
             eFaktúru cez slovenskú schému Peppol. Českej firme by sľuboval
@@ -604,9 +594,7 @@ function Dashboard() {
                       <div className="text-2xl font-bold tabular-nums">
                         {String(x.v).padStart(2, "0")}
                       </div>
-                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        {x.l}
-                      </div>
+                      <div className="text-[12px] text-muted-foreground">{x.l}</div>
                     </div>
                   ))}
                 </div>
@@ -697,9 +685,7 @@ function Dashboard() {
                   <div className="text-2xl font-bold tabular-nums">
                     {(tripStats?.km_month ?? 0).toFixed(1)}
                   </div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    km tento mesiac
-                  </div>
+                  <div className="text-[12px] text-muted-foreground">km tento mesiac</div>
                 </div>
                 <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </div>
@@ -908,12 +894,23 @@ function Segment({
   );
 }
 
+/**
+ * Štyri hlavné čísla.
+ *
+ * Predtým to bol jeden pás rozdelený linkami. Karty sú zvlášť, lebo pás sa na
+ * úzkom okne zlomil na dva riadky a bez rámu nebolo poznať, kde jedno číslo
+ * končí a druhé začína.
+ *
+ * Ikona vpravo hore nesie **stav, nie ozdobu**: červená je len vtedy, keď je
+ * hodnota naozaj problém (niečo je po splatnosti). Keby červenala vždy, prestala
+ * by niečo znamenať.
+ */
 function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
   if (loading) {
     return (
-      <div className="grid divide-y divide-border/60 rounded-xl border border-border/60 bg-card sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="space-y-2 px-5 py-4">
+          <div key={i} className="space-y-2 rounded-xl border border-border bg-card p-4">
             <div className="h-3 w-24 animate-pulse rounded bg-muted/60" />
             <div className="h-7 w-32 animate-pulse rounded bg-muted/60" />
             <div className="h-3 w-20 animate-pulse rounded bg-muted/60" />
@@ -924,39 +921,77 @@ function StatStrip({ metrics, loading }: { metrics: any; loading: boolean }) {
   }
 
   const revenueDelta = metrics.prevMonthRevenue > 0 ? (metrics.monthRevenueDelta as number) : null;
+  const jePoSplatnosti = metrics.overdueAmount > 0;
 
   return (
-    <div className="grid divide-y divide-border/60 rounded-xl border border-border/60 bg-card sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
-      <Segment
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <KpiKarta
         label="Obrat tento mesiac"
         value={fmt(metrics.monthRevenue)}
+        icon={TrendingUp}
         meta={<Delta pct={revenueDelta} />}
       />
-      <Segment
+      <KpiKarta
         label="Neuhradené"
         value={fmt(metrics.unpaidAmount)}
+        icon={FileText}
         meta={sPoctom(metrics.unpaidCount, FAKTURY)}
       />
-      <Segment
+      <KpiKarta
         label="Po splatnosti"
         value={fmt(metrics.overdueAmount)}
-        tone={metrics.overdueAmount > 0 ? "destructive" : undefined}
+        icon={AlertTriangle}
+        stav={jePoSplatnosti ? "zle" : "pokoj"}
         meta={`${sPoctom(metrics.overdueCount, FAKTURY)} · ${sPoctom(metrics.debtorCount, ODBERATELIA)}`}
       />
-      <Segment
+      <KpiKarta
         label="Dlžia mi zákazníci"
         value={fmt(metrics.receivables)}
-        tone="primary"
+        icon={HandCoins}
         meta={
           <Link
             to="/faktury"
             search={{ neuhradene: true } as any}
-            className="inline-flex items-center gap-1 text-primary hover:underline"
+            className="inline-flex items-center gap-1 hover:underline"
           >
             Zobraziť pohľadávky <ArrowUpRight className="h-3 w-3" />
           </Link>
         }
       />
+    </div>
+  );
+}
+
+function KpiKarta({
+  label,
+  value,
+  icon: Icon,
+  meta,
+  stav = "pokoj",
+}: {
+  label: string;
+  value: string;
+  icon: any;
+  meta?: ReactNode;
+  /** `zle` zafarbí ikonu načerveno — inak ostáva neutrálna. */
+  stav?: "pokoj" | "zle";
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[12px] text-muted-foreground">{label}</div>
+          <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
+        </div>
+        <span
+          className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
+            stav === "zle" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
+          }`}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+      </div>
+      {meta && <div className="mt-2 text-[12px] text-muted-foreground">{meta}</div>}
     </div>
   );
 }
@@ -996,7 +1031,7 @@ function Panel({
     <div className={`rounded-2xl border border-border/60 bg-card p-6 ${className ?? ""}`}>
       <div className="mb-4 flex items-center gap-2">
         {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-        <h2 className="text-sm font-semibold uppercase tracking-wide">{title}</h2>
+        <h2 className="text-sm font-medium">{title}</h2>
       </div>
       {children}
     </div>
@@ -1029,7 +1064,7 @@ function Row({
 function MiniStat({ label, value, icon: Icon }: { label: string; value: string; icon: any }) {
   return (
     <div className="rounded-lg border border-border bg-muted/30 p-3">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
         <Icon className="h-3 w-3" /> {label}
       </div>
       <div className="mt-1 text-lg font-bold tabular-nums">{value}</div>
@@ -1450,52 +1485,120 @@ function AgingPanel({
   buckets: AgingBucket[];
   loading: boolean;
 }) {
+  const [rozpis, setRozpis] = useState(false);
   const total = buckets.reduce((a, b) => a + b.amount, 0);
+  const pocetSpolu = buckets.reduce((a, b) => a + b.count, 0);
+
+  /*
+    Pruh zlučuje päť buketov do troch pásov, aby sa dal prečítať na prvý
+    pohľad — dva pásy po pár percentách sa vedľa seba nedajú rozoznať.
+    **Bukety sa nemenia**: rozpis pod tlačidlom ukazuje všetkých päť tak, ako
+    ich počíta `buildAging`, a súčty sedia na to isté číslo.
+  */
+  const pasy = [
+    {
+      kluc: "current",
+      nazov: "V termíne",
+      farba: "bg-emerald-500",
+      suma: sumaZa(buckets, ["current"]),
+    },
+    {
+      kluc: "1_60",
+      nazov: "1–60 dní",
+      farba: "bg-amber-500",
+      suma: sumaZa(buckets, ["1_30", "31_60"]),
+    },
+    {
+      kluc: "60_plus",
+      nazov: "60+ dní",
+      farba: "bg-destructive",
+      suma: sumaZa(buckets, ["61_90", "90_plus"]),
+    },
+  ];
+
   return (
     <Panel title={title} icon={icon}>
       {loading ? (
         <div className="space-y-2">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-9 animate-pulse rounded-md bg-muted/50" />
-          ))}
+          <div className="h-3 animate-pulse rounded-full bg-muted/50" />
+          <div className="h-9 animate-pulse rounded-md bg-muted/50" />
+        </div>
+      ) : total === 0 ? (
+        <div className="py-6 text-center">
+          <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-muted">
+            <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">Nič otvorené — všetko je vyrovnané.</p>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="py-1.5 font-medium">Bucket</th>
-                  <th className="py-1.5 text-right font-medium">Počet</th>
-                  <th className="py-1.5 text-right font-medium">Suma</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {buckets.map((b) => (
-                  <tr key={b.key}>
-                    <td className={`py-2 ${b.tone}`}>{b.label}</td>
-                    <td className="py-2 text-right tabular-nums">{b.count}</td>
-                    <td className={`py-2 text-right tabular-nums ${b.tone}`}>{fmt(b.amount)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t border-border">
-                  <td className="pt-2 text-xs uppercase tracking-wide text-muted-foreground">
-                    Spolu
-                  </td>
-                  <td className="pt-2 text-right text-xs text-muted-foreground tabular-nums">
-                    {buckets.reduce((a, b) => a + b.count, 0)}
-                  </td>
-                  <td className="pt-2 text-right font-semibold tabular-nums">{fmt(total)}</td>
-                </tr>
-              </tfoot>
-            </table>
+          <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
+            {pasy.map((p) =>
+              p.suma > 0 ? (
+                <div
+                  key={p.kluc}
+                  className={p.farba}
+                  style={{ width: `${(p.suma / total) * 100}%` }}
+                  title={`${p.nazov}: ${fmt(p.suma)}`}
+                />
+              ) : null,
+            )}
           </div>
+
+          <ul className="mt-3 space-y-1.5">
+            {pasy.map((p) => (
+              <li key={p.kluc} className="flex items-center gap-2 text-[13px]">
+                <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${p.farba}`} />
+                <span className="flex-1 text-muted-foreground">{p.nazov}</span>
+                <span className="tabular-nums">{fmt(p.suma)}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-3 flex items-center justify-between border-t border-border pt-2 text-[13px]">
+            <span className="text-muted-foreground">Spolu · {pocetSpolu}</span>
+            <span className="font-semibold tabular-nums">{fmt(total)}</span>
+          </div>
+
+          <button
+            onClick={() => setRozpis((v) => !v)}
+            aria-expanded={rozpis}
+            className="mt-2 text-[12px] text-muted-foreground hover:text-foreground hover:underline"
+          >
+            {rozpis ? "Skryť rozpis" : "Zobraziť rozpis"}
+          </button>
+
+          {rozpis && (
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[12px] text-muted-foreground">
+                    <th className="py-1.5 font-medium">Bucket</th>
+                    <th className="py-1.5 text-right font-medium">Počet</th>
+                    <th className="py-1.5 text-right font-medium">Suma</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {buckets.map((b) => (
+                    <tr key={b.key}>
+                      <td className="py-2">{b.label}</td>
+                      <td className="py-2 text-right tabular-nums">{b.count}</td>
+                      <td className="py-2 text-right tabular-nums">{fmt(b.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </>
       )}
     </Panel>
   );
+}
+
+/** Súčet vybraných buketov. Pruh zlučuje, rozpis nie — počíta sa z tých istých. */
+function sumaZa(buckets: AgingBucket[], kluce: string[]): number {
+  return buckets.filter((b) => kluce.includes(b.key)).reduce((a, b) => a + b.amount, 0);
 }
 
 function DsoCard({
@@ -1570,7 +1673,7 @@ function ForecastPanel({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr className="text-left text-[12px] text-muted-foreground">
                 <th className="py-1.5 font-medium">Obdobie</th>
                 <th className="py-1.5 text-right font-medium">Príjmy</th>
                 <th className="py-1.5 text-right font-medium">Výdavky</th>
@@ -1600,9 +1703,7 @@ function ForecastPanel({
             </tbody>
             <tfoot>
               <tr className="border-t border-border">
-                <td className="pt-2 text-xs uppercase tracking-wide text-muted-foreground">
-                  Spolu 4 týždne
-                </td>
+                <td className="pt-2 text-[12px] text-muted-foreground">Spolu 4 týždne</td>
                 <td className="pt-2 text-right text-xs tabular-nums text-emerald-600 dark:text-emerald-400">
                   {fmt(rows.reduce((a, r) => a + r.income, 0))}
                 </td>
