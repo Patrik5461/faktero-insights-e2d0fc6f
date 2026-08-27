@@ -5,6 +5,8 @@ import { Diagnostika } from "./Diagnostika";
 import { PrijateDoklady } from "./PrijateDoklady";
 import { VystaveneFaktury } from "./VystaveneFaktury";
 import { NovaFaktura } from "./NovaFaktura";
+import { Ponuky, stavPonuky } from "./Ponuky";
+import { NovaPonuka } from "./NovaPonuka";
 import { Jazda } from "./Jazda";
 import { Banka } from "./Banka";
 import { MobilPanel } from "./MobilPanel";
@@ -35,6 +37,19 @@ describe("mobilné obrazovky sa vykreslia", () => {
 
   it("diagnostika", () => {
     expect(renderToString(<Diagnostika onSpat={nic} />)).toContain("Diagnostika");
+  });
+
+  it("cenové ponuky", () => {
+    const html = renderToString(
+      <Ponuky firma={firma} onSpat={nic} onNova={nic} onFakturaVytvorena={nic} />,
+    );
+    expect(html).toContain("Cenové ponuky");
+  });
+
+  it("nová cenová ponuka", () => {
+    expect(renderToString(<NovaPonuka firma={firma} onSpat={nic} onHotovo={nic} />)).toContain(
+      "Načítavam",
+    );
   });
 
   it("prijaté doklady", () => {
@@ -120,5 +135,42 @@ describe("pruh prebiehajúcej jazdy", () => {
     );
     expect(html).toContain("spustená ručne");
     expect(html).toContain("0 min");
+  });
+});
+
+/*
+  Stav ponuky sa počíta z dátumov a väzieb, nie zo stĺpca `status` — ten sa na
+  „po platnosti" nikde neprepisuje a prepadnutá ponuka by sa tvárila ako živá.
+*/
+describe("stav cenovej ponuky", () => {
+  const zaklad = {
+    id: "1",
+    quote_number: "P2026001",
+    status: "draft",
+    issue_date: "2026-01-01",
+    valid_until: null,
+    currency: "EUR",
+    total: 100,
+    customer_name: "Kto",
+    customer_email: null,
+    converted_invoice_id: null,
+    sent_at: null,
+  };
+
+  it("vyfakturovaná prebíja všetko ostatné", () => {
+    expect(stavPonuky({ ...zaklad, converted_invoice_id: "x", valid_until: "2020-01-01" }).text).toBe(
+      "Vyfakturovaná",
+    );
+  });
+
+  it("prepadnutú platnosť pozná z dátumu", () => {
+    expect(stavPonuky({ ...zaklad, valid_until: "2020-01-01" }).text).toBe("Po platnosti");
+    expect(stavPonuky({ ...zaklad, valid_until: "2099-01-01" }).text).toBe("Návrh");
+  });
+
+  it("odoslaná a prijatá sa nezamenia", () => {
+    expect(stavPonuky({ ...zaklad, sent_at: "2026-01-02" }).text).toBe("Odoslaná");
+    expect(stavPonuky({ ...zaklad, status: "accepted" }).text).toBe("Prijatá");
+    expect(stavPonuky({ ...zaklad, status: "rejected" }).text).toBe("Zamietnutá");
   });
 });

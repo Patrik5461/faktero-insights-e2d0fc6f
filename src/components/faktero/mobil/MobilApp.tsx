@@ -72,6 +72,12 @@ const VystaveneFaktury = lazy(() =>
     default: m.VystaveneFaktury,
   })),
 );
+const Ponuky = lazy(() =>
+  import("@/components/faktero/mobil/Ponuky").then((m) => ({ default: m.Ponuky })),
+);
+const NovaPonuka = lazy(() =>
+  import("@/components/faktero/mobil/NovaPonuka").then((m) => ({ default: m.NovaPonuka })),
+);
 const Jazda = lazy(() =>
   import("@/components/faktero/mobil/Jazda").then((m) => ({ default: m.Jazda })),
 );
@@ -172,6 +178,8 @@ type Krok =
   | "novaFaktura"
   | "upravaFaktury"
   | "faktury"
+  | "ponuky"
+  | "novaPonuka"
   | "jazda"
   | "banka"
   | "ucet";
@@ -791,6 +799,7 @@ function ObsahApky() {
           onPrehlad={() => setKrok("domov")}
           onDoklady={() => setKrok("doklady")}
           onFaktury={() => setKrok("faktury")}
+          onPonuky={() => setKrok("ponuky")}
           onUcet={() => {
             setPanel(false);
             setKrok("ucet");
@@ -883,6 +892,30 @@ function ObsahApky() {
         </Obrazovka>
       </SoSpodnouListou>
     );
+  if (krok === "ponuky" && firma)
+    return (
+      <SoSpodnouListou zobrazit={skenerPrvy} aktivna="faktury" onPrepni={prepniZalozku}>
+        <Obrazovka onSpat={() => setKrok(DOMOV)}>
+          <Ponuky
+            firma={firma}
+            onSpat={() => setKrok(DOMOV)}
+            onNova={() => setKrok("novaPonuka")}
+            /* Po prevode vedieme človeka do faktúr — nech vidí, že doklad je. */
+            onFakturaVytvorena={() => setKrok("faktury")}
+          />
+        </Obrazovka>
+      </SoSpodnouListou>
+    );
+  if (krok === "novaPonuka" && firma)
+    return (
+      <Obrazovka onSpat={() => setKrok("ponuky")}>
+        <NovaPonuka
+          firma={firma}
+          onSpat={() => setKrok("ponuky")}
+          onHotovo={() => setKrok("ponuky")}
+        />
+      </Obrazovka>
+    );
   if (krok === "zachyt" && firma)
     return (
       <ZachytDokladu
@@ -937,6 +970,7 @@ function ObsahApky() {
         onZmenitFirmu={() => setKrok("firma")}
         onDoklady={() => setKrok("doklady")}
         onFaktury={() => setKrok("faktury")}
+        onPonuky={() => setKrok("ponuky")}
         onUcet={() => {
           setPanel(false);
           setKrok("ucet");

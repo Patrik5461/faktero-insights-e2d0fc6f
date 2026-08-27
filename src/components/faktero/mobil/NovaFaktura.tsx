@@ -38,7 +38,7 @@ import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
  * sa doupraví na webe.
  */
 
-type Odberatel = {
+export type Odberatel = {
   id: string;
   name: string;
   email: string | null;
@@ -61,7 +61,7 @@ type Podkladove = {
   produkty: Produkt[];
 };
 
-type Riadok = {
+export type Riadok = {
   key: string;
   name: string;
   quantity: string;
@@ -76,32 +76,32 @@ type Riadok = {
 type Krok = "odberatel" | "polozky" | "suhrn" | "hotovo" | "odlozena";
 
 /** „12,50" aj „12.50" — na telefóne sa píše desatinná čiarka. */
-function cislo(v: string): number {
+export function cislo(v: string): number {
   const n = Number(String(v).replace(",", ".").trim());
   return Number.isFinite(n) ? n : 0;
 }
 
-function suma(n: number, mena = "EUR"): string {
+export function suma(n: number, mena = "EUR"): string {
   return formatovacMeny(mena, "sk-SK")(n);
 }
 
 /** „2026-08-11" → „11. 8. 2026" — ISO tvar nikto nečíta ako dátum. */
-function datumSk(v: string): string {
+export function datumSk(v: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
   return m ? `${Number(m[3])}. ${Number(m[2])}. ${m[1]}` : v;
 }
 
-function dnes(): string {
+export function dnes(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function oDni(od: string, dni: number): string {
+export function oDni(od: string, dni: number): string {
   const d = new Date(`${od}T00:00:00`);
   d.setDate(d.getDate() + dni);
   return d.toISOString().slice(0, 10);
 }
 
-function prazdnyRiadok(sadzba: number): Riadok {
+export function prazdnyRiadok(sadzba: number): Riadok {
   return {
     key: Math.random().toString(36).slice(2),
     name: "",
@@ -1019,7 +1019,7 @@ function KrokPolozky({
   );
 }
 
-function RiadokPolozky({
+export function RiadokPolozky({
   riadok,
   platca,
   mena,

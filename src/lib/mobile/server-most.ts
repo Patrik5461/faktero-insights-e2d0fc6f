@@ -24,6 +24,10 @@ import {
 } from "@/lib/faktero/expenses.functions";
 import { podkladyFakturyFn, poslednaFakturaFn } from "@/lib/faktero/mobil-faktura.functions";
 import { vystavFakturuFn } from "@/lib/faktero/faktura-vystavenie.functions";
+import { vystavPonukuFn, ponukyZoznamFn } from "@/lib/faktero/ponuka-vystavenie.functions";
+import { generateQuotePdf } from "@/lib/faktero/quote-pdf.functions";
+import { sendQuoteEmailFn } from "@/lib/faktero/quote-email.functions";
+import { convertQuoteToInvoice } from "@/lib/faktero/quote.functions";
 import {
   rezervujCislaFn,
   stavRezervaciiFn,
@@ -65,6 +69,11 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "faktura-podklady": podkladyFakturyFn,
   "faktura-posledna": poslednaFakturaFn,
   "faktura-vystav": vystavFakturuFn,
+  "ponuka-vystav": vystavPonukuFn,
+  "ponuky-zoznam": ponukyZoznamFn,
+  "ponuka-pdf": generateQuotePdf,
+  "ponuka-email": sendQuoteEmailFn,
+  "ponuka-na-fakturu": convertQuoteToInvoice,
   "cisla-rezervuj": rezervujCislaFn,
   "cisla-uvolni": uvolniCislaFn,
   "cisla-stav": stavRezervaciiFn,

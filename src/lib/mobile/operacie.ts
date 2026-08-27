@@ -29,6 +29,13 @@ export const OPERACIE = [
   "faktura-podklady",
   "faktura-posledna",
   "faktura-vystav",
+  // Cenové ponuky. Vystavenie ide cez server rovnako ako pri faktúre —
+  // číslo ponuky aj súčty musia vznikať na jednom mieste s webom.
+  "ponuka-vystav",
+  "ponuky-zoznam",
+  "ponuka-pdf",
+  "ponuka-email",
+  "ponuka-na-fakturu",
   "cisla-rezervuj",
   "cisla-uvolni",
   "cisla-stav",

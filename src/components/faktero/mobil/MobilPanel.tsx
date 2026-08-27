@@ -14,6 +14,7 @@ import {
   X,
   Stethoscope,
   Bug,
+  FileSignature,
 } from "lucide-react";
 import {
   disableBiometric,
@@ -46,6 +47,7 @@ export function MobilPanel({
   onPrehlad,
   onDoklady,
   onFaktury,
+  onPonuky,
   onUcet,
   onOdhlasit,
 }: {
@@ -59,6 +61,8 @@ export function MobilPanel({
   onPrehlad?: () => void;
   onDoklady: () => void;
   onFaktury: () => void;
+  /** Cenové ponuky. Nie sú v spodnej lište — tá má päť agend a je plná. */
+  onPonuky?: () => void;
   onUcet: () => void;
   onOdhlasit: () => void;
 }) {
@@ -199,6 +203,16 @@ export function MobilPanel({
               onFaktury();
             }}
           />
+          {onPonuky && (
+            <Polozka
+              icon={FileSignature}
+              label="Cenové ponuky"
+              onClick={() => {
+                onZavri();
+                onPonuky();
+              }}
+            />
+          )}
           <Polozka
             icon={Receipt}
             label="Prijaté doklady"
