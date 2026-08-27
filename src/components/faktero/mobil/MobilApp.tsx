@@ -155,6 +155,7 @@ import {
 import { Logo } from "@/components/faktero/Logo";
 import { ZELENA_DOLE, ZELENA_HORE } from "@/lib/mobile/brand";
 
+import { usePreklad } from "@/lib/mobile/preklady/hook";
 /**
  * Mobilná aplikácia — prihlásenie, výber firmy a skenovanie dokladov.
  *
@@ -1280,6 +1281,7 @@ function Domov({
   onPanel: () => void;
   zrusiSa: string | null;
 }) {
+  const { t } = usePreklad();
   /*
    * Panel sa otvára aj potiahnutím od ľavého okraja. Na ostatných obrazovkách
    * to isté gesto znamená „späť" — tu späť nie je kam, tak je voľné.
@@ -1404,60 +1406,60 @@ function Domov({
           </button>
         )}
 
-        <Skupina nazov="Fakturácia" />
+        <Skupina nazov={t("domov.skupina.fakturacia")} />
         <VelkeTlacidlo
           icon={FilePlus2}
-          label="Nová faktúra"
-          hint="Odberateľ, položky, splatnosť — a rovno odoslať"
+          label={t("domov.novaFaktura")}
+          hint={t("domov.novaFakturaPopis")}
           variant="primary"
           onClick={onNovaFaktura}
         />
         <VelkeTlacidlo
           icon={FileText}
-          label="Vystavené faktúry"
-          hint="Kto ešte nezaplatil, PDF a odoslanie"
+          label={t("domov.vystaveneFaktury")}
+          hint={t("domov.vystaveneFakturyPopis")}
           onClick={onFaktury}
         />
 
-        <Skupina nazov="Skenovanie dokladov" />
+        <Skupina nazov={t("domov.skupina.skenovanie")} />
         <VelkeTlacidlo
           icon={QrCode}
-          label="Bloček s QR kódom"
-          hint="Načíta sa z Finančnej správy aj s položkami"
+          label={t("domov.blocek")}
+          hint={t("domov.blocekPopis")}
           onClick={() => onZachyt("blocek")}
         />
         <VelkeTlacidlo
           icon={FileText}
-          label="Faktúra v PDF"
-          hint="Vyberte súbor z telefónu alebo z cloudu"
+          label={t("domov.fakturaPdf")}
+          hint={t("domov.fakturaPdfPopis")}
           onClick={() => onZachyt("pdf")}
         />
         <VelkeTlacidlo
           icon={Files}
-          label="Viacstranový doklad"
-          hint="Strana po strane, uloží sa ako jedno PDF"
+          label={t("domov.viacstranovy")}
+          hint={t("domov.viacstranovyPopis")}
           onClick={() => onZachyt("strany")}
         />
         <VelkeTlacidlo
           icon={Receipt}
-          label="Prijaté doklady"
-          hint="Bločky a faktúry, ktoré ste už naskenovali"
+          label={t("domov.prijateDoklady")}
+          hint={t("domov.prijateDokladyPopis")}
           onClick={onDoklady}
         />
 
-        <Skupina nazov="Banka" />
+        <Skupina nazov={t("domov.skupina.banka")} />
         <VelkeTlacidlo
           icon={Landmark}
-          label="Pohyby na účte"
-          hint="Či prišli peniaze — zostatok a posledné platby"
+          label={t("domov.pohybyNaUcte")}
+          hint={t("domov.pohybyNaUctePopis")}
           onClick={onBanka}
         />
 
-        <Skupina nazov="Kniha jázd" />
+        <Skupina nazov={t("domov.skupina.jazdy")} />
         <VelkeTlacidlo
           icon={Car}
-          label="Nová jazda"
-          hint="Kilometre odmeria telefón, stačí štart a stop"
+          label={t("domov.novaJazda")}
+          hint={t("domov.novaJazdaPopis")}
           onClick={onJazda}
         />
       </main>
