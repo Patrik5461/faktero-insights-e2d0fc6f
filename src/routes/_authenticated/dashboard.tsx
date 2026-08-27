@@ -665,7 +665,7 @@ function Dashboard() {
           <div className="mb-6">
             <Link
               to="/jazdy"
-              className="group flex items-center justify-between rounded-2xl border border-border/60 bg-card p-6 transition-colors hover:bg-muted/30"
+              className="group flex items-center justify-between rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/30"
             >
               <div className="flex items-center gap-4">
                 <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -998,7 +998,7 @@ function KpiKarta({
 
 function EmptyDashboard() {
   return (
-    <div className="rounded-xl border border-border/60 bg-card px-6 py-16 text-center">
+    <div className="rounded-xl border border-border bg-card px-6 py-16 text-center">
       <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10">
         <HandCoins className="h-5 w-5 text-primary" />
       </div>
@@ -1028,8 +1028,11 @@ function Panel({
   className?: string;
 }) {
   return (
-    <div className={`rounded-2xl border border-border/60 bg-card p-6 ${className ?? ""}`}>
-      <div className="mb-4 flex items-center gap-2">
+    /* Rovnaký jazyk ako KPI karty: 1px rám v plnej farbe, `rounded-xl` a 16
+       bodov vnútri. Predtým 24 — pri dvoch kartách vedľa seba to na notebooku
+       ubralo z obsahu celý stĺpec. */
+    <div className={`rounded-xl border border-border bg-card p-4 ${className ?? ""}`}>
+      <div className="mb-3 flex items-center gap-2">
         {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
         <h2 className="text-sm font-medium">{title}</h2>
       </div>
