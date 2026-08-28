@@ -1,5 +1,19 @@
 apply plugin: 'com.android.application'
 
+/*
+  Podpisovanie pre Play Console.
+
+  Kľúč je zámerne mimo repozitára (`/home/patrik/android-keys`): keby raz
+  unikol repozitár, nesmie s ním uniknúť aj možnosť vydať aktualizáciu pod
+  našim menom. Keď súbor s nastavením nie je (iný počítač, CI bez kľúča),
+  podpisovanie sa preskočí a `assembleDebug` funguje ďalej.
+*/
+def suborKluca = file(System.getenv("FAKTERO_KEYSTORE_PROPS") ?: "/home/patrik/android-keys/keystore.properties")
+def kluc = new Properties()
+if (suborKluca.exists()) {
+    suborKluca.withInputStream { kluc.load(it) }
+}
+
 android {
     namespace = "sk.tobify.faktero"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +30,19 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (kluc.containsKey("storeFile")) {
+            release {
+                storeFile file(kluc["storeFile"])
+                storePassword kluc["storePassword"]
+                keyAlias kluc["keyAlias"]
+                keyPassword kluc["keyPassword"]
+            }
+        }
+    }
     buildTypes {
         release {
+            if (kluc.containsKey("storeFile")) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

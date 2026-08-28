@@ -38,4 +38,12 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      Skener bločkov a čítanie QR kódov. Plugin na čítanie kódov si povolenie
+      sám nedeklaruje — očakáva, že si ho appka vypýta. Bez tohto riadku sa
+      skener na Androide neotvorí a chyba sa prejaví až v ruke používateľa.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 </manifest>

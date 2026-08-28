@@ -1,0 +1,18 @@
+<lint-module
+    format="1"
+    dir="/home/patrik/faktero-invoice-hub/node_modules/@faktero/drive-detector/android"
+    name=":faktero-drive-detector"
+    type="LIBRARY"
+    maven="android:faktero-drive-detector:unspecified"
+    agpVersion="8.13.0"
+    buildFolder="build"
+    bootClassPath="/home/patrik/android-sdk/platforms/android-36/android.jar:/home/patrik/android-sdk/build-tools/35.0.0/core-lambda-stubs.jar"
+    javaSourceLevel="21"
+    compileTarget="android-36"
+    neverShrinking="true">
+  <lintOptions
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="release"/>
+</lint-module>
