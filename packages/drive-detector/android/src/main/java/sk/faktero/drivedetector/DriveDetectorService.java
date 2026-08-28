@@ -129,9 +129,7 @@ public class DriveDetectorService extends Service {
         */
         if (!AKCIA_STOP.equals(akcia)) {
             if (!mamePolohu() || !doPopredia()) {
-                zastavPresnuPolohu();
-                zastavLacnuPolohu();
-                stopSelf();
+                skonciBezpecne();
                 return START_NOT_STICKY;
             }
         }
@@ -422,6 +420,33 @@ public class DriveDetectorService extends Service {
     }
 
     // ── Popredie ───────────────────────────────────────────────────────────
+
+    /**
+     * Zastaví službu tak, aby to systém neoznačil za porušený sľub.
+     *
+     * Službu spúšťame ako službu v popredí, čím sa appka zaviaže ohlásiť sa
+     * do piatich sekúnd notifikáciou. Keď sa medzitým ukáže, že merať sa
+     * nedá, samotné `stopSelf()` nestačí — na časti zariadení systém sľub
+     * vymáha a aplikáciu zabije. Ohlásime sa teda ako krátka služba (tá
+     * povolenie nepotrebuje) a hneď skončíme.
+     */
+    private void skonciBezpecne() {
+        zastavPresnuPolohu();
+        zastavLacnuPolohu();
+        if (Build.VERSION.SDK_INT >= 34) {
+            try {
+                ServiceCompat.startForeground(
+                        this,
+                        DriveNotifications.ID_BEH,
+                        DriveNotifications.prubeh(this, "Kniha jázd", "Detekcia je vypnutá."),
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE);
+            } catch (Exception ignored) {
+                // Keď ani to neprejde, nezostáva než skončiť a dúfať.
+            }
+        }
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
+        stopSelf();
+    }
 
     /** `false`, keď sa službu do popredia dostať nepodarilo. */
     private boolean doPopredia() {

@@ -24,10 +24,17 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application>
+        <!--
+          `shortService` je únikový východ. Keď sa služba spustí a zistí, že
+          polohu povolenú nemá, musí sa aj tak ohlásiť ako služba v popredí —
+          inak ju systém do piatich sekúnd zabije aj s aplikáciou. Krátka
+          služba nepotrebuje žiadne povolenie, takže sa ohlásiť dá vždy a
+          hneď nato sa zastaví.
+        -->
         <service
             android:name="sk.faktero.drivedetector.DriveDetectorService"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="location|shortService" />
 
         <!-- Tri tlačidlá v notifikácii. Musia fungovať, aj keď appka nebeží. -->
         <receiver

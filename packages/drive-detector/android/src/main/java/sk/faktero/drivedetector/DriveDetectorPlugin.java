@@ -72,6 +72,28 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
     public void load() {
         store = new TripStore(getContext());
         DriveDetectorService.nastavPoslucháča(this);
+        // Pád si appka zapamätá, aby ho vedela ukázať po ďalšom otvorení.
+        PadAppky.sleduj(getContext());
+    }
+
+    /**
+     * Posledný pád aplikácie pre obrazovku Diagnostika.
+     *
+     * „Aplikácia sa opakovane zastavuje" je bez výpisu neriešiteľné —
+     * systémový log ostane v telefóne a k nám sa nedostane.
+     */
+    @PluginMethod
+    public void getLastCrash(PluginCall call) {
+        String text = PadAppky.posledny(getContext());
+        JSObject von = new JSObject();
+        von.put("crash", text == null ? JSObject.NULL : text);
+        call.resolve(von);
+    }
+
+    @PluginMethod
+    public void clearLastCrash(PluginCall call) {
+        PadAppky.zabudni(getContext());
+        call.resolve();
     }
 
     // ── Nastavenia a beh ───────────────────────────────────────────────────

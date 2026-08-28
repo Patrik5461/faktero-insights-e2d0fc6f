@@ -229,6 +229,12 @@ export interface DriveDetectorPlugin {
    * vedie cez nastavenia.
    */
   openAppSettings?(): Promise<void>;
+  /**
+   * Posledný pád aplikácie. **Len Android** — bez neho je hláška „aplikácia sa
+   * opakovane zastavuje" neriešiteľná: výpis ostane v systémovom logu telefónu.
+   */
+  getLastCrash?(): Promise<{ crash: string | null }>;
+  clearLastCrash?(): Promise<void>;
 
   addListener(
     eventName: "driveDetected",

@@ -354,6 +354,24 @@ async function zisti(): Promise<Riadok[]> {
     r.push({ co: "notifikácie", hodnota: String(e?.message ?? e), zle: true });
   }
 
+  /*
+    Posledný pád aplikácie.
+
+    „Aplikácia sa opakovane zastavuje" nezanechá nič, čo by sa dalo poslať —
+    výpis ostane v systémovom logu telefónu a bez počítača sa k nemu nedá
+    dostať. Odteraz si ho appka zapamätá a pošle sa spolu s diagnostikou.
+  */
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("DriveDetector")) {
+      const { DriveDetector } = await import("@faktero/drive-detector");
+      const pad = await DriveDetector.getLastCrash?.();
+      if (pad?.crash) r.push({ co: "posledný pád aplikácie", hodnota: pad.crash, zle: true });
+    }
+  } catch {
+    /* staršia binárka pády nezaznamenáva */
+  }
+
   // Prihlásenie — a hlavne či sa naň vôbec dá spýtať.
   try {
     const odpoved = await Promise.race([
@@ -431,9 +449,7 @@ export function Diagnostika({ onSpat }: { onSpat: () => void }) {
         ) : (
           riadky.map((r) => (
             <div key={r.co} className="rounded-app-sm border border-app-ramik p-3">
-              <div className="text-[12px] uppercase tracking-wide text-app-text-2">
-                {r.co}
-              </div>
+              <div className="text-[12px] uppercase tracking-wide text-app-text-2">{r.co}</div>
               <div className={`text-[15px] ${r.zle ? "text-app-chyba" : ""}`}>{r.hodnota}</div>
             </div>
           ))

@@ -93,4 +93,12 @@ export class DriveDetectorWeb extends WebPlugin implements NativeDriveDetectorPl
   async openAppSettings(): Promise<void> {
     throw this.unimplemented("Detekcia jazdy je dostupná len v mobilnej aplikácii.");
   }
+
+  async getLastCrash(): Promise<{ crash: string | null }> {
+    return { crash: null };
+  }
+
+  async clearLastCrash(): Promise<void> {
+    // Na webe niet čoho zabudnúť.
+  }
 }
