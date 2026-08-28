@@ -40,6 +40,25 @@ android {
             }
         }
     }
+    /*
+      Skúšobný balík staviame len pre arm64.
+
+      Štyri architektúry naraz znamenajú štyri kópie knižníc skenera — 15 MB
+      navyše, ktoré na telefóne nikto nepoužije. Veľký súbor sa navyše cez
+      prehliadač dosťahuje horšie a inštalátor potom hlási „problém pri
+      analýze balíka", čo znie ako pokazená appka, hoci je len nedosťahovaná.
+
+      Do Play Console ide `bundleRelease` — ten si architektúry rieši sám a
+      toto nastavenie sa ho netýka.
+    */
+    splits {
+        abi {
+            enable true
+            reset()
+            include "arm64-v8a"
+            universalApk false
+        }
+    }
     buildTypes {
         release {
             if (kluc.containsKey("storeFile")) signingConfig signingConfigs.release

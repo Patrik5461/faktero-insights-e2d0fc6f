@@ -15,6 +15,10 @@ export async function initNativePlatform(): Promise<void> {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return;
 
+    // Pád z minulého behu. Musí odísť sám: keď sa appka po štarte hneď
+    // zloží, nikto sa do Diagnostiky nedostane a výpis by ostal v telefóne.
+    void posliPadZMinula();
+
     /*
      * Status bar — pás pod hodinami musí mať presne farbu hlavičky.
      *
@@ -97,5 +101,35 @@ export async function initNativePlatform(): Promise<void> {
     }
   } catch {
     // capacitor not available (web prod build)
+  }
+}
+
+/**
+ * Pošle výpis pádu z minulého behu a až potom ho zabudne.
+ *
+ * Keď sa odoslať nepodarí (bez signálu, ešte neprihlásený), výpis ostáva
+ * uložený a skúsi sa pri ďalšom otvorení. Stratiť sa nesmie — je to jediná
+ * stopa po hláške „aplikácia sa opakovane zastavuje".
+ */
+async function posliPadZMinula(): Promise<void> {
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor.isPluginAvailable("DriveDetector")) return;
+    const { DriveDetector } = await import("@faktero/drive-detector");
+    const pad = (await DriveDetector.getLastCrash?.())?.crash;
+    if (!pad) return;
+
+    /* Cez alias, nie relatívne: v mobilnom builde sa tak vezme most cez
+       endpointy. Relatívna cesta by do balíčka vtiahla serverové funkcie. */
+    const { volajOperaciu } = await import("@/lib/mobile/server-most-volanie");
+    await volajOperaciu("spatna-vazba", {
+      kind: "chyba",
+      message: `Pád aplikácie:\n\n${pad}`.slice(0, 4000),
+      url: "app://pad",
+      user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 400) : undefined,
+    });
+    await DriveDetector.clearLastCrash?.();
+  } catch {
+    /* skúsi sa nabudúce */
   }
 }
