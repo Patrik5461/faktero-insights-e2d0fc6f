@@ -53,3 +53,7 @@ ios-jazdy/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/*
 !ios-jazdy/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 packages/drive-detector/.swiftpm/
 **/xcuserdata/
+
+# Výstupy Gradle. Do repozitára sa raz nedopatrením dostali — sú to medzivýsledky
+# prekladu, ktoré sa menia po každom builde a pri každom `git status` len šumia.
+packages/drive-detector/android/build/

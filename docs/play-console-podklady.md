@@ -213,6 +213,44 @@ uzatvára na www.faktero.sk, nie v aplikácii.
 
 ## 8. Samostatná Kniha jázd
 
-Keď bude Faktero v obchode, druhá appka je to isté ešte raz: vlastný
-`applicationId` (`sk.tobify.knihajazd`), vlastný záznam v Play Console, vlastná
-ikona a **vlastné obhájenie polohy na pozadí** — to sa z prvej appky neprenáša.
+Druhá appka je postavená vedľa (`android-jazdy/`, `applicationId`
+`sk.tobify.knihajazd`, názov **Kniha jázd**). Stavia sa rovnako, len z iného
+priečinka:
+
+```bash
+npm run build:jazdy                       # dist-jazdy + cap sync android
+cd android-jazdy
+./gradlew :app:assembleDebug              # APK na skúšku
+./gradlew :app:bundleRelease              # podpísaný .aab
+```
+
+Podpisuje sa **tým istým kľúčom** ako Faktero — jedno vývojárske konto, dve
+appky. Ikona je vlastná (asfaltová sivá s trasou, `public/kniha-jazd-icon.png`,
+do obchodu `public/play-store-icon-jazdy.png`); prekresliť sa dá cez
+`node scripts/kniha-jazd-ikona.mjs` a rozsypať do projektu cez
+`CAPACITOR_APP=jazdy node scripts/android-ikony.mjs`.
+
+Balík má **9 MB namiesto 36** — `includePlugins` v `capacitor.config.jazdy.ts`
+z neho vynecháva skener a fotoaparát, ktoré kniha jázd nepoužíva. Preto tu
+nie je ani povolenie `CAMERA`; v Play Console sa teda **nevypĺňa** nič o
+fotoaparáte.
+
+Čo sa **neprenáša** z Fakterovho záznamu a treba spraviť odznova:
+
+| Vec | Poznámka |
+| --- | --- |
+| Záznam v Play Console | vlastný, vrátane popisu a snímok |
+| Obhájenie polohy na pozadí | vlastný formulár **aj vlastné video** — text nižšie |
+| Dotazník o bezpečnosti údajov | to isté ako Faktero, len bez fotografií a faktúr |
+| Vekové hodnotenie | znova od začiatku |
+
+### Krátky popis (80 znakov)
+
+```
+Kniha jázd, ktorá sa zapíše sama — bez papiera a bez zabúdania.
+```
+
+### Text na obhájenie polohy
+
+Ten istý ako v časti 4, len bez zmienky o fakturácii: appka je **len** kniha
+jázd, takže polohu na pozadí potrebuje o to zjavnejšie — bez nej nerobí nič.

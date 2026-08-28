@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kniha jázd</string>
+    <string name="title_activity_main">Kniha jázd</string>
+    <string name="package_name">sk.tobify.knihajazd</string>
+    <string name="custom_url_scheme">sk.tobify.knihajazd</string>
+</resources>

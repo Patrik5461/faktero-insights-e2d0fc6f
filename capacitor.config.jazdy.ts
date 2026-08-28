@@ -11,6 +11,26 @@ const config: CapacitorConfig = {
   appId: "sk.tobify.knihajazd",
   appName: "Kniha jázd",
   webDir: "dist-jazdy",
+  /*
+    Kniha jázd nefotí doklady ani nečíta QR kódy, takže si skener a fotoaparát
+    ani nepribalí. Bez tohto zoznamu si Capacitor vezme všetky pluginy z
+    package.json — appka by narástla o ML Kit a pýtala by si prístup k
+    fotoaparátu, ktorý nikdy nepoužije.
+  */
+  includePlugins: [
+    "@aparajita/capacitor-biometric-auth",
+    "@aparajita/capacitor-secure-storage",
+    "@capacitor/app",
+    "@capacitor/filesystem",
+    "@capacitor/keyboard",
+    "@capacitor/network",
+    "@capacitor/preferences",
+    "@capacitor/push-notifications",
+    "@capacitor/share",
+    "@capacitor/splash-screen",
+    "@capacitor/status-bar",
+    "@faktero/drive-detector",
+  ],
   server: {
     androidScheme: "https",
   },
@@ -25,13 +45,15 @@ const config: CapacitorConfig = {
     scrollEnabled: true,
   },
   android: {
+    // To isté, čo `ios.path` vyššie: vlastný natívny projekt vedľa Fakterovho.
+    path: "android-jazdy",
     allowMixedContent: false,
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,
       launchAutoHide: false,
-      backgroundColor: "#007e46",
+      backgroundColor: "#1f2a33",
       androidSplashResourceName: "splash",
       showSpinner: false,
     },
