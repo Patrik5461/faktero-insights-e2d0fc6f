@@ -1,6 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
+import knihaJazd from "./capacitor.config.jazdy";
 
-const config: CapacitorConfig = {
+const faktero: CapacitorConfig = {
   appId: "sk.tobify.faktero",
   appName: "Faktero",
   // Appka má rozhranie v sebe (build z `vite.config.mobile.ts`), takže sa otvorí
@@ -46,4 +47,12 @@ const config: CapacitorConfig = {
   },
 };
 
-export default config;
+/**
+ * Dve appky, jeden repozitár.
+ *
+ * Capacitor CLI číta vždy len tento súbor — vlastný `--config` nemá. Voľbu
+ * appky preto nesie premenná prostredia: `CAPACITOR_APP=jazdy npx cap sync`
+ * pracuje s Knihou jázd a jej projektom v `ios-jazdy`. Bez premennej je to
+ * Faktero, takže doterajšie príkazy robia presne to, čo robili.
+ */
+export default process.env.CAPACITOR_APP === "jazdy" ? knihaJazd : faktero;

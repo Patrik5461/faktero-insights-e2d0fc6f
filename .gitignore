@@ -45,9 +45,11 @@ dist-jazdy
 # Vzniká pri každom otvorení projektu a do repozitára nepatrí; bez tohto sa
 # objavuje ako neznáme súbory a mätie pri `git status`.
 ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/*
+ios-jazdy/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/*
 # Package.resolved je výnimka — Xcode Cloud stavia s vypnutým riešením balíkov
 # a bez tohto zoznamu odmietne začať. Na CI si ho vyrába ci_post_clone.sh sám;
 # keby to raz prestalo stačiť, dá sa commitnúť z Macu.
 !ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+!ios-jazdy/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 packages/drive-detector/.swiftpm/
 **/xcuserdata/

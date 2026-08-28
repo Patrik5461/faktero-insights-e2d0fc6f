@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CAPACITOR_DEBUG</key>
+	<string>$(CAPACITOR_DEBUG)</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+        <string>Kniha jázd</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+    <false/>
+    <key>UISceneConfigurations</key>
+    <dict>
+      <key>UIWindowSceneSessionRoleApplication</key>
+      <array>
+        <dict>
+            <key>UISceneConfigurationName</key>
+            <string>Default Configuration</string>
+            <key>UISceneDelegateClassName</key>
+            <string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+            <key>UISceneStoryboardFile</key>
+            <string>Main</string>
+        </dict>
+      </array>
+    </dict>
+	</dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Face ID použijeme na rýchle odomknutie aplikácie bez zadávania hesla.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Polohu potrebujeme na odmeranie kilometrov jazdy do knihy jázd.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Aby sa jazda zapísala aj vtedy, keď máte telefón vo vrecku, potrebujeme polohu aj na pozadí. Presnú polohu zapíname len počas jazdy autom.</string>
+	<!-- Bez tohto kľúča sa `requestTemporaryFullAccuracyAuthorization` ticho
+	     odmietne a appka nemá ako o presnú polohu požiadať. Kľúč `KnihaJazd`
+	     musí sedieť s tým, ktorý posiela plugin. -->
+	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
+	<dict>
+		<key>KnihaJazd</key>
+		<string>So zníženou presnosťou vieme len približnú oblasť, nie trasu. Kilometre do knihy jázd by boli mimo o stovky metrov.</string>
+	</dict>
+	<key>NSMotionUsageDescription</key>
+	<string>Pohybové senzory nám pomôžu rozoznať jazdu autom od chôdze, aby sme nezaznamenávali cesty, ktoré do knihy jázd nepatria.</string>
+	<!-- Fotoaparát, fotky ani tichý push tu zámerne nie sú: táto appka
+	     neskenuje doklady a notifikácie zo servera nedostáva. Povolenie, ktoré
+	     appka nepoužíva, musí pri posudzovaní niekto obhájiť. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+</dict>
+</plist>

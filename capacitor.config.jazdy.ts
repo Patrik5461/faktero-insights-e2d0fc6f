@@ -15,6 +15,9 @@ const config: CapacitorConfig = {
     androidScheme: "https",
   },
   ios: {
+    // Vlastný natívny projekt vedľa toho Fakterovho. Bez tohto by si obe appky
+    // prepisovali ten istý priečinok `ios/`.
+    path: "ios-jazdy",
     // Bez `never` si WebView pridá vlastné odsadenie a bije sa s odsadením
     // pre výrez, ktoré si stránka rieši sama cez `env(safe-area-inset-*)`.
     contentInset: "never",
