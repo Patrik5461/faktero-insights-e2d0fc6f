@@ -51,4 +51,9 @@ dependencies {
     // pozadí neporovnateľne horšiu spotrebu.
     implementation "com.google.android.gms:play-services-location:21.3.0"
     testImplementation "junit:junit:$junitVersion"
+    // `org.json` je v android.jar len ako prázdna náhrada, ktorá z každej
+    // metódy vyhodí výnimku. Skutočná knižnica dovolí otestovať aj prevod
+    // časov na mostíku — teda presne to miesto, kde sa raz sekundy poslali
+    // ako milisekundy a jazdy skončili v roku 1970.
+    testImplementation "org.json:json:20250107"
 }

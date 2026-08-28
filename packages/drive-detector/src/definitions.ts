@@ -77,6 +77,13 @@ export interface DriveDetectorPermissions {
   /** Pohybové senzory — len pomocné potvrdenie, detekcia beží aj bez nich. */
   motion: PermissionState;
   /**
+   * Notifikácie. Bez nich sa nezobrazí otázka „bola táto jazda služobná?" —
+   * jazda sa zmeria a uloží, ale človek sa o nej dozvie až v aplikácii.
+   * Android si o ne pýta pri zapnutí detekcie; iOS ich rieši spolu s push
+   * notifikáciami, takže tam kľúč chýba.
+   */
+  notifications?: PermissionState;
+  /**
    * Presná poloha (iOS „Precise Location"). Pri zníženej presnosti chodia
    * merania s odchýlkou v kilometroch a bez rýchlosti — detekcia z nich
    * nerozpozná nikdy nič. Chýba v starších binárkach.

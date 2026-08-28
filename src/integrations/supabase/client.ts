@@ -28,8 +28,23 @@ function bezpecneUlozisko(): Storage | undefined {
   }
 }
 
-function jeVlastnaSchema(): boolean {
+/**
+ * Beží stránka v zabalenej appke?
+ *
+ * Pozeralo sa to podľa schémy — všetko okrem `http(s)` je appka. Na iOS to
+ * sedí (`capacitor://localhost`), **na Androide nie**: ten servíruje appku
+ * cez `https://localhost`, takže sa tvárila ako web. Prihlásenie potom
+ * skončilo v prehliadačovom úložisku, ktoré zatvorenie appky neprežije —
+ * a človek sa po každom reštarte prihlasoval odznova.
+ *
+ * Rozhoduje preto Capacitor sám. Globálny objekt je vo WebView k dispozícii
+ * hneď, ešte pred prvým `await`, a na webe jednoducho nie je.
+ */
+function jeVTelefone(): boolean {
   if (typeof window === "undefined") return false;
+  const cap = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  if (cap?.isNativePlatform?.()) return true;
+  // Staršie balíčky bez `window.Capacitor` — vlastná schéma je vtedy istá stopa.
   return !/^https?:$/.test(window.location.protocol);
 }
 
@@ -44,7 +59,7 @@ function jeVlastnaSchema(): boolean {
  * Na webe ostáva `localStorage`; tam je v poriadku a natívne neexistuje.
  */
 function ulozisko() {
-  if (!jeVlastnaSchema()) return bezpecneUlozisko();
+  if (!jeVTelefone()) return bezpecneUlozisko();
   try {
     // Načítava sa staticky, aby bolo k dispozícii hneď pri vzniku klienta —
     // Supabase si úložisko pýta ešte pred prvým `await`.
@@ -113,7 +128,7 @@ function createSupabaseClient() {
       storage: ulozisko(),
       persistSession: true,
       autoRefreshToken: true,
-      lock: jeVlastnaSchema() ? processLock : zamokSoStropom,
+      lock: jeVTelefone() ? processLock : zamokSoStropom,
     },
   });
 }

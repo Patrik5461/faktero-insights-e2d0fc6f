@@ -45,6 +45,14 @@ import sk.faktero.drivedetector.core.Classification;
                 }),
                 @Permission(alias = "motion", strings = {
                         "android.permission.ACTIVITY_RECOGNITION"
+                }),
+                /*
+                  Od Androidu 13 sa musí pýtať aj o notifikácie. Bez nich
+                  nepríde otázka „bola táto jazda služobná?" — meranie beží,
+                  ale človek o hotovej jazde nemá ako vedieť.
+                */
+                @Permission(alias = "notifications", strings = {
+                        "android.permission.POST_NOTIFICATIONS"
                 })
         })
 public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.Poslucháč {
@@ -68,14 +76,51 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
         call.resolve();
     }
 
+    /**
+     * Zapne meranie a cestou dopýta, čo Android pýtať musí.
+     *
+     * iOS si o notifikácie povie sám vo chvíli, keď sa detekcia spúšťa;
+     * Android to spraviť nemôže — o povolenie smie požiadať len obrazovka,
+     * nie služba na pozadí. Preto sa pýta tu, po jednom, a odmietnutie
+     * meranie nezablokuje: bez notifikácií sa jazda zapíše tiež, len sa
+     * appka na jej zaradenie spýta až pri najbližšom otvorení.
+     */
     @PluginMethod
     public void start(PluginCall call) {
         if (!mameFinePolohu()) {
             call.reject("Bez povolenej polohy sa detekcia spustiť nedá.");
             return;
         }
+        if (chybaNotifikacia()) {
+            requestPermissionForAlias("notifications", call, "poNotifikaciach");
+            return;
+        }
+        poNotifikaciach(call);
+    }
+
+    @PermissionCallback
+    private void poNotifikaciach(PluginCall call) {
+        if (chybaPohyb()) {
+            requestPermissionForAlias("motion", call, "poPohybe");
+            return;
+        }
+        poPohybe(call);
+    }
+
+    @PermissionCallback
+    private void poPohybe(PluginCall call) {
         posliSluzbe(DriveDetectorService.AKCIA_START);
         call.resolve();
+    }
+
+    private boolean chybaNotifikacia() {
+        return Build.VERSION.SDK_INT >= 33
+                && !"granted".equals(stav("android.permission.POST_NOTIFICATIONS"));
+    }
+
+    private boolean chybaPohyb() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                && !"granted".equals(stav("android.permission.ACTIVITY_RECOGNITION"));
     }
 
     @PluginMethod
@@ -89,7 +134,7 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
         JSObject von = new JSObject();
         von.put("monitoring", store.jeMonitoring());
         BufferedTrip aktivna = store.nacitajAktivnu();
-        von.put("activeTrip", aktivna == null ? JSObject.NULL : naJs(TripStore.doJson(aktivna)));
+        von.put("activeTrip", aktivna == null ? JSObject.NULL : naJs(JsPrevod.jazda(aktivna)));
         von.put("diagnostika", diagnostika());
         call.resolve(von);
     }
@@ -108,7 +153,7 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
     @PluginMethod
     public void getUnresolvedTrips(PluginCall call) {
         JSArray pole = new JSArray();
-        for (BufferedTrip t : store.nacitajNevyriesene()) pole.put(TripStore.doJson(t));
+        for (BufferedTrip t : store.nacitajNevyriesene()) pole.put(JsPrevod.jazda(t));
         JSObject von = new JSObject();
         von.put("trips", pole);
         call.resolve(von);
@@ -143,13 +188,13 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
         BufferedTrip aktivna = store.nacitajAktivnu();
         if (aktivna != null && aktivna.id.equals(id)) {
             aktivna.classification = trieda;
-            call.resolve(naJs(TripStore.doJson(aktivna)));
+            call.resolve(naJs(JsPrevod.jazda(aktivna)));
             return;
         }
         for (BufferedTrip t : store.nacitajNevyriesene()) {
             if (!t.id.equals(id)) continue;
             t.classification = trieda;
-            call.resolve(naJs(TripStore.doJson(t)));
+            call.resolve(naJs(JsPrevod.jazda(t)));
             return;
         }
         call.reject("Jazda sa nenašla.");
@@ -233,6 +278,9 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
                 : "granted");
         // „Presná poloha" je na Androide samostatné povolenie od verzie 12.
         von.put("precise", stav(Manifest.permission.ACCESS_FINE_LOCATION));
+        von.put("notifications", Build.VERSION.SDK_INT >= 33
+                ? stav("android.permission.POST_NOTIFICATIONS")
+                : "granted");
         // Obnovovanie na pozadí Android nepozná; úsporný režim ale prácu na
         // pozadí obmedzuje rovnako účinne, takže ho hlásime.
         PowerManager pm = ContextCompat.getSystemService(getContext(), PowerManager.class);
@@ -257,18 +305,18 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
     public void naJazduRozpoznanu(BufferedTrip trip) {
         JSObject e = new JSObject();
         e.put("tripId", trip.id);
-        e.put("startedAt", trip.startedAt);
+        e.put("startedAt", JsPrevod.milis(trip.startedAt));
         notifyListeners("driveDetected", e);
     }
 
     @Override
     public void naZmenuJazdy(BufferedTrip trip) {
-        notifyListeners("tripUpdated", naJs(TripStore.doJson(trip)));
+        notifyListeners("tripUpdated", naJs(JsPrevod.jazda(trip)));
     }
 
     @Override
     public void naKoniecJazdy(BufferedTrip trip) {
-        notifyListeners("tripEnded", naJs(TripStore.doJson(trip)));
+        notifyListeners("tripEnded", naJs(JsPrevod.jazda(trip)));
     }
 
     // ── Pomocné ────────────────────────────────────────────────────────────
@@ -292,7 +340,7 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
                     call.reject("Jazdu sa nepodarilo spustiť.");
                     return;
                 }
-                call.resolve(naJs(TripStore.doJson(t)));
+                call.resolve(naJs(JsPrevod.jazda(t)));
             } else {
                 List<BufferedTrip> zoznam = store.nacitajNevyriesene();
                 call.resolve(zabal(zoznam.isEmpty() ? null : zoznam.get(zoznam.size() - 1)));
@@ -316,13 +364,13 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
     /** `null` sa cez mostík posiela ako objekt s `trip: null`, nie ako prázdno. */
     private JSObject zabal(BufferedTrip t) {
         JSObject von = new JSObject();
-        von.put("trip", t == null ? JSObject.NULL : naJs(TripStore.doJson(t)));
+        von.put("trip", t == null ? JSObject.NULL : naJs(JsPrevod.jazda(t)));
         return von;
     }
 
     private JSObject diagnostika() {
         JSONObject d = store.nacitajDiagnostiku();
-        JSObject von = naJs(d);
+        JSObject von = naJs(JsPrevod.dennik(d));
         BufferedTrip aktivna = store.nacitajAktivnu();
         von.put("stav", aktivna != null ? "jazdi" : (store.jeMonitoring() ? "caka" : "caka"));
         von.put("sekundyNadPrahom", d.optDouble("sekundyNadPrahom", 0));
