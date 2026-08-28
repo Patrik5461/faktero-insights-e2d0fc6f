@@ -8,7 +8,6 @@ import {
   stavPovoleniJazd,
   type ChybajucePovolenie,
 } from "@/lib/mobile/povolenia-jazd";
-import { stavDetekcie } from "@/lib/mobile/auto-jazdy-sync";
 
 /**
  * Okno, ktoré si na Androide vypýta povolenia pre knihu jázd.
@@ -19,14 +18,18 @@ import { stavDetekcie } from "@/lib/mobile/auto-jazdy-sync";
  * sebou.
  *
  * Zobrazí sa len vtedy, keď naozaj niečo chýba, a len na Androide — na iOS
- * si povolenia pýta appka v inom poradí a v iných chvíľach.
+ * si povolenia pýta appka v inom poradí a v iných chvíľach. Pýta sa v oboch
+ * appkách hneď po prihlásení, nielen v Knihe jázd: kto si kúpil fakturáciu
+ * s knihou jázd, ten ju zvyčajne aj chce, a povolenie vypýtané mesiac po
+ * inštalácii znamená mesiac nezapísaných jázd. Kto o ňu nestojí, klepne na
+ * „Neskôr".
  */
 
 /** Odloženie platí do zatvorenia appky. Bez povolení kniha jázd nerobí nič,
  *  takže sa pri ďalšom otvorení spýta znova. */
 let odlozene = false;
 
-export function PovoleniaJazd({ lenKedZapnuta = false }: { lenKedZapnuta?: boolean }) {
+export function PovoleniaJazd() {
   const { t } = usePreklad();
   const [chyba, setChyba] = useState<ChybajucePovolenie[] | null>(null);
   const [pracujem, setPracujem] = useState(false);
@@ -35,16 +38,13 @@ export function PovoleniaJazd({ lenKedZapnuta = false }: { lenKedZapnuta?: boole
     let zive = true;
     void (async () => {
       if (odlozene) return;
-      // Vo Fakteri sa pýta len ten, kto detekciu naozaj zapol — fakturačná
-      // appka nemá pri štarte pýtať polohu nikomu inému.
-      if (lenKedZapnuta && !(await stavDetekcie()).zapnuta) return;
       const chybajuce = await stavPovoleniJazd();
       if (zive && chybajuce?.length) setChyba(chybajuce);
     })();
     return () => {
       zive = false;
     };
-  }, [lenKedZapnuta]);
+  }, []);
 
   if (!chyba?.length) return null;
 

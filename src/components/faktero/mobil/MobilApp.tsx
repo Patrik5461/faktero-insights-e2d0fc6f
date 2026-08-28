@@ -1136,12 +1136,8 @@ function SoSpodnouListou({
       }
     >
       {children}
-      {/*
-        Povolenia pre knihu jázd. Vo fakturačnej appke sa okno ukáže len tomu,
-        kto detekciu naozaj zapol — pýtať polohu pri štarte každému, kto si
-        prišiel vystaviť faktúru, by bolo bezočivé.
-      */}
-      <PovoleniaJazd lenKedZapnuta />
+      {/* Povolenia pre knihu jázd — pýtajú sa hneď, rovnako ako v Knihe jázd. */}
+      <PovoleniaJazd />
       <TabBar aktivna={aktivna} onPrepni={onPrepni} onVytvorit={onVytvorit} />
     </div>
   );
