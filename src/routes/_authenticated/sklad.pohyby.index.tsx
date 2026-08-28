@@ -210,12 +210,17 @@ function MovementsPage() {
             <div className="relative">
               <button
                 onClick={() => setExportOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={exportOpen}
                 className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-secondary"
               >
                 <Download className="h-4 w-4" /> Export pohybov <ChevronDown className="h-3 w-3" />
               </button>
               {exportOpen && (
-                <div className="absolute right-0 z-20 mt-1 w-44 rounded-md border border-border bg-popover p-1 shadow-md">
+                <div
+                  role="menu"
+                  className="absolute right-0 z-20 mt-1 w-44 rounded-md border border-border bg-popover p-1 shadow-md"
+                >
                   <button
                     onClick={() => exportMovements("csv")}
                     className="block w-full rounded px-3 py-2 text-left text-sm hover:bg-muted"
@@ -234,12 +239,17 @@ function MovementsPage() {
             <div className="relative">
               <button
                 onClick={() => setNewOpen((o) => !o)}
+                aria-haspopup="menu"
+                aria-expanded={newOpen}
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
                 <Plus className="h-4 w-4" /> Nový pohyb <ChevronDown className="h-3 w-3" />
               </button>
               {newOpen && (
-                <div className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-border bg-popover p-1 shadow-md">
+                <div
+                  role="menu"
+                  className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-border bg-popover p-1 shadow-md"
+                >
                   <Link
                     to="/sklad/prijem"
                     onClick={() => setNewOpen(false)}

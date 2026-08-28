@@ -9,6 +9,7 @@ import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { PLAN_PENDING_KEY } from "@/routes/registracia";
 
 import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
+import { MENY } from "@/lib/faktero/mena";
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({ meta: [{ title: "Nastavenie firmy — Faktero" }] }),
   component: Onboarding,
@@ -160,11 +161,22 @@ function Onboarding() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="IBAN" value={form.iban} onChange={(v) => set("iban", v)} />
-          <Field
-            label="Mena"
-            value={form.default_currency}
-            onChange={(v) => set("default_currency", v)}
-          />
+          {/* Mena firmy sa dedí do dokladov — voľný text by sem pustil kód,
+              ktorý nikto nekontroluje. */}
+          <label className="block">
+            <span className="text-sm font-medium">Mena</span>
+            <select
+              value={form.default_currency}
+              onChange={(e) => set("default_currency", e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {MENY.map((m) => (
+                <option key={m.code} value={m.code}>
+                  {m.flag} {m.code} {m.symbol} — {m.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <button

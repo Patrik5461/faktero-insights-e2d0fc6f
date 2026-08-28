@@ -1,3 +1,4 @@
+import { MENY } from "@/lib/faktero/mena";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -105,7 +106,22 @@ function CompanyPage() {
             )}
           </div>
           <In label="SWIFT/BIC" value={c.swift ?? ""} onChange={f("swift")} />
-          <In label="Mena" value={c.default_currency ?? "EUR"} onChange={f("default_currency")} />
+          {/* Predvolená mena firmy sa dedí do každého nového dokladu, takže
+              práve tu voľný text škodí najviac. */}
+          <label className="block">
+            <span className="text-sm font-medium">Mena</span>
+            <select
+              value={c.default_currency ?? "EUR"}
+              onChange={(e) => f("default_currency")(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {MENY.map((m) => (
+                <option key={m.code} value={m.code}>
+                  {m.flag} {m.code} {m.symbol} — {m.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <div>
             <In
               label="Formát čísla faktúry"

@@ -1,9 +1,14 @@
 /** Shared payment-method codes + Slovak labels (UI, PDF, API). */
+/*
+  Čo sa dá vybrať na doklade. „Online platba (GoPay)" tu zámerne nie je:
+  platby kartou pre zákazníkov firmy sa stiahli (viď `/nastavenia/online-platby`),
+  takže doklad by sľuboval spôsob úhrady, ktorý odberateľ nemá ako použiť.
+  V `LABELS` ostáva — staršie doklady s tou hodnotou sa musia vypísať správne.
+*/
 export const PAYMENT_METHODS = [
   { value: "bank_transfer", label: "Bankový prevod" },
   { value: "card", label: "Karta" },
   { value: "cash", label: "Hotovosť" },
-  { value: "online", label: "Online platba (GoPay)" },
 ] as const;
 
 export type PaymentMethodCode = (typeof PAYMENT_METHODS)[number]["value"];

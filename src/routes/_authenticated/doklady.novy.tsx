@@ -15,6 +15,7 @@ import {
 import { Camera, Loader2, QrCode, Save, Upload as UploadIcon } from "lucide-react";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { MENY } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/doklady/novy")({
   head: () => ({ meta: [{ title: "Nový doklad — Faktero" }] }),
@@ -602,11 +603,25 @@ function NovyDokladPage() {
                 value={form.vat_rate}
                 onChange={(v) => updateForm("vat_rate", v)}
               />
-              <Field
-                label="Mena"
-                value={form.currency}
-                onChange={(v) => updateForm("currency", v)}
-              />
+              {/*
+                Výber, nie voľný text. Neplatný kód meny sa zapíše do databázy
+                a formátovanie súm ho potom dostane rovno odtiaľ — presne tak
+                raz ostal prehľad prázdny.
+              */}
+              <label className="block">
+                <span className="mb-1 block text-xs text-muted-foreground">Mena</span>
+                <select
+                  value={form.currency}
+                  onChange={(e) => updateForm("currency", e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {MENY.map((m) => (
+                    <option key={m.code} value={m.code}>
+                      {m.flag} {m.code} {m.symbol} — {m.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {/* Rozhoduje o stave pokladne: kartou ani prevodom hotovosť neubudne. */}
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">

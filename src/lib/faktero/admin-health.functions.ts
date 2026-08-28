@@ -137,16 +137,53 @@ export const getSystemHealth = createServerFn({ method: "GET" })
       { key: "RESEND_API_KEY", label: "Resend (e-maily)" },
       { key: "RESEND_WEBHOOK_SECRET", label: "Resend webhook (doklady mailom)" },
       { key: "RESEND_INBOUND_API_KEY", label: "Resend čítanie pošty (doklady mailom)" },
-      { key: "GOPAY_GOID", label: "GoPay GoID" },
-      { key: "GOPAY_CLIENT_ID", label: "GoPay Client ID" },
-      { key: "GOPAY_CLIENT_SECRET", label: "GoPay Client Secret" },
       { key: "STRIPE_SECRET_KEY", label: "Stripe" },
-      { key: "TATRABANKA_CLIENT_ID", label: "Tatra banka Client ID" },
-      { key: "TATRABANKA_CLIENT_SECRET", label: "Tatra banka Secret" },
+      /* Mená musia sedieť s tým, čo appka naozaj číta (`tatrabanka.server.ts`).
+         Pod `TATRABANKA_*` tu svietilo „Nenastavené", hoci produkcia bežala. */
+      { key: "TB_CLIENT_ID", label: "Tatra banka Client ID" },
+      { key: "TB_CLIENT_SECRET", label: "Tatra banka Secret" },
       { key: "TESLA_CLIENT_ID", label: "Tesla Client ID" },
       { key: "TESLA_CLIENT_SECRET", label: "Tesla Secret" },
       { key: "FINSTAT_API_KEY", label: "FinStat" },
     ];
+    /*
+      GoPay sa nastavuje v Admin → GoPay a uloží sa do `platform_settings`;
+      premenné prostredia sú až záloha (viď `admin-gopay.functions.ts`).
+      Kontrola, ktorá pozerá len do prostredia, preto hlásila „Nenastavené"
+      aj na správne nastavenej platforme — a devätoro planých varovaní spraví
+      z tejto stránky niečo, na čo sa nikto nepozerá.
+    */
+    try {
+      const { data: nastavenie } = await supabaseAdmin
+        .from("platform_settings")
+        .select("value")
+        .eq("key", "gopay")
+        .maybeSingle();
+      const v = (nastavenie?.value ?? {}) as Record<string, unknown>;
+      const zdroj = (dbPole: unknown, envKluc: string) =>
+        dbPole ? "databáza" : process.env[envKluc] ? "prostredie" : null;
+      for (const [popis, dbPole, envKluc] of [
+        ["GoPay GoID", v.goid, "GOPAY_GOID"],
+        ["GoPay Client ID", v.client_id_enc, "GOPAY_CLIENT_ID"],
+        ["GoPay Client Secret", v.client_secret_enc, "GOPAY_CLIENT_SECRET"],
+      ] as const) {
+        const kde = zdroj(dbPole, envKluc);
+        checks.push({
+          key: `int_${envKluc}`,
+          label: popis,
+          status: kde ? "ok" : "warn",
+          message: kde ? `Nastavené (${kde})` : "Nenastavené",
+        });
+      }
+    } catch {
+      checks.push({
+        key: "int_GOPAY",
+        label: "GoPay",
+        status: "warn",
+        message: "Nastavenie sa nepodarilo prečítať",
+      });
+    }
+
     for (const i of integrations) {
       const raw = process.env[i.key];
       const present = !!raw && raw.trim().length > 0;

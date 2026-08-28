@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { MENY } from "@/lib/faktero/mena";
 export const Route = createFileRoute("/_authenticated/opakovane/$id")({
   head: () => ({ meta: [{ title: "Opakovaná faktúra — Faktero" }] }),
   component: RecurringDetail,
@@ -247,11 +248,17 @@ function RecurringDetail() {
             </label>
             <label className="block">
               <span className="text-sm font-medium">Mena</span>
-              <input
+              <select
                 value={rec.currency}
                 onChange={(e) => setRec({ ...rec, currency: e.target.value })}
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+              >
+                {MENY.map((m) => (
+                  <option key={m.code} value={m.code}>
+                    {m.flag} {m.code} {m.symbol} — {m.name}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 

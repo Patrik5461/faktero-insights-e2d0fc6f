@@ -9,6 +9,7 @@ import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
+import { MENY } from "@/lib/faktero/mena";
 export const Route = createFileRoute("/_authenticated/opakovane/nova")({
   head: () => ({ meta: [{ title: "Nová opakovaná faktúra — Faktero" }] }),
   component: NewRecurring,
@@ -205,11 +206,17 @@ function NewRecurring() {
             </label>
             <label className="block">
               <span className="text-sm font-medium">Mena</span>
-              <input
+              <select
                 value={form.currency}
                 onChange={(e) => setForm({ ...form, currency: e.target.value })}
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+              >
+                {MENY.map((m) => (
+                  <option key={m.code} value={m.code}>
+                    {m.flag} {m.code} {m.symbol} — {m.name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="flex items-center gap-2 sm:col-span-3">
               <input
