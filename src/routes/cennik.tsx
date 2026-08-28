@@ -125,7 +125,13 @@ export const Route = createFileRoute("/cennik")({
   component: CennikPage,
 });
 
-function PlanCard({ p }: { p: (typeof INVOICING_PLANS)[number] }) {
+function PlanCard({
+  p,
+  naVyziadanie,
+}: {
+  p: (typeof INVOICING_PLANS)[number];
+  naVyziadanie?: boolean;
+}) {
   return (
     <div
       className={`rounded-2xl border p-6 ${
@@ -165,14 +171,14 @@ function PlanCard({ p }: { p: (typeof INVOICING_PLANS)[number] }) {
         ))}
       </ul>
       <Link
-        to="/registracia"
+        to={naVyziadanie ? "/kontakt" : "/registracia"}
         className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold ${
           p.featured
             ? "bg-primary text-primary-foreground hover:opacity-90"
             : "border border-border bg-background hover:bg-secondary"
         }`}
       >
-        Vyskúšať zdarma <ArrowRight className="h-4 w-4" />
+        {naVyziadanie ? "Napíšte nám" : "Vyskúšať zdarma"} <ArrowRight className="h-4 w-4" />
       </Link>
     </div>
   );
@@ -283,11 +289,17 @@ function CennikPage() {
             <p className="text-sm text-muted-foreground">
               Jazdy, vozidlá, Commander GPS a Tesla Fleet API.
             </p>
+            {/* V aplikácii sa tieto plány aktivujú na vyžiadanie, nie samoobslužne.
+                Kým to platí, musí to byť vidieť aj tu — inak si človek vyberie plán
+                a zistí to až po registrácii. */}
+            <p className="mt-1 text-sm text-muted-foreground">
+              Tieto plány zatiaľ aktivujeme na vyžiadanie — napíšte nám a zapneme vám ich.
+            </p>
           </div>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           {LOGBOOK_PLANS.map((p) => (
-            <PlanCard key={p.name} p={p} />
+            <PlanCard key={p.name} p={p} naVyziadanie />
           ))}
         </div>
       </section>

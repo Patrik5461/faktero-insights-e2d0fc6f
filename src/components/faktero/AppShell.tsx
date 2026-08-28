@@ -958,6 +958,8 @@ function MobileNav({
  * `/sklad/objednavky` nájde svoj vlastný manuál a nie ten skladový.
  */
 const MANUALY: { prefix: string; to: string }[] = [
+  { prefix: "/nastavenia", to: "/pomoc/nastavenia" },
+  { prefix: "/firma", to: "/pomoc/nastavenia" },
   // Párovanie platieb je bližšie k banke než k vystavovaniu faktúr.
   { prefix: "/faktury/parovanie", to: "/pomoc/banka" },
   { prefix: "/faktury", to: "/pomoc/faktury" },

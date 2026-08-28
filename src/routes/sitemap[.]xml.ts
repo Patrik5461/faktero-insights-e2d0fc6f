@@ -47,16 +47,25 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/kontakt", priority: 0.7 },
           { path: "/funkcie", priority: 0.7 },
           { path: "/objednavka", priority: 0.7 },
-          { path: "/predplatne", priority: 0.6 },
+          /*
+            `/predplatne` tu zámerne nie je: je za prihlásením, takže robot
+            dostane presmerovanie na prihlásenie a zaindexuje prázdno. Ceny
+            patria na `/cennik`, ktorý verejný je.
+          */
+          { path: "/pravne", priority: 0.4 },
           { path: "/pravne/gdpr", priority: 0.4 },
           { path: "/pravne/obchodne-podmienky", priority: 0.4 },
           { path: "/pravne/reklamacny-poriadok", priority: 0.4 },
           { path: "/pravne/opakovane-platby", priority: 0.4 },
           { path: "/pravne/cookies", priority: 0.4 },
+          /* Podmienky brány sú odkazované z platobnej obrazovky — musia sa
+             dať otvoriť aj bez prihlásenia a nájsť vo vyhľadávaní. */
+          { path: "/pravne/gopay-podmienky", priority: 0.4 },
           // Manuály. Sú to verejné stránky s návodmi — bez zápisu tu by ich
           // vyhľadávače našli len náhodou cez odkazy z centra pomoci.
           { path: "/pomoc", priority: 0.7 },
           { path: "/pomoc/faktury", priority: 0.6 },
+          { path: "/pomoc/nastavenia", priority: 0.6 },
           { path: "/pomoc/ai-asistent", priority: 0.6 },
           { path: "/pomoc/ponuky", priority: 0.6 },
           { path: "/pomoc/objednavky", priority: 0.6 },

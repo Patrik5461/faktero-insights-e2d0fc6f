@@ -913,19 +913,21 @@ export const uctovnici: HubContent = {
     {
       slug: "integracie",
       label: "Integrácie",
-      summary: "Pripravujeme prepojenia s ďalšími účtovnými softvérmi.",
+      summary: "Prepojenia s ďalšími účtovnými softvérmi.",
       icon: Plug,
       blocks: [
         {
           type: "lead",
-          text: "Okrem Pohody pracujeme na integráciách s Money S3, Omega a iDoklad.",
+          text: "Okrem Pohody vieme prevziať dáta z Money S3, Omegy, KROSu, iDokladu aj SuperFaktúry — a čokoľvek ďalšie sa dá cez REST API.",
         },
         {
           type: "bullets",
           items: [
-            "Money S3 — pripravujeme",
-            "Omega — pripravujeme",
-            "iDoklad — pripravujeme",
+            "Money S3 (Seyfor) — XML dátový balík MoneyData",
+            "Omega a KROS — CSV alebo XML, vrátane kódovania Windows-1250",
+            "iDoklad — CSV alebo XLSX zo zoznamu faktúr",
+            "SuperFaktúra — ZIP s ISDOC dokladmi",
+            "Pohoda — export XML aj konektor a bankový výpis",
             "Vlastné integrácie cez REST API",
           ],
         },

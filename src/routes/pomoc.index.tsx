@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 import {
+  Settings,
   CreditCard,
   FileText,
   Code2,
@@ -240,6 +241,14 @@ const CATS: Cat[] = [
     skupina: "Účet a vývoj",
   },
   {
+    to: "/pomoc/nastavenia",
+    label: "Nastavenia firmy",
+    desc: "Údaje firmy, číslovanie dokladov, logo a farba na faktúre, e-mailové šablóny.",
+    icon: Settings,
+    available: true,
+    skupina: "Účet a vývoj",
+  },
+  {
     to: "/pomoc/ai-asistent",
     label: "Faktero AI",
     desc: "Otázky nad vlastnými dátami — kto dlží, čo je po splatnosti, čo poslať účtovníčke.",
@@ -261,7 +270,9 @@ function Page() {
   return (
     <MarketingShell>
       <div className="mx-auto max-w-5xl px-4 py-16">
-        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Pomoc</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+          Pomoc
+        </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Centrum pomoci</h1>
         <p className="mt-2 text-muted-foreground max-w-2xl">
           Vyberte si oblasť, s ktorou potrebujete poradiť. Ak hľadáte konkrétnu odpoveď, napíšte nám

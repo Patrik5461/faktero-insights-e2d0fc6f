@@ -81,6 +81,7 @@ import { Route as PomocExportyRouteImport } from './routes/pomoc.exporty'
 import { Route as PomocFakturyRouteImport } from './routes/pomoc.faktury'
 import { Route as PomocFinancovanieRouteImport } from './routes/pomoc.financovanie'
 import { Route as PomocJazdyRouteImport } from './routes/pomoc.jazdy'
+import { Route as PomocNastaveniaRouteImport } from './routes/pomoc.nastavenia'
 import { Route as PomocObjednavkyRouteImport } from './routes/pomoc.objednavky'
 import { Route as PomocObjednavkyDodavatelRouteImport } from './routes/pomoc.objednavky-dodavatel'
 import { Route as PomocOdberateliaRouteImport } from './routes/pomoc.odberatelia'
@@ -620,6 +621,11 @@ const PomocFinancovanieRoute = PomocFinancovanieRouteImport.update({
 const PomocJazdyRoute = PomocJazdyRouteImport.update({
   id: '/pomoc/jazdy',
   path: '/pomoc/jazdy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocNastaveniaRoute = PomocNastaveniaRouteImport.update({
+  id: '/pomoc/nastavenia',
+  path: '/pomoc/nastavenia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomocObjednavkyRoute = PomocObjednavkyRouteImport.update({
@@ -1669,6 +1675,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/faktury': typeof PomocFakturyRoute
   '/pomoc/financovanie': typeof PomocFinancovanieRoute
   '/pomoc/jazdy': typeof PomocJazdyRoute
+  '/pomoc/nastavenia': typeof PomocNastaveniaRoute
   '/pomoc/objednavky': typeof PomocObjednavkyRoute
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
@@ -1910,6 +1917,7 @@ export interface FileRoutesByTo {
   '/pomoc/faktury': typeof PomocFakturyRoute
   '/pomoc/financovanie': typeof PomocFinancovanieRoute
   '/pomoc/jazdy': typeof PomocJazdyRoute
+  '/pomoc/nastavenia': typeof PomocNastaveniaRoute
   '/pomoc/objednavky': typeof PomocObjednavkyRoute
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
@@ -2160,6 +2168,7 @@ export interface FileRoutesById {
   '/pomoc/faktury': typeof PomocFakturyRoute
   '/pomoc/financovanie': typeof PomocFinancovanieRoute
   '/pomoc/jazdy': typeof PomocJazdyRoute
+  '/pomoc/nastavenia': typeof PomocNastaveniaRoute
   '/pomoc/objednavky': typeof PomocObjednavkyRoute
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
@@ -2411,6 +2420,7 @@ export interface FileRouteTypes {
     | '/pomoc/faktury'
     | '/pomoc/financovanie'
     | '/pomoc/jazdy'
+    | '/pomoc/nastavenia'
     | '/pomoc/objednavky'
     | '/pomoc/objednavky-dodavatel'
     | '/pomoc/odberatelia'
@@ -2652,6 +2662,7 @@ export interface FileRouteTypes {
     | '/pomoc/faktury'
     | '/pomoc/financovanie'
     | '/pomoc/jazdy'
+    | '/pomoc/nastavenia'
     | '/pomoc/objednavky'
     | '/pomoc/objednavky-dodavatel'
     | '/pomoc/odberatelia'
@@ -2901,6 +2912,7 @@ export interface FileRouteTypes {
     | '/pomoc/faktury'
     | '/pomoc/financovanie'
     | '/pomoc/jazdy'
+    | '/pomoc/nastavenia'
     | '/pomoc/objednavky'
     | '/pomoc/objednavky-dodavatel'
     | '/pomoc/odberatelia'
@@ -3119,6 +3131,7 @@ export interface RootRouteChildren {
   PomocFakturyRoute: typeof PomocFakturyRoute
   PomocFinancovanieRoute: typeof PomocFinancovanieRoute
   PomocJazdyRoute: typeof PomocJazdyRoute
+  PomocNastaveniaRoute: typeof PomocNastaveniaRoute
   PomocObjednavkyRoute: typeof PomocObjednavkyRoute
   PomocObjednavkyDodavatelRoute: typeof PomocObjednavkyDodavatelRoute
   PomocOdberateliaRoute: typeof PomocOdberateliaRoute
@@ -3693,6 +3706,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/jazdy'
       fullPath: '/pomoc/jazdy'
       preLoaderRoute: typeof PomocJazdyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/nastavenia': {
+      id: '/pomoc/nastavenia'
+      path: '/pomoc/nastavenia'
+      fullPath: '/pomoc/nastavenia'
+      preLoaderRoute: typeof PomocNastaveniaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/objednavky': {
@@ -5462,6 +5482,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocFakturyRoute: PomocFakturyRoute,
   PomocFinancovanieRoute: PomocFinancovanieRoute,
   PomocJazdyRoute: PomocJazdyRoute,
+  PomocNastaveniaRoute: PomocNastaveniaRoute,
   PomocObjednavkyRoute: PomocObjednavkyRoute,
   PomocObjednavkyDodavatelRoute: PomocObjednavkyDodavatelRoute,
   PomocOdberateliaRoute: PomocOdberateliaRoute,
