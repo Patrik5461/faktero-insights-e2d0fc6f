@@ -39,6 +39,7 @@ dist-ssr
 
 # Zostavená mobilná appka — vyrába ju `npm run build:mobile`
 dist-mobile
+dist-jazdy
 
 # Xcode — vyrovnávacia pamäť Swift Package Managera.
 # Vzniká pri každom otvorení projektu a do repozitára nepatrí; bez tohto sa

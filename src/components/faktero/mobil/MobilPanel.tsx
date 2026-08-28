@@ -70,8 +70,9 @@ export function MobilPanel({
   onZmenitFirmu: () => void;
   /** Pôvodná domovská obrazovka. V skener-first režime sa na ňu chodí odtiaľto. */
   onPrehlad?: () => void;
-  onDoklady: () => void;
-  onFaktury: () => void;
+  /* Nepovinné: appka Kniha jázd panel používa tiež, ale fakturáciu v sebe nemá. */
+  onDoklady?: () => void;
+  onFaktury?: () => void;
   /** Cenové ponuky. Nie sú v spodnej lište — tá má päť agend a je plná. */
   onPonuky?: () => void;
   onUcet: () => void;
@@ -200,14 +201,16 @@ export function MobilPanel({
               }}
             />
           )}
-          <Polozka
-            icon={FileText}
-            label={t("panel.vystaveneFaktury")}
-            onClick={() => {
-              onZavri();
-              onFaktury();
-            }}
-          />
+          {onFaktury && (
+            <Polozka
+              icon={FileText}
+              label={t("panel.vystaveneFaktury")}
+              onClick={() => {
+                onZavri();
+                onFaktury();
+              }}
+            />
+          )}
           {onPonuky && (
             <Polozka
               icon={FileSignature}
@@ -218,14 +221,16 @@ export function MobilPanel({
               }}
             />
           )}
-          <Polozka
-            icon={Receipt}
-            label={t("panel.prijateDoklady")}
-            onClick={() => {
-              onZavri();
-              onDoklady();
-            }}
-          />
+          {onDoklady && (
+            <Polozka
+              icon={Receipt}
+              label={t("panel.prijateDoklady")}
+              onClick={() => {
+                onZavri();
+                onDoklady();
+              }}
+            />
+          )}
 
           <Skupina nazov={t("panel.nastavenia")} />
           {biometriaMozna ? (

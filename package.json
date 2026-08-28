@@ -15,7 +15,8 @@
     "cap:android": "cap open android",
     "cap:add:ios": "cap add ios",
     "cap:add:android": "cap add android",
-    "build:mobile": "node scripts/build-mobile.mjs"
+    "build:mobile": "node scripts/build-mobile.mjs",
+    "build:jazdy": "node scripts/build-jazdy.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",

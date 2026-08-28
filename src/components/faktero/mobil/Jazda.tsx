@@ -969,7 +969,7 @@ export function Jazda({
  * Spotreba je zámerne súčasťou už tohto kroku: bez nej nemá jazda náklad a
  * vyhodnotenie zákaziek aj kniha jázd ukážu pri doprave nulu.
  */
-function NoveVozidlo({
+export function NoveVozidlo({
   firma,
   onSpat,
   onPridane,

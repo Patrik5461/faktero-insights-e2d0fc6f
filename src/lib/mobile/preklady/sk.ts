@@ -757,6 +757,26 @@ export const sk = {
   "spolocne.zrusit": "Zrušiť",
   "spolocne.nacitavam": "Načítavam…",
   "spolocne.km": "km",
+
+  /* samostatná appka Kniha jázd */
+  "kj.nazov": "Kniha jázd",
+  "kj.tabPrehlad": "Prehľad",
+  "kj.tabHistoria": "História",
+  "kj.tabVozidla": "Vozidlá",
+  "kj.tentoMesiac": "Tento mesiac",
+  "kj.sluzobne": "Služobné",
+  "kj.sukromne": "Súkromné",
+  "kj.posledneJazdy": "Posledné jazdy",
+  "kj.vyberVozidla": "Vyberte vozidlo",
+  "kj.vyberVozidlaPopis": "Kniha jázd sa vedie po vozidlách.",
+  "kj.mojeVozidlo": "Moje vozidlo",
+  "kj.mojeVozidloPopis": "Ťuknutím vyberiete auto, ktoré appka ponúkne pri jazde.",
+  "kj.nastavitAkoMoje": "Nastaviť ako moje",
+  "kj.jazd1": "jazda",
+  "kj.jazd2": "jazdy",
+  "kj.jazd5": "jázd",
+  "kj.bezJazd": "Tento mesiac zatiaľ bez jazdy",
+  "kj.bezJazdPopis": "Prvú spustíte zeleným tlačidlom dole.",
 } as const;
 
 export type Kluc = keyof typeof sk;
