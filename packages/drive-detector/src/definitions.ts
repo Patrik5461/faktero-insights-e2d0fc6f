@@ -211,6 +211,18 @@ export interface DriveDetectorPlugin {
    * nezmenený stav.
    */
   requestPrecisePermission(): Promise<DriveDetectorPermissions>;
+  /**
+   * Notifikácie. **Len Android** — od verzie 13 sa oň musí appka pýtať sama a
+   * bez neho nepríde otázka „bola táto jazda služobná?". Na iOS metóda
+   * neexistuje (o notifikácie si hovorí push) a v starších binárkach tiež nie,
+   * takže sa volá len keď je k dispozícii.
+   */
+  requestNotificationPermission?(): Promise<DriveDetectorPermissions>;
+  /**
+   * Rozpoznanie jazdy autom. **Len Android** — iOS sa spýta sám pri prvom
+   * čítaní senzora. Detekcia beží aj bez neho, len dlhšie drží prah rýchlosti.
+   */
+  requestMotionPermission?(): Promise<DriveDetectorPermissions>;
 
   addListener(
     eventName: "driveDetected",

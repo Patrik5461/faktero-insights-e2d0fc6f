@@ -645,6 +645,17 @@ export const hu: Partial<Record<Kluc, string>> = {
   "banka.aktualizovane": "Frissítve: {ked}",
   "jz.bezi": "fut {trvanie}",
   "jz.ukladaSaNa": "A(z) {auto} járműre mentjük — lentebb másik járművet választhat.",
+
+  /* engedélyek az útnyilvántartáshoz (Android) */
+  "pov.nadpis": "Hogy az utak maguktól rögzüljenek",
+  "pov.uvod": "Az útnyilvántartás a háttérben méri az útvonalat — akkor is, ha a kijelző sötét és a telefon a zsebben van. E nélkül a kilométerek nem jönnének ki. A helyadatot csak az út kiszámításához használjuk, sehová nem küldjük.",
+  "pov.poloha": "Helyadat — hogy az utat egyáltalán mérni lehessen.",
+  "pov.notifikacie": "Értesítések — hogy az alkalmazás az út után megkérdezhesse, üzleti volt-e.",
+  "pov.pohyb": "Mozgásérzékelők — hogy az utat gyorsabban felismerje.",
+  "pov.vzdy": "Helyadat „Mindig“ — enélkül sötét kijelzőnél semmi sem mérhető.",
+  "pov.povolit": "Engedélyezés",
+  "pov.pytamSa": "Kérdezem…",
+  "pov.neskor": "Később",
   "app.spustam": "A Faktero indítása… ({faza}) · {balicek}",
   "app.startZasekol": "Az indítás elakadt a(z) „{faza}” lépésnél.",
   "app.balicek": "csomag {peciatka}",

@@ -244,6 +244,33 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
         requestPermissionForAlias("location", call, "poVyzve");
     }
 
+    /**
+     * Notifikácie a pohybové senzory sa dajú vypýtať aj bez zapínania detekcie.
+     *
+     * Appka sa tak môže spýtať hneď na začiatku, na jednom mieste a s
+     * vysvetlením, namiesto toho, aby človek zisťoval až po týždni bez jedinej
+     * jazdy, že mu chýbalo povolenie. iOS tieto metódy nemá — tam si o
+     * notifikácie hovorí systém push a o pohyb sa pýta pri prvom čítaní
+     * senzora, takže ich appka volá len na Androide.
+     */
+    @PluginMethod
+    public void requestNotificationPermission(PluginCall call) {
+        if (!chybaNotifikacia()) {
+            call.resolve(povolenia());
+            return;
+        }
+        requestPermissionForAlias("notifications", call, "poVyzve");
+    }
+
+    @PluginMethod
+    public void requestMotionPermission(PluginCall call) {
+        if (!chybaPohyb()) {
+            call.resolve(povolenia());
+            return;
+        }
+        requestPermissionForAlias("motion", call, "poVyzve");
+    }
+
     @PluginMethod
     public void requestBackgroundPermission(PluginCall call) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {

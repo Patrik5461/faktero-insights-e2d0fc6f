@@ -644,6 +644,17 @@ export const de: Partial<Record<Kluc, string>> = {
   "banka.aktualizovane": "Aktualisiert {ked}",
   "jz.bezi": "läuft {trvanie}",
   "jz.ukladaSaNa": "Sie wird auf {auto} gebucht — ändern Sie es durch Auswahl eines anderen Fahrzeugs unten.",
+
+  /* Berechtigungen für das Fahrtenbuch (Android) */
+  "pov.nadpis": "Damit sich Fahrten selbst eintragen",
+  "pov.uvod": "Das Fahrtenbuch misst die Strecke im Hintergrund — auch bei ausgeschaltetem Display und Telefon in der Tasche. Sonst lassen sich die Kilometer nicht berechnen. Den Standort nutzen wir nur für die Fahrt; wir senden ihn nirgendwohin.",
+  "pov.poloha": "Standort — damit die Fahrt überhaupt gemessen werden kann.",
+  "pov.notifikacie": "Mitteilungen — damit die App nach der Fahrt fragen kann, ob sie geschäftlich war.",
+  "pov.pohyb": "Bewegungssensoren — damit eine Fahrt schneller erkannt wird.",
+  "pov.vzdy": "Standort „Immer“ — ohne ihn wird bei ausgeschaltetem Display nichts gemessen.",
+  "pov.povolit": "Erlauben",
+  "pov.pytamSa": "Frage an…",
+  "pov.neskor": "Später",
   "app.spustam": "Faktero wird gestartet… ({faza}) · {balicek}",
   "app.startZasekol": "Der Start hängt beim Schritt „{faza}“.",
   "app.balicek": "Paket {peciatka}",

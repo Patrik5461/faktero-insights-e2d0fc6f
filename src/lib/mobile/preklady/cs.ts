@@ -649,6 +649,17 @@ export const cs: Partial<Record<Kluc, string>> = {
   "banka.aktualizovane": "Aktualizováno {ked}",
   "jz.bezi": "běží {trvanie}",
   "jz.ukladaSaNa": "Ukládá se na {auto} — změníš výběrem vozidla níže.",
+
+  /* povolení pro knihu jízd (Android) */
+  "pov.nadpis": "Aby se jízdy zapisovaly samy",
+  "pov.uvod": "Kniha jízd měří trasu na pozadí — i když máte zhasnutý displej a telefon v kapse. Bez toho by se kilometry nedopočítaly. Polohu používáme jen k výpočtu jízdy, nikam ji neposíláme.",
+  "pov.poloha": "Poloha — aby šlo jízdu vůbec změřit.",
+  "pov.notifikacie": "Oznámení — aby se aplikace po jízdě zeptala, zda byla služební.",
+  "pov.pohyb": "Pohybové senzory — aby se jízda rozpoznala rychleji.",
+  "pov.vzdy": "Poloha „Vždy“ — bez ní se se zhasnutým displejem neměří nic.",
+  "pov.povolit": "Povolit",
+  "pov.pytamSa": "Ptám se…",
+  "pov.neskor": "Později",
   "app.spustam": "Spouštím Faktero… ({faza}) · {balicek}",
   "app.startZasekol": "Start se zasekl na kroku „{faza}“.",
   "app.balicek": "balíček {peciatka}",

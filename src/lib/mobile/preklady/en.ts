@@ -650,6 +650,17 @@ export const en: Partial<Record<Kluc, string>> = {
   "banka.aktualizovane": "Updated {ked}",
   "jz.bezi": "running {trvanie}",
   "jz.ukladaSaNa": "It is saved to {auto} — change it by picking another vehicle below.",
+
+  /* permissions for the logbook (Android) */
+  "pov.nadpis": "So trips record themselves",
+  "pov.uvod": "The logbook measures your route in the background — even with the screen off and the phone in your pocket. Without that the distance cannot be worked out. Location is used only to measure the trip; we never send it anywhere.",
+  "pov.poloha": "Location — so the trip can be measured at all.",
+  "pov.notifikacie": "Notifications — so the app can ask whether the trip was for business.",
+  "pov.pohyb": "Motion sensors — so a drive is recognised sooner.",
+  "pov.vzdy": "Location „Always“ — without it nothing is measured once the screen goes off.",
+  "pov.povolit": "Allow",
+  "pov.pytamSa": "Asking…",
+  "pov.neskor": "Later",
   "app.spustam": "Starting Faktero… ({faza}) · {balicek}",
   "app.startZasekol": "Startup got stuck at step “{faza}”.",
   "app.balicek": "bundle {peciatka}",

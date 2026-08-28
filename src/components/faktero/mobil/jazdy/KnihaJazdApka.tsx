@@ -17,6 +17,7 @@ import { Prihlasenie, VyberFirmy, Zamok } from "../Vstup";
 import { RegistraciaUctu } from "../RegistraciaUctu";
 import { VytvorFirmu } from "../VytvorFirmu";
 import { MobilPanel } from "../MobilPanel";
+import { PovoleniaJazd } from "../PovoleniaJazd";
 import { AppHeader, MobilObrazovka, PasHore, Pracujem } from "../MobilChrome";
 import { PrehladJazd } from "./PrehladJazd";
 import { HistoriaVozidiel } from "./HistoriaVozidiel";
@@ -466,6 +467,8 @@ function SoSpodnouListou({
       }
     >
       {children}
+      {/* Kniha jázd bez povolení nerobí nič, tak si o ne povie hneď na začiatku. */}
+      <PovoleniaJazd />
       <TabBarJazd aktivna={aktivna} onPrepni={onPrepni} bezi={bezi} />
     </div>
   );

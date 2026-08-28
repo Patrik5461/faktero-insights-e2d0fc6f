@@ -661,6 +661,17 @@ export const sk = {
   "banka.aktualizovane": "Aktualizované {ked}",
   "jz.bezi": "beží {trvanie}",
   "jz.ukladaSaNa": "Ukladá sa na {auto} — zmeníš výberom vozidla nižšie.",
+
+  /* povolenia pre knihu jázd (Android) */
+  "pov.nadpis": "Aby sa jazdy zapisovali samy",
+  "pov.uvod": "Kniha jázd meria trasu na pozadí — aj vtedy, keď máte zhasnutý displej a telefón vo vrecku. Bez toho by sa kilometre nedorátali. Polohu používame len na výpočet jazdy, nikam ju neposielame.",
+  "pov.poloha": "Poloha — aby sa dala jazda vôbec zmerať.",
+  "pov.notifikacie": "Notifikácie — aby sa appka po jazde spýtala, či bola služobná.",
+  "pov.pohyb": "Pohybové senzory — aby sa jazda rozpoznala rýchlejšie.",
+  "pov.vzdy": "Poloha „Vždy“ — bez nej sa so zhasnutým displejom nemeria nič.",
+  "pov.povolit": "Povoliť",
+  "pov.pytamSa": "Pýtam sa…",
+  "pov.neskor": "Neskôr",
   "app.spustam": "Spúšťam Faktero… ({faza}) · {balicek}",
   "app.startZasekol": "Štart sa zasekol na kroku „{faza}“.",
   "app.balicek": "balíček {peciatka}",

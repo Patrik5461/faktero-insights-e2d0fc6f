@@ -141,6 +141,7 @@ import {
   type NastavenieDokladu,
 } from "@/components/faktero/mobil/Skener";
 import { TabBar, type Zalozka } from "@/components/faktero/mobil/TabBar";
+import { PovoleniaJazd } from "@/components/faktero/mobil/PovoleniaJazd";
 import { VytvorFirmu } from "@/components/faktero/mobil/VytvorFirmu";
 import { Prihlasenie, VyberFirmy, Zamok } from "@/components/faktero/mobil/Vstup";
 import {
@@ -1135,6 +1136,12 @@ function SoSpodnouListou({
       }
     >
       {children}
+      {/*
+        Povolenia pre knihu jázd. Vo fakturačnej appke sa okno ukáže len tomu,
+        kto detekciu naozaj zapol — pýtať polohu pri štarte každému, kto si
+        prišiel vystaviť faktúru, by bolo bezočivé.
+      */}
+      <PovoleniaJazd lenKedZapnuta />
       <TabBar aktivna={aktivna} onPrepni={onPrepni} onVytvorit={onVytvorit} />
     </div>
   );
