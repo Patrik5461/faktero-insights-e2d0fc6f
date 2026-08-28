@@ -89,4 +89,8 @@ export class DriveDetectorWeb extends WebPlugin implements NativeDriveDetectorPl
   async requestMotionPermission(): Promise<DriveDetectorPermissions> {
     throw this.unimplemented("Detekcia jazdy je dostupná len v mobilnej aplikácii.");
   }
+
+  async openAppSettings(): Promise<void> {
+    throw this.unimplemented("Detekcia jazdy je dostupná len v mobilnej aplikácii.");
+  }
 }

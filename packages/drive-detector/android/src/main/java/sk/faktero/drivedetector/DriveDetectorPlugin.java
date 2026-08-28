@@ -59,6 +59,15 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
 
     private TripStore store;
 
+    /**
+     * Beží práve žiadosť o povolenie?
+     *
+     * Android dovolí naraz jednu; druhá spustená spopod prvej zhodí appku.
+     * Stáva sa to ľahko: obrazovka si pýta povolenia a zapnutie detekcie
+     * si o ne povie tiež.
+     */
+    private boolean pytameSa;
+
     @Override
     public void load() {
         store = new TripStore(getContext());
@@ -91,7 +100,7 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
             call.reject("Bez povolenej polohy sa detekcia spustiť nedá.");
             return;
         }
-        if (chybaNotifikacia()) {
+        if (chybaNotifikacia() && zacniPytat()) {
             requestPermissionForAlias("notifications", call, "poNotifikaciach");
             return;
         }
@@ -100,7 +109,8 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
 
     @PermissionCallback
     private void poNotifikaciach(PluginCall call) {
-        if (chybaPohyb()) {
+        pytameSa = false;
+        if (chybaPohyb() && zacniPytat()) {
             requestPermissionForAlias("motion", call, "poPohybe");
             return;
         }
@@ -109,8 +119,16 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
 
     @PermissionCallback
     private void poPohybe(PluginCall call) {
+        pytameSa = false;
         posliSluzbe(DriveDetectorService.AKCIA_START);
         call.resolve();
+    }
+
+    /** `true`, keď sa smie pýtať. Druhá žiadosť naraz by appku zhodila. */
+    private boolean zacniPytat() {
+        if (pytameSa) return false;
+        pytameSa = true;
+        return true;
     }
 
     private boolean chybaNotifikacia() {
@@ -255,7 +273,7 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
      */
     @PluginMethod
     public void requestNotificationPermission(PluginCall call) {
-        if (!chybaNotifikacia()) {
+        if (!chybaNotifikacia() || !zacniPytat()) {
             call.resolve(povolenia());
             return;
         }
@@ -264,16 +282,36 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
 
     @PluginMethod
     public void requestMotionPermission(PluginCall call) {
-        if (!chybaPohyb()) {
+        if (!chybaPohyb() || !zacniPytat()) {
             call.resolve(povolenia());
             return;
         }
         requestPermissionForAlias("motion", call, "poVyzve");
     }
 
+    /**
+     * Otvorí nastavenia aplikácie.
+     *
+     * Polohu „vždy" od Androidu 11 nevie appka vypýtať oknom — systém na ňu
+     * žiadne nezobrazí a žiadosť rovno zamietne. Jediná cesta vedie cez
+     * nastavenia, tak nech tam človek nemusí hľadať sám.
+     */
+    @PluginMethod
+    public void openAppSettings(PluginCall call) {
+        Intent i = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData(android.net.Uri.fromParts("package", getContext().getPackageName(), null))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            getContext().startActivity(i);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Nastavenia sa nepodarilo otvoriť.");
+        }
+    }
+
     @PluginMethod
     public void requestBackgroundPermission(PluginCall call) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !zacniPytat()) {
             call.resolve(povolenia());
             return;
         }
@@ -286,11 +324,16 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
      */
     @PluginMethod
     public void requestPrecisePermission(PluginCall call) {
+        if (!zacniPytat()) {
+            call.resolve(povolenia());
+            return;
+        }
         requestPermissionForAlias("location", call, "poVyzve");
     }
 
     @PermissionCallback
     private void poVyzve(PluginCall call) {
+        pytameSa = false;
         call.resolve(povolenia());
     }
 
@@ -350,8 +393,22 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
 
     private void posliSluzbe(String akcia) {
         Intent i = new Intent(getContext(), DriveDetectorService.class).setAction(akcia);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(i);
-        else getContext().startService(i);
+        /*
+          Vypnutie sa posiela ako obyčajná služba. `startForegroundService`
+          zaväzuje ohlásiť sa do piatich sekúnd notifikáciou v popredí — a
+          keby sa mala služba vzápätí zastaviť, systém by za nesplnený sľub
+          zabil celú appku.
+        */
+        boolean vPopredi = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                && !DriveDetectorService.AKCIA_STOP.equals(akcia);
+        try {
+            if (vPopredi) getContext().startForegroundService(i);
+            else getContext().startService(i);
+        } catch (Exception ignored) {
+            // Systém službu na pozadí nemusí pustiť (úsporný režim, zamknutá
+            // appka). Pád appky to nesmie znamenať; detekcia sa zapne pri
+            // najbližšom otvorení.
+        }
     }
 
     /**

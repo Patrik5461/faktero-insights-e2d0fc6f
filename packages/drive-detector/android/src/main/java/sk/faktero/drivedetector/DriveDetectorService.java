@@ -113,8 +113,29 @@ public class DriveDetectorService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        doPopredia();
         String akcia = intent != null ? intent.getAction() : null;
+
+        /*
+          Bez polohy sa služba v popredí spustiť nesmie.
+
+          Od Androidu 14 systém odmietne službu typu „location" appke, ktorá
+          polohu povolenú nemá — a keď sa služba do piatich sekúnd neohlási
+          ako bežiaca v popredí, systém **zabije celú aplikáciu**. Navonok to
+          vyzerá tak, že appka po zatvorení spadne a už sa neotvorí, pritom
+          príčina je v povolení, ktoré si človek nedal.
+
+          Zastavenie sa vybavuje bez popredia — vypnutá detekcia nemá čo
+          hlásiť.
+        */
+        if (!AKCIA_STOP.equals(akcia)) {
+            if (!mamePolohu() || !doPopredia()) {
+                zastavPresnuPolohu();
+                zastavLacnuPolohu();
+                stopSelf();
+                return START_NOT_STICKY;
+            }
+        }
+
         if (akcia == null) return START_STICKY;
 
         switch (akcia) {
@@ -402,7 +423,8 @@ public class DriveDetectorService extends Service {
 
     // ── Popredie ───────────────────────────────────────────────────────────
 
-    private void doPopredia() {
+    /** `false`, keď sa službu do popredia dostať nepodarilo. */
+    private boolean doPopredia() {
         BufferedTrip bezi = motor != null ? motor.getTrip() : null;
         String nadpis = bezi != null ? "Nahrávam jazdu" : "Kniha jázd sleduje jazdy";
         String popis = bezi != null
@@ -416,9 +438,12 @@ public class DriveDetectorService extends Service {
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
                             ? android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
                             : 0);
-        } catch (Exception ignored) {
-            // Android 14+ odmietne štart v popredí bez povolenia polohy —
-            // meranie sa vtedy nespustí a appka to zistí z povolení.
+            return true;
+        } catch (Exception e) {
+            // Android 14+ odmietne štart v popredí bez povolenia polohy.
+            // Volajúci musí službu zastaviť — inak ju systém zabije aj
+            // s aplikáciou za to, že sa neohlásila.
+            return false;
         }
     }
 

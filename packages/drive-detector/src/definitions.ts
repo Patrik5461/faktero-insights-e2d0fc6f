@@ -223,6 +223,12 @@ export interface DriveDetectorPlugin {
    * čítaní senzora. Detekcia beží aj bez neho, len dlhšie drží prah rýchlosti.
    */
   requestMotionPermission?(): Promise<DriveDetectorPermissions>;
+  /**
+   * Otvorí nastavenia aplikácie. **Len Android** — polohu „vždy" od verzie 11
+   * nevie appka vypýtať oknom, systém žiadosť rovno zamietne a jediná cesta
+   * vedie cez nastavenia.
+   */
+  openAppSettings?(): Promise<void>;
 
   addListener(
     eventName: "driveDetected",

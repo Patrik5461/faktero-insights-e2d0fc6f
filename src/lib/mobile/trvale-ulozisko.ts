@@ -57,6 +57,21 @@ type Trezor = {
   removeItem(kluc: string): Promise<void>;
 };
 
+/**
+ * Natívne volanie so stropom.
+ *
+ * Keď plugin neodpovie, appka nesmie stáť. Stalo sa to práve pri prihlásení:
+ * relácia sa číta z Keychainu ešte pred prvým vykreslením, a keby to volanie
+ * ostalo visieť, appka sa zasekne na úvodnej obrazovke a človek nemá ako
+ * zistiť prečo. Radšej sa použije to, čo je po ruke v pamäti.
+ */
+function soStropom<T>(praca: Promise<T>, nahrada: T, ms = 2500): Promise<T> {
+  return Promise.race([
+    praca,
+    new Promise<T>((hotovo) => setTimeout(() => hotovo(nahrada), ms)),
+  ]).catch(() => nahrada);
+}
+
 let trezorUlozisko: Trezor | null | undefined;
 
 /**
@@ -283,7 +298,7 @@ export const trvaleUlozisko = {
       const t = await trezor();
       if (t) {
         try {
-          const zTrezoru = await t.getItem(kluc);
+          const zTrezoru = await soStropom(t.getItem(kluc), null);
           if (zTrezoru != null) {
             pamat.set(kluc, zTrezoru);
             return zTrezoru;
@@ -296,7 +311,7 @@ export const trvaleUlozisko = {
     const p = await nativne();
     if (p) {
       try {
-        const { value } = await p.get({ key: kluc });
+        const { value } = await soStropom(p.get({ key: kluc }), { value: null });
         if (value != null) {
           pamat.set(kluc, value);
           return value;

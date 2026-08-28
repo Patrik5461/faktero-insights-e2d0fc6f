@@ -48,6 +48,52 @@ async function pluginAndroid() {
   return DriveDetector;
 }
 
+/**
+ * Kľúč, pod ktorým si appka pamätá, že sa už raz pýtala.
+ *
+ * Bez neho by okno vyskočilo pri každom otvorení: polohu „vždy" Android
+ * oknom povoliť nedá, takže „niečo chýba" ostane pravda aj po tom, čo
+ * človek klepol na Povoliť — a appka by ho otravovala donekonečna.
+ */
+const KLUC_PYTANE = "faktero.povolenia.pytaneSa";
+
+async function preferencie() {
+  const { Capacitor } = await import("@capacitor/core");
+  if (!Capacitor.isNativePlatform()) return null;
+  const { Preferences } = await import("@capacitor/preferences");
+  // Plugin je proxy, ktorá z prístupu k `then` robí natívne volanie — vrátiť
+  // sa smie len zabalený v obyčajnom objekte.
+  return {
+    get: (key: string) => Preferences.get({ key }),
+    set: (key: string, value: string) => Preferences.set({ key, value }),
+  };
+}
+
+/** Pýtali sme sa už na tomto telefóne? */
+export async function uzSmeSaPytali(): Promise<boolean> {
+  try {
+    const p = await preferencie();
+    return Boolean((await p?.get(KLUC_PYTANE))?.value);
+  } catch {
+    return false;
+  }
+}
+
+export async function zapamatajZePytane(): Promise<void> {
+  try {
+    const p = await preferencie();
+    await p?.set(KLUC_PYTANE, "1");
+  } catch {
+    /* keď sa to nezapíše, spýtame sa raz navyše — to je menšie zlo */
+  }
+}
+
+/** Otvorí nastavenia aplikácie; tam sa prepína poloha „vždy". */
+export async function otvorNastaveniaAppky(): Promise<void> {
+  const p = await pluginAndroid();
+  await p?.openAppSettings?.().catch(() => {});
+}
+
 /** Čo chýba práve teraz. `null` znamená, že sa niet koho pýtať (web, iOS). */
 export async function stavPovoleniJazd(): Promise<ChybajucePovolenie[] | null> {
   const p = await pluginAndroid();
