@@ -664,6 +664,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "pov.vzdyNastavenia": "One last thing: Android only lets „Always“ location be switched on in Settings. We will open them — choose Permissions → Location → Allow all the time.",
   "pov.otvoritNastavenia": "Open settings",
   "pov.hotovo": "Done",
+  "pov.zvysokNastavenia": "These cannot be granted from a dialog any more — Android offers them only in the app settings. We will open them; look for Permissions.",
   "app.spustam": "Starting Faktero… ({faza}) · {balicek}",
   "app.startZasekol": "Startup got stuck at step “{faza}”.",
   "app.balicek": "bundle {peciatka}",

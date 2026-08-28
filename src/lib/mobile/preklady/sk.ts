@@ -675,6 +675,7 @@ export const sk = {
   "pov.vzdyNastavenia": "Ostáva posledná vec: Android dovolí polohu „Vždy“ prepnúť len v nastaveniach. Otvoríme ich — vyberte Povolenia → Poloha → Povoliť vždy.",
   "pov.otvoritNastavenia": "Otvoriť nastavenia",
   "pov.hotovo": "Hotovo",
+  "pov.zvysokNastavenia": "Toto sa oknom povoliť nedá — Android ich ponúka už len v nastaveniach aplikácie. Otvoríme ich, hľadajte Povolenia.",
   "app.spustam": "Spúšťam Faktero… ({faza}) · {balicek}",
   "app.startZasekol": "Štart sa zasekol na kroku „{faza}“.",
   "app.balicek": "balíček {peciatka}",

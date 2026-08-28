@@ -663,6 +663,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "pov.vzdyNastavenia": "Zbývá poslední věc: Android dovolí polohu „Vždy“ přepnout jen v nastavení. Otevřeme je — vyberte Oprávnění → Poloha → Povolit vždy.",
   "pov.otvoritNastavenia": "Otevřít nastavení",
   "pov.hotovo": "Hotovo",
+  "pov.zvysokNastavenia": "Tohle už oknem povolit nejde — Android to nabízí jen v nastavení aplikace. Otevřeme je, hledejte Oprávnění.",
   "app.spustam": "Spouštím Faktero… ({faza}) · {balicek}",
   "app.startZasekol": "Start se zasekl na kroku „{faza}“.",
   "app.balicek": "balíček {peciatka}",

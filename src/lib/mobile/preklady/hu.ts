@@ -659,6 +659,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "pov.vzdyNastavenia": "Még egy dolog: a „Mindig“ helyhozzáférést az Android csak a beállításokban engedi átkapcsolni. Megnyitjuk — válassza az Engedélyek → Helyadatok → Mindig engedélyezve lehetőséget.",
   "pov.otvoritNastavenia": "Beállítások megnyitása",
   "pov.hotovo": "Kész",
+  "pov.zvysokNastavenia": "Ezt ablakból már nem lehet engedélyezni — az Android csak az alkalmazás beállításaiban kínálja. Megnyitjuk; keresse az Engedélyek pontot.",
   "app.spustam": "A Faktero indítása… ({faza}) · {balicek}",
   "app.startZasekol": "Az indítás elakadt a(z) „{faza}” lépésnél.",
   "app.balicek": "csomag {peciatka}",

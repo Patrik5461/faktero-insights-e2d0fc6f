@@ -45,9 +45,15 @@ export function PovoleniaJazd() {
   useEffect(() => {
     let zive = true;
     void (async () => {
-      if (odlozene || (await uzSmeSaPytali())) return;
+      if (odlozene) return;
       const chybajuce = await stavPovoleniJazd();
-      if (zive && chybajuce?.length) setChyba(chybajuce);
+      if (!zive || !chybajuce?.length) return;
+      /*
+        Raz sa pýtame a potom mlčíme — okrem polohy. Bez nej appka nemeria
+        vôbec nič, takže sa na ňu spýtame vždy; na zvyšok len prvý raz.
+      */
+      if (!chybajuce.includes("poloha") && (await uzSmeSaPytali())) return;
+      if (zive) setChyba(chybajuce);
     })();
     return () => {
       zive = false;
@@ -106,10 +112,13 @@ export function PovoleniaJazd() {
                   setPracujem(true);
                   const ostalo = await dopytajPovoleniaJazd();
                   setPracujem(false);
-                  // Poloha „vždy" je jediná, ktorú okno vybaviť nevie —
-                  // na ňu treba nastavenia. Zvyšok je hotový, tak zavri.
-                  if (ostalo.includes("vzdy")) {
-                    setChyba(["vzdy"]);
+                  /*
+                    Čo ostalo, sa oknom vybaviť nedá: polohu „vždy" Android
+                    oknom nedáva vôbec a raz zamietnuté povolenie druhýkrát
+                    neponúkne. Zvyšná cesta vedie cez nastavenia.
+                  */
+                  if (ostalo.length) {
+                    setChyba(ostalo);
                     setKrok("nastavenia");
                     return;
                   }
@@ -130,8 +139,17 @@ export function PovoleniaJazd() {
         ) : (
           <>
             <p className="mt-2 text-[13px] leading-relaxed text-app-text-2">
-              {t("pov.vzdyNastavenia")}
+              {chyba.length === 1 && chyba[0] === "vzdy"
+                ? t("pov.vzdyNastavenia")
+                : t("pov.zvysokNastavenia")}
             </p>
+            <ul className="mt-3 space-y-2">
+              {chyba.map((k) => (
+                <li key={k} className="text-[13px] leading-relaxed text-app-text">
+                  {t(TEXTY[k])}
+                </li>
+              ))}
+            </ul>
             <div className="mt-5">
               <PrimaryCta
                 onClick={async () => {

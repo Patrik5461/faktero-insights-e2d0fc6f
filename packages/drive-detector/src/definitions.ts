@@ -224,6 +224,11 @@ export interface DriveDetectorPlugin {
    */
   requestMotionPermission?(): Promise<DriveDetectorPermissions>;
   /**
+   * Notifikácie aj pohybové senzory naraz. **Len Android** — dve samostatné
+   * žiadosti hneď po sebe systém nedoručí a druhé okno sa neukáže.
+   */
+  requestExtraPermissions?(): Promise<DriveDetectorPermissions>;
+  /**
    * Otvorí nastavenia aplikácie. **Len Android** — polohu „vždy" od verzie 11
    * nevie appka vypýtať oknom, systém žiadosť rovno zamietne a jediná cesta
    * vedie cez nastavenia.

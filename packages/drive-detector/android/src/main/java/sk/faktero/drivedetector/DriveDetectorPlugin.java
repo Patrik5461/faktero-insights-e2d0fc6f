@@ -53,6 +53,16 @@ import sk.faktero.drivedetector.core.Classification;
                 */
                 @Permission(alias = "notifications", strings = {
                         "android.permission.POST_NOTIFICATIONS"
+                }),
+                /*
+                  Notifikácie a senzory naraz. Android ich v jednom volaní
+                  ukáže za sebou sám — dve samostatné žiadosti hneď po sebe
+                  systém spoľahlivo nedoručí a druhé okno sa jednoducho
+                  neukáže, ako keby ho appka nikdy nevypýtala.
+                */
+                @Permission(alias = "doplnkove", strings = {
+                        "android.permission.POST_NOTIFICATIONS",
+                        "android.permission.ACTIVITY_RECOGNITION"
                 })
         })
 public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.Poslucháč {
@@ -300,6 +310,16 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
             return;
         }
         requestPermissionForAlias("notifications", call, "poVyzve");
+    }
+
+    /** Notifikácie aj pohybové senzory naraz — jedno volanie, dve okná za sebou. */
+    @PluginMethod
+    public void requestExtraPermissions(PluginCall call) {
+        if ((!chybaNotifikacia() && !chybaPohyb()) || !zacniPytat()) {
+            call.resolve(povolenia());
+            return;
+        }
+        requestPermissionForAlias("doplnkove", call, "poVyzve");
     }
 
     @PluginMethod

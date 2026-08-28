@@ -112,24 +112,56 @@ export async function stavPovoleniJazd(): Promise<ChybajucePovolenie[] | null> {
  * treba na obrazovke, nie výnimkou.
  */
 export async function dopytajPovoleniaJazd(): Promise<ChybajucePovolenie[]> {
-  const p = await pluginAndroid();
-  if (!p) return [];
-  try {
-    let stav = await p.checkPermissions();
-    if (stav.location !== "granted") stav = await p.requestPermissions();
-    // Bez polohy je zvyšok bezpredmetný — notifikácia o jazde, ktorá sa
-    // nemôže zmerať, je len otravovanie.
-    if (stav.location !== "granted") return chybajucePovolenia(stav);
+  const detektor = await pluginAndroid();
+  if (!detektor) return [];
+  const p = detektor;
 
-    if (stav.notifications != null && stav.notifications !== "granted") {
-      stav = (await p.requestNotificationPermission?.()) ?? stav;
+  /*
+    Každý krok zvlášť a s vlastným zotavením.
+
+    Reťaz bola predtým jedno `try` — keď ktorékoľvek volanie zlyhalo (staršia
+    binárka metódu nemá, systém žiadosť zamietol), zvyšok sa preskočil a
+    navonok to vyzeralo tak, že sa appka po povolení polohy prestala pýtať.
+  */
+  async function skus(praca: () => Promise<unknown>): Promise<void> {
+    try {
+      await praca();
+    } catch {
+      /* jedno zamietnutie nesmie zhodiť zvyšok reťaze */
     }
-    if (stav.motion != null && stav.motion !== "granted") {
-      stav = (await p.requestMotionPermission?.()) ?? stav;
-    }
-    if (stav.background !== "granted") stav = await p.requestBackgroundPermission();
-    return chybajucePovolenia(stav);
-  } catch {
-    return [];
+    // Android zahodí žiadosť podanú vo chvíli, keď sa predchádzajúce okno
+    // ešte zatvára. Navonok to vyzerá, že sa appka nespýtala.
+    await new Promise((hotovo) => setTimeout(hotovo, 400));
   }
+
+  async function stav(): Promise<Partial<DriveDetectorPermissions> | null> {
+    try {
+      return await p.checkPermissions();
+    } catch {
+      return null;
+    }
+  }
+
+  if ((await stav())?.location !== "granted") {
+    await skus(() => p.requestPermissions());
+  }
+  // Bez polohy je zvyšok bezpredmetný — notifikácia o jazde, ktorá sa nemá
+  // ako zmerať, je len otravovanie.
+  if ((await stav())?.location !== "granted") return chybajucePovolenia(await stav());
+
+  const chyba = chybajucePovolenia(await stav());
+  if (chyba.includes("notifikacie") || chyba.includes("pohyb")) {
+    if (p.requestExtraPermissions) {
+      await skus(() => p.requestExtraPermissions!());
+    } else {
+      // Staršia binárka vie len po jednom.
+      if (chyba.includes("notifikacie")) await skus(() => p.requestNotificationPermission!());
+      if (chyba.includes("pohyb")) await skus(() => p.requestMotionPermission!());
+    }
+  }
+
+  if (chybajucePovolenia(await stav()).includes("vzdy")) {
+    await skus(() => p.requestBackgroundPermission());
+  }
+  return chybajucePovolenia(await stav());
 }

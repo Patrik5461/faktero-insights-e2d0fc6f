@@ -355,6 +355,24 @@ async function zisti(): Promise<Riadok[]> {
   }
 
   /*
+    Okno povolení pre knihu jázd. Bez tohto riadku sa nedá odlíšiť „appka sa
+    nepýta, lebo je pokazená" od „appka sa nepýta, lebo je všetko povolené".
+  */
+  try {
+    const { stavPovoleniJazd, uzSmeSaPytali } = await import("@/lib/mobile/povolenia-jazd");
+    const chyba = await stavPovoleniJazd();
+    if (chyba) {
+      const pytane = (await uzSmeSaPytali()) ? " (už sa pýtalo)" : "";
+      r.push({
+        co: "okno povolení",
+        hodnota: chyba.length ? `chýba: ${chyba.join(", ")}${pytane}` : `netreba nič${pytane}`,
+      });
+    }
+  } catch {
+    /* na iOS a na webe sa okno nepoužíva */
+  }
+
+  /*
     Posledný pád aplikácie.
 
     „Aplikácia sa opakovane zastavuje" nezanechá nič, čo by sa dalo poslať —

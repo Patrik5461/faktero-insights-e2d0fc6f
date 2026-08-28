@@ -658,6 +658,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "pov.vzdyNastavenia": "Eine letzte Sache: Den Standort „Immer“ lässt Android nur in den Einstellungen umschalten. Wir öffnen sie — wählen Sie Berechtigungen → Standort → Immer zulassen.",
   "pov.otvoritNastavenia": "Einstellungen öffnen",
   "pov.hotovo": "Fertig",
+  "pov.zvysokNastavenia": "Das lässt sich per Dialog nicht mehr erlauben — Android bietet es nur in den App-Einstellungen an. Wir öffnen sie; suchen Sie nach Berechtigungen.",
   "app.spustam": "Faktero wird gestartet… ({faza}) · {balicek}",
   "app.startZasekol": "Der Start hängt beim Schritt „{faza}“.",
   "app.balicek": "Paket {peciatka}",
