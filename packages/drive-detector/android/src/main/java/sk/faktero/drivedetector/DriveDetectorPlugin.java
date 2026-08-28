@@ -1,92 +1,335 @@
 package sk.faktero.drivedetector;
 
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.os.PowerManager;
+
+import androidx.core.content.ContextCompat;
+
+import com.getcapacitor.JSArray;
+import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
+
+import java.util.List;
+
+import org.json.JSONObject;
+
+import sk.faktero.drivedetector.core.BufferedTrip;
+import sk.faktero.drivedetector.core.Classification;
 
 /**
- * Kostra pre Android.
+ * Mostík medzi detekciou a aplikáciou.
  *
- * Rovnaké názvy metód ako na iOS, ale každá povie, že nie je hotová. Vďaka
- * tomu je TypeScript vrstva platformovo neutrálna a doplnenie Androidu
- * (Fused Location + Activity Recognition + Foreground Service) sa zaobíde bez
- * zmeny rozhrania.
+ * Metódy sedia s rozhraním v `src/definitions.ts` — tie isté názvy a tie isté
+ * návratové hodnoty ako na iOS. Appka nesmie vedieť, na ktorej platforme beží.
+ *
+ * Sám nič nemeria: meranie vlastní služba, ktorá beží aj vtedy, keď appka
+ * nebeží. Plugin je len okno do nej a do jej úložiska.
  */
-@CapacitorPlugin(name = "DriveDetector")
-public class DriveDetectorPlugin extends Plugin {
+@CapacitorPlugin(
+        name = "DriveDetector",
+        permissions = {
+                @Permission(alias = "location", strings = {
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                }),
+                @Permission(alias = "background", strings = {
+                        Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                }),
+                @Permission(alias = "motion", strings = {
+                        "android.permission.ACTIVITY_RECOGNITION"
+                })
+        })
+public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.Poslucháč {
 
-    private static final String SPRAVA = "Detekcia jazdy zatiaľ nie je pre Android implementovaná.";
+    private TripStore store;
+
+    @Override
+    public void load() {
+        store = new TripStore(getContext());
+        DriveDetectorService.nastavPoslucháča(this);
+    }
+
+    // ── Nastavenia a beh ───────────────────────────────────────────────────
 
     @PluginMethod
     public void configure(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        JSObject data = call.getData();
+        store.ulozConfig(data);
+        JSObject texty = data.getJSObject("notification");
+        if (texty != null) store.ulozTexty(texty);
+        call.resolve();
     }
 
     @PluginMethod
     public void start(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        if (!mameFinePolohu()) {
+            call.reject("Bez povolenej polohy sa detekcia spustiť nedá.");
+            return;
+        }
+        posliSluzbe(DriveDetectorService.AKCIA_START);
+        call.resolve();
     }
 
     @PluginMethod
     public void stop(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        posliSluzbe(DriveDetectorService.AKCIA_STOP);
+        call.resolve();
     }
 
     @PluginMethod
     public void getState(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        JSObject von = new JSObject();
+        von.put("monitoring", store.jeMonitoring());
+        BufferedTrip aktivna = store.nacitajAktivnu();
+        von.put("activeTrip", aktivna == null ? JSObject.NULL : naJs(TripStore.doJson(aktivna)));
+        von.put("diagnostika", diagnostika());
+        call.resolve(von);
     }
 
     @PluginMethod
     public void getBufferedTrip(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        BufferedTrip aktivna = store.nacitajAktivnu();
+        if (aktivna == null) {
+            // Keď žiadna nebeží, posledná nezaradená ukončená.
+            List<BufferedTrip> zoznam = store.nacitajNevyriesene();
+            if (!zoznam.isEmpty()) aktivna = zoznam.get(zoznam.size() - 1);
+        }
+        call.resolve(zabal(aktivna));
     }
 
     @PluginMethod
     public void getUnresolvedTrips(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        JSArray pole = new JSArray();
+        for (BufferedTrip t : store.nacitajNevyriesene()) pole.put(TripStore.doJson(t));
+        JSObject von = new JSObject();
+        von.put("trips", pole);
+        call.resolve(von);
     }
 
     @PluginMethod
     public void markSynced(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        String id = call.getString("tripId");
+        if (id == null) {
+            call.reject("Chýba tripId.");
+            return;
+        }
+        store.odoberNevyriesenu(id);
+        call.resolve();
     }
 
     @PluginMethod
     public void confirmTrip(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        String id = call.getString("tripId");
+        Classification trieda = Classification.zKodu(call.getString("classification"));
+        if (id == null || trieda == null) {
+            call.reject("Chýba tripId alebo classification.");
+            return;
+        }
+        Intent i = new Intent(getContext(), DriveDetectorService.class)
+                .setAction(trieda == Classification.BUSINESS
+                        ? DriveNotifications.AKCIA_SLUZOBNA
+                        : DriveNotifications.AKCIA_SUKROMNA)
+                .putExtra(DriveNotifications.EXTRA_TRIP, id);
+        getContext().startService(i);
+
+        BufferedTrip aktivna = store.nacitajAktivnu();
+        if (aktivna != null && aktivna.id.equals(id)) {
+            aktivna.classification = trieda;
+            call.resolve(naJs(TripStore.doJson(aktivna)));
+            return;
+        }
+        for (BufferedTrip t : store.nacitajNevyriesene()) {
+            if (!t.id.equals(id)) continue;
+            t.classification = trieda;
+            call.resolve(naJs(TripStore.doJson(t)));
+            return;
+        }
+        call.reject("Jazda sa nenašla.");
     }
 
     @PluginMethod
     public void discardTrip(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        String id = call.getString("tripId");
+        Intent i = new Intent(getContext(), DriveDetectorService.class)
+                .setAction(DriveNotifications.AKCIA_ZAHODIT)
+                .putExtra(DriveNotifications.EXTRA_TRIP, id);
+        getContext().startService(i);
+        if (id != null) store.odoberNevyriesenu(id);
+        call.resolve();
     }
 
     @PluginMethod
     public void startTrip(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        if (!mameFinePolohu()) {
+            call.reject("Bez povolenej polohy sa jazda merať nedá.");
+            return;
+        }
+        posliSluzbe(DriveDetectorService.AKCIA_START_TRIP);
+        // Služba jazdu vytvorí a uloží; vraciame, čo je v úložisku.
+        cakajNaUlozenie(call, true);
     }
 
     @PluginMethod
     public void endTrip(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        posliSluzbe(DriveDetectorService.AKCIA_END_TRIP);
+        cakajNaUlozenie(call, false);
     }
 
-    @Override
+    // ── Povolenia ──────────────────────────────────────────────────────────
+
     @PluginMethod
+    @Override
     public void checkPermissions(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        call.resolve(povolenia());
     }
 
-    @Override
     @PluginMethod
+    @Override
     public void requestPermissions(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        // Pýta sa len poloha „počas používania". Na „vždy" sa ide až potom —
+        // Android 11+ inak žiadosť rovno odmietne.
+        requestPermissionForAlias("location", call, "poVyzve");
     }
 
     @PluginMethod
     public void requestBackgroundPermission(PluginCall call) {
-        call.unimplemented(SPRAVA);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            call.resolve(povolenia());
+            return;
+        }
+        requestPermissionForAlias("background", call, "poVyzve");
+    }
+
+    /**
+     * Na Androide sa presná poloha pýta spolu s hrubou — samostatná dočasná
+     * výnimka ako na iOS tu neexistuje. Vraciame teda len stav.
+     */
+    @PluginMethod
+    public void requestPrecisePermission(PluginCall call) {
+        requestPermissionForAlias("location", call, "poVyzve");
+    }
+
+    @PermissionCallback
+    private void poVyzve(PluginCall call) {
+        call.resolve(povolenia());
+    }
+
+    private JSObject povolenia() {
+        JSObject von = new JSObject();
+        von.put("location", stav(Manifest.permission.ACCESS_COARSE_LOCATION));
+        von.put("background", Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                ? stav(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                : stav(Manifest.permission.ACCESS_FINE_LOCATION));
+        von.put("motion", Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                ? stav("android.permission.ACTIVITY_RECOGNITION")
+                : "granted");
+        // „Presná poloha" je na Androide samostatné povolenie od verzie 12.
+        von.put("precise", stav(Manifest.permission.ACCESS_FINE_LOCATION));
+        // Obnovovanie na pozadí Android nepozná; úsporný režim ale prácu na
+        // pozadí obmedzuje rovnako účinne, takže ho hlásime.
+        PowerManager pm = ContextCompat.getSystemService(getContext(), PowerManager.class);
+        von.put("lowPower", pm != null && pm.isPowerSaveMode() ? "on" : "off");
+        return von;
+    }
+
+    private String stav(String povolenie) {
+        return ContextCompat.checkSelfPermission(getContext(), povolenie) == PackageManager.PERMISSION_GRANTED
+                ? "granted"
+                : "denied";
+    }
+
+    private boolean mameFinePolohu() {
+        return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    // ── Udalosti zo služby ─────────────────────────────────────────────────
+
+    @Override
+    public void naJazduRozpoznanu(BufferedTrip trip) {
+        JSObject e = new JSObject();
+        e.put("tripId", trip.id);
+        e.put("startedAt", trip.startedAt);
+        notifyListeners("driveDetected", e);
+    }
+
+    @Override
+    public void naZmenuJazdy(BufferedTrip trip) {
+        notifyListeners("tripUpdated", naJs(TripStore.doJson(trip)));
+    }
+
+    @Override
+    public void naKoniecJazdy(BufferedTrip trip) {
+        notifyListeners("tripEnded", naJs(TripStore.doJson(trip)));
+    }
+
+    // ── Pomocné ────────────────────────────────────────────────────────────
+
+    private void posliSluzbe(String akcia) {
+        Intent i = new Intent(getContext(), DriveDetectorService.class).setAction(akcia);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(i);
+        else getContext().startService(i);
+    }
+
+    /**
+     * Služba je v inom vlákne, takže jazda nemusí byť uložená v tej istej
+     * milisekunde. Chvíľu sa počká — dlhšie čakanie by znamenalo, že sa niečo
+     * pokazilo, a vtedy je poctivejšie vrátiť prázdno.
+     */
+    private void cakajNaUlozenie(PluginCall call, boolean ocakavamJazdu) {
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            BufferedTrip t = store.nacitajAktivnu();
+            if (ocakavamJazdu) {
+                if (t == null) {
+                    call.reject("Jazdu sa nepodarilo spustiť.");
+                    return;
+                }
+                call.resolve(naJs(TripStore.doJson(t)));
+            } else {
+                List<BufferedTrip> zoznam = store.nacitajNevyriesene();
+                call.resolve(zabal(zoznam.isEmpty() ? null : zoznam.get(zoznam.size() - 1)));
+            }
+        }, 350);
+    }
+
+    /**
+     * `JSObject.fromJSONObject` hlási kontrolovanú výnimku, hoci vstup je vždy
+     * náš vlastný JSON. Zabalené na jednom mieste, nech to nezaťažuje každé
+     * volanie zvlášť.
+     */
+    private static JSObject naJs(JSONObject j) {
+        try {
+            return JSObject.fromJSONObject(j);
+        } catch (org.json.JSONException e) {
+            return new JSObject();
+        }
+    }
+
+    /** `null` sa cez mostík posiela ako objekt s `trip: null`, nie ako prázdno. */
+    private JSObject zabal(BufferedTrip t) {
+        JSObject von = new JSObject();
+        von.put("trip", t == null ? JSObject.NULL : naJs(TripStore.doJson(t)));
+        return von;
+    }
+
+    private JSObject diagnostika() {
+        JSONObject d = store.nacitajDiagnostiku();
+        JSObject von = naJs(d);
+        BufferedTrip aktivna = store.nacitajAktivnu();
+        von.put("stav", aktivna != null ? "jazdi" : (store.jeMonitoring() ? "caka" : "caka"));
+        von.put("sekundyNadPrahom", d.optDouble("sekundyNadPrahom", 0));
+        von.put("potrebnychSekund", store.nacitajConfig().sustainedSeconds);
+        von.put("prebudeni", d.optInt("prebudeni", 0));
+        von.put("neuspesnychOvereni", d.optInt("neuspesnychOvereni", 0));
+        von.put("najvyssiaRychlost", d.optDouble("najvyssiaRychlost", 0));
+        return von;
     }
 }

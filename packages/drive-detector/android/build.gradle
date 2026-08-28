@@ -1,6 +1,6 @@
-// Kostra pre Android. Projekt Faktera zatiaľ platformu `android` pridanú nemá,
-// takže tento modul sa nikde nezostavuje — je tu preto, aby doplnenie Androidu
-// nevyžadovalo zásah do TypeScript vrstvy.
+// Detekcia jazdy pre Android. Jadro kaskády je v `core/` bez jedinej triedy
+// z Androidu — tá istá logika ako na iOS a rovnaké testy, takže sa dá overiť
+// bez zariadenia (`./gradlew :faktero-drive-detector:testDebugUnitTest`).
 ext {
     junitVersion = project.hasProperty('junitVersion') ? rootProject.ext.junitVersion : '4.13.2'
     androidxAppCompatVersion = project.hasProperty('androidxAppCompatVersion') ? rootProject.ext.androidxAppCompatVersion : '1.7.1'
@@ -46,5 +46,9 @@ dependencies {
     implementation fileTree(dir: 'src/main/libs', include: ['*.jar'])
     implementation project(':capacitor-android')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    // Poloha a rozpoznávanie činnosti. `FusedLocationProvider` je jediný
+    // rozumný zdroj polohy na Androide — surový `LocationManager` má na
+    // pozadí neporovnateľne horšiu spotrebu.
+    implementation "com.google.android.gms:play-services-location:21.3.0"
     testImplementation "junit:junit:$junitVersion"
 }
