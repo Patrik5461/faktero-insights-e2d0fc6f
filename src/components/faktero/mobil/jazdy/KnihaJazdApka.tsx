@@ -22,6 +22,7 @@ import { AppHeader, MobilObrazovka, PasHore, Pracujem } from "../MobilChrome";
 import { PrehladJazd } from "./PrehladJazd";
 import { HistoriaVozidiel } from "./HistoriaVozidiel";
 import { VozidlaJazd } from "./VozidlaJazd";
+import type { Vozidlo } from "./useVozidla";
 import { TabBarJazd, type ZalozkaJazd } from "./TabBarJazdy";
 
 /**
@@ -91,6 +92,9 @@ function ObsahJazd() {
   const [panel, setPanel] = useState(false);
   const [diagnostika, setDiagnostika] = useState(false);
   const [bezi, setBezi] = useState(false);
+  /* Podstránky záložiek drží obal — pozri `vlastnaHlavicka` nižšie. */
+  const [vozidloHistoria, setVozidloHistoria] = useState<Vozidlo | null>(null);
+  const [pridavamVozidlo, setPridavamVozidlo] = useState(false);
 
   /**
    * Kto je prihlásený a za akú firmu.
@@ -392,8 +396,21 @@ function ObsahJazd() {
   );
 
   function prepni(z: ZalozkaJazd) {
+    /* Ťuknutie na záložku vracia na jej začiatok — nie do podstránky, v ktorej
+       človek skončil naposledy. */
+    setVozidloHistoria(null);
+    setPridavamVozidlo(false);
     setKrok(z);
   }
+
+  /*
+    Podstránky si nesú vlastnú hlavičku so šípkou späť. Keby obal nad nimi
+    kreslil ešte svoju, obe by si rezervovali miesto pre výrez a nad obsahom
+    by ostala prázdna medzera. Obal preto musí vedieť, kedy hlavičku vynechať
+    — a musí to vedieť už pri vykresľovaní, nie až po ňom.
+  */
+  const vlastnaHlavicka =
+    (krok === "historia" && vozidloHistoria !== null) || (krok === "vozidla" && pridavamVozidlo);
 
   const aktivna: ZalozkaJazd =
     krok === "jazda"
@@ -421,11 +438,16 @@ function ObsahJazd() {
   return (
     <SoSpodnouListou aktivna={aktivna} onPrepni={prepni} bezi={bezi}>
       <div className="flex min-h-[calc(100dvh-var(--spodna-lista,0px))] flex-col bg-app-pozadie">
-        {hlavicka}
+        {!vlastnaHlavicka && hlavicka}
         {krok === "historia" ? (
-          <HistoriaVozidiel firma={firma} onSpat={() => setKrok("prehlad")} />
+          <HistoriaVozidiel
+            firma={firma}
+            onSpat={() => setKrok("prehlad")}
+            vybrane={vozidloHistoria}
+            onVyber={setVozidloHistoria}
+          />
         ) : krok === "vozidla" ? (
-          <VozidlaJazd firma={firma} />
+          <VozidlaJazd firma={firma} pridavam={pridavamVozidlo} onPridavam={setPridavamVozidlo} />
         ) : (
           <PrehladJazd
             firma={firma}

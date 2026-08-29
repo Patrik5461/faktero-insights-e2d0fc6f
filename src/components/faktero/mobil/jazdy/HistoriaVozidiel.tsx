@@ -18,13 +18,24 @@ import { useVozidla, type Vozidlo } from "./useVozidla";
 export function HistoriaVozidiel({
   firma,
   onSpat,
+  vybrane,
+  onVyber,
 }: {
   firma: { id: string; name: string };
   onSpat: () => void;
+  /**
+   * Vybrané vozidlo drží obal appky, nie táto obrazovka.
+   *
+   * Zoznam jázd si nesie vlastnú hlavičku so šípkou späť a obal nad ňou
+   * kreslí svoju s menom firmy. Dve hlavičky nad sebou si každá rezervujú
+   * miesto pre výrez — a to je tá medzera hore. Obal preto musí vedieť už
+   * pri vykresľovaní, že si obrazovka hlavičku rieši sama.
+   */
+  vybrane: Vozidlo | null;
+  onVyber: (v: Vozidlo | null) => void;
 }) {
   const { t } = usePreklad();
   const { vozidla } = useVozidla(firma.id);
-  const [vybrane, setVybrane] = useState<Vozidlo | null>(null);
   /* Predvýber sa robí raz. Bez toho by sa vozidlo nasadilo znova hneď po tom,
      ako sa človek vráti na výber. */
   const [predvybrane, setPredvybrane] = useState(false);
@@ -32,11 +43,11 @@ export function HistoriaVozidiel({
   useEffect(() => {
     if (!vozidla || predvybrane) return;
     setPredvybrane(true);
-    if (vozidla.length === 1) return setVybrane(vozidla[0]);
+    if (vozidla.length === 1) return onVyber(vozidla[0]);
     const moje = mojeVozidlo(firma.id);
     const n = moje ? vozidla.find((v) => v.id === moje) : null;
-    if (n) setVybrane(n);
-  }, [vozidla, predvybrane, firma.id]);
+    if (n) onVyber(n);
+  }, [vozidla, predvybrane, firma.id, onVyber]);
 
   if (vozidla === null) return <Pracujem text={t("jz.nacitavamVozidla")} />;
 
@@ -46,7 +57,7 @@ export function HistoriaVozidiel({
         firma={firma}
         vozidlo={vybrane}
         /* Pri jedinom aute niet kam sa vracať na výber — ide sa na prehľad. */
-        onSpat={() => (vozidla.length > 1 ? setVybrane(null) : onSpat())}
+        onSpat={() => (vozidla.length > 1 ? onVyber(null) : onSpat())}
       />
     );
 
@@ -69,7 +80,7 @@ export function HistoriaVozidiel({
                   title={v.name}
                   subtitle={v.license_plate ?? undefined}
                   chevron
-                  onClick={() => setVybrane(v)}
+                  onClick={() => onVyber(v)}
                 />
               ))}
             </ListCard>

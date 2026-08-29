@@ -19,12 +19,24 @@ import { useVozidla } from "./useVozidla";
  * teda tlačidlo v tlačidle. Na jazdy je vlastná záložka a v nej ten istý
  * výber vozidla.
  */
-export function VozidlaJazd({ firma }: { firma: { id: string; name: string } }) {
+export function VozidlaJazd({
+  firma,
+  pridavam,
+  onPridavam,
+}: {
+  firma: { id: string; name: string };
+  /**
+   * Pridávanie vozidla drží obal appky — obrazovka „Nové vozidlo" si nesie
+   * vlastnú hlavičku a obal nad ňou nesmie kresliť svoju. Dve hlavičky nad
+   * sebou si každá rezervujú miesto pre výrez a vznikne medzera.
+   */
+  pridavam: boolean;
+  onPridavam: (v: boolean) => void;
+}) {
   const { t } = usePreklad();
   const { vozidla, nezistene, nacitaj } = useVozidla(firma.id);
   const [commander, setCommander] = useState<Set<string>>(new Set());
   const [moje, setMoje] = useState<string | null>(null);
-  const [pridavam, setPridavam] = useState(false);
 
   useEffect(() => setMoje(mojeVozidlo(firma.id)), [firma.id]);
 
@@ -49,9 +61,9 @@ export function VozidlaJazd({ firma }: { firma: { id: string; name: string } }) 
     return (
       <NoveVozidlo
         firma={firma}
-        onSpat={() => setPridavam(false)}
+        onSpat={() => onPridavam(false)}
         onPridane={async () => {
-          setPridavam(false);
+          onPridavam(false);
           await nacitaj();
         }}
       />
@@ -73,7 +85,7 @@ export function VozidlaJazd({ firma }: { firma: { id: string; name: string } }) 
             popis={nezistene ? t("jz.bezZoznamu") : t("jz.pridajteHo")}
             akcia={
               nezistene ? undefined : (
-                <HlavneTlacidlo onClick={() => setPridavam(true)}>
+                <HlavneTlacidlo onClick={() => onPridavam(true)}>
                   {t("jz.pridatVozidlo")}
                 </HlavneTlacidlo>
               )
@@ -102,7 +114,7 @@ export function VozidlaJazd({ firma }: { firma: { id: string; name: string } }) 
 
             <button
               type="button"
-              onClick={() => setPridavam(true)}
+              onClick={() => onPridavam(true)}
               className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-app border border-dashed border-app-ramik px-4 py-3.5 text-[14px] text-app-text-2"
             >
               <Plus className="h-4 w-4" /> {t("jz.pridatVozidlo")}
