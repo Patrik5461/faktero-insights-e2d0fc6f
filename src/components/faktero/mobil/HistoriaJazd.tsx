@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Map as MapIcon, Route as RouteIcon, Satellite } from "lucide-react";
+import { Map as MapIcon, Route as RouteIcon, Satellite, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { trasa, trvanieJazdy } from "@/lib/faktero/adresa-jazdy";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
@@ -134,6 +134,9 @@ export function HistoriaJazd({
   const [otvorena, setOtvorena] = useState<string | null>(null);
   /** Ktorej jazde sa práve prepisuje charakter — nech sa nedá ťuknúť dvakrát. */
   const [meni, setMeni] = useState<string | null>(null);
+  /** Jazda čakajúca na potvrdenie zmazania a jazda, ktorá sa práve maže. */
+  const [potvrdZmazanie, setPotvrdZmazanie] = useState<string | null>(null);
+  const [mazem, setMazem] = useState<string | null>(null);
 
   /*
     Zmena charakteru jazdy. Zapisuje sa hneď a zoznam sa prekreslí bez
@@ -162,6 +165,42 @@ export function HistoriaJazd({
     }
     const hlaska = t(na === "private" ? "jazdy.oznacenaSukromna" : "jazdy.oznacenaSluzobna");
     toast.success(hlaska);
+  }
+
+  /*
+    Zmazanie jazdy.
+
+    Do knihy jázd sa občas dostane niečo, čo tam nepatrí — appka rozpozná cestu
+    autobusom alebo sa meranie spustí omylom. Označiť to za súkromné nestačí:
+    v súkromných kilometroch by potom svietila cesta, ktorá sa nikdy nekonala.
+
+    Mazať smie len správca firmy — tak to má nastavené databáza. Kontroluje sa
+    počet zmazaných riadkov, lebo pri zakázanom riadku Postgres chybu nevráti,
+    len nezmaže nič — a appka by tvrdila, že jazda je preč, hoci tam ostala.
+  */
+  async function zmazJazdu(id: string) {
+    setMazem(id);
+    const { data, error } = await supabase
+      .from("trips")
+      .delete()
+      .eq("id", id)
+      .eq("company_id", firma.id)
+      .select("id");
+    setMazem(null);
+    if (error) return toast.error(error.message);
+    if (!data?.length) return toast.error(t("jazdy.mazeLenSpravca"));
+
+    setJazdy((xs) => (xs ?? []).filter((j) => j.id !== id));
+    setOtvorena(null);
+    setPotvrdZmazanie(null);
+    // Aj z telefónu — inak sa jazda vráti pri prvom otvorení bez signálu.
+    try {
+      const { zmazJazdu: zmazLokalne } = await import("@/lib/mobile/jazdy-lokalne");
+      await zmazLokalne(id);
+    } catch {
+      /* lokálna kópia je len vyrovnávacia pamäť, chyba tu nič nemení */
+    }
+    toast.success(t("jazdy.zmazana"));
   }
 
   useEffect(() => {
@@ -405,6 +444,43 @@ export function HistoriaJazd({
                                 </div>
                               </div>
                               {j.route && <MapaTrasy route={j.route} vyska={220} />}
+
+                              {/* Zmazanie je na dve ťuknutia — jedno je pri
+                                  podklade pre daňový výdavok málo. */}
+                              {potvrdZmazanie === j.id ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    disabled={mazem === j.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      void zmazJazdu(j.id);
+                                    }}
+                                    className="min-h-[36px] rounded-app-sm bg-red-600 px-3 text-[13px] font-medium text-white disabled:opacity-60"
+                                  >
+                                    {mazem === j.id ? t("jazdy.mazem") : t("jazdy.naozajZmazat")}
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPotvrdZmazanie(null);
+                                    }}
+                                    className="min-h-[36px] px-2 text-[13px] text-app-text-2"
+                                  >
+                                    {t("spolocne.zrusit")}
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPotvrdZmazanie(j.id);
+                                  }}
+                                  className="inline-flex min-h-[36px] items-center gap-1.5 text-[13px] text-app-text-2"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  {t("jazdy.zmazatJazdu")}
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
