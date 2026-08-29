@@ -199,3 +199,51 @@ File → Save Screen. Alebo priamo na zariadení a orežte na požadovaný rozme
   push zatiaľ nesľubujeme, kým to neprejde naostro.
 - **eFaktúra (Peppol) ešte nie je napojená.** Popis ju spomína len v kontexte webu, nie
   ako funkciu aplikácie.
+
+---
+
+## 9. Kniha jázd — druhá aplikácia
+
+Samostatná appka pre firmy, ktoré jazdy evidujú, ale nefakturujú. Kód je
+spoločný, obal vlastný: projekt `ios-jazdy/`, `sk.tobify.knihajazd`, názov
+**Kniha jázd**, verzia 1.0.
+
+### Čo je hotové (2026-08-29)
+
+- **Vlastná ikona a úvodná obrazovka** — asfaltová sivá s trasou, odjazdom a
+  cieľom. Kreslí ju `node scripts/kniha-jazd-ikona.mjs`, do projektu rozsype
+  `CAPACITOR_APP=jazdy node scripts/ios-ikony.mjs`.
+- **Vlastná značka v appke** — na prihlásení aj pri registrácii je znak Knihy
+  jázd, nie logo Faktera. Appka si ju vyberá pri zostavení (`VITE_APKA`).
+- **Vlastný tím a podpis** v projekte (`DEVELOPMENT_TEAM`), `MARKETING_VERSION 1.0`.
+- **Xcode Cloud** — `ios-jazdy/App/ci_scripts/ci_post_clone.sh` je na mieste a
+  odovzdáva prácu spoločnému skriptu s `CAPACITOR_APP=jazdy`.
+- **Bez fotoaparátu a bez push notifikácií** — `includePlugins` v
+  `capacitor.config.jazdy.ts` ich do balíčka nepustí, takže appka nepýta
+  povolenia, ktoré nepoužije, a nepotrebuje `App.entitlements`.
+
+### Čo musí spraviť človek
+
+1. **Zaregistrovať Bundle ID** `sk.tobify.knihajazd` (Certificates, Identifiers
+   & Profiles). Capability stačí predvolená — push tu nie je.
+2. **Vytvoriť záznam v App Store Connect**: názov *Kniha jázd* (over dostupnosť
+   názvu, je dosť všeobecný — záloha „Kniha jázd – Faktero"), primárny jazyk
+   slovenčina, kategória Business.
+3. **Nový workflow v Xcode Cloude**: projekt `ios-jazdy/App/App.xcodeproj`,
+   schéma `App`, vetva `main`, archív → TestFlight. Faktérov workflow sa
+   nekopíruje — stavia iný projekt.
+4. **Snímky obrazovky** a popis. Popis nesmie sľubovať fakturáciu.
+
+### Pravidlo 4.3 (duplicitné aplikácie)
+
+Dve appky toho istého vývojára Apple posudzuje prísne. Naša obrana je vecná:
+iná cieľová skupina (kto nefakturuje), **iná ikona a značka**, iný obsah
+(žiadne faktúry, doklady ani sklad) a menší rozsah povolení. Keby aj tak prišla
+otázka, odpoveď je, že Kniha jázd je samostatný produkt s vlastným cenníkom,
+nie orezaná kópia.
+
+### Čo ešte nie je
+
+- Prúžok na uzamknutej obrazovke (Live Activity) — Faktero ho má, Kniha jázd
+  nie. Meranie na ňom nezávisí.
+- Skúška na skutočnom iPhone: appka bola zatiaľ len zostavená, nie odjazdená.

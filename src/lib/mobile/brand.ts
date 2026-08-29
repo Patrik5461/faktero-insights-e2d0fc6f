@@ -1,3 +1,5 @@
+import { JE_KNIHA_JAZD } from "./apka";
+
 /**
  * Značková zelená.
  *
@@ -34,7 +36,8 @@ export const ZELENA_DOLE = "#0a8f52";
 /**
  * Verzia mobilnej aplikácie tak, ako ju vidí človek.
  *
- * Musí sedieť s `MARKETING_VERSION` v `ios/App/App.xcodeproj/project.pbxproj` —
- * inak appka o sebe tvrdí jedno a v App Store je napísané druhé.
+ * Musí sedieť s `MARKETING_VERSION` v `project.pbxproj` — inak appka o sebe
+ * tvrdí jedno a v App Store je napísané druhé. Appky sú dve a každá má svoje
+ * číslo: Kniha jázd začína od jednotky, Faktero je v obchode ďalej.
  */
-export const VERZIA_APKY = "1.2";
+export const VERZIA_APKY = JE_KNIHA_JAZD ? "1.0" : "1.2";

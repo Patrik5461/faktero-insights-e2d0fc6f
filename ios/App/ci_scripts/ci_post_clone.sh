@@ -33,6 +33,20 @@ KOREN="${CI_PRIMARY_REPOSITORY_PATH:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 cd "$KOREN"
 echo "▸ Repozitár: $KOREN"
 
+# ── Ktorá z dvoch appiek ─────────────────────────────────────────────────────
+# Xcode Cloud spúšťa skript, ktorý leží vedľa projektu. Kniha jázd má vlastný
+# projekt (`ios-jazdy`) a vlastný webový build, inak je príprava tá istá — tak
+# je skript jeden a appku si vyberá premennou, rovnako ako Capacitor.
+readonly APKA="${CAPACITOR_APP:-faktero}"
+if [ "$APKA" = "jazdy" ]; then
+  readonly IOS="ios-jazdy"
+  readonly BUILD="build:jazdy"
+else
+  readonly IOS="ios"
+  readonly BUILD="build:mobile"
+fi
+echo "▸ Appka: $APKA (projekt $IOS)"
+
 # ── Node ─────────────────────────────────────────────────────────────────────
 # Obrazy Xcode Cloudu Node negarantujú a keď ho majú, býva starší. Preto sa
 # doťahuje oficiálny balík z nodejs.org — je to rýchlejšie a predvídateľnejšie
@@ -75,8 +89,8 @@ fi
 if [ -n "${CI_BUILD_NUMBER:-}" ]; then
   echo "▸ Číslo buildu: ${CI_BUILD_NUMBER}"
   perl -pi -e "s/CURRENT_PROJECT_VERSION = [^;]+;/CURRENT_PROJECT_VERSION = ${CI_BUILD_NUMBER};/g" \
-    ios/App/App.xcodeproj/project.pbxproj
-  grep -c "CURRENT_PROJECT_VERSION = ${CI_BUILD_NUMBER};" ios/App/App.xcodeproj/project.pbxproj \
+    "$IOS/App/App.xcodeproj/project.pbxproj"
+  grep -c "CURRENT_PROJECT_VERSION = ${CI_BUILD_NUMBER};" "$IOS/App/App.xcodeproj/project.pbxproj" \
     | xargs -I{} echo "▸ prepísané výskyty: {} (očakávajú sa 4)"
 else
   echo "▸ CI_BUILD_NUMBER nie je nastavené — číslo buildu ostáva z projektu."
@@ -95,16 +109,22 @@ npm ci --no-audit --no-fund
 # `build:mobile` = klientský build z vite.config.mobile.ts do dist-mobile,
 # premenovanie index.mobile.html na index.html, pečiatka verzie a `cap sync`.
 # Ten sync je ten `npx cap sync ios` — platforma je v repozitári len jedna.
-echo "▸ npm run build:mobile"
-npm run build:mobile
+echo "▸ npm run $BUILD"
+npm run "$BUILD"
+
+# `build:mobile` si `cap sync` spúšťa sám; `build:jazdy` synchronizuje len
+# Android (ten sa stavia na serveri) — iOS sa dá zosynchronizovať iba tu.
+if [ "$APKA" = "jazdy" ]; then
+  echo "▸ cap sync ios (Kniha jázd)"
+  CAPACITOR_APP=jazdy npx cap sync ios
+fi
 
 # ── Kontrola, že sa naozaj vyrobilo to, čo build potrebuje ───────────────────
 # Bez tohto by sa chýbajúci súbor prejavil až ako neprehľadná chyba xcodebuildu.
 for SUBOR in \
-  "node_modules/@capacitor/push-notifications/Package.swift" \
   "node_modules/@faktero/drive-detector/Package.swift" \
-  "ios/App/App/public/index.html" \
-  "ios/App/App/capacitor.config.json"
+  "$IOS/App/App/public/index.html" \
+  "$IOS/App/App/capacitor.config.json"
 do
   if [ ! -e "$SUBOR" ]; then
     echo "✗ Chýba $SUBOR — build by padol na rozlúsknutí závislostí."
@@ -119,7 +139,7 @@ done
 #
 # Ide to až teraz: pokiaľ `node_modules` neexistovalo, nedali sa rozlúsknuť
 # lokálne balíky pluginov a resolver by nemal z čoho vychádzať.
-readonly XCPROJEKT="ios/App/App.xcodeproj"
+readonly XCPROJEKT="$IOS/App/App.xcodeproj"
 readonly RESOLVED="$XCPROJEKT/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
 
 mkdir -p "$(dirname "$RESOLVED")"
@@ -139,9 +159,9 @@ fi
 # nastavenie Xcode Cloudu nezaujíma, preto sa dostane ďalej.
 if [ ! -f "$RESOLVED" ] && command -v swift >/dev/null 2>&1; then
   echo "▸ 2/2 swift package resolve (CapApp-SPM)"
-  ( cd ios/App/CapApp-SPM && swift package resolve )
-  if [ -f "ios/App/CapApp-SPM/Package.resolved" ]; then
-    cp "ios/App/CapApp-SPM/Package.resolved" "$RESOLVED"
+  ( cd "$IOS/App/CapApp-SPM" && swift package resolve )
+  if [ -f "$IOS/App/CapApp-SPM/Package.resolved" ]; then
+    cp "$IOS/App/CapApp-SPM/Package.resolved" "$RESOLVED"
     echo "▸ Zoznam prekopírovaný tam, kde ho Xcode hľadá."
   fi
 fi

@@ -14,6 +14,14 @@ export default defineConfig(async (env) => {
   const zaklad = (await (mobilny as UserConfigFnObject)(env)) as UserConfig;
   return {
     ...zaklad,
+    /*
+      Podľa tejto premennej si spoločné obrazovky vyberú značku. Rozhoduje sa
+      pri zostavení: appky sú dve, balíček je jeden pre každú.
+    */
+    define: {
+      ...(zaklad.define ?? {}),
+      "import.meta.env.VITE_APKA": JSON.stringify("jazdy"),
+    },
     build: {
       ...zaklad.build,
       outDir: "dist-jazdy",

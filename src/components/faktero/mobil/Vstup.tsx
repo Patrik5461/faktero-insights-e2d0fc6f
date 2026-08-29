@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { isBiometricAvailable, loginWithBiometric, overBiometriu } from "@/lib/mobile/biometric";
 import { MobilObrazovka, VelkeTlacidlo } from "@/components/faktero/mobil/MobilChrome";
 import { Logo } from "@/components/faktero/Logo";
+import { JE_KNIHA_JAZD } from "@/lib/mobile/apka";
+import { ZnackaJazd } from "./jazdy/ZnackaJazd";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 
 type Firma = { id: string; name: string };
@@ -68,7 +70,11 @@ export function Prihlasenie({
       }}
     >
       <div className="mx-auto w-full max-w-sm">
-        <Logo variant="header" className="mb-8 h-9" />
+        {JE_KNIHA_JAZD ? (
+          <ZnackaJazd className="mb-8" />
+        ) : (
+          <Logo variant="header" className="mb-8 h-9" />
+        )}
         <h1 className="text-2xl font-semibold tracking-tight">{t("app.prihlasenie")}</h1>
         <p className="mt-1 text-sm text-app-text-2">{t("app.prihlasteSa")}</p>
 

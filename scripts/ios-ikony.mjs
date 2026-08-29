@@ -1,5 +1,5 @@
 /**
- * Vyrobí ikonu a úvodnú obrazovku pre iOS z `public/faktero-icon.png`.
+ * Vyrobí ikonu a úvodnú obrazovku pre iOS.
  *
  * Projekt mal doteraz predvolené obrázky Capacitora (modrý štvorec), takže by
  * appka mala na ploche cudziu ikonu a pri štarte biele okno s cudzím logom.
@@ -12,17 +12,39 @@
  *    bodu v riadku — prechod v pozadí ikony tak ostane plynulý.
  *
  * Spustenie: node scripts/ios-ikony.mjs
+ *            CAPACITOR_APP=jazdy node scripts/ios-ikony.mjs
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { PNG } from "pngjs";
 
 const KOREN = new URL("..", import.meta.url).pathname;
-const PREDLOHA = `${KOREN}public/faktero-icon.png`;
-const IKONA = `${KOREN}ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png`;
-const SPLASH_DIR = `${KOREN}ios/App/App/Assets.xcassets/Splash.imageset`;
 
-/** Zelená úvodnej obrazovky — musí sedieť s `SplashScreen.backgroundColor` v capacitor.config.ts. */
-const ZELENA = [0x00, 0x7e, 0x46];
+/**
+ * Obe appky stoja vedľa seba v tom istom repozitári a líšia sa len predlohou,
+ * farbou a priečinkom natívneho projektu. Kniha jázd má vlastnú ikonu zámerne:
+ * dve appky tej istej firmy s rovnakým znakom sú presne to, na čo Apple pozerá
+ * pri pravidle 4.3 — a človek by ich na ploche od seba nerozoznal.
+ */
+const APKY = {
+  faktero: {
+    predloha: "public/faktero-icon.png",
+    projekt: "ios/App/App/Assets.xcassets",
+    podklad: [0x00, 0x7e, 0x46],
+  },
+  jazdy: {
+    predloha: "public/kniha-jazd-icon.png",
+    projekt: "ios-jazdy/App/App/Assets.xcassets",
+    podklad: [0x1f, 0x2a, 0x33],
+  },
+};
+
+const APKA = process.env.CAPACITOR_APP === "jazdy" ? APKY.jazdy : APKY.faktero;
+const PREDLOHA = `${KOREN}${APKA.predloha}`;
+const IKONA = `${KOREN}${APKA.projekt}/AppIcon.appiconset/AppIcon-512@2x.png`;
+const SPLASH_DIR = `${KOREN}${APKA.projekt}/Splash.imageset`;
+
+/** Farba úvodnej obrazovky — musí sedieť so `SplashScreen.backgroundColor` v capacitor.config. */
+const ZELENA = APKA.podklad;
 
 const zdroj = PNG.sync.read(readFileSync(PREDLOHA));
 

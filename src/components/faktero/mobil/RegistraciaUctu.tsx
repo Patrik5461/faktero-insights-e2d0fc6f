@@ -7,6 +7,8 @@ import { adresaPotvrdenia, overRegistraciu } from "@/lib/mobile/registracia";
 import { odlozSuhlasy, zapisOdlozeneSuhlasy } from "@/lib/faktero/pravne-suhlasy";
 import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 import { Logo } from "@/components/faktero/Logo";
+import { JE_KNIHA_JAZD } from "@/lib/mobile/apka";
+import { ZnackaJazd } from "./jazdy/ZnackaJazd";
 import { toast } from "sonner";
 import { ArrowLeft, MailCheck } from "lucide-react";
 
@@ -207,7 +209,11 @@ export function RegistraciaUctu({
   return (
     <div className={ramec} style={odsadenie}>
       <div className="mx-auto w-full max-w-sm">
-        <Logo variant="header" className="mb-8 h-9" />
+        {JE_KNIHA_JAZD ? (
+          <ZnackaJazd className="mb-8" />
+        ) : (
+          <Logo variant="header" className="mb-8 h-9" />
+        )}
         <h1 className="text-2xl font-semibold tracking-tight">{t("reg.vytvorteSiUcet")}</h1>
         <p className="mt-1 text-sm text-app-text-2">
           {t("reg.zadarmo")}
