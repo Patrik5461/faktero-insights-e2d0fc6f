@@ -14,10 +14,10 @@ if (suborKluca.exists()) {
 }
 
 android {
-    namespace = "sk.tobify.knihajazd"
+    namespace = "sk.faktero.knihajazd"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "sk.tobify.knihajazd"
+        applicationId "sk.faktero.knihajazd"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

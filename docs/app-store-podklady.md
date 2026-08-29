@@ -205,7 +205,7 @@ File → Save Screen. Alebo priamo na zariadení a orežte na požadovaný rozme
 ## 9. Kniha jázd — druhá aplikácia
 
 Samostatná appka pre firmy, ktoré jazdy evidujú, ale nefakturujú. Kód je
-spoločný, obal vlastný: projekt `ios-jazdy/`, `sk.tobify.knihajazd`, názov
+spoločný, obal vlastný: projekt `ios-jazdy/`, `sk.faktero.knihajazd`, názov
 **Kniha jázd**, verzia 1.0.
 
 ### Čo je hotové (2026-08-29)
@@ -224,7 +224,7 @@ spoločný, obal vlastný: projekt `ios-jazdy/`, `sk.tobify.knihajazd`, názov
 
 ### Čo musí spraviť človek
 
-1. **Zaregistrovať Bundle ID** `sk.tobify.knihajazd` (Certificates, Identifiers
+1. **Zaregistrovať Bundle ID** `sk.faktero.knihajazd` (Certificates, Identifiers
    & Profiles). Capability stačí predvolená — push tu nie je.
 2. **Vytvoriť záznam v App Store Connect**: názov *Kniha jázd* (over dostupnosť
    názvu, je dosť všeobecný — záloha „Kniha jázd – Faktero"), primárny jazyk

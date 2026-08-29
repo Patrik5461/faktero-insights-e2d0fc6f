@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">Kniha jázd</string>
     <string name="title_activity_main">Kniha jázd</string>
-    <string name="package_name">sk.tobify.knihajazd</string>
-    <string name="custom_url_scheme">sk.tobify.knihajazd</string>
+    <string name="package_name">sk.faktero.knihajazd</string>
+    <string name="custom_url_scheme">sk.faktero.knihajazd</string>
 </resources>

@@ -214,7 +214,7 @@ uzatvára na www.faktero.sk, nie v aplikácii.
 ## 8. Samostatná Kniha jázd
 
 Druhá appka je postavená vedľa (`android-jazdy/`, `applicationId`
-`sk.tobify.knihajazd`, názov **Kniha jázd**). Stavia sa rovnako, len z iného
+`sk.faktero.knihajazd`, názov **Kniha jázd**). Stavia sa rovnako, len z iného
 priečinka:
 
 ```bash

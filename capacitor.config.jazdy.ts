@@ -8,7 +8,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  * spoločný s Fakterom, líši sa len obal.
  */
 const config: CapacitorConfig = {
-  appId: "sk.tobify.knihajazd",
+  appId: "sk.faktero.knihajazd",
   appName: "Kniha jázd",
   webDir: "dist-jazdy",
   /*

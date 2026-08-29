@@ -33,7 +33,7 @@ async function vybav(request: Request): Promise<Response> {
   const vypis = typeof telo.vypis === "string" ? telo.vypis.slice(0, STROP) : "";
   // Balíček musí byť náš. Verejný endpoint bez tejto podmienky je pozvánka
   // na to, aby si doň hocikto písal, čo chce.
-  if (!/^sk\.tobify\.[a-z]+$/.test(balicek) || vypis.length < 10) {
+  if (!/^sk\.(tobify|faktero)\.[a-z]+$/.test(balicek) || vypis.length < 10) {
     return sCors(Response.json({ error: "Neplatné hlásenie" }, { status: 400 }), origin);
   }
 

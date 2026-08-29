@@ -1,4 +1,4 @@
-package sk.tobify.knihajazd;
+package sk.faktero.knihajazd;
 
 import com.getcapacitor.BridgeActivity;
 
