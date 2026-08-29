@@ -185,6 +185,7 @@ import { Route as AdminUsersIndexRouteImport } from './routes/admin.users.index'
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
 import { Route as ApiAdminMigrationExportRouteImport } from './routes/api/admin/migration-export'
 import { Route as ApiMobilOperaciaRouteImport } from './routes/api/mobil/$operacia'
+import { Route as ApiMobilPadRouteImport } from './routes/api/mobil/pad'
 import { Route as ApiPublicKontaktRouteImport } from './routes/api/public/kontakt'
 import { Route as ApiPublicSupportChatRouteImport } from './routes/api/public/support-chat'
 import { Route as ApiV1CustomersRouteImport } from './routes/api/v1/customers'
@@ -1206,6 +1207,11 @@ const ApiMobilOperaciaRoute = ApiMobilOperaciaRouteImport.update({
   path: '/api/mobil/$operacia',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMobilPadRoute = ApiMobilPadRouteImport.update({
+  id: '/api/mobil/pad',
+  path: '/api/mobil/pad',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicKontaktRoute = ApiPublicKontaktRouteImport.update({
   id: '/api/public/kontakt',
   path: '/api/public/kontakt',
@@ -1766,6 +1772,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
+  '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
@@ -2007,6 +2014,7 @@ export interface FileRoutesByTo {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
+  '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
@@ -2259,6 +2267,7 @@ export interface FileRoutesById {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
+  '/api/mobil/pad': typeof ApiMobilPadRoute
   '/api/public/kontakt': typeof ApiPublicKontaktRoute
   '/api/public/support-chat': typeof ApiPublicSupportChatRoute
   '/api/v1/customers': typeof ApiV1CustomersRouteWithChildren
@@ -2511,6 +2520,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
+    | '/api/mobil/pad'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
     | '/api/v1/customers'
@@ -2752,6 +2762,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
+    | '/api/mobil/pad'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
     | '/api/v1/customers'
@@ -3003,6 +3014,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
+    | '/api/mobil/pad'
     | '/api/public/kontakt'
     | '/api/public/support-chat'
     | '/api/v1/customers'
@@ -3157,6 +3169,7 @@ export interface RootRouteChildren {
   PravneIndexRoute: typeof PravneIndexRoute
   ApiAdminMigrationExportRoute: typeof ApiAdminMigrationExportRoute
   ApiMobilOperaciaRoute: typeof ApiMobilOperaciaRoute
+  ApiMobilPadRoute: typeof ApiMobilPadRoute
   ApiPublicKontaktRoute: typeof ApiPublicKontaktRoute
   ApiPublicSupportChatRoute: typeof ApiPublicSupportChatRoute
   ApiV1CustomersRoute: typeof ApiV1CustomersRouteWithChildren
@@ -4436,6 +4449,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMobilOperaciaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mobil/pad': {
+      id: '/api/mobil/pad'
+      path: '/api/mobil/pad'
+      fullPath: '/api/mobil/pad'
+      preLoaderRoute: typeof ApiMobilPadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/kontakt': {
       id: '/api/public/kontakt'
       path: '/api/public/kontakt'
@@ -5508,6 +5528,7 @@ const rootRouteChildren: RootRouteChildren = {
   PravneIndexRoute: PravneIndexRoute,
   ApiAdminMigrationExportRoute: ApiAdminMigrationExportRoute,
   ApiMobilOperaciaRoute: ApiMobilOperaciaRoute,
+  ApiMobilPadRoute: ApiMobilPadRoute,
   ApiPublicKontaktRoute: ApiPublicKontaktRoute,
   ApiPublicSupportChatRoute: ApiPublicSupportChatRoute,
   ApiV1CustomersRoute: ApiV1CustomersRouteWithChildren,
