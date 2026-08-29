@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Menu } from "lucide-react";
+import { ChevronDown, Menu } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { nacitajUlozenuRelaciu } from "@/lib/mobile/relacia";
 import { vyberFirmy } from "@/lib/mobile/start";
@@ -383,6 +383,34 @@ function ObsahJazd() {
     <AppHeader
       variant="root"
       title={firma.name}
+      /*
+        Meno firmy je zároveň prepínač, rovnako ako vo Fakteri. Kto vedie
+        jazdy za dve firmy, prepína medzi nimi denne — a hľadať to v bočnom
+        paneli je o dve ťuknutia viac než treba. Pri jedinej firme je to
+        obyčajný nadpis; šípka dole by sľubovala výber, ktorý nie je.
+      */
+      hlavicka={
+        <button
+          onClick={
+            firmy.length > 1
+              ? () => {
+                  setVozidloHistoria(null);
+                  setPridavamVozidlo(false);
+                  setKrok("firma");
+                }
+              : undefined
+          }
+          aria-label={firmy.length > 1 ? t("panel.zmenitFirmu") : undefined}
+          className={`flex min-h-[44px] w-full items-center gap-1 rounded-app-sm px-2 text-left ${
+            firmy.length > 1 ? "active:bg-app-ramik" : "cursor-default"
+          }`}
+        >
+          <span className="min-w-0 truncate text-[17px] font-semibold tracking-tight">
+            {firma.name}
+          </span>
+          {firmy.length > 1 && <ChevronDown className="h-4 w-4 shrink-0 text-app-text-2" />}
+        </button>
+      }
       right={
         <button
           onClick={() => setPanel(true)}
