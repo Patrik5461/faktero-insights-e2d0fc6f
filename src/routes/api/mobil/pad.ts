@@ -22,7 +22,7 @@ async function vybav(request: Request): Promise<Response> {
     return sCors(Response.json({ error: "Iba POST" }, { status: 405 }), origin);
   }
 
-  let telo: { balicek?: unknown; system?: unknown; vypis?: unknown };
+  let telo: { balicek?: unknown; system?: unknown; vypis?: unknown; typ?: unknown };
   try {
     telo = await request.json();
   } catch {
@@ -51,6 +51,8 @@ async function vybav(request: Request): Promise<Response> {
   const { error } = await admin.from("app_crashes").insert({
     balicek,
     system: typeof telo.system === "string" ? telo.system.slice(0, 200) : null,
+    // Štart hlási skúšobný build pri každom otvorení; pád vtedy, keď je čo hlásiť.
+    typ: telo.typ === "start" ? "start" : "pad",
     vypis,
   });
   if (error) {

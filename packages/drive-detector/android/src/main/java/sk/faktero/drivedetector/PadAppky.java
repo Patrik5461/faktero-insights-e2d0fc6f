@@ -2,6 +2,8 @@ package sk.faktero.drivedetector;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 
 import android.os.Build;
 
@@ -45,6 +47,7 @@ public final class PadAppky {
         // Čo sa nazbieralo minule, nech odíde hneď — do Diagnostiky sa pri
         // páde pri štarte nikto nedostane.
         posliUlozeny(app);
+        ohlasStart(app);
         Thread.UncaughtExceptionHandler predosly = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((vlakno, chyba) -> {
             try {
@@ -78,28 +81,58 @@ public final class PadAppky {
         String vypis = posledny(app);
         if (vypis == null) return;
         new Thread(() -> {
-            HttpURLConnection spojenie = null;
-            try {
-                String telo = "{\"balicek\":" + json(app.getPackageName())
-                        + ",\"system\":" + json("Android " + Build.VERSION.RELEASE + " / " + Build.MODEL)
-                        + ",\"vypis\":" + json(vypis) + "}";
-                spojenie = (HttpURLConnection) new URL(ADRESA).openConnection();
-                spojenie.setRequestMethod("POST");
-                spojenie.setRequestProperty("Content-Type", "application/json");
-                spojenie.setConnectTimeout(8000);
-                spojenie.setReadTimeout(8000);
-                spojenie.setDoOutput(true);
-                try (OutputStream out = spojenie.getOutputStream()) {
-                    out.write(telo.getBytes(StandardCharsets.UTF_8));
-                }
-                int stav = spojenie.getResponseCode();
-                if (stav >= 200 && stav < 300) zabudni(app);
-            } catch (Exception ignored) {
-                // Bez signálu sa výpis nestráca — ostáva uložený.
-            } finally {
-                if (spojenie != null) spojenie.disconnect();
-            }
+            // Zabudne sa až po úspechu — bez signálu výpis ostáva.
+            if (posli(app, "pad", vypis)) zabudni(app);
         }, "faktero-pad").start();
+    }
+
+    /** Odoslanie na server. Vracia `true`, keď to server prijal. */
+    private static boolean posli(Context app, String typ, String vypis) {
+        HttpURLConnection spojenie = null;
+        try {
+            String telo = "{\"balicek\":" + json(app.getPackageName())
+                    + ",\"system\":" + json("Android " + Build.VERSION.RELEASE + " / " + Build.MODEL)
+                    + ",\"typ\":" + json(typ)
+                    + ",\"vypis\":" + json(vypis) + "}";
+            spojenie = (HttpURLConnection) new URL(ADRESA).openConnection();
+            spojenie.setRequestMethod("POST");
+            spojenie.setRequestProperty("Content-Type", "application/json");
+            spojenie.setConnectTimeout(8000);
+            spojenie.setReadTimeout(8000);
+            spojenie.setDoOutput(true);
+            try (OutputStream out = spojenie.getOutputStream()) {
+                out.write(telo.getBytes(StandardCharsets.UTF_8));
+            }
+            int stav = spojenie.getResponseCode();
+            return stav >= 200 && stav < 300;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            if (spojenie != null) spojenie.disconnect();
+        }
+    }
+
+    /**
+     * Ohlási, že sa appka spustila — len zo skúšobných buildov.
+     *
+     * Pri hľadaní chyby je to jediný spôsob, ako odlíšiť „appka sa ani
+     * nespustila" od „appka beží a padá až niekde ďalej", a zároveň zistiť,
+     * ktorý balíček má človek naozaj v telefóne. Z buildu pre obchod sa
+     * neposiela nič: `FLAG_DEBUGGABLE` má len skúšobná verzia.
+     */
+    private static void ohlasStart(Context app) {
+        if ((app.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) == 0) return;
+        new Thread(() -> {
+            try {
+                PackageInfo info = app.getPackageManager().getPackageInfo(app.getPackageName(), 0);
+                String kedy = new SimpleDateFormat("d. M. yyyy H:mm", Locale.US)
+                        .format(new Date(info.lastUpdateTime));
+                posli(app, "start", "Appka sa spustila. Verzia " + info.versionName
+                        + ", nainštalovaná " + kedy + ".");
+            } catch (Exception ignored) {
+                // Ohlásenie štartu nesmie appke prekážať.
+            }
+        }, "faktero-start").start();
     }
 
     /** Reťazec do JSON. Vlastné, aby modul nezávisel od žiadnej knižnice. */
