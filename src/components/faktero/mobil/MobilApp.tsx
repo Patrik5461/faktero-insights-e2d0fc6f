@@ -804,9 +804,9 @@ function ObsahApky() {
                 <button
                   onClick={() => setPanel(true)}
                   aria-label={t("panel.nastavenia")}
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-app-zelena-jemna text-[14px] font-semibold text-app-zelena active:opacity-80"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-app-sm text-app-text active:bg-app-ramik"
                 >
-                  {(email ?? firma.name).trim().charAt(0).toUpperCase() || "?"}
+                  <Menu className="h-5 w-5" />
                 </button>
               }
             />
