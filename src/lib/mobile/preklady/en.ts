@@ -495,6 +495,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "faktury.cisloOstava": "It disappears from the list, but the number stays taken — no gap appears in the sequence.",
   "jazdy.nacitavam": "Loading trips…",
   "jazdy.prvaPribudne": "The first one appears after you end a measurement — or is pulled from the GPS unit when the vehicle is connected.",
+  "jazdy.ztohoSukromne": "of which personal",
   "jazdy.spoluCelaHistoria": "Total for the whole history",
   "jazdy.spoluPoslednych": "Total for the last {pocet} trips",
   "jazdy.nacitatStarsie": "Load older trips",

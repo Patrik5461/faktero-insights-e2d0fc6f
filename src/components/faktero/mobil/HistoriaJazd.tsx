@@ -6,7 +6,7 @@ import { trasa, trvanieJazdy } from "@/lib/faktero/adresa-jazdy";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
 
-import { jeSukromna } from "@/lib/faktero/trip-format";
+import { jeSukromna, jeSukromnaJazda } from "@/lib/faktero/trip-format";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 /**
  * História jázd jedného vozidla.
@@ -305,6 +305,18 @@ export function HistoriaJazd({
 
   const spolu = useMemo(() => (jazdy ?? []).reduce((s, j) => s + (j.distance_km ?? 0), 0), [jazdy]);
 
+  /*
+    Súkromné kilometre sa z celkového súčtu nevyberajú — kniha jázd je kniha
+    celého vozidla a tachometer nerozlišuje. Musí však byť vidieť, koľko
+    z toho do daňového výdavku nepatrí. Riadok sa kreslí len keď súkromná
+    jazda naozaj je: pri firemnom aute je to výnimka a stála nula by len
+    zaberala miesto.
+  */
+  const sukromneKm = useMemo(
+    () => (jazdy ?? []).filter(jeSukromnaJazda).reduce((s, j) => s + (j.distance_km ?? 0), 0),
+    [jazdy],
+  );
+
   if (jazdy === null) return <Pracujem text={t("jazdy.nacitavam")} />;
 
   return (
@@ -332,6 +344,14 @@ export function HistoriaJazd({
             <div className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums">
               {km(spolu, loc)}
             </div>
+            {sukromneKm > 0 && (
+              <div className="mt-1.5 text-[13px] text-app-text-2">
+                {t("jazdy.ztohoSukromne")}{" "}
+                <span className="font-medium tabular-nums text-app-text">
+                  {km(sukromneKm, loc)}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-5">

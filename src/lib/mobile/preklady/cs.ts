@@ -494,6 +494,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "faktury.cisloOstava": "Zmizí ze seznamu, ale číslo zůstává obsazené — v číselné řadě nevznikne díra.",
   "jazdy.nacitavam": "Načítám jízdy…",
   "jazdy.prvaPribudne": "První přibude po ukončení měření — nebo se natáhne z GPS jednotky, když je vozidlo propojené.",
+  "jazdy.ztohoSukromne": "z toho soukromé",
   "jazdy.spoluCelaHistoria": "Celkem za celou historii",
   "jazdy.spoluPoslednych": "Celkem za posledních {pocet} jízd",
   "jazdy.nacitatStarsie": "Načíst starší jízdy",
