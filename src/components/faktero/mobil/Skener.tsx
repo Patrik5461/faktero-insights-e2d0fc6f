@@ -104,8 +104,10 @@ export function Skener({
         >
           {(
             [
-              ["doklad", t("sken.doklad")],
+              // QR kód je vľavo. Bloček sa skenuje raz za čas, kód aj
+              // niekoľkokrát denne — a v dvojici sa prstom mieri na prvé.
               ["qr", t("sken.qrKod")],
+              ["doklad", t("sken.doklad")],
             ] as const
           ).map(([kod, popis]) => (
             <button
