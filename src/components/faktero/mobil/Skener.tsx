@@ -46,8 +46,11 @@ export function Skener({
     je výhoda, nie prekážka. Líšia sa tým, čo obrazovka ponúka: pri doklade
     spúšť a nastavenie, pri kóde len zameriavač, aby nič neodvádzalo od toho,
     že stačí namieriť.
+
+    Otvára sa na QR kóde. Ten je tu častejší a nepotrebuje nič ďalšie — stačí
+    namieriť. Doklad je o ťuknutie vedľa a aj tak si vyžiada spúšť.
   */
-  const [rezim, setRezim] = useState<"doklad" | "qr">("doklad");
+  const [rezim, setRezim] = useState<"doklad" | "qr">("qr");
   const [nastaveniaOtvorene, setNastaveniaOtvorene] = useState(false);
 
   /*
