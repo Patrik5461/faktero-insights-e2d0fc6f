@@ -4,7 +4,6 @@ import type { Kluc } from "./sk";
 export const cs: Partial<Record<Kluc, string>> = {
   "tab.skener": "Skener",
   "tab.faktury": "Faktury",
-  "tab.vytvorit": "Vytvořit",
   "tab.banka": "Banka",
   "tab.jazda": "Kniha jízd",
   "tab.navigacia": "Hlavní navigace",

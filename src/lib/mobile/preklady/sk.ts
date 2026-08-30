@@ -12,7 +12,6 @@ export const sk = {
   /* spodná lišta */
   "tab.skener": "Skener",
   "tab.faktury": "Faktúry",
-  "tab.vytvorit": "Vytvoriť",
   "tab.banka": "Banka",
   "tab.jazda": "Kniha jázd",
   "tab.navigacia": "Hlavná navigácia",

@@ -773,7 +773,7 @@ function ObsahApky() {
 
   if (krok === "prehlad" && firma)
     return (
-      <SoSpodnouListou aktivna="prehlad" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
+      <SoSpodnouListou aktivna="prehlad" onPrepni={prepniZalozku}>
         <Obrazovka onSpat={() => setPanel(true)}>
           <div className="flex min-h-[calc(100dvh-var(--spodna-lista,0px))] flex-col bg-app-pozadie">
             <AppHeader
@@ -908,7 +908,7 @@ function ObsahApky() {
           }}
           onPrijateDoklady={() => setKrok("doklady")}
         />
-        <TabBar aktivna="skener" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu} />
+        <TabBar aktivna="skener" onPrepni={prepniZalozku} />
         <MobilPanel
           otvoreny={panel}
           onZavri={() => setPanel(false)}
@@ -931,7 +931,7 @@ function ObsahApky() {
 
   if (krok === "doklady" && firma)
     return (
-      <SoSpodnouListou aktivna="doklady" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
+      <SoSpodnouListou aktivna="doklady" onPrepni={prepniZalozku}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <PrijateDoklady firma={firma} onSpat={() => setKrok(DOMOV)} />
         </Obrazovka>
@@ -939,7 +939,7 @@ function ObsahApky() {
     );
   if (krok === "novaFaktura" && firma)
     return (
-      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
+      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <NovaFaktura
             firma={firma}
@@ -965,7 +965,7 @@ function ObsahApky() {
     );
   if (krok === "jazda" && firma)
     return (
-      <SoSpodnouListou aktivna="jazda" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
+      <SoSpodnouListou aktivna="jazda" onPrepni={prepniZalozku}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <Jazda firma={firma} onSpat={() => setKrok(DOMOV)} />
         </Obrazovka>
@@ -973,7 +973,7 @@ function ObsahApky() {
     );
   if (krok === "banka" && firma)
     return (
-      <SoSpodnouListou aktivna="banka" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
+      <SoSpodnouListou aktivna="banka" onPrepni={prepniZalozku}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <Banka firma={firma} onSpat={() => setKrok(DOMOV)} />
         </Obrazovka>
@@ -1000,7 +1000,7 @@ function ObsahApky() {
     );
   if (krok === "faktury" && firma)
     return (
-      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
+      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <VystaveneFaktury
             firma={firma}
@@ -1016,7 +1016,7 @@ function ObsahApky() {
     );
   if (krok === "ponuky" && firma)
     return (
-      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku} onVytvorit={naNovuFakturu}>
+      <SoSpodnouListou aktivna="faktury" onPrepni={prepniZalozku}>
         <Obrazovka onSpat={() => setKrok(DOMOV)}>
           <Ponuky
             firma={firma}
@@ -1115,12 +1115,10 @@ function ObsahApky() {
 function SoSpodnouListou({
   aktivna,
   onPrepni,
-  onVytvorit,
   children,
 }: {
   aktivna: Zalozka;
   onPrepni: (z: Zalozka) => void;
-  onVytvorit: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -1138,7 +1136,7 @@ function SoSpodnouListou({
       {children}
       {/* Povolenia pre knihu jázd — pýtajú sa hneď, rovnako ako v Knihe jázd. */}
       <PovoleniaJazd />
-      <TabBar aktivna={aktivna} onPrepni={onPrepni} onVytvorit={onVytvorit} />
+      <TabBar aktivna={aktivna} onPrepni={onPrepni} />
     </div>
   );
 }

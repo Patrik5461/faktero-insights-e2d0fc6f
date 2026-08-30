@@ -1,19 +1,20 @@
 import type { ComponentType } from "react";
-import { Car, Home, Landmark, Plus, Receipt, ScanLine, FileText } from "lucide-react";
+import { Car, Home, Landmark, Receipt, ScanLine, FileText } from "lucide-react";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
 
 /**
  * Spodná navigácia mobilnej aplikácie.
  *
- * Šesť agend a uprostred plavák na vystavenie faktúry. Je to o jednu agendu
- * viac, než sa do lišty bežne dáva, a je to zámer: skener aj banka sú veci,
- * do ktorých človek chodí denne, a schovať ich do bočného panela znamená, že
- * ich prestane používať. Preto sú popisky 10 px a ikony 20 px — na 390 px
- * širokom displeji vyjde na položku 54 px, čo je nad hranicou dotyku.
+ * Šesť agend. Je to o jednu viac, než sa do lišty bežne dáva, a je to zámer:
+ * skener aj banka sú veci, do ktorých človek chodí denne, a schovať ich do
+ * bočného panela znamená, že ich prestane používať. Preto sú popisky 10 px
+ * a ikony 20 px — na 390 px širokom displeji vyjde na položku 54 px, čo je
+ * nad hranicou dotyku.
  *
- * Plavák nie je siedma položka. Vystavenie faktúry je akcia, nie miesto,
- * kam sa dá „prepnúť": nemá aktívny stav a lišta sa pod ním nezvýrazňuje.
+ * Uprostred býval vyvýšený plavák „+" na vystavenie faktúry. Neponúkal nič,
+ * čo by sa nedalo spraviť o ťuknutie ďalej — na Prehľade aj na Faktúrach je
+ * na to vlastné tlačidlo — takže z lišty ubral miesto a pridal len šum.
  */
 export type Zalozka = "prehlad" | "faktury" | "doklady" | "skener" | "banka" | "jazda";
 
@@ -32,12 +33,9 @@ const VPRAVO: { kod: Zalozka; kluc: Kluc; icon: ComponentType<{ className?: stri
 export function TabBar({
   aktivna,
   onPrepni,
-  onVytvorit,
 }: {
   aktivna: Zalozka;
   onPrepni: (z: Zalozka) => void;
-  /** Plavák. Bez neho sa lišta vykreslí bez stredovej medzery. */
-  onVytvorit?: () => void;
 }) {
   const { t } = usePreklad();
   return (
@@ -48,31 +46,10 @@ export function TabBar({
       style={{ paddingBottom: "var(--safe-bottom)" }}
       aria-label={t("tab.navigacia")}
     >
-      <div className="relative flex items-stretch">
+      <div className="flex items-stretch">
         {VLAVO.map((p) => (
           <Polozka key={p.kod} {...p} aktivna={aktivna} onPrepni={onPrepni} />
         ))}
-
-        {onVytvorit && (
-          <>
-            {/* Miesto pre plavák. Prázdna bunka, aby sa ikony rozdelili 3 + 3. */}
-            <div className="w-16 shrink-0" aria-hidden />
-            <button
-              type="button"
-              onClick={onVytvorit}
-              aria-label={t("tab.vytvorit")}
-              /*
-                Vyvýšený nad lištu. `-translate-y-1/3` ho zdvihne asi o 18 px —
-                dosť na to, aby bol vidieť ako samostatná vec, a málo na to,
-                aby zakrýval obsah nad lištou.
-              */
-              className="absolute left-1/2 top-0 grid h-14 w-14 -translate-x-1/2 -translate-y-1/3 place-items-center rounded-full bg-app-zelena text-white shadow-[0_6px_16px_rgb(0_126_70_/_0.35)] transition active:scale-95"
-            >
-              <Plus className="h-7 w-7" />
-            </button>
-          </>
-        )}
-
         {VPRAVO.map((p) => (
           <Polozka key={p.kod} {...p} aktivna={aktivna} onPrepni={onPrepni} />
         ))}

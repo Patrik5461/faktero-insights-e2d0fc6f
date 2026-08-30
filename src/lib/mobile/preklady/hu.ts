@@ -4,7 +4,6 @@ import type { Kluc } from "./sk";
 export const hu: Partial<Record<Kluc, string>> = {
   "tab.skener": "Szkenner",
   "tab.faktury": "Számlák",
-  "tab.vytvorit": "Létrehozás",
   "tab.banka": "Bank",
   "tab.jazda": "Útnyilvántartás",
   "tab.navigacia": "Fő navigáció",
