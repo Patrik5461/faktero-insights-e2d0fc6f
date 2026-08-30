@@ -43,3 +43,19 @@ export function jeSukromna(classification: string | null | undefined): boolean {
 export function charakterJazdy(classification: string | null | undefined): string {
   return jeSukromna(classification) ? "Súkromná" : "Služobná";
 }
+
+/**
+ * Súkromná jazda aj so starými zápismi — na súčty v prehľadoch.
+ *
+ * Pole `classification` pribudlo neskôr; dovtedy sa charakter písal len do
+ * účelu („Súkromná jazda"). Keď je pole vyplnené, rozhoduje **ono**: jazdu,
+ * ktorú človek prepol na služobnú, nesmie starý text v účele ťahať späť do
+ * súkromných. Účel sa číta len vtedy, keď pole nie je vyplnené vôbec.
+ */
+export function jeSukromnaJazda(jazda: {
+  classification?: string | null;
+  purpose?: string | null;
+}): boolean {
+  if (jazda.classification) return jeSukromna(jazda.classification);
+  return /súkrom/i.test(jazda.purpose ?? "");
+}

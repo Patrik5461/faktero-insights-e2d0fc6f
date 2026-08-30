@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { jeSukromnaJazda } from "@/lib/faktero/trip-format";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Car, Route as RouteIcon, Fuel, Wallet, Gauge, Briefcase, User } from "lucide-react";
 
@@ -79,9 +80,14 @@ function OverviewPage() {
     ? withDur.reduce((a, t) => a + Number(t.distance_km), 0) /
       (withDur.reduce((a, t) => a + Number(t.duration_seconds), 0) / 3600)
     : 0;
-  // Business vs private (purpose containing "súkrom" = private)
+  /*
+    Služobné verzus súkromné. Rozhoduje `classification` — pole, ktoré sa
+    prepína v knihe jázd. Predtým sa tu hľadalo slovo „súkrom" v účele, takže
+    jazda označená za súkromnú sa do súkromných km nikdy nedostala. Účel sa
+    číta len pri jazdách bez vyplneného poľa, čo sú tie spred jeho zavedenia.
+  */
   const privKm = trips
-    .filter((t) => /súkrom/i.test(String(t.purpose ?? "")))
+    .filter((t) => jeSukromnaJazda(t))
     .reduce((a, t) => a + Number(t.distance_km), 0);
   const bizKm = kmYear - privKm;
   const tripCount = trips.length;

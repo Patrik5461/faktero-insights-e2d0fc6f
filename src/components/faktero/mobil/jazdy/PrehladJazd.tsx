@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Car, Route } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { jeSukromnaJazda } from "@/lib/faktero/trip-format";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
   Card,
@@ -81,10 +82,17 @@ export function PrehladJazd({
   const suhrn = useMemo(() => {
     const z = jazdy ?? [];
     const km = (v: Jazdenka[]) => v.reduce((s, j) => s + Number(j.distance_km || 0), 0);
-    const sluzobne = z.filter((j) => j.classification !== "personal");
-    const sukromne = z.filter((j) => j.classification === "personal");
+    /*
+      Charakter jazdy rozhoduje jedna funkcia pre celú appku. Táto obrazovka
+      si ho kedysi porovnávala sama — a proti hodnote „personal", ktorú do
+      `classification` nikto nikdy nezapísal. Súkromné jazdy tak padali do
+      služobných a súčet nad kartou „Súkromné" ostal navždy na nule.
+    */
+    const sukromne = z.filter(jeSukromnaJazda);
+    const sluzobne = z.filter((j) => !jeSukromnaJazda(j));
     return {
-      pocet: z.length,
+      pocetSluzobne: sluzobne.length,
+      pocetSukromne: sukromne.length,
       kmSluzobne: km(sluzobne),
       kmSukromne: km(sukromne),
     };
@@ -118,13 +126,14 @@ export function PrehladJazd({
             <StatCard
               label={t("kj.sluzobne")}
               value={nacitava ? "—" : km(suhrn.kmSluzobne)}
-              hint={nacitava ? undefined : pocetJazd(suhrn.pocet)}
+              hint={nacitava ? undefined : pocetJazd(suhrn.pocetSluzobne)}
               ton="zelena"
               onClick={onHistoria}
             />
             <StatCard
               label={t("kj.sukromne")}
               value={nacitava ? "—" : km(suhrn.kmSukromne)}
+              hint={nacitava ? undefined : pocetJazd(suhrn.pocetSukromne)}
               onClick={onHistoria}
             />
           </div>
@@ -155,9 +164,9 @@ export function PrehladJazd({
                   rightSub={
                     <StatusBadge
                       text={
-                        j.classification === "personal" ? t("jazdy.sukromna") : t("jazdy.sluzobna")
+                        jeSukromnaJazda(j) ? t("jazdy.sukromna") : t("jazdy.sluzobna")
                       }
-                      ton={j.classification === "personal" ? "neutral" : "zelena"}
+                      ton={jeSukromnaJazda(j) ? "neutral" : "zelena"}
                     />
                   }
                   onClick={onHistoria}

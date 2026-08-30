@@ -4,6 +4,7 @@ import {
   formatDuration,
   formatSpeed,
   jeSukromna,
+  jeSukromnaJazda,
   sourceLabel,
 } from "./trip-format";
 
@@ -22,6 +23,26 @@ describe("popis jazdy", () => {
     expect(charakterJazdy("private")).toBe("Súkromná");
     expect(jeSukromna(null)).toBe(false);
     expect(jeSukromna("private")).toBe(true);
+  });
+
+  /*
+    Súčty v prehľadoch sa opierali o dve rôzne pravdy: appka porovnávala
+    `classification` s hodnotou „personal", ktorú nikto nezapisuje, a webový
+    prehľad hľadal slovo „súkrom" v účele. Súkromná jazda tak v oboch končila
+    medzi služobnými. Odteraz o tom rozhoduje jedna funkcia.
+  */
+  it("v súčtoch rozhoduje zaradenie, nie text v účele", () => {
+    expect(jeSukromnaJazda({ classification: "private", purpose: "Návšteva" })).toBe(true);
+    expect(jeSukromnaJazda({ classification: "business", purpose: "Rozvoz" })).toBe(false);
+
+    // Jazda prepnutá na služobnú si nesie starý účel z automatickej detekcie.
+    // Rozhodnutie človeka musí prebiť text, inak by sa vrátila medzi súkromné.
+    expect(jeSukromnaJazda({ classification: "business", purpose: "Súkromná jazda" })).toBe(false);
+
+    // Bez zaradenia — jazdy spred stĺpca. Tam ostáva jediným vodidlom účel.
+    expect(jeSukromnaJazda({ classification: null, purpose: "Súkromná jazda" })).toBe(true);
+    expect(jeSukromnaJazda({ classification: null, purpose: "Odvoz tovaru" })).toBe(false);
+    expect(jeSukromnaJazda({})).toBe(false);
   });
 
   it("trvanie a rýchlosť znesú prázdne hodnoty", () => {
