@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { pripravKonektorFn, stavKonektoraFn } from "@/lib/faktero/pohoda-konektor.functions";
+import { fetchMyCompanies } from "@/lib/faktero/active-company";
 
 /**
  * Priame prepojenie s Pohodou.
@@ -19,9 +20,18 @@ type PotvrdenyDoklad = {
 };
 type StavKonektora = { kluce: number; naposledy: string | null; potvrdene: PotvrdenyDoklad[] };
 
+type MojaFirma = { id: string; name: string; role: string };
+
 export function KonektorPohody({ companyId }: { companyId: string }) {
   const [stav, setStav] = useState<StavKonektora | null>(null);
   const [pracuje, setPracuje] = useState(false);
+  /*
+    Firmy, do ktorých smie človek vydať kľúč (majiteľ alebo správca). Kto ich
+    má viac, dostane ich v jednom balíčku — inak by sa musel prepínať medzi
+    firmami a sťahovať zvlášť pre každú, a účtovníčka by dostala N zásielok.
+  */
+  const [firmy, setFirmy] = useState<MojaFirma[]>([]);
+  const [vybrane, setVybrane] = useState<string[]>([companyId]);
   const fnPriprav = useServerFn(pripravKonektorFn);
   const fnStav = useServerFn(stavKonektoraFn);
 
@@ -29,13 +39,23 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
     fnStav({ data: { companyId } })
       .then((r) => setStav(r as StavKonektora))
       .catch(() => setStav(null));
+    void fetchMyCompanies()
+      .then((z) => {
+        const moje = (z as MojaFirma[]).filter((f) => f.role === "owner" || f.role === "admin");
+        setFirmy(moje);
+        setVybrane(moje.map((f) => f.id));
+      })
+      .catch(() => setFirmy([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
+
+  const prepni = (id: string) =>
+    setVybrane((v) => (v.includes(id) ? v.filter((x) => x !== id) : [...v, id]));
 
   async function stiahni() {
     setPracuje(true);
     try {
-      const r = await fnPriprav({ data: { companyId } });
+      const r = await fnPriprav({ data: { companyIds: vybrane } });
       const bin = atob(r.base64);
       const bajty = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bajty[i] = bin.charCodeAt(i);
@@ -45,7 +65,11 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
       a.download = r.fileName;
       a.click();
       URL.revokeObjectURL(url);
-      toast.success("Balíček stiahnutý — pošlite ho účtovníčke.");
+      toast.success(
+        r.firmy.length > 1
+          ? `Balíček stiahnutý pre ${r.firmy.length} firmy — pošlite ho účtovníčke.`
+          : "Balíček stiahnutý — pošlite ho účtovníčke.",
+      );
       fnStav({ data: { companyId } }).then((r) => setStav(r as StavKonektora));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Balíček sa nepodarilo pripraviť.");
@@ -65,14 +89,39 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
         <code className="rounded bg-secondary px-1">firmy.txt</code> — priečinok ani úlohu už
         nezakladá znova.
       </p>
+      {firmy.length > 1 && (
+        <div className="mt-3 rounded-md border border-border bg-secondary/40 p-3">
+          <div className="mb-2 text-xs font-medium">Do balíčka zahrnúť</div>
+          <div className="space-y-1.5">
+            {firmy.map((f) => (
+              <label key={f.id} className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={vybrane.includes(f.id)}
+                  onChange={() => prepni(f.id)}
+                />
+                {f.name}
+              </label>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Každá firma dostane vlastný kľúč a vlastný riadok vo firmy.txt. Účtovníčka tak zakladá
+            priečinok aj naplánovanú úlohu iba raz.
+          </p>
+        </div>
+      )}
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={stiahni}
-          disabled={pracuje}
+          disabled={pracuje || vybrane.length === 0}
           className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
-          {pracuje ? "Pripravujem…" : "Stiahnuť balíček pre účtovníčku"}
+          {pracuje
+            ? "Pripravujem…"
+            : vybrane.length > 1
+              ? `Stiahnuť balíček pre ${vybrane.length} firmy`
+              : "Stiahnuť balíček pre účtovníčku"}
         </button>
         {stav?.naposledy ? (
           <span className="text-xs text-muted-foreground">

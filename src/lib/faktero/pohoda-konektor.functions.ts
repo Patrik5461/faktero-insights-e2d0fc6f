@@ -18,71 +18,92 @@ import { zakladnaAdresa } from "./pohoda-konektor.server";
  */
 export const pripravKonektorFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: { companyId: string }) => input)
+  .validator((input: { companyIds: string[] }) => input)
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
+    const ziadane = [...new Set(data.companyIds ?? [])];
+    if (!ziadane.length) throw new Error("Nevybrali ste žiadnu firmu.");
 
-    const { data: company, error: cErr } = await supabase
-      .from("companies")
-      .select("id, name, ico")
-      .eq("id", data.companyId)
-      .single();
-    if (cErr) throw new Error(cErr.message);
-    if (!company) throw new Error("Firma nenájdená");
+    /*
+      Kľúč smie vydať len majiteľ alebo správca firmy — rovnako, ako to stráži
+      politika nad `api_keys`. Kontrolujeme to aj tu, aby sa človek dozvedel
+      dôvod: zamietnutý zápis by inak vyzeral ako chyba databázy.
+    */
+    const { data: clenstva, error: mErr } = await supabase
+      .from("company_users")
+      .select("company_id, role, company:companies(id, name, ico)")
+      .eq("user_id", userId)
+      .in("company_id", ziadane);
+    if (mErr) throw new Error(mErr.message);
 
-    const bajty = new Uint8Array(24);
-    crypto.getRandomValues(bajty);
-    const kluc = `fk_live_${Array.from(bajty)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("")}`;
-    const hash = Array.from(
-      new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(kluc))),
-    )
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    const firmy = (clenstva ?? [])
+      .filter((r: { role: string }) => r.role === "owner" || r.role === "admin")
+      .map(
+        (r: { company: unknown }) => r.company as { id: string; name: string; ico: string | null },
+      )
+      .filter(Boolean);
+    if (!firmy.length) {
+      throw new Error("Ani k jednej z vybraných firiem nemáte právo vydať kľúč.");
+    }
 
-    const { error: kErr } = await supabase.from("api_keys").insert({
-      company_id: data.companyId,
-      mode: "live",
-      name: "Pohoda — konektor",
-      prefix: kluc.slice(0, 14),
-      key_hash: hash,
-    });
-    if (kErr) throw new Error(kErr.message);
+    const rok = new Date().getFullYear();
+    const riadky: { kluc: string; firma: string; databaza: string }[] = [];
+
+    for (const firma of firmy) {
+      const bajty = new Uint8Array(24);
+      crypto.getRandomValues(bajty);
+      const kluc = `fk_live_${Array.from(bajty)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")}`;
+      const hash = Array.from(
+        new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(kluc))),
+      )
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
+      const { error: kErr } = await supabase.from("api_keys").insert({
+        company_id: firma.id,
+        mode: "live",
+        name: "Pohoda — konektor",
+        prefix: kluc.slice(0, 14),
+        key_hash: hash,
+      });
+      if (kErr) throw new Error(kErr.message);
+
+      const ico = String(firma.ico ?? "").replace(/\D/g, "");
+      riadky.push({
+        kluc,
+        firma: String(firma.name ?? ""),
+        /*
+          Databáza účtovnej jednotky je odhad podľa IČO a roka — Pohoda si
+          súbory takto pomenúva, ale účtovníčka si ich mohla nazvať inak,
+          takže si to má overiť. Predvyplnené preto, aby v bežnom prípade
+          nemusela hľadať nič.
+        */
+        databaza: `StwPh_${ico || "00000000"}_${rok}.mdb`,
+      });
+    }
 
     const adresa = zakladnaAdresa();
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
-    const firma = String(company.name ?? "");
-    const ico = String(company.ico ?? "").replace(/\D/g, "");
     zip.file("faktero-pohoda.cmd", davkovySubor({ adresa }));
-    /*
-      Databáza účtovnej jednotky je odhad podľa IČO a roka — Pohoda si súbory
-      naozaj takto pomenúva, ale účtovníčka si ich mohla nazvať inak, takže si
-      to má overiť. Predvyplnené preto, aby firma, ktorá si konektor púšťa
-      sama, nemusela hľadať nič.
-    */
     /*
       Bez BOM, na rozdiel od návodu: `for /f "eol=#"` porovnáva **prvý znak**
       riadku, a BOM by sa pred mriežku postavil — hlavička so vysvetlivkami by
       sa potom čítala ako firma. Súbor je zámerne celý bez diakritiky, takže
       ho Poznámkový blok zobrazí správne aj tak.
     */
-    zip.file(
-      "firmy.txt",
-      zoznamFiriem({
-        kluc,
-        firma,
-        databaza: `StwPh_${ico || "00000000"}_${new Date().getFullYear()}.mdb`,
-      }),
-    );
+    zip.file("firmy.txt", zoznamFiriem(riadky));
     zip.file("nastav-ulohu.cmd", nastavenieUlohy());
     // BOM, nech Poznámkový blok prečíta diakritiku.
-    zip.file("NAVOD.txt", "\ufeff" + navod({ firma, adresa }));
+    zip.file("NAVOD.txt", "\ufeff" + navod({ firmy: riadky.map((r) => r.firma), adresa }));
 
     return {
       base64: await zip.generateAsync({ type: "base64" }),
-      fileName: nazovBalicka(firma),
+      fileName:
+        riadky.length === 1 ? nazovBalicka(riadky[0].firma) : "faktero-pohoda-vsetky-firmy.zip",
+      firmy: riadky.map((r) => r.firma),
     };
   });
 

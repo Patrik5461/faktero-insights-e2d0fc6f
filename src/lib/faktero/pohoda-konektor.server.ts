@@ -1158,7 +1158,7 @@ exit /b
  * priečinok a jeden riadok na klienta: kľúč z jeho balíčka, databáza jeho
  * účtovnej jednotky, názov do protokolu.
  */
-export function zoznamFiriem(p: { kluc: string; firma: string; databaza: string }): string {
+export function zoznamFiriem(firmy: { kluc: string; firma: string; databaza: string }[]): string {
   return `# Ktore firmy sa prenasaju do Pohody.
 #
 # Jeden riadok na firmu, tri hodnoty oddelene bodkociarkou:
@@ -1176,7 +1176,7 @@ export function zoznamFiriem(p: { kluc: string; firma: string; databaza: string 
 # Dalsieho klienta pridate tak, ze si z jeho balicka skopirujete jeho
 # riadok sem pod tento. Priecinok, davkovy subor ani ulohu uz nemenite.
 
-${p.kluc};${p.databaza};${p.firma}
+${firmy.map((f) => `${f.kluc};${f.databaza};${f.firma}`).join("\n")}
 `;
 }
 
@@ -1205,11 +1205,11 @@ pause
 `;
 }
 
-export function navod(p: { firma: string; adresa: string }): string {
+export function navod(p: { firmy: string[]; adresa: string }): string {
   return `PRENOS DOKLADOV Z FAKTERA DO POHODY
 ${"=".repeat(45)}
 
-Firma: ${p.firma}
+${p.firmy.length === 1 ? `Firma: ${p.firmy[0]}` : `Firmy (${p.firmy.length}): ${p.firmy.join(", ")}`}
 
 Čo to robí
 ----------

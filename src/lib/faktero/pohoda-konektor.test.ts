@@ -706,11 +706,9 @@ describe("strážca konektora", () => {
 
 describe("balíček pre viac firiem", () => {
   const cmd = davkovySubor({ adresa: "https://www.faktero.sk" });
-  const zoznam = zoznamFiriem({
-    kluc: "fk_live_abc",
-    firma: "Tobify s. r. o.",
-    databaza: "StwPh_12345678_2026.mdb",
-  });
+  const zoznam = zoznamFiriem([
+    { kluc: "fk_live_abc", firma: "Tobify s. r. o.", databaza: "StwPh_12345678_2026.mdb" },
+  ]);
 
   /*
     Účtovníčka má klientov aj päťdesiat. Dávkový súbor preto prejde zoznam
@@ -730,6 +728,22 @@ describe("balíček pre viac firiem", () => {
       "fk_live_abc",
       "StwPh_12345678_2026.mdb",
       "Tobify s. r. o.",
+    ]);
+  });
+
+  /*
+    Kto má v Fakteri firiem viac, dostane ich v jednom balíčku — inak by sa
+    musel prepínať medzi firmami a sťahovať zvlášť pre každú.
+  */
+  it("viac firiem naraz je viac riadkov v jednom zozname", () => {
+    const viac = zoznamFiriem([
+      { kluc: "fk_live_a", firma: "Prvá s.r.o.", databaza: "StwPh_1_2026.mdb" },
+      { kluc: "fk_live_b", firma: "Druhá s.r.o.", databaza: "StwPh_2_2026.mdb" },
+    ]);
+    const riadky = viac.split("\n").filter((r) => r.trim() && !r.startsWith("#"));
+    expect(riadky).toEqual([
+      "fk_live_a;StwPh_1_2026.mdb;Prvá s.r.o.",
+      "fk_live_b;StwPh_2_2026.mdb;Druhá s.r.o.",
     ]);
   });
 
