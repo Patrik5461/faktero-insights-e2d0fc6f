@@ -27,6 +27,8 @@ import {
   ArrowRightLeft,
   HardHat,
   BookOpen,
+  Receipt,
+  Route,
 } from "lucide-react";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,7 +115,12 @@ const NAV: NavGroup[] = [
   {
     key: "doklady",
     label: "Doklady",
-    icon: FileText,
+    /*
+      Ikona sa v jednom pohľade nesmie opakovať — inak sa lišta číta len podľa
+      textu a v zúženom stave, kde ostanú samotné ikony, sa dve skupiny nedajú
+      rozoznať vôbec. Doklady majú bloček, rovnako ako v mobilnej appke.
+    */
+    icon: Receipt,
     match: ["/doklady", "/efaktura"],
     children: [
       { to: "/doklady", label: "Prehľad dokladov" },
@@ -209,7 +216,9 @@ const NAV: NavGroup[] = [
   {
     key: "jazdy",
     label: "Jazdy",
-    icon: Car,
+    /* Jazda je trasa, vozidlo je auto. Dovtedy tu boli dve rovnaké autá pod
+       sebou — tá istá chyba, akú mala Fakturácia s Dokladmi. */
+    icon: Route,
     match: ["/jazdy", "/jazdy/nova", "/jazdy/export"],
     exact: true,
     children: [
