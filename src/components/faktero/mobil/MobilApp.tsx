@@ -5,7 +5,16 @@
  * samostatného balíčka v telefóne (`src/mobile/main.tsx`), aby appka fungovala
  * aj bez pripojenia. Preto tu nie je nič z routera — obrazovky prepína stav.
  */
-import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Capacitor } from "@capacitor/core";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { PrebiehaJazda } from "./PrebiehaJazda";
@@ -1104,6 +1113,23 @@ function ObsahApky() {
 }
 
 /**
+ * Prepnutie záložky vracia stránku na začiatok.
+ *
+ * Obrazovky sú rôzne vysoké a rolovanie je na celom dokumente. Bez tohto sa
+ * posun z predošlej záložky prenesie do novej: keď je nová kratšia, prehliadač
+ * ho musí orezať a spodok stránky poskočí. A na iPhone to nie je len skok —
+ * v odkrytom páse pri spodnom okraji na okamih presvitá podklad WebView.
+ *
+ * `useLayoutEffect`, nie `useEffect`: posun sa musí zmeniť v tom istom
+ * prekreslení ako nový obsah, inak je skok aj tak vidieť.
+ */
+function useNaZaciatokPriPrepnuti(aktivna: string) {
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [aktivna]);
+}
+
+/**
  * Obal agend, nad ktorými má byť spodná lišta.
  *
  * Obrazovky sú vysoké na celý displej (`min-h-[100dvh]`), takže by pod nimi
@@ -1121,9 +1147,10 @@ function SoSpodnouListou({
   onPrepni: (z: Zalozka) => void;
   children: React.ReactNode;
 }) {
+  useNaZaciatokPriPrepnuti(aktivna);
   return (
     <div
-      className="flex min-h-[100dvh] flex-col [&>*:first-child]:min-h-[calc(100dvh-var(--spodna-lista))]"
+      className="flex min-h-[100dvh] flex-col bg-app-pozadie [&>*:first-child]:min-h-[calc(100dvh-var(--spodna-lista))]"
       style={
         {
           "--spodna-lista": "calc(3.75rem + var(--safe-bottom))",

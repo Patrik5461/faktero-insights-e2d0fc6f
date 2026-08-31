@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown, Menu } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { nacitajUlozenuRelaciu } from "@/lib/mobile/relacia";
@@ -490,6 +490,20 @@ function ObsahJazd() {
 }
 
 /**
+ * Prepnutie záložky vracia stránku na začiatok.
+ *
+ * To isté, čo robí Faktero: obrazovky sú rôzne vysoké a rolovanie je na celom
+ * dokumente, takže bez tohto sa posun z predošlej záložky prenesie do novej,
+ * prehliadač ho musí orezať a spodok stránky poskočí. Na iPhone v odkrytom
+ * páse na okamih presvitá podklad WebView.
+ */
+function useNaZaciatokPriPrepnuti(aktivna: string) {
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [aktivna]);
+}
+
+/**
  * Obal so spodnou lištou.
  *
  * Prvému dieťaťu zníži minimálnu výšku o lištu — inak stránka roluje za ňu
@@ -506,9 +520,10 @@ function SoSpodnouListou({
   bezi?: boolean;
   children: React.ReactNode;
 }) {
+  useNaZaciatokPriPrepnuti(aktivna);
   return (
     <div
-      className="flex min-h-[100dvh] flex-col [&>*:first-child]:min-h-[calc(100dvh-var(--spodna-lista))]"
+      className="flex min-h-[100dvh] flex-col bg-app-pozadie [&>*:first-child]:min-h-[calc(100dvh-var(--spodna-lista))]"
       style={
         {
           "--spodna-lista": "calc(3.75rem + var(--safe-bottom))",

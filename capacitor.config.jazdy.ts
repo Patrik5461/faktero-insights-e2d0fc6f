@@ -12,6 +12,17 @@ const config: CapacitorConfig = {
   appName: "Kniha jázd",
   webDir: "dist-jazdy",
   /*
+    Podklad WebView.
+
+    Bez tejto hodnoty si ho Capacitor nastaví na `UIColor.systemBackground` —
+    teda na telefóne v nočnom režime na **čiernu**. Appka je pritom svetlá, a
+    tak každý kúsok, ktorý sa na okamih odkryje (prepočet výšky pri prepnutí
+    záložky, dobiehajúce prekreslenie), blysne čiernym pásom pri spodnom
+    okraji. Musí sedieť s `--app-pozadie` v `styles.css` a s `POZADIE_APKY`
+    v `src/lib/mobile/brand.ts`.
+  */
+  backgroundColor: "#f5f6f5",
+  /*
     Kniha jázd nefotí doklady ani nečíta QR kódy, takže si skener a fotoaparát
     ani nepribalí. Bez tohto zoznamu si Capacitor vezme všetky pluginy z
     package.json — appka by narástla o ML Kit a pýtala by si prístup k
