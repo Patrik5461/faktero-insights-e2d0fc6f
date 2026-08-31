@@ -506,6 +506,8 @@ export const sk = {
   "faktury.cisloOstava": "Zmizne zo zoznamu, ale číslo ostáva obsadené — v číselnom rade nevznikne diera.",
   "jazdy.nacitavam": "Načítavam jazdy…",
   "jazdy.prvaPribudne": "Prvá pribudne po ukončení merania — alebo sa natiahne z GPS jednotky, keď je vozidlo prepojené.",
+  "jazdy.filtre": "Filtre",
+  "jazdy.filterVsetky": "Všetky",
   "jazdy.ztohoSukromne": "z toho súkromné",
   "jazdy.spoluCelaHistoria": "Spolu za celú históriu",
   "jazdy.spoluPoslednych": "Spolu za posledných {pocet} jázd",

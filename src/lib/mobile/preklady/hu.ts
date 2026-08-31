@@ -490,6 +490,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "faktury.cisloOstava": "Eltűnik a listáról, de a szám foglalt marad — a számsorban nem keletkezik lyuk.",
   "jazdy.nacitavam": "Utak betöltése…",
   "jazdy.prvaPribudne": "Az első a mérés befejezése után jelenik meg — vagy a GPS-egységből töltődik be, ha a jármű csatlakoztatva van.",
+  "jazdy.filtre": "Szűrők",
+  "jazdy.filterVsetky": "Összes",
   "jazdy.ztohoSukromne": "ebből magán",
   "jazdy.spoluCelaHistoria": "Összesen a teljes előzményre",
   "jazdy.spoluPoslednych": "Összesen az utolsó {pocet} útra",

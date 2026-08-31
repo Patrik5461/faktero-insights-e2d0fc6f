@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { trasa, trvanieJazdy } from "@/lib/faktero/adresa-jazdy";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { MobilObrazovka, Pracujem } from "./MobilChrome";
+import { FilterChips } from "./ui";
 
 import { jeSukromna, jeSukromnaJazda } from "@/lib/faktero/trip-format";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
@@ -128,6 +129,15 @@ export function HistoriaJazd({
   const [jazdy, setJazdy] = useState<Jazdenka[] | null>(null);
   /* Či je na serveri ešte niečo staršie, než čo držíme v ruke. */
   const [jeVsetko, setJeVsetko] = useState(true);
+  /*
+    Zúženie zoznamu na charakter jazdy.
+
+    Kniha jázd je kniha celého vozidla, takže služobné aj súkromné jazdy sú
+    v jednom zozname — a keď z nich treba vypísať len jedny (podklad pre
+    výdavok, alebo naopak kontrola, čo sa najazdilo mimo firmy), dovtedy sa
+    to dalo iba prstom po obrazovke.
+  */
+  const [filter, setFilter] = useState<"vsetky" | "sluzobne" | "sukromne">("vsetky");
   const [nacitavamStarsie, setNacitavamStarsie] = useState(false);
   /* Mapa sa otvára ťuknutím na jazdu — na malej obrazovke sa nezmestia obe naraz. */
   const { t, locale: loc } = usePreklad();
@@ -293,17 +303,34 @@ export function HistoriaJazd({
     );
   }
 
+  const viditelne = useMemo(() => {
+    const z = jazdy ?? [];
+    if (filter === "sukromne") return z.filter(jeSukromnaJazda);
+    if (filter === "sluzobne") return z.filter((j) => !jeSukromnaJazda(j));
+    return z;
+  }, [jazdy, filter]);
+
+  /*
+    Filtre sa ponúkajú len vtedy, keď je z čoho vyberať. Pri firemnom aute
+    bez jedinej súkromnej jazdy by to boli dve tlačidlá, z ktorých jedno vedie
+    na prázdny zoznam a druhé nerobí nič.
+  */
+  const daSaFiltrovat = useMemo(() => {
+    const z = jazdy ?? [];
+    return z.some(jeSukromnaJazda) && z.some((j) => !jeSukromnaJazda(j));
+  }, [jazdy]);
+
   const mesiace = useMemo(() => {
     const mapa = new Map<string, Jazdenka[]>();
-    for (const j of jazdy ?? []) {
+    for (const j of viditelne) {
       const kluc = j.trip_date.slice(0, 7);
       if (!mapa.has(kluc)) mapa.set(kluc, []);
       mapa.get(kluc)!.push(j);
     }
     return [...mapa.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [jazdy]);
+  }, [viditelne]);
 
-  const spolu = useMemo(() => (jazdy ?? []).reduce((s, j) => s + (j.distance_km ?? 0), 0), [jazdy]);
+  const spolu = useMemo(() => viditelne.reduce((s, j) => s + (j.distance_km ?? 0), 0), [viditelne]);
 
   /*
     Súkromné kilometre sa z celkového súčtu nevyberajú — kniha jázd je kniha
@@ -336,15 +363,21 @@ export function HistoriaJazd({
       ) : (
         <>
           <div className="mb-4 rounded-app border border-app-ramik bg-app-karta p-4 shadow-app">
+            {/* Popis hovorí, čo je pod ním — pri zapnutom filtre teda charakter
+                jázd, nie celú históriu vozidla. */}
             <div className="text-[13px] text-app-text-2">
-              {jeVsetko
-                ? t("jazdy.spoluCelaHistoria")
-                : t("jazdy.spoluPoslednych", { pocet: jazdy.length })}
+              {filter !== "vsetky"
+                ? t(filter === "sukromne" ? "kj.sukromne" : "kj.sluzobne")
+                : jeVsetko
+                  ? t("jazdy.spoluCelaHistoria")
+                  : t("jazdy.spoluPoslednych", { pocet: jazdy.length })}
             </div>
             <div className="mt-0.5 text-[26px] font-semibold leading-none tabular-nums">
               {km(spolu, loc)}
             </div>
-            {sukromneKm > 0 && (
+            {/* Riadok patrí k celkovému súčtu. Pri zapnutom filtre by hovoril
+                to isté, čo číslo nad ním, alebo by k nemu vôbec nepatril. */}
+            {filter === "vsetky" && sukromneKm > 0 && (
               <div className="mt-1.5 text-[13px] text-app-text-2">
                 {t("jazdy.ztohoSukromne")}{" "}
                 <span className="font-medium tabular-nums text-app-text">
@@ -353,6 +386,21 @@ export function HistoriaJazd({
               </div>
             )}
           </div>
+
+          {daSaFiltrovat && (
+            <div className="mb-4">
+              <FilterChips
+                ariaLabel={t("jazdy.filtre")}
+                aktivna={filter}
+                onZmen={setFilter}
+                moznosti={[
+                  { kod: "vsetky", popis: t("jazdy.filterVsetky") },
+                  { kod: "sluzobne", popis: t("kj.sluzobne") },
+                  { kod: "sukromne", popis: t("kj.sukromne") },
+                ]}
+              />
+            </div>
+          )}
 
           <div className="space-y-5">
             {mesiace.map(([kluc, riadky]) => {

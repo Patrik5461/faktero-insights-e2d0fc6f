@@ -489,6 +489,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "faktury.cisloOstava": "Sie verschwindet aus der Liste, die Nummer bleibt aber vergeben — in der Reihe entsteht keine Lücke.",
   "jazdy.nacitavam": "Fahrten werden geladen…",
   "jazdy.prvaPribudne": "Die erste erscheint nach dem Beenden einer Messung — oder wird aus der GPS-Einheit geholt, wenn das Fahrzeug verbunden ist.",
+  "jazdy.filtre": "Filter",
+  "jazdy.filterVsetky": "Alle",
   "jazdy.ztohoSukromne": "davon privat",
   "jazdy.spoluCelaHistoria": "Gesamt über die gesamte Historie",
   "jazdy.spoluPoslednych": "Gesamt für die letzten {pocet} Fahrten",
