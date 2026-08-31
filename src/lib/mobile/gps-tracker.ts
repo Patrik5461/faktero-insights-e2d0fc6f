@@ -145,6 +145,12 @@ async function spustiUsek(): Promise<{ ok: boolean; error?: string }> {
 
     // Priebeh z pluginu chodí najviac raz za 10 sekúnd, čo je na počítadlo
     // kilometrov na obrazovke málo — stav sa preto ešte doťahuje.
+    //
+    // Starý doťahovač musí odísť skôr, než vznikne nový. Úsek sa spúšťa aj po
+    // pauze a po samočinnom rozpoznaní jazdy; keby sa dva štarty stretli,
+    // osirený interval by sa pýtal pluginu na stav každé tri sekundy až do
+    // zabitia appky — a nemal by to už kto zastaviť.
+    if (nativePoll) clearInterval(nativePoll);
     nativePoll = setInterval(async () => {
       try {
         const stav = await DriveDetector.getState();

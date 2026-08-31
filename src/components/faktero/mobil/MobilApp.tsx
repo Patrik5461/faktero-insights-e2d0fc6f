@@ -866,7 +866,7 @@ function ObsahApky() {
           firma={firma}
           viacFiriem={firmy.length > 1}
           onZmenitFirmu={() => setKrok("firma")}
-          onPrehlad={() => setKrok("domov")}
+          onPrehlad={() => setKrok(DOMOV)}
           onDoklady={() => setKrok("doklady")}
           onFaktury={() => setKrok("faktury")}
           onPonuky={() => setKrok("ponuky")}
@@ -926,7 +926,7 @@ function ObsahApky() {
           email={email}
           viacFiriem={firmy.length > 1}
           onZmenitFirmu={() => setKrok("firma")}
-          onPrehlad={() => setKrok("domov")}
+          onPrehlad={() => setKrok(DOMOV)}
           onDoklady={() => setKrok("doklady")}
           onFaktury={() => setKrok("faktury")}
           onPonuky={() => setKrok("ponuky")}
