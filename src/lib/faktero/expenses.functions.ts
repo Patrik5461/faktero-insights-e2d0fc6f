@@ -104,11 +104,49 @@ export const deleteExpenseFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { id: string }) => data)
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { error } = await context.supabase.from("expense_documents").delete().eq("id", data.id);
+    /*
+      Mazanie musí povedať, či naozaj mazalo.
+
+      `delete()` nad riadkom, ktorý politika nepustí (mazať smie len správca
+      firmy) alebo ktorý už neexistuje, nevráti chybu — vráti nula riadkov.
+      Bez `select()` sa to nedalo odlíšiť od úspechu a appka aj web na to
+      odpovedali „Doklad zmazaný", hoci doklad ostal ležať v databáze a ďalej
+      sa hlásil ako „čaká na kontrolu".
+    */
+    const { data: zmazane, error } = await context.supabase
+      .from("expense_documents")
+      .delete()
+      .eq("id", data.id)
+      .select("id");
     if (error) throw new Error(error.message);
+    if (!zmazane?.length) {
+      throw new Error("Doklad sa nezmazal — buď už neexistuje, alebo naň nemáte právo.");
+    }
     return { ok: true };
   });
+
+/**
+ * Doklady patriace do mesiaca.
+ *
+ * Účtuje sa podľa dátumu vystavenia — lenže bloček, ktorý sa nepodarilo
+ * prečítať, žiadny nemá. A porovnanie `issue_date >= …` je pri prázdnej
+ * hodnote vždy nepravda, takže taký doklad vypadol z filtra vo **všetkých**
+ * mesiacoch: appka naň upozorňovala („čaká na kontrolu"), ale na webe sa
+ * nedal nájsť, opraviť ani zmazať. Bez dátumu vystavenia preto rozhoduje
+ * dátum vzniku — presne ako v appke, kde sa doklady zoskupujú podľa
+ * `issue_date ?? created_at`.
+ */
+function vMesiaci<Q extends { or: (filter: string) => Q }>(q: Q, month: string): Q {
+  const [y, m] = month.split("-").map(Number);
+  const od = `${y}-${String(m).padStart(2, "0")}-01`;
+  const dalsiMesiac = m === 12 ? 1 : m + 1;
+  const dalsiRok = m === 12 ? y + 1 : y;
+  const do_ = `${dalsiRok}-${String(dalsiMesiac).padStart(2, "0")}-01`;
+  return q.or(
+    `and(issue_date.gte.${od},issue_date.lt.${do_}),` +
+      `and(issue_date.is.null,created_at.gte.${od},created_at.lt.${do_})`,
+  );
+}
 
 export const listExpensesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -122,14 +160,7 @@ export const listExpensesFn = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(500);
     if (data.status && data.status !== "all") q = q.eq("status", data.status);
-    if (data.month) {
-      const [y, m] = data.month.split("-").map(Number);
-      const from = `${y}-${String(m).padStart(2, "0")}-01`;
-      const toMonth = m === 12 ? 1 : m + 1;
-      const toYear = m === 12 ? y + 1 : y;
-      const to = `${toYear}-${String(toMonth).padStart(2, "0")}-01`;
-      q = q.gte("issue_date", from).lt("issue_date", to);
-    }
+    if (data.month) q = vMesiaci(q, data.month);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
     return rows ?? [];
@@ -161,14 +192,7 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const { supabase } = context;
     let q = supabase.from("expense_documents").select("*").eq("company_id", data.company_id);
     if (data.ids?.length) q = q.in("id", data.ids);
-    if (data.month) {
-      const [y, m] = data.month.split("-").map(Number);
-      const from = `${y}-${String(m).padStart(2, "0")}-01`;
-      const toMonth = m === 12 ? 1 : m + 1;
-      const toYear = m === 12 ? y + 1 : y;
-      const to = `${toYear}-${String(toMonth).padStart(2, "0")}-01`;
-      q = q.gte("issue_date", from).lt("issue_date", to);
-    }
+    if (data.month) q = vMesiaci(q, data.month);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
     if (!rows?.length) throw new Error("Žiadne doklady na export");
