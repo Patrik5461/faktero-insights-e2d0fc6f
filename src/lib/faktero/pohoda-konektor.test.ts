@@ -6,6 +6,8 @@ import {
   holeId,
   predvolenyZaciatok,
   rozoberOdpoved,
+  nazovUlohy,
+  nazovBalicka,
 } from "./pohoda-konektor.server";
 import { mlciaceFirmy } from "./pohoda-strazca.server";
 
@@ -697,5 +699,34 @@ describe("strážca konektora", () => {
       dnes,
     );
     expect(mlciace).toHaveLength(1);
+  });
+});
+
+describe("balíček pre viac firiem", () => {
+  /*
+    `schtasks /f` úlohu s rovnakým názvom prepíše. Kým názov nenies firmu,
+    druhý stiahnutý balíček prvému ticho vypol nočný prenos.
+  */
+  it("každá firma má vlastný názov úlohy", () => {
+    const a = nazovUlohy("Tobify s. r. o.");
+    const b = nazovUlohy("Paliera s.r.o.");
+    expect(a).not.toBe(b);
+    expect(a).toContain("Tobify");
+  });
+
+  it("z názvu úlohy zmizne diakritika aj znaky, ktoré schtasks neznesie", () => {
+    const n = nazovUlohy('Žltý "kôň" / s.r.o.');
+    expect(n).not.toMatch(/["\\/:*?<>|]/);
+    expect(n).not.toMatch(/[žôý]/i);
+  });
+
+  it("firma bez použiteľného názvu spadne na pôvodný názov", () => {
+    expect(nazovUlohy("???")).toBe("Faktero - prenos do Pohody");
+    expect(nazovBalicka("???")).toBe("faktero-pohoda-konektor.zip");
+  });
+
+  it("stiahnuté balíčky sa dajú od seba rozoznať", () => {
+    expect(nazovBalicka("Tobify s. r. o.")).toBe("faktero-pohoda-tobify-s-r-o.zip");
+    expect(nazovBalicka("Tobify s. r. o.")).not.toBe(nazovBalicka("Paliera s.r.o."));
   });
 });

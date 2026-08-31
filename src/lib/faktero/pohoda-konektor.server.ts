@@ -984,3 +984,36 @@ export function dekodujOdpoved(bajty: ArrayBuffer): string {
     return new TextDecoder("utf-8").decode(bajty);
   }
 }
+
+/**
+ * Názov naplánovanej úlohy — nesie firmu.
+ *
+ * Účtovníčka má klientov viac a balíček si sťahuje pre každého zvlášť.
+ * `schtasks /f` úlohu s rovnakým názvom **prepíše**, takže s jedným spoločným
+ * názvom by druhý balíček prvému ticho vypol prenos — a nikto by sa to
+ * nedozvedel, lebo prvá firma by len prestala posielať doklady.
+ *
+ * Diakritika a znaky, ktoré `schtasks` v názve neznesie, idú preč.
+ */
+export function nazovUlohy(firma: string): string {
+  const ocistene = bezDiakritiky(firma)
+    .replace(/["\\/:*?<>|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 40);
+  return ocistene ? `Faktero - prenos do Pohody - ${ocistene}` : "Faktero - prenos do Pohody";
+}
+
+function bezDiakritiky(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+/** Názov súboru balíčka — aby sa tri stiahnuté ZIPy dali od seba rozoznať. */
+export function nazovBalicka(firma: string): string {
+  const slug = bezDiakritiky(firma)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+  return slug ? `faktero-pohoda-${slug}.zip` : "faktero-pohoda-konektor.zip";
+}

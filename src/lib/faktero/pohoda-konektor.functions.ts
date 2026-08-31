@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { nazovBalicka, nazovUlohy } from "./pohoda-konektor.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { zakladnaAdresa } from "./pohoda-konektor.server";
 
@@ -115,25 +116,27 @@ exit /b
 `;
 }
 
-function nastavenieUlohy(): string {
+function nastavenieUlohy(nazov: string): string {
   return `@echo off
 rem Zalozi naplanovanu ulohu, ktora spusti prenos kazdy den o 2:00 v noci.
 rem Cas zmenite tak, ze prepisete 02:00 nizsie.
+rem Nazov ulohy nesie firmu — pri viacerych firmach tak jedna druhej
+rem naplanovanu ulohu neprepise.
 
-schtasks /create /tn "Faktero - prenos do Pohody" /tr "'%~dp0faktero-pohoda.cmd'" /sc daily /st 02:00 /f
+schtasks /create /tn "${nazov}" /tr "'%~dp0faktero-pohoda.cmd'" /sc daily /st 02:00 /f
 
 if errorlevel 1 (
   echo.
   echo Ulohu sa nepodarilo zalozit. Skuste tento subor spustit ako spravca.
 ) else (
   echo.
-  echo Hotovo. Uloha "Faktero - prenos do Pohody" pobezi kazdy den o 2:00.
+  echo Hotovo. Uloha "${nazov}" pobezi kazdy den o 2:00.
 )
 pause
 `;
 }
 
-function navod(p: { firma: string; adresa: string }): string {
+function navod(p: { firma: string; adresa: string; uloha: string; priecinok: string }): string {
   return `PRENOS DOKLADOV Z FAKTERA DO POHODY
 ${"=".repeat(45)}
 
@@ -153,7 +156,9 @@ takže sa neotvárajú žiadne porty.
 Nastavenie (raz, asi päť minút)
 -------------------------------
 1. Celý priečinok skopírujte na počítač, kde je POHODA.
-   Odporúčame C:\\Faktero — cesta bez medzier a diakritiky.
+   Odporúčame C:\\Faktero\\${p.priecinok} — cesta bez medzier a diakritiky.
+   Keď vediete viac firiem, každá musí mať **vlastný priečinok**;
+   dávkový súbor pracuje vždy len v tom svojom.
 
 2. Otvorte faktero-pohoda.cmd v Poznámkovom bloku
    (pravé tlačidlo → Upraviť) a hore vyplňte:
@@ -194,10 +199,17 @@ Môže sa doklad naimportovať dvakrát?
   Dôvod uvidíte v protokole importu a Faktero ho dostane v odpovedi.
   Taký doklad sa vráti do fronty a príde znova, keď sa chyba opraví.
 
+Mám v Pohode viac firiem, čo s tým?
+  Pre každú firmu si stiahnite v Fakteru vlastný balíček a dajte ho
+  do vlastného priečinka. Každý si nesie svoj kľúč, svoju databázu
+  účtovnej jednotky aj vlastnú naplánovanú úlohu, takže si navzájom
+  neprekážajú. Časy úloh môžete rozložiť (2:00, 2:20, 2:40) — Pohoda
+  vie naraz spracovať len jeden import.
+
 Ako to vypnem?
-  Zrušte naplánovanú úlohu (Plánovač úloh → Faktero - prenos do
-  Pohody) alebo zmažte celý priečinok. V Fakteru sa dá kľúč
-  zneplatniť v Nastavenia → API kľúče.
+  Zrušte naplánovanú úlohu (Plánovač úloh → ${p.uloha})
+  alebo zmažte celý priečinok. V Fakteru sa dá kľúč zneplatniť
+  v Nastavenia → API kľúče.
 
 Podpora: ${p.adresa}
 `;
@@ -256,13 +268,24 @@ export const pripravKonektorFn = createServerFn({ method: "POST" })
         rok: new Date().getFullYear(),
       }),
     );
-    zip.file("nastav-ulohu.cmd", nastavenieUlohy());
+    const firma = String(company.name ?? "");
+    const uloha = nazovUlohy(firma);
+    zip.file("nastav-ulohu.cmd", nastavenieUlohy(uloha));
     // BOM, nech Poznámkový blok prečíta diakritiku.
-    zip.file("NAVOD.txt", "\ufeff" + navod({ firma: String(company.name ?? ""), adresa }));
+    zip.file(
+      "NAVOD.txt",
+      "\ufeff" +
+        navod({
+          firma,
+          adresa,
+          uloha,
+          priecinok: nazovBalicka(firma).replace(/^faktero-pohoda-|\.zip$/g, "") || "firma",
+        }),
+    );
 
     return {
       base64: await zip.generateAsync({ type: "base64" }),
-      fileName: "faktero-pohoda-konektor.zip",
+      fileName: nazovBalicka(firma),
     };
   });
 
