@@ -54,6 +54,15 @@ export function PrehladJazd({
 }) {
   const { t, mnozne, locale: loc } = usePreklad();
   const [jazdy, setJazdy] = useState<Jazdenka[] | null>(null);
+  /*
+    Ktorý charakter jázd je práve vybraný.
+
+    Karty nad zoznamom nikam nevedú — ťuknutie na ne zúži zoznam pod nimi na
+    tie jazdy, ktoré to číslo tvoria. Je to najkratšia cesta k otázke „a ktoré
+    to boli?", ktorá príde hneď po tom, čo človek uvidí súčet. Druhé ťuknutie
+    na tú istú kartu výber zruší.
+  */
+  const [filter, setFilter] = useState<"sluzobne" | "sukromne" | null>(null);
 
   useEffect(() => {
     let zrusene = false;
@@ -91,6 +100,8 @@ export function PrehladJazd({
     const sukromne = z.filter(jeSukromnaJazda);
     const sluzobne = z.filter((j) => !jeSukromnaJazda(j));
     return {
+      sluzobne,
+      sukromne,
       pocetSluzobne: sluzobne.length,
       pocetSukromne: sukromne.length,
       kmSluzobne: km(sluzobne),
@@ -99,6 +110,21 @@ export function PrehladJazd({
   }, [jazdy]);
 
   const nacitava = jazdy === null;
+  /*
+    Bez filtra je to výber posledných šiestich — zvyšok je v Histórii. S ním
+    sa vypisujú všetky, ktoré doň patria: keď si človek vypýta súkromné jazdy,
+    chce ich vidieť všetky, nie šesť z nich.
+  */
+  const zobrazene =
+    filter === "sukromne"
+      ? suhrn.sukromne
+      : filter === "sluzobne"
+        ? suhrn.sluzobne
+        : (jazdy ?? []).slice(0, 6);
+
+  /** Prázdna skupina sa nedá otvoriť — nebolo by v nej čo ukázať. */
+  const prepni = (ktory: "sluzobne" | "sukromne", pocet: number) =>
+    pocet > 0 ? () => setFilter((s) => (s === ktory ? null : ktory)) : undefined;
   const km = (v: number) =>
     `${v.toLocaleString(loc, { maximumFractionDigits: 1 })} ${t("spolocne.km")}`;
   const pocetJazd = (pocet: number) =>
@@ -128,26 +154,34 @@ export function PrehladJazd({
               value={nacitava ? "—" : km(suhrn.kmSluzobne)}
               hint={nacitava ? undefined : pocetJazd(suhrn.pocetSluzobne)}
               ton="zelena"
-              onClick={onHistoria}
+              aktivna={filter === "sluzobne"}
+              onClick={prepni("sluzobne", suhrn.pocetSluzobne)}
             />
             <StatCard
               label={t("kj.sukromne")}
               value={nacitava ? "—" : km(suhrn.kmSukromne)}
               hint={nacitava ? undefined : pocetJazd(suhrn.pocetSukromne)}
-              onClick={onHistoria}
+              aktivna={filter === "sukromne"}
+              onClick={prepni("sukromne", suhrn.pocetSukromne)}
             />
           </div>
         </section>
 
         <section>
-          <SectionHeader title={t("kj.posledneJazdy")} />
+          <SectionHeader
+            title={
+              filter === null
+                ? t("kj.posledneJazdy")
+                : t(filter === "sukromne" ? "kj.sukromne" : "kj.sluzobne")
+            }
+          />
           {nacitava ? (
             <Card className="px-4 py-5">
               <p className="text-[15px] text-app-text-2">{t("jazdy.nacitavam")}</p>
             </Card>
-          ) : jazdy.length > 0 ? (
+          ) : zobrazene.length > 0 ? (
             <ListCard>
-              {jazdy.slice(0, 6).map((j) => (
+              {zobrazene.map((j) => (
                 <ListRow
                   key={j.id}
                   icon={Route}

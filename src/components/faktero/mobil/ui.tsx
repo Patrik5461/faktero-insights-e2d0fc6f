@@ -98,11 +98,14 @@ export function Card({
   className = "",
   onClick,
   ariaLabel,
+  ariaPressed,
 }: {
   children: ReactNode;
   className?: string;
   onClick?: () => void;
   ariaLabel?: string;
+  /** Karta, ktorá niečo zapína (filter), nie karta, ktorá niekam vedie. */
+  ariaPressed?: boolean;
 }) {
   const styl = `rounded-app border border-app-ramik bg-app-karta shadow-app ${className}`;
   if (!onClick) return <div className={styl}>{children}</div>;
@@ -111,6 +114,7 @@ export function Card({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
+      aria-pressed={ariaPressed}
       className={`${styl} w-full text-left transition active:scale-[0.99] active:bg-app-pozadie`}
     >
       {children}
@@ -131,6 +135,7 @@ export function StatCard({
   ton = "neutral",
   velka,
   onClick,
+  aktivna,
 }: {
   label: string;
   value: string;
@@ -139,12 +144,25 @@ export function StatCard({
   /** Celoplošná karta (banka) má sumu o kúsok väčšiu než dvojica vedľa seba. */
   velka?: boolean;
   onClick?: () => void;
+  /**
+   * Karta zapína filter a toto je jeho stav.
+   *
+   * Keď je zadané, karta nikam nevedie — preto z nej zmizne šípka a namiesto
+   * nej si zapnutý stav drží rámik. Šípka, ktorá by nikam neviedla, je horšia
+   * než žiadna: sľubuje obrazovku, ktorá sa neotvorí.
+   */
+  aktivna?: boolean;
 }) {
+  const prepinac = aktivna !== undefined;
   return (
-    <Card onClick={onClick} className="p-4">
+    <Card
+      onClick={onClick}
+      ariaPressed={prepinac ? aktivna : undefined}
+      className={`p-4 ${aktivna ? "ring-2 ring-app-zelena" : ""}`}
+    >
       <div className="flex items-start justify-between gap-2">
         <span className="text-[13px] text-app-text-2">{label}</span>
-        {onClick && <ChevronRight className="h-4 w-4 shrink-0 text-app-text-3" />}
+        {onClick && !prepinac && <ChevronRight className="h-4 w-4 shrink-0 text-app-text-3" />}
       </div>
       <div
         className={`mt-1.5 font-bold tabular-nums leading-none ${velka ? "text-[30px]" : "text-[26px]"} ${TON_TEXT[ton]}`}
