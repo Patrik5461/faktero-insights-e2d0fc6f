@@ -265,7 +265,9 @@ public class DriveDetectionEngineTest {
 
         BufferedTrip jazda = koniecJazdy(ukony);
         assertNotNull(jazda);
-        assertEquals(START + 360, jazda.endedAt, 0.001);
+        // Koniec patrí k poslednému pohybu, nie k okamihu, keď sa na to prišlo —
+        // inak by každá jazda v knihe mala navyše päť minút státia.
+        assertEquals(START + 60, jazda.endedAt, 0.001);
         assertTrue(obsahuje(ukony, DetectorEffect.Druh.STOP_PRECISE_UPDATES));
         assertEquals(DetectorState.IDLE, m.getState());
         assertNull(m.getTrip());
@@ -381,21 +383,88 @@ public class DriveDetectionEngineTest {
 
     // ── Obnova a zaradenie ─────────────────────────────────────────────────
 
+    private BufferedTrip ulozenaJazda() {
+        List<TripPoint> body = new ArrayList<>();
+        body.add(new TripPoint(48.15, 17.11, 60, 10, null, START));
+        return new BufferedTrip("z-databazy", START, null, body, 120, 60, null, false);
+    }
+
     @Test
     public void obnovenaJazdaPokracuje() {
         DriveDetectionEngine m = motor();
-        List<TripPoint> body = new ArrayList<>();
-        body.add(new TripPoint(48.15, 17.11, 60, 10, null, START));
-        BufferedTrip ulozena = new BufferedTrip("z-databazy", START, null, body, 120, 60, null, false);
 
-        List<DetectorEffect> ukony = m.resume(ulozena, null, START + 3_600);
+        List<DetectorEffect> ukony = m.resume(ulozenaJazda(), null, START + 120);
         assertEquals(1, ukony.size());
         assertTrue(obsahuje(ukony, DetectorEffect.Druh.START_PRECISE_UPDATES));
         assertEquals(DetectorState.DRIVING, m.getState());
 
-        jazdi(m, START + 3_600, START + 3_620);
+        jazdi(m, START + 125, START + 145);
         assertEquals(6, m.getTrip().points.size());
         assertEquals("z-databazy", m.getTrip().id);
+    }
+
+    @Test
+    public void obnovenaJazdaPoDlhomTichuSaUkonciSpatne() {
+        // Appka bola hodinu mimo. Jazda sa medzitým nemala ako ukončiť —
+        // nikto neťukal — ale skončila sa pri poslednom pohybe, nie teraz.
+        DriveDetectionEngine m = motor();
+
+        List<DetectorEffect> ukony = m.resume(ulozenaJazda(), null, START + 3_600);
+
+        BufferedTrip jazda = koniecJazdy(ukony);
+        assertNotNull(jazda);
+        assertEquals(START, jazda.endedAt, 0.001);
+        assertEquals(DetectorState.IDLE, m.getState());
+        assertNull(m.getTrip());
+    }
+
+    @Test
+    public void obnovenaRucnaJazdaPokracujeAjPoDlhomTichu() {
+        // Ručne spustenú jazdu ukončí človek, nie hodiny.
+        DriveDetectionEngine m = motor();
+        BufferedTrip rucna = new BufferedTrip("rucna", START, true);
+
+        List<DetectorEffect> ukony = m.resume(rucna, null, START + 3_600);
+
+        assertEquals(1, ukony.size());
+        assertTrue(obsahuje(ukony, DetectorEffect.Druh.START_PRECISE_UPDATES));
+        assertEquals(DetectorState.DRIVING, m.getState());
+    }
+
+    @Test
+    public void dieraVMeraniachUkonciStaruJazduAZacneNovu() {
+        DriveDetectionEngine m = motor();
+        m.wake(START);
+        jazdi(m, START, START + 60);
+        String prva = m.getTrip().id;
+
+        // Appka hodinu spala. Prvé meranie po prebudení nepatrí do starej jazdy.
+        List<DetectorEffect> ukony = jazdi(m, START + 3_600, START + 3_700);
+
+        BufferedTrip ukoncena = koniecJazdy(ukony);
+        assertNotNull(ukoncena);
+        assertEquals(prva, ukoncena.id);
+        assertEquals(START + 60, ukoncena.endedAt, 0.001);
+
+        BufferedTrip nova = zaciatokJazdy(ukony);
+        assertNotNull(nova);
+        assertFalse(prva.equals(nova.id));
+    }
+
+    @Test
+    public void posuvyGpsPriStatiJazduNedrzia() {
+        // Stojace auto vie GPS posúvať o desiatky metrov. Body pribúdajú, ale
+        // pohyb to nie je — jazda sa musí ukončiť pri poslednej skutočnej jazde.
+        DriveDetectionEngine m = motor();
+        m.wake(START);
+        jazdi(m, START, START + 60);
+
+        List<DetectorEffect> ukony = jazdi(m, START + 90, START + 420, 30, 1);
+
+        BufferedTrip jazda = koniecJazdy(ukony);
+        assertNotNull(jazda);
+        assertEquals(START + 60, jazda.endedAt, 0.001);
+        assertNull(m.getTrip());
     }
 
     @Test

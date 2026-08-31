@@ -231,7 +231,9 @@ final class DriveDetectionEngineTests: XCTestCase {
 
         let jazda = koniecJazdy(ukony)
         XCTAssertNotNil(jazda)
-        XCTAssertEqual(jazda?.endedAt, start + 360)
+        // Koniec patrí k poslednému pohybu, nie k okamihu, keď sa na to prišlo —
+        // inak by každá jazda v knihe mala navyše päť minút státia.
+        XCTAssertEqual(jazda?.endedAt, start + 60)
         XCTAssertTrue(ukony.contains(.stopPreciseUpdates))
         XCTAssertEqual(motor.state, .idle)
         XCTAssertNil(motor.trip)
@@ -339,22 +341,79 @@ final class DriveDetectionEngineTests: XCTestCase {
         XCTAssertEqual(motor.trip?.id, id)
     }
 
+    private func ulozenaJazda(id: String = "z-databazy", speed: Double = 60) -> BufferedTrip {
+        BufferedTrip(
+            id: id,
+            startedAt: start,
+            points: [TripPoint(lat: 48.15, lng: 17.11, speedKmh: speed, accuracy: 10, altitude: nil, timestamp: start)],
+            distanceMeters: 120,
+            maxSpeedKmh: speed)
+    }
+
     func testObnovenaJazdaPokracuje() {
         let motor = engine()
-        let ulozena = BufferedTrip(
-            id: "z-databazy",
-            startedAt: start,
-            points: [TripPoint(lat: 48.15, lng: 17.11, speedKmh: 60, accuracy: 10, altitude: nil, timestamp: start)],
-            distanceMeters: 120,
-            maxSpeedKmh: 60)
 
-        let ukony = motor.resume(trip: ulozena, debounceUntil: nil, at: start + 3_600)
+        let ukony = motor.resume(trip: ulozenaJazda(), debounceUntil: nil, at: start + 120)
         XCTAssertEqual(ukony, [.startPreciseUpdates])
         XCTAssertEqual(motor.state, .driving)
 
-        jazdi(motor, od: start + 3_600, po: start + 3_620)
+        jazdi(motor, od: start + 125, po: start + 145)
         XCTAssertEqual(motor.trip?.points.count, 6)
         XCTAssertEqual(motor.trip?.id, "z-databazy")
+    }
+
+    func testObnovenaJazdaPoDlhomTichuSaUkonciSpatne() {
+        // Appka bola hodinu mimo. Jazda sa medzitým nemala ako ukončiť —
+        // nikto neťukal — ale skončila sa pri poslednom pohybe, nie teraz.
+        let motor = engine()
+
+        let ukony = motor.resume(trip: ulozenaJazda(), debounceUntil: nil, at: start + 3_600)
+
+        XCTAssertEqual(koniecJazdy(ukony)?.endedAt, start)
+        XCTAssertEqual(motor.state, .idle)
+        XCTAssertNil(motor.trip)
+    }
+
+    func testObnovenaRucnaJazdaPokracujeAjPoDlhomTichu() {
+        // Ručne spustenú jazdu ukončí človek, nie hodiny.
+        let motor = engine()
+        let rucna = BufferedTrip(id: "rucna", startedAt: start, manual: true)
+
+        let ukony = motor.resume(trip: rucna, debounceUntil: nil, at: start + 3_600)
+
+        XCTAssertEqual(ukony, [.startPreciseUpdates])
+        XCTAssertEqual(motor.state, .driving)
+    }
+
+    func testDieraVMeraniachUkonciStaruJazduAZacneNovu() {
+        let motor = engine()
+        _ = motor.wake(at: start)
+        jazdi(motor, od: start, po: start + 60)
+        let prva = motor.trip?.id
+
+        // Appka hodinu spala. Prvé meranie po prebudení nepatrí do starej jazdy.
+        let ukony = jazdi(motor, od: start + 3_600, po: start + 3_700)
+
+        let ukoncena = koniecJazdy(ukony)
+        XCTAssertEqual(ukoncena?.id, prva)
+        XCTAssertEqual(ukoncena?.endedAt, start + 60)
+
+        let nova = zaciatokJazdy(ukony)
+        XCTAssertNotNil(nova)
+        XCTAssertNotEqual(nova?.id, prva)
+    }
+
+    func testPosuvyGPSPriStatiJazduNedrzia() {
+        // Stojace auto vie GPS posúvať o desiatky metrov. Body pribúdajú, ale
+        // pohyb to nie je — jazda sa musí ukončiť pri poslednej skutočnej jazde.
+        let motor = engine()
+        _ = motor.wake(at: start)
+        jazdi(motor, od: start, po: start + 60)
+
+        let ukony = jazdi(motor, od: start + 90, po: start + 420, krok: 30, speed: 1)
+
+        XCTAssertEqual(koniecJazdy(ukony)?.endedAt, start + 60)
+        XCTAssertNil(motor.trip)
     }
 
     func testZaradenieJazduNeukonci() {

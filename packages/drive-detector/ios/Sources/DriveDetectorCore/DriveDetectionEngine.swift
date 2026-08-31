@@ -60,14 +60,29 @@ public final class DriveDetectionEngine {
         self.config = config
     }
 
-    /// Po reštarte zariadenia pokračuje rozpracovaná jazda tam, kde skončila.
+    /// Po reštarte zariadenia pokračuje rozpracovaná jazda tam, kde skončila —
+    /// ak sa medzitým nezastavila.
+    ///
+    /// Kým bola appka mimo (uspatá alebo zabitá), nikto neťukal, takže sa jazda
+    /// nemala ako ukončiť. Keď je od posledného pohybu viac než prah státia,
+    /// skončila sa dávno a zapíše sa **spätne k poslednému pohybu**, nie
+    /// k tomuto okamihu.
+    ///
+    /// Predtým tu bolo `lastMovingAt = now`, aby sa jazda neukončila v tej
+    /// istej sekunde, v ktorej sa obnovila. Lenže tým každé prebudenie
+    /// nastavilo hodiny státia na nulu — otvorená jazda potom v knihe jázd
+    /// zožrala aj hodinu státia a k nej kus ďalšej cesty.
     public func resume(trip: BufferedTrip, debounceUntil: TimeInterval?, at now: TimeInterval) -> [DetectorEffect] {
         self.trip = trip
         self.debounceUntil = debounceUntil
         state = .driving
-        // Zámerne od teraz: telefón mohol byť hodinu vypnutý a jazda by sa
-        // ukončila v tej istej sekunde, v ktorej sa obnovila.
-        lastMovingAt = now
+        lastMovingAt = nil
+
+        let posledny = poslednyPohyb(trip)
+        if !trip.manual, now - posledny >= config.stopAfterSeconds {
+            return finishTrip(at: posledny)
+        }
+        lastMovingAt = posledny
         return [.startPreciseUpdates]
     }
 
@@ -123,7 +138,7 @@ public final class DriveDetectionEngine {
         case .driving:
             guard trip?.manual == false else { return [] }
             guard let m = lastMovingAt, now - m >= config.stopAfterSeconds else { return [] }
-            return finishTrip(at: now)
+            return finishTrip(at: m)
         }
     }
 
@@ -175,6 +190,18 @@ public final class DriveDetectionEngine {
     }
 
     // MARK: - Vnútro
+
+    /// Kedy sa auto naposledy hýbalo — podľa hodín tohto behu aj podľa bodov.
+    ///
+    /// Bez druhej časti sa po prebudení procesu nedá zistiť nič: appka vstáva
+    /// s prázdnou pamäťou a jedinou stopou po jazde sú body v databáze.
+    /// Zámerne sa hľadá posledný bod **nad prahom státia**, nie posledný bod:
+    /// stojacim autom vie GPS posúvať aj o desiatky metrov a taká drž by
+    /// jazdu držala otvorenú donekonečna.
+    private func poslednyPohyb(_ jazda: BufferedTrip) -> TimeInterval {
+        let zBodov = jazda.points.last(where: { $0.speedKmh >= config.stopSpeedKmh })?.timestamp
+        return max(lastMovingAt ?? 0, zBodov ?? jazda.startedAt)
+    }
 
     private var requiredSustained: Double {
         automotive ? min(config.sustainedSeconds, config.automotiveSustainedSeconds) : config.sustainedSeconds
@@ -236,6 +263,20 @@ public final class DriveDetectionEngine {
 
     private func ingestWhileDriving(_ fix: Fix, at now: TimeInterval) -> [DetectorEffect] {
         guard var bezi = trip else { return [] }
+
+        // Diera v meraniach znamená, že appka medzitým nebežala — systém ju
+        // uspal alebo zabil. Ťukanie počas spánku nechodí, takže jazda ostala
+        // otvorená; bez tejto kontroly by k nej teraz pribudla aj cesta, ktorá
+        // s ňou nesúvisí. Stará sa uzavrie k poslednému pohybu a toto meranie
+        // začína overovanie novej.
+        let stalo = poslednyPohyb(bezi)
+        if !bezi.manual, fix.timestamp - stalo >= config.stopAfterSeconds {
+            var ukony = finishTrip(at: stalo)
+            ukony += wake(at: now)
+            ukony += ingest(fix, at: now)
+            return ukony
+        }
+
         guard isUsable(fix), fix.speedKmh >= 0 else { return [] }
 
         let bod = TripPoint(fix: fix)
@@ -252,7 +293,7 @@ public final class DriveDetectionEngine {
 
         var ukony: [DetectorEffect] = [.pointAppended(tripId: bezi.id, point: bod)]
         if !bezi.manual, let m = lastMovingAt, now - m >= config.stopAfterSeconds {
-            ukony += finishTrip(at: now)
+            ukony += finishTrip(at: m)
         }
         return ukony
     }

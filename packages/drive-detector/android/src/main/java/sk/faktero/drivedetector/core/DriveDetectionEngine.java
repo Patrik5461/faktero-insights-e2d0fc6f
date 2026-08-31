@@ -97,15 +97,50 @@ public final class DriveDetectionEngine {
         this.config = config;
     }
 
-    /** Po reštarte zariadenia pokračuje rozpracovaná jazda tam, kde skončila. */
+    /**
+     * Po reštarte zariadenia pokračuje rozpracovaná jazda tam, kde skončila —
+     * ak sa medzitým nezastavila.
+     *
+     * Kým bola appka mimo (uspatá alebo zabitá), nikto neťukal, takže sa jazda
+     * nemala ako ukončiť. Keď je od posledného pohybu viac než prah státia,
+     * skončila sa dávno a zapíše sa <b>spätne k poslednému pohybu</b>, nie
+     * k tomuto okamihu.
+     *
+     * Predtým tu bolo {@code lastMovingAt = now}, aby sa jazda neukončila v tej
+     * istej sekunde, v ktorej sa obnovila. Lenže tým každé prebudenie nastavilo
+     * hodiny státia na nulu — otvorená jazda potom v knihe jázd zožrala aj
+     * hodinu státia a k nej kus ďalšej cesty.
+     */
     public List<DetectorEffect> resume(BufferedTrip trip, Double debounceUntil, double now) {
         this.trip = trip;
         this.debounceUntil = debounceUntil;
         this.state = DetectorState.DRIVING;
-        // Zámerne od teraz: telefón mohol byť hodinu vypnutý a jazda by sa
-        // ukončila v tej istej sekunde, v ktorej sa obnovila.
-        this.lastMovingAt = now;
+        this.lastMovingAt = null;
+
+        double posledny = poslednyPohyb(trip);
+        if (!trip.manual && now - posledny >= config.stopAfterSeconds) {
+            return finishTrip(posledny);
+        }
+        this.lastMovingAt = posledny;
         return jeden(DetectorEffect.Druh.START_PRECISE_UPDATES);
+    }
+
+    /**
+     * Kedy sa auto naposledy hýbalo — podľa hodín tohto behu aj podľa bodov.
+     *
+     * Bez druhej časti sa po prebudení procesu nedá zistiť nič: appka vstáva
+     * s prázdnou pamäťou a jedinou stopou po jazde sú body v databáze.
+     * Zámerne sa hľadá posledný bod <b>nad prahom státia</b>, nie posledný bod:
+     * stojacim autom vie GPS posúvať aj o desiatky metrov a taká drž by jazdu
+     * držala otvorenú donekonečna.
+     */
+    private double poslednyPohyb(BufferedTrip jazda) {
+        double posledny = jazda.startedAt;
+        for (TripPoint bod : jazda.points) {
+            if (bod.speedKmh >= config.stopSpeedKmh) posledny = bod.timestamp;
+        }
+        if (lastMovingAt != null) posledny = Math.max(posledny, lastMovingAt);
+        return posledny;
     }
 
     public void setDebounce(Double until) {
@@ -165,7 +200,8 @@ public final class DriveDetectionEngine {
                 if (lastMovingAt == null || now - lastMovingAt < config.stopAfterSeconds) {
                     return Collections.emptyList();
                 }
-                return finishTrip(now);
+                // Koniec patrí k poslednému pohybu, nie k okamihu zistenia.
+                return finishTrip(lastMovingAt);
             default:
                 return Collections.emptyList();
         }
@@ -292,6 +328,20 @@ public final class DriveDetectionEngine {
 
     private List<DetectorEffect> ingestWhileDriving(Fix fix, double now) {
         if (trip == null) return Collections.emptyList();
+
+        // Diera v meraniach znamená, že appka medzitým nebežala — systém ju
+        // uspal alebo zabil. Ťukanie počas spánku nechodí, takže jazda ostala
+        // otvorená; bez tejto kontroly by k nej teraz pribudla aj cesta, ktorá
+        // s ňou nesúvisí. Stará sa uzavrie k poslednému pohybu a toto meranie
+        // začína overovanie novej.
+        double posledny = poslednyPohyb(trip);
+        if (!trip.manual && fix.timestamp - posledny >= config.stopAfterSeconds) {
+            List<DetectorEffect> ukony = new ArrayList<>(finishTrip(posledny));
+            ukony.addAll(wake(now));
+            ukony.addAll(ingest(fix, now));
+            return ukony;
+        }
+
         if (!isUsable(fix) || fix.speedKmh < 0) return Collections.emptyList();
 
         TripPoint bod = new TripPoint(fix);
@@ -308,7 +358,7 @@ public final class DriveDetectionEngine {
         List<DetectorEffect> ukony = new ArrayList<>();
         ukony.add(DetectorEffect.pointAppended(trip.id, bod));
         if (!trip.manual && lastMovingAt != null && now - lastMovingAt >= config.stopAfterSeconds) {
-            ukony.addAll(finishTrip(now));
+            ukony.addAll(finishTrip(lastMovingAt));
         }
         return ukony;
     }
