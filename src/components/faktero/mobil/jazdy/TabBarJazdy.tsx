@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { Car, Clock, Home, Navigation } from "lucide-react";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
+import { SPODNA_LISTA } from "@/lib/mobile/rozmery";
 
 /**
  * Spodná navigácia appky Kniha jázd.
@@ -37,11 +38,16 @@ export function TabBarJazd({
   return (
     <nav
       className="sticky bottom-0 z-30 border-t border-app-ramik bg-app-karta"
-      /* Bez odsadenia dole padne posledný riadok ikon pod systémový indikátor. */
-      style={{ paddingBottom: "var(--safe-bottom)" }}
+      /*
+        Daná výška — musí sedieť s miestom, ktoré lište rezervuje obal
+        (`--spodna-lista`), inak lišta pri prepnutí záložky poskočí; viď
+        `lib/mobile/rozmery`. Bez odsadenia dole padne posledný riadok ikon
+        pod systémový indikátor.
+      */
+      style={{ height: SPODNA_LISTA, paddingBottom: "var(--safe-bottom)" }}
       aria-label={t("tab.navigacia")}
     >
-      <div className="flex items-stretch">
+      <div className="flex h-full items-stretch">
         {ZALOZKY.map((p) => (
           <Polozka
             key={p.kod}
@@ -78,7 +84,7 @@ function Polozka({
       type="button"
       onClick={() => onPrepni(kod)}
       aria-current={je ? "page" : undefined}
-      className={`flex min-h-[44px] min-w-0 flex-1 select-none flex-col items-center gap-1 px-0.5 pb-1.5 pt-2 transition active:scale-95 ${
+      className={`flex min-w-0 flex-1 select-none flex-col items-center justify-center gap-1 px-0.5 transition active:scale-95 ${
         je ? "text-app-zelena" : "text-app-text-3"
       }`}
     >

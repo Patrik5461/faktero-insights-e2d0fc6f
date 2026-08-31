@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { Car, Home, Landmark, Receipt, ScanLine, FileText } from "lucide-react";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
+import { SPODNA_LISTA } from "@/lib/mobile/rozmery";
 
 /**
  * Spodná navigácia mobilnej aplikácie.
@@ -41,12 +42,16 @@ export function TabBar({
   return (
     <nav
       className="sticky bottom-0 z-30 border-t border-app-ramik bg-app-karta"
-      /* Bez odsadenia dole by na iPhone posledný riadok ikon padol pod
-         systémový indikátor a nedal by sa trafiť. */
-      style={{ paddingBottom: "var(--safe-bottom)" }}
+      /*
+        Výška je daná, nie zdedená z obsahu: musí sedieť s miestom, ktoré lište
+        rezervuje obal (`--spodna-lista`) — viď `lib/mobile/rozmery`. Odsadenie
+        dole je v nej započítané, bez neho by na iPhone posledný riadok ikon
+        padol pod systémový indikátor a nedal by sa trafiť.
+      */
+      style={{ height: SPODNA_LISTA, paddingBottom: "var(--safe-bottom)" }}
       aria-label={t("tab.navigacia")}
     >
-      <div className="flex items-stretch">
+      <div className="flex h-full items-stretch">
         {VLAVO.map((p) => (
           <Polozka key={p.kod} {...p} aktivna={aktivna} onPrepni={onPrepni} />
         ))}
@@ -78,7 +83,7 @@ function Polozka({
       type="button"
       onClick={() => onPrepni(kod)}
       aria-current={je ? "page" : undefined}
-      className={`flex min-w-0 flex-1 select-none flex-col items-center gap-1 px-0.5 pb-1.5 pt-2 transition active:scale-95 ${
+      className={`flex min-w-0 flex-1 select-none flex-col items-center justify-center gap-1 px-0.5 transition active:scale-95 ${
         je ? "text-app-zelena" : "text-app-text-3"
       }`}
     >

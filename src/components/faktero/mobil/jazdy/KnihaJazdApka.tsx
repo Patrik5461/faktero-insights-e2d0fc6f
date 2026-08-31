@@ -24,6 +24,7 @@ import { HistoriaVozidiel } from "./HistoriaVozidiel";
 import { VozidlaJazd } from "./VozidlaJazd";
 import type { Vozidlo } from "./useVozidla";
 import { TabBarJazd, type ZalozkaJazd } from "./TabBarJazdy";
+import { SPODNA_LISTA } from "@/lib/mobile/rozmery";
 
 /**
  * Kniha jázd — samostatná aplikácia.
@@ -526,7 +527,7 @@ function SoSpodnouListou({
       className="flex min-h-[100dvh] flex-col bg-app-pozadie [&>*:first-child]:min-h-[calc(100dvh-var(--spodna-lista))]"
       style={
         {
-          "--spodna-lista": "calc(3.75rem + var(--safe-bottom))",
+          "--spodna-lista": SPODNA_LISTA,
           "--patka-spodok": "0px",
         } as React.CSSProperties
       }

@@ -150,6 +150,7 @@ import {
   type NastavenieDokladu,
 } from "@/components/faktero/mobil/Skener";
 import { TabBar, type Zalozka } from "@/components/faktero/mobil/TabBar";
+import { SPODNA_LISTA } from "@/lib/mobile/rozmery";
 import { PovoleniaJazd } from "@/components/faktero/mobil/PovoleniaJazd";
 import { VytvorFirmu } from "@/components/faktero/mobil/VytvorFirmu";
 import { Prihlasenie, VyberFirmy, Zamok } from "@/components/faktero/mobil/Vstup";
@@ -1153,7 +1154,7 @@ function SoSpodnouListou({
       className="flex min-h-[100dvh] flex-col bg-app-pozadie [&>*:first-child]:min-h-[calc(100dvh-var(--spodna-lista))]"
       style={
         {
-          "--spodna-lista": "calc(3.75rem + var(--safe-bottom))",
+          "--spodna-lista": SPODNA_LISTA,
           // Lišta bezpečnú zónu už drží; keby si ju pripočítala aj lepivá
           // pätka, ostala by nad lištou prázdna medzera na výšku palca.
           "--patka-spodok": "0px",
