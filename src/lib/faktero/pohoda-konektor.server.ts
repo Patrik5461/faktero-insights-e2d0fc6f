@@ -985,25 +985,6 @@ export function dekodujOdpoved(bajty: ArrayBuffer): string {
   }
 }
 
-/**
- * Názov naplánovanej úlohy — nesie firmu.
- *
- * Účtovníčka má klientov viac a balíček si sťahuje pre každého zvlášť.
- * `schtasks /f` úlohu s rovnakým názvom **prepíše**, takže s jedným spoločným
- * názvom by druhý balíček prvému ticho vypol prenos — a nikto by sa to
- * nedozvedel, lebo prvá firma by len prestala posielať doklady.
- *
- * Diakritika a znaky, ktoré `schtasks` v názve neznesie, idú preč.
- */
-export function nazovUlohy(firma: string): string {
-  const ocistene = bezDiakritiky(firma)
-    .replace(/["\\/:*?<>|]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 40);
-  return ocistene ? `Faktero - prenos do Pohody - ${ocistene}` : "Faktero - prenos do Pohody";
-}
-
 function bezDiakritiky(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
@@ -1016,4 +997,302 @@ export function nazovBalicka(firma: string): string {
     .replace(/^-|-$/g, "")
     .slice(0, 40);
   return slug ? `faktero-pohoda-${slug}.zip` : "faktero-pohoda-konektor.zip";
+}
+
+/**
+ * Balíček pre účtovníčku — celý most na jej strane.
+ *
+ * Zámerne to nie je program, ktorý by sa inštaloval. POHODA vie XML import
+ * spustiť z príkazového riadku, takže stačí dávkový súbor a naplánovaná úloha
+ * Windows: nič sa nepodpisuje, nič sa neaktualizuje, účtovníčka si obsah vie
+ * prečítať v Poznámkovom bloku a kedykoľvek ho zmazať.
+ *
+ * Kľúč sa vyrába tu a vloží sa rovno do súboru — nikde sa nezobrazuje a nemá
+ * ako skončiť v mailoch ani v chate.
+ */
+export function davkovySubor(p: { adresa: string }): string {
+  // Bez diakritiky zámerne: dávkový súbor sa vykonáva v kódovej stránke, ktorú
+  // si Windows volí sám, a rozsypané hlásenie by len mýlilo.
+  return `@echo off
+setlocal enabledelayedexpansion
+title Faktero - prenos do Pohody
+
+rem ===========================================================
+rem  NASTAVENIE - spolocne pre vsetky firmy v tomto priecinku
+rem ===========================================================
+
+rem Cesta k programu POHODA (skontrolujte nazov priecinka)
+set "POHODA=C:\\Program Files (x86)\\STORMWARE\\POHODA SK\\Pohoda.exe"
+
+rem Prihlasenie do Pohody. Ked ucet nema heslo, nechajte prazdne.
+set "MENO=@"
+set "HESLO="
+
+rem ===========================================================
+rem  Ktore firmy sa prenasaju, je vo firmy.txt vedla tohto suboru.
+rem  Jeden riadok na firmu:  KLUC;DATABAZA;NAZOV
+rem  Dalej uz netreba menit nic.
+rem ===========================================================
+
+set "ADRESA=${p.adresa}"
+set "PRIECINOK=%~dp0"
+set "ZOZNAM=%PRIECINOK%firmy.txt"
+set "VSTUP=%PRIECINOK%vstup"
+set "ODPOVED=%PRIECINOK%odpoved"
+set "HOTOVO=%PRIECINOK%hotovo"
+set "PROTOKOL=%PRIECINOK%protokol.txt"
+
+if not exist "%VSTUP%" mkdir "%VSTUP%"
+if not exist "%ODPOVED%" mkdir "%ODPOVED%"
+if not exist "%HOTOVO%" mkdir "%HOTOVO%"
+
+call :log "--- start ---"
+
+if not exist "%POHODA%" (
+  call :log "CHYBA: Pohoda.exe sa nenasla - opravte cestu v tomto subore."
+  goto :koniec
+)
+if not exist "%ZOZNAM%" (
+  call :log "CHYBA: chyba subor firmy.txt - bez neho nevieme, co prenasat."
+  goto :koniec
+)
+
+rem Firmy sa beru po jednej. Pohoda vie naraz spracovat len jeden import,
+rem takze paralelne by to aj tak neslo - a takto sedi kazda odpoved k svojmu
+rem klucu. Riadky zacinajuce na # su poznamky.
+for /f "usebackq eol=# tokens=1,2,* delims=;" %%a in ("%ZOZNAM%") do (
+  set "KLUC=%%a"
+  set "DATABAZA=%%b"
+  set "NAZOV=%%c"
+  call :firma
+)
+
+goto :koniec
+
+rem ===========================================================
+rem  Jedna firma
+rem ===========================================================
+:firma
+if "%KLUC%"=="" exit /b
+rem Poistka na poznamku, ktorej sa do zaciatku dostal BOM: Poznamkovy blok
+rem ho pri ulozeni v UTF-8 pridava sam a "eol=#" ho uz nerozpozna.
+echo %KLUC%| findstr /b /c:"fk_" >nul || exit /b
+if "%DATABAZA%"=="" (
+  call :log "%NAZOV%: PRESKOCENE - v firmy.txt chyba nazov databazy."
+  exit /b
+)
+
+rem Odpoved z predosleho behu, ktoru sa nepodarilo odoslat, patri inej firme
+rem ako tej, ktora ide teraz - poslat ju s cudzim klucom by bola chyba.
+for %%f in ("%ODPOVED%\\*.xml") do (
+  move /y "%%f" "%HOTOVO%" >nul
+  call :log "Odlozena neodoslana odpoved z predosleho behu: %%~nxf"
+)
+
+rem 1. Stiahnutie davky z Faktera. Von ide bezne HTTPS, nic sa neotvara.
+set "SUBOR=%VSTUP%\\davka.xml"
+if exist "%SUBOR%" del /q "%SUBOR%"
+for /f %%k in ('curl -sS -o "%SUBOR%" -w "%%{http_code}" -H "Authorization: Bearer %KLUC%" "%ADRESA%/api/v1/pohoda/davka"') do set "KOD=%%k"
+
+if "%KOD%"=="204" (
+  call :log "%NAZOV%: nic nove na prenos."
+  if exist "%SUBOR%" del /q "%SUBOR%"
+  exit /b
+)
+if not "%KOD%"=="200" (
+  call :log "%NAZOV%: Faktero odpovedalo %KOD% - preskocene."
+  if exist "%SUBOR%" del /q "%SUBOR%"
+  exit /b
+)
+call :log "%NAZOV%: davka stiahnuta."
+
+rem 2. Konfiguracia importu. Pise sa zakazdym, lebo databaza je ina firma od firmy.
+> "%PRIECINOK%import.ini" (
+  echo [XML]
+  echo database=%DATABAZA%
+  echo input_dir=%VSTUP%
+  echo response_dir=%ODPOVED%
+  echo check_duplicity=1
+  echo action_after_processing=2
+  echo Move_to=%HOTOVO%
+)
+
+rem 3. Nacitanie do Pohody. /wait - inak by sa pokracovalo skor, nez skonci.
+call :log "%NAZOV%: spustam import do Pohody..."
+start "" /wait "%POHODA%" /XML "%MENO%" "%HESLO%" "%PRIECINOK%import.ini"
+call :log "%NAZOV%: import skoncil."
+
+rem 4. Odpoved spat do Faktera - z nej sa dozvie cisla dokladov a chyby.
+dir /b "%ODPOVED%\\*.xml" >nul 2>&1 || call :log "%NAZOV%: Pohoda nevratila ziadnu odpoved - pozrite protokol importu v Pohode."
+for %%f in ("%ODPOVED%\\*.xml") do (
+  for /f %%k in ('curl -sS -o nul -w "%%{http_code}" -X POST -H "Authorization: Bearer %KLUC%" -H "Content-Type: text/xml" --data-binary "@%%f" "%ADRESA%/api/v1/pohoda/odpoved"') do set "KOD2=%%k"
+  if "!KOD2!"=="200" (
+    move /y "%%f" "%HOTOVO%" >nul
+    call :log "%NAZOV%: odpoved odoslana ^(%%~nxf^)"
+  ) else (
+    call :log "%NAZOV%: odpoved sa odoslat nepodarila ^(!KOD2!^): %%~nxf"
+  )
+)
+exit /b
+
+:koniec
+call :log "--- koniec ---"
+endlocal
+exit /b 0
+
+:log
+rem Presmerovanie je pred echom zamerne: ked by text koncil cislicou,
+rem cmd by ju spojil so znakmi >> a vzalo by to ako presmerovanie prudu.
+>>"%PROTOKOL%" echo %date% %time% %~1
+echo %~1
+exit /b
+`;
+}
+
+/**
+ * Zoznam firiem, ktoré sa prenášajú.
+ *
+ * Účtovníčka vedie klientov aj päťdesiat a Pohoda spúšťa import vždy nad
+ * jednou účtovnou jednotkou — cyklus teda musí byť na jej strane tak či tak.
+ * Radšej ako päťdesiat priečinkov a päťdesiat naplánovaných úloh je jeden
+ * priečinok a jeden riadok na klienta: kľúč z jeho balíčka, databáza jeho
+ * účtovnej jednotky, názov do protokolu.
+ */
+export function zoznamFiriem(p: { kluc: string; firma: string; databaza: string }): string {
+  return `# Ktore firmy sa prenasaju do Pohody.
+#
+# Jeden riadok na firmu, tri hodnoty oddelene bodkociarkou:
+#
+#   KLUC;DATABAZA;NAZOV
+#
+#   KLUC      - z balicka, ktory vam poslal klient (zacina fk_live_)
+#   DATABAZA  - nazov databazy uctovnej jednotky v Pohode
+#               (Pohoda: Subor - Uctovne jednotky - stlpec Databaza)
+#   NAZOV     - lubovolne pomenovanie do protokolu
+#
+# Bez medzier okolo bodkociarky. Riadok zacinajuci na # sa preskoci,
+# takze firmu viete docasne vypnut tym, ze pred nu date #.
+#
+# Dalsieho klienta pridate tak, ze si z jeho balicka skopirujete jeho
+# riadok sem pod tento. Priecinok, davkovy subor ani ulohu uz nemenite.
+
+${p.kluc};${p.databaza};${p.firma}
+`;
+}
+
+export function nastavenieUlohy(): string {
+  return `@echo off
+rem Zalozi naplanovanu ulohu, ktora spusti prenos kazdy den o 2:00 v noci.
+rem Cas zmenite tak, ze prepisete 02:00 nizsie.
+rem
+rem Nazov ulohy nesie nazov tohto priecinka. Vsetky firmy z firmy.txt
+rem obsluhuje jedna uloha; ked by ste priecinkov mali predsa viac, nazvy
+rem sa nezhoduju a jedna uloha druhu neprepise.
+
+for %%i in ("%~dp0.") do set "TENTO=%%~nxi"
+set "ULOHA=Faktero - prenos do Pohody - %TENTO%"
+
+schtasks /create /tn "%ULOHA%" /tr "'%~dp0faktero-pohoda.cmd'" /sc daily /st 02:00 /f
+
+if errorlevel 1 (
+  echo.
+  echo Ulohu sa nepodarilo zalozit. Skuste tento subor spustit ako spravca.
+) else (
+  echo.
+  echo Hotovo. Uloha "%ULOHA%" pobezi kazdy den o 2:00.
+)
+pause
+`;
+}
+
+export function navod(p: { firma: string; adresa: string }): string {
+  return `PRENOS DOKLADOV Z FAKTERA DO POHODY
+${"=".repeat(45)}
+
+Firma: ${p.firma}
+
+Čo to robí
+----------
+Raz denne v noci si tento priečinok stiahne z Faktera doklady, ktoré
+ešte v Pohode nie sú, načíta ich do Pohody a pošle späť správu o tom,
+ako import dopadol. Vďaka tomu Faktero vie, ktoré doklady sa naozaj
+založili a aké čísla dostali.
+
+Nič sa neinštaluje a Pohoda nemusí byť spustená — dávkový súbor si ju
+spustí sám a po skončení zavrie. Von ide len bežné HTTPS spojenie,
+takže sa neotvárajú žiadne porty.
+
+Firiem môže byť v jednom priečinku ľubovoľne veľa — sú vypísané
+v súbore firmy.txt a prenášajú sa jedna po druhej.
+
+Nastavenie (raz, asi päť minút)
+-------------------------------
+1. Celý priečinok skopírujte na počítač, kde je POHODA.
+   Odporúčame C:\\Faktero — cesta bez medzier a diakritiky.
+
+2. Otvorte faktero-pohoda.cmd v Poznámkovom bloku
+   (pravé tlačidlo → Upraviť) a hore vyplňte:
+
+   POHODA — cesta k Pohoda.exe
+   MENO   — prihlasovacie meno do Pohody (@ = admin)
+   HESLO  — heslo; keď žiadne nie je, nechajte prázdne
+
+   Toto platí pre všetky firmy naraz, mení sa to len raz.
+
+3. Otvorte firmy.txt a skontrolujte názov databázy účtovnej jednotky.
+   Predvyplnili sme odhad; skutočný nájdete v Pohode:
+   Súbor → Účtovné jednotky, stĺpec Databáza.
+
+4. Dvakrát kliknite na faktero-pohoda.cmd a pozrite sa, čo vypíše.
+   Prvý beh je najlepšie spustiť, keď v Pohode nikto nepracuje.
+
+5. Keď prvý beh prejde, spustite nastav-ulohu.cmd — založí
+   naplánovanú úlohu na 2:00 v noci. Ak sa nepodarí, spustite ho
+   pravým tlačidlom → Spustiť ako správca.
+
+Ďalší klient (asi pol minúty)
+-----------------------------
+Klient vám pošle svoj balíček. Z jeho firmy.txt skopírujte posledný
+riadok (ten s kľúčom) a vložte ho do svojho firmy.txt pod ostatné.
+Doplňte názov jeho databázy — a to je všetko. Priečinok, dávkový súbor
+ani naplánovanú úlohu už nemeníte, o zvyšok sa postará cyklus.
+
+Firmu dočasne vypnete tým, že pred jej riadok dáte #.
+
+Čo v priečinku vzniká
+---------------------
+firmy.txt    zoznam firiem — jediné, čo pri pribúdaní klientov meníte
+vstup\\      stiahnutá dávka pred načítaním
+odpoved\\    odpoveď z Pohody pred odoslaním späť
+hotovo\\     spracované súbory (archív, dá sa občas vyprázdniť)
+protokol.txt čo sa kedy stalo — každý riadok má na začiatku firmu
+import.ini   konfigurácia importu; prepisuje sa pri každej firme
+
+Časté otázky
+------------
+Musí byť počítač zapnutý?
+  Áno, v čase, keď má úloha bežať. Keď je vypnutý, prenos sa vynechá
+  a doklady prídu ďalšiu noc — nič sa nestratí.
+
+Ako dlho to trvá pri viacerých firmách?
+  Firmy idú za sebou, nie naraz — Pohoda vie spracovať vždy len jeden
+  import. Firma, ktorá nemá nič nové, je vybavená za sekundu: Faktero
+  odpovie „nič nové" a ide sa ďalej.
+
+Môže sa doklad naimportovať dvakrát?
+  Nie. Pohoda má zapnutú kontrolu duplicity a každý doklad má stály
+  identifikátor, takže druhý pokus odmietne.
+
+Čo keď Pohoda niektorý doklad odmietne?
+  Dôvod uvidíte v protokole importu a Faktero ho dostane v odpovedi.
+  Taký doklad sa vráti do fronty a príde znova, keď sa chyba opraví.
+
+Ako to vypnem?
+  Celé: zrušte naplánovanú úlohu (Plánovač úloh → Faktero - prenos do
+  Pohody - <názov priečinka>) alebo zmažte priečinok.
+  Pre jednu firmu: dajte # pred jej riadok vo firmy.txt.
+  Kľúč sa dá zneplatniť v Fakteru v Nastavenia → API kľúče.
+
+Podpora: ${p.adresa}
+`;
 }

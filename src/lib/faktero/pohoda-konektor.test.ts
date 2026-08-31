@@ -6,8 +6,10 @@ import {
   holeId,
   predvolenyZaciatok,
   rozoberOdpoved,
-  nazovUlohy,
   nazovBalicka,
+  davkovySubor,
+  zoznamFiriem,
+  nastavenieUlohy,
 } from "./pohoda-konektor.server";
 import { mlciaceFirmy } from "./pohoda-strazca.server";
 
@@ -703,30 +705,61 @@ describe("strážca konektora", () => {
 });
 
 describe("balíček pre viac firiem", () => {
+  const cmd = davkovySubor({ adresa: "https://www.faktero.sk" });
+  const zoznam = zoznamFiriem({
+    kluc: "fk_live_abc",
+    firma: "Tobify s. r. o.",
+    databaza: "StwPh_12345678_2026.mdb",
+  });
+
   /*
-    `schtasks /f` úlohu s rovnakým názvom prepíše. Kým názov nenies firmu,
-    druhý stiahnutý balíček prvému ticho vypol nočný prenos.
+    Účtovníčka má klientov aj päťdesiat. Dávkový súbor preto prejde zoznam
+    firiem, nie jednu firmu — a formát, ktorý píše `zoznamFiriem`, musí sedieť
+    s tým, ktorý číta `for /f` v dávkovom súbore.
   */
-  it("každá firma má vlastný názov úlohy", () => {
-    const a = nazovUlohy("Tobify s. r. o.");
-    const b = nazovUlohy("Paliera s.r.o.");
-    expect(a).not.toBe(b);
-    expect(a).toContain("Tobify");
+  it("dávkový súbor číta zoznam firiem v cykle", () => {
+    expect(cmd).toContain("firmy.txt");
+    expect(cmd).toMatch(/for \/f "usebackq eol=# tokens=1,2,\* delims=;"/);
+    expect(cmd).toContain("call :firma");
   });
 
-  it("z názvu úlohy zmizne diakritika aj znaky, ktoré schtasks neznesie", () => {
-    const n = nazovUlohy('Žltý "kôň" / s.r.o.');
-    expect(n).not.toMatch(/["\\/:*?<>|]/);
-    expect(n).not.toMatch(/[žôý]/i);
+  it("zoznam píše tri hodnoty oddelené bodkočiarkou a poznámky mriežkou", () => {
+    const riadky = zoznam.split("\n").filter((r) => r.trim() && !r.startsWith("#"));
+    expect(riadky).toHaveLength(1);
+    expect(riadky[0].split(";")).toEqual([
+      "fk_live_abc",
+      "StwPh_12345678_2026.mdb",
+      "Tobify s. r. o.",
+    ]);
   });
 
-  it("firma bez použiteľného názvu spadne na pôvodný názov", () => {
-    expect(nazovUlohy("???")).toBe("Faktero - prenos do Pohody");
-    expect(nazovBalicka("???")).toBe("faktero-pohoda-konektor.zip");
+  it("kľúč ani databáza nie sú zapečené v dávkovom súbore", () => {
+    expect(cmd).not.toContain("fk_live_");
+    expect(cmd).not.toContain(".mdb");
+  });
+
+  /*
+    Odpoveď z predošlého behu patrí inej firme — poslať ju s cudzím kľúčom by
+    znamenalo, že si Faktero priradí čísla dokladov k nesprávnej firme.
+  */
+  it("neodoslaná odpoveď z predošlého behu sa nepošle cudzím kľúčom", () => {
+    const usek = cmd.slice(cmd.indexOf(":firma"), cmd.indexOf("1. Stiahnutie"));
+    expect(usek).toContain("Odlozena neodoslana odpoved");
+    expect(usek).toContain('move /y "%%f" "%HOTOVO%"');
+  });
+
+  it("naplánovaná úloha sa volá podľa priečinka, nie natvrdo", () => {
+    const uloha = nastavenieUlohy();
+    expect(uloha).toContain('for %%i in ("%~dp0.") do set "TENTO=%%~nxi"');
+    expect(uloha).toContain('schtasks /create /tn "%ULOHA%"');
   });
 
   it("stiahnuté balíčky sa dajú od seba rozoznať", () => {
     expect(nazovBalicka("Tobify s. r. o.")).toBe("faktero-pohoda-tobify-s-r-o.zip");
     expect(nazovBalicka("Tobify s. r. o.")).not.toBe(nazovBalicka("Paliera s.r.o."));
+  });
+
+  it("firma bez použiteľného názvu spadne na pôvodný názov balíčka", () => {
+    expect(nazovBalicka("???")).toBe("faktero-pohoda-konektor.zip");
   });
 });

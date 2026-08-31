@@ -61,7 +61,9 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
         Namiesto posielania súborov mailom si Pohoda vezme doklady sama — raz denne v noci a späť
         nám povie, aké čísla im pridelila. Účtovníčka nič neinštaluje: stiahnutý priečinok skopíruje
         k Pohode, vyplní v ňom cestu a názov databázy a spustí druhý súbor, ktorý založí naplánovanú
-        úlohu.
+        úlohu. Keď vedie viac firiem, ďalšiu pridá jedným riadkom do{" "}
+        <code className="rounded bg-secondary px-1">firmy.txt</code> — priečinok ani úlohu už
+        nezakladá znova.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
