@@ -18,7 +18,13 @@ type PotvrdenyDoklad = {
   pohoda_stav: string | null;
   error: string | null;
 };
-type StavKonektora = { kluce: number; naposledy: string | null; potvrdene: PotvrdenyDoklad[] };
+type StavFirmy = { id: string; kluce: number; naposledy: string | null };
+type StavKonektora = {
+  kluce: number;
+  naposledy: string | null;
+  potvrdene: PotvrdenyDoklad[];
+  firmy: StavFirmy[];
+};
 
 type MojaFirma = { id: string; name: string; role: string };
 
@@ -44,6 +50,12 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
         const moje = (z as MojaFirma[]).filter((f) => f.role === "owner" || f.role === "admin");
         setFirmy(moje);
         setVybrane(moje.map((f) => f.id));
+        // Druhý dotaz už pozná všetky firmy, takže stav ukáže za každú z nich.
+        if (moje.length > 1) {
+          fnStav({ data: { companyId, companyIds: moje.map((f) => f.id) } })
+            .then((r) => setStav(r as StavKonektora))
+            .catch(() => {});
+        }
       })
       .catch(() => setFirmy([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,7 +82,7 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
           ? `Balíček stiahnutý pre ${r.firmy.length} firmy — pošlite ho účtovníčke.`
           : "Balíček stiahnutý — pošlite ho účtovníčke.",
       );
-      fnStav({ data: { companyId } }).then((r) => setStav(r as StavKonektora));
+      fnStav({ data: { companyId, companyIds: vybrane } }).then((r) => setStav(r as StavKonektora));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Balíček sa nepodarilo pripraviť.");
     } finally {
@@ -100,7 +112,8 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
                   checked={vybrane.includes(f.id)}
                   onChange={() => prepni(f.id)}
                 />
-                {f.name}
+                <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                <StavFirmyPopis stav={stav?.firmy?.find((x) => x.id === f.id)} />
               </label>
             ))}
           </div>
@@ -155,5 +168,26 @@ export function KonektorPohody({ companyId }: { companyId: string }) {
         .
       </p>
     </div>
+  );
+}
+
+/**
+ * Ako je na tom jedna firma.
+ *
+ * Rozlišuje tri stavy, lebo každý znamená niečo iné: bez balíčka sa ešte nič
+ * nezačalo, vydaný a mlčiaci môže znamenať, že ho účtovníčka nespustila, a
+ * dátum posledného ozvania je jediné, z čoho sa dá poznať, že prenos beží.
+ */
+function StavFirmyPopis({ stav }: { stav?: StavFirmy }) {
+  if (!stav?.kluce) {
+    return <span className="shrink-0 text-[11px] text-muted-foreground">bez balíčka</span>;
+  }
+  if (!stav.naposledy) {
+    return <span className="shrink-0 text-[11px] text-amber-600">vydaný, zatiaľ ticho</span>;
+  }
+  return (
+    <span className="shrink-0 text-[11px] text-muted-foreground">
+      ozval sa {new Date(stav.naposledy).toLocaleDateString("sk-SK")}
+    </span>
   );
 }

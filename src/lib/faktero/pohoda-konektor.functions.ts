@@ -110,15 +110,22 @@ export const pripravKonektorFn = createServerFn({ method: "POST" })
 /** Stav konektora do rozhrania — beží vôbec, a čo naposledy priniesol. */
 export const stavKonektoraFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input: { companyId: string }) => input)
+  .validator((input: { companyId: string; companyIds?: string[] }) => input)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    /*
+      Stav sa pýta za všetky firmy, ktoré balíček nesie, nie len za tú
+      prepnutú. Jeden balíček obsluhuje aj desiatky klientov a keby sa stav
+      dal zistiť len prepínaním firiem, nikto by si nevšimol, že sa jedna
+      z nich prestala ozývať.
+    */
+    const idFiriem = [...new Set([data.companyId, ...(data.companyIds ?? [])])];
 
     const [{ data: kluce }, { data: potvrdene }] = await Promise.all([
       supabase
         .from("api_keys")
-        .select("id, last_used_at, revoked_at")
-        .eq("company_id", data.companyId)
+        .select("id, company_id, last_used_at, revoked_at")
+        .in("company_id", idFiriem)
         .eq("name", "Pohoda — konektor")
         .order("created_at", { ascending: false }),
       supabase
@@ -130,16 +137,28 @@ export const stavKonektoraFn = createServerFn({ method: "POST" })
         .limit(5),
     ]);
 
-    const zive = (kluce ?? []).filter((k: { revoked_at: string | null }) => !k.revoked_at);
-    const naposledy = zive
-      .map((k: { last_used_at: string | null }) => k.last_used_at)
-      .filter(Boolean)
-      .sort()
-      .pop() as string | undefined;
+    type Kluc = { company_id: string; last_used_at: string | null; revoked_at: string | null };
+    const zive = ((kluce ?? []) as Kluc[]).filter((k) => !k.revoked_at);
+
+    /** Kedy sa naposledy ozval ktorýkoľvek živý kľúč firmy. */
+    const naposledyPre = (id: string) =>
+      (zive
+        .filter((k) => k.company_id === id)
+        .map((k) => k.last_used_at)
+        .filter(Boolean)
+        .sort()
+        .pop() as string | undefined) ?? null;
+
+    const mojej = zive.filter((k) => k.company_id === data.companyId);
 
     return {
-      kluce: zive.length,
-      naposledy: naposledy ?? null,
+      kluce: mojej.length,
+      naposledy: naposledyPre(data.companyId),
       potvrdene: potvrdene ?? [],
+      firmy: idFiriem.map((id) => ({
+        id,
+        kluce: zive.filter((k) => k.company_id === id).length,
+        naposledy: naposledyPre(id),
+      })),
     };
   });
