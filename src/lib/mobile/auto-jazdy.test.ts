@@ -5,6 +5,7 @@ import {
   jePrikratka,
   miestnyDatum,
   prekazkaDetekcie,
+  prekryvajucaSaJazda,
   riadokZJazdy,
 } from "./auto-jazdy";
 import { dekoduj } from "@/lib/faktero/polyline";
@@ -232,5 +233,48 @@ describe("prečo detekcia nebeží", () => {
         lowPower: "on",
       }),
     ).toBe("pozadie");
+  });
+});
+
+describe("prekryvajucaSaJazda", () => {
+  const zaciatok = new Date("2026-08-13T08:00:00+02:00").getTime();
+  const nova = { startedAt: zaciatok, endedAt: zaciatok + 30 * 60 * 1000 };
+
+  function vKnihe(odMin: number, doMin: number, id = "uz-tam") {
+    return {
+      id,
+      start_time: new Date(zaciatok + odMin * 60 * 1000).toISOString(),
+      end_time: new Date(zaciatok + doMin * 60 * 1000).toISOString(),
+    };
+  }
+
+  it("tú istú cestu z druhej appky odhalí", () => {
+    // Dve nezávislé merania sa nikdy nezhodujú na minútu ani na kilometer —
+    // spoločný čas je jediné, čo ich spája.
+    expect(prekryvajucaSaJazda(nova, [vKnihe(5, 28)])).toBe("uz-tam");
+  });
+
+  it("jazdu, ktorá začína tam, kde predošlá skončila, nechá prejsť", () => {
+    expect(prekryvajucaSaJazda(nova, [vKnihe(-45, 0)])).toBeNull();
+    expect(prekryvajucaSaJazda(nova, [vKnihe(30, 70)])).toBeNull();
+  });
+
+  it("dotyk kratší než minútu za prekryv nepovažuje", () => {
+    expect(prekryvajucaSaJazda(nova, [vKnihe(-20, 0.5)])).toBeNull();
+    expect(prekryvajucaSaJazda(nova, [vKnihe(-20, 1)])).toBe("uz-tam");
+  });
+
+  it("záznam bez časov preskočí", () => {
+    // Ručne dopísaná jazda má často len dátum. Bez časov sa prekryv posúdiť
+    // nedá a tichý zákaz zápisu by bol horší než duplicita.
+    expect(
+      prekryvajucaSaJazda(nova, [{ id: "rucna", start_time: null, end_time: null }]),
+    ).toBeNull();
+  });
+
+  it("nedokončenú jazdu posudzovať nevie a pustí ju", () => {
+    // Jazda bez konca nemá trvanie, takže spoločný čas vyjde nula. Radšej
+    // duplicita, ktorú človek vidí, než ticho zahodená jazda.
+    expect(prekryvajucaSaJazda({ startedAt: zaciatok }, [vKnihe(-10, 10)])).toBeNull();
   });
 });

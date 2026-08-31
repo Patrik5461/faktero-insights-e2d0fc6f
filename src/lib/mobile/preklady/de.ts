@@ -451,6 +451,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "jz.lenPocasPouzivania": "Wenn Sie den Standort nur „Beim Verwenden“ erlaubt haben, lassen Sie die App geöffnet — nach dem Ausschalten des Displays stoppt das Telefon die Messung und die Kilometer wären falsch. Mit „Immer“ misst sie auch in der Tasche.",
   "jz.vyberteVozidlo": "Wählen Sie ein Fahrzeug.",
   "jz.odoslanychJazd": "{pocet} offline erfasste Fahrten wurden gesendet",
+  "jz.uzJeVKnihe": "Diese Fahrt steht bereits im Fahrtenbuch — die andere App hat sie erfasst.",
   "jz.rozpoznanaUlozena": "Erkannte Fahrt gespeichert — {km} km, {auto}",
   "jz.bezPolohy": "Es wurde kein Standort gemessen, die Fahrt wurde nicht gespeichert. Versuchen Sie es im Freien — im Gebäude ist der Standort ungenau — und stellen Sie den Zugriff auf „Immer“.",
   "jz.ulozenaVTelefone": "Fahrt auf dem Telefon gespeichert — {km} km. Sie wird bei Verbindung gesendet.",

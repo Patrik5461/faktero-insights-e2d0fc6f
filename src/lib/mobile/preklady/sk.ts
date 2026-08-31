@@ -468,6 +468,7 @@ export const sk = {
   "jz.lenPocasPouzivania": "Ak ste polohu povolili len „počas používania“, nechajte appku otvorenú — po zhasnutí displeja telefón meranie zastaví a kilometre by sa doratali nesprávne. S povolením „Vždy“ beží meranie aj vo vrecku.",
   "jz.vyberteVozidlo": "Vyberte vozidlo.",
   "jz.odoslanychJazd": "Odoslaných {pocet} jázd zapísaných bez signálu",
+  "jz.uzJeVKnihe": "Túto jazdu už v knihe máte — zapísala ju druhá aplikácia.",
   "jz.rozpoznanaUlozena": "Rozpoznaná jazda uložená — {km} km, {auto}",
   "jz.bezPolohy": "Nenamerali sme žiadnu polohu, jazdu som neuložil. Skúste to vonku — v budove je poloha nepresná — a polohu povoľte na „Vždy“.",
   "jz.ulozenaVTelefone": "Jazda uložená v telefóne — {km} km. Odošle sa po pripojení.",

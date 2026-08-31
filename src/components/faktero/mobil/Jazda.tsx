@@ -279,12 +279,16 @@ export function Jazda({
             classification: jazda.classification,
           });
           if (r.ok) {
-            toast.success(
-              t("jz.rozpoznanaUlozena", {
-                km: (jazda.distanceMeters / 1000).toFixed(1),
-                auto: vozidla.find((v) => v.id === auto)?.name ?? "",
-              }),
-            );
+            if (r.duplicita) {
+              toast.info(t("jz.uzJeVKnihe"));
+            } else {
+              toast.success(
+                t("jz.rozpoznanaUlozena", {
+                  km: (jazda.distanceMeters / 1000).toFixed(1),
+                  auto: vozidla.find((v) => v.id === auto)?.name ?? "",
+                }),
+              );
+            }
             continue;
           }
         }
@@ -315,6 +319,7 @@ export function Jazda({
     setVybavujem(null);
     if (!r.ok) return toast.error(r.chyba ?? t("jz.chybaUlozenia"));
     setCakajuce((z) => z.filter((j) => j.id !== jazda.id));
+    if (r.duplicita) return toast.info(t("jz.uzJeVKnihe"));
     const vozidlo = vozidla?.find((v) => v.id === vehicleId);
     toast.success(
       `${classification === "business" ? t("jz.ulozeneSluzobna") : t("jz.ulozeneSukromna")}${

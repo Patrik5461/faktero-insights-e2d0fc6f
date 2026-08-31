@@ -457,6 +457,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "jz.lenPocasPouzivania": "If you allowed location only “while using the app”, keep the app open — once the screen goes off the phone stops measuring and the distance would come out wrong. With “Always” it keeps measuring in your pocket.",
   "jz.vyberteVozidlo": "Choose a vehicle.",
   "jz.odoslanychJazd": "{pocet} trips recorded offline were sent",
+  "jz.uzJeVKnihe": "This trip is already in the log — the other app recorded it.",
   "jz.rozpoznanaUlozena": "Detected trip saved — {km} km, {auto}",
   "jz.bezPolohy": "We measured no location, so the trip was not saved. Try outdoors — indoors the location is inaccurate — and set location access to “Always”.",
   "jz.ulozenaVTelefone": "Trip saved on the phone — {km} km. It will be sent once you are online.",

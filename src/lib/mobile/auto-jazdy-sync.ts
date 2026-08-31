@@ -9,7 +9,13 @@ import type {
 } from "@faktero/drive-detector";
 import { supabase } from "@/integrations/supabase/client";
 import { poslednaCenaPaliva } from "@/lib/faktero/cena-paliva";
-import { TEXT_PREKAZKY, jePrikratka, prekazkaDetekcie, riadokZJazdy } from "./auto-jazdy";
+import {
+  TEXT_PREKAZKY,
+  jePrikratka,
+  prekazkaDetekcie,
+  prekryvajucaSaJazda,
+  riadokZJazdy,
+} from "./auto-jazdy";
 import { vozidloPreRozpoznanuJazdu } from "./moje-vozidlo";
 
 /**
@@ -269,11 +275,28 @@ export async function ulozRozpoznanuJazdu(args: {
   companyId: string;
   vehicleId: string;
   classification: Classification;
-}): Promise<{ ok: boolean; chyba?: string }> {
+}): Promise<{ ok: boolean; chyba?: string; duplicita?: boolean }> {
   const p = await plugin();
   if (!p) return { ok: false, chyba: "Detekcia jázd je len v mobilnej aplikácii." };
 
   try {
+    // Tú istú cestu vie zapísať aj druhá appka na tom istom telefóne (Faktero
+    // a Kniha jázd merajú každá sama za seba) alebo Commander. V knihe by
+    // potom bola tá istá jazda dvakrát a kilometre by sedeli za nikoho.
+    const koniecJazdy = args.jazda.endedAt ?? args.jazda.startedAt;
+    const { data: susedia } = await supabase
+      .from("trips")
+      .select("id, start_time, end_time")
+      .eq("vehicle_id", args.vehicleId)
+      .lt("start_time", new Date(koniecJazdy).toISOString())
+      .gt("end_time", new Date(args.jazda.startedAt).toISOString());
+
+    if (prekryvajucaSaJazda(args.jazda, susedia ?? [])) {
+      // Vybavená je aj tak — inak by sa appka pýtala na tú istú jazdu donekonečna.
+      await p.markSynced({ tripId: args.jazda.id });
+      return { ok: true, duplicita: true };
+    }
+
     const [{ data: vozidlo }, cena, { data: session }] = await Promise.all([
       supabase
         .from("vehicles")

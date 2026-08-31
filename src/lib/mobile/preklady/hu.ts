@@ -452,6 +452,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "jz.lenPocasPouzivania": "Ha a helymeghatározást csak „az alkalmazás használata közben” engedélyezte, hagyja nyitva az alkalmazást — a képernyő kikapcsolása után a telefon leállítja a mérést, és a kilométerek hibásak lennének. Az „Mindig” beállítással a zsebben is mér.",
   "jz.vyberteVozidlo": "Válasszon járművet.",
   "jz.odoslanychJazd": "{pocet} jel nélkül rögzített utat elküldtünk",
+  "jz.uzJeVKnihe": "Ez az út már szerepel a nyilvántartásban — a másik alkalmazás rögzítette.",
   "jz.rozpoznanaUlozena": "Felismert út mentve — {km} km, {auto}",
   "jz.bezPolohy": "Nem mértünk helyzetet, ezért az utat nem mentettük. Próbálja szabadban — épületben a helymeghatározás pontatlan —, és állítsa a hozzáférést „Mindig” értékre.",
   "jz.ulozenaVTelefone": "Az utat a telefonon mentettük — {km} km. Kapcsolat esetén elküldjük.",

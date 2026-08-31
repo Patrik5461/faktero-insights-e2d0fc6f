@@ -83,6 +83,40 @@ export function riadokZJazdy(args: {
   };
 }
 
+/** Najkratší spoločný čas, ktorý ešte považujeme za tú istú jazdu. */
+const MIN_PREKRYV_MS = 60_000;
+
+/**
+ * Jazda toho istého auta, ktorá sa s touto prekrýva v čase.
+ *
+ * Jedno auto nemôže ísť dve jazdy naraz, takže prekryv znamená, že tú istú
+ * cestu už niekto zapísal: druhá appka na tom istom telefóne, druhý účet nad
+ * tým istým autom alebo import z Commandera. Dve nezávislé merania nikdy
+ * nevyjdú rovnako — líšia sa o stovky metrov aj o minúty — takže porovnávať
+ * kilometre nemá zmysel; spoločný čas je jediné spoľahlivé znamenie.
+ *
+ * Dotyk koncom prekryv nie je: jazda, ktorá začína presne tam, kde predošlá
+ * skončila, je bežná vec. Preto sa žiada aspoň minúta spoločného času —
+ * a jazda bez konca sa tým pádom posúdiť nedá a prejde. Radšej duplicita,
+ * ktorú človek v knihe vidí, než ticho zahodená jazda.
+ */
+export function prekryvajucaSaJazda(
+  jazda: { startedAt: number; endedAt?: number | null },
+  existujuce: Array<{ id: string; start_time: string | null; end_time: string | null }>,
+): string | null {
+  const zaciatok = jazda.startedAt;
+  const koniec = jazda.endedAt ?? jazda.startedAt;
+
+  for (const iny of existujuce) {
+    if (!iny.start_time || !iny.end_time) continue;
+    const od = Date.parse(iny.start_time);
+    const do_ = Date.parse(iny.end_time);
+    if (Number.isNaN(od) || Number.isNaN(do_)) continue;
+    if (Math.min(koniec, do_) - Math.max(zaciatok, od) >= MIN_PREKRYV_MS) return iny.id;
+  }
+  return null;
+}
+
 /** Jazda, ktorú bez človeka uložiť nevieme — chýba jej zaradenie. */
 export function cakaNaCloveka(jazda: BufferedTrip): boolean {
   return jazda.classification == null;

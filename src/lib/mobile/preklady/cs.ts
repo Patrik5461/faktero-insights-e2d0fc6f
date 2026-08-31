@@ -456,6 +456,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "jz.lenPocasPouzivania": "Pokud jste polohu povolili jen „při používání“, nechte aplikaci otevřenou — po zhasnutí displeje telefon měření zastaví a kilometry by se dopočítaly nesprávně. S povolením „Vždy“ běží měření i v kapse.",
   "jz.vyberteVozidlo": "Vyberte vozidlo.",
   "jz.odoslanychJazd": "Odesláno {pocet} jízd zapsaných bez signálu",
+  "jz.uzJeVKnihe": "Tuto jízdu už v knize máte — zapsala ji druhá aplikace.",
   "jz.rozpoznanaUlozena": "Rozpoznaná jízda uložena — {km} km, {auto}",
   "jz.bezPolohy": "Nenaměřili jsme žádnou polohu, jízdu jsem neuložil. Zkuste to venku — v budově je poloha nepřesná — a polohu povolte na „Vždy“.",
   "jz.ulozenaVTelefone": "Jízda uložena v telefonu — {km} km. Odešle se po připojení.",
