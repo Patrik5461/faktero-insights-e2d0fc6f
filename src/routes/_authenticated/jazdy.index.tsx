@@ -7,6 +7,8 @@ import { Plus, Pencil, Trash2, Car, Map as MapIcon } from "lucide-react";
 import { toast } from "sonner";
 import { formatDuration, formatSpeed, jeSukromna, sourceLabel } from "@/lib/faktero/trip-format";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
+import { useServerFn } from "@tanstack/react-start";
+import { trasaMedziBodmi } from "@/lib/faktero/trasa.server";
 import { BulkBar, ConfirmDialog } from "@/components/faktero/ListControls";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -32,10 +34,34 @@ type Trip = {
   note: string | null;
   duration_seconds: number | null;
   average_speed_kmh: number | null;
+  max_speed_kmh: number | null;
+  raw_provider_data: any;
   external_source: string | null;
   classification: string | null;
   route: string | null;
 };
+
+/**
+ * Začiatok a koniec jazdy zo surových dát Commandera.
+ *
+ * Commander skutočne prejdenú trasu neposiela — pole `waypoints` je v jeho
+ * odpovedi vždy prázdne (overené na 3 209 jazdách). Má ale presné súradnice
+ * začiatku a konca, takže sa aspoň dá ukázať, kde jazda začala a skončila.
+ */
+function koncoveBody(r: Trip): { odkial: Bod; kam: Bod } | null {
+  if (r.route) return null;
+  const d = r.raw_provider_data;
+  if (!d) return null;
+  const c = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : null);
+  const a = { lat: c(d.latStart), lng: c(d.lonStart) };
+  const b = { lat: c(d.latStop), lng: c(d.lonStop) };
+  if (a.lat == null || a.lng == null || b.lat == null || b.lng == null) return null;
+  // Jazda, ktorá skončila tam, kde začala, nemá čo kresliť.
+  if (a.lat === b.lat && a.lng === b.lng) return null;
+  return { odkial: a as Bod, kam: b as Bod };
+}
+
+type Bod = { lat: number; lng: number };
 
 /** Koľko jázd sa načíta naraz. */
 const DAVKA = 500;
@@ -57,6 +83,13 @@ function TripsPage() {
   // päťsto načítaných jazdách je preklikávanie zoznamom zbytočne pomalé.
   const [vybrane, setVybrane] = useState<Record<string, boolean>>({});
   const [potvrdenie, setPotvrdenie] = useState(false);
+  /*
+    Navrhnutá trasa pre jazdy, ktoré si vlastnú nenesú (Commander). Drží sa
+    podľa id jazdy, aby sa tá istá cesta nepýtala pri každom otvorení znova.
+  */
+  const [navrhy, setNavrhy] = useState<Record<string, string>>({});
+  const [navrhujem, setNavrhujem] = useState(false);
+  const ziadajTrasu = useServerFn(trasaMedziBodmi);
   const [mazem, setMazem] = useState(false);
 
   async function load() {
@@ -115,6 +148,21 @@ function TripsPage() {
 
   function prepniVsetky(zapnute: boolean) {
     setVybrane(zapnute ? Object.fromEntries(rows.map((r) => [r.id, true])) : {});
+  }
+
+  async function otvorTrasu(r: Trip) {
+    setTrasa(r);
+    const body = koncoveBody(r);
+    if (!body || navrhy[r.id]) return;
+    setNavrhujem(true);
+    try {
+      const v = await ziadajTrasu({ data: body });
+      setNavrhy((n) => ({ ...n, [r.id]: v.route }));
+    } catch (e: any) {
+      toast.error(e?.message ?? "Trasu sa nepodarilo navrhnúť.");
+    } finally {
+      setNavrhujem(false);
+    }
   }
 
   /** Jednu jazdu maže tá istá cesta ako hromadu — jeden dialóg, jedno hlásenie. */
@@ -236,6 +284,7 @@ function TripsPage() {
                     <th className="p-3">Za kým</th>
                     <th className="p-3 text-right">Počet km</th>
                     <th className="p-3 text-right">Priemerná rýchlosť</th>
+                    <th className="p-3 text-right">Najvyššia rýchlosť</th>
                     <th className="p-3 text-right">Trvanie jazdy</th>
                     <th className="p-3">Typ jazdy</th>
                     <th className="p-3">Zdroj</th>
@@ -285,6 +334,11 @@ function TripsPage() {
                       <td className="p-3 text-right tabular-nums">
                         {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
                       </td>
+                      {/* Najvyššiu rýchlosť merajú len appka a Commander —
+                          pri ručne zapísanej jazde tam nemá čo stáť. */}
+                      <td className="p-3 text-right tabular-nums">
+                        {r.max_speed_kmh ? `${Number(r.max_speed_kmh).toFixed(0)} km/h` : "—"}
+                      </td>
                       <td className="p-3 text-right tabular-nums">
                         {formatDuration(r.duration_seconds)}
                       </td>
@@ -304,9 +358,9 @@ function TripsPage() {
                         className="p-3 text-right whitespace-nowrap"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {r.route && (
+                        {(r.route || koncoveBody(r)) && (
                           <button
-                            onClick={() => setTrasa(r)}
+                            onClick={() => otvorTrasu(r)}
                             title="Zobraziť trasu na mape"
                             className="rounded p-1.5 text-muted-foreground hover:bg-muted"
                           >
@@ -385,9 +439,9 @@ function TripsPage() {
                       <div className="text-sm font-bold tabular-nums">
                         {Number(r.distance_km).toFixed(1)} km
                       </div>
-                      {r.route && (
+                      {(r.route || koncoveBody(r)) && (
                         <button
-                          onClick={() => setTrasa(r)}
+                          onClick={() => otvorTrasu(r)}
                           aria-label="Zobraziť trasu na mape"
                           className="mt-1 rounded p-1 text-muted-foreground"
                         >
@@ -454,7 +508,25 @@ function TripsPage() {
                 {trasa ? ` — ${trasa.trip_date}, ${Number(trasa.distance_km).toFixed(1)} km` : ""}
               </DialogTitle>
             </DialogHeader>
-            {trasa && <MapaTrasy route={trasa.route} vyska={420} />}
+            {trasa &&
+              (trasa.route ? (
+                <MapaTrasy route={trasa.route} vyska={420} />
+              ) : navrhy[trasa.id] ? (
+                <>
+                  <MapaTrasy route={navrhy[trasa.id]} vyska={420} />
+                  {/* Nech je to povedané rovno v mape: Commander posiela len
+                      začiatok a koniec, cesta medzi nimi je dopočítaná. */}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Commander posiela iba začiatok a koniec jazdy. Nakreslená cesta medzi nimi je
+                    návrh po cestách, nie skutočne prejdená trasa — kilometre v knihe ostávajú tie z
+                    tachometra.
+                  </p>
+                </>
+              ) : (
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  {navrhujem ? "Kreslím trasu…" : "Trasa nie je k dispozícii."}
+                </div>
+              ))}
           </DialogContent>
         </Dialog>
       </PageBody>

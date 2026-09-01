@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Car, Route } from "lucide-react";
+import { Car, Route, TriangleAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { jeSukromnaJazda } from "@/lib/faktero/trip-format";
+import { nacitajRozpoznaneJazdy } from "@/lib/mobile/auto-jazdy-sync";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
   Card,
@@ -63,6 +64,12 @@ export function PrehladJazd({
     na tú istú kartu výber zruší.
   */
   const [filter, setFilter] = useState<"sluzobne" | "sukromne" | null>(null);
+  /*
+    Jazdy, ktoré appka rozpoznala, ale do knihy ešte nešli. Vodič ich musí
+    vidieť hneď na úvodnej obrazovke: kým ich nezapíše, v knihe nie sú a
+    mesačný súčet nad tým klame o ich kilometre.
+  */
+  const [nezapisane, setNezapisane] = useState(0);
 
   useEffect(() => {
     let zrusene = false;
@@ -87,6 +94,18 @@ export function PrehladJazd({
       zrusene = true;
     };
   }, [firma.id]);
+
+  useEffect(() => {
+    let zrusene = false;
+    void (async () => {
+      // Mimo appky plugin nie je — zoznam vtedy príde prázdny, nie s chybou.
+      const cakajuce = await nacitajRozpoznaneJazdy().catch(() => []);
+      if (!zrusene) setNezapisane(cakajuce.length);
+    })();
+    return () => {
+      zrusene = true;
+    };
+  }, []);
 
   const suhrn = useMemo(() => {
     const z = jazdy ?? [];
@@ -143,6 +162,25 @@ export function PrehladJazd({
       <main className="flex-1 space-y-6 px-4 pb-6">
         <PrebiehaJazda onOtvor={onJazda} />
 
+        {/* Kým rozpoznaná jazda nie je zapísaná, v knihe nie je — a mesačný
+            súčet pod tým o jej kilometre klame. Preto navrch, nie do zoznamu. */}
+        {nezapisane > 0 && (
+          <ListCard>
+            <ListRow
+              icon={TriangleAlert}
+              ikonaTon="cervena"
+              title={
+                nezapisane === 1
+                  ? t("kj.nezapisanaJedna")
+                  : t("kj.nezapisaneJazdy", { pocet: nezapisane })
+              }
+              subtitle={t("kj.nezapisanePopis")}
+              chevron
+              onClick={onJazda}
+            />
+          </ListCard>
+        )}
+
         {/* Jediné, kvôli čomu sa táto appka otvára v aute. Patrí navrch. */}
         <PrimaryCta onClick={onJazda}>{t("jz.zacatJazdu")}</PrimaryCta>
 
@@ -197,9 +235,7 @@ export function PrehladJazd({
                   right={km(Number(j.distance_km || 0))}
                   rightSub={
                     <StatusBadge
-                      text={
-                        jeSukromnaJazda(j) ? t("jazdy.sukromna") : t("jazdy.sluzobna")
-                      }
+                      text={jeSukromnaJazda(j) ? t("jazdy.sukromna") : t("jazdy.sluzobna")}
                       ton={jeSukromnaJazda(j) ? "neutral" : "zelena"}
                     />
                   }

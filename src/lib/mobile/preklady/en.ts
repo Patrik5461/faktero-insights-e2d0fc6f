@@ -307,6 +307,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "jz.zahoditOtazka": "Discard this trip? It will not be recorded.",
   "jz.ukoncena": "Trip finished — classify it below.",
   "jz.zahodena": "Trip discarded.",
+  "jz.odberatelPreJazdu": "Customer you visited",
+  "jz.bezOdberatela": "No customer",
   "jz.vozidloPreJazdu": "Vehicle for the detected trip",
   "jz.telefonNevie": "The phone does not know which car you got into — check it for every trip.",
   "jz.rozpoznavat": "Detect trips automatically",
@@ -327,7 +329,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "jz.ukladamVozidlo": "Saving the vehicle…",
   "jz.nacitavamVozidla": "Loading vehicles…",
   "jz.bezVozidla": "The company has no vehicle",
-  "jz.pridajteHo": "Add one here — a name and plate are enough, the rest can be filled in on the web.",
+  "jz.pridajteHo":
+    "Add one here — a name and plate are enough, the rest can be filled in on the web.",
   "jz.commander": "This car trips come from Commander",
   "jz.bezPripojenia": "Vehicles cannot be loaded while offline",
   "jz.bezZoznamu": "No list is stored on the phone yet. Open this screen once while online.",
@@ -353,20 +356,24 @@ export const en: Partial<Record<Kluc, string>> = {
   "push.skusitZaregistrovat": "Try registering",
   "spolocne.chyba": "Error",
   "cisla.nazov": "Issue invoices offline with a number",
-  "cisla.vypnutePopis": "Without it, an offline invoice is queued and issued automatically once you are online — it gets its number only then.",
-  "cisla.zapnutePopis": "Numbers ready: {pocet}. An invoice issued offline gets its number right away, so you can hand it over on the spot.",
+  "cisla.vypnutePopis":
+    "Without it, an offline invoice is queued and issued automatically once you are online — it gets its number only then.",
+  "cisla.zapnutePopis":
+    "Numbers ready: {pocet}. An invoice issued offline gets its number right away, so you can hand it over on the spot.",
   "cisla.zapnut": "Turn on",
   "cisla.vypnut": "Turn off",
   "cisla.vypnute": "Turned off. Unused numbers were returned to the sequence.",
   "cisla.zapnute": "Turned on. The app has {pocet} numbers ready.",
-  "cisla.trebaPripojenie": "Turning it on needs a connection — the app requests the numbers from the server.",
+  "cisla.trebaPripojenie":
+    "Turning it on needs a connection — the app requests the numbers from the server.",
   "cisla.nepodariloVypytat": "The numbers could not be requested. Try again in a moment.",
   "cisla.nepodariloPrepnut": "It could not be switched.",
 
   /* skener, firma, registrácia */
   "sken.naskenujte": "Scan the QR code on the receipt",
   "sken.aleboOdfotte": "or take a photo of the receipt",
-  "sken.kameraNejde": "You can still photograph the receipt or pick it from files — the buttons below work.",
+  "sken.kameraNejde":
+    "You can still photograph the receipt or pick it from files — the buttons below work.",
   "sken.odfotit": "Take a photo",
   "sken.zGalerie": "From gallery",
   "sken.uhrada": "Payment",
@@ -380,7 +387,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "vf.podnadpis": "These details appear on your invoices",
   "vf.vytvaram": "Creating…",
   "vf.vytvoritFirmu": "Create company",
-  "vf.uvod": "The name is enough — everything else can be added later in settings. Enter the company ID and we will pull the address and tax numbers from the register.",
+  "vf.uvod":
+    "The name is enough — everything else can be added later in settings. Enter the company ID and we will pull the address and tax numbers from the register.",
   "vf.nazovFirmy": "Company name",
   "vf.ico": "Company ID",
   "vf.dic": "Tax ID",
@@ -401,8 +409,10 @@ export const en: Partial<Record<Kluc, string>> = {
   "vf.chyba.email": "Enter a valid company e-mail.",
   "vf.chyba.iban": "The IBAN is not in a valid format.",
   "reg.potvrdteEmail": "Confirm your e-mail",
-  "reg.potvrdenieText": "The account {email} has been created. We sent it a link — open it and come back here. The app notices the confirmation on its own; if not, use the button below. You cannot sign in without confirming.",
-  "reg.spamPriecinok": "If the e-mail does not arrive within a few minutes, check your spam folder.",
+  "reg.potvrdenieText":
+    "The account {email} has been created. We sent it a link — open it and come back here. The app notices the confirmation on its own; if not, use the button below. You cannot sign in without confirming.",
+  "reg.spamPriecinok":
+    "If the e-mail does not arrive within a few minutes, check your spam folder.",
   "reg.overujem": "Checking…",
   "reg.uzSomPotvrdil": "I have confirmed, continue",
   "reg.posielam": "Sending…",
@@ -444,22 +454,27 @@ export const en: Partial<Record<Kluc, string>> = {
   "ponuky.vytvaram": "Creating the quote…",
 
   /* kniha jázd — zvyšok */
-  "jz.odCasu": "From {cas}. When you have arrived, end it — otherwise it stops on its own only after five minutes of standing.",
+  "jz.odCasu":
+    "From {cas}. When you have arrived, end it — otherwise it stops on its own only after five minutes of standing.",
   "jz.rozpoznalaJazdu": "The app detected a trip",
   "jz.rozpoznalaJazdy": "The app detected trips ({pocet})",
-  "jz.commanderZvysok": ", so the phone does not have to measure them — pick another car, or leave detection off.",
+  "jz.commanderZvysok":
+    ", so the phone does not have to measure them — pick another car, or leave detection off.",
   "jz.typJazdy": "Trip type",
   "jz.vozidlo": "Vehicle",
   "jz.nazovVozidla": "Name",
   "jz.spotreba": "Consumption (l/100 km)",
   "jz.spotrebaPriklad": "e.g. 6.5",
-  "jz.vsimneSi": "The app notices the trip on its own and asks in a notification whether it was for business.",
-  "jz.lenPocasPouzivania": "If you allowed location only “while using the app”, keep the app open — once the screen goes off the phone stops measuring and the distance would come out wrong. With “Always” it keeps measuring in your pocket.",
+  "jz.vsimneSi":
+    "The app notices the trip on its own and asks in a notification whether it was for business.",
+  "jz.lenPocasPouzivania":
+    "If you allowed location only “while using the app”, keep the app open — once the screen goes off the phone stops measuring and the distance would come out wrong. With “Always” it keeps measuring in your pocket.",
   "jz.vyberteVozidlo": "Choose a vehicle.",
   "jz.odoslanychJazd": "{pocet} trips recorded offline were sent",
   "jz.uzJeVKnihe": "This trip is already in the log — the other app recorded it.",
   "jz.rozpoznanaUlozena": "Detected trip saved — {km} km, {auto}",
-  "jz.bezPolohy": "We measured no location, so the trip was not saved. Try outdoors — indoors the location is inaccurate — and set location access to “Always”.",
+  "jz.bezPolohy":
+    "We measured no location, so the trip was not saved. Try outdoors — indoors the location is inaccurate — and set location access to “Always”.",
   "jz.ulozenaVTelefone": "Trip saved on the phone — {km} km. It will be sent once you are online.",
   "jz.ulozenaKm": "Trip saved — {km} km",
   "jz.historiaVozidla": "Trip history — {auto}",
@@ -487,15 +502,19 @@ export const en: Partial<Record<Kluc, string>> = {
   "pd.icDph": "VAT ID",
   "faktury.vystavenychPocet": "Invoices issued: {pocet}.",
   "faktury.neuhradene": "Unpaid",
-  "faktury.odosluSaSamy2": "They will be sent on their own as soon as you have signal. Nothing to remember.",
-  "faktury.bezZoznamu": "No list is stored on the phone yet. Open this screen once with internet and it will work offline afterwards.",
+  "faktury.odosluSaSamy2":
+    "They will be sent on their own as soon as you have signal. Nothing to remember.",
+  "faktury.bezZoznamu":
+    "No list is stored on the phone yet. Open this screen once with internet and it will work offline afterwards.",
   "faktury.vystavena": "Issued",
   "faktury.splatna": "Due",
   "faktury.uhradena": "Paid",
   "faktury.odoslana": "Sent",
-  "faktury.cisloOstava": "It disappears from the list, but the number stays taken — no gap appears in the sequence.",
+  "faktury.cisloOstava":
+    "It disappears from the list, but the number stays taken — no gap appears in the sequence.",
   "jazdy.nacitavam": "Loading trips…",
-  "jazdy.prvaPribudne": "The first one appears after you end a measurement — or is pulled from the GPS unit when the vehicle is connected.",
+  "jazdy.prvaPribudne":
+    "The first one appears after you end a measurement — or is pulled from the GPS unit when the vehicle is connected.",
   "jazdy.filtre": "Filters",
   "jazdy.filterVsetky": "All",
   "jazdy.ztohoSukromne": "of which personal",
@@ -517,7 +536,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "banka.zostatokSpolu": "Total balance",
 
   /* nová faktúra — zvyšok */
-  "nf.zalohovaVysvetlenie": "A proforma invoice is a request for payment, not a tax document — it stays out of VAT and gets a number from its own sequence. Once paid, you issue a regular invoice and settle the deposit on it.",
+  "nf.zalohovaVysvetlenie":
+    "A proforma invoice is a request for payment, not a tax document — it stays out of VAT and gets a number from its own sequence. Once paid, you issue a regular invoice and settle the deposit on it.",
   "nf.ico": "Company ID",
   "nf.ulica": "Street",
   "nf.mesto": "City",
@@ -527,10 +547,14 @@ export const en: Partial<Record<Kluc, string>> = {
   "nf.spolu": "Total",
   "nf.dph": "VAT",
   "nf.vystavenie": "Issue date",
-  "nf.bezIbanu": "The company has no IBAN — there will be nowhere to pay on the invoice. Add it on the web in the company settings.",
-  "nf.ziadnaZalohaPopis": "This customer has no unsettled proforma invoice. To issue one, choose {zalohova} in the first step of a new invoice.",
-  "nf.cisloJeVase": "The number is yours and will not be given to anyone else — you can hand it to the customer. The PDF is created and the invoice sent on its own once you have signal.",
-  "nf.odlozenaPopis": "It will be issued with a number on its own once you have signal. It has no number yet, so you cannot dictate it to the customer — if you need that, turn on issuing with numbers in advance in the settings.",
+  "nf.bezIbanu":
+    "The company has no IBAN — there will be nowhere to pay on the invoice. Add it on the web in the company settings.",
+  "nf.ziadnaZalohaPopis":
+    "This customer has no unsettled proforma invoice. To issue one, choose {zalohova} in the first step of a new invoice.",
+  "nf.cisloJeVase":
+    "The number is yours and will not be given to anyone else — you can hand it to the customer. The PDF is created and the invoice sent on its own once you have signal.",
+  "nf.odlozenaPopis":
+    "It will be issued with a number on its own once you have signal. It has no number yet, so you cannot dictate it to the customer — if you need that, turn on issuing with numbers in advance in the settings.",
   "nf.hotovo": "Done",
   "nf.pripravujemPdf": "Preparing the PDF…",
   "nf.bezPripojeniaNadpis": "Offline",
@@ -553,7 +577,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.odomknitePokracujte": "Unlock it with biometrics and pick up where you left off.",
   "app.pridatDalsiuFirmu": "Add another company",
   "app.odvolatZiadost": "Withdraw the request",
-  "app.zFakturyPrecita": "The supplier, date, amount and VAT are read from the invoice. Check the data before saving.",
+  "app.zFakturyPrecita":
+    "The supplier, date, amount and VAT are read from the invoice. Check the data before saving.",
   "app.vyberteUhradu": "Choose a payment method",
   "app.povinne": "Required",
   "app.vyberteMoznost": "Choose one of the options — the receipt cannot be saved without it.",
@@ -583,9 +608,11 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.odfotitDoklad": "Photograph the receipt",
   "app.papierovyDoklad": "You have to keep the paper receipt anyway — the photo replaces it",
   "app.vyplnteEmailHeslo": "Fill in both the e-mail and the password.",
-  "app.prilohaNenahrata": "The attachment could not be uploaded, the receipt will be saved without it.",
+  "app.prilohaNenahrata":
+    "The attachment could not be uploaded, the receipt will be saved without it.",
   "app.dokladUlozeny": "Receipt saved",
-  "app.bezPripojeniaFirmy": "No connection, and no list of companies is stored on the phone yet. Open the app once with internet.",
+  "app.bezPripojeniaFirmy":
+    "No connection, and no list of companies is stored on the phone yet. Open the app once with internet.",
   "app.fakturaOdoslana": "The invoice issued offline has been sent.",
   "app.odoslanychOdlozenych": "Queued invoices sent: {pocet}.",
   "app.jazdaUlozena": "Detected trip saved",
@@ -595,7 +622,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.prihlasitSa": "Sign in",
   "app.odomykam": "Unlocking…",
   "app.odomknut": "Unlock",
-  "app.bezFirmy": "No company belongs to this account yet. Without one the receipts have nowhere to go — create it right here.",
+  "app.bezFirmy":
+    "No company belongs to this account yet. Without one the receipts have nowhere to go — create it right here.",
   "app.blocekQr": "Receipt with a QR code",
   "app.fakturaPdf": "Invoice as PDF",
   "app.viacstranovyDoklad": "Multi-page receipt",
@@ -624,7 +652,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "spolocne.den5": "days",
 
   /* množné tvary */
-  "app.cakajuceFaktury": "{pocet} are waiting on the phone to be sent. Go online and open Issued invoices — then you can sign out.",
+  "app.cakajuceFaktury":
+    "{pocet} are waiting on the phone to be sent. Go online and open Issued invoices — then you can sign out.",
   "spolocne.faktura1": "invoice",
   "spolocne.faktura2": "invoices",
   "spolocne.faktura5": "invoices",
@@ -633,7 +662,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.odstranitStranu": "Remove page {n}",
 
   /* ponuky — prázdny zoznam */
-  "ponuky.ziadnePopis2": "You make a quote the same way as an invoice — and once the customer accepts it, one tap turns it into an invoice.",
+  "ponuky.ziadnePopis2":
+    "You make a quote the same way as an invoice — and once the customer accepts it, one tap turns it into an invoice.",
 
   /* drobnosti — kroky a stavy */
   "nf.oprava": "Editing {cislo}",
@@ -661,7 +691,8 @@ export const en: Partial<Record<Kluc, string>> = {
 
   /* permissions for the logbook (Android) */
   "pov.nadpis": "So trips record themselves",
-  "pov.uvod": "The logbook measures your route in the background — even with the screen off and the phone in your pocket. Without that the distance cannot be worked out. Location is used only to measure the trip; we never send it anywhere.",
+  "pov.uvod":
+    "The logbook measures your route in the background — even with the screen off and the phone in your pocket. Without that the distance cannot be worked out. Location is used only to measure the trip; we never send it anywhere.",
   "pov.poloha": "Location — so the trip can be measured at all.",
   "pov.notifikacie": "Notifications — so the app can ask whether the trip was for business.",
   "pov.pohyb": "Motion sensors — so a drive is recognised sooner.",
@@ -669,10 +700,12 @@ export const en: Partial<Record<Kluc, string>> = {
   "pov.povolit": "Allow",
   "pov.pytamSa": "Asking…",
   "pov.neskor": "Later",
-  "pov.vzdyNastavenia": "One last thing: Android only lets „Always“ location be switched on in Settings. We will open them — choose Permissions → Location → Allow all the time.",
+  "pov.vzdyNastavenia":
+    "One last thing: Android only lets „Always“ location be switched on in Settings. We will open them — choose Permissions → Location → Allow all the time.",
   "pov.otvoritNastavenia": "Open settings",
   "pov.hotovo": "Done",
-  "pov.zvysokNastavenia": "These cannot be granted from a dialog any more — Android offers them only in the app settings. We will open them; look for Permissions.",
+  "pov.zvysokNastavenia":
+    "These cannot be granted from a dialog any more — Android offers them only in the app settings. We will open them; look for Permissions.",
   "app.spustam": "Starting Faktero… ({faza}) · {balicek}",
   "app.startZasekol": "Startup got stuck at step “{faza}”.",
   "app.balicek": "bundle {peciatka}",
@@ -786,6 +819,9 @@ export const en: Partial<Record<Kluc, string>> = {
   "kj.jazd1": "trip",
   "kj.jazd2": "trips",
   "kj.jazd5": "trips",
+  "kj.nezapisanaJedna": "One trip is not saved yet",
+  "kj.nezapisaneJazdy": "Unsaved trips ({pocet})",
+  "kj.nezapisanePopis": "Tap to add it to the logbook — until then it is missing from the month.",
   "kj.bezJazd": "No trips this month yet",
   "kj.bezJazdPopis": "Start one with the green button below.",
 };

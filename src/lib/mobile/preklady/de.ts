@@ -301,8 +301,11 @@ export const de: Partial<Record<Kluc, string>> = {
   "jz.zahoditOtazka": "Diese Fahrt verwerfen? Sie wird nicht erfasst.",
   "jz.ukoncena": "Fahrt beendet — ordnen Sie sie unten zu.",
   "jz.zahodena": "Fahrt verworfen.",
+  "jz.odberatelPreJazdu": "Besuchter Kunde",
+  "jz.bezOdberatela": "Ohne Kunde",
   "jz.vozidloPreJazdu": "Fahrzeug für die erkannte Fahrt",
-  "jz.telefonNevie": "Das Telefon weiß nicht, in welches Auto Sie gestiegen sind — prüfen Sie es bei jeder Fahrt.",
+  "jz.telefonNevie":
+    "Das Telefon weiß nicht, in welches Auto Sie gestiegen sind — prüfen Sie es bei jeder Fahrt.",
   "jz.rozpoznavat": "Fahrten automatisch erkennen",
   "jz.detekciaZapnuta": "Fahrterkennung ist aktiv",
   "jz.detekciaNemaAkoBezat": "Erkennung ist aktiv, kann aber nicht laufen",
@@ -324,7 +327,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "jz.pridajteHo": "Fügen Sie eines hinzu — Name und Kennzeichen genügen, der Rest geht im Web.",
   "jz.commander": "Die Fahrten dieses Autos kommen von Commander",
   "jz.bezPripojenia": "Ohne Verbindung lassen sich Fahrzeuge nicht laden",
-  "jz.bezZoznamu": "Auf dem Telefon ist noch keine Liste gespeichert. Öffnen Sie diesen Bildschirm einmal online.",
+  "jz.bezZoznamu":
+    "Auf dem Telefon ist noch keine Liste gespeichert. Öffnen Sie diesen Bildschirm einmal online.",
   "jz.nepovinneCena": "Optional, aber ohne sie ergibt sich für die Fahrt kein Kostenwert.",
 
   /* skener, notifikácie, čísla dopredu */
@@ -334,7 +338,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "qr.namierte": "Auf den QR-Code richten",
   "qr.zrusitSkenovanie": "Scannen abbrechen",
   "qr.kameraNejde": "Die Kamera konnte nicht gestartet werden. Fotografieren Sie den Beleg.",
-  "qr.kameraZamietnuta": "Der Kamerazugriff ist gesperrt. Erlauben Sie ihn in den Telefoneinstellungen.",
+  "qr.kameraZamietnuta":
+    "Der Kamerazugriff ist gesperrt. Erlauben Sie ihn in den Telefoneinstellungen.",
   "push.nazov": "Benachrichtigungen",
   "push.zistujem": "Wird geprüft…",
   "push.zaregistrovane": "Das Gerät ist registriert, Benachrichtigungen kommen an.",
@@ -347,20 +352,25 @@ export const de: Partial<Record<Kluc, string>> = {
   "push.skusitZaregistrovat": "Registrierung versuchen",
   "spolocne.chyba": "Fehler",
   "cisla.nazov": "Rechnungen offline direkt mit Nummer ausstellen",
-  "cisla.vypnutePopis": "Andernfalls wird eine Rechnung ohne Signal zurückgestellt und erst bei Verbindung automatisch ausgestellt — die Nummer bekommt sie erst dann.",
-  "cisla.zapnutePopis": "Vorbereitete Nummern: {pocet}. Eine offline ausgestellte Rechnung erhält ihre Nummer sofort und kann vor Ort übergeben werden.",
+  "cisla.vypnutePopis":
+    "Andernfalls wird eine Rechnung ohne Signal zurückgestellt und erst bei Verbindung automatisch ausgestellt — die Nummer bekommt sie erst dann.",
+  "cisla.zapnutePopis":
+    "Vorbereitete Nummern: {pocet}. Eine offline ausgestellte Rechnung erhält ihre Nummer sofort und kann vor Ort übergeben werden.",
   "cisla.zapnut": "Einschalten",
   "cisla.vypnut": "Ausschalten",
   "cisla.vypnute": "Ausgeschaltet. Nicht verwendete Nummern wurden in die Reihe zurückgegeben.",
   "cisla.zapnute": "Eingeschaltet. Die App hat {pocet} Nummern bereit.",
-  "cisla.trebaPripojenie": "Zum Einschalten ist eine Verbindung nötig — die App fordert die Nummern vom Server an.",
-  "cisla.nepodariloVypytat": "Die Nummern konnten nicht angefordert werden. Versuchen Sie es gleich noch einmal.",
+  "cisla.trebaPripojenie":
+    "Zum Einschalten ist eine Verbindung nötig — die App fordert die Nummern vom Server an.",
+  "cisla.nepodariloVypytat":
+    "Die Nummern konnten nicht angefordert werden. Versuchen Sie es gleich noch einmal.",
   "cisla.nepodariloPrepnut": "Es konnte nicht umgeschaltet werden.",
 
   /* skener, firma, registrácia */
   "sken.naskenujte": "QR-Code auf dem Beleg scannen",
   "sken.aleboOdfotte": "oder fotografieren Sie den Beleg",
-  "sken.kameraNejde": "Der Beleg lässt sich trotzdem fotografieren oder aus Dateien wählen — die Schaltflächen unten funktionieren.",
+  "sken.kameraNejde":
+    "Der Beleg lässt sich trotzdem fotografieren oder aus Dateien wählen — die Schaltflächen unten funktionieren.",
   "sken.odfotit": "Fotografieren",
   "sken.zGalerie": "Aus der Galerie",
   "sken.uhrada": "Zahlung",
@@ -374,7 +384,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "vf.podnadpis": "Diese Angaben erscheinen auf den Rechnungen",
   "vf.vytvaram": "Wird erstellt…",
   "vf.vytvoritFirmu": "Unternehmen erstellen",
-  "vf.uvod": "Der Name genügt — alles andere lässt sich später in den Einstellungen ergänzen. Geben Sie die Firmennummer ein, dann holen wir Adresse und Steuernummern aus dem Register.",
+  "vf.uvod":
+    "Der Name genügt — alles andere lässt sich später in den Einstellungen ergänzen. Geben Sie die Firmennummer ein, dann holen wir Adresse und Steuernummern aus dem Register.",
   "vf.nazovFirmy": "Firmenname",
   "vf.ico": "Firmennummer",
   "vf.dic": "Steuernummer",
@@ -387,7 +398,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "vf.email": "E-Mail",
   "vf.telefon": "Telefon",
   "vf.hladamVRegistri": "Suche im Register…",
-  "vf.trebaPripojenie": "Zum Anlegen eines Unternehmens ist eine Verbindung nötig. Versuchen Sie es mit Empfang erneut.",
+  "vf.trebaPripojenie":
+    "Zum Anlegen eines Unternehmens ist eine Verbindung nötig. Versuchen Sie es mit Empfang erneut.",
   "vf.nepodariloVytvorit": "Das Unternehmen konnte nicht erstellt werden.",
   "vf.vytvorena": "Das Unternehmen wurde erstellt.",
   "vf.chyba.nazov": "Geben Sie den Firmennamen ein.",
@@ -395,8 +407,10 @@ export const de: Partial<Record<Kluc, string>> = {
   "vf.chyba.email": "Geben Sie eine gültige Firmen-E-Mail ein.",
   "vf.chyba.iban": "Die IBAN hat kein gültiges Format.",
   "reg.potvrdteEmail": "Bestätigen Sie Ihre E-Mail",
-  "reg.potvrdenieText": "Das Konto {email} wurde erstellt. Wir haben einen Link dorthin geschickt — öffnen Sie ihn und kommen Sie zurück. Die App bemerkt die Bestätigung selbst; falls nicht, nutzen Sie die Schaltfläche unten. Ohne Bestätigung ist keine Anmeldung möglich.",
-  "reg.spamPriecinok": "Kommt die E-Mail nicht innerhalb weniger Minuten an, sehen Sie im Spam-Ordner nach.",
+  "reg.potvrdenieText":
+    "Das Konto {email} wurde erstellt. Wir haben einen Link dorthin geschickt — öffnen Sie ihn und kommen Sie zurück. Die App bemerkt die Bestätigung selbst; falls nicht, nutzen Sie die Schaltfläche unten. Ohne Bestätigung ist keine Anmeldung möglich.",
+  "reg.spamPriecinok":
+    "Kommt die E-Mail nicht innerhalb weniger Minuten an, sehen Sie im Spam-Ordner nach.",
   "reg.overujem": "Wird geprüft…",
   "reg.uzSomPotvrdil": "Ich habe bestätigt, weiter",
   "reg.posielam": "Wird gesendet…",
@@ -416,7 +430,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "reg.uzMamUcet": "Ich habe bereits ein Konto, anmelden",
   "reg.ucetJeVytvoreny": "Ihr Konto wurde erstellt.",
   "reg.registraciaZlyhala": "Die Registrierung ist fehlgeschlagen.",
-  "reg.nepotvrdene": "Es ist noch nicht bestätigt. Öffnen Sie den Link aus der E-Mail und versuchen Sie es erneut.",
+  "reg.nepotvrdene":
+    "Es ist noch nicht bestätigt. Öffnen Sie den Link aus der E-Mail und versuchen Sie es erneut.",
   "reg.emailPoslanyZnova": "Wir haben die E-Mail erneut gesendet.",
   "reg.chyba.meno": "Geben Sie Vor- und Nachnamen ein.",
   "reg.chyba.email": "Geben Sie eine gültige E-Mail ein.",
@@ -438,23 +453,29 @@ export const de: Partial<Record<Kluc, string>> = {
   "ponuky.vytvaram": "Angebot wird erstellt…",
 
   /* kniha jázd — zvyšok */
-  "jz.odCasu": "Ab {cas}. Beenden Sie sie nach der Ankunft — sonst stoppt sie erst nach fünf Minuten Stillstand von selbst.",
+  "jz.odCasu":
+    "Ab {cas}. Beenden Sie sie nach der Ankunft — sonst stoppt sie erst nach fünf Minuten Stillstand von selbst.",
   "jz.rozpoznalaJazdu": "Die App hat eine Fahrt erkannt",
   "jz.rozpoznalaJazdy": "Die App hat Fahrten erkannt ({pocet})",
-  "jz.commanderZvysok": ", das Telefon muss sie also nicht messen — wählen Sie ein anderes Auto oder lassen Sie die Erkennung aus.",
+  "jz.commanderZvysok":
+    ", das Telefon muss sie also nicht messen — wählen Sie ein anderes Auto oder lassen Sie die Erkennung aus.",
   "jz.typJazdy": "Fahrtart",
   "jz.vozidlo": "Fahrzeug",
   "jz.nazovVozidla": "Name",
   "jz.spotreba": "Verbrauch (l/100 km)",
   "jz.spotrebaPriklad": "z. B. 6,5",
-  "jz.vsimneSi": "Die App bemerkt die Fahrt selbst und fragt per Benachrichtigung, ob sie geschäftlich war.",
-  "jz.lenPocasPouzivania": "Wenn Sie den Standort nur „Beim Verwenden“ erlaubt haben, lassen Sie die App geöffnet — nach dem Ausschalten des Displays stoppt das Telefon die Messung und die Kilometer wären falsch. Mit „Immer“ misst sie auch in der Tasche.",
+  "jz.vsimneSi":
+    "Die App bemerkt die Fahrt selbst und fragt per Benachrichtigung, ob sie geschäftlich war.",
+  "jz.lenPocasPouzivania":
+    "Wenn Sie den Standort nur „Beim Verwenden“ erlaubt haben, lassen Sie die App geöffnet — nach dem Ausschalten des Displays stoppt das Telefon die Messung und die Kilometer wären falsch. Mit „Immer“ misst sie auch in der Tasche.",
   "jz.vyberteVozidlo": "Wählen Sie ein Fahrzeug.",
   "jz.odoslanychJazd": "{pocet} offline erfasste Fahrten wurden gesendet",
   "jz.uzJeVKnihe": "Diese Fahrt steht bereits im Fahrtenbuch — die andere App hat sie erfasst.",
   "jz.rozpoznanaUlozena": "Erkannte Fahrt gespeichert — {km} km, {auto}",
-  "jz.bezPolohy": "Es wurde kein Standort gemessen, die Fahrt wurde nicht gespeichert. Versuchen Sie es im Freien — im Gebäude ist der Standort ungenau — und stellen Sie den Zugriff auf „Immer“.",
-  "jz.ulozenaVTelefone": "Fahrt auf dem Telefon gespeichert — {km} km. Sie wird bei Verbindung gesendet.",
+  "jz.bezPolohy":
+    "Es wurde kein Standort gemessen, die Fahrt wurde nicht gespeichert. Versuchen Sie es im Freien — im Gebäude ist der Standort ungenau — und stellen Sie den Zugriff auf „Immer“.",
+  "jz.ulozenaVTelefone":
+    "Fahrt auf dem Telefon gespeichert — {km} km. Sie wird bei Verbindung gesendet.",
   "jz.ulozenaKm": "Fahrt gespeichert — {km} km",
   "jz.historiaVozidla": "Fahrtenbuch — {auto}",
 
@@ -481,15 +502,19 @@ export const de: Partial<Record<Kluc, string>> = {
   "pd.icDph": "USt-IdNr.",
   "faktury.vystavenychPocet": "Ausgestellte Rechnungen: {pocet}.",
   "faktury.neuhradene": "Offen",
-  "faktury.odosluSaSamy2": "Sie werden von selbst gesendet, sobald Empfang da ist. Sie müssen an nichts denken.",
-  "faktury.bezZoznamu": "Auf dem Telefon ist noch keine Liste gespeichert. Öffnen Sie diesen Bildschirm einmal mit Internet, danach geht es auch offline.",
+  "faktury.odosluSaSamy2":
+    "Sie werden von selbst gesendet, sobald Empfang da ist. Sie müssen an nichts denken.",
+  "faktury.bezZoznamu":
+    "Auf dem Telefon ist noch keine Liste gespeichert. Öffnen Sie diesen Bildschirm einmal mit Internet, danach geht es auch offline.",
   "faktury.vystavena": "Ausgestellt",
   "faktury.splatna": "Fällig",
   "faktury.uhradena": "Bezahlt",
   "faktury.odoslana": "Gesendet",
-  "faktury.cisloOstava": "Sie verschwindet aus der Liste, die Nummer bleibt aber vergeben — in der Reihe entsteht keine Lücke.",
+  "faktury.cisloOstava":
+    "Sie verschwindet aus der Liste, die Nummer bleibt aber vergeben — in der Reihe entsteht keine Lücke.",
   "jazdy.nacitavam": "Fahrten werden geladen…",
-  "jazdy.prvaPribudne": "Die erste erscheint nach dem Beenden einer Messung — oder wird aus der GPS-Einheit geholt, wenn das Fahrzeug verbunden ist.",
+  "jazdy.prvaPribudne":
+    "Die erste erscheint nach dem Beenden einer Messung — oder wird aus der GPS-Einheit geholt, wenn das Fahrzeug verbunden ist.",
   "jazdy.filtre": "Filter",
   "jazdy.filterVsetky": "Alle",
   "jazdy.ztohoSukromne": "davon privat",
@@ -511,7 +536,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "banka.zostatokSpolu": "Gesamtsaldo",
 
   /* nová faktúra — zvyšok */
-  "nf.zalohovaVysvetlenie": "Eine Anzahlungsrechnung ist eine Zahlungsaufforderung, kein Steuerbeleg — sie geht nicht in die USt. ein und erhält eine Nummer aus einer eigenen Reihe. Nach der Zahlung stellen Sie eine normale Rechnung aus und verrechnen die Anzahlung darauf.",
+  "nf.zalohovaVysvetlenie":
+    "Eine Anzahlungsrechnung ist eine Zahlungsaufforderung, kein Steuerbeleg — sie geht nicht in die USt. ein und erhält eine Nummer aus einer eigenen Reihe. Nach der Zahlung stellen Sie eine normale Rechnung aus und verrechnen die Anzahlung darauf.",
   "nf.ico": "Firmennummer",
   "nf.ulica": "Straße",
   "nf.mesto": "Stadt",
@@ -521,17 +547,22 @@ export const de: Partial<Record<Kluc, string>> = {
   "nf.spolu": "Gesamt",
   "nf.dph": "USt.",
   "nf.vystavenie": "Ausstellung",
-  "nf.bezIbanu": "Das Unternehmen hat keine IBAN — auf der Rechnung fehlt das Zahlungsziel. Ergänzen Sie sie im Web in den Firmeneinstellungen.",
-  "nf.ziadnaZalohaPopis": "Dieser Kunde hat keine offene Anzahlungsrechnung. Sie stellen eine aus, indem Sie im ersten Schritt einer neuen Rechnung {zalohova} wählen.",
-  "nf.cisloJeVase": "Die Nummer gehört Ihnen und wird niemand anderem vergeben — Sie können sie dem Kunden geben. Das PDF entsteht und die Rechnung wird von selbst gesendet, sobald Empfang da ist.",
-  "nf.odlozenaPopis": "Sie wird mit Nummer von selbst ausgestellt, sobald Empfang da ist. Eine Nummer hat sie noch nicht, Sie können sie dem Kunden also nicht nennen — falls nötig, aktivieren Sie in den Einstellungen die Nummernvergabe im Voraus.",
+  "nf.bezIbanu":
+    "Das Unternehmen hat keine IBAN — auf der Rechnung fehlt das Zahlungsziel. Ergänzen Sie sie im Web in den Firmeneinstellungen.",
+  "nf.ziadnaZalohaPopis":
+    "Dieser Kunde hat keine offene Anzahlungsrechnung. Sie stellen eine aus, indem Sie im ersten Schritt einer neuen Rechnung {zalohova} wählen.",
+  "nf.cisloJeVase":
+    "Die Nummer gehört Ihnen und wird niemand anderem vergeben — Sie können sie dem Kunden geben. Das PDF entsteht und die Rechnung wird von selbst gesendet, sobald Empfang da ist.",
+  "nf.odlozenaPopis":
+    "Sie wird mit Nummer von selbst ausgestellt, sobald Empfang da ist. Eine Nummer hat sie noch nicht, Sie können sie dem Kunden also nicht nennen — falls nötig, aktivieren Sie in den Einstellungen die Nummernvergabe im Voraus.",
   "nf.hotovo": "Fertig",
   "nf.pripravujemPdf": "PDF wird vorbereitet…",
   "nf.bezPripojeniaNadpis": "Ohne Verbindung",
 
   /* hlavná obrazovka appky */
   "app.chybaObrazovky": "Dieser Bildschirm konnte nicht geöffnet werden.",
-  "app.slabePripojenie": "Meist liegt es an einer schwachen Verbindung. Versuchen Sie es erneut oder melden Sie sich neu an.",
+  "app.slabePripojenie":
+    "Meist liegt es an einer schwachen Verbindung. Versuchen Sie es erneut oder melden Sie sich neu an.",
   "app.skusitZnova": "Erneut versuchen",
   "app.prihlasitNanovo": "Neu anmelden",
   "app.diagnostika": "Diagnose",
@@ -544,10 +575,12 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.zaregistrujteSa": "Registrieren",
   "app.zabudnuteHeslo": "Ein vergessenes Passwort setzen Sie auf faktero.sk zurück.",
   "app.zamknute": "Faktero ist gesperrt",
-  "app.odomknitePokracujte": "Entsperren Sie es per Biometrie und machen Sie dort weiter, wo Sie aufgehört haben.",
+  "app.odomknitePokracujte":
+    "Entsperren Sie es per Biometrie und machen Sie dort weiter, wo Sie aufgehört haben.",
   "app.pridatDalsiuFirmu": "Weiteres Unternehmen hinzufügen",
   "app.odvolatZiadost": "Antrag zurückziehen",
-  "app.zFakturyPrecita": "Lieferant, Datum, Betrag und USt. werden aus der Rechnung gelesen. Prüfen Sie die Daten vor dem Speichern.",
+  "app.zFakturyPrecita":
+    "Lieferant, Datum, Betrag und USt. werden aus der Rechnung gelesen. Prüfen Sie die Daten vor dem Speichern.",
   "app.vyberteUhradu": "Zahlungsart wählen",
   "app.povinne": "Pflicht",
   "app.vyberteMoznost": "Wählen Sie eine Option — ohne sie lässt sich der Beleg nicht speichern.",
@@ -577,9 +610,11 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.odfotitDoklad": "Beleg fotografieren",
   "app.papierovyDoklad": "Den Papierbeleg müssen Sie ohnehin aufbewahren — das Foto ersetzt ihn",
   "app.vyplnteEmailHeslo": "Füllen Sie E-Mail und Passwort aus.",
-  "app.prilohaNenahrata": "Der Anhang konnte nicht hochgeladen werden, der Beleg wird ohne ihn gespeichert.",
+  "app.prilohaNenahrata":
+    "Der Anhang konnte nicht hochgeladen werden, der Beleg wird ohne ihn gespeichert.",
   "app.dokladUlozeny": "Beleg gespeichert",
-  "app.bezPripojeniaFirmy": "Keine Verbindung, und auf dem Telefon ist noch keine Firmenliste gespeichert. Öffnen Sie die App einmal mit Internet.",
+  "app.bezPripojeniaFirmy":
+    "Keine Verbindung, und auf dem Telefon ist noch keine Firmenliste gespeichert. Öffnen Sie die App einmal mit Internet.",
   "app.fakturaOdoslana": "Die offline ausgestellte Rechnung wurde gesendet.",
   "app.odoslanychOdlozenych": "Gesendete zurückgestellte Rechnungen: {pocet}.",
   "app.jazdaUlozena": "Erkannte Fahrt gespeichert",
@@ -589,15 +624,18 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.prihlasitSa": "Anmelden",
   "app.odomykam": "Wird entsperrt…",
   "app.odomknut": "Entsperren",
-  "app.bezFirmy": "Zu diesem Konto gehört noch kein Unternehmen. Ohne eines haben Belege kein Ziel — legen Sie es gleich hier an.",
+  "app.bezFirmy":
+    "Zu diesem Konto gehört noch kein Unternehmen. Ohne eines haben Belege kein Ziel — legen Sie es gleich hier an.",
   "app.blocekQr": "Beleg mit QR-Code",
   "app.fakturaPdf": "Rechnung als PDF",
   "app.viacstranovyDoklad": "Mehrseitiger Beleg",
   "app.nepodariloPrecitat": "Der Beleg konnte nicht gelesen werden.",
   "app.citanieZlyhalo": "Das Lesen ist fehlgeschlagen.",
   "app.spojenieStranZlyhalo": "Das Zusammenfügen der Seiten ist fehlgeschlagen.",
-  "app.bezSignaluOdosleSa": "Ohne Signal — der Beleg wird von selbst gesendet, sobald Verbindung besteht.",
-  "app.spojenieVypadlo": "Die Verbindung ist abgebrochen — der Beleg wird später von selbst gesendet.",
+  "app.bezSignaluOdosleSa":
+    "Ohne Signal — der Beleg wird von selbst gesendet, sobald Verbindung besteht.",
+  "app.spojenieVypadlo":
+    "Die Verbindung ist abgebrochen — der Beleg wird später von selbst gesendet.",
   "app.ulozenieZlyhalo": "Das Speichern ist fehlgeschlagen.",
   "app.odfotitPrvuStranu": "Erste Seite fotografieren",
   "app.pridatDalsiuStranu": "Weitere Seite hinzufügen",
@@ -618,7 +656,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "spolocne.den5": "Tage",
 
   /* množné tvary */
-  "app.cakajuceFaktury": "{pocet} warten auf dem Telefon auf den Versand. Gehen Sie online und öffnen Sie Ausgestellte Rechnungen — danach können Sie sich abmelden.",
+  "app.cakajuceFaktury":
+    "{pocet} warten auf dem Telefon auf den Versand. Gehen Sie online und öffnen Sie Ausgestellte Rechnungen — danach können Sie sich abmelden.",
   "spolocne.faktura1": "Rechnung",
   "spolocne.faktura2": "Rechnungen",
   "spolocne.faktura5": "Rechnungen",
@@ -627,7 +666,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.odstranitStranu": "Seite {n} entfernen",
 
   /* ponuky — prázdny zoznam */
-  "ponuky.ziadnePopis2": "Ein Angebot erstellen Sie wie eine Rechnung — und sobald der Kunde es annimmt, wird mit einem Tippen eine Rechnung daraus.",
+  "ponuky.ziadnePopis2":
+    "Ein Angebot erstellen Sie wie eine Rechnung — und sobald der Kunde es annimmt, wird mit einem Tippen eine Rechnung daraus.",
 
   /* drobnosti — kroky a stavy */
   "nf.oprava": "Korrektur {cislo}",
@@ -651,22 +691,27 @@ export const de: Partial<Record<Kluc, string>> = {
   "banka.kFakture": "zu Rechnung {cislo}",
   "banka.aktualizovane": "Aktualisiert {ked}",
   "jz.bezi": "läuft {trvanie}",
-  "jz.ukladaSaNa": "Sie wird auf {auto} gebucht — ändern Sie es durch Auswahl eines anderen Fahrzeugs unten.",
+  "jz.ukladaSaNa":
+    "Sie wird auf {auto} gebucht — ändern Sie es durch Auswahl eines anderen Fahrzeugs unten.",
 
   /* Berechtigungen für das Fahrtenbuch (Android) */
   "pov.nadpis": "Damit sich Fahrten selbst eintragen",
-  "pov.uvod": "Das Fahrtenbuch misst die Strecke im Hintergrund — auch bei ausgeschaltetem Display und Telefon in der Tasche. Sonst lassen sich die Kilometer nicht berechnen. Den Standort nutzen wir nur für die Fahrt; wir senden ihn nirgendwohin.",
+  "pov.uvod":
+    "Das Fahrtenbuch misst die Strecke im Hintergrund — auch bei ausgeschaltetem Display und Telefon in der Tasche. Sonst lassen sich die Kilometer nicht berechnen. Den Standort nutzen wir nur für die Fahrt; wir senden ihn nirgendwohin.",
   "pov.poloha": "Standort — damit die Fahrt überhaupt gemessen werden kann.",
-  "pov.notifikacie": "Mitteilungen — damit die App nach der Fahrt fragen kann, ob sie geschäftlich war.",
+  "pov.notifikacie":
+    "Mitteilungen — damit die App nach der Fahrt fragen kann, ob sie geschäftlich war.",
   "pov.pohyb": "Bewegungssensoren — damit eine Fahrt schneller erkannt wird.",
   "pov.vzdy": "Standort „Immer“ — ohne ihn wird bei ausgeschaltetem Display nichts gemessen.",
   "pov.povolit": "Erlauben",
   "pov.pytamSa": "Frage an…",
   "pov.neskor": "Später",
-  "pov.vzdyNastavenia": "Eine letzte Sache: Den Standort „Immer“ lässt Android nur in den Einstellungen umschalten. Wir öffnen sie — wählen Sie Berechtigungen → Standort → Immer zulassen.",
+  "pov.vzdyNastavenia":
+    "Eine letzte Sache: Den Standort „Immer“ lässt Android nur in den Einstellungen umschalten. Wir öffnen sie — wählen Sie Berechtigungen → Standort → Immer zulassen.",
   "pov.otvoritNastavenia": "Einstellungen öffnen",
   "pov.hotovo": "Fertig",
-  "pov.zvysokNastavenia": "Das lässt sich per Dialog nicht mehr erlauben — Android bietet es nur in den App-Einstellungen an. Wir öffnen sie; suchen Sie nach Berechtigungen.",
+  "pov.zvysokNastavenia":
+    "Das lässt sich per Dialog nicht mehr erlauben — Android bietet es nur in den App-Einstellungen an. Wir öffnen sie; suchen Sie nach Berechtigungen.",
   "app.spustam": "Faktero wird gestartet… ({faza}) · {balicek}",
   "app.startZasekol": "Der Start hängt beim Schritt „{faza}“.",
   "app.balicek": "Paket {peciatka}",
@@ -780,6 +825,9 @@ export const de: Partial<Record<Kluc, string>> = {
   "kj.jazd1": "Fahrt",
   "kj.jazd2": "Fahrten",
   "kj.jazd5": "Fahrten",
+  "kj.nezapisanaJedna": "Eine Fahrt ist noch nicht eingetragen",
+  "kj.nezapisaneJazdy": "Nicht eingetragene Fahrten ({pocet})",
+  "kj.nezapisanePopis": "Zum Eintragen tippen — bis dahin fehlt sie im Monat.",
   "kj.bezJazd": "Diesen Monat noch keine Fahrt",
   "kj.bezJazdPopis": "Die erste starten Sie mit der grünen Taste unten.",
 };

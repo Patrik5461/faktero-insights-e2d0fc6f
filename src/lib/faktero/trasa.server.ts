@@ -174,3 +174,31 @@ export const navrhniTrasu = createServerFn({ method: "POST" })
 
     return { ...trasaZOdpovede(smer), odkial, kam };
   });
+
+const Bod = z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) });
+
+/**
+ * Trasa medzi dvoma známymi bodmi.
+ *
+ * Commander posiela pri jazde len súradnice začiatku a konca — pole `waypoints`
+ * je v jeho odpovedi vždy prázdne, takže skutočne prejdenú cestu nemáme z čoho
+ * nakresliť. Toto je návrh, ako sa medzi tými dvoma bodmi dá dôjsť; v knihe
+ * jázd sa nikam nezapisuje a v mape je označený ako návrh.
+ */
+export const trasaMedziBodmi = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ odkial: Bod, kam: Bod }).parse(d))
+  .handler(
+    async ({ data }): Promise<{ route: string; vzdialenost_km: number; trvanie_min: number }> => {
+      const smer = await zavolaj("/v2/directions/driving-car", {
+        method: "POST",
+        body: JSON.stringify({
+          coordinates: [
+            [data.odkial.lng, data.odkial.lat],
+            [data.kam.lng, data.kam.lat],
+          ],
+        }),
+      });
+      return trasaZOdpovede(smer);
+    },
+  );

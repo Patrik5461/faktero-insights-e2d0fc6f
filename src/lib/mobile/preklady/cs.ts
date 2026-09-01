@@ -306,6 +306,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "jz.zahoditOtazka": "Zahodit tuto jízdu? Do knihy jízd se nezapíše.",
   "jz.ukoncena": "Jízda ukončena — zařaďte ji níže.",
   "jz.zahodena": "Jízda zahozena.",
+  "jz.odberatelPreJazdu": "Odběratel, za kterým jste jeli",
+  "jz.bezOdberatela": "Bez odběratele",
   "jz.vozidloPreJazdu": "Vozidlo pro rozpoznanou jízdu",
   "jz.telefonNevie": "Telefon neví, do kterého auta jste sedli — zkontrolujte ho u každé jízdy.",
   "jz.rozpoznavat": "Rozpoznávat jízdy automaticky",
@@ -329,7 +331,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "jz.pridajteHo": "Přidejte ho tady — stačí název a značka, zbytek se dá doplnit na webu.",
   "jz.commander": "Jízdy tohoto auta tahá Commander",
   "jz.bezPripojenia": "Bez připojení se vozidla nedají načíst",
-  "jz.bezZoznamu": "V telefonu zatím není uložený seznam. Otevřete tuto obrazovku jednou s internetem.",
+  "jz.bezZoznamu":
+    "V telefonu zatím není uložený seznam. Otevřete tuto obrazovku jednou s internetem.",
   "jz.nepovinneCena": "Nepovinné, ale bez ní vyjde náklad na jízdu nula.",
 
   /* skener, notifikácie, čísla dopredu */
@@ -352,8 +355,10 @@ export const cs: Partial<Record<Kluc, string>> = {
   "push.skusitZaregistrovat": "Zkusit zaregistrovat",
   "spolocne.chyba": "Chyba",
   "cisla.nazov": "Vystavovat bez signálu rovnou s číslem",
-  "cisla.vypnutePopis": "Bez toho se faktura bez signálu odloží a vystaví se sama po připojení — číslo dostane až tehdy.",
-  "cisla.zapnutePopis": "Připravených čísel: {pocet}. Faktura vystavená bez signálu dostane číslo hned, takže se dá předat na místě.",
+  "cisla.vypnutePopis":
+    "Bez toho se faktura bez signálu odloží a vystaví se sama po připojení — číslo dostane až tehdy.",
+  "cisla.zapnutePopis":
+    "Připravených čísel: {pocet}. Faktura vystavená bez signálu dostane číslo hned, takže se dá předat na místě.",
   "cisla.zapnut": "Zapnout",
   "cisla.vypnut": "Vypnout",
   "cisla.vypnute": "Vypnuto. Nepoužitá čísla se vrátila do řady.",
@@ -379,7 +384,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "vf.podnadpis": "Tyto údaje se zobrazí na fakturách",
   "vf.vytvaram": "Vytvářím…",
   "vf.vytvoritFirmu": "Vytvořit firmu",
-  "vf.uvod": "Stačí název — ostatní se dá doplnit kdykoli později v nastavení. Když zadáte IČO, adresu i daňová čísla natáhneme z rejstříku.",
+  "vf.uvod":
+    "Stačí název — ostatní se dá doplnit kdykoli později v nastavení. Když zadáte IČO, adresu i daňová čísla natáhneme z rejstříku.",
   "vf.nazovFirmy": "Název firmy",
   "vf.ico": "IČO",
   "vf.dic": "DIČ",
@@ -400,7 +406,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "vf.chyba.email": "Zadejte platný e-mail firmy.",
   "vf.chyba.iban": "IBAN nemá správný tvar.",
   "reg.potvrdteEmail": "Potvrďte si e-mail",
-  "reg.potvrdenieText": "Účet {email} je vytvořen. Poslali jsme na něj odkaz — otevřete jej a vraťte se sem. Aplikace si potvrzení všimne sama; kdyby ne, je tu tlačítko níže. Bez potvrzení se přihlásit nedá.",
+  "reg.potvrdenieText":
+    "Účet {email} je vytvořen. Poslali jsme na něj odkaz — otevřete jej a vraťte se sem. Aplikace si potvrzení všimne sama; kdyby ne, je tu tlačítko níže. Bez potvrzení se přihlásit nedá.",
   "reg.spamPriecinok": "Pokud e-mail do pár minut nepřijde, podívejte se do nevyžádané pošty.",
   "reg.overujem": "Ověřuji…",
   "reg.uzSomPotvrdil": "Už jsem potvrdil, pokračovat",
@@ -443,22 +450,26 @@ export const cs: Partial<Record<Kluc, string>> = {
   "ponuky.vytvaram": "Vytvářím nabídku…",
 
   /* kniha jázd — zvyšok */
-  "jz.odCasu": "Od {cas}. Když jste dojeli, ukončete ji — jinak se zastaví sama až po pěti minutách stání.",
+  "jz.odCasu":
+    "Od {cas}. Když jste dojeli, ukončete ji — jinak se zastaví sama až po pěti minutách stání.",
   "jz.rozpoznalaJazdu": "Aplikace rozpoznala jízdu",
   "jz.rozpoznalaJazdy": "Aplikace rozpoznala jízdy ({pocet})",
-  "jz.commanderZvysok": ", takže je telefon měřit nemusí — vyber jiné auto, nebo nech detekci vypnutou.",
+  "jz.commanderZvysok":
+    ", takže je telefon měřit nemusí — vyber jiné auto, nebo nech detekci vypnutou.",
   "jz.typJazdy": "Typ jízdy",
   "jz.vozidlo": "Vozidlo",
   "jz.nazovVozidla": "Název",
   "jz.spotreba": "Spotřeba (l/100 km)",
   "jz.spotrebaPriklad": "např. 6,5",
   "jz.vsimneSi": "Aplikace si jízdu všimne sama a zeptá se oznámením, zda byla služební.",
-  "jz.lenPocasPouzivania": "Pokud jste polohu povolili jen „při používání“, nechte aplikaci otevřenou — po zhasnutí displeje telefon měření zastaví a kilometry by se dopočítaly nesprávně. S povolením „Vždy“ běží měření i v kapse.",
+  "jz.lenPocasPouzivania":
+    "Pokud jste polohu povolili jen „při používání“, nechte aplikaci otevřenou — po zhasnutí displeje telefon měření zastaví a kilometry by se dopočítaly nesprávně. S povolením „Vždy“ běží měření i v kapse.",
   "jz.vyberteVozidlo": "Vyberte vozidlo.",
   "jz.odoslanychJazd": "Odesláno {pocet} jízd zapsaných bez signálu",
   "jz.uzJeVKnihe": "Tuto jízdu už v knize máte — zapsala ji druhá aplikace.",
   "jz.rozpoznanaUlozena": "Rozpoznaná jízda uložena — {km} km, {auto}",
-  "jz.bezPolohy": "Nenaměřili jsme žádnou polohu, jízdu jsem neuložil. Zkuste to venku — v budově je poloha nepřesná — a polohu povolte na „Vždy“.",
+  "jz.bezPolohy":
+    "Nenaměřili jsme žádnou polohu, jízdu jsem neuložil. Zkuste to venku — v budově je poloha nepřesná — a polohu povolte na „Vždy“.",
   "jz.ulozenaVTelefone": "Jízda uložena v telefonu — {km} km. Odešle se po připojení.",
   "jz.ulozenaKm": "Jízda uložena — {km} km",
   "jz.historiaVozidla": "Historie jízd — {auto}",
@@ -487,14 +498,17 @@ export const cs: Partial<Record<Kluc, string>> = {
   "faktury.vystavenychPocet": "Vystaveno faktur: {pocet}.",
   "faktury.neuhradene": "Neuhrazené",
   "faktury.odosluSaSamy2": "Odešlou se samy, jakmile bude signál. Nemusíte na to myslet.",
-  "faktury.bezZoznamu": "V telefonu zatím není uložen žádný seznam. Otevřete tuto obrazovku jednou s internetem, potom bude dostupná i bez něj.",
+  "faktury.bezZoznamu":
+    "V telefonu zatím není uložen žádný seznam. Otevřete tuto obrazovku jednou s internetem, potom bude dostupná i bez něj.",
   "faktury.vystavena": "Vystavena",
   "faktury.splatna": "Splatná",
   "faktury.uhradena": "Uhrazena",
   "faktury.odoslana": "Odeslána",
-  "faktury.cisloOstava": "Zmizí ze seznamu, ale číslo zůstává obsazené — v číselné řadě nevznikne díra.",
+  "faktury.cisloOstava":
+    "Zmizí ze seznamu, ale číslo zůstává obsazené — v číselné řadě nevznikne díra.",
   "jazdy.nacitavam": "Načítám jízdy…",
-  "jazdy.prvaPribudne": "První přibude po ukončení měření — nebo se natáhne z GPS jednotky, když je vozidlo propojené.",
+  "jazdy.prvaPribudne":
+    "První přibude po ukončení měření — nebo se natáhne z GPS jednotky, když je vozidlo propojené.",
   "jazdy.filtre": "Filtry",
   "jazdy.filterVsetky": "Všechny",
   "jazdy.ztohoSukromne": "z toho soukromé",
@@ -516,7 +530,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "banka.zostatokSpolu": "Zůstatek celkem",
 
   /* nová faktúra — zvyšok */
-  "nf.zalohovaVysvetlenie": "Zálohová faktura je výzva k platbě, ne daňový doklad — nevstupuje do DPH a dostane číslo z vlastní řady. Po zaplacení na ni vystavíte běžnou fakturu a zálohu na ní zúčtujete.",
+  "nf.zalohovaVysvetlenie":
+    "Zálohová faktura je výzva k platbě, ne daňový doklad — nevstupuje do DPH a dostane číslo z vlastní řady. Po zaplacení na ni vystavíte běžnou fakturu a zálohu na ní zúčtujete.",
   "nf.ico": "IČO",
   "nf.ulica": "Ulice",
   "nf.mesto": "Město",
@@ -526,10 +541,14 @@ export const cs: Partial<Record<Kluc, string>> = {
   "nf.spolu": "Celkem",
   "nf.dph": "DPH",
   "nf.vystavenie": "Vystavení",
-  "nf.bezIbanu": "Firma nemá vyplněný IBAN — na faktuře nebude kam zaplatit. Doplňte jej na webu v nastavení firmy.",
-  "nf.ziadnaZalohaPopis": "Tento odběratel nemá zálohovou fakturu, která by ještě nebyla zúčtovaná. Vystavíte ji tak, že v prvním kroku nové faktury vyberete {zalohova}.",
-  "nf.cisloJeVase": "Číslo je vaše a nikomu jinému se nepřidělí — klidně jej předejte zákazníkovi. PDF se vytvoří a faktura odešle sama, jakmile bude signál.",
-  "nf.odlozenaPopis": "Vystaví se i s číslem sama, jakmile bude signál. Číslo zatím nemá, takže se zákazníkovi nedá nadiktovat — pokud to potřebujete, zapněte si v nastavení vydávání s číslem dopředu.",
+  "nf.bezIbanu":
+    "Firma nemá vyplněný IBAN — na faktuře nebude kam zaplatit. Doplňte jej na webu v nastavení firmy.",
+  "nf.ziadnaZalohaPopis":
+    "Tento odběratel nemá zálohovou fakturu, která by ještě nebyla zúčtovaná. Vystavíte ji tak, že v prvním kroku nové faktury vyberete {zalohova}.",
+  "nf.cisloJeVase":
+    "Číslo je vaše a nikomu jinému se nepřidělí — klidně jej předejte zákazníkovi. PDF se vytvoří a faktura odešle sama, jakmile bude signál.",
+  "nf.odlozenaPopis":
+    "Vystaví se i s číslem sama, jakmile bude signál. Číslo zatím nemá, takže se zákazníkovi nedá nadiktovat — pokud to potřebujete, zapněte si v nastavení vydávání s číslem dopředu.",
   "nf.hotovo": "Hotovo",
   "nf.pripravujemPdf": "Připravuji PDF…",
   "nf.bezPripojeniaNadpis": "Bez připojení",
@@ -552,7 +571,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "app.odomknitePokracujte": "Odemkněte jej biometrií a pokračujte tam, kde jste skončili.",
   "app.pridatDalsiuFirmu": "Přidat další firmu",
   "app.odvolatZiadost": "Odvolat žádost",
-  "app.zFakturyPrecita": "Z faktury se přečte dodavatel, datum, částka i DPH. Údaje před uložením zkontrolujte.",
+  "app.zFakturyPrecita":
+    "Z faktury se přečte dodavatel, datum, částka i DPH. Údaje před uložením zkontrolujte.",
   "app.vyberteUhradu": "Vyberte způsob úhrady",
   "app.povinne": "Povinné",
   "app.vyberteMoznost": "Vyberte jednu z možností — bez ní se doklad uložit nedá.",
@@ -584,7 +604,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "app.vyplnteEmailHeslo": "Vyplňte e-mail i heslo.",
   "app.prilohaNenahrata": "Přílohu se nepodařilo nahrát, doklad uložím bez ní.",
   "app.dokladUlozeny": "Doklad uložen",
-  "app.bezPripojeniaFirmy": "Bez připojení a v telefonu zatím není uložen seznam firem. Otevřete aplikaci jednou s internetem.",
+  "app.bezPripojeniaFirmy":
+    "Bez připojení a v telefonu zatím není uložen seznam firem. Otevřete aplikaci jednou s internetem.",
   "app.fakturaOdoslana": "Faktura vystavená bez signálu je odeslána.",
   "app.odoslanychOdlozenych": "Odesláno odložených faktur: {pocet}.",
   "app.jazdaUlozena": "Rozpoznaná jízda uložena",
@@ -594,7 +615,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "app.prihlasitSa": "Přihlásit se",
   "app.odomykam": "Odemykám…",
   "app.odomknut": "Odemknout",
-  "app.bezFirmy": "K tomuto účtu zatím nepatří žádná firma. Bez ní nemají doklady kam jít — založte si ji rovnou tady.",
+  "app.bezFirmy":
+    "K tomuto účtu zatím nepatří žádná firma. Bez ní nemají doklady kam jít — založte si ji rovnou tady.",
   "app.blocekQr": "Účtenka s QR kódem",
   "app.fakturaPdf": "Faktura v PDF",
   "app.viacstranovyDoklad": "Vícestránkový doklad",
@@ -623,7 +645,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "spolocne.den5": "dní",
 
   /* množné tvary */
-  "app.cakajuceFaktury": "V telefonu čeká {pocet} na odeslání. Připojte se a otevřete Vystavené faktury — potom se dá odhlásit.",
+  "app.cakajuceFaktury":
+    "V telefonu čeká {pocet} na odeslání. Připojte se a otevřete Vystavené faktury — potom se dá odhlásit.",
   "spolocne.faktura1": "faktura",
   "spolocne.faktura2": "faktury",
   "spolocne.faktura5": "faktur",
@@ -632,7 +655,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "app.odstranitStranu": "Odstranit stranu {n}",
 
   /* ponuky — prázdny zoznam */
-  "ponuky.ziadnePopis2": "Nabídku uděláte stejně jako fakturu — a když ji zákazník přijme, jedním klepnutím z ní faktura vznikne.",
+  "ponuky.ziadnePopis2":
+    "Nabídku uděláte stejně jako fakturu — a když ji zákazník přijme, jedním klepnutím z ní faktura vznikne.",
 
   /* drobnosti — kroky a stavy */
   "nf.oprava": "Oprava {cislo}",
@@ -660,7 +684,8 @@ export const cs: Partial<Record<Kluc, string>> = {
 
   /* povolení pro knihu jízd (Android) */
   "pov.nadpis": "Aby se jízdy zapisovaly samy",
-  "pov.uvod": "Kniha jízd měří trasu na pozadí — i když máte zhasnutý displej a telefon v kapse. Bez toho by se kilometry nedopočítaly. Polohu používáme jen k výpočtu jízdy, nikam ji neposíláme.",
+  "pov.uvod":
+    "Kniha jízd měří trasu na pozadí — i když máte zhasnutý displej a telefon v kapse. Bez toho by se kilometry nedopočítaly. Polohu používáme jen k výpočtu jízdy, nikam ji neposíláme.",
   "pov.poloha": "Poloha — aby šlo jízdu vůbec změřit.",
   "pov.notifikacie": "Oznámení — aby se aplikace po jízdě zeptala, zda byla služební.",
   "pov.pohyb": "Pohybové senzory — aby se jízda rozpoznala rychleji.",
@@ -668,10 +693,12 @@ export const cs: Partial<Record<Kluc, string>> = {
   "pov.povolit": "Povolit",
   "pov.pytamSa": "Ptám se…",
   "pov.neskor": "Později",
-  "pov.vzdyNastavenia": "Zbývá poslední věc: Android dovolí polohu „Vždy“ přepnout jen v nastavení. Otevřeme je — vyberte Oprávnění → Poloha → Povolit vždy.",
+  "pov.vzdyNastavenia":
+    "Zbývá poslední věc: Android dovolí polohu „Vždy“ přepnout jen v nastavení. Otevřeme je — vyberte Oprávnění → Poloha → Povolit vždy.",
   "pov.otvoritNastavenia": "Otevřít nastavení",
   "pov.hotovo": "Hotovo",
-  "pov.zvysokNastavenia": "Tohle už oknem povolit nejde — Android to nabízí jen v nastavení aplikace. Otevřeme je, hledejte Oprávnění.",
+  "pov.zvysokNastavenia":
+    "Tohle už oknem povolit nejde — Android to nabízí jen v nastavení aplikace. Otevřeme je, hledejte Oprávnění.",
   "app.spustam": "Spouštím Faktero… ({faza}) · {balicek}",
   "app.startZasekol": "Start se zasekl na kroku „{faza}“.",
   "app.balicek": "balíček {peciatka}",
@@ -785,6 +812,9 @@ export const cs: Partial<Record<Kluc, string>> = {
   "kj.jazd1": "jízda",
   "kj.jazd2": "jízdy",
   "kj.jazd5": "jízd",
+  "kj.nezapisanaJedna": "Jedna jízda ještě není zapsaná",
+  "kj.nezapisaneJazdy": "Nezapsané jízdy ({pocet})",
+  "kj.nezapisanePopis": "Klepnutím ji doplníte do knihy — dokud tam není, nepočítá se do měsíce.",
   "kj.bezJazd": "Tento měsíc zatím bez jízdy",
   "kj.bezJazdPopis": "První spustíte zeleným tlačítkem dole.",
 };

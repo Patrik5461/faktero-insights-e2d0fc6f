@@ -318,6 +318,8 @@ export const sk = {
   "jz.zahoditOtazka": "Zahodiť túto jazdu? Do knihy jázd sa nezapíše.",
   "jz.ukoncena": "Jazda ukončená — zaraďte ju nižšie.",
   "jz.zahodena": "Jazda zahodená.",
+  "jz.odberatelPreJazdu": "Odberateľ, za ktorým ste išli",
+  "jz.bezOdberatela": "Bez odberateľa",
   "jz.vozidloPreJazdu": "Vozidlo pre rozpoznanú jazdu",
   "jz.telefonNevie": "Telefón nevie, do ktorého auta ste sadli — skontrolujte ho pri každej jazde.",
   "jz.rozpoznavat": "Rozpoznávať jazdy automaticky",
@@ -341,7 +343,8 @@ export const sk = {
   "jz.pridajteHo": "Pridajte ho tu — stačí názov a značka, zvyšok sa dá doplniť na webe.",
   "jz.commander": "Jazdy tohto auta ťahá Commander",
   "jz.bezPripojenia": "Bez pripojenia sa vozidlá nedajú načítať",
-  "jz.bezZoznamu": "V telefóne zatiaľ nie je uložený zoznam. Otvorte túto obrazovku raz s internetom.",
+  "jz.bezZoznamu":
+    "V telefóne zatiaľ nie je uložený zoznam. Otvorte túto obrazovku raz s internetom.",
   "jz.nepovinneCena": "Nepovinné, ale bez nej vyjde náklad na jazdu nula.",
 
   /* skener, notifikácie, čísla dopredu */
@@ -364,8 +367,10 @@ export const sk = {
   "push.skusitZaregistrovat": "Skúsiť zaregistrovať",
   "spolocne.chyba": "Chyba",
   "cisla.nazov": "Vystavovať bez signálu rovno s číslom",
-  "cisla.vypnutePopis": "Bez toho sa faktúra bez signálu odloží a vystaví sa sama po pripojení — číslo dostane až vtedy.",
-  "cisla.zapnutePopis": "Pripravených čísel: {pocet}. Faktúra vystavená bez signálu dostane číslo hneď, takže sa dá odovzdať na mieste.",
+  "cisla.vypnutePopis":
+    "Bez toho sa faktúra bez signálu odloží a vystaví sa sama po pripojení — číslo dostane až vtedy.",
+  "cisla.zapnutePopis":
+    "Pripravených čísel: {pocet}. Faktúra vystavená bez signálu dostane číslo hneď, takže sa dá odovzdať na mieste.",
   "cisla.zapnut": "Zapnúť",
   "cisla.vypnut": "Vypnúť",
   "cisla.vypnute": "Vypnuté. Nepoužité čísla sa vrátili do radu.",
@@ -377,7 +382,8 @@ export const sk = {
   /* skener, firma, registrácia */
   "sken.naskenujte": "Naskenujte QR kód bločku",
   "sken.aleboOdfotte": "alebo odfoťte doklad",
-  "sken.kameraNejde": "Doklad sa dá aj tak odfotiť alebo vybrať zo súborov — tlačidlá nižšie fungujú.",
+  "sken.kameraNejde":
+    "Doklad sa dá aj tak odfotiť alebo vybrať zo súborov — tlačidlá nižšie fungujú.",
   "sken.odfotit": "Odfotiť",
   "sken.zGalerie": "Z galérie",
   "sken.uhrada": "Úhrada",
@@ -391,7 +397,8 @@ export const sk = {
   "vf.podnadpis": "Tieto údaje sa zobrazia na faktúrach",
   "vf.vytvaram": "Vytváram…",
   "vf.vytvoritFirmu": "Vytvoriť firmu",
-  "vf.uvod": "Stačí názov — ostatné sa dá doplniť kedykoľvek neskôr v nastaveniach. Keď zadáte IČO, adresu aj daňové čísla si natiahneme z registra.",
+  "vf.uvod":
+    "Stačí názov — ostatné sa dá doplniť kedykoľvek neskôr v nastaveniach. Keď zadáte IČO, adresu aj daňové čísla si natiahneme z registra.",
   "vf.nazovFirmy": "Názov firmy",
   "vf.ico": "IČO",
   "vf.dic": "DIČ",
@@ -412,7 +419,8 @@ export const sk = {
   "vf.chyba.email": "Zadajte platný e-mail firmy.",
   "vf.chyba.iban": "IBAN nemá správny tvar.",
   "reg.potvrdteEmail": "Potvrďte si e-mail",
-  "reg.potvrdenieText": "Účet {email} je vytvorený. Poslali sme naň odkaz — otvorte ho a vráťte sa sem. Appka si potvrdenia všimne sama; keby nie, je tu tlačidlo nižšie. Bez potvrdenia sa prihlásiť nedá.",
+  "reg.potvrdenieText":
+    "Účet {email} je vytvorený. Poslali sme naň odkaz — otvorte ho a vráťte sa sem. Appka si potvrdenia všimne sama; keby nie, je tu tlačidlo nižšie. Bez potvrdenia sa prihlásiť nedá.",
   "reg.spamPriecinok": "Ak e-mail do pár minút nepríde, pozrite sa do nevyžiadanej pošty.",
   "reg.overujem": "Overujem…",
   "reg.uzSomPotvrdil": "Už som potvrdil, pokračovať",
@@ -455,22 +463,26 @@ export const sk = {
   "ponuky.vytvaram": "Vytváram ponuku…",
 
   /* kniha jázd — zvyšok */
-  "jz.odCasu": "Od {cas}. Keď ste dojazdili, ukončite ju — inak sa zastaví sama až po piatich minútach státia.",
+  "jz.odCasu":
+    "Od {cas}. Keď ste dojazdili, ukončite ju — inak sa zastaví sama až po piatich minútach státia.",
   "jz.rozpoznalaJazdu": "Appka rozpoznala jazdu",
   "jz.rozpoznalaJazdy": "Appka rozpoznala jazdy ({pocet})",
-  "jz.commanderZvysok": ", takže ich telefón merať nemusí — vyber iné auto, alebo nechaj detekciu vypnutú.",
+  "jz.commanderZvysok":
+    ", takže ich telefón merať nemusí — vyber iné auto, alebo nechaj detekciu vypnutú.",
   "jz.typJazdy": "Typ jazdy",
   "jz.vozidlo": "Vozidlo",
   "jz.nazovVozidla": "Názov",
   "jz.spotreba": "Spotreba (l/100 km)",
   "jz.spotrebaPriklad": "napr. 6,5",
   "jz.vsimneSi": "Appka si jazdu všimne sama a spýta sa notifikáciou, či bola služobná.",
-  "jz.lenPocasPouzivania": "Ak ste polohu povolili len „počas používania“, nechajte appku otvorenú — po zhasnutí displeja telefón meranie zastaví a kilometre by sa doratali nesprávne. S povolením „Vždy“ beží meranie aj vo vrecku.",
+  "jz.lenPocasPouzivania":
+    "Ak ste polohu povolili len „počas používania“, nechajte appku otvorenú — po zhasnutí displeja telefón meranie zastaví a kilometre by sa doratali nesprávne. S povolením „Vždy“ beží meranie aj vo vrecku.",
   "jz.vyberteVozidlo": "Vyberte vozidlo.",
   "jz.odoslanychJazd": "Odoslaných {pocet} jázd zapísaných bez signálu",
   "jz.uzJeVKnihe": "Túto jazdu už v knihe máte — zapísala ju druhá aplikácia.",
   "jz.rozpoznanaUlozena": "Rozpoznaná jazda uložená — {km} km, {auto}",
-  "jz.bezPolohy": "Nenamerali sme žiadnu polohu, jazdu som neuložil. Skúste to vonku — v budove je poloha nepresná — a polohu povoľte na „Vždy“.",
+  "jz.bezPolohy":
+    "Nenamerali sme žiadnu polohu, jazdu som neuložil. Skúste to vonku — v budove je poloha nepresná — a polohu povoľte na „Vždy“.",
   "jz.ulozenaVTelefone": "Jazda uložená v telefóne — {km} km. Odošle sa po pripojení.",
   "jz.ulozenaKm": "Jazda uložená — {km} km",
   "jz.historiaVozidla": "História jázd — {auto}",
@@ -499,14 +511,17 @@ export const sk = {
   "faktury.vystavenychPocet": "Vystavených faktúr: {pocet}.",
   "faktury.neuhradene": "Neuhradené",
   "faktury.odosluSaSamy2": "Odošlú sa samy, len čo bude signál. Netreba na to myslieť.",
-  "faktury.bezZoznamu": "V telefóne zatiaľ nie je uložený žiadny zoznam. Otvorte túto obrazovku raz s internetom a potom bude dostupná aj bez neho.",
+  "faktury.bezZoznamu":
+    "V telefóne zatiaľ nie je uložený žiadny zoznam. Otvorte túto obrazovku raz s internetom a potom bude dostupná aj bez neho.",
   "faktury.vystavena": "Vystavená",
   "faktury.splatna": "Splatná",
   "faktury.uhradena": "Uhradená",
   "faktury.odoslana": "Odoslaná",
-  "faktury.cisloOstava": "Zmizne zo zoznamu, ale číslo ostáva obsadené — v číselnom rade nevznikne diera.",
+  "faktury.cisloOstava":
+    "Zmizne zo zoznamu, ale číslo ostáva obsadené — v číselnom rade nevznikne diera.",
   "jazdy.nacitavam": "Načítavam jazdy…",
-  "jazdy.prvaPribudne": "Prvá pribudne po ukončení merania — alebo sa natiahne z GPS jednotky, keď je vozidlo prepojené.",
+  "jazdy.prvaPribudne":
+    "Prvá pribudne po ukončení merania — alebo sa natiahne z GPS jednotky, keď je vozidlo prepojené.",
   "jazdy.filtre": "Filtre",
   "jazdy.filterVsetky": "Všetky",
   "jazdy.ztohoSukromne": "z toho súkromné",
@@ -528,7 +543,8 @@ export const sk = {
   "banka.zostatokSpolu": "Zostatok spolu",
 
   /* nová faktúra — zvyšok */
-  "nf.zalohovaVysvetlenie": "Zálohová faktúra je výzva na platbu, nie daňový doklad — nevstupuje do DPH a dostane číslo z vlastnej rady. Po zaplatení na ňu vystavíte bežnú faktúru a zálohu na nej zúčtujete.",
+  "nf.zalohovaVysvetlenie":
+    "Zálohová faktúra je výzva na platbu, nie daňový doklad — nevstupuje do DPH a dostane číslo z vlastnej rady. Po zaplatení na ňu vystavíte bežnú faktúru a zálohu na nej zúčtujete.",
   "nf.ico": "IČO",
   "nf.ulica": "Ulica",
   "nf.mesto": "Mesto",
@@ -538,10 +554,14 @@ export const sk = {
   "nf.spolu": "Spolu",
   "nf.dph": "DPH",
   "nf.vystavenie": "Vystavenie",
-  "nf.bezIbanu": "Firma nemá vyplnený IBAN — na faktúre nebude kam zaplatiť. Doplňte ho na webe v nastaveniach firmy.",
-  "nf.ziadnaZalohaPopis": "Tento odberateľ nemá zálohovú faktúru, ktorá by ešte nebola zúčtovaná. Vystavíte ju tak, že v prvom kroku novej faktúry vyberiete {zalohova}.",
-  "nf.cisloJeVase": "Číslo je vaše a nikomu inému sa nepridelí — pokojne ho odovzdajte zákazníkovi. PDF sa vytvorí a faktúra odošle sama, len čo bude signál.",
-  "nf.odlozenaPopis": "Vystaví sa aj s číslom sama, len čo bude signál. Číslo zatiaľ nemá, takže sa zákazníkovi nedá nadiktovať — ak to potrebujete, zapnite si v nastaveniach vydávanie s číslom dopredu.",
+  "nf.bezIbanu":
+    "Firma nemá vyplnený IBAN — na faktúre nebude kam zaplatiť. Doplňte ho na webe v nastaveniach firmy.",
+  "nf.ziadnaZalohaPopis":
+    "Tento odberateľ nemá zálohovú faktúru, ktorá by ešte nebola zúčtovaná. Vystavíte ju tak, že v prvom kroku novej faktúry vyberiete {zalohova}.",
+  "nf.cisloJeVase":
+    "Číslo je vaše a nikomu inému sa nepridelí — pokojne ho odovzdajte zákazníkovi. PDF sa vytvorí a faktúra odošle sama, len čo bude signál.",
+  "nf.odlozenaPopis":
+    "Vystaví sa aj s číslom sama, len čo bude signál. Číslo zatiaľ nemá, takže sa zákazníkovi nedá nadiktovať — ak to potrebujete, zapnite si v nastaveniach vydávanie s číslom dopredu.",
   "nf.hotovo": "Hotovo",
   "nf.pripravujemPdf": "Pripravujem PDF…",
   "nf.bezPripojeniaNadpis": "Bez pripojenia",
@@ -564,7 +584,8 @@ export const sk = {
   "app.odomknitePokracujte": "Odomknite ho biometriou a pokračujte tam, kde ste skončili.",
   "app.pridatDalsiuFirmu": "Pridať ďalšiu firmu",
   "app.odvolatZiadost": "Odvolať žiadosť",
-  "app.zFakturyPrecita": "Z faktúry sa prečíta dodávateľ, dátum, suma aj DPH. Údaje pred uložením skontrolujte.",
+  "app.zFakturyPrecita":
+    "Z faktúry sa prečíta dodávateľ, dátum, suma aj DPH. Údaje pred uložením skontrolujte.",
   "app.vyberteUhradu": "Vyberte spôsob úhrady",
   "app.povinne": "Povinné",
   "app.vyberteMoznost": "Vyberte jednu z možností — bez nej sa doklad uložiť nedá.",
@@ -596,7 +617,8 @@ export const sk = {
   "app.vyplnteEmailHeslo": "Vyplňte e-mail aj heslo.",
   "app.prilohaNenahrata": "Prílohu sa nepodarilo nahrať, doklad uložím bez nej.",
   "app.dokladUlozeny": "Doklad uložený",
-  "app.bezPripojeniaFirmy": "Bez pripojenia a v telefóne zatiaľ nie je uložený zoznam firiem. Otvorte appku raz s internetom.",
+  "app.bezPripojeniaFirmy":
+    "Bez pripojenia a v telefóne zatiaľ nie je uložený zoznam firiem. Otvorte appku raz s internetom.",
   "app.fakturaOdoslana": "Faktúra vystavená bez signálu je odoslaná.",
   "app.odoslanychOdlozenych": "Odoslaných odložených faktúr: {pocet}.",
   "app.jazdaUlozena": "Rozpoznaná jazda uložená",
@@ -606,7 +628,8 @@ export const sk = {
   "app.prihlasitSa": "Prihlásiť sa",
   "app.odomykam": "Odomykám…",
   "app.odomknut": "Odomknúť",
-  "app.bezFirmy": "K tomuto účtu zatiaľ nepatrí žiadna firma. Bez nej nemajú doklady kam ísť — založte si ju rovno tu.",
+  "app.bezFirmy":
+    "K tomuto účtu zatiaľ nepatrí žiadna firma. Bez nej nemajú doklady kam ísť — založte si ju rovno tu.",
   "app.blocekQr": "Bloček s QR kódom",
   "app.fakturaPdf": "Faktúra v PDF",
   "app.viacstranovyDoklad": "Viacstranový doklad",
@@ -635,7 +658,8 @@ export const sk = {
   "spolocne.den5": "dní",
 
   /* množné tvary */
-  "app.cakajuceFaktury": "V telefóne čaká {pocet} na odoslanie. Pripojte sa a otvorte Vystavené faktúry — potom sa dá odhlásiť.",
+  "app.cakajuceFaktury":
+    "V telefóne čaká {pocet} na odoslanie. Pripojte sa a otvorte Vystavené faktúry — potom sa dá odhlásiť.",
   "spolocne.faktura1": "faktúra",
   "spolocne.faktura2": "faktúry",
   "spolocne.faktura5": "faktúr",
@@ -644,7 +668,8 @@ export const sk = {
   "app.odstranitStranu": "Odstrániť stranu {n}",
 
   /* ponuky — prázdny zoznam */
-  "ponuky.ziadnePopis2": "Ponuku spravíte rovnako ako faktúru — a keď ju zákazník prijme, jedným ťuknutím z nej faktúra vznikne.",
+  "ponuky.ziadnePopis2":
+    "Ponuku spravíte rovnako ako faktúru — a keď ju zákazník prijme, jedným ťuknutím z nej faktúra vznikne.",
 
   /* drobnosti — kroky a stavy */
   "nf.oprava": "Oprava {cislo}",
@@ -672,7 +697,8 @@ export const sk = {
 
   /* povolenia pre knihu jázd (Android) */
   "pov.nadpis": "Aby sa jazdy zapisovali samy",
-  "pov.uvod": "Kniha jázd meria trasu na pozadí — aj vtedy, keď máte zhasnutý displej a telefón vo vrecku. Bez toho by sa kilometre nedorátali. Polohu používame len na výpočet jazdy, nikam ju neposielame.",
+  "pov.uvod":
+    "Kniha jázd meria trasu na pozadí — aj vtedy, keď máte zhasnutý displej a telefón vo vrecku. Bez toho by sa kilometre nedorátali. Polohu používame len na výpočet jazdy, nikam ju neposielame.",
   "pov.poloha": "Poloha — aby sa dala jazda vôbec zmerať.",
   "pov.notifikacie": "Notifikácie — aby sa appka po jazde spýtala, či bola služobná.",
   "pov.pohyb": "Pohybové senzory — aby sa jazda rozpoznala rýchlejšie.",
@@ -680,10 +706,12 @@ export const sk = {
   "pov.povolit": "Povoliť",
   "pov.pytamSa": "Pýtam sa…",
   "pov.neskor": "Neskôr",
-  "pov.vzdyNastavenia": "Ostáva posledná vec: Android dovolí polohu „Vždy“ prepnúť len v nastaveniach. Otvoríme ich — vyberte Povolenia → Poloha → Povoliť vždy.",
+  "pov.vzdyNastavenia":
+    "Ostáva posledná vec: Android dovolí polohu „Vždy“ prepnúť len v nastaveniach. Otvoríme ich — vyberte Povolenia → Poloha → Povoliť vždy.",
   "pov.otvoritNastavenia": "Otvoriť nastavenia",
   "pov.hotovo": "Hotovo",
-  "pov.zvysokNastavenia": "Toto sa oknom povoliť nedá — Android ich ponúka už len v nastaveniach aplikácie. Otvoríme ich, hľadajte Povolenia.",
+  "pov.zvysokNastavenia":
+    "Toto sa oknom povoliť nedá — Android ich ponúka už len v nastaveniach aplikácie. Otvoríme ich, hľadajte Povolenia.",
   "app.spustam": "Spúšťam Faktero… ({faza}) · {balicek}",
   "app.startZasekol": "Štart sa zasekol na kroku „{faza}“.",
   "app.balicek": "balíček {peciatka}",
@@ -798,6 +826,9 @@ export const sk = {
   "kj.jazd1": "jazda",
   "kj.jazd2": "jazdy",
   "kj.jazd5": "jázd",
+  "kj.nezapisanaJedna": "Jedna jazda ešte nie je zapísaná",
+  "kj.nezapisaneJazdy": "Nezapísané jazdy ({pocet})",
+  "kj.nezapisanePopis": "Ťuknutím ju doplníte do knihy — kým tam nie je, nepočíta sa do mesiaca.",
   "kj.bezJazd": "Tento mesiac zatiaľ bez jazdy",
   "kj.bezJazdPopis": "Prvú spustíte zeleným tlačidlom dole.",
 } as const;

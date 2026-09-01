@@ -275,6 +275,7 @@ export async function ulozRozpoznanuJazdu(args: {
   companyId: string;
   vehicleId: string;
   classification: Classification;
+  odberatel?: { id: string; name: string } | null;
 }): Promise<{ ok: boolean; chyba?: string; duplicita?: boolean }> {
   const p = await plugin();
   if (!p) return { ok: false, chyba: "Detekcia jázd je len v mobilnej aplikácii." };
@@ -315,6 +316,8 @@ export async function ulozRozpoznanuJazdu(args: {
       spotrebaL100: vozidlo?.consumption_l_100km ?? null,
       cenaPaliva: cena,
       userId: session.session?.user?.id ?? null,
+      // Súkromná jazda odberateľa nemá — za nikoho sa neišlo.
+      odberatel: args.classification === "business" ? (args.odberatel ?? null) : null,
     });
 
     const { error } = await supabase.from("trips").insert(riadok);

@@ -47,6 +47,8 @@ export function riadokZJazdy(args: {
   spotrebaL100?: number | null;
   cenaPaliva?: number | null;
   userId?: string | null;
+  /** Odberateľ, za ktorým sa išlo. Nepovinné — súkromná jazda ho nemá vôbec. */
+  odberatel?: { id: string; name: string } | null;
 }): TablesInsert<"trips"> {
   const { jazda } = args;
   const km = zaokruhli(jazda.distanceMeters / 1000);
@@ -76,6 +78,10 @@ export function riadokZJazdy(args: {
     // ktorí si jazdu čítajú, ale hľadať a exportovať sa dá až takto.
     max_speed_kmh: zaokruhli(jazda.maxSpeedKmh, 1),
     route: trasaDoPolyline(jazda.points),
+    // Meno sa ukladá vedľa odkazu zámerne — odberateľa možno premenovať aj
+    // zmazať, kniha jázd má ostať čitateľná aj potom.
+    customer_id: args.odberatel?.id ?? null,
+    customer_name: args.odberatel?.name ?? null,
     external_source: ZDROJ,
     external_id: jazda.id,
     created_by: args.userId ?? null,

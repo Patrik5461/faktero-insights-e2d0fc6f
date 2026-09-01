@@ -107,6 +107,13 @@ export function Jazda({
   const [rozpoznana, setRozpoznana] = useState<BeziacaJazda | null>(null);
   const [ukoncujem, setUkoncujem] = useState(false);
   const [vyberAuta, setVyberAuta] = useState<Record<string, string>>({});
+  /*
+    Odberateľ, za ktorým sa išlo. Nepovinné: väčšina jázd je presun medzi
+    vlastnými miestami a vypĺňať pri nich zákazníka by bolo otravné. Keď zoznam
+    nepríde (bez signálu alebo firma odberateľov nemá), políčko sa nezobrazí.
+  */
+  const [odberatelia, setOdberatelia] = useState<Array<{ id: string; name: string }>>([]);
+  const [vyberOdberatela, setVyberOdberatela] = useState<Record<string, string>>({});
   const [vybavujem, setVybavujem] = useState<string | null>(null);
   const [trasaOtvorena, setTrasaOtvorena] = useState<string | null>(null);
   const cenaPaliva = useRef<number | null>(null);
@@ -242,9 +249,7 @@ export function Jazda({
       .then((pocet) => {
         if (pocet > 0) {
           toast.success(
-            pocet === 1
-              ? t("jz.bezSignaluOdoslana")
-              : t("jz.odoslanychJazd", { pocet }),
+            pocet === 1 ? t("jz.bezSignaluOdoslana") : t("jz.odoslanychJazd", { pocet }),
           );
         }
       })
@@ -301,6 +306,27 @@ export function Jazda({
     };
   }, [firma.id, vozidla, commander]);
 
+  useEffect(() => {
+    let zrusene = false;
+    void (async () => {
+      const { data } = await supabase
+        .from("customers")
+        .select("id, name")
+        .eq("company_id", firma.id)
+        .is("deleted_at", null)
+        .order("name")
+        .limit(300)
+        .then(
+          (r) => r,
+          () => ({ data: null }),
+        );
+      if (!zrusene && data) setOdberatelia(data as Array<{ id: string; name: string }>);
+    })();
+    return () => {
+      zrusene = true;
+    };
+  }, [firma.id]);
+
   /** Auto pre konkrétnu rozpoznanú jazdu; predvolené je to vybrané hore. */
   function autoPre(jazda: BufferedTrip): string {
     return vyberAuta[jazda.id] ?? vozidloId;
@@ -310,11 +336,13 @@ export function Jazda({
     const vehicleId = autoPre(jazda);
     if (!vehicleId) return toast.error(t("jz.vyberteVozidlo"));
     setVybavujem(jazda.id);
+    const zvoleny = vyberOdberatela[jazda.id];
     const r = await ulozRozpoznanuJazdu({
       jazda,
       companyId: firma.id,
       vehicleId,
       classification,
+      odberatel: odberatelia.find((o) => o.id === zvoleny) ?? null,
     });
     setVybavujem(null);
     if (!r.ok) return toast.error(r.chyba ?? t("jz.chybaUlozenia"));
@@ -384,10 +412,7 @@ export function Jazda({
       setUkladam(false);
       setKm(0);
       setOdkedy(null);
-      toast.error(
-        t("jz.bezPolohy"),
-        { duration: 8000 },
-      );
+      toast.error(t("jz.bezPolohy"), { duration: 8000 });
       return;
     }
 
@@ -456,10 +481,7 @@ export function Jazda({
           zapis,
           chyba: error.message,
         });
-        toast.success(
-          t("jz.ulozenaVTelefone", { km: vysledok.distance_km }),
-          { duration: 6000 },
-        );
+        toast.success(t("jz.ulozenaVTelefone", { km: vysledok.distance_km }), { duration: 6000 });
       } else {
         toast.success(
           `${t("jz.ulozenaKm", { km: vysledok.distance_km })}${vozidlo ? `, ${vozidlo.name}` : ""}`,
@@ -501,7 +523,9 @@ export function Jazda({
         title={t("jazdy.jazda")}
         subtitle={firma.name}
         onBack={onSpat}
-        footer={<HlavneTlacidlo onClick={() => setPridavam(true)}>{t("jz.pridatVozidlo")}</HlavneTlacidlo>}
+        footer={
+          <HlavneTlacidlo onClick={() => setPridavam(true)}>{t("jz.pridatVozidlo")}</HlavneTlacidlo>
+        }
       >
         <div className="grid place-items-center py-16 text-center">
           <Car className="mb-3 h-10 w-10 text-app-text-2/50" />
@@ -509,9 +533,7 @@ export function Jazda({
             {nezistene ? t("jz.bezPripojenia") : t("jz.bezVozidla")}
           </p>
           <p className="mt-1 text-xs text-app-text-2">
-            {nezistene
-              ? t("jz.bezZoznamu")
-              : t("jz.pridajteHo")}
+            {nezistene ? t("jz.bezZoznamu") : t("jz.pridajteHo")}
           </p>
         </div>
       </MobilObrazovka>
@@ -666,9 +688,7 @@ export function Jazda({
                 ? t("jz.rozpoznalaJazdu")
                 : t("jz.rozpoznalaJazdy", { pocet: cakajuce.length })}
             </div>
-            <p className="mt-1 text-xs text-app-text-2">
-              {t("jz.telefonNevie")}
-            </p>
+            <p className="mt-1 text-xs text-app-text-2">{t("jz.telefonNevie")}</p>
             <div className="mt-3 space-y-2">
               {cakajuce.map((j) => (
                 <div key={j.id} className="rounded-app-sm border border-app-ramik bg-app-karta p-3">
@@ -700,6 +720,25 @@ export function Jazda({
                       </option>
                     ))}
                   </select>
+
+                  {odberatelia.length > 0 && (
+                    <select
+                      value={vyberOdberatela[j.id] ?? ""}
+                      disabled={vybavujem === j.id}
+                      onChange={(e) =>
+                        setVyberOdberatela((v) => ({ ...v, [j.id]: e.target.value }))
+                      }
+                      aria-label={t("jz.odberatelPreJazdu")}
+                      className="mt-2 w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px] disabled:opacity-60"
+                    >
+                      <option value="">{t("jz.bezOdberatela")}</option>
+                      {odberatelia.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
 
                   <button
                     onClick={() => setTrasaOtvorena((t) => (t === j.id ? null : j.id))}
@@ -891,9 +930,7 @@ export function Jazda({
                     </span>
                   )}
                   {v.license_plate && (
-                    <span className="shrink-0 text-[13px] text-app-text-2">
-                      {v.license_plate}
-                    </span>
+                    <span className="shrink-0 text-[13px] text-app-text-2">{v.license_plate}</span>
                   )}
                 </button>
                 <button
@@ -954,9 +991,7 @@ export function Jazda({
           </div>
         </div>
 
-        <p className="text-xs text-app-text-2">
-          {t("jz.lenPocasPouzivania")}
-        </p>
+        <p className="text-xs text-app-text-2">{t("jz.lenPocasPouzivania")}</p>
       </div>
     </MobilObrazovka>
   );
@@ -1034,7 +1069,9 @@ export function NoveVozidlo({
     >
       <div className="space-y-3">
         <label className="block">
-          <span className="mb-1 block text-[13px] font-medium text-app-text-2">{t("jz.nazovVozidla")}</span>
+          <span className="mb-1 block text-[13px] font-medium text-app-text-2">
+            {t("jz.nazovVozidla")}
+          </span>
           <input
             value={nazov}
             onChange={(e) => setNazov(e.target.value)}
@@ -1065,9 +1102,7 @@ export function NoveVozidlo({
             placeholder={t("jz.spotrebaPriklad")}
             className="w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-3 py-2.5 text-[16px]"
           />
-          <span className="mt-1 block text-[12px] text-app-text-2">
-            {t("jz.nepovinneCena")}
-          </span>
+          <span className="mt-1 block text-[12px] text-app-text-2">{t("jz.nepovinneCena")}</span>
         </label>
       </div>
     </MobilObrazovka>

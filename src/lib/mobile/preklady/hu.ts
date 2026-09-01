@@ -302,6 +302,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "jz.zahoditOtazka": "Elveti ezt az utat? Nem kerül rögzítésre.",
   "jz.ukoncena": "Az út befejezve — sorolja be alább.",
   "jz.zahodena": "Út elvetve.",
+  "jz.odberatelPreJazdu": "Meglátogatott vevő",
+  "jz.bezOdberatela": "Nincs vevő",
   "jz.vozidloPreJazdu": "Jármű a felismert úthoz",
   "jz.telefonNevie": "A telefon nem tudja, melyik autóba ült be — ellenőrizze minden útnál.",
   "jz.rozpoznavat": "Utak automatikus felismerése",
@@ -325,7 +327,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "jz.pridajteHo": "Adja hozzá itt — elég a név és a rendszám, a többi a weben pótolható.",
   "jz.commander": "Ennek az autónak az útjait a Commander hozza",
   "jz.bezPripojenia": "Kapcsolat nélkül a járművek nem tölthetők be",
-  "jz.bezZoznamu": "A telefonon még nincs mentett lista. Nyissa meg egyszer ezt a képernyőt internettel.",
+  "jz.bezZoznamu":
+    "A telefonon még nincs mentett lista. Nyissa meg egyszer ezt a képernyőt internettel.",
   "jz.nepovinneCena": "Nem kötelező, de nélküle az út költsége nulla lesz.",
 
   /* skener, notifikácie, čísla dopredu */
@@ -335,7 +338,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "qr.namierte": "Irányítsa a QR-kódra",
   "qr.zrusitSkenovanie": "Beolvasás megszakítása",
   "qr.kameraNejde": "A kamerát nem sikerült elindítani. Próbálja lefényképezni a bizonylatot.",
-  "qr.kameraZamietnuta": "A kamerához való hozzáférés le van tiltva. Engedélyezze a telefon beállításaiban.",
+  "qr.kameraZamietnuta":
+    "A kamerához való hozzáférés le van tiltva. Engedélyezze a telefon beállításaiban.",
   "push.nazov": "Értesítések",
   "push.zistujem": "Ellenőrzés…",
   "push.zaregistrovane": "Az eszköz regisztrálva van, az értesítések meg fognak érkezni.",
@@ -348,20 +352,24 @@ export const hu: Partial<Record<Kluc, string>> = {
   "push.skusitZaregistrovat": "Regisztráció megkísérlése",
   "spolocne.chyba": "Hiba",
   "cisla.nazov": "Számla kiállítása jel nélkül, számmal együtt",
-  "cisla.vypnutePopis": "E nélkül a jel nélkül kiállított számla várakozik, és a kapcsolat helyreálltakor állítja ki magát — a számot csak akkor kapja meg.",
-  "cisla.zapnutePopis": "Előkészített számok: {pocet}. A jel nélkül kiállított számla azonnal számot kap, így a helyszínen átadható.",
+  "cisla.vypnutePopis":
+    "E nélkül a jel nélkül kiállított számla várakozik, és a kapcsolat helyreálltakor állítja ki magát — a számot csak akkor kapja meg.",
+  "cisla.zapnutePopis":
+    "Előkészített számok: {pocet}. A jel nélkül kiállított számla azonnal számot kap, így a helyszínen átadható.",
   "cisla.zapnut": "Bekapcsolás",
   "cisla.vypnut": "Kikapcsolás",
   "cisla.vypnute": "Kikapcsolva. A fel nem használt számok visszakerültek a sorba.",
   "cisla.zapnute": "Bekapcsolva. Az alkalmazásnak {pocet} száma áll készen.",
-  "cisla.trebaPripojenie": "A bekapcsoláshoz kapcsolat kell — az alkalmazás a kiszolgálótól kéri a számokat.",
+  "cisla.trebaPripojenie":
+    "A bekapcsoláshoz kapcsolat kell — az alkalmazás a kiszolgálótól kéri a számokat.",
   "cisla.nepodariloVypytat": "A számokat nem sikerült lekérni. Próbálja meg kicsit később.",
   "cisla.nepodariloPrepnut": "Nem sikerült átkapcsolni.",
 
   /* skener, firma, registrácia */
   "sken.naskenujte": "Olvassa be a blokk QR-kódját",
   "sken.aleboOdfotte": "vagy fényképezze le a bizonylatot",
-  "sken.kameraNejde": "A bizonylatot így is lefényképezheti vagy kiválaszthatja a fájlok közül — az alábbi gombok működnek.",
+  "sken.kameraNejde":
+    "A bizonylatot így is lefényképezheti vagy kiválaszthatja a fájlok közül — az alábbi gombok működnek.",
   "sken.odfotit": "Fényképezés",
   "sken.zGalerie": "Galériából",
   "sken.uhrada": "Fizetés",
@@ -375,7 +383,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "vf.podnadpis": "Ezek az adatok jelennek meg a számlákon",
   "vf.vytvaram": "Létrehozás…",
   "vf.vytvoritFirmu": "Cég létrehozása",
-  "vf.uvod": "A név elég — a többit később bármikor kiegészítheti a beállításokban. Ha megadja a cégjegyzékszámot, a címet és az adószámokat a nyilvántartásból töltjük be.",
+  "vf.uvod":
+    "A név elég — a többit később bármikor kiegészítheti a beállításokban. Ha megadja a cégjegyzékszámot, a címet és az adószámokat a nyilvántartásból töltjük be.",
   "vf.nazovFirmy": "Cégnév",
   "vf.ico": "Cégjegyzékszám",
   "vf.dic": "Adószám",
@@ -396,8 +405,10 @@ export const hu: Partial<Record<Kluc, string>> = {
   "vf.chyba.email": "Adjon meg érvényes céges e-mailt.",
   "vf.chyba.iban": "Az IBAN formátuma nem megfelelő.",
   "reg.potvrdteEmail": "Erősítse meg az e-mailjét",
-  "reg.potvrdenieText": "A(z) {email} fiók létrejött. Küldtünk rá egy hivatkozást — nyissa meg, és térjen ide vissza. Az alkalmazás magától észreveszi a megerősítést; ha mégsem, használja az alábbi gombot. Megerősítés nélkül nem lehet bejelentkezni.",
-  "reg.spamPriecinok": "Ha az e-mail pár percen belül nem érkezik meg, nézze meg a levélszemét mappát.",
+  "reg.potvrdenieText":
+    "A(z) {email} fiók létrejött. Küldtünk rá egy hivatkozást — nyissa meg, és térjen ide vissza. Az alkalmazás magától észreveszi a megerősítést; ha mégsem, használja az alábbi gombot. Megerősítés nélkül nem lehet bejelentkezni.",
+  "reg.spamPriecinok":
+    "Ha az e-mail pár percen belül nem érkezik meg, nézze meg a levélszemét mappát.",
   "reg.overujem": "Ellenőrzés…",
   "reg.uzSomPotvrdil": "Megerősítettem, tovább",
   "reg.posielam": "Küldés…",
@@ -417,7 +428,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "reg.uzMamUcet": "Van már fiókom, bejelentkezés",
   "reg.ucetJeVytvoreny": "A fiók létrejött.",
   "reg.registraciaZlyhala": "A regisztráció nem sikerült.",
-  "reg.nepotvrdene": "Még nincs megerősítve. Nyissa meg az e-mailben kapott hivatkozást, és próbálja újra.",
+  "reg.nepotvrdene":
+    "Még nincs megerősítve. Nyissa meg az e-mailben kapott hivatkozást, és próbálja újra.",
   "reg.emailPoslanyZnova": "Újraküldtük az e-mailt.",
   "reg.chyba.meno": "Adja meg a teljes nevét.",
   "reg.chyba.email": "Adjon meg érvényes e-mailt.",
@@ -439,22 +451,27 @@ export const hu: Partial<Record<Kluc, string>> = {
   "ponuky.vytvaram": "Árajánlat létrehozása…",
 
   /* kniha jázd — zvyšok */
-  "jz.odCasu": "{cas} óta. Ha megérkezett, zárja le — különben csak öt perc állás után áll le magától.",
+  "jz.odCasu":
+    "{cas} óta. Ha megérkezett, zárja le — különben csak öt perc állás után áll le magától.",
   "jz.rozpoznalaJazdu": "Az alkalmazás felismert egy utat",
   "jz.rozpoznalaJazdy": "Az alkalmazás utakat ismert fel ({pocet})",
-  "jz.commanderZvysok": ", így a telefonnak nem kell mérnie — válasszon másik autót, vagy hagyja kikapcsolva a felismerést.",
+  "jz.commanderZvysok":
+    ", így a telefonnak nem kell mérnie — válasszon másik autót, vagy hagyja kikapcsolva a felismerést.",
   "jz.typJazdy": "Út típusa",
   "jz.vozidlo": "Jármű",
   "jz.nazovVozidla": "Név",
   "jz.spotreba": "Fogyasztás (l/100 km)",
   "jz.spotrebaPriklad": "pl. 6,5",
-  "jz.vsimneSi": "Az alkalmazás magától észreveszi az utat, és értesítésben kérdezi meg, hogy üzleti volt-e.",
-  "jz.lenPocasPouzivania": "Ha a helymeghatározást csak „az alkalmazás használata közben” engedélyezte, hagyja nyitva az alkalmazást — a képernyő kikapcsolása után a telefon leállítja a mérést, és a kilométerek hibásak lennének. Az „Mindig” beállítással a zsebben is mér.",
+  "jz.vsimneSi":
+    "Az alkalmazás magától észreveszi az utat, és értesítésben kérdezi meg, hogy üzleti volt-e.",
+  "jz.lenPocasPouzivania":
+    "Ha a helymeghatározást csak „az alkalmazás használata közben” engedélyezte, hagyja nyitva az alkalmazást — a képernyő kikapcsolása után a telefon leállítja a mérést, és a kilométerek hibásak lennének. Az „Mindig” beállítással a zsebben is mér.",
   "jz.vyberteVozidlo": "Válasszon járművet.",
   "jz.odoslanychJazd": "{pocet} jel nélkül rögzített utat elküldtünk",
   "jz.uzJeVKnihe": "Ez az út már szerepel a nyilvántartásban — a másik alkalmazás rögzítette.",
   "jz.rozpoznanaUlozena": "Felismert út mentve — {km} km, {auto}",
-  "jz.bezPolohy": "Nem mértünk helyzetet, ezért az utat nem mentettük. Próbálja szabadban — épületben a helymeghatározás pontatlan —, és állítsa a hozzáférést „Mindig” értékre.",
+  "jz.bezPolohy":
+    "Nem mértünk helyzetet, ezért az utat nem mentettük. Próbálja szabadban — épületben a helymeghatározás pontatlan —, és állítsa a hozzáférést „Mindig” értékre.",
   "jz.ulozenaVTelefone": "Az utat a telefonon mentettük — {km} km. Kapcsolat esetén elküldjük.",
   "jz.ulozenaKm": "Út mentve — {km} km",
   "jz.historiaVozidla": "Útnyilvántartás — {auto}",
@@ -483,14 +500,17 @@ export const hu: Partial<Record<Kluc, string>> = {
   "faktury.vystavenychPocet": "Kiállított számlák: {pocet}.",
   "faktury.neuhradene": "Kifizetetlen",
   "faktury.odosluSaSamy2": "Maguktól elküldődnek, amint van térerő. Nem kell rá gondolnia.",
-  "faktury.bezZoznamu": "A telefonon még nincs mentett lista. Nyissa meg egyszer ezt a képernyőt internettel, utána offline is működik.",
+  "faktury.bezZoznamu":
+    "A telefonon még nincs mentett lista. Nyissa meg egyszer ezt a képernyőt internettel, utána offline is működik.",
   "faktury.vystavena": "Kiállítva",
   "faktury.splatna": "Esedékes",
   "faktury.uhradena": "Kifizetve",
   "faktury.odoslana": "Elküldve",
-  "faktury.cisloOstava": "Eltűnik a listáról, de a szám foglalt marad — a számsorban nem keletkezik lyuk.",
+  "faktury.cisloOstava":
+    "Eltűnik a listáról, de a szám foglalt marad — a számsorban nem keletkezik lyuk.",
   "jazdy.nacitavam": "Utak betöltése…",
-  "jazdy.prvaPribudne": "Az első a mérés befejezése után jelenik meg — vagy a GPS-egységből töltődik be, ha a jármű csatlakoztatva van.",
+  "jazdy.prvaPribudne":
+    "Az első a mérés befejezése után jelenik meg — vagy a GPS-egységből töltődik be, ha a jármű csatlakoztatva van.",
   "jazdy.filtre": "Szűrők",
   "jazdy.filterVsetky": "Összes",
   "jazdy.ztohoSukromne": "ebből magán",
@@ -512,7 +532,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "banka.zostatokSpolu": "Teljes egyenleg",
 
   /* nová faktúra — zvyšok */
-  "nf.zalohovaVysvetlenie": "A díjbekérő fizetési felszólítás, nem adóügyi bizonylat — nem kerül be az áfába, és saját számsorból kap számot. Fizetés után rendes számlát állít ki, és azon számolja el az előleget.",
+  "nf.zalohovaVysvetlenie":
+    "A díjbekérő fizetési felszólítás, nem adóügyi bizonylat — nem kerül be az áfába, és saját számsorból kap számot. Fizetés után rendes számlát állít ki, és azon számolja el az előleget.",
   "nf.ico": "Cégjegyzékszám",
   "nf.ulica": "Utca",
   "nf.mesto": "Város",
@@ -522,17 +543,22 @@ export const hu: Partial<Record<Kluc, string>> = {
   "nf.spolu": "Összesen",
   "nf.dph": "Áfa",
   "nf.vystavenie": "Kiállítás",
-  "nf.bezIbanu": "A cégnek nincs IBAN-ja — a számlán nem lesz hova fizetni. Adja meg a weben, a cég beállításaiban.",
-  "nf.ziadnaZalohaPopis": "Ennek az ügyfélnek nincs elszámolatlan díjbekérője. Úgy állíthat ki egyet, hogy az új számla első lépésében a(z) {zalohova} lehetőséget választja.",
-  "nf.cisloJeVase": "A szám az Öné, és senki másnak nem adjuk ki — nyugodtan átadhatja az ügyfélnek. A PDF elkészül, és a számla magától elmegy, amint van térerő.",
-  "nf.odlozenaPopis": "Amint van térerő, magától kiállítódik számmal együtt. Egyelőre nincs száma, így nem tudja bediktálni az ügyfélnek — ha erre szüksége van, kapcsolja be a beállításokban az előre kiadott számokat.",
+  "nf.bezIbanu":
+    "A cégnek nincs IBAN-ja — a számlán nem lesz hova fizetni. Adja meg a weben, a cég beállításaiban.",
+  "nf.ziadnaZalohaPopis":
+    "Ennek az ügyfélnek nincs elszámolatlan díjbekérője. Úgy állíthat ki egyet, hogy az új számla első lépésében a(z) {zalohova} lehetőséget választja.",
+  "nf.cisloJeVase":
+    "A szám az Öné, és senki másnak nem adjuk ki — nyugodtan átadhatja az ügyfélnek. A PDF elkészül, és a számla magától elmegy, amint van térerő.",
+  "nf.odlozenaPopis":
+    "Amint van térerő, magától kiállítódik számmal együtt. Egyelőre nincs száma, így nem tudja bediktálni az ügyfélnek — ha erre szüksége van, kapcsolja be a beállításokban az előre kiadott számokat.",
   "nf.hotovo": "Kész",
   "nf.pripravujemPdf": "PDF előkészítése…",
   "nf.bezPripojeniaNadpis": "Nincs kapcsolat",
 
   /* hlavná obrazovka appky */
   "app.chybaObrazovky": "Ezt a képernyőt nem sikerült megnyitni.",
-  "app.slabePripojenie": "Általában gyenge kapcsolat okozza. Próbálja újra, vagy jelentkezzen be újra.",
+  "app.slabePripojenie":
+    "Általában gyenge kapcsolat okozza. Próbálja újra, vagy jelentkezzen be újra.",
   "app.skusitZnova": "Újrapróbálás",
   "app.prihlasitNanovo": "Bejelentkezés újra",
   "app.diagnostika": "Diagnosztika",
@@ -548,7 +574,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "app.odomknitePokracujte": "Oldja fel biometriával, és folytassa ott, ahol abbahagyta.",
   "app.pridatDalsiuFirmu": "További cég hozzáadása",
   "app.odvolatZiadost": "Kérelem visszavonása",
-  "app.zFakturyPrecita": "A számláról beolvassuk a szállítót, a dátumot, az összeget és az áfát. Mentés előtt ellenőrizze az adatokat.",
+  "app.zFakturyPrecita":
+    "A számláról beolvassuk a szállítót, a dátumot, az összeget és az áfát. Mentés előtt ellenőrizze az adatokat.",
   "app.vyberteUhradu": "Válasszon fizetési módot",
   "app.povinne": "Kötelező",
   "app.vyberteMoznost": "Válasszon egy lehetőséget — enélkül a bizonylat nem menthető.",
@@ -580,7 +607,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "app.vyplnteEmailHeslo": "Töltse ki az e-mailt és a jelszót is.",
   "app.prilohaNenahrata": "A mellékletet nem sikerült feltölteni, a bizonylatot enélkül mentem.",
   "app.dokladUlozeny": "Bizonylat mentve",
-  "app.bezPripojeniaFirmy": "Nincs kapcsolat, és a telefonon még nincs cégjegyzék. Nyissa meg egyszer az alkalmazást internettel.",
+  "app.bezPripojeniaFirmy":
+    "Nincs kapcsolat, és a telefonon még nincs cégjegyzék. Nyissa meg egyszer az alkalmazást internettel.",
   "app.fakturaOdoslana": "A jel nélkül kiállított számlát elküldtük.",
   "app.odoslanychOdlozenych": "Elküldött várakozó számlák: {pocet}.",
   "app.jazdaUlozena": "Felismert út mentve",
@@ -590,7 +618,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "app.prihlasitSa": "Bejelentkezés",
   "app.odomykam": "Feloldás…",
   "app.odomknut": "Feloldás",
-  "app.bezFirmy": "Ehhez a fiókhoz még nem tartozik cég. Enélkül a bizonylatoknak nincs hova kerülniük — hozza létre itt.",
+  "app.bezFirmy":
+    "Ehhez a fiókhoz még nem tartozik cég. Enélkül a bizonylatoknak nincs hova kerülniük — hozza létre itt.",
   "app.blocekQr": "Blokk QR-kóddal",
   "app.fakturaPdf": "Számla PDF-ben",
   "app.viacstranovyDoklad": "Többoldalas bizonylat",
@@ -619,7 +648,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "spolocne.den5": "nap",
 
   /* množné tvary */
-  "app.cakajuceFaktury": "{pocet} vár a telefonon elküldésre. Csatlakozzon, és nyissa meg a Kiállított számlákat — utána ki tud jelentkezni.",
+  "app.cakajuceFaktury":
+    "{pocet} vár a telefonon elküldésre. Csatlakozzon, és nyissa meg a Kiállított számlákat — utána ki tud jelentkezni.",
   "spolocne.faktura1": "számla",
   "spolocne.faktura2": "számla",
   "spolocne.faktura5": "számla",
@@ -628,7 +658,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "app.odstranitStranu": "{n}. oldal eltávolítása",
 
   /* ponuky — prázdny zoznam */
-  "ponuky.ziadnePopis2": "Az árajánlatot ugyanúgy készíti, mint a számlát — és ha az ügyfél elfogadja, egy koppintással számla lesz belőle.",
+  "ponuky.ziadnePopis2":
+    "Az árajánlatot ugyanúgy készíti, mint a számlát — és ha az ügyfél elfogadja, egy koppintással számla lesz belőle.",
 
   /* drobnosti — kroky a stavy */
   "nf.oprava": "{cislo} javítása",
@@ -656,7 +687,8 @@ export const hu: Partial<Record<Kluc, string>> = {
 
   /* engedélyek az útnyilvántartáshoz (Android) */
   "pov.nadpis": "Hogy az utak maguktól rögzüljenek",
-  "pov.uvod": "Az útnyilvántartás a háttérben méri az útvonalat — akkor is, ha a kijelző sötét és a telefon a zsebben van. E nélkül a kilométerek nem jönnének ki. A helyadatot csak az út kiszámításához használjuk, sehová nem küldjük.",
+  "pov.uvod":
+    "Az útnyilvántartás a háttérben méri az útvonalat — akkor is, ha a kijelző sötét és a telefon a zsebben van. E nélkül a kilométerek nem jönnének ki. A helyadatot csak az út kiszámításához használjuk, sehová nem küldjük.",
   "pov.poloha": "Helyadat — hogy az utat egyáltalán mérni lehessen.",
   "pov.notifikacie": "Értesítések — hogy az alkalmazás az út után megkérdezhesse, üzleti volt-e.",
   "pov.pohyb": "Mozgásérzékelők — hogy az utat gyorsabban felismerje.",
@@ -664,10 +696,12 @@ export const hu: Partial<Record<Kluc, string>> = {
   "pov.povolit": "Engedélyezés",
   "pov.pytamSa": "Kérdezem…",
   "pov.neskor": "Később",
-  "pov.vzdyNastavenia": "Még egy dolog: a „Mindig“ helyhozzáférést az Android csak a beállításokban engedi átkapcsolni. Megnyitjuk — válassza az Engedélyek → Helyadatok → Mindig engedélyezve lehetőséget.",
+  "pov.vzdyNastavenia":
+    "Még egy dolog: a „Mindig“ helyhozzáférést az Android csak a beállításokban engedi átkapcsolni. Megnyitjuk — válassza az Engedélyek → Helyadatok → Mindig engedélyezve lehetőséget.",
   "pov.otvoritNastavenia": "Beállítások megnyitása",
   "pov.hotovo": "Kész",
-  "pov.zvysokNastavenia": "Ezt ablakból már nem lehet engedélyezni — az Android csak az alkalmazás beállításaiban kínálja. Megnyitjuk; keresse az Engedélyek pontot.",
+  "pov.zvysokNastavenia":
+    "Ezt ablakból már nem lehet engedélyezni — az Android csak az alkalmazás beállításaiban kínálja. Megnyitjuk; keresse az Engedélyek pontot.",
   "app.spustam": "A Faktero indítása… ({faza}) · {balicek}",
   "app.startZasekol": "Az indítás elakadt a(z) „{faza}” lépésnél.",
   "app.balicek": "csomag {peciatka}",
@@ -781,6 +815,9 @@ export const hu: Partial<Record<Kluc, string>> = {
   "kj.jazd1": "út",
   "kj.jazd2": "út",
   "kj.jazd5": "út",
+  "kj.nezapisanaJedna": "Egy út még nincs rögzítve",
+  "kj.nezapisaneJazdy": "Nem rögzített utak ({pocet})",
+  "kj.nezapisanePopis": "Koppintson a naplóba rögzítéshez — addig nem számít bele a hónapba.",
   "kj.bezJazd": "Ebben a hónapban még nincs út",
   "kj.bezJazdPopis": "Az elsőt az alábbi zöld gombbal indíthatja.",
 };
