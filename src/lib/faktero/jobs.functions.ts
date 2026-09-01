@@ -294,13 +294,46 @@ export const setJobStatus = createServerFn({ method: "POST" })
     return { ok: true, status: data.status };
   });
 
+/**
+ * Doklady, ktoré držia zákazku pri živote. Zoznam sedí s triggerom
+ * `jobs_block_delete_with_documents` — keď sa mení jeden, musí sa aj druhý.
+ */
+const NAVIAZANE: Array<[tabulka: string, popis: string]> = [
+  ["invoices", "faktúry"],
+  ["purchase_invoices", "prijaté faktúry"],
+  ["stock_movements", "skladové pohyby"],
+  ["trips", "jazdy"],
+  ["purchase_orders", "objednávky u dodávateľa"],
+  ["sales_orders", "prijaté objednávky"],
+  ["quotes", "ponuky"],
+];
+
+async function naviazaneDoklady(supabase: any, jobId: string): Promise<string[]> {
+  const najdene: string[] = [];
+  for (const [tabulka, popis] of NAVIAZANE) {
+    const { count } = await supabase
+      .from(tabulka)
+      .select("id", { count: "exact", head: true })
+      .eq("job_id", jobId);
+    if (count) najdene.push(`${popis} (${count})`);
+  }
+  return najdene;
+}
+
 export const deleteJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => CompanyScoped.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const job = await nacitajZakazku(context.supabase, data.company_id, data.id);
-    // Zákazku s dokladmi odmietne aj trigger v databáze; toto je len preto, aby
-    // sa človek dozvedel zrozumiteľný dôvod namiesto chyby z Postgresu.
+    // Zákazku s dokladmi odmietne aj trigger v databáze, ten ale povie len to, že
+    // „nejaké" doklady existujú. Tu ich vymenujeme, aby človek vedel, čo odpojiť.
+    const naviazane = await naviazaneDoklady(context.supabase, job.id);
+    if (naviazane.length) {
+      throw new Error(
+        `Zákazka sa nedá zmazať, sú na ňu naviazané doklady: ${naviazane.join(", ")}. ` +
+          `Odpojte ich od zákazky alebo ju len uzavrite.`,
+      );
+    }
     const { error } = await context.supabase
       .from("jobs")
       .delete()

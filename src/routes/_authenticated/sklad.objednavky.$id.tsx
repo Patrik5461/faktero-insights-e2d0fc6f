@@ -172,34 +172,37 @@ function PurchaseOrderDetail() {
 
           <div className="flex flex-wrap gap-2">
             {stav === "draft" && (
-              <>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() =>
-                    akcia(
-                      () => doSend({ data: { company_id: cid!, id } }),
-                      "Objednávka je odoslaná — od teraz sa počíta ako tovar na ceste.",
-                    )
-                  }
-                  className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-                >
-                  <Send className="h-4 w-4" /> Označiť ako odoslanú
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() =>
-                    akcia(async () => {
-                      await doDelete({ data: { company_id: cid!, id } });
-                      nav({ to: "/sklad/objednavky" });
-                    })
-                  }
-                  className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
-                >
-                  <Trash2 className="h-4 w-4" /> Zmazať
-                </button>
-              </>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  akcia(
+                    () => doSend({ data: { company_id: cid!, id } }),
+                    "Objednávka je odoslaná — od teraz sa počíta ako tovar na ceste.",
+                  )
+                }
+                className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" /> Označiť ako odoslanú
+              </button>
+            )}
+            {/* Zrušená objednávka je len riadok v zozname — nech sa dá upratať.
+                Či z nej neprišiel tovar, dozerá server. */}
+            {(stav === "draft" || stav === "cancelled") && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  if (!confirm("Naozaj zmazať objednávku?")) return;
+                  akcia(async () => {
+                    await doDelete({ data: { company_id: cid!, id } });
+                    nav({ to: "/sklad/objednavky" });
+                  });
+                }}
+                className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" /> Zmazať
+              </button>
             )}
             {otvorena && (
               <button

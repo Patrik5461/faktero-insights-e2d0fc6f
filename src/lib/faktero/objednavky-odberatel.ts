@@ -80,11 +80,13 @@ export function jeOtvorena(stav: StavPrijatejObjednavky): boolean {
 }
 
 /**
- * Zmazať sa dá len rozpracovaná objednávka. Potvrdená je záväzok voči
- * odberateľovi — tá sa ruší, aby po nej ostala stopa.
+ * Zmazať sa dá rozpracovaná a zrušená objednávka. Potvrdená je záväzok voči
+ * odberateľovi — tá sa najprv ruší, aby po nej ostala stopa. Keď je raz
+ * zrušená, je to len riadok v zozname a človek ho musí vedieť upratať;
+ * na to, či z nej predsa len nevisí faktúra, dozerá server.
  */
 export function saDaZmazat(stav: StavPrijatejObjednavky): boolean {
-  return stav === "draft";
+  return stav === "draft" || stav === "cancelled";
 }
 
 /** Rezervovať sklad má zmysel len na potvrdenú a ešte nevybavenú objednávku. */

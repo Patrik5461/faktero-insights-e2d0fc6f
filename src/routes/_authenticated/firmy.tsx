@@ -4,8 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { CreateCompanyDialog } from "@/components/faktero/CreateCompanyDialog";
 import { getActiveCompanyId, setActiveCompanyId } from "@/lib/faktero/active-company";
-import { Plus, Check, Building2 } from "lucide-react";
+import { Plus, Check, Building2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { zmazFirmuFn } from "@/lib/faktero/firma-zmazanie.functions";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 
 export const Route = createFileRoute("/_authenticated/firmy")({
   head: () => ({ meta: [{ title: "Správa firiem — Faktero" }] }),
@@ -18,6 +21,8 @@ function CompanyManagementPage() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [activeId, setAid] = useState<string | null>(getActiveCompanyId());
   const [open, setOpen] = useState(false);
+  const [mazem, setMazem] = useState<Row | null>(null);
+  const zmazFirmu = useServerFn(zmazFirmuFn);
 
   async function load() {
     // Bez filtra na seba vráti RLS aj členstvá kolegov a firma sa v zozname
@@ -46,6 +51,24 @@ function CompanyManagementPage() {
   useEffect(() => {
     load();
   }, []);
+
+  /**
+   * Po zmazaní firmy sa treba prepnúť inam — inak by celá aplikácia ukazovala
+   * na firmu, ktorá už neexistuje, a každá stránka by skončila prázdna.
+   */
+  async function poZmazani(zmazana: Row) {
+    setMazem(null);
+    toast.success(`Firma ${zmazana.name} je zmazaná.`);
+    if (zmazana.id === activeId) {
+      const ina = (rows ?? []).find((r) => r.id !== zmazana.id);
+      if (ina) {
+        setActiveCompanyId(ina.id);
+        window.location.assign("/dashboard");
+        return;
+      }
+    }
+    await load();
+  }
 
   function switchTo(id: string) {
     setActiveCompanyId(id);
@@ -135,6 +158,17 @@ function CompanyManagementPage() {
                       >
                         Pozvať
                       </Link>
+                      {/* Skúšobná firma sa dala doteraz len založiť. Mazať smie
+                          majiteľ a len keď mu ostane iná — poslednú firmu rieši
+                          zrušenie účtu, ktoré má odklad. */}
+                      {r.role === "owner" && (rows?.length ?? 0) > 1 && (
+                        <button
+                          onClick={() => setMazem(r)}
+                          className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Zmazať
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -144,6 +178,86 @@ function CompanyManagementPage() {
         </div>
       </PageBody>
       <CreateCompanyDialog open={open} onOpenChange={setOpen} onCreated={load} />
+      {mazem && (
+        <ZmazanieFirmyDialog
+          firma={mazem}
+          onClose={() => setMazem(null)}
+          onZmazat={async (potvrdenie) => {
+            await zmazFirmu({ data: { company_id: mazem.id, potvrdenie } });
+            await poZmazani(mazem);
+          }}
+        />
+      )}
     </>
+  );
+}
+
+/**
+ * Zmazanie firmy je nevratné a berie so sebou doklady, sklad aj prílohy —
+ * preto sa názov prepisuje ručne. Server ho kontroluje ešte raz.
+ */
+function ZmazanieFirmyDialog({
+  firma,
+  onClose,
+  onZmazat,
+}: {
+  firma: Row;
+  onClose: () => void;
+  onZmazat: (potvrdenie: string) => Promise<void>;
+}) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  useZatvorNaEscape(onClose);
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Zmazať firmu ${firma.name}`}
+        className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-base font-semibold">Zmazať firmu {firma.name}?</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Zmažú sa všetky doklady, sklad, jazdy aj prílohy tejto firmy. Vrátiť sa to nedá. Ak si to
+          chcete nechať, firmu len prestaňte používať.
+        </p>
+        <label className="mt-4 block text-xs font-medium text-muted-foreground">
+          Prepíšte názov firmy
+        </label>
+        <input
+          autoFocus
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={firma.name}
+          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+        />
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+          >
+            Späť
+          </button>
+          <button
+            disabled={busy || text.trim() !== firma.name.trim()}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await onZmazat(text);
+              } catch (e: any) {
+                toast.error(e?.message ?? "Firmu sa nepodarilo zmazať.");
+              } finally {
+                setBusy(false);
+              }
+            }}
+            className="rounded-md bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            {busy ? "Mažem…" : "Zmazať natrvalo"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

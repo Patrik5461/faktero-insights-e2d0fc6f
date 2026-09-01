@@ -346,8 +346,19 @@ export const deleteSalesOrder = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!o) throw new Error("Objednávka sa nenašla.");
     // Potvrdená objednávka je záväzok voči odberateľovi — tá sa ruší, nie maže.
-    if (o.status !== "draft") {
-      throw new Error("Zmazať sa dá len rozpracovaná objednávka. Potvrdenú zrušte.");
+    if (o.status !== "draft" && o.status !== "cancelled") {
+      throw new Error(
+        "Zmazať sa dá rozpracovaná alebo zrušená objednávka. Potvrdenú najprv zrušte.",
+      );
+    }
+    // Zrušiť sa dá aj čiastočne vyfakturovaná objednávka. Taká sa mazať nesmie —
+    // faktúra sa na ňu odvoláva a po zmazaní by odkaz viedol do prázdna.
+    const { count: faktury } = await context.supabase
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("sales_order_id", data.id);
+    if (faktury) {
+      throw new Error(`Z objednávky už bola vystavená faktúra (${faktury}), zmazať sa preto nedá.`);
     }
     const { error } = await context.supabase
       .from("sales_orders")

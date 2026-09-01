@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Plus, Pencil, Power, Fuel } from "lucide-react";
+import { Plus, Pencil, Power, Fuel, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 
@@ -71,6 +71,42 @@ function VehiclesPage() {
     load();
   }
 
+  /**
+   * Omylom pridané vozidlo sa dalo len deaktivovať a v zozname ostávalo
+   * navždy. Zmazať sa dá, kým naň nevisia jazdy ani tankovania — tie drží
+   * cudzí kľúč s RESTRICT, ale surová hláška z Postgresu človeku nepovie nič.
+   */
+  async function zmazVozidlo(v: any) {
+    const [{ count: jazdy }, { count: tankovania }] = await Promise.all([
+      supabase.from("trips").select("id", { count: "exact", head: true }).eq("vehicle_id", v.id),
+      supabase
+        .from("fuel_records")
+        .select("id", { count: "exact", head: true })
+        .eq("vehicle_id", v.id),
+    ]);
+    if (jazdy || tankovania) {
+      const co = [jazdy && `jazdy (${jazdy})`, tankovania && `tankovania (${tankovania})`]
+        .filter(Boolean)
+        .join(" a ");
+      return toast.error(
+        `Vozidlo sa nedá zmazať, sú naň naviazané ${co}. Namiesto toho ho deaktivujte.`,
+      );
+    }
+    if (!confirm(`Naozaj zmazať vozidlo ${v.name}?`)) return;
+    const { error } = await supabase.from("vehicles").delete().eq("id", v.id);
+    if (error) return toast.error(error.message);
+    toast.success("Vozidlo zmazané");
+    load();
+  }
+
+  async function zmazTankovanie(f: any) {
+    if (!confirm("Naozaj zmazať tento záznam o tankovaní?")) return;
+    const { error } = await supabase.from("fuel_records").delete().eq("id", f.id);
+    if (error) return toast.error(error.message);
+    toast.success("Tankovanie zmazané");
+    load();
+  }
+
   return (
     <>
       <PageHeader
@@ -119,6 +155,14 @@ function VehiclesPage() {
                   >
                     <Power className="h-4 w-4" />
                   </button>
+                  <button
+                    onClick={() => zmazVozidlo(v)}
+                    title="Zmazať vozidlo"
+                    aria-label="Zmazať vozidlo"
+                    className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
               <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
@@ -157,12 +201,13 @@ function VehiclesPage() {
                 <th className="p-3 text-right">Spolu</th>
                 <th className="p-3">Stanica</th>
                 <th className="p-3">Doklad</th>
+                <th className="p-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {fuel.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="p-6 text-center text-muted-foreground">
                     Žiadne záznamy.
                   </td>
                 </tr>
@@ -180,6 +225,16 @@ function VehiclesPage() {
                   </td>
                   <td className="p-3">{f.station_name ?? "—"}</td>
                   <td className="p-3">{f.receipt_number ?? "—"}</td>
+                  <td className="p-3 text-right">
+                    <button
+                      onClick={() => zmazTankovanie(f)}
+                      title="Zmazať tankovanie"
+                      aria-label="Zmazať tankovanie"
+                      className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

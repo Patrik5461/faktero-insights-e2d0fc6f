@@ -96,11 +96,14 @@ describe("jeOtvorena, saDaZmazat, maRezervovat", () => {
     expect(jeOtvorena("cancelled")).toBe(false);
   });
 
-  // Potvrdená objednávka je záväzok voči odberateľovi — tá sa ruší, nie maže.
-  it("mazať sa dá len rozpracovaná", () => {
+  // Potvrdená objednávka je záväzok voči odberateľovi — tá sa najprv ruší.
+  // Zrušená už je len riadok v zozname, ten sa upratať dá.
+  it("mazať sa dá rozpracovaná a zrušená", () => {
     expect(saDaZmazat("draft")).toBe(true);
+    expect(saDaZmazat("cancelled")).toBe(true);
     expect(saDaZmazat("confirmed")).toBe(false);
-    expect(saDaZmazat("cancelled")).toBe(false);
+    expect(saDaZmazat("partially_invoiced")).toBe(false);
+    expect(saDaZmazat("completed")).toBe(false);
   });
 
   it("rezervuje sa len potvrdená a čiastočne vybavená", () => {

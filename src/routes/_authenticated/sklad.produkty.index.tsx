@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Archive,
   ArchiveRestore,
+  Trash2,
   X,
   Check,
   Settings,
@@ -377,6 +378,41 @@ function StockItemsPage() {
     clearSelection();
     load();
   }
+  /**
+   * Archív bola doteraz jednosmerka — karta založená omylom v ňom ostala
+   * navždy. Zmazať sa dá, kým na nej nevisí pohyb ani inventúra; tie drží
+   * databáza s RESTRICT, tu ide o zrozumiteľnú hlášku namiesto chyby Postgresu.
+   */
+  async function zmazKartu(s: any) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    const [{ count: pohyby }, { count: inventury }] = await Promise.all([
+      supabase
+        .from("stock_movements")
+        .select("id", { count: "exact", head: true })
+        .eq("stock_item_id", s.id),
+      supabase
+        .from("inventory_count_items")
+        .select("id", { count: "exact", head: true })
+        .eq("stock_item_id", s.id),
+    ]);
+    if (pohyby || inventury) {
+      const drzi = [pohyby && `pohyby (${pohyby})`, inventury && `inventúry (${inventury})`]
+        .filter(Boolean)
+        .join(" a ");
+      return toast.error(`Kartu sa nedá zmazať, sú na nej ${drzi}. V archíve ale prekážať nebude.`);
+    }
+    if (!confirm("Zmazať skladovú kartu natrvalo? Vrátiť sa to nedá.")) return;
+    const { error } = await supabase
+      .from("stock_items")
+      .delete()
+      .eq("id", s.id)
+      .eq("company_id", cid);
+    if (error) return toast.error(error.message);
+    toast.success("Karta zmazaná");
+    load();
+  }
+
   async function bulkRestore() {
     const cid = getActiveCompanyId();
     if (!cid || !selectedIds.length) return;
@@ -857,24 +893,33 @@ function StockItemsPage() {
                     <td className="p-3 text-right">
                       <div className="inline-flex items-center gap-1">
                         {isArchived ? (
-                          <button
-                            onClick={async () => {
-                              const cid = getActiveCompanyId();
-                              if (!cid) return;
-                              const { error } = await supabase
-                                .from("stock_items")
-                                .update({ archived_at: null })
-                                .eq("id", s.id)
-                                .eq("company_id", cid);
-                              if (error) return toast.error(error.message);
-                              toast.success("Obnovené");
-                              load();
-                            }}
-                            className="rounded p-1.5 hover:bg-muted"
-                            title="Obnoviť z archívu"
-                          >
-                            <ArchiveRestore className="h-4 w-4" />
-                          </button>
+                          <>
+                            <button
+                              onClick={async () => {
+                                const cid = getActiveCompanyId();
+                                if (!cid) return;
+                                const { error } = await supabase
+                                  .from("stock_items")
+                                  .update({ archived_at: null })
+                                  .eq("id", s.id)
+                                  .eq("company_id", cid);
+                                if (error) return toast.error(error.message);
+                                toast.success("Obnovené");
+                                load();
+                              }}
+                              className="rounded p-1.5 hover:bg-muted"
+                              title="Obnoviť z archívu"
+                            >
+                              <ArchiveRestore className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => zmazKartu(s)}
+                              className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                              title="Zmazať natrvalo"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </>
                         ) : (
                           <>
                             {/* Skladová karta (pohyby, rezervácie, priemerná

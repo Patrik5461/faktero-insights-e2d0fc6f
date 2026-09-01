@@ -263,9 +263,21 @@ export const deletePurchaseOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => CompanyScoped.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { order } = await nacitajObjednavku(context.supabase, data.company_id, data.id);
-    if (order.status !== "draft") {
-      throw new Error("Zmazať možno len rozpracovanú objednávku. Odoslanú zrušte.");
+    const { order, items } = await nacitajObjednavku(context.supabase, data.company_id, data.id);
+    if (order.status !== "draft" && order.status !== "cancelled") {
+      throw new Error(
+        "Zmazať možno rozpracovanú alebo zrušenú objednávku. Odoslanú najprv zrušte.",
+      );
+    }
+    // Zrušiť sa dá aj objednávka, z ktorej už niečo prišlo na sklad. Tá musí
+    // ostať — príjem sa na ňu odvoláva a bez nej by sa nedalo dohľadať, odkiaľ
+    // tovar prišiel.
+    const prijate = (items ?? []).reduce(
+      (s: number, i: any) => s + Number(i.received_quantity ?? 0),
+      0,
+    );
+    if (prijate > 0) {
+      throw new Error("Z objednávky už bol prijatý tovar, zmazať sa preto nedá.");
     }
     const { error } = await context.supabase.from("purchase_orders").delete().eq("id", order.id);
     if (error) throw new Error(error.message);

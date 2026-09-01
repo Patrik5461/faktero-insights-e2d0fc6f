@@ -5,7 +5,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sklad/nastavenia")({
   head: () => ({ meta: [{ title: "Sklady — Faktero" }] }),
@@ -70,6 +70,50 @@ function WarehousesPage() {
     load();
   }
 
+  /**
+   * Sklad založený omylom sa nedal odstrániť vôbec. Mazať sa dá, kým v ňom nie
+   * je pohyb, inventúra, presun ani zásoba — na to má databáza RESTRICT, tu ide
+   * len o zrozumiteľný dôvod. Posledný sklad ostáva: bez neho si ho stránka pri
+   * najbližšom otvorení aj tak vyrobí znova.
+   */
+  async function zmaz(w: any) {
+    if (rows.length <= 1) {
+      return toast.error("Aspoň jeden sklad musí ostať.");
+    }
+    const [{ count: pohyby }, { count: inventury }, { count: presuny }, { data: zasoby }] =
+      await Promise.all([
+        supabase
+          .from("stock_movements")
+          .select("id", { count: "exact", head: true })
+          .eq("warehouse_id", w.id),
+        supabase
+          .from("inventory_counts")
+          .select("id", { count: "exact", head: true })
+          .eq("warehouse_id", w.id),
+        supabase
+          .from("stock_transfers")
+          .select("id", { count: "exact", head: true })
+          .or(`warehouse_from_id.eq.${w.id},warehouse_to_id.eq.${w.id}`),
+        supabase.from("stock_levels").select("quantity").eq("warehouse_id", w.id).gt("quantity", 0),
+      ]);
+    const drzi = [
+      pohyby && `pohyby (${pohyby})`,
+      inventury && `inventúry (${inventury})`,
+      presuny && `presuny (${presuny})`,
+      zasoby?.length && `zásoba na ${zasoby.length} kartách`,
+    ].filter(Boolean);
+    if (drzi.length) {
+      return toast.error(
+        `Sklad sa nedá zmazať, sú v ňom ${drzi.join(", ")}. Namiesto toho ho nastavte ako neaktívny.`,
+      );
+    }
+    if (!confirm(`Naozaj zmazať sklad ${w.name}?`)) return;
+    const { error } = await supabase.from("warehouses").delete().eq("id", w.id);
+    if (error) return toast.error(error.message);
+    toast.success("Sklad zmazaný");
+    load();
+  }
+
   return (
     <>
       <PageHeader
@@ -124,6 +168,14 @@ function WarehousesPage() {
                   <td className="p-3 text-right">
                     <button onClick={() => setEditing(w)} className="rounded p-1.5 hover:bg-muted">
                       <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => zmaz(w)}
+                      title="Zmazať sklad"
+                      aria-label="Zmazať sklad"
+                      className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </td>
                 </tr>

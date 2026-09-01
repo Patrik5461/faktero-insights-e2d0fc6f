@@ -144,6 +144,13 @@ function JobDetail() {
   const j = data.job;
   const v = data.vyhodnotenie;
   const otvorena = j.status === "active";
+  const maDoklady = Boolean(
+    data.faktury?.length ||
+    data.prijate_faktury?.length ||
+    data.pohyby?.length ||
+    data.jazdy?.length ||
+    data.objednavky?.length,
+  );
   const pole = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
   const popis = "mb-1 block text-xs font-medium text-muted-foreground";
 
@@ -497,27 +504,30 @@ function JobDetail() {
           ])}
         />
 
-        {otvorena && (
-          <div className="mt-8 border-t border-border pt-4">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                if (!confirm(`Naozaj zmazať zákazku ${j.job_number}?`)) return;
-                akcia(async () => {
-                  await doDelete({ data: { company_id: cid!, id } });
-                  nav({ to: "/zakazky" });
-                });
-              }}
-              className="inline-flex items-center gap-1 text-sm text-destructive hover:underline disabled:opacity-50"
-            >
-              <Trash2 className="h-4 w-4" /> Zmazať zákazku
-            </button>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Zmazať sa dá len zákazka bez dokladov. Rozbehnutú zákazku uzavrite.
-            </p>
-          </div>
-        )}
+        {/* Mazanie nezávisí od stavu — uzavretá zákazka bez dokladov je rovnaký
+            omyl ako otvorená a človek ju musel vedieť dostať preč. Bránia jej
+            len naviazané doklady; tie vymenuje chyba zo servera. */}
+        <div className="mt-8 border-t border-border pt-4">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              if (!confirm(`Naozaj zmazať zákazku ${j.job_number}?`)) return;
+              akcia(async () => {
+                await doDelete({ data: { company_id: cid!, id } });
+                nav({ to: "/zakazky" });
+              });
+            }}
+            className="inline-flex items-center gap-1 text-sm text-destructive hover:underline disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" /> Zmazať zákazku
+          </button>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {maDoklady
+              ? "Zákazka má naviazané doklady — najprv ich od nej odpojte, inak ju možno len uzavrieť."
+              : "Zmazať sa dá zákazka bez dokladov. Rozbehnutú radšej uzavrite."}
+          </p>
+        </div>
       </PageBody>
     </>
   );
