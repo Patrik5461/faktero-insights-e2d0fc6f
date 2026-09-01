@@ -19,6 +19,15 @@ export type GeoVlastnosti = {
   label?: string | null;
 };
 
+/**
+ * Má text vôbec písmeno? Pelias niekedy vráti ako ulicu holé parcelné číslo
+ * („1279"). Riadok „1279, Trnava" v knihe jázd nikomu nič nepovie, tak taký
+ * údaj zahodíme a ostane samotné mesto.
+ */
+function maPismeno(s: string | null | undefined): boolean {
+  return !!s && /\p{L}/u.test(s);
+}
+
 /** Mesto, ako ho pozná človek — Pelias ho podľa krajiny ukladá do rôznych polí. */
 function mesto(v: GeoVlastnosti): string | null {
   return v.locality?.trim() || v.localadmin?.trim() || v.county?.trim() || null;
@@ -26,9 +35,9 @@ function mesto(v: GeoVlastnosti): string | null {
 
 function ulica(v: GeoVlastnosti): string | null {
   const u = v.street?.trim();
-  if (!u) return null;
+  if (!maPismeno(u)) return null;
   const c = v.housenumber?.trim();
-  return c ? `${u} ${c}` : u;
+  return c ? `${u} ${c}` : u!;
 }
 
 /**
@@ -39,14 +48,17 @@ export function zlozAdresu(v: GeoVlastnosti | null | undefined): string | null {
   if (!v) return null;
   const m = mesto(v);
   const u = ulica(v);
+  // V dedinách býva ulica pomenovaná podľa obce („Zavar 122"); pridať za ňu
+  // ešte raz obec by dalo „Zavar 122, Zavar".
+  if (u && m && u.toLowerCase().includes(m.toLowerCase())) return u;
   if (u && m) return `${u}, ${m}`;
   if (u) return u;
   // Bez ulice je meno bodu záujmu lepšie ako samotné mesto — aspoň povie,
-  // pri čom auto stálo.
-  const n = v.name?.trim();
-  if (n && m && n !== m) return `${n}, ${m}`;
+  // pri čom auto stálo. Holé číslo ale menom nie je.
+  const n = maPismeno(v.name) ? v.name!.trim() : null;
+  if (n && m && n.toLowerCase() !== m.toLowerCase()) return `${n}, ${m}`;
   if (m) return m;
-  return n || v.label?.trim() || null;
+  return n || (maPismeno(v.label) ? v.label!.trim() : null);
 }
 
 /**

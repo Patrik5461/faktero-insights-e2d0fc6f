@@ -53,3 +53,21 @@ describe("geoKluc", () => {
     expect(geoKluc(48.3762, 17.591)).not.toBe(geoKluc(48.1485, 17.1077));
   });
 });
+
+describe("zlozAdresu — čo Pelias vracia v teréne", () => {
+  // Presne prípad „1279, Trnava" z prvého behu nad ostrými jazdami.
+  it("holé parcelné číslo namiesto ulice zahodí", () => {
+    expect(zlozAdresu({ street: "1279", locality: "Trnava" })).toBe("Trnava");
+    expect(zlozAdresu({ name: "1279", locality: "Trnava" })).toBe("Trnava");
+  });
+
+  it("ulicu pomenovanú podľa obce nezopakuje dvakrát", () => {
+    expect(zlozAdresu({ street: "Zavar", housenumber: "122", locality: "Zavar" })).toBe(
+      "Zavar 122",
+    );
+  });
+
+  it("obec s veľkým písmenom v názve ulice tiež spozná", () => {
+    expect(zlozAdresu({ street: "Trnava 9733", locality: "Trnava" })).toBe("Trnava 9733");
+  });
+});

@@ -44,7 +44,7 @@ export async function doplnJazdy(limit = 200): Promise<VysledokDoplnenia> {
     .from("trips")
     .select("id, route, created_by, start_location, end_location, driver_name")
     .in("external_source", ZDROJE)
-    .or("start_location.is.null,driver_name.is.null")
+    .or("start_location.is.null,end_location.is.null,driver_name.is.null")
     .order("created_at", { ascending: false })
     .limit(limit);
 
