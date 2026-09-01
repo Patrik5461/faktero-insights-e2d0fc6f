@@ -171,6 +171,36 @@ function TripsPage() {
     setPotvrdenie(true);
   }
 
+  /**
+   * Hromadné prepnutie služobná/súkromná. Rovnaká poistka ako pri mazaní:
+   * `select()` povie, koľkých riadkov sa to naozaj týkalo — uzamknuté obdobie
+   * alebo cudzia firma sa inak tvária ako úspech.
+   */
+  async function nastavZaradenie(classification: "business" | "private") {
+    const cid = getActiveCompanyId();
+    if (!cid || !vybraneIds.length) return;
+    const { data, error } = await supabase
+      .from("trips")
+      .update({ classification })
+      .in("id", vybraneIds)
+      .eq("company_id", cid)
+      .select("id");
+    if (error) return toast.error(error.message);
+
+    const zmenenych = data?.length ?? 0;
+    const popis = classification === "private" ? "súkromné" : "služobné";
+    if (zmenenych === vybraneIds.length) {
+      toast.success(`Označených ako ${popis}: ${zmenenych}`);
+    } else {
+      toast.warning(
+        `Zmenených ${zmenenych} z ${vybraneIds.length} — zvyšok sa zmeniť nedal, ` +
+          `skontrolujte, či nie je obdobie uzamknuté.`,
+      );
+    }
+    setVybrane({});
+    load();
+  }
+
   async function zmazVybrate() {
     const cid = getActiveCompanyId();
     if (!cid || !vybraneIds.length) return;
@@ -259,6 +289,22 @@ function TripsPage() {
                 onDelete={() => setPotvrdenie(true)}
                 onRestore={() => {}}
                 onClear={() => setVybrane({})}
+                akcie={
+                  <>
+                    <button
+                      onClick={() => nastavZaradenie("business")}
+                      className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
+                    >
+                      Označiť ako služobné
+                    </button>
+                    <button
+                      onClick={() => nastavZaradenie("private")}
+                      className="rounded-md border border-border bg-card px-3 py-1.5 text-xs hover:bg-secondary"
+                    >
+                      Označiť ako súkromné
+                    </button>
+                  </>
+                }
               />
             </div>
 

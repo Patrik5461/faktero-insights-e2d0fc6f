@@ -10,7 +10,7 @@ import {
   X,
   ArrowDownUp,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 
 export function PageSizeSelect({
@@ -181,6 +181,7 @@ export function BulkBar({
   onRestore,
   onHardDelete,
   onClear,
+  akcie,
 }: {
   count: number;
   showDeleted: boolean;
@@ -189,12 +190,19 @@ export function BulkBar({
   /** Nenávratné zmazanie z koša. Bez neho sa tlačidlo nezobrazí. */
   onHardDelete?: () => void;
   onClear: () => void;
+  /**
+   * Ďalšie hromadné akcie zoznamu — stoja pred mazaním, lebo mazanie má byť
+   * to posledné, čoho sa ruka dotkne. Kniha jázd sem dáva prepnutie
+   * služobná/súkromná.
+   */
+  akcie?: ReactNode;
 }) {
   if (count === 0) return null;
   return (
     <div className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm">
       <span className="font-medium text-primary">Vybraté: {count}</span>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
+        {!showDeleted && akcie}
         {showDeleted ? (
           <>
             <button
