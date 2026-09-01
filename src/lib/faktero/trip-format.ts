@@ -45,6 +45,35 @@ export function charakterJazdy(classification: string | null | undefined): strin
 }
 
 /**
+ * Účel jazdy na zobrazenie vedľa charakteru — alebo nič.
+ *
+ * Rozpoznané jazdy si kedysi ukladali účel „Automaticky rozpoznaná jazda"
+ * a „Súkromná jazda", Commander píše do všetkých „Služobná cesta". Vedľa
+ * štítku Služobná/Súkromná to len opakuje to isté a človeka mätie — hľadá
+ * v tom informáciu, ktorá tam nie je. Vlastný účel („Servis u zákazníka")
+ * sa zobrazí.
+ */
+export function ucelNaZobrazenie(
+  purpose: string | null | undefined,
+  classification: string | null | undefined,
+): string | null {
+  const u = purpose?.trim();
+  if (!u) return null;
+  const holy = u.toLowerCase().replace(/\s+/g, " ");
+  const prazdne = [
+    "automaticky rozpoznaná jazda",
+    "súkromná jazda",
+    "služobná jazda",
+    "služobná cesta",
+    "jazda",
+  ];
+  if (prazdne.includes(holy)) return null;
+  // „Súkromná" pri súkromnej jazde je to isté slovo dvakrát.
+  if (holy === charakterJazdy(classification).toLowerCase()) return null;
+  return u;
+}
+
+/**
  * Súkromná jazda aj so starými zápismi — na súčty v prehľadoch.
  *
  * Pole `classification` pribudlo neskôr; dovtedy sa charakter písal len do

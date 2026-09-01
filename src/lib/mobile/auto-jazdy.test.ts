@@ -50,11 +50,13 @@ describe("riadok knihy jázd z rozpoznanej jazdy", () => {
     expect(r.start_odometer).toBe(0);
     expect(r.duration_seconds).toBe(1800);
     expect(r.average_speed_kmh).toBe(90);
-    expect(r.purpose).toBe("Automaticky rozpoznaná jazda");
+    // Účel ostáva prázdny: charakter jazdy nesie `classification` a zástupný
+    // text by v knihe stál druhýkrát vedľa štítku Služobná/Súkromná.
+    expect(r.purpose).toBeNull();
     expect(r.classification).toBe("business");
   });
 
-  it("súkromná jazda má vlastný účel", () => {
+  it("súkromná jazda sa pozná podľa zaradenia, nie podľa účelu", () => {
     const r = riadokZJazdy({
       jazda: jazda(),
       companyId: "firma-1",
@@ -62,7 +64,7 @@ describe("riadok knihy jázd z rozpoznanej jazdy", () => {
       classification: "private",
     });
     expect(r.classification).toBe("private");
-    expect(r.purpose).toBe("Súkromná jazda");
+    expect(r.purpose).toBeNull();
   });
 
   it("nesie zdroj a identifikátor kvôli opakovanému prevzatiu", () => {

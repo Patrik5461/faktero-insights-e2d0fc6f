@@ -63,7 +63,13 @@ export function riadokZJazdy(args: {
     company_id: args.companyId,
     vehicle_id: args.vehicleId,
     trip_date: miestnyDatum(jazda.startedAt),
-    purpose: args.classification === "business" ? "Automaticky rozpoznaná jazda" : "Súkromná jazda",
+    /*
+      Účel sa nevypĺňa. Kedysi tu stálo „Automaticky rozpoznaná jazda", resp.
+      „Súkromná jazda" — lenže charakter jazdy nesie `classification` a v knihe
+      to potom stálo dvakrát vedľa seba. Účel je miesto pre to, čo appka nevie:
+      za čím sa išlo. Nechá sa prázdny, nech je vidieť, že tam nič nie je.
+    */
+    purpose: null,
     classification: args.classification,
     start_odometer: 0,
     end_odometer: km,

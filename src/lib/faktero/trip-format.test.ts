@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   charakterJazdy,
+  ucelNaZobrazenie,
   formatDuration,
   formatSpeed,
   jeSukromna,
@@ -50,5 +51,27 @@ describe("popis jazdy", () => {
     expect(formatDuration(5400)).toBe("1 h 30 min");
     expect(formatSpeed(45, 1800, null)).toBe("90 km/h");
     expect(formatSpeed(45, null, null)).toBe("—");
+  });
+});
+
+describe("ucelNaZobrazenie", () => {
+  it("zástupné texty nezobrazuje", () => {
+    expect(ucelNaZobrazenie("Automaticky rozpoznaná jazda", "business")).toBeNull();
+    expect(ucelNaZobrazenie("Súkromná jazda", "private")).toBeNull();
+    expect(ucelNaZobrazenie("Služobná cesta", "business")).toBeNull();
+  });
+
+  it("vlastný účel zobrazí", () => {
+    expect(ucelNaZobrazenie("Servis u zákazníka", "business")).toBe("Servis u zákazníka");
+  });
+
+  it("prázdny účel je nič", () => {
+    expect(ucelNaZobrazenie(null, "business")).toBeNull();
+    expect(ucelNaZobrazenie("   ", "private")).toBeNull();
+  });
+
+  it("účel, ktorý je len zopakovaný charakter, zahodí", () => {
+    expect(ucelNaZobrazenie("Súkromná", "private")).toBeNull();
+    expect(ucelNaZobrazenie("služobná", "business")).toBeNull();
   });
 });

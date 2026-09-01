@@ -5,7 +5,13 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Plus, Pencil, Trash2, Car, Map as MapIcon } from "lucide-react";
 import { toast } from "sonner";
-import { formatDuration, formatSpeed, jeSukromna, sourceLabel } from "@/lib/faktero/trip-format";
+import {
+  formatDuration,
+  formatSpeed,
+  jeSukromna,
+  sourceLabel,
+  ucelNaZobrazenie,
+} from "@/lib/faktero/trip-format";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
 import { useServerFn } from "@tanstack/react-start";
 import { trasaMedziBodmi } from "@/lib/faktero/trasa.server";
@@ -389,12 +395,22 @@ function TripsPage() {
                         {formatDuration(r.duration_seconds)}
                       </td>
                       <td className="p-3">
-                        {jeSukromna(r.classification) ? (
-                          <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
-                            Súkromná
-                          </span>
-                        ) : (
-                          (r.purpose ?? "—")
+                        {/* Charakter jazdy je štítok, účel je to, čo appka nevie
+                            — za čím sa išlo. Kým sa účel vypĺňal zástupným
+                            textom, stálo tu dvakrát to isté. */}
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs ${
+                            jeSukromna(r.classification)
+                              ? "bg-muted text-muted-foreground"
+                              : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                          }`}
+                        >
+                          {jeSukromna(r.classification) ? "Súkromná" : "Služobná"}
+                        </span>
+                        {ucelNaZobrazenie(r.purpose, r.classification) && (
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {ucelNaZobrazenie(r.purpose, r.classification)}
+                          </div>
                         )}
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">
@@ -473,10 +489,11 @@ function TripsPage() {
                           <span>
                             Ø {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
                           </span>
-                          {jeSukromna(r.classification) ? (
-                            <span className="font-medium">Súkromná</span>
-                          ) : (
-                            r.purpose && <span>{r.purpose}</span>
+                          <span className="font-medium">
+                            {jeSukromna(r.classification) ? "Súkromná" : "Služobná"}
+                          </span>
+                          {ucelNaZobrazenie(r.purpose, r.classification) && (
+                            <span>{ucelNaZobrazenie(r.purpose, r.classification)}</span>
                           )}
                         </div>
                       </div>
