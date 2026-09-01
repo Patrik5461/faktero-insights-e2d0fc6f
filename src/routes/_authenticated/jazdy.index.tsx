@@ -7,6 +7,7 @@ import { Plus, Pencil, Trash2, Car, Map as MapIcon } from "lucide-react";
 import { toast } from "sonner";
 import { formatDuration, formatSpeed, jeSukromna, sourceLabel } from "@/lib/faktero/trip-format";
 import { MapaTrasy } from "@/components/faktero/MapaTrasy";
+import { BulkBar, ConfirmDialog } from "@/components/faktero/ListControls";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/jazdy/")({
@@ -52,6 +53,11 @@ function TripsPage() {
   const [limit, setLimit] = useState(DAVKA);
   const [spolu, setSpolu] = useState<number | null>(null);
   const [trasa, setTrasa] = useState<Trip | null>(null);
+  // Výber na hromadné mazanie. Drží sa v mape podľa id, nie poľom — pri
+  // päťsto načítaných jazdách je preklikávanie zoznamom zbytočne pomalé.
+  const [vybrane, setVybrane] = useState<Record<string, boolean>>({});
+  const [potvrdenie, setPotvrdenie] = useState(false);
+  const [mazem, setMazem] = useState(false);
 
   async function load() {
     const cid = getActiveCompanyId();
@@ -97,11 +103,55 @@ function TripsPage() {
     return m;
   }, [vehicleList]);
 
-  async function del(id: string) {
-    if (!confirm("Vymazať túto jazdu?")) return;
-    const { error } = await supabase.from("trips").delete().eq("id", id);
+  const vybraneIds = useMemo(
+    () => rows.filter((r) => vybrane[r.id]).map((r) => r.id),
+    [rows, vybrane],
+  );
+  const vsetkyVybrate = rows.length > 0 && vybraneIds.length === rows.length;
+
+  function prepniJazdu(id: string, zapnute: boolean) {
+    setVybrane((p) => ({ ...p, [id]: zapnute }));
+  }
+
+  function prepniVsetky(zapnute: boolean) {
+    setVybrane(zapnute ? Object.fromEntries(rows.map((r) => [r.id, true])) : {});
+  }
+
+  /** Jednu jazdu maže tá istá cesta ako hromadu — jeden dialóg, jedno hlásenie. */
+  function zmazJednu(id: string) {
+    setVybrane({ [id]: true });
+    setPotvrdenie(true);
+  }
+
+  async function zmazVybrate() {
+    const cid = getActiveCompanyId();
+    if (!cid || !vybraneIds.length) return;
+    setMazem(true);
+    /*
+      `select()` tu nie je kozmetika: bez neho `delete()` ohlási úspech aj vtedy,
+      keď riadok neprepustila politika (napríklad uzamknuté obdobie), a človek by
+      si myslel, že jazdy sú preč. Takto vieme, koľkých sa to naozaj týkalo.
+    */
+    const { data, error } = await supabase
+      .from("trips")
+      .delete()
+      .in("id", vybraneIds)
+      .eq("company_id", cid)
+      .select("id");
+    setMazem(false);
+    setPotvrdenie(false);
     if (error) return toast.error(error.message);
-    toast.success("Vymazané");
+
+    const zmazanych = data?.length ?? 0;
+    if (zmazanych === vybraneIds.length) {
+      toast.success(zmazanych === 1 ? "Jazda je vymazaná" : `Vymazaných ${zmazanych} jázd`);
+    } else {
+      toast.warning(
+        `Vymazaných ${zmazanych} z ${vybraneIds.length} — zvyšok sa vymazať nedal, ` +
+          `skontrolujte, či nie je obdobie uzamknuté.`,
+      );
+    }
+    setVybrane({});
     load();
   }
 
@@ -154,11 +204,30 @@ function TripsPage() {
           </div>
         ) : (
           <>
+            <div className="mb-3">
+              <BulkBar
+                count={vybraneIds.length}
+                showDeleted={false}
+                onDelete={() => setPotvrdenie(true)}
+                onRestore={() => {}}
+                onClear={() => setVybrane({})}
+              />
+            </div>
+
             {/* Desktop */}
             <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
+                    <th className="p-3 w-10">
+                      <input
+                        type="checkbox"
+                        aria-label="Označiť všetky jazdy v zozname"
+                        checked={vsetkyVybrate}
+                        onChange={(e) => prepniVsetky(e.target.checked)}
+                        className="h-4 w-4 cursor-pointer accent-primary"
+                      />
+                    </th>
                     <th className="p-3">Dátum jazdy</th>
                     <th className="p-3">Vozidlo</th>
                     <th className="p-3">Vodič</th>
@@ -186,6 +255,15 @@ function TripsPage() {
                       className="cursor-pointer hover:bg-muted/30"
                       onClick={() => navigate({ to: "/jazdy/nova", search: { id: r.id } })}
                     >
+                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Označiť jazdu z ${r.trip_date}`}
+                          checked={!!vybrane[r.id]}
+                          onChange={(e) => prepniJazdu(r.id, e.target.checked)}
+                          className="h-4 w-4 cursor-pointer accent-primary"
+                        />
+                      </td>
                       <td className="p-3 whitespace-nowrap">{r.trip_date}</td>
                       <td className="p-3">
                         {vehicles[r.vehicle_id]?.name ?? "—"}{" "}
@@ -244,7 +322,7 @@ function TripsPage() {
                           <Pencil className="h-4 w-4" />
                         </Link>
                         <button
-                          onClick={() => del(r.id)}
+                          onClick={() => zmazJednu(r.id)}
                           title="Vymazať jazdu"
                           className="rounded p-1.5 text-destructive hover:bg-destructive/10"
                         >
@@ -274,23 +352,33 @@ function TripsPage() {
                   className="cursor-pointer rounded-xl border border-border bg-card p-3 shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold">
-                        {r.trip_date} · {vehicles[r.vehicle_id]?.name ?? "—"}
-                      </div>
-                      <div className="mt-0.5 text-xs text-muted-foreground truncate">
-                        {r.start_location ?? "—"} → {r.end_location ?? "—"}
-                      </div>
-                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                        <span>Trvanie: {formatDuration(r.duration_seconds)}</span>
-                        <span>
-                          Ø {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
-                        </span>
-                        {jeSukromna(r.classification) ? (
-                          <span className="font-medium">Súkromná</span>
-                        ) : (
-                          r.purpose && <span>{r.purpose}</span>
-                        )}
+                    <div className="flex min-w-0 gap-2">
+                      <input
+                        type="checkbox"
+                        aria-label={`Označiť jazdu z ${r.trip_date}`}
+                        checked={!!vybrane[r.id]}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => prepniJazdu(r.id, e.target.checked)}
+                        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primary"
+                      />
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold">
+                          {r.trip_date} · {vehicles[r.vehicle_id]?.name ?? "—"}
+                        </div>
+                        <div className="mt-0.5 text-xs text-muted-foreground truncate">
+                          {r.start_location ?? "—"} → {r.end_location ?? "—"}
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                          <span>Trvanie: {formatDuration(r.duration_seconds)}</span>
+                          <span>
+                            Ø {formatSpeed(r.distance_km, r.duration_seconds, r.average_speed_kmh)}
+                          </span>
+                          {jeSukromna(r.classification) ? (
+                            <span className="font-medium">Súkromná</span>
+                          ) : (
+                            r.purpose && <span>{r.purpose}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="shrink-0 text-right" onClick={(e) => e.stopPropagation()}>
@@ -315,7 +403,7 @@ function TripsPage() {
                         <Pencil className="h-4 w-4" />
                       </Link>
                       <button
-                        onClick={() => del(r.id)}
+                        onClick={() => zmazJednu(r.id)}
                         aria-label="Vymazať jazdu"
                         className="mt-1 rounded p-1 text-destructive"
                       >
@@ -346,6 +434,17 @@ function TripsPage() {
             </div>
           </>
         )}
+
+        <ConfirmDialog
+          open={potvrdenie}
+          title={vybraneIds.length === 1 ? "Vymazať jazdu?" : `Vymazať ${vybraneIds.length} jázd?`}
+          message="Jazdy sa z knihy odstránia natrvalo — kniha jázd nemá kôš."
+          warning="Ak boli priradené k zákazke, jej náklady sa o ne znížia."
+          confirmLabel="Vymazať"
+          busy={mazem}
+          onCancel={() => setPotvrdenie(false)}
+          onConfirm={zmazVybrate}
+        />
 
         <Dialog open={trasa !== null} onOpenChange={(o) => !o && setTrasa(null)}>
           <DialogContent className="max-w-3xl">
