@@ -3,6 +3,7 @@ import {
   emptySkipBreakdown,
   zalogovatPreskocenu,
   jeDuplicitaVDatabaze,
+  jazdaBezKilometrov,
   type CommanderSkipReason,
 } from "./commander-preskocene";
 
@@ -50,5 +51,26 @@ describe("logovanie preskočených jázd", () => {
       jeDuplicitaVDatabaze("null value in column start_time violates not-null constraint"),
     ).toBe(false);
     expect(jeDuplicitaVDatabaze(null)).toBe(false);
+  });
+});
+
+describe("jazdaBezKilometrov", () => {
+  it("nulová jazda z Commanderu do knihy nepatrí", () => {
+    expect(jazdaBezKilometrov(0)).toBe(true);
+  });
+
+  it("jazda s kilometrami prejde, aj keď je krátka", () => {
+    expect(jazdaBezKilometrov(0.3)).toBe(false);
+    expect(jazdaBezKilometrov(120)).toBe(false);
+  });
+
+  // Zápornú vzdialenosť odmietne kontrola pred týmto; keby sa sem predsa
+  // dostala, nech skončí rovnako — v knihe nemá čo hľadať.
+  it("záporná vzdialenosť tiež neprejde", () => {
+    expect(jazdaBezKilometrov(-5)).toBe(true);
+  });
+
+  it("neznáme číslo neposudzuje", () => {
+    expect(jazdaBezKilometrov(Number.NaN)).toBe(false);
   });
 });

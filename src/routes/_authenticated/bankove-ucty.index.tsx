@@ -442,6 +442,16 @@ function BankAccountsPage() {
                           <div className="font-mono text-xs text-muted-foreground">
                             {a.iban ?? "—"}
                           </div>
+                          {/* Účet, ktorý banka odmieta, sa už v noci neťahá —
+                              nech to človek vidí a nečaká na pohyby zbytočne. */}
+                          {a.unavailable_since && (
+                            <div
+                              className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400"
+                              title={a.unavailable_reason ?? undefined}
+                            >
+                              Banka ho nepozná — obnovte súhlas
+                            </div>
+                          )}
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-semibold tabular-nums">

@@ -228,10 +228,18 @@ async function apiGet(path: string, accessToken: string, _consentId?: string | n
     if (res.ok) return JSON.parse(txt);
 
     const retriable = RETRY_STATUSES.has(res.status) && attempt < RETRY_DELAYS_MS.length;
-    console.error(
+    /*
+     * „Earliest allowed dateFrom" nie je porucha — je to odpoveď na otázku, ako
+     * ďaleko dozadu banka pustí, a volajúci sa hneď spýta znova s dátumom, ktorý
+     * mu banka ponúkla. V chybovom logu to len robilo poplach, ktorý sa nedal
+     * odlíšiť od skutočných zlyhaní.
+     */
+    const ocakavane = /Earliest allowed dateFrom/.test(txt);
+    const sprava =
       `[tatrabanka] ${res.status} ${res.statusText} for ${url} — body: ${txt.slice(0, 300)}` +
-        (retriable ? ` (pokus ${attempt + 1}, skúšam znova)` : ""),
-    );
+      (retriable ? ` (pokus ${attempt + 1}, skúšam znova)` : "");
+    if (ocakavane) console.log(sprava + " (očakávané, opakujem s dátumom od banky)");
+    else console.error(sprava);
     if (!retriable) throw new Error(`tb_api_error: ${res.status} ${url} ${txt.slice(0, 500)}`);
     await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
   }

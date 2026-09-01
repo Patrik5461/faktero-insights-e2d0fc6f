@@ -38,7 +38,6 @@ export const OPERACIE = [
   "ponuka-na-fakturu",
   "cisla-rezervuj",
   "cisla-uvolni",
-  "cisla-stav",
   "cennik-kontext",
   "firma-podla-ica",
   "doklad-presun",

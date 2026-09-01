@@ -152,20 +152,6 @@ function AdminCompanyDetailPage() {
                 <PauseCircle className="h-4 w-4" /> Pozastaviť
               </button>
             )}
-            <button
-              disabled
-              title="Bude pripravené po spustení GoPay"
-              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm opacity-60"
-            >
-              Zmeniť plán
-            </button>
-            <button
-              disabled
-              title="Impersonácia zatiaľ neaktívna"
-              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm opacity-60"
-            >
-              <UserCog className="h-4 w-4" /> Impersonovať
-            </button>
           </>
         }
       />

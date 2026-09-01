@@ -81,7 +81,7 @@ async function syncAccounts(supabaseAdmin: any, conn: any, accessToken: string) 
 
   const { data: accounts } = await supabaseAdmin
     .from("bank_accounts")
-    .select("id, external_account_id, iban")
+    .select("id, external_account_id, iban, unavailable_since, unavailable_reason")
     .eq("bank_connection_id", conn.id);
   return accounts ?? [];
 }
@@ -160,6 +160,15 @@ export async function stiahniTransakcieUctu(
   const odDna = new Date(Date.now() - okno * 86400_000).toISOString().slice(0, 10);
   const seen = await znameReferencie(supabaseAdmin, account.id, odDna);
 
+  // Sem sa dostaneme len keď banka účet vydala — prípadná stará značka
+  // o nedostupnosti tým prestáva platiť.
+  if (account.unavailable_since) {
+    await supabaseAdmin
+      .from("bank_accounts")
+      .update({ unavailable_since: null, unavailable_reason: null })
+      .eq("id", account.id);
+  }
+
   const fresh = txs.filter((t) => !t.transaction_reference || !seen.has(t.transaction_reference));
   if (fresh.length === 0) return { inserted: 0, total: txs.length };
 
@@ -213,6 +222,24 @@ export async function vlozPohyby(supabaseAdmin: any, riadky: any[]): Promise<num
 }
 
 /**
+ * Banka pozná účet, ktorý u nás máme? Keď odpovie `NO_ACCOUNT`, nemá zmysel
+ * pýtať sa každú noc znova — účet buď zanikol, alebo ho nekryje súhlas.
+ * Zapíšeme si to k účtu a nočný beh ho odvtedy preskočí; ručné stiahnutie
+ * z prehľadu ho skúsi vždy a pri prvom úspechu značku zmaže.
+ */
+async function oznacNedostupny(supabaseAdmin: any, accountId: string, dovod: string) {
+  await supabaseAdmin
+    .from("bank_accounts")
+    .update({ unavailable_since: new Date().toISOString(), unavailable_reason: dovod })
+    .eq("id", accountId);
+}
+
+function bankaUcetNepozna(chyba: any): boolean {
+  const t = String(chyba?.message ?? chyba ?? "");
+  return /NO_ACCOUNT|Account does not exist/i.test(t);
+}
+
+/**
  * Prejde všetky pripojené banky a natiahne účty aj transakcie.
  * Chyba na jednom pripojení nezhodí ostatné — zapíše sa do výsledku.
  */
@@ -241,12 +268,25 @@ export async function runDailyBankSync(daysBack = DEFAULT_DAYS_BACK) {
       let inserted = 0;
       const chybneUcty: string[] = [];
       for (const acc of accounts) {
+        if (acc.unavailable_since) {
+          console.log(
+            `[bank-sync] účet ${acc.iban ?? acc.id} preskočený — ${acc.unavailable_reason ?? "banka ho nepozná"}`,
+          );
+          continue;
+        }
         try {
           const r = await stiahniTransakcieUctu(supabaseAdmin, conn, accessToken, acc, daysBack);
           inserted += r.inserted;
         } catch (e: any) {
           chybneUcty.push(acc.iban ?? acc.id);
-          console.error(`[bank-sync] účet ${acc.iban ?? acc.id} zlyhal:`, e?.message ?? e);
+          if (bankaUcetNepozna(e)) {
+            await oznacNedostupny(supabaseAdmin, acc.id, "Banka účet nepozná (NO_ACCOUNT).");
+            console.error(
+              `[bank-sync] účet ${acc.iban ?? acc.id}: banka ho nepozná, ďalej ho neskúšam`,
+            );
+          } else {
+            console.error(`[bank-sync] účet ${acc.iban ?? acc.id} zlyhal:`, e?.message ?? e);
+          }
         }
       }
       if (chybneUcty.length) {

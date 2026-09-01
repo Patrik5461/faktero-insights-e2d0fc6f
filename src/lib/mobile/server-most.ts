@@ -28,11 +28,7 @@ import { vystavPonukuFn, ponukyZoznamFn } from "@/lib/faktero/ponuka-vystavenie.
 import { generateQuotePdf } from "@/lib/faktero/quote-pdf.functions";
 import { sendQuoteEmailFn } from "@/lib/faktero/quote-email.functions";
 import { convertQuoteToInvoice } from "@/lib/faktero/quote.functions";
-import {
-  rezervujCislaFn,
-  stavRezervaciiFn,
-  uvolniCislaFn,
-} from "@/lib/faktero/cisla-rezervacia.functions";
+import { rezervujCislaFn, uvolniCislaFn } from "@/lib/faktero/cisla-rezervacia.functions";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { lookupCompanyByIcoFn } from "@/lib/faktero/company-lookup.functions";
 import { presunDokladDoPrijatychFn } from "@/lib/faktero/doklad-presun.functions";
@@ -76,7 +72,6 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "ponuka-na-fakturu": convertQuoteToInvoice,
   "cisla-rezervuj": rezervujCislaFn,
   "cisla-uvolni": uvolniCislaFn,
-  "cisla-stav": stavRezervaciiFn,
   "cennik-kontext": getPriceContext,
   "firma-podla-ica": lookupCompanyByIcoFn,
   "doklad-presun": presunDokladDoPrijatychFn,

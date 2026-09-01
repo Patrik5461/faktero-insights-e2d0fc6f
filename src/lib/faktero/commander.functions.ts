@@ -5,6 +5,7 @@ import {
   emptySkipBreakdown,
   zalogovatPreskocenu,
   jeDuplicitaVDatabaze,
+  jazdaBezKilometrov,
   type CommanderSkipReason,
 } from "./commander-preskocene";
 
@@ -645,6 +646,11 @@ export const syncCommanderRides = createServerFn({ method: "POST" })
               mappedLink,
               `Koncový tachometer (${end_odo}) je menší ako počiatočný (${start_odo}).`,
             );
+            continue;
+          }
+          // Naštartovanie a zhasnutie na mieste nie je jazda — do knihy nepatrí.
+          if (jazdaBezKilometrov(distance)) {
+            skip("zero_distance", r, mappedLink, "Jazda má nulovú vzdialenosť.");
             continue;
           }
 
