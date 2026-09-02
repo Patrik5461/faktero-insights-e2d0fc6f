@@ -8,6 +8,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Camera, Loader2, QrCode, BadgeCheck, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 
 type Uhrada = "hotovost" | "karta" | "prevod";
 
@@ -24,6 +25,14 @@ function fmt(n?: number, mena = "EUR") {
 function ScannerPage() {
   const navigate = useNavigate();
   const nacitaj = useServerFn(nacitajBlocekFn);
+  /*
+   * Česká firma má pri skenovaní iné možnosti a musí to vedieť dopredu, nie až
+   * z výsledku: evidencia tržieb (EET) skončila 1. 1. 2023, register dokladov
+   * neexistuje a v QR kóde na bločku nikdy nie sú položky. Sľubovať jej
+   * „načíta sa z Finančnej správy aj s položkami“ by bolo klamstvo.
+   */
+  const krajina = useKrajinaDane();
+  const cesko = krajina === "CZ";
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BlocekVysledok | null>(null);
@@ -94,7 +103,11 @@ function ScannerPage() {
     <>
       <PageHeader
         title="Skener dokladov"
-        description="Bloček s QR kódom sa načíta priamo z Finančnej správy — aj s položkami."
+        description={
+          cesko
+            ? "Z QR kódu na bločku sa prečíta suma, dátum a DIČ predajcu. Položky sa čítajú z fotky."
+            : "Bloček s QR kódom sa načíta priamo z Finančnej správy — aj s položkami."
+        }
       />
       <PageBody>
         <div className="mx-auto max-w-xl space-y-4">
@@ -116,8 +129,19 @@ function ScannerPage() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Odfoťte doklad celý aj s QR kódom. Keď sa QR prečítať nedá, údaje sa odhadnú z fotky —
-            vtedy ich pred uložením skontrolujte.
+            {cesko ? (
+              <>
+                Odfoťte doklad celý aj s QR kódom. Česká evidencia tržieb (EET) skončila 1. 1. 2023
+                — doklad sa preto nemá kde overiť a položky v QR kóde nie sú. Z QR sa prečíta suma,
+                dátum a DIČ predajcu, zvyšok sa odhadne z fotky, tak si ho pred uložením
+                skontrolujte.
+              </>
+            ) : (
+              <>
+                Odfoťte doklad celý aj s QR kódom. Keď sa QR prečítať nedá, údaje sa odhadnú z fotky
+                — vtedy ich pred uložením skontrolujte.
+              </>
+            )}
           </p>
 
           {preview && (

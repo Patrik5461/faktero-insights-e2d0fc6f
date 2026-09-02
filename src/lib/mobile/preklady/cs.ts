@@ -34,6 +34,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "domov.vystaveneFakturyPopis": "Kdo ještě nezaplatil, PDF a odeslání",
   "domov.blocek": "Účtenka s QR kódem",
   "domov.blocekPopis": "Načte se z Finanční správy i s položkami",
+  "domov.blocekPopisCz": "Z QR kódu se přečte částka a prodejce, položky z fotky",
   "domov.fakturaPdf": "Faktura v PDF",
   "domov.fakturaPdfPopis": "Vyberte soubor z telefonu nebo z cloudu",
   "domov.viacstranovy": "Vícestránkový doklad",

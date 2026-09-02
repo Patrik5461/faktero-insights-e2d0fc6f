@@ -34,6 +34,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "domov.vystaveneFakturyPopis": "Who hasn't paid, PDF and sending",
   "domov.blocek": "Receipt with a QR code",
   "domov.blocekPopis": "Loaded from the tax authority, items included",
+  "domov.blocekPopisCz": "Amount and seller from the QR code, items from the photo",
   "domov.fakturaPdf": "Invoice as PDF",
   "domov.fakturaPdfPopis": "Pick a file from the phone or the cloud",
   "domov.viacstranovy": "Multi-page document",

@@ -41,6 +41,7 @@ import {
   Plus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { nacitajUlozenuRelaciu } from "@/lib/mobile/relacia";
 import { vyberFirmy } from "@/lib/mobile/start";
 import { zapisOdlozeneSuhlasy } from "@/lib/faktero/pravne-suhlasy";
@@ -169,12 +170,7 @@ import {
   VelkeTlacidlo,
 } from "@/components/faktero/mobil/MobilChrome";
 import { Logo } from "@/components/faktero/Logo";
-import {
-  VYCHODZI_APKA,
-  nacitajMotiv,
-  nasadMotiv,
-  sledujSystem,
-} from "@/lib/faktero/motiv";
+import { VYCHODZI_APKA, nacitajMotiv, nasadMotiv, sledujSystem } from "@/lib/faktero/motiv";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import type { Kluc } from "@/lib/mobile/preklady";
@@ -443,7 +439,9 @@ function ObsahApky() {
         if (!(await isOnline())) throw new Error(t("app.bezPripojeniaKratke"));
         zoznam = (await Promise.race([
           fetchMyCompanies(),
-          new Promise((_, zamietni) => setTimeout(() => zamietni(new Error(t("app.bezOdpovede"))), 8000)),
+          new Promise((_, zamietni) =>
+            setTimeout(() => zamietni(new Error(t("app.bezOdpovede"))), 8000),
+          ),
         ])) as Firma[];
         void ulozDoPamate(klucFiriem, zoznam);
       } catch (e) {
@@ -451,9 +449,7 @@ function ObsahApky() {
         if (!zapamatane?.hodnota?.length) {
           // Bez siete a bez zapamätaného zoznamu sa nedá povedať nič iné, než
           // ako to je. Tvrdiť, že k účtu nepatrí firma, by bola nepravda.
-          setChybaStartu(
-            t("app.bezPripojeniaFirmy"),
-          );
+          setChybaStartu(t("app.bezPripojeniaFirmy"));
           setKrok("firma");
           return;
         }
@@ -505,9 +501,7 @@ function ObsahApky() {
           .then(({ ulozene }) => {
             if (ulozene > 0) {
               toast.success(
-                ulozene === 1
-                  ? t("app.jazdaUlozena")
-                  : t("app.jazdUlozenych", { pocet: ulozene }),
+                ulozene === 1 ? t("app.jazdaUlozena") : t("app.jazdUlozenych", { pocet: ulozene }),
               );
             }
           })
@@ -704,9 +698,7 @@ function ObsahApky() {
       <div className="grid min-h-[100dvh] place-items-center bg-app-pozadie p-6 text-center">
         <div className="space-y-3">
           <p className="text-sm font-medium">{t("app.startZasekol", { faza })}</p>
-          <p className="text-[13px] text-app-text-2">
-            {t("app.slabePripojenie")}
-          </p>
+          <p className="text-[13px] text-app-text-2">{t("app.slabePripojenie")}</p>
           {chybaStartu && (
             <p className="rounded-lg bg-app-chyba-jemna p-2 text-[12px] text-app-chyba">
               {chybaStartu}
@@ -805,9 +797,7 @@ function ObsahApky() {
                   <span className="min-w-0 truncate text-[17px] font-semibold tracking-tight">
                     {firma.name}
                   </span>
-                  {firmy.length > 1 && (
-                    <ChevronDown className="h-4 w-4 shrink-0 text-app-text-2" />
-                  )}
+                  {firmy.length > 1 && <ChevronDown className="h-4 w-4 shrink-0 text-app-text-2" />}
                 </button>
               }
               right={
@@ -991,7 +981,11 @@ function ObsahApky() {
     );
   if (krok === "ucet")
     return (
-      <MobilObrazovka title={t("app.ucet")} subtitle={email ?? undefined} onBack={() => setKrok(DOMOV)}>
+      <MobilObrazovka
+        title={t("app.ucet")}
+        subtitle={email ?? undefined}
+        onBack={() => setKrok(DOMOV)}
+      >
         <div className="space-y-4">
           <StavPushu />
           {firma && <CislaDopredu firma={firma} />}
@@ -1000,9 +994,7 @@ function ObsahApky() {
             className="w-full rounded-app border border-app-ramik p-4 text-left text-sm"
           >
             {t("app.diagnostika")}
-            <span className="mt-1 block text-xs text-app-text-2">
-              {t("app.diagnostikaPopis")}
-            </span>
+            <span className="mt-1 block text-xs text-app-text-2">{t("app.diagnostikaPopis")}</span>
           </button>
           <ZrusenieUctu onZrusene={() => zisti()} />
         </div>
@@ -1200,6 +1192,12 @@ function Domov({
 }) {
   const { t, mnozne, locale: loc } = usePreklad();
   /*
+   * Českej firme sa nesmie sľubovať načítanie z Finančnej správy — evidencia
+   * tržieb (EET) skončila v roku 2023 a register dokladov neexistuje. Z českého
+   * QR kódu sa prečíta hlavička, položky ostávajú na fotku (`eet-cz.ts`).
+   */
+  const krajina = useKrajinaDane();
+  /*
    * Panel sa otvára aj potiahnutím od ľavého okraja. Na ostatných obrazovkách
    * to isté gesto znamená „späť" — tu späť nie je kam, tak je voľné.
    */
@@ -1284,9 +1282,7 @@ function Domov({
                   {firma?.name ?? t("panel.bezFirmy")}
                 </span>
                 {viacFiriem && (
-                  <span className="shrink-0 text-[12px] text-app-text-2">
-                    {t("ponuky.zmenit")}
-                  </span>
+                  <span className="shrink-0 text-[12px] text-app-text-2">{t("ponuky.zmenit")}</span>
                 )}
               </button>
             </div>
@@ -1345,7 +1341,7 @@ function Domov({
         <VelkeTlacidlo
           icon={QrCode}
           label={t("domov.blocek")}
-          hint={t("domov.blocekPopis")}
+          hint={t(krajina === "CZ" ? "domov.blocekPopisCz" : "domov.blocekPopis")}
           onClick={() => onZachyt("blocek")}
         />
         <VelkeTlacidlo
@@ -1644,9 +1640,7 @@ function ZachytDokladu({
             variant="primary"
             onClick={vyberPdf}
           />
-          <p className="text-xs text-app-text-2">
-            {t("app.zFakturyPrecita")}
-          </p>
+          <p className="text-xs text-app-text-2">{t("app.zFakturyPrecita")}</p>
         </div>
       )}
 
@@ -1655,7 +1649,11 @@ function ZachytDokladu({
           <VelkeTlacidlo
             icon={Camera}
             label={strany.length === 0 ? t("app.odfotitPrvuStranu") : t("app.pridatDalsiuStranu")}
-            hint={strany.length > 0 ? t("app.zatialStran", { pocet: strany.length }) : t("app.dokladOdfotteCely")}
+            hint={
+              strany.length > 0
+                ? t("app.zatialStran", { pocet: strany.length })
+                : t("app.dokladOdfotteCely")
+            }
             variant="primary"
             onClick={pridajStranu}
           />
@@ -1663,7 +1661,10 @@ function ZachytDokladu({
             <>
               <div className="grid grid-cols-3 gap-2">
                 {strany.map((s, i) => (
-                  <div key={i} className="relative overflow-hidden rounded-lg border border-app-ramik">
+                  <div
+                    key={i}
+                    className="relative overflow-hidden rounded-lg border border-app-ramik"
+                  >
                     <img src={s} alt={`strana ${i + 1}`} className="h-24 w-full object-cover" />
                     <button
                       onClick={() => setStrany((p) => p.filter((_, j) => j !== i))}
@@ -1786,11 +1787,7 @@ function Potvrdenie({
               </span>
             )}
           </div>
-          {!uhrada && (
-            <p className="mb-2 text-xs text-app-zelena">
-              {t("app.vyberteMoznost")}
-            </p>
-          )}
+          {!uhrada && <p className="mb-2 text-xs text-app-zelena">{t("app.vyberteMoznost")}</p>}
           <div className="grid grid-cols-3 gap-2">
             {(
               [
@@ -1815,9 +1812,7 @@ function Potvrdenie({
             ))}
           </div>
           {uhrada === "hotovost" && (
-            <p className="mt-1.5 text-xs text-app-text-2">
-              {t("app.hotovostnyDoklad")}
-            </p>
+            <p className="mt-1.5 text-xs text-app-text-2">{t("app.hotovostnyDoklad")}</p>
           )}
         </div>
 

@@ -44,6 +44,7 @@ export const sk = {
   "domov.vystaveneFakturyPopis": "Kto ešte nezaplatil, PDF a odoslanie",
   "domov.blocek": "Bloček s QR kódom",
   "domov.blocekPopis": "Načíta sa z Finančnej správy aj s položkami",
+  "domov.blocekPopisCz": "Z QR kódu sa prečíta suma a predajca, položky z fotky",
   "domov.fakturaPdf": "Faktúra v PDF",
   "domov.fakturaPdfPopis": "Vyberte súbor z telefónu alebo z cloudu",
   "domov.viacstranovy": "Viacstranový doklad",

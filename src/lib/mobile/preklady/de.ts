@@ -32,6 +32,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "domov.vystaveneFakturyPopis": "Wer noch nicht bezahlt hat, PDF und Versand",
   "domov.blocek": "Beleg mit QR-Code",
   "domov.blocekPopis": "Wird von der Finanzverwaltung geladen, samt Positionen",
+  "domov.blocekPopisCz": "Betrag und Verkäufer aus dem QR-Code, Positionen vom Foto",
   "domov.fakturaPdf": "Rechnung als PDF",
   "domov.fakturaPdfPopis": "Datei vom Telefon oder aus der Cloud wählen",
   "domov.viacstranovy": "Mehrseitiger Beleg",

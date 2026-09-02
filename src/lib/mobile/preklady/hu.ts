@@ -32,6 +32,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "domov.vystaveneFakturyPopis": "Ki nem fizetett még, PDF és küldés",
   "domov.blocek": "Blokk QR-kóddal",
   "domov.blocekPopis": "Az adóhatóságtól töltődik be, tételekkel együtt",
+  "domov.blocekPopisCz": "Az összeg és az eladó a QR-kódból, a tételek a fotóról",
   "domov.fakturaPdf": "Számla PDF-ben",
   "domov.fakturaPdfPopis": "Válasszon fájlt a telefonról vagy a felhőből",
   "domov.viacstranovy": "Többoldalas bizonylat",

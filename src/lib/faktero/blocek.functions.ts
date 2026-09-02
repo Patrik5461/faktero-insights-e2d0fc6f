@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { jeEetQr, parseEetQr } from "./eet-cz";
+import { firmaZAres } from "./ares.server";
 
 /**
  * Prečítanie pokladničného dokladu (bločku).
@@ -15,6 +17,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  *    to stránka aj takto pomenuje.
  *
  * Skener predtým vedel len druhú cestu a o QR kóde na bločku nevedel nič.
+ *
+ * Na českom bločku to funguje inak a nedá sa to spraviť rovnako: evidencia
+ * tržieb (EET) skončila 1. 1. 2023 a databáza, z ktorej by sa doklad dal
+ * dotiahnuť, neexistuje. Český QR kód ale nesie údaje priamo v sebe — suma,
+ * dátum a DIČ sa z neho prečítajú bez akéhokoľvek volania von (`eet-cz.ts`),
+ * predajca sa podľa IČO dohľadá v ARES a položky ostávajú na fotku.
  */
 
 /** Pod týmto kľúčom si stránka nového dokladu prevezme prečítaný bloček. */
@@ -86,7 +94,43 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<BlocekVysledok> => {
     let poznamka: string | undefined;
 
-    if (data.qr?.trim()) {
+    /*
+     * Český bloček sa musí skúsiť skôr než eKasa — `processEkasaQr` by na
+     * reťazci `EET*1.0*…` len márne hľadal base64 payload a skončil chybou.
+     * Keď je aj fotka, výsledok sa nižšie zlúči: hlavička z QR, položky z fotky.
+     */
+    let eet: BlocekVysledok | undefined;
+    if (data.qr?.trim() && jeEetQr(data.qr)) {
+      const d = parseEetQr(data.qr.trim());
+      if (d) {
+        const firma = d.ico ? await firmaZAres(d.ico) : null;
+        eet = {
+          zdroj: "qr",
+          overeny: false,
+          qr_raw: data.qr.trim(),
+          poznamka:
+            "Český bloček — údaje sú priamo z QR kódu. Evidencia tržieb (EET) skončila v roku 2023, " +
+            "takže doklad ani jeho položky sa nemajú kde overiť.",
+          supplier: firma?.nazov,
+          supplier_address: firma?.adresa,
+          supplier_ico: d.ico,
+          supplier_dic: d.dic,
+          supplier_ic_dph: firma?.platitelDph ? (firma.dic ?? d.dic) : undefined,
+          total: d.suma,
+          currency: "CZK",
+          date: d.datum,
+          items: [],
+        };
+        if (!data.image_data_url) return eet;
+        poznamka = "Suma, dátum a predajca sú z QR kódu, položky sú prečítané z fotky.";
+      } else {
+        poznamka = data.image_data_url
+          ? "Český QR kód sa nepodarilo prečítať, údaje sú prečítané z fotky."
+          : "Český QR kód sa nepodarilo prečítať.";
+      }
+    }
+
+    if (data.qr?.trim() && !jeEetQr(data.qr)) {
       const { processEkasaQr } = await import("./ekasa-decoder.server");
       const r = await processEkasaQr(data.qr.trim());
       if (r.ok && r.source === "ekasa") {
@@ -199,7 +243,7 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
       };
     });
 
-    return {
+    const vysledok: BlocekVysledok = {
       zdroj: "foto",
       overeny: false,
       poznamka,
@@ -215,4 +259,19 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
       document_number: ocr.document_number ?? undefined,
       items,
     };
+
+    if (eet) {
+      // Hlavička ide z QR kódu — ten je odpísaný z pokladnice, kdežto fotka je
+      // odhad. Položky ostávajú z fotky, v českom QR nie sú a nikdy neboli.
+      vysledok.currency = "CZK";
+      if (eet.total != null) vysledok.total = eet.total;
+      if (eet.date) vysledok.date = eet.date;
+      if (eet.supplier) vysledok.supplier = eet.supplier;
+      if (eet.supplier_address) vysledok.supplier_address = eet.supplier_address;
+      if (eet.supplier_ico) vysledok.supplier_ico = eet.supplier_ico;
+      if (eet.supplier_dic) vysledok.supplier_dic = eet.supplier_dic;
+      if (eet.supplier_ic_dph) vysledok.supplier_ic_dph = eet.supplier_ic_dph;
+    }
+
+    return vysledok;
   });
