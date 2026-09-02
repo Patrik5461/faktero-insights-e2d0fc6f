@@ -71,6 +71,13 @@ function round2(n: number): number {
 const Vstup = z.object({
   qr: z.string().max(4000).optional(),
   image_data_url: z.string().max(12_000_000).optional(),
+  /*
+   * Krajina firmy, ktorá doklad skenuje. Rozhoduje o tom, aké sadzby DPH a akú
+   * menu má čítanie z fotky čakať — český bloček s 12 % DPH sa proti slovenskej
+   * sade sadzieb prečítal ako nulový. Keď nepríde, ostáva Slovensko; český QR
+   * kód si krajinu povie sám.
+   */
+  krajina: z.enum(["SK", "CZ"]).optional(),
 });
 
 /**
@@ -217,7 +224,7 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
     }
 
     const { ocrBlocek } = await import("./blocek-ocr.server");
-    const ocr = await ocrBlocek(data.image_data_url);
+    const ocr = await ocrBlocek(data.image_data_url, eet ? "CZ" : (data.krajina ?? "SK"));
     if (!ocr) {
       return {
         zdroj: "nic",

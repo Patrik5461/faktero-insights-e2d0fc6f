@@ -1420,6 +1420,8 @@ function ZachytDokladu({
   hotovyQr?: string | null;
 }) {
   const { t } = usePreklad();
+  /* Sadzby DPH a mena pri čítaní z fotky sa riadia krajinou firmy. */
+  const krajina = useKrajinaDane();
   const nacitaj = useOperacia<BlocekVysledok>("blocek-precitaj");
   const uloz = useOperacia("vydavok-uloz");
 
@@ -1453,7 +1455,7 @@ function ZachytDokladu({
     setQrKod(vstup.qr ?? null);
     setStav("citam");
     try {
-      prijmi((await nacitaj({ data: vstup })) as BlocekVysledok, prilozene);
+      prijmi((await nacitaj({ data: { ...vstup, krajina } })) as BlocekVysledok, prilozene);
     } catch (e: any) {
       const { isOnline } = await import("@/lib/mobile/offline-queue");
       if (!(await isOnline())) {

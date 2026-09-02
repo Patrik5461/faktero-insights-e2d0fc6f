@@ -6,6 +6,7 @@
  * `null` a stránka povie, že sa nepodarilo prečítať nič.
  */
 import { odpovedNaJson } from "./json-odpoved";
+import { sadzbyKrajiny, type KrajinaDane } from "./vat-rates";
 
 export type OcrBlocek = {
   supplier?: string | null;
@@ -20,15 +21,33 @@ export type OcrBlocek = {
   items?: Array<{ name: string; quantity: number; unit_price: number; vat_rate: number }>;
 };
 
-const PROMPT = `Si OCR asistent pre slovenské pokladničné bločky a faktúry. Z dokladu prečítaj údaje.
+/*
+ * Pokyn sa skladá podľa krajiny dokladu. Natvrdo tu boli slovenské sadzby a
+ * eurá, takže český bloček s 12 % DPH sa čítal so sadzbou 0 % a v eurách —
+ * doklad potom sadol do DPH priznania s nulou a nikto si to nevšimol.
+ */
+const KDE: Record<KrajinaDane, string> = { SK: "na Slovensku", CZ: "v Česku" };
+const MENA: Record<KrajinaDane, string> = { SK: "EUR", CZ: "CZK" };
+
+function pokyn(krajina: KrajinaDane): string {
+  const sadzby = sadzbyKrajiny(krajina);
+  const zoznam = sadzby.join(", ");
+  const vyber = sadzby.join("|");
+  const mena = MENA[krajina];
+  return `Si OCR asistent pre pokladničné bločky a faktúry. Z dokladu prečítaj údaje.
 Doklad môže mať viac strán — položky pozbieraj zo všetkých a sumy vezmi z tej, kde je celkový súčet.
-Sadzby DPH na Slovensku sú 23, 19, 5 alebo 0 percent — inú nevracaj.
+Sadzby DPH ${KDE[krajina]} sú ${zoznam} percent — inú nevracaj.
 Dátum vráť tak, ako je na doklade, vo formáte YYYY-MM-DD.
 Keď údaj na doklade nie je, daj null; nič si nevymýšľaj.
 Vráť VÝHRADNE JSON bez sprievodného textu:
-{"supplier":string|null,"ico":string|null,"ic_dph":string|null,"total":number|null,"vat_amount":number|null,"vat_rate":23|19|5|0|null,"currency":"EUR","date":"YYYY-MM-DD"|null,"document_number":string|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":23|19|5|0}]}`;
+{"supplier":string|null,"ico":string|null,"ic_dph":string|null,"total":number|null,"vat_amount":number|null,"vat_rate":${vyber}|null,"currency":"${mena}","date":"YYYY-MM-DD"|null,"document_number":string|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":${vyber}}]}`;
+}
 
-export async function ocrBlocek(imageDataUrl: string): Promise<OcrBlocek | null> {
+export async function ocrBlocek(
+  imageDataUrl: string,
+  krajina: KrajinaDane = "SK",
+): Promise<OcrBlocek | null> {
+  const PROMPT = pokyn(krajina);
   const jePdf = imageDataUrl.startsWith("data:application/pdf");
   if (!imageDataUrl.startsWith("data:image/") && !jePdf) return null;
 

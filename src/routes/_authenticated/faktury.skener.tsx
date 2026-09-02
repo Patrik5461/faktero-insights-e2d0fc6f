@@ -49,7 +49,9 @@ function ScannerPage() {
     setLoading(true);
     setResult(null);
     try {
-      const r = (await nacitaj({ data: { qr, image_data_url: dataUrl } })) as BlocekVysledok;
+      const r = (await nacitaj({
+        data: { qr, image_data_url: dataUrl, krajina },
+      })) as BlocekVysledok;
       setResult(r);
       setUhrada(r.payment_method ?? null);
       if (r.zdroj === "ekasa") toast.success("Doklad načítaný z Finančnej správy");

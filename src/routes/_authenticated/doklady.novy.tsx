@@ -7,6 +7,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
 import { scanQrCode, scanQrFromImage } from "@/lib/mobile/qr-scanner";
 import { nacitajBlocekFn, PRENOS_KLUC, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
+import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import {
   createExpenseFn,
   updateExpenseFn,
@@ -71,6 +72,8 @@ const EMPTY: Form = {
 
 function NovyDokladPage() {
   const navigate = useNavigate();
+  /* Podľa krajiny firmy sa čítajú sadzby DPH a mena z fotky dokladu. */
+  const krajina = useKrajinaDane();
   const search = useSearch({ from: "/_authenticated/doklady/novy" });
   const nacitaj = useServerFn(nacitajBlocekFn);
   const createFn = useServerFn(createExpenseFn);
@@ -335,7 +338,9 @@ function NovyDokladPage() {
   }
 
   async function precitaj(qr: string | undefined, dataUrl?: string) {
-    const r = (await nacitaj({ data: { qr, image_data_url: dataUrl } })) as BlocekVysledok;
+    const r = (await nacitaj({
+      data: { qr, image_data_url: dataUrl, krajina },
+    })) as BlocekVysledok;
     applyBlocek(r);
   }
 
