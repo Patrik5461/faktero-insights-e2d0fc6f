@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listBankData } from "@/lib/faktero/tatrabanka.functions";
 import { JobPicker } from "@/components/faktero/JobPicker";
@@ -610,15 +611,8 @@ function NahladPrilohy({
       ) : jeObrazok ? (
         <img src={url} alt="Doklad" className="max-h-[70vh] w-full bg-muted/20 object-contain" />
       ) : (
-        <object data={url} type="application/pdf" className="h-[70vh] w-full">
-          {/* Mobilné prehliadače PDF vo vnorenom rámci často nezobrazia. */}
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            Váš prehliadač náhľad PDF nezobrazí.{" "}
-            <button onClick={stiahni} className="text-primary underline">
-              Otvoriť doklad
-            </button>
-          </div>
-        </object>
+        /* Vlastné vykreslenie — na zabudovaný prehliadač PDF sa spoľahnúť nedá. */
+        <NahladPdf url={url} />
       )}
     </div>
   );

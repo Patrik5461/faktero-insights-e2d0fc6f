@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { captureReceipt } from "@/lib/mobile/receipt-scanner";
@@ -81,6 +82,11 @@ function NovyDokladPage() {
   const urlFn = useServerFn(getExpenseFileUrlFn);
   const [form, setForm] = useState<Form>(EMPTY);
   const [preview, setPreview] = useState<string | null>(null);
+  /*
+   * PDF sa nedá ukázať v `<img>` — pri otvorení uloženého dokladu tam bol
+   * rozbitý obrázok. Kreslí ho `NahladPdf`, tak treba vedieť, čo je v ruke.
+   */
+  const [nahladJePdf, setNahladJePdf] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<{
     path: string;
     mime: string;
@@ -142,6 +148,9 @@ function NovyDokladPage() {
         });
         try {
           const { url } = await urlFn({ data: { file_path: data.file_path } });
+          setNahladJePdf(
+            (data.file_mime ?? "").includes("pdf") || (data.file_path ?? "").endsWith(".pdf"),
+          );
           setPreview(url);
         } catch {
           // náhľad je nadštandard — doklad sa dá otvoriť aj bez neho
@@ -224,6 +233,7 @@ function NovyDokladPage() {
     const cap = await captureReceipt();
     if (!cap) return;
     setSource("photo");
+    setNahladJePdf(false);
     setPreview(cap.dataUrl);
     setLoading(true);
     try {
@@ -272,7 +282,8 @@ function NovyDokladPage() {
         reader.onerror = () => rej(reader.error);
         reader.readAsDataURL(file);
       });
-      if (file.type.startsWith("image/")) setPreview(dataUrl);
+      setNahladJePdf(file.type === "application/pdf");
+      if (file.type.startsWith("image/") || file.type === "application/pdf") setPreview(dataUrl);
       const stored = await uploadToStorage(dataUrl, file.type || "application/octet-stream");
       if (stored) setUploadedFile({ path: stored.path, mime: file.type, size: stored.size });
       // Faktúra od dodávateľa chodí v PDF a čítať sa dá rovnako ako fotka —
@@ -475,7 +486,11 @@ function NovyDokladPage() {
 
           {preview && (
             <div className="overflow-hidden rounded-xl border border-border bg-card">
-              <img src={preview} alt="náhľad" className="max-h-72 w-full object-contain" />
+              {nahladJePdf ? (
+                <NahladPdf url={preview} />
+              ) : (
+                <img src={preview} alt="náhľad" className="max-h-72 w-full object-contain" />
+              )}
             </div>
           )}
 
