@@ -166,6 +166,52 @@ export const listExpensesFn = createServerFn({ method: "POST" })
     return rows ?? [];
   });
 
+/**
+ * Koľko dokladov leží mimo vybraného mesiaca a ktorý mesiac je najbližší.
+ *
+ * Zoznam Dokladov sa otvára na aktuálnom mesiaci a filtruje podľa dátumu
+ * vystavenia. Faktúra vystavená 31. 8. a nahratá 3. 9. sa tak hneď po uložení
+ * stratí z dohľadu — vyzerá to, že sa neuložila. Zoznam preto musí vedieť
+ * povedať, že niečo je inde, a ponúknuť, kde.
+ */
+export const dokladyMimoMesiacaFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { company_id: string; month: string }) => data)
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const [y, m] = data.month.split("-").map(Number);
+    if (!y || !m) return { pocet: 0, mesiac: null as string | null };
+    const od = `${y}-${String(m).padStart(2, "0")}-01`;
+    const do_ = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, "0")}-01`;
+    // Doklad bez dátumu vystavenia sa v zozname riadi dňom vzniku — tu ide o
+    // ten istý pohľad, len naopak, tak sa musí pýtať rovnako.
+    const mimo = `or(issue_date.lt.${od},issue_date.gte.${do_})`;
+    const bezDatumu = `and(issue_date.is.null,or(created_at.lt.${od},created_at.gte.${do_}))`;
+
+    const { count, error } = await supabase
+      .from("expense_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", data.company_id)
+      .or(`${mimo},${bezDatumu}`);
+    if (error) throw new Error(error.message);
+    if (!count) return { pocet: 0, mesiac: null as string | null };
+
+    // Najbližší mesiac, kam sa dá skočiť: ten, v ktorom leží najnovší doklad
+    // mimo výberu. Vo väčšine prípadov je to práve ten práve nahratý.
+    const { data: najnovsi } = await supabase
+      .from("expense_documents")
+      .select("issue_date, created_at")
+      .eq("company_id", data.company_id)
+      .or(`${mimo},${bezDatumu}`)
+      .order("issue_date", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const den = (najnovsi?.issue_date as string | null) ?? (najnovsi?.created_at as string | null);
+    return { pocet: count, mesiac: den ? den.slice(0, 7) : null };
+  });
+
 export const getExpenseFileUrlFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { file_path: string }) => data)

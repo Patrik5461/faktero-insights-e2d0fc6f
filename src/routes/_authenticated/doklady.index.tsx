@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { dokladyMimoMesiacaFn } from "@/lib/faktero/expenses.functions";
 import {
   navrhniParovanieDokladov,
   potvrdParovanieDokladu,
@@ -28,8 +29,24 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: () => ({ meta: [{ title: "Doklady — Faktero" }] }),
+  /*
+   * `mesiac` v adrese otvorí zoznam rovno na mesiaci dokladu. Bez neho sa
+   * zoznam otvára na tomto mesiaci a doklad vystavený v minulom mesiaci sa hneď
+   * po uložení stratí z dohľadu — vyzerá to, že sa neuložil.
+   */
+  validateSearch: (s: Record<string, unknown>): { mesiac?: string } => {
+    const m = typeof s.mesiac === "string" && /^\d{4}-\d{2}$/.test(s.mesiac) ? s.mesiac : undefined;
+    return m ? { mesiac: m } : {};
+  },
   component: DokladyPage,
 });
+
+/** „2026-08" → „august 2026" — do vety, nie do tabuľky. */
+function nazovMesiaca(m: string): string {
+  const [r, me] = m.split("-").map(Number);
+  if (!r || !me) return m;
+  return new Date(r, me - 1, 1).toLocaleDateString("sk-SK", { month: "long", year: "numeric" });
+}
 
 const STATUS_LABEL: Record<string, string> = {
   new: "Nový",
@@ -45,6 +62,7 @@ const STATUS_STYLE: Record<string, string> = {
 function DokladyPage() {
   const navigate = useNavigate();
   const listFn = useServerFn(listExpensesFn);
+  const mimoFn = useServerFn(dokladyMimoMesiacaFn);
   const deleteFn = useServerFn(deleteExpenseFn);
   const exportFn = useServerFn(exportExpensesZipFn);
   const urlFn = useServerFn(getExpenseFileUrlFn);
@@ -63,7 +81,13 @@ function DokladyPage() {
   const [status, setStatus] = useState<string>("all");
   /** Doklad, ktorý sa práve presúva medzi prijaté faktúry. */
   const [presuvam, setPresuvam] = useState<string | null>(null);
-  const [month, setMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const { mesiac: mesiacZAdresy } = Route.useSearch();
+  const [month, setMonth] = useState<string>(mesiacZAdresy ?? new Date().toISOString().slice(0, 7));
+  /** Koľko dokladov je mimo vybraného mesiaca a kam sa dá skočiť. */
+  const [mimo, setMimo] = useState<{ pocet: number; mesiac: string | null }>({
+    pocet: 0,
+    mesiac: null,
+  });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
   const cid = getActiveCompanyId();
@@ -109,6 +133,14 @@ function DokladyPage() {
         Párovanie s bankou je nadstavba nad zoznamom — keď zlyhá, doklady sa aj
         tak ukážu. Preto zvlášť a ticho.
       */
+      void (async () => {
+        try {
+          if (month) setMimo(await mimoFn({ data: { company_id: cid, month } }));
+          else setMimo({ pocet: 0, mesiac: null });
+        } catch {
+          /* upozornenie je nadstavba — zoznam funguje aj bez neho */
+        }
+      })();
       void (async () => {
         try {
           const ids = (data ?? []).map((r: any) => r.id).slice(0, 200);
@@ -244,12 +276,22 @@ function DokladyPage() {
         <div className="mb-4 flex flex-wrap items-end gap-3">
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Mesiac</label>
-            <input
-              type="month"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="month"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setMonth("")}
+                disabled={!month}
+                className="rounded-md border border-border bg-card px-2 py-1.5 text-xs hover:bg-secondary disabled:opacity-40"
+              >
+                Všetky
+              </button>
+            </div>
           </div>
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Stav</label>
@@ -274,13 +316,45 @@ function DokladyPage() {
             </button>
             <button
               onClick={() => handleExport(true)}
-              disabled={exporting || !rows.length}
+              disabled={exporting || !rows.length || (!month && !selected.size)}
+              title={
+                !month && !selected.size
+                  ? "Vyberte mesiac alebo označte doklady — inak by sa za odovzdané označili všetky."
+                  : undefined
+              }
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               <Download className="h-4 w-4" /> Odovzdať účtovníkovi
             </button>
           </div>
         </div>
+
+        {month && mimo.pocet > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
+            <span>
+              {rows.length === 0
+                ? `V tomto mesiaci nie je žiadny doklad.`
+                : `Mimo tohto mesiaca ${mimo.pocet === 1 ? "je ešte 1 doklad" : `je ešte ${mimo.pocet} dokladov`}.`}{" "}
+              Doklady sa radia podľa dátumu vystavenia, nie podľa dňa nahratia.
+            </span>
+            {mimo.mesiac && (
+              <button
+                type="button"
+                onClick={() => setMonth(mimo.mesiac!)}
+                className="rounded-md border border-border bg-card px-2 py-1 text-xs font-medium hover:bg-secondary"
+              >
+                Zobraziť {nazovMesiaca(mimo.mesiac)}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setMonth("")}
+              className="rounded-md border border-border bg-card px-2 py-1 text-xs hover:bg-secondary"
+            >
+              Zobraziť všetky
+            </button>
+          </div>
+        )}
 
         <p className="mb-4 text-xs text-muted-foreground">
           V balíku je <strong>pohoda.xml</strong> na priamy import do Pohody, súpiska v CSV a

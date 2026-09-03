@@ -386,7 +386,13 @@ function NovyDokladPage() {
       if (search.id) await updateFn({ data: { id: search.id, patch: payload } });
       else await createFn({ data: payload });
       toast.success("Doklad uložený");
-      navigate({ to: "/doklady" });
+      /*
+       * Zoznam sa otvára na jednom mesiaci a radí sa podľa dátumu vystavenia.
+       * Doklad z minulého mesiaca nahratý dnes by tam preto nebol vidieť — tak
+       * sa zoznam otvorí rovno na mesiaci, do ktorého doklad patrí.
+       */
+      const mesiac = (form.issue_date || new Date().toISOString().slice(0, 10)).slice(0, 7);
+      navigate({ to: "/doklady", search: { mesiac } });
     } catch (e: any) {
       toast.error(e?.message ?? "Uloženie zlyhalo");
     } finally {
