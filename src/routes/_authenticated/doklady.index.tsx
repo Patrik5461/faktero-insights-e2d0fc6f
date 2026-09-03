@@ -422,14 +422,26 @@ function DokladyPage() {
           ) : rows.length === 0 ? (
             <div className="p-12 text-center text-sm text-muted-foreground">
               <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
-              Zatiaľ tu nemáte žiadne doklady. Odfoťte blok alebo nahrajte fotku/PDF.
+              {mimo.pocet > 0
+                ? `Vo výbere nie je žiadny doklad — ${mimo.pocet === 1 ? "jeden je" : `${mimo.pocet} ich je`} v inom mesiaci.`
+                : "Zatiaľ tu nemáte žiadne doklady. Odfoťte blok alebo nahrajte fotku/PDF."}
               <div className="mt-4 flex justify-center gap-2">
-                <Link
-                  to="/doklady/novy"
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
-                >
-                  <Camera className="h-4 w-4" /> Skenovať doklad
-                </Link>
+                {mimo.pocet > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setMonth("")}
+                    className="rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+                  >
+                    Zobraziť všetky doklady
+                  </button>
+                ) : (
+                  <Link
+                    to="/doklady/novy"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+                  >
+                    <Camera className="h-4 w-4" /> Skenovať doklad
+                  </Link>
+                )}
               </div>
             </div>
           ) : (
