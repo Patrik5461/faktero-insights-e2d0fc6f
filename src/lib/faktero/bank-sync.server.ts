@@ -240,6 +240,120 @@ function bankaUcetNepozna(chyba: any): boolean {
 }
 
 /**
+ * Zosynchronizuje jedno pripojenie: účty, transakcie, párovanie aj upozornenia.
+ *
+ * Vydelené z denného behu preto, že notifikácia z banky sa týka konkrétneho
+ * súhlasu — sťahovať kvôli nej všetky firmy by bolo zbytočné.
+ */
+export async function syncPripojenie(
+  supabaseAdmin: any,
+  conn: any,
+  daysBack = DEFAULT_DAYS_BACK,
+): Promise<SyncResult> {
+  const base = { connection_id: conn.id, company_id: conn.company_id, accounts: 0, inserted: 0 };
+  try {
+    if (!conn.access_token) throw new Error("chýba access_token");
+    const accessToken = await ensureFreshToken(supabaseAdmin, conn);
+    const accounts = await syncAccounts(supabaseAdmin, conn, accessToken);
+    /*
+     * Účty sa ťahajú každý zvlášť a chyba jedného nesmie zhodiť ostatné.
+     * Firmy majú v jednom pripojení aj účty vedené v iných bankách (TB ich
+     * sprístupňuje cez multibanking) a tie sa správajú inak — keby na nich
+     * sťahovanie padlo, o zvyšné účty by firma prišla celkom.
+     */
+    let inserted = 0;
+    const chybneUcty: string[] = [];
+    for (const acc of accounts) {
+      if (acc.unavailable_since) {
+        console.log(
+          `[bank-sync] účet ${acc.iban ?? acc.id} preskočený — ${acc.unavailable_reason ?? "banka ho nepozná"}`,
+        );
+        continue;
+      }
+      try {
+        const r = await stiahniTransakcieUctu(supabaseAdmin, conn, accessToken, acc, daysBack);
+        inserted += r.inserted;
+      } catch (e: any) {
+        chybneUcty.push(acc.iban ?? acc.id);
+        if (bankaUcetNepozna(e)) {
+          await oznacNedostupny(supabaseAdmin, acc.id, "Banka účet nepozná (NO_ACCOUNT).");
+          console.error(
+            `[bank-sync] účet ${acc.iban ?? acc.id}: banka ho nepozná, ďalej ho neskúšam`,
+          );
+        } else {
+          console.error(`[bank-sync] účet ${acc.iban ?? acc.id} zlyhal:`, e?.message ?? e);
+        }
+      }
+    }
+    if (chybneUcty.length) {
+      console.error(
+        `[bank-sync] pripojenie ${conn.id}: nepodarilo sa ${chybneUcty.length} účtov (${chybneUcty.join(", ")})`,
+      );
+    }
+    await supabaseAdmin
+      .from("bank_connections")
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq("id", conn.id);
+
+    /*
+     * Nové pohyby hneď spárujeme. Zapíše sa len isté (sedí variabilný symbol
+     * aj suma) — sporné ostávajú návrhmi, presne ako pri ručnom párovaní.
+     * Bez tohto kroku by peniaze na účte ležali nespárované až dovtedy, kým
+     * si niekto otvorí párovanie, a upozornenie o úhrade by nemalo vzniknúť.
+     */
+    if (inserted > 0 && conn.company_id) {
+      try {
+        const { sparujFirmuAutomaticky } = await import("./parovanie.functions");
+        const { uhradene } = await sparujFirmuAutomaticky(conn.company_id);
+        if (uhradene.length) {
+          const { oznamUhradu } = await import("./push-uhrada.server");
+          await oznamUhradu(conn.company_id, uhradene);
+        }
+      } catch (e: any) {
+        // Párovanie je nadstavba — keď zlyhá, stiahnuté pohyby ostávajú.
+        console.error(`[bank-sync] párovanie firmy ${conn.company_id} zlyhalo:`, e?.message ?? e);
+      }
+
+      /*
+        To isté pre splátky leasingov a úverov. Je to samostatný prechod:
+        faktúry sa párujú z prichádzajúcich platieb, splátky z odchádzajúcich,
+        a pravidlá sú iné — pri splátkach nestačí suma, lebo sú každý mesiac
+        rovnaké.
+      */
+      try {
+        const { sparujSplatkyFirmyAutomaticky } = await import("./financovanie.functions");
+        const { zapisanych } = await sparujSplatkyFirmyAutomaticky(conn.company_id);
+        if (zapisanych > 0) {
+          console.log(`[bank-sync] firma ${conn.company_id}: spárovaných splátok ${zapisanych}`);
+        }
+      } catch (e: any) {
+        console.error(
+          `[bank-sync] párovanie splátok firmy ${conn.company_id} zlyhalo:`,
+          e?.message ?? e,
+        );
+      }
+    }
+
+    return {
+      ...base,
+      accounts: accounts.length,
+      inserted,
+      ...(chybneUcty.length ? { failed_accounts: chybneUcty } : {}),
+    };
+  } catch (e: any) {
+    const error = e?.message ?? "sync_failed";
+    console.error(`[bank-sync] pripojenie ${conn.id} zlyhalo:`, error);
+    return { ...base, error };
+  }
+}
+
+function zhrnutie(results: SyncResult[]) {
+  const inserted = results.reduce((s, r) => s + r.inserted, 0);
+  const failed = results.filter((r) => r.error).length;
+  return { connections: results.length, inserted, failed, results };
+}
+
+/**
  * Prejde všetky pripojené banky a natiahne účty aj transakcie.
  * Chyba na jednom pripojení nezhodí ostatné — zapíše sa do výsledku.
  */
@@ -252,109 +366,41 @@ export async function runDailyBankSync(daysBack = DEFAULT_DAYS_BACK) {
     .eq("status", "connected");
 
   const results: SyncResult[] = [];
-
   for (const conn of connections ?? []) {
-    const base = { connection_id: conn.id, company_id: conn.company_id, accounts: 0, inserted: 0 };
-    try {
-      if (!conn.access_token) throw new Error("chýba access_token");
-      const accessToken = await ensureFreshToken(supabaseAdmin, conn);
-      const accounts = await syncAccounts(supabaseAdmin, conn, accessToken);
-      /*
-       * Účty sa ťahajú každý zvlášť a chyba jedného nesmie zhodiť ostatné.
-       * Firmy majú v jednom pripojení aj účty vedené v iných bankách (TB ich
-       * sprístupňuje cez multibanking) a tie sa správajú inak — keby na nich
-       * sťahovanie padlo, o zvyšné účty by firma prišla celkom.
-       */
-      let inserted = 0;
-      const chybneUcty: string[] = [];
-      for (const acc of accounts) {
-        if (acc.unavailable_since) {
-          console.log(
-            `[bank-sync] účet ${acc.iban ?? acc.id} preskočený — ${acc.unavailable_reason ?? "banka ho nepozná"}`,
-          );
-          continue;
-        }
-        try {
-          const r = await stiahniTransakcieUctu(supabaseAdmin, conn, accessToken, acc, daysBack);
-          inserted += r.inserted;
-        } catch (e: any) {
-          chybneUcty.push(acc.iban ?? acc.id);
-          if (bankaUcetNepozna(e)) {
-            await oznacNedostupny(supabaseAdmin, acc.id, "Banka účet nepozná (NO_ACCOUNT).");
-            console.error(
-              `[bank-sync] účet ${acc.iban ?? acc.id}: banka ho nepozná, ďalej ho neskúšam`,
-            );
-          } else {
-            console.error(`[bank-sync] účet ${acc.iban ?? acc.id} zlyhal:`, e?.message ?? e);
-          }
-        }
-      }
-      if (chybneUcty.length) {
-        console.error(
-          `[bank-sync] pripojenie ${conn.id}: nepodarilo sa ${chybneUcty.length} účtov (${chybneUcty.join(", ")})`,
-        );
-      }
-      await supabaseAdmin
-        .from("bank_connections")
-        .update({ last_synced_at: new Date().toISOString() })
-        .eq("id", conn.id);
-
-      /*
-       * Nové pohyby hneď spárujeme. Zapíše sa len isté (sedí variabilný symbol
-       * aj suma) — sporné ostávajú návrhmi, presne ako pri ručnom párovaní.
-       * Bez tohto kroku by peniaze na účte ležali nespárované až dovtedy, kým
-       * si niekto otvorí párovanie, a upozornenie o úhrade by nemalo vzniknúť.
-       */
-      if (inserted > 0 && conn.company_id) {
-        try {
-          const { sparujFirmuAutomaticky } = await import("./parovanie.functions");
-          const { uhradene } = await sparujFirmuAutomaticky(conn.company_id);
-          if (uhradene.length) {
-            const { oznamUhradu } = await import("./push-uhrada.server");
-            await oznamUhradu(conn.company_id, uhradene);
-          }
-        } catch (e: any) {
-          // Párovanie je nadstavba — keď zlyhá, stiahnuté pohyby ostávajú.
-          console.error(`[bank-sync] párovanie firmy ${conn.company_id} zlyhalo:`, e?.message ?? e);
-        }
-
-        /*
-          To isté pre splátky leasingov a úverov. Je to samostatný prechod:
-          faktúry sa párujú z prichádzajúcich platieb, splátky z odchádzajúcich,
-          a pravidlá sú iné — pri splátkach nestačí suma, lebo sú každý mesiac
-          rovnaké.
-        */
-        try {
-          const { sparujSplatkyFirmyAutomaticky } = await import("./financovanie.functions");
-          const { zapisanych } = await sparujSplatkyFirmyAutomaticky(conn.company_id);
-          if (zapisanych > 0) {
-            console.log(`[bank-sync] firma ${conn.company_id}: spárovaných splátok ${zapisanych}`);
-          }
-        } catch (e: any) {
-          console.error(
-            `[bank-sync] párovanie splátok firmy ${conn.company_id} zlyhalo:`,
-            e?.message ?? e,
-          );
-        }
-      }
-
-      results.push({
-        ...base,
-        accounts: accounts.length,
-        inserted,
-        ...(chybneUcty.length ? { failed_accounts: chybneUcty } : {}),
-      });
-    } catch (e: any) {
-      const error = e?.message ?? "sync_failed";
-      console.error(`[bank-sync] pripojenie ${conn.id} zlyhalo:`, error);
-      results.push({ ...base, error });
-    }
+    results.push(await syncPripojenie(supabaseAdmin, conn, daysBack));
   }
 
-  const inserted = results.reduce((s, r) => s + r.inserted, 0);
-  const failed = results.filter((r) => r.error).length;
+  const r = zhrnutie(results);
   console.log(
-    `[bank-sync] hotovo: ${results.length} pripojení, ${inserted} nových transakcií, ${failed} chýb`,
+    `[bank-sync] hotovo: ${r.connections} pripojení, ${r.inserted} nových transakcií, ${r.failed} chýb`,
   );
-  return { connections: results.length, inserted, failed, results };
+  return r;
+}
+
+/**
+ * Sťahovanie vyvolané notifikáciou banky — len pre súhlasy, ktoré v nej prišli.
+ *
+ * Neznámy `consentId` sa ticho preskočí: banka posiela aj súhlasy, ktoré už
+ * nemáme (staré, odvolané), a nie je to chyba.
+ */
+export async function syncPodlaSuhlasov(consentIds: string[], daysBack = DEFAULT_DAYS_BACK) {
+  if (!consentIds.length) return zhrnutie([]);
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: connections } = await supabaseAdmin
+    .from("bank_connections")
+    .select("*")
+    .eq("provider", "tatrabanka")
+    .eq("status", "connected")
+    .in("consent_id", consentIds);
+
+  const results: SyncResult[] = [];
+  for (const conn of connections ?? []) {
+    results.push(await syncPripojenie(supabaseAdmin, conn, daysBack));
+  }
+
+  const r = zhrnutie(results);
+  console.log(
+    `[bank-sync] z notifikácie: ${r.connections} pripojení, ${r.inserted} nových transakcií, ${r.failed} chýb`,
+  );
+  return r;
 }

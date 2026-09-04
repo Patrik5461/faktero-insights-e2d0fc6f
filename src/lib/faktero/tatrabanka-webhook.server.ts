@@ -1,26 +1,49 @@
 /**
  * Prijímač notifikácií od Tatra banky.
  *
- * POZOR — provizórny stav. Tatra banka nám zatiaľ nedodala dokumentáciu k formátu
- * notifikácií (aké hlavičky posiela, či a ako telo podpisuje, aká je štruktúra
- * payloadu). Preto tento handler notifikáciu **iba prijme, overí zdieľané tajomstvo
- * a uloží** — zámerne z nej nič neodvodzuje a nespúšťa žiadnu synchronizáciu.
- * Konať na základe neautentizovaného obsahu by bola diera; keď dorazí dokumentácia,
- * doplní sa overenie podpisu a spracovanie uložených záznamov.
+ * Banka nám klope vždy, keď na účte pribudne pohyb — telo je len ťuknutie po
+ * pleci, žiadne sumy v ňom nie sú:
  *
- * Banka nám notifikácie naozaj posiela (brána `Layer7-SecureSpan-Gateway`), ale
- * naše zdieľané tajomstvo nepozná — nikdy sme jej ho nemali ako odovzdať. Všetky
- * volania preto padali na 401 a nezostala po nich žiadna stopa okrem riadku v logu.
- * Odmietnutú notifikáciu teraz uložíme ako diagnostiku (`error_message` vyplnené,
- * `processed = false`), aby bolo z čoho zistiť, čím sa banka autentizuje — z
- * hlavičky `Authorization` si necháme **len schému** (`Basic`, `Bearer`), nikdy
- * samotný údaj. Stále vraciame 401 a stále z obsahu nič neodvodzujeme.
+ *     {"events": {"transactionEvents": [{"consentId": "…", "eventType": "NEW",
+ *      "accounts": [{"accountId": "…"}]}]}}
+ *
+ * Dokumentáciu k formátu sme nikdy nedostali a z hlavičiek naozajstných
+ * notifikácií je vidieť, že banka **neposiela nijaký overovací údaj** —
+ * `Authorization` chodí prázdna, `x-webhook-secret` ani `?s=` nie sú. Zdieľané
+ * tajomstvo sme jej nemali ako odovzdať, takže sa nikdy netrafilo a všetkých
+ * 101 notifikácií od augusta 2026 skončilo na 401.
+ *
+ * Preukazom je preto `consentId`: je to UUID, ktoré vzniklo pri udelení súhlasu
+ * a pozná ho len banka a my. Notifikáciu prijmeme, keď aspoň jeden `consentId`
+ * v nej sedí na naše živé pripojenie — alebo keď sedí tajomstvo, ak by nám ho
+ * banka niekedy začala posielať.
+ *
+ * Z obsahu notifikácie sa **neberú žiadne dáta**. Jediné, čo vyvolá, je to isté
+ * sťahovanie z API banky, aké robí nočný cron. Aj podvrhnutá notifikácia so
+ * správne uhádnutým UUID by teda dosiahla nanajvýš to, že sa natiahneme o
+ * chvíľu skôr.
+ *
+ * Odmietnutá notifikácia sa uloží ako diagnostika (`error_message` vyplnené,
+ * `processed = false`) — z hlavičky `Authorization` si necháme len schému
+ * (`Basic`, `Bearer`), nikdy samotný údaj.
  */
 
 const MAX_BODY_BYTES = 64 * 1024;
 
 /** Koľko odmietnutých notifikácií si za deň uložíme, aby sa tabuľka nedala zaplaviť. */
 const MAX_ODMIETNUTYCH_ZA_DEN = 50;
+
+/**
+ * Okno sťahovania pri notifikácii. Kratšie než nočných 14 dní — notifikácia je
+ * o pohybe, ktorý pribudol teraz, a odpoveď má byť rýchla.
+ */
+const DNI_PRI_NOTIFIKACII = 7;
+
+/** Ako často najviac sa smie kvôli notifikáciám ťahať ten istý súhlas. */
+const MIN_ODSTUP_MS = 60_000;
+
+/** Kedy sme naposledy ťahali pre daný súhlas. Banka pošle aj niekoľko výziev za sebou. */
+const poslednyBeh = new Map<string, number>();
 
 /** Porovnanie odolné voči časovej analýze. */
 function safeEqual(a: string, b: string): boolean {
@@ -141,23 +164,96 @@ function clientIp(request: Request): string | null {
   return request.headers.get("x-real-ip")?.slice(0, 64) ?? null;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Pozbiera `consentId` z tela notifikácie.
+ *
+ * Hľadá sa v celom strome, nie na pevnej ceste: formát nemáme popísaný a keď ho
+ * banka preskupí, notifikácia sa nesmie stať neprečítateľnou. Zoberú sa len
+ * hodnoty tvaru UUID a najviac desať — zvyšok je pokus o zahltenie.
+ */
+export function suhlasyZNotifikacie(payload: unknown): string[] {
+  const najdene = new Set<string>();
+  const prejdi = (uzol: unknown, hlbka: number): void => {
+    if (najdene.size >= 10 || hlbka > 8 || !uzol || typeof uzol !== "object") return;
+    if (Array.isArray(uzol)) {
+      for (const p of uzol.slice(0, 100)) prejdi(p, hlbka + 1);
+      return;
+    }
+    for (const [kluc, hodnota] of Object.entries(uzol)) {
+      if (kluc.toLowerCase() === "consentid" && typeof hodnota === "string" && UUID.test(hodnota)) {
+        najdene.add(hodnota);
+      } else {
+        prejdi(hodnota, hlbka + 1);
+      }
+    }
+  };
+  prejdi(payload, 0);
+  return [...najdene];
+}
+
+/**
+ * Ktoré zo súhlasov v notifikácii patria našim živým pripojeniam.
+ *
+ * Toto je celé overenie: `consentId` vzniklo pri udelení súhlasu a pozná ho len
+ * banka a my. Neznáme sa ticho zahodí — banka posiela aj súhlasy, ktoré sme už
+ * nahradili novšími, a nie je to chyba.
+ */
+async function znameSuhlasy(consentIds: string[]): Promise<string[]> {
+  if (!consentIds.length) return [];
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("bank_connections")
+      .select("consent_id")
+      .eq("provider", "tatrabanka")
+      .eq("status", "connected")
+      .in("consent_id", consentIds);
+    return (data ?? []).map((r: any) => r.consent_id).filter(Boolean);
+  } catch (e: any) {
+    // Keď sa nedá overiť, notifikáciu radšej odmietneme — prijať neoverenú
+    // by znamenalo pustiť sťahovanie na cudzí podnet.
+    console.error("[tatrabanka webhook] overenie súhlasu zlyhalo:", e?.message ?? e);
+    return [];
+  }
+}
+
+/**
+ * Spustí sťahovanie pre súhlasy z notifikácie — mimo odpovede banke.
+ *
+ * Banka čaká na potvrdenie a nginx volanie po 30 sekundách preruší, kým celé
+ * sťahovanie trvá dlhšie. Preto sa odpovie hneď a ťahá sa až potom; keby to
+ * padlo, nočný cron to o pár hodín dobehne.
+ */
+function spustiSync(consentIds: string[]): void {
+  const teraz = Date.now();
+  const nato = consentIds.filter((c) => teraz - (poslednyBeh.get(c) ?? 0) >= MIN_ODSTUP_MS);
+  if (!nato.length) {
+    console.log("[tatrabanka webhook] sťahovanie preskočené — bolo pred chvíľou");
+    return;
+  }
+  for (const c of nato) poslednyBeh.set(c, teraz);
+
+  void (async () => {
+    try {
+      const { syncPodlaSuhlasov } = await import("./bank-sync.server");
+      await syncPodlaSuhlasov(nato, DNI_PRI_NOTIFIKACII);
+    } catch (e: any) {
+      console.error("[tatrabanka webhook] sťahovanie zlyhalo:", e?.message ?? e);
+    }
+  })();
+}
+
 /** Uloží notifikáciu. `chyba` je vyplnená pri odmietnutej — tá je len diagnostika. */
 async function ulozUdalost(args: {
   request: Request;
   path: string;
   raw: string;
+  payload: unknown;
   chyba: string | null;
 }): Promise<void> {
-  const { request, path, raw, chyba } = args;
-
-  let payload: unknown = null;
-  if ((request.headers.get("content-type") ?? "").includes("json")) {
-    try {
-      payload = JSON.parse(raw);
-    } catch {
-      // Neplatný JSON necháme len v raw_body, nie je to dôvod vrátiť chybu.
-    }
-  }
+  const { request, path, raw, payload, chyba } = args;
 
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -183,6 +279,8 @@ async function ulozUdalost(args: {
       payload: payload as any,
       raw_body: raw || null,
       source_ip: clientIp(request),
+      processed: !chyba,
+      processed_at: chyba ? null : new Date().toISOString(),
       error_message: chyba,
     });
     if (error) throw new Error(error.message);
@@ -202,19 +300,6 @@ export async function handleTatraWebhook(request: Request, path: string): Promis
     return new Response("method not allowed", { status: 405 });
   }
 
-  const secret = process.env.TB_WEBHOOK_SECRET?.trim();
-  const url = new URL(request.url);
-  const supplied = url.searchParams.get("s") ?? request.headers.get("x-webhook-secret") ?? "";
-
-  if (!secret) {
-    // Bez nastaveného tajomstva by ktokoľvek na internete vedel plniť tabuľku.
-    // Notifikáciu preto potvrdíme, ale neukladáme – len zalogujeme, že prišla.
-    console.warn(
-      `[tatrabanka webhook] TB_WEBHOOK_SECRET nie je nastavený – notifikácia prijatá a zahodená (path=${path})`,
-    );
-    return new Response("ok", { status: 200 });
-  }
-
   let raw = "";
   try {
     raw = await request.text();
@@ -226,12 +311,30 @@ export async function handleTatraWebhook(request: Request, path: string): Promis
     raw = raw.slice(0, MAX_BODY_BYTES);
   }
 
-  if (!safeEqual(supplied, secret)) {
-    console.warn(`[tatrabanka webhook] odmietnuté – nesedí tajomstvo (path=${path})`);
-    await ulozUdalost({ request, path, raw, chyba: "odmietnuté – nesedí tajomstvo" });
+  let payload: unknown = null;
+  if ((request.headers.get("content-type") ?? "").includes("json")) {
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      // Neplatný JSON necháme len v raw_body, nie je to dôvod vrátiť chybu.
+    }
+  }
+
+  const suhlasy = await znameSuhlasy(suhlasyZNotifikacie(payload));
+
+  // Tajomstvo ostáva ako druhá cesta — keby nám ho banka niekedy začala posielať.
+  const secret = process.env.TB_WEBHOOK_SECRET?.trim();
+  const url = new URL(request.url);
+  const supplied = url.searchParams.get("s") ?? request.headers.get("x-webhook-secret") ?? "";
+  const tajomstvoSedi = !!secret && safeEqual(supplied, secret);
+
+  if (!suhlasy.length && !tajomstvoSedi) {
+    console.warn(`[tatrabanka webhook] odmietnuté – neznámy súhlas (path=${path})`);
+    await ulozUdalost({ request, path, raw, payload, chyba: "odmietnuté – neznámy súhlas" });
     return new Response("unauthorized", { status: 401 });
   }
 
-  await ulozUdalost({ request, path, raw, chyba: null });
+  await ulozUdalost({ request, path, raw, payload, chyba: null });
+  if (suhlasy.length) spustiSync(suhlasy);
   return new Response("ok", { status: 200 });
 }
