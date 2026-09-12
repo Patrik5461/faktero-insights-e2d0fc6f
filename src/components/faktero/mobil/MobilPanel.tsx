@@ -25,6 +25,7 @@ import {
   isBiometricAvailable,
   isBiometricEnabled,
 } from "@/lib/mobile/biometric";
+import { JE_KNIHA_JAZD } from "@/lib/mobile/apka";
 import { VERZIA_APKY } from "@/lib/mobile/brand";
 import { mojaPeciatka } from "@/lib/mobile/verzia";
 import { AppHeader } from "@/components/faktero/mobil/MobilChrome";
@@ -32,12 +33,7 @@ import { NahlasitChybu } from "@/components/faktero/NahlasitChybu";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { JAZYKY } from "@/lib/mobile/jazyk";
-import {
-  VYCHODZI_APKA,
-  nacitajMotiv,
-  ulozMotiv,
-  type Motiv,
-} from "@/lib/faktero/motiv";
+import { VYCHODZI_APKA, nacitajMotiv, ulozMotiv, type Motiv } from "@/lib/faktero/motiv";
 /**
  * Vysúvací panel s nastaveniami.
  *
@@ -302,18 +298,26 @@ export function MobilPanel({
             hint={t("panel.ucetPamat")}
             onClick={onUcet}
           />
+          {/*
+            Panel je spoločný pre obe appky, ale odkazy von z neho nie sú.
+            V Knihe jázd viedli na centrum pomoci Faktera a na návod k pokladni
+            — teda do agendy, ktorú tá appka vôbec nemá. Preto sa tu vetví:
+            návody idú rovno na knihu jázd a bločky sa neponúkajú.
+          */}
           <Polozka
             icon={BookOpen}
-            label={t("panel.navody")}
+            label={JE_KNIHA_JAZD ? t("panel.navodyJazdy") : t("panel.navody")}
             hint={t("panel.otvoriVPrehliadaci")}
-            onClick={() => otvorNaWebe("/pomoc")}
+            onClick={() => otvorNaWebe(JE_KNIHA_JAZD ? "/pomoc/jazdy" : "/pomoc")}
           />
-          <Polozka
-            icon={Receipt}
-            label={t("panel.blocky")}
-            hint={t("panel.ekasaPopis")}
-            onClick={() => otvorNaWebe("/pomoc/pokladna")}
-          />
+          {!JE_KNIHA_JAZD && (
+            <Polozka
+              icon={Receipt}
+              label={t("panel.blocky")}
+              hint={t("panel.ekasaPopis")}
+              onClick={() => otvorNaWebe("/pomoc/pokladna")}
+            />
+          )}
           {/* Nahlásiť sa dá aj z telefónu — chyba sa nájde najčastejšie tam. */}
           <Polozka
             icon={Bug}
@@ -323,9 +327,9 @@ export function MobilPanel({
           />
           <Polozka
             icon={Globe}
-            label={t("panel.otvoritNaWebe")}
-            hint={t("panel.zvysokAplikacie")}
-            onClick={() => otvorNaWebe("/dashboard")}
+            label={JE_KNIHA_JAZD ? t("panel.otvoritJazdyNaWebe") : t("panel.otvoritNaWebe")}
+            hint={JE_KNIHA_JAZD ? t("panel.jazdyNaWebe") : t("panel.zvysokAplikacie")}
+            onClick={() => otvorNaWebe(JE_KNIHA_JAZD ? "/jazdy" : "/dashboard")}
           />
 
           {/*
