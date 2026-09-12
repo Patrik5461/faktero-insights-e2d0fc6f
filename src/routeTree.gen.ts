@@ -72,6 +72,7 @@ import { Route as PayTokenRouteImport } from './routes/pay.$token'
 import { Route as PomocIndexRouteImport } from './routes/pomoc.index'
 import { Route as PomocAiAsistentRouteImport } from './routes/pomoc.ai-asistent'
 import { Route as PomocApiRouteImport } from './routes/pomoc.api'
+import { Route as PomocApkaRouteImport } from './routes/pomoc.apka'
 import { Route as PomocBankaRouteImport } from './routes/pomoc.banka'
 import { Route as PomocCenyRouteImport } from './routes/pomoc.ceny'
 import { Route as PomocDokladyRouteImport } from './routes/pomoc.doklady'
@@ -578,6 +579,11 @@ const PomocAiAsistentRoute = PomocAiAsistentRouteImport.update({
 const PomocApiRoute = PomocApiRouteImport.update({
   id: '/pomoc/api',
   path: '/pomoc/api',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocApkaRoute = PomocApkaRouteImport.update({
+  id: '/pomoc/apka',
+  path: '/pomoc/apka',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomocBankaRoute = PomocBankaRouteImport.update({
@@ -1679,6 +1685,7 @@ export interface FileRoutesByFullPath {
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
   '/pomoc/api': typeof PomocApiRoute
+  '/pomoc/apka': typeof PomocApkaRoute
   '/pomoc/banka': typeof PomocBankaRoute
   '/pomoc/ceny': typeof PomocCenyRoute
   '/pomoc/doklady': typeof PomocDokladyRoute
@@ -1923,6 +1930,7 @@ export interface FileRoutesByTo {
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
   '/pomoc/api': typeof PomocApiRoute
+  '/pomoc/apka': typeof PomocApkaRoute
   '/pomoc/banka': typeof PomocBankaRoute
   '/pomoc/ceny': typeof PomocCenyRoute
   '/pomoc/doklady': typeof PomocDokladyRoute
@@ -2176,6 +2184,7 @@ export interface FileRoutesById {
   '/pay/$token': typeof PayTokenRoute
   '/pomoc/ai-asistent': typeof PomocAiAsistentRoute
   '/pomoc/api': typeof PomocApiRoute
+  '/pomoc/apka': typeof PomocApkaRoute
   '/pomoc/banka': typeof PomocBankaRoute
   '/pomoc/ceny': typeof PomocCenyRoute
   '/pomoc/doklady': typeof PomocDokladyRoute
@@ -2430,6 +2439,7 @@ export interface FileRouteTypes {
     | '/pay/$token'
     | '/pomoc/ai-asistent'
     | '/pomoc/api'
+    | '/pomoc/apka'
     | '/pomoc/banka'
     | '/pomoc/ceny'
     | '/pomoc/doklady'
@@ -2674,6 +2684,7 @@ export interface FileRouteTypes {
     | '/pay/$token'
     | '/pomoc/ai-asistent'
     | '/pomoc/api'
+    | '/pomoc/apka'
     | '/pomoc/banka'
     | '/pomoc/ceny'
     | '/pomoc/doklady'
@@ -2926,6 +2937,7 @@ export interface FileRouteTypes {
     | '/pay/$token'
     | '/pomoc/ai-asistent'
     | '/pomoc/api'
+    | '/pomoc/apka'
     | '/pomoc/banka'
     | '/pomoc/ceny'
     | '/pomoc/doklady'
@@ -3147,6 +3159,7 @@ export interface RootRouteChildren {
   PayTokenRoute: typeof PayTokenRoute
   PomocAiAsistentRoute: typeof PomocAiAsistentRoute
   PomocApiRoute: typeof PomocApiRoute
+  PomocApkaRoute: typeof PomocApkaRoute
   PomocBankaRoute: typeof PomocBankaRoute
   PomocCenyRoute: typeof PomocCenyRoute
   PomocDokladyRoute: typeof PomocDokladyRoute
@@ -3670,6 +3683,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/api'
       fullPath: '/pomoc/api'
       preLoaderRoute: typeof PomocApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/apka': {
+      id: '/pomoc/apka'
+      path: '/pomoc/apka'
+      fullPath: '/pomoc/apka'
+      preLoaderRoute: typeof PomocApkaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/banka': {
@@ -5514,6 +5534,7 @@ const rootRouteChildren: RootRouteChildren = {
   PayTokenRoute: PayTokenRoute,
   PomocAiAsistentRoute: PomocAiAsistentRoute,
   PomocApiRoute: PomocApiRoute,
+  PomocApkaRoute: PomocApkaRoute,
   PomocBankaRoute: PomocBankaRoute,
   PomocCenyRoute: PomocCenyRoute,
   PomocDokladyRoute: PomocDokladyRoute,

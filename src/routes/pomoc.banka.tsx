@@ -150,6 +150,29 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "kedy",
+    title: "Kedy sa pohyby objavia",
+    body: (
+      <>
+        <p>
+          Raz denne predpoludním si Faktero samo stiahne pohyby zo všetkých pripojených účtov. To je
+          spodná hranica — nič viac netreba nastavovať.
+        </p>
+        <p>
+          Pri <strong>Tatra banke</strong> to býva rýchlejšie: banka dá vedieť, že sa na účte niečo
+          stalo, a Faktero si po pohyby siahne <strong>v priebehu pár sekúnd</strong>. Platba
+          prijatá doobeda tak nečaká na ďalšie ráno.
+        </p>
+        <p>
+          Sťahovanie sa nespúšťa ručne a je to zámer — nie je čo zrýchliť. Banky vydávajú pohyby s
+          vlastným oneskorením: čo ešte nezaúčtovali, nepošlú ani na požiadanie. Tlačidlo{" "}
+          <strong>Načítať účty</strong> v <Link to="/bankove-ucty">Bankových účtoch</Link> obnoví
+          zoznam účtov a zostatky, nie zoznam pohybov.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "transakcie",
     title: "Transakcie a párovanie",
     body: (

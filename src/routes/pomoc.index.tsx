@@ -24,6 +24,7 @@ import {
   ScanLine,
   Banknote,
   Sparkles,
+  Smartphone,
 } from "lucide-react";
 
 export const Route = createFileRoute("/pomoc/")({
@@ -105,6 +106,14 @@ const CATS: Cat[] = [
     label: "eFaktúra",
     desc: "Pripravenosť na elektronickú fakturáciu 2027.",
     icon: FileCheck2,
+    available: true,
+    skupina: "Fakturácia",
+  },
+  {
+    to: "/pomoc/apka",
+    label: "Aplikácia v telefóne",
+    desc: "Fakturovanie a skenovanie v teréne, práca bez signálu a samostatná Kniha jázd.",
+    icon: Smartphone,
     available: true,
     skupina: "Fakturácia",
   },

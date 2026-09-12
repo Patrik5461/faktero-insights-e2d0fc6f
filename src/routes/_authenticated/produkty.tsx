@@ -241,6 +241,8 @@ function ProductsPage() {
                   <td className="p-3 text-right">
                     {!list.showDeleted && (
                       <button
+                        aria-label="Upraviť"
+                        title="Upraviť"
                         onClick={() => setEditing(p)}
                         className="rounded p-1.5 hover:bg-muted"
                       >
@@ -265,6 +267,8 @@ function ProductsPage() {
                       </button>
                     ) : (
                       <button
+                        aria-label="Zmazať"
+                        title="Zmazať"
                         onClick={() => setRowDelete(p)}
                         className="rounded p-1.5 text-destructive hover:bg-destructive/10"
                       >

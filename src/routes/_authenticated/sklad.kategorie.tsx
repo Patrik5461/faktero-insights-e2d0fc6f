@@ -18,7 +18,19 @@ export const Route = createFileRoute("/_authenticated/sklad/kategorie")({
   component: CategoriesPage,
 });
 
-const PALETTE = ["#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#64748b"];
+/*
+  Farba sa vyberá krúžkom, v ktorom nie je žiadny text — bez názvu je to pre
+  čítačku obrazovky sedem rovnakých „tlačidiel" a nedá sa z nich vybrať.
+*/
+const PALETTE: { kod: string; nazov: string }[] = [
+  { kod: "#ef4444", nazov: "červená" },
+  { kod: "#f59e0b", nazov: "oranžová" },
+  { kod: "#10b981", nazov: "zelená" },
+  { kod: "#3b82f6", nazov: "modrá" },
+  { kod: "#8b5cf6", nazov: "fialová" },
+  { kod: "#ec4899", nazov: "ružová" },
+  { kod: "#64748b", nazov: "sivá" },
+];
 
 function CategoriesPage() {
   const listFn = useServerFn(listCategoriesWithCounts);
@@ -202,12 +214,15 @@ function CategoriesPage() {
                 className={`h-7 w-7 rounded-full border ${color === "" ? "ring-2 ring-primary" : "border-border"}`}
                 title="Bez farby"
               />
-              {PALETTE.map((c) => (
+              {PALETTE.map((f) => (
                 <button
-                  key={c}
-                  onClick={() => setColor(c)}
-                  className={`h-7 w-7 rounded-full border border-border ${color === c ? "ring-2 ring-primary" : ""}`}
-                  style={{ background: c }}
+                  key={f.kod}
+                  onClick={() => setColor(f.kod)}
+                  aria-label={f.nazov}
+                  title={f.nazov}
+                  aria-pressed={color === f.kod}
+                  className={`h-7 w-7 rounded-full border border-border ${color === f.kod ? "ring-2 ring-primary" : ""}`}
+                  style={{ background: f.kod }}
                 />
               ))}
             </div>

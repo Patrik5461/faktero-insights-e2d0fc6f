@@ -40,7 +40,12 @@ const sections: HelpSection[] = [
     title: "Sadzby DPH",
     body: (
       <>
-        <p>Faktero pracuje so slovenskými sadzbami:</p>
+        <p>
+          Ponuka sadzieb sa riadi <strong>krajinou firmy</strong> z{" "}
+          <Link to="/firma">Nastavení firmy</Link> a dátumom dokladu — pri staršom doklade teda
+          dostanete sadzby, ktoré vtedy platili, nie tie dnešné.
+        </p>
+        <p>Slovenská firma:</p>
         <ul>
           <li>
             <strong>23 %</strong> — základná,
@@ -56,7 +61,24 @@ const sections: HelpSection[] = [
           </li>
         </ul>
         <p>
-          Sadzba sa nastavuje na produkte a dá sa prepísať na riadku faktúry. Predvolená je 23 %.
+          Takto to platí od 1. januára 2025. Na dokladoch do konca roka 2024 Faktero ponúkne 20 % a
+          10 %.
+        </p>
+        <p>Česká firma:</p>
+        <ul>
+          <li>
+            <strong>21 %</strong> — základná,
+          </li>
+          <li>
+            <strong>12 %</strong> — znížená (od 1. januára 2024, keď sa obe znížené zlúčili),
+          </li>
+          <li>
+            <strong>0 %</strong> — oslobodené plnenia.
+          </li>
+        </ul>
+        <p>
+          Sadzba sa nastavuje na produkte a dá sa prepísať na riadku faktúry. Predvolená je tá
+          základná.
         </p>
       </>
     ),
