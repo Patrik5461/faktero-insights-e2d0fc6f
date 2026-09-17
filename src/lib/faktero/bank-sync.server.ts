@@ -222,6 +222,70 @@ export async function vlozPohyby(supabaseAdmin: any, riadky: any[]): Promise<num
 }
 
 /**
+ * Stiahne pohyby všetkých účtov jedného pripojenia pre banky, ktoré nejdú cez
+ * Tatra banku (Wise, Revolut, Wallester).
+ *
+ * Tie tri sa líšia len tým, ako sa k pohybom dostanú — zvyšok (čo už poznáme,
+ * vkladanie, poradie, znášanie chyby jedného účtu) bol trikrát ten istý kód.
+ * Teraz je na jednom mieste a volá ho aj tlačidlo v appke aj nočný beh.
+ *
+ * Chyba jedného účtu nezhodí ostatné: keď Wise pri jednej mene odmietne
+ * podpis, zvyšné meny sa aj tak stiahnu a povie sa, čo neprešlo.
+ */
+export async function stiahniPohybyPripojenia(
+  supabaseAdmin: any,
+  companyId: string,
+  connectionId: string,
+  nacitajPohybyUctu: (ucet: {
+    id: string;
+    external_account_id: string;
+    currency: string;
+  }) => Promise<any[]>,
+): Promise<{ vlozenych: number; problemy: string[] }> {
+  const { data: ucty } = await supabaseAdmin
+    .from("bank_accounts")
+    .select("id, external_account_id, currency")
+    .eq("bank_connection_id", connectionId);
+
+  const odDna = new Date(Date.now() - 366 * 86400_000).toISOString().slice(0, 10);
+  let vlozenych = 0;
+  const problemy: string[] = [];
+
+  for (const u of (ucty as any[]) ?? []) {
+    if (!u.external_account_id) continue;
+    try {
+      const pohyby = await nacitajPohybyUctu(u);
+      const zname = await znameReferencie(supabaseAdmin, u.id, odDna);
+      const nove = pohyby.filter((p) => !zname.has(p.external_id));
+      if (!nove.length) continue;
+      vlozenych += await vlozPohyby(
+        supabaseAdmin,
+        nove.map((p) => ({
+          company_id: companyId,
+          bank_account_id: u.id,
+          booking_date: p.booking_date,
+          amount: p.amount,
+          currency: p.currency,
+          variable_symbol: p.variable_symbol,
+          counterparty: p.counterparty,
+          description: p.description,
+          transaction_reference: p.external_id,
+        })),
+      );
+    } catch (e: any) {
+      problemy.push(`${u.currency}: ${e?.message ?? "nepodarilo sa"}`);
+    }
+  }
+
+  await supabaseAdmin
+    .from("bank_connections")
+    .update({ last_synced_at: new Date().toISOString() })
+    .eq("id", connectionId);
+
+  return { vlozenych, problemy };
+}
+
+/**
  * Banka pozná účet, ktorý u nás máme? Keď odpovie `NO_ACCOUNT`, nemá zmysel
  * pýtať sa každú noc znova — účet buď zanikol, alebo ho nekryje súhlas.
  * Zapíšeme si to k účtu a nočný beh ho odvtedy preskočí; ručné stiahnutie
@@ -354,6 +418,48 @@ function zhrnutie(results: SyncResult[]) {
 }
 
 /**
+ * Sťahovanie pre banku, ktorá nejde cez Tatra banku.
+ *
+ * Každá má vlastné prihlásenie (Wise token s podpisom, Revolut OAuth s
+ * obnovou, Wallester podpísaný token), takže si ho postaví ten modul, ktorý
+ * mu rozumie. Sem sa vracia už len počet účtov a nových pohybov.
+ */
+async function syncOstatnaBanka(conn: any): Promise<SyncResult> {
+  const base = { connection_id: conn.id, company_id: conn.company_id, accounts: 0, inserted: 0 };
+  try {
+    const r = await (async () => {
+      if (conn.provider === "wise") {
+        const { synchronizujWiseZoServera } = await import("./wise.functions");
+        return synchronizujWiseZoServera(conn.company_id);
+      }
+      if (conn.provider === "revolut") {
+        const { synchronizujRevolutZoServera } = await import("./revolut.functions");
+        return synchronizujRevolutZoServera(conn.company_id);
+      }
+      const { synchronizujWallesterZoServera } = await import("./wallester.functions");
+      return synchronizujWallesterZoServera(conn.company_id);
+    })();
+
+    if (r.problemy.length) {
+      console.warn(`[bank-sync] ${conn.provider} ${conn.id}: ${r.problemy.join(" · ")}`);
+    }
+    return {
+      ...base,
+      accounts: r.accounts,
+      inserted: r.inserted,
+      ...(r.problemy.length ? { failed_accounts: r.problemy } : {}),
+    };
+  } catch (e: any) {
+    const error = e?.message ?? "sync_failed";
+    console.error(`[bank-sync] ${conn.provider} ${conn.id} zlyhalo:`, error);
+    return { ...base, error };
+  }
+}
+
+/** Ktoré banky vie nočný beh stiahnuť sám. */
+const PODPOROVANE = ["tatrabanka", "wise", "revolut", "wallester"];
+
+/**
  * Prejde všetky pripojené banky a natiahne účty aj transakcie.
  * Chyba na jednom pripojení nezhodí ostatné — zapíše sa do výsledku.
  */
@@ -362,12 +468,16 @@ export async function runDailyBankSync(daysBack = DEFAULT_DAYS_BACK) {
   const { data: connections } = await supabaseAdmin
     .from("bank_connections")
     .select("*")
-    .eq("provider", "tatrabanka")
+    .in("provider", PODPOROVANE)
     .eq("status", "connected");
 
   const results: SyncResult[] = [];
   for (const conn of connections ?? []) {
-    results.push(await syncPripojenie(supabaseAdmin, conn, daysBack));
+    results.push(
+      conn.provider === "tatrabanka"
+        ? await syncPripojenie(supabaseAdmin, conn, daysBack)
+        : await syncOstatnaBanka(conn),
+    );
   }
 
   const r = zhrnutie(results);

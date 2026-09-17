@@ -244,50 +244,40 @@ export const synchronizujRevolutPohyby = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await overClena(context.supabase, context.userId, data.company_id);
     const { spojenie, token, conn, supabaseAdmin } = await platnyToken(data.company_id);
-    const { data: ucty } = await supabaseAdmin
-      .from("bank_accounts")
-      .select("id, external_account_id, currency")
-      .eq("bank_connection_id", conn.id);
-
     const { nacitajPohyby } = await import("./revolut.server");
-    const { znameReferencie, vlozPohyby } = await import("./bank-sync.server");
-    const odDna = new Date(Date.now() - 366 * 86400_000).toISOString().slice(0, 10);
-
-    let vlozenych = 0;
-    const problemy: string[] = [];
-    for (const u of (ucty as any[]) ?? []) {
-      if (!u.external_account_id) continue;
-      try {
-        const pohyby = await nacitajPohyby(spojenie, token, u.external_account_id);
-        const zname = await znameReferencie(supabaseAdmin, u.id, odDna);
-        const nove = pohyby.filter((p) => !zname.has(p.external_id));
-        if (!nove.length) continue;
-        vlozenych += await vlozPohyby(
-          supabaseAdmin,
-          nove.map((p) => ({
-            company_id: data.company_id,
-            bank_account_id: u.id,
-            booking_date: p.booking_date,
-            amount: p.amount,
-            currency: p.currency,
-            variable_symbol: p.variable_symbol,
-            counterparty: p.counterparty,
-            description: p.description,
-            transaction_reference: p.external_id,
-          })),
-        );
-      } catch (e: any) {
-        problemy.push(`${u.currency}: ${e?.message ?? "nepodarilo sa"}`);
-      }
-    }
-
-    await supabaseAdmin
-      .from("bank_connections")
-      .update({ last_synced_at: new Date().toISOString() })
-      .eq("id", conn.id);
+    const { stiahniPohybyPripojenia } = await import("./bank-sync.server");
+    const { vlozenych, problemy } = await stiahniPohybyPripojenia(
+      supabaseAdmin,
+      data.company_id,
+      conn.id as string,
+      (u) => nacitajPohyby(spojenie, token, u.external_account_id),
+    );
     if (!vlozenych && problemy.length) throw new Error(problemy.join(" · "));
     return { ok: true, vlozenych, problemy };
   });
+
+/**
+ * To isté bez prihláseného človeka — pre nočný beh.
+ *
+ * `platnyToken` po ceste obnoví prístup, ak vypršal; keď už sa obnoviť nedá,
+ * vyhodí zrozumiteľnú chybu a tá sa zapíše do výsledku behu.
+ */
+export async function synchronizujRevolutZoServera(companyId: string) {
+  const { spojenie, token, conn, supabaseAdmin } = await platnyToken(companyId);
+  const { nacitajUcty, nacitajPohyby } = await import("./revolut.server");
+  const { upsertBankAccounts } = await import("./tatrabanka.server");
+  const { stiahniPohybyPripojenia } = await import("./bank-sync.server");
+
+  const ucty = await nacitajUcty(spojenie, token);
+  await upsertBankAccounts(companyId, conn.id as string, ucty);
+  const { vlozenych, problemy } = await stiahniPohybyPripojenia(
+    supabaseAdmin,
+    companyId,
+    conn.id as string,
+    (u) => nacitajPohyby(spojenie, token, u.external_account_id),
+  );
+  return { accounts: ucty.length, inserted: vlozenych, problemy };
+}
 
 export const odpojRevolut = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
