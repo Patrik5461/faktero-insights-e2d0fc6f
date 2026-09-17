@@ -33,9 +33,9 @@ vi.mock("@/integrations/supabase/client.server", () => ({
 const wise = vi.fn();
 const revolut = vi.fn();
 const wallester = vi.fn();
-vi.mock("./wise.functions", () => ({ synchronizujWiseZoServera: (c: string) => wise(c) }));
-vi.mock("./revolut.functions", () => ({ synchronizujRevolutZoServera: (c: string) => revolut(c) }));
-vi.mock("./wallester.functions", () => ({
+vi.mock("./wise.server", () => ({ synchronizujWiseZoServera: (c: string) => wise(c) }));
+vi.mock("./revolut.server", () => ({ synchronizujRevolutZoServera: (c: string) => revolut(c) }));
+vi.mock("./wallester.server", () => ({
   synchronizujWallesterZoServera: (c: string) => wallester(c),
 }));
 
@@ -58,9 +58,9 @@ describe("denný beh a ostatné banky", () => {
       pripojenie("revolut", "r1"),
       pripojenie("wallester", "s1"),
     );
-    const { runDailyBankSync } = await import("./bank-sync.server");
+    const { runDailySyncOstatnych } = await import("./bank-sync-ostatne.server");
 
-    const r = await runDailyBankSync();
+    const r = await runDailySyncOstatnych();
 
     expect(wise).toHaveBeenCalledWith("firma-w1");
     expect(revolut).toHaveBeenCalledWith("firma-r1");
@@ -73,9 +73,9 @@ describe("denný beh a ostatné banky", () => {
   it("zlyhanie jednej banky nezhodí ostatné", async () => {
     pripojenia.push(pripojenie("wise", "w1"), pripojenie("revolut", "r1"));
     wise.mockRejectedValue(new Error("Wise odmietol podpis"));
-    const { runDailyBankSync } = await import("./bank-sync.server");
+    const { runDailySyncOstatnych } = await import("./bank-sync-ostatne.server");
 
-    const r = await runDailyBankSync();
+    const r = await runDailySyncOstatnych();
 
     expect(r.failed).toBe(1);
     expect(r.results.find((x: any) => x.connection_id === "w1")?.error).toBe(
@@ -89,19 +89,19 @@ describe("denný beh a ostatné banky", () => {
   it("problém na jednej mene sa zapíše, pripojenie ostáva úspešné", async () => {
     pripojenia.push(pripojenie("wise", "w1"));
     wise.mockResolvedValue({ accounts: 2, inserted: 3, problemy: ["USD: podpis odmietnutý"] });
-    const { runDailyBankSync } = await import("./bank-sync.server");
+    const { runDailySyncOstatnych } = await import("./bank-sync-ostatne.server");
 
-    const r = await runDailyBankSync();
+    const r = await runDailySyncOstatnych();
 
     expect(r.failed).toBe(0);
-    expect(r.results[0].failed_accounts).toEqual(["USD: podpis odmietnutý"]);
+    expect(r.results[0].problemy).toEqual(["USD: podpis odmietnutý"]);
   });
 
   it("banku, ktorú beh nevie stiahnuť, si ani nevypýta", async () => {
     pripojenia.push(pripojenie("wise", "w1"), pripojenie("neznama", "x1"));
-    const { runDailyBankSync } = await import("./bank-sync.server");
+    const { runDailySyncOstatnych } = await import("./bank-sync-ostatne.server");
 
-    const r = await runDailyBankSync();
+    const r = await runDailySyncOstatnych();
 
     expect(r.connections).toBe(1);
   });

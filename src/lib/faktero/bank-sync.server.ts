@@ -418,66 +418,26 @@ function zhrnutie(results: SyncResult[]) {
 }
 
 /**
- * Sťahovanie pre banku, ktorá nejde cez Tatra banku.
- *
- * Každá má vlastné prihlásenie (Wise token s podpisom, Revolut OAuth s
- * obnovou, Wallester podpísaný token), takže si ho postaví ten modul, ktorý
- * mu rozumie. Sem sa vracia už len počet účtov a nových pohybov.
- */
-async function syncOstatnaBanka(conn: any): Promise<SyncResult> {
-  const base = { connection_id: conn.id, company_id: conn.company_id, accounts: 0, inserted: 0 };
-  try {
-    const r = await (async () => {
-      if (conn.provider === "wise") {
-        const { synchronizujWiseZoServera } = await import("./wise.functions");
-        return synchronizujWiseZoServera(conn.company_id);
-      }
-      if (conn.provider === "revolut") {
-        const { synchronizujRevolutZoServera } = await import("./revolut.functions");
-        return synchronizujRevolutZoServera(conn.company_id);
-      }
-      const { synchronizujWallesterZoServera } = await import("./wallester.functions");
-      return synchronizujWallesterZoServera(conn.company_id);
-    })();
-
-    if (r.problemy.length) {
-      console.warn(`[bank-sync] ${conn.provider} ${conn.id}: ${r.problemy.join(" · ")}`);
-    }
-    return {
-      ...base,
-      accounts: r.accounts,
-      inserted: r.inserted,
-      ...(r.problemy.length ? { failed_accounts: r.problemy } : {}),
-    };
-  } catch (e: any) {
-    const error = e?.message ?? "sync_failed";
-    console.error(`[bank-sync] ${conn.provider} ${conn.id} zlyhalo:`, error);
-    return { ...base, error };
-  }
-}
-
-/** Ktoré banky vie nočný beh stiahnuť sám. */
-const PODPOROVANE = ["tatrabanka", "wise", "revolut", "wallester"];
-
-/**
- * Prejde všetky pripojené banky a natiahne účty aj transakcie.
+ * Prejde pripojenia Tatra banky a natiahne účty aj transakcie.
  * Chyba na jednom pripojení nezhodí ostatné — zapíše sa do výsledku.
+ *
+ * Ostatné banky (Wise, Revolut, Wallester) sťahuje `bank-sync-ostatne.server`.
+ * Oddelené sú zámerne: ten modul siaha na šifrované tajomstvá cez
+ * `*.functions`, a tento súbor je cez `import-vypisu.functions` dosiahnuteľný
+ * z prehliadačového balíka — spojiť ich znamená ťahať serverové šifrovanie do
+ * prehliadača a build spadne.
  */
 export async function runDailyBankSync(daysBack = DEFAULT_DAYS_BACK) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: connections } = await supabaseAdmin
     .from("bank_connections")
     .select("*")
-    .in("provider", PODPOROVANE)
+    .eq("provider", "tatrabanka")
     .eq("status", "connected");
 
   const results: SyncResult[] = [];
   for (const conn of connections ?? []) {
-    results.push(
-      conn.provider === "tatrabanka"
-        ? await syncPripojenie(supabaseAdmin, conn, daysBack)
-        : await syncOstatnaBanka(conn),
-    );
+    results.push(await syncPripojenie(supabaseAdmin, conn, daysBack));
   }
 
   const r = zhrnutie(results);

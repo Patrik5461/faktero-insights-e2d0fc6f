@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { navratovaAdresa } from "./revolut";
 
 /**
  * Pripojenie Revolut Business.
@@ -17,11 +18,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const Firma = z.object({ company_id: z.string().uuid() });
 
-/** Návratová adresa. Musí byť verejná HTTPS — Revolut `localhost` odmieta. */
-export function navratovaAdresa(): string {
-  return `${process.env.APP_PUBLIC_URL || "https://www.faktero.sk"}/bankove-ucty/revolut`;
-}
-
 async function overClena(supabase: any, userId: string, companyId: string) {
   const { data } = await supabase
     .from("company_users")
@@ -33,27 +29,8 @@ async function overClena(supabase: any, userId: string, companyId: string) {
 }
 
 async function spojenieFirmy(companyId: string) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: conn } = await supabaseAdmin
-    .from("bank_connections")
-    .select("*")
-    .eq("company_id", companyId)
-    .eq("provider", "revolut")
-    .maybeSingle();
-  if (!conn) throw new Error("Revolut nie je pripojený.");
-  const meta = (conn.metadata as any) ?? {};
-  const { decryptSecret } = await import("./payment-crypto.server");
-  return {
-    conn,
-    meta,
-    supabaseAdmin,
-    spojenie: {
-      clientId: meta.client_id ?? "",
-      privateKeyPem: decryptSecret(meta.private_key),
-      redirectUri: meta.redirect_uri ?? navratovaAdresa(),
-      prostredie: (meta.prostredie ?? "produkcia") as "sandbox" | "produkcia",
-    },
-  };
+  const { spojenieFirmy: zoServera } = await import("./revolut.server");
+  return zoServera(companyId);
 }
 
 /**
@@ -64,34 +41,8 @@ async function spojenieFirmy(companyId: string) {
  * servera čas beží ďalej.
  */
 async function platnyToken(companyId: string) {
-  const { conn, meta, supabaseAdmin, spojenie } = await spojenieFirmy(companyId);
-  const { decryptSecret, encryptSecret } = await import("./payment-crypto.server");
-  const vyprsi = conn.token_expires_at ? Date.parse(conn.token_expires_at as string) : 0;
-  if (conn.access_token && vyprsi - 60_000 > Date.now()) {
-    return {
-      spojenie,
-      token: decryptSecret(conn.access_token as string),
-      conn,
-      supabaseAdmin,
-      meta,
-    };
-  }
-  if (!conn.refresh_token) {
-    throw new Error("Prístup do Revolutu vypršal. Potvrďte ho znova.");
-  }
-
-  const { obnovToken } = await import("./revolut.server");
-  const nove = await obnovToken(spojenie, decryptSecret(conn.refresh_token as string));
-  await supabaseAdmin
-    .from("bank_connections")
-    .update({
-      access_token: encryptSecret(nove.access_token),
-      token_expires_at: new Date(Date.now() + nove.expires_in * 1000).toISOString(),
-      // Obnovovací token v odpovedi zvyčajne nie je — starý ostáva platný.
-      ...(nove.refresh_token ? { refresh_token: encryptSecret(nove.refresh_token) } : {}),
-    })
-    .eq("id", conn.id);
-  return { spojenie, token: nove.access_token, conn, supabaseAdmin, meta };
+  const { platnyToken: zoServera } = await import("./revolut.server");
+  return zoServera(companyId);
 }
 
 /** Krok 1: certifikát na nahratie do portálu Revolutu. */
@@ -255,29 +206,6 @@ export const synchronizujRevolutPohyby = createServerFn({ method: "POST" })
     if (!vlozenych && problemy.length) throw new Error(problemy.join(" · "));
     return { ok: true, vlozenych, problemy };
   });
-
-/**
- * To isté bez prihláseného človeka — pre nočný beh.
- *
- * `platnyToken` po ceste obnoví prístup, ak vypršal; keď už sa obnoviť nedá,
- * vyhodí zrozumiteľnú chybu a tá sa zapíše do výsledku behu.
- */
-export async function synchronizujRevolutZoServera(companyId: string) {
-  const { spojenie, token, conn, supabaseAdmin } = await platnyToken(companyId);
-  const { nacitajUcty, nacitajPohyby } = await import("./revolut.server");
-  const { upsertBankAccounts } = await import("./tatrabanka.server");
-  const { stiahniPohybyPripojenia } = await import("./bank-sync.server");
-
-  const ucty = await nacitajUcty(spojenie, token);
-  await upsertBankAccounts(companyId, conn.id as string, ucty);
-  const { vlozenych, problemy } = await stiahniPohybyPripojenia(
-    supabaseAdmin,
-    companyId,
-    conn.id as string,
-    (u) => nacitajPohyby(spojenie, token, u.external_account_id),
-  );
-  return { accounts: ucty.length, inserted: vlozenych, problemy };
-}
 
 export const odpojRevolut = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

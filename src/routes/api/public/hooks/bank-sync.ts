@@ -1,5 +1,6 @@
 /**
- * Cron: denná synchronizácia bankových účtov a transakcií z Tatra banky.
+ * Cron: denná synchronizácia bankových účtov a transakcií zo všetkých
+ * pripojených bánk — Tatra banka, Wise, Revolut aj Wallester.
  * Volaný cez pg_cron s hlavičkou `x-faktero-cron-token: <FAKTERO_CRON_TOKEN>`.
  *
  * Voliteľné telo: {"days_back": 30} — dokedy dozadu ťahať transakcie (default 14).
@@ -33,7 +34,14 @@ export const Route = createFileRoute("/api/public/hooks/bank-sync")({
           }
           const { runDailyBankSync } = await import("@/lib/faktero/bank-sync.server");
           const r = await runDailyBankSync(daysBack);
-          return new Response(JSON.stringify({ ok: true, ...r }), {
+          /*
+            Wise, Revolut a Wallester majú vlastný beh. Ide až po Tatra banke a
+            samostatne preto, že zlyhanie ktorejkoľvek z nich nesmie pripraviť
+            firmu o pohyby z tej banky, ktorou naozaj platí.
+          */
+          const { runDailySyncOstatnych } = await import("@/lib/faktero/bank-sync-ostatne.server");
+          const ostatne = await runDailySyncOstatnych();
+          return new Response(JSON.stringify({ ok: true, ...r, ostatne }), {
             status: 200,
             headers: { "content-type": "application/json" },
           });

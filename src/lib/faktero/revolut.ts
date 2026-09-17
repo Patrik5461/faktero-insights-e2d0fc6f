@@ -146,3 +146,13 @@ export function oknoPohybov(teraz: Date = new Date()): { od: string; do: string 
   od.setUTCFullYear(od.getUTCFullYear() - 1);
   return { od: od.toISOString().slice(0, 10), do: teraz.toISOString().slice(0, 10) };
 }
+
+/**
+ * Návratová adresa. Musí byť verejná HTTPS — Revolut `localhost` odmieta.
+ *
+ * Je tu, a nie pri obsluhe, lebo ju potrebuje aj podpis žiadosti o token na
+ * serveri. Dve kópie by sa rozišli a Revolut by žiadosť odmietol.
+ */
+export function navratovaAdresa(): string {
+  return `${process.env.APP_PUBLIC_URL || "https://www.faktero.sk"}/bankove-ucty/revolut`;
+}

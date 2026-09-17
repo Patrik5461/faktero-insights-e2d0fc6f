@@ -27,27 +27,14 @@ async function overClena(supabase: any, userId: string, companyId: string) {
   if (!data) throw new Error("Do tejto firmy nemáte prístup.");
 }
 
-/** Spojenie aj s rozšifrovanými tajomstvami. Server-only. */
+/**
+ * Spojenie aj s rozšifrovanými tajomstvami. Telo je vo `wise.server`, aby ho
+ * vedel použiť aj nočný beh; sem sa ťahá až vnútri obsluhy, nech sa cesta k
+ * `payment-crypto` nedostane do prehliadačového balíka.
+ */
 async function spojenieFirmy(companyId: string) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: conn } = await supabaseAdmin
-    .from("bank_connections")
-    .select("*")
-    .eq("company_id", companyId)
-    .eq("provider", "wise")
-    .maybeSingle();
-  if (!conn) throw new Error("Wise nie je pripojený.");
-  const { decryptSecret } = await import("./payment-crypto.server");
-  const meta = (conn.metadata as any) ?? {};
-  return {
-    conn,
-    supabaseAdmin,
-    spojenie: {
-      token: decryptSecret(conn.access_token as string),
-      privateKeyPem: meta.private_key ? decryptSecret(meta.private_key) : null,
-      profileId: meta.profile_id ?? null,
-    },
-  };
+  const { spojenieFirmy: zoServera } = await import("./wise.server");
+  return zoServera(companyId);
 }
 
 /**
@@ -169,29 +156,6 @@ export const synchronizujWisePohyby = createServerFn({ method: "POST" })
     if (!vlozenych && problemy.length) throw new Error(problemy.join(" · "));
     return { ok: true, vlozenych, problemy };
   });
-
-/**
- * To isté, ale bez prihláseného človeka — pre nočný beh.
- *
- * Účty aj pohyby naraz: zostatok sa mení rovnako ako pohyby a sťahovať ich
- * zvlášť by znamenalo, že prehľad ukazuje starý zostatok k novým pohybom.
- */
-export async function synchronizujWiseZoServera(companyId: string) {
-  const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(companyId);
-  const { nacitajUcty, nacitajPohyby } = await import("./wise.server");
-  const { upsertBankAccounts } = await import("./tatrabanka.server");
-  const { stiahniPohybyPripojenia } = await import("./bank-sync.server");
-
-  const ucty = await nacitajUcty(spojenie);
-  await upsertBankAccounts(companyId, conn.id as string, ucty);
-  const { vlozenych, problemy } = await stiahniPohybyPripojenia(
-    supabaseAdmin,
-    companyId,
-    conn.id as string,
-    (u) => nacitajPohyby(spojenie, u.external_account_id, u.currency),
-  );
-  return { accounts: ucty.length, inserted: vlozenych, problemy };
-}
 
 /** Odpojenie. Účty a pohyby ostávajú — sú to už zaúčtované dáta firmy. */
 export const odpojWise = createServerFn({ method: "POST" })

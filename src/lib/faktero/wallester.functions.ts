@@ -26,33 +26,8 @@ async function overClena(supabase: any, userId: string, companyId: string) {
 }
 
 async function spojenieFirmy(companyId: string, musiBytUplne = true) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: conn } = await supabaseAdmin
-    .from("bank_connections")
-    .select("*")
-    .eq("company_id", companyId)
-    .eq("provider", "wallester")
-    .maybeSingle();
-  if (!conn) throw new Error("Wallester nie je pripojený.");
-  const meta = (conn.metadata as any) ?? {};
-  if (musiBytUplne && (!meta.issuer_id || !meta.audience_id)) {
-    throw new Error(
-      "Wallester ešte nedodal issuer ID a audience ID. Pošlite im verejný kľúč a doplňte, čo vám vrátia.",
-    );
-  }
-  const { decryptSecret } = await import("./payment-crypto.server");
-  return {
-    conn,
-    supabaseAdmin,
-    meta,
-    spojenie: {
-      issuerId: meta.issuer_id ?? "",
-      audienceId: meta.audience_id ?? "",
-      privateKeyPem: decryptSecret(meta.private_key),
-      productCode: meta.product_code ?? "",
-      maxPlatnostSekund: Number(meta.max_exp_seconds ?? 60),
-    },
-  };
+  const { spojenieFirmy: zoServera } = await import("./wallester.server");
+  return zoServera(companyId, musiBytUplne);
 }
 
 /** Prvý krok: vyrobí pár kľúčov, aby bolo čo poslať Wallesteru. */
@@ -199,24 +174,6 @@ export const synchronizujWallesterPohyby = createServerFn({ method: "POST" })
     if (!vlozenych && problemy.length) throw new Error(problemy.join(" · "));
     return { ok: true, vlozenych, problemy };
   });
-
-/** To isté bez prihláseného človeka — pre nočný beh. */
-export async function synchronizujWallesterZoServera(companyId: string) {
-  const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(companyId);
-  const { nacitajUcty, nacitajPohyby } = await import("./wallester.server");
-  const { upsertBankAccounts } = await import("./tatrabanka.server");
-  const { stiahniPohybyPripojenia } = await import("./bank-sync.server");
-
-  const ucty = await nacitajUcty(spojenie);
-  await upsertBankAccounts(companyId, conn.id as string, ucty);
-  const { vlozenych, problemy } = await stiahniPohybyPripojenia(
-    supabaseAdmin,
-    companyId,
-    conn.id as string,
-    (u) => nacitajPohyby(spojenie, u.external_account_id),
-  );
-  return { accounts: ucty.length, inserted: vlozenych, problemy };
-}
 
 /** Odpojenie. Účty aj pohyby ostávajú — sú to už zaúčtované dáta firmy. */
 export const odpojWallester = createServerFn({ method: "POST" })

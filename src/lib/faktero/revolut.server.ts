@@ -6,6 +6,7 @@ import { join } from "path";
 import { promisify } from "util";
 import {
   jeZivy,
+  navratovaAdresa,
   oknoPohybov,
   pohybyZRevolutu,
   ucetZRevolutu,
@@ -220,4 +221,89 @@ export async function nacitajPohyby(
   const p = new URLSearchParams({ from: od, to: doKedy, count: "1000", account: accountId });
   const transakcie = await volaj<RevolutTransakcia[]>(s, accessToken, `/transactions?${p}`);
   return pohybyZRevolutu(transakcie, accountId);
+}
+
+/**
+ * Pripojenie firmy aj s rozšifrovanými tajomstvami.
+ *
+ * Stojí tu, a nie vo `revolut.functions`, lebo to potrebuje aj nočný beh bez
+ * prihláseného človeka — a `*.functions` sa balí aj pre prehliadač, kam
+ * `payment-crypto` nesmie.
+ */
+export async function spojenieFirmy(companyId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: conn } = await supabaseAdmin
+    .from("bank_connections")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("provider", "revolut")
+    .maybeSingle();
+  if (!conn) throw new Error("Revolut nie je pripojený.");
+  const meta = (conn.metadata as any) ?? {};
+  const { decryptSecret } = await import("./payment-crypto.server");
+  return {
+    conn,
+    meta,
+    supabaseAdmin,
+    spojenie: {
+      clientId: meta.client_id ?? "",
+      privateKeyPem: decryptSecret(meta.private_key),
+      redirectUri: meta.redirect_uri ?? navratovaAdresa(),
+      prostredie: (meta.prostredie ?? "produkcia") as "sandbox" | "produkcia",
+    },
+  };
+}
+
+/**
+ * Platný prístupový token.
+ *
+ * Revolutu platí asi 40 minút, takže sa obnovuje pri každom použití, keď je
+ * blízko konca. Minúta rezervy je tam preto, že medzi kontrolou a odpoveďou
+ * servera čas beží ďalej.
+ */
+export async function platnyToken(companyId: string) {
+  const { conn, meta, supabaseAdmin, spojenie } = await spojenieFirmy(companyId);
+  const { decryptSecret, encryptSecret } = await import("./payment-crypto.server");
+  const vyprsi = conn.token_expires_at ? Date.parse(conn.token_expires_at as string) : 0;
+  if (conn.access_token && vyprsi - 60_000 > Date.now()) {
+    return {
+      spojenie,
+      token: decryptSecret(conn.access_token as string),
+      conn,
+      supabaseAdmin,
+      meta,
+    };
+  }
+  if (!conn.refresh_token) {
+    throw new Error("Prístup do Revolutu vypršal. Potvrďte ho znova.");
+  }
+
+  const nove = await obnovToken(spojenie, decryptSecret(conn.refresh_token as string));
+  await supabaseAdmin
+    .from("bank_connections")
+    .update({
+      access_token: encryptSecret(nove.access_token),
+      token_expires_at: new Date(Date.now() + nove.expires_in * 1000).toISOString(),
+      // Obnovovací token v odpovedi zvyčajne nie je — starý ostáva platný.
+      ...(nove.refresh_token ? { refresh_token: encryptSecret(nove.refresh_token) } : {}),
+    })
+    .eq("id", conn.id);
+  return { spojenie, token: nove.access_token, conn, supabaseAdmin, meta };
+}
+
+/** Účty aj pohyby naraz, bez prihláseného človeka — pre nočný beh. */
+export async function synchronizujRevolutZoServera(companyId: string) {
+  const { spojenie, token, conn, supabaseAdmin } = await platnyToken(companyId);
+  const { upsertBankAccounts } = await import("./tatrabanka.server");
+  const { stiahniPohybyPripojenia } = await import("./bank-sync.server");
+
+  const ucty = await nacitajUcty(spojenie, token);
+  await upsertBankAccounts(companyId, conn.id as string, ucty);
+  const { vlozenych, problemy } = await stiahniPohybyPripojenia(
+    supabaseAdmin,
+    companyId,
+    conn.id as string,
+    (u) => nacitajPohyby(spojenie, token, u.external_account_id),
+  );
+  return { accounts: ucty.length, inserted: vlozenych, problemy };
 }

@@ -157,3 +157,55 @@ export async function nacitajPohyby(
   );
   return pohybyZVypisu(vypis as any, balanceId);
 }
+
+/**
+ * Pripojenie firmy aj s rozšifrovanými tajomstvami.
+ *
+ * Býva v `wise.functions`, ale musí byť dosiahnuteľné aj pre nočný beh, ktorý
+ * žiadneho prihláseného človeka nemá. A práve preto stojí tu: `*.functions` sa
+ * balí aj pre prehliadač a čokoľvek, čo z neho vyváža cestu k `payment-crypto`,
+ * pritiahne do prehliadača `node:crypto` a build spadne.
+ */
+export async function spojenieFirmy(companyId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: conn } = await supabaseAdmin
+    .from("bank_connections")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("provider", "wise")
+    .maybeSingle();
+  if (!conn) throw new Error("Wise nie je pripojený.");
+  const { decryptSecret } = await import("./payment-crypto.server");
+  const meta = (conn.metadata as any) ?? {};
+  return {
+    conn,
+    supabaseAdmin,
+    spojenie: {
+      token: decryptSecret(conn.access_token as string),
+      privateKeyPem: meta.private_key ? decryptSecret(meta.private_key) : null,
+      profileId: meta.profile_id ?? null,
+    },
+  };
+}
+
+/**
+ * Účty aj pohyby naraz, bez prihláseného človeka — pre nočný beh.
+ *
+ * Spolu preto, že zostatok sa mení rovnako ako pohyby: sťahovať ich zvlášť by
+ * znamenalo, že prehľad ukazuje starý zostatok k novým pohybom.
+ */
+export async function synchronizujWiseZoServera(companyId: string) {
+  const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(companyId);
+  const { upsertBankAccounts } = await import("./tatrabanka.server");
+  const { stiahniPohybyPripojenia } = await import("./bank-sync.server");
+
+  const ucty = await nacitajUcty(spojenie);
+  await upsertBankAccounts(companyId, conn.id as string, ucty);
+  const { vlozenych, problemy } = await stiahniPohybyPripojenia(
+    supabaseAdmin,
+    companyId,
+    conn.id as string,
+    (u) => nacitajPohyby(spojenie, u.external_account_id, u.currency),
+  );
+  return { accounts: ucty.length, inserted: vlozenych, problemy };
+}

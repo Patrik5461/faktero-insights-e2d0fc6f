@@ -171,3 +171,57 @@ export async function nacitajPohyby(
 
   return pohybyZWallesteru(vsetky);
 }
+
+/**
+ * Pripojenie firmy aj s rozšifrovanými tajomstvami.
+ *
+ * Stojí tu, a nie vo `wallester.functions`, lebo to potrebuje aj nočný beh bez
+ * prihláseného človeka — a `*.functions` sa balí aj pre prehliadač, kam
+ * `payment-crypto` nesmie.
+ */
+export async function spojenieFirmy(companyId: string, musiBytUplne = true) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: conn } = await supabaseAdmin
+    .from("bank_connections")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("provider", "wallester")
+    .maybeSingle();
+  if (!conn) throw new Error("Wallester nie je pripojený.");
+  const meta = (conn.metadata as any) ?? {};
+  if (musiBytUplne && (!meta.issuer_id || !meta.audience_id)) {
+    throw new Error(
+      "Wallester ešte nedodal issuer ID a audience ID. Pošlite im verejný kľúč a doplňte, čo vám vrátia.",
+    );
+  }
+  const { decryptSecret } = await import("./payment-crypto.server");
+  return {
+    conn,
+    supabaseAdmin,
+    meta,
+    spojenie: {
+      issuerId: meta.issuer_id ?? "",
+      audienceId: meta.audience_id ?? "",
+      privateKeyPem: decryptSecret(meta.private_key),
+      productCode: meta.product_code ?? "",
+      maxPlatnostSekund: Number(meta.max_exp_seconds ?? 60),
+    },
+  };
+}
+
+/** Účty aj pohyby naraz, bez prihláseného človeka — pre nočný beh. */
+export async function synchronizujWallesterZoServera(companyId: string) {
+  const { conn, supabaseAdmin, spojenie } = await spojenieFirmy(companyId);
+  const { upsertBankAccounts } = await import("./tatrabanka.server");
+  const { stiahniPohybyPripojenia } = await import("./bank-sync.server");
+
+  const ucty = await nacitajUcty(spojenie);
+  await upsertBankAccounts(companyId, conn.id as string, ucty);
+  const { vlozenych, problemy } = await stiahniPohybyPripojenia(
+    supabaseAdmin,
+    companyId,
+    conn.id as string,
+    (u) => nacitajPohyby(spojenie, u.external_account_id),
+  );
+  return { accounts: ucty.length, inserted: vlozenych, problemy };
+}
