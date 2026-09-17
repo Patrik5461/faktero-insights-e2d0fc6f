@@ -3,54 +3,61 @@
  * pripojených bánk — Tatra banka, Wise, Revolut aj Wallester.
  * Volaný cez pg_cron s hlavičkou `x-faktero-cron-token: <FAKTERO_CRON_TOKEN>`.
  *
+ * `POST` prácu **spustí a hneď odpovie** — celý beh trvá dlhšie, než nginx
+ * necháva spojenie otvorené. Výsledok sa dá prečítať cez `GET` na tej istej
+ * adrese, s tým istým tokenom.
+ *
  * Voliteľné telo: {"days_back": 30} — dokedy dozadu ťahať transakcie (default 14).
  */
 import { createFileRoute } from "@tanstack/react-router";
+
+async function overToken(request: Request): Promise<boolean> {
+  const token = request.headers.get("x-faktero-cron-token") ?? request.headers.get("x-cron-token");
+  const { isValidCronToken } = await import("@/lib/faktero/cron-auth.server");
+  return isValidCronToken(token, process.env.FAKTERO_CRON_TOKEN);
+}
+
+function odpoved(telo: unknown, status = 200) {
+  return new Response(JSON.stringify(telo), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
 
 export const Route = createFileRoute("/api/public/hooks/bank-sync")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const token =
-          request.headers.get("x-faktero-cron-token") ?? request.headers.get("x-cron-token");
-        const { isValidCronToken } = await import("@/lib/faktero/cron-auth.server");
-        if (!isValidCronToken(token, process.env.FAKTERO_CRON_TOKEN)) {
-          return new Response(JSON.stringify({ error: "unauthorized" }), {
-            status: 401,
-            headers: { "content-type": "application/json" },
-          });
-        }
+        if (!(await overToken(request))) return odpoved({ error: "unauthorized" }, 401);
+
+        const { MAX_DAYS_BACK } = await import("@/lib/faktero/bank-sync.server");
+        let daysBack = 14;
         try {
-          const { MAX_DAYS_BACK } = await import("@/lib/faktero/bank-sync.server");
-          let daysBack = 14;
-          try {
-            const body = await request.json();
-            const n = Number(body?.days_back);
-            // Strop je najdlhšie okno, aké banka dá — dlhší dopyt aj tak
-            // orežeme na dátum, ktorý ponúkne sama.
-            if (Number.isFinite(n) && n > 0 && n <= MAX_DAYS_BACK) daysBack = n;
-          } catch {
-            // prázdne telo je v poriadku — ostáva default
-          }
-          const { runDailyBankSync } = await import("@/lib/faktero/bank-sync.server");
-          const r = await runDailyBankSync(daysBack);
-          /*
-            Wise, Revolut a Wallester majú vlastný beh. Ide až po Tatra banke a
-            samostatne preto, že zlyhanie ktorejkoľvek z nich nesmie pripraviť
-            firmu o pohyby z tej banky, ktorou naozaj platí.
-          */
-          const { runDailySyncOstatnych } = await import("@/lib/faktero/bank-sync-ostatne.server");
-          const ostatne = await runDailySyncOstatnych();
-          return new Response(JSON.stringify({ ok: true, ...r, ostatne }), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          });
-        } catch (e: any) {
-          return new Response(JSON.stringify({ error: e?.message ?? "internal" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
-          });
+          const body = await request.json();
+          const n = Number(body?.days_back);
+          // Strop je najdlhšie okno, aké banka dá — dlhší dopyt aj tak
+          // orežeme na dátum, ktorý ponúkne sama.
+          if (Number.isFinite(n) && n > 0 && n <= MAX_DAYS_BACK) daysBack = n;
+        } catch {
+          // prázdne telo je v poriadku — ostáva default
         }
+
+        const { spustiDennyBeh, stavBehu } = await import("@/lib/faktero/bank-sync-beh.server");
+        const spustene = spustiDennyBeh(daysBack);
+        // 202: prijaté a beží. Cron sa na výsledok nepýta, ale človek áno.
+        return odpoved(
+          spustene
+            ? { ok: true, spustene: true, days_back: daysBack }
+            : { ok: true, spustene: false, dovod: "beh už prebieha", stav: stavBehu() },
+          202,
+        );
+      },
+
+      /** Ako dopadol posledný beh. */
+      GET: async ({ request }) => {
+        if (!(await overToken(request))) return odpoved({ error: "unauthorized" }, 401);
+        const { stavBehu } = await import("@/lib/faktero/bank-sync-beh.server");
+        return odpoved({ ok: true, ...stavBehu() });
       },
     },
   },
