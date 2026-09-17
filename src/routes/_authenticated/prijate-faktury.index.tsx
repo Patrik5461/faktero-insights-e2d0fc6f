@@ -15,9 +15,17 @@ import {
   ScanLine,
   FileCode,
   User,
+  Landmark,
+  X,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
+import {
+  navrhniParovaniePrijatych,
+  potvrdParovaniePrijatej,
+  uhradyPrijatych,
+  zrusParovaniePrijatej,
+} from "@/lib/faktero/prijata-parovanie.functions";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
@@ -85,6 +93,55 @@ function PurchaseInvoicesPage() {
   /** Meno k `created_by`; profily číta server, RLS pustí každého len k sebe. */
   const [mena, setMena] = useState<Record<string, string>>({});
   const nacitajMena = useServerFn(menaClenovFirmy);
+
+  /* Väzba na banku: ktorý pohyb faktúru uhradil a čo sa ešte ponúka spárovať. */
+  type Uhrada = { datum: string; transactionId: string; suma: number; protistrana: string | null };
+  const [uhrady, setUhrady] = useState<Record<string, Uhrada>>({});
+  const [navrhy, setNavrhy] = useState<any[]>([]);
+  const [parujem, setParujem] = useState<string | null>(null);
+  const navrhyFn = useServerFn(navrhniParovaniePrijatych);
+  const sparujFn = useServerFn(potvrdParovaniePrijatej);
+  const rozparujFn = useServerFn(zrusParovaniePrijatej);
+  const uhradyFn = useServerFn(uhradyPrijatych);
+
+  async function nacitajNavrhy() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    try {
+      const r: any = await navrhyFn({ data: { company_id: cid } });
+      setNavrhy(r?.zhody ?? []);
+    } catch {
+      // Návrhy sú pomoc navyše — keď sa nenačítajú, zoznam funguje ďalej.
+      setNavrhy([]);
+    }
+  }
+
+  async function sparuj(z: any) {
+    setParujem(z.transactionId);
+    try {
+      await sparujFn({
+        data: { transaction_id: z.transactionId, purchase_invoice_id: z.purchaseInvoiceId },
+      });
+      toast.success("Spárované, faktúra je zaplatená.");
+      setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId));
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Spárovať sa to nepodarilo.");
+    } finally {
+      setParujem(null);
+    }
+  }
+
+  async function rozparuj(transactionId: string) {
+    try {
+      await rozparujFn({ data: { transaction_id: transactionId } });
+      toast.success("Väzba zrušená.");
+      await load();
+      await nacitajNavrhy();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Zrušiť sa to nepodarilo.");
+    }
+  }
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -263,6 +320,18 @@ function PurchaseInvoicesPage() {
     const { data } = await q;
     setRows(data ?? []);
     setLoading(false);
+
+    const ids = (data ?? []).map((r: any) => r.id).slice(0, 300);
+    if (ids.length) {
+      try {
+        const u: any = await uhradyFn({ data: { company_id: cid, ids } });
+        setUhrady(u?.uhrady ?? {});
+      } catch {
+        setUhrady({});
+      }
+    } else {
+      setUhrady({});
+    }
   }
   useEffect(() => {
     load();
@@ -274,6 +343,7 @@ function PurchaseInvoicesPage() {
     nacitajMena({ data: { company_id: cid } })
       .then((m) => setMena(m as Record<string, string>))
       .catch(() => setMena({}));
+    nacitajNavrhy();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -389,6 +459,55 @@ function PurchaseInvoicesPage() {
           </div>
         )}
 
+        {/*
+          Návrhy na spárovanie s platbami z účtu. Nič sa nepáruje potichu — aj
+          istá dvojica čaká na potvrdenie, lebo potvrdením sa faktúra označí za
+          zaplatenú a to je zápis do účtovníctva.
+        */}
+        {navrhy.length > 0 && (
+          <div className="mb-4 overflow-hidden rounded-xl border border-primary/40 bg-primary/5">
+            <div className="px-4 py-3 text-sm font-medium">
+              Našli sme platby k faktúram ({navrhy.length})
+            </div>
+            {navrhy.map((z) => (
+              <div
+                key={z.transactionId}
+                className="flex flex-wrap items-center gap-3 border-t border-primary/20 px-4 py-3 text-sm"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">
+                    {z.faktura?.supplier_name ?? "Faktúra"}{" "}
+                    <span className="text-muted-foreground">{z.faktura?.invoice_number}</span>{" "}
+                    <span className="tabular-nums">
+                      {z.faktura?.amount_total != null
+                        ? `${Number(z.faktura.amount_total).toFixed(2)} ${z.faktura.currency ?? "EUR"}`
+                        : ""}
+                    </span>
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {z.pohyb?.booking_date} · {z.dovody.join(" · ")}
+                  </span>
+                </span>
+                <button
+                  disabled={parujem === z.transactionId}
+                  onClick={() => sparuj(z)}
+                  className="rounded-md bg-primary/15 px-3 py-1.5 text-xs font-medium text-primary disabled:opacity-60"
+                >
+                  {z.istota === "auto" ? "Spárovať" : "Áno, patrí k sebe"}
+                </button>
+                <button
+                  onClick={() =>
+                    setNavrhy((n) => n.filter((i) => i.transactionId !== z.transactionId))
+                  }
+                  className="rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground"
+                >
+                  Nie
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -459,8 +578,27 @@ function PurchaseInvoicesPage() {
                   <td className="p-3">
                     <Zapisal zdroj={r.source} autor={r.created_by ? mena[r.created_by] : null} />
                   </td>
-                  <td className="p-3">
+                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <StatusBadge status={r.status} />
+                    {/*
+                      Keď faktúru uhradil pohyb z účtu, je to vidieť priamo tu —
+                      inak by sa väzba dala len vytvoriť, nie skontrolovať ani
+                      zrušiť.
+                    */}
+                    {uhrady[r.id] && (
+                      <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                        <Landmark className="h-3 w-3" />
+                        <span className="tabular-nums">{uhrady[r.id].datum}</span>
+                        <button
+                          onClick={() => rozparuj(uhrady[r.id].transactionId)}
+                          title="Zrušiť väzbu na platbu"
+                          aria-label="Zrušiť väzbu na platbu"
+                          className="rounded p-0.5 hover:bg-muted"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

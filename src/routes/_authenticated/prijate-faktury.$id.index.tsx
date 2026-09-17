@@ -13,6 +13,7 @@ import {
   refreshPaymentStatus,
 } from "@/lib/faktero/tatrabanka-payments.functions";
 import { toast } from "sonner";
+import { uhradyPrijatych, zrusParovaniePrijatej } from "@/lib/faktero/prijata-parovanie.functions";
 import {
   ArrowLeft,
   Download,
@@ -96,6 +97,7 @@ function PurchaseInvoiceDetail() {
       .maybeSingle();
     setNenajdene(!data);
     setRow(data);
+    if (data?.id) nacitajUhradu(data.id);
   }
   useEffect(() => {
     load();
@@ -167,6 +169,43 @@ function PurchaseInvoiceDetail() {
       loadBankStuff();
     } catch (e: any) {
       toast.error(e?.message ?? "Stav sa nepodarilo načítať");
+    }
+  }
+
+  /*
+    Ktorý pohyb na účte túto faktúru uhradil. Bez toho sa z dokladu nedalo
+    zistiť, čím bol zaplatený — dátum úhrady sám o sebe nepovie, z ktorej
+    platby pochádza.
+  */
+  const [uhrada, setUhrada] = useState<{
+    datum: string;
+    transactionId: string;
+    suma: number;
+    protistrana: string | null;
+  } | null>(null);
+  const uhradyFn = useServerFn(uhradyPrijatych);
+  const rozparujFn = useServerFn(zrusParovaniePrijatej);
+
+  async function nacitajUhradu(fakturaId: string) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    try {
+      const u: any = await uhradyFn({ data: { company_id: cid, ids: [fakturaId] } });
+      setUhrada(u?.uhrady?.[fakturaId] ?? null);
+    } catch {
+      setUhrada(null);
+    }
+  }
+
+  async function zrusVazbu() {
+    if (!uhrada) return;
+    try {
+      await rozparujFn({ data: { transaction_id: uhrada.transactionId } });
+      toast.success("Väzba na platbu zrušená.");
+      setUhrada(null);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Zrušiť sa to nepodarilo.");
     }
   }
 
@@ -351,6 +390,23 @@ function PurchaseInvoiceDetail() {
                 <Row label="Prijatie" value={row.received_date} />
                 <Row label="Splatnosť" value={row.due_date} />
                 {row.payment_date && <Row label="Úhrada" value={row.payment_date} />}
+                {uhrada && (
+                  <div className="mt-1 flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs">
+                    <span className="min-w-0">
+                      <span className="block font-medium">Zaplatené z účtu</span>
+                      <span className="block truncate text-muted-foreground">
+                        {uhrada.datum}
+                        {uhrada.protistrana ? ` · ${uhrada.protistrana}` : ""}
+                      </span>
+                    </span>
+                    <button
+                      onClick={zrusVazbu}
+                      className="shrink-0 rounded border border-border px-2 py-1 text-muted-foreground hover:bg-background"
+                    >
+                      Zrušiť väzbu
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
