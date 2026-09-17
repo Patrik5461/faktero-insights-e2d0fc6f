@@ -237,9 +237,21 @@ export async function runMonthlyStatements(period?: { start: string; end: string
       */
       if (acc.unavailable_since) {
         nedostupne += 2;
-        console.log(
-          `[bank-statements] účet ${acc.iban ?? acc.id} preskočený — ${acc.unavailable_reason ?? "banka ho nepozná"}`,
-        );
+        /*
+          Rozrobené riadky za toto obdobie sa zároveň uzavrú. Bez toho by na
+          stránke výpisov navždy svietilo červené „PDF zlyhalo" pri niečom, čo
+          sa už nikdy neskúsi — takto sa účet ocitne medzi tými, ku ktorým
+          výpis nevznikne, aj s dôvodom.
+        */
+        const dovod = acc.unavailable_reason ?? "Banka účet nepozná (NO_ACCOUNT).";
+        await supabaseAdmin
+          .from("bank_statements")
+          .update({ status: "unsupported", error: dovod, updated_at: new Date().toISOString() })
+          .eq("bank_account_id", acc.id)
+          .eq("period_start", start)
+          .eq("period_end", end)
+          .in("status", ["pending", "failed"]);
+        console.log(`[bank-statements] účet ${acc.iban ?? acc.id} preskočený — ${dovod}`);
         continue;
       }
       for (const exportType of ["PDF", "XML"] as ExportType[]) {
@@ -303,10 +315,11 @@ export async function runMonthlyStatements(period?: { start: string; end: string
             nočný beh ho už neskúša — dovtedy padalo to isté volanie každý deň a
             plnilo chybový log.
 
-            Účet sa pritom **nesmie** označiť za nedostupný: napríklad
-            MaxiTicket pohyby vydáva bez problémov a padajú mu len výpisy. Tá
-            značka zastavuje sťahovanie transakcií, takže by sme kvôli
-            chýbajúcemu výpisu prišli o pohyby. Preto sa tu len číta.
+            Účet sa pritom **nesmie** označiť za nedostupný. Tá značka zastavuje
+            sťahovanie transakcií a patrí dennému behu pohybov, ktorý jediný vie,
+            či banka účet vydáva. Výpis môže padnúť aj vtedy, keď pohyby chodia
+            (banka ich vydáva zvlášť), a kvôli chýbajúcemu výpisu by sme tak
+            prišli aj o pohyby. Preto sa tu značka len číta.
 
             Nasledujúci mesiac vznikne nový riadok a skúsi sa znova — keby banka
             účet sprístupnila, výpisy sa rozbehnú samy.
