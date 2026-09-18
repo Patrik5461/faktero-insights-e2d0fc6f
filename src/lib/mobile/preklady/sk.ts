@@ -717,6 +717,7 @@ export const sk = {
   "pov.zvysokNastavenia":
     "Toto sa oknom povoliť nedá — Android ich ponúka už len v nastaveniach aplikácie. Otvoríme ich, hľadajte Povolenia.",
   "app.spustam": "Spúšťam Faktero… ({faza}) · {balicek}",
+  "app.spustamJazdy": "Spúšťam Knihu jázd… ({faza}) · {balicek}",
   "app.startZasekol": "Štart sa zasekol na kroku „{faza}“.",
   "app.balicek": "balíček {peciatka}",
   "app.hotovoStran": "Hotovo — {pocet} strán",

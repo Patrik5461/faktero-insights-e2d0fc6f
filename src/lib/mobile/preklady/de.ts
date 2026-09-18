@@ -717,6 +717,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "pov.zvysokNastavenia":
     "Das lässt sich per Dialog nicht mehr erlauben — Android bietet es nur in den App-Einstellungen an. Wir öffnen sie; suchen Sie nach Berechtigungen.",
   "app.spustam": "Faktero wird gestartet… ({faza}) · {balicek}",
+  "app.spustamJazdy": "Fahrtenbuch wird gestartet… ({faza}) · {balicek}",
   "app.startZasekol": "Der Start hängt beim Schritt „{faza}“.",
   "app.balicek": "Paket {peciatka}",
   "app.hotovoStran": "Fertig — {pocet} Seiten",

@@ -704,6 +704,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "pov.zvysokNastavenia":
     "Tohle už oknem povolit nejde — Android to nabízí jen v nastavení aplikace. Otevřeme je, hledejte Oprávnění.",
   "app.spustam": "Spouštím Faktero… ({faza}) · {balicek}",
+  "app.spustamJazdy": "Spouštím Knihu jízd… ({faza}) · {balicek}",
   "app.startZasekol": "Start se zasekl na kroku „{faza}“.",
   "app.balicek": "balíček {peciatka}",
   "app.hotovoStran": "Hotovo — {pocet} stran",

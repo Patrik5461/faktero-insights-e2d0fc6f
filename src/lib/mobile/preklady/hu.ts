@@ -707,6 +707,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "pov.zvysokNastavenia":
     "Ezt ablakból már nem lehet engedélyezni — az Android csak az alkalmazás beállításaiban kínálja. Megnyitjuk; keresse az Engedélyek pontot.",
   "app.spustam": "A Faktero indítása… ({faza}) · {balicek}",
+  "app.spustamJazdy": "Az útnyilvántartás indítása… ({faza}) · {balicek}",
   "app.startZasekol": "Az indítás elakadt a(z) „{faza}” lépésnél.",
   "app.balicek": "csomag {peciatka}",
   "app.hotovoStran": "Kész — {pocet} oldal",

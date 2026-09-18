@@ -48,3 +48,28 @@ describe("bočný panel v Knihe jázd", () => {
     expect(html).not.toContain("Bločky a pokladňa");
   });
 });
+
+/**
+ * Úvodná obrazovka sa nesmie hlásiť cudzím menom.
+ *
+ * Kniha jázd je samostatná appka v obchode a človek, ktorý vedie len jazdy,
+ * o Fakteri nemusí vedieť nič — „Spúšťam Faktero…" pri štarte vyzeralo, že si
+ * stiahol niečo iné.
+ */
+describe("štart Knihy jázd", () => {
+  it("hlási sa ako Kniha jázd, nie ako Faktero", async () => {
+    const { prelozit } = await import("@/lib/mobile/preklady");
+    const text = prelozit("sk", "app.spustamJazdy", { faza: "1", balicek: "—" });
+    expect(text).toContain("Knihu jázd");
+    expect(text).not.toContain("Faktero");
+  });
+
+  it("každý jazyk má vlastný text štartu a nespomína Faktero", async () => {
+    const { prelozit } = await import("@/lib/mobile/preklady");
+    for (const jazyk of ["sk", "cs", "en", "de", "hu"] as const) {
+      const text = prelozit(jazyk, "app.spustamJazdy", { faza: "1", balicek: "—" });
+      expect(text).not.toContain("Faktero");
+      expect(text).not.toContain("app.spustamJazdy");
+    }
+  });
+});

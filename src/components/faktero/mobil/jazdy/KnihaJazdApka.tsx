@@ -275,7 +275,12 @@ function ObsahJazd() {
   if (zamknute) return <Zamok onOdomknute={() => setZamknute(false)} onOdhlasit={odhlas} />;
 
   if (krok === "nacitavam") {
-    if (!dlho && !chybaStartu) return <Pracujem text={t("app.spustam", { faza, balicek: "—" })} />;
+    /*
+      Vlastný text, nie ten z Faktera — toto je samostatná appka a človek, ktorý
+      vedie len knihu jázd, o Fakteri nemusí vedieť vôbec nič.
+    */
+    if (!dlho && !chybaStartu)
+      return <Pracujem text={t("app.spustamJazdy", { faza, balicek: "—" })} />;
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-app-pozadie p-6 text-center">
         <div className="space-y-3">
