@@ -56,6 +56,40 @@ describe("bočný panel v Knihe jázd", () => {
  * o Fakteri nemusí vedieť nič — „Spúšťam Faktero…" pri štarte vyzeralo, že si
  * stiahol niečo iné.
  */
+/**
+ * Pravidlo, ktoré nahradilo vetvenie textov po jednom.
+ *
+ * Kľúč s príponou `Jazdy` prebije spoločný text, keď beží Kniha jázd. Obyčajná
+ * náhrada mena by nestačila: v slovenčine aj češtine sa s menom mení rod —
+ * „Kniha jázd je zamknuté" by bolo zmrzačené, prekladá sa preto celá veta.
+ */
+describe("prípona Jazdy prebije spoločný text", () => {
+  it("zamknutá appka sa menuje správne a v správnom rode", async () => {
+    const { prelozit } = await import("@/lib/mobile/preklady");
+    expect(prelozit("sk", "app.zamknute")).toBe("Kniha jázd je zamknutá");
+    expect(prelozit("cs", "app.zamknute")).toBe("Kniha jízd je zamčená");
+  });
+
+  it("kľúč bez varianty ostáva spoločný", async () => {
+    const { prelozit } = await import("@/lib/mobile/preklady");
+    // Tento text appku nemenuje, takže vlastnú verziu mať nemusí.
+    expect(prelozit("sk", "panel.zavriet")).toBe("Zavrieť");
+  });
+
+  it("v Knihe jázd sa Faktero neobjaví v žiadnom jazyku", async () => {
+    const { prelozit } = await import("@/lib/mobile/preklady");
+    const { sk } = await import("@/lib/mobile/preklady/sk");
+    const podozrive: string[] = [];
+    for (const jazyk of ["sk", "cs", "en", "de", "hu"] as const) {
+      for (const kluc of Object.keys(sk) as (keyof typeof sk)[]) {
+        if (String(kluc).endsWith("Jazdy")) continue;
+        if (prelozit(jazyk, kluc).includes("Faktero")) podozrive.push(`${jazyk}:${kluc}`);
+      }
+    }
+    expect(podozrive).toEqual([]);
+  });
+});
+
 describe("štart Knihy jázd", () => {
   it("hlási sa ako Kniha jázd, nie ako Faktero", async () => {
     const { prelozit } = await import("@/lib/mobile/preklady");

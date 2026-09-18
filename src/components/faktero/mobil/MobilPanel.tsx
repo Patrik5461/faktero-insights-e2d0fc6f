@@ -301,12 +301,14 @@ export function MobilPanel({
           {/*
             Panel je spoločný pre obe appky, ale odkazy von z neho nie sú.
             V Knihe jázd viedli na centrum pomoci Faktera a na návod k pokladni
-            — teda do agendy, ktorú tá appka vôbec nemá. Preto sa tu vetví:
-            návody idú rovno na knihu jázd a bločky sa neponúkajú.
+            — teda do agendy, ktorú tá appka vôbec nemá.
+
+            Texty sa tu už nevetvia: o tie sa stará prekladová vrstva podľa
+            kľúča s príponou `Jazdy`. Vetví sa len cesta, tá preložiť nejde.
           */}
           <Polozka
             icon={BookOpen}
-            label={JE_KNIHA_JAZD ? t("panel.navodyJazdy") : t("panel.navody")}
+            label={t("panel.navody")}
             hint={t("panel.otvoriVPrehliadaci")}
             onClick={() => otvorNaWebe(JE_KNIHA_JAZD ? "/pomoc/jazdy" : "/pomoc")}
           />
@@ -327,8 +329,8 @@ export function MobilPanel({
           />
           <Polozka
             icon={Globe}
-            label={JE_KNIHA_JAZD ? t("panel.otvoritJazdyNaWebe") : t("panel.otvoritNaWebe")}
-            hint={JE_KNIHA_JAZD ? t("panel.jazdyNaWebe") : t("panel.zvysokAplikacie")}
+            label={t("panel.otvoritNaWebe")}
+            hint={t("panel.zvysokAplikacie")}
             onClick={() => otvorNaWebe(JE_KNIHA_JAZD ? "/jazdy" : "/dashboard")}
           />
 
