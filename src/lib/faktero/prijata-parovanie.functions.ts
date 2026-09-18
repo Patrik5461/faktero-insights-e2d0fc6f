@@ -43,37 +43,57 @@ export const navrhniParovaniePrijatych = createServerFn({ method: "POST" })
     const supabase = context.supabase as unknown as Klient;
     const od = predDnami(DNI_DOZADU);
 
-    const [{ data: faktury }, { data: pohyby }] = await Promise.all([
-      supabase
-        .from("purchase_invoices")
-        .select(
-          "id, supplier_name, invoice_number, variable_symbol, issue_date, due_date, amount_total, currency, payment_method, status",
-        )
-        .eq("company_id", data.company_id)
-        .is("deleted_at", null)
-        .gte("issue_date", od)
-        .neq("status", "cancelled")
-        // Hotovosť sa v banke neobjaví, tak ju netreba ani ťahať.
-        .or("payment_method.is.null,payment_method.neq.hotovost")
-        .order("issue_date", { ascending: false })
-        .limit(400),
-      supabase
-        .from("bank_transactions")
-        .select("id, booking_date, amount, currency, variable_symbol, counterparty, description")
-        .eq("company_id", data.company_id)
-        .gte("booking_date", od)
-        /*
-          Pohyb, ktorý už niečo uhrádza, nemá čo uhrádzať druhýkrát — ani
-          vydanú faktúru, ani doklad, ani splátku.
-        */
-        .is("matched_purchase_invoice_id", null)
-        .is("matched_expense_id", null)
-        .is("matched_invoice_id", null)
-        .is("matched_installment_id", null)
-        .lt("amount", 0)
-        .order("booking_date", { ascending: false })
-        .limit(600),
-    ]);
+    const { data: faktury } = await supabase
+      .from("purchase_invoices")
+      .select(
+        "id, supplier_name, invoice_number, variable_symbol, issue_date, due_date, amount_total, currency, payment_method, status",
+      )
+      .eq("company_id", data.company_id)
+      .is("deleted_at", null)
+      .gte("issue_date", od)
+      .neq("status", "cancelled")
+      // Hotovosť sa v banke neobjaví, tak ju netreba ani ťahať.
+      .or("payment_method.is.null,payment_method.neq.hotovost")
+      .order("issue_date", { ascending: false })
+      .limit(400);
+
+    /*
+      Pohyby sa vyberajú podľa súm faktúr, nie „posledných N odchádzajúcich".
+
+      Účet, cez ktorý chodí prevádzka, má za pol roka aj dvetisíc odchádzajúcich
+      platieb. Pri strope na počet vypadli tie staršie — teda práve tie, kvôli
+      ktorým je okno také široké: faktúra zaplatená dva mesiace po vystavení.
+      Suma musí sedieť na cent, takže je to zároveň ten najostrejší filter, aký
+      máme, a nechá z tisícok riadkov pár.
+    */
+    const sumy = [
+      ...new Set(
+        ((faktury as unknown as PrijataFaktura[]) ?? [])
+          .map((f) =>
+            f.amount_total == null ? null : -Math.round(Number(f.amount_total) * 100) / 100,
+          )
+          .filter((x): x is number => x != null && x < 0),
+      ),
+    ];
+
+    const { data: pohyby } = sumy.length
+      ? await supabase
+          .from("bank_transactions")
+          .select("id, booking_date, amount, currency, variable_symbol, counterparty, description")
+          .eq("company_id", data.company_id)
+          .gte("booking_date", od)
+          .in("amount", sumy)
+          /*
+            Pohyb, ktorý už niečo uhrádza, nemá čo uhrádzať druhýkrát — ani
+            vydanú faktúru, ani doklad, ani splátku.
+          */
+          .is("matched_purchase_invoice_id", null)
+          .is("matched_expense_id", null)
+          .is("matched_invoice_id", null)
+          .is("matched_installment_id", null)
+          .order("booking_date", { ascending: false })
+          .limit(1000)
+      : { data: [] as any[] };
 
     // Faktúra, ktorá už pohyb má, sa znova neponúka.
     const { data: uzSparovane } = await supabase
