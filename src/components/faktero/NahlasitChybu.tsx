@@ -5,6 +5,47 @@ import { Bug, Lightbulb, X } from "lucide-react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 
 /**
+ * O koľko klávesnica prekrýva okno.
+ *
+ * Čistá časť výpočtu — dá sa overiť bez prehliadača a práve tu sa dá pomýliť:
+ * `offsetTop` je to, o koľko je viditeľná časť posunutá nadol, keď stránku
+ * vytlačí klávesnica. Bez neho vyjde prekrytie menšie, než je.
+ *
+ * Malé rozdiely (lišty prehliadača) sa ignorujú — odsúvať okno o pár bodov by
+ * len poskakovalo.
+ */
+export function prekrytieKlavesnicou(okno: number, viditelne: number, posun: number): number {
+  const prekryv = okno - viditelne - posun;
+  return prekryv > 80 ? Math.round(prekryv) : 0;
+}
+
+/**
+ * Koľko miesta zdola zaberá klávesnica.
+ *
+ * V zabalenej appke sa stránka pri otvorení klávesnice **nezmenší** — `inset-0`
+ * teda ostane cez celú obrazovku a spodok okna aj s tlačidlom skončí pod
+ * klávesnicou. `visualViewport` je jediné miesto, ktoré o nej vie.
+ */
+function useKlavesnica(aktivne: boolean): number {
+  const [vyska, setVyska] = useState(0);
+  useEffect(() => {
+    const vv = typeof window === "undefined" ? null : window.visualViewport;
+    if (!aktivne || !vv) return;
+    const prepocitaj = () =>
+      setVyska(prekrytieKlavesnicou(window.innerHeight, vv.height, vv.offsetTop));
+    prepocitaj();
+    vv.addEventListener("resize", prepocitaj);
+    vv.addEventListener("scroll", prepocitaj);
+    return () => {
+      vv.removeEventListener("resize", prepocitaj);
+      vv.removeEventListener("scroll", prepocitaj);
+      setVyska(0);
+    };
+  }, [aktivne]);
+  return vyska;
+}
+
+/**
  * Okno na nahlásenie chyby a návrhu na zlepšenie.
  *
  * Otvára sa z ponuky pod avatarom, takže je poruke z každej stránky. Adresu
@@ -27,6 +68,7 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
     a serverová funkcia volaná relatívnou adresou by mierila do prázdna.
   */
   const posli = useOperacia("spatna-vazba");
+  const klavesnica = useKlavesnica(otvorene);
 
   useEffect(() => {
     if (!otvorene) return;
@@ -73,6 +115,14 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
   return (
     <div
       className="fixed inset-0 z-[70] grid place-items-end bg-black/40 p-4 sm:place-items-center"
+      /*
+        Okno sedí pri spodnom okraji, takže ho klávesnica prekryje celé — aj
+        pole, aj tlačidlo Odoslať. Odsunie sa presne o jej výšku; keď nie je,
+        drží sa nad domovským prúžkom iPhonu.
+      */
+      style={{
+        paddingBottom: klavesnica ? klavesnica + 16 : "calc(env(safe-area-inset-bottom) + 1rem)",
+      }}
       onClick={onZavri}
     >
       <div
@@ -80,7 +130,11 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
         aria-modal="true"
         aria-label="Nahlásiť chybu alebo návrh"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-2xl border border-border bg-card p-5 shadow-lg"
+        /*
+          Na nízkej obrazovke (alebo s otvorenou klávesnicou) sa obsah nezmestí
+          — bez rolovania sa k tlačidlu nedá dostať vôbec.
+        */
+        className="max-h-[85dvh] w-full max-w-lg overflow-y-auto overscroll-contain rounded-2xl border border-border bg-card p-5 shadow-lg"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
