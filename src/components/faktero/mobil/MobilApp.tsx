@@ -184,7 +184,7 @@ import type { Kluc } from "@/lib/mobile/preklady";
 
 type Firma = { id: string; name: string };
 type Uhrada = "hotovost" | "karta" | "prevod";
-type Krok =
+export type Krok =
   | "nacitavam"
   | "prihlasenie"
   | "registracia"
@@ -204,6 +204,19 @@ type Krok =
   | "banka"
   | "ucet";
 type Zachyt = "blocek" | "pdf" | "strany";
+
+/**
+ * Kam viesť po odchode zo zachytávania dokladu.
+ *
+ * Skener je celoobrazovková kamera. Kto sa do dokladu dostal cez ňu, chce sa
+ * na ňu aj vrátiť — či už doklad uložil, alebo sa vrátil späť. Zoznam dokladov
+ * po uložení má zmysel len pri vstupe z Prehľadu, kde človek inak nevidí, či
+ * sa doklad vôbec uložil.
+ */
+export function navratZoZachytu(odkial: Krok, ulozene: boolean): Krok {
+  if (odkial === "skener") return "skener";
+  return ulozene ? "doklady" : odkial;
+}
 
 /**
  * Appka má veľa stavov a každý sa vracia vlastným `return` — prihlásenie, výber
@@ -283,6 +296,12 @@ function ObsahApky() {
     useState<NastavenieDokladu>(vychodzieNastavenie);
   /** Kód prečítaný na skeneri, ktorý čaká na spracovanie v toku dokladu. */
   const [qrZoSkenera, setQrZoSkenera] = useState<string | null>(null);
+  /*
+    Odkiaľ sa do zachytávania dokladu vošlo. Zo skenera sa treba vrátiť späť
+    naň — je to celoobrazovková kamera a človek chce fotiť ďalší doklad, nie
+    prezerať zoznam.
+  */
+  const [zachytZo, setZachytZo] = useState<Krok>("prehlad");
 
   /*
    * Povolenie na notifikácie sa pýta až tu: na domovskej obrazovke, teda po
@@ -772,6 +791,12 @@ function ObsahApky() {
     setKrok("jazda");
   }
   const naNovuFakturu = () => setKrok("novaFaktura");
+  /** Otvorí zachytávanie dokladu a zapamätá si, kam sa z neho vrátiť. */
+  const doZachytu = (druh: Zachyt, odkial: Krok) => {
+    setZachyt(druh);
+    setZachytZo(odkial);
+    setKrok("zachyt");
+  };
 
   if (krok === "prehlad" && firma)
     return (
@@ -888,23 +913,19 @@ function ObsahApky() {
           onNastavenie={setNastavenieDokladu}
           onQr={(raw) => {
             setQrZoSkenera(raw);
-            setZachyt("blocek");
-            setKrok("zachyt");
+            doZachytu("blocek", "skener");
           }}
           onOdfotit={() => {
             setQrZoSkenera(null);
-            setZachyt("blocek");
-            setKrok("zachyt");
+            doZachytu("blocek", "skener");
           }}
           onZGalerie={() => {
             setQrZoSkenera(null);
-            setZachyt("pdf");
-            setKrok("zachyt");
+            doZachytu("pdf", "skener");
           }}
           onViacstranovy={() => {
             setQrZoSkenera(null);
-            setZachyt("strany");
-            setKrok("zachyt");
+            doZachytu("strany", "skener");
           }}
           onPrijateDoklady={() => setKrok("doklady")}
         />
@@ -1047,10 +1068,15 @@ function ObsahApky() {
         firma={firma}
         prednastavene={skenerPrvy ? nastavenieDokladu : undefined}
         hotovyQr={qrZoSkenera}
-        onSpat={() => setKrok(DOMOV)}
-        // Po uložení ukážeme zoznam — inak doklad zmizne a nedá sa overiť,
-        // či sa vôbec uložil.
-        onUlozene={() => setKrok("doklady")}
+        zoSkenera={zachytZo === "skener"}
+        onSpat={() => setKrok(navratZoZachytu(zachytZo, false))}
+        /*
+          Zo skenera sa po uložení vraciame na skener, aby sa dal hneď nasnímať
+          ďalší doklad; že sa uložil, povie hláška a odkaz na Prijaté doklady
+          je priamo na ňom. Odinakiaľ ukážeme zoznam — inak doklad zmizne a
+          nedá sa overiť, či sa vôbec uložil.
+        */
+        onUlozene={() => setKrok(navratZoZachytu(zachytZo, true))}
       />
     );
 
@@ -1073,10 +1099,7 @@ function ObsahApky() {
         viacFiriem={firmy.length > 1}
         zrusiSa={zrusiSa}
         onUcet={() => setKrok("ucet")}
-        onZachyt={(d) => {
-          setZachyt(d);
-          setKrok("zachyt");
-        }}
+        onZachyt={(d) => doZachytu(d, DOMOV)}
         onDoklady={() => setKrok("doklady")}
         onNovaFaktura={() => setKrok("novaFaktura")}
         onFaktury={() => setKrok("faktury")}
@@ -1409,6 +1432,7 @@ function ZachytDokladu({
   onUlozene,
   prednastavene,
   hotovyQr,
+  zoSkenera,
 }: {
   druh: Zachyt;
   firma: Firma;
@@ -1418,6 +1442,8 @@ function ZachytDokladu({
   prednastavene?: NastavenieDokladu;
   /** QR prečítaný už na úvodnej obrazovke; čítanie sa nespúšťa druhý raz. */
   hotovyQr?: string | null;
+  /** Sem sa vošlo z celoobrazovkového skenera — „späť" vedie naň. */
+  zoSkenera?: boolean;
 }) {
   const { t } = usePreklad();
   /* Sadzby DPH a mena pri čítaní z fotky sa riadia krajinou firmy. */
@@ -1604,6 +1630,12 @@ function ZachytDokladu({
         }}
         onUloz={ulozDoklad}
         onSpat={() => {
+          /*
+            Zo skenera sa „späť" vracia rovno naň. Krok nižšie je náhrada
+            kamery pre web — po nasnímaní na telefóne by pôsobil ako druhý,
+            zjednodušený skener.
+          */
+          if (zoSkenera) return onSpat();
           setVysledok(null);
           setFoto(null);
           setStrany([]);
