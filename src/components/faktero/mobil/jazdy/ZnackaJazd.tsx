@@ -13,7 +13,13 @@ export function ZnackaJazd({ className = "" }: { className?: string }) {
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <svg viewBox="0 0 100 100" className="h-9 w-9" aria-hidden>
-        <rect width="100" height="100" rx="22.5" className="fill-app-text" />
+        {/*
+          Farba je pevná, nie z motívu. Podklad kedysi bral `fill-app-text`,
+          teda farbu textu — v tmavom režime teda zbelel a biela trasa na ňom
+          zmizla. Zo značky ostal prázdny svetlý štvorček. Hodnota je odčítaná
+          z ikony appky, aby prihlásenie a ikona na ploche vyzerali rovnako.
+        */}
+        <rect width="100" height="100" rx="22.5" fill="#1f2a33" />
         <path
           d="M25 77 C84 63, 18 40, 75 25"
           fill="none"
