@@ -24,6 +24,8 @@ export type CakajuciDoklad = {
   /** Fotka alebo PDF ako data URL — priloží sa k dokladu po odoslaní. */
   obrazok?: string | null;
   uhrada: "hotovost" | "karta" | "prevod";
+  /** Kategória nákladu vybraná na skeneri. Bez nej by sa cestou stratila. */
+  kategoria?: string | null;
   /** Keď sa doklad stihol prečítať ešte online, netreba ho čítať znova. */
   vysledok?: BlocekVysledok | null;
   ts: number;

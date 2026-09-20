@@ -81,6 +81,8 @@
   --color-app-text-3: var(--app-text-3);
   --color-app-chyba: var(--app-chyba);
   --color-app-chyba-jemna: var(--app-chyba-jemna);
+  --color-app-pozor: var(--app-pozor);
+  --color-app-pozor-jemna: var(--app-pozor-jemna);
   --radius-app: var(--app-radius);
   --radius-app-sm: var(--app-radius-sm);
   --shadow-app: var(--app-tien);
@@ -175,6 +177,9 @@
   --app-text-3: #9ca3af;
   --app-chyba: #dc2626;
   --app-chyba-jemna: #fdeaea;
+  /* Pozor, nie chyba: appka na niečo upozorní, ale dovolí pokračovať. */
+  --app-pozor: #b45309;
+  --app-pozor-jemna: #fef4e6;
   --app-radius: 16px;
   --app-radius-sm: 12px;
   /* Tieň skoro žiadny — karty oddeľuje rámik, nie vrstvenie. */
@@ -232,6 +237,8 @@
   --app-text-3: oklch(0.6 0.02 160);
   --app-chyba: oklch(0.7 0.19 22);
   --app-chyba-jemna: oklch(0.3 0.07 22);
+  --app-pozor: oklch(0.82 0.14 75);
+  --app-pozor-jemna: oklch(0.31 0.06 75);
   --app-tien: 0 1px 2px rgb(0 0 0 / 0.3);
 }
 

@@ -205,6 +205,16 @@ export type Krok =
   | "ucet";
 type Zachyt = "blocek" | "pdf" | "strany";
 
+/** Doklad, ktorý vo firme už je — toľko z neho stačí, aby sa dal spoznať. */
+type NajdenyDoklad = {
+  id: string;
+  document_number: string | null;
+  issue_date: string | null;
+  total_amount: number | null;
+  currency: string | null;
+  supplier_name: string | null;
+};
+
 /**
  * Kam viesť po odchode zo zachytávania dokladu.
  *
@@ -1450,8 +1460,9 @@ function ZachytDokladu({
   const krajina = useKrajinaDane();
   const nacitaj = useOperacia<BlocekVysledok>("blocek-precitaj");
   const uloz = useOperacia("vydavok-uloz");
+  const hladajDuplikat = useOperacia<NajdenyDoklad | null>("vydavok-duplikat");
 
-  const [stav, setStav] = useState<"start" | "citam" | "potvrdenie" | "ukladam">("start");
+  const [stav, setStav] = useState<"start" | "citam" | "potvrdenie">("start");
   const [vysledok, setVysledok] = useState<BlocekVysledok | null>(null);
   const [uhrada, setUhrada] = useState<Uhrada | null>(prednastavene?.uhrada ?? null);
   const [foto, setFoto] = useState<string | null>(null);
@@ -1459,6 +1470,8 @@ function ZachytDokladu({
   const [skenujem, setSkenujem] = useState(false);
   /** QR kód sa odloží aj vtedy, keď ho server nemal ako prečítať. */
   const [qrKod, setQrKod] = useState<string | null>(null);
+  /** Doklad, ktorý už vo firme je. Neblokuje uloženie, len naň upozorní. */
+  const [duplikat, setDuplikat] = useState<NajdenyDoklad | null>(null);
 
   /** Doklad prečítaný — ďalej sa pýtame na úhradu a na fotku. */
   function prijmi(r: BlocekVysledok, prilozene?: string | null) {
@@ -1467,6 +1480,34 @@ function ZachytDokladu({
     if (prilozene) setFoto(prilozene);
     setStav("potvrdenie");
     if (r.zdroj === "nic") toast.error(r.poznamka ?? t("app.nepodariloPrecitat"));
+    void overDuplicitu(r);
+  }
+
+  /*
+    Ten istý bloček sa naskenuje ľahko — raz v obchode a raz doma z fotky.
+    Pýtame sa na to hneď po prečítaní, nie až pri ukladaní: kým človek vyberá
+    úhradu, odpoveď je späť a upozornenie je na obrazovke skôr, než stlačí
+    uložiť. Keď hľadanie zlyhá, mlčíme — duplicita je pomoc, nie podmienka, a
+    zápis ju aj tak druhý raz nepustí.
+  */
+  async function overDuplicitu(r: BlocekVysledok) {
+    setDuplikat(null);
+    try {
+      const najdeny = await hladajDuplikat({
+        data: {
+          company_id: firma.id,
+          qr_raw: r.qr_raw ?? null,
+          supplier_ico: r.supplier_ico ?? null,
+          supplier_name: r.supplier ?? null,
+          document_number: r.document_number ?? null,
+          issue_date: r.date ?? null,
+          total_amount: r.total ?? null,
+        },
+      });
+      setDuplikat(najdeny ?? null);
+    } catch {
+      /* bez signálu alebo pri chybe sa na duplicitu nepýtame druhý raz */
+    }
   }
 
   /*
@@ -1569,58 +1610,50 @@ function ZachytDokladu({
       qr_raw: qrKod ?? vysledok?.qr_raw ?? null,
       obrazok: foto,
       uhrada: uhrada!,
+      kategoria: prednastavene?.kategoria ?? null,
       vysledok: vysledok,
     });
     toast.success(dovod);
     onUlozene();
   }
 
+  /*
+    Ukladá sa na pozadí.
+
+    Fotka dokladu má bežne jeden až tri megabajty a na mobilnej sieti trvá jej
+    nahratie aj so zápisom desiatky sekúnd. Človek dovtedy stál nad obrazovkou
+    „Ukladám doklad…" s ďalším bločkom v ruke. Doklad preto ide do tej istej
+    fronty, ktorá drží doklady bez signálu — tá vie počkať, opakovať pokus aj
+    prežiť zatvorenie appky — a obrazovka sa vráti hneď.
+
+    Zdvojeniu bráni zápis na serveri: doklad s rovnakým QR kódom sa druhý raz
+    nezaloží, nech sa pokus zopakuje koľkokrát chce.
+  */
   async function ulozDoklad() {
     if (!vysledok || !uhrada) return;
-    setStav("ukladam");
-
     const { isOnline } = await import("@/lib/mobile/offline-queue");
-    if (!(await isOnline())) {
-      await odlozDoklad(t("app.bezSignaluOdosleSa"));
-      return;
-    }
+    const online = await isOnline();
+    await odlozDoklad(online ? t("app.dokladSaUklada") : t("app.bezSignaluOdosleSa"));
+    if (!online) return;
 
-    try {
-      const priloha = foto ? await nahrajPrilohu(firma.id, foto) : null;
-      if (foto && !priloha) toast.error(t("app.prilohaNenahrata"));
-      await uloz({
-        data: dokladNaZaznam(
-          firma.id,
-          vysledok,
-          uhrada,
-          priloha,
-          prednastavene?.kategoria ?? null,
-        ) as any,
+    const { odosliCakajuce } = await import("@/lib/mobile/doklady-odoslanie");
+    void odosliCakajuce(firma.id, nacitaj as any, uloz as any)
+      .then(({ odoslane }) => {
+        if (odoslane > 0) toast.success(t("app.dokladUlozeny"));
+      })
+      .catch(() => {
+        /* doklad ostáva vo fronte aj s dôvodom; vidieť ho v Prijatých dokladoch */
       });
-      toast.success(t("app.dokladUlozeny"));
-      onUlozene();
-    } catch (e: any) {
-      /*
-       * Signál vie vypadnúť aj uprostred ukladania. Doklad sa preto nezahodí
-       * ani tu — odloží sa a odošle neskôr; človek už fotí ďalší.
-       */
-      if (!(await isOnline())) {
-        await odlozDoklad(t("app.spojenieVypadlo"));
-        return;
-      }
-      toast.error(e?.message ?? t("app.ulozenieZlyhalo"));
-      setStav("potvrdenie");
-    }
   }
 
   if (skenujem) return <QrSkener onNajdene={precitajQr} onZrusit={() => setSkenujem(false)} />;
   if (stav === "citam") return <Pracujem text={t("app.citamDoklad")} />;
-  if (stav === "ukladam") return <Pracujem text={t("app.ukladamDoklad")} />;
 
   if (stav === "potvrdenie" && vysledok) {
     return (
       <Potvrdenie
         vysledok={vysledok}
+        duplikat={duplikat}
         uhrada={uhrada}
         setUhrada={setUhrada}
         foto={foto}
@@ -1728,6 +1761,7 @@ function ZachytDokladu({
 
 function Potvrdenie({
   vysledok,
+  duplikat,
   uhrada,
   setUhrada,
   foto,
@@ -1736,6 +1770,8 @@ function Potvrdenie({
   onSpat,
 }: {
   vysledok: BlocekVysledok;
+  /** Ten istý doklad, ktorý vo firme už je — inak `null`. */
+  duplikat: NajdenyDoklad | null;
   uhrada: Uhrada | null;
   setUhrada: (u: Uhrada) => void;
   foto: string | null;
@@ -1755,7 +1791,12 @@ function Potvrdenie({
       footer={
         <HlavneTlacidlo onClick={onUloz} disabled={!uhrada}>
           {uhrada ? (
-            t("app.ulozitDoklad")
+            /* Pri známom duplikáte sa tlačidlo prizná, čo sa stane. */
+            duplikat ? (
+              t("app.ulozitAjTak")
+            ) : (
+              t("app.ulozitDoklad")
+            )
           ) : (
             /*
               Šípka nahor je tu naschvál: tlačidlo drží spodok obrazovky a
@@ -1770,6 +1811,29 @@ function Potvrdenie({
       }
     >
       <div className="space-y-4">
+        {/*
+          Upozornenie na už uložený doklad. Nie je to zákaz — bloček s tým istým
+          číslom môže vzniknúť aj omylom pokladnice — ale má byť vidieť skôr,
+          než sa siahne na tlačidlo, tak je nad sumou, nie pod ňou.
+        */}
+        {duplikat && (
+          <div
+            role="status"
+            className="rounded-app border border-app-pozor/40 bg-app-pozor-jemna p-4 text-[14px]"
+          >
+            <div className="font-semibold text-app-pozor">{t("app.dokladUzMate")}</div>
+            <div className="mt-1 text-app-text-2">
+              {t("app.dokladUzMatePopis", {
+                datum: duplikat.issue_date ? datum(duplikat.issue_date, loc) : "—",
+                suma:
+                  duplikat.total_amount == null
+                    ? "—"
+                    : formatovacMeny(duplikat.currency ?? mena, loc)(duplikat.total_amount),
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="rounded-app border border-app-ramik bg-app-karta p-4 shadow-[var(--shadow-card)]">
           <div className="text-[32px] font-semibold leading-none tabular-nums">
             {suma(vysledok.total)}

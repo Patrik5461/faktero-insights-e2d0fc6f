@@ -51,7 +51,7 @@ async function odosliJeden(d: CakajuciDoklad, nacitaj: NacitajFn, uloz: UlozFn):
   }
 
   const priloha = d.obrazok ? await nahrajPrilohu(d.company_id, d.obrazok) : null;
-  await uloz({ data: dokladNaZaznam(d.company_id, vysledok, d.uhrada, priloha) });
+  await uloz({ data: dokladNaZaznam(d.company_id, vysledok, d.uhrada, priloha, d.kategoria) });
   await zmazZFronty(d.id);
 }
 

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { daSaPorovnat, jeTenIstyDoklad, type OdtlacokDokladu } from "./doklad-duplikat";
 
 export type ExpenseInput = {
   company_id: string;
@@ -71,11 +72,64 @@ const inputSchema = z.object({
     .optional(),
 });
 
+const odtlacokSchema = z.object({
+  company_id: z.string().uuid(),
+  qr_raw: z.string().nullable().optional(),
+  supplier_ico: z.string().nullable().optional(),
+  supplier_name: z.string().nullable().optional(),
+  document_number: z.string().nullable().optional(),
+  issue_date: z.string().nullable().optional(),
+  total_amount: z.number().nullable().optional(),
+});
+
+/**
+ * Už taký doklad vo firme je?
+ *
+ * Hľadá sa cez databázu úzko — podľa QR kódu alebo podľa čísla s dátumom — a
+ * rozhoduje až pravidlo v `doklad-duplikat`. Načítať všetky doklady firmy a
+ * porovnávať ich tu by pri tisícoch riadkov trvalo dlhšie než samotný zápis.
+ */
+export const findExpenseDuplicateFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: OdtlacokDokladu & { company_id: string }) => odtlacokSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    if (!daSaPorovnat(data)) return null;
+    const { supabase } = context;
+    let dopyt = supabase
+      .from("expense_documents")
+      .select("id, document_number, issue_date, total_amount, currency, supplier_name, qr_raw, supplier_ico")
+      .eq("company_id", data.company_id)
+      .limit(20);
+    dopyt = data.qr_raw?.trim()
+      ? dopyt.eq("qr_raw", data.qr_raw.trim())
+      : dopyt.eq("document_number", data.document_number!).eq("issue_date", data.issue_date!);
+    const { data: najdene, error } = await dopyt;
+    if (error) throw new Error(error.message);
+    return (najdene ?? []).find((r) => jeTenIstyDoklad(data, r as OdtlacokDokladu)) ?? null;
+  });
+
 export const createExpenseFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: ExpenseInput) => inputSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    /*
+      Poistka proti dvojitému zápisu. Appka sa na duplicitu pýta ešte pred
+      uložením, ale doklad sa odosiela z fronty na pozadí — pokus, ktorý spadne
+      až po zápise, by sa zopakoval a bloček by bol v účtovníctve dvakrát.
+      Rovnaký QR kód preto nezapisujeme druhý raz a vrátime, čo už je uložené.
+    */
+    const qr = data.qr_raw?.trim();
+    if (qr) {
+      const { data: uz } = await supabase
+        .from("expense_documents")
+        .select("*")
+        .eq("company_id", data.company_id)
+        .eq("qr_raw", qr)
+        .limit(1)
+        .maybeSingle();
+      if (uz) return uz;
+    }
     const { data: row, error } = await supabase
       .from("expense_documents")
       .insert({ ...data, created_by: userId })

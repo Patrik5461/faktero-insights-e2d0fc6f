@@ -8,7 +8,7 @@
  */
 import { useServerFn } from "@tanstack/react-start";
 import { nacitajBlocekFn } from "@/lib/faktero/blocek.functions";
-import { createExpenseFn } from "@/lib/faktero/expenses.functions";
+import { createExpenseFn, findExpenseDuplicateFn } from "@/lib/faktero/expenses.functions";
 import { bankaPrehladFn } from "@/lib/faktero/mobil-banka.functions";
 import { syncBankTransactions } from "@/lib/faktero/tatrabanka.functions";
 import { vystaveneFakturyFn } from "@/lib/faktero/mobil-faktura.functions";
@@ -51,6 +51,7 @@ import type { Operacia } from "./operacie";
 export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "blocek-precitaj": nacitajBlocekFn,
   "vydavok-uloz": createExpenseFn,
+  "vydavok-duplikat": findExpenseDuplicateFn,
   "banka-prehlad": bankaPrehladFn,
   "banka-stiahni": syncBankTransactions,
   "faktury-zoznam": vystaveneFakturyFn,
