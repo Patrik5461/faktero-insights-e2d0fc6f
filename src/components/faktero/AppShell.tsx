@@ -377,7 +377,7 @@ function filterNav(
   const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
   // "viac" je spoločné pre oba produkty a vždy ide na koniec lišty
   return NAV.filter((g) => allowed.has(g.key) || g.key === "viac")
-    // Zamestnanci len pri firme, ktorá má modul zapnutý (companies.module_employees).
+    // Zamestnanci majú všetky firmy (predvolene zapnuté); vypnúť sa dá cez companies.module_employees.
     .filter((g) => g.key !== "zamestnanci" || modulZamestnanci)
     .map((g) =>
       isCompanyAdmin ? g : { ...g, children: g.children.filter((c) => !c.companyAdminOnly) },
