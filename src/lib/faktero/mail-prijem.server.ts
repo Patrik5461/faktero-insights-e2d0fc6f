@@ -379,12 +379,21 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
           continue;
         }
         const riadok = ostatnyZMailu({ ai, odosielatel, predmet, nazovSuboru: meno, dnes });
+        // Exekúcia k zamestnancovi, leasing k zmluve — len pri jednoznačnej zhode.
+        const { navrhniVazby } = await import("./ostatne-doklady-vazby.server");
+        const vazby = await navrhniVazby(supabaseAdmin, adresa.company_id, {
+          kind: riadok.kind,
+          sender: riadok.sender,
+          subject: riadok.subject,
+          summary: riadok.note,
+        }).catch(() => ({}));
         const { error: chybaO } = await supabaseAdmin.from("other_documents").insert({
           id: idOstatneho,
           company_id: adresa.company_id,
           created_by: adresa.user_id,
           status: "new",
           ...riadok,
+          ...vazby,
         });
         if (!chybaO) {
           await supabaseAdmin.from("other_document_files").insert({

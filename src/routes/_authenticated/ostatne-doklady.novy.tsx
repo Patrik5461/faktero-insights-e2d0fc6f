@@ -12,6 +12,7 @@ import {
   spustiRozpoznanieOstatnehoFn,
   stavRozpoznaniaOstatnehoFn,
   ulozOstatnyFn,
+  vazbyOstatnychFn,
 } from "@/lib/faktero/ostatne-doklady.functions";
 import {
   DRUHY_OSTATNYCH,
@@ -20,6 +21,8 @@ import {
   bezpecneMeno,
   jeRozpoznaniePouzitelne,
   nazovDruhu,
+  navrhniZamestnanca,
+  navrhniZmluvu,
   type DruhOstatneho,
   type RozpoznanyOstatny,
 } from "@/lib/faktero/ostatne-doklady";
@@ -30,8 +33,23 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/novy")({
   head: () => ({ meta: [{ title: "Ostatný doklad — Faktero" }] }),
-  validateSearch: (s: Record<string, unknown>): { id?: string } =>
-    typeof s.id === "string" && s.id ? { id: s.id } : {},
+  /*
+    `zamestnanec`, `zmluva` a `druh` predvyplnia nový doklad — z karty
+    zamestnanca („Pridať exekúciu“) alebo z detailu leasingu.
+  */
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { id?: string; zamestnanec?: string; zmluva?: string; druh?: DruhOstatneho } => {
+    const uuid = (v: unknown) =>
+      typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v) ? v : undefined;
+    const druh = DRUHY_OSTATNYCH.find((d) => d.kluc === s.druh)?.kluc;
+    return {
+      ...(typeof s.id === "string" && s.id ? { id: s.id } : {}),
+      ...(uuid(s.zamestnanec) ? { zamestnanec: uuid(s.zamestnanec) } : {}),
+      ...(uuid(s.zmluva) ? { zmluva: uuid(s.zmluva) } : {}),
+      ...(druh ? { druh } : {}),
+    };
+  },
   component: OstatnyDokladPage,
 });
 
@@ -44,6 +62,8 @@ type Form = {
   currency: string;
   due_date: string;
   note: string;
+  employee_id: string;
+  financing_contract_id: string;
 };
 
 const PRAZDNY: Form = {
@@ -55,6 +75,8 @@ const PRAZDNY: Form = {
   currency: "EUR",
   due_date: "",
   note: "",
+  employee_id: "",
+  financing_contract_id: "",
 };
 
 function velkost(b: number | null | undefined): string {
@@ -100,7 +122,26 @@ function OstatnyDokladPage() {
   */
   const [id] = useState<string>(() => search.id ?? crypto.randomUUID());
   const novy = !search.id;
-  const [form, setForm] = useState<Form>(PRAZDNY);
+  const [form, setForm] = useState<Form>(() => ({
+    ...PRAZDNY,
+    kind: search.druh ?? PRAZDNY.kind,
+    employee_id: search.zamestnanec ?? "",
+    financing_contract_id: search.zmluva ?? "",
+  }));
+  const vazbyFn = useServerFn(vazbyOstatnychFn);
+  const [vazby, setVazby] = useState<{
+    zamestnanci: { id: string; first_name: string | null; last_name: string | null; meno: string }[];
+    zmluvy: { id: string; contract_number: string | null; nazov: string }[];
+  }>({ zamestnanci: [], zmluvy: [] });
+  useEffect(() => {
+    if (!cid) return;
+    vazbyFn({ data: { company_id: cid } })
+      .then(setVazby)
+      .catch(() => {
+        /* bez zoznamov sa doklad uloží aj tak, len bez väzby */
+      });
+    // eslint-disable-next-line
+  }, [cid]);
   const [stav, setStav] = useState<string | null>(null);
   const [ulozene, setUlozene] = useState<any[]>([]);
   const [nove, setNove] = useState<File[]>([]);
@@ -123,6 +164,8 @@ function OstatnyDokladPage() {
           currency: d.currency ?? "EUR",
           due_date: d.due_date ?? "",
           note: d.note ?? "",
+          employee_id: d.employee_id ?? "",
+          financing_contract_id: d.financing_contract_id ?? "",
         });
         setStav(d.status);
         setUlozene(
@@ -174,6 +217,23 @@ function OstatnyDokladPage() {
     if (!f.note.trim() && r.summary) {
       zmeny.note = r.summary;
       doplnene.push("poznámka");
+    }
+    // Exekúcia k zamestnancovi, leasing k zmluve — len pri jednoznačnej zhode.
+    const druh = zmeny.kind ?? f.kind;
+    const text = [r.subject, r.summary, r.sender].filter(Boolean).join(" ");
+    if (druh === "exekucia" && !f.employee_id) {
+      const idZ = navrhniZamestnanca(text, vazby.zamestnanci);
+      if (idZ) {
+        zmeny.employee_id = idZ;
+        doplnene.push("zamestnanec");
+      }
+    }
+    if ((druh === "leasing_uver" || druh === "poistovna") && !f.financing_contract_id) {
+      const idM = navrhniZmluvu(text, vazby.zmluvy);
+      if (idM) {
+        zmeny.financing_contract_id = idM;
+        doplnene.push("zmluva");
+      }
     }
     setForm((x) => ({ ...x, ...zmeny }));
     return doplnene;
@@ -284,6 +344,8 @@ function OstatnyDokladPage() {
             currency: form.currency,
             due_date: form.due_date || null,
             note: form.note || null,
+            employee_id: form.employee_id || null,
+            financing_contract_id: form.financing_contract_id || null,
           },
           prilohy: nahrate,
         },
@@ -416,6 +478,45 @@ function OstatnyDokladPage() {
                     className={pole}
                   />
                 </label>
+                {(form.kind === "exekucia" || form.employee_id) && vazby.zamestnanci.length > 0 && (
+                  <label className="block text-sm sm:col-span-2">
+                    <span className="mb-1 block text-xs text-muted-foreground">
+                      Zamestnanec, ktorému sa zráža zo mzdy
+                    </span>
+                    <select
+                      value={form.employee_id}
+                      onChange={(e) => nastav("employee_id", e.target.value)}
+                      className={pole}
+                    >
+                      <option value="">— nepriradený —</option>
+                      {vazby.zamestnanci.map((z) => (
+                        <option key={z.id} value={z.id}>
+                          {z.meno}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {(form.kind === "leasing_uver" || form.kind === "poistovna" || form.financing_contract_id) &&
+                  vazby.zmluvy.length > 0 && (
+                    <label className="block text-sm sm:col-span-2">
+                      <span className="mb-1 block text-xs text-muted-foreground">
+                        Zmluva o leasingu alebo úvere
+                      </span>
+                      <select
+                        value={form.financing_contract_id}
+                        onChange={(e) => nastav("financing_contract_id", e.target.value)}
+                        className={pole}
+                      >
+                        <option value="">— nepriradená —</option>
+                        {vazby.zmluvy.map((z) => (
+                          <option key={z.id} value={z.id}>
+                            {z.nazov}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                 <label className="block text-sm sm:col-span-2">
                   <span className="mb-1 block text-xs text-muted-foreground">Poznámka pre účtovníka</span>
                   <textarea

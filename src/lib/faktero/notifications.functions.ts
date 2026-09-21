@@ -121,6 +121,36 @@ async function notifikacieZamestnancov(companyId: string): Promise<AppNotificati
   }));
 }
 
+/**
+ * Lehoty z ostatných dokladov: splatnosť predpisu, začiatok zrážok pri
+ * exekúcii, termín z listu úradu. Kľúč nesie aj dátum — keď sa lehota
+ * posunie, zvonček sa ozve znova.
+ */
+async function lehotyOstatnych(companyId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { lehotyNaUpozornenie, nazovDruhu } = await import("./ostatne-doklady");
+  const dnes = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(new Date());
+  const o7 = new Date(`${dnes}T00:00:00Z`);
+  o7.setUTCDate(o7.getUTCDate() + 7);
+  const { data } = await supabaseAdmin
+    .from("other_documents")
+    .select("id, due_date, status, sender, subject, kind")
+    .eq("company_id", companyId)
+    .neq("status", "exported")
+    .not("due_date", "is", null)
+    .lte("due_date", o7.toISOString().slice(0, 10))
+    .order("due_date")
+    .limit(LIMIT);
+  return lehotyNaUpozornenie((data ?? []) as any, dnes).map((d) => ({
+    key: `ostatne-lehota:${d.id}:${d.due_date}`,
+    severity: d.po ? ("danger" as const) : ("warning" as const),
+    title: `${d.po ? "Zmeškaná lehota" : "Blíži sa lehota"}: ${nazovDruhu(d.kind)}`,
+    detail: [d.sender, d.subject, `lehota ${d.due_date}`].filter(Boolean).join(" · "),
+    to: "/ostatne-doklady",
+    date: String(d.due_date),
+  }));
+}
+
 /** Ostatné doklady (listy, predpisy, exekúcie) čakajúce na spracovanie. */
 async function notifikaciaOstatnych(companyId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -132,8 +162,10 @@ async function notifikaciaOstatnych(companyId: string): Promise<AppNotification[
     .order("created_at", { ascending: false })
     .limit(1);
   const najnovsi = data?.[0];
-  if (!count || !najnovsi) return [];
+  const lehoty = await lehotyOstatnych(companyId);
+  if (!count || !najnovsi) return lehoty;
   return [
+    ...lehoty,
     {
       key: `ostatne-nespracovane:${najnovsi.id}`,
       severity: "info",

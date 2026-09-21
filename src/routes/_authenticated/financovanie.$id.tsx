@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
+import { PrepojeneOstatneDoklady } from "@/components/faktero/ostatne/PrepojeneOstatneDoklady";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -399,6 +400,17 @@ function Stranka() {
             Späť na zoznam
           </Link>
         </p>
+
+        <section className="mt-8">
+          <h2 className="mb-2 text-sm font-medium">Doklady k zmluve</h2>
+          <PrepojeneOstatneDoklady
+            cid={cid}
+            financingContractId={id}
+            druhNoveho="leasing_uver"
+            popisPrazdny="Oznámenia banky, dodatky, predpisy poistenia a ďalšie doklady z Ostatných dokladov."
+            tlacidlo="Pridať doklad"
+          />
+        </section>
       </PageBody>
     </>
   );

@@ -66,6 +66,8 @@ export type Database = {
           processed_at: string | null
           processed_by: string | null
           exported_at: string | null
+          employee_id: string | null
+          financing_contract_id: string | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -85,6 +87,8 @@ export type Database = {
           processed_at?: string | null
           processed_by?: string | null
           exported_at?: string | null
+          employee_id?: string | null
+          financing_contract_id?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -104,11 +108,28 @@ export type Database = {
           processed_at?: string | null
           processed_by?: string | null
           exported_at?: string | null
+          employee_id?: string | null
+          financing_contract_id?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "other_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "other_documents_financing_contract_id_fkey"
+            columns: ["financing_contract_id"]
+            isOneToOne: false
+            referencedRelation: "financing_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_actions: {
         Row: {

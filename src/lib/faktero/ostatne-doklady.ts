@@ -157,3 +157,68 @@ export function ostatnyZMailu(args: {
     note: [r.summary, `${zMailu}.`].filter(Boolean).join("\n\n"),
   };
 }
+
+/** Text na porovnávanie: malé písmená, bez diakritiky, len písmená a čísla. */
+function naPorovnanie(t: string | null | undefined): string {
+  return ` ${String(t ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()} `;
+}
+
+/**
+ * Zamestnanec, o ktorom je exekúcia. Hľadá sa celé meno v oboch poradiach
+ * („Ján Novák“ aj „Novák Ján“), bez ohľadu na diakritiku a skloňovanie
+ * nerieši — radšej nič než zlý človek. Vráti id len pri jedinej zhode.
+ */
+export function navrhniZamestnanca(
+  text: string,
+  zamestnanci: { id: string; first_name: string | null; last_name: string | null }[],
+): string | null {
+  const t = naPorovnanie(text);
+  const zhody = zamestnanci.filter((z) => {
+    const m = naPorovnanie(z.first_name).trim();
+    const p = naPorovnanie(z.last_name).trim();
+    if (!m || !p) return false;
+    return t.includes(` ${m} ${p} `) || t.includes(` ${p} ${m} `);
+  });
+  return zhody.length === 1 ? zhody[0]!.id : null;
+}
+
+/**
+ * Zmluva o leasingu či úvere, ktorej sa doklad týka — podľa čísla zmluvy
+ * v texte. Krátke čísla (menej ako 4 znaky) sa nehľadajú, našli by sa všade.
+ */
+export function navrhniZmluvu(
+  text: string,
+  zmluvy: { id: string; contract_number: string | null }[],
+): string | null {
+  const t = naPorovnanie(text).replace(/ /g, "");
+  const zhody = zmluvy.filter((z) => {
+    const c = naPorovnanie(z.contract_number).replace(/ /g, "");
+    return c.length >= 4 && t.includes(c);
+  });
+  return zhody.length === 1 ? zhody[0]!.id : null;
+}
+
+export type LehotaDokladu = {
+  id: string;
+  due_date: string | null;
+  status: string;
+  sender: string | null;
+  subject: string | null;
+  kind: string;
+};
+
+/**
+ * Lehoty do zvončeka: zmeškané a tie, ktoré prídu do 7 dní. Odovzdaný doklad
+ * už rieši účtovník, ten sa nehlási. Zoradené od najnaliehavejšej.
+ */
+export function lehotyNaUpozornenie(doklady: LehotaDokladu[], dnes: string) {
+  return doklady
+    .filter((d) => d.status !== "exported" && d.due_date && stavLehoty(d.due_date, dnes))
+    .map((d) => ({ ...d, po: stavLehoty(d.due_date, dnes) === "po" }))
+    .sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)));
+}

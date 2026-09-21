@@ -19,6 +19,8 @@ const Udaje = z.object({
   currency: z.string().trim().length(3).optional(),
   due_date: z.string().date().nullable().optional(),
   note: z.string().trim().max(5000).nullable().optional(),
+  employee_id: z.string().uuid().nullable().optional(),
+  financing_contract_id: z.string().uuid().nullable().optional(),
 });
 
 const Priloha = z.object({
@@ -44,19 +46,25 @@ export const zoznamOstatnychFn = createServerFn({ method: "POST" })
         stav: z.enum(["new", "processed", "exported", "all"]),
         month: z.string().regex(/^\d{4}-\d{2}$/).nullable().optional(),
         kind: z.enum(DRUHY_KLUCE).nullable().optional(),
+        employee_id: z.string().uuid().nullable().optional(),
+        financing_contract_id: z.string().uuid().nullable().optional(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     let q = context.supabase
       .from("other_documents")
-      .select("*, other_document_files(id, name, mime, size, position)")
+      .select(
+        "*, other_document_files(id, name, mime, size, position), zamestnanec:employees(first_name, last_name), zmluva:financing_contracts(name, provider_name, contract_number)",
+      )
       .eq("company_id", data.company_id)
       .order("received_date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(500);
     if (data.stav !== "all") q = q.eq("status", data.stav);
     if (data.kind) q = q.eq("kind", data.kind);
+    if (data.employee_id) q = q.eq("employee_id", data.employee_id);
+    if (data.financing_contract_id) q = q.eq("financing_contract_id", data.financing_contract_id);
     if (data.month) {
       const { od, do_ } = vMesiaci(data.month);
       q = q.gte("received_date", od).lt("received_date", do_);
@@ -114,6 +122,8 @@ export const ulozOstatnyFn = createServerFn({ method: "POST" })
       due_date: data.udaje.due_date || null,
       amount: data.udaje.amount ?? null,
       currency: data.udaje.currency ?? "EUR",
+      employee_id: data.udaje.employee_id ?? null,
+      financing_contract_id: data.udaje.financing_contract_id ?? null,
     };
     if (data.novy) {
       const { error } = await supabase.from("other_documents").insert({
@@ -399,7 +409,17 @@ export const ulozOstatnyZAppkyFn = createServerFn({ method: "POST" })
           .eq("id", id)
           .maybeSingle();
         if (!teraz) return;
-        const zmeny: Partial<{ kind: string; sender: string; subject: string; amount: number; currency: string; due_date: string; note: string }> = {};
+        const zmeny: Partial<{
+          kind: string;
+          sender: string;
+          subject: string;
+          amount: number;
+          currency: string;
+          due_date: string;
+          note: string;
+          employee_id: string;
+          financing_contract_id: string;
+        }> = {};
         if (teraz.kind === "ine" && r.kind !== "ine") zmeny.kind = r.kind;
         if (!teraz.sender && r.sender) zmeny.sender = r.sender;
         if (teraz.subject === "Doklad z mobilnej appky" && r.subject) zmeny.subject = r.subject;
@@ -409,6 +429,8 @@ export const ulozOstatnyZAppkyFn = createServerFn({ method: "POST" })
         }
         if (!teraz.due_date && r.due_date) zmeny.due_date = r.due_date;
         if (!teraz.note && r.summary) zmeny.note = r.summary;
+        const { navrhniVazby } = await import("./ostatne-doklady-vazby.server");
+        Object.assign(zmeny, await navrhniVazby(supabase, data.company_id, { ...r, kind: (zmeny.kind ?? teraz.kind) as any }));
         if (Object.keys(zmeny).length) {
           await supabase.from("other_documents").update(zmeny).eq("id", id);
         }
@@ -418,6 +440,54 @@ export const ulozOstatnyZAppkyFn = createServerFn({ method: "POST" })
     })();
 
     return { id };
+  });
+
+/**
+ * Na výber vo formulári: zamestnanci (len pri zapnutej personalistike) a
+ * zmluvy o leasingu či úvere. Zo zamestnanca sa berie len meno — citlivé
+ * údaje z karty sem nepatria.
+ */
+export const vazbyOstatnychFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const [{ data: firma }, { data: zmluvy }] = await Promise.all([
+      supabase.from("companies").select("module_employees").eq("id", data.company_id).maybeSingle(),
+      supabase
+        .from("financing_contracts")
+        .select("id, kind, name, provider_name, contract_number, status")
+        .eq("company_id", data.company_id)
+        .order("created_at", { ascending: false }),
+    ]);
+    let zamestnanci: { id: string; first_name: string | null; last_name: string | null; status: string | null }[] = [];
+    if (firma?.module_employees) {
+      const { data: ludia } = await supabase
+        .from("employees")
+        .select("id, first_name, last_name, status")
+        .eq("company_id", data.company_id)
+        .order("last_name");
+      zamestnanci = ludia ?? [];
+    }
+    return {
+      zamestnanci: zamestnanci.map((z) => ({
+        id: z.id,
+        first_name: z.first_name,
+        last_name: z.last_name,
+        meno: [z.first_name, z.last_name].filter(Boolean).join(" ") + (z.status === "active" ? "" : " (ukončený)"),
+      })),
+      zmluvy: (zmluvy ?? []).map((z: any) => ({
+        id: z.id,
+        contract_number: z.contract_number,
+        nazov: [
+          z.kind === "leasing" ? "Leasing" : "Úver",
+          z.name || z.provider_name,
+          z.contract_number ? `č. ${z.contract_number}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+      })),
+    };
   });
 
 export const pocetNespracovanychOstatnychFn = createServerFn({ method: "POST" })
@@ -452,7 +522,9 @@ export const exportOstatnychZipFn = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: doklady, error } = await supabase
       .from("other_documents")
-      .select("*, other_document_files(path, name, position)")
+      .select(
+        "*, other_document_files(path, name, position), zamestnanec:employees(first_name, last_name), zmluva:financing_contracts(name, provider_name, contract_number)",
+      )
       .eq("company_id", data.company_id)
       .in("id", data.ids)
       .order("received_date");

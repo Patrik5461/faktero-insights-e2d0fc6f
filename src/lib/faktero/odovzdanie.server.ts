@@ -163,7 +163,9 @@ export async function zostavBalik(
     // Ostatné doklady sa radia podľa dňa doručenia — dátum vystavenia nemajú.
     supabase
       .from("other_documents")
-      .select("*, other_document_files(path, name, position)")
+      .select(
+        "*, other_document_files(path, name, position), zamestnanec:employees(first_name, last_name), zmluva:financing_contracts(name, provider_name, contract_number)",
+      )
       .eq("company_id", vstup.companyId)
       .gte("received_date", od)
       .lt("received_date", doDatumu)

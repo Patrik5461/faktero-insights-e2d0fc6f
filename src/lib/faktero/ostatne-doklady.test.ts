@@ -49,10 +49,16 @@ describe("balík ostatných dokladov", () => {
 
   it("súpis má hlavičku, desatinnú čiarku a úvodzovky", () => {
     const riadky = supisOstatnych([d]).replace("﻿", "").split("\r\n");
-    expect(riadky[0]).toBe("prijate;druh;odosielatel;predmet;suma;mena;lehota;poznamka;prilohy");
-    expect(riadky[1]).toBe(
-      '2026-09-10;Exekúcia;Exekútorský úrad Nitra;Exekučný príkaz;1234,5;EUR;;"Zrážky od ""októbra""; 1/3";1',
+    expect(riadky[0]).toBe(
+      "prijate;druh;odosielatel;predmet;suma;mena;lehota;zamestnanec;zmluva;poznamka;prilohy",
     );
+    expect(riadky[1]).toBe(
+      '2026-09-10;Exekúcia;Exekútorský úrad Nitra;Exekučný príkaz;1234,5;EUR;;;;"Zrážky od ""októbra""; 1/3";1',
+    );
+    const sVazbou = supisOstatnych([
+      { ...d, zamestnanec: { first_name: "Ján", last_name: "Novák" }, zmluva: null },
+    ]).split("\r\n")[1];
+    expect(sVazbou).toContain(";Ján Novák;;");
   });
 
   it("priečinok sa dá triediť a nemá diakritiku", () => {
@@ -141,5 +147,44 @@ describe("ostatný doklad z e-mailu", () => {
     expect(r.sender).toBe("a@b.sk");
     expect(r.subject).toBe("x.pdf");
     expect(r.kind).toBe("ine");
+  });
+});
+
+import { lehotyNaUpozornenie, navrhniZamestnanca, navrhniZmluvu } from "./ostatne-doklady";
+
+describe("väzby ostatných dokladov", () => {
+  const ludia = [
+    { id: "a", first_name: "Ján", last_name: "Novák" },
+    { id: "b", first_name: "Jana", last_name: "Nováková" },
+    { id: "c", first_name: "Peter", last_name: null },
+  ];
+
+  it("zamestnanec podľa celého mena v oboch poradiach", () => {
+    expect(navrhniZamestnanca("Exekučný príkaz — JAN NOVAK, nar. 1985", ludia)).toBe("a");
+    expect(navrhniZamestnanca("povinný: Nováková Jana", ludia)).toBe("b");
+    expect(navrhniZamestnanca("povinný Novák", ludia)).toBeNull();
+    expect(navrhniZamestnanca("Peter", ludia)).toBeNull();
+  });
+
+  it("pri dvoch zhodách nevyberie nikoho", () => {
+    expect(navrhniZamestnanca("Ján Novák", [...ludia, { id: "d", first_name: "Jan", last_name: "Novak" }])).toBeNull();
+  });
+
+  it("zmluva podľa čísla, bez ohľadu na medzery a pomlčky", () => {
+    const zmluvy = [
+      { id: "x", contract_number: "LZ-2024/0815" },
+      { id: "y", contract_number: "12" },
+    ];
+    expect(navrhniZmluvu("Oznámenie k zmluve č. LZ 2024 0815", zmluvy)).toBe("x");
+    expect(navrhniZmluvu("strana 12", zmluvy)).toBeNull();
+  });
+
+  it("lehoty: zmeškané a do 7 dní, bez odovzdaných", () => {
+    const d = (id: string, due: string | null, status = "new") => ({ id, due_date: due, status, sender: null, subject: null, kind: "ine" });
+    const r = lehotyNaUpozornenie(
+      [d("1", "2026-09-30"), d("2", "2026-09-20"), d("3", "2026-09-25", "exported"), d("4", null), d("5", "2026-09-24", "processed")],
+      "2026-09-21",
+    );
+    expect(r.map((x) => [x.id, x.po])).toEqual([["2", true], ["5", false]]);
   });
 });

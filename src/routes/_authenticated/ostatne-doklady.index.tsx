@@ -384,6 +384,15 @@ function OstatneDokladyPage() {
                           {r.subject && (
                             <div className="text-xs text-muted-foreground">{r.subject}</div>
                           )}
+                          {(r.zamestnanec || r.zmluva) && (
+                            <div className="text-xs text-primary">
+                              {r.zamestnanec &&
+                                `Zamestnanec: ${[r.zamestnanec.first_name, r.zamestnanec.last_name].filter(Boolean).join(" ")}`}
+                              {r.zamestnanec && r.zmluva ? " · " : ""}
+                              {r.zmluva &&
+                                `Zmluva: ${r.zmluva.name || r.zmluva.provider_name || ""}${r.zmluva.contract_number ? ` č. ${r.zmluva.contract_number}` : ""}`}
+                            </div>
+                          )}
                           {prilohy.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {prilohy.map((p: any) => (

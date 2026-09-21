@@ -13,6 +13,8 @@ type DokladVBaliku = {
   note: string | null;
   status: string;
   other_document_files?: { path: string; name: string; position: number }[] | null;
+  zamestnanec?: { first_name: string | null; last_name: string | null } | null;
+  zmluva?: { name: string | null; provider_name: string | null; contract_number: string | null } | null;
 };
 
 function csv(v: unknown): string {
@@ -22,7 +24,19 @@ function csv(v: unknown): string {
 
 /** Súpis ostatných dokladov v CSV — oddeľovač bodkočiarka, ako čaká Excel v SK. */
 export function supisOstatnych(doklady: DokladVBaliku[]): string {
-  const hlavicka = ["prijate", "druh", "odosielatel", "predmet", "suma", "mena", "lehota", "poznamka", "prilohy"];
+  const hlavicka = [
+    "prijate",
+    "druh",
+    "odosielatel",
+    "predmet",
+    "suma",
+    "mena",
+    "lehota",
+    "zamestnanec",
+    "zmluva",
+    "poznamka",
+    "prilohy",
+  ];
   const riadky = doklady.map((d) =>
     [
       d.received_date,
@@ -32,6 +46,10 @@ export function supisOstatnych(doklady: DokladVBaliku[]): string {
       d.amount != null ? String(d.amount).replace(".", ",") : "",
       d.currency,
       d.due_date,
+      d.zamestnanec ? [d.zamestnanec.first_name, d.zamestnanec.last_name].filter(Boolean).join(" ") : "",
+      d.zmluva
+        ? [d.zmluva.name || d.zmluva.provider_name, d.zmluva.contract_number].filter(Boolean).join(" ")
+        : "",
       d.note,
       (d.other_document_files ?? []).length,
     ]

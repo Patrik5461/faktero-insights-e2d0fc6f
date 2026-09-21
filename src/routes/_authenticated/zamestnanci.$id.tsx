@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { PrepojeneOstatneDoklady } from "@/components/faktero/ostatne/PrepojeneOstatneDoklady";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -53,13 +54,14 @@ export const Route = createFileRoute("/_authenticated/zamestnanci/$id")({
   component: KartaZamestnanca,
 });
 
-type Zalozka = "udaje" | "zmluvy" | "dokumenty" | "nepritomnosti" | "dochadzka";
+type Zalozka = "udaje" | "zmluvy" | "dokumenty" | "nepritomnosti" | "dochadzka" | "exekucie";
 const ZALOZKY: [Zalozka, string][] = [
   ["udaje", "Údaje"],
   ["zmluvy", "Zmluvy"],
   ["dokumenty", "Dokumenty"],
   ["nepritomnosti", "Neprítomnosti"],
   ["dochadzka", "Dochádzka"],
+  ["exekucie", "Exekúcie"],
 ];
 
 type Detail = {
@@ -148,6 +150,15 @@ function KartaZamestnanca() {
             {zalozka === "dokumenty" && <Dokumenty cid={cid} detail={detail} obnov={nacitaj} />}
             {zalozka === "nepritomnosti" && <Nepritomnosti cid={cid} detail={detail} obnov={nacitaj} />}
             {zalozka === "dochadzka" && <DochadzkaZalozka cid={cid} employeeId={detail.zamestnanec.id} />}
+            {zalozka === "exekucie" && (
+              <PrepojeneOstatneDoklady
+                cid={cid}
+                employeeId={detail.zamestnanec.id}
+                druhNoveho="exekucia"
+                popisPrazdny="Exekučné príkazy a ďalšie doklady z Ostatných dokladov, ktoré sa týkajú tohto zamestnanca."
+                tlacidlo="Pridať exekúciu"
+              />
+            )}
           </>
         )}
       </PageBody>

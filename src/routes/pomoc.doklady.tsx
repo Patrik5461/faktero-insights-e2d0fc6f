@@ -143,6 +143,13 @@ const sections: HelpSection[] = [
           ostatné doklady namiesto prijatých faktúr.
         </p>
         <p>
+          <strong>Exekúciu</strong> priradíte k zamestnancovi — AI ho navrhne sama, keď v dokumente
+          nájde jeho celé meno — a na karte zamestnanca ju uvidíte v záložke{" "}
+          <strong>Exekúcie</strong>. Doklad k leasingu či úveru priradíte k zmluve a nájdete ho v jej
+          detaile v časti <strong>Doklady k zmluve</strong>. Na lehotu, ktorá príde do siedmich dní
+          alebo už uplynula, upozorní zvonček, kým doklad neodovzdáte účtovníkovi.
+        </p>
+        <p>
           Aj tu platí <strong>Nespracované → Spracované → Odovzdané</strong>: účtovník doklad
           pozrie a klikne na <strong>Spracovať</strong>. Ostatné doklady sa do Pohody neposielajú,
           sú podkladom. V mesačnom balíku pre účtovníka sú v priečinku{" "}
