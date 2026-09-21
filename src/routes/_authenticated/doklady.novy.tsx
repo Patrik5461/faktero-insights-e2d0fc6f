@@ -12,9 +12,10 @@ import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import {
   createExpenseFn,
   updateExpenseFn,
+  nastavStavDokladovFn,
   getExpenseFileUrlFn,
 } from "@/lib/faktero/expenses.functions";
-import { Camera, Loader2, QrCode, Save, Upload as UploadIcon } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, QrCode, Save, Upload as UploadIcon } from "lucide-react";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { MENY } from "@/lib/faktero/mena";
@@ -79,6 +80,9 @@ function NovyDokladPage() {
   const nacitaj = useServerFn(nacitajBlocekFn);
   const createFn = useServerFn(createExpenseFn);
   const updateFn = useServerFn(updateExpenseFn);
+  const stavFn = useServerFn(nastavStavDokladovFn);
+  /** Stav upravovaného dokladu — nespracovaný sa dá rovno odkliknúť. */
+  const [stavDokladu, setStavDokladu] = useState<string | null>(null);
   const urlFn = useServerFn(getExpenseFileUrlFn);
   const [form, setForm] = useState<Form>(EMPTY);
   const [preview, setPreview] = useState<string | null>(null);
@@ -136,6 +140,7 @@ function NovyDokladPage() {
         note: data.note ?? "",
       });
       celkomRucne.current = data.total_amount != null;
+      setStavDokladu(data.status);
       setSource(data.source as "photo" | "qr" | "upload" | "web");
       setQrRaw(data.qr_raw);
       setPolozky(Array.isArray(data.items) ? (data.items as any) : []);
@@ -355,7 +360,7 @@ function NovyDokladPage() {
     applyBlocek(r);
   }
 
-  async function handleSave() {
+  async function handleSave(spracovat = false) {
     if (!cid) {
       toast.error("Vyberte firmu");
       return;
@@ -371,7 +376,6 @@ function NovyDokladPage() {
       const payload = {
         company_id: cid,
         source,
-        status: "processed" as const,
         supplier_name: form.supplier_name || null,
         supplier_ico: form.supplier_ico || null,
         supplier_ic_dph: form.supplier_ic_dph || null,
@@ -396,14 +400,32 @@ function NovyDokladPage() {
       };
       if (search.id) await updateFn({ data: { id: search.id, patch: payload } });
       else await createFn({ data: payload });
-      toast.success("Doklad uložený");
+      let stav = search.id ? stavDokladu : "new";
+      if (spracovat && search.id) {
+        const v = await stavFn({ data: { company_id: cid, ids: [search.id], stav: "processed" } });
+        if (v.zmenene) stav = "processed";
+        else toast.warning("Doklad je uložený, ale bez sumy a dátumu sa nedá označiť ako spracovaný.");
+      }
+      toast.success(
+        stav === "processed" && spracovat
+          ? "Doklad uložený a spracovaný"
+          : search.id
+            ? "Doklad uložený"
+            : "Doklad uložený medzi nespracované",
+      );
       /*
        * Zoznam sa otvára na jednom mesiaci a radí sa podľa dátumu vystavenia.
        * Doklad z minulého mesiaca nahratý dnes by tam preto nebol vidieť — tak
        * sa zoznam otvorí rovno na mesiaci, do ktorého doklad patrí.
        */
       const mesiac = (form.issue_date || new Date().toISOString().slice(0, 10)).slice(0, 7);
-      navigate({ to: "/doklady", search: { mesiac } });
+      navigate({
+        to: "/doklady",
+        search: {
+          mesiac,
+          stav: stav === "processed" ? "spracovane" : stav === "exported" ? "odovzdane" : "nespracovane",
+        },
+      });
     } catch (e: any) {
       toast.error(e?.message ?? "Uloženie zlyhalo");
     } finally {
@@ -695,8 +717,17 @@ function NovyDokladPage() {
               >
                 Zrušiť
               </button>
+              {search.id && stavDokladu === "new" && (
+                <button
+                  onClick={() => handleSave(true)}
+                  disabled={saving || !form.payment_method}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-600/10 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-600/20 disabled:opacity-50 dark:text-emerald-400"
+                >
+                  <CheckCircle2 className="h-4 w-4" /> Uložiť a spracovať
+                </button>
+              )}
               <button
-                onClick={handleSave}
+                onClick={() => handleSave()}
                 disabled={saving || !form.payment_method}
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
               >

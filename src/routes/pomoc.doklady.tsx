@@ -128,9 +128,18 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Zoznam sa filtruje podľa <strong>mesiaca</strong> a <strong>stavu</strong> (spracované,
-          exportované). Pri každom doklade vidno dátum, dodávateľa, sumu a <strong>zdroj</strong> —
-          teda či prišiel z eKasy, z fotky alebo bol nahratý ručne.
+          Každý nový doklad — z appky, z webu aj naskenovaný — padne najprv do záložky{" "}
+          <strong>Nespracované</strong>. Tam ho vy alebo účtovník skontrolujete, prípadne doplníte
+          a kliknete na <strong>Spracovať</strong> (viac naraz cez zaškrtnutie a{" "}
+          <strong>Označiť ako spracované</strong>). Spracovať sa dá doklad so sumou a dátumom; ak
+          niečo chýba, zoznam to napíše a ponúkne <strong>Doplniť</strong>.
+        </p>
+        <p>
+          Ďalšie záložky sú <strong>Spracované</strong>, <strong>Odovzdané účtovníkovi</strong> a{" "}
+          <strong>Všetky</strong>, filtrujú sa podľa mesiaca. Nespracované sa ukazujú zo všetkých
+          mesiacov, aby žiadny neostal schovaný. Prepojenie s Pohodou si berie len spracované
+          doklady. Pri každom doklade vidno dátum, dodávateľa, sumu a <strong>zdroj</strong> — teda
+          či prišiel z eKasy, z fotky alebo bol nahratý ručne.
         </p>
         <p>
           Do balíka pre účtovníčku idú doklady spolu s faktúrami cez{" "}

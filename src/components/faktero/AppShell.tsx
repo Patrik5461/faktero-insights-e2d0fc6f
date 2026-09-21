@@ -132,6 +132,7 @@ const NAV: NavGroup[] = [
     match: ["/doklady", "/efaktura"],
     children: [
       { to: "/doklady", label: "Prehľad dokladov" },
+      { to: "/doklady", search: { stav: "nespracovane" }, label: "Nespracované doklady" },
       { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
       { to: "/doklady/mailom", label: "Doklady e-mailom" },
       { to: "/efaktura", label: "Prehľad eFaktúry" },

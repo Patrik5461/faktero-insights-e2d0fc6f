@@ -15,9 +15,21 @@ import {
   deleteExpenseFn,
   exportExpensesZipFn,
   getExpenseFileUrlFn,
+  nastavStavDokladovFn,
+  pocetNespracovanychDokladovFn,
 } from "@/lib/faktero/expenses.functions";
 import {
+  STAV_DOKLADU_NAZOV,
+  ZALOZKY_DOKLADOV,
+  chybajuceUdaje,
+  daSaSpracovat,
+  jeZalozkaDokladov,
+  type ZalozkaDokladov,
+} from "@/lib/faktero/doklad-stav";
+import {
   Camera,
+  CheckCircle2,
+  Undo2,
   Download,
   FileInput,
   FileText,
@@ -34,9 +46,14 @@ export const Route = createFileRoute("/_authenticated/doklady/")({
    * zoznam otvára na tomto mesiaci a doklad vystavený v minulom mesiaci sa hneď
    * po uložení stratí z dohľadu — vyzerá to, že sa neuložil.
    */
-  validateSearch: (s: Record<string, unknown>): { mesiac?: string } => {
+  /*
+   * `stav` vyberá záložku. Bez neho sa zoznam otvára na nespracovaných —
+   * tam leží to, čo treba skontrolovať.
+   */
+  validateSearch: (s: Record<string, unknown>): { mesiac?: string; stav?: ZalozkaDokladov } => {
     const m = typeof s.mesiac === "string" && /^\d{4}-\d{2}$/.test(s.mesiac) ? s.mesiac : undefined;
-    return m ? { mesiac: m } : {};
+    const stav = jeZalozkaDokladov(s.stav) ? s.stav : undefined;
+    return { ...(m ? { mesiac: m } : {}), ...(stav ? { stav } : {}) };
   },
   component: DokladyPage,
 });
@@ -48,11 +65,7 @@ function nazovMesiaca(m: string): string {
   return new Date(r, me - 1, 1).toLocaleDateString("sk-SK", { month: "long", year: "numeric" });
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  new: "Nový",
-  processed: "Spracovaný",
-  exported: "Exportovaný",
-};
+const STATUS_LABEL: Record<string, string> = STAV_DOKLADU_NAZOV;
 const STATUS_STYLE: Record<string, string> = {
   new: "bg-amber-500/10 text-amber-700",
   processed: "bg-secondary text-foreground/70",
@@ -70,6 +83,11 @@ function DokladyPage() {
   const sparujFn = useServerFn(potvrdParovanieDokladu);
   const rozparujFn = useServerFn(zrusParovanieDokladu);
   const uhradyFn = useServerFn(uhradyDokladov);
+  const stavFn = useServerFn(nastavStavDokladovFn);
+  const pocetFn = useServerFn(pocetNespracovanychDokladovFn);
+  /** Počet nespracovaných pre záložku — platí za všetky mesiace. */
+  const [nespracovanych, setNespracovanych] = useState<number | null>(null);
+  const [menimStav, setMenimStav] = useState(false);
   /** Ktorý doklad je uhradený z účtu, kedy a ktorým pohybom. */
   const [uhrady, setUhrady] = useState<Record<string, { datum: string; transactionId: string }>>(
     {},
@@ -78,10 +96,13 @@ function DokladyPage() {
   const [parujem, setParujem] = useState<string | null>(null);
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<string>("all");
   /** Doklad, ktorý sa práve presúva medzi prijaté faktúry. */
   const [presuvam, setPresuvam] = useState<string | null>(null);
-  const { mesiac: mesiacZAdresy } = Route.useSearch();
+  const { mesiac: mesiacZAdresy, stav: zalozkaZAdresy } = Route.useSearch();
+  const zalozka: ZalozkaDokladov = zalozkaZAdresy ?? "nespracovane";
+  const status = ZALOZKY_DOKLADOV.find((z) => z.kluc === zalozka)!.stav;
+  /** Nespracované sa ukazujú zo všetkých mesiacov — nič nesmie ostať schované. */
+  const bezMesiaca = zalozka === "nespracovane";
   const [month, setMonth] = useState<string>(mesiacZAdresy ?? new Date().toISOString().slice(0, 7));
   /** Koľko dokladov je mimo vybraného mesiaca a kam sa dá skočiť. */
   const [mimo, setMimo] = useState<{ pocet: number; mesiac: string | null }>({
@@ -127,15 +148,23 @@ function DokladyPage() {
     if (!cid) return;
     setLoading(true);
     try {
-      const data = await listFn({ data: { company_id: cid, status, month: month || null } });
+      const data = await listFn({
+        data: { company_id: cid, status, month: bezMesiaca ? null : month || null },
+      });
       setRows(data ?? []);
+      setSelected(new Set());
+      void pocetFn({ data: { company_id: cid } })
+        .then((v) => setNespracovanych(v.pocet))
+        .catch(() => {
+          /* počet je len na záložke — zoznam funguje aj bez neho */
+        });
       /*
         Párovanie s bankou je nadstavba nad zoznamom — keď zlyhá, doklady sa aj
         tak ukážu. Preto zvlášť a ticho.
       */
       void (async () => {
         try {
-          if (month) setMimo(await mimoFn({ data: { company_id: cid, month } }));
+          if (month && !bezMesiaca) setMimo(await mimoFn({ data: { company_id: cid, month } }));
           else setMimo({ pocet: 0, mesiac: null });
         } catch {
           /* upozornenie je nadstavba — zoznam funguje aj bez neho */
@@ -186,6 +215,36 @@ function DokladyPage() {
     refresh(); /* eslint-disable-next-line */
   }, [status, month]);
 
+  function prepniZalozku(kluc: ZalozkaDokladov) {
+    navigate({
+      to: "/doklady",
+      search: { ...(mesiacZAdresy ? { mesiac: mesiacZAdresy } : {}), stav: kluc },
+      replace: true,
+    });
+  }
+
+  async function zmenStav(ids: string[], stav: "new" | "processed") {
+    if (!cid || !ids.length) return;
+    setMenimStav(true);
+    try {
+      const v = await stavFn({ data: { company_id: cid, ids, stav } });
+      if (stav === "processed") {
+        if (v.zmenene) toast.success(v.zmenene === 1 ? "Doklad je spracovaný." : `Spracovaných ${v.zmenene} dokladov.`);
+        if (v.preskocene.length)
+          toast.warning(
+            `${v.preskocene.length === 1 ? "Jeden doklad nemá" : `${v.preskocene.length} dokladov nemá`} sumu alebo dátum — otvorte ho a doplňte.`,
+          );
+      } else if (v.zmenene) {
+        toast.success("Vrátené medzi nespracované.");
+      }
+      refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Zmena stavu sa nepodarila.");
+    } finally {
+      setMenimStav(false);
+    }
+  }
+
   const totals = useMemo(() => {
     let net = 0,
       vat = 0,
@@ -212,11 +271,28 @@ function DokladyPage() {
 
   async function handleExport(markExported: boolean) {
     if (!cid) return;
+    const vyber = selected.size ? rows.filter((r) => selected.has(r.id)) : rows;
+    const nesprac = vyber.filter((r) => r.status === "new").length;
+    if (
+      markExported &&
+      nesprac > 0 &&
+      !confirm(
+        `${nesprac === 1 ? "Jeden doklad je" : `${nesprac} dokladov je`} ešte nespracovaných. Odovzdať aj ${nesprac === 1 ? "ten" : "tie"}?`,
+      )
+    )
+      return;
     setExporting(true);
     try {
       const ids = selected.size ? Array.from(selected) : undefined;
       const res = await exportFn({
-        data: { company_id: cid, ids, month: ids ? null : month, mark_exported: markExported },
+        // Balí sa presne to, čo je na obrazovke — označené, inak celá záložka
+        // vo vybranom mesiaci. Nie celý mesiac bez ohľadu na záložku.
+        data: {
+          company_id: cid,
+          ids: ids ?? rows.map((r) => r.id),
+          month: null,
+          mark_exported: markExported,
+        },
       });
       const bin = atob(res.base64);
       const bytes = new Uint8Array(bin.length);
@@ -273,7 +349,38 @@ function DokladyPage() {
         }
       />
       <PageBody>
+        <div role="tablist" aria-label="Stav dokladov" className="mb-4 flex flex-wrap gap-1 border-b border-border">
+          {ZALOZKY_DOKLADOV.map((z) => (
+            <button
+              key={z.kluc}
+              role="tab"
+              aria-selected={zalozka === z.kluc}
+              onClick={() => prepniZalozku(z.kluc)}
+              className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm ${
+                zalozka === z.kluc
+                  ? "border-primary font-medium text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {z.nazov}
+              {z.kluc === "nespracovane" && nespracovanych ? (
+                <span className="rounded-full bg-amber-500/15 px-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
+                  {nespracovanych}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+
+        {bezMesiaca && (
+          <p className="mb-4 text-sm text-muted-foreground">
+            Sem padne každý nový doklad — z appky, z webu aj naskenovaný. Skontrolujte ho a
+            označte ako spracovaný; ukazujú sa tu nespracované zo všetkých mesiacov.
+          </p>
+        )}
+
         <div className="mb-4 flex flex-wrap items-end gap-3">
+          {!bezMesiaca && (
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Mesiac</label>
             <div className="flex items-center gap-2">
@@ -293,19 +400,27 @@ function DokladyPage() {
               </button>
             </div>
           </div>
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Stav</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+          )}
+          {selected.size > 0 && (zalozka === "nespracovane" || zalozka === "spracovane") && (
+            <button
+              onClick={() =>
+                zmenStav(Array.from(selected), zalozka === "nespracovane" ? "processed" : "new")
+              }
+              disabled={menimStav}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
             >
-              <option value="all">Všetky</option>
-              <option value="new">Nové</option>
-              <option value="processed">Spracované</option>
-              <option value="exported">Exportované</option>
-            </select>
-          </div>
+              {zalozka === "nespracovane" ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Označiť ako spracované (
+                  {selected.size})
+                </>
+              ) : (
+                <>
+                  <Undo2 className="h-4 w-4" /> Vrátiť medzi nespracované ({selected.size})
+                </>
+              )}
+            </button>
+          )}
           <div className="ml-auto flex gap-2">
             <button
               onClick={() => handleExport(false)}
@@ -316,9 +431,9 @@ function DokladyPage() {
             </button>
             <button
               onClick={() => handleExport(true)}
-              disabled={exporting || !rows.length || (!month && !selected.size)}
+              disabled={exporting || !rows.length || (!month && !bezMesiaca && !selected.size)}
               title={
-                !month && !selected.size
+                !month && !bezMesiaca && !selected.size
                   ? "Vyberte mesiac alebo označte doklady — inak by sa za odovzdané označili všetky."
                   : undefined
               }
@@ -329,7 +444,7 @@ function DokladyPage() {
           </div>
         </div>
 
-        {month && mimo.pocet > 0 && (
+        {month && !bezMesiaca && mimo.pocet > 0 && (
           <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
             <span>
               {rows.length === 0
@@ -422,11 +537,21 @@ function DokladyPage() {
           ) : rows.length === 0 ? (
             <div className="p-12 text-center text-sm text-muted-foreground">
               <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
-              {mimo.pocet > 0
+              {bezMesiaca
+                ? "Všetko je spracované — žiadny doklad nečaká na kontrolu."
+                : mimo.pocet > 0
                 ? `Vo výbere nie je žiadny doklad — ${mimo.pocet === 1 ? "jeden je" : `${mimo.pocet} ich je`} v inom mesiaci.`
                 : "Zatiaľ tu nemáte žiadne doklady. Odfoťte blok alebo nahrajte fotku/PDF."}
               <div className="mt-4 flex justify-center gap-2">
-                {mimo.pocet > 0 ? (
+                {bezMesiaca ? (
+                  <button
+                    type="button"
+                    onClick={() => prepniZalozku("vsetky")}
+                    className="rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+                  >
+                    Zobraziť všetky doklady
+                  </button>
+                ) : mimo.pocet > 0 ? (
                   <button
                     type="button"
                     onClick={() => setMonth("")}
@@ -451,7 +576,7 @@ function DokladyPage() {
                   <th className="w-8 px-3 py-2">
                     <input
                       type="checkbox"
-                      checked={selected.size === rows.length}
+                      checked={rows.length > 0 && selected.size === rows.length}
                       onChange={toggleAll}
                     />
                   </th>
@@ -490,6 +615,11 @@ function DokladyPage() {
                       {r.supplier_ico ? (
                         <div className="text-xs text-muted-foreground">IČO {r.supplier_ico}</div>
                       ) : null}
+                      {r.status === "new" && chybajuceUdaje(r).length > 0 && (
+                        <div className="text-xs text-amber-700 dark:text-amber-400">
+                          Chýba: {chybajuceUdaje(r).join(", ")}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-2">{r.document_number ?? "—"}</td>
                     <td className="px-3 py-2 text-right tabular-nums">
@@ -498,11 +628,47 @@ function DokladyPage() {
                         : "—"}
                     </td>
                     <td className="px-3 py-2">
-                      <span
-                        className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[r.status]}`}
-                      >
-                        {STATUS_LABEL[r.status] ?? r.status}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span
+                          title={
+                            r.processed_at
+                              ? `Spracované ${new Date(r.processed_at).toLocaleDateString("sk-SK")}`
+                              : undefined
+                          }
+                          className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap ${STATUS_STYLE[r.status]}`}
+                        >
+                          {STATUS_LABEL[r.status] ?? r.status}
+                        </span>
+                        {r.status === "new" &&
+                          (daSaSpracovat(r) ? (
+                            <button
+                              onClick={() => zmenStav([r.id], "processed")}
+                              disabled={menimStav}
+                              className="inline-flex items-center gap-1 rounded-md bg-emerald-600/10 px-2 py-0.5 text-xs font-medium text-emerald-700 hover:bg-emerald-600/20 disabled:opacity-50 dark:text-emerald-400"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Spracovať
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                navigate({ to: "/doklady/novy", search: { id: r.id } as any })
+                              }
+                              className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-secondary"
+                            >
+                              Doplniť
+                            </button>
+                          ))}
+                        {r.status === "processed" && (
+                          <button
+                            onClick={() => zmenStav([r.id], "new")}
+                            disabled={menimStav}
+                            title="Vrátiť medzi nespracované"
+                            className="rounded-md p-0.5 text-muted-foreground hover:bg-secondary disabled:opacity-50"
+                          >
+                            <Undo2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-2 text-xs text-muted-foreground">{r.source}</td>
                     <td className="px-3 py-2 text-xs whitespace-nowrap">

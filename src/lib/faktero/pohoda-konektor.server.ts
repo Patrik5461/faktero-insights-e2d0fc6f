@@ -198,6 +198,8 @@ export async function zostavDavku(
       .eq("company_id", vstup.companyId)
       .gte("issue_date", od)
       .is("exported_at", null)
+      // Most si doklady berie sám — nespracovaný doklad ešte nikto neskontroloval.
+      .eq("status", "processed")
       .order("issue_date")
       .limit(STROP_DAVKY),
     supabase

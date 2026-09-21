@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { daSaPorovnat, jeTenIstyDoklad, type OdtlacokDokladu } from "./doklad-duplikat";
+import { daSaSpracovat } from "./doklad-stav";
 
 export type ExpenseInput = {
   company_id: string;
@@ -130,9 +131,14 @@ export const createExpenseFn = createServerFn({ method: "POST" })
         .maybeSingle();
       if (uz) return uz;
     }
+    /*
+      Nový doklad je vždy nespracovaný, nech ho pred zaúčtovaním niekto
+      skontroluje. Stav od klienta sa nepreberá: staršie verzie appky posielajú
+      „processed" a tie sa v telefónoch udržia ešte dlho.
+    */
     const { data: row, error } = await supabase
       .from("expense_documents")
-      .insert({ ...data, created_by: userId })
+      .insert({ ...data, status: "new", created_by: userId })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
@@ -144,14 +150,86 @@ export const updateExpenseFn = createServerFn({ method: "POST" })
   .validator((data: { id: string; patch: Partial<ExpenseInput> }) => data)
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    /*
+      Stav sa úpravou nemení — na to je `nastavStavDokladovFn`. Inak by oprava
+      preklepu na už odovzdanom doklade vrátila doklad medzi neodovzdané a
+      poslal by sa účtovníkovi druhý raz.
+    */
+    const { status: _stav, ...patch } = data.patch;
     const { data: row, error } = await supabase
       .from("expense_documents")
-      .update(data.patch as any)
+      .update(patch as any)
       .eq("id", data.id)
       .select("*")
       .single();
     if (error) throw new Error(error.message);
     return row;
+  });
+
+/**
+ * Odklikne doklady ako spracované, alebo ich vráti medzi nespracované.
+ *
+ * Spracovať sa dá len doklad so sumou a dátumom — ostatné sa preskočia a
+ * vrátia sa v `preskocene`, aby človek vedel, ktoré treba doplniť. Odovzdaný
+ * doklad sa tu nemení: ten už je v účtovníctve.
+ */
+export const nastavStavDokladovFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        ids: z.array(z.string().uuid()).min(1).max(500),
+        stav: z.enum(["new", "processed"]),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: doklady, error } = await supabase
+      .from("expense_documents")
+      .select("id, status, total_amount, issue_date, supplier_name")
+      .eq("company_id", data.company_id)
+      .in("id", data.ids);
+    if (error) throw new Error(error.message);
+
+    const zdrojovy = data.stav === "processed" ? "new" : "processed";
+    const kandidati = (doklady ?? []).filter((d) => d.status === zdrojovy);
+    const naZmenu =
+      data.stav === "processed" ? kandidati.filter((d) => daSaSpracovat(d)) : kandidati;
+    const preskocene = kandidati.filter((d) => !naZmenu.includes(d)).map((d) => d.id);
+    if (!naZmenu.length) return { zmenene: 0, preskocene };
+
+    const { data: zmenene, error: chyba } = await supabase
+      .from("expense_documents")
+      .update(
+        data.stav === "processed"
+          ? { status: "processed", processed_at: new Date().toISOString(), processed_by: userId }
+          : { status: "new", processed_at: null, processed_by: null },
+      )
+      .eq("company_id", data.company_id)
+      .eq("status", zdrojovy)
+      .in(
+        "id",
+        naZmenu.map((d) => d.id),
+      )
+      .select("id");
+    if (chyba) throw new Error(chyba.message);
+    return { zmenene: zmenene?.length ?? 0, preskocene };
+  });
+
+/** Koľko dokladov čaká na spracovanie — pre záložku a upozornenie. */
+export const pocetNespracovanychDokladovFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { count, error } = await context.supabase
+      .from("expense_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("company_id", data.company_id)
+      .eq("status", "new");
+    if (error) throw new Error(error.message);
+    return { pocet: count ?? 0 };
   });
 
 export const deleteExpenseFn = createServerFn({ method: "POST" })

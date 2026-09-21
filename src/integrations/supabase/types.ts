@@ -2446,6 +2446,8 @@ export type Database = {
       }
       expense_documents: {
         Row: {
+          processed_at: string | null
+          processed_by: string | null
           ai_raw: Json | null
           category: string | null
           company_id: string
@@ -2478,6 +2480,8 @@ export type Database = {
           vat_rate: number | null
         }
         Insert: {
+          processed_at?: string | null
+          processed_by?: string | null
           ai_raw?: Json | null
           category?: string | null
           company_id: string
@@ -2510,6 +2514,8 @@ export type Database = {
           vat_rate?: number | null
         }
         Update: {
+          processed_at?: string | null
+          processed_by?: string | null
           ai_raw?: Json | null
           category?: string | null
           company_id?: string

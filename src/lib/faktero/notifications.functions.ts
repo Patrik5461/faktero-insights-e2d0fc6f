@@ -121,17 +121,46 @@ async function notifikacieZamestnancov(companyId: string): Promise<AppNotificati
   }));
 }
 
+/**
+ * Doklady čakajúce na spracovanie ako jedna položka. Kľúč nesie najnovší
+ * doklad, takže po prečítaní sa zvonček ozve znova až pri ďalšom doklade.
+ */
+async function notifikaciaNespracovanychDokladov(companyId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, count } = await supabaseAdmin
+    .from("expense_documents")
+    .select("id, created_at", { count: "exact" })
+    .eq("company_id", companyId)
+    .eq("status", "new")
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const najnovsi = data?.[0];
+  if (!count || !najnovsi) return [];
+  return [
+    {
+      key: `doklady-nespracovane:${najnovsi.id}`,
+      severity: "info",
+      title: count === 1 ? "1 nespracovaný doklad" : `${count} nespracovaných dokladov`,
+      detail: "Čaká na kontrolu a označenie ako spracovaný.",
+      // Bez parametra: `/doklady` sa otvára na nespracovaných a Link parameter v `to` nečíta.
+      to: "/doklady",
+      date: String(najnovsi.created_at).slice(0, 10),
+    },
+  ];
+}
+
 const PORADIE_ZAVAZNOSTI = { danger: 0, warning: 1, info: 2 } as const;
 
 /** Faktúry, banka aj zamestnanci v jednom zozname, zoradené rovnako. */
 async function vsetkyNotifikacie(companyId: string): Promise<AppNotification[]> {
-  const [signaly, zamestnanci] = await Promise.all([
+  const [signaly, zamestnanci, doklady] = await Promise.all([
     zozbierajSignaly(companyId),
     notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
+    notifikaciaNespracovanychDokladov(companyId).catch(() => [] as AppNotification[]),
   ]);
   // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
   // inak najstaršie (najdlhšie po termíne).
-  return [...buildNotifications(signaly), ...zamestnanci].sort((a, b) => {
+  return [...buildNotifications(signaly), ...zamestnanci, ...doklady].sort((a, b) => {
     const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];
     if (podlaZavaznosti !== 0) return podlaZavaznosti;
     return a.severity === "info" ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
