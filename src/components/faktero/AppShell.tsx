@@ -129,12 +129,13 @@ const NAV: NavGroup[] = [
       rozoznať vôbec. Doklady majú bloček, rovnako ako v mobilnej appke.
     */
     icon: Receipt,
-    match: ["/doklady", "/efaktura"],
+    match: ["/doklady", "/ostatne-doklady", "/efaktura"],
     children: [
       { to: "/doklady", label: "Prehľad dokladov" },
       { to: "/doklady", search: { stav: "nespracovane" }, label: "Nespracované doklady" },
       { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
       { to: "/doklady/mailom", label: "Doklady e-mailom" },
+      { to: "/ostatne-doklady", label: "Ostatné doklady" },
       { to: "/efaktura", label: "Prehľad eFaktúry" },
       { to: "/efaktura/odoslane", label: "Odoslané eFaktúry" },
       { to: "/efaktura/prijate", label: "Prijaté eFaktúry" },
@@ -1005,6 +1006,7 @@ const MANUALY: { prefix: string; to: string }[] = [
   { prefix: "/opakovane", to: "/pomoc/opakovane" },
   { prefix: "/prijate-faktury", to: "/pomoc/prijate-faktury" },
   { prefix: "/doklady", to: "/pomoc/doklady" },
+  { prefix: "/ostatne-doklady", to: "/pomoc/doklady" },
   { prefix: "/pokladna", to: "/pomoc/pokladna" },
   { prefix: "/efaktura", to: "/pomoc/efaktura" },
   { prefix: "/odberatelia", to: "/pomoc/odberatelia" },

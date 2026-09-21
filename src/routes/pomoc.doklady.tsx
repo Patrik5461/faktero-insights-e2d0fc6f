@@ -123,6 +123,27 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "ostatne",
+    title: "Ostatné doklady — listy, predpisy, exekúcie",
+    body: (
+      <>
+        <p>
+          Nie všetko, z čoho účtovník účtuje, je faktúra alebo bloček. Exekučný príkaz, predpis
+          poistného, list z daňového úradu či zmluvu nahráte do{" "}
+          <Link to="/ostatne-doklady">Doklady → Ostatné doklady</Link>. Vyberiete druh dokladu,
+          odosielateľa, dátum doručenia a pripojíte PDF alebo fotky (aj viac strán). Suma a lehota
+          sú nepovinné — lehota, ktorá sa blíži alebo už uplynula, sa v zozname zvýrazní.
+        </p>
+        <p>
+          Aj tu platí <strong>Nespracované → Spracované → Odovzdané</strong>: účtovník doklad
+          pozrie a klikne na <strong>Spracovať</strong>. Ostatné doklady sa do Pohody neposielajú,
+          sú podkladom. V mesačnom balíku pre účtovníka sú v priečinku{" "}
+          <strong>ostatne-doklady</strong> so súpisom v CSV.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "prehlad",
     title: "Zoznam, filtre a odovzdanie účtovníčke",
     body: (

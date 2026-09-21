@@ -121,6 +121,30 @@ async function notifikacieZamestnancov(companyId: string): Promise<AppNotificati
   }));
 }
 
+/** Ostatné doklady (listy, predpisy, exekúcie) čakajúce na spracovanie. */
+async function notifikaciaOstatnych(companyId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, count } = await supabaseAdmin
+    .from("other_documents")
+    .select("id, created_at", { count: "exact" })
+    .eq("company_id", companyId)
+    .eq("status", "new")
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const najnovsi = data?.[0];
+  if (!count || !najnovsi) return [];
+  return [
+    {
+      key: `ostatne-nespracovane:${najnovsi.id}`,
+      severity: "info",
+      title: count === 1 ? "1 nespracovaný ostatný doklad" : `${count} nespracovaných ostatných dokladov`,
+      detail: "List, predpis alebo zmluva čaká na účtovníka.",
+      to: "/ostatne-doklady",
+      date: String(najnovsi.created_at).slice(0, 10),
+    },
+  ];
+}
+
 /**
  * Doklady čakajúce na spracovanie ako jedna položka. Kľúč nesie najnovší
  * doklad, takže po prečítaní sa zvonček ozve znova až pri ďalšom doklade.
@@ -135,8 +159,10 @@ async function notifikaciaNespracovanychDokladov(companyId: string): Promise<App
     .order("created_at", { ascending: false })
     .limit(1);
   const najnovsi = data?.[0];
-  if (!count || !najnovsi) return [];
+  const ostatne = await notifikaciaOstatnych(companyId);
+  if (!count || !najnovsi) return ostatne;
   return [
+    ...ostatne,
     {
       key: `doklady-nespracovane:${najnovsi.id}`,
       severity: "info",

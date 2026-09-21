@@ -156,6 +156,8 @@ import { Route as AuthenticatedObjednavkyNovaRouteImport } from './routes/_authe
 import { Route as AuthenticatedOpakovaneIndexRouteImport } from './routes/_authenticated/opakovane.index'
 import { Route as AuthenticatedOpakovaneIdRouteImport } from './routes/_authenticated/opakovane.$id'
 import { Route as AuthenticatedOpakovaneNovaRouteImport } from './routes/_authenticated/opakovane.nova'
+import { Route as AuthenticatedOstatneDokladyIndexRouteImport } from './routes/_authenticated/ostatne-doklady.index'
+import { Route as AuthenticatedOstatneDokladyNovyRouteImport } from './routes/_authenticated/ostatne-doklady.novy'
 import { Route as AuthenticatedPonukyIndexRouteImport } from './routes/_authenticated/ponuky.index'
 import { Route as AuthenticatedPonukyIdRouteImport } from './routes/_authenticated/ponuky.$id'
 import { Route as AuthenticatedPonukyNovaRouteImport } from './routes/_authenticated/ponuky.nova'
@@ -1051,6 +1053,18 @@ const AuthenticatedOpakovaneNovaRoute =
     path: '/opakovane/nova',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOstatneDokladyIndexRoute =
+  AuthenticatedOstatneDokladyIndexRouteImport.update({
+    id: '/ostatne-doklady/',
+    path: '/ostatne-doklady/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOstatneDokladyNovyRoute =
+  AuthenticatedOstatneDokladyNovyRouteImport.update({
+    id: '/ostatne-doklady/novy',
+    path: '/ostatne-doklady/novy',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPonukyIndexRoute =
   AuthenticatedPonukyIndexRouteImport.update({
     id: '/ponuky/',
@@ -1805,6 +1819,7 @@ export interface FileRoutesByFullPath {
   '/objednavky/nova': typeof AuthenticatedObjednavkyNovaRoute
   '/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
+  '/ostatne-doklady/novy': typeof AuthenticatedOstatneDokladyNovyRoute
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
@@ -1857,6 +1872,7 @@ export interface FileRoutesByFullPath {
   '/nastavenia/': typeof AuthenticatedNastaveniaIndexRoute
   '/objednavky/': typeof AuthenticatedObjednavkyIndexRoute
   '/opakovane/': typeof AuthenticatedOpakovaneIndexRoute
+  '/ostatne-doklady/': typeof AuthenticatedOstatneDokladyIndexRoute
   '/ponuky/': typeof AuthenticatedPonukyIndexRoute
   '/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
   '/sklad/': typeof AuthenticatedSkladIndexRoute
@@ -2055,6 +2071,7 @@ export interface FileRoutesByTo {
   '/objednavky/nova': typeof AuthenticatedObjednavkyNovaRoute
   '/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
+  '/ostatne-doklady/novy': typeof AuthenticatedOstatneDokladyNovyRoute
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
@@ -2107,6 +2124,7 @@ export interface FileRoutesByTo {
   '/nastavenia': typeof AuthenticatedNastaveniaIndexRoute
   '/objednavky': typeof AuthenticatedObjednavkyIndexRoute
   '/opakovane': typeof AuthenticatedOpakovaneIndexRoute
+  '/ostatne-doklady': typeof AuthenticatedOstatneDokladyIndexRoute
   '/ponuky': typeof AuthenticatedPonukyIndexRoute
   '/prijate-faktury': typeof AuthenticatedPrijateFakturyIndexRoute
   '/sklad': typeof AuthenticatedSkladIndexRoute
@@ -2316,6 +2334,7 @@ export interface FileRoutesById {
   '/_authenticated/objednavky/nova': typeof AuthenticatedObjednavkyNovaRoute
   '/_authenticated/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/_authenticated/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
+  '/_authenticated/ostatne-doklady/novy': typeof AuthenticatedOstatneDokladyNovyRoute
   '/_authenticated/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/_authenticated/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/_authenticated/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
@@ -2368,6 +2387,7 @@ export interface FileRoutesById {
   '/_authenticated/nastavenia/': typeof AuthenticatedNastaveniaIndexRoute
   '/_authenticated/objednavky/': typeof AuthenticatedObjednavkyIndexRoute
   '/_authenticated/opakovane/': typeof AuthenticatedOpakovaneIndexRoute
+  '/_authenticated/ostatne-doklady/': typeof AuthenticatedOstatneDokladyIndexRoute
   '/_authenticated/ponuky/': typeof AuthenticatedPonukyIndexRoute
   '/_authenticated/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
   '/_authenticated/sklad/': typeof AuthenticatedSkladIndexRoute
@@ -2577,6 +2597,7 @@ export interface FileRouteTypes {
     | '/objednavky/nova'
     | '/opakovane/$id'
     | '/opakovane/nova'
+    | '/ostatne-doklady/novy'
     | '/ponuky/$id'
     | '/ponuky/nova'
     | '/prijate-faktury/nova'
@@ -2629,6 +2650,7 @@ export interface FileRouteTypes {
     | '/nastavenia/'
     | '/objednavky/'
     | '/opakovane/'
+    | '/ostatne-doklady/'
     | '/ponuky/'
     | '/prijate-faktury/'
     | '/sklad/'
@@ -2827,6 +2849,7 @@ export interface FileRouteTypes {
     | '/objednavky/nova'
     | '/opakovane/$id'
     | '/opakovane/nova'
+    | '/ostatne-doklady/novy'
     | '/ponuky/$id'
     | '/ponuky/nova'
     | '/prijate-faktury/nova'
@@ -2879,6 +2902,7 @@ export interface FileRouteTypes {
     | '/nastavenia'
     | '/objednavky'
     | '/opakovane'
+    | '/ostatne-doklady'
     | '/ponuky'
     | '/prijate-faktury'
     | '/sklad'
@@ -3087,6 +3111,7 @@ export interface FileRouteTypes {
     | '/_authenticated/objednavky/nova'
     | '/_authenticated/opakovane/$id'
     | '/_authenticated/opakovane/nova'
+    | '/_authenticated/ostatne-doklady/novy'
     | '/_authenticated/ponuky/$id'
     | '/_authenticated/ponuky/nova'
     | '/_authenticated/prijate-faktury/nova'
@@ -3139,6 +3164,7 @@ export interface FileRouteTypes {
     | '/_authenticated/nastavenia/'
     | '/_authenticated/objednavky/'
     | '/_authenticated/opakovane/'
+    | '/_authenticated/ostatne-doklady/'
     | '/_authenticated/ponuky/'
     | '/_authenticated/prijate-faktury/'
     | '/_authenticated/sklad/'
@@ -4352,6 +4378,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOpakovaneNovaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ostatne-doklady/': {
+      id: '/_authenticated/ostatne-doklady/'
+      path: '/ostatne-doklady'
+      fullPath: '/ostatne-doklady/'
+      preLoaderRoute: typeof AuthenticatedOstatneDokladyIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ostatne-doklady/novy': {
+      id: '/_authenticated/ostatne-doklady/novy'
+      path: '/ostatne-doklady/novy'
+      fullPath: '/ostatne-doklady/novy'
+      preLoaderRoute: typeof AuthenticatedOstatneDokladyNovyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ponuky/': {
       id: '/_authenticated/ponuky/'
       path: '/ponuky'
@@ -5280,6 +5320,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedObjednavkyNovaRoute: typeof AuthenticatedObjednavkyNovaRoute
   AuthenticatedOpakovaneIdRoute: typeof AuthenticatedOpakovaneIdRoute
   AuthenticatedOpakovaneNovaRoute: typeof AuthenticatedOpakovaneNovaRoute
+  AuthenticatedOstatneDokladyNovyRoute: typeof AuthenticatedOstatneDokladyNovyRoute
   AuthenticatedPonukyIdRoute: typeof AuthenticatedPonukyIdRoute
   AuthenticatedPonukyNovaRoute: typeof AuthenticatedPonukyNovaRoute
   AuthenticatedPrijateFakturyNovaRoute: typeof AuthenticatedPrijateFakturyNovaRoute
@@ -5303,6 +5344,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNastaveniaIndexRoute: typeof AuthenticatedNastaveniaIndexRoute
   AuthenticatedObjednavkyIndexRoute: typeof AuthenticatedObjednavkyIndexRoute
   AuthenticatedOpakovaneIndexRoute: typeof AuthenticatedOpakovaneIndexRoute
+  AuthenticatedOstatneDokladyIndexRoute: typeof AuthenticatedOstatneDokladyIndexRoute
   AuthenticatedPonukyIndexRoute: typeof AuthenticatedPonukyIndexRoute
   AuthenticatedPrijateFakturyIndexRoute: typeof AuthenticatedPrijateFakturyIndexRoute
   AuthenticatedZakazkyIndexRoute: typeof AuthenticatedZakazkyIndexRoute
@@ -5371,6 +5413,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedObjednavkyNovaRoute: AuthenticatedObjednavkyNovaRoute,
   AuthenticatedOpakovaneIdRoute: AuthenticatedOpakovaneIdRoute,
   AuthenticatedOpakovaneNovaRoute: AuthenticatedOpakovaneNovaRoute,
+  AuthenticatedOstatneDokladyNovyRoute: AuthenticatedOstatneDokladyNovyRoute,
   AuthenticatedPonukyIdRoute: AuthenticatedPonukyIdRoute,
   AuthenticatedPonukyNovaRoute: AuthenticatedPonukyNovaRoute,
   AuthenticatedPrijateFakturyNovaRoute: AuthenticatedPrijateFakturyNovaRoute,
@@ -5396,6 +5439,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNastaveniaIndexRoute: AuthenticatedNastaveniaIndexRoute,
   AuthenticatedObjednavkyIndexRoute: AuthenticatedObjednavkyIndexRoute,
   AuthenticatedOpakovaneIndexRoute: AuthenticatedOpakovaneIndexRoute,
+  AuthenticatedOstatneDokladyIndexRoute: AuthenticatedOstatneDokladyIndexRoute,
   AuthenticatedPonukyIndexRoute: AuthenticatedPonukyIndexRoute,
   AuthenticatedPrijateFakturyIndexRoute: AuthenticatedPrijateFakturyIndexRoute,
   AuthenticatedZakazkyIndexRoute: AuthenticatedZakazkyIndexRoute,

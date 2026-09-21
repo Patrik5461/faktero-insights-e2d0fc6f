@@ -545,12 +545,14 @@ function OdovzdanieZaMesiac() {
     pocetFaktur: number;
     pocetDokladov: number;
     pocetPokladnicnych: number;
+    pocetOstatnych?: number;
   }) {
     return (
       [
         r.pocetFaktur ? `${r.pocetFaktur} faktúr` : "",
         r.pocetDokladov ? `${r.pocetDokladov} prijatých dokladov` : "",
         r.pocetPokladnicnych ? `${r.pocetPokladnicnych} pokladničných` : "",
+        r.pocetOstatnych ? `${r.pocetOstatnych} ostatných dokladov` : "",
       ]
         .filter(Boolean)
         .join(", ") || "nič"

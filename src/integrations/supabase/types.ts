@@ -14,6 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      other_document_files: {
+        Row: {
+          id: string
+          document_id: string
+          company_id: string
+          path: string
+          name: string
+          mime: string | null
+          size: number | null
+          position: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          document_id: string
+          company_id: string
+          path: string
+          name: string
+          mime?: string | null
+          size?: number | null
+          position?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          document_id?: string
+          company_id?: string
+          path?: string
+          name?: string
+          mime?: string | null
+          size?: number | null
+          position?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      other_documents: {
+        Row: {
+          id: string
+          company_id: string
+          kind: string
+          sender: string | null
+          subject: string | null
+          received_date: string
+          amount: number | null
+          currency: string
+          due_date: string | null
+          note: string | null
+          status: string
+          processed_at: string | null
+          processed_by: string | null
+          exported_at: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          kind?: string
+          sender?: string | null
+          subject?: string | null
+          received_date?: string
+          amount?: number | null
+          currency?: string
+          due_date?: string | null
+          note?: string | null
+          status?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          exported_at?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          kind?: string
+          sender?: string | null
+          subject?: string | null
+          received_date?: string
+          amount?: number | null
+          currency?: string
+          due_date?: string | null
+          note?: string | null
+          status?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          exported_at?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_actions: {
         Row: {
           action_type: string

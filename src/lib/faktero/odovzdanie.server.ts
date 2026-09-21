@@ -93,6 +93,9 @@ export type Balik = {
   pocetFaktur: number;
   pocetDokladov: number;
   pocetPokladnicnych: number;
+  /** Listy, predpisy, exekúcie a zmluvy doručené v mesiaci. */
+  pocetOstatnych: number;
+  ostatneIds: string[];
   preskocene: string[];
   vynechanePrilohy: number;
   fakturyIds: string[];
@@ -142,7 +145,7 @@ export async function zostavBalik(
 
   const faktury = (vsetky ?? []).filter((f: Riadok) => !vstup.lenNove || !odovzdaneIds.has(f.id));
 
-  const [{ data: vsetkyDoklady }, { data: pokladnica }] = await Promise.all([
+  const [{ data: vsetkyDoklady }, { data: pokladnica }, { data: vsetkyOstatne }] = await Promise.all([
     supabase
       .from("expense_documents")
       .select("*")
@@ -157,12 +160,21 @@ export async function zostavBalik(
       .gte("entry_date", od)
       .lt("entry_date", doDatumu)
       .order("entry_date"),
+    // Ostatné doklady sa radia podľa dňa doručenia — dátum vystavenia nemajú.
+    supabase
+      .from("other_documents")
+      .select("*, other_document_files(path, name, position)")
+      .eq("company_id", vstup.companyId)
+      .gte("received_date", od)
+      .lt("received_date", doDatumu)
+      .order("received_date"),
   ]);
   const doklady = (vsetkyDoklady ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at);
+  const ostatne = (vsetkyOstatne ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at);
 
-  if (!faktury.length && !doklady.length && !pokladnica?.length) {
+  if (!faktury.length && !doklady.length && !pokladnica?.length && !ostatne.length) {
     throw new Error(
-      vstup.lenNove && (vsetky?.length || vsetkyDoklady?.length)
+      vstup.lenNove && (vsetky?.length || vsetkyDoklady?.length || vsetkyOstatne?.length)
         ? `Za ${nazov} už bolo všetko odovzdané`
         : `Za ${nazov} nie sú žiadne doklady`,
     );
@@ -436,6 +448,13 @@ export async function zostavBalik(
     }
   }
 
+  // Ostatné doklady nejdú do Pohody — sú podkladom, z ktorého účtovník účtuje.
+  if (ostatne.length) {
+    const { balikOstatnych } = await import("./ostatne-doklady-balik.server");
+    const { vynechane } = await balikOstatnych(zip, ostatne, supabaseAdmin, "ostatne-doklady/");
+    vynechanePrilohy += vynechane;
+  }
+
   const base64 = await zip.generateAsync({ type: "base64" });
 
   return {
@@ -446,6 +465,8 @@ export async function zostavBalik(
       pocetFaktur: vyvezene.length,
       pocetDokladov: doklady.length,
       pocetPokladnicnych: pokladnica?.length ?? 0,
+      pocetOstatnych: ostatne.length,
+      ostatneIds: ostatne.map((d: Riadok) => d.id),
       preskocene,
       vynechanePrilohy,
       fakturyIds: faktury.map((f: Riadok) => f.id),
@@ -538,6 +559,12 @@ export async function oznacOdovzdane(
       })
       .in("id", balik.dokladyIds);
   }
+  if (job && balik.ostatneIds.length) {
+    await supabase
+      .from("other_documents")
+      .update({ status: "exported", exported_at: new Date().toISOString() })
+      .in("id", balik.ostatneIds);
+  }
   // Číselníky si pamätá tá istá tabuľka ako pri konektore, takže sa doklad
   // neodovzdá dvakrát ani vtedy, keď firma používa obidve cesty.
   if (job && balik.ciselniky.length) {
@@ -584,6 +611,7 @@ export async function posliBalikMailom(opts: {
     balik.pocetFaktur ? `${balik.pocetFaktur} vydaných faktúr` : "",
     balik.pocetDokladov ? `${balik.pocetDokladov} prijatých dokladov` : "",
     balik.pocetPokladnicnych ? `${balik.pocetPokladnicnych} pokladničných dokladov` : "",
+    balik.pocetOstatnych ? `${balik.pocetOstatnych} ostatných dokladov` : "",
     balik.pocetCiselnikov ? `${balik.pocetCiselnikov} záznamov číselníkov` : "",
   ].filter(Boolean);
 
