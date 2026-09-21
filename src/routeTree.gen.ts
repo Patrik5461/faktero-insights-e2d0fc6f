@@ -133,6 +133,7 @@ import { Route as AuthenticatedFinancovanieIndexRouteImport } from './routes/_au
 import { Route as AuthenticatedFinancovanieIdRouteImport } from './routes/_authenticated/financovanie.$id'
 import { Route as AuthenticatedFinancovanieNovaRouteImport } from './routes/_authenticated/financovanie.nova'
 import { Route as AuthenticatedImportyIndexRouteImport } from './routes/_authenticated/importy.index'
+import { Route as AuthenticatedImportyDokladyRouteImport } from './routes/_authenticated/importy.doklady'
 import { Route as AuthenticatedImportyIdokladRouteImport } from './routes/_authenticated/importy.idoklad'
 import { Route as AuthenticatedImportyKrosRouteImport } from './routes/_authenticated/importy.kros'
 import { Route as AuthenticatedImportyMoneyS3RouteImport } from './routes/_authenticated/importy.money-s3'
@@ -916,6 +917,12 @@ const AuthenticatedImportyIndexRoute =
   AuthenticatedImportyIndexRouteImport.update({
     id: '/importy/',
     path: '/importy/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImportyDokladyRoute =
+  AuthenticatedImportyDokladyRouteImport.update({
+    id: '/importy/doklady',
+    path: '/importy/doklady',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedImportyIdokladRoute =
@@ -1800,6 +1807,7 @@ export interface FileRoutesByFullPath {
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/financovanie/$id': typeof AuthenticatedFinancovanieIdRoute
   '/financovanie/nova': typeof AuthenticatedFinancovanieNovaRoute
+  '/importy/doklady': typeof AuthenticatedImportyDokladyRoute
   '/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
   '/importy/kros': typeof AuthenticatedImportyKrosRoute
   '/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
@@ -2053,6 +2061,7 @@ export interface FileRoutesByTo {
   '/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/financovanie/$id': typeof AuthenticatedFinancovanieIdRoute
   '/financovanie/nova': typeof AuthenticatedFinancovanieNovaRoute
+  '/importy/doklady': typeof AuthenticatedImportyDokladyRoute
   '/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
   '/importy/kros': typeof AuthenticatedImportyKrosRoute
   '/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
@@ -2315,6 +2324,7 @@ export interface FileRoutesById {
   '/_authenticated/faktury/skener': typeof AuthenticatedFakturySkenerRoute
   '/_authenticated/financovanie/$id': typeof AuthenticatedFinancovanieIdRoute
   '/_authenticated/financovanie/nova': typeof AuthenticatedFinancovanieNovaRoute
+  '/_authenticated/importy/doklady': typeof AuthenticatedImportyDokladyRoute
   '/_authenticated/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
   '/_authenticated/importy/kros': typeof AuthenticatedImportyKrosRoute
   '/_authenticated/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
@@ -2578,6 +2588,7 @@ export interface FileRouteTypes {
     | '/faktury/skener'
     | '/financovanie/$id'
     | '/financovanie/nova'
+    | '/importy/doklady'
     | '/importy/idoklad'
     | '/importy/kros'
     | '/importy/money-s3'
@@ -2831,6 +2842,7 @@ export interface FileRouteTypes {
     | '/faktury/skener'
     | '/financovanie/$id'
     | '/financovanie/nova'
+    | '/importy/doklady'
     | '/importy/idoklad'
     | '/importy/kros'
     | '/importy/money-s3'
@@ -3092,6 +3104,7 @@ export interface FileRouteTypes {
     | '/_authenticated/faktury/skener'
     | '/_authenticated/financovanie/$id'
     | '/_authenticated/financovanie/nova'
+    | '/_authenticated/importy/doklady'
     | '/_authenticated/importy/idoklad'
     | '/_authenticated/importy/kros'
     | '/_authenticated/importy/money-s3'
@@ -4217,6 +4230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImportyIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/importy/doklady': {
+      id: '/_authenticated/importy/doklady'
+      path: '/importy/doklady'
+      fullPath: '/importy/doklady'
+      preLoaderRoute: typeof AuthenticatedImportyDokladyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/importy/idoklad': {
       id: '/_authenticated/importy/idoklad'
       path: '/importy/idoklad'
@@ -5301,6 +5321,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFakturySkenerRoute: typeof AuthenticatedFakturySkenerRoute
   AuthenticatedFinancovanieIdRoute: typeof AuthenticatedFinancovanieIdRoute
   AuthenticatedFinancovanieNovaRoute: typeof AuthenticatedFinancovanieNovaRoute
+  AuthenticatedImportyDokladyRoute: typeof AuthenticatedImportyDokladyRoute
   AuthenticatedImportyIdokladRoute: typeof AuthenticatedImportyIdokladRoute
   AuthenticatedImportyKrosRoute: typeof AuthenticatedImportyKrosRoute
   AuthenticatedImportyMoneyS3Route: typeof AuthenticatedImportyMoneyS3Route
@@ -5390,6 +5411,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFakturySkenerRoute: AuthenticatedFakturySkenerRoute,
   AuthenticatedFinancovanieIdRoute: AuthenticatedFinancovanieIdRoute,
   AuthenticatedFinancovanieNovaRoute: AuthenticatedFinancovanieNovaRoute,
+  AuthenticatedImportyDokladyRoute: AuthenticatedImportyDokladyRoute,
   AuthenticatedImportyIdokladRoute: AuthenticatedImportyIdokladRoute,
   AuthenticatedImportyKrosRoute: AuthenticatedImportyKrosRoute,
   AuthenticatedImportyMoneyS3Route: AuthenticatedImportyMoneyS3Route,

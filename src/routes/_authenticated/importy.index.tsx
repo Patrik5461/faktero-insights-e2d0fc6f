@@ -73,12 +73,20 @@ function ImportHistoryPage() {
         title="História importov"
         description="Prehľad všetkých importov vo vašej firme."
         action={
-          <Link
-            to="/importy/superfaktura"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <UploadIcon className="h-4 w-4" /> Nový import
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/importy/doklady"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              <UploadIcon className="h-4 w-4" /> Prijaté doklady (Doklado…)
+            </Link>
+            <Link
+              to="/importy/superfaktura"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <UploadIcon className="h-4 w-4" /> Nový import
+            </Link>
+          </div>
         }
       />
       <PageBody>

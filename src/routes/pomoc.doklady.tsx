@@ -159,6 +159,28 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "import",
+    title: "Prechod z Doklado — import prijatých dokladov",
+    body: (
+      <>
+        <p>
+          V <Link to="/importy/doklady">Účtovníctvo → Import prijatých dokladov</Link> nahráte export
+          z Doklado, Pohody alebo tabuľku. Najpresnejšie je nahrať naraz <strong>XML (Pohoda)</strong>{" "}
+          a <strong>ZIP s PDF</strong>: údaje sa vezmú z XML a skeny sa priradia k dokladom podľa
+          čísla, alebo podľa sumy, dátumu a dodávateľa. Ide aj <strong>CSV/XLSX</strong> a samotný
+          ZIP so skenmi — ten prečíta AI.
+        </p>
+        <p>
+          Prijaté faktúry pôjdu medzi prijaté faktúry, bločky do Dokladov a listy, predpisy či
+          exekúcie do Ostatných dokladov. Pred spustením uvidíte, čo sa naimportuje, a zvolíte stav
+          (napríklad „Odovzdané účtovníkovi“ pre doklady, ktoré sú už zaúčtované). Doklady, ktoré vo
+          Fakteri už sú, sa preskočia, takže import sa dá pustiť aj opakovane. Hotovostné bločky
+          sa do pokladne započítajú len vtedy, keď to zaškrtnete.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "prehlad",
     title: "Zoznam, filtre a odovzdanie účtovníčke",
     body: (

@@ -3155,6 +3155,8 @@ export type Database = {
           mapping: Json | null
           options: Json
           preview: Json | null
+          processed_rows: number
+          result: Json | null
           source: string
           status: string
           total_rows: number
@@ -3174,6 +3176,8 @@ export type Database = {
           mapping?: Json | null
           options?: Json
           preview?: Json | null
+          processed_rows?: number
+          result?: Json | null
           source?: string
           status?: string
           total_rows?: number
@@ -3193,6 +3197,8 @@ export type Database = {
           mapping?: Json | null
           options?: Json
           preview?: Json | null
+          processed_rows?: number
+          result?: Json | null
           source?: string
           status?: string
           total_rows?: number

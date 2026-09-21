@@ -221,6 +221,7 @@ const NAV: NavGroup[] = [
       { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
       { to: "/uctovnictvo/pohoda", label: "Prepojenie s Pohodou" },
       { to: "/uctovnictvo/vypis-do-pohody", label: "Bankový výpis do Pohody" },
+      { to: "/importy/doklady", label: "Import prijatých dokladov (Doklado…)" },
       { to: "/importy/superfaktura", label: "Import zo SuperFaktúry" },
       { to: "/importy/pohoda", label: "Import z Pohody a mPohody" },
       { to: "/importy/money-s3", label: "Import z Money S3" },

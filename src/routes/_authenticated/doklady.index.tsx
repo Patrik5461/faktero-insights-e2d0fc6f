@@ -66,6 +66,13 @@ function nazovMesiaca(m: string): string {
 }
 
 const STATUS_LABEL: Record<string, string> = STAV_DOKLADU_NAZOV;
+const ZDROJ_DOKLADU: Record<string, string> = {
+  photo: "fotka",
+  qr: "QR kód",
+  upload: "nahratý",
+  web: "web",
+  import: "import",
+};
 const STATUS_STYLE: Record<string, string> = {
   new: "bg-amber-500/10 text-amber-700",
   processed: "bg-secondary text-foreground/70",
@@ -339,6 +346,12 @@ function DokladyPage() {
         description="Naskenované a nahraté výdavkové doklady pre účtovníka."
         action={
           <div className="flex gap-2">
+            <Link
+              to="/importy/doklady"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              <UploadIcon className="h-4 w-4" /> Import z Doklado
+            </Link>
             <Link
               to="/doklady/novy"
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
@@ -670,7 +683,9 @@ function DokladyPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{r.source}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">
+                      {ZDROJ_DOKLADU[r.source] ?? r.source}
+                    </td>
                     <td className="px-3 py-2 text-xs whitespace-nowrap">
                       {uhrady[r.id] ? (
                         <span className="inline-flex items-center gap-1.5">
