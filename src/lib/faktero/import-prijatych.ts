@@ -597,10 +597,14 @@ export function riadokBlocku(
     vat_amount: s.dph,
     net_amount: s.zaklad,
     currency: z.mena || "EUR",
-    payment_method: hotovostMimo ? null : z.uhrada,
+    // Úhrada je v databáze povinná. Keď ju export nemá, je to karta — tá
+    // stav pokladne nemení; hotovosť mimo pokladne drží `mimo_pokladne`.
+    payment_method: z.uhrada ?? "karta",
+    mimo_pokladne: hotovostMimo,
     note: [
       poznamkaImportu(z, o.zdrojAplikacie),
       hotovostMimo ? "Platené v hotovosti — do pokladne sa nezapočítalo." : null,
+      z.uhrada ? null : "Spôsob úhrady v exporte nebol, doplnená karta.",
     ]
       .filter(Boolean)
       .join("\n"),

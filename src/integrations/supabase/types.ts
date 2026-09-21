@@ -2565,6 +2565,7 @@ export type Database = {
         Row: {
           processed_at: string | null
           processed_by: string | null
+          mimo_pokladne: boolean
           ai_raw: Json | null
           category: string | null
           company_id: string
@@ -2599,6 +2600,7 @@ export type Database = {
         Insert: {
           processed_at?: string | null
           processed_by?: string | null
+          mimo_pokladne?: boolean
           ai_raw?: Json | null
           category?: string | null
           company_id: string
@@ -2633,6 +2635,7 @@ export type Database = {
         Update: {
           processed_at?: string | null
           processed_by?: string | null
+          mimo_pokladne?: boolean
           ai_raw?: Json | null
           category?: string | null
           company_id?: string

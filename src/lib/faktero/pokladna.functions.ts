@@ -50,6 +50,8 @@ export const getCashBook = createServerFn({ method: "POST" })
         .select("id, issue_date, total_amount, payment_method, supplier_name, document_number")
         .eq("company_id", data.company_id)
         .eq("payment_method", "hotovost")
+        // Starý doklad z importu, ktorý sa do pokladne vedome nezapočítal.
+        .eq("mimo_pokladne", false)
         .limit(5000),
       context.supabase
         .from("companies")

@@ -169,12 +169,16 @@ describe("riadky do databázy", () => {
   it("hotovostný bloček mimo pokladne", () => {
     const b = { ...zaklad, typ: "blocek" as const, uhrada: "hotovost" as const, spolu: 12, zaklad: null, dph: null };
     const mimo = riadokBlocku(b, { stav: "processed", dnes: "2026-09-21", zdrojAplikacie: "Doklado", doPokladne: false });
-    expect(mimo.payment_method).toBeNull();
+    expect(mimo.payment_method).toBe("hotovost");
+    expect(mimo.mimo_pokladne).toBe(true);
     expect(mimo.note).toContain("do pokladne sa nezapočítalo");
     expect(mimo.processed_at).not.toBeNull();
     expect(mimo.exported_at).toBeNull();
     const v = riadokBlocku(b, { stav: "exported", dnes: "2026-09-21", zdrojAplikacie: "Doklado", doPokladne: true });
     expect(v.payment_method).toBe("hotovost");
+    expect(v.mimo_pokladne).toBe(false);
+    const bezUhrady = riadokBlocku({ ...b, uhrada: null }, { stav: "new", dnes: "2026-09-21", zdrojAplikacie: "Doklado", doPokladne: false });
+    expect(bezUhrady.payment_method).toBe("karta");
     expect(v.exported_at).not.toBeNull();
   });
 
