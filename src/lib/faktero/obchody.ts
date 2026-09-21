@@ -10,6 +10,9 @@
 /** Faktero v App Store. Slovenský obchod; Apple človeka presmeruje na ten jeho. */
 export const APP_STORE_FAKTERO = "https://apps.apple.com/sk/app/faktero/id6802420128";
 
+/** Kniha jázd v App Store — samostatná appka len na jazdy. */
+export const APP_STORE_KNIHA_JAZD = "https://apps.apple.com/sk/app/kniha-jazd-faktero/id6806653930";
+
 /**
  * Oficiálny odznak „Download on the App Store“ od Apple. Vlastné napodobeniny
  * pravidlá Apple nedovoľujú; slovenská verzia odznaku sa zo servera stiahnuť

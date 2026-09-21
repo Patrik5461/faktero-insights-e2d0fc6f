@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { APP_STORE_FAKTERO } from "@/lib/faktero/obchody";
+import { APP_STORE_FAKTERO, APP_STORE_KNIHA_JAZD } from "@/lib/faktero/obchody";
 import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
 
 export const Route = createFileRoute("/pomoc/apka")({
@@ -43,15 +43,18 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          <strong>Faktero pre iPhone</strong> si stiahnete z{" "}
+          Obe appky pre iPhone sú v App Store:{" "}
           <a href={APP_STORE_FAKTERO} target="_blank" rel="noopener noreferrer">
-            App Store
+            Faktero
+          </a>{" "}
+          a samostatná{" "}
+          <a href={APP_STORE_KNIHA_JAZD} target="_blank" rel="noopener noreferrer">
+            Kniha jázd
           </a>
           .
         </p>
         <p>
-          <strong>Kniha jázd</strong> ako samostatná appka práve čaká na schválenie v App Store a
-          verzia pre <strong>Android</strong> sa pripravuje. Dovtedy ich dostanete v testovaní na
+          Verzia pre <strong>Android</strong> sa pripravuje. Dovtedy ju dostanete v testovaní na
           pozvánku — napíšte na <a href="mailto:servis@faktero.sk">servis@faktero.sk</a>.
         </p>
         <p>
