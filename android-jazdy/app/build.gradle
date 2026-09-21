@@ -16,6 +16,11 @@ if (suborKluca.exists()) {
 android {
     namespace = "sk.faktero.knihajazd"
     compileSdk = rootProject.ext.compileSdkVersion
+    // Len jazyky appky (ako `CFBundleLocalizations` na iOS). Inak Android pribalí
+    // preklady knižníc do vyše 80 jazykov a Google Play by ich pri appke vypísal.
+    androidResources {
+        localeFilters += ["sk", "cs", "en", "de", "hu"]
+    }
     defaultConfig {
         applicationId "sk.faktero.knihajazd"
         minSdkVersion rootProject.ext.minSdkVersion

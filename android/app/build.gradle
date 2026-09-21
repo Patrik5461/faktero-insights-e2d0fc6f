@@ -17,12 +17,17 @@ if (suborKluca.exists()) {
 android {
     namespace = "sk.tobify.faktero"
     compileSdk = rootProject.ext.compileSdkVersion
+    // Len jazyky appky (ako `CFBundleLocalizations` na iOS). Inak Android pribalí
+    // preklady knižníc do vyše 80 jazykov a Google Play by ich pri appke vypísal.
+    androidResources {
+        localeFilters += ["sk", "cs", "en", "de", "hu"]
+    }
     defaultConfig {
         applicationId "sk.tobify.faktero"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName "1.3"  // rovnako ako MARKETING_VERSION na iOS
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

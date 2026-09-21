@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Jazyky appky, rovnaké ako `CFBundleLocalizations` na iOS. Preklady sú v jej
+  vlastnom kóde (lib/mobile/preklady); tento zoznam ich ohlási systému, takže
+  sa dajú zvoliť aj v nastaveniach Androidu pri appke (Android 13 a novší).
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="sk" />
+    <locale android:name="cs" />
+    <locale android:name="en" />
+    <locale android:name="de" />
+    <locale android:name="hu" />
+</locale-config>
