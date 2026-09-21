@@ -27,6 +27,9 @@ final class JsPrevod {
             "posledneNeuspesne",
             "poslednaJazda",
             "poslednyFix",
+            "zivot",
+            "vypadokOd",
+            "vypadokDo",
     };
 
     static double milis(double sekundy) {

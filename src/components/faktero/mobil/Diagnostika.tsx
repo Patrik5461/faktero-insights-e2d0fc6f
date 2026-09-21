@@ -313,6 +313,30 @@ async function zisti(): Promise<Riadok[]> {
             zle: !nemerane && d.dennik.pouzitelnychVOvereni === 0,
           });
         }
+        /*
+          Či služba naozaj žije. „Zapnutá, čaká na jazdu“ hovorí len o
+          nastavení — Xiaomi a spol. službu na pozadí ukončia a telefón potom
+          jazdu nevidí, hoci je všetko povolené.
+        */
+        if (d.dennik.sluzbaBezi != null) {
+          r.push({
+            co: "služba detekcie",
+            hodnota: d.dennik.sluzbaBezi ? "beží" : "nebeží",
+            zle: d.zapnuta && !d.dennik.sluzbaBezi,
+          });
+        }
+        if (d.dennik.vypadky != null) {
+          r.push({
+            co: "výpadky služby",
+            hodnota: d.dennik.vypadky
+              ? `${d.dennik.vypadky}×, naposledy ${cas(d.dennik.vypadokOd) ?? "?"} – ${cas(d.dennik.vypadokDo) ?? "?"}`
+              : "žiadne",
+            zle: d.dennik.vypadky > 0,
+          });
+        }
+        if (d.dennik.prebudeniAuto != null) {
+          r.push({ co: "prebudení nástupom do auta", hodnota: `${d.dennik.prebudeniAuto}×` });
+        }
         if (d.dennik.spusteniProcesu != null) {
           r.push({
             co: "spustení appky na pozadí",

@@ -86,6 +86,20 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
         PadAppky.sleduj(getContext());
     }
 
+    /*
+      Otvorenie appky oživí službu, ktorú systém medzitým ukončil. Xiaomi a
+      ďalší výrobcovia službu na pozadí zabíjajú a samé ju nemusia pustiť
+      späť; zapnutá detekcia by potom mlčala, kým sa telefón nereštartuje.
+      Z popredia (appka je práve otvorená) smie Android službu spustiť vždy.
+    */
+    @Override
+    protected void handleOnResume() {
+        super.handleOnResume();
+        if (store != null && store.jeMonitoring() && !DriveDetectorService.bezi()) {
+            posliSluzbe(DriveDetectorService.AKCIA_START);
+        }
+    }
+
     /**
      * Posledný pád aplikácie pre obrazovku Diagnostika.
      *
@@ -504,6 +518,7 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
         von.put("prebudeni", d.optInt("prebudeni", 0));
         von.put("neuspesnychOvereni", d.optInt("neuspesnychOvereni", 0));
         von.put("najvyssiaRychlost", d.optDouble("najvyssiaRychlost", 0));
+        von.put("sluzbaBezi", DriveDetectorService.bezi());
         return von;
     }
 }

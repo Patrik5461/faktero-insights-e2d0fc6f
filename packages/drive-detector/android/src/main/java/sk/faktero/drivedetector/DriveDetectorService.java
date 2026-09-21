@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.ActivityRecognition;
 import com.google.android.gms.location.ActivityTransition;
+import com.google.android.gms.location.ActivityTransitionEvent;
 import com.google.android.gms.location.ActivityTransitionRequest;
 import com.google.android.gms.location.ActivityTransitionResult;
 import com.google.android.gms.location.DetectedActivity;
@@ -86,6 +87,7 @@ public class DriveDetectorService extends Service {
     private LocationCallback odberLacny;
     private Handler tikac;
     private Runnable tik;
+    private int tikov = 0;
     /** Priebeh sa hlási najviac raz za desať sekúnd — inak by WebView nerobil nič iné. */
     private double poslednyOznam = 0;
 
@@ -108,7 +110,26 @@ public class DriveDetectorService extends Service {
             motor.setDebounce(store.nacitajDebounce());
         }
         store.pripocitaj("spusteniProcesu", 1);
+        /*
+          Výpadok služby. Srdce (`zivot`) sa zapisuje raz za minútu; keď od
+          neho pri novom štarte uplynulo viac ako päť minút a detekcia bola
+          zapnutá, službu medzitým ukončil systém. Bez tohto záznamu sa to
+          nedalo zistiť — diagnostika čítala len uložené „zapnuté“ a tvrdila
+          „čaká na jazdu“ aj vtedy, keď služba už vôbec neexistovala.
+        */
+        double zivot = store.nacitajDiagnostiku().optDouble("zivot", 0);
+        if (store.jeMonitoring() && zivot > 0 && teraz() - zivot > 5 * 60) {
+            store.pripocitaj("vypadky", 1);
+            store.zapisDiag("vypadokOd", zivot);
+            store.zapisDiag("vypadokDo", teraz());
+        }
+        store.zapisDiag("zivot", teraz());
         spustiTikac();
+    }
+
+    /** Beží služba práve teraz? Pre diagnostiku a pre oživenie pri otvorení appky. */
+    public static boolean bezi() {
+        return bezici != null;
     }
 
     @Override
@@ -134,6 +155,18 @@ public class DriveDetectorService extends Service {
             }
         }
 
+        /*
+          Po reštarte procesu (systém službu zabil a znova spustil, vtedy je
+          `akcia == null`) aj pri každom inom prebudení musí služba znova
+          počúvať polohu. Odber polohy nežije dlhšie než proces: kým sa toto
+          nerobilo, reštartovaná služba bežala hluchá — v popredí, s
+          notifikáciou, ale bez jedinej polohy, a jazdu nemala ako vidieť.
+        */
+        if (!AKCIA_STOP.equals(akcia) && store.jeMonitoring()) {
+            spustiLacnuPolohu();
+            spustiBudik();
+        }
+
         if (akcia == null) return START_STICKY;
 
         switch (akcia) {
@@ -145,6 +178,7 @@ public class DriveDetectorService extends Service {
                 store.nastavMonitoring(false);
                 zastavPresnuPolohu();
                 zastavLacnuPolohu();
+                zastavBudik();
                 stopSelf();
                 break;
             case AKCIA_START_TRIP:
@@ -162,6 +196,9 @@ public class DriveDetectorService extends Service {
             case DriveNotifications.AKCIA_ZAHODIT:
                 vykonaj(motor.discard(intent.getStringExtra(DriveNotifications.EXTRA_TRIP), teraz()));
                 store.ulozDebounce(motor.getDebounceUntil());
+                break;
+            case AKCIA_BUDIK:
+                prebudZPohybu(intent);
                 break;
             default:
                 // Prechod rozpoznávania pohybu — príde ako výsledok v tom istom intente.
@@ -194,6 +231,7 @@ public class DriveDetectorService extends Service {
             @Override
             public void run() {
                 vykonaj(motor.tick(teraz()));
+                if (++tikov % 4 == 0) store.zapisDiag("zivot", teraz());
                 tikac.postDelayed(this, 15_000);
             }
         };
@@ -414,9 +452,81 @@ public class DriveDetectorService extends Service {
 
     private android.app.PendingIntent pohybIntent() {
         Intent i = new Intent(this, DriveDetectorService.class).setAction("sk.faktero.drivedetector.POHYB");
-        return android.app.PendingIntent.getService(
-                this, 7788, i,
-                android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_MUTABLE);
+        return sluzbaIntent(7788, i);
+    }
+
+    /*
+      Služba sa z rozpoznania pohybu spúšťa ako služba v popredí. Obyčajné
+      `getService` Android od verzie 8 na pozadí zahodí — a práve vtedy, keď
+      proces nebeží, bol signál „sedíte v aute“ jediná šanca detekciu
+      prebudiť. Prechod z rozpoznávania pohybu je výslovná výnimka, pri ktorej
+      smie appka službu v popredí spustiť aj z pozadia.
+    */
+    private android.app.PendingIntent sluzbaIntent(int kod, Intent i) {
+        int priznaky = android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_MUTABLE;
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                ? android.app.PendingIntent.getForegroundService(this, kod, i, priznaky)
+                : android.app.PendingIntent.getService(this, kod, i, priznaky);
+    }
+
+    // ── Budík: nástup do auta prebudí aj zabitú službu ─────────────────────
+
+    /*
+      Android nemá lacné prebúdzanie pri väčšom presune ako iOS. Keď systém
+      proces zabije (Xiaomi to robí bežne), lacný odber polohy zanikne s ním a
+      nič ho neobnoví. Budík je stály odber prechodu „nástup do auta“, ktorý
+      doručuje Google Play služby aj mŕtvemu procesu — a ten službu spustí
+      znova. Beží celý čas, kým je detekcia zapnutá; odber prechodov je lacný.
+      Vlastný kód žiadosti, aby ho nezrušilo vypínanie pohybu v overovaní.
+    */
+    static final String AKCIA_BUDIK = "sk.faktero.drivedetector.BUDIK";
+
+    private android.app.PendingIntent budikIntent() {
+        return sluzbaIntent(7789, new Intent(this, DriveDetectorService.class).setAction(AKCIA_BUDIK));
+    }
+
+    private void spustiBudik() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                && ContextCompat.checkSelfPermission(this, "android.permission.ACTIVITY_RECOGNITION")
+                != PackageManager.PERMISSION_GRANTED) {
+            return; // Bez povolenia pohybu ostáva len lacná poloha.
+        }
+        List<ActivityTransition> prechody = new ArrayList<>();
+        prechody.add(new ActivityTransition.Builder()
+                .setActivityType(DetectedActivity.IN_VEHICLE)
+                .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_ENTER)
+                .build());
+        try {
+            ActivityRecognition.getClient(this)
+                    .requestActivityTransitionUpdates(new ActivityTransitionRequest(prechody), budikIntent());
+        } catch (SecurityException ignored) {
+        }
+    }
+
+    private void zastavBudik() {
+        try {
+            ActivityRecognition.getClient(this).removeActivityTransitionUpdates(budikIntent());
+        } catch (SecurityException ignored) {
+        }
+    }
+
+    /** Nástup do auta: rovnaké prebudenie ako pri väčšom presune polohy. */
+    private void prebudZPohybu(Intent intent) {
+        if (!ActivityTransitionResult.hasResult(intent)) return;
+        ActivityTransitionResult vysledok = ActivityTransitionResult.extractResult(intent);
+        if (vysledok == null) return;
+        for (ActivityTransitionEvent u : vysledok.getTransitionEvents()) {
+            if (u.getActivityType() != DetectedActivity.IN_VEHICLE
+                    || u.getTransitionType() != ActivityTransition.ACTIVITY_TRANSITION_ENTER) continue;
+            store.pripocitaj("prebudeniAuto", 1);
+            List<DetectorEffect> ukony = motor.wake(teraz());
+            if (!ukony.isEmpty()) {
+                store.pripocitaj("prebudeni", 1);
+                store.zapisDiag("poslednePrebudenie", teraz());
+            }
+            vykonaj(ukony);
+            return;
+        }
     }
 
     // ── Popredie ───────────────────────────────────────────────────────────

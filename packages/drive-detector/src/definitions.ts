@@ -140,6 +140,16 @@ export interface DriveDetectorDiagnostics {
    */
   spusteniProcesu?: number;
   fixovOdSpustenia?: number;
+  /** Android: beží služba práve teraz (nielen „detekcia je zapnutá“). */
+  sluzbaBezi?: boolean;
+  /** Android: posledné znamenie života služby (zapisuje sa raz za minútu). */
+  zivot?: number;
+  /** Android: koľkokrát službu ukončil systém, kým bola detekcia zapnutá. */
+  vypadky?: number;
+  vypadokOd?: number;
+  vypadokDo?: number;
+  /** Android: koľkokrát detekciu prebudil nástup do auta. */
+  prebudeniAuto?: number;
   fixovVOvereni?: number;
   pouzitelnychVOvereni?: number;
   /** Najlepšia (najmenšia) presnosť v metroch počas posledného overovania. */
