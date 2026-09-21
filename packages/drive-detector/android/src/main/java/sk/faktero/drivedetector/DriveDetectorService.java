@@ -164,7 +164,17 @@ public class DriveDetectorService extends Service {
         */
         if (!AKCIA_STOP.equals(akcia) && store.jeMonitoring()) {
             spustiLacnuPolohu();
-            spustiBudik();
+            /*
+              Budík sa prihlasuje raz za život procesu, nikdy nie pri jeho
+              vlastnom doručení. Google pri každom prihlásení hneď pošle
+              aktuálny stav („ste v aute“) — a keď sa na ten signál prihlásil
+              znova, vznikol kruh: 2026-09-21 na Xiaomi 295 000 prebudení za
+              šesť hodín, teda asi 14 za sekundu, s procesorom stále hore.
+            */
+            if (!budikPrihlaseny && !AKCIA_BUDIK.equals(akcia)) {
+                budikPrihlaseny = true;
+                spustiBudik();
+            }
         }
 
         if (akcia == null) return START_STICKY;
@@ -273,6 +283,8 @@ public class DriveDetectorService extends Service {
         if (vysledok == null) return;
         for (com.google.android.gms.location.ActivityTransitionEvent e : vysledok.getTransitionEvents()) {
             if (e.getActivityType() != DetectedActivity.IN_VEHICLE) continue;
+            long vek = android.os.SystemClock.elapsedRealtimeNanos() - e.getElapsedRealTimeNanos();
+            if (vek > MAX_VEK_PRECHODU_NS) continue;
             boolean vozidlo = e.getTransitionType() == ActivityTransition.ACTIVITY_TRANSITION_ENTER;
             motor.setAutomotive(vozidlo);
             // Nasadnutie do auta je dôvod začať overovať, aj keď sa telefón
@@ -436,14 +448,21 @@ public class DriveDetectorService extends Service {
                 .setActivityType(DetectedActivity.IN_VEHICLE)
                 .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_EXIT)
                 .build());
+        // Opätovné prihlásenie by hneď doručilo aktuálny stav a ten by overovanie
+        // zobudil znova — rovnaký kruh ako pri budíku.
+        if (pohybPrihlaseny) return;
         try {
             ActivityRecognition.getClient(this)
                     .requestActivityTransitionUpdates(new ActivityTransitionRequest(prechody), pohybIntent());
+            pohybPrihlaseny = true;
         } catch (SecurityException ignored) {
         }
     }
 
+    private boolean pohybPrihlaseny = false;
+
     private void zastavRozpoznavaniePohybu() {
+        pohybPrihlaseny = false;
         try {
             ActivityRecognition.getClient(this).removeActivityTransitionUpdates(pohybIntent());
         } catch (SecurityException ignored) {
@@ -481,6 +500,12 @@ public class DriveDetectorService extends Service {
     */
     static final String AKCIA_BUDIK = "sk.faktero.drivedetector.BUDIK";
 
+    /** Budík je v tomto procese prihlásený — odber prežije službu, nie proces. */
+    private static boolean budikPrihlaseny = false;
+
+    /** Starší prechod je len zopakovaný stav, nie práve teraz nastúpený človek. */
+    private static final long MAX_VEK_PRECHODU_NS = 2L * 60 * 1_000_000_000L;
+
     private android.app.PendingIntent budikIntent() {
         return sluzbaIntent(7789, new Intent(this, DriveDetectorService.class).setAction(AKCIA_BUDIK));
     }
@@ -504,6 +529,7 @@ public class DriveDetectorService extends Service {
     }
 
     private void zastavBudik() {
+        budikPrihlaseny = false;
         try {
             ActivityRecognition.getClient(this).removeActivityTransitionUpdates(budikIntent());
         } catch (SecurityException ignored) {
@@ -518,6 +544,8 @@ public class DriveDetectorService extends Service {
         for (ActivityTransitionEvent u : vysledok.getTransitionEvents()) {
             if (u.getActivityType() != DetectedActivity.IN_VEHICLE
                     || u.getTransitionType() != ActivityTransition.ACTIVITY_TRANSITION_ENTER) continue;
+            long vek = android.os.SystemClock.elapsedRealtimeNanos() - u.getElapsedRealTimeNanos();
+            if (vek > MAX_VEK_PRECHODU_NS) continue;
             store.pripocitaj("prebudeniAuto", 1);
             List<DetectorEffect> ukony = motor.wake(teraz());
             if (!ukony.isEmpty()) {
