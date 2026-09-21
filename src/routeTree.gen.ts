@@ -180,6 +180,11 @@ import { Route as AuthenticatedZakazkyIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedZakazkyIdRouteImport } from './routes/_authenticated/zakazky.$id'
 import { Route as AuthenticatedZakazkyNovaRouteImport } from './routes/_authenticated/zakazky.nova'
 import { Route as AuthenticatedZalohoveIndexRouteImport } from './routes/_authenticated/zalohove.index'
+import { Route as AuthenticatedZamestnanciIndexRouteImport } from './routes/_authenticated/zamestnanci.index'
+import { Route as AuthenticatedZamestnanciIdRouteImport } from './routes/_authenticated/zamestnanci.$id'
+import { Route as AuthenticatedZamestnanciExportRouteImport } from './routes/_authenticated/zamestnanci.export'
+import { Route as AuthenticatedZamestnanciNovyRouteImport } from './routes/_authenticated/zamestnanci.novy'
+import { Route as AuthenticatedZamestnanciSablonyRouteImport } from './routes/_authenticated/zamestnanci.sablony'
 import { Route as AdminCompaniesIndexRouteImport } from './routes/admin.companies.index'
 import { Route as AdminCompaniesIdRouteImport } from './routes/admin.companies.$id'
 import { Route as AdminUsersIndexRouteImport } from './routes/admin.users.index'
@@ -233,6 +238,7 @@ import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public
 import { Route as ApiPublicHooksStockAlertsRouteImport } from './routes/api/public/hooks/stock-alerts'
 import { Route as ApiPublicHooksTrialLifecycleRouteImport } from './routes/api/public/hooks/trial-lifecycle'
 import { Route as ApiPublicHooksUcetZrusenieRouteImport } from './routes/api/public/hooks/ucet-zrusenie'
+import { Route as ApiPublicHooksZamestnanciPripomienkyRouteImport } from './routes/api/public/hooks/zamestnanci-pripomienky'
 import { Route as ApiPublicMailPrijemRouteImport } from './routes/api/public/mail/prijem'
 import { Route as ApiPublicMobilVerziaRouteImport } from './routes/api/public/mobil/verzia'
 import { Route as ApiPublicTatrabankaCallbackRouteImport } from './routes/api/public/tatrabanka/callback'
@@ -1184,6 +1190,36 @@ const AuthenticatedZalohoveIndexRoute =
     path: '/zalohove/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedZamestnanciIndexRoute =
+  AuthenticatedZamestnanciIndexRouteImport.update({
+    id: '/zamestnanci/',
+    path: '/zamestnanci/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedZamestnanciIdRoute =
+  AuthenticatedZamestnanciIdRouteImport.update({
+    id: '/zamestnanci/$id',
+    path: '/zamestnanci/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedZamestnanciExportRoute =
+  AuthenticatedZamestnanciExportRouteImport.update({
+    id: '/zamestnanci/export',
+    path: '/zamestnanci/export',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedZamestnanciNovyRoute =
+  AuthenticatedZamestnanciNovyRouteImport.update({
+    id: '/zamestnanci/novy',
+    path: '/zamestnanci/novy',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedZamestnanciSablonyRoute =
+  AuthenticatedZamestnanciSablonyRouteImport.update({
+    id: '/zamestnanci/sablony',
+    path: '/zamestnanci/sablony',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AdminCompaniesIndexRoute = AdminCompaniesIndexRouteImport.update({
   id: '/companies/',
   path: '/companies/',
@@ -1476,6 +1512,12 @@ const ApiPublicHooksUcetZrusenieRoute =
   ApiPublicHooksUcetZrusenieRouteImport.update({
     id: '/api/public/hooks/ucet-zrusenie',
     path: '/api/public/hooks/ucet-zrusenie',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksZamestnanciPripomienkyRoute =
+  ApiPublicHooksZamestnanciPripomienkyRouteImport.update({
+    id: '/api/public/hooks/zamestnanci-pripomienky',
+    path: '/api/public/hooks/zamestnanci-pripomienky',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicMailPrijemRoute = ApiPublicMailPrijemRouteImport.update({
@@ -1782,6 +1824,10 @@ export interface FileRoutesByFullPath {
   '/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
   '/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
+  '/zamestnanci/$id': typeof AuthenticatedZamestnanciIdRoute
+  '/zamestnanci/export': typeof AuthenticatedZamestnanciExportRoute
+  '/zamestnanci/novy': typeof AuthenticatedZamestnanciNovyRoute
+  '/zamestnanci/sablony': typeof AuthenticatedZamestnanciSablonyRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
@@ -1816,6 +1862,7 @@ export interface FileRoutesByFullPath {
   '/sklad/': typeof AuthenticatedSkladIndexRoute
   '/zakazky/': typeof AuthenticatedZakazkyIndexRoute
   '/zalohove/': typeof AuthenticatedZalohoveIndexRoute
+  '/zamestnanci/': typeof AuthenticatedZamestnanciIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
@@ -1844,6 +1891,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
+  '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
@@ -2026,6 +2074,10 @@ export interface FileRoutesByTo {
   '/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
   '/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
+  '/zamestnanci/$id': typeof AuthenticatedZamestnanciIdRoute
+  '/zamestnanci/export': typeof AuthenticatedZamestnanciExportRoute
+  '/zamestnanci/novy': typeof AuthenticatedZamestnanciNovyRoute
+  '/zamestnanci/sablony': typeof AuthenticatedZamestnanciSablonyRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
@@ -2060,6 +2112,7 @@ export interface FileRoutesByTo {
   '/sklad': typeof AuthenticatedSkladIndexRoute
   '/zakazky': typeof AuthenticatedZakazkyIndexRoute
   '/zalohove': typeof AuthenticatedZalohoveIndexRoute
+  '/zamestnanci': typeof AuthenticatedZamestnanciIndexRoute
   '/admin/companies': typeof AdminCompaniesIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
@@ -2088,6 +2141,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
+  '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
@@ -2281,6 +2335,10 @@ export interface FileRoutesById {
   '/_authenticated/uctovnictvo/vypis-do-pohody': typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
   '/_authenticated/zakazky/$id': typeof AuthenticatedZakazkyIdRoute
   '/_authenticated/zakazky/nova': typeof AuthenticatedZakazkyNovaRoute
+  '/_authenticated/zamestnanci/$id': typeof AuthenticatedZamestnanciIdRoute
+  '/_authenticated/zamestnanci/export': typeof AuthenticatedZamestnanciExportRoute
+  '/_authenticated/zamestnanci/novy': typeof AuthenticatedZamestnanciNovyRoute
+  '/_authenticated/zamestnanci/sablony': typeof AuthenticatedZamestnanciSablonyRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
@@ -2315,6 +2373,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/': typeof AuthenticatedSkladIndexRoute
   '/_authenticated/zakazky/': typeof AuthenticatedZakazkyIndexRoute
   '/_authenticated/zalohove/': typeof AuthenticatedZalohoveIndexRoute
+  '/_authenticated/zamestnanci/': typeof AuthenticatedZamestnanciIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
   '/_authenticated/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
@@ -2343,6 +2402,7 @@ export interface FileRoutesById {
   '/api/public/hooks/stock-alerts': typeof ApiPublicHooksStockAlertsRoute
   '/api/public/hooks/trial-lifecycle': typeof ApiPublicHooksTrialLifecycleRoute
   '/api/public/hooks/ucet-zrusenie': typeof ApiPublicHooksUcetZrusenieRoute
+  '/api/public/hooks/zamestnanci-pripomienky': typeof ApiPublicHooksZamestnanciPripomienkyRoute
   '/api/public/mail/prijem': typeof ApiPublicMailPrijemRoute
   '/api/public/mobil/verzia': typeof ApiPublicMobilVerziaRoute
   '/api/public/tatrabanka/callback': typeof ApiPublicTatrabankaCallbackRoute
@@ -2536,6 +2596,10 @@ export interface FileRouteTypes {
     | '/uctovnictvo/vypis-do-pohody'
     | '/zakazky/$id'
     | '/zakazky/nova'
+    | '/zamestnanci/$id'
+    | '/zamestnanci/export'
+    | '/zamestnanci/novy'
+    | '/zamestnanci/sablony'
     | '/admin/companies/$id'
     | '/admin/users/$id'
     | '/api/admin/migration-export'
@@ -2570,6 +2634,7 @@ export interface FileRouteTypes {
     | '/sklad/'
     | '/zakazky/'
     | '/zalohove/'
+    | '/zamestnanci/'
     | '/admin/companies/'
     | '/admin/users/'
     | '/faktury/$id/upravit'
@@ -2598,6 +2663,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
+    | '/api/public/hooks/zamestnanci-pripomienky'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
     | '/api/public/tatrabanka/callback'
@@ -2780,6 +2846,10 @@ export interface FileRouteTypes {
     | '/uctovnictvo/vypis-do-pohody'
     | '/zakazky/$id'
     | '/zakazky/nova'
+    | '/zamestnanci/$id'
+    | '/zamestnanci/export'
+    | '/zamestnanci/novy'
+    | '/zamestnanci/sablony'
     | '/admin/companies/$id'
     | '/admin/users/$id'
     | '/api/admin/migration-export'
@@ -2814,6 +2884,7 @@ export interface FileRouteTypes {
     | '/sklad'
     | '/zakazky'
     | '/zalohove'
+    | '/zamestnanci'
     | '/admin/companies'
     | '/admin/users'
     | '/faktury/$id/upravit'
@@ -2842,6 +2913,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
+    | '/api/public/hooks/zamestnanci-pripomienky'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
     | '/api/public/tatrabanka/callback'
@@ -3034,6 +3106,10 @@ export interface FileRouteTypes {
     | '/_authenticated/uctovnictvo/vypis-do-pohody'
     | '/_authenticated/zakazky/$id'
     | '/_authenticated/zakazky/nova'
+    | '/_authenticated/zamestnanci/$id'
+    | '/_authenticated/zamestnanci/export'
+    | '/_authenticated/zamestnanci/novy'
+    | '/_authenticated/zamestnanci/sablony'
     | '/admin/companies/$id'
     | '/admin/users/$id'
     | '/api/admin/migration-export'
@@ -3068,6 +3144,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/'
     | '/_authenticated/zakazky/'
     | '/_authenticated/zalohove/'
+    | '/_authenticated/zamestnanci/'
     | '/admin/companies/'
     | '/admin/users/'
     | '/_authenticated/faktury/$id/upravit'
@@ -3096,6 +3173,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/stock-alerts'
     | '/api/public/hooks/trial-lifecycle'
     | '/api/public/hooks/ucet-zrusenie'
+    | '/api/public/hooks/zamestnanci-pripomienky'
     | '/api/public/mail/prijem'
     | '/api/public/mobil/verzia'
     | '/api/public/tatrabanka/callback'
@@ -3226,6 +3304,7 @@ export interface RootRouteChildren {
   ApiPublicHooksStockAlertsRoute: typeof ApiPublicHooksStockAlertsRoute
   ApiPublicHooksTrialLifecycleRoute: typeof ApiPublicHooksTrialLifecycleRoute
   ApiPublicHooksUcetZrusenieRoute: typeof ApiPublicHooksUcetZrusenieRoute
+  ApiPublicHooksZamestnanciPripomienkyRoute: typeof ApiPublicHooksZamestnanciPripomienkyRoute
   ApiPublicMailPrijemRoute: typeof ApiPublicMailPrijemRoute
   ApiPublicMobilVerziaRoute: typeof ApiPublicMobilVerziaRoute
   ApiPublicTatrabankaCallbackRoute: typeof ApiPublicTatrabankaCallbackRoute
@@ -4441,6 +4520,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedZalohoveIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/zamestnanci/': {
+      id: '/_authenticated/zamestnanci/'
+      path: '/zamestnanci'
+      fullPath: '/zamestnanci/'
+      preLoaderRoute: typeof AuthenticatedZamestnanciIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/zamestnanci/$id': {
+      id: '/_authenticated/zamestnanci/$id'
+      path: '/zamestnanci/$id'
+      fullPath: '/zamestnanci/$id'
+      preLoaderRoute: typeof AuthenticatedZamestnanciIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/zamestnanci/export': {
+      id: '/_authenticated/zamestnanci/export'
+      path: '/zamestnanci/export'
+      fullPath: '/zamestnanci/export'
+      preLoaderRoute: typeof AuthenticatedZamestnanciExportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/zamestnanci/novy': {
+      id: '/_authenticated/zamestnanci/novy'
+      path: '/zamestnanci/novy'
+      fullPath: '/zamestnanci/novy'
+      preLoaderRoute: typeof AuthenticatedZamestnanciNovyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/zamestnanci/sablony': {
+      id: '/_authenticated/zamestnanci/sablony'
+      path: '/zamestnanci/sablony'
+      fullPath: '/zamestnanci/sablony'
+      preLoaderRoute: typeof AuthenticatedZamestnanciSablonyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/admin/companies/': {
       id: '/admin/companies/'
       path: '/companies'
@@ -4812,6 +4926,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksUcetZrusenieRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/zamestnanci-pripomienky': {
+      id: '/api/public/hooks/zamestnanci-pripomienky'
+      path: '/api/public/hooks/zamestnanci-pripomienky'
+      fullPath: '/api/public/hooks/zamestnanci-pripomienky'
+      preLoaderRoute: typeof ApiPublicHooksZamestnanciPripomienkyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/mail/prijem': {
       id: '/api/public/mail/prijem'
       path: '/api/public/mail/prijem'
@@ -5168,6 +5289,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUctovnictvoVypisDoPohodyRoute: typeof AuthenticatedUctovnictvoVypisDoPohodyRoute
   AuthenticatedZakazkyIdRoute: typeof AuthenticatedZakazkyIdRoute
   AuthenticatedZakazkyNovaRoute: typeof AuthenticatedZakazkyNovaRoute
+  AuthenticatedZamestnanciIdRoute: typeof AuthenticatedZamestnanciIdRoute
+  AuthenticatedZamestnanciExportRoute: typeof AuthenticatedZamestnanciExportRoute
+  AuthenticatedZamestnanciNovyRoute: typeof AuthenticatedZamestnanciNovyRoute
+  AuthenticatedZamestnanciSablonyRoute: typeof AuthenticatedZamestnanciSablonyRoute
   AuthenticatedBankoveUctyIndexRoute: typeof AuthenticatedBankoveUctyIndexRoute
   AuthenticatedCenyIndexRoute: typeof AuthenticatedCenyIndexRoute
   AuthenticatedDokladyIndexRoute: typeof AuthenticatedDokladyIndexRoute
@@ -5182,6 +5307,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPrijateFakturyIndexRoute: typeof AuthenticatedPrijateFakturyIndexRoute
   AuthenticatedZakazkyIndexRoute: typeof AuthenticatedZakazkyIndexRoute
   AuthenticatedZalohoveIndexRoute: typeof AuthenticatedZalohoveIndexRoute
+  AuthenticatedZamestnanciIndexRoute: typeof AuthenticatedZamestnanciIndexRoute
   AuthenticatedFakturyIdUpravitRoute: typeof AuthenticatedFakturyIdUpravitRoute
   AuthenticatedPrijateFakturyIdUpravitRoute: typeof AuthenticatedPrijateFakturyIdUpravitRoute
   AuthenticatedFakturyIdIndexRoute: typeof AuthenticatedFakturyIdIndexRoute
@@ -5256,6 +5382,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedUctovnictvoVypisDoPohodyRoute,
   AuthenticatedZakazkyIdRoute: AuthenticatedZakazkyIdRoute,
   AuthenticatedZakazkyNovaRoute: AuthenticatedZakazkyNovaRoute,
+  AuthenticatedZamestnanciIdRoute: AuthenticatedZamestnanciIdRoute,
+  AuthenticatedZamestnanciExportRoute: AuthenticatedZamestnanciExportRoute,
+  AuthenticatedZamestnanciNovyRoute: AuthenticatedZamestnanciNovyRoute,
+  AuthenticatedZamestnanciSablonyRoute: AuthenticatedZamestnanciSablonyRoute,
   AuthenticatedBankoveUctyIndexRoute: AuthenticatedBankoveUctyIndexRoute,
   AuthenticatedCenyIndexRoute: AuthenticatedCenyIndexRoute,
   AuthenticatedDokladyIndexRoute: AuthenticatedDokladyIndexRoute,
@@ -5270,6 +5400,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPrijateFakturyIndexRoute: AuthenticatedPrijateFakturyIndexRoute,
   AuthenticatedZakazkyIndexRoute: AuthenticatedZakazkyIndexRoute,
   AuthenticatedZalohoveIndexRoute: AuthenticatedZalohoveIndexRoute,
+  AuthenticatedZamestnanciIndexRoute: AuthenticatedZamestnanciIndexRoute,
   AuthenticatedFakturyIdUpravitRoute: AuthenticatedFakturyIdUpravitRoute,
   AuthenticatedPrijateFakturyIdUpravitRoute:
     AuthenticatedPrijateFakturyIdUpravitRoute,
@@ -5602,6 +5733,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksStockAlertsRoute: ApiPublicHooksStockAlertsRoute,
   ApiPublicHooksTrialLifecycleRoute: ApiPublicHooksTrialLifecycleRoute,
   ApiPublicHooksUcetZrusenieRoute: ApiPublicHooksUcetZrusenieRoute,
+  ApiPublicHooksZamestnanciPripomienkyRoute:
+    ApiPublicHooksZamestnanciPripomienkyRoute,
   ApiPublicMailPrijemRoute: ApiPublicMailPrijemRoute,
   ApiPublicMobilVerziaRoute: ApiPublicMobilVerziaRoute,
   ApiPublicTatrabankaCallbackRoute: ApiPublicTatrabankaCallbackRoute,

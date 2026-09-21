@@ -1,7 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { buildNotifications, applyReadState, type NotificationInput } from "./notifications";
+import {
+  buildNotifications,
+  applyReadState,
+  type AppNotification,
+  type NotificationInput,
+} from "./notifications";
+import { pripomienkyZamestnancov } from "./zamestnanci";
 
 const CompanyInput = z.object({ company_id: z.string().uuid() });
 
@@ -79,6 +85,59 @@ async function zozbierajSignaly(companyId: string): Promise<NotificationInput> {
   };
 }
 
+/**
+ * Pripomienky k zamestnancom — len pri firme so zapnutým modulom. Počítajú sa
+ * z tých istých dát a tou istou funkciou ako denný e-mail, takže zvonček a
+ * e-mail sa nikdy nerozídu.
+ */
+async function notifikacieZamestnancov(companyId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: firma } = await supabaseAdmin
+    .from("companies")
+    .select("module_employees")
+    .eq("id", companyId)
+    .maybeSingle();
+  if (!firma?.module_employees) return [];
+  const dnes = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(new Date());
+  const [zam, zml] = await Promise.all([
+    supabaseAdmin
+      .from("employees")
+      .select("id, first_name, last_name, title_before, title_after, start_date, end_date, status, sp_registered_at, zp_registered_at, medical_check_due, bozp_training_due")
+      .eq("company_id", companyId)
+      .eq("status", "active"),
+    supabaseAdmin
+      .from("employee_contracts")
+      .select("id, employee_id, kind, start_date, end_date, probation_end, status")
+      .eq("company_id", companyId)
+      .eq("status", "active"),
+  ]);
+  return pripomienkyZamestnancov(dnes, (zam.data ?? []) as any, (zml.data ?? []) as any).map((p) => ({
+    key: p.kluc,
+    severity: p.zavaznost,
+    title: p.nadpis,
+    detail: p.text,
+    to: `/zamestnanci/${p.employee_id}`,
+    date: p.termin,
+  }));
+}
+
+const PORADIE_ZAVAZNOSTI = { danger: 0, warning: 1, info: 2 } as const;
+
+/** Faktúry, banka aj zamestnanci v jednom zozname, zoradené rovnako. */
+async function vsetkyNotifikacie(companyId: string): Promise<AppNotification[]> {
+  const [signaly, zamestnanci] = await Promise.all([
+    zozbierajSignaly(companyId),
+    notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
+  ]);
+  // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
+  // inak najstaršie (najdlhšie po termíne).
+  return [...buildNotifications(signaly), ...zamestnanci].sort((a, b) => {
+    const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];
+    if (podlaZavaznosti !== 0) return podlaZavaznosti;
+    return a.severity === "info" ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
+  });
+}
+
 /** Čo má firma práve teraz na stole, aj s tým, čo si už používateľ prečítal. */
 export const listNotifications = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -87,8 +146,8 @@ export const listNotifications = createServerFn({ method: "POST" })
     await assertMember(context.supabase, context.userId, data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [signaly, precitane] = await Promise.all([
-      zozbierajSignaly(data.company_id),
+    const [vsetky, precitane] = await Promise.all([
+      vsetkyNotifikacie(data.company_id),
       supabaseAdmin
         .from("notification_reads")
         .select("notification_key")
@@ -96,7 +155,6 @@ export const listNotifications = createServerFn({ method: "POST" })
         .eq("user_id", context.userId),
     ]);
 
-    const vsetky = buildNotifications(signaly);
     const kluce = ((precitane.data as any[]) ?? []).map((r) => r.notification_key as string);
     return applyReadState(vsetky, kluce);
   });
@@ -112,7 +170,7 @@ export const markNotificationsRead = createServerFn({ method: "POST" })
     const keys =
       data.keys && data.keys.length > 0
         ? data.keys
-        : buildNotifications(await zozbierajSignaly(data.company_id)).map((n) => n.key);
+        : (await vsetkyNotifikacie(data.company_id)).map((n) => n.key);
     if (keys.length === 0) return { ok: true, marked: 0 };
 
     // Kľúč sa môže označiť opakovane — unikátny index to pretečie na no-op.

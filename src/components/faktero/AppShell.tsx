@@ -29,6 +29,7 @@ import {
   BookOpen,
   Receipt,
   Route,
+  IdCard,
 } from "lucide-react";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,7 +63,14 @@ import {
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import type { KrajinaDane } from "@/lib/faktero/vat-rates";
-type Company = { id: string; name: string; logo_url?: string | null; role: string };
+type Company = {
+  id: string;
+  name: string;
+  logo_url?: string | null;
+  role: string;
+  /** Modul Zamestnanci — zapína sa po firmách. */
+  module_employees?: boolean | null;
+};
 
 /** `companyAdminOnly`: skryté pre bežných členov firmy — server tie dáta owner/adminovi
  *  vydá a členovi nie, takže položka by im aj tak skončila chybou. */
@@ -150,6 +158,20 @@ const NAV: NavGroup[] = [
     children: [
       { to: "/zakazky", label: "Prehľad zákaziek" },
       { to: "/zakazky/nova", label: "Nová zákazka" },
+    ],
+  },
+  {
+    /* Personalistika bez miezd. Samostatná položka, ktorú firma vidí, len keď
+       má modul zapnutý — pozri `filterNav`. */
+    key: "zamestnanci",
+    label: "Zamestnanci",
+    icon: IdCard,
+    match: ["/zamestnanci"],
+    children: [
+      { to: "/zamestnanci", label: "Prehľad zamestnancov" },
+      { to: "/zamestnanci/novy", label: "Nový zamestnanec" },
+      { to: "/zamestnanci/sablony", label: "Šablóny dokumentov" },
+      { to: "/zamestnanci/export", label: "Export dochádzky" },
     ],
   },
   {
@@ -321,6 +343,7 @@ const INVOICING_KEYS = new Set([
   "doklady",
   "kontakty",
   "zakazky",
+  "zamestnanci",
   "sklad",
   "banka",
   "uctovnictvo",
@@ -349,10 +372,13 @@ function filterNav(
   view: ActiveProduct,
   isCompanyAdmin: boolean,
   krajina: KrajinaDane = "SK",
+  modulZamestnanci = false,
 ): NavGroup[] {
   const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
   // "viac" je spoločné pre oba produkty a vždy ide na koniec lišty
   return NAV.filter((g) => allowed.has(g.key) || g.key === "viac")
+    // Zamestnanci len pri firme, ktorá má modul zapnutý (companies.module_employees).
+    .filter((g) => g.key !== "zamestnanci" || modulZamestnanci)
     .map((g) =>
       isCompanyAdmin ? g : { ...g, children: g.children.filter((c) => !c.companyAdminOnly) },
     )
@@ -423,7 +449,7 @@ export function AppShell({
   const krajina = useKrajinaDane();
   const view = resolveView(productMode, activeProduct);
   const isCompanyAdmin = active?.role === "owner" || active?.role === "admin";
-  const nav = filterNav(view, isCompanyAdmin, krajina);
+  const nav = filterNav(view, isCompanyAdmin, krajina, Boolean(active?.module_employees));
   const homePath = landingPathFor(view);
   const canSwitch = productMode === "both";
 
