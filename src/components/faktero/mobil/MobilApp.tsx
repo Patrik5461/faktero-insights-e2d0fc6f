@@ -1036,7 +1036,7 @@ function ObsahApky() {
             {t("app.diagnostika")}
             <span className="mt-1 block text-xs text-app-text-2">{t("app.diagnostikaPopis")}</span>
           </button>
-          <ZrusenieUctu jazyk={jazyk} onZrusene={() => zisti()} />
+          <ZrusenieUctu jazyk={jazyk} onZmena={setZrusiSa} />
         </div>
       </MobilObrazovka>
     );
@@ -1051,7 +1051,7 @@ function ObsahApky() {
         subtitle={email ?? undefined}
         onBack={() => setKrok(DOMOV)}
       >
-        <ZrusenieUctu jazyk={jazyk} onZrusene={() => zisti()} />
+        <ZrusenieUctu jazyk={jazyk} onZmena={setZrusiSa} />
       </MobilObrazovka>
     );
   if (krok === "faktury" && firma)

@@ -33,10 +33,16 @@ type Stav = {
 };
 
 export function ZrusenieUctu({
-  onZrusene,
+  onZmena,
   jazyk = "sk",
 }: {
-  onZrusene?: () => void;
+  /**
+   * Termín zmazania sa zmenil — po žiadosti aj po odvolaní (`null`). Obrazovka
+   * pri tom ostáva stáť a sama ukáže nový stav. Predtým appka po potvrdení
+   * odskočila na Prehľad a človek potvrdenie, že je účet naplánovaný na
+   * zmazanie, vôbec nevidel — čo je presne krok, ktorý App Store chce vidieť.
+   */
+  onZmena?: (zrusiSa: string | null) => void;
   jazyk?: Jazyk;
 }) {
   const t = (kluc: Kluc, premenne?: Record<string, string | number>) =>
@@ -49,11 +55,14 @@ export function ZrusenieUctu({
   const [potvrdzujem, setPotvrdzujem] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  async function obnov() {
+  async function obnov(): Promise<Stav | null> {
     try {
-      setStav((await nacitaj({ data: undefined })) as Stav);
+      const novy = (await nacitaj({ data: undefined })) as Stav;
+      setStav(novy);
+      return novy;
     } catch (e: any) {
       toast.error(e?.message ?? t("zrus.chybaStavu"));
+      return null;
     }
   }
 
@@ -66,10 +75,10 @@ export function ZrusenieUctu({
     setBusy(true);
     try {
       await poziadaj({ data: undefined });
-      await obnov();
+      const novy = await obnov();
       setPotvrdzujem(false);
       toast.success(t("zrus.prijate"));
-      onZrusene?.();
+      onZmena?.(novy?.zrusiSa ?? null);
     } catch (e: any) {
       toast.error(e?.message ?? t("zrus.chybaZapisu"));
     } finally {
@@ -83,6 +92,7 @@ export function ZrusenieUctu({
       await odvolaj({ data: undefined });
       await obnov();
       toast.success(t("zrus.odvolane"));
+      onZmena?.(null);
     } catch (e: any) {
       toast.error(e?.message ?? t("zrus.chybaOdvolania"));
     } finally {

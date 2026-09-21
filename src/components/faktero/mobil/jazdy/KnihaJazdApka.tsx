@@ -365,7 +365,7 @@ function ObsahJazd() {
             {t("app.diagnostika")}
             <span className="mt-1 block text-xs text-app-text-2">{t("app.diagnostikaPopis")}</span>
           </button>
-          <ZrusenieUctu jazyk={jazyk} onZrusene={() => zisti()} />
+          <ZrusenieUctu jazyk={jazyk} />
         </div>
       </MobilObrazovka>
     );
@@ -378,7 +378,7 @@ function ObsahJazd() {
         subtitle={email ?? undefined}
         onBack={() => setKrok("prehlad")}
       >
-        <ZrusenieUctu jazyk={jazyk} onZrusene={() => zisti()} />
+        <ZrusenieUctu jazyk={jazyk} />
       </MobilObrazovka>
     );
 
@@ -391,9 +391,22 @@ function ObsahJazd() {
       email={email}
       firma={firma}
       viacFiriem={firmy.length > 1}
-      onZmenitFirmu={() => setKrok("firma")}
-      onUcet={() => setKrok("ucet")}
-      onZmazatUcet={() => setKrok("zmazanieUctu")}
+      onZmenitFirmu={() => {
+        setPanel(false);
+        setKrok("firma");
+      }}
+      /*
+        Panel sa pri odchode zatvára. Ostával otvorený v stave, a keď sa appka
+        vrátila na Prehľad, vyskočil znova sám od seba.
+      */
+      onUcet={() => {
+        setPanel(false);
+        setKrok("ucet");
+      }}
+      onZmazatUcet={() => {
+        setPanel(false);
+        setKrok("zmazanieUctu");
+      }}
       onOdhlasit={odhlas}
     />
   );
