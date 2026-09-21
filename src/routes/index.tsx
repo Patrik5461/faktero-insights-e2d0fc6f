@@ -55,7 +55,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { track } from "@/lib/faktero/track";
-import { APP_STORE_FAKTERO, APP_STORE_ODZNAK } from "@/lib/faktero/obchody";
+import { APP_STORE_FAKTERO, APP_STORE_KNIHA_JAZD, APP_STORE_ODZNAK } from "@/lib/faktero/obchody";
 import { PartneriPas } from "@/components/faktero/PartneriPas";
 import { zoznamPartnerovPublic } from "@/lib/partneri.functions";
 
@@ -1324,6 +1324,30 @@ function MobileAppSection() {
                   Čoskoro
                 </span>
               </button>
+            </div>
+            {/*
+              Samostatná appka Kniha jázd — pre toho, kto potrebuje len jazdy,
+              napríklad vodiča vo firme, ktorý s faktúrami nerobí. V obchode je
+              zvlášť, s vlastnou ikonou, tak aj tu.
+            */}
+            <div className="mt-6 flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
+              <img src="/kniha-jazd-icon.png" alt="" className="h-12 w-12 shrink-0 rounded-[22%]" />
+              <div className="min-w-0 flex-1 basis-48">
+                <div className="text-sm font-semibold">Potrebujete len knihu jázd?</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  Samostatná appka <strong>Kniha jázd</strong> pre vodičov — jazdy rozpozná a zapíše
+                  sama, aj s telefónom vo vrecku.
+                </div>
+              </div>
+              <a
+                href={APP_STORE_KNIHA_JAZD}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Stiahnuť Knihu jázd v App Store"
+                className="inline-block shrink-0 rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                <img src={APP_STORE_ODZNAK} alt="Download on the App Store" className="h-10 w-auto" />
+              </a>
             </div>
           </div>
           <div className="relative mx-auto w-full max-w-sm">
