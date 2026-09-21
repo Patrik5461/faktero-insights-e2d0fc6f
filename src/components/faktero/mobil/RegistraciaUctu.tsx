@@ -215,9 +215,12 @@ export function RegistraciaUctu({
           <Logo variant="header" className="mb-8 h-9" />
         )}
         <h1 className="text-2xl font-semibold tracking-tight">{t("reg.vytvorteSiUcet")}</h1>
-        <p className="mt-1 text-sm text-app-text-2">
-          {t("reg.zadarmo")}
-        </p>
+        {/*
+          Zmienka o skúšobnej dobe na pláne Premium tu byť nesmie. App Store
+          (pravidlo 3.1.1) z nej vyčítal, že appka sprístupňuje predplatné
+          kúpené mimo nej, a Knihu jázd zamietol. Predplatné je vec webu; appka
+          o cenách ani plánoch nehovorí nič.
+        */}
 
         <div className="mt-6 space-y-3">
           <input

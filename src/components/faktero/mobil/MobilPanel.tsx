@@ -14,6 +14,7 @@ import {
   X,
   Stethoscope,
   Bug,
+  UserX,
   FileSignature,
   Sun,
   Moon,
@@ -56,6 +57,7 @@ export function MobilPanel({
   onFaktury,
   onPonuky,
   onUcet,
+  onZmazatUcet,
   onOdhlasit,
 }: {
   otvoreny: boolean;
@@ -72,6 +74,8 @@ export function MobilPanel({
   /** Cenové ponuky. Nie sú v spodnej lište — tá má päť agend a je plná. */
   onPonuky?: () => void;
   onUcet: () => void;
+  /** Samostatná obrazovka so zmazaním účtu — kvôli pravidlu App Store 5.1.1(v). */
+  onZmazatUcet: () => void;
   onOdhlasit: () => void;
 }) {
   const { t, jazyk, nastavJazyk } = usePreklad();
@@ -282,6 +286,20 @@ export function MobilPanel({
               }}
             />
           )}
+
+          {/*
+            Zmazanie účtu má vlastnú položku s vlastným menom. Bolo schované
+            v „Nastavení aplikácie“ pod Pomocou, s ikonou stetoskopu a pod
+            diagnostikou — recenzent App Store ho nenašiel a Knihu jázd zamietol
+            (pravidlo 5.1.1(v)). Pomenované je tak, ako to hľadá človek aj
+            recenzent: „Zmazať účet“.
+          */}
+          <Polozka
+            icon={UserX}
+            label={t("panel.zmazatUcet")}
+            hint={t("panel.zmazatUcetPopis")}
+            onClick={onZmazatUcet}
+          />
 
           <Skupina nazov={t("panel.pomoc")} />
           {/*

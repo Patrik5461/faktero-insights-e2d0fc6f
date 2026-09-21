@@ -39,6 +39,9 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
         env.VITE_SUPABASE_PUBLISHABLE_KEY || VEREJNE.kluc,
       ),
+      // Balíček ide do App Store — hlášky nesmú odkazovať na kúpu plánu
+      // (pravidlo 3.1.1). Pozri `lib/faktero/plan-error.ts`.
+      "import.meta.env.VITE_V_OBCHODE": JSON.stringify("1"),
     },
     resolve: {
       // Poradie je dôležité — konkrétne cesty musia byť pred všeobecným "@".

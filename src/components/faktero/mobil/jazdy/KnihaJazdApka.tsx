@@ -58,7 +58,8 @@ type Krok =
   | "jazda"
   | "historia"
   | "vozidla"
-  | "ucet";
+  | "ucet"
+  | "zmazanieUctu";
 
 export function KnihaJazdApka() {
   /* Motív nasadzuje appka sama — AppShell tu nie je. Predvolený je svetlý. */
@@ -77,7 +78,7 @@ export function KnihaJazdApka() {
 }
 
 function ObsahJazd() {
-  const { t } = usePreklad();
+  const { t, jazyk } = usePreklad();
   const [krok, setKrok] = useState<Krok>("nacitavam");
   /* Neskoro dobehnutá relácia sa rozhoduje mimo renderu — `krok` v uzávere je
      v tej chvíli už zastaraný. */
@@ -364,8 +365,20 @@ function ObsahJazd() {
             {t("app.diagnostika")}
             <span className="mt-1 block text-xs text-app-text-2">{t("app.diagnostikaPopis")}</span>
           </button>
-          <ZrusenieUctu onZrusene={() => zisti()} />
+          <ZrusenieUctu jazyk={jazyk} onZrusene={() => zisti()} />
         </div>
+      </MobilObrazovka>
+    );
+
+  /* Zmazanie účtu samo — kvôli pravidlu App Store 5.1.1(v), pozri `MobilPanel`. */
+  if (krok === "zmazanieUctu")
+    return (
+      <MobilObrazovka
+        title={t("panel.zmazatUcet")}
+        subtitle={email ?? undefined}
+        onBack={() => setKrok("prehlad")}
+      >
+        <ZrusenieUctu jazyk={jazyk} onZrusene={() => zisti()} />
       </MobilObrazovka>
     );
 
@@ -380,6 +393,7 @@ function ObsahJazd() {
       viacFiriem={firmy.length > 1}
       onZmenitFirmu={() => setKrok("firma")}
       onUcet={() => setKrok("ucet")}
+      onZmazatUcet={() => setKrok("zmazanieUctu")}
       onOdhlasit={odhlas}
     />
   );

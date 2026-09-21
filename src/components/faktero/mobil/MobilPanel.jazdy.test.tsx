@@ -25,6 +25,7 @@ async function panel() {
       viacFiriem={false}
       onZmenitFirmu={nic}
       onUcet={nic}
+      onZmazatUcet={nic}
       onOdhlasit={nic}
     />,
   );
@@ -41,6 +42,16 @@ describe("bočný panel v Knihe jázd", () => {
     const html = await panel();
     expect(html).toContain("Otvoriť Knihu jázd na webe");
     expect(html).not.toContain("Otvoriť Faktero na webe");
+  });
+
+  /*
+    App Store Knihu jázd zamietol pre chýbajúce zmazanie účtu (5.1.1(v)) —
+    bolo schované v „Nastavení aplikácie“ pod Pomocou. Položka musí byť
+    v paneli pod vlastným menom.
+  */
+  it("zmazanie účtu má v paneli vlastnú položku", async () => {
+    const html = await panel();
+    expect(html).toContain("Zmazať účet");
   });
 
   it("bločky z eKasy sa neponúkajú — appka pokladňu nemá", async () => {

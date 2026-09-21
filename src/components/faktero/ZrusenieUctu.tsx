@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useOperacia } from "@/lib/mobile/server-most";
 import { toast } from "sonner";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
-import { dniDoZrusenia, terminSlovom } from "@/lib/faktero/ucet-zrusenie";
-import { DNI, sPoctom } from "@/lib/faktero/mnozne";
+import { terminSlovom } from "@/lib/faktero/ucet-zrusenie";
+import { prelozit, type Kluc } from "@/lib/mobile/preklady";
+import { locale, type Jazyk } from "@/lib/mobile/jazyk";
 
 /**
  * Zrušenie účtu — spoločné pre web aj pre mobilnú aplikáciu.
@@ -14,6 +15,13 @@ import { DNI, sPoctom } from "@/lib/faktero/mnozne";
  *
  * Čo sa deje a čo nie, musí byť napísané **pred** potvrdením — nie v e-maile,
  * ktorý príde potom.
+ *
+ * Jazyk podáva appka. Kým bol text natvrdo po slovensky, recenzent App Store
+ * mal zariadenie v angličtine, celá appka sa mu ukázala anglicky a len toto
+ * tlačidlo nie — nespoznal ho a Knihu jázd zamietol pre chýbajúce zmazanie
+ * účtu (pravidlo 5.1.1(v)). Web jazyk nepodáva a ostáva po slovensky; vlastný
+ * jazyk podľa prehliadača by ho prepol do cudzej reči uprostred slovenskej
+ * stránky.
  */
 
 type Stav = {
@@ -24,7 +32,15 @@ type Stav = {
   odkladDni: number;
 };
 
-export function ZrusenieUctu({ onZrusene }: { onZrusene?: () => void }) {
+export function ZrusenieUctu({
+  onZrusene,
+  jazyk = "sk",
+}: {
+  onZrusene?: () => void;
+  jazyk?: Jazyk;
+}) {
+  const t = (kluc: Kluc, premenne?: Record<string, string | number>) =>
+    prelozit(jazyk, kluc, premenne);
   const nacitaj = useOperacia("ucet-stav-zrusenia");
   const poziadaj = useOperacia("ucet-poziadaj-o-zrusenie");
   const odvolaj = useOperacia("ucet-odvolaj-zrusenie");
@@ -37,7 +53,7 @@ export function ZrusenieUctu({ onZrusene }: { onZrusene?: () => void }) {
     try {
       setStav((await nacitaj({ data: undefined })) as Stav);
     } catch (e: any) {
-      toast.error(e?.message ?? "Stav účtu sa nepodarilo načítať.");
+      toast.error(e?.message ?? t("zrus.chybaStavu"));
     }
   }
 
@@ -52,10 +68,10 @@ export function ZrusenieUctu({ onZrusene }: { onZrusene?: () => void }) {
       await poziadaj({ data: undefined });
       await obnov();
       setPotvrdzujem(false);
-      toast.success("Žiadosť sme prijali. Do termínu ju môžete odvolať.");
+      toast.success(t("zrus.prijate"));
       onZrusene?.();
     } catch (e: any) {
-      toast.error(e?.message ?? "Žiadosť sa nepodarilo zapísať.");
+      toast.error(e?.message ?? t("zrus.chybaZapisu"));
     } finally {
       setBusy(false);
     }
@@ -66,28 +82,28 @@ export function ZrusenieUctu({ onZrusene }: { onZrusene?: () => void }) {
     try {
       await odvolaj({ data: undefined });
       await obnov();
-      toast.success("Žiadosť je odvolaná, účet ostáva.");
+      toast.success(t("zrus.odvolane"));
     } catch (e: any) {
-      toast.error(e?.message ?? "Žiadosť sa nepodarilo odvolať.");
+      toast.error(e?.message ?? t("zrus.chybaOdvolania"));
     } finally {
       setBusy(false);
     }
   }
 
-  if (!stav) return <p className="text-sm text-muted-foreground">Načítavam…</p>;
+  if (!stav) return <p className="text-sm text-muted-foreground">{t("spolocne.nacitavam")}</p>;
 
   /* --- žiadosť už beží --- */
   if (stav.zrusiSa) {
-    const dni = dniDoZrusenia(stav.zrusiSa);
     return (
       <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-5">
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
           <div className="min-w-0">
-            <h3 className="text-[15px] font-semibold">Účet je naplánovaný na zrušenie</h3>
+            <h3 className="text-[15px] font-semibold">{t("zrus.naplanovane")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Zruší sa <strong>{terminSlovom(stav.zrusiSa)}</strong>, čiže o {sPoctom(dni, DNI)}. Do
-              vtedy sa nič nemaže a stačí žiadosť odvolať.
+              {t("zrus.naplanovanePopis", {
+                termin: terminSlovom(stav.zrusiSa, locale(jazyk)),
+              })}
             </p>
           </div>
         </div>
@@ -96,7 +112,7 @@ export function ZrusenieUctu({ onZrusene }: { onZrusene?: () => void }) {
           disabled={busy}
           className="mt-4 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60 sm:w-auto"
         >
-          {busy ? "Ruším žiadosť…" : "Odvolať žiadosť a nechať účet"}
+          {busy ? t("zrus.odvolavam") : t("zrus.odvolat")}
         </button>
       </div>
     );
@@ -109,23 +125,23 @@ export function ZrusenieUctu({ onZrusene }: { onZrusene?: () => void }) {
         <div className="flex items-start gap-3">
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
           <div className="min-w-0">
-            <h3 className="text-[15px] font-semibold">Naozaj zrušiť účet?</h3>
+            <h3 className="text-[15px] font-semibold">{t("zrus.naozaj")}</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Účet <strong>{stav.email ?? "—"}</strong> sa zruší o {stav.odkladDni} dní. Do vtedy
-              stačí sa prihlásiť a žiadosť odvolať — dovtedy sa nemaže nič.
+              {/* Odklad je pevný (14 dní), takže tvar „dní“ sedí v každom z jazykov. */}
+              {t("zrus.naozajPopis", { email: stav.email ?? "—", dni: stav.odkladDni })}
             </p>
           </div>
         </div>
 
         <div className="mt-4 space-y-3 text-sm">
           <div>
-            <div className="font-medium">Po uplynutí lehoty sa zmaže</div>
+            <div className="font-medium">{t("zrus.zmazeSa")}</div>
             <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted-foreground">
-              <li>prihlásenie, e-mail a meno,</li>
-              <li>prístup do všetkých firiem, kde ste členom.</li>
+              <li>{t("zrus.zmazePrihlasenie")}</li>
+              <li>{t("zrus.zmazePristup")}</li>
               {stav.firmyNaZmazanie.length > 0 && (
                 <li>
-                  firmy, kde ste jediným členom, aj so všetkými dokladmi, skladom a prílohami:{" "}
+                  {t("zrus.zmazeFirmy")}{" "}
                   <strong className="text-foreground">
                     {stav.firmyNaZmazanie.map((f) => f.name).join(", ")}
                   </strong>
@@ -135,17 +151,16 @@ export function ZrusenieUctu({ onZrusene }: { onZrusene?: () => void }) {
           </div>
 
           <div>
-            <div className="font-medium">Ostáva</div>
+            <div className="font-medium">{t("zrus.ostava")}</div>
             <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted-foreground">
-              <li>firmy, ktoré majú aj iných členov — tým sa nič nestane,</li>
-              <li>doklady, ktoré ste už stiahli alebo poslali odberateľom.</li>
+              <li>{t("zrus.ostavaFirmy")}</li>
+              <li>{t("zrus.ostavaDoklady")}</li>
             </ul>
           </div>
 
           {stav.firmyNaZmazanie.length > 0 && (
             <p className="rounded-lg bg-secondary p-3 text-[13px] text-muted-foreground">
-              Faktúry a doklady si <strong>stiahnite ešte pred zrušením</strong> — z účtovných
-              exportov alebo z prehľadu faktúr. Po zmazaní ich už nemáme odkiaľ obnoviť.
+              {t("zrus.stiahnite")}
             </p>
           )}
         </div>
@@ -156,14 +171,14 @@ export function ZrusenieUctu({ onZrusene }: { onZrusene?: () => void }) {
             disabled={busy}
             className="rounded-lg bg-destructive px-4 py-2.5 text-sm font-medium text-destructive-foreground disabled:opacity-60"
           >
-            {busy ? "Zapisujem…" : `Zrušiť účet o ${stav.odkladDni} dní`}
+            {busy ? t("zrus.zapisujem") : t("zrus.potvrdit", { dni: stav.odkladDni })}
           </button>
           <button
             onClick={() => setPotvrdzujem(false)}
             disabled={busy}
             className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary"
           >
-            Nechať účet
+            {t("zrus.nechat")}
           </button>
         </div>
       </div>
@@ -173,16 +188,15 @@ export function ZrusenieUctu({ onZrusene }: { onZrusene?: () => void }) {
   /* --- prvý krok --- */
   return (
     <div className="rounded-xl border border-border bg-card p-5">
-      <h3 className="text-[15px] font-semibold">Zrušenie účtu</h3>
+      <h3 className="text-[15px] font-semibold">{t("zrus.nadpis")}</h3>
       <p className="mt-1 text-sm text-muted-foreground">
-        Zrušenie má {stav.odkladDni}-dňový odklad. Kým lehota beží, nič sa nemaže a žiadosť sa dá
-        odvolať prihlásením.
+        {t("zrus.popis", { dni: stav.odkladDni })}
       </p>
       <button
         onClick={() => setPotvrdzujem(true)}
         className="mt-4 rounded-lg border border-destructive/50 px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/5"
       >
-        Chcem zrušiť účet
+        {t("zrus.chcem")}
       </button>
     </div>
   );

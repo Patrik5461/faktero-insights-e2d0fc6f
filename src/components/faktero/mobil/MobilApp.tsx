@@ -202,7 +202,8 @@ export type Krok =
   | "novaPonuka"
   | "jazda"
   | "banka"
-  | "ucet";
+  | "ucet"
+  | "zmazanieUctu";
 type Zachyt = "blocek" | "pdf" | "strany";
 
 /** Doklad, ktorý vo firme už je — toľko z neho stačí, aby sa dal spoznať. */
@@ -254,7 +255,7 @@ export function MobilnaApka() {
 }
 
 function ObsahApky() {
-  const { t, mnozne, locale } = usePreklad();
+  const { t, mnozne, locale, jazyk } = usePreklad();
   const [krok, setKrok] = useState<Krok>("nacitavam");
   /* Neskoro dobehnutá relácia sa rozhoduje mimo renderu — `krok` v uzávere je
      v tej chvíli už zastaraný. */
@@ -899,6 +900,10 @@ function ObsahApky() {
             setPanel(false);
             setKrok("ucet");
           }}
+          onZmazatUcet={() => {
+            setPanel(false);
+            setKrok("zmazanieUctu");
+          }}
           onOdhlasit={odhlas}
         />
       </SoSpodnouListou>
@@ -954,6 +959,10 @@ function ObsahApky() {
           onUcet={() => {
             setPanel(false);
             setKrok("ucet");
+          }}
+          onZmazatUcet={() => {
+            setPanel(false);
+            setKrok("zmazanieUctu");
           }}
           onOdhlasit={odhlas}
         />
@@ -1027,8 +1036,22 @@ function ObsahApky() {
             {t("app.diagnostika")}
             <span className="mt-1 block text-xs text-app-text-2">{t("app.diagnostikaPopis")}</span>
           </button>
-          <ZrusenieUctu onZrusene={() => zisti()} />
+          <ZrusenieUctu jazyk={jazyk} onZrusene={() => zisti()} />
         </div>
+      </MobilObrazovka>
+    );
+  /*
+    Zmazanie účtu samo, bez stavu notifikácií a rezervácií čísel nad ním. Na
+    obrazovke Účet bolo až dole, mimo prvého pohľadu.
+  */
+  if (krok === "zmazanieUctu")
+    return (
+      <MobilObrazovka
+        title={t("panel.zmazatUcet")}
+        subtitle={email ?? undefined}
+        onBack={() => setKrok(DOMOV)}
+      >
+        <ZrusenieUctu jazyk={jazyk} onZrusene={() => zisti()} />
       </MobilObrazovka>
     );
   if (krok === "faktury" && firma)
@@ -1131,6 +1154,10 @@ function ObsahApky() {
         onUcet={() => {
           setPanel(false);
           setKrok("ucet");
+        }}
+        onZmazatUcet={() => {
+          setPanel(false);
+          setKrok("zmazanieUctu");
         }}
         onOdhlasit={odhlas}
       />

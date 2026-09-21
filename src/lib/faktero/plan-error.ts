@@ -14,8 +14,29 @@ const KIND_LABEL: Record<string, string> = {
   user: "Dosiahli ste limit používateľov pre váš plán. Prejdite na vyšší plán.",
 };
 
+/**
+ * Beží kód v appke z App Store?
+ *
+ * Appka nesmie k predplatnému, ktoré sa kupuje mimo nej, ani nabádať (pravidlo
+ * 3.1.1, výnimka 3.1.3(f) platí len bez výzvy na nákup). Hlášky vyššie posielajú
+ * človeka „do sekcie Predplatné“ — na webe správne, v appke dôvod na zamietnutie.
+ * Konštantu dopĺňa `vite.config.mobile.ts`, takže o tom rozhoduje zostavenie.
+ */
+// Bez `?.`: zostavenie tú presnú cestu nahradí hodnotou a vetva pre web
+// z balíčka appky vypadne celá, aj s textami, ktoré k nákupu nabádajú.
+const V_OBCHODE = import.meta.env.VITE_V_OBCHODE === "1";
+
+/** Hláška pre appku: čo sa nedá, bez slova o cene, pláne či kúpe. */
+export const BEZ_VYZVY_NA_NAKUP = "Túto akciu firma teraz nemá povolenú. Viac vám povie správca firmy.";
+
+/** Je to hláška o neaktívnom predplatnom, nech prišla z databázy alebo zo servera? */
+export function jeBlokPlanu(sprava: string): boolean {
+  return /FAKTERO_PLAN_BLOCK|predplatné nie je aktívne/i.test(sprava);
+}
+
 export function planBlockMessage(err: unknown): string | null {
   const msg = String((err as any)?.message ?? err ?? "");
+  if (V_OBCHODE) return jeBlokPlanu(msg) ? BEZ_VYZVY_NA_NAKUP : null;
   const m = msg.match(/FAKTERO_PLAN_BLOCK:([a-z_]+)/);
   if (!m) return null;
   return KIND_LABEL[m[1]] ?? "Akcia je blokovaná aktuálnym plánom predplatného.";

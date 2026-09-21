@@ -90,10 +90,12 @@ describe("mobilné obrazovky sa vykreslia", () => {
         onDoklady={nic}
         onFaktury={nic}
         onUcet={nic}
+        onZmazatUcet={nic}
         onOdhlasit={nic}
       />,
     );
     expect(otvoreny).toContain("skuska@faktero.sk");
+    expect(otvoreny).toContain("Zmazať účet");
   });
 });
 

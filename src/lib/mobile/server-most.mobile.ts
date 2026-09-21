@@ -10,6 +10,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { SERVER, type Operacia } from "./operacie";
+import { BEZ_VYZVY_NA_NAKUP, jeBlokPlanu } from "@/lib/faktero/plan-error";
 
 async function token(): Promise<string | null> {
   const { data } = await supabase.auth.getSession();
@@ -39,6 +40,12 @@ export async function volajOperaciu<T = any>(kluc: Operacia, data: any): Promise
       dovod = (await r.text().catch(() => "")).slice(0, 200);
     }
     if (r.status === 401) throw new Error(dovod || "Prihlásenie vypršalo.");
+    /*
+      Server hlási neaktívne predplatné vetou „…aktivujte si plán“. Na webe je
+      to správne, v appke z App Store je to výzva na nákup mimo nej (3.1.1).
+      Väčšina obrazoviek ukazuje chybu tak, ako príde, preto sa prekladá tu.
+    */
+    if (jeBlokPlanu(dovod)) throw new Error(BEZ_VYZVY_NA_NAKUP);
     throw new Error(dovod || `Server odpovedal ${r.status}.`);
   }
 
