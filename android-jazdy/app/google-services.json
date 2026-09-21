@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "870706056516",
+    "project_id": "faktero",
+    "storage_bucket": "faktero.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:870706056516:android:aa929e0d07341ba91c1b11",
+        "android_client_info": {
+          "package_name": "sk.faktero.knihajazd"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "870706056516-8mkr608jh32jqc174ibh11siegeuqbfs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBh4FJP9AvdY99vyjfI14u2n7HxqkRd-dQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "870706056516-8mkr608jh32jqc174ibh11siegeuqbfs.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:870706056516:android:457609e3938bdcf51c1b11",
+        "android_client_info": {
+          "package_name": "sk.tobify.faktero"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "870706056516-8mkr608jh32jqc174ibh11siegeuqbfs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBh4FJP9AvdY99vyjfI14u2n7HxqkRd-dQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "870706056516-8mkr608jh32jqc174ibh11siegeuqbfs.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
