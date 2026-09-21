@@ -40,4 +40,4 @@ export const ZELENA_DOLE = "#0a8f52";
  * tvrdí jedno a v App Store je napísané druhé. Appky sú dve a každá má svoje
  * číslo: Kniha jázd začína od jednotky, Faktero je v obchode ďalej.
  */
-export const VERZIA_APKY = JE_KNIHA_JAZD ? "1.0" : "1.2";
+export const VERZIA_APKY = JE_KNIHA_JAZD ? "1.0" : "1.3";
