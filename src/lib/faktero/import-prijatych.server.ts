@@ -353,6 +353,24 @@ export async function vykonajImport(args: {
         const j = naRade.shift()!;
         const sken = plan.skeny[j]!;
         try {
+          /*
+            Ten istý sken z predchádzajúceho importu. Ostatné doklady si pamätajú
+            meno a veľkosť súboru, tak sa pozná ešte pred AI — opakovaný import
+            by inak založil exekúciu či predpis druhý raz.
+          */
+          const { data: uzJe } = await klient
+            .from("other_document_files")
+            .select("id")
+            .eq("company_id", args.companyId)
+            .eq("name", sken.meno)
+            .eq("size", sken.bajty.length)
+            .limit(1);
+          if (uzJe?.length) {
+            vysledok.preskocene++;
+            hotovo++;
+            await priebeh();
+            continue;
+          }
           const mime = mimeZMena(sken.meno);
           const ai = await precitajDoklad(Buffer.from(sken.bajty).toString("base64"), mime);
           if (ai && jeOstatnyZMailu(ai)) {
