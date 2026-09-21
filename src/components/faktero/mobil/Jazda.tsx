@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { BehNaPozadi } from "./BehNaPozadi";
 import { toast } from "sonner";
 import { Car, ChevronRight, Pause, Play, Plus, TriangleAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -885,6 +886,8 @@ export function Jazda({
             </div>
           </div>
         )}
+
+        {detekcia.dostupna && <BehNaPozadi zapnuta={detekcia.zapnuta} />}
 
         <div>
           {/* Rovnaký štýl ako „Účel cesty" a „Typ jazdy" — predtým bol väčší

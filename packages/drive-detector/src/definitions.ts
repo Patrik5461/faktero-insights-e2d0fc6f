@@ -249,6 +249,23 @@ export interface DriveDetectorPlugin {
    * opakovane zastavuje" neriešiteľná: výpis ostane v systémovom logu telefónu.
    */
   getLastCrash?(): Promise<{ crash: string | null }>;
+  /**
+   * Výrobca telefónu a obmedzenie behu na pozadí. **Len Android** — Xiaomi,
+   * Redmi a POCO zatvorenú appku zastavia úplne, a to aj s detekciou jázd.
+   */
+  getDeviceInfo?(): Promise<{
+    manufacturer: string;
+    brand: string;
+    xiaomi: boolean;
+    ignoringBatteryOptimizations: boolean;
+  }>;
+  /**
+   * Otvorí automatické spúšťanie alebo nastavenie batérie. **Len Android** —
+   * na Xiaomi ich vlastné obrazovky, inak všeobecné nastavenia systému.
+   */
+  openManufacturerSettings?(opts: {
+    kind: "autostart" | "battery";
+  }): Promise<{ opened: "manufacturer" | "fallback" }>;
   clearLastCrash?(): Promise<void>;
 
   addListener(

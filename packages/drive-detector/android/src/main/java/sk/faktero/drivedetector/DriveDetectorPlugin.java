@@ -365,6 +365,77 @@ public class DriveDetectorPlugin extends Plugin implements DriveDetectorService.
         }
     }
 
+    /** Telefóny Xiaomi, Redmi a POCO — tie zatvorenú appku zastavia úplne. */
+    private static boolean jeXiaomi() {
+        String v = (Build.MANUFACTURER + " " + Build.BRAND).toLowerCase(java.util.Locale.ROOT);
+        return v.contains("xiaomi") || v.contains("redmi") || v.contains("poco");
+    }
+
+    /**
+     * Výrobca a to, či systém appke obmedzuje beh na pozadí. Podľa toho appka
+     * vie, či má ukázať návod na nastavenia — na Xiaomi bez neho detekcia
+     * zatvorenej appky nefunguje.
+     */
+    @PluginMethod
+    public void getDeviceInfo(PluginCall call) {
+        JSObject von = new JSObject();
+        von.put("manufacturer", Build.MANUFACTURER);
+        von.put("brand", Build.BRAND);
+        von.put("xiaomi", jeXiaomi());
+        android.os.PowerManager pm =
+                (android.os.PowerManager) getContext().getSystemService(android.content.Context.POWER_SERVICE);
+        von.put("ignoringBatteryOptimizations",
+                pm != null && pm.isIgnoringBatteryOptimizations(getContext().getPackageName()));
+        call.resolve(von);
+    }
+
+    /**
+     * Otvorí nastavenie, ktoré drží detekciu nažive po zatvorení appky.
+     *
+     * Na Xiaomi sú automatické spúšťanie a obmedzenie batérie schované v ich
+     * vlastnej aplikácii Zabezpečenie a človek ich sám nenájde — skúsi sa ich
+     * obrazovka priamo. Keď ju systém nemá (iná verzia HyperOS, iný výrobca),
+     * otvorí sa všeobecné nastavenie batérie a nakoniec nastavenia appky.
+     */
+    @PluginMethod
+    public void openManufacturerSettings(PluginCall call) {
+        String druh = call.getString("kind", "battery");
+        String balik = getContext().getPackageName();
+        java.util.List<Intent> kandidati = new java.util.ArrayList<>();
+        boolean xiaomi = jeXiaomi();
+        if (xiaomi && "autostart".equals(druh)) {
+            kandidati.add(new Intent().setComponent(new android.content.ComponentName(
+                    "com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")));
+            kandidati.add(new Intent("miui.intent.action.OP_AUTO_START").addCategory(Intent.CATEGORY_DEFAULT));
+        }
+        if (xiaomi && "battery".equals(druh)) {
+            String nazov = getContext().getApplicationInfo().loadLabel(getContext().getPackageManager()).toString();
+            kandidati.add(new Intent().setComponent(new android.content.ComponentName(
+                    "com.miui.powerkeeper", "com.miui.powerkeeper.ui.HiddenAppsConfigActivity"))
+                    .putExtra("package_name", balik)
+                    .putExtra("package_label", nazov));
+        }
+        int prvyVseobecny = kandidati.size();
+        if ("battery".equals(druh)) {
+            kandidati.add(new Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+        }
+        kandidati.add(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData(android.net.Uri.fromParts("package", balik, null)));
+
+        for (int i = 0; i < kandidati.size(); i++) {
+            try {
+                getContext().startActivity(kandidati.get(i).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                JSObject von = new JSObject();
+                von.put("opened", i < prvyVseobecny ? "manufacturer" : "fallback");
+                call.resolve(von);
+                return;
+            } catch (Exception ignored) {
+                // Obrazovka v tomto systéme nie je — skúsi sa ďalšia.
+            }
+        }
+        call.reject("Nastavenia sa nepodarilo otvoriť.");
+    }
+
     @PluginMethod
     public void requestBackgroundPermission(PluginCall call) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || !zacniPytat()) {

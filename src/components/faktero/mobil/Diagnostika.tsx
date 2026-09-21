@@ -325,6 +325,23 @@ async function zisti(): Promise<Riadok[]> {
             zle: d.zapnuta && !d.dennik.sluzbaBezi,
           });
         }
+        // Xiaomi a obmedzenie batérie — najčastejší dôvod, prečo služba nežije.
+        const { behNaPozadi, behNaPozadiVybaveny } = await import("@/lib/mobile/povolenia-jazd");
+        const beh = await behNaPozadi();
+        if (beh) {
+          r.push({ co: "výrobca telefónu", hodnota: beh.vyrobca });
+          r.push({
+            co: "optimalizácia batérie",
+            hodnota: beh.obmedzeny ? "ZAPNUTÁ — systém môže detekciu zastaviť" : "vypnutá (bez obmedzení)",
+            zle: d.zapnuta && beh.obmedzeny,
+          });
+          if (beh.xiaomi) {
+            r.push({
+              co: "návod pre Xiaomi",
+              hodnota: (await behNaPozadiVybaveny()) ? "označený ako vybavený" : "ešte nevybavený",
+            });
+          }
+        }
         if (d.dennik.vypadky != null) {
           r.push({
             co: "výpadky služby",

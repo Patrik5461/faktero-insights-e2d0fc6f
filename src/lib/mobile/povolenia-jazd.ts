@@ -165,3 +165,55 @@ export async function dopytajPovoleniaJazd(): Promise<ChybajucePovolenie[]> {
   }
   return chybajucePovolenia(await stav());
 }
+
+/* ---------------- beh na pozadí (Xiaomi a spol.) ---------------- */
+
+const KLUC_BEH_NA_POZADI = "faktero.behNaPozadi.hotovo";
+
+export type BehNaPozadi = { xiaomi: boolean; obmedzeny: boolean; vyrobca: string };
+
+/**
+ * Či treba ukázať návod na beh na pozadí. Xiaomi, Redmi a POCO sa ukazujú
+ * vždy (automatické spúšťanie sa zistiť nedá), ostatné len pri zapnutej
+ * optimalizácii batérie. `null` — nie je čo ukázať (web, iOS, stará binárka).
+ */
+export async function behNaPozadi(): Promise<BehNaPozadi | null> {
+  const p = await pluginAndroid();
+  if (!p?.getDeviceInfo) return null;
+  try {
+    const i = await p.getDeviceInfo();
+    return { xiaomi: i.xiaomi, obmedzeny: !i.ignoringBatteryOptimizations, vyrobca: i.manufacturer };
+  } catch {
+    return null;
+  }
+}
+
+export async function otvorNastavenieBehu(
+  druh: "autostart" | "battery",
+): Promise<"manufacturer" | "fallback" | null> {
+  const p = await pluginAndroid();
+  if (!p?.openManufacturerSettings) return null;
+  try {
+    return (await p.openManufacturerSettings({ kind: druh })).opened;
+  } catch {
+    return null;
+  }
+}
+
+export async function behNaPozadiVybaveny(): Promise<boolean> {
+  try {
+    const p = await preferencie();
+    return (await p?.get(KLUC_BEH_NA_POZADI))?.value === "1";
+  } catch {
+    return false;
+  }
+}
+
+export async function zapamatajBehNaPozadi(): Promise<void> {
+  try {
+    const p = await preferencie();
+    await p?.set(KLUC_BEH_NA_POZADI, "1");
+  } catch {
+    /* pripomenie sa raz navyše */
+  }
+}
