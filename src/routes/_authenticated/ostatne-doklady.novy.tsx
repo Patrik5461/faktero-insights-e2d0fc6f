@@ -9,6 +9,8 @@ import {
   nastavStavOstatnychFn,
   odkazPrilohyOstatnehoFn,
   odoberPrilohuOstatnehoFn,
+  spustiRozpoznanieOstatnehoFn,
+  stavRozpoznaniaOstatnehoFn,
   ulozOstatnyFn,
 } from "@/lib/faktero/ostatne-doklady.functions";
 import {
@@ -16,11 +18,14 @@ import {
   MAX_VELKOST_PRILOHY,
   POVOLENE_TYPY_PRILOH,
   bezpecneMeno,
+  jeRozpoznaniePouzitelne,
+  nazovDruhu,
   type DruhOstatneho,
+  type RozpoznanyOstatny,
 } from "@/lib/faktero/ostatne-doklady";
 import { STAV_DOKLADU_NAZOV } from "@/lib/faktero/doklad-stav";
 import { MENY } from "@/lib/faktero/mena";
-import { CheckCircle2, Loader2, Paperclip, Save, Trash2, Upload, X } from "lucide-react";
+import { CheckCircle2, Loader2, Paperclip, Save, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/ostatne-doklady/novy")({
@@ -57,6 +62,18 @@ function velkost(b: number | null | undefined): string {
   return b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} kB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
 }
 
+/** Súbor ako data URL — tak ho berie čítanie na serveri. */
+function naDataUrl(f: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(new Error("Súbor sa nepodarilo načítať."));
+    r.readAsDataURL(f);
+  });
+}
+
+const cakaj = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 function OstatnyDokladPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -65,6 +82,16 @@ function OstatnyDokladPage() {
   const stavFn = useServerFn(nastavStavOstatnychFn);
   const odkazFn = useServerFn(odkazPrilohyOstatnehoFn);
   const odoberFn = useServerFn(odoberPrilohuOstatnehoFn);
+  const citajFn = useServerFn(spustiRozpoznanieOstatnehoFn);
+  const stavCitaniaFn = useServerFn(stavRozpoznaniaOstatnehoFn);
+  /** Čítanie prílohy cez AI: čo práve beží a čím skončilo. */
+  const [citanie, setCitanie] = useState<
+    | { stav: "bezi"; subor: string }
+    | { stav: "hotovo"; subor: string; doplnene: string[] }
+    | { stav: "chyba"; subor: string; chyba: string }
+    | null
+  >(null);
+  const formRef = useRef<Form>(PRAZDNY);
   const cid = getActiveCompanyId();
 
   /*
@@ -113,6 +140,69 @@ function OstatnyDokladPage() {
   function nastav<K extends keyof Form>(k: K, v: Form[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
+  formRef.current = form;
+
+  /*
+    Vyplní z prílohy len prázdne polia. Čo človek medzitým napísal, sa
+    neprepisuje — čítanie trvá pár sekúnd a formulár ostáva otvorený.
+  */
+  function doplnZRozpoznania(r: RozpoznanyOstatny): string[] {
+    const f = formRef.current;
+    const zmeny: Partial<Form> = {};
+    const doplnene: string[] = [];
+    if (f.kind === "ine" && r.kind !== "ine") {
+      zmeny.kind = r.kind;
+      doplnene.push(`druh (${nazovDruhu(r.kind)})`);
+    }
+    if (!f.sender.trim() && r.sender) {
+      zmeny.sender = r.sender;
+      doplnene.push("odosielateľ");
+    }
+    if (!f.subject.trim() && r.subject) {
+      zmeny.subject = r.subject;
+      doplnene.push("predmet");
+    }
+    if (!f.amount.trim() && r.amount != null) {
+      zmeny.amount = String(r.amount);
+      if (r.currency) zmeny.currency = r.currency;
+      doplnene.push("suma");
+    }
+    if (!f.due_date && r.due_date) {
+      zmeny.due_date = r.due_date;
+      doplnene.push("lehota");
+    }
+    if (!f.note.trim() && r.summary) {
+      zmeny.note = r.summary;
+      doplnene.push("poznámka");
+    }
+    setForm((x) => ({ ...x, ...zmeny }));
+    return doplnene;
+  }
+
+  async function precitaj(f: File) {
+    if (!cid) return;
+    setCitanie({ stav: "bezi", subor: f.name });
+    try {
+      const { kluc } = await citajFn({
+        data: { company_id: cid, document_id: id, subor: await naDataUrl(f) },
+      });
+      // Čítanie trvá zvyčajne 5–20 sekúnd; po dvoch minútach to vzdáme.
+      for (let i = 0; i < 60; i++) {
+        await cakaj(2000);
+        const v: any = await stavCitaniaFn({ data: { company_id: cid, document_id: id, kluc } });
+        if (!v.hotovo) continue;
+        if (!v.ok) throw new Error(v.chyba);
+        if (!jeRozpoznaniePouzitelne(v.rozpoznanie)) {
+          throw new Error("V dokumente sa nenašiel odosielateľ ani predmet.");
+        }
+        setCitanie({ stav: "hotovo", subor: f.name, doplnene: doplnZRozpoznania(v.rozpoznanie) });
+        return;
+      }
+      throw new Error("Čítanie trvá príliš dlho.");
+    } catch (e: any) {
+      setCitanie({ stav: "chyba", subor: f.name, chyba: e?.message ?? "Dokument sa nepodarilo prečítať." });
+    }
+  }
 
   function pridajSubory(zoznam: FileList | File[]) {
     const ok: File[] = [];
@@ -127,7 +217,13 @@ function OstatnyDokladPage() {
       }
       ok.push(f);
     }
-    if (ok.length) setNove((n) => [...n, ...ok]);
+    if (ok.length) {
+      setNove((n) => [...n, ...ok]);
+      // Prvú prílohu prečíta AI sama, kým sú údaje prázdne — nech človek
+      // nemusí prepisovať odosielateľa a predmet z papiera.
+      const f = formRef.current;
+      if (!f.sender.trim() && !f.subject.trim() && citanie?.stav !== "bezi") void precitaj(ok[0]);
+    }
   }
 
   async function otvor(fileId: string) {
@@ -360,7 +456,8 @@ function OstatnyDokladPage() {
             <div className="min-w-0 rounded-2xl border border-border bg-card p-5">
               <h2 className="text-sm font-semibold">Prílohy</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                PDF alebo fotky, aj viac strán naraz. Najviac 20 MB na súbor.
+                PDF alebo fotky, aj viac strán naraz. Najviac 20 MB na súbor. Prvú prílohu
+                prečíta AI a vyplní druh, odosielateľa, predmet, sumu a lehotu.
               </p>
               <div
                 onDragOver={(e) => {
@@ -399,6 +496,28 @@ function OstatnyDokladPage() {
                 />
               </div>
 
+              {citanie && (
+                <div
+                  role="status"
+                  className={`mt-3 rounded-lg border px-3 py-2 text-sm ${
+                    citanie.stav === "chyba"
+                      ? "border-amber-500/40 bg-amber-500/5"
+                      : "border-primary/30 bg-primary/5"
+                  }`}
+                >
+                  {citanie.stav === "bezi" && (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Čítam {citanie.subor}…
+                    </span>
+                  )}
+                  {citanie.stav === "hotovo" &&
+                    (citanie.doplnene.length
+                      ? `Z prílohy som doplnil: ${citanie.doplnene.join(", ")}. Skontrolujte to.`
+                      : "Príloha je prečítaná, všetky polia už boli vyplnené.")}
+                  {citanie.stav === "chyba" && `Prílohu sa nepodarilo prečítať: ${citanie.chyba} Vyplňte údaje ručne.`}
+                </div>
+              )}
+
               {(ulozene.length > 0 || nove.length > 0) && (
                 <ul className="mt-4 space-y-2">
                   {ulozene.map((p) => (
@@ -430,6 +549,15 @@ function OstatnyDokladPage() {
                       <span className="shrink-0 text-xs text-muted-foreground">
                         {velkost(f.size)} · nahrá sa pri uložení
                       </span>
+                      <button
+                        onClick={() => precitaj(f)}
+                        disabled={citanie?.stav === "bezi"}
+                        title="Vyplniť údaje z tejto prílohy"
+                        aria-label={`Prečítať ${f.name}`}
+                        className="rounded p-1 text-primary hover:bg-primary/10 disabled:opacity-40"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                      </button>
                       <button
                         onClick={() => setNove((n) => n.filter((_, j) => j !== i))}
                         aria-label={`Nepridávať ${f.name}`}

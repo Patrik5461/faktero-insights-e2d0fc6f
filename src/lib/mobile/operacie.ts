@@ -16,6 +16,7 @@ export const OPERACIE = [
   "blocek-precitaj",
   "vydavok-uloz",
   "vydavok-duplikat",
+  "ostatny-uloz",
   "banka-prehlad",
   "banka-stiahni",
   "faktury-zoznam",

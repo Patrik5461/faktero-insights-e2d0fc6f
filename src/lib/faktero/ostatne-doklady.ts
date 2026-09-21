@@ -4,6 +4,8 @@
   Pohody nejdú), ale účtovník z nich účtuje, tak ich musí vidieť a odkliknúť.
 */
 
+import { cislo, datum } from "./mail-prijem";
+
 export const DRUHY_OSTATNYCH = [
   { kluc: "exekucia", nazov: "Exekúcia" },
   { kluc: "poistovna", nazov: "Poisťovňa — predpis" },
@@ -61,4 +63,97 @@ export function stavLehoty(dueDate: string | null | undefined, dnes: string): "p
   const o7 = new Date(`${dnes}T00:00:00Z`);
   o7.setUTCDate(o7.getUTCDate() + 7);
   return dueDate <= o7.toISOString().slice(0, 10) ? "blizko" : null;
+}
+
+
+/** Čo AI prečítala z ostatného dokladu — už uprataté na hodnoty pre formulár. */
+export type RozpoznanyOstatny = {
+  kind: DruhOstatneho;
+  sender: string | null;
+  subject: string | null;
+  document_date: string | null;
+  amount: number | null;
+  currency: string | null;
+  due_date: string | null;
+  summary: string | null;
+};
+
+function textAI(v: unknown, max: number): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  if (!t || /^(null|n\/a|neuvedené|-)$/i.test(t)) return null;
+  return t.slice(0, max);
+}
+
+/**
+ * Uprace odpoveď modelu. Neznámy druh je „Iné“, suma a dátumy prejdú tými
+ * istými pravidlami ako pri doklade z e-mailu — prázdny reťazec nikdy nesmie
+ * skončiť v date stĺpci.
+ */
+export function normalizujRozpoznanie(raw: unknown): RozpoznanyOstatny {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const kind = DRUHY_KLUCE.includes(r.kind as DruhOstatneho) ? (r.kind as DruhOstatneho) : "ine";
+  const mena = textAI(r.currency, 3)?.toUpperCase() ?? null;
+  return {
+    kind,
+    sender: textAI(r.sender, 255),
+    subject: textAI(r.subject, 500),
+    document_date: datum(r.document_date),
+    amount: cislo(r.amount),
+    currency: mena && /^[A-Z]{3}$/.test(mena) ? mena : null,
+    due_date: datum(r.due_date),
+    summary: textAI(r.summary, 1000),
+  };
+}
+
+/** Rozpoznanie je na niečo, keď model našiel aspoň odosielateľa alebo predmet. */
+export function jeRozpoznaniePouzitelne(r: RozpoznanyOstatny): boolean {
+  return Boolean(r.sender || r.subject);
+}
+
+/**
+ * Príloha z e-mailu je ostatný doklad, keď to model povedal výslovne. Pri
+ * pochybnosti ostáva faktúrou — zapadnutá faktúra v ostatných dokladoch by
+ * sa nezaplatila ani nezaúčtovala, kým ostatný doklad v prijatých faktúrach
+ * si účtovník všimne.
+ */
+export function jeOstatnyZMailu(ai: Record<string, unknown> | null): boolean {
+  return ai?.document_type === "ostatny";
+}
+
+/** Riadok ostatného dokladu z toho, čo AI prečítala z prílohy e-mailu. */
+export function ostatnyZMailu(args: {
+  ai: Record<string, unknown> | null;
+  odosielatel: string | null;
+  predmet: string | null;
+  nazovSuboru: string | null;
+  dnes: string;
+}) {
+  const ai = args.ai ?? {};
+  const r = normalizujRozpoznanie({
+    kind: ai.other_kind,
+    sender: ai.supplier_name,
+    subject: ai.other_subject,
+    document_date: ai.issue_date,
+    amount: ai.amount_total,
+    currency: ai.currency,
+    due_date: ai.other_due_date ?? ai.due_date,
+    summary: ai.summary,
+  });
+  const zMailu = [
+    args.odosielatel ? `Prišlo e-mailom od ${args.odosielatel}` : "Prišlo e-mailom",
+    args.predmet ? `predmet „${args.predmet}“` : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return {
+    kind: r.kind,
+    sender: r.sender ?? args.odosielatel,
+    subject: r.subject ?? args.predmet ?? args.nazovSuboru,
+    received_date: args.dnes,
+    amount: r.amount,
+    currency: r.currency ?? "EUR",
+    due_date: r.due_date,
+    note: [r.summary, `${zMailu}.`].filter(Boolean).join("\n\n"),
+  };
 }

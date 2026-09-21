@@ -277,6 +277,15 @@ export function PrijemMailom({
                                 otvoriť doklad
                               </Link>
                             )}
+                            {s.created_other_ids?.length > 0 && (
+                              <Link
+                                to="/ostatne-doklady/novy"
+                                search={{ id: s.created_other_ids[0]! }}
+                                className="text-primary hover:underline"
+                              >
+                                otvoriť ostatný doklad
+                              </Link>
+                            )}
                             {s.detail && (
                               <span className="w-full text-xs text-muted-foreground">
                                 {s.detail}

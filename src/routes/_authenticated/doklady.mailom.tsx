@@ -83,6 +83,10 @@ function Stranka() {
               <Link to="/prijate-faktury" className="text-primary underline">
                 Prijatých faktúrach
               </Link>
+              . Exekúcie, predpisy poistného, listy z úradov a zmluvy rozpozná AI a uloží ich do{" "}
+              <Link to="/ostatne-doklady" className="text-primary underline">
+                Ostatných dokladov
+              </Link>
               .
             </li>
             <li>

@@ -204,7 +204,7 @@ export type Krok =
   | "banka"
   | "ucet"
   | "zmazanieUctu";
-type Zachyt = "blocek" | "pdf" | "strany";
+type Zachyt = "blocek" | "pdf" | "strany" | "ostatny";
 
 /** Doklad, ktorý vo firme už je — toľko z neho stačí, aby sa dal spoznať. */
 type NajdenyDoklad = {
@@ -943,6 +943,10 @@ function ObsahApky() {
             doZachytu("strany", "skener");
           }}
           onPrijateDoklady={() => setKrok("doklady")}
+          onInyDoklad={() => {
+            setQrZoSkenera(null);
+            doZachytu("ostatny", "skener");
+          }}
         />
         <TabBar aktivna="skener" onPrepni={prepniZalozku} />
         <MobilPanel
@@ -1460,6 +1464,7 @@ const NAZVY: Record<Zachyt, Kluc> = {
   blocek: "app.blocekQr",
   pdf: "app.fakturaPdf",
   strany: "app.viacstranovyDoklad",
+  ostatny: "app.inyDoklad",
 };
 
 function ZachytDokladu({
@@ -1488,6 +1493,7 @@ function ZachytDokladu({
   const nacitaj = useOperacia<BlocekVysledok>("blocek-precitaj");
   const uloz = useOperacia("vydavok-uloz");
   const hladajDuplikat = useOperacia<NajdenyDoklad | null>("vydavok-duplikat");
+  const ulozOstatny = useOperacia<{ id: string }>("ostatny-uloz");
 
   const [stav, setStav] = useState<"start" | "citam" | "potvrdenie">("start");
   const [vysledok, setVysledok] = useState<BlocekVysledok | null>(null);
@@ -1625,6 +1631,47 @@ function ZachytDokladu({
       return;
     }
     await precitaj({ image_data_url: pdf }, pdf);
+  }
+
+  /* --- Iný doklad: exekúcia, predpis, list z úradu, zmluva --- */
+
+  /*
+    Ide rovno na server, bez čítania bločku a bez fronty: AI ho prečíta až
+    tam a doklad nemá úhradu ani sumu, na ktoré by sa appka pýtala. Bez
+    signálu sa preto uložiť nedá — radšej to povedať, než ho potichu stratiť.
+  */
+  async function ulozAkoOstatny(subor: string, nazov?: string) {
+    const { isOnline } = await import("@/lib/mobile/offline-queue");
+    if (!(await isOnline())) {
+      toast.error(t("app.ostatnyBezSignalu"));
+      return;
+    }
+    setStav("citam");
+    try {
+      await ulozOstatny({ data: { company_id: firma.id, subor, nazov: nazov ?? null } });
+      toast.success(t("app.ostatnyUlozeny"));
+      onUlozene();
+    } catch (e: any) {
+      toast.error(e?.message ?? t("app.citanieZlyhalo"));
+      setStav("start");
+    }
+  }
+
+  async function dokonciOstatny() {
+    if (strany.length === 0) return;
+    let pdf: string;
+    try {
+      pdf = strany.length === 1 ? strany[0]! : await stranyDoPdf(strany);
+    } catch (e: any) {
+      toast.error(e?.message ?? t("app.spojenieStranZlyhalo"));
+      return;
+    }
+    await ulozAkoOstatny(pdf);
+  }
+
+  async function vyberOstatny() {
+    const dataUrl = await vyberSubor("application/pdf,image/*");
+    if (dataUrl) await ulozAkoOstatny(dataUrl);
   }
 
   /* --- Uloženie --- */
@@ -1777,6 +1824,53 @@ function ZachytDokladu({
                 onClick={dokonciStrany}
               />
             </>
+          )}
+        </div>
+      )}
+
+      {druh === "ostatny" && (
+        <div className="space-y-3">
+          <p className="text-sm text-app-text-2">{t("app.inyDokladPopis")}</p>
+          <VelkeTlacidlo
+            icon={Camera}
+            label={strany.length === 0 ? t("app.odfotitPrvuStranu") : t("app.pridatDalsiuStranu")}
+            hint={
+              strany.length > 0
+                ? t("app.zatialStran", { pocet: strany.length })
+                : t("app.dokladOdfotteCely")
+            }
+            variant="primary"
+            onClick={pridajStranu}
+          />
+          {strany.length > 0 && (
+            <>
+              <div className="grid grid-cols-3 gap-2">
+                {strany.map((s, i) => (
+                  <div
+                    key={i}
+                    className="relative overflow-hidden rounded-lg border border-app-ramik"
+                  >
+                    <img src={s} alt={`strana ${i + 1}`} className="h-24 w-full object-cover" />
+                    <button
+                      onClick={() => setStrany((p) => p.filter((_, j) => j !== i))}
+                      className="absolute right-1 top-1 rounded-full bg-black/60 px-2 text-xs text-white"
+                      aria-label={t("app.odstranitStranu", { n: i + 1 })}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <VelkeTlacidlo icon={Check} label={t("app.ulozitOstatny")} onClick={dokonciOstatny} />
+            </>
+          )}
+          {strany.length === 0 && (
+            <VelkeTlacidlo
+              icon={FileText}
+              label={t("app.vybratSubor")}
+              hint={t("app.pdfAleboObrazok")}
+              onClick={vyberOstatny}
+            />
           )}
         </div>
       )}

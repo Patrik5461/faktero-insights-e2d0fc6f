@@ -45,6 +45,7 @@ import {
   uhradyDokladov,
   zrusParovanieDokladu,
 } from "@/lib/faktero/doklad-parovanie.functions";
+import { ulozOstatnyZAppkyFn } from "@/lib/faktero/ostatne-doklady.functions";
 import type { Operacia } from "./operacie";
 
 /** Jediné miesto, kde sa kľúč operácie stretáva so serverovou funkciou. */
@@ -52,6 +53,7 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "blocek-precitaj": nacitajBlocekFn,
   "vydavok-uloz": createExpenseFn,
   "vydavok-duplikat": findExpenseDuplicateFn,
+  "ostatny-uloz": ulozOstatnyZAppkyFn,
   "banka-prehlad": bankaPrehladFn,
   "banka-stiahni": syncBankTransactions,
   "faktury-zoznam": vystaveneFakturyFn,

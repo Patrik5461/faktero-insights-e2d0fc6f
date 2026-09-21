@@ -135,6 +135,14 @@ const sections: HelpSection[] = [
           sú nepovinné — lehota, ktorá sa blíži alebo už uplynula, sa v zozname zvýrazní.
         </p>
         <p>
+          Údaje nemusíte prepisovať: po pridaní prílohy ju prečíta <strong>AI</strong> a doplní
+          druh, odosielateľa, predmet, sumu, lehotu aj krátke zhrnutie pre účtovníka. V mobilnej
+          appke je na skeneri voľba <strong>Iný doklad</strong> — nafotíte strany a doklad sa uloží
+          sem. A keď takýto dokument príde na adresu pre{" "}
+          <Link to="/doklady/mailom">doklady e-mailom</Link>, AI ho rozpozná a uloží medzi
+          ostatné doklady namiesto prijatých faktúr.
+        </p>
+        <p>
           Aj tu platí <strong>Nespracované → Spracované → Odovzdané</strong>: účtovník doklad
           pozrie a klikne na <strong>Spracovať</strong>. Ostatné doklady sa do Pohody neposielajú,
           sú podkladom. V mesačnom balíku pre účtovníka sú v priečinku{" "}

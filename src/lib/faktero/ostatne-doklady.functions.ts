@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { DRUHY_KLUCE, jeCestaDokladu } from "./ostatne-doklady";
+import { DRUHY_KLUCE, bezpecneMeno, jeCestaDokladu, jeRozpoznaniePouzitelne } from "./ostatne-doklady";
 
 /*
   Ostatné doklady. Všetko ide cez používateľského klienta, takže o tom, kto čo
@@ -239,6 +239,185 @@ export const zmazOstatnyFn = createServerFn({ method: "POST" })
     }
     if (prilohy?.length) await supabase.storage.from(KBELIK).remove(prilohy.map((p) => p.path));
     return { ok: true };
+  });
+
+/** 15 MB — väčší list či predpis nebýva a telo požiadavky by bolo neúnosné. */
+const MAX_NA_CITANIE = 15 * 1024 * 1024;
+
+/**
+ * Spustí prečítanie prílohy cez AI. Model číta aj 20 sekúnd a nginx po 30 s
+ * spojenie zruší — čítanie preto beží ďalej samo a stránka sa na výsledok
+ * dopytuje cez `stavRozpoznaniaOstatnehoFn`. Výsledok leží v priečinku
+ * dokladu ako `.ai-<kluc>.json`; do príloh sa nedostane, tie sú v tabuľke.
+ */
+export const spustiRozpoznanieOstatnehoFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        document_id: z.string().uuid(),
+        /** Súbor ako data URL — rovnako ako pri čítaní zmlúv. */
+        subor: z.string().min(100),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: clen } = await supabase
+      .from("company_users")
+      .select("user_id")
+      .eq("company_id", data.company_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!clen) throw new Error("Do tejto firmy nemáte prístup.");
+
+    const zhoda = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(data.subor);
+    if (!zhoda || !zhoda[2]) throw new Error("Súbor sa nepodarilo prečítať.");
+    const mime = (zhoda[1] || "application/pdf").trim();
+    if (!/^(application\/pdf|image\/(png|jpe?g|webp|heic))$/i.test(mime)) {
+      throw new Error("Prečítať sa dá PDF alebo fotka.");
+    }
+    const base64 = zhoda[3] ?? "";
+    const velkost = Math.floor((base64.length * 3) / 4);
+    if (!velkost) throw new Error("Súbor je prázdny.");
+    if (velkost > MAX_NA_CITANIE) throw new Error("Na prečítanie je súbor väčší než 15 MB.");
+
+    const kluc = crypto.randomUUID();
+    const cesta = `${data.company_id}/${data.document_id}/.ai-${kluc}.json`;
+    void (async () => {
+      let vysledok: Record<string, unknown>;
+      try {
+        const { precitajOstatny } = await import("./ostatne-doklady-citanie.server");
+        vysledok = { ok: true, rozpoznanie: await precitajOstatny(base64, mime) };
+      } catch (e: any) {
+        vysledok = { ok: false, chyba: e?.message ?? "Dokument sa nepodarilo prečítať." };
+      }
+      const { error } = await supabase.storage
+        .from(KBELIK)
+        .upload(cesta, Buffer.from(JSON.stringify(vysledok)), {
+          contentType: "application/json",
+          upsert: true,
+        });
+      if (error) console.error("[ostatne] výsledok čítania sa neuložil:", error.message);
+    })();
+    return { kluc };
+  });
+
+/** Výsledok čítania. Kým nie je, vracia `hotovo: false`; po prečítaní sa zmaže. */
+export const stavRozpoznaniaOstatnehoFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        document_id: z.string().uuid(),
+        kluc: z.string().uuid(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const cesta = `${data.company_id}/${data.document_id}/.ai-${data.kluc}.json`;
+    const { data: subor } = await context.supabase.storage.from(KBELIK).download(cesta);
+    if (!subor) return { hotovo: false as const };
+    const obsah = JSON.parse(await subor.text());
+    await context.supabase.storage.from(KBELIK).remove([cesta]);
+    return { hotovo: true as const, ...obsah };
+  });
+
+/**
+ * Ostatný doklad z mobilnej appky: nafotené strany (spojené do PDF) alebo
+ * vybraný súbor. Doklad vznikne hneď — appka nemusí čakať na AI — a údaje
+ * doplní čítanie na pozadí. Nič, čo už je vyplnené, sa neprepíše.
+ */
+export const ulozOstatnyZAppkyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        subor: z.string().min(100),
+        nazov: z.string().max(200).nullable().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const zhoda = /^data:([^;,]+)?(;base64)?,(.*)$/s.exec(data.subor);
+    if (!zhoda || !zhoda[2]) throw new Error("Súbor sa nepodarilo prečítať.");
+    const mime = (zhoda[1] || "application/pdf").trim();
+    if (!/^(application\/pdf|image\/(png|jpe?g|webp|heic))$/i.test(mime)) {
+      throw new Error("Uložiť sa dá PDF alebo fotka.");
+    }
+    const base64 = zhoda[3] ?? "";
+    const bajty = Buffer.from(base64, "base64");
+    if (!bajty.length) throw new Error("Súbor je prázdny.");
+    if (bajty.length > MAX_NA_CITANIE) throw new Error("Súbor je väčší než 15 MB.");
+
+    const id = crypto.randomUUID();
+    const dnes = new Date().toISOString().slice(0, 10);
+    const pripona = mime === "application/pdf" ? "pdf" : mime.split("/")[1]!.replace("jpeg", "jpg");
+    const meno = data.nazov?.trim() || `doklad-${dnes}.${pripona}`;
+    const cesta = `${data.company_id}/${id}/${Date.now()}-${bezpecneMeno(meno)}`;
+
+    const { error: chybaDokladu } = await supabase.from("other_documents").insert({
+      id,
+      company_id: data.company_id,
+      kind: "ine",
+      subject: "Doklad z mobilnej appky",
+      received_date: dnes,
+      status: "new",
+      created_by: userId,
+    });
+    if (chybaDokladu) throw new Error(chybaDokladu.message);
+
+    const { error: chybaNahratia } = await supabase.storage
+      .from(KBELIK)
+      .upload(cesta, bajty, { contentType: mime, upsert: false });
+    if (chybaNahratia) {
+      await supabase.from("other_documents").delete().eq("id", id);
+      throw new Error(`Súbor sa nepodarilo uložiť: ${chybaNahratia.message}`);
+    }
+    await supabase.from("other_document_files").insert({
+      document_id: id,
+      company_id: data.company_id,
+      path: cesta,
+      name: meno,
+      mime,
+      size: bajty.length,
+      position: 0,
+    });
+
+    void (async () => {
+      try {
+        const { precitajOstatny } = await import("./ostatne-doklady-citanie.server");
+        const r = await precitajOstatny(base64, mime);
+        if (!jeRozpoznaniePouzitelne(r)) return;
+        const { data: teraz } = await supabase
+          .from("other_documents")
+          .select("kind, sender, subject, amount, currency, due_date, note")
+          .eq("id", id)
+          .maybeSingle();
+        if (!teraz) return;
+        const zmeny: Partial<{ kind: string; sender: string; subject: string; amount: number; currency: string; due_date: string; note: string }> = {};
+        if (teraz.kind === "ine" && r.kind !== "ine") zmeny.kind = r.kind;
+        if (!teraz.sender && r.sender) zmeny.sender = r.sender;
+        if (teraz.subject === "Doklad z mobilnej appky" && r.subject) zmeny.subject = r.subject;
+        if (teraz.amount == null && r.amount != null) {
+          zmeny.amount = r.amount;
+          if (r.currency) zmeny.currency = r.currency;
+        }
+        if (!teraz.due_date && r.due_date) zmeny.due_date = r.due_date;
+        if (!teraz.note && r.summary) zmeny.note = r.summary;
+        if (Object.keys(zmeny).length) {
+          await supabase.from("other_documents").update(zmeny).eq("id", id);
+        }
+      } catch (e: any) {
+        console.warn("[ostatne] čítanie dokladu z appky zlyhalo:", String(e?.message ?? e).slice(0, 200));
+      }
+    })();
+
+    return { id };
   });
 
 export const pocetNespracovanychOstatnychFn = createServerFn({ method: "POST" })

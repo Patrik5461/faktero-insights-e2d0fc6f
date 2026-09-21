@@ -22,6 +22,8 @@ import {
   rozbalTelo,
   type OdosielatelPotvrdeni,
 } from "./mail-potvrdenie";
+import { bezpecneMeno, jeOstatnyZMailu, ostatnyZMailu } from "./ostatne-doklady";
+import { DRUHY_PRE_AI } from "./ostatne-doklady-citanie.server";
 
 /** Koľko príloh z jedného mailu spracujeme a aká veľká smie byť. */
 const MAX_PRILOH = 5;
@@ -81,6 +83,18 @@ Vráť VÝLUČNE JSON v tvare:
  "items": [{"name": string, "quantity": number|null, "unit": string|null,
             "unit_price": number|null, "vat_rate": number|null, "total": number|null}]}
 Dodávateľ je ten, KTO doklad vystavil, nie odberateľ. Sumy uveď ako čísla s bodkou.
+
+Najprv rozhodni "document_type":
+- "faktura" — faktúra, zálohová faktúra, dobropis, blok, účtenka: doklad o nákupe tovaru či služby.
+- "ostatny" — všetko ostatné, čo firma dostala: exekučný príkaz, predpis poistného, list alebo
+  rozhodnutie úradu, výzva Sociálnej či zdravotnej poisťovne, zmluva, splátkový kalendár, upomienka.
+Keď si nie si istý, daj "faktura".
+Pri "ostatny" vyplň aj "other_kind" (jeden z kľúčov nižšie), "other_subject" (o čom dokument je,
+jednou vetou po slovensky), "other_due_date" (lehota, YYYY-MM-DD) a "summary" (1–3 vety pre
+účtovníka, čo z dokumentu vyplýva). Odosielateľa daj do "supplier_name" a sumu do "amount_total".
+Kľúče pre "other_kind":
+${DRUHY_PRE_AI}
+Do JSON pridaj: "document_type", "other_kind", "other_subject", "other_due_date", "summary".
 Do "items" daj riadky tabuľky dokladu v poradí, v akom sú na papieri; keď doklad
 položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie sú položka.
 Čo na doklade nie je, nechaj null — nič si nevymýšľaj.`;
@@ -248,7 +262,13 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
     .select("id")
     .single();
 
-  async function doprav(stav: string, detail: string | null, pocet: number, faktury: string[]) {
+  async function doprav(
+    stav: string,
+    detail: string | null,
+    pocet: number,
+    faktury: string[],
+    ostatne: string[] = [],
+  ) {
     if (zaznam?.id) {
       await supabaseAdmin
         .from("inbox_messages")
@@ -257,6 +277,7 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
           detail,
           attachment_count: pocet,
           created_invoice_ids: faktury,
+          created_other_ids: ostatne,
         })
         .eq("id", zaznam.id);
     }
@@ -310,6 +331,7 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
 
     const dnes = new Date().toISOString().slice(0, 10);
     const vytvorene: string[] = [];
+    const vytvoreneOstatne: string[] = [];
     const poznamky: string[] = [];
 
     for (const priloha of doklady.slice(0, MAX_PRILOH)) {
@@ -337,6 +359,51 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
       const pripona = (priloha.filename?.split(".").pop() ?? "pdf").toLowerCase().slice(0, 5);
       const cesta = `${adresa.company_id}/${crypto.randomUUID()}.${pripona}`;
 
+      // Čítanie ide pred uložením: od neho závisí, do ktorého kbelíka súbor patrí.
+      const ai = await precitajDoklad(bajty.toString("base64"), mime);
+
+      /*
+        Exekúcia, predpis poistného či list z úradu nie sú prijatá faktúra —
+        v nej by sa tvárili ako záväzok na zaplatenie. Idú medzi ostatné
+        doklady, kde ich účtovník uvidí a odklikne.
+      */
+      if (jeOstatnyZMailu(ai)) {
+        const idOstatneho = crypto.randomUUID();
+        const meno = priloha.filename ?? `priloha.${pripona}`;
+        const cestaOstatneho = `${adresa.company_id}/${idOstatneho}/${Date.now()}-${bezpecneMeno(meno)}`;
+        const upO = await supabaseAdmin.storage
+          .from("other-docs")
+          .upload(cestaOstatneho, bajty, { contentType: mime, upsert: false });
+        if (upO.error) {
+          poznamky.push(`${meno}: uloženie zlyhalo`);
+          continue;
+        }
+        const riadok = ostatnyZMailu({ ai, odosielatel, predmet, nazovSuboru: meno, dnes });
+        const { error: chybaO } = await supabaseAdmin.from("other_documents").insert({
+          id: idOstatneho,
+          company_id: adresa.company_id,
+          created_by: adresa.user_id,
+          status: "new",
+          ...riadok,
+        });
+        if (!chybaO) {
+          await supabaseAdmin.from("other_document_files").insert({
+            document_id: idOstatneho,
+            company_id: adresa.company_id,
+            path: cestaOstatneho,
+            name: meno,
+            mime,
+            size: bajty.length,
+            position: 0,
+          });
+          vytvoreneOstatne.push(idOstatneho);
+        } else {
+          await supabaseAdmin.storage.from("other-docs").remove([cestaOstatneho]);
+          poznamky.push(`${meno}: zápis zlyhal (${chybaO.message})`);
+        }
+        continue;
+      }
+
       const up = await supabaseAdmin.storage
         .from("purchase-invoices")
         .upload(cesta, bajty, { contentType: mime, upsert: false });
@@ -345,7 +412,6 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
         continue;
       }
 
-      const ai = await precitajDoklad(bajty.toString("base64"), mime);
       const faktura = zostavPrijatuFakturu({
         ai,
         odosielatel,
@@ -380,15 +446,24 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
     const preskocene = doklady.length - Math.min(doklady.length, MAX_PRILOH);
     if (preskocene > 0) poznamky.push(`${preskocene} príloh nad rámec limitu ${MAX_PRILOH}`);
 
+    if (vytvoreneOstatne.length) {
+      poznamky.unshift(
+        vytvoreneOstatne.length === 1
+          ? "1 príloha nie je faktúra — je medzi ostatnými dokladmi"
+          : `${vytvoreneOstatne.length} príloh nie sú faktúry — sú medzi ostatnými dokladmi`,
+      );
+    }
+    const spolu = vytvorene.length + vytvoreneOstatne.length;
     await doprav(
-      vytvorene.length ? "hotovo" : "chyba",
+      spolu ? "hotovo" : "chyba",
       poznamky.join("; ") || null,
       doklady.length,
       vytvorene,
+      vytvoreneOstatne,
     );
     return {
-      stav: vytvorene.length ? "hotovo" : "chyba",
-      vytvorenych: vytvorene.length,
+      stav: spolu ? "hotovo" : "chyba",
+      vytvorenych: spolu,
       detail: poznamky.join("; ") || undefined,
     };
   } catch (e: any) {

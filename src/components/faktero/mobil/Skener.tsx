@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Files, FileText, Image as ImageIcon, Receipt, SlidersHorizontal } from "lucide-react";
+import { Files, FileText, Image as ImageIcon, Mail, Receipt, SlidersHorizontal } from "lucide-react";
 import { useKameraQr } from "./KameraQr";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import {
@@ -29,6 +29,7 @@ export function Skener({
   onZGalerie,
   onViacstranovy,
   onPrijateDoklady,
+  onInyDoklad,
   nastavenie,
   onNastavenie,
 }: {
@@ -37,6 +38,8 @@ export function Skener({
   onZGalerie: () => void;
   onViacstranovy: () => void;
   onPrijateDoklady: () => void;
+  /** Exekúcia, predpis, list z úradu — nie bloček ani faktúra. */
+  onInyDoklad?: () => void;
   nastavenie: NastavenieDokladu;
   onNastavenie: (n: NastavenieDokladu) => void;
 }) {
@@ -252,6 +255,9 @@ export function Skener({
               label={t("sken.nastavenie")}
               onClick={() => setNastaveniaOtvorene((v) => !v)}
             />
+          )}
+          {onInyDoklad && (
+            <MalyOdkaz icon={Mail} label={t("sken.inyDoklad")} onClick={onInyDoklad} />
           )}
           <MalyOdkaz icon={Receipt} label={t("pd.nazov")} onClick={onPrijateDoklady} />
         </div>

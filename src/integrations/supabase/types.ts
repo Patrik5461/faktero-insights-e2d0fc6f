@@ -3281,6 +3281,7 @@ export type Database = {
           attachment_count: number
           company_id: string
           created_invoice_ids: string[]
+          created_other_ids: string[]
           detail: string | null
           from_email: string | null
           id: string
@@ -3294,6 +3295,7 @@ export type Database = {
           attachment_count?: number
           company_id: string
           created_invoice_ids?: string[]
+          created_other_ids?: string[]
           detail?: string | null
           from_email?: string | null
           id?: string
@@ -3307,6 +3309,7 @@ export type Database = {
           attachment_count?: number
           company_id?: string
           created_invoice_ids?: string[]
+          created_other_ids?: string[]
           detail?: string | null
           from_email?: string | null
           id?: string
