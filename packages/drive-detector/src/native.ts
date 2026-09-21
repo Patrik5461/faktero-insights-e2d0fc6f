@@ -29,6 +29,22 @@ export interface NativeDriveDetectorPlugin {
   requestPermissions(): Promise<DriveDetectorPermissions>;
   requestBackgroundPermission(): Promise<DriveDetectorPermissions>;
   requestPrecisePermission(): Promise<DriveDetectorPermissions>;
+  // Len Android — na iOS ich natívna strana nemá.
+  requestNotificationPermission(): Promise<DriveDetectorPermissions>;
+  requestMotionPermission(): Promise<DriveDetectorPermissions>;
+  requestExtraPermissions(): Promise<DriveDetectorPermissions>;
+  openAppSettings(): Promise<void>;
+  getLastCrash(): Promise<{ crash: string | null }>;
+  clearLastCrash(): Promise<void>;
+  getDeviceInfo(): Promise<{
+    manufacturer: string;
+    brand: string;
+    xiaomi: boolean;
+    ignoringBatteryOptimizations: boolean;
+  }>;
+  openManufacturerSettings(opts: {
+    kind: "autostart" | "battery";
+  }): Promise<{ opened: "manufacturer" | "fallback" }>;
   // Typované prekrytie je v `DriveDetectorPlugin`; tu musí sedieť s tým, čo
   // predpisuje `WebPlugin`.
   addListener(

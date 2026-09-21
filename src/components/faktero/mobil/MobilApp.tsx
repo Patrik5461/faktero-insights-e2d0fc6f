@@ -152,6 +152,7 @@ import {
 } from "@/components/faktero/mobil/Skener";
 import { TabBar, type Zalozka } from "@/components/faktero/mobil/TabBar";
 import { SPODNA_LISTA } from "@/lib/mobile/rozmery";
+import { BehNaPozadiOkno } from "@/components/faktero/mobil/BehNaPozadi";
 import { PovoleniaJazd } from "@/components/faktero/mobil/PovoleniaJazd";
 import { VytvorFirmu } from "@/components/faktero/mobil/VytvorFirmu";
 import { Prihlasenie, VyberFirmy, Zamok } from "@/components/faktero/mobil/Vstup";
@@ -1220,6 +1221,7 @@ function SoSpodnouListou({
       {children}
       {/* Povolenia pre knihu jázd — pýtajú sa hneď, rovnako ako v Knihe jázd. */}
       <PovoleniaJazd />
+      <BehNaPozadiOkno />
       <TabBar aktivna={aktivna} onPrepni={onPrepni} />
     </div>
   );

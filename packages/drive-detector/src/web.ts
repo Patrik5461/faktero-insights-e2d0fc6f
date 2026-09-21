@@ -105,4 +105,19 @@ export class DriveDetectorWeb extends WebPlugin implements NativeDriveDetectorPl
   async clearLastCrash(): Promise<void> {
     // Na webe niet čoho zabudnúť.
   }
+
+  async getDeviceInfo(): Promise<{
+    manufacturer: string;
+    brand: string;
+    xiaomi: boolean;
+    ignoringBatteryOptimizations: boolean;
+  }> {
+    throw this.unimplemented("Len v mobilnej aplikácii pre Android.");
+  }
+
+  async openManufacturerSettings(_opts: {
+    kind: "autostart" | "battery";
+  }): Promise<{ opened: "manufacturer" | "fallback" }> {
+    throw this.unimplemented("Len v mobilnej aplikácii pre Android.");
+  }
 }

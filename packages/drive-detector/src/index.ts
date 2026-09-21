@@ -1,4 +1,4 @@
-import { registerPlugin } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import type { PluginListenerHandle } from "@capacitor/core";
 
 import type {
@@ -52,6 +52,25 @@ const DriveDetector: DriveDetectorPlugin = {
   ): Promise<PluginListenerHandle> =>
     nativny.addListener(eventName, listener)) as DriveDetectorPlugin["addListener"],
   removeAllListeners: () => nativny.removeAllListeners(),
+  /*
+    Metódy, ktoré má len Android. Obálka ich predtým neprepúšťala vôbec, takže
+    `DriveDetector.openAppSettings?.()` či `getLastCrash?.()` potichu nerobili
+    nič — tlačidlo nastavení v okne povolení, záznam pádu v Diagnostike aj
+    návod pre Xiaomi. Na iOS ostávajú `undefined`, volajúci s tým počítajú.
+  */
+  ...(Capacitor.getPlatform() === "android"
+    ? {
+        requestNotificationPermission: () => nativny.requestNotificationPermission(),
+        requestMotionPermission: () => nativny.requestMotionPermission(),
+        requestExtraPermissions: () => nativny.requestExtraPermissions(),
+        openAppSettings: () => nativny.openAppSettings(),
+        getLastCrash: () => nativny.getLastCrash(),
+        clearLastCrash: () => nativny.clearLastCrash(),
+        getDeviceInfo: () => nativny.getDeviceInfo(),
+        openManufacturerSettings: (opts: { kind: "autostart" | "battery" }) =>
+          nativny.openManufacturerSettings(opts),
+      }
+    : {}),
 };
 
 export * from "./definitions";

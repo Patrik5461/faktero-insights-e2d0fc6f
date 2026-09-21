@@ -20,7 +20,7 @@ import {
  * tlačidlá otvoria priamo. Na ostatných telefónoch sa karta ukáže, len keď
  * systém appke obmedzuje beh na pozadí.
  */
-export function BehNaPozadi({ zapnuta }: { zapnuta: boolean }) {
+export function BehNaPozadi({ zapnuta, okno = false }: { zapnuta: boolean; okno?: boolean }) {
   const { t } = usePreklad();
   const [stav, setStav] = useState<Stav | null>(null);
   const [skryta, setSkryta] = useState(true);
@@ -70,8 +70,16 @@ export function BehNaPozadi({ zapnuta }: { zapnuta: boolean }) {
     </li>
   );
 
-  return (
-    <div role="region" aria-label={t(stav.xiaomi ? "bp.nadpisXiaomi" : "bp.nadpisIny")} className="rounded-app border border-amber-500/40 bg-amber-500/5 p-4">
+  const obsah = (
+    <div
+      role={okno ? "dialog" : "region"}
+      aria-label={t(stav.xiaomi ? "bp.nadpisXiaomi" : "bp.nadpisIny")}
+      className={
+        okno
+          ? "w-full rounded-t-app bg-app-karta p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:max-w-sm sm:rounded-app"
+          : "rounded-app border border-amber-500/40 bg-amber-500/5 p-4"
+      }
+    >
       <div className="text-sm font-medium">{t(stav.xiaomi ? "bp.nadpisXiaomi" : "bp.nadpisIny")}</div>
       <p className="mt-1 text-xs leading-relaxed text-app-text-2">
         {t(stav.xiaomi ? "bp.uvodXiaomi" : "bp.uvodIny")}
@@ -94,4 +102,35 @@ export function BehNaPozadi({ zapnuta }: { zapnuta: boolean }) {
       </button>
     </div>
   );
+  if (!okno) return obsah;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-black/50 sm:items-center sm:justify-center">
+      {obsah}
+    </div>
+  );
+}
+
+/**
+ * To isté ako okno hneď po štarte appky. Na obrazovke Jazda ho ľudia
+ * nevideli — kto ju neotvorí, o návode sa nedozvie a Xiaomi mu zatvorenú
+ * appku ticho zastavuje. Ukáže sa len pri zapnutej detekcii a keď už
+ * nechýba žiadne povolenie (inak sa pýta okno povolení).
+ */
+export function BehNaPozadiOkno() {
+  const [zapnuta, setZapnuta] = useState(false);
+  useEffect(() => {
+    let zive = true;
+    void (async () => {
+      const [{ stavDetekcie }, { stavPovoleniJazd }] = await Promise.all([
+        import("@/lib/mobile/auto-jazdy-sync"),
+        import("@/lib/mobile/povolenia-jazd"),
+      ]);
+      const [d, chyba] = await Promise.all([stavDetekcie(), stavPovoleniJazd()]);
+      if (zive && d.dostupna && d.zapnuta && !chyba?.length) setZapnuta(true);
+    })();
+    return () => {
+      zive = false;
+    };
+  }, []);
+  return <BehNaPozadi zapnuta={zapnuta} okno />;
 }
