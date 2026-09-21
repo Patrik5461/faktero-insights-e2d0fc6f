@@ -55,6 +55,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { track } from "@/lib/faktero/track";
+import { APP_STORE_FAKTERO, APP_STORE_ODZNAK } from "@/lib/faktero/obchody";
 import { PartneriPas } from "@/components/faktero/PartneriPas";
 import { zoznamPartnerovPublic } from "@/lib/partneri.functions";
 
@@ -1183,8 +1184,8 @@ function ComparisonSection() {
     { label: "FinStat integrácia", faktero: true, ine: false, manual: false },
     { label: "Bankové párovanie", faktero: true, ine: "Obmedzene", manual: false },
     { label: "Prijaté faktúry", faktero: true, ine: true, manual: false },
-    // Appka je pred vydaním — do porovnania nepatrí ako hotová vec.
-    { label: "Mobilná aplikácia", faktero: "Pripravujeme", ine: "Rôzne", manual: false },
+    // Na iPhone je appka v App Store; Android ešte nie, tak ho nesľubujeme ako hotový.
+    { label: "Mobilná aplikácia", faktero: "iPhone", ine: "Rôzne", manual: false },
     { label: "Upomienky po splatnosti", faktero: true, ine: "Obmedzene", manual: false },
     { label: "Schvaľovanie faktúr zákazníkom", faktero: true, ine: false, manual: false },
     { label: "Skladové hospodárstvo", faktero: true, ine: false, manual: false },
@@ -1277,7 +1278,7 @@ function MobileAppSection() {
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              <Smartphone className="h-3 w-3" /> iOS & Android (pripravujeme)
+              <Smartphone className="h-3 w-3" /> V App Store · Android pripravujeme
             </div>
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl whitespace-pre-line">
               Faktero v mobile{"\n"}
@@ -1287,8 +1288,9 @@ function MobileAppSection() {
               {/* Pôvodne tu stálo „s offline režimom". Appka bez signálu naozaj zapíše
                   jazdu aj doklad, ale rozhranie sa načítava zo živého webu — pri
                   studenom štarte bez pripojenia sa neotvorí. Sľubujme len to, čo platí. */}
-              iOS a Android appka so skenovaním dokladov a GPS knihou jázd. Jazdu aj odfotený doklad
-              zapíše aj bez signálu a odošle ich, len čo ste online.
+              Appka pre iPhone so skenovaním dokladov a GPS knihou jázd — stiahnete si ju z App
+              Store, verzia pre Android sa pripravuje. Jazdu aj odfotený doklad zapíše aj bez
+              signálu a odošle ich, len čo ste online.
             </p>
             <ul className="mt-8 grid gap-3 sm:grid-cols-2">
               {items.map((i) => (
@@ -1301,17 +1303,17 @@ function MobileAppSection() {
                 </li>
               ))}
             </ul>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                type="button"
-                disabled
-                className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold text-muted-foreground opacity-70"
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              {/* Oficiálny odznak Apple — na svetlom aj tmavom pozadí ho drží jeho sivý rámik. */}
+              <a
+                href={APP_STORE_FAKTERO}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Stiahnuť Faktero v App Store"
+                className="inline-block rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
-                <Smartphone className="h-4 w-4" /> App Store
-                <span className="ml-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                  Čoskoro
-                </span>
-              </button>
+                <img src={APP_STORE_ODZNAK} alt="Download on the App Store" className="h-12 w-auto" />
+              </a>
               <button
                 type="button"
                 disabled

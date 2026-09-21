@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { APP_STORE_FAKTERO } from "@/lib/faktero/obchody";
 import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
 
 export const Route = createFileRoute("/pomoc/apka")({
@@ -42,9 +43,16 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Obe appky sú zatiaľ <strong>v testovaní</strong> — v obchode ešte nie sú. Prístup
-          dostanete cez TestFlight na pozvánku; napíšte na{" "}
-          <a href="mailto:servis@faktero.sk">servis@faktero.sk</a> a pošleme vám ju.
+          <strong>Faktero pre iPhone</strong> si stiahnete z{" "}
+          <a href={APP_STORE_FAKTERO} target="_blank" rel="noopener noreferrer">
+            App Store
+          </a>
+          .
+        </p>
+        <p>
+          <strong>Kniha jázd</strong> ako samostatná appka práve čaká na schválenie v App Store a
+          verzia pre <strong>Android</strong> sa pripravuje. Dovtedy ich dostanete v testovaní na
+          pozvánku — napíšte na <a href="mailto:servis@faktero.sk">servis@faktero.sk</a>.
         </p>
         <p>
           Appka sa <strong>neaktualizuje sama</strong>. Celé rozhranie je zabalené v nej, aby sa
