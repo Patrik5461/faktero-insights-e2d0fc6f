@@ -72,6 +72,8 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
           // logo je voliteľné — cenová ponuka sa vygeneruje aj bez neho
         }
       }
+      const { stiahniObrazokFirmy } = await import("./firma-obrazky.server");
+      const stamp = await stiahniObrazokFirmy((company as any)?.stamp_url);
       const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
       const bytes = await generateInvoicePdfBytes({
         company,
@@ -79,6 +81,8 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
         items: items ?? [],
         logoBytes,
         logoMime,
+        stampBytes: stamp?.bytes ?? null,
+        stampMime: stamp?.mime ?? null,
         documentLabel: "CENOVÁ PONUKA",
         numberLabel: `č. ${q.quote_number}`,
         hidePayment: true,

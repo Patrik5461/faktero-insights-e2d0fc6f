@@ -37,6 +37,9 @@ export type InvoicePdfInput = {
   items: any[];
   logoBytes?: Uint8Array | null;
   logoMime?: string | null;
+  /** Pečiatka (a podpis) firmy — kreslí sa vpravo dole nad pätičkou. */
+  stampBytes?: Uint8Array | null;
+  stampMime?: string | null;
   /** Document title shown top-right, e.g. "FAKTÚRA" or "CENOVÁ PONUKA". Defaults to FAKTÚRA. */
   documentLabel?: string;
   /** Override the meta-strip rows (label/value pairs). */
@@ -412,6 +415,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   const totalsH = totalsRows * 18 + 8 + 60;
   ensureSpace(totalsH);
 
+  const totalsTop = y;
   let ty = y;
   drawTotalRow(
     cur,
@@ -540,6 +544,40 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       font: bold,
       color: primaryDark,
     });
+  }
+
+  /*
+    Pečiatka firmy do voľného miesta vľavo od súčtov — tam sa na papierovej
+    faktúre pečiatkuje a podpisuje, a nikdy kvôli nej nevznikne ďalšia strana.
+    Zmestí sa do výšky bloku súčtov a najviac 150 bodov šírky, pomer strán
+    obrázka ostane zachovaný.
+  */
+  if (input.stampBytes && input.stampMime && (company as any).invoice_show_stamp !== false) {
+    try {
+      const img = input.stampMime.includes("png")
+        ? await doc.embedPng(input.stampBytes)
+        : await doc.embedJpg(input.stampBytes);
+      const spodok = ty - heroH;
+      const maxH = totalsTop - spodok - 16;
+      const maxW = Math.min(150, totalsX - margin - 24);
+      const mierka = Math.min(maxW / img.width, maxH / img.height, 1);
+      const sw = img.width * mierka;
+      const sh = img.height * mierka;
+      const popis = "Pečiatka a podpis";
+      const pw = font.widthOfTextAtSize(popis, 7.5);
+      const sirka = Math.max(sw, pw);
+      const stredX = margin + 12 + sirka / 2;
+      cur.drawImage(img, { x: stredX - sw / 2, y: spodok + 16, width: sw, height: sh });
+      cur.drawLine({
+        start: { x: stredX - sirka / 2, y: spodok + 12 },
+        end: { x: stredX + sirka / 2, y: spodok + 12 },
+        color: hairline,
+        thickness: 0.5,
+      });
+      cur.drawText(popis, { x: stredX - pw / 2, y: spodok + 2, size: 7.5, font, color: muted });
+    } catch {
+      /* poškodený obrázok pečiatky nesmie zabrániť vystaveniu dokladu */
+    }
   }
 
   y = ty - heroH - (isPaid ? 38 : 24);

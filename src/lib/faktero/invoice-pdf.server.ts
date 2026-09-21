@@ -84,6 +84,9 @@ export async function ensureInvoicePdf(
     }
   }
 
+  const { stiahniObrazokFirmy } = await import("./firma-obrazky.server");
+  const stamp = await stiahniObrazokFirmy((company as any).stamp_url);
+
   let paymentLinkUrl: string | null = null;
   try {
     const { data: link } = await supabaseAdmin
@@ -138,6 +141,8 @@ export async function ensureInvoicePdf(
     items: items ?? [],
     logoBytes,
     logoMime,
+    stampBytes: stamp?.bytes ?? null,
+    stampMime: stamp?.mime ?? null,
     paymentLinkUrl,
     verejnyOdkaz,
   });

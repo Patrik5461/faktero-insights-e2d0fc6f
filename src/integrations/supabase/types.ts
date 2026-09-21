@@ -1007,6 +1007,8 @@ export type Database = {
           invoice_footer: string | null
           invoice_number_format: string
           invoice_show_logo: boolean
+          invoice_show_stamp: boolean
+          stamp_url: string | null
           locked_until: string | null
           logo_url: string | null
           module_employees: boolean
@@ -1073,6 +1075,8 @@ export type Database = {
           invoice_footer?: string | null
           invoice_number_format?: string
           invoice_show_logo?: boolean
+          invoice_show_stamp?: boolean
+          stamp_url?: string | null
           locked_until?: string | null
           logo_url?: string | null
           module_employees?: boolean
@@ -1139,6 +1143,8 @@ export type Database = {
           invoice_footer?: string | null
           invoice_number_format?: string
           invoice_show_logo?: boolean
+          invoice_show_stamp?: boolean
+          stamp_url?: string | null
           locked_until?: string | null
           logo_url?: string | null
           module_employees?: boolean

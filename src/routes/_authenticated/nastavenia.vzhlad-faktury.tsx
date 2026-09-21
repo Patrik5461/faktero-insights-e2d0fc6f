@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/nastavenia/vzhlad-faktury"
       {
         name: "description",
         content:
-          "Nastavte logo, farbu akcentu a pätičku, ktoré sa použijú na PDF faktúrach a cenových ponukách.",
+          "Nastavte logo, pečiatku, farbu akcentu a pätičku, ktoré sa použijú na PDF faktúrach a cenových ponukách.",
       },
       { property: "og:title", content: "Vzhľad faktúry — Faktero" },
       {
@@ -26,6 +26,28 @@ export const Route = createFileRoute("/_authenticated/nastavenia/vzhlad-faktury"
   }),
   component: InvoiceAppearancePage,
 });
+
+type Obrazok = "logo" | "stamp";
+
+const OBRAZKY: Record<
+  Obrazok,
+  { nazov: string; predpona: string; stlpec: string; nahrate: string; odstranene: string }
+> = {
+  logo: {
+    nazov: "Logo",
+    predpona: "logo",
+    stlpec: "logo_url",
+    nahrate: "Logo nahraté",
+    odstranene: "Logo odstránené",
+  },
+  stamp: {
+    nazov: "Pečiatka",
+    predpona: "stamp",
+    stlpec: "stamp_url",
+    nahrate: "Pečiatka nahratá",
+    odstranene: "Pečiatka odstránená",
+  },
+};
 
 const PRESETS = [
   { label: "Faktero zelená", value: "#0F7A4D" },
@@ -41,9 +63,11 @@ function InvoiceAppearancePage() {
   const [companyId] = useState<string | null>(() => getActiveCompanyId());
   const [c, setC] = useState<any>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [stampPreview, setStampPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<Obrazok | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const stampRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!companyId) return;
@@ -64,52 +88,64 @@ function InvoiceAppearancePage() {
       .then(({ data }) => setLogoPreview(data?.signedUrl ?? null));
   }, [c?.logo_url]);
 
+  useEffect(() => {
+    const path = (c as any)?.stamp_url;
+    if (!path) return setStampPreview(null);
+    supabase.storage
+      .from("company-logos")
+      .createSignedUrl(path, 600)
+      .then(({ data }) => setStampPreview(data?.signedUrl ?? null));
+  }, [c?.stamp_url]);
+
   if (!companyId) return <PageBody>Chýba aktívna firma.</PageBody>;
   if (!c) return <PageBody>Načítavam…</PageBody>;
 
   const accent: string = c.invoice_accent_color ?? "#0F7A4D";
 
-  async function onUpload(file: File) {
+  async function onUpload(file: File, druh: Obrazok) {
+    const o = OBRAZKY[druh];
     if (!/^image\/(png|jpeg)$/.test(file.type)) {
       toast.error("Podporované sú len PNG alebo JPG obrázky.");
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("Logo môže mať najviac 2 MB.");
+      toast.error(`${o.nazov} môže mať najviac 2 MB.`);
       return;
     }
-    setUploading(true);
+    setUploading(druh);
     const ext = file.type === "image/png" ? "png" : "jpg";
-    const path = `${companyId}/logo-${Date.now()}.${ext}`;
+    // Nové meno pri každom nahratí: zmení sa odtlačok firmy a staré PDF sa pregenerujú.
+    const path = `${companyId}/${o.predpona}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage
       .from("company-logos")
       .upload(path, file, { contentType: file.type, upsert: true });
     if (error) {
-      setUploading(false);
+      setUploading(null);
       return toast.error(error.message);
     }
-    const old = c.logo_url as string | null;
+    const old = c[o.stlpec] as string | null;
     const { error: upErr } = await supabase
       .from("companies")
-      .update({ logo_url: path })
+      .update({ [o.stlpec]: path } as any)
       .eq("id", companyId!);
-    setUploading(false);
+    setUploading(null);
     if (upErr) return toast.error(upErr.message);
     if (old && old !== path) await supabase.storage.from("company-logos").remove([old]);
-    setC({ ...c, logo_url: path });
-    toast.success("Logo nahraté");
+    setC({ ...c, [o.stlpec]: path });
+    toast.success(o.nahrate);
   }
 
-  async function removeLogo() {
-    const old = c.logo_url as string | null;
+  async function removeImage(druh: Obrazok) {
+    const o = OBRAZKY[druh];
+    const old = c[o.stlpec] as string | null;
     const { error } = await supabase
       .from("companies")
-      .update({ logo_url: null })
+      .update({ [o.stlpec]: null } as any)
       .eq("id", companyId!);
     if (error) return toast.error(error.message);
     if (old) await supabase.storage.from("company-logos").remove([old]);
-    setC({ ...c, logo_url: null });
-    toast.success("Logo odstránené");
+    setC({ ...c, [o.stlpec]: null });
+    toast.success(o.odstranene);
   }
 
   async function save() {
@@ -119,6 +155,7 @@ function InvoiceAppearancePage() {
       .update({
         invoice_accent_color: accent,
         invoice_show_logo: c.invoice_show_logo ?? true,
+        invoice_show_stamp: c.invoice_show_stamp ?? true,
         invoice_footer: c.invoice_footer ?? null,
       } as any)
       .eq("id", companyId!);
@@ -131,7 +168,7 @@ function InvoiceAppearancePage() {
     <>
       <PageHeader
         title="Vzhľad faktúry"
-        description="Logo, farba akcentu a pätička na PDF faktúrach a cenových ponukách."
+        description="Logo, pečiatka, farba akcentu a pätička na PDF faktúrach a cenových ponukách."
       />
       <PageBody>
         <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,320px)]">
@@ -162,16 +199,16 @@ function InvoiceAppearancePage() {
                     className="hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
-                      if (f) onUpload(f);
+                      if (f) onUpload(f, "logo");
                       e.target.value = "";
                     }}
                   />
                   <button
                     onClick={() => fileRef.current?.click()}
-                    disabled={uploading}
+                    disabled={uploading !== null}
                     className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
                   >
-                    {uploading ? (
+                    {uploading === "logo" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <ImageUp className="h-4 w-4" />
@@ -180,7 +217,7 @@ function InvoiceAppearancePage() {
                   </button>
                   {c.logo_url && (
                     <button
-                      onClick={removeLogo}
+                      onClick={() => removeImage("logo")}
                       className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-secondary px-3 text-sm"
                     >
                       <Trash2 className="h-4 w-4" /> Odstrániť
@@ -196,6 +233,70 @@ function InvoiceAppearancePage() {
                   className="h-4 w-4 rounded border-input"
                 />
                 Zobrazovať logo na dokladoch
+              </label>
+            </section>
+
+            {/* Pečiatka */}
+            <section className="rounded-xl border border-border bg-card p-6">
+              <h2 className="text-sm font-semibold">Pečiatka a podpis</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Najlepšie PNG s priehľadným pozadím, max. 2 MB. Zobrazí sa na faktúre a cenovej
+                ponuke vedľa súm, kde sa doklad podpisuje.
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-4">
+                <div className="flex h-24 w-40 items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 p-2">
+                  {stampPreview ? (
+                    <img
+                      src={stampPreview}
+                      alt="Pečiatka firmy na faktúre"
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Bez pečiatky</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    ref={stampRef}
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) onUpload(f, "stamp");
+                      e.target.value = "";
+                    }}
+                  />
+                  <button
+                    onClick={() => stampRef.current?.click()}
+                    disabled={uploading !== null}
+                    className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                  >
+                    {uploading === "stamp" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ImageUp className="h-4 w-4" />
+                    )}
+                    Nahrať pečiatku
+                  </button>
+                  {c.stamp_url && (
+                    <button
+                      onClick={() => removeImage("stamp")}
+                      className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-secondary px-3 text-sm"
+                    >
+                      <Trash2 className="h-4 w-4" /> Odstrániť
+                    </button>
+                  )}
+                </div>
+              </div>
+              <label className="mt-4 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={c.invoice_show_stamp ?? true}
+                  onChange={(e) => setC({ ...c, invoice_show_stamp: e.target.checked })}
+                  className="h-4 w-4 rounded border-input"
+                />
+                Zobrazovať pečiatku na dokladoch
               </label>
             </section>
 
@@ -308,6 +409,11 @@ function InvoiceAppearancePage() {
                 <span className="font-semibold">SPOLU K ÚHRADE</span>
                 <span className="font-bold">624,00 €</span>
               </div>
+              {(c.invoice_show_stamp ?? true) && stampPreview && (
+                <div className="mt-3">
+                  <img src={stampPreview} alt="Náhľad pečiatky" className="h-12 object-contain" />
+                </div>
+              )}
               {c.invoice_footer && (
                 <div className="mt-3 text-muted-foreground">{c.invoice_footer}</div>
               )}
