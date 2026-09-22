@@ -1387,6 +1387,7 @@ export type Database = {
           accepted_at: string | null
           accepted_user_id: string | null
           company_id: string
+          permissions: Json
           created_at: string
           email: string
           expires_at: string
@@ -1399,6 +1400,7 @@ export type Database = {
           accepted_at?: string | null
           accepted_user_id?: string | null
           company_id: string
+          permissions?: Json
           created_at?: string
           email: string
           expires_at?: string
@@ -1411,6 +1413,7 @@ export type Database = {
           accepted_at?: string | null
           accepted_user_id?: string | null
           company_id?: string
+          permissions?: Json
           created_at?: string
           email?: string
           expires_at?: string
@@ -1553,6 +1556,7 @@ export type Database = {
       company_users: {
         Row: {
           company_id: string
+          permissions: Json
           created_at: string
           id: string
           role: Database["public"]["Enums"]["company_role"]
@@ -1560,6 +1564,7 @@ export type Database = {
         }
         Insert: {
           company_id: string
+          permissions?: Json
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["company_role"]
@@ -1567,6 +1572,7 @@ export type Database = {
         }
         Update: {
           company_id?: string
+          permissions?: Json
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["company_role"]
@@ -7367,7 +7373,7 @@ export type Database = {
       accounting_system: "pohoda" | "omega" | "money" | "alfa_plus" | "other"
       api_key_mode: "test" | "live"
       cash_entry_type: "prijem" | "vydaj"
-      company_role: "owner" | "admin" | "accountant" | "employee"
+      company_role: "owner" | "admin" | "accountant" | "employee" | "custom"
       efaktura_channel: "peppol" | "digitalny_postar" | "email" | "manual"
       efaktura_delivery_status:
         | "pending"
@@ -7565,7 +7571,7 @@ export const Constants = {
       accounting_system: ["pohoda", "omega", "money", "alfa_plus", "other"],
       api_key_mode: ["test", "live"],
       cash_entry_type: ["prijem", "vydaj"],
-      company_role: ["owner", "admin", "accountant", "employee"],
+      company_role: ["owner", "admin", "accountant", "employee", "custom"],
       efaktura_channel: ["peppol", "digitalny_postar", "email", "manual"],
       efaktura_delivery_status: [
         "pending",

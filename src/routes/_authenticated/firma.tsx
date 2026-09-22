@@ -12,6 +12,8 @@ import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
 import { zabudniKrajinuDane } from "@/lib/faktero/krajina-firmy";
 import { BankoveUctyFirmy } from "@/components/faktero/banka/BankoveUctyFirmy";
+import { EditorOpravneni, VysvetlenieRoli } from "@/components/faktero/pristupy/Opravnenia";
+import { suhrnOpravneni, type Opravnenia } from "@/lib/faktero/opravnenia";
 export const Route = createFileRoute("/_authenticated/firma")({
   head: () => ({ meta: [{ title: "Firma — Faktero" }] }),
   component: CompanyPage,
@@ -328,11 +330,16 @@ const ROLA_POPIS: Record<string, string> = {
   admin: "Administrátor",
   accountant: "Účtovník",
   employee: "Používateľ",
+  custom: "Vlastný prístup",
 };
 
 function TeamSection({ companyId }: { companyId: string }) {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "accountant" | "employee">("employee");
+  const [role, setRole] = useState<"admin" | "accountant" | "employee" | "custom">("employee");
+  /** Oblasti pri pozvánke s vlastným prístupom. */
+  const [oprPozvanky, setOprPozvanky] = useState<Opravnenia>({});
+  /** Člen, ktorému sa práve upravuje vlastný prístup. */
+  const [upravuje, setUpravuje] = useState<{ userId: string; opr: Opravnenia } | null>(null);
   const [invs, setInvs] = useState<any[]>([]);
   const [clenovia, setClenovia] = useState<any[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -357,13 +364,14 @@ function TeamSection({ companyId }: { companyId: string }) {
     }
   }
 
-  async function zmenRolu(userId: string, novaRola: string) {
+  async function zmenRolu(userId: string, novaRola: string, opravnenia?: Opravnenia) {
     const { changeMemberRoleFn } = await import("@/lib/faktero/invitations.functions");
     try {
       await changeMemberRoleFn({
-        data: { company_id: companyId, user_id: userId, role: novaRola as any },
+        data: { company_id: companyId, user_id: userId, role: novaRola as any, permissions: opravnenia },
       });
-      toast.success("Rola zmenená");
+      toast.success(novaRola === "custom" ? "Prístup uložený" : "Rola zmenená");
+      setUpravuje(null);
       load();
     } catch (e: any) {
       toast.error(e?.message ?? "Rolu sa nepodarilo zmeniť");
@@ -387,10 +395,16 @@ function TeamSection({ companyId }: { companyId: string }) {
 
   async function invite(e: React.FormEvent) {
     e.preventDefault();
+    if (role === "custom" && !Object.keys(oprPozvanky).length) {
+      toast.error("Vyberte aspoň jednu oblasť, ku ktorej bude mať prístup.");
+      return;
+    }
     setBusy(true);
     try {
       const { createInvitationFn } = await import("@/lib/faktero/invitations.functions");
-      const r: any = await createInvitationFn({ data: { company_id: companyId, email, role } });
+      const r: any = await createInvitationFn({
+        data: { company_id: companyId, email, role, permissions: role === "custom" ? oprPozvanky : undefined },
+      });
       if (r?.emailOdoslany) {
         toast.success(`Pozvánka odoslaná na ${email}`);
         setOdkaz(null);
@@ -423,6 +437,7 @@ function TeamSection({ companyId }: { companyId: string }) {
       <p className="mt-1 text-sm text-muted-foreground">
         Pozvite kolegu alebo účtovníka na e-mail. Prijatie pozvánky ich pripojí k tejto firme.
       </p>
+      <VysvetlenieRoli />
 
       {clenovia && clenovia.length > 0 && (
         <div className="mt-5 overflow-hidden rounded-md border border-border">
@@ -445,15 +460,62 @@ function TeamSection({ companyId }: { companyId: string }) {
                   </td>
                   <td className="p-3">
                     <select
-                      value={m.role}
-                      onChange={(e) => zmenRolu(m.user_id, e.target.value)}
+                      value={upravuje?.userId === m.user_id ? "custom" : m.role}
+                      onChange={(e) =>
+                        // Vlastný prístup potrebuje oblasti — najprv sa vyklikajú, uloží sa potom.
+                        e.target.value === "custom"
+                          ? setUpravuje({ userId: m.user_id, opr: (m.permissions ?? {}) as Opravnenia })
+                          : zmenRolu(m.user_id, e.target.value)
+                      }
                       className="rounded-md border border-input bg-background px-2 py-1 text-sm"
                     >
                       <option value="owner">Majiteľ</option>
                       <option value="admin">Administrátor</option>
                       <option value="accountant">Účtovník</option>
                       <option value="employee">Používateľ</option>
+                      <option value="custom">Vlastný prístup</option>
                     </select>
+                    {m.role === "custom" && upravuje?.userId !== m.user_id && (
+                      <div className="mt-1 max-w-xs text-xs text-muted-foreground">
+                        {suhrnOpravneni(m.permissions)}{" "}
+                        <button
+                          type="button"
+                          onClick={() => setUpravuje({ userId: m.user_id, opr: (m.permissions ?? {}) as Opravnenia })}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          Upraviť
+                        </button>
+                      </div>
+                    )}
+                    {upravuje?.userId === m.user_id && (
+                      <div className="mt-2 min-w-[20rem]">
+                        <EditorOpravneni
+                          hodnota={upravuje?.opr ?? {}}
+                          onZmena={(opr) => setUpravuje({ userId: m.user_id, opr })}
+                        />
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const opr = upravuje?.opr ?? {};
+                              if (!Object.keys(opr).length)
+                                return toast.error("Vyberte aspoň jednu oblasť.");
+                              zmenRolu(m.user_id, "custom", opr);
+                            }}
+                            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+                          >
+                            Uložiť prístup
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setUpravuje(null)}
+                            className="rounded-md border border-border px-3 py-1.5 text-xs"
+                          >
+                            Zrušiť
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </td>
                   <td className="p-3 text-muted-foreground">
                     {new Date(m.created_at).toLocaleDateString("sk-SK")}
@@ -496,6 +558,7 @@ function TeamSection({ companyId }: { companyId: string }) {
             <option value="employee">Používateľ</option>
             <option value="accountant">Účtovník</option>
             <option value="admin">Administrátor</option>
+            <option value="custom">Vlastný prístup</option>
           </select>
         </label>
         <button
@@ -506,6 +569,14 @@ function TeamSection({ companyId }: { companyId: string }) {
           {busy ? "Odosielam…" : "Pozvať používateľa"}
         </button>
       </form>
+      {role === "custom" && (
+        <div className="mt-3">
+          <p className="text-sm text-muted-foreground">
+            Vyberte, ku ktorým oblastiam bude mať pozvaný prístup:
+          </p>
+          <EditorOpravneni hodnota={oprPozvanky} onZmena={setOprPozvanky} />
+        </div>
+      )}
 
       {odkaz && (
         <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
@@ -543,7 +614,12 @@ function TeamSection({ companyId }: { companyId: string }) {
                 return (
                   <tr key={r.id}>
                     <td className="p-3">{r.email}</td>
-                    <td className="p-3">{ROLA_POPIS[r.role] ?? r.role}</td>
+                    <td className="p-3">
+                      {ROLA_POPIS[r.role] ?? r.role}
+                      {r.role === "custom" && (
+                        <div className="text-xs text-muted-foreground">{suhrnOpravneni(r.permissions)}</div>
+                      )}
+                    </td>
                     <td className="p-3">{status}</td>
                     <td className="p-3 text-muted-foreground">
                       {new Date(r.created_at).toLocaleDateString("sk-SK")}

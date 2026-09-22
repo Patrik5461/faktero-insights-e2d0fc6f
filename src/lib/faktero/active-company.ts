@@ -38,11 +38,11 @@ export async function fetchMyCompanies() {
   if (!uid) return [];
   const { data, error } = await supabase
     .from("company_users")
-    .select("role, company:companies(id, name, ico, logo_url, module_employees)")
+    .select("role, permissions, company:companies(id, name, ico, logo_url, module_employees)")
     .eq("user_id", uid)
     .order("created_at", { ascending: true });
   if (error) throw error;
   return (data ?? [])
     .filter((r: any) => r.company)
-    .map((r: any) => ({ role: r.role, ...r.company }));
+    .map((r: any) => ({ role: r.role, permissions: r.permissions ?? {}, ...r.company }));
 }

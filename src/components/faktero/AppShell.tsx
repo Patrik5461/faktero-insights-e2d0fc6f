@@ -31,6 +31,7 @@ import {
   Route,
   IdCard,
 } from "lucide-react";
+import { oblastPodlaCesty, vidiOblast } from "@/lib/faktero/opravnenia";
 import { HLADANIE_OD, filtrujFirmy } from "@/lib/faktero/hladanie-firiem";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,6 +73,8 @@ type Company = {
   role: string;
   /** Modul Zamestnanci — zapína sa po firmách. */
   module_employees?: boolean | null;
+  /** Pri roli „custom“ oblasti, ku ktorým má človek prístup. */
+  permissions?: Record<string, string> | null;
 };
 
 /** `companyAdminOnly`: skryté pre bežných členov firmy — server tie dáta owner/adminovi
@@ -379,6 +382,8 @@ function filterNav(
   isCompanyAdmin: boolean,
   krajina: KrajinaDane = "SK",
   modulZamestnanci = false,
+  rola: string | null = null,
+  opravnenia: unknown = null,
 ): NavGroup[] {
   const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
   // "viac" je spoločné pre oba produkty a vždy ide na koniec lišty
@@ -395,6 +400,18 @@ function filterNav(
             ...g,
             children: g.children.filter((c) => !LEN_SK.some((x) => String(c.to).startsWith(x))),
           },
+    )
+    // Vlastný prístup: položky oblastí bez práva sa skryjú (databáza by aj tak nevydala nič).
+    .map((g) =>
+      rola === "custom"
+        ? {
+            ...g,
+            children: g.children.filter((c) => {
+              const o = oblastPodlaCesty(String(c.to));
+              return !o || vidiOblast(rola, opravnenia, o);
+            }),
+          }
+        : g,
     )
     .filter((g) => g.children.length > 0);
 }
@@ -456,7 +473,14 @@ export function AppShell({
   const krajina = useKrajinaDane();
   const view = resolveView(productMode, activeProduct);
   const isCompanyAdmin = active?.role === "owner" || active?.role === "admin";
-  const nav = filterNav(view, isCompanyAdmin, krajina, Boolean(active?.module_employees));
+  const nav = filterNav(
+    view,
+    isCompanyAdmin,
+    krajina,
+    Boolean(active?.module_employees),
+    active?.role ?? null,
+    active?.permissions ?? null,
+  );
   const homePath = landingPathFor(view);
   const canSwitch = productMode === "both";
 

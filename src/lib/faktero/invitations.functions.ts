@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { vycistiOpravnenia } from "./opravnenia";
 
 // randomToken() vydáva 48 hex znakov. Rozsah je zámerne voľnejší, aby prípadné
 // staršie tokeny neprestali fungovať, ale odfiltruje vstupy, ktoré tokenom ani
@@ -17,11 +18,13 @@ function randomToken(): string {
     .join("");
 }
 
-type InviteRole = "admin" | "accountant" | "employee";
+type InviteRole = "admin" | "accountant" | "employee" | "custom";
 
 export const createInvitationFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { company_id: string; email: string; role: InviteRole }) => d)
+  .validator(
+    (d: { company_id: string; email: string; role: InviteRole; permissions?: unknown }) => d,
+  )
   .handler(async ({ data, context }) => {
     const email = data.email.trim().toLowerCase();
     if (!email || !email.includes("@")) throw new Error("Neplatný email");
@@ -41,6 +44,8 @@ export const createInvitationFn = createServerFn({ method: "POST" })
         company_id: data.company_id,
         email,
         role: data.role,
+        // Oblasti majú zmysel len pri vlastnom prístupe; inak sa nič neukladá.
+        permissions: data.role === "custom" ? vycistiOpravnenia(data.permissions) : {},
         token,
         invited_by: context.userId,
       })
@@ -127,7 +132,12 @@ export const acceptInvitationFn = createServerFn({ method: "POST" })
     const { error: linkErr } = await supabaseAdmin
       .from("company_users")
       .upsert(
-        { company_id: inv.company_id, user_id: context.userId, role: inv.role },
+        {
+          company_id: inv.company_id,
+          user_id: context.userId,
+          role: inv.role,
+          permissions: (inv as any).permissions ?? {},
+        },
         { onConflict: "company_id,user_id" },
       );
     if (linkErr) throw linkErr;
@@ -146,7 +156,7 @@ export const listInvitationsFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: rows } = await context.supabase
       .from("company_invitations")
-      .select("id, email, role, accepted_at, expires_at, created_at")
+      .select("id, email, role, permissions, accepted_at, expires_at, created_at")
       .eq("company_id", data.company_id)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -164,7 +174,7 @@ export const revokeInvitationFn = createServerFn({ method: "POST" })
 
 /* ---------- členovia firmy ---------- */
 
-type RolaClena = "owner" | "admin" | "accountant" | "employee";
+type RolaClena = "owner" | "admin" | "accountant" | "employee" | "custom";
 
 /** Kto v tejto firme rozhoduje o prístupoch. */
 async function overAdmina(context: any, companyId: string) {
@@ -189,7 +199,7 @@ export const listMembersFn = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: clenovia, error } = await supabaseAdmin
       .from("company_users")
-      .select("user_id, role, created_at")
+      .select("user_id, role, permissions, created_at")
       .eq("company_id", data.company_id)
       .order("created_at");
     if (error) throw error;
@@ -203,6 +213,7 @@ export const listMembersFn = createServerFn({ method: "POST" })
     return (clenovia ?? []).map((c: any) => ({
       user_id: c.user_id as string,
       role: c.role as RolaClena,
+      permissions: (c.permissions ?? {}) as Record<string, string>,
       created_at: c.created_at as string,
       email: podlaId.get(c.user_id)?.email ?? null,
       full_name: podlaId.get(c.user_id)?.full_name ?? null,
@@ -223,7 +234,9 @@ async function poslednyMajitel(admin: any, companyId: string, userId: string) {
 
 export const changeMemberRoleFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: { company_id: string; user_id: string; role: RolaClena }) => d)
+  .validator(
+    (d: { company_id: string; user_id: string; role: RolaClena; permissions?: unknown }) => d,
+  )
   .handler(async ({ data, context }) => {
     await overAdmina(context, data.company_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -235,7 +248,10 @@ export const changeMemberRoleFn = createServerFn({ method: "POST" })
       throw new Error("Firma musí mať aspoň jedného majiteľa.");
     const { error } = await supabaseAdmin
       .from("company_users")
-      .update({ role: data.role })
+      .update({
+        role: data.role,
+        permissions: data.role === "custom" ? vycistiOpravnenia(data.permissions) : {},
+      })
       .eq("company_id", data.company_id)
       .eq("user_id", data.user_id);
     if (error) throw error;
