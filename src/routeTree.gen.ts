@@ -59,6 +59,7 @@ import { Route as AdminPlatformInvoicesRouteImport } from './routes/admin.platfo
 import { Route as AdminSeoRouteImport } from './routes/admin.seo'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
+import { Route as AuthPotvrdenieRouteImport } from './routes/auth.potvrdenie'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as DanovyDokladTokenRouteImport } from './routes/danovy-doklad.$token'
@@ -524,6 +525,11 @@ const AdminUsageRoute = AdminUsageRouteImport.update({
   id: '/usage',
   path: '/usage',
   getParentRoute: () => AdminRoute,
+} as any)
+const AuthPotvrdenieRoute = AuthPotvrdenieRouteImport.update({
+  id: '/auth/potvrdenie',
+  path: '/auth/potvrdenie',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/',
@@ -1739,6 +1745,7 @@ export interface FileRoutesByFullPath {
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
+  '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
@@ -1993,6 +2000,7 @@ export interface FileRoutesByTo {
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
+  '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
@@ -2256,6 +2264,7 @@ export interface FileRoutesById {
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
   '/admin/usage': typeof AdminUsageRoute
+  '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/danovy-doklad/$token': typeof DanovyDokladTokenRoute
   '/docs/api': typeof DocsApiRoute
@@ -2520,6 +2529,7 @@ export interface FileRouteTypes {
     | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
+    | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
     | '/docs/api'
@@ -2774,6 +2784,7 @@ export interface FileRouteTypes {
     | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
+    | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
     | '/docs/api'
@@ -3036,6 +3047,7 @@ export interface FileRouteTypes {
     | '/admin/seo'
     | '/admin/subscriptions'
     | '/admin/usage'
+    | '/auth/potvrdenie'
     | '/blog/$slug'
     | '/danovy-doklad/$token'
     | '/docs/api'
@@ -3270,6 +3282,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UctovniciRoute: typeof UctovniciRouteWithChildren
   VyvojariRoute: typeof VyvojariRouteWithChildren
+  AuthPotvrdenieRoute: typeof AuthPotvrdenieRoute
   DanovyDokladTokenRoute: typeof DanovyDokladTokenRoute
   DocsApiRoute: typeof DocsApiRoute
   FakturaTokenRoute: typeof FakturaTokenRoute
@@ -3711,6 +3724,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/usage'
       preLoaderRoute: typeof AdminUsageRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/auth/potvrdenie': {
+      id: '/auth/potvrdenie'
+      path: '/auth/potvrdenie'
+      fullPath: '/auth/potvrdenie'
+      preLoaderRoute: typeof AuthPotvrdenieRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/blog/': {
       id: '/blog/'
@@ -5725,6 +5745,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UctovniciRoute: UctovniciRouteWithChildren,
   VyvojariRoute: VyvojariRouteWithChildren,
+  AuthPotvrdenieRoute: AuthPotvrdenieRoute,
   DanovyDokladTokenRoute: DanovyDokladTokenRoute,
   DocsApiRoute: DocsApiRoute,
   FakturaTokenRoute: FakturaTokenRoute,
