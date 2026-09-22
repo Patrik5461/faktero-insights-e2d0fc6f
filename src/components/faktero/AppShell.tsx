@@ -31,6 +31,7 @@ import {
   Route,
   IdCard,
 } from "lucide-react";
+import { HLADANIE_OD, filtrujFirmy } from "@/lib/faktero/hladanie-firiem";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useRef, type ReactNode } from "react";
@@ -66,6 +67,7 @@ import type { KrajinaDane } from "@/lib/faktero/vat-rates";
 type Company = {
   id: string;
   name: string;
+  ico?: string | null;
   logo_url?: string | null;
   role: string;
   /** Modul Zamestnanci — zapína sa po firmách. */
@@ -416,6 +418,7 @@ export function AppShell({
   const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const navigate = useNavigate();
   const active = companies.find((c) => c.id === activeId) ?? companies[0];
+  const [hladanieFiriem, setHladanieFiriem] = useState("");
   const [search, setSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   /* Zbalenie panela si pamätá prehliadač. Čítanie je v efekte, nie v
@@ -671,7 +674,7 @@ export function AppShell({
 
             {/* Company switcher — pill */}
             {active && (
-              <DropdownMenu>
+              <DropdownMenu onOpenChange={(o) => !o && setHladanieFiriem("")}>
                 <DropdownMenuTrigger className="hidden min-w-0 items-center gap-1.5 rounded-full border-[0.5px] border-border bg-background py-1 pl-1 pr-2 text-[12px] text-foreground hover:bg-secondary/60 md:inline-flex">
                   <span
                     className={`grid h-[17px] w-[17px] shrink-0 place-items-center rounded-full bg-gradient-to-br ${avatarGradient(active.name)} text-[9px] font-semibold text-white`}
@@ -683,7 +686,26 @@ export function AppShell({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-64">
                   <DropdownMenuLabel>Firmy</DropdownMenuLabel>
-                  {companies.map((c) => (
+                  {/* Účtovník môže mať stovky firiem — od šiestich sa dá hľadať. */}
+                  {companies.length >= HLADANIE_OD && (
+                    <div className="px-2 pb-1.5">
+                      <input
+                        autoFocus
+                        value={hladanieFiriem}
+                        onChange={(e) => setHladanieFiriem(e.target.value)}
+                        // Menu inak písmená berie ako skok na položku a pole by nepísalo.
+                        onKeyDown={(e) => e.key !== "Escape" && e.stopPropagation()}
+                        placeholder="Hľadať firmu alebo IČO…"
+                        aria-label="Hľadať firmu"
+                        className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+                  )}
+                  <div className="max-h-80 overflow-y-auto">
+                  {filtrujFirmy(companies, hladanieFiriem, activeId).length === 0 && (
+                    <p className="px-2 py-3 text-center text-sm text-muted-foreground">Nič sa nenašlo.</p>
+                  )}
+                  {filtrujFirmy(companies, hladanieFiriem, activeId).map((c) => (
                     <DropdownMenuItem
                       key={c.id}
                       onClick={() => onChangeCompany(c.id)}
@@ -694,10 +716,14 @@ export function AppShell({
                       >
                         {(c.name?.[0] ?? "F").toUpperCase()}
                       </span>
-                      <span className="truncate">{c.name}</span>
-                      <span className="ml-auto text-xs text-muted-foreground">{c.role}</span>
+                      <span className="min-w-0 truncate">
+                        {c.name}
+                        {c.ico && <span className="block text-[11px] font-normal text-muted-foreground">IČO {c.ico}</span>}
+                      </span>
+                      <span className="ml-auto pl-2 text-xs text-muted-foreground">{c.role}</span>
                     </DropdownMenuItem>
                   ))}
+                  </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onSelect={(e) => {
@@ -895,6 +921,7 @@ function MobileNav({
   onAddCompany: () => void;
   onClose: () => void;
 }) {
+  const [hladanie, setHladanie] = useState("");
   const locSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
   const sekcie: SekciaPanela[] = nav.map((g) => ({
     key: g.key,
@@ -942,12 +969,21 @@ function MobileNav({
       {active && (
         <div className="border-b border-border px-4 py-3">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Firma</div>
+          {companies.length >= HLADANIE_OD && (
+            <input
+              value={hladanie}
+              onChange={(e) => setHladanie(e.target.value)}
+              placeholder="Hľadať firmu alebo IČO…"
+              aria-label="Hľadať firmu"
+              className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+            />
+          )}
           <select
             value={active.id}
             onChange={(e) => onChangeCompany(e.target.value)}
             className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
           >
-            {companies.map((c) => (
+            {[active, ...filtrujFirmy(companies, hladanie).filter((c) => c.id !== active.id)].map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>

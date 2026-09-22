@@ -17,6 +17,7 @@ import { Logo } from "@/components/faktero/Logo";
 import { JE_KNIHA_JAZD } from "@/lib/mobile/apka";
 import { ZnackaJazd } from "./jazdy/ZnackaJazd";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { HLADANIE_OD, filtrujFirmy } from "@/lib/faktero/hladanie-firiem";
 
 type Firma = { id: string; name: string };
 
@@ -234,6 +235,9 @@ export function VyberFirmy({
   firmaSaNeda?: boolean;
 }) {
   const { t } = usePreklad();
+  // Účtovník môže mať stovky firiem — od šiestich sa dá hľadať (názov aj IČO).
+  const [hladanie, setHladanie] = useState("");
+  const zobrazene = filtrujFirmy(firmy, hladanie);
   return (
     <MobilObrazovka title={t("app.vyberteFirmu")} subtitle={t("app.doVybranejFirmy")}>
       {firmy.length === 0 ? (
@@ -251,7 +255,19 @@ export function VyberFirmy({
         </div>
       ) : (
         <div className="space-y-2">
-          {firmy.map((f) => (
+          {firmy.length >= HLADANIE_OD && (
+            <input
+              value={hladanie}
+              onChange={(e) => setHladanie(e.target.value)}
+              placeholder={t("app.hladatFirmu")}
+              aria-label={t("app.hladatFirmu")}
+              className="w-full rounded-app border border-app-ramik bg-app-karta px-4 py-3 text-[15px] outline-none"
+            />
+          )}
+          {zobrazene.length === 0 && (
+            <p className="py-4 text-center text-sm text-app-text-2">{t("app.nicSaNenaslo")}</p>
+          )}
+          {zobrazene.map((f) => (
             <VelkeTlacidlo key={f.id} icon={Building2} label={f.name} onClick={() => onVyber(f)} />
           ))}
           {onNovaFirma && !firmaSaNeda && (

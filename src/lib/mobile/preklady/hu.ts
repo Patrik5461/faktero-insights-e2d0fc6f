@@ -582,6 +582,8 @@ export const hu: Partial<Record<Kluc, string>> = {
   "app.overit": "Ellenőrzés",
   "app.overujem": "Ellenőrzés…",
   "app.inyUcet": "Bejelentkezés másik fiókkal",
+  "app.hladatFirmu": "Cég keresése (név vagy azonosító)",
+  "app.nicSaNenaslo": "Nincs találat.",
   "app.zamknute": "A Faktero zárolva van",
   "app.zamknuteJazdy": "Az útnyilvántartás zárolva van",
   "app.odomknitePokracujte": "Oldja fel biometriával, és folytassa ott, ahol abbahagyta.",

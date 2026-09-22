@@ -586,6 +586,8 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.overit": "Bestätigen",
   "app.overujem": "Wird bestätigt…",
   "app.inyUcet": "Mit anderem Konto anmelden",
+  "app.hladatFirmu": "Firma suchen (Name oder ID)",
+  "app.nicSaNenaslo": "Nichts gefunden.",
   "app.zamknute": "Faktero ist gesperrt",
   "app.zamknuteJazdy": "Das Fahrtenbuch ist gesperrt",
   "app.odomknitePokracujte":

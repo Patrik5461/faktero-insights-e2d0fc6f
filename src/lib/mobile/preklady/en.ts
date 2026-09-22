@@ -585,6 +585,8 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.overit": "Verify",
   "app.overujem": "Verifying…",
   "app.inyUcet": "Sign in with another account",
+  "app.hladatFirmu": "Search company (name or ID)",
+  "app.nicSaNenaslo": "Nothing found.",
   "app.zamknute": "Faktero is locked",
   "app.zamknuteJazdy": "The mileage log is locked",
   "app.odomknitePokracujte": "Unlock it with biometrics and pick up where you left off.",

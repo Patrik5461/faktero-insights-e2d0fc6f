@@ -592,6 +592,8 @@ export const sk = {
   "app.overit": "Overiť",
   "app.overujem": "Overujem…",
   "app.inyUcet": "Prihlásiť sa iným účtom",
+  "app.hladatFirmu": "Hľadať firmu (názov alebo IČO)",
+  "app.nicSaNenaslo": "Nič sa nenašlo.",
   "app.zamknute": "Faktero je zamknuté",
   "app.zamknuteJazdy": "Kniha jázd je zamknutá",
   "app.odomknitePokracujte": "Odomknite ho biometriou a pokračujte tam, kde ste skončili.",

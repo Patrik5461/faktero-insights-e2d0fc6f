@@ -579,6 +579,8 @@ export const cs: Partial<Record<Kluc, string>> = {
   "app.overit": "Ověřit",
   "app.overujem": "Ověřuji…",
   "app.inyUcet": "Přihlásit se jiným účtem",
+  "app.hladatFirmu": "Hledat firmu (název nebo IČO)",
+  "app.nicSaNenaslo": "Nic nenalezeno.",
   "app.zamknute": "Faktero je zamčeno",
   "app.zamknuteJazdy": "Kniha jízd je zamčená",
   "app.odomknitePokracujte": "Odemkněte jej biometrií a pokračujte tam, kde jste skončili.",
