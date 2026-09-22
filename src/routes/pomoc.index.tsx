@@ -25,7 +25,9 @@ import {
   Banknote,
   Sparkles,
   Smartphone,
+  PlayCircle,
 } from "lucide-react";
+import { VIDEO_NAVODY } from "@/lib/faktero/video-navody";
 
 export const Route = createFileRoute("/pomoc/")({
   head: () => ({
@@ -291,6 +293,25 @@ function Page() {
           </a>
           .
         </p>
+        {VIDEO_NAVODY.length > 0 && (
+          <Link
+            to="/pomoc/videa"
+            className="mt-8 flex items-center gap-4 rounded-xl border border-emerald-500/30 bg-emerald-50/60 p-5 transition hover:border-emerald-500/60 hover:shadow-sm dark:bg-emerald-950/20"
+          >
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-emerald-700 text-white">
+              <PlayCircle className="h-6 w-6" />
+            </span>
+            <div>
+              <div className="font-semibold">Video návody</div>
+              <p className="text-sm text-muted-foreground">
+                Pozrite si, ako na to — krátke videá so slovenským komentárom.
+              </p>
+            </div>
+            <span className="ml-auto hidden text-sm font-medium text-emerald-700 sm:block dark:text-emerald-300">
+              {VIDEO_NAVODY.length === 1 ? "1 video" : `${VIDEO_NAVODY.length} videá`} →
+            </span>
+          </Link>
+        )}
         {SKUPINY.map((skupina) => (
           <section key={skupina} className="mt-10">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">

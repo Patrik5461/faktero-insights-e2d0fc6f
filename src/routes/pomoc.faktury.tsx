@@ -1,5 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { VideoNavodPlayer } from "@/components/faktero/VideoNavodPlayer";
+import { videoJsonLd, videoNavod } from "@/lib/faktero/video-navody";
+
+const VIDEO_PRVA_FAKTURA = videoNavod("vytvorenie-prvej-faktury");
 
 export const Route = createFileRoute("/pomoc/faktury")({
   head: () => ({
@@ -14,6 +18,9 @@ export const Route = createFileRoute("/pomoc/faktury")({
       { property: "og:url", content: "https://faktero.sk/pomoc/faktury" },
     ],
     links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/faktury" }],
+    scripts: VIDEO_PRVA_FAKTURA
+      ? [{ type: "application/ld+json", children: JSON.stringify(videoJsonLd(VIDEO_PRVA_FAKTURA)) }]
+      : [],
   }),
   component: Page,
 });
@@ -24,15 +31,30 @@ const sections: HelpSection[] = [
     title: "Ako vytvoriť faktúru",
     body: (
       <>
+        {VIDEO_PRVA_FAKTURA && (
+          <VideoNavodPlayer video={VIDEO_PRVA_FAKTURA} className="not-prose mb-5" />
+        )}
         <ol>
           <li>
-            V ľavom menu otvorte <strong>Faktúry → Nová faktúra</strong>.
+            V ľavom menu otvorte <strong>Fakturácia → Nová faktúra</strong> (alebo hore vpravo{" "}
+            <strong>Vytvoriť → Nová faktúra</strong>).
           </li>
-          <li>Vyberte odberateľa zo zoznamu alebo vytvorte nového.</li>
-          <li>Pridajte položky — ručne alebo zo skladu/produktov.</li>
-          <li>Skontrolujte DPH, dátum splatnosti a variabilný symbol.</li>
           <li>
-            Uložte ako <em>Koncept</em> alebo rovno <em>Odoslať</em>.
+            V poli <strong>Odberateľ</strong> začnite písať názov alebo IČO a vyberte firmu zo
+            zoznamu. Nového odberateľa pridáte tlačidlom <strong>Vytvoriť nového odberateľa</strong>
+            .
+          </li>
+          <li>
+            Dátum vystavenia a dodania sa vyplní sám. Splatnosť nastavíte jedným klikom na{" "}
+            <strong>7d</strong>, <strong>14d</strong> alebo <strong>30d</strong>.
+          </li>
+          <li>
+            Pridajte položky — ručne (názov, množstvo, cena, sadzba DPH) alebo cez{" "}
+            <strong>Z katalógu</strong>. Sumu bez DPH, DPH aj sumu na úhradu Faktero prepočíta hneď.
+          </li>
+          <li>
+            Kliknite na <strong>Vystaviť faktúru</strong>. Otvorí sa detail faktúry, odkiaľ ju
+            odošlete e-mailom alebo vygenerujete PDF.
           </li>
         </ol>
         <p>Číslovanie sa generuje automaticky podľa nastavenej rady vo firme.</p>
@@ -45,8 +67,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Na detaile faktúry kliknite na <strong>Stiahnuť PDF</strong>. Ak ešte neexistuje, Faktero
-          ho vytvorí automaticky a uloží do priloženého úložiska.
+          Na detaile faktúry kliknite na <strong>Vygenerovať PDF</strong>. Ak ešte neexistuje,
+          Faktero ho vytvorí automaticky a uloží do priloženého úložiska.
         </p>
         <p>
           PDF obsahuje vaše logo, IBAN, variabilný symbol a{" "}
@@ -152,7 +174,7 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          V sekcii <strong>Faktúry → Opakované</strong> nastavíte šablónu, frekvenciu
+          V sekcii <strong>Fakturácia → Opakované faktúry</strong> nastavíte šablónu, frekvenciu
           (mesačne/štvrťročne/ročne) a dátum spustenia.
         </p>
         <ul>

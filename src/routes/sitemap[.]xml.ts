@@ -65,6 +65,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           // vyhľadávače našli len náhodou cez odkazy z centra pomoci.
           { path: "/pomoc", priority: 0.7 },
           { path: "/pomoc/faktury", priority: 0.6 },
+          { path: "/pomoc/videa", priority: 0.6 },
           { path: "/pomoc/nastavenia", priority: 0.6 },
           { path: "/pomoc/ai-asistent", priority: 0.6 },
           { path: "/pomoc/ponuky", priority: 0.6 },

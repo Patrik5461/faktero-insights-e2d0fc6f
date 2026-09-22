@@ -99,6 +99,7 @@ import { Route as PomocPrijateFakturyRouteImport } from './routes/pomoc.prijate-
 import { Route as PomocRoleRouteImport } from './routes/pomoc.role'
 import { Route as PomocSkladRouteImport } from './routes/pomoc.sklad'
 import { Route as PomocUzavierkaRouteImport } from './routes/pomoc.uzavierka'
+import { Route as PomocVideaRouteImport } from './routes/pomoc.videa'
 import { Route as PomocZakazkyRouteImport } from './routes/pomoc.zakazky'
 import { Route as PravneIndexRouteImport } from './routes/pravne.index'
 import { Route as PravneCookiesRouteImport } from './routes/pravne.cookies'
@@ -729,6 +730,11 @@ const PomocSkladRoute = PomocSkladRouteImport.update({
 const PomocUzavierkaRoute = PomocUzavierkaRouteImport.update({
   id: '/pomoc/uzavierka',
   path: '/pomoc/uzavierka',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocVideaRoute = PomocVideaRouteImport.update({
+  id: '/pomoc/videa',
+  path: '/pomoc/videa',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomocZakazkyRoute = PomocZakazkyRouteImport.update({
@@ -1806,6 +1812,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/role': typeof PomocRoleRoute
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
+  '/pomoc/videa': typeof PomocVideaRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
@@ -2065,6 +2072,7 @@ export interface FileRoutesByTo {
   '/pomoc/role': typeof PomocRoleRoute
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
+  '/pomoc/videa': typeof PomocVideaRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
@@ -2333,6 +2341,7 @@ export interface FileRoutesById {
   '/pomoc/role': typeof PomocRoleRoute
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
+  '/pomoc/videa': typeof PomocVideaRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
@@ -2602,6 +2611,7 @@ export interface FileRouteTypes {
     | '/pomoc/role'
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
+    | '/pomoc/videa'
     | '/pomoc/zakazky'
     | '/pravne/cookies'
     | '/pravne/gdpr'
@@ -2861,6 +2871,7 @@ export interface FileRouteTypes {
     | '/pomoc/role'
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
+    | '/pomoc/videa'
     | '/pomoc/zakazky'
     | '/pravne/cookies'
     | '/pravne/gdpr'
@@ -3128,6 +3139,7 @@ export interface FileRouteTypes {
     | '/pomoc/role'
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
+    | '/pomoc/videa'
     | '/pomoc/zakazky'
     | '/pravne/cookies'
     | '/pravne/gdpr'
@@ -3364,6 +3376,7 @@ export interface RootRouteChildren {
   PomocRoleRoute: typeof PomocRoleRoute
   PomocSkladRoute: typeof PomocSkladRoute
   PomocUzavierkaRoute: typeof PomocUzavierkaRoute
+  PomocVideaRoute: typeof PomocVideaRoute
   PomocZakazkyRoute: typeof PomocZakazkyRoute
   PravneCookiesRoute: typeof PravneCookiesRoute
   PravneGdprRoute: typeof PravneGdprRoute
@@ -4055,6 +4068,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/uzavierka'
       fullPath: '/pomoc/uzavierka'
       preLoaderRoute: typeof PomocUzavierkaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/videa': {
+      id: '/pomoc/videa'
+      path: '/pomoc/videa'
+      fullPath: '/pomoc/videa'
+      preLoaderRoute: typeof PomocVideaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/zakazky': {
@@ -5861,6 +5881,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocRoleRoute: PomocRoleRoute,
   PomocSkladRoute: PomocSkladRoute,
   PomocUzavierkaRoute: PomocUzavierkaRoute,
+  PomocVideaRoute: PomocVideaRoute,
   PomocZakazkyRoute: PomocZakazkyRoute,
   PravneCookiesRoute: PravneCookiesRoute,
   PravneGdprRoute: PravneGdprRoute,
