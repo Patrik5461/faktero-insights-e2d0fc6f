@@ -210,18 +210,38 @@ async function notifikaciaNespracovanychDokladov(companyId: string): Promise<App
 const PORADIE_ZAVAZNOSTI = { danger: 0, warning: 1, info: 2 } as const;
 
 /** Faktúry, banka aj zamestnanci v jednom zozname, zoradené rovnako. */
-async function vsetkyNotifikacie(companyId: string): Promise<AppNotification[]> {
-  const [signaly, zamestnanci, doklady] = await Promise.all([
-    zozbierajSignaly(companyId),
-    notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
-    notifikaciaNespracovanychDokladov(companyId).catch(() => [] as AppNotification[]),
-  ]);
-  // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
-  // inak najstaršie (najdlhšie po termíne).
-  return [...buildNotifications(signaly), ...zamestnanci, ...doklady].sort((a, b) => {
-    const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];
-    if (podlaZavaznosti !== 0) return podlaZavaznosti;
-    return a.severity === "info" ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
+async function vsetkyNotifikacie(companyId: string, userId: string): Promise<AppNotification[]> {
+  const zoznam = await (async () => {
+    const [signaly, zamestnanci, doklady] = await Promise.all([
+      zozbierajSignaly(companyId),
+      notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
+      notifikaciaNespracovanychDokladov(companyId).catch(() => [] as AppNotification[]),
+    ]);
+    // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
+    // inak najstaršie (najdlhšie po termíne).
+    return [...buildNotifications(signaly), ...zamestnanci, ...doklady].sort((a, b) => {
+      const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];
+      if (podlaZavaznosti !== 0) return podlaZavaznosti;
+      return a.severity === "info" ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
+    });
+  })();
+  /*
+    Signály sa zbierajú servisným kľúčom, ktorý obchádza oprávnenia v databáze.
+    Človek s vlastným prístupom preto dostane len upozornenia z oblastí, ku
+    ktorým prístup má — rovnaké pravidlo ako menu (podľa stránky, kam vedú).
+  */
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: clen } = await supabaseAdmin
+    .from("company_users")
+    .select("role, permissions")
+    .eq("company_id", companyId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (clen?.role !== "custom") return zoznam;
+  const { oblastPodlaCesty, vidiOblast } = await import("./opravnenia");
+  return zoznam.filter((n) => {
+    const o = oblastPodlaCesty(String(n.to ?? "").split("?")[0]!);
+    return !o || vidiOblast(clen.role, clen.permissions, o);
   });
 }
 
@@ -234,7 +254,7 @@ export const listNotifications = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const [vsetky, precitane] = await Promise.all([
-      vsetkyNotifikacie(data.company_id),
+      vsetkyNotifikacie(data.company_id, context.userId),
       supabaseAdmin
         .from("notification_reads")
         .select("notification_key")
@@ -257,7 +277,7 @@ export const markNotificationsRead = createServerFn({ method: "POST" })
     const keys =
       data.keys && data.keys.length > 0
         ? data.keys
-        : (await vsetkyNotifikacie(data.company_id)).map((n) => n.key);
+        : (await vsetkyNotifikacie(data.company_id, context.userId)).map((n) => n.key);
     if (keys.length === 0) return { ok: true, marked: 0 };
 
     // Kľúč sa môže označiť opakovane — unikátny index to pretečie na no-op.
