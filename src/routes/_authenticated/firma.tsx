@@ -11,6 +11,7 @@ import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 
 import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
 import { zabudniKrajinuDane } from "@/lib/faktero/krajina-firmy";
+import { BankoveUctyFirmy } from "@/components/faktero/banka/BankoveUctyFirmy";
 export const Route = createFileRoute("/_authenticated/firma")({
   head: () => ({ meta: [{ title: "Firma — Faktero" }] }),
   component: CompanyPage,
@@ -32,7 +33,9 @@ function CompanyPage() {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    const { id, created_at, updated_at, created_by, ...patch } = c;
+    // IBAN a SWIFT spravujú Bankové účty nižšie — uloženie firmy ich nesmie
+    // prepísať hodnotou z času, keď sa stránka otvorila.
+    const { id, created_at, updated_at, created_by, iban: _iban, swift: _swift, ...patch } = c;
     const { error } = await supabase.from("companies").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
     // Krajina určuje sadzby DPH a formuláre si ju pamätajú — po zmene sa musí
@@ -96,16 +99,6 @@ function CompanyPage() {
           <VyberKrajiny hodnota={c.country} onZmena={f("country")} />
           <In label="Telefón" value={c.phone ?? ""} onChange={f("phone")} />
           <In label="Web" value={c.website ?? ""} onChange={f("website")} />
-          <div>
-            <In label="IBAN" value={c.iban ?? ""} onChange={f("iban")} />
-            {/* Bez IBAN-u sa na faktúre nevykreslia platobné údaje ani QR platba. */}
-            {!c.iban && (
-              <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-                Bez IBAN-u nebude na faktúrach číslo účtu ani QR platba.
-              </p>
-            )}
-          </div>
-          <In label="SWIFT/BIC" value={c.swift ?? ""} onChange={f("swift")} />
           {/* Predvolená mena firmy sa dedí do každého nového dokladu, takže
               práve tu voľný text škodí najviac. */}
           <label className="block">
@@ -319,6 +312,10 @@ function CompanyPage() {
             </button>
           </div>
         </form>
+
+        <div className="mt-6">
+          <BankoveUctyFirmy companyId={c.id} />
+        </div>
 
         <TeamSection companyId={c.id} />
       </PageBody>

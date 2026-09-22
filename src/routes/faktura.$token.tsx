@@ -20,7 +20,7 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     const { data: f } = await supabaseAdmin
       .from("invoices")
       .select(
-        "id, company_id, invoice_number, type, status, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, deleted_at",
+        "id, company_id, invoice_number, type, status, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, deleted_at, payment_iban, payment_swift",
       )
       .eq("public_token", data.token)
       .maybeSingle();
@@ -41,8 +41,10 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     ]);
 
     // `id` ani `company_id` sa von neposielajú — návštevník ich nepotrebuje.
-    const { id: _id, company_id: _c, deleted_at: _d, ...doklad } = f as any;
-    return { doklad, polozky: polozky ?? [], firma: firma ?? null };
+    const { id: _id, company_id: _c, deleted_at: _d, payment_iban: _pi, payment_swift: _ps, ...doklad } = f as any;
+    // Účet, ktorý si faktúra zapamätala, má prednosť pred účtom firmy.
+    const { sUctomFaktury } = await import("@/lib/faktero/platobny-ucet");
+    return { doklad, polozky: polozky ?? [], firma: firma ? sUctomFaktury(firma, f as any) : null };
   });
 
 export const Route = createFileRoute("/faktura/$token")({

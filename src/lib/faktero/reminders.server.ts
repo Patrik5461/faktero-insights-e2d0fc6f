@@ -1,5 +1,6 @@
 import { runInBatches, selectByIds } from "./batch.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { sUctomFaktury } from "./platobny-ucet";
 
 export type ReminderNumber = 1 | 2 | 3;
 
@@ -33,7 +34,7 @@ function applyVars(s: string, inv: any, company: any) {
     ["total", total],
     ["company_name", company?.name ?? ""],
     ["customer_name", inv.customer_name ?? ""],
-    ["iban", company?.iban ?? ""],
+    ["iban", sUctomFaktury(company ?? {}, inv).iban ?? ""],
     ["variable_symbol", inv.variable_symbol ?? inv.invoice_number ?? ""],
   ];
   let out = s;
@@ -78,7 +79,7 @@ export function buildReminderContent({
   const message = applyVars(messageTpl, invoice, company);
 
   const paymentDetails = [
-    company?.iban ? `IBAN: ${company.iban}` : null,
+    sUctomFaktury(company ?? {}, invoice).iban ? `IBAN: ${sUctomFaktury(company ?? {}, invoice).iban}` : null,
     invoice?.variable_symbol
       ? `VS: ${invoice.variable_symbol}`
       : `VS: ${invoice.invoice_number ?? ""}`,

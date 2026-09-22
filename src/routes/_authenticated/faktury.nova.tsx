@@ -45,6 +45,7 @@ import { DEFAULT_VAT_RATE, sadzbyKrajiny, zakladnaSadzba } from "@/lib/faktero/v
 import { MENY } from "@/lib/faktero/mena";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
   /**
@@ -142,6 +143,8 @@ function NewInvoice() {
     order_number: "",
     currency: "EUR",
     payment_method: "bank_transfer",
+    /** Účet, na ktorý majú prísť peniaze; prázdny = predvolený účet firmy. */
+    payment_account_id: "" as string,
     delivery_method: "",
     rounding_mode: "per_document" as "per_item" | "per_document" | "retail",
     reverse_charge: false,
@@ -538,6 +541,7 @@ function NewInvoice() {
             ? form.reverse_charge_type || "domestic_69"
             : null,
           advance_invoice_id: form.advance_invoice_id || null,
+          payment_account_id: form.payment_account_id || null,
           opravuje_fakturu_id: form.opravuje_fakturu_id || null,
           advance_amount: form.advance_amount ? Number(form.advance_amount) : null,
           job_id: form.job_id || null,
@@ -779,6 +783,14 @@ function NewInvoice() {
                   ))}
                 </select>
               </div>
+              {form.payment_method === "bank_transfer" && (
+                <VyberUctu
+                  companyId={getActiveCompanyId()}
+                  value={form.payment_account_id || null}
+                  onChange={(id) => setForm((f) => ({ ...f, payment_account_id: id }))}
+                  className="[&>span]:text-xs [&>span]:font-medium"
+                />
+              )}
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Mena</label>
                 <select

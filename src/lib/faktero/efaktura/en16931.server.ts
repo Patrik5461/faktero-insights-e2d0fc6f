@@ -5,6 +5,7 @@
  * affect XML generation.
  */
 import type { EN16931Invoice, EN16931Line, EN16931Party, EN16931TaxSubtotal } from "./types";
+import { sUctomFaktury } from "../platobny-ucet";
 
 type CompanyRow = {
   id: string;
@@ -214,7 +215,9 @@ export function mapToEN16931(args: {
   customizationId?: string;
   profileId?: string;
 }): EN16931Invoice {
-  const { company, profile, invoice, items } = args;
+  const { profile, invoice, items } = args;
+  // Účet z faktúry, ak si ho zapamätala — inak účet firmy.
+  const company = sUctomFaktury(args.company, invoice as any);
   const customizationId =
     args.customizationId ??
     "urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0";

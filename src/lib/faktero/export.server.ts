@@ -7,6 +7,7 @@ import {
   krajinaDane,
   type KrajinaDane,
 } from "./vat-rates";
+import { sUctomFaktury } from "./platobny-ucet";
 type InvoiceRow = any;
 type ItemRow = any;
 type CompanyRow = any;
@@ -494,8 +495,8 @@ export function polozkyFaktur(opts: {
           </typ:address>
         </inv:partnerIdentity>
         <inv:paymentType><typ:paymentType>${forma}</typ:paymentType></inv:paymentType>${
-          company?.iban
-            ? `\n        <inv:account><typ:accountNo>${esc(company.iban)}</typ:accountNo></inv:account>`
+          sUctomFaktury(company ?? {}, invoice).iban
+            ? `\n        <inv:account><typ:accountNo>${esc(sUctomFaktury(company ?? {}, invoice).iban)}</typ:accountNo></inv:account>`
             : ""
         }
       </inv:invoiceHeader>

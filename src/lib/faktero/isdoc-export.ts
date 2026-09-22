@@ -1,4 +1,5 @@
 import { krajinaDane } from "./vat-rates";
+import { sUctomFaktury } from "./platobny-ucet";
 
 /**
  * ISDOC — český národný formát elektronickej faktúry.
@@ -168,7 +169,9 @@ export function buildIsdoc(opts: {
   company: Riadok;
   customer?: Riadok | null;
 }): string {
-  const { invoice, items, company } = opts;
+  const { invoice, items } = opts;
+  // Účet z faktúry, ak si ho zapamätala — inak účet firmy.
+  const company = sUctomFaktury(opts.company, invoice);
   /*
     Doklad bez IČO dodávateľa je v Česku neplatný sám o sebe — podateľňa ho
     odmietne. Lepšie to povedať tu než vydať súbor, ktorý nikde neprejde.

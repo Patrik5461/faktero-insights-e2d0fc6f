@@ -6,6 +6,7 @@ import { RobotoRegularBase64 } from "./fonts/Roboto-Regular";
 import { RobotoBoldBase64 } from "./fonts/Roboto-Bold";
 import { paymentMethodLabel } from "./payment-method";
 import { maZuctovanuZalohu, zostavaUhradit } from "./zaloha";
+import { sUctomFaktury } from "./platobny-ucet";
 
 function b64ToBytes(b64: string): Uint8Array {
   const bin =
@@ -73,7 +74,9 @@ function san(s: any): string {
 }
 
 export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<Uint8Array> {
-  const { company, invoice, items } = input;
+  const { invoice, items } = input;
+  // Účet, na ktorý majú prísť peniaze, je ten z faktúry (ak ho má).
+  const company = sUctomFaktury(input.company, invoice);
   const docLabel = input.documentLabel ?? "FAKTÚRA";
   const numberLabel =
     input.numberLabel ?? `č. ${invoice.invoice_number ?? invoice.quote_number ?? ""}`;

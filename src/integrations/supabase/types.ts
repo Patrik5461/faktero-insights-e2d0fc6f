@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      company_bank_accounts: {
+        Row: {
+          id: string
+          company_id: string
+          name: string | null
+          iban: string
+          swift: string | null
+          bank_name: string | null
+          currency: string
+          is_default: boolean
+          position: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name?: string | null
+          iban: string
+          swift?: string | null
+          bank_name?: string | null
+          currency?: string
+          is_default?: boolean
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string | null
+          iban?: string
+          swift?: string | null
+          bank_name?: string | null
+          currency?: string
+          is_default?: boolean
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       other_document_files: {
         Row: {
           id: string
@@ -3869,6 +3911,10 @@ export type Database = {
           customer_ic_dph: string | null
           customer_ico: string | null
           customer_id: string | null
+          payment_account_id: string | null
+          payment_iban: string | null
+          payment_swift: string | null
+          payment_bank_name: string | null
           customer_name: string | null
           customer_street: string | null
           customer_zip: string | null
@@ -3932,6 +3978,10 @@ export type Database = {
           customer_ic_dph?: string | null
           customer_ico?: string | null
           customer_id?: string | null
+          payment_account_id?: string | null
+          payment_iban?: string | null
+          payment_swift?: string | null
+          payment_bank_name?: string | null
           customer_name?: string | null
           customer_street?: string | null
           customer_zip?: string | null
@@ -3995,6 +4045,10 @@ export type Database = {
           customer_ic_dph?: string | null
           customer_ico?: string | null
           customer_id?: string | null
+          payment_account_id?: string | null
+          payment_iban?: string | null
+          payment_swift?: string | null
+          payment_bank_name?: string | null
           customer_name?: string | null
           customer_street?: string | null
           customer_zip?: string | null

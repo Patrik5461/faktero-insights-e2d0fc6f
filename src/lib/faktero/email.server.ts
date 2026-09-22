@@ -1,3 +1,4 @@
+import { sUctomFaktury } from "./platobny-ucet";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type SendInvoiceEmailInput = {
@@ -16,7 +17,7 @@ function applyVars(s: string, inv: any, company: any) {
     ["total", total],
     ["company_name", company?.name ?? ""],
     ["customer_name", inv.customer_name ?? ""],
-    ["iban", company?.iban ?? ""],
+    ["iban", sUctomFaktury(company ?? {}, inv).iban ?? ""],
     ["variable_symbol", inv.variable_symbol ?? inv.invoice_number ?? ""],
   ];
   let out = s;

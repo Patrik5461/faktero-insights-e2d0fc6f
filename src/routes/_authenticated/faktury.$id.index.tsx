@@ -60,6 +60,8 @@ import { sendReminderFn, previewReminderFn } from "@/lib/faktero/reminders.funct
 
 import { isdocFakturyFn } from "@/lib/faktero/isdoc.functions";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
+import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
 export const Route = createFileRoute("/_authenticated/faktury/$id/")({
   head: () => ({ meta: [{ title: "Detail faktúry — Faktero" }] }),
   component: InvoiceDetail,
@@ -907,7 +909,7 @@ function InvoiceDetail() {
           a doteraz sa to nikde nepovedalo. Doklad vyzeral hotovo a odberateľ
           nemal kam zaplatiť.
         */}
-        {company && !company.iban && (
+        {company && !sUctomFaktury(company, inv).iban && (
           <div className="mb-4 rounded-xl border border-amber-400/40 bg-amber-500/5 p-4 text-sm">
             <div className="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-400">
               <AlertTriangle className="h-4 w-4" /> Faktúra nemá platobné údaje
@@ -1059,8 +1061,32 @@ function InvoiceDetail() {
               <div className="rounded-xl border border-border bg-card p-5 text-sm">
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Platba</div>
                 <div className="mt-2">
-                  IBAN: <span className="font-mono">{company?.iban ?? "—"}</span>
+                  IBAN:{" "}
+                  <span className="font-mono">
+                    {sUctomFaktury(company ?? {}, inv).iban
+                      ? formatujIban(sUctomFaktury(company ?? {}, inv).iban)
+                      : "—"}
+                  </span>
                 </div>
+                {/* Iný účet aj na vystavenej faktúre — PDF a QR sa pregenerujú samé. */}
+                {inv.status !== "cancelled" && (
+                  <VyberUctu
+                    className="mt-2"
+                    predvyplnit={false}
+                    companyId={inv.company_id}
+                    value={inv.payment_account_id ?? null}
+                    onChange={async (id) => {
+                      if (id === inv.payment_account_id) return;
+                      const { error } = await supabase
+                        .from("invoices")
+                        .update({ payment_account_id: id })
+                        .eq("id", inv.id);
+                      if (error) return toast.error(error.message);
+                      toast.success("Účet na úhradu zmenený.");
+                      void load();
+                    }}
+                  />
+                )}
                 <div>
                   Variabilný symbol: <span className="font-mono">{inv.variable_symbol}</span>
                 </div>
@@ -1071,7 +1097,7 @@ function InvoiceDetail() {
                   QR kód. Pri novej firme sa toto pole preskočí ľahko — register
                   ho nedopĺňa — a chyba sa ukáže až vtedy, keď peniaze neprídu.
                 */}
-                {!company?.iban && (
+                {!sUctomFaktury(company ?? {}, inv).iban && (
                   <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
                     <div className="font-medium text-foreground">Chýba IBAN</div>
                     <p className="mt-0.5 text-muted-foreground">
