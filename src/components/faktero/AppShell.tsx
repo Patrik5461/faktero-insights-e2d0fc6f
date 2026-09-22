@@ -297,6 +297,7 @@ const ACCOUNT_SETTINGS_LINKS: NavChild[] = [
   { to: "/firma", label: "Firma" },
   { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry" },
   { to: "/nastavenia/email-sablony", label: "Email šablóny" },
+  { to: "/nastavenia/zabezpecenie", label: "Zabezpečenie účtu" },
   { to: "/nastavenia", label: "Nastavenia systému" },
 ];
 

@@ -283,3 +283,58 @@ export function VyberFirmy({
     </MobilObrazovka>
   );
 }
+
+/**
+ * Druhý krok prihlásenia pre toho, kto má zapnuté dvojfaktorové overenie.
+ * Bez kódu by databáza appke nevydala nič a tvárila by sa, že účet nemá firmu.
+ * Kód sa pýta raz — overená relácia vydrží v telefóne až do odhlásenia.
+ */
+export function OverenieKodu({ onHotovo, onOdhlasit }: { onHotovo: () => void; onOdhlasit: () => void }) {
+  const { t } = usePreklad();
+  const [kod, setKod] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function over() {
+    setBusy(true);
+    try {
+      const { overKod } = await import("@/lib/faktero/dvojfaktor");
+      await overKod(kod);
+      onHotovo();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("app.prihlasenieZlyhalo"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex min-h-[100dvh] flex-col justify-center bg-app-pozadie px-6">
+      <div className="mx-auto w-full max-w-sm">
+        <Lock className="mb-4 h-8 w-8 text-app-zelena" />
+        <h1 className="text-2xl font-semibold tracking-tight">{t("app.overenieNadpis")}</h1>
+        <p className="mt-1 text-sm text-app-text-2">{t("app.overenieText")}</p>
+        <input
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          autoFocus
+          maxLength={7}
+          value={kod}
+          onChange={(e) => setKod(e.target.value)}
+          aria-label={t("app.overenieNadpis")}
+          placeholder="123 456"
+          className="mt-6 w-full rounded-app border border-app-ramik bg-app-karta px-4 py-3 text-center font-mono text-2xl tracking-[0.3em] outline-none"
+        />
+        <button
+          onClick={over}
+          disabled={busy}
+          className="mt-4 w-full rounded-app bg-app-zelena py-3 text-[15px] font-semibold text-white disabled:opacity-60"
+        >
+          {busy ? t("app.overujem") : t("app.overit")}
+        </button>
+        <button onClick={onOdhlasit} className="mt-3 w-full py-2 text-center text-sm text-app-text-2">
+          {t("app.inyUcet")}
+        </button>
+      </div>
+    </div>
+  );
+}

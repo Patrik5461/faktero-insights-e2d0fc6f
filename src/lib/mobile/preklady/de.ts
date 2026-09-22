@@ -581,6 +581,11 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.zabudliHeslo": "Passwort vergessen?",
   "app.zadajteEmailPreHeslo": "Geben Sie zuerst die E-Mail ein, an die wir den Link senden sollen.",
   "app.odkazNaHesloOdoslany": "Falls zu {email} ein Konto existiert, haben wir einen Link zum Festlegen eines neuen Passworts gesendet.",
+  "app.overenieNadpis": "Zwei-Faktor-Authentifizierung",
+  "app.overenieText": "Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein (Google Authenticator, Microsoft Authenticator…). Auf diesem Telefon wird er erst nach dem Abmelden erneut abgefragt.",
+  "app.overit": "Bestätigen",
+  "app.overujem": "Wird bestätigt…",
+  "app.inyUcet": "Mit anderem Konto anmelden",
   "app.zamknute": "Faktero ist gesperrt",
   "app.zamknuteJazdy": "Das Fahrtenbuch ist gesperrt",
   "app.odomknitePokracujte":

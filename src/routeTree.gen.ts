@@ -22,6 +22,7 @@ import { Route as FunkcieRouteImport } from './routes/funkcie'
 import { Route as KontaktRouteImport } from './routes/kontakt'
 import { Route as NoveHesloRouteImport } from './routes/nove-heslo'
 import { Route as ObjednavkaRouteImport } from './routes/objednavka'
+import { Route as OverenieRouteImport } from './routes/overenie'
 import { Route as PridatPouzivatelaRouteImport } from './routes/pridat-pouzivatela'
 import { Route as PrihlasenieRouteImport } from './routes/prihlasenie'
 import { Route as RegistraciaRouteImport } from './routes/registracia'
@@ -154,6 +155,7 @@ import { Route as AuthenticatedNastaveniaIndexRouteImport } from './routes/_auth
 import { Route as AuthenticatedNastaveniaEmailSablonyRouteImport } from './routes/_authenticated/nastavenia.email-sablony'
 import { Route as AuthenticatedNastaveniaOnlinePlatbyRouteImport } from './routes/_authenticated/nastavenia.online-platby'
 import { Route as AuthenticatedNastaveniaVzhladFakturyRouteImport } from './routes/_authenticated/nastavenia.vzhlad-faktury'
+import { Route as AuthenticatedNastaveniaZabezpecenieRouteImport } from './routes/_authenticated/nastavenia.zabezpecenie'
 import { Route as AuthenticatedObjednavkyIndexRouteImport } from './routes/_authenticated/objednavky.index'
 import { Route as AuthenticatedObjednavkyIdRouteImport } from './routes/_authenticated/objednavky.$id'
 import { Route as AuthenticatedObjednavkyNovaRouteImport } from './routes/_authenticated/objednavky.nova'
@@ -336,6 +338,11 @@ const NoveHesloRoute = NoveHesloRouteImport.update({
 const ObjednavkaRoute = ObjednavkaRouteImport.update({
   id: '/objednavka',
   path: '/objednavka',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OverenieRoute = OverenieRouteImport.update({
+  id: '/overenie',
+  path: '/overenie',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PridatPouzivatelaRoute = PridatPouzivatelaRouteImport.update({
@@ -1042,6 +1049,12 @@ const AuthenticatedNastaveniaVzhladFakturyRoute =
     path: '/nastavenia/vzhlad-faktury',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedNastaveniaZabezpecenieRoute =
+  AuthenticatedNastaveniaZabezpecenieRouteImport.update({
+    id: '/nastavenia/zabezpecenie',
+    path: '/nastavenia/zabezpecenie',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedObjednavkyIndexRoute =
   AuthenticatedObjednavkyIndexRouteImport.update({
     id: '/objednavky/',
@@ -1721,6 +1734,7 @@ export interface FileRoutesByFullPath {
   '/kontakt': typeof KontaktRoute
   '/nove-heslo': typeof NoveHesloRoute
   '/objednavka': typeof ObjednavkaRoute
+  '/overenie': typeof OverenieRoute
   '/pridat-pouzivatela': typeof PridatPouzivatelaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
@@ -1844,6 +1858,7 @@ export interface FileRoutesByFullPath {
   '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
   '/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
+  '/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
   '/objednavky/$id': typeof AuthenticatedObjednavkyIdRoute
   '/objednavky/nova': typeof AuthenticatedObjednavkyNovaRoute
   '/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
@@ -1982,6 +1997,7 @@ export interface FileRoutesByTo {
   '/kontakt': typeof KontaktRoute
   '/nove-heslo': typeof NoveHesloRoute
   '/objednavka': typeof ObjednavkaRoute
+  '/overenie': typeof OverenieRoute
   '/pridat-pouzivatela': typeof PridatPouzivatelaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
@@ -2100,6 +2116,7 @@ export interface FileRoutesByTo {
   '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
   '/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
+  '/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
   '/objednavky/$id': typeof AuthenticatedObjednavkyIdRoute
   '/objednavky/nova': typeof AuthenticatedObjednavkyNovaRoute
   '/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
@@ -2244,6 +2261,7 @@ export interface FileRoutesById {
   '/kontakt': typeof KontaktRoute
   '/nove-heslo': typeof NoveHesloRoute
   '/objednavka': typeof ObjednavkaRoute
+  '/overenie': typeof OverenieRoute
   '/pridat-pouzivatela': typeof PridatPouzivatelaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
@@ -2367,6 +2385,7 @@ export interface FileRoutesById {
   '/_authenticated/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/_authenticated/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
   '/_authenticated/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
+  '/_authenticated/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
   '/_authenticated/objednavky/$id': typeof AuthenticatedObjednavkyIdRoute
   '/_authenticated/objednavky/nova': typeof AuthenticatedObjednavkyNovaRoute
   '/_authenticated/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
@@ -2511,6 +2530,7 @@ export interface FileRouteTypes {
     | '/kontakt'
     | '/nove-heslo'
     | '/objednavka'
+    | '/overenie'
     | '/pridat-pouzivatela'
     | '/prihlasenie'
     | '/registracia'
@@ -2634,6 +2654,7 @@ export interface FileRouteTypes {
     | '/nastavenia/email-sablony'
     | '/nastavenia/online-platby'
     | '/nastavenia/vzhlad-faktury'
+    | '/nastavenia/zabezpecenie'
     | '/objednavky/$id'
     | '/objednavky/nova'
     | '/opakovane/$id'
@@ -2772,6 +2793,7 @@ export interface FileRouteTypes {
     | '/kontakt'
     | '/nove-heslo'
     | '/objednavka'
+    | '/overenie'
     | '/pridat-pouzivatela'
     | '/prihlasenie'
     | '/registracia'
@@ -2890,6 +2912,7 @@ export interface FileRouteTypes {
     | '/nastavenia/email-sablony'
     | '/nastavenia/online-platby'
     | '/nastavenia/vzhlad-faktury'
+    | '/nastavenia/zabezpecenie'
     | '/objednavky/$id'
     | '/objednavky/nova'
     | '/opakovane/$id'
@@ -3033,6 +3056,7 @@ export interface FileRouteTypes {
     | '/kontakt'
     | '/nove-heslo'
     | '/objednavka'
+    | '/overenie'
     | '/pridat-pouzivatela'
     | '/prihlasenie'
     | '/registracia'
@@ -3156,6 +3180,7 @@ export interface FileRouteTypes {
     | '/_authenticated/nastavenia/email-sablony'
     | '/_authenticated/nastavenia/online-platby'
     | '/_authenticated/nastavenia/vzhlad-faktury'
+    | '/_authenticated/nastavenia/zabezpecenie'
     | '/_authenticated/objednavky/$id'
     | '/_authenticated/objednavky/nova'
     | '/_authenticated/opakovane/$id'
@@ -3300,6 +3325,7 @@ export interface RootRouteChildren {
   KontaktRoute: typeof KontaktRoute
   NoveHesloRoute: typeof NoveHesloRoute
   ObjednavkaRoute: typeof ObjednavkaRoute
+  OverenieRoute: typeof OverenieRoute
   PridatPouzivatelaRoute: typeof PridatPouzivatelaRoute
   PrihlasenieRoute: typeof PrihlasenieRoute
   RegistraciaRoute: typeof RegistraciaRoute
@@ -3490,6 +3516,13 @@ declare module '@tanstack/react-router' {
       path: '/objednavka'
       fullPath: '/objednavka'
       preLoaderRoute: typeof ObjednavkaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/overenie': {
+      id: '/overenie'
+      path: '/overenie'
+      fullPath: '/overenie'
+      preLoaderRoute: typeof OverenieRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pridat-pouzivatela': {
@@ -4414,6 +4447,13 @@ declare module '@tanstack/react-router' {
       path: '/nastavenia/vzhlad-faktury'
       fullPath: '/nastavenia/vzhlad-faktury'
       preLoaderRoute: typeof AuthenticatedNastaveniaVzhladFakturyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nastavenia/zabezpecenie': {
+      id: '/_authenticated/nastavenia/zabezpecenie'
+      path: '/nastavenia/zabezpecenie'
+      fullPath: '/nastavenia/zabezpecenie'
+      preLoaderRoute: typeof AuthenticatedNastaveniaZabezpecenieRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/objednavky/': {
@@ -5397,6 +5437,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNastaveniaEmailSablonyRoute: typeof AuthenticatedNastaveniaEmailSablonyRoute
   AuthenticatedNastaveniaOnlinePlatbyRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRoute
   AuthenticatedNastaveniaVzhladFakturyRoute: typeof AuthenticatedNastaveniaVzhladFakturyRoute
+  AuthenticatedNastaveniaZabezpecenieRoute: typeof AuthenticatedNastaveniaZabezpecenieRoute
   AuthenticatedObjednavkyIdRoute: typeof AuthenticatedObjednavkyIdRoute
   AuthenticatedObjednavkyNovaRoute: typeof AuthenticatedObjednavkyNovaRoute
   AuthenticatedOpakovaneIdRoute: typeof AuthenticatedOpakovaneIdRoute
@@ -5491,6 +5532,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedNastaveniaOnlinePlatbyRoute,
   AuthenticatedNastaveniaVzhladFakturyRoute:
     AuthenticatedNastaveniaVzhladFakturyRoute,
+  AuthenticatedNastaveniaZabezpecenieRoute:
+    AuthenticatedNastaveniaZabezpecenieRoute,
   AuthenticatedObjednavkyIdRoute: AuthenticatedObjednavkyIdRoute,
   AuthenticatedObjednavkyNovaRoute: AuthenticatedObjednavkyNovaRoute,
   AuthenticatedOpakovaneIdRoute: AuthenticatedOpakovaneIdRoute,
@@ -5779,6 +5822,7 @@ const rootRouteChildren: RootRouteChildren = {
   KontaktRoute: KontaktRoute,
   NoveHesloRoute: NoveHesloRoute,
   ObjednavkaRoute: ObjednavkaRoute,
+  OverenieRoute: OverenieRoute,
   PridatPouzivatelaRoute: PridatPouzivatelaRoute,
   PrihlasenieRoute: PrihlasenieRoute,
   RegistraciaRoute: RegistraciaRoute,

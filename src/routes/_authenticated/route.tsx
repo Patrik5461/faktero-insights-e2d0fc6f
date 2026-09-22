@@ -30,6 +30,12 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
     const { data: sessionData } = await supabase.auth.getSession();
     if (sessionData.session?.user) {
+      // Zapnuté dvojfaktorové overenie: bez kódu sa ďalej nepokračuje (databáza
+      // by aj tak nevydala nič). Kód sa pýta raz za prihlásenie.
+      const { potrebujeKod } = await import("@/lib/faktero/dvojfaktor");
+      if (await potrebujeKod()) {
+        throw redirect({ to: "/overenie", search: { next: location.href } });
+      }
       return { user: sessionData.session.user };
     }
     try {

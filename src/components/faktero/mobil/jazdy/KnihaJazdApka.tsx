@@ -13,7 +13,7 @@ import { beziacaJazda } from "@/lib/mobile/auto-jazdy-sync";
 import { VYCHODZI_APKA, nacitajMotiv, nasadMotiv, sledujSystem } from "@/lib/faktero/motiv";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { ZrusenieUctu } from "@/components/faktero/ZrusenieUctu";
-import { Prihlasenie, VyberFirmy, Zamok } from "../Vstup";
+import { OverenieKodu, Prihlasenie, VyberFirmy, Zamok } from "../Vstup";
 import { RegistraciaUctu } from "../RegistraciaUctu";
 import { VytvorFirmu } from "../VytvorFirmu";
 import { MobilPanel } from "../MobilPanel";
@@ -52,6 +52,7 @@ type Relacia = { user?: { email?: string | null } | null };
 type Krok =
   | "nacitavam"
   | "prihlasenie"
+  | "overenie"
   | "registracia"
   | "novaFirma"
   | "firma"
@@ -155,6 +156,12 @@ function ObsahJazd() {
       return;
     }
 
+    // Zapnuté dvojfaktorové overenie: kým relácia nezadá kód, databáza nevydá nič.
+    const { potrebujeKod } = await import("@/lib/faktero/dvojfaktor");
+    if (await potrebujeKod()) {
+      setKrok("overenie");
+      return;
+    }
     setFaza("odomknutie");
     if (studenyStart && (await isBiometricEnabled()) && (await isBiometricAvailable()))
       setZamknute(true);
@@ -317,6 +324,16 @@ function ObsahJazd() {
 
   if (krok === "prihlasenie")
     return <Prihlasenie onHotovo={() => zisti()} onRegistracia={() => setKrok("registracia")} />;
+  if (krok === "overenie")
+    return (
+      <OverenieKodu
+        onHotovo={() => zisti()}
+        onOdhlasit={async () => {
+          await supabase.auth.signOut({ scope: "local" });
+          setKrok("prihlasenie");
+        }}
+      />
+    );
 
   if (krok === "registracia")
     return <RegistraciaUctu onHotovo={() => zisti()} onSpat={() => setKrok("prihlasenie")} />;
