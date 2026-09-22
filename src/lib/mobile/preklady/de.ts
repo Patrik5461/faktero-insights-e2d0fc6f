@@ -578,6 +578,9 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.nemateUcet": "Noch kein Konto?",
   "app.zaregistrujteSa": "Registrieren",
   "app.zabudnuteHeslo": "Ein vergessenes Passwort setzen Sie auf faktero.sk zurück.",
+  "app.zabudliHeslo": "Passwort vergessen?",
+  "app.zadajteEmailPreHeslo": "Geben Sie zuerst die E-Mail ein, an die wir den Link senden sollen.",
+  "app.odkazNaHesloOdoslany": "Falls zu {email} ein Konto existiert, haben wir einen Link zum Festlegen eines neuen Passworts gesendet.",
   "app.zamknute": "Faktero ist gesperrt",
   "app.zamknuteJazdy": "Das Fahrtenbuch ist gesperrt",
   "app.odomknitePokracujte":

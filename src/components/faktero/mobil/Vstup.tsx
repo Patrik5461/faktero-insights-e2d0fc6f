@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Building2, Fingerprint, Lock, LogOut, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 import { isBiometricAvailable, loginWithBiometric, overBiometriu } from "@/lib/mobile/biometric";
 import { MobilObrazovka, VelkeTlacidlo } from "@/components/faktero/mobil/MobilChrome";
 import { Logo } from "@/components/faktero/Logo";
@@ -48,6 +49,29 @@ export function Prihlasenie({
       });
       if (error) throw new Error(error.message);
       onHotovo();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("app.prihlasenieZlyhalo"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /*
+    Odkaz na nové heslo posiela appka sama. Heslo sa potom nastavuje na webe
+    (`/nove-heslo`) — odkaz z e-mailu sa otvára v prehliadači, nie v appke.
+    Hlásenie je rovnaké, či účet existuje alebo nie.
+  */
+  async function zabudnuteHeslo() {
+    const adresa = email.trim();
+    if (!adresa) return toast.error(t("app.zadajteEmailPreHeslo"));
+    setBusy(true);
+    try {
+      const { SERVER } = await import("@/lib/mobile/operacie");
+      const { error } = await supabase.auth.resetPasswordForEmail(adresa, {
+        redirectTo: `${SERVER}/nove-heslo`,
+      });
+      if (error) throw new Error(prelozAuthChybu(error.message).sprava);
+      toast.success(t("app.odkazNaHesloOdoslany", { email: adresa }), { duration: 8000 });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("app.prihlasenieZlyhalo"));
     } finally {
@@ -124,7 +148,13 @@ export function Prihlasenie({
           {t("app.nemateUcet")}{" "}
           <span className="font-medium text-app-zelena">{t("app.zaregistrujteSa")}</span>
         </button>
-        <p className="mt-2 text-center text-xs text-app-text-2">{t("app.zabudnuteHeslo")}</p>
+        <button
+          onClick={zabudnuteHeslo}
+          disabled={busy}
+          className="mt-1 w-full py-2 text-center text-sm font-medium text-app-zelena disabled:opacity-60"
+        >
+          {t("app.zabudliHeslo")}
+        </button>
       </div>
     </div>
   );

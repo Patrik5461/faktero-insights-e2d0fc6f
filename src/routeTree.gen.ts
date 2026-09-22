@@ -20,6 +20,7 @@ import { Route as CennikRouteImport } from './routes/cennik'
 import { Route as EfakturaciaRouteImport } from './routes/efakturacia'
 import { Route as FunkcieRouteImport } from './routes/funkcie'
 import { Route as KontaktRouteImport } from './routes/kontakt'
+import { Route as NoveHesloRouteImport } from './routes/nove-heslo'
 import { Route as ObjednavkaRouteImport } from './routes/objednavka'
 import { Route as PridatPouzivatelaRouteImport } from './routes/pridat-pouzivatela'
 import { Route as PrihlasenieRouteImport } from './routes/prihlasenie'
@@ -28,6 +29,7 @@ import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as UctovniciRouteImport } from './routes/uctovnici'
 import { Route as VyvojariRouteImport } from './routes/vyvojari'
+import { Route as ZabudnuteHesloRouteImport } from './routes/zabudnute-heslo'
 import { Route as AuthenticatedAiAsistentRouteImport } from './routes/_authenticated/ai-asistent'
 import { Route as AuthenticatedApiDokumentaciaRouteImport } from './routes/_authenticated/api-dokumentacia'
 import { Route as AuthenticatedApiKluceRouteImport } from './routes/_authenticated/api-kluce'
@@ -326,6 +328,11 @@ const KontaktRoute = KontaktRouteImport.update({
   path: '/kontakt',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NoveHesloRoute = NoveHesloRouteImport.update({
+  id: '/nove-heslo',
+  path: '/nove-heslo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ObjednavkaRoute = ObjednavkaRouteImport.update({
   id: '/objednavka',
   path: '/objednavka',
@@ -364,6 +371,11 @@ const UctovniciRoute = UctovniciRouteImport.update({
 const VyvojariRoute = VyvojariRouteImport.update({
   id: '/vyvojari',
   path: '/vyvojari',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ZabudnuteHesloRoute = ZabudnuteHesloRouteImport.update({
+  id: '/zabudnute-heslo',
+  path: '/zabudnute-heslo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAiAsistentRoute = AuthenticatedAiAsistentRouteImport.update({
@@ -1707,6 +1719,7 @@ export interface FileRoutesByFullPath {
   '/efakturacia': typeof EfakturaciaRouteWithChildren
   '/funkcie': typeof FunkcieRouteWithChildren
   '/kontakt': typeof KontaktRoute
+  '/nove-heslo': typeof NoveHesloRoute
   '/objednavka': typeof ObjednavkaRoute
   '/pridat-pouzivatela': typeof PridatPouzivatelaRoute
   '/prihlasenie': typeof PrihlasenieRoute
@@ -1715,6 +1728,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
+  '/zabudnute-heslo': typeof ZabudnuteHesloRoute
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
   '/api-dokumentacia': typeof AuthenticatedApiDokumentaciaRoute
   '/api-kluce': typeof AuthenticatedApiKluceRoute
@@ -1966,12 +1980,14 @@ export interface FileRoutesByTo {
   '/app-jazdy': typeof AppJazdyRoute
   '/cennik': typeof CennikRoute
   '/kontakt': typeof KontaktRoute
+  '/nove-heslo': typeof NoveHesloRoute
   '/objednavka': typeof ObjednavkaRoute
   '/pridat-pouzivatela': typeof PridatPouzivatelaRoute
   '/prihlasenie': typeof PrihlasenieRoute
   '/registracia': typeof RegistraciaRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/zabudnute-heslo': typeof ZabudnuteHesloRoute
   '/ai-asistent': typeof AuthenticatedAiAsistentRoute
   '/api-dokumentacia': typeof AuthenticatedApiDokumentaciaRoute
   '/api-kluce': typeof AuthenticatedApiKluceRoute
@@ -2226,6 +2242,7 @@ export interface FileRoutesById {
   '/efakturacia': typeof EfakturaciaRouteWithChildren
   '/funkcie': typeof FunkcieRouteWithChildren
   '/kontakt': typeof KontaktRoute
+  '/nove-heslo': typeof NoveHesloRoute
   '/objednavka': typeof ObjednavkaRoute
   '/pridat-pouzivatela': typeof PridatPouzivatelaRoute
   '/prihlasenie': typeof PrihlasenieRoute
@@ -2234,6 +2251,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/uctovnici': typeof UctovniciRouteWithChildren
   '/vyvojari': typeof VyvojariRouteWithChildren
+  '/zabudnute-heslo': typeof ZabudnuteHesloRoute
   '/_authenticated/ai-asistent': typeof AuthenticatedAiAsistentRoute
   '/_authenticated/api-dokumentacia': typeof AuthenticatedApiDokumentaciaRoute
   '/_authenticated/api-kluce': typeof AuthenticatedApiKluceRoute
@@ -2491,6 +2509,7 @@ export interface FileRouteTypes {
     | '/efakturacia'
     | '/funkcie'
     | '/kontakt'
+    | '/nove-heslo'
     | '/objednavka'
     | '/pridat-pouzivatela'
     | '/prihlasenie'
@@ -2499,6 +2518,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/uctovnici'
     | '/vyvojari'
+    | '/zabudnute-heslo'
     | '/ai-asistent'
     | '/api-dokumentacia'
     | '/api-kluce'
@@ -2750,12 +2770,14 @@ export interface FileRouteTypes {
     | '/app-jazdy'
     | '/cennik'
     | '/kontakt'
+    | '/nove-heslo'
     | '/objednavka'
     | '/pridat-pouzivatela'
     | '/prihlasenie'
     | '/registracia'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/zabudnute-heslo'
     | '/ai-asistent'
     | '/api-dokumentacia'
     | '/api-kluce'
@@ -3009,6 +3031,7 @@ export interface FileRouteTypes {
     | '/efakturacia'
     | '/funkcie'
     | '/kontakt'
+    | '/nove-heslo'
     | '/objednavka'
     | '/pridat-pouzivatela'
     | '/prihlasenie'
@@ -3017,6 +3040,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/uctovnici'
     | '/vyvojari'
+    | '/zabudnute-heslo'
     | '/_authenticated/ai-asistent'
     | '/_authenticated/api-dokumentacia'
     | '/_authenticated/api-kluce'
@@ -3274,6 +3298,7 @@ export interface RootRouteChildren {
   EfakturaciaRoute: typeof EfakturaciaRouteWithChildren
   FunkcieRoute: typeof FunkcieRouteWithChildren
   KontaktRoute: typeof KontaktRoute
+  NoveHesloRoute: typeof NoveHesloRoute
   ObjednavkaRoute: typeof ObjednavkaRoute
   PridatPouzivatelaRoute: typeof PridatPouzivatelaRoute
   PrihlasenieRoute: typeof PrihlasenieRoute
@@ -3282,6 +3307,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UctovniciRoute: typeof UctovniciRouteWithChildren
   VyvojariRoute: typeof VyvojariRouteWithChildren
+  ZabudnuteHesloRoute: typeof ZabudnuteHesloRoute
   AuthPotvrdenieRoute: typeof AuthPotvrdenieRoute
   DanovyDokladTokenRoute: typeof DanovyDokladTokenRoute
   DocsApiRoute: typeof DocsApiRoute
@@ -3452,6 +3478,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KontaktRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nove-heslo': {
+      id: '/nove-heslo'
+      path: '/nove-heslo'
+      fullPath: '/nove-heslo'
+      preLoaderRoute: typeof NoveHesloRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/objednavka': {
       id: '/objednavka'
       path: '/objednavka'
@@ -3506,6 +3539,13 @@ declare module '@tanstack/react-router' {
       path: '/vyvojari'
       fullPath: '/vyvojari'
       preLoaderRoute: typeof VyvojariRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/zabudnute-heslo': {
+      id: '/zabudnute-heslo'
+      path: '/zabudnute-heslo'
+      fullPath: '/zabudnute-heslo'
+      preLoaderRoute: typeof ZabudnuteHesloRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/ai-asistent': {
@@ -5737,6 +5777,7 @@ const rootRouteChildren: RootRouteChildren = {
   EfakturaciaRoute: EfakturaciaRouteWithChildren,
   FunkcieRoute: FunkcieRouteWithChildren,
   KontaktRoute: KontaktRoute,
+  NoveHesloRoute: NoveHesloRoute,
   ObjednavkaRoute: ObjednavkaRoute,
   PridatPouzivatelaRoute: PridatPouzivatelaRoute,
   PrihlasenieRoute: PrihlasenieRoute,
@@ -5745,6 +5786,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UctovniciRoute: UctovniciRouteWithChildren,
   VyvojariRoute: VyvojariRouteWithChildren,
+  ZabudnuteHesloRoute: ZabudnuteHesloRoute,
   AuthPotvrdenieRoute: AuthPotvrdenieRoute,
   DanovyDokladTokenRoute: DanovyDokladTokenRoute,
   DocsApiRoute: DocsApiRoute,

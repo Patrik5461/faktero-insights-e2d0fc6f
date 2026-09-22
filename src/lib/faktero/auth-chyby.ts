@@ -37,6 +37,22 @@ export function prelozAuthChybu(surova: string | null | undefined): AuthChyba {
   if (n.includes("password should be at least")) {
     return { sprava: "Heslo musí mať aspoň 8 znakov.", nepotvrdeny: false };
   }
+  if (n.includes("should be different from the old password") || n.includes("same_password")) {
+    return { sprava: "Nové heslo musí byť iné ako to doterajšie.", nepotvrdeny: false };
+  }
+  // Ochrana pred uniknutými heslami (Have I Been Pwned) v Supabase.
+  if (n.includes("pwned") || n.includes("weak_password") || n.includes("known to be weak")) {
+    return {
+      sprava: "Toto heslo sa objavilo v uniknutých databázach hesiel. Zvoľte iné.",
+      nepotvrdeny: false,
+    };
+  }
+  if (n.includes("auth session missing")) {
+    return {
+      sprava: "Odkaz na zmenu hesla vypršal. Vyžiadajte si nový.",
+      nepotvrdeny: false,
+    };
+  }
   if (n.includes("unable to validate email address") || n.includes("invalid email")) {
     return { sprava: "E-mailová adresa nie je platná.", nepotvrdeny: false };
   }
