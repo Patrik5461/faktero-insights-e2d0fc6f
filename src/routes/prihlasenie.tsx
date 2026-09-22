@@ -125,15 +125,6 @@ function LoginPage() {
     toast.success("Potvrdzovací e-mail sme poslali znova.");
   }
 
-  async function onGoogle() {
-    setActiveProduct(product);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin + landingPathFor(product) },
-    });
-    if (error) toast.error(error.message);
-  }
-
   return (
     <div className="grid min-h-screen place-items-center bg-background px-4 py-10">
       <div className="w-full max-w-md rounded-xl border border-border bg-card p-8 shadow-sm">
@@ -169,18 +160,11 @@ function LoginPage() {
           </p>
         </div>
 
-        <button
-          onClick={onGoogle}
-          className="mt-5 w-full rounded-md border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-secondary"
-        >
-          Pokračovať cez Google
-        </button>
-
-        <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="h-px flex-1 bg-border" /> alebo <div className="h-px flex-1 bg-border" />
-        </div>
-
-        <form onSubmit={onSubmit} className="space-y-3">
+        {/*
+          Prihlásenie cez Google sa 2026-09-22 zrušilo. Kto ho používal, heslo
+          nemá — nastaví si ho cez „Zabudli ste heslo?“ na svoj e-mail z Googlu.
+        */}
+        <form onSubmit={onSubmit} className="mt-5 space-y-3">
           {/* Pole vnútri <label> a `autoComplete` — to isté ako pri registrácii. */}
           <label className="block">
             <span className="text-sm font-medium">Email</span>
@@ -213,6 +197,10 @@ function LoginPage() {
               Zabudli ste heslo?
             </Link>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Prihlasovali ste sa doteraz cez Google? Táto možnosť sa zrušila — cez „Zabudli ste
+            heslo?“ si na svoj e-mail nastavíte heslo a účet aj dáta ostanú.
+          </p>
           <button
             type="submit"
             disabled={loading}

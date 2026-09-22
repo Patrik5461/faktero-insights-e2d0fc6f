@@ -90,20 +90,6 @@ function RegisterPage() {
     navigate({ to: "/onboarding" });
   }
 
-  async function onGoogle() {
-    if (!acceptTerms || !acceptGdpr) {
-      toast.error("Pre pokračovanie potvrďte obidva súhlasy.");
-      return;
-    }
-    odlozSuhlasy();
-    stashPlan();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin + "/onboarding" },
-    });
-    if (error) toast.error(error.message);
-  }
-
   async function posliPotvrdenieZnova() {
     setPosielamZnova(true);
     const { error } = await supabase.auth.resend({
@@ -163,18 +149,7 @@ function RegisterPage() {
           30 dní zadarmo na pláne Premium. Bez platobnej karty.
         </p>
 
-        <button
-          onClick={onGoogle}
-          className="mt-6 w-full rounded-md border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-secondary"
-        >
-          Pokračovať cez Google
-        </button>
-
-        <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="h-px flex-1 bg-border" /> alebo <div className="h-px flex-1 bg-border" />
-        </div>
-
-        <form onSubmit={onSubmit} className="space-y-3">
+        <form onSubmit={onSubmit} className="mt-6 space-y-3">
           {/*
             Pole je vnútri <label>, takže patrí k svojmu popisu — ťuknutie na
             popis kurzor postaví do poľa a čítačka obrazovky vie, čo sa pýta.
