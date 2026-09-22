@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getInvitationByTokenFn, acceptInvitationFn } from "@/lib/faktero/invitations.functions";
 import { setActiveCompanyId } from "@/lib/faktero/active-company";
 import { toast } from "sonner";
+import { prelozAuthChybu } from "@/lib/faktero/auth-chyby";
 
 /** Rola z databázy po slovensky — v pozvánke svietilo „accountant". */
 const ROLA_POPIS: Record<string, string> = {
@@ -30,6 +31,9 @@ function AcceptInvitationPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [pwd, setPwd] = useState("");
   const [busy, setBusy] = useState(false);
+  /** Účet čaká na potvrdenie e-mailu — pozvánka sa prijme až po kliknutí na odkaz. */
+  const [cakaNaPotvrdenie, setCakaNaPotvrdenie] = useState(false);
+  const automaticky = useRef(false);
 
   useEffect(() => {
     if (!token) {
@@ -68,7 +72,7 @@ function AcceptInvitationPage() {
           setBusy(false);
           return;
         }
-        const { error: signUpErr } = await supabase.auth.signUp({
+        const { data: reg, error: signUpErr } = await supabase.auth.signUp({
           email: inv.email,
           password: pwd,
           options: {
@@ -81,7 +85,16 @@ function AcceptInvitationPage() {
             email: inv.email,
             password: pwd,
           });
-          if (signInErr) throw signInErr;
+          if (signInErr) throw new Error(prelozAuthChybu(signInErr.message).sprava);
+        } else if (!reg.session) {
+          /*
+            Nový účet musí najprv potvrdiť e-mail. Bez prihlásenia server
+            pozvánku prijať nevie — predtým tu vyskočilo anglické
+            „Unauthorized“. Odkaz z e-mailu vráti človeka sem a pozvánka sa
+            prijme sama.
+          */
+          setCakaNaPotvrdenie(true);
+          return;
         }
       }
       await acceptInv({ data: { token } });
@@ -94,6 +107,31 @@ function AcceptInvitationPage() {
       setBusy(false);
     }
   }
+
+  // Po návrate z potvrdzovacieho e-mailu je človek prihlásený tou istou
+  // adresou — pozvánka sa prijme bez ďalšieho klikania.
+  useEffect(() => {
+    if (automaticky.current || !inv?.valid || !userEmail) return;
+    if (userEmail.toLowerCase() !== String(inv.email).toLowerCase()) return;
+    automaticky.current = true;
+    void handleAccept({ preventDefault() {} } as React.FormEvent);
+    // eslint-disable-next-line
+  }, [inv, userEmail]);
+
+  if (cakaNaPotvrdenie)
+    return (
+      <div className="mx-auto max-w-md p-8">
+        <h1 className="text-2xl font-bold">Potvrďte e-mail</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Na adresu <strong className="text-foreground">{inv?.email}</strong> sme poslali odkaz na
+          potvrdenie účtu. Kliknite naň — vrátite sa sem a pripojíte sa k firme{" "}
+          <strong className="text-foreground">{inv?.company_name}</strong>.
+        </p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          E-mail neprišiel? Pozrite aj priečinok nevyžiadanej pošty.
+        </p>
+      </div>
+    );
 
   if (loading)
     return (
