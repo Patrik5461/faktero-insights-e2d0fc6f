@@ -26,8 +26,8 @@ android {
         applicationId "sk.tobify.faktero"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.4"  // rovnako ako MARKETING_VERSION na iOS
+        versionCode 3
+        versionName "1.5"  // rovnako ako MARKETING_VERSION na iOS
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
