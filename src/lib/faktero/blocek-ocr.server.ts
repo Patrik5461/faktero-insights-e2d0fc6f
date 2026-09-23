@@ -68,6 +68,7 @@ export async function ocrBlocek(
     text = await aiVision(base64, mimeType, PROMPT, { ucel: "blocek" });
   } else {
     const model = process.env.OPENAI_VISION_MODEL || process.env.OPENAI_MODEL || "gpt-4o";
+    const zacalo = Date.now();
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
@@ -97,6 +98,7 @@ export async function ocrBlocek(
       ucel: "blocek",
       vstupneTokeny: json?.usage?.prompt_tokens ?? null,
       vystupneTokeny: json?.usage?.completion_tokens ?? null,
+      trvanieMs: Date.now() - zacalo,
       ok: true,
     });
     text = json?.choices?.[0]?.message?.content ?? "";

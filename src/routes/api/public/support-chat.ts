@@ -96,6 +96,7 @@ export const Route = createFileRoute("/api/public/support-chat")({
 
         try {
           const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+          const zacalo = Date.now();
           const res = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -146,6 +147,7 @@ export const Route = createFileRoute("/api/public/support-chat")({
             ucel: "podpora",
             vstupneTokeny: json?.usage?.prompt_tokens ?? null,
             vystupneTokeny: json?.usage?.completion_tokens ?? null,
+            trvanieMs: Date.now() - zacalo,
             ok: true,
           });
           const content =

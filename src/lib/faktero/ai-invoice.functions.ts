@@ -29,6 +29,7 @@ Vráť VÝLUČNE JSON v tvare:
 Ak cena je s DPH, odhadni jednotkovú cenu bez DPH. Štandardná DPH je 23%.`;
 
     const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+    const zacalo = Date.now();
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
@@ -58,6 +59,7 @@ Ak cena je s DPH, odhadni jednotkovú cenu bez DPH. Štandardná DPH je 23%.`;
       ucel: "faktura-z-textu",
       vstupneTokeny: json?.usage?.prompt_tokens ?? null,
       vystupneTokeny: json?.usage?.completion_tokens ?? null,
+      trvanieMs: Date.now() - zacalo,
       ok: true,
     });
     const content = json?.choices?.[0]?.message?.content ?? "{}";

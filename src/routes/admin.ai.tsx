@@ -33,6 +33,13 @@ function cislo(n: number): string {
   return n.toLocaleString("sk-SK");
 }
 
+/** Priemerné trvanie jedného volania — pri čítaní dlhých dokumentov je to minúty. */
+function priemer(trvanie: number, volani: number): string {
+  if (!volani) return "—";
+  const s = trvanie / volani / 1000;
+  return s >= 60 ? `${Math.round(s / 6) / 10} min` : `${s.toFixed(1)} s`;
+}
+
 function Dlazdica({ titulok, skupina }: { titulok: string; skupina: ReturnType<typeof spocitaj> }) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -69,6 +76,7 @@ function Tabulka({ nadpis, riadky, popis }: { nadpis: string; riadky: Skupina[];
                 <th className="px-4 py-2 text-right font-medium">Volaní</th>
                 <th className="px-4 py-2 text-right font-medium">Zlyhaní</th>
                 <th className="px-4 py-2 text-right font-medium">Tokeny</th>
+                <th className="px-4 py-2 text-right font-medium">Priemer</th>
                 <th className="px-4 py-2 text-right font-medium">Odhad ceny</th>
               </tr>
             </thead>
@@ -84,6 +92,9 @@ function Tabulka({ nadpis, riadky, popis }: { nadpis: string; riadky: Skupina[];
                   </td>
                   <td className="px-4 py-2 text-right text-muted-foreground">
                     {cislo(r.vstup + r.vystup)}
+                  </td>
+                  <td className="px-4 py-2 text-right text-muted-foreground">
+                    {priemer(r.trvanie, r.volani)}
                   </td>
                   <td className="px-4 py-2 text-right">{usd(r.cena)}</td>
                 </tr>
