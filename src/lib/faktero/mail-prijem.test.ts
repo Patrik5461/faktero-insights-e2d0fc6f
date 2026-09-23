@@ -258,3 +258,31 @@ describe("položky prečítané z dokladu", () => {
     expect(f.items?.[0]?.name).toBe("Papier");
   });
 });
+
+import { jePrilohaDoklad as jePriloha2, maPouzitelneUdaje } from "./mail-prijem";
+
+describe("prílohy, ktoré nie sú doklad", () => {
+  it("PDF prejde vždy, aj malé", () => {
+    expect(jePriloha2("application/pdf", "faktura.pdf", 40_000)).toBe(true);
+    expect(jePriloha2("application/octet-stream", "faktura.pdf", 1_000)).toBe(true);
+  });
+  it("podpisy a logá v obrázkoch neprejdú", () => {
+    expect(jePriloha2("image/png", "image001.png", 128_201)).toBe(false);
+    expect(jePriloha2("image/png", "logo.png", 300_000)).toBe(false);
+    expect(jePriloha2("image/jpeg", "podpis.jpg", 500_000)).toBe(false);
+    expect(jePriloha2("image/jpeg", "bloček.jpg", 1_535)).toBe(false);
+  });
+  it("fotka dokladu prejde", () => {
+    expect(jePriloha2("image/jpeg", "IMG_2048.jpg", 900_000)).toBe(true);
+    expect(jePriloha2("image/jpeg", "IMG_2048.jpg", null)).toBe(true);
+  });
+  it("iné typy neprejdú", () => {
+    expect(jePriloha2("text/calendar", "pozvanka.ics", 900_000)).toBe(false);
+  });
+  it("bez údajov sa doklad nezaloží", () => {
+    expect(maPouzitelneUdaje(null)).toBe(false);
+    expect(maPouzitelneUdaje({ supplier_name: null, invoice_number: "", amount_total: null })).toBe(false);
+    expect(maPouzitelneUdaje({ supplier_name: "Slovnaft, a.s." })).toBe(true);
+    expect(maPouzitelneUdaje({ amount_total: "63,96" })).toBe(true);
+  });
+});

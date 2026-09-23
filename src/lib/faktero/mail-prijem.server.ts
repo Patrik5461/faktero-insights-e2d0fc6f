@@ -10,6 +10,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import {
   vyberLocalPart,
   jePrilohaDoklad,
+  maPouzitelneUdaje,
   zostavPrijatuFakturu,
   podomenaDokladov,
   celaAdresa,
@@ -327,7 +328,8 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
     }
 
     const vsetky = await prilohyMailu(mail.email_id, apiKey);
-    const doklady = vsetky.filter((p) => jePrilohaDoklad(p.content_type, p.filename));
+    const doklady = vsetky.filter((p) => jePrilohaDoklad(p.content_type, p.filename, p.size));
+    const podpisy = vsetky.length - doklady.length;
 
     if (!doklady.length) {
       await doprav("bez_prilohy", "Mail neobsahoval PDF ani fotku dokladu.", vsetky.length, []);
@@ -366,6 +368,17 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
 
       // Čítanie ide pred uložením: od neho závisí, do ktorého kbelíka súbor patrí.
       const ai = await precitajDoklad(bajty.toString("base64"), mime);
+
+      /*
+        Z prílohy, z ktorej sa nedá prečítať ani dodávateľ, ani číslo, ani
+        suma, doklad nevznikne. Bývajú to logá a podpisy, ktoré prešli cez
+        meno a veľkosť — prázdna faktúra „Neurčený dodávateľ“ za 0 € je horšia
+        než žiadna, lebo ju musí niekto ručne mazať.
+      */
+      if (!maPouzitelneUdaje(ai)) {
+        poznamky.push(`${priloha.filename ?? "príloha"}: nevyzerá ako doklad, preskočené`);
+        continue;
+      }
 
       /*
         Exekúcia, predpis poistného či list z úradu nie sú prijatá faktúra —
@@ -460,6 +473,9 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
     const preskocene = doklady.length - Math.min(doklady.length, MAX_PRILOH);
     if (preskocene > 0) poznamky.push(`${preskocene} príloh nad rámec limitu ${MAX_PRILOH}`);
 
+    if (podpisy > 0) {
+      poznamky.push(`${podpisy} príloh vyzerá ako podpis alebo logo — nespracovali sme ich`);
+    }
     if (vytvoreneOstatne.length) {
       poznamky.unshift(
         vytvoreneOstatne.length === 1

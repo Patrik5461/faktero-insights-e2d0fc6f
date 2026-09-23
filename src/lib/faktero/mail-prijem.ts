@@ -152,11 +152,54 @@ export function vyberLocalPart(
   return null;
 }
 
-export function jePrilohaDoklad(contentType?: string | null, filename?: string | null): boolean {
+/*
+  Obrázok z podpisu alebo hlavičky mailu nie je doklad. Preposlaná faktúra
+  nesie logo dodávateľa, ikonky sociálnych sietí a podpis odosielateľa — z
+  každého takého obrázka vznikla prázdna prijatá faktúra „Neurčený dodávateľ“
+  s nulovou sumou (2026-09-23 ich mala PALIERA osem z osemnástich).
+
+  Rozhoduje meno a veľkosť: podpisy majú typické mená (`image001.png`,
+  `logo.png`) a bývajú malé. Fotka dokladu z telefónu má stovky kilobajtov.
+  Čo prejde sem, preveruje ešte raz čítanie cez AI.
+*/
+const MENA_PODPISOV = /(image\d+|logo|signature|podpis|ikona|icon|banner|footer|header|avatar|emblem|facebook|instagram|linkedin|twitter|youtube)/i;
+/** Menší obrázok než toto je podpis alebo ikona, nie doklad. */
+export const MIN_BAJTOV_OBRAZKA = 60 * 1024;
+
+export function jePrilohaDoklad(
+  contentType?: string | null,
+  filename?: string | null,
+  velkost?: number | null,
+): boolean {
   const typ = (contentType ?? "").toLowerCase().split(";")[0]!.trim();
-  if (TYPY_DOKLADOV.includes(typ)) return true;
-  // Niektorí odosielatelia pošlú PDF ako application/octet-stream.
-  return /\.(pdf|jpe?g|png|webp|heic)$/i.test(filename ?? "");
+  const meno = filename ?? "";
+  const jeVhodnyTyp = TYPY_DOKLADOV.includes(typ) || /\.(pdf|jpe?g|png|webp|heic)$/i.test(meno);
+  if (!jeVhodnyTyp) return false;
+
+  const jePdf = typ === "application/pdf" || /\.pdf$/i.test(meno);
+  if (jePdf) return true;
+
+  if (MENA_PODPISOV.test(meno.replace(/\.[a-z0-9]+$/i, ""))) return false;
+  if (typeof velkost === "number" && velkost > 0 && velkost < MIN_BAJTOV_OBRAZKA) return false;
+  return true;
+}
+
+/**
+ * Prečítala z prílohy AI niečo, čo vyzerá ako doklad? Bez dodávateľa, čísla
+ * aj sumy by vznikla prázdna faktúra s predmetom mailu namiesto čísla —
+ * presne to robili logá, ktoré cez meno a veľkosť prešli.
+ */
+export function maPouzitelneUdaje(ai: Record<string, unknown> | null | undefined): boolean {
+  if (!ai) return false;
+  const text = (v: unknown) => (typeof v === "string" && v.trim().length > 1 ? v.trim() : null);
+  return Boolean(
+    text(ai.supplier_name) ||
+      text(ai.supplier_ico) ||
+      text(ai.invoice_number) ||
+      text(ai.variable_symbol) ||
+      cislo(ai.amount_total) ||
+      cislo(ai.amount_without_vat),
+  );
 }
 
 /** Číslo z textu, ktorý môže mať čiarku, medzery aj menu. */
