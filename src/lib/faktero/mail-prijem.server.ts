@@ -474,7 +474,12 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
     if (preskocene > 0) poznamky.push(`${preskocene} príloh nad rámec limitu ${MAX_PRILOH}`);
 
     if (podpisy > 0) {
-      poznamky.push(`${podpisy} príloh vyzerá ako podpis alebo logo — nespracovali sme ich`);
+      // Slovenčina má tri tvary — „1 príloh" vyzerá ako chyba.
+      const tvar = podpisy === 1 ? "príloha vyzerá" : podpisy < 5 ? "prílohy vyzerajú" : "príloh vyzerá";
+      poznamky.push(`${podpisy} ${tvar} ako podpis alebo logo — nespracovali sme ju`.replace(
+        "sme ju",
+        podpisy === 1 ? "sme ju" : "sme ich",
+      ));
     }
     if (vytvoreneOstatne.length) {
       poznamky.unshift(
