@@ -400,7 +400,7 @@ export async function vykonajImport(args: {
               position: 0,
             });
             vysledok.ostatne++;
-          } else if (ai) {
+          } else if (ai && (await import("./mail-prijem")).maPouzitelneUdaje(ai)) {
             const z = zaznamZAI(ai, sken.meno);
             if (!z.vystavenie) z.vystavenie = datumZTextu(ai.issue_date);
             const par = najdiParPreSken(zapisane, z);
@@ -423,7 +423,8 @@ export async function vykonajImport(args: {
               else vysledok.blocky++;
             }
           } else {
-            vysledok.chyby.push(`${sken.meno}: AI dokument neprečítala`);
+            // Logo, podpis či prázdna strana — doklad z toho nerobíme.
+            vysledok.chyby.push(`${sken.meno}: nevyzerá ako doklad, preskočené`);
           }
         } catch (e: any) {
           vysledok.chyby.push(`${sken.meno}: ${String(e?.message ?? e).slice(0, 120)}`);
