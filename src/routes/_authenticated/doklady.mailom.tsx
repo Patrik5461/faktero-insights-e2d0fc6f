@@ -20,7 +20,7 @@ const KROKY = [
   {
     icon: Forward,
     nadpis: "Prepošlete mail",
-    text: "Faktúru od dodávateľa prepošlete na svoju adresu nižšie. Nemusíte nič sťahovať ani prihlasovať sa.",
+    text: "Faktúru od dodávateľa prepošlete na svoju adresu nižšie. V jednom maile spracujeme až 15 príloh, takže ich pokojne pošlite viac naraz.",
   },
   {
     icon: ScanLine,
@@ -76,7 +76,13 @@ function Stranka() {
             </li>
             <li>
               Viac príloh v jednom maile znamená <strong>viac dokladov</strong> — každá sa spracuje
-              zvlášť, najviac však <strong>15</strong> z jedného e-mailu.
+              zvlášť.
+            </li>
+            <li>
+              Z jedného e-mailu spracujeme <strong>až 15 príloh</strong>, takže pokojne pošlite aj
+              celý mesiac faktúr naraz. Jedna príloha môže mať najviac <strong>15 MB</strong>. Keby
+              ich bolo viac než 15, zvyšok sa nespracuje — napíšeme to v denníku nižšie a stačí ho
+              poslať druhým e-mailom.
             </li>
             <li>
               Doklady sú vždy <strong>rozpracované</strong>. Nájdete ich v{" "}
