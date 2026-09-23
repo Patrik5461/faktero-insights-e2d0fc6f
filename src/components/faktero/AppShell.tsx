@@ -1128,8 +1128,10 @@ export function PageHeader({
       Šírka je zhora obmedzená spolu s obsahom (`PageBody`) — na širokouhlom
       monitore by sa nadpis inak tiahol cez celú obrazovku a nesedel by nad
       kartami, ktoré pod ním končia na 1440 bodoch.
+      Nadpis má minimálnu šírku 20rem – pri minmax(0,…) ho detail s veľa
+      tlačidlami (cenová ponuka) zúžil až na „Ponuk…“; radšej sa zalomia tlačidlá.
     */
-    <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-6 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-4 lg:px-6">
+    <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-6 lg:grid lg:grid-cols-[minmax(20rem,1fr)_minmax(0,auto)] lg:items-end lg:gap-4 lg:px-6">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
@@ -1147,7 +1149,7 @@ export function PageHeader({
         </div>
         {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>
-      {action && <div className="flex w-full flex-wrap gap-2 lg:w-auto">{action}</div>}
+      {action && <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">{action}</div>}
     </div>
   );
 }
