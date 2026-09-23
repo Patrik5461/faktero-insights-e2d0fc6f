@@ -45,6 +45,19 @@ export const VIDEO_NAVODY: VideoNavod[] = [
     helpPath: "/pomoc/odberatelia",
     helpLabel: "Odberatelia",
   },
+  {
+    slug: "oznacenie-uhradenej-faktury",
+    title: "Označenie faktúry ako uhradenej",
+    description: "Ako označiť faktúru ako uhradenú, keď vám zákazník zaplatí.",
+    durationSeconds: 51,
+    videoUrl:
+      "https://sywcjxydnljkzoepfcaz.supabase.co/storage/v1/object/public/video-navody/oznacenie-uhradenej-faktury.mp4",
+    posterUrl:
+      "https://sywcjxydnljkzoepfcaz.supabase.co/storage/v1/object/public/video-navody/oznacenie-uhradenej-faktury.jpg",
+    uploadDate: "2026-09-23",
+    helpPath: "/pomoc/faktury",
+    helpLabel: "Faktúry",
+  },
 ];
 
 export function videoNavod(slug: string) {

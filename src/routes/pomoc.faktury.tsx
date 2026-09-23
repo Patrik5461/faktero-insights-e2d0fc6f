@@ -4,6 +4,7 @@ import { VideoNavodPlayer } from "@/components/faktero/VideoNavodPlayer";
 import { videoJsonLd, videoNavod } from "@/lib/faktero/video-navody";
 
 const VIDEO_PRVA_FAKTURA = videoNavod("vytvorenie-prvej-faktury");
+const VIDEO_UHRADENA = videoNavod("oznacenie-uhradenej-faktury");
 
 export const Route = createFileRoute("/pomoc/faktury")({
   head: () => ({
@@ -18,9 +19,9 @@ export const Route = createFileRoute("/pomoc/faktury")({
       { property: "og:url", content: "https://faktero.sk/pomoc/faktury" },
     ],
     links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/faktury" }],
-    scripts: VIDEO_PRVA_FAKTURA
-      ? [{ type: "application/ld+json", children: JSON.stringify(videoJsonLd(VIDEO_PRVA_FAKTURA)) }]
-      : [],
+    scripts: [VIDEO_PRVA_FAKTURA, VIDEO_UHRADENA]
+      .filter((v) => v !== undefined)
+      .map((v) => ({ type: "application/ld+json", children: JSON.stringify(videoJsonLd(v)) })),
   }),
   component: Page,
 });
@@ -102,6 +103,7 @@ const sections: HelpSection[] = [
     title: "Ako označiť faktúru ako uhradenú",
     body: (
       <>
+        {VIDEO_UHRADENA && <VideoNavodPlayer video={VIDEO_UHRADENA} className="not-prose mb-5" />}
         <p>Existujú tri spôsoby:</p>
         <ul>
           <li>
@@ -114,8 +116,8 @@ const sections: HelpSection[] = [
             transakcie.
           </li>
           <li>
-            <strong>Manuálne:</strong> na detaile faktúry → <em>Pridať platbu</em> alebo{" "}
-            <em>Označiť ako uhradenú</em>.
+            <strong>Manuálne:</strong> na detaile faktúry otvorte menu <em>…</em> vpravo hore a
+            vyberte <em>Označiť ako uhradenú</em>.
           </li>
         </ul>
       </>

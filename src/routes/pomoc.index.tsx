@@ -277,6 +277,12 @@ const SKUPINY = [
   "Účet a vývoj",
 ] as const;
 
+/** 1 video, 2 – 4 videá, 5 a viac videí. */
+function pocetVidei(n: number) {
+  if (n === 1) return "1 video";
+  return n >= 2 && n <= 4 ? `${n} videá` : `${n} videí`;
+}
+
 function Page() {
   return (
     <MarketingShell>
@@ -308,7 +314,7 @@ function Page() {
               </p>
             </div>
             <span className="ml-auto hidden text-sm font-medium text-emerald-700 sm:block dark:text-emerald-300">
-              {VIDEO_NAVODY.length === 1 ? "1 video" : `${VIDEO_NAVODY.length} videá`} →
+              {pocetVidei(VIDEO_NAVODY.length)} →
             </span>
           </Link>
         )}
