@@ -76,7 +76,7 @@ function Stranka() {
             </li>
             <li>
               Viac príloh v jednom maile znamená <strong>viac dokladov</strong> — každá sa spracuje
-              zvlášť.
+              zvlášť, najviac však <strong>15</strong> z jedného e-mailu.
             </li>
             <li>
               Doklady sú vždy <strong>rozpracované</strong>. Nájdete ich v{" "}

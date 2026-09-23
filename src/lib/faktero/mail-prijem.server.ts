@@ -25,8 +25,13 @@ import {
 import { bezpecneMeno, jeOstatnyZMailu, ostatnyZMailu } from "./ostatne-doklady";
 import { DRUHY_PRE_AI } from "./ostatne-doklady-citanie.server";
 
-/** Koľko príloh z jedného mailu spracujeme a aká veľká smie byť. */
-const MAX_PRILOH = 5;
+/**
+ * Koľko príloh z jedného mailu spracujeme a aká veľká smie byť. Od
+ * 2026-09-23 pätnásť namiesto piatich — dodávatelia posielajú aj celý mesiac
+ * faktúr v jednom maile a zvyšok sa predtým ticho zahodil (poznámka o tom
+ * ostáva v zázname prijatého mailu).
+ */
+const MAX_PRILOH = 15;
 const MAX_BAJTOV = 15 * 1024 * 1024;
 /** Tolerancia veku podpisu — chráni pred prehratím zachytenej požiadavky. */
 const TOLERANCIA_SEKUND = 300;
