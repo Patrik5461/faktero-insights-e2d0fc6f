@@ -38,9 +38,18 @@ export type AiNastavenie = {
 const TICHO_MS = 10 * 60_000;
 let geminiTichoDo = 0;
 
-/** Odmietnutie pre vyčerpaný kredit alebo kvótu — nie výpadok, opakovať netreba. */
+/**
+ * Odmietnutie, ktoré neprejde samo — nie výpadok, opakovať netreba.
+ *
+ * Okrem vyčerpaného kreditu sem patrí aj zamknutý projekt (`403
+ * PERMISSION_DENIED`). Overené 2026-09-23: Gemini takto odmietal každé volanie
+ * a keďže to za dôvod na umlčanie neplatilo, každé rozpoznávanie sa najprv
+ * márne spýtalo jeho a až potom šlo na OpenAI.
+ */
 function jeVycerpanyKredit(e: unknown): boolean {
-  return /429|RESOURCE_EXHAUSTED|quota|credits/i.test(String((e as Error)?.message ?? e));
+  return /429|RESOURCE_EXHAUSTED|quota|credits|403|PERMISSION_DENIED|denied access/i.test(
+    String((e as Error)?.message ?? e),
+  );
 }
 
 function maGemini(): boolean {
@@ -52,7 +61,10 @@ function maGemini(): boolean {
 function umlcGemini(e: unknown): void {
   if (!jeVycerpanyKredit(e)) return;
   geminiTichoDo = Date.now() + TICHO_MS;
-  console.warn(`[ai] Gemini nemá kredit, ${TICHO_MS / 60_000} minút sa naň nechodí.`);
+  console.warn(
+    `[ai] Gemini odmieta volania, ${TICHO_MS / 60_000} minút sa naň nechodí:`,
+    String((e as Error)?.message ?? e).slice(0, 120),
+  );
 }
 
 function maOpenAi(): boolean {

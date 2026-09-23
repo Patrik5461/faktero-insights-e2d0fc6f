@@ -93,6 +93,21 @@ describe("výber poskytovateľa", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
+  it("zamknutý projekt umlčí Gemini rovnako ako vyčerpaný kredit", async () => {
+    // Overené naostro 2026-09-23: Gemini odmietal každé volanie hláškou
+    // „Your project has been denied access“ a čakalo sa naň zbytočne.
+    geminiText.mockRejectedValueOnce(
+      new Error('Gemini 403: {"error":{"status":"PERMISSION_DENIED"}}'),
+    );
+    const { aiText } = await import("./ai.server");
+
+    await aiText("prvý");
+    await aiText("druhý");
+
+    expect(geminiText).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("výpadok Gemini kľúč neumlčí — skúsi sa nabudúce znova", async () => {
     geminiText.mockRejectedValueOnce(new Error("Gemini 503: service unavailable"));
     const { aiText } = await import("./ai.server");
