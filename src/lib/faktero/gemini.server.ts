@@ -1,6 +1,11 @@
 // Gemini vision cez generateContent API (podporuje obrázky aj PDF ako inline_data).
 // Vracia text odpovede; volajúci ho prečíta cez `odpovedNaJson`, lebo model
 // rád zabalí JSON do bloku so spätnými apostrofmi.
+import { modelGemini } from "./ai-modely";
+
+/** Spotreba tokenov — chodí až v odpovedi, volajúci si ju vypýta funkciou. */
+export type MeracTokenov = (t: { vstup?: number | null; vystup?: number | null }) => void;
+
 export async function geminiVision(
   base64: string,
   mimeType: string,
@@ -11,8 +16,13 @@ export async function geminiVision(
     /** Vypýta si čistý JSON, takže odpoveď nechodí zabalená v apostrofoch. */
     json?: boolean;
   },
+  merac?: MeracTokenov,
 ): Promise<string> {
-  return volaj([{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } }], nastavenie);
+  return volaj(
+    [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } }],
+    nastavenie,
+    merac,
+  );
 }
 
 /**
@@ -25,13 +35,15 @@ export async function geminiVision(
 export async function geminiText(
   prompt: string,
   nastavenie?: { maxOutputTokens?: number; json?: boolean },
+  merac?: MeracTokenov,
 ): Promise<string> {
-  return volaj([{ text: prompt }], nastavenie);
+  return volaj([{ text: prompt }], nastavenie, merac);
 }
 
 async function volaj(
   parts: unknown[],
   nastavenie?: { maxOutputTokens?: number; json?: boolean },
+  merac?: MeracTokenov,
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) throw new Error("GEMINI_API_KEY nie je nastavený");
@@ -40,7 +52,7 @@ async function volaj(
   const timeout = setTimeout(() => controller.abort(), 120000);
 
   const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
+    `https://generativelanguage.googleapis.com/v1beta/models/${modelGemini()}:generateContent`,
     {
       method: "POST",
       headers: {
@@ -73,6 +85,11 @@ async function volaj(
   }
 
   const data = await res.json();
+  // Spotreba sa hlási aj pri odrezanej odpovedi — zaplatená je tak či tak.
+  merac?.({
+    vstup: data.usageMetadata?.promptTokenCount ?? null,
+    vystup: data.usageMetadata?.candidatesTokenCount ?? null,
+  });
   /*
    * Odrezanú odpoveď treba povedať nahlas. Pri dlhom splátkovom kalendári sa
    * JSON nedopíše do konca, ticho sa neprečíta a volajúci to vidí ako

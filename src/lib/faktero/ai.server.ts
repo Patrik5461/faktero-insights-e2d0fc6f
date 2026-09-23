@@ -13,11 +13,18 @@
  * model nikdy nezistil.
  */
 
+import { zmeraj } from "./ai-merac.server";
+import { modelGemini, modelOpenAi } from "./ai-modely";
+
 export type AiNastavenie = {
   /** Strop odpovede. Dlhý splátkový kalendár sa do predvoleného nezmestí. */
   maxOutputTokens?: number;
   /** Vypýta si čistý JSON. */
   json?: boolean;
+  /** Agenda, ktorá si model vypýtala — kvôli prehľadu využitia v admine. */
+  ucel?: string;
+  /** Firma, ktorej sa dokument týka; pri verejných volaniach chýba. */
+  firma?: string | null;
 };
 
 /**
@@ -52,6 +59,30 @@ function maOpenAi(): boolean {
   return Boolean(process.env.OPENAI_API_KEY?.trim());
 }
 
+/**
+ * Čo je práve nastavené a či sa na Gemini chodí.
+ *
+ * Umlčanie si modul drží v pamäti procesu, takže inak sa zvonku zistiť nedá —
+ * a práve ono je najbližšie k odpovedi na otázku „minul sa kredit?“.
+ */
+export function stavAi(): {
+  gemini: { kluc: boolean; model: string; umlcanyDo: string | null };
+  openai: { kluc: boolean; model: string; modelVidiaci: string };
+} {
+  return {
+    gemini: {
+      kluc: Boolean(process.env.GEMINI_API_KEY?.trim()),
+      model: modelGemini(),
+      umlcanyDo: geminiTichoDo > Date.now() ? new Date(geminiTichoDo).toISOString() : null,
+    },
+    openai: {
+      kluc: maOpenAi(),
+      model: modelOpenAi(false),
+      modelVidiaci: modelOpenAi(true),
+    },
+  };
+}
+
 function bezPoskytovatela(): never {
   throw new Error("Rozpoznávanie dokumentov nie je nastavené — chýba kľúč ku Gemini aj k OpenAI.");
 }
@@ -80,12 +111,37 @@ function preskocDoChvile(status: number): boolean {
   return status === 429 || status >= 500;
 }
 
+/**
+ * Volanie OpenAI aj s meraním. Meria sa celé — aj s opakovaniami —, lebo
+ * zaplatí sa za každý pokus, ktorý prešiel.
+ */
 async function cezOpenAi(
   pokyn: string,
   obsah: unknown[],
   nastavenie?: AiNastavenie,
-  /** Obrázok a PDF potrebujú model, ktorý vidí; na text stačí ten rýchlejší. */
   vidiaci = true,
+  /** true, keď sa sem ide až po tom, čo Gemini zlyhal. */
+  nahrada = false,
+): Promise<string> {
+  return zmeraj(
+    {
+      poskytovatel: "openai",
+      model: modelOpenAi(vidiaci),
+      ucel: nastavenie?.ucel,
+      firma: nastavenie?.firma,
+      nahrada,
+    },
+    (ohlasTokeny) => openAiVolanie(pokyn, obsah, nastavenie, vidiaci, ohlasTokeny),
+  );
+}
+
+async function openAiVolanie(
+  pokyn: string,
+  obsah: unknown[],
+  nastavenie: AiNastavenie | undefined,
+  /** Obrázok a PDF potrebujú model, ktorý vidí; na text stačí ten rýchlejší. */
+  vidiaci: boolean,
+  ohlasTokeny: (t: { vstup?: number | null; vystup?: number | null }) => void,
   pokus = 1,
 ): Promise<string> {
   const kluc = process.env.OPENAI_API_KEY?.trim();
@@ -95,9 +151,7 @@ async function cezOpenAi(
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${kluc}` },
     body: JSON.stringify({
-      model: vidiaci
-        ? process.env.OPENAI_VISION_MODEL || "gpt-4o"
-        : process.env.OPENAI_MODEL || "gpt-4o-mini",
+      model: modelOpenAi(vidiaci),
       messages: [
         { role: "system", content: pokyn },
         { role: "user", content: obsah },
@@ -123,11 +177,15 @@ async function cezOpenAi(
       const cakaj = Number.isFinite(povedane) && povedane > 0 ? povedane * 1000 : 2000 * pokus;
       console.warn(`[ai] OpenAI ${res.status}, ${pokus}. pokus, čakám ${cakaj} ms`);
       await new Promise((r) => setTimeout(r, Math.min(cakaj, 20_000)));
-      return cezOpenAi(pokyn, obsah, nastavenie, vidiaci, pokus + 1);
+      return openAiVolanie(pokyn, obsah, nastavenie, vidiaci, ohlasTokeny, pokus + 1);
     }
     throw new Error(`OpenAI ${res.status}: ${telo.slice(0, 300)}`);
   }
   const j: any = await res.json();
+  ohlasTokeny({
+    vstup: j?.usage?.prompt_tokens ?? null,
+    vystup: j?.usage?.completion_tokens ?? null,
+  });
   return j?.choices?.[0]?.message?.content ?? "";
 }
 
@@ -138,7 +196,7 @@ export async function aiVision(
   pokyn: string,
   nastavenie?: AiNastavenie,
 ): Promise<string> {
-  const naOpenAi = () =>
+  const naOpenAi = (nahrada = false) =>
     cezOpenAi(
       pokyn,
       mimeType === "application/pdf"
@@ -154,6 +212,8 @@ export async function aiVision(
             { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
           ],
       nastavenie,
+      true,
+      nahrada,
     );
 
   if (!maGemini()) {
@@ -163,7 +223,15 @@ export async function aiVision(
 
   try {
     const { geminiVision } = await import("./gemini.server");
-    return await geminiVision(base64, mimeType, pokyn, nastavenie);
+    return await zmeraj(
+      {
+        poskytovatel: "gemini",
+        model: modelGemini(),
+        ucel: nastavenie?.ucel,
+        firma: nastavenie?.firma,
+      },
+      (ohlasTokeny) => geminiVision(base64, mimeType, pokyn, nastavenie, ohlasTokeny),
+    );
   } catch (e) {
     umlcGemini(e);
     if (!maOpenAi() || !opravitelna(e)) throw e;
@@ -171,13 +239,14 @@ export async function aiVision(
       "[ai] Gemini zlyhal, skúšam OpenAI:",
       String((e as Error)?.message ?? e).slice(0, 200),
     );
-    return naOpenAi();
+    return naOpenAi(true);
   }
 }
 
 /** To isté nad obyčajným textom — keď dokument textovú vrstvu má. */
 export async function aiText(pokyn: string, nastavenie?: AiNastavenie): Promise<string> {
-  const naOpenAi = () => cezOpenAi(pokyn, [{ type: "text", text: "Pokračuj." }], nastavenie, false);
+  const naOpenAi = (nahrada = false) =>
+    cezOpenAi(pokyn, [{ type: "text", text: "Pokračuj." }], nastavenie, false, nahrada);
 
   if (!maGemini()) {
     if (!maOpenAi()) bezPoskytovatela();
@@ -186,7 +255,15 @@ export async function aiText(pokyn: string, nastavenie?: AiNastavenie): Promise<
 
   try {
     const { geminiText } = await import("./gemini.server");
-    return await geminiText(pokyn, nastavenie);
+    return await zmeraj(
+      {
+        poskytovatel: "gemini",
+        model: modelGemini(),
+        ucel: nastavenie?.ucel,
+        firma: nastavenie?.firma,
+      },
+      (ohlasTokeny) => geminiText(pokyn, nastavenie, ohlasTokeny),
+    );
   } catch (e) {
     umlcGemini(e);
     if (!maOpenAi() || !opravitelna(e)) throw e;
@@ -194,6 +271,6 @@ export async function aiText(pokyn: string, nastavenie?: AiNastavenie): Promise<
       "[ai] Gemini zlyhal, skúšam OpenAI:",
       String((e as Error)?.message ?? e).slice(0, 200),
     );
-    return naOpenAi();
+    return naOpenAi(true);
   }
 }

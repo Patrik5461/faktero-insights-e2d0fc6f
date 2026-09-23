@@ -43,7 +43,11 @@ FORMÁT ODPOVEDE - VÝHRADNE JSON objekt, žiadny iný text:
 {"supplier":"názov dodávateľa alebo null","delivery_number":"číslo alebo null","items":[{"name":"presný názov","code":"kód alebo null","quantity":číslo,"unit":"ks/kg/m/l/bal","unit_price":číslo alebo null,"total_price":číslo alebo null}]}`;
 
     const { aiVision } = await import("@/lib/faktero/ai.server");
-    const content = await aiVision(base64, mt, prompt, { json: true, maxOutputTokens: 4000 });
+    const content = await aiVision(base64, mt, prompt, {
+      json: true,
+      maxOutputTokens: 4000,
+      ucel: "dodaci-list",
+    });
 
     const { debugLog } = await import("@/lib/faktero/debug.server");
     debugLog("parse", "ai raw response (first 300):", (content || "").slice(0, 300));

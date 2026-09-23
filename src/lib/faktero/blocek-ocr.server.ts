@@ -65,7 +65,7 @@ export async function ocrBlocek(
       imageDataUrl,
       jePdf ? "application/pdf" : "image/jpeg",
     );
-    text = await aiVision(base64, mimeType, PROMPT);
+    text = await aiVision(base64, mimeType, PROMPT, { ucel: "blocek" });
   } else {
     const model = process.env.OPENAI_VISION_MODEL || process.env.OPENAI_MODEL || "gpt-4o";
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -88,6 +88,17 @@ export async function ocrBlocek(
     });
     if (!res.ok) throw new Error(`Čítanie z fotky zlyhalo (${res.status}).`);
     const json: any = await res.json();
+    // Meranie využitia AI — zostatok kreditu poskytovateľ nepovie, vlastnú
+    // spotrebu si teda rátame sami.
+    const { zapisPouzitie } = await import("@/lib/faktero/ai-merac.server");
+    zapisPouzitie({
+      poskytovatel: "openai",
+      model,
+      ucel: "blocek",
+      vstupneTokeny: json?.usage?.prompt_tokens ?? null,
+      vystupneTokeny: json?.usage?.completion_tokens ?? null,
+      ok: true,
+    });
     text = json?.choices?.[0]?.message?.content ?? "";
   }
 

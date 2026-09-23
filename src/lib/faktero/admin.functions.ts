@@ -989,3 +989,57 @@ export const listAuditLogs = createServerFn({ method: "POST" })
       total: count ?? 0,
     };
   });
+
+// ── Využitie AI ─────────────────────────────────────────────────────────
+/**
+ * Prehľad spotreby modelov.
+ *
+ * Zostatok kreditu sa u Gemini ani u OpenAI cez rozhranie vyčítať nedá, preto
+ * sa ukazuje vlastné meranie: koľko volaní, koľko tokenov a čo to podľa
+ * cenníka stálo. Umlčanie Gemini po vyčerpanom kredite si server drží v pamäti,
+ * takže sa berie priamo z neho.
+ */
+export const getAdminAiUsage = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await getAdmin(context);
+    const od = new Date();
+    od.setDate(od.getDate() - 29);
+    od.setHours(0, 0, 0, 0);
+
+    const [suhrn, chyby] = await Promise.all([
+      supabaseAdmin.rpc("ai_pouzitie_suhrn", { _od: od.toISOString() }),
+      supabaseAdmin
+        .from("ai_pouzitie")
+        .select("created_at, poskytovatel, model, ucel, chyba, nahrada")
+        .eq("ok", false)
+        .gte("created_at", od.toISOString())
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+    if (suhrn.error) throw suhrn.error;
+
+    const { stavAi } = await import("@/lib/faktero/ai.server");
+    return {
+      riadky: (suhrn.data ?? []).map((r: any) => ({
+        den: String(r.den),
+        poskytovatel: String(r.poskytovatel),
+        model: String(r.model),
+        ucel: String(r.ucel),
+        ok: Boolean(r.ok),
+        volani: Number(r.volani ?? 0),
+        vstup: Number(r.vstup ?? 0),
+        vystup: Number(r.vystup ?? 0),
+        trvanie: Number(r.trvanie ?? 0),
+      })),
+      chyby: (chyby.data ?? []) as {
+        created_at: string;
+        poskytovatel: string;
+        model: string;
+        ucel: string;
+        chyba: string | null;
+        nahrada: boolean;
+      }[],
+      stav: stavAi(),
+    };
+  });

@@ -182,7 +182,11 @@ async function precitajVypis(data: {
     }
 
     const { aiText, aiVision } = await import("./ai.server");
-    const nastavenie = { json: true, maxOutputTokens: 12000 };
+    const nastavenie = {
+      json: true,
+      maxOutputTokens: 12000,
+      ucel: "bankovy-vypis",
+    };
 
     let vypis: Vypis;
     let surovych = 0;

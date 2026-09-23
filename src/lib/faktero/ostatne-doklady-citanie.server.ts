@@ -33,9 +33,12 @@ ${DRUHY_PRE_AI}
 Vráť VÝHRADNE JSON:
 {"kind":string,"sender":string|null,"subject":string|null,"document_date":"YYYY-MM-DD"|null,"amount":number|null,"currency":string|null,"due_date":"YYYY-MM-DD"|null,"summary":string|null}`;
 
-export async function precitajOstatny(base64: string, mimeType: string): Promise<RozpoznanyOstatny> {
+export async function precitajOstatny(
+  base64: string,
+  mimeType: string,
+): Promise<RozpoznanyOstatny> {
   const { aiVision } = await import("./ai.server");
-  const odpoved = await aiVision(base64, mimeType, PROMPT);
+  const odpoved = await aiVision(base64, mimeType, PROMPT, { ucel: "ostatny-doklad" });
   const parsed = odpovedNaJson<any>(odpoved);
   if (!parsed) throw new Error("Z dokumentu sa nepodarilo prečítať nič.");
   return normalizujRozpoznanie(parsed);

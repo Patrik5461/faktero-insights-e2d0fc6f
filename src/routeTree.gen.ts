@@ -50,6 +50,7 @@ import { Route as AuthenticatedSkladRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedWebhookyRouteImport } from './routes/_authenticated/webhooky'
 import { Route as AuthenticatedWebhookyLogyRouteImport } from './routes/_authenticated/webhooky-logy'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAiRouteImport } from './routes/admin.ai'
 import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
 import { Route as AdminErrorsRouteImport } from './routes/admin.errors'
 import { Route as AdminGopayRouteImport } from './routes/admin.gopay'
@@ -484,6 +485,11 @@ const AuthenticatedWebhookyLogyRoute =
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAiRoute = AdminAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAuditLogRoute = AdminAuditLogRouteImport.update({
@@ -1767,6 +1773,7 @@ export interface FileRoutesByFullPath {
   '/sklad': typeof AuthenticatedSkladRouteWithChildren
   '/webhooky': typeof AuthenticatedWebhookyRoute
   '/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
+  '/admin/ai': typeof AdminAiRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/gopay': typeof AdminGopayRoute
@@ -2027,6 +2034,7 @@ export interface FileRoutesByTo {
   '/produkty': typeof AuthenticatedProduktyRoute
   '/webhooky': typeof AuthenticatedWebhookyRoute
   '/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
+  '/admin/ai': typeof AdminAiRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/gopay': typeof AdminGopayRoute
@@ -2296,6 +2304,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad': typeof AuthenticatedSkladRouteWithChildren
   '/_authenticated/webhooky': typeof AuthenticatedWebhookyRoute
   '/_authenticated/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
+  '/admin/ai': typeof AdminAiRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/gopay': typeof AdminGopayRoute
@@ -2566,6 +2575,7 @@ export interface FileRouteTypes {
     | '/sklad'
     | '/webhooky'
     | '/webhooky-logy'
+    | '/admin/ai'
     | '/admin/audit-log'
     | '/admin/errors'
     | '/admin/gopay'
@@ -2826,6 +2836,7 @@ export interface FileRouteTypes {
     | '/produkty'
     | '/webhooky'
     | '/webhooky-logy'
+    | '/admin/ai'
     | '/admin/audit-log'
     | '/admin/errors'
     | '/admin/gopay'
@@ -3094,6 +3105,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad'
     | '/_authenticated/webhooky'
     | '/_authenticated/webhooky-logy'
+    | '/admin/ai'
     | '/admin/audit-log'
     | '/admin/errors'
     | '/admin/gopay'
@@ -3725,6 +3737,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/ai': {
+      id: '/admin/ai'
+      path: '/ai'
+      fullPath: '/admin/ai'
+      preLoaderRoute: typeof AdminAiRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/audit-log': {
@@ -5602,6 +5621,7 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface AdminRouteChildren {
+  AdminAiRoute: typeof AdminAiRoute
   AdminAuditLogRoute: typeof AdminAuditLogRoute
   AdminErrorsRoute: typeof AdminErrorsRoute
   AdminGopayRoute: typeof AdminGopayRoute
@@ -5622,6 +5642,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAiRoute: AdminAiRoute,
   AdminAuditLogRoute: AdminAuditLogRoute,
   AdminErrorsRoute: AdminErrorsRoute,
   AdminGopayRoute: AdminGopayRoute,

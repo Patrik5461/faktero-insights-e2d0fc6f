@@ -246,6 +246,59 @@ export type Database = {
           },
         ]
       }
+      ai_pouzitie: {
+        Row: {
+          chyba: string | null
+          company_id: string | null
+          created_at: string
+          id: number
+          model: string
+          nahrada: boolean
+          ok: boolean
+          poskytovatel: string
+          trvanie_ms: number | null
+          ucel: string
+          vstupne_tokeny: number | null
+          vystupne_tokeny: number | null
+        }
+        Insert: {
+          chyba?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: never
+          model: string
+          nahrada?: boolean
+          ok?: boolean
+          poskytovatel: string
+          trvanie_ms?: number | null
+          ucel?: string
+          vstupne_tokeny?: number | null
+          vystupne_tokeny?: number | null
+        }
+        Update: {
+          chyba?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: never
+          model?: string
+          nahrada?: boolean
+          ok?: boolean
+          poskytovatel?: string
+          trvanie_ms?: number | null
+          ucel?: string
+          vstupne_tokeny?: number | null
+          vystupne_tokeny?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_pouzitie_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_messages: {
         Row: {
           content: string
@@ -7242,6 +7295,20 @@ export type Database = {
     }
     Functions: {
       admin_db_usage_stats: { Args: never; Returns: Json }
+      ai_pouzitie_suhrn: {
+        Args: { _od: string }
+        Returns: {
+          den: string
+          poskytovatel: string
+          model: string
+          ucel: string
+          ok: boolean
+          volani: number
+          vstup: number
+          vystup: number
+          trvanie: number
+        }[]
+      }
       apply_stock_movement: {
         Args: {
           _company_id: string

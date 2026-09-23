@@ -242,6 +242,18 @@ ${JSON.stringify(ctx, null, 2)}`;
       throw new Error(`AI chyba: ${res.status} ${t.slice(0, 200)}`);
     }
     const json: any = await res.json();
+    // Meranie využitia AI — zostatok kreditu poskytovateľ nepovie, vlastnú
+    // spotrebu si teda rátame sami.
+    const { zapisPouzitie } = await import("@/lib/faktero/ai-merac.server");
+    zapisPouzitie({
+      poskytovatel: "openai",
+      model,
+      ucel: "asistent",
+      firma: data.companyId,
+      vstupneTokeny: json?.usage?.prompt_tokens ?? null,
+      vystupneTokeny: json?.usage?.completion_tokens ?? null,
+      ok: true,
+    });
     const reply = json?.choices?.[0]?.message?.content ?? "Bez odpovede.";
 
     const { data: stored } = await context.supabase

@@ -48,7 +48,10 @@ export async function precitajZmluvu(base64: string, mimeType: string): Promise<
    * sa, že skončil normálne. Bez neho pošle JSON v bloku so spätnými
    * apostrofmi, čo `odpovedNaJson` číta bez problémov.
    */
-  const odpoved = await aiVision(base64, mimeType, PROMPT, { maxOutputTokens: 32768 });
+  const odpoved = await aiVision(base64, mimeType, PROMPT, {
+    maxOutputTokens: 32768,
+    ucel: "financovanie",
+  });
   const parsed = odpovedNaJson<any>(odpoved);
   if (!parsed) throw new Error("Z dokumentu sa nepodarilo prečítať nič.");
 

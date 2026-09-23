@@ -17,6 +17,7 @@ import {
   Search,
   Handshake,
   Receipt,
+  Sparkles,
 } from "lucide-react";
 
 const NAV = [
@@ -28,6 +29,7 @@ const NAV = [
   { to: "/admin/gopay", label: "GoPay (predplatné)", icon: Wallet },
   { to: "/admin/platform-invoices", label: "Platformové faktúry", icon: Receipt },
   { to: "/admin/usage", label: "Využitie", icon: Gauge },
+  { to: "/admin/ai", label: "AI a kredity", icon: Sparkles },
   { to: "/admin/errors", label: "Chyby", icon: AlertTriangle },
   { to: "/admin/audit-log", label: "Audit log", icon: ScrollText },
   { to: "/admin/legal", label: "Právne dokumenty", icon: FileText },

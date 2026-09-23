@@ -112,7 +112,7 @@ export async function precitajDoklad(
 ): Promise<Record<string, unknown> | null> {
   try {
     const { aiVision } = await import("./ai.server");
-    const odpoved = await aiVision(base64, mimeType, PROMPT);
+    const odpoved = await aiVision(base64, mimeType, PROMPT, { ucel: "doklad-z-posty" });
     const json = odpoved.match(/\{[\s\S]*\}/)?.[0];
     return json ? JSON.parse(json) : null;
   } catch (e: any) {
@@ -475,11 +475,14 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
 
     if (podpisy > 0) {
       // Slovenčina má tri tvary — „1 príloh" vyzerá ako chyba.
-      const tvar = podpisy === 1 ? "príloha vyzerá" : podpisy < 5 ? "prílohy vyzerajú" : "príloh vyzerá";
-      poznamky.push(`${podpisy} ${tvar} ako podpis alebo logo — nespracovali sme ju`.replace(
-        "sme ju",
-        podpisy === 1 ? "sme ju" : "sme ich",
-      ));
+      const tvar =
+        podpisy === 1 ? "príloha vyzerá" : podpisy < 5 ? "prílohy vyzerajú" : "príloh vyzerá";
+      poznamky.push(
+        `${podpisy} ${tvar} ako podpis alebo logo — nespracovali sme ju`.replace(
+          "sme ju",
+          podpisy === 1 ? "sme ju" : "sme ich",
+        ),
+      );
     }
     if (vytvoreneOstatne.length) {
       poznamky.unshift(

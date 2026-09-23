@@ -137,6 +137,17 @@ export const Route = createFileRoute("/api/public/support-chat")({
             });
           }
           const json: any = await res.json();
+          // Meranie využitia AI — zostatok kreditu poskytovateľ nepovie, vlastnú
+          // spotrebu si teda rátame sami.
+          const { zapisPouzitie } = await import("@/lib/faktero/ai-merac.server");
+          zapisPouzitie({
+            poskytovatel: "openai",
+            model,
+            ucel: "podpora",
+            vstupneTokeny: json?.usage?.prompt_tokens ?? null,
+            vystupneTokeny: json?.usage?.completion_tokens ?? null,
+            ok: true,
+          });
           const content =
             json?.choices?.[0]?.message?.content ??
             "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk a ozveme sa vám.";
