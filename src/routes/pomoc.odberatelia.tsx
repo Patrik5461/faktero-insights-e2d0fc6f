@@ -1,5 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { HelpArticle, HelpSection } from "@/components/faktero/HelpArticle";
+import { VideoNavodPlayer } from "@/components/faktero/VideoNavodPlayer";
+import { videoJsonLd, videoNavod } from "@/lib/faktero/video-navody";
+
+const VIDEO_ODBERATEL = videoNavod("pridanie-odberatela");
 
 export const Route = createFileRoute("/pomoc/odberatelia")({
   head: () => ({
@@ -13,6 +17,9 @@ export const Route = createFileRoute("/pomoc/odberatelia")({
       { property: "og:url", content: "https://faktero.sk/pomoc/odberatelia" },
     ],
     links: [{ rel: "canonical", href: "https://faktero.sk/pomoc/odberatelia" }],
+    scripts: VIDEO_ODBERATEL
+      ? [{ type: "application/ld+json", children: JSON.stringify(videoJsonLd(VIDEO_ODBERATEL)) }]
+      : [],
   }),
   component: Page,
 });
@@ -23,6 +30,7 @@ const sections: HelpSection[] = [
     title: "Založenie odberateľa",
     body: (
       <>
+        {VIDEO_ODBERATEL && <VideoNavodPlayer video={VIDEO_ODBERATEL} className="not-prose mb-5" />}
         <p>
           V <Link to="/odberatelia">Kontakty → Odberatelia</Link> stačí začať písať názov firmy
           alebo zadať IČO — Faktero doplní adresu, DIČ aj IČ DPH z registra. Údaje sa dajú prepísať.

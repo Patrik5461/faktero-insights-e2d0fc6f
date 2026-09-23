@@ -22,7 +22,7 @@ export const VIDEO_NAVODY: VideoNavod[] = [
     slug: "vytvorenie-prvej-faktury",
     title: "Vytvorenie prvej faktúry",
     description: "Ako vo Faktere vystaviť faktúru za menej ako minútu.",
-    durationSeconds: 79,
+    durationSeconds: 80,
     videoUrl:
       "https://sywcjxydnljkzoepfcaz.supabase.co/storage/v1/object/public/video-navody/vytvorenie-prvej-faktury.mp4",
     posterUrl:
@@ -30,6 +30,20 @@ export const VIDEO_NAVODY: VideoNavod[] = [
     uploadDate: "2026-09-22",
     helpPath: "/pomoc/faktury",
     helpLabel: "Faktúry",
+  },
+  {
+    slug: "pridanie-odberatela",
+    title: "Pridanie nového odberateľa",
+    description:
+      "Ako pridať odberateľa tak, aby sa jeho údaje vyplnili samy podľa názvu alebo IČO.",
+    durationSeconds: 55,
+    videoUrl:
+      "https://sywcjxydnljkzoepfcaz.supabase.co/storage/v1/object/public/video-navody/pridanie-odberatela.mp4",
+    posterUrl:
+      "https://sywcjxydnljkzoepfcaz.supabase.co/storage/v1/object/public/video-navody/pridanie-odberatela.jpg",
+    uploadDate: "2026-09-23",
+    helpPath: "/pomoc/odberatelia",
+    helpLabel: "Odberatelia",
   },
 ];
 
