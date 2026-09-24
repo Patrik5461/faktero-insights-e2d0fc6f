@@ -178,6 +178,14 @@ const CATS: Cat[] = [
     skupina: "Účtovníctvo",
   },
   {
+    to: "/pomoc/vykazy-dph",
+    label: "Výkazy k DPH",
+    desc: "Priznanie, kontrolný a súhrnný výkaz v XML pre eDane.",
+    icon: Percent,
+    available: true,
+    skupina: "Účtovníctvo",
+  },
+  {
     to: "/pomoc/uzavierka",
     label: "Uzávierka",
     desc: "Uzamknutie období, aby sa staré doklady už nemenili.",

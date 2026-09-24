@@ -101,6 +101,7 @@ import { Route as PomocRoleRouteImport } from './routes/pomoc.role'
 import { Route as PomocSkladRouteImport } from './routes/pomoc.sklad'
 import { Route as PomocUzavierkaRouteImport } from './routes/pomoc.uzavierka'
 import { Route as PomocVideaRouteImport } from './routes/pomoc.videa'
+import { Route as PomocVykazyDphRouteImport } from './routes/pomoc.vykazy-dph'
 import { Route as PomocZakazkyRouteImport } from './routes/pomoc.zakazky'
 import { Route as PravneIndexRouteImport } from './routes/pravne.index'
 import { Route as PravneCookiesRouteImport } from './routes/pravne.cookies'
@@ -742,6 +743,11 @@ const PomocUzavierkaRoute = PomocUzavierkaRouteImport.update({
 const PomocVideaRoute = PomocVideaRouteImport.update({
   id: '/pomoc/videa',
   path: '/pomoc/videa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocVykazyDphRoute = PomocVykazyDphRouteImport.update({
+  id: '/pomoc/vykazy-dph',
+  path: '/pomoc/vykazy-dph',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomocZakazkyRoute = PomocZakazkyRouteImport.update({
@@ -1827,6 +1833,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
+  '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
@@ -2089,6 +2096,7 @@ export interface FileRoutesByTo {
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
+  '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
@@ -2360,6 +2368,7 @@ export interface FileRoutesById {
   '/pomoc/sklad': typeof PomocSkladRoute
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
+  '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
@@ -2632,6 +2641,7 @@ export interface FileRouteTypes {
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
+    | '/pomoc/vykazy-dph'
     | '/pomoc/zakazky'
     | '/pravne/cookies'
     | '/pravne/gdpr'
@@ -2894,6 +2904,7 @@ export interface FileRouteTypes {
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
+    | '/pomoc/vykazy-dph'
     | '/pomoc/zakazky'
     | '/pravne/cookies'
     | '/pravne/gdpr'
@@ -3164,6 +3175,7 @@ export interface FileRouteTypes {
     | '/pomoc/sklad'
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
+    | '/pomoc/vykazy-dph'
     | '/pomoc/zakazky'
     | '/pravne/cookies'
     | '/pravne/gdpr'
@@ -3402,6 +3414,7 @@ export interface RootRouteChildren {
   PomocSkladRoute: typeof PomocSkladRoute
   PomocUzavierkaRoute: typeof PomocUzavierkaRoute
   PomocVideaRoute: typeof PomocVideaRoute
+  PomocVykazyDphRoute: typeof PomocVykazyDphRoute
   PomocZakazkyRoute: typeof PomocZakazkyRoute
   PravneCookiesRoute: typeof PravneCookiesRoute
   PravneGdprRoute: typeof PravneGdprRoute
@@ -4107,6 +4120,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/videa'
       fullPath: '/pomoc/videa'
       preLoaderRoute: typeof PomocVideaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/vykazy-dph': {
+      id: '/pomoc/vykazy-dph'
+      path: '/pomoc/vykazy-dph'
+      fullPath: '/pomoc/vykazy-dph'
+      preLoaderRoute: typeof PomocVykazyDphRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/zakazky': {
@@ -5925,6 +5945,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocSkladRoute: PomocSkladRoute,
   PomocUzavierkaRoute: PomocUzavierkaRoute,
   PomocVideaRoute: PomocVideaRoute,
+  PomocVykazyDphRoute: PomocVykazyDphRoute,
   PomocZakazkyRoute: PomocZakazkyRoute,
   PravneCookiesRoute: PravneCookiesRoute,
   PravneGdprRoute: PravneGdprRoute,

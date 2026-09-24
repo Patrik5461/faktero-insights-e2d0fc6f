@@ -138,7 +138,7 @@ export function kvNaXml(
     <Nazov>${esc(firma.nazov)}</Nazov>
     <Stat>${esc(firma.stat || "Slovensko")}</Stat>
     <Obec>${esc(firma.obec ?? "")}</Obec>
-    <PSC>${esc(firma.psc ?? "")}</PSC>
+    <PSC>${esc((firma.psc ?? "").replace(/\s/g, ""))}</PSC>
     <Ulica>${esc(firma.ulica ?? "")}</Ulica>
     <Cislo>${esc(firma.cislo ?? "")}</Cislo>
     <Tel>${esc(firma.tel ?? "")}</Tel>

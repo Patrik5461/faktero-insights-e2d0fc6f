@@ -1088,6 +1088,7 @@ const MANUALY: { prefix: string; to: string }[] = [
   { prefix: "/sklad/objednavky", to: "/pomoc/objednavky-dodavatel" },
   { prefix: "/produkty", to: "/pomoc/sklad" },
   { prefix: "/ceny", to: "/pomoc/ceny" },
+  { prefix: "/uctovnictvo/vykazy", to: "/pomoc/vykazy-dph" },
   { prefix: "/uctovnictvo/dph", to: "/pomoc/dph" },
   { prefix: "/uctovnictvo/uzavierka", to: "/pomoc/uzavierka" },
   { prefix: "/uctovnictvo/pohoda", to: "/pomoc/pohoda" },
