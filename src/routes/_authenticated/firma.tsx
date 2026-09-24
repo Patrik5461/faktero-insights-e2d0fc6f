@@ -121,6 +121,25 @@ function CompanyPage() {
               setC((prev: any) => ({ ...prev, vat_payer: platitel, vat_scheme: schema }))
             }
           />
+          {Boolean(c.vat_payer) && (
+            <label className="flex items-start gap-2 sm:col-span-2">
+              <input
+                type="checkbox"
+                checked={Boolean(c.dan_z_prijatej_platby)}
+                onChange={(e) =>
+                  setC((prev: any) => ({ ...prev, dan_z_prijatej_platby: e.target.checked }))
+                }
+                className="mt-0.5 h-4 w-4 rounded border-input"
+              />
+              <span className="text-sm">
+                Uplatňujem daň na základe prijatia platby (§ 68d)
+                <span className="block text-xs text-muted-foreground">
+                  Na každú faktúru pribudne veta „Daň sa uplatňuje na základe prijatia platby" — bez
+                  nej je doklad neúplný.
+                </span>
+              </span>
+            </label>
+          )}
           <In label="Telefón" value={c.phone ?? ""} onChange={f("phone")} />
           <In label="Web" value={c.website ?? ""} onChange={f("website")} />
           {/* Predvolená mena firmy sa dedí do každého nového dokladu, takže
@@ -390,7 +409,12 @@ function TeamSection({ companyId }: { companyId: string }) {
     const { changeMemberRoleFn } = await import("@/lib/faktero/invitations.functions");
     try {
       await changeMemberRoleFn({
-        data: { company_id: companyId, user_id: userId, role: novaRola as any, permissions: opravnenia },
+        data: {
+          company_id: companyId,
+          user_id: userId,
+          role: novaRola as any,
+          permissions: opravnenia,
+        },
       });
       toast.success(novaRola === "custom" ? "Prístup uložený" : "Rola zmenená");
       setUpravuje(null);
@@ -425,7 +449,12 @@ function TeamSection({ companyId }: { companyId: string }) {
     try {
       const { createInvitationFn } = await import("@/lib/faktero/invitations.functions");
       const r: any = await createInvitationFn({
-        data: { company_id: companyId, email, role, permissions: role === "custom" ? oprPozvanky : undefined },
+        data: {
+          company_id: companyId,
+          email,
+          role,
+          permissions: role === "custom" ? oprPozvanky : undefined,
+        },
       });
       if (r?.emailOdoslany) {
         toast.success(`Pozvánka odoslaná na ${email}`);
@@ -486,7 +515,10 @@ function TeamSection({ companyId }: { companyId: string }) {
                       onChange={(e) =>
                         // Vlastný prístup potrebuje oblasti — najprv sa vyklikajú, uloží sa potom.
                         e.target.value === "custom"
-                          ? setUpravuje({ userId: m.user_id, opr: (m.permissions ?? {}) as Opravnenia })
+                          ? setUpravuje({
+                              userId: m.user_id,
+                              opr: (m.permissions ?? {}) as Opravnenia,
+                            })
                           : zmenRolu(m.user_id, e.target.value)
                       }
                       className="rounded-md border border-input bg-background px-2 py-1 text-sm"
@@ -502,7 +534,12 @@ function TeamSection({ companyId }: { companyId: string }) {
                         {suhrnOpravneni(m.permissions)}{" "}
                         <button
                           type="button"
-                          onClick={() => setUpravuje({ userId: m.user_id, opr: (m.permissions ?? {}) as Opravnenia })}
+                          onClick={() =>
+                            setUpravuje({
+                              userId: m.user_id,
+                              opr: (m.permissions ?? {}) as Opravnenia,
+                            })
+                          }
                           className="font-medium text-primary hover:underline"
                         >
                           Upraviť
@@ -639,7 +676,9 @@ function TeamSection({ companyId }: { companyId: string }) {
                     <td className="p-3">
                       {ROLA_POPIS[r.role] ?? r.role}
                       {r.role === "custom" && (
-                        <div className="text-xs text-muted-foreground">{suhrnOpravneni(r.permissions)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {suhrnOpravneni(r.permissions)}
+                        </div>
                       )}
                     </td>
                     <td className="p-3">{status}</td>

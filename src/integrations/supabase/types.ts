@@ -1268,6 +1268,7 @@ export type Database = {
           zip: string | null
           vat_payer: boolean
           vat_scheme: string | null
+          dan_z_prijatej_platby: boolean
         }
         Insert: {
           city?: string | null
@@ -1338,6 +1339,7 @@ export type Database = {
           zip?: string | null
           vat_payer?: boolean
           vat_scheme?: string | null
+          dan_z_prijatej_platby?: boolean
         }
         Update: {
           city?: string | null
@@ -1408,6 +1410,7 @@ export type Database = {
           zip?: string | null
           vat_payer?: boolean
           vat_scheme?: string | null
+          dan_z_prijatej_platby?: boolean
         }
         Relationships: []
       }
@@ -4059,6 +4062,7 @@ export type Database = {
           total_eur: number | null
           oss: boolean
           oss_country: string | null
+          osobitna_uprava: string | null
         }
         Insert: {
           advance_amount?: number | null
@@ -4134,6 +4138,7 @@ export type Database = {
           total_eur?: number | null
           oss?: boolean
           oss_country?: string | null
+          osobitna_uprava?: string | null
         }
         Update: {
           advance_amount?: number | null
@@ -4209,6 +4214,7 @@ export type Database = {
           total_eur?: number | null
           oss?: boolean
           oss_country?: string | null
+          osobitna_uprava?: string | null
         }
         Relationships: [
           {

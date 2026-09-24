@@ -8,6 +8,7 @@ import { paymentMethodLabel } from "./payment-method";
 import { maZuctovanuZalohu, zostavaUhradit } from "./zaloha";
 import { rezimFirmy, type FirmaDph } from "./dph-rezim";
 import { textPrepoctu, trebaPrepocet } from "./kurzy";
+import { vetyNaDoklad } from "./faktura-nalezitosti";
 import { krajinaDane } from "./vat-rates";
 import { sUctomFaktury } from "./platobny-ucet";
 
@@ -788,6 +789,24 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       ry -= 12;
     });
     y -= rcLines.length * 12 + 22;
+  }
+
+  /*
+    Vety osobitných úprav (§ 68d, § 65, § 66). Bez nich je doklad neúplný, aj
+    keď sumy na ňom sedia — na rozdiel od prenesenia daňovej povinnosti nemajú
+    vlastný rámik, sú to riadky pod súčtami.
+  */
+  for (const veta of vetyNaDoklad({
+    danZPrijatejPlatby: (company as any).dan_z_prijatej_platby,
+    osobitnaUprava: invoice.osobitna_uprava,
+  })) {
+    const lines = wrapLines(veta, bold, 9.5, innerW);
+    ensureSpace(14 + lines.length * 12 + 6);
+    lines.forEach((ln) => {
+      cur.drawText(ln, { x: margin, y, size: 9.5, font: bold, color: sub });
+      y -= 12;
+    });
+    y -= 6;
   }
 
   /*

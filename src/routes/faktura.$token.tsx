@@ -21,7 +21,7 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     const { data: f } = await supabaseAdmin
       .from("invoices")
       .select(
-        "id, company_id, invoice_number, type, status, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, exchange_rate, exchange_rate_date, vat_total_eur, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, deleted_at, payment_iban, payment_swift",
+        "id, company_id, invoice_number, type, status, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, exchange_rate, exchange_rate_date, vat_total_eur, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, osobitna_uprava, deleted_at, payment_iban, payment_swift",
       )
       .eq("public_token", data.token)
       .maybeSingle();
@@ -58,8 +58,13 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     // daňou ju nedostane ani vtedy, keď je firma dnes vedená ako neplatiteľ.
     const { rezimFirmy } = await import("@/lib/faktero/dph-rezim");
     const textDph = Number((f as any).vat_total ?? 0) > 0 ? null : rezimFirmy(firma).textNaDoklad;
+    const { vetyNaDoklad } = await import("@/lib/faktero/faktura-nalezitosti");
     return {
       doklad,
+      vetyUprav: vetyNaDoklad({
+        danZPrijatejPlatby: (firma as any)?.dan_z_prijatej_platby,
+        osobitnaUprava: (f as any).osobitna_uprava,
+      }),
       polozky: polozky ?? [],
       firma: firma ? sUctomFaktury(firma, f as any) : null,
       textDph,
@@ -119,7 +124,7 @@ function Riadok({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 function VerejnaFaktura() {
-  const { doklad, polozky, firma, textDph } = Route.useLoaderData();
+  const { doklad, polozky, firma, textDph, vetyUprav } = Route.useLoaderData();
   const mena = doklad.currency ?? "EUR";
   const suma = (n: unknown) => formatujMenu(n, mena);
   const nazov =
@@ -237,6 +242,12 @@ function VerejnaFaktura() {
           )}
         </p>
       )}
+
+      {vetyUprav.map((v: string) => (
+        <p key={v} className="mt-4 text-sm font-medium">
+          {v}
+        </p>
+      ))}
 
       {textDph && <p className="mt-4 text-sm font-medium">{textDph}</p>}
 

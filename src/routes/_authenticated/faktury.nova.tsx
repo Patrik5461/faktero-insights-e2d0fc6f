@@ -48,6 +48,7 @@ import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { prepocitajFakturuFn } from "@/lib/faktero/kurzy.functions";
 import { jeHotovost, prekrocenyStrop } from "@/lib/faktero/hotovost";
+import { skontrolujDatumy, UPRAVY_NA_VYBER } from "@/lib/faktero/faktura-nalezitosti";
 import { OverenieVies } from "@/components/faktero/OverenieVies";
 import { SADZBY_EU, sadzbyStatu, zakladnaSadzbaStatu } from "@/lib/faktero/sadzby-eu";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
@@ -162,6 +163,8 @@ function NewInvoice() {
     /* Predaj spotrebiteľovi v EÚ — daň sa odvádza cez OSS sadzbou jeho štátu. */
     oss: false,
     oss_country: "",
+    /* Úprava zdaňovania prirážky — cestovné kancelárie a použitý tovar. */
+    osobitna_uprava: "",
     advance_invoice_id: "" as string | "",
     opravuje_fakturu_id: "" as string | "",
     advance_amount: 0,
@@ -502,6 +505,14 @@ function NewInvoice() {
     const cust = customers.find((c) => c.id === form.customer_id);
     if (!cust) return toast.error("Vyberte odberateľa");
     if (!items.length || !items[0].name) return toast.error("Pridajte aspoň jednu položku");
+    // Dátum dodania je na faktúre platiteľa povinný a určuje obdobie DPH.
+    const datumy = skontrolujDatumy({
+      platitel: rezim.platitel,
+      datumDodania: form.delivery_date,
+      datumVystavenia: form.issue_date,
+    });
+    if (datumy.chyba) return toast.error(datumy.chyba);
+    if (datumy.upozornenie) toast.warning(datumy.upozornenie);
     // Reverse charge validations
     if (form.reverse_charge && form.reverse_charge_type === "eu_b2b") {
       const vat = (cust.ic_dph || "").trim();
@@ -560,6 +571,7 @@ function NewInvoice() {
             form.reverse_charge && form.reverse_charge_type === "eu_b2b" ? form.eu_plnenie : null,
           oss: form.oss,
           oss_country: form.oss ? form.oss_country : null,
+          osobitna_uprava: form.osobitna_uprava || null,
           reverse_charge_type: form.reverse_charge
             ? form.reverse_charge_type || "domestic_69"
             : null,
@@ -1016,6 +1028,28 @@ function NewInvoice() {
                     </span>
                   </span>
                 </label>
+                {!form.reverse_charge && rezim.platitel && (
+                  <label className="mt-3 block">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Osobitná úprava (nepovinné)
+                    </span>
+                    <select
+                      value={form.osobitna_uprava}
+                      onChange={(e) => setForm({ ...form, osobitna_uprava: e.target.value })}
+                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">Bez osobitnej úpravy</option>
+                      {UPRAVY_NA_VYBER.map((u) => (
+                        <option key={u.kod} value={u.kod}>
+                          {u.nazov}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Veta sa vytlačí na faktúru; zdaňuje sa len prirážka, nie celá cena.
+                    </span>
+                  </label>
+                )}
                 {!form.reverse_charge && (
                   <label className="mt-3 flex items-start gap-2">
                     <input
