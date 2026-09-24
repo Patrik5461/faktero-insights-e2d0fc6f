@@ -221,6 +221,7 @@ const NAV: NavGroup[] = [
     children: [
       { to: "/pokladna", label: "Pokladňa" },
       { to: "/uctovnictvo/dph", label: "DPH prehľad" },
+      { to: "/uctovnictvo/vykazy", label: "Výkazy k DPH (priznanie, KV, SV)" },
       { to: "/uctovnictvo/uzavierka", label: "Uzávierka" },
       { to: "/exporty", label: "Účtovné exporty" },
       { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
@@ -387,33 +388,35 @@ function filterNav(
 ): NavGroup[] {
   const allowed = view === "invoicing" ? INVOICING_KEYS : LOGBOOK_KEYS;
   // "viac" je spoločné pre oba produkty a vždy ide na koniec lišty
-  return NAV.filter((g) => allowed.has(g.key) || g.key === "viac")
-    // Zamestnanci majú všetky firmy (predvolene zapnuté); vypnúť sa dá cez companies.module_employees.
-    .filter((g) => g.key !== "zamestnanci" || modulZamestnanci)
-    .map((g) =>
-      isCompanyAdmin ? g : { ...g, children: g.children.filter((c) => !c.companyAdminOnly) },
-    )
-    .map((g) =>
-      krajina === "SK"
-        ? g
-        : {
-            ...g,
-            children: g.children.filter((c) => !LEN_SK.some((x) => String(c.to).startsWith(x))),
-          },
-    )
-    // Vlastný prístup: položky oblastí bez práva sa skryjú (databáza by aj tak nevydala nič).
-    .map((g) =>
-      rola === "custom"
-        ? {
-            ...g,
-            children: g.children.filter((c) => {
-              const o = oblastPodlaCesty(String(c.to));
-              return !o || vidiOblast(rola, opravnenia, o);
-            }),
-          }
-        : g,
-    )
-    .filter((g) => g.children.length > 0);
+  return (
+    NAV.filter((g) => allowed.has(g.key) || g.key === "viac")
+      // Zamestnanci majú všetky firmy (predvolene zapnuté); vypnúť sa dá cez companies.module_employees.
+      .filter((g) => g.key !== "zamestnanci" || modulZamestnanci)
+      .map((g) =>
+        isCompanyAdmin ? g : { ...g, children: g.children.filter((c) => !c.companyAdminOnly) },
+      )
+      .map((g) =>
+        krajina === "SK"
+          ? g
+          : {
+              ...g,
+              children: g.children.filter((c) => !LEN_SK.some((x) => String(c.to).startsWith(x))),
+            },
+      )
+      // Vlastný prístup: položky oblastí bez práva sa skryjú (databáza by aj tak nevydala nič).
+      .map((g) =>
+        rola === "custom"
+          ? {
+              ...g,
+              children: g.children.filter((c) => {
+                const o = oblastPodlaCesty(String(c.to));
+                return !o || vidiOblast(rola, opravnenia, o);
+              }),
+            }
+          : g,
+      )
+      .filter((g) => g.children.length > 0)
+  );
 }
 
 export function AppShell({
@@ -726,27 +729,33 @@ export function AppShell({
                     </div>
                   )}
                   <div className="max-h-80 overflow-y-auto">
-                  {filtrujFirmy(companies, hladanieFiriem, activeId).length === 0 && (
-                    <p className="px-2 py-3 text-center text-sm text-muted-foreground">Nič sa nenašlo.</p>
-                  )}
-                  {filtrujFirmy(companies, hladanieFiriem, activeId).map((c) => (
-                    <DropdownMenuItem
-                      key={c.id}
-                      onClick={() => onChangeCompany(c.id)}
-                      className={c.id === activeId ? "font-semibold" : ""}
-                    >
-                      <span
-                        className={`mr-2 grid h-5 w-5 shrink-0 place-items-center rounded bg-gradient-to-br ${avatarGradient(c.name)} text-[10px] font-semibold text-white`}
+                    {filtrujFirmy(companies, hladanieFiriem, activeId).length === 0 && (
+                      <p className="px-2 py-3 text-center text-sm text-muted-foreground">
+                        Nič sa nenašlo.
+                      </p>
+                    )}
+                    {filtrujFirmy(companies, hladanieFiriem, activeId).map((c) => (
+                      <DropdownMenuItem
+                        key={c.id}
+                        onClick={() => onChangeCompany(c.id)}
+                        className={c.id === activeId ? "font-semibold" : ""}
                       >
-                        {(c.name?.[0] ?? "F").toUpperCase()}
-                      </span>
-                      <span className="min-w-0 truncate">
-                        {c.name}
-                        {c.ico && <span className="block text-[11px] font-normal text-muted-foreground">IČO {c.ico}</span>}
-                      </span>
-                      <span className="ml-auto pl-2 text-xs text-muted-foreground">{c.role}</span>
-                    </DropdownMenuItem>
-                  ))}
+                        <span
+                          className={`mr-2 grid h-5 w-5 shrink-0 place-items-center rounded bg-gradient-to-br ${avatarGradient(c.name)} text-[10px] font-semibold text-white`}
+                        >
+                          {(c.name?.[0] ?? "F").toUpperCase()}
+                        </span>
+                        <span className="min-w-0 truncate">
+                          {c.name}
+                          {c.ico && (
+                            <span className="block text-[11px] font-normal text-muted-foreground">
+                              IČO {c.ico}
+                            </span>
+                          )}
+                        </span>
+                        <span className="ml-auto pl-2 text-xs text-muted-foreground">{c.role}</span>
+                      </DropdownMenuItem>
+                    ))}
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -1007,11 +1016,13 @@ function MobileNav({
             onChange={(e) => onChangeCompany(e.target.value)}
             className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
           >
-            {[active, ...filtrujFirmy(companies, hladanie).filter((c) => c.id !== active.id)].map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
+            {[active, ...filtrujFirmy(companies, hladanie).filter((c) => c.id !== active.id)].map(
+              (c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ),
+            )}
           </select>
           <button
             type="button"
@@ -1149,7 +1160,9 @@ export function PageHeader({
         </div>
         {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>
-      {action && <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">{action}</div>}
+      {action && (
+        <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">{action}</div>
+      )}
     </div>
   );
 }

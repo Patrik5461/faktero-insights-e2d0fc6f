@@ -45,6 +45,11 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
     note: "",
     job_id: "",
     status: "received" as "draft" | "received" | "booked" | "paid" | "cancelled",
+    /* Výkazy k DPH: kto daň platí, či si ju odpočítavame a čo doklad opravuje. */
+    dph_rezim: "" as "" | "tuzemsko" | "samozdanenie" | "nadobudnutie" | "dovoz" | "bez_dane",
+    delivery_date: "",
+    odpocet: true,
+    opravuje_cislo: "",
   });
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -97,6 +102,10 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
         note: data.note ?? "",
         job_id: data.job_id ?? "",
         status: (data.status ?? "received") as typeof form.status,
+        dph_rezim: (data.dph_rezim ?? "") as typeof form.dph_rezim,
+        delivery_date: data.delivery_date ?? "",
+        odpocet: data.odpocet !== false,
+        opravuje_cislo: data.opravuje_cislo ?? "",
       });
       setPrilohaCesta(data.file_path ?? null);
       setNacitavam(false);
@@ -167,6 +176,10 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
         note: form.note || null,
         job_id: form.job_id || null,
         status: form.status,
+        dph_rezim: form.dph_rezim || null,
+        delivery_date: form.delivery_date || null,
+        odpocet: form.odpocet,
+        opravuje_cislo: form.opravuje_cislo.trim() || null,
         file_path,
         file_mime,
         file_size,
@@ -449,6 +462,54 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
               onChange={(v) => set("job_id", v)}
               label="Zákazka (náklad sa započíta do jej vyhodnotenia)"
             />
+            <Field label="Dátum dodania (pre kontrolný výkaz)">
+              <input
+                type="date"
+                value={form.delivery_date}
+                onChange={(e) => set("delivery_date", e.target.value)}
+                className="input"
+              />
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Keď ostane prázdny, do výkazu ide dátum vystavenia.
+              </span>
+            </Field>
+            <Field label="Režim DPH">
+              <select
+                value={form.dph_rezim}
+                onChange={(e) => set("dph_rezim", e.target.value as typeof form.dph_rezim)}
+                className="input"
+              >
+                <option value="">Určiť podľa dodávateľa</option>
+                <option value="tuzemsko">Tuzemská faktúra od platiteľa (B.2)</option>
+                <option value="samozdanenie">Daň platím ja — § 69 (B.1)</option>
+                <option value="nadobudnutie">Nadobudnutie tovaru z EÚ</option>
+                <option value="dovoz">Dovoz — daň zaplatená colnému úradu</option>
+                <option value="bez_dane">Bez dane / od neplatiteľa</option>
+              </select>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Rozhoduje, do ktorej časti kontrolného výkazu a do ktorého riadku priznania faktúra
+                vstúpi.
+              </span>
+            </Field>
+            <Field label="Odpočítanie dane">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.odpocet}
+                  onChange={(e) => set("odpocet", e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                Daň si z tejto faktúry odpočítavam
+              </label>
+            </Field>
+            <Field label="Opravuje faktúru číslo">
+              <input
+                value={form.opravuje_cislo}
+                onChange={(e) => set("opravuje_cislo", e.target.value)}
+                placeholder="pri dobropise číslo pôvodnej faktúry"
+                className="input"
+              />
+            </Field>
             <Field label="Poznámka">
               <textarea
                 rows={3}

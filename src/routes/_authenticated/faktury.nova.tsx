@@ -152,6 +152,8 @@ function NewInvoice() {
     rounding_mode: "per_document" as "per_item" | "per_document" | "retail",
     reverse_charge: false,
     reverse_charge_type: "" as "" | "domestic_69" | "eu_b2b" | "export",
+    /* Súhrnný výkaz potrebuje vedieť, čo sa do EÚ dodalo — z položiek to nevyplýva. */
+    eu_plnenie: "tovar" as "tovar" | "sluzba" | "trojstranny",
     advance_invoice_id: "" as string | "",
     opravuje_fakturu_id: "" as string | "",
     advance_amount: 0,
@@ -540,6 +542,8 @@ function NewInvoice() {
           delivery_method: form.delivery_method || null,
           rounding_mode: form.rounding_mode,
           reverse_charge: form.reverse_charge,
+          eu_plnenie:
+            form.reverse_charge && form.reverse_charge_type === "eu_b2b" ? form.eu_plnenie : null,
           reverse_charge_type: form.reverse_charge
             ? form.reverse_charge_type || "domestic_69"
             : null,
@@ -979,6 +983,30 @@ function NewInvoice() {
                       </option>
                       <option value="export">Vývoz mimo EÚ (oslobodené podľa §47)</option>
                     </select>
+                    {form.reverse_charge_type === "eu_b2b" && (
+                      <label className="mt-3 block">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          Druh plnenia do súhrnného výkazu
+                        </span>
+                        <select
+                          value={form.eu_plnenie}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              eu_plnenie: e.target.value as typeof form.eu_plnenie,
+                            })
+                          }
+                          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="tovar">Dodanie tovaru</option>
+                          <option value="sluzba">Dodanie služby (§ 15 ods. 1)</option>
+                          <option value="trojstranny">Trojstranný obchod</option>
+                        </select>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          Tovar ide aj do priznania (r. 13 a 14), služba len do súhrnného výkazu.
+                        </span>
+                      </label>
+                    )}
                     {form.reverse_charge_type === "eu_b2b" &&
                       (() => {
                         const cust = customers.find((c) => c.id === form.customer_id);

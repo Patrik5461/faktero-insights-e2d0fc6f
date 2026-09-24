@@ -226,14 +226,20 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
     name: "Účtovníctvo a uzávierka",
     summary: "DPH, uzamykanie období a odovzdanie účtovníčke.",
     features: [
-      "Priznanie k DPH a kontrolný výkaz",
+      "Priznanie k DPH, kontrolný výkaz a súhrnný výkaz v XML pre eDane",
       "Sadzby DPH podľa krajiny firmy (SK 23/19/5/0, CZ 21/12/0)",
       "Uzamknutie účtovného obdobia",
       "Export do Pohody (XML) a konektor",
       "Bankový výpis do Pohody",
       "Mesačné podklady pre účtovníčku",
     ],
-    routes: ["/uctovnictvo/dph", "/uctovnictvo/uzavierka", "/uctovnictvo/pohoda", "/exporty"],
+    routes: [
+      "/uctovnictvo/dph",
+      "/uctovnictvo/vykazy",
+      "/uctovnictvo/uzavierka",
+      "/uctovnictvo/pohoda",
+      "/exporty",
+    ],
   },
   {
     key: "financing",

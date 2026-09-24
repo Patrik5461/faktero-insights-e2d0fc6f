@@ -345,6 +345,14 @@ function DphPage() {
     <>
       <PageHeader title="DPH prehľad" description="Informatívny prehľad DPH na výstupe a vstupe" />
       <PageBody>
+        <p className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          Tento prehľad je informatívny.{" "}
+          <Link to="/uctovnictvo/vykazy" className="underline">
+            Výkazy k DPH
+          </Link>{" "}
+          z tých istých dokladov zostavia priznanie, kontrolný výkaz aj súhrnný výkaz a stiahnu ich
+          v XML pre eDane.
+        </p>
         <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 flex gap-2 items-start dark:bg-amber-950/30 dark:text-amber-100 dark:border-amber-900/40">
           <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
           <div className="text-sm">

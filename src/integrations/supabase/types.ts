@@ -2703,6 +2703,7 @@ export type Database = {
           vat_amount: number | null
           vat_breakdown: Json | null
           vat_rate: number | null
+          odpocet: boolean
         }
         Insert: {
           processed_at?: string | null
@@ -2738,6 +2739,7 @@ export type Database = {
           vat_amount?: number | null
           vat_breakdown?: Json | null
           vat_rate?: number | null
+          odpocet?: boolean
         }
         Update: {
           processed_at?: string | null
@@ -2773,6 +2775,7 @@ export type Database = {
           vat_amount?: number | null
           vat_breakdown?: Json | null
           vat_rate?: number | null
+          odpocet?: boolean
         }
         Relationships: [
           {
@@ -4021,6 +4024,7 @@ export type Database = {
           updated_at: string
           variable_symbol: string | null
           vat_total: number
+          eu_plnenie: string | null
         }
         Insert: {
           advance_amount?: number | null
@@ -4088,6 +4092,7 @@ export type Database = {
           updated_at?: string
           variable_symbol?: string | null
           vat_total?: number
+          eu_plnenie?: string | null
         }
         Update: {
           advance_amount?: number | null
@@ -4155,6 +4160,7 @@ export type Database = {
           updated_at?: string
           variable_symbol?: string | null
           vat_total?: number
+          eu_plnenie?: string | null
         }
         Relationships: [
           {
@@ -4994,6 +5000,10 @@ export type Database = {
           updated_at: string
           variable_symbol: string | null
           vat_amount: number
+          dph_rezim: string | null
+          delivery_date: string | null
+          odpocet: boolean
+          opravuje_cislo: string | null
         }
         Insert: {
           amount_total?: number
@@ -5029,6 +5039,10 @@ export type Database = {
           updated_at?: string
           variable_symbol?: string | null
           vat_amount?: number
+          dph_rezim?: string | null
+          delivery_date?: string | null
+          odpocet?: boolean
+          opravuje_cislo?: string | null
         }
         Update: {
           amount_total?: number
@@ -5064,6 +5078,10 @@ export type Database = {
           updated_at?: string
           variable_symbol?: string | null
           vat_amount?: number
+          dph_rezim?: string | null
+          delivery_date?: string | null
+          odpocet?: boolean
+          opravuje_cislo?: string | null
         }
         Relationships: [
           {
@@ -7147,6 +7165,59 @@ export type Database = {
             columns: ["webhook_id"]
             isOneToOne: false
             referencedRelation: "webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vat_reports: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          data: Json
+          druh: string
+          id: string
+          mesiac: number | null
+          podane_at: string | null
+          rok: number
+          stvrtrok: number | null
+          typ: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          druh: string
+          id?: string
+          mesiac?: number | null
+          podane_at?: string | null
+          rok: number
+          stvrtrok?: number | null
+          typ?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          druh?: string
+          id?: string
+          mesiac?: number | null
+          podane_at?: string | null
+          rok?: number
+          stvrtrok?: number | null
+          typ?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vat_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
