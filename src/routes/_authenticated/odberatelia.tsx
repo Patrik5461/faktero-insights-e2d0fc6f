@@ -32,6 +32,11 @@ export const Route = createFileRoute("/_authenticated/odberatelia")({
   component: CustomersPage,
 });
 
+/** Fyzická osoba nemá IČO ani daňové čísla — formulár sa jej prispôsobí. */
+function jeFyzicka(c: { typ?: string | null }): boolean {
+  return (c.typ ?? "firma") === "fyzicka";
+}
+
 type Customer = {
   id?: string;
   name: string;
@@ -46,6 +51,8 @@ type Customer = {
   phone?: string;
   contact_person?: string;
   notes?: string;
+  /** „firma" alebo „fyzicka" — fyzická osoba nemá IČO ani daňové čísla. */
+  typ?: string;
   /** Posledné overenie IČ DPH vo VIES. */
   vies_platne?: boolean | null;
   vies_overene_at?: string | null;
@@ -57,7 +64,7 @@ type Customer = {
   discount_percent?: number | string | null;
 };
 
-const EMPTY: Customer = { name: "", country: "SK" };
+const EMPTY: Customer = { name: "", country: "SK", typ: "firma" };
 
 function CustomersPage() {
   const list = usePagedList({
@@ -103,6 +110,12 @@ function CustomersPage() {
       ...c,
       company_id: cid,
       discount_percent: Number.isFinite(zlava as number) ? (zlava as number) : null,
+      typ: c.typ ?? "firma",
+      /*
+        Fyzická osoba IČO ani daňové čísla nemá. Keby sa po prepnutí typu
+        nevyčistili, ostali by na karte skryté a vyšli by na faktúre.
+      */
+      ...(jeFyzicka(c) ? { ico: null, dic: null, ic_dph: null } : {}),
     };
     if (c.id) {
       const { error } = await supabase.from("customers").update(payload).eq("id", c.id);
@@ -260,6 +273,11 @@ function CustomersPage() {
                     >
                       {c.name}
                     </button>
+                    {jeFyzicka(c) && (
+                      <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                        fyzická osoba
+                      </span>
+                    )}
                   </td>
                   <td className="p-3">{c.ico ?? "—"}</td>
                   <td className="p-3">{c.dic ?? "—"}</td>
@@ -413,21 +431,54 @@ function CustomerDialog({
           }}
           className="mt-4 grid gap-4 sm:grid-cols-2"
         >
+          {/* Firma alebo súkromná osoba. Rozhoduje to o tom, čo sa vypĺňa:
+              fyzická osoba nemá IČO ani daňové čísla a v registri sa nenájde. */}
+          <div className="sm:col-span-2 flex flex-wrap gap-2">
+            {[
+              { kod: "firma", popis: "Firma alebo živnostník" },
+              { kod: "fyzicka", popis: "Fyzická osoba (nepodnikateľ)" },
+            ].map((t) => (
+              <button
+                key={t.kod}
+                type="button"
+                onClick={() => setC((prev) => ({ ...(prev as Customer), typ: t.kod }))}
+                className={`rounded-md border px-3 py-1.5 text-sm ${
+                  (c.typ ?? "firma") === t.kod
+                    ? "border-primary bg-primary/10 font-medium text-primary"
+                    : "border-border hover:bg-secondary"
+                }`}
+              >
+                {t.popis}
+              </button>
+            ))}
+          </div>
+
           <label className="block sm:col-span-2">
-            <span className="text-sm font-medium">Názov *</span>
+            <span className="text-sm font-medium">
+              {jeFyzicka(c) ? "Meno a priezvisko *" : "Názov *"}
+            </span>
             <div className="mt-1">
-              <CompanyNameAutocomplete
-                value={c.name}
-                onChange={(v) => f("name", v)}
-                onPick={(d, { auto }) =>
-                  setC(
-                    (prev) =>
-                      mergeCompanyAutofill(prev, d, {
-                        mode: auto ? "fill-empty" : "overwrite",
-                      }) as Customer,
-                  )
-                }
-              />
+              {jeFyzicka(c) ? (
+                <input
+                  value={c.name}
+                  onChange={(e) => f("name", e.target.value)}
+                  placeholder="Ján Novák"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              ) : (
+                <CompanyNameAutocomplete
+                  value={c.name}
+                  onChange={(v) => f("name", v)}
+                  onPick={(d, { auto }) =>
+                    setC(
+                      (prev) =>
+                        mergeCompanyAutofill(prev, d, {
+                          mode: auto ? "fill-empty" : "overwrite",
+                        }) as Customer,
+                    )
+                  }
+                />
+              )}
             </div>
           </label>
           {dup && (
@@ -435,49 +486,53 @@ function CustomerDialog({
               Odberateľ s týmto IČO už existuje: <strong>{dup.name}</strong>.
             </div>
           )}
-          <label className="block">
-            <span className="text-sm font-medium">IČO</span>
-            <div className="mt-1 flex -space-x-px items-start">
-              <input
-                value={c.ico ?? ""}
-                onChange={(e) => f("ico", e.target.value)}
-                className="w-full rounded-l-md border border-input bg-background px-3 py-2 text-sm focus:z-10"
-              />
-              <IcoLookupButton
-                ico={c.ico ?? ""}
-                onResult={(d, { auto }) =>
+          {!jeFyzicka(c) && (
+            <label className="block">
+              <span className="text-sm font-medium">IČO</span>
+              <div className="mt-1 flex -space-x-px items-start">
+                <input
+                  value={c.ico ?? ""}
+                  onChange={(e) => f("ico", e.target.value)}
+                  className="w-full rounded-l-md border border-input bg-background px-3 py-2 text-sm focus:z-10"
+                />
+                <IcoLookupButton
+                  ico={c.ico ?? ""}
+                  onResult={(d, { auto }) =>
+                    setC(
+                      (prev) =>
+                        mergeCompanyAutofill(prev, d, {
+                          mode: auto ? "fill-empty" : "overwrite",
+                        }) as Customer,
+                    )
+                  }
+                />
+              </div>
+            </label>
+          )}
+          {!jeFyzicka(c) && <In label="DIČ" value={c.dic ?? ""} onChange={(v) => f("dic", v)} />}
+          {!jeFyzicka(c) && (
+            <div>
+              <In label="IČ DPH" value={c.ic_dph ?? ""} onChange={(v) => f("ic_dph", v)} />
+              <OverenieVies
+                companyId={getActiveCompanyId()}
+                icDph={c.ic_dph}
+                customerId={c.id ?? null}
+                posledne={{ platne: c.vies_platne ?? null, kedy: c.vies_overene_at ?? null }}
+                onOverene={(v) =>
                   setC(
                     (prev) =>
-                      mergeCompanyAutofill(prev, d, {
-                        mode: auto ? "fill-empty" : "overwrite",
+                      ({
+                        ...(prev ?? {}),
+                        vies_platne: v.platne,
+                        vies_overene_at: v.overene,
+                        // Register vie aj názov — keď je pole prázdne, doplní sa.
+                        name: prev?.name || v.nazov || "",
                       }) as Customer,
                   )
                 }
               />
             </div>
-          </label>
-          <In label="DIČ" value={c.dic ?? ""} onChange={(v) => f("dic", v)} />
-          <div>
-            <In label="IČ DPH" value={c.ic_dph ?? ""} onChange={(v) => f("ic_dph", v)} />
-            <OverenieVies
-              companyId={getActiveCompanyId()}
-              icDph={c.ic_dph}
-              customerId={c.id ?? null}
-              posledne={{ platne: c.vies_platne ?? null, kedy: c.vies_overene_at ?? null }}
-              onOverene={(v) =>
-                setC(
-                  (prev) =>
-                    ({
-                      ...(prev ?? {}),
-                      vies_platne: v.platne,
-                      vies_overene_at: v.overene,
-                      // Register vie aj názov — keď je pole prázdne, doplní sa.
-                      name: prev?.name || v.nazov || "",
-                    }) as Customer,
-                )
-              }
-            />
-          </div>
+          )}
           <In
             label="Kontaktná osoba"
             value={c.contact_person ?? ""}

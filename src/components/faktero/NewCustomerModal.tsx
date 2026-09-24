@@ -30,6 +30,7 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
   const [f, setF] = useState({
     name: defaultName ?? "",
     ico: "",
+    typ: "firma",
     dic: "",
     ic_dph: "",
     email: "",
@@ -43,7 +44,8 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
   useEffect(() => {
     const cid = getActiveCompanyId();
     const ico = f.ico.replace(/\s+/g, "");
-    if (!cid || !/^\d{6,8}$/.test(ico)) {
+    // Fyzická osoba IČO nemá, takže sa ani nekontroluje duplicita podľa neho.
+    if (f.typ === "fyzicka" || !cid || !/^\d{6,8}$/.test(ico)) {
       setDup(null);
       return;
     }
@@ -57,10 +59,13 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
       }
     }, 500);
     return () => clearTimeout(h);
-  }, [f.ico]);
+  }, [f.ico, f.typ]);
+
+  const fyzicka = f.typ === "fyzicka";
 
   async function save() {
-    if (!f.name.trim()) return toast.error("Zadajte názov firmy");
+    if (!f.name.trim())
+      return toast.error(fyzicka ? "Zadajte meno a priezvisko" : "Zadajte názov firmy");
     const cid = getActiveCompanyId();
     if (!cid) return toast.error("Nie je vybraná firma");
     if (dup) {
@@ -73,9 +78,12 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
       .insert({
         company_id: cid,
         name: f.name.trim(),
-        ico: f.ico.trim() || null,
-        dic: f.dic.trim() || null,
-        ic_dph: f.ic_dph.trim() || null,
+        typ: f.typ,
+        // Fyzická osoba IČO ani daňové čísla nemá — nech tam nezostanú
+        // po prepnutí typu.
+        ico: fyzicka ? null : f.ico.trim() || null,
+        dic: fyzicka ? null : f.dic.trim() || null,
+        ic_dph: fyzicka ? null : f.ic_dph.trim() || null,
         email: f.email.trim() || null,
         phone: f.phone.trim() || null,
         street: f.street.trim() || null,
@@ -127,51 +135,86 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
               </button>
             </div>
           )}
+          <div className="mb-3 flex flex-wrap gap-2">
+            {[
+              { kod: "firma", popis: "Firma alebo živnostník" },
+              { kod: "fyzicka", popis: "Fyzická osoba (nepodnikateľ)" },
+            ].map((t) => (
+              <button
+                key={t.kod}
+                type="button"
+                onClick={() => setF((p) => ({ ...p, typ: t.kod }))}
+                className={`rounded-md border px-3 py-1.5 text-sm ${
+                  f.typ === t.kod
+                    ? "border-primary bg-primary/10 font-medium text-primary"
+                    : "border-border hover:bg-secondary"
+                }`}
+              >
+                {t.popis}
+              </button>
+            ))}
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Názov firmy *">
-              <CompanyNameAutocomplete
-                autoFocus
-                value={f.name}
-                onChange={(v) => setF((p) => ({ ...p, name: v }))}
-                onPick={(d, { auto }) =>
-                  setF((p) =>
-                    mergeCompanyAutofill(p, d, { mode: auto ? "fill-empty" : "overwrite" }),
-                  )
-                }
-                className={input}
-              />
-            </Field>
-            <Field label="IČO">
-              <div className="flex -space-x-px items-start">
+            <Field label={fyzicka ? "Meno a priezvisko *" : "Názov firmy *"}>
+              {fyzicka ? (
                 <input
-                  value={f.ico}
-                  onChange={(e) => setF({ ...f, ico: e.target.value })}
-                  className={`${input} rounded-l-md focus:z-10`}
+                  autoFocus
+                  value={f.name}
+                  onChange={(e) => setF((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Ján Novák"
+                  className={input}
                 />
-                <IcoLookupButton
-                  ico={f.ico}
-                  onResult={(d, { auto }) =>
-                    setF((prev) =>
-                      mergeCompanyAutofill(prev, d, { mode: auto ? "fill-empty" : "overwrite" }),
+              ) : (
+                <CompanyNameAutocomplete
+                  autoFocus
+                  value={f.name}
+                  onChange={(v) => setF((p) => ({ ...p, name: v }))}
+                  onPick={(d, { auto }) =>
+                    setF((p) =>
+                      mergeCompanyAutofill(p, d, { mode: auto ? "fill-empty" : "overwrite" }),
                     )
                   }
+                  className={input}
                 />
-              </div>
+              )}
             </Field>
-            <Field label="DIČ">
-              <input
-                value={f.dic}
-                onChange={(e) => setF({ ...f, dic: e.target.value })}
-                className={input}
-              />
-            </Field>
-            <Field label="IČ DPH">
-              <input
-                value={f.ic_dph}
-                onChange={(e) => setF({ ...f, ic_dph: e.target.value })}
-                className={input}
-              />
-            </Field>
+            {!fyzicka && (
+              <Field label="IČO">
+                <div className="flex -space-x-px items-start">
+                  <input
+                    value={f.ico}
+                    onChange={(e) => setF({ ...f, ico: e.target.value })}
+                    className={`${input} rounded-l-md focus:z-10`}
+                  />
+                  <IcoLookupButton
+                    ico={f.ico}
+                    onResult={(d, { auto }) =>
+                      setF((prev) =>
+                        mergeCompanyAutofill(prev, d, { mode: auto ? "fill-empty" : "overwrite" }),
+                      )
+                    }
+                  />
+                </div>
+              </Field>
+            )}
+            {!fyzicka && (
+              <Field label="DIČ">
+                <input
+                  value={f.dic}
+                  onChange={(e) => setF({ ...f, dic: e.target.value })}
+                  className={input}
+                />
+              </Field>
+            )}
+            {!fyzicka && (
+              <Field label="IČ DPH">
+                <input
+                  value={f.ic_dph}
+                  onChange={(e) => setF({ ...f, ic_dph: e.target.value })}
+                  className={input}
+                />
+              </Field>
+            )}
             <Field label="Email">
               <input
                 type="email"

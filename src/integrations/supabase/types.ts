@@ -1675,6 +1675,7 @@ export type Database = {
           zip: string | null
           vies_platne: boolean | null
           vies_overene_at: string | null
+          typ: string
         }
         Insert: {
           city?: string | null
@@ -1700,6 +1701,7 @@ export type Database = {
           zip?: string | null
           vies_platne?: boolean | null
           vies_overene_at?: string | null
+          typ?: string
         }
         Update: {
           city?: string | null
@@ -1725,6 +1727,7 @@ export type Database = {
           zip?: string | null
           vies_platne?: boolean | null
           vies_overene_at?: string | null
+          typ?: string
         }
         Relationships: [
           {
