@@ -5,6 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { setActiveProduct } from "@/lib/faktero/active-product";
 import { ZrusenieUctu } from "@/components/faktero/ZrusenieUctu";
+import { StiahnutieDat } from "@/components/faktero/StiahnutieDat";
 
 export const Route = createFileRoute("/_authenticated/nastavenia/")({
   head: () => ({ meta: [{ title: "Nastavenia — Faktero" }] }),
@@ -112,6 +113,10 @@ function SettingsPage() {
               );
             })}
           </div>
+        </div>
+
+        <div className="mt-8 max-w-3xl">
+          <StiahnutieDat />
         </div>
 
         <div className="mt-8 max-w-3xl">
