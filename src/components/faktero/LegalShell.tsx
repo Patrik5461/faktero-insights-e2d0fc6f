@@ -4,6 +4,7 @@ import { MarketingShell } from "./MarketingShell";
 const LINKS = [
   { to: "/pravne/obchodne-podmienky", label: "Obchodné podmienky" },
   { to: "/pravne/gdpr", label: "GDPR" },
+  { to: "/pravne/spracovanie-udajov", label: "Spracúvanie údajov (čl. 28)" },
   { to: "/pravne/reklamacny-poriadok", label: "Reklamačný poriadok" },
   { to: "/pravne/gopay-podmienky", label: "GoPay podmienky" },
   { to: "/pravne/opakovane-platby", label: "Opakované platby" },

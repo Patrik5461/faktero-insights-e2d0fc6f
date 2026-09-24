@@ -46,6 +46,13 @@ function Page() {
         kontaktujte <a href={`mailto:${LEGAL_COMPANY.email}`}>{LEGAL_COMPANY.email}</a>.
       </p>
 
+      <p>
+        Keď Faktero používate na vedenie svojej agendy, spracúvame údaje vašich odberateľov a
+        zamestnancov ako <strong>sprostredkovateľ</strong> podľa čl. 28 GDPR — podmienky sú v{" "}
+        <a href="/pravne/spracovanie-udajov">zmluve o spracúvaní osobných údajov</a>, kde je aj
+        zoznam subdodávateľov.
+      </p>
+
       <h2>3. Aké údaje spracúvame</h2>
       <ul>
         <li>Identifikačné údaje: meno, priezvisko, e-mail, telefón.</li>

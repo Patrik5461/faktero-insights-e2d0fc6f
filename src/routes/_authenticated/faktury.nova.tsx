@@ -48,6 +48,7 @@ import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { prepocitajFakturuFn } from "@/lib/faktero/kurzy.functions";
 import { jeHotovost, prekrocenyStrop } from "@/lib/faktero/hotovost";
+import { OverenieVies } from "@/components/faktero/OverenieVies";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
@@ -298,7 +299,9 @@ function NewInvoice() {
     if (!cid) return;
     supabase
       .from("customers")
-      .select("id, name, ico, dic, ic_dph, street, city, zip, country, email")
+      .select(
+        "id, name, ico, dic, ic_dph, street, city, zip, country, email, vies_platne, vies_overene_at",
+      )
       .eq("company_id", cid)
       .order("name")
       .then(({ data }) => setCustomers(data ?? []));
@@ -1047,6 +1050,22 @@ function NewInvoice() {
                     {form.reverse_charge_type === "eu_b2b" &&
                       (() => {
                         const cust = customers.find((c) => c.id === form.customer_id);
+                        if (!cust?.ic_dph) return null;
+                        return (
+                          <OverenieVies
+                            companyId={getActiveCompanyId()}
+                            icDph={cust.ic_dph}
+                            customerId={cust.id}
+                            posledne={{
+                              platne: cust.vies_platne ?? null,
+                              kedy: cust.vies_overene_at ?? null,
+                            }}
+                          />
+                        );
+                      })()}
+                    {form.reverse_charge_type === "eu_b2b" &&
+                      (() => {
+                        const cust = customers.find((c) => c.id === form.customer_id);
                         const vat = (cust?.ic_dph || "").trim();
                         const ok = vat && /^[A-Z]{2}[A-Z0-9]{2,}$/i.test(vat) && !/^SK/i.test(vat);
                         if (ok) return null;
@@ -1691,7 +1710,9 @@ function NewCustomerModal({
         zip: f.zip.trim() || null,
         country: f.country.trim() || "SK",
       })
-      .select("id, name, ico, dic, ic_dph, street, city, zip, country, email")
+      .select(
+        "id, name, ico, dic, ic_dph, street, city, zip, country, email, vies_platne, vies_overene_at",
+      )
       .single();
     setSaving(false);
     if (error || !data) return toast.error(error?.message ?? "Nepodarilo sa vytvoriť odberateľa");

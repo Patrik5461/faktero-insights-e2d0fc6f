@@ -54,6 +54,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           */
           { path: "/pravne", priority: 0.4 },
           { path: "/pravne/gdpr", priority: 0.4 },
+          { path: "/pravne/spracovanie-udajov", priority: 0.4 },
           { path: "/pravne/obchodne-podmienky", priority: 0.4 },
           { path: "/pravne/reklamacny-poriadok", priority: 0.4 },
           { path: "/pravne/opakovane-platby", priority: 0.4 },

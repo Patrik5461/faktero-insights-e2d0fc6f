@@ -10,6 +10,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { triggerEventFn } from "@/lib/faktero/email.functions";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocomplete";
+import { OverenieVies } from "@/components/faktero/OverenieVies";
 import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { findCustomerByIcoFn } from "@/lib/faktero/company-lookup.functions";
 import { JobPicker } from "@/components/faktero/JobPicker";
@@ -45,6 +46,9 @@ type Customer = {
   phone?: string;
   contact_person?: string;
   notes?: string;
+  /** Posledné overenie IČ DPH vo VIES. */
+  vies_platne?: boolean | null;
+  vies_overene_at?: string | null;
   /** Doplní sa do nového dokladu tohto odberateľa. */
   default_job_id?: string | null;
   /** Cenová skupina — jej zľava a dohodnuté ceny sa premietnu do dokladu. */
@@ -453,7 +457,27 @@ function CustomerDialog({
             </div>
           </label>
           <In label="DIČ" value={c.dic ?? ""} onChange={(v) => f("dic", v)} />
-          <In label="IČ DPH" value={c.ic_dph ?? ""} onChange={(v) => f("ic_dph", v)} />
+          <div>
+            <In label="IČ DPH" value={c.ic_dph ?? ""} onChange={(v) => f("ic_dph", v)} />
+            <OverenieVies
+              companyId={getActiveCompanyId()}
+              icDph={c.ic_dph}
+              customerId={c.id ?? null}
+              posledne={{ platne: c.vies_platne ?? null, kedy: c.vies_overene_at ?? null }}
+              onOverene={(v) =>
+                setC(
+                  (prev) =>
+                    ({
+                      ...(prev ?? {}),
+                      vies_platne: v.platne,
+                      vies_overene_at: v.overene,
+                      // Register vie aj názov — keď je pole prázdne, doplní sa.
+                      name: prev?.name || v.nazov || "",
+                    }) as Customer,
+                )
+              }
+            />
+          </div>
           <In
             label="Kontaktná osoba"
             value={c.contact_person ?? ""}

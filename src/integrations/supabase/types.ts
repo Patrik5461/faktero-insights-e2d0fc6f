@@ -1670,6 +1670,8 @@ export type Database = {
           street: string | null
           updated_at: string
           zip: string | null
+          vies_platne: boolean | null
+          vies_overene_at: string | null
         }
         Insert: {
           city?: string | null
@@ -1693,6 +1695,8 @@ export type Database = {
           street?: string | null
           updated_at?: string
           zip?: string | null
+          vies_platne?: boolean | null
+          vies_overene_at?: string | null
         }
         Update: {
           city?: string | null
@@ -1716,6 +1720,8 @@ export type Database = {
           street?: string | null
           updated_at?: string
           zip?: string | null
+          vies_platne?: boolean | null
+          vies_overene_at?: string | null
         }
         Relationships: [
           {
@@ -7109,6 +7115,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vehicles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vies_checks: {
+        Row: {
+          adresa: string | null
+          chyba: string | null
+          company_id: string
+          customer_id: string | null
+          ic_dph: string
+          id: string
+          nazov: string | null
+          overene_at: string
+          overil: string | null
+          platne: boolean
+          potvrdenie: string | null
+        }
+        Insert: {
+          adresa?: string | null
+          chyba?: string | null
+          company_id: string
+          customer_id?: string | null
+          ic_dph: string
+          id?: string
+          nazov?: string | null
+          overene_at?: string
+          overil?: string | null
+          platne: boolean
+          potvrdenie?: string | null
+        }
+        Update: {
+          adresa?: string | null
+          chyba?: string | null
+          company_id?: string
+          customer_id?: string | null
+          ic_dph?: string
+          id?: string
+          nazov?: string | null
+          overene_at?: string
+          overil?: string | null
+          platne?: boolean
+          potvrdenie?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vies_checks_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"

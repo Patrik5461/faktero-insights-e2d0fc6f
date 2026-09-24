@@ -110,6 +110,7 @@ import { Route as PravneGopayPodmienkyRouteImport } from './routes/pravne.gopay-
 import { Route as PravneObchodnePodmienkyRouteImport } from './routes/pravne.obchodne-podmienky'
 import { Route as PravneOpakovanePlatbyRouteImport } from './routes/pravne.opakovane-platby'
 import { Route as PravneReklamacnyPoriadokRouteImport } from './routes/pravne.reklamacny-poriadok'
+import { Route as PravneSpracovanieUdajovRouteImport } from './routes/pravne.spracovanie-udajov'
 import { Route as PravneTeslaPodmienkyRouteImport } from './routes/pravne.tesla-podmienky'
 import { Route as SchvalitTokenRouteImport } from './routes/schvalit.$token'
 import { Route as UctovniciIndexRouteImport } from './routes/uctovnici.index'
@@ -791,6 +792,11 @@ const PravneReklamacnyPoriadokRoute =
     path: '/pravne/reklamacny-poriadok',
     getParentRoute: () => rootRouteImport,
   } as any)
+const PravneSpracovanieUdajovRoute = PravneSpracovanieUdajovRouteImport.update({
+  id: '/pravne/spracovanie-udajov',
+  path: '/pravne/spracovanie-udajov',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PravneTeslaPodmienkyRoute = PravneTeslaPodmienkyRouteImport.update({
   id: '/pravne/tesla-podmienky',
   path: '/pravne/tesla-podmienky',
@@ -1841,6 +1847,7 @@ export interface FileRoutesByFullPath {
   '/pravne/obchodne-podmienky': typeof PravneObchodnePodmienkyRoute
   '/pravne/opakovane-platby': typeof PravneOpakovanePlatbyRoute
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
+  '/pravne/spracovanie-udajov': typeof PravneSpracovanieUdajovRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
@@ -2104,6 +2111,7 @@ export interface FileRoutesByTo {
   '/pravne/obchodne-podmienky': typeof PravneObchodnePodmienkyRoute
   '/pravne/opakovane-platby': typeof PravneOpakovanePlatbyRoute
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
+  '/pravne/spracovanie-udajov': typeof PravneSpracovanieUdajovRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
@@ -2376,6 +2384,7 @@ export interface FileRoutesById {
   '/pravne/obchodne-podmienky': typeof PravneObchodnePodmienkyRoute
   '/pravne/opakovane-platby': typeof PravneOpakovanePlatbyRoute
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
+  '/pravne/spracovanie-udajov': typeof PravneSpracovanieUdajovRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
@@ -2649,6 +2658,7 @@ export interface FileRouteTypes {
     | '/pravne/obchodne-podmienky'
     | '/pravne/opakovane-platby'
     | '/pravne/reklamacny-poriadok'
+    | '/pravne/spracovanie-udajov'
     | '/pravne/tesla-podmienky'
     | '/schvalit/$token'
     | '/uctovnici/$slug'
@@ -2912,6 +2922,7 @@ export interface FileRouteTypes {
     | '/pravne/obchodne-podmienky'
     | '/pravne/opakovane-platby'
     | '/pravne/reklamacny-poriadok'
+    | '/pravne/spracovanie-udajov'
     | '/pravne/tesla-podmienky'
     | '/schvalit/$token'
     | '/uctovnici/$slug'
@@ -3183,6 +3194,7 @@ export interface FileRouteTypes {
     | '/pravne/obchodne-podmienky'
     | '/pravne/opakovane-platby'
     | '/pravne/reklamacny-poriadok'
+    | '/pravne/spracovanie-udajov'
     | '/pravne/tesla-podmienky'
     | '/schvalit/$token'
     | '/uctovnici/$slug'
@@ -3422,6 +3434,7 @@ export interface RootRouteChildren {
   PravneObchodnePodmienkyRoute: typeof PravneObchodnePodmienkyRoute
   PravneOpakovanePlatbyRoute: typeof PravneOpakovanePlatbyRoute
   PravneReklamacnyPoriadokRoute: typeof PravneReklamacnyPoriadokRoute
+  PravneSpracovanieUdajovRoute: typeof PravneSpracovanieUdajovRoute
   PravneTeslaPodmienkyRoute: typeof PravneTeslaPodmienkyRoute
   SchvalitTokenRoute: typeof SchvalitTokenRoute
   PomocIndexRoute: typeof PomocIndexRoute
@@ -4183,6 +4196,13 @@ declare module '@tanstack/react-router' {
       path: '/pravne/reklamacny-poriadok'
       fullPath: '/pravne/reklamacny-poriadok'
       preLoaderRoute: typeof PravneReklamacnyPoriadokRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pravne/spracovanie-udajov': {
+      id: '/pravne/spracovanie-udajov'
+      path: '/pravne/spracovanie-udajov'
+      fullPath: '/pravne/spracovanie-udajov'
+      preLoaderRoute: typeof PravneSpracovanieUdajovRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pravne/tesla-podmienky': {
@@ -5953,6 +5973,7 @@ const rootRouteChildren: RootRouteChildren = {
   PravneObchodnePodmienkyRoute: PravneObchodnePodmienkyRoute,
   PravneOpakovanePlatbyRoute: PravneOpakovanePlatbyRoute,
   PravneReklamacnyPoriadokRoute: PravneReklamacnyPoriadokRoute,
+  PravneSpracovanieUdajovRoute: PravneSpracovanieUdajovRoute,
   PravneTeslaPodmienkyRoute: PravneTeslaPodmienkyRoute,
   SchvalitTokenRoute: SchvalitTokenRoute,
   PomocIndexRoute: PomocIndexRoute,
