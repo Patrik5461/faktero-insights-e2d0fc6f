@@ -46,6 +46,8 @@ import { MENY } from "@/lib/faktero/mena";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
+import { prepocitajFakturuFn } from "@/lib/faktero/kurzy.functions";
+import { jeHotovost, prekrocenyStrop } from "@/lib/faktero/hotovost";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
@@ -121,6 +123,7 @@ function NewInvoice() {
   const search = Route.useSearch();
   const triggerEvt = useServerFn(triggerEventFn);
   const aiParse = useServerFn(aiParseInvoiceFn);
+  const prepocitaj = useServerFn(prepocitajFakturuFn);
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
   const rezim = useRezimDph();
   const krajina = rezim.krajina;
@@ -658,6 +661,16 @@ function NewInvoice() {
         }
       }
 
+      // Faktúra v cudzej mene musí niesť daň aj v eurách — kurz sa doťahuje
+      // na serveri hneď po vystavení, aby ho mala aj tlač a výkazy k DPH.
+      if (form.currency && form.currency !== "EUR") {
+        try {
+          await prepocitaj({ data: { invoice_id: inv.id } });
+        } catch {
+          toast.warning("Kurz ECB sa nepodarilo načítať — daň v eurách doplňte pred podaním DPH.");
+        }
+      }
+
       toast.success("Faktúra vytvorená");
       navigate({ to: "/faktury/$id", params: { id: inv.id } });
     } finally {
@@ -781,7 +794,20 @@ function NewInvoice() {
                 <label className="text-xs font-medium text-muted-foreground">Spôsob platby</label>
                 <select
                   value={form.payment_method}
-                  onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
+                  onChange={(e) => {
+                    const sposob = e.target.value;
+                    setForm((f) => ({
+                      ...f,
+                      payment_method: sposob,
+                      /* Hotovosť sa platí na päť centov — jedno- a dvojcentovky
+                         sa už nevydávajú (zákon o cenách od 1. 7. 2022). */
+                      rounding_mode: jeHotovost(sposob)
+                        ? "retail"
+                        : f.rounding_mode === "retail"
+                          ? "per_document"
+                          : f.rounding_mode,
+                    }));
+                  }}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   {PAYMENT_METHODS.map((m) => (
@@ -791,6 +817,17 @@ function NewInvoice() {
                   ))}
                 </select>
               </div>
+              {jeHotovost(form.payment_method) && (
+                <p className="text-xs text-muted-foreground sm:col-span-2">
+                  Suma sa zaokrúhli na päť centov, ako to pri platbe v hotovosti ukladá zákon o
+                  cenách.
+                </p>
+              )}
+              {prekrocenyStrop(totals.payable, form.payment_method) && (
+                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive sm:col-span-2">
+                  {prekrocenyStrop(totals.payable, form.payment_method)}
+                </p>
+              )}
               {form.payment_method === "bank_transfer" && (
                 <VyberUctu
                   companyId={getActiveCompanyId()}

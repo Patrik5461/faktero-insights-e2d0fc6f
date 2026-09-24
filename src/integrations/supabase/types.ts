@@ -2668,6 +2668,27 @@ export type Database = {
           },
         ]
       }
+      exchange_rates: {
+        Row: {
+          created_at: string
+          den: string
+          kurz: number
+          mena: string
+        }
+        Insert: {
+          created_at?: string
+          den: string
+          kurz: number
+          mena: string
+        }
+        Update: {
+          created_at?: string
+          den?: string
+          kurz?: number
+          mena?: string
+        }
+        Relationships: []
+      }
       expense_documents: {
         Row: {
           processed_at: string | null
@@ -4025,6 +4046,11 @@ export type Database = {
           variable_symbol: string | null
           vat_total: number
           eu_plnenie: string | null
+          exchange_rate: number | null
+          exchange_rate_date: string | null
+          subtotal_eur: number | null
+          vat_total_eur: number | null
+          total_eur: number | null
         }
         Insert: {
           advance_amount?: number | null
@@ -4093,6 +4119,11 @@ export type Database = {
           variable_symbol?: string | null
           vat_total?: number
           eu_plnenie?: string | null
+          exchange_rate?: number | null
+          exchange_rate_date?: string | null
+          subtotal_eur?: number | null
+          vat_total_eur?: number | null
+          total_eur?: number | null
         }
         Update: {
           advance_amount?: number | null
@@ -4161,6 +4192,11 @@ export type Database = {
           variable_symbol?: string | null
           vat_total?: number
           eu_plnenie?: string | null
+          exchange_rate?: number | null
+          exchange_rate_date?: string | null
+          subtotal_eur?: number | null
+          vat_total_eur?: number | null
+          total_eur?: number | null
         }
         Relationships: [
           {
@@ -5004,6 +5040,9 @@ export type Database = {
           delivery_date: string | null
           odpocet: boolean
           opravuje_cislo: string | null
+          exchange_rate: number | null
+          amount_without_vat_eur: number | null
+          vat_amount_eur: number | null
         }
         Insert: {
           amount_total?: number
@@ -5043,6 +5082,9 @@ export type Database = {
           delivery_date?: string | null
           odpocet?: boolean
           opravuje_cislo?: string | null
+          exchange_rate?: number | null
+          amount_without_vat_eur?: number | null
+          vat_amount_eur?: number | null
         }
         Update: {
           amount_total?: number
@@ -5082,6 +5124,9 @@ export type Database = {
           delivery_date?: string | null
           odpocet?: boolean
           opravuje_cislo?: string | null
+          exchange_rate?: number | null
+          amount_without_vat_eur?: number | null
+          vat_amount_eur?: number | null
         }
         Relationships: [
           {

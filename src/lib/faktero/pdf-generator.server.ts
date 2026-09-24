@@ -7,6 +7,8 @@ import { RobotoBoldBase64 } from "./fonts/Roboto-Bold";
 import { paymentMethodLabel } from "./payment-method";
 import { maZuctovanuZalohu, zostavaUhradit } from "./zaloha";
 import { rezimFirmy, type FirmaDph } from "./dph-rezim";
+import { textPrepoctu, trebaPrepocet } from "./kurzy";
+import { krajinaDane } from "./vat-rates";
 import { sUctomFaktury } from "./platobny-ucet";
 
 function b64ToBytes(b64: string): Uint8Array {
@@ -786,6 +788,33 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       ry -= 12;
     });
     y -= rcLines.length * 12 + 22;
+  }
+
+  /*
+    Faktúra v cudzej mene musí mať daň vyčíslenú aj v eurách, prepočítanú
+    kurzom ECB zo dňa predchádzajúceho dňu dodania (§ 26 ods. 1 zákona o DPH).
+    Bez tejto vety je doklad neúplný, hoci sumy v nej sedia.
+  */
+  if (
+    trebaPrepocet(invoice.currency) &&
+    invoice.exchange_rate &&
+    invoice.vat_total_eur != null &&
+    Number(invoice.vat_total ?? 0) !== 0
+  ) {
+    const text = textPrepoctu(
+      String(invoice.currency),
+      Number(invoice.exchange_rate),
+      String(invoice.exchange_rate_date ?? invoice.delivery_date ?? invoice.issue_date),
+      Number(invoice.vat_total_eur),
+      krajinaDane(company.country) === "CZ" ? "cz" : "sk",
+    );
+    const lines = wrapLines(text, font, 9, innerW);
+    ensureSpace(14 + lines.length * 11 + 8);
+    lines.forEach((ln) => {
+      cur.drawText(ln, { x: margin, y, size: 9, font, color: sub });
+      y -= 11;
+    });
+    y -= 8;
   }
 
   /*

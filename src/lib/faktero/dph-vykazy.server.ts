@@ -65,7 +65,7 @@ export async function nacitajVstup(
     supabase
       .from("invoices")
       .select(
-        "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, opravuje_fakturu_id, subtotal, vat_total, invoice_items(vat_rate, subtotal, quantity, unit_price)",
+        "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, opravuje_fakturu_id, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, invoice_items(vat_rate, subtotal, quantity, unit_price)",
       )
       .eq("company_id", companyId)
       .is("deleted_at", null)
@@ -73,7 +73,7 @@ export async function nacitajVstup(
     supabase
       .from("purchase_invoices")
       .select(
-        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount",
+        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate",
       )
       .eq("company_id", companyId)
       .is("deleted_at", null)
@@ -100,11 +100,27 @@ export async function nacitajVstup(
     const den = f.delivery_date || f.issue_date;
     if (!vDobe(den)) continue;
     if (NEPLATNE_STAVY.includes(String(f.status))) continue;
-    if (f.currency && f.currency !== "EUR") {
-      vytky.push({
-        doklad: f.invoice_number,
-        text: `Faktúra je v mene ${f.currency}. Do výkazu patria sumy v eurách — prepočítajte ju a sumu opravte ručne.`,
-      });
+    /*
+      Do výkazu patria eurá. Keď je faktúra v cudzej mene, berú sa prepočítané
+      sumy (kurz ECB zo dňa pred dodaním) a riadky po sadzbách sa prepočítajú
+      rovnakým pomerom — chýbajúci prepočet sa ozve, nezamlčí.
+    */
+    const cudzia = Boolean(f.currency && f.currency !== "EUR");
+    let riadky = riadkyZPoloziek(f.invoice_items ?? []);
+    if (cudzia) {
+      const kurz = Number(f.exchange_rate ?? 0);
+      if (kurz > 0) {
+        riadky = riadky.map((r) => ({
+          sadzba: r.sadzba,
+          zaklad: Math.round((r.zaklad / kurz) * 100) / 100,
+          dan: Math.round((r.dan / kurz) * 100) / 100,
+        }));
+      } else {
+        vytky.push({
+          doklad: f.invoice_number,
+          text: `Faktúra je v mene ${f.currency} a chýba jej prepočet kurzom ECB. Otvorte ju a uložte znova, alebo sumu do výkazu opravte ručne.`,
+        });
+      }
     }
     vystavene.push({
       cislo: String(f.invoice_number),
@@ -116,7 +132,7 @@ export async function nacitajVstup(
       prenosTyp: f.reverse_charge_type,
       euPlnenie: f.eu_plnenie,
       opravujeCislo: f.opravuje_fakturu_id ? (cisla.get(f.opravuje_fakturu_id) ?? null) : null,
-      riadky: riadkyZPoloziek(f.invoice_items ?? []),
+      riadky,
     });
   }
 
@@ -124,13 +140,19 @@ export async function nacitajVstup(
   for (const p of (prijateRes.data ?? []) as any[]) {
     const den = p.delivery_date || p.issue_date;
     if (!vDobe(den)) continue;
-    if (p.currency && p.currency !== "EUR") {
+    const cudziaP = Boolean(p.currency && p.currency !== "EUR");
+    const maPrepocet = p.vat_amount_eur != null || p.amount_without_vat_eur != null;
+    if (cudziaP && !maPrepocet) {
       vytky.push({
         doklad: p.invoice_number ?? p.supplier_name ?? "prijatá faktúra",
-        text: `Prijatá faktúra je v mene ${p.currency}. Do výkazu patria sumy v eurách.`,
+        text: `Prijatá faktúra je v mene ${p.currency} a chýba jej prepočet kurzom ECB — do výkazu patria eurá.`,
       });
     }
-    const dan = Number(p.vat_amount ?? 0);
+    const dan = cudziaP && maPrepocet ? Number(p.vat_amount_eur ?? 0) : Number(p.vat_amount ?? 0);
+    const zaklad =
+      cudziaP && maPrepocet
+        ? Number(p.amount_without_vat_eur ?? 0)
+        : Number(p.amount_without_vat ?? 0);
     prijate.push({
       cislo: String(p.invoice_number ?? ""),
       dodavatelNazov: p.supplier_name,
@@ -140,7 +162,7 @@ export async function nacitajVstup(
       rezim: (p.dph_rezim as PrijataFaktura["rezim"]) ?? odvodRezimPrijatej(p.supplier_ic_dph, dan),
       odpocet: p.odpocet !== false,
       opravujeCislo: p.opravuje_cislo,
-      riadky: [riadokZoSum(Number(p.amount_without_vat ?? 0), dan, den)],
+      riadky: [riadokZoSum(zaklad, dan, den)],
     });
     if (!p.invoice_number) {
       vytky.push({

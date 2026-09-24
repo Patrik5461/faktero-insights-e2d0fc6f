@@ -1,4 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
+import { textPrepoctu } from "@/lib/faktero/kurzy";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { formatujMenu } from "@/lib/faktero/mena";
@@ -20,7 +21,7 @@ const nacitajFakturu = createServerFn({ method: "POST" })
     const { data: f } = await supabaseAdmin
       .from("invoices")
       .select(
-        "id, company_id, invoice_number, type, status, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, deleted_at, payment_iban, payment_swift",
+        "id, company_id, invoice_number, type, status, issue_date, delivery_date, due_date, currency, subtotal, vat_total, total, exchange_rate, exchange_rate_date, vat_total_eur, variable_symbol, customer_name, customer_street, customer_city, customer_zip, customer_ico, customer_dic, customer_ic_dph, notes, reverse_charge, deleted_at, payment_iban, payment_swift",
       )
       .eq("public_token", data.token)
       .maybeSingle();
@@ -225,6 +226,17 @@ function VerejnaFaktura() {
         <Riadok k="Variabilný symbol" v={doklad.variable_symbol} />
         <Riadok k="IBAN" v={firma?.iban} />
       </div>
+
+      {doklad.currency !== "EUR" && doklad.exchange_rate && doklad.vat_total_eur != null && (
+        <p className="mt-4 text-sm text-muted-foreground">
+          {textPrepoctu(
+            String(doklad.currency),
+            Number(doklad.exchange_rate),
+            String(doklad.exchange_rate_date ?? doklad.delivery_date ?? doklad.issue_date),
+            Number(doklad.vat_total_eur),
+          )}
+        </p>
+      )}
 
       {textDph && <p className="mt-4 text-sm font-medium">{textDph}</p>}
 

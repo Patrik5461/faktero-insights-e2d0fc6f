@@ -134,6 +134,47 @@ export async function ensureInvoicePdf(
     /* bez odkazu sa PDF vyrobí ďalej — faktúra bez QR je stále platná faktúra */
   }
 
+  /*
+    Faktúra v cudzej mene musí niesť daň aj v eurách. Keď prepočet chýba (napr.
+    doklad z importu alebo z času, keď sa kurz neukladal), dotiahne sa teraz —
+    inak by na tlači chýbal údaj, ktorý zákon vyžaduje.
+  */
+  if (invoice.currency && invoice.currency !== "EUR" && invoice.vat_total_eur == null) {
+    try {
+      const { prepocitajDoklad } = await import("./kurzy.server");
+      const p = await prepocitajDoklad(
+        invoice.currency,
+        String(invoice.delivery_date || invoice.issue_date),
+        {
+          zaklad: Number(invoice.subtotal ?? 0),
+          dan: Number(invoice.vat_total ?? 0),
+          celkom: Number(invoice.total ?? 0),
+        },
+      );
+      if (p) {
+        Object.assign(invoice, {
+          exchange_rate: p.kurz,
+          exchange_rate_date: p.den,
+          subtotal_eur: p.zaklad,
+          vat_total_eur: p.dan,
+          total_eur: p.celkom,
+        });
+        await supabaseAdmin
+          .from("invoices")
+          .update({
+            exchange_rate: p.kurz,
+            exchange_rate_date: p.den,
+            subtotal_eur: p.zaklad,
+            vat_total_eur: p.dan,
+            total_eur: p.celkom,
+          })
+          .eq("id", invoice.id);
+      }
+    } catch (e) {
+      console.warn("[pdf] kurz ECB sa nepodarilo doplniť:", String((e as Error)?.message ?? e));
+    }
+  }
+
   const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
   const bytes = await generateInvoicePdfBytes({
     company,

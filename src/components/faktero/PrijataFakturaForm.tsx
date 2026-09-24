@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { prepocitajPrijatuFn } from "@/lib/faktero/kurzy.functions";
 import { ArrowLeft, Upload, Loader2 } from "lucide-react";
 import { IcoLookupButton } from "@/components/faktero/IcoLookupButton";
 import { JobPicker } from "@/components/faktero/JobPicker";
@@ -25,6 +27,7 @@ function addDays(iso: string, d: number) {
  */
 export function PrijataFakturaForm({ id }: { id?: string }) {
   const upravujeme = Boolean(id);
+  const prepocitaj = useServerFn(prepocitajPrijatuFn);
   const navigate = useNavigate();
   const [form, setForm] = useState({
     supplier_name: "",
@@ -62,6 +65,20 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
   const [nenajdene, setNenajdene] = useState(false);
   /** Príloha, ktorá je na faktúre už uložená — nová ju nahradí. */
   const [prilohaCesta, setPrilohaCesta] = useState<string | null>(null);
+
+  /*
+    Faktúra v cudzej mene sa do priznania k DPH uvádza v eurách, prepočítaná
+    kurzom ECB zo dňa pred dodaním. Prepočet robí server hneď po uložení —
+    inak by doklad vo výkazoch chýbal alebo by tam bol v cudzej sume.
+  */
+  async function doplnKurz(id: string) {
+    if (!form.currency || form.currency === "EUR") return;
+    try {
+      await prepocitaj({ data: { id } });
+    } catch {
+      toast.warning("Kurz ECB sa nepodarilo načítať — prepočet doplňte pred podaním DPH.");
+    }
+  }
 
   function set<K extends keyof typeof form>(k: K, v: (typeof form)[K]) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -198,6 +215,7 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
           .update(uprava as never)
           .eq("id", id);
         if (error) throw error;
+        await doplnKurz(id);
         toast.success("Zmeny sú uložené");
         navigate({ to: "/prijate-faktury/$id", params: { id } });
         return;
@@ -208,6 +226,7 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
         .select("id")
         .single();
       if (error) throw error;
+      await doplnKurz(data!.id);
       toast.success("Prijatá faktúra bola uložená");
       navigate({ to: "/prijate-faktury/$id", params: { id: data!.id } });
     } catch (e: any) {
