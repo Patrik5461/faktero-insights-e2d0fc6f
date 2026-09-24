@@ -183,6 +183,39 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "udaje-pre-dph",
+    title: "Údaje pre výkazy k DPH",
+    body: (
+      <>
+        <p>Na prijatej faktúre sú štyri polia, ktoré rozhodujú, ako sa dostane do výkazov:</p>
+        <ul>
+          <li>
+            <strong>Režim DPH</strong> — tuzemská faktúra od platiteľa ide do časti B.2 kontrolného
+            výkazu, samozdanenie podľa § 69 do B.1, nadobudnutie tovaru z EÚ do riadkov 05 až 08
+            priznania. Keď pole necháte prázdne, režim sa odhadne podľa IČ DPH dodávateľa.
+          </li>
+          <li>
+            <strong>Dátum dodania</strong> — rozhoduje o období; keď chýba, použije sa dátum
+            vystavenia.
+          </li>
+          <li>
+            <strong>Odpočítanie dane</strong> — keď si daň neodpočítavate, faktúra do časti B.2
+            nepatrí.
+          </li>
+          <li>
+            <strong>Opravuje faktúru číslo</strong> — dobropis bez čísla pôvodnej faktúry sa do
+            časti C.2 zapísať nedá.
+          </li>
+        </ul>
+        <p>
+          Faktúra v cudzej mene sa po uložení prepočíta kurzom ECB — do priznania totiž vstupuje v
+          eurách. Zostavenie výkazov popisuje{" "}
+          <Link to="/pomoc/vykazy-dph">manuál k výkazom k DPH</Link>.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

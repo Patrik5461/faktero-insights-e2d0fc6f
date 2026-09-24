@@ -165,6 +165,36 @@ const SEKCIE: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "dph-nastavenie",
+    title: "Postavenie k DPH",
+    body: (
+      <>
+        <p>
+          V údajoch firmy sa zaškrtáva <strong>Firma je platiteľ DPH</strong> a vyberá typ
+          registrácie — § 4, § 4b alebo § 5 pre platiteľa, § 7, § 7a alebo bez registrácie pre
+          ostatných. Z registra sa ťahá len IČ DPH, paragraf v ňom nie je.
+        </p>
+        <p>
+          Voľba rozhoduje o tom, či sa v dokladoch ponúkajú sadzby DPH a aká veta pribudne na
+          faktúru. Podrobnosti sú v <Link to="/pomoc/dph">manuáli k DPH</Link>.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "bankove-ucty",
+    title: "Bankové účty firmy",
+    body: (
+      <>
+        <p>
+          Účtov môže byť viac — jeden je predvolený a pri vystavovaní faktúry sa dá prehodiť.
+          Faktúra si vybraný účet zapamätá, takže neskoršia zmena predvoleného účtu staré doklady
+          neprepíše.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

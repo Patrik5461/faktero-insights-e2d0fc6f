@@ -173,6 +173,24 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "zaokruhlenie",
+    title: "Zaokrúhľovanie na päť centov",
+    body: (
+      <>
+        <p>
+          Pri platbe v hotovosti sa celková suma zaokrúhľuje na <strong>päť centov</strong> — tak to
+          od 1. 7. 2022 ukladá zákon o cenách, lebo jedno- a dvojcentové mince sa už nevydávajú. Keď
+          na faktúre vyberiete hotovosť, Faktero prepne zaokrúhlenie samo a rozdiel (najviac dva
+          centy) je vidieť v súčtoch.
+        </p>
+        <p>
+          Platba v hotovosti nad <strong>5 000 €</strong> je medzi podnikateľmi zakázaná (zákon č.
+          394/2012 Z. z.) — pri takej sume sa objaví upozornenie.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

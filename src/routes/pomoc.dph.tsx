@@ -130,6 +130,70 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "platitel",
+    title: "Platiteľ, alebo len registrovaná osoba",
+    body: (
+      <>
+        <p>
+          V <Link to="/firma">Nastaveniach firmy</Link> sa zaškrtáva, či je firma platiteľ DPH, a
+          vyberá sa typ registrácie. Nestačí totiž vyplnené IČ DPH: osoba registrovaná podľa{" "}
+          <strong>§ 7</strong> (nadobudnutie tovaru z EÚ) alebo <strong>§ 7a</strong> (služby v
+          rámci EÚ) IČ DPH má, ale platiteľom nie je — faktúry vystavuje bez dane.
+        </p>
+        <ul>
+          <li>
+            <strong>Platiteľ:</strong> § 4 (bežná registrácia), § 4b (skupinová), § 5 (zahraničná
+            osoba).
+          </li>
+          <li>
+            <strong>Bez postavenia platiteľa:</strong> § 7, § 7a alebo neregistrovaná osoba.
+          </li>
+          <li>Pre českú firmu: plátce, identifikovaná osoba, neplátce.</li>
+        </ul>
+        <p>
+          Neplatiteľovi sa v doklade ponúka len nulová sadzba a na faktúru pribudne veta, prečo na
+          nej daň nie je. Z registra sa ťahá len IČ DPH — paragraf treba vybrať ručne.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "cudzia-mena",
+    title: "Faktúra v cudzej mene",
+    body: (
+      <>
+        <p>
+          Pri faktúre v inej mene než euro sa daň prepočíta{" "}
+          <strong>kurzom ECB zo dňa predchádzajúceho dňu dodania</strong> a na doklade pribudne
+          riadok s daňou v eurách, kurzom a dňom, z ktorého je (§ 26 ods. 1 zákona o DPH). Robí sa
+          to samo pri vystavení; kurz si faktúra zapamätá, takže sa spätne nemení.
+        </p>
+        <p>
+          Cez víkend a sviatky sa použije posledný zverejnený kurz. Do výkazov k DPH vstupuje
+          prepočítaná suma v eurách.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "vykazy",
+    title: "Priznanie a výkazy",
+    body: (
+      <>
+        <p>
+          Z tých istých dokladov sa v{" "}
+          <Link to="/uctovnictvo/vykazy">Účtovníctve → Výkazy k DPH</Link> zostaví priznanie,
+          kontrolný výkaz aj súhrnný výkaz a stiahnu sa v XML pre eDane. Podrobne to popisuje{" "}
+          <Link to="/pomoc/vykazy-dph">manuál k výkazom</Link>.
+        </p>
+        <p>
+          Predaj spotrebiteľom v EÚ cez <Link to="/pomoc/oss">režim OSS</Link> do priznania ani do
+          kontrolného výkazu nevstupuje — má vlastné priznanie.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

@@ -139,21 +139,21 @@ const sections: HelpSection[] = [
           druh, odosielateľa, predmet, sumu, lehotu aj krátke zhrnutie pre účtovníka. V mobilnej
           appke je na skeneri voľba <strong>Iný doklad</strong> — nafotíte strany a doklad sa uloží
           sem. A keď takýto dokument príde na adresu pre{" "}
-          <Link to="/doklady/mailom">doklady e-mailom</Link>, AI ho rozpozná a uloží medzi
-          ostatné doklady namiesto prijatých faktúr.
+          <Link to="/doklady/mailom">doklady e-mailom</Link>, AI ho rozpozná a uloží medzi ostatné
+          doklady namiesto prijatých faktúr.
         </p>
         <p>
           <strong>Exekúciu</strong> priradíte k zamestnancovi — AI ho navrhne sama, keď v dokumente
           nájde jeho celé meno — a na karte zamestnanca ju uvidíte v záložke{" "}
-          <strong>Exekúcie</strong>. Doklad k leasingu či úveru priradíte k zmluve a nájdete ho v jej
-          detaile v časti <strong>Doklady k zmluve</strong>. Na lehotu, ktorá príde do siedmich dní
-          alebo už uplynula, upozorní zvonček, kým doklad neodovzdáte účtovníkovi.
+          <strong>Exekúcie</strong>. Doklad k leasingu či úveru priradíte k zmluve a nájdete ho v
+          jej detaile v časti <strong>Doklady k zmluve</strong>. Na lehotu, ktorá príde do siedmich
+          dní alebo už uplynula, upozorní zvonček, kým doklad neodovzdáte účtovníkovi.
         </p>
         <p>
-          Aj tu platí <strong>Nespracované → Spracované → Odovzdané</strong>: účtovník doklad
-          pozrie a klikne na <strong>Spracovať</strong>. Ostatné doklady sa do Pohody neposielajú,
-          sú podkladom. V mesačnom balíku pre účtovníka sú v priečinku{" "}
-          <strong>ostatne-doklady</strong> so súpisom v CSV.
+          Aj tu platí <strong>Nespracované → Spracované → Odovzdané</strong>: účtovník doklad pozrie
+          a klikne na <strong>Spracovať</strong>. Ostatné doklady sa do Pohody neposielajú, sú
+          podkladom. V mesačnom balíku pre účtovníka sú v priečinku <strong>ostatne-doklady</strong>{" "}
+          so súpisom v CSV.
         </p>
       </>
     ),
@@ -164,18 +164,18 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          V <Link to="/importy/doklady">Účtovníctvo → Import prijatých dokladov</Link> nahráte export
-          z Doklado, Pohody alebo tabuľku. Najpresnejšie je nahrať naraz <strong>XML (Pohoda)</strong>{" "}
-          a <strong>ZIP s PDF</strong>: údaje sa vezmú z XML a skeny sa priradia k dokladom podľa
-          čísla, alebo podľa sumy, dátumu a dodávateľa. Ide aj <strong>CSV/XLSX</strong> a samotný
-          ZIP so skenmi — ten prečíta AI.
+          V <Link to="/importy/doklady">Účtovníctvo → Import prijatých dokladov</Link> nahráte
+          export z Doklado, Pohody alebo tabuľku. Najpresnejšie je nahrať naraz{" "}
+          <strong>XML (Pohoda)</strong> a <strong>ZIP s PDF</strong>: údaje sa vezmú z XML a skeny
+          sa priradia k dokladom podľa čísla, alebo podľa sumy, dátumu a dodávateľa. Ide aj{" "}
+          <strong>CSV/XLSX</strong> a samotný ZIP so skenmi — ten prečíta AI.
         </p>
         <p>
           Prijaté faktúry pôjdu medzi prijaté faktúry, bločky do Dokladov a listy, predpisy či
           exekúcie do Ostatných dokladov. Pred spustením uvidíte, čo sa naimportuje, a zvolíte stav
           (napríklad „Odovzdané účtovníkovi“ pre doklady, ktoré sú už zaúčtované). Doklady, ktoré vo
-          Fakteri už sú, sa preskočia, takže import sa dá pustiť aj opakovane. Hotovostné bločky
-          sa do pokladne započítajú len vtedy, keď to zaškrtnete.
+          Fakteri už sú, sa preskočia, takže import sa dá pustiť aj opakovane. Hotovostné bločky sa
+          do pokladne započítajú len vtedy, keď to zaškrtnete.
         </p>
       </>
     ),
@@ -187,8 +187,8 @@ const sections: HelpSection[] = [
       <>
         <p>
           Každý nový doklad — z appky, z webu aj naskenovaný — padne najprv do záložky{" "}
-          <strong>Nespracované</strong>. Tam ho vy alebo účtovník skontrolujete, prípadne doplníte
-          a kliknete na <strong>Spracovať</strong> (viac naraz cez zaškrtnutie a{" "}
+          <strong>Nespracované</strong>. Tam ho vy alebo účtovník skontrolujete, prípadne doplníte a
+          kliknete na <strong>Spracovať</strong> (viac naraz cez zaškrtnutie a{" "}
           <strong>Označiť ako spracované</strong>). Spracovať sa dá doklad so sumou a dátumom; ak
           niečo chýba, zoznam to napíše a ponúkne <strong>Doplniť</strong>.
         </p>
@@ -338,6 +338,24 @@ const sections: HelpSection[] = [
         <p>
           Faktúru z PDF viete rovnakým spôsobom načítať aj v{" "}
           <Link to="/faktury/skener">Skeneri dokladov</Link> na webe.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "odpocet-dph",
+    title: "Odpočet DPH z bločkov",
+    body: (
+      <>
+        <p>
+          Bloček je zjednodušená faktúra — do kontrolného výkazu ide do časti <strong>B.3</strong>,
+          nie medzi bežné prijaté faktúry. Do 3 000 € odpočítanej dane za obdobie sa vykazuje
+          sumárne, nad túto hranicu sa rozpisuje po dodávateľoch (vtedy je potrebné IČ DPH
+          dodávateľa).
+        </p>
+        <p>
+          Keď si z dokladu daň neodpočítavate, prepnite na ňom <strong>Odpočítanie dane</strong> —
+          do výkazu potom nevstúpi.
         </p>
       </>
     ),

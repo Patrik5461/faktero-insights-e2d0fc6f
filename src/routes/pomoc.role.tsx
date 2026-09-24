@@ -126,17 +126,16 @@ const sections: HelpSection[] = [
       <>
         <p>
           Keď nesedí ani jedna rola, zvoľte pri pozvaní alebo pri členovi rolu{" "}
-          <strong>Vlastný prístup</strong> a vyklikajte oblasti: faktúry a ponuky, prijaté faktúry
-          a doklady, ostatné doklady, kontakty, banka, pokladňa, sklad a cenník, zákazky, kniha
-          jázd, zamestnanci, účtovníctvo a exporty. Pri každej zvolíte{" "}
-          <strong>Bez prístupu</strong>, <strong>Len čítať</strong> alebo{" "}
-          <strong>Upravovať</strong>.
+          <strong>Vlastný prístup</strong> a vyklikajte oblasti: faktúry a ponuky, prijaté faktúry a
+          doklady, ostatné doklady, kontakty, banka, pokladňa, sklad a cenník, zákazky, kniha jázd,
+          zamestnanci, účtovníctvo a exporty. Pri každej zvolíte <strong>Bez prístupu</strong>,{" "}
+          <strong>Len čítať</strong> alebo <strong>Upravovať</strong>.
         </p>
         <p>
-          Obmedzenie stráži databáza, nie len menu — oblasť bez prístupu sa nezobrazí ani cez
-          priamy odkaz. Kto smie faktúry, vidí aj odberateľov. Pripojenie banky, zmena bankových
-          účtov firmy, API kľúče a správa používateľov ostávajú pri vlastnom prístupe vždy len
-          majiteľovi a administrátorovi.
+          Obmedzenie stráži databáza, nie len menu — oblasť bez prístupu sa nezobrazí ani cez priamy
+          odkaz. Kto smie faktúry, vidí aj odberateľov. Pripojenie banky, zmena bankových účtov
+          firmy, API kľúče a správa používateľov ostávajú pri vlastnom prístupe vždy len majiteľovi
+          a administrátorovi.
         </p>
       </>
     ),
@@ -249,6 +248,19 @@ const sections: HelpSection[] = [
         <p>
           Koľko ľudí môžete pozvať, závisí od plánu — pozri{" "}
           <Link to="/pomoc/predplatne">Predplatné</Link>.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "dvojfaktor",
+    title: "Dvojfaktorové overenie",
+    body: (
+      <>
+        <p>
+          Prístup sa dá zosilniť overením kódom z aplikácie. Je dobrovoľné a zapína si ho každý sám
+          v <Link to="/nastavenia/zabezpecenie">Nastaveniach → Zabezpečenie</Link>; podrobnosti sú v{" "}
+          <Link to="/pomoc/zabezpecenie">manuáli k zabezpečeniu účtu</Link>.
         </p>
       </>
     ),

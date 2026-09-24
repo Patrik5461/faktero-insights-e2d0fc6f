@@ -92,6 +92,7 @@ import { Route as PomocObjednavkyRouteImport } from './routes/pomoc.objednavky'
 import { Route as PomocObjednavkyDodavatelRouteImport } from './routes/pomoc.objednavky-dodavatel'
 import { Route as PomocOdberateliaRouteImport } from './routes/pomoc.odberatelia'
 import { Route as PomocOpakovaneRouteImport } from './routes/pomoc.opakovane'
+import { Route as PomocOssRouteImport } from './routes/pomoc.oss'
 import { Route as PomocPohodaRouteImport } from './routes/pomoc.pohoda'
 import { Route as PomocPokladnaRouteImport } from './routes/pomoc.pokladna'
 import { Route as PomocPonukyRouteImport } from './routes/pomoc.ponuky'
@@ -102,7 +103,9 @@ import { Route as PomocSkladRouteImport } from './routes/pomoc.sklad'
 import { Route as PomocUzavierkaRouteImport } from './routes/pomoc.uzavierka'
 import { Route as PomocVideaRouteImport } from './routes/pomoc.videa'
 import { Route as PomocVykazyDphRouteImport } from './routes/pomoc.vykazy-dph'
+import { Route as PomocZabezpecenieRouteImport } from './routes/pomoc.zabezpecenie'
 import { Route as PomocZakazkyRouteImport } from './routes/pomoc.zakazky'
+import { Route as PomocZamestnanciRouteImport } from './routes/pomoc.zamestnanci'
 import { Route as PravneIndexRouteImport } from './routes/pravne.index'
 import { Route as PravneCookiesRouteImport } from './routes/pravne.cookies'
 import { Route as PravneGdprRouteImport } from './routes/pravne.gdpr'
@@ -702,6 +705,11 @@ const PomocOpakovaneRoute = PomocOpakovaneRouteImport.update({
   path: '/pomoc/opakovane',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PomocOssRoute = PomocOssRouteImport.update({
+  id: '/pomoc/oss',
+  path: '/pomoc/oss',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PomocPohodaRoute = PomocPohodaRouteImport.update({
   id: '/pomoc/pohoda',
   path: '/pomoc/pohoda',
@@ -752,9 +760,19 @@ const PomocVykazyDphRoute = PomocVykazyDphRouteImport.update({
   path: '/pomoc/vykazy-dph',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PomocZabezpecenieRoute = PomocZabezpecenieRouteImport.update({
+  id: '/pomoc/zabezpecenie',
+  path: '/pomoc/zabezpecenie',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PomocZakazkyRoute = PomocZakazkyRouteImport.update({
   id: '/pomoc/zakazky',
   path: '/pomoc/zakazky',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocZamestnanciRoute = PomocZamestnanciRouteImport.update({
+  id: '/pomoc/zamestnanci',
+  path: '/pomoc/zamestnanci',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PravneIndexRoute = PravneIndexRouteImport.update({
@@ -1837,6 +1855,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
+  '/pomoc/oss': typeof PomocOssRoute
   '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
@@ -1847,7 +1866,9 @@ export interface FileRoutesByFullPath {
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
   '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
+  '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
+  '/pomoc/zamestnanci': typeof PomocZamestnanciRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
@@ -2102,6 +2123,7 @@ export interface FileRoutesByTo {
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
+  '/pomoc/oss': typeof PomocOssRoute
   '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
@@ -2112,7 +2134,9 @@ export interface FileRoutesByTo {
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
   '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
+  '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
+  '/pomoc/zamestnanci': typeof PomocZamestnanciRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
@@ -2376,6 +2400,7 @@ export interface FileRoutesById {
   '/pomoc/objednavky-dodavatel': typeof PomocObjednavkyDodavatelRoute
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
+  '/pomoc/oss': typeof PomocOssRoute
   '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
@@ -2386,7 +2411,9 @@ export interface FileRoutesById {
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
   '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
+  '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
+  '/pomoc/zamestnanci': typeof PomocZamestnanciRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
@@ -2651,6 +2678,7 @@ export interface FileRouteTypes {
     | '/pomoc/objednavky-dodavatel'
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
+    | '/pomoc/oss'
     | '/pomoc/pohoda'
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
@@ -2661,7 +2689,9 @@ export interface FileRouteTypes {
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
     | '/pomoc/vykazy-dph'
+    | '/pomoc/zabezpecenie'
     | '/pomoc/zakazky'
+    | '/pomoc/zamestnanci'
     | '/pravne/cookies'
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
@@ -2916,6 +2946,7 @@ export interface FileRouteTypes {
     | '/pomoc/objednavky-dodavatel'
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
+    | '/pomoc/oss'
     | '/pomoc/pohoda'
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
@@ -2926,7 +2957,9 @@ export interface FileRouteTypes {
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
     | '/pomoc/vykazy-dph'
+    | '/pomoc/zabezpecenie'
     | '/pomoc/zakazky'
+    | '/pomoc/zamestnanci'
     | '/pravne/cookies'
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
@@ -3189,6 +3222,7 @@ export interface FileRouteTypes {
     | '/pomoc/objednavky-dodavatel'
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
+    | '/pomoc/oss'
     | '/pomoc/pohoda'
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
@@ -3199,7 +3233,9 @@ export interface FileRouteTypes {
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
     | '/pomoc/vykazy-dph'
+    | '/pomoc/zabezpecenie'
     | '/pomoc/zakazky'
+    | '/pomoc/zamestnanci'
     | '/pravne/cookies'
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
@@ -3430,6 +3466,7 @@ export interface RootRouteChildren {
   PomocObjednavkyDodavatelRoute: typeof PomocObjednavkyDodavatelRoute
   PomocOdberateliaRoute: typeof PomocOdberateliaRoute
   PomocOpakovaneRoute: typeof PomocOpakovaneRoute
+  PomocOssRoute: typeof PomocOssRoute
   PomocPohodaRoute: typeof PomocPohodaRoute
   PomocPokladnaRoute: typeof PomocPokladnaRoute
   PomocPonukyRoute: typeof PomocPonukyRoute
@@ -3440,7 +3477,9 @@ export interface RootRouteChildren {
   PomocUzavierkaRoute: typeof PomocUzavierkaRoute
   PomocVideaRoute: typeof PomocVideaRoute
   PomocVykazyDphRoute: typeof PomocVykazyDphRoute
+  PomocZabezpecenieRoute: typeof PomocZabezpecenieRoute
   PomocZakazkyRoute: typeof PomocZakazkyRoute
+  PomocZamestnanciRoute: typeof PomocZamestnanciRoute
   PravneCookiesRoute: typeof PravneCookiesRoute
   PravneGdprRoute: typeof PravneGdprRoute
   PravneGopayPodmienkyRoute: typeof PravneGopayPodmienkyRoute
@@ -4085,6 +4124,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PomocOpakovaneRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pomoc/oss': {
+      id: '/pomoc/oss'
+      path: '/pomoc/oss'
+      fullPath: '/pomoc/oss'
+      preLoaderRoute: typeof PomocOssRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pomoc/pohoda': {
       id: '/pomoc/pohoda'
       path: '/pomoc/pohoda'
@@ -4155,11 +4201,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PomocVykazyDphRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pomoc/zabezpecenie': {
+      id: '/pomoc/zabezpecenie'
+      path: '/pomoc/zabezpecenie'
+      fullPath: '/pomoc/zabezpecenie'
+      preLoaderRoute: typeof PomocZabezpecenieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pomoc/zakazky': {
       id: '/pomoc/zakazky'
       path: '/pomoc/zakazky'
       fullPath: '/pomoc/zakazky'
       preLoaderRoute: typeof PomocZakazkyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/zamestnanci': {
+      id: '/pomoc/zamestnanci'
+      path: '/pomoc/zamestnanci'
+      fullPath: '/pomoc/zamestnanci'
+      preLoaderRoute: typeof PomocZamestnanciRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pravne/': {
@@ -5978,6 +6038,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocObjednavkyDodavatelRoute: PomocObjednavkyDodavatelRoute,
   PomocOdberateliaRoute: PomocOdberateliaRoute,
   PomocOpakovaneRoute: PomocOpakovaneRoute,
+  PomocOssRoute: PomocOssRoute,
   PomocPohodaRoute: PomocPohodaRoute,
   PomocPokladnaRoute: PomocPokladnaRoute,
   PomocPonukyRoute: PomocPonukyRoute,
@@ -5988,7 +6049,9 @@ const rootRouteChildren: RootRouteChildren = {
   PomocUzavierkaRoute: PomocUzavierkaRoute,
   PomocVideaRoute: PomocVideaRoute,
   PomocVykazyDphRoute: PomocVykazyDphRoute,
+  PomocZabezpecenieRoute: PomocZabezpecenieRoute,
   PomocZakazkyRoute: PomocZakazkyRoute,
+  PomocZamestnanciRoute: PomocZamestnanciRoute,
   PravneCookiesRoute: PravneCookiesRoute,
   PravneGdprRoute: PravneGdprRoute,
   PravneGopayPodmienkyRoute: PravneGopayPodmienkyRoute,

@@ -262,6 +262,62 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "ucet-na-fakture",
+    title: "Na ktorý účet majú prísť peniaze",
+    body: (
+      <>
+        <p>
+          Firma môže mať viac bankových účtov — spravujú sa v{" "}
+          <Link to="/firma">Nastaveniach firmy</Link>. Pri vystavovaní sa účet dá prehodiť a faktúra
+          si ho zapamätá, takže na PDF, v QR kóde aj v upomienke je ten, ktorý ste vybrali, aj keď
+          neskôr zmeníte predvolený účet.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "hotovost",
+    title: "Platba v hotovosti",
+    body: (
+      <>
+        <p>
+          Keď ako spôsob platby vyberiete hotovosť, suma sa zaokrúhli na <strong>päť centov</strong>{" "}
+          — jedno- a dvojcentové mince sa od 1. 7. 2022 nevydávajú a zákon o cenách to pri hotovosti
+          ukladá.
+        </p>
+        <p>
+          Nad <strong>5 000 €</strong> sa objaví upozornenie: taká platba v hotovosti je medzi
+          podnikateľmi zakázaná (zákon č. 394/2012 Z. z.). Medzi fyzickými osobami mimo podnikania
+          je strop 15 000 €.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "do-zahranicia",
+    title: "Faktúra do zahraničia",
+    body: (
+      <>
+        <p>Tri rôzne situácie, tri rôzne nastavenia:</p>
+        <ul>
+          <li>
+            <strong>Firme v EÚ s IČ DPH</strong> — prenesenie daňovej povinnosti, dodanie bez dane.
+            Vyberie sa aj druh plnenia (tovar, služba, trojstranný obchod) kvôli súhrnnému výkazu a
+            odberateľovo IČ DPH sa dá overiť vo VIES priamo z faktúry.
+          </li>
+          <li>
+            <strong>Spotrebiteľovi v EÚ</strong> — zaškrtne sa „Predaj spotrebiteľovi v EÚ (OSS)" a
+            vyberie štát; sadzby položiek sa prepnú na sadzby jeho štátu. Viac v{" "}
+            <Link to="/pomoc/oss">manuáli k OSS</Link>.
+          </li>
+          <li>
+            <strong>Mimo EÚ</strong> — vývoz oslobodený podľa § 47.
+          </li>
+        </ul>
+      </>
+    ),
+  },
 ];
 
 function Page() {

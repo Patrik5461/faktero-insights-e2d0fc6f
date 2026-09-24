@@ -116,6 +116,29 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "vies",
+    title: "Overenie IČ DPH vo VIES",
+    body: (
+      <>
+        <p>
+          Pri odberateľovi z iného členského štátu je vedľa poľa IČ DPH tlačidlo{" "}
+          <strong>Overiť vo VIES</strong>. Register Európskej komisie povie, či je číslo platné, a
+          doplní názov firmy.
+        </p>
+        <p>
+          Nie je to formalita: pri dodaní tovaru do EÚ je platné IČ DPH odberateľa{" "}
+          <strong>podmienkou oslobodenia od dane</strong>. Každé overenie sa zapíše aj s dátumom,
+          takže sa dá pri kontrole preukázať; po tridsiatich dňoch sa označí za staršie a pred
+          ďalším dodaním sa oplatí overiť znova.
+        </p>
+        <p>
+          Keď je register nedostupný, Faktero to povie ako výpadok — nie ako neplatné IČ DPH. To sú
+          dve rôzne veci a rozhodujú o tom, či faktúra smie ísť bez dane.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

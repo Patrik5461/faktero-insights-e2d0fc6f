@@ -114,6 +114,24 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "vykazy-a-uzavierka",
+    title: "Výkazy a uzamknutie",
+    body: (
+      <>
+        <p>
+          Poradie je jednoduché: najprv sa v{" "}
+          <Link to="/uctovnictvo/vykazy">Účtovníctve → Výkazy k DPH</Link> zostaví priznanie,
+          kontrolný a súhrnný výkaz, podajú sa cez eDane a označia ako podané — a až potom sa
+          obdobie uzamkne.
+        </p>
+        <p>
+          Dodatočná zmena dokladu po podaní by rozišla účtovníctvo s tým, čo už má finančná správa;
+          ak je zmena naozaj potrebná, podáva sa dodatočné priznanie alebo opravný výkaz.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {
