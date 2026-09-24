@@ -81,6 +81,27 @@ export function CookieConsentBanner() {
   }, []);
 
   /**
+   * Kým je otvorené okno (nové okno odberateľa, nastavenia, čokoľvek s
+   * `role="dialog"`), lišta sa schová.
+   *
+   * Je vyššie než všetko ostatné, aby sa dala odkliknúť — lenže tým sadla na
+   * spodok modálnych okien a prekryla ich tlačidlá. Vyzeralo to, že sa
+   * odberateľ s vyplneným menom nedá uložiť: klik na „Uložiť" chytila lišta.
+   * Nižší z-index by problém presunul inam (pomoc v rohu by zase prekryla ju),
+   * takže je správne lištu na ten čas odložiť a po zatvorení okna ju vrátiť.
+   */
+  const [okno, setOkno] = useState(false);
+  useEffect(() => {
+    if (!mounted || consent) return;
+    const zisti = () =>
+      setOkno(Boolean(document.querySelector('[role="dialog"]:not([data-cookie-lista])')));
+    zisti();
+    const sledovac = new MutationObserver(zisti);
+    sledovac.observe(document.body, { childList: true, subtree: true });
+    return () => sledovac.disconnect();
+  }, [mounted, consent]);
+
+  /**
    * Lišta visí na `position: fixed`, takže sama nezaberá miesto a prekrýva to,
    * čo je naspodku stránky. Na mobile zakrývala prihlasovacie tlačidlo — človek
    * naň klikal a nič sa nedialo. Kým je lišta na obrazovke, odsadíme o jej
@@ -88,9 +109,9 @@ export function CookieConsentBanner() {
    */
   useEffect(() => {
     const el = bannerRef.current;
-    if (!mounted || consent || !el) return;
+    if (!mounted || consent || okno || !el) return;
     const uprav = () => {
-      document.body.style.paddingBottom = `${el.offsetHeight}px`;
+      document.body.style.paddingBottom = okno ? "" : `${el.offsetHeight}px`;
     };
     uprav();
     const ro = new ResizeObserver(uprav);
@@ -101,7 +122,7 @@ export function CookieConsentBanner() {
       window.removeEventListener("resize", uprav);
       document.body.style.paddingBottom = "";
     };
-  }, [mounted, consent]);
+  }, [mounted, consent, okno]);
 
   const recordToBackend = async (consent: CookieConsent) => {
     if (consent.recorded) return;
@@ -168,6 +189,8 @@ export function CookieConsentBanner() {
         role="dialog"
         aria-live="polite"
         aria-label="Cookies súhlas"
+        data-cookie-lista=""
+        hidden={okno}
         ref={bannerRef}
         /*
           Vyššie než plávajúca pomoc (`z-[60]`). Tá sedí v pravom dolnom rohu a
