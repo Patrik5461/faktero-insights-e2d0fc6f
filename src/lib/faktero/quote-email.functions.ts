@@ -112,6 +112,15 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
     ).replaceAll("{quote_number}", q.quote_number);
     const senderName = company?.email_sender_name || company?.name || "Faktero";
 
+    /*
+      Tlačidlá na prijatie a zamietnutie. Bez nich odpoveď chodila e-mailom
+      alebo telefónom a stav ponuky prepisoval dodávateľ ručne — teda často
+      vôbec. Token vznikne raz a ostáva ponuke, aby starší odkaz nezmŕtvel.
+    */
+    const { zabezpecToken, tlacidlaDoMailu, tlacidlaDoTextu } =
+      await import("./ponuka-odpoved.server");
+    const token = await zabezpecToken(q.id, (q as any).approval_token);
+
     const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -121,8 +130,11 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
         to: [data.recipient_email],
         subject,
         reply_to: company?.email_reply_to || undefined,
-        text: message,
-        html: `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;white-space:pre-wrap">${escapeHtml(message)}</div>`,
+        text: message + "\n" + tlacidlaDoTextu(token, q.valid_until),
+        html: `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;max-width:560px">
+          <div style="white-space:pre-wrap">${escapeHtml(message)}</div>
+          ${tlacidlaDoMailu(token, q.valid_until)}
+        </div>`,
         attachments: [{ filename: `${q.quote_number}.pdf`, content: pdfB64 }],
       }),
     });

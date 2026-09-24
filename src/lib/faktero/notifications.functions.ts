@@ -98,11 +98,15 @@ async function notifikacieZamestnancov(companyId: string): Promise<AppNotificati
     .eq("id", companyId)
     .maybeSingle();
   if (!firma?.module_employees) return [];
-  const dnes = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(new Date());
+  const dnes = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(
+    new Date(),
+  );
   const [zam, zml] = await Promise.all([
     supabaseAdmin
       .from("employees")
-      .select("id, first_name, last_name, title_before, title_after, start_date, end_date, status, sp_registered_at, zp_registered_at, medical_check_due, bozp_training_due")
+      .select(
+        "id, first_name, last_name, title_before, title_after, start_date, end_date, status, sp_registered_at, zp_registered_at, medical_check_due, bozp_training_due",
+      )
       .eq("company_id", companyId)
       .eq("status", "active"),
     supabaseAdmin
@@ -111,14 +115,16 @@ async function notifikacieZamestnancov(companyId: string): Promise<AppNotificati
       .eq("company_id", companyId)
       .eq("status", "active"),
   ]);
-  return pripomienkyZamestnancov(dnes, (zam.data ?? []) as any, (zml.data ?? []) as any).map((p) => ({
-    key: p.kluc,
-    severity: p.zavaznost,
-    title: p.nadpis,
-    detail: p.text,
-    to: `/zamestnanci/${p.employee_id}`,
-    date: p.termin,
-  }));
+  return pripomienkyZamestnancov(dnes, (zam.data ?? []) as any, (zml.data ?? []) as any).map(
+    (p) => ({
+      key: p.kluc,
+      severity: p.zavaznost,
+      title: p.nadpis,
+      detail: p.text,
+      to: `/zamestnanci/${p.employee_id}`,
+      date: p.termin,
+    }),
+  );
 }
 
 /**
@@ -129,7 +135,9 @@ async function notifikacieZamestnancov(companyId: string): Promise<AppNotificati
 async function lehotyOstatnych(companyId: string): Promise<AppNotification[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { lehotyNaUpozornenie, nazovDruhu } = await import("./ostatne-doklady");
-  const dnes = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(new Date());
+  const dnes = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Bratislava" }).format(
+    new Date(),
+  );
   const o7 = new Date(`${dnes}T00:00:00Z`);
   o7.setUTCDate(o7.getUTCDate() + 7);
   const { data } = await supabaseAdmin
@@ -169,7 +177,10 @@ async function notifikaciaOstatnych(companyId: string): Promise<AppNotification[
     {
       key: `ostatne-nespracovane:${najnovsi.id}`,
       severity: "info",
-      title: count === 1 ? "1 nespracovaný ostatný doklad" : `${count} nespracovaných ostatných dokladov`,
+      title:
+        count === 1
+          ? "1 nespracovaný ostatný doklad"
+          : `${count} nespracovaných ostatných dokladov`,
       detail: "List, predpis alebo zmluva čaká na účtovníka.",
       to: "/ostatne-doklady",
       date: String(najnovsi.created_at).slice(0, 10),
@@ -207,19 +218,57 @@ async function notifikaciaNespracovanychDokladov(companyId: string): Promise<App
   ];
 }
 
+/**
+ * Odpovede odberateľov na cenové ponuky.
+ *
+ * Bez toho by sa dodávateľ o prijatí dozvedel len z e-mailu — a ten sa stratí
+ * medzi ostatnými. Prijatá ponuka je pritom výzva vystaviť faktúru.
+ */
+async function notifikacieOdpovediNaPonuky(companyId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const od = new Date(Date.now() - 30 * 86_400_000).toISOString();
+  const { data } = await supabaseAdmin
+    .from("quotes")
+    .select("id, quote_number, status, responded_at, response_note, customer_name")
+    .eq("company_id", companyId)
+    .is("deleted_at", null)
+    .in("status", ["accepted", "rejected"])
+    .gte("responded_at", od)
+    .order("responded_at", { ascending: false })
+    .limit(10);
+
+  return (data ?? []).map((q: any) => ({
+    key: `ponuka-odpoved:${q.id}:${q.status}`,
+    severity: q.status === "accepted" ? "info" : "info",
+    title:
+      q.status === "accepted"
+        ? `Ponuka ${q.quote_number} bola prijatá`
+        : `Ponuka ${q.quote_number} bola zamietnutá`,
+    detail:
+      q.status === "accepted"
+        ? `${q.customer_name ?? "Odberateľ"} ponuku prijal — dá sa premeniť na faktúru.`
+        : q.response_note
+          ? `${q.customer_name ?? "Odberateľ"}: ${String(q.response_note).slice(0, 120)}`
+          : `${q.customer_name ?? "Odberateľ"} ponuku zamietol.`,
+    to: "/ponuky",
+    date: String(q.responded_at ?? "").slice(0, 10),
+  }));
+}
+
 const PORADIE_ZAVAZNOSTI = { danger: 0, warning: 1, info: 2 } as const;
 
 /** Faktúry, banka aj zamestnanci v jednom zozname, zoradené rovnako. */
 async function vsetkyNotifikacie(companyId: string, userId: string): Promise<AppNotification[]> {
   const zoznam = await (async () => {
-    const [signaly, zamestnanci, doklady] = await Promise.all([
+    const [signaly, zamestnanci, doklady, ponuky] = await Promise.all([
       zozbierajSignaly(companyId),
       notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
       notifikaciaNespracovanychDokladov(companyId).catch(() => [] as AppNotification[]),
+      notifikacieOdpovediNaPonuky(companyId).catch(() => [] as AppNotification[]),
     ]);
     // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
     // inak najstaršie (najdlhšie po termíne).
-    return [...buildNotifications(signaly), ...zamestnanci, ...doklady].sort((a, b) => {
+    return [...buildNotifications(signaly), ...zamestnanci, ...doklady, ...ponuky].sort((a, b) => {
       const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];
       if (podlaZavaznosti !== 0) return podlaZavaznosti;
       return a.severity === "info" ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);

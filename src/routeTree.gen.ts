@@ -106,6 +106,7 @@ import { Route as PomocVykazyDphRouteImport } from './routes/pomoc.vykazy-dph'
 import { Route as PomocZabezpecenieRouteImport } from './routes/pomoc.zabezpecenie'
 import { Route as PomocZakazkyRouteImport } from './routes/pomoc.zakazky'
 import { Route as PomocZamestnanciRouteImport } from './routes/pomoc.zamestnanci'
+import { Route as PonukaTokenRouteImport } from './routes/ponuka.$token'
 import { Route as PravneIndexRouteImport } from './routes/pravne.index'
 import { Route as PravneCookiesRouteImport } from './routes/pravne.cookies'
 import { Route as PravneGdprRouteImport } from './routes/pravne.gdpr'
@@ -773,6 +774,11 @@ const PomocZakazkyRoute = PomocZakazkyRouteImport.update({
 const PomocZamestnanciRoute = PomocZamestnanciRouteImport.update({
   id: '/pomoc/zamestnanci',
   path: '/pomoc/zamestnanci',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PonukaTokenRoute = PonukaTokenRouteImport.update({
+  id: '/ponuka/$token',
+  path: '/ponuka/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PravneIndexRoute = PravneIndexRouteImport.update({
@@ -1869,6 +1875,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pomoc/zamestnanci': typeof PomocZamestnanciRoute
+  '/ponuka/$token': typeof PonukaTokenRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
@@ -2137,6 +2144,7 @@ export interface FileRoutesByTo {
   '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pomoc/zamestnanci': typeof PomocZamestnanciRoute
+  '/ponuka/$token': typeof PonukaTokenRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
@@ -2414,6 +2422,7 @@ export interface FileRoutesById {
   '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pomoc/zamestnanci': typeof PomocZamestnanciRoute
+  '/ponuka/$token': typeof PonukaTokenRoute
   '/pravne/cookies': typeof PravneCookiesRoute
   '/pravne/gdpr': typeof PravneGdprRoute
   '/pravne/gopay-podmienky': typeof PravneGopayPodmienkyRoute
@@ -2692,6 +2701,7 @@ export interface FileRouteTypes {
     | '/pomoc/zabezpecenie'
     | '/pomoc/zakazky'
     | '/pomoc/zamestnanci'
+    | '/ponuka/$token'
     | '/pravne/cookies'
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
@@ -2960,6 +2970,7 @@ export interface FileRouteTypes {
     | '/pomoc/zabezpecenie'
     | '/pomoc/zakazky'
     | '/pomoc/zamestnanci'
+    | '/ponuka/$token'
     | '/pravne/cookies'
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
@@ -3236,6 +3247,7 @@ export interface FileRouteTypes {
     | '/pomoc/zabezpecenie'
     | '/pomoc/zakazky'
     | '/pomoc/zamestnanci'
+    | '/ponuka/$token'
     | '/pravne/cookies'
     | '/pravne/gdpr'
     | '/pravne/gopay-podmienky'
@@ -3480,6 +3492,7 @@ export interface RootRouteChildren {
   PomocZabezpecenieRoute: typeof PomocZabezpecenieRoute
   PomocZakazkyRoute: typeof PomocZakazkyRoute
   PomocZamestnanciRoute: typeof PomocZamestnanciRoute
+  PonukaTokenRoute: typeof PonukaTokenRoute
   PravneCookiesRoute: typeof PravneCookiesRoute
   PravneGdprRoute: typeof PravneGdprRoute
   PravneGopayPodmienkyRoute: typeof PravneGopayPodmienkyRoute
@@ -4220,6 +4233,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/zamestnanci'
       fullPath: '/pomoc/zamestnanci'
       preLoaderRoute: typeof PomocZamestnanciRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ponuka/$token': {
+      id: '/ponuka/$token'
+      path: '/ponuka/$token'
+      fullPath: '/ponuka/$token'
+      preLoaderRoute: typeof PonukaTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pravne/': {
@@ -6052,6 +6072,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocZabezpecenieRoute: PomocZabezpecenieRoute,
   PomocZakazkyRoute: PomocZakazkyRoute,
   PomocZamestnanciRoute: PomocZamestnanciRoute,
+  PonukaTokenRoute: PonukaTokenRoute,
   PravneCookiesRoute: PravneCookiesRoute,
   PravneGdprRoute: PravneGdprRoute,
   PravneGopayPodmienkyRoute: PravneGopayPodmienkyRoute,

@@ -385,6 +385,28 @@ function QuoteDetail() {
                 {q.notes}
               </div>
             )}
+
+            {/* Ako odberateľ odpovedal cez odkaz v e-maile. Dôvod zamietnutia sa
+                inak stratí v pošte a pri ďalšej ponuke nikto nevie, čo mu vadilo. */}
+            {q.responded_at && (q.status === "accepted" || q.status === "rejected") && (
+              <div
+                className={`rounded-xl border p-5 text-sm ${
+                  q.status === "accepted"
+                    ? "border-emerald-500/40 bg-emerald-500/10"
+                    : "border-destructive/40 bg-destructive/10"
+                }`}
+              >
+                <div className="font-medium">
+                  Odberateľ ponuku {q.status === "accepted" ? "prijal" : "zamietol"}{" "}
+                  {new Date(q.responded_at).toLocaleString("sk-SK")}
+                </div>
+                {q.response_note && (
+                  <div className="mt-2 whitespace-pre-wrap text-muted-foreground">
+                    Dôvod: {q.response_note}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <aside className="space-y-4">

@@ -5473,6 +5473,9 @@ export type Database = {
           updated_at: string
           valid_until: string
           vat_total: number
+          approval_token: string | null
+          responded_at: string | null
+          response_note: string | null
         }
         Insert: {
           company_id: string
@@ -5507,6 +5510,9 @@ export type Database = {
           updated_at?: string
           valid_until?: string
           vat_total?: number
+          approval_token?: string | null
+          responded_at?: string | null
+          response_note?: string | null
         }
         Update: {
           company_id?: string
@@ -5541,6 +5547,9 @@ export type Database = {
           updated_at?: string
           valid_until?: string
           vat_total?: number
+          approval_token?: string | null
+          responded_at?: string | null
+          response_note?: string | null
         }
         Relationships: [
           {
