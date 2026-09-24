@@ -207,6 +207,24 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "vykazy-xml",
+    title: "Výkazy pre finančnú správu",
+    body: (
+      <>
+        <p>
+          Okrem účtovných exportov vie Faktero pripraviť aj podania: priznanie k DPH, kontrolný
+          výkaz a súhrnný výkaz v XML pre eDane — v{" "}
+          <Link to="/uctovnictvo/vykazy">Účtovníctve → Výkazy k DPH</Link>. Popisuje to{" "}
+          <Link to="/pomoc/vykazy-dph">samostatný manuál</Link>.
+        </p>
+        <p>
+          Prijaté doklady z iného systému (napríklad z Doklada) sa dajú naimportovať aj s prílohami
+          — pozri <Link to="/pomoc/doklady">Doklady a skenovanie</Link>.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

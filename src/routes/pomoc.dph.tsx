@@ -89,10 +89,15 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          V <Link to="/firma">Nastaveniach firmy</Link> nechajte IČ DPH prázdne. Faktúry potom
-          vychádzajú bez dane a na doklade sa objaví poznámka, že nie ste platiteľom.
+          V <Link to="/firma">Nastaveniach firmy</Link> nechajte zaškrtávacie pole{" "}
+          <strong>Firma je platiteľ DPH</strong> prázdne a vyberte „Neplatiteľ DPH". Faktúry potom
+          vychádzajú bez dane, sadzby sa neponúkajú a na doklade je veta, že dodávateľ nie je
+          platiteľom.
         </p>
-        <p>Prehľad DPH v tom prípade nepotrebujete.</p>
+        <p>
+          Samotné IČ DPH o platiteľstve nerozhoduje — registrácia podľa § 7 alebo § 7a ho má tiež.
+          Prehľad DPH v tomto prípade nepotrebujete, súhrnný výkaz pri § 7a áno.
+        </p>
       </>
     ),
   },

@@ -244,6 +244,14 @@ const CATS: Cat[] = [
   },
 
   {
+    to: "/pomoc/online-platby/gopay",
+    label: "Online platby (GoPay)",
+    desc: "Platba predplatného kartou a opakované platby.",
+    icon: Lock,
+    available: true,
+    skupina: "Účet a vývoj",
+  },
+  {
     to: "/pomoc/predplatne",
     label: "Predplatné",
     desc: "Plány, fakturácia, zrušenie predplatného.",
