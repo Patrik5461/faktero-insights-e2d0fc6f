@@ -12,6 +12,13 @@ import { Download, Loader2 } from "lucide-react";
  * GDPR) a povinnosť uchovávať účtovné doklady desať rokov, ktorá zrušením účtu
  * nezaniká. Preto je tlačidlo hneď nad zrušením účtu.
  */
+/** Malý balík v megabajtoch vyzerá ako nulový, preto sa pod megabajt píšu kilobajty. */
+function velkostSlovom(bajtov: number): string {
+  return bajtov < 1024 * 1024
+    ? `${Math.max(1, Math.round(bajtov / 1024))} kB`
+    : `${(bajtov / 1024 / 1024).toFixed(1)} MB`;
+}
+
 export function StiahnutieDat() {
   const exportuj = useServerFn(exportFirmyFn);
   const [sPdf, setSPdf] = useState(true);
@@ -70,7 +77,7 @@ export function StiahnutieDat() {
       {vysledok && (
         <div className="mt-4 rounded-md border border-border bg-muted/40 p-3 text-sm">
           <div className="font-medium">
-            Balík je hotový ({(vysledok.velkost / 1024 / 1024).toFixed(1)} MB)
+            Balík je hotový ({velkostSlovom(vysledok.velkost)})
             {vysledok.pdfka > 0 && `, z toho ${vysledok.pdfka} PDF faktúr`}
           </div>
           <ul className="mt-1 text-xs text-muted-foreground">

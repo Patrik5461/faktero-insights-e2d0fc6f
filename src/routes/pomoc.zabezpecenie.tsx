@@ -70,6 +70,24 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "export-dat",
+    title: "Stiahnutie všetkých dát",
+    body: (
+      <>
+        <p>
+          V <Link to="/nastavenia">Nastaveniach</Link> je tlačidlo{" "}
+          <strong>Stiahnuť všetky dáta</strong>. Pripraví balík ZIP s tabuľkami všetkých agend v CSV
+          — faktúry a ich položky, prijaté faktúry, doklady, odberatelia, cenník, pokladňa, banka,
+          jazdy, zákazky — a voliteľne aj s PDF vystavených faktúr.
+        </p>
+        <p>
+          Súbory otvorí Excel bez nastavovania. Odkaz na stiahnutie platí sedem dní; balík sa dá
+          pripraviť kedykoľvek znova.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "zrusenie",
     title: "Zrušenie účtu",
     body: (
