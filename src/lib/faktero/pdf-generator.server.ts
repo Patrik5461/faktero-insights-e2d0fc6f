@@ -6,6 +6,7 @@ import { RobotoRegularBase64 } from "./fonts/Roboto-Regular";
 import { RobotoBoldBase64 } from "./fonts/Roboto-Bold";
 import { paymentMethodLabel } from "./payment-method";
 import { maZuctovanuZalohu, zostavaUhradit } from "./zaloha";
+import { rezimFirmy, type FirmaDph } from "./dph-rezim";
 import { sUctomFaktury } from "./platobny-ucet";
 
 function b64ToBytes(b64: string): Uint8Array {
@@ -785,6 +786,26 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       ry -= 12;
     });
     y -= rcLines.length * 12 + 22;
+  }
+
+  /*
+    Neplatiteľ musí na doklade povedať, prečo na ňom nie je daň — a osoba
+    registrovaná podľa § 7 alebo § 7a aj to, že IČ DPH na doklade z nej
+    platiteľa nerobí.
+
+    Doklad, na ktorom daň vyčíslená je, vetu nedostane ani vtedy, keď je firma
+    dnes vedená ako neplatiteľ: faktúra má niesť stav spred zmeny, nie dnešný.
+  */
+  const textDph =
+    Number(invoice.vat_total ?? 0) > 0 ? null : rezimFirmy(company as FirmaDph).textNaDoklad;
+  if (textDph) {
+    const lines = wrapLines(textDph, bold, 9.5, innerW);
+    ensureSpace(18 + lines.length * 12 + 8);
+    lines.forEach((ln) => {
+      cur.drawText(ln, { x: margin, y, size: 9.5, font: bold, color: sub });
+      y -= 12;
+    });
+    y -= 10;
   }
 
   if (invoice.notes) {

@@ -9,6 +9,9 @@ import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { PLAN_PENDING_KEY } from "@/routes/registracia";
 
 import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
+import { VyberRezimuDph } from "@/components/faktero/VyberRezimuDph";
+import { zosuladSchemu, type SchemaDph } from "@/lib/faktero/dph-rezim";
+import { krajinaDane } from "@/lib/faktero/vat-rates";
 import { MENY } from "@/lib/faktero/mena";
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({ meta: [{ title: "Nastavenie firmy — Faktero" }] }),
@@ -30,12 +33,19 @@ function Onboarding() {
     phone: "",
     iban: "",
     default_currency: "EUR",
+    vat_payer: false,
+    vat_scheme: "sk_neplatitel" as SchemaDph,
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
-    setForm((f) => ({ ...f, [k]: v }));
+    setForm((f) => {
+      const n = { ...f, [k]: v };
+      // Krajina prepína, ktoré paragrafy pripadajú do úvahy.
+      if (k === "country") n.vat_scheme = zosuladSchemu(f.vat_scheme, krajinaDane(v), f.vat_payer);
+      return n;
+    });
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -65,6 +75,8 @@ function Onboarding() {
         _phone: form.phone || undefined,
         _iban: form.iban || undefined,
         _default_currency: form.default_currency || "EUR",
+        _vat_payer: form.vat_payer,
+        _vat_scheme: form.vat_scheme,
       });
       if (error || !companyId) {
         throw new Error(error?.message ?? "Nepodarilo sa vytvoriť firmu.");
@@ -154,6 +166,17 @@ function Onboarding() {
           <Field label="Mesto" value={form.city} onChange={(v) => set("city", v)} />
           <Field label="PSČ" value={form.zip} onChange={(v) => set("zip", v)} />
           <VyberKrajiny hodnota={form.country} onZmena={(v) => set("country", v)} />
+        </div>
+        <div className="grid gap-4">
+          <VyberRezimuDph
+            krajina={form.country}
+            platitel={form.vat_payer}
+            schema={form.vat_scheme}
+            icDph={form.ic_dph}
+            onZmena={({ platitel, schema }) =>
+              setForm((f) => ({ ...f, vat_payer: platitel, vat_scheme: schema }))
+            }
+          />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Email" type="email" value={form.email} onChange={(v) => set("email", v)} />

@@ -27,8 +27,8 @@ import {
 import { downloadCsv, downloadXlsx, type ExportRow } from "@/lib/faktero/export-helpers";
 import { StockSettingsDialog } from "@/components/faktero/StockSettingsDialog";
 
-import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/")({
   head: () => ({ meta: [{ title: "Skladové položky — Faktero" }] }),
   validateSearch: (s: Record<string, unknown>): { filter?: "low_stock" } => ({
@@ -99,7 +99,7 @@ function StockItemsPage() {
   const createProductWithDebug = useServerFn(createStockProductDebug);
   const fetchDebugSnapshot = useServerFn(getStockDebugSnapshot);
   /* Sadzby DPH podľa krajiny registrácie firmy. */
-  const krajina = useKrajinaDane();
+  const rezim = useRezimDph();
   const [rows, setRows] = useState<any[]>([]);
   const [levels, setLevels] = useState<Record<string, number>>({});
   const [products, setProducts] = useState<any[]>([]);
@@ -262,7 +262,7 @@ function StockItemsPage() {
     if (!cid) return toast.error("Vyberte firmu.");
     setCreating({
       ...EMPTY_NEW,
-      vat_rate: zakladnaSadzba(krajina),
+      vat_rate: zakladnaSadzbaRezimu(rezim),
       warehouse_id: warehouses[0]?.id ?? "",
     });
   }

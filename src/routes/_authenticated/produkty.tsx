@@ -18,8 +18,8 @@ import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { setProductStockTracking } from "@/lib/faktero/stock.functions";
 
-import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/produkty")({
   head: () => ({ meta: [{ title: "Produkty a služby — Faktero" }] }),
   /** `?new=1` z menu („Nový produkt“) rovno otvorí formulár. */
@@ -52,7 +52,7 @@ const EMPTY: Product = {
 function ProductsPage() {
   const list = usePagedList({ resource: "products", searchColumns: ["name", "code"] });
   /* Sadzby DPH podľa krajiny registrácie firmy. */
-  const krajina = useKrajinaDane();
+  const rezim = useRezimDph();
   const [editing, setEditing] = useState<Product | null>(null);
   useZatvorNaEscape(editing ? () => setEditing(null) : null);
   const [rowDelete, setRowDelete] = useState<any | null>(null);
@@ -78,7 +78,7 @@ function ProductsPage() {
   const navigate = useNavigate();
   useEffect(() => {
     if (!openNew) return;
-    setEditing({ ...EMPTY, vat_rate: zakladnaSadzba(krajina) });
+    setEditing({ ...EMPTY, vat_rate: zakladnaSadzbaRezimu(rezim) });
     navigate({ to: "/produkty", search: {} as any, replace: true });
   }, [openNew, navigate]);
 
@@ -154,7 +154,7 @@ function ProductsPage() {
         description="Cenník, ktorý môžete vkladať do faktúr."
         action={
           <button
-            onClick={() => setEditing({ ...EMPTY, vat_rate: zakladnaSadzba(krajina) })}
+            onClick={() => setEditing({ ...EMPTY, vat_rate: zakladnaSadzbaRezimu(rezim) })}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             <Plus className="h-4 w-4" /> Nová položka

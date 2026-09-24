@@ -5,11 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
-import { DEFAULT_VAT_RATE, sadzbyKrajiny, zakladnaSadzba } from "@/lib/faktero/vat-rates";
+import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { vystavFakturuFn } from "@/lib/faktero/faktura-vystavenie.functions";
 import { friendlyError } from "@/lib/faktero/plan-error";
 
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
+import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/faktury/rychla")({
   head: () => ({ meta: [{ title: "Rýchla faktúra — Faktero" }] }),
   component: QuickInvoicePage,
@@ -19,7 +21,8 @@ function QuickInvoicePage() {
   const navigate = useNavigate();
   const vystav = useServerFn(vystavFakturuFn);
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
-  const krajina = useKrajinaDane();
+  const rezim = useRezimDph();
+  const krajina = rezim.krajina;
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState("");
@@ -33,8 +36,8 @@ function QuickInvoicePage() {
     sadzba, ktorú vôbec neuplatňuje. Kto si sadzbu vybral sám, ten má prednosť.
   */
   useEffect(() => {
-    if (!dphRucne) setVatRate(zakladnaSadzba(krajina));
-  }, [krajina, dphRucne]);
+    if (!dphRucne) setVatRate(zakladnaSadzbaRezimu(rezim));
+  }, [krajina, rezim, dphRucne]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -103,6 +106,7 @@ function QuickInvoicePage() {
     <>
       <PageHeader title="Rýchla faktúra" description={`Krok ${step} z 3`} />
       <PageBody>
+        <PoznamkaRezimuDph />
         <div className="mx-auto max-w-md space-y-4">
           <div className="flex gap-1">
             {[1, 2, 3].map((n) => (
@@ -163,7 +167,7 @@ function QuickInvoicePage() {
                   }}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
-                  {sadzbyKrajiny(krajina).map((r) => (
+                  {sadzbyRezimu(rezim).map((r) => (
                     <option key={r} value={r}>
                       {r} %
                     </option>

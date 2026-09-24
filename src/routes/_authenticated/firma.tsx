@@ -10,7 +10,10 @@ import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocom
 import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 
 import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
-import { zabudniKrajinuDane } from "@/lib/faktero/krajina-firmy";
+import { VyberRezimuDph } from "@/components/faktero/VyberRezimuDph";
+import { zosuladSchemu } from "@/lib/faktero/dph-rezim";
+import { krajinaDane } from "@/lib/faktero/vat-rates";
+import { zabudniKrajinuDane, zabudniRezimDph } from "@/lib/faktero/krajina-firmy";
 import { BankoveUctyFirmy } from "@/components/faktero/banka/BankoveUctyFirmy";
 import { EditorOpravneni, VysvetlenieRoli } from "@/components/faktero/pristupy/Opravnenia";
 import { suhrnOpravneni, type Opravnenia } from "@/lib/faktero/opravnenia";
@@ -43,6 +46,7 @@ function CompanyPage() {
     // Krajina určuje sadzby DPH a formuláre si ju pamätajú — po zmene sa musí
     // zabudnúť, inak by faktúra ďalej ponúkala sadzby predchádzajúcej krajiny.
     zabudniKrajinuDane(id);
+    zabudniRezimDph(id);
     toast.success("Uložené");
   }
 
@@ -98,7 +102,25 @@ function CompanyPage() {
           <In label="Mesto" value={c.city ?? ""} onChange={f("city")} />
           <In label="PSČ" value={c.zip ?? ""} onChange={f("zip")} />
           {/* Krajina prepína režim sadzieb DPH, tak sa vyberá, nepíše. */}
-          <VyberKrajiny hodnota={c.country} onZmena={f("country")} />
+          <VyberKrajiny
+            hodnota={c.country}
+            onZmena={(v) =>
+              setC((prev: any) => ({
+                ...prev,
+                country: v,
+                vat_scheme: zosuladSchemu(prev.vat_scheme, krajinaDane(v), Boolean(prev.vat_payer)),
+              }))
+            }
+          />
+          <VyberRezimuDph
+            krajina={c.country}
+            platitel={Boolean(c.vat_payer)}
+            schema={c.vat_scheme}
+            icDph={c.ic_dph}
+            onZmena={({ platitel, schema }) =>
+              setC((prev: any) => ({ ...prev, vat_payer: platitel, vat_scheme: schema }))
+            }
+          />
           <In label="Telefón" value={c.phone ?? ""} onChange={f("phone")} />
           <In label="Web" value={c.website ?? ""} onChange={f("website")} />
           {/* Predvolená mena firmy sa dedí do každého nového dokladu, takže

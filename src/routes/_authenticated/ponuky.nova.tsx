@@ -14,8 +14,9 @@ import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 import { MENY } from "@/lib/faktero/mena";
 
-import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
+import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/ponuky/nova")({
   head: () => ({ meta: [{ title: "Nová cenová ponuka — Faktero" }] }),
   component: NewQuote,
@@ -39,7 +40,8 @@ const EMPTY: Item = { name: "", quantity: 1, unit: "ks", unit_price: 0, vat_rate
 function NewQuote() {
   const navigate = useNavigate();
   /* Sadzby DPH podľa krajiny registrácie firmy. */
-  const krajina = useKrajinaDane();
+  const rezim = useRezimDph();
+  const krajina = rezim.krajina;
   const [customers, setCustomers] = useState<any[]>([]);
   const [form, setForm] = useState({
     customer_id: "",
@@ -51,14 +53,14 @@ function NewQuote() {
   });
   const [items, setItems] = useState<Item[]>([{ ...EMPTY }]);
   useEffect(() => {
-    const z = zakladnaSadzba(krajina);
+    const z = zakladnaSadzbaRezimu(rezim);
     setItems((a) =>
       a.some((it) => it.vat_rate !== z && !it.name)
         ? a.map((it) => (it.name ? it : { ...it, vat_rate: z }))
         : a,
     );
-  }, [krajina]);
-  const novaPolozka = () => ({ ...EMPTY, vat_rate: zakladnaSadzba(krajina) });
+  }, [krajina, rezim.platitel]);
+  const novaPolozka = () => ({ ...EMPTY, vat_rate: zakladnaSadzbaRezimu(rezim) });
   const [produkty, setProdukty] = useState<any[]>([]);
   const [podklady, setPodklady] = useState<Podklady | null>(null);
   const nacitajCennik = useServerFn(getPriceContext);
@@ -138,7 +140,7 @@ function NewQuote() {
       quantity: 1,
       unit: p.unit ?? "ks",
       unit_price: r ? r.cena : Number(p.unit_price),
-      vat_rate: Number(p.vat_rate ?? zakladnaSadzba(krajina)),
+      vat_rate: Number(p.vat_rate ?? zakladnaSadzbaRezimu(rezim)),
       product_id: p.id,
       _dovod: r && r.zdroj !== "zakladna" ? r.dovod : undefined,
     };
@@ -262,6 +264,7 @@ function NewQuote() {
     <>
       <PageHeader title="Nová cenová ponuka" description="Vyplňte údaje a pridajte položky." />
       <PageBody>
+        <PoznamkaRezimuDph />
         <form onSubmit={submit} className="space-y-6">
           <div className="grid gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-3">
             <label className="block sm:col-span-3">

@@ -35,16 +35,34 @@ const nacitajFakturu = createServerFn({ method: "POST" })
         .order("position", { ascending: true }),
       supabaseAdmin
         .from("companies")
-        .select("name, street, city, zip, country, ico, dic, ic_dph, iban, email, phone")
+        .select(
+          "name, street, city, zip, country, ico, dic, ic_dph, vat_payer, vat_scheme, iban, email, phone",
+        )
         .eq("id", (f as any).company_id)
         .maybeSingle(),
     ]);
 
     // `id` ani `company_id` sa von neposielajú — návštevník ich nepotrebuje.
-    const { id: _id, company_id: _c, deleted_at: _d, payment_iban: _pi, payment_swift: _ps, ...doklad } = f as any;
+    const {
+      id: _id,
+      company_id: _c,
+      deleted_at: _d,
+      payment_iban: _pi,
+      payment_swift: _ps,
+      ...doklad
+    } = f as any;
     // Účet, ktorý si faktúra zapamätala, má prednosť pred účtom firmy.
     const { sUctomFaktury } = await import("@/lib/faktero/platobny-ucet");
-    return { doklad, polozky: polozky ?? [], firma: firma ? sUctomFaktury(firma, f as any) : null };
+    // Prečo na doklade nie je daň — rovnaká veta ako v PDF. Doklad s vyčíslenou
+    // daňou ju nedostane ani vtedy, keď je firma dnes vedená ako neplatiteľ.
+    const { rezimFirmy } = await import("@/lib/faktero/dph-rezim");
+    const textDph = Number((f as any).vat_total ?? 0) > 0 ? null : rezimFirmy(firma).textNaDoklad;
+    return {
+      doklad,
+      polozky: polozky ?? [],
+      firma: firma ? sUctomFaktury(firma, f as any) : null,
+      textDph,
+    };
   });
 
 export const Route = createFileRoute("/faktura/$token")({
@@ -100,7 +118,7 @@ function Riadok({ k, v }: { k: string; v: React.ReactNode }) {
 }
 
 function VerejnaFaktura() {
-  const { doklad, polozky, firma } = Route.useLoaderData();
+  const { doklad, polozky, firma, textDph } = Route.useLoaderData();
   const mena = doklad.currency ?? "EUR";
   const suma = (n: unknown) => formatujMenu(n, mena);
   const nazov =
@@ -207,6 +225,8 @@ function VerejnaFaktura() {
         <Riadok k="Variabilný symbol" v={doklad.variable_symbol} />
         <Riadok k="IBAN" v={firma?.iban} />
       </div>
+
+      {textDph && <p className="mt-4 text-sm font-medium">{textDph}</p>}
 
       {doklad.notes && <p className="mt-4 text-sm text-muted-foreground">{doklad.notes}</p>}
 

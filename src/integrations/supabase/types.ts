@@ -1266,6 +1266,8 @@ export type Database = {
           updated_at: string
           website: string | null
           zip: string | null
+          vat_payer: boolean
+          vat_scheme: string | null
         }
         Insert: {
           city?: string | null
@@ -1334,6 +1336,8 @@ export type Database = {
           updated_at?: string
           website?: string | null
           zip?: string | null
+          vat_payer?: boolean
+          vat_scheme?: string | null
         }
         Update: {
           city?: string | null
@@ -1402,6 +1406,8 @@ export type Database = {
           updated_at?: string
           website?: string | null
           zip?: string | null
+          vat_payer?: boolean
+          vat_scheme?: string | null
         }
         Relationships: []
       }
@@ -7331,6 +7337,8 @@ export type Database = {
           _name: string
           _phone?: string
           _street?: string
+          _vat_payer?: boolean
+          _vat_scheme?: string
           _zip?: string
         }
         Returns: string

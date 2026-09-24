@@ -15,6 +15,9 @@ import { CompanyNameAutocomplete } from "@/components/faktero/CompanyNameAutocom
 import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 
 import { VyberKrajiny } from "@/components/faktero/VyberKrajiny";
+import { VyberRezimuDph } from "@/components/faktero/VyberRezimuDph";
+import { zosuladSchemu, type SchemaDph } from "@/lib/faktero/dph-rezim";
+import { krajinaDane } from "@/lib/faktero/vat-rates";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -32,6 +35,8 @@ const EMPTY = {
   city: "",
   zip: "",
   country: "SK",
+  vat_payer: false,
+  vat_scheme: "sk_neplatitel" as SchemaDph,
 };
 
 export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
@@ -40,7 +45,12 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   function set<K extends keyof typeof EMPTY>(k: K, v: string) {
-    setForm((f) => ({ ...f, [k]: v }));
+    setForm((f) => {
+      const n = { ...f, [k]: v };
+      // Krajina prepína, ktoré paragrafy pripadajú do úvahy.
+      if (k === "country") n.vat_scheme = zosuladSchemu(f.vat_scheme, krajinaDane(v), f.vat_payer);
+      return n;
+    });
   }
 
   function reset() {
@@ -71,6 +81,8 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
         _email: form.email || undefined,
         _phone: form.phone || undefined,
         _default_currency: "EUR",
+        _vat_payer: form.vat_payer,
+        _vat_scheme: form.vat_scheme,
       });
       if (error || !companyId) {
         console.error("[create_company]", error);
@@ -153,6 +165,15 @@ export function CreateCompanyDialog({ open, onOpenChange, onCreated }: Props) {
             <Field label="DIČ" value={form.dic} onChange={(v) => set("dic", v)} />
             <Field label="IČ DPH" value={form.ic_dph} onChange={(v) => set("ic_dph", v)} />
           </div>
+          <VyberRezimuDph
+            krajina={form.country}
+            platitel={form.vat_payer}
+            schema={form.vat_scheme}
+            icDph={form.ic_dph}
+            onZmena={({ platitel, schema }) =>
+              setForm((f) => ({ ...f, vat_payer: platitel, vat_scheme: schema }))
+            }
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Email" value={form.email} onChange={(v) => set("email", v)} />
             <Field label="Telefón" value={form.phone} onChange={(v) => set("phone", v)} />

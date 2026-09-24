@@ -7,8 +7,8 @@ import { runRecurringNow, toggleRecurring } from "@/lib/faktero/recurring.functi
 import { Play, Save, Power, PowerOff, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { MENY } from "@/lib/faktero/mena";
 export const Route = createFileRoute("/_authenticated/opakovane/$id")({
   head: () => ({ meta: [{ title: "Opakovaná faktúra — Faktero" }] }),
@@ -35,7 +35,7 @@ function RecurringDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   /* Sadzby DPH podľa krajiny registrácie firmy. */
-  const krajina = useKrajinaDane();
+  const rezim = useRezimDph();
   const [rec, setRec] = useState<any>(null);
   // Bez tohto ostala na neexistujúcej šablóne navždy hláška „Načítavam…".
   const [nenajdene, setNenajdene] = useState(false);
@@ -275,7 +275,7 @@ function RecurringDetail() {
                       quantity: 1,
                       unit: "ks",
                       unit_price: 0,
-                      vat_rate: zakladnaSadzba(krajina),
+                      vat_rate: zakladnaSadzbaRezimu(rezim),
                     },
                   ])
                 }

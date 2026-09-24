@@ -41,10 +41,12 @@ import { mergeCompanyAutofill } from "@/lib/faktero/company-autofill";
 import { findCustomerByIcoFn } from "@/lib/faktero/company-lookup.functions";
 import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombobox";
 import { JobPicker } from "@/components/faktero/JobPicker";
-import { DEFAULT_VAT_RATE, sadzbyKrajiny, zakladnaSadzba } from "@/lib/faktero/vat-rates";
+import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { MENY } from "@/lib/faktero/mena";
 
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
+import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
@@ -120,7 +122,8 @@ function NewInvoice() {
   const triggerEvt = useServerFn(triggerEventFn);
   const aiParse = useServerFn(aiParseInvoiceFn);
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
-  const krajina = useKrajinaDane();
+  const rezim = useRezimDph();
+  const krajina = rezim.krajina;
   const [customers, setCustomers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [stockByProduct, setStockByProduct] = useState<Record<string, StockMeta>>({});
@@ -176,13 +179,13 @@ function NewInvoice() {
     ];
   });
   useEffect(() => {
-    const zakl = zakladnaSadzba(krajina);
+    const zakl = zakladnaSadzbaRezimu(rezim);
     setItems((rs) =>
       rs.some((r) => !r._dph_rucne && r.vat_rate !== zakl)
         ? rs.map((r) => (r._dph_rucne ? r : { ...r, vat_rate: zakl }))
         : rs,
     );
-  }, [krajina]);
+  }, [krajina, rezim.platitel]);
   const [pickerOpen, setPickerOpen] = useState<null | "copy" | "advance" | "opravuje">(null);
 
   /**
@@ -677,6 +680,7 @@ function NewInvoice() {
         }
       />
       <PageBody>
+        <PoznamkaRezimuDph />
         <form onSubmit={submit} className="mx-auto max-w-5xl space-y-6">
           {/* SECTION 1 — basic info */}
           <section className="rounded-2xl border border-border bg-card p-5">
@@ -1132,7 +1136,7 @@ function NewInvoice() {
                             }
                             className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                           >
-                            {sadzbyKrajiny(krajina).map((r) => (
+                            {sadzbyRezimu(rezim).map((r) => (
                               <option key={r} value={r}>
                                 {r}%
                               </option>
@@ -1196,7 +1200,7 @@ function NewInvoice() {
                         }
                         className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                       >
-                        {sadzbyKrajiny(krajina).map((r) => (
+                        {sadzbyRezimu(rezim).map((r) => (
                           <option key={r} value={r}>
                             {r}%
                           </option>

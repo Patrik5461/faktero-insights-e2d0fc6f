@@ -1,4 +1,6 @@
 import type { NormalizedCompany } from "./company-registry.server";
+import { jeSchemaDph, predvolenaSchema, type SchemaDph } from "./dph-rezim";
+import { krajinaDane } from "./vat-rates";
 
 export type AutofillTarget = {
   name?: string | null;
@@ -9,6 +11,8 @@ export type AutofillTarget = {
   city?: string | null;
   zip?: string | null;
   country?: string | null;
+  vat_payer?: boolean | null;
+  vat_scheme?: string | null;
 };
 
 /**
@@ -16,6 +20,11 @@ export type AutofillTarget = {
  * - mode "overwrite" (explicit user click): replace every field FinStat returned.
  * - mode "fill-empty" (automatic debounce lookup or name pick): only fill fields
  *   that are currently empty in the form; never overwrite a value the user typed.
+ *
+ * Nájdené IČ DPH zaškrtne „platiteľ“, ale iba kým si človek postavenie k DPH
+ * sám nenastavil. Register totiž paragraf registrácie nehovorí — kto je
+ * registrovaný podľa § 7 alebo § 7a, IČ DPH má a platiteľom nie je, a takú
+ * voľbu nesmie prepísať ďalšie vyhľadanie.
  */
 export function mergeCompanyAutofill<T extends AutofillTarget>(
   prev: T,
@@ -32,12 +41,21 @@ export function mergeCompanyAutofill<T extends AutofillTarget>(
     if (fillEmpty && !isEmpty) return current;
     return value ?? current ?? null;
   };
+  const icDph = take("ic_dph", d.ic_dph ?? null);
+  const krajina = krajinaDane(take("country", d.country || "SK"));
+  const uzVybrate = jeSchemaDph((prev as any).vat_scheme);
+  const platitel = uzVybrate ? (prev as any).vat_payer : Boolean(String(icDph ?? "").trim());
+  const schema: SchemaDph = uzVybrate
+    ? ((prev as any).vat_scheme as SchemaDph)
+    : predvolenaSchema(krajina, Boolean(platitel));
+
   return {
     ...prev,
+    ...("vat_scheme" in prev ? { vat_payer: Boolean(platitel), vat_scheme: schema } : {}),
     ico: take("ico", d.ico),
     name: take("name", d.name) || (prev as any).name || "",
     dic: take("dic", d.dic ?? null),
-    ic_dph: take("ic_dph", d.ic_dph ?? null),
+    ic_dph: icDph,
     street: take("street", d.street ?? null),
     city: take("city", d.city ?? null),
     zip: take("zip", d.zip ?? null),

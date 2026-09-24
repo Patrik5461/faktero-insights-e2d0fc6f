@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { rezimFirmy } from "./dph-rezim";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -26,7 +27,7 @@ export const podkladyFakturyFn = createServerFn({ method: "POST" })
     const [firma, odberatelia, produkty] = await Promise.all([
       supabase
         .from("companies")
-        .select("id, name, ic_dph, default_currency, iban")
+        .select("id, name, ic_dph, country, vat_payer, vat_scheme, default_currency, iban")
         .eq("id", data.company_id)
         .maybeSingle(),
       supabase
@@ -55,8 +56,9 @@ export const podkladyFakturyFn = createServerFn({ method: "POST" })
         id: firma.data.id,
         name: firma.data.name,
         // Neplatiteľ DPH nesmie daň fakturovať — formulár podľa toho schová
-        // sadzby a počíta s nulou.
-        platcaDph: Boolean(firma.data.ic_dph),
+        // sadzby a počíta s nulou. Samotné IČ DPH na to nestačí: osoba
+        // registrovaná podľa § 7 alebo § 7a ho má a platiteľom nie je.
+        platcaDph: rezimFirmy(firma.data).platitel,
         mena: firma.data.default_currency || "EUR",
         maIban: Boolean(firma.data.iban),
       },

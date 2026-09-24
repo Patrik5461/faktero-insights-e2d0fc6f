@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { popisSchemy, schemyKrajiny, zosuladSchemu, type SchemaDph } from "@/lib/faktero/dph-rezim";
+import { krajinaDane } from "@/lib/faktero/vat-rates";
 /**
  * Založenie firmy priamo v telefóne.
  *
@@ -43,6 +45,8 @@ export function VytvorFirmu({
     email: "",
     phone: "",
     iban: "",
+    vat_payer: false,
+    vat_scheme: "sk_neplatitel" as SchemaDph,
   });
   const [hladam, setHladam] = useState(false);
   const [ukladam, setUkladam] = useState(false);
@@ -51,6 +55,12 @@ export function VytvorFirmu({
   function set<K extends keyof typeof f>(k: K, v: string) {
     setF((p) => ({ ...p, [k]: v }));
   }
+
+  // Krajina rozhoduje, ktoré paragrafy pripadajú do úvahy, a zaškrtnutie zas,
+  // či sa ponúkajú registrácie platiteľa alebo tie ostatné.
+  const krajina = krajinaDane(f.country);
+  const schema = zosuladSchemu(f.vat_scheme, krajina, f.vat_payer);
+  const moznostiDph = schemyKrajiny(krajina, f.vat_payer);
 
   /* Doplnenie z registra, len čo je IČO celé — rovnako ako pri odberateľovi. */
   const posledne = useRef("");
@@ -69,6 +79,9 @@ export function VytvorFirmu({
           name: p.name || d.name || "",
           dic: p.dic || d.dic || "",
           ic_dph: p.ic_dph || d.ic_dph || "",
+          // Register povie len IČ DPH, nie podľa ktorého paragrafu — platiteľa
+          // teda navrhne a človek si typ registrácie prípadne opraví.
+          vat_payer: p.vat_payer || Boolean(String(d.ic_dph ?? "").trim()),
           street: p.street || d.street || "",
           city: p.city || d.city || "",
           zip: p.zip || d.zip || "",
@@ -96,7 +109,10 @@ export function VytvorFirmu({
 
     setUkladam(true);
     try {
-      const { data, error } = await supabase.rpc("create_company_with_owner", firmaNaZapis(f));
+      const { data, error } = await supabase.rpc(
+        "create_company_with_owner",
+        firmaNaZapis({ ...f, vat_scheme: schema }),
+      );
       if (error || !data) throw new Error(error?.message ?? t("vf.nepodariloVytvorit"));
       const id = data as string;
       setActiveCompanyId(id);
@@ -119,9 +135,7 @@ export function VytvorFirmu({
         </HlavneTlacidlo>
       }
     >
-      <p className="mb-4 text-[13px] leading-snug text-app-text-2">
-        {t("vf.uvod")}
-      </p>
+      <p className="mb-4 text-[13px] leading-snug text-app-text-2">{t("vf.uvod")}</p>
 
       <div className="space-y-3">
         <Pole label={t("vf.nazovFirmy")} value={f.name} onChange={(v) => set("name", v)} povinne />
@@ -134,14 +148,50 @@ export function VytvorFirmu({
           pracuje={hladam}
         />
         <div className="grid grid-cols-2 gap-3">
-          <Pole label={t("vf.dic")} value={f.dic} onChange={(v) => set("dic", v)} inputMode="numeric" />
+          <Pole
+            label={t("vf.dic")}
+            value={f.dic}
+            onChange={(v) => set("dic", v)}
+            inputMode="numeric"
+          />
           <Pole label={t("vf.icDph")} value={f.ic_dph} onChange={(v) => set("ic_dph", v)} />
         </div>
         <Pole label={t("vf.ulica")} value={f.street} onChange={(v) => set("street", v)} />
         <div className="grid grid-cols-2 gap-3">
           <Pole label={t("vf.mesto")} value={f.city} onChange={(v) => set("city", v)} />
-          <Pole label={t("vf.psc")} value={f.zip} onChange={(v) => set("zip", v)} inputMode="numeric" />
+          <Pole
+            label={t("vf.psc")}
+            value={f.zip}
+            onChange={(v) => set("zip", v)}
+            inputMode="numeric"
+          />
         </div>
+        <label className="flex items-start gap-3 text-sm leading-snug">
+          <input
+            type="checkbox"
+            checked={f.vat_payer}
+            onChange={(e) => setF((p) => ({ ...p, vat_payer: e.target.checked }))}
+            className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--primary)]"
+          />
+          <span>{t("vf.platitelDph")}</span>
+        </label>
+        <label className="block">
+          <span className="text-[13px] font-medium text-app-text-2">
+            {f.vat_payer ? t("vf.typRegistracie") : t("vf.postavenieDph")}
+          </span>
+          <select
+            value={schema}
+            onChange={(e) => setF((p) => ({ ...p, vat_scheme: e.target.value as SchemaDph }))}
+            className="mt-1 w-full rounded-app-sm border border-app-ramik bg-app-pozadie px-4 py-3 text-base"
+          >
+            {moznostiDph.map((m) => (
+              <option key={m.kod} value={m.kod}>
+                {m.nazov}
+              </option>
+            ))}
+          </select>
+          <span className="mt-1 block text-[12px] text-app-text-2">{popisSchemy(schema)}</span>
+        </label>
         <Pole
           label={t("vf.iban")}
           value={f.iban}
@@ -155,7 +205,12 @@ export function VytvorFirmu({
             onChange={(v) => set("email", v)}
             inputMode="email"
           />
-          <Pole label={t("vf.telefon")} value={f.phone} onChange={(v) => set("phone", v)} inputMode="tel" />
+          <Pole
+            label={t("vf.telefon")}
+            value={f.phone}
+            onChange={(v) => set("phone", v)}
+            inputMode="tel"
+          />
         </div>
       </div>
     </MobilObrazovka>

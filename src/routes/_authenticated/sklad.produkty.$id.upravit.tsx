@@ -13,10 +13,9 @@ import {
 } from "@/lib/faktero/stock.functions";
 import { useStockPermissions } from "@/hooks/useStockPermissions";
 import { ArrowLeft, Save, Upload, X } from "lucide-react";
-import { vatRateOptions } from "@/lib/faktero/vat-rates";
 
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
-import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { moznostiSadziebRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/upravit")({
   head: () => ({ meta: [{ title: "Upraviť skladovú kartu — Faktero" }] }),
   component: EditStockProduct,
@@ -36,7 +35,7 @@ function EditStockProduct() {
 
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
 
-  const krajina = useKrajinaDane();
+  const rezim = useRezimDph();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,7 +60,7 @@ function EditStockProduct() {
     sku: "",
     barcode: "",
     unit: "ks",
-    vat_rate: zakladnaSadzba(krajina),
+    vat_rate: zakladnaSadzbaRezimu(rezim),
     sale_price: 0,
     purchase_price: 0,
     min_stock: 0,
@@ -101,7 +100,7 @@ function EditStockProduct() {
           sku: si?.sku ?? "",
           barcode: si?.barcode ?? "",
           unit: si?.unit ?? p?.unit ?? "ks",
-          vat_rate: Number(si?.vat_rate ?? p?.vat_rate ?? zakladnaSadzba(krajina)),
+          vat_rate: Number(si?.vat_rate ?? p?.vat_rate ?? zakladnaSadzbaRezimu(rezim)),
           sale_price: Number(si?.sale_price ?? p?.unit_price ?? 0),
           purchase_price: Number(si?.purchase_price ?? 0),
           min_stock: Number(si?.min_stock ?? 0),
@@ -379,7 +378,7 @@ function EditStockProduct() {
                   onChange={(e) => set("vat_rate", Number(e.target.value))}
                   className="input"
                 >
-                  {vatRateOptions(krajina, form.vat_rate).map((r) => (
+                  {moznostiSadziebRezimu(rezim, form.vat_rate).map((r) => (
                     <option key={r} value={r}>
                       {r}%
                     </option>

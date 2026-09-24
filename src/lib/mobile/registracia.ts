@@ -60,13 +60,13 @@ export function overFirmu(v: VstupFirmy): Kluc | null {
 }
 
 /** Údaje firmy do tvaru, aký čaká `create_company_with_owner`. */
-export function firmaNaZapis(v: Record<string, string>) {
+export function firmaNaZapis(v: Record<string, string | boolean>) {
   const cistaHodnota = (k: string) => {
-    const x = (v[k] ?? "").trim();
+    const x = String(v[k] ?? "").trim();
     return x === "" ? undefined : x;
   };
   return {
-    _name: (v.name ?? "").trim(),
+    _name: String(v.name ?? "").trim(),
     _ico: cistaHodnota("ico")?.replace(/\s+/g, ""),
     _dic: cistaHodnota("dic"),
     _ic_dph: cistaHodnota("ic_dph"),
@@ -78,5 +78,8 @@ export function firmaNaZapis(v: Record<string, string>) {
     _phone: cistaHodnota("phone"),
     _iban: cistaHodnota("iban")?.replace(/\s+/g, "").toUpperCase(),
     _default_currency: "EUR",
+    // Postavenie k DPH: register ho nehovorí, vyberá ho človek.
+    _vat_payer: Boolean(v.vat_payer),
+    _vat_scheme: cistaHodnota("vat_scheme"),
   };
 }

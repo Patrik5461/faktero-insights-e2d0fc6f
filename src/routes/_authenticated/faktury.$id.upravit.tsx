@@ -5,10 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Trash2, Plus, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
-import { DEFAULT_VAT_RATE, vatRateOptions } from "@/lib/faktero/vat-rates";
+import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
 
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { moznostiSadziebRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/faktury/$id/upravit")({
   head: () => ({ meta: [{ title: "Upraviť faktúru — Faktero" }] }),
   component: EditInvoice,
@@ -41,7 +42,7 @@ function EditInvoice() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
-  const krajina = useKrajinaDane();
+  const rezim = useRezimDph();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [inv, setInv] = useState<any>(null);
@@ -397,7 +398,7 @@ function EditInvoice() {
                           onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                           className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                         >
-                          {vatRateOptions(krajina, it.vat_rate).map((r) => (
+                          {moznostiSadziebRezimu(rezim, it.vat_rate).map((r) => (
                             <option key={r} value={r}>
                               {r}%
                             </option>
@@ -470,7 +471,7 @@ function EditInvoice() {
                       onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                     >
-                      {vatRateOptions(krajina, it.vat_rate).map((r) => (
+                      {moznostiSadziebRezimu(rezim, it.vat_rate).map((r) => (
                         <option key={r} value={r}>
                           {r}%
                         </option>

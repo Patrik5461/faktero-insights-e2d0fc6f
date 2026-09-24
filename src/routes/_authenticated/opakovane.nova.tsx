@@ -7,8 +7,8 @@ import { Plus, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
 
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
-import { zakladnaSadzba } from "@/lib/faktero/vat-rates";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { MENY } from "@/lib/faktero/mena";
 export const Route = createFileRoute("/_authenticated/opakovane/nova")({
   head: () => ({ meta: [{ title: "Nová opakovaná faktúra — Faktero" }] }),
@@ -40,16 +40,17 @@ function NewRecurring() {
     active: true,
   });
   /* Sadzby DPH podľa krajiny registrácie firmy. */
-  const krajina = useKrajinaDane();
+  const rezim = useRezimDph();
+  const krajina = rezim.krajina;
   const [items, setItems] = useState<Item[]>([{ ...EMPTY }]);
   useEffect(() => {
-    const z = zakladnaSadzba(krajina);
+    const z = zakladnaSadzbaRezimu(rezim);
     setItems((a) =>
       a.some((it) => !it.name && it.vat_rate !== z)
         ? a.map((it) => (it.name ? it : { ...it, vat_rate: z }))
         : a,
     );
-  }, [krajina]);
+  }, [krajina, rezim.platitel]);
   const [newCustOpen, setNewCustOpen] = useState(false);
 
   useEffect(() => {
@@ -234,7 +235,7 @@ function NewRecurring() {
               <button
                 type="button"
                 onClick={() =>
-                  setItems([...items, { ...EMPTY, vat_rate: zakladnaSadzba(krajina) }])
+                  setItems([...items, { ...EMPTY, vat_rate: zakladnaSadzbaRezimu(rezim) }])
                 }
                 className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
               >

@@ -9,11 +9,12 @@ import { getSalesOrder, saveSalesOrder } from "@/lib/faktero/sales-orders.functi
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 import { suctyObjednavky } from "@/lib/faktero/objednavky-odberatel";
-import { sadzbyKrajiny, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
+import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
-import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
+import { useRezimDph } from "@/lib/faktero/krajina-firmy";
+import { sadzbyRezimu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/objednavky/nova")({
   head: () => ({ meta: [{ title: "Nová objednávka — Faktero" }] }),
   /**
@@ -68,7 +69,7 @@ function NewOrder() {
 
   /* Sadzby DPH vyplývajú z krajiny registrácie firmy, nenastavujú sa ručne. */
 
-  const krajina = useKrajinaDane();
+  const rezim = useRezimDph();
 
   const [customers, setCustomers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -424,7 +425,7 @@ function NewOrder() {
                           value={p.vat_rate}
                           onChange={(e) => nastavPolozku(i, { vat_rate: Number(e.target.value) })}
                         >
-                          {sadzbyKrajiny(krajina).map((r) => (
+                          {sadzbyRezimu(rezim).map((r) => (
                             <option key={r} value={r}>
                               {r} %
                             </option>
