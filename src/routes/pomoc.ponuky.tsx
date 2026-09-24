@@ -124,6 +124,28 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "odpoved-odberatela",
+    title: "Odberateľ ponuku prijme alebo zamietne sám",
+    body: (
+      <>
+        <p>
+          V e-maile s ponukou sú tlačidlá <strong>Prijať ponuku</strong> a{" "}
+          <strong>Zamietnuť</strong> a odkaz na stránku, kde odberateľ vidí položky, súčty aj PDF.
+          Nemusí sa nikde prihlasovať — stačí kliknúť.
+        </p>
+        <p>
+          Stav ponuky sa prepne sám na „Akceptovaná" alebo „Zamietnutá", zapíše sa čas a pri
+          zamietnutí aj dôvod, ak ho odberateľ napíše. Vám príde e-mail a upozornenie do zvončeka; v
+          detaile ponuky potom vidno, kedy a ako odpovedal.
+        </p>
+        <p>
+          Po uplynutí platnosti ponuky tlačidlá prestanú účinkovať a stránka povie, že ponuka
+          vypršala. Druhé kliknutie prvú odpoveď neprepíše.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {
