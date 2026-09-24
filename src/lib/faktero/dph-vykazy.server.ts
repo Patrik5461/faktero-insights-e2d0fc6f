@@ -65,7 +65,7 @@ export async function nacitajVstup(
     supabase
       .from("invoices")
       .select(
-        "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, opravuje_fakturu_id, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, invoice_items(vat_rate, subtotal, quantity, unit_price)",
+        "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, invoice_items(vat_rate, subtotal, quantity, unit_price)",
       )
       .eq("company_id", companyId)
       .is("deleted_at", null)
@@ -131,6 +131,8 @@ export async function nacitajVstup(
       prenosDane: Boolean(f.reverse_charge),
       prenosTyp: f.reverse_charge_type,
       euPlnenie: f.eu_plnenie,
+      oss: Boolean(f.oss),
+      ossStat: f.oss_country,
       opravujeCislo: f.opravuje_fakturu_id ? (cisla.get(f.opravuje_fakturu_id) ?? null) : null,
       riadky,
     });

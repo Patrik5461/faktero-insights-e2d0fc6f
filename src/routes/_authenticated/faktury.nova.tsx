@@ -49,6 +49,7 @@ import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
 import { prepocitajFakturuFn } from "@/lib/faktero/kurzy.functions";
 import { jeHotovost, prekrocenyStrop } from "@/lib/faktero/hotovost";
 import { OverenieVies } from "@/components/faktero/OverenieVies";
+import { SADZBY_EU, sadzbyStatu, zakladnaSadzbaStatu } from "@/lib/faktero/sadzby-eu";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
@@ -158,6 +159,9 @@ function NewInvoice() {
     reverse_charge_type: "" as "" | "domestic_69" | "eu_b2b" | "export",
     /* Súhrnný výkaz potrebuje vedieť, čo sa do EÚ dodalo — z položiek to nevyplýva. */
     eu_plnenie: "tovar" as "tovar" | "sluzba" | "trojstranny",
+    /* Predaj spotrebiteľovi v EÚ — daň sa odvádza cez OSS sadzbou jeho štátu. */
+    oss: false,
+    oss_country: "",
     advance_invoice_id: "" as string | "",
     opravuje_fakturu_id: "" as string | "",
     advance_amount: 0,
@@ -192,6 +196,10 @@ function NewInvoice() {
         : rs,
     );
   }, [krajina, rezim.platitel]);
+  /* Pri predaji do EÚ cez OSS sa účtuje sadzbami štátu zákazníka. */
+  const sadzbyPolozky =
+    form.oss && form.oss_country ? sadzbyStatu(form.oss_country) : sadzbyRezimu(rezim);
+
   const [pickerOpen, setPickerOpen] = useState<null | "copy" | "advance" | "opravuje">(null);
 
   /**
@@ -550,6 +558,8 @@ function NewInvoice() {
           reverse_charge: form.reverse_charge,
           eu_plnenie:
             form.reverse_charge && form.reverse_charge_type === "eu_b2b" ? form.eu_plnenie : null,
+          oss: form.oss,
+          oss_country: form.oss ? form.oss_country : null,
           reverse_charge_type: form.reverse_charge
             ? form.reverse_charge_type || "domestic_69"
             : null,
@@ -1006,6 +1016,53 @@ function NewInvoice() {
                     </span>
                   </span>
                 </label>
+                {!form.reverse_charge && (
+                  <label className="mt-3 flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.oss}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          oss: e.target.checked,
+                          oss_country: e.target.checked ? f.oss_country || "AT" : "",
+                        }))
+                      }
+                      className="mt-0.5 h-4 w-4 rounded border-input"
+                    />
+                    <span className="text-sm">
+                      Predaj spotrebiteľovi v EÚ (OSS)
+                      <span className="block text-xs text-muted-foreground">
+                        Sadzba štátu zákazníka; daň sa odvádza cez jedno kontaktné miesto, nie v
+                        slovenskom priznaní.
+                      </span>
+                    </span>
+                  </label>
+                )}
+                {form.oss && !form.reverse_charge && (
+                  <label className="mt-3 block">
+                    <span className="text-xs font-medium text-muted-foreground">Štát spotreby</span>
+                    <select
+                      value={form.oss_country}
+                      onChange={(e) => {
+                        const stat = e.target.value;
+                        const zakl = zakladnaSadzbaStatu(stat);
+                        setForm((f) => ({ ...f, oss_country: stat }));
+                        // Sadzby položiek sa prepnú na sadzby zvoleného štátu.
+                        setItems((rs) =>
+                          rs.map((r) => (r._dph_rucne ? r : { ...r, vat_rate: zakl })),
+                        );
+                      }}
+                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      {SADZBY_EU.filter((x) => x.kod !== "SK").map((x) => (
+                        <option key={x.kod} value={x.kod}>
+                          {x.nazov} — základná {x.zakladna} %
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 {form.reverse_charge && (
                   <>
                     <select
@@ -1220,7 +1277,7 @@ function NewInvoice() {
                             }
                             className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                           >
-                            {sadzbyRezimu(rezim).map((r) => (
+                            {sadzbyPolozky.map((r) => (
                               <option key={r} value={r}>
                                 {r}%
                               </option>
@@ -1284,7 +1341,7 @@ function NewInvoice() {
                         }
                         className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                       >
-                        {sadzbyRezimu(rezim).map((r) => (
+                        {sadzbyPolozky.map((r) => (
                           <option key={r} value={r}>
                             {r}%
                           </option>

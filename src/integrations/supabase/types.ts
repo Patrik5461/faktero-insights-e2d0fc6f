@@ -4057,6 +4057,8 @@ export type Database = {
           subtotal_eur: number | null
           vat_total_eur: number | null
           total_eur: number | null
+          oss: boolean
+          oss_country: string | null
         }
         Insert: {
           advance_amount?: number | null
@@ -4130,6 +4132,8 @@ export type Database = {
           subtotal_eur?: number | null
           vat_total_eur?: number | null
           total_eur?: number | null
+          oss?: boolean
+          oss_country?: string | null
         }
         Update: {
           advance_amount?: number | null
@@ -4203,6 +4207,8 @@ export type Database = {
           subtotal_eur?: number | null
           vat_total_eur?: number | null
           total_eur?: number | null
+          oss?: boolean
+          oss_country?: string | null
         }
         Relationships: [
           {

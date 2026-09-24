@@ -185,6 +185,7 @@ import { Route as AuthenticatedSkladNastaveniaRouteImport } from './routes/_auth
 import { Route as AuthenticatedSkladPrijemRouteImport } from './routes/_authenticated/sklad.prijem'
 import { Route as AuthenticatedSkladVydajRouteImport } from './routes/_authenticated/sklad.vydaj'
 import { Route as AuthenticatedUctovnictvoDphRouteImport } from './routes/_authenticated/uctovnictvo.dph'
+import { Route as AuthenticatedUctovnictvoOssRouteImport } from './routes/_authenticated/uctovnictvo.oss'
 import { Route as AuthenticatedUctovnictvoPohodaRouteImport } from './routes/_authenticated/uctovnictvo.pohoda'
 import { Route as AuthenticatedUctovnictvoUzavierkaRouteImport } from './routes/_authenticated/uctovnictvo.uzavierka'
 import { Route as AuthenticatedUctovnictvoVykazyRouteImport } from './routes/_authenticated/uctovnictvo.vykazy'
@@ -1226,6 +1227,12 @@ const AuthenticatedUctovnictvoDphRoute =
     path: '/uctovnictvo/dph',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedUctovnictvoOssRoute =
+  AuthenticatedUctovnictvoOssRouteImport.update({
+    id: '/uctovnictvo/oss',
+    path: '/uctovnictvo/oss',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedUctovnictvoPohodaRoute =
   AuthenticatedUctovnictvoPohodaRouteImport.update({
     id: '/uctovnictvo/pohoda',
@@ -1913,6 +1920,7 @@ export interface FileRoutesByFullPath {
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
   '/uctovnictvo/uzavierka': typeof AuthenticatedUctovnictvoUzavierkaRoute
   '/uctovnictvo/vykazy': typeof AuthenticatedUctovnictvoVykazyRoute
@@ -2176,6 +2184,7 @@ export interface FileRoutesByTo {
   '/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
   '/uctovnictvo/uzavierka': typeof AuthenticatedUctovnictvoUzavierkaRoute
   '/uctovnictvo/vykazy': typeof AuthenticatedUctovnictvoVykazyRoute
@@ -2450,6 +2459,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/prijem': typeof AuthenticatedSkladPrijemRoute
   '/_authenticated/sklad/vydaj': typeof AuthenticatedSkladVydajRoute
   '/_authenticated/uctovnictvo/dph': typeof AuthenticatedUctovnictvoDphRoute
+  '/_authenticated/uctovnictvo/oss': typeof AuthenticatedUctovnictvoOssRoute
   '/_authenticated/uctovnictvo/pohoda': typeof AuthenticatedUctovnictvoPohodaRoute
   '/_authenticated/uctovnictvo/uzavierka': typeof AuthenticatedUctovnictvoUzavierkaRoute
   '/_authenticated/uctovnictvo/vykazy': typeof AuthenticatedUctovnictvoVykazyRoute
@@ -2724,6 +2734,7 @@ export interface FileRouteTypes {
     | '/sklad/prijem'
     | '/sklad/vydaj'
     | '/uctovnictvo/dph'
+    | '/uctovnictvo/oss'
     | '/uctovnictvo/pohoda'
     | '/uctovnictvo/uzavierka'
     | '/uctovnictvo/vykazy'
@@ -2987,6 +2998,7 @@ export interface FileRouteTypes {
     | '/sklad/prijem'
     | '/sklad/vydaj'
     | '/uctovnictvo/dph'
+    | '/uctovnictvo/oss'
     | '/uctovnictvo/pohoda'
     | '/uctovnictvo/uzavierka'
     | '/uctovnictvo/vykazy'
@@ -3260,6 +3272,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/prijem'
     | '/_authenticated/sklad/vydaj'
     | '/_authenticated/uctovnictvo/dph'
+    | '/_authenticated/uctovnictvo/oss'
     | '/_authenticated/uctovnictvo/pohoda'
     | '/_authenticated/uctovnictvo/uzavierka'
     | '/_authenticated/uctovnictvo/vykazy'
@@ -4723,6 +4736,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUctovnictvoDphRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/uctovnictvo/oss': {
+      id: '/_authenticated/uctovnictvo/oss'
+      path: '/uctovnictvo/oss'
+      fullPath: '/uctovnictvo/oss'
+      preLoaderRoute: typeof AuthenticatedUctovnictvoOssRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/uctovnictvo/pohoda': {
       id: '/_authenticated/uctovnictvo/pohoda'
       path: '/uctovnictvo/pohoda'
@@ -5546,6 +5566,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPonukyNovaRoute: typeof AuthenticatedPonukyNovaRoute
   AuthenticatedPrijateFakturyNovaRoute: typeof AuthenticatedPrijateFakturyNovaRoute
   AuthenticatedUctovnictvoDphRoute: typeof AuthenticatedUctovnictvoDphRoute
+  AuthenticatedUctovnictvoOssRoute: typeof AuthenticatedUctovnictvoOssRoute
   AuthenticatedUctovnictvoPohodaRoute: typeof AuthenticatedUctovnictvoPohodaRoute
   AuthenticatedUctovnictvoUzavierkaRoute: typeof AuthenticatedUctovnictvoUzavierkaRoute
   AuthenticatedUctovnictvoVykazyRoute: typeof AuthenticatedUctovnictvoVykazyRoute
@@ -5643,6 +5664,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPonukyNovaRoute: AuthenticatedPonukyNovaRoute,
   AuthenticatedPrijateFakturyNovaRoute: AuthenticatedPrijateFakturyNovaRoute,
   AuthenticatedUctovnictvoDphRoute: AuthenticatedUctovnictvoDphRoute,
+  AuthenticatedUctovnictvoOssRoute: AuthenticatedUctovnictvoOssRoute,
   AuthenticatedUctovnictvoPohodaRoute: AuthenticatedUctovnictvoPohodaRoute,
   AuthenticatedUctovnictvoUzavierkaRoute:
     AuthenticatedUctovnictvoUzavierkaRoute,

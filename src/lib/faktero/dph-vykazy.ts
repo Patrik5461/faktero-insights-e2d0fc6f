@@ -38,6 +38,9 @@ export type VystavenaFaktura = {
   euPlnenie?: "tovar" | "sluzba" | "trojstranny" | null;
   /** Číslo faktúry, ktorú tento doklad opravuje (dobropis). */
   opravujeCislo?: string | null;
+  /** Predaj spotrebiteľovi v EÚ — daň sa odvádza cez OSS, nie tu. */
+  oss?: boolean | null;
+  ossStat?: string | null;
   riadky: SadzbovyRiadok[];
 };
 
@@ -102,9 +105,15 @@ function jeZakladna(sadzba: number, den: string): boolean {
   return sadzba > 0 && sadzba === sadzbyKuDnu("SK", den).high;
 }
 
-/** Doklad, ktorý do výkazov nepatrí vôbec: zálohová faktúra nie je daňový doklad. */
+/**
+ * Doklad, ktorý do výkazov nepatrí vôbec.
+ *
+ * Zálohová faktúra nie je daňový doklad a predaj cez OSS sa priznáva v
+ * osobitnom priznaní k jednému kontaktnému miestu — do slovenského priznania
+ * ani kontrolného výkazu nevstupuje.
+ */
 function doVykazov(f: VystavenaFaktura): boolean {
-  return f.typ !== "proforma";
+  return f.typ !== "proforma" && !f.oss;
 }
 
 function jeOpravna(f: VystavenaFaktura): boolean {

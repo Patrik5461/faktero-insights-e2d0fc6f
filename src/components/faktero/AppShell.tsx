@@ -222,6 +222,7 @@ const NAV: NavGroup[] = [
       { to: "/pokladna", label: "Pokladňa" },
       { to: "/uctovnictvo/dph", label: "DPH prehľad" },
       { to: "/uctovnictvo/vykazy", label: "Výkazy k DPH (priznanie, KV, SV)" },
+      { to: "/uctovnictvo/oss", label: "OSS — predaj do EÚ" },
       { to: "/uctovnictvo/uzavierka", label: "Uzávierka" },
       { to: "/exporty", label: "Účtovné exporty" },
       { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
