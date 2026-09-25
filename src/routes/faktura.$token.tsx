@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { vynutSvetlyMotiv } from "@/lib/faktero/motiv";
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { textPrepoctu } from "@/lib/faktero/kurzy";
 import { createServerFn } from "@tanstack/react-start";
@@ -125,6 +127,10 @@ function Riadok({ k, v }: { k: string; v: React.ReactNode }) {
 
 function VerejnaFaktura() {
   const { doklad, polozky, firma, textDph, vetyUprav } = Route.useLoaderData();
+
+  // Doklad pre zákazníka je vždy svetlý — tmavý podľa jeho prehliadača vyzerá
+  // ako chyba a horšie sa tlačí.
+  useEffect(() => vynutSvetlyMotiv(), []);
   const mena = doklad.currency ?? "EUR";
   const suma = (n: unknown) => formatujMenu(n, mena);
   const nazov =

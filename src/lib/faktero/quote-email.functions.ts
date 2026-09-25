@@ -139,7 +139,7 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
         text: message + "\n" + tlacidlaDoTextu(token, q.valid_until) + podpisText(company ?? {}),
         html: `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;max-width:560px">
           <div style="white-space:pre-wrap">${escapeHtml(message)}</div>
-          ${tlacidlaDoMailu(token, q.valid_until)}
+          ${tlacidlaDoMailu({ token, cislo: q.quote_number, suma: q.total, mena: q.currency, platiDo: q.valid_until })}
           ${podpisHtml(company ?? {})}
         </div>`,
         attachments: [{ filename: `${q.quote_number}.pdf`, content: pdfB64 }],

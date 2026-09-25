@@ -77,6 +77,30 @@ export function nasadMotiv(volba: Motiv): void {
 }
 
 /**
+ * Stránka, ktorú vidí zákazník, je vždy svetlá.
+ *
+ * Verejný odkaz na faktúru či ponuku otvára niekto, kto Faktero nepozná a
+ * nemá tu nastavený motív. Tmavý doklad podľa nastavenia jeho prehliadača
+ * vyzerá ako chyba — papierový doklad je biely. Vracia funkciu, ktorá pôvodný
+ * motív obnoví, keď sa stránka opustí.
+ */
+export function vynutSvetlyMotiv(): () => void {
+  try {
+    const koren = document.documentElement;
+    const boloTmave = koren.classList.contains("dark");
+    const povodnaSchema = koren.style.colorScheme;
+    koren.classList.remove("dark");
+    koren.style.colorScheme = "light";
+    return () => {
+      koren.classList.toggle("dark", boloTmave);
+      koren.style.colorScheme = povodnaSchema;
+    };
+  } catch {
+    return () => {};
+  }
+}
+
+/**
  * Je práve tma? Pre veci mimo CSS — status bar telefónu farbu z triedy
  * `dark` prečítať nevie a musí ju dostať ako hodnotu.
  */

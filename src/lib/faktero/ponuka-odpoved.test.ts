@@ -45,3 +45,29 @@ describe("odpoveď", () => {
     expect(upravDovod("x".repeat(3000))?.length).toBe(2000);
   });
 });
+
+describe("karta s tlačidlami v e-maile", () => {
+  it("nesie číslo, sumu, platnosť aj obidva odkazy", async () => {
+    const { tlacidlaDoMailu } = await import("./ponuka-odpoved.server");
+    const html = tlacidlaDoMailu({
+      token: "t".repeat(64),
+      cislo: "2026/UK-2",
+      suma: 553.5,
+      mena: "EUR",
+      platiDo: "2026-10-08",
+    });
+    expect(html).toContain("2026/UK-2");
+    expect(html).toContain("553,50 EUR");
+    expect(html).toContain("Platí do 8. 10. 2026");
+    expect(html).toContain("?odpoved=prijat");
+    expect(html).toContain("?odpoved=zamietnut");
+    // Poštoví klienti flex nevedia — layout musí stáť na tabuľke.
+    expect(html).toContain("<table");
+    expect(html).not.toContain("display:flex");
+  });
+
+  it("staršie volanie so samotným tokenom funguje ďalej", async () => {
+    const { tlacidlaDoMailu } = await import("./ponuka-odpoved.server");
+    expect(tlacidlaDoMailu("x".repeat(64), "2026-10-08")).toContain("Platí do 8. 10. 2026");
+  });
+});

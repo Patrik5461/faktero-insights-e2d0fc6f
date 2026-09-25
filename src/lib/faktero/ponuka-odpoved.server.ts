@@ -24,24 +24,66 @@ export function odkazNaPonuku(token: string): string {
   return `${zakladnaAdresa()}/ponuka/${token}`;
 }
 
-/** Blok s tlačidlami, ktorý sa pridá pod text správy v e-maile s ponukou. */
-export function tlacidlaDoMailu(token: string, platiDo?: string | null): string {
-  const odkaz = odkazNaPonuku(token);
-  const tlacidlo = (url: string, text: string, farba: string) =>
-    `<a href="${url}" style="display:inline-block;background:${farba};color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;font-size:14px">${text}</a>`;
+export type KartaPonuky = {
+  token: string;
+  cislo?: string | null;
+  suma?: number | null;
+  mena?: string | null;
+  platiDo?: string | null;
+};
+
+/**
+ * Karta s tlačidlami pod textom správy.
+ *
+ * Poštoví klienti sú zastaraní: `flex` ani `grid` nevedia a Outlook zahodí aj
+ * polovicu CSS. Preto tabuľka, vloženými štýlmi a bez obrázkov — vyzerá to
+ * rovnako v Gmaile, na telefóne aj v Outlooku, a keď štýly nepustí vôbec,
+ * ostanú čitateľné odkazy pod sebou.
+ */
+export function tlacidlaDoMailu(vstup: KartaPonuky | string, platiDoStare?: string | null): string {
+  const k: KartaPonuky =
+    typeof vstup === "string" ? { token: vstup, platiDo: platiDoStare ?? null } : vstup;
+  const odkaz = odkazNaPonuku(k.token);
+  const suma =
+    k.suma != null
+      ? `${Number(k.suma).toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${k.mena ?? "EUR"}`
+      : null;
+
+  const tlacidlo = (url: string, text: string, plne: boolean) =>
+    `<a href="${url}" style="display:inline-block;${
+      plne
+        ? "background:#12734f;border:1px solid #12734f;color:#ffffff;"
+        : "background:#ffffff;border:1px solid #d1d5db;color:#374151;"
+    }text-decoration:none;padding:13px 26px;border-radius:10px;font-weight:600;font-size:15px;line-height:1;font-family:Inter,Arial,sans-serif">${text}</a>`;
+
   return `
-  <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb">
-    <p style="margin:0 0 12px;font-size:14px;color:#111">Odpovedať sa dá jedným kliknutím:</p>
-    <div>
-      ${tlacidlo(`${odkaz}?odpoved=prijat`, "Prijať ponuku", "#12734f")}
-      &nbsp;
-      ${tlacidlo(`${odkaz}?odpoved=zamietnut`, "Zamietnuť", "#b91c1c")}
-    </div>
-    <p style="margin:12px 0 0;font-size:13px;color:#6b7280">
-      Alebo si ponuku pozrite online: <a href="${odkaz}" style="color:#12734f">${odkaz}</a>
-      ${platiDo ? `<br>Ponuka platí do ${escapeHtml(datumSlovom(platiDo))}.` : ""}
-    </p>
-  </div>`;
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:24px">
+    <tr>
+      <td style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:20px 22px;font-family:Inter,Arial,sans-serif">
+        ${
+          k.cislo
+            ? `<div style="font-size:13px;color:#6b7280;margin-bottom:2px">Cenová ponuka ${escapeHtml(k.cislo)}</div>`
+            : ""
+        }
+        ${suma ? `<div style="font-size:22px;font-weight:700;color:#111;margin-bottom:4px">${escapeHtml(suma)}</div>` : ""}
+        ${
+          k.platiDo
+            ? `<div style="font-size:13px;color:#6b7280;margin-bottom:16px">Platí do ${escapeHtml(datumSlovom(k.platiDo))}</div>`
+            : '<div style="margin-bottom:16px"></div>'
+        }
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="padding-right:10px">${tlacidlo(`${odkaz}?odpoved=prijat`, "Prijať ponuku", true)}</td>
+            <td>${tlacidlo(`${odkaz}?odpoved=zamietnut`, "Zamietnuť", false)}</td>
+          </tr>
+        </table>
+        <div style="font-size:13px;color:#6b7280;margin-top:14px">
+          Alebo si ponuku najprv pozrite:
+          <a href="${odkaz}" style="color:#12734f;text-decoration:underline">otvoriť ponuku online</a>
+        </div>
+      </td>
+    </tr>
+  </table>`;
 }
 
 /** To isté do textovej podoby — čítačky aj poštoví klienti bez HTML. */

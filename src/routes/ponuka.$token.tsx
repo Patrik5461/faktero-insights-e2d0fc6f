@@ -1,5 +1,6 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { vynutSvetlyMotiv } from "@/lib/faktero/motiv";
 import { useServerFn } from "@tanstack/react-start";
 import { ponukaPodlaTokenuFn, odpovedzNaPonukuFn } from "@/lib/faktero/ponuka-odpoved.functions";
 import { datumSlovom } from "@/lib/faktero/ponuka-odpoved";
@@ -42,6 +43,10 @@ function PonukaPage() {
   const [hotovo, setHotovo] = useState<null | { prijate: boolean }>(null);
   const [zamietam, setZamietam] = useState(odpoved === "zamietnut");
   const [dovod, setDovod] = useState("");
+
+  // Doklad pre zákazníka je vždy svetlý — tmavý podľa jeho prehliadača vyzerá
+  // ako chyba a horšie sa tlačí.
+  useEffect(() => vynutSvetlyMotiv(), []);
 
   useEffect(() => {
     nacitaj({ data: { token } })
