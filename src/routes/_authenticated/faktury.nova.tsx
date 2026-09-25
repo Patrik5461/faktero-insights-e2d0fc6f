@@ -1876,7 +1876,7 @@ function AiModal({
         role="dialog"
         aria-modal="true"
         aria-label="Faktúra z dokumentu"
-        className="w-full max-w-xl rounded-2xl border border-border bg-card p-5 shadow-2xl"
+        className="w-full max-w-xl rounded-2xl border border-border bg-card p-5 shadow-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
@@ -1991,7 +1991,7 @@ function InvoicePickerModal({
         role="dialog"
         aria-modal="true"
         aria-label="Výber faktúry"
-        className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl"
+        className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">

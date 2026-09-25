@@ -109,7 +109,7 @@ export function NewCustomerModal({ defaultName, onClose, onCreated }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label="Nový odberateľ"
-        className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl"
+        className="w-full max-w-2xl rounded-2xl border border-border bg-card shadow-xl max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">

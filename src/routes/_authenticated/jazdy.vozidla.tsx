@@ -276,7 +276,7 @@ function VehicleDialog({
         role="dialog"
         aria-modal="true"
         aria-label={v.id ? "Upraviť vozidlo" : "Nové vozidlo"}
-        className="w-full max-w-xl rounded-xl border border-border bg-card p-6"
+        className="w-full max-w-xl rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">{v.id ? "Upraviť vozidlo" : "Nové vozidlo"}</h2>
@@ -399,7 +399,7 @@ function FuelDialog({
         role="dialog"
         aria-modal="true"
         aria-label="Nové tankovanie"
-        className="w-full max-w-md rounded-xl border border-border bg-card p-6"
+        className="w-full max-w-md rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">Nové tankovanie</h2>

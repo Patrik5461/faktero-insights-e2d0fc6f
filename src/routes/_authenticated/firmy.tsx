@@ -215,7 +215,7 @@ function ZmazanieFirmyDialog({
         role="dialog"
         aria-modal="true"
         aria-label={`Zmazať firmu ${firma.name}`}
-        className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg"
+        className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-lg max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-base font-semibold">Zmazať firmu {firma.name}?</h2>

@@ -1223,7 +1223,7 @@ function InvoiceDetail() {
             role="dialog"
             aria-modal="true"
             aria-label="Odoslať faktúru e-mailom"
-            className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5"
+            className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold">Odoslať faktúru e-mailom</h3>
@@ -1289,7 +1289,7 @@ function InvoiceDetail() {
             role="dialog"
             aria-modal="true"
             aria-label="Poslať upomienku"
-            className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5"
+            className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold">

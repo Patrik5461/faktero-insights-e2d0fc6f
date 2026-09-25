@@ -983,7 +983,7 @@ function StockItemsPage() {
             role="dialog"
             aria-modal="true"
             aria-label="Skladová karta"
-            className="w-full max-w-2xl rounded-xl border border-border bg-card p-6"
+            className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">
@@ -1126,7 +1126,7 @@ function StockItemsPage() {
             role="dialog"
             aria-modal="true"
             aria-label="Nová položka na sklad"
-            className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 my-8"
+            className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 my-8 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">Pridať tovar</h2>

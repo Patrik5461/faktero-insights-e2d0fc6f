@@ -35,7 +35,7 @@ export function StockSettingsDialog({
         role="dialog"
         aria-modal="true"
         aria-label="Nastavenia skladu"
-        className="w-full max-w-3xl rounded-xl border border-border bg-card p-0 shadow-lg"
+        className="w-full max-w-3xl rounded-xl border border-border bg-card p-0 shadow-lg max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
@@ -414,7 +414,7 @@ function WarehousesTab({ onChanged }: { onChanged?: () => void }) {
             role="dialog"
             aria-modal="true"
             aria-label="Sklad"
-            className="w-full max-w-lg rounded-xl border border-border bg-card p-6"
+            className="w-full max-w-lg rounded-xl border border-border bg-card p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">{editing.id ? "Upraviť sklad" : "Nový sklad"}</h2>

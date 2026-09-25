@@ -737,7 +737,7 @@ function AiScanOverlay({
       aria-modal="true"
     >
       <div
-        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-scale-in"
+        className="relative w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl animate-scale-in max-h-[calc(100dvh-2rem)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button

@@ -198,7 +198,7 @@ function WebhooksPage() {
               role="dialog"
               aria-modal="true"
               aria-label="Webhook"
-              className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5"
+              className="w-full max-w-lg space-y-3 rounded-xl border border-border bg-card p-5 max-h-[calc(100dvh-2rem)] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-semibold">

@@ -219,7 +219,7 @@ function ManualReservationDialog({
         aria-label="Ručná rezervácia"
         onSubmit={submit}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md space-y-3 rounded-xl border border-border bg-card p-5"
+        className="w-full max-w-md space-y-3 rounded-xl border border-border bg-card p-5 max-h-[calc(100dvh-2rem)] overflow-y-auto"
       >
         <div className="text-base font-semibold">Ručná rezervácia</div>
         <label className="block">
