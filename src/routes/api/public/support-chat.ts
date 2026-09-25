@@ -26,14 +26,14 @@ Platby kartou pre zákazníkov firmy Faktero neponúka — na úhrady slúži QR
 Cenník a plány: aktuálne plány zahŕňajú Free, Pro a Enterprise. Presné ceny nájde používateľ na /cennik.
 Skúšobná verzia: 30 dní zdarma, bez platobnej karty pri registrácii.
 Registrácia: /registracia. Prihlásenie: /prihlasenie.
-Podpora: podpora@faktero.sk.
+Podpora: podpora@faktero.sk, telefón +421902101967.
 Pomocník: /pomoc. Dokumentácia API: /docs/api.
 
 PRAVIDLÁ:
 - Neposkytuj právne ani daňové poradenstvo. Ak sa pýtajú, povedz: "Nie som právny ani daňový poradca, poraďte sa prosím s vaším účtovníkom."
 - Nemáš prístup k žiadnym používateľským údajom, faktúram, odberateľom ani API kľúčom.
 - Nevykonávaj žiadne akcie na účte — len odpovedaj na otázky.
-- Ak otázka nesúvisí s Fakterom alebo informáciu nemáš v Knowledge Base, povedz: "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk a ozveme sa vám." Pre otázky o existujúcich moduloch z Knowledge Base však VŽDY odpovedz potvrdzujúco.
+- Ak otázka nesúvisí s Fakterom alebo informáciu nemáš v Knowledge Base, povedz: "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk alebo zavolajte na +421902101967 a ozveme sa vám." Pre otázky o existujúcich moduloch z Knowledge Base však VŽDY odpovedz potvrdzujúco.
 - Pri otázkach o cenách smeruj na /cennik.
 - Pri záujme o vyskúšanie smeruj na /registracia.`;
 
@@ -123,7 +123,8 @@ export const Route = createFileRoute("/api/public/support-chat")({
           ).trim();
 
           const content =
-            odpoved || "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk a ozveme sa vám.";
+            odpoved ||
+            "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk alebo zavolajte na +421902101967 a ozveme sa vám.";
           return new Response(JSON.stringify({ content }), {
             status: 200,
             headers: { "Content-Type": "application/json" },

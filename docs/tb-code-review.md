@@ -231,4 +231,4 @@ spoločnom hovore.
 
 ---
 
-**Kontakt:** Tobify s. r. o. · info@faktero.sk · +421 902 101 967
+**Kontakt:** Tobify s. r. o. · info@faktero.sk · +421902101967

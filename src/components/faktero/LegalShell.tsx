@@ -69,7 +69,9 @@ export const LEGAL_COMPANY = {
   icDph: "SK2122358579",
   address: "Športová 707/43, 919 26 Zavar, Slovenská republika",
   email: "info@faktero.sk",
-  phone: "+421 902 101 967",
+  /* Jedno miesto pravdy pre kontaktné číslo — bez medzier, aby sedelo
+     zobrazenie aj odkaz `tel:` a dalo sa kopírovať jedným ťuknutím. */
+  phone: "+421902101967",
   web: "https://www.faktero.sk",
   statutar: "Patrik Henček",
   incorporated: "31. októbra 2024",

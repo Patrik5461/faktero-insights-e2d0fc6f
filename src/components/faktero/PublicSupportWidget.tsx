@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useOtvoreneOkno } from "@/hooks/useOtvoreneOkno";
 import ReactMarkdown from "react-markdown";
-import { MessageCircle, X, Send, Loader2, Minus, Mail } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Minus, Mail, Phone } from "lucide-react";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -56,7 +56,9 @@ export function PublicSupportWidget() {
           ...m,
           {
             role: "assistant",
-            content: data?.message ?? "Napíšte nám na podporu a ozveme sa vám.",
+            content:
+              data?.message ??
+              "Napíšte nám na podpora@faktero.sk alebo zavolajte na +421902101967 a ozveme sa vám.",
           },
         ]);
         setEscalate(true);
@@ -69,7 +71,11 @@ export function PublicSupportWidget() {
     } catch {
       setMsgs((m) => [
         ...m,
-        { role: "assistant", content: "Napíšte nám na podporu a ozveme sa vám." },
+        {
+          role: "assistant",
+          content:
+            "Napíšte nám na podpora@faktero.sk alebo zavolajte na +421902101967 a ozveme sa vám.",
+        },
       ]);
       setEscalate(true);
     } finally {
@@ -177,14 +183,24 @@ export function PublicSupportWidget() {
             {escalate && !busy && (
               <div className="rounded-lg border border-border bg-muted/50 p-2.5 text-xs">
                 <div className="mb-1.5 text-muted-foreground">
-                  Napíšte nám na podporu a ozveme sa vám.
+                  Napíšte nám alebo zavolajte a ozveme sa vám.
                 </div>
-                <a
-                  href="mailto:podpora@faktero.sk"
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
-                >
-                  <Mail className="h-3.5 w-3.5" /> podpora@faktero.sk
-                </a>
+                {/* Telefón vedľa e-mailu: kto sa pýta cez widget, býva rozhodnutý
+                    hneď a e-mailová odpoveď mu príde neskoro. */}
+                <div className="flex flex-wrap gap-1.5">
+                  <a
+                    href="mailto:podpora@faktero.sk"
+                    className="inline-flex items-center gap-1.5 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                  >
+                    <Mail className="h-3.5 w-3.5" /> podpora@faktero.sk
+                  </a>
+                  <a
+                    href="tel:+421902101967"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground hover:border-primary/50"
+                  >
+                    <Phone className="h-3.5 w-3.5" /> +421902101967
+                  </a>
+                </div>
               </div>
             )}
           </div>

@@ -336,6 +336,10 @@ function Page() {
           na{" "}
           <a href="mailto:info@faktero.sk" className="text-primary hover:underline">
             info@faktero.sk
+          </a>{" "}
+          alebo zavolajte na{" "}
+          <a href="tel:+421902101967" className="text-primary hover:underline">
+            +421902101967
           </a>
           .
         </p>

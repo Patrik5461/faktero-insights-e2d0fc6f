@@ -19,6 +19,7 @@ export const TOBIFY_SELLER = {
   zip: "919 26",
   country: "Slovenská republika",
   email: "info@faktero.sk",
+  phone: "+421902101967",
   web: "https://www.faktero.sk",
   registration: "Obchodný register Okresného súdu Trnava, oddiel: Sro, dátum vzniku: 31. 10. 2024",
 } as const;
