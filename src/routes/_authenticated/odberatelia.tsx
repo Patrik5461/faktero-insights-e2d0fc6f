@@ -218,7 +218,7 @@ function CustomersPage() {
           }}
           onClear={list.clearSelection}
         />
-        <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card">
+        <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>

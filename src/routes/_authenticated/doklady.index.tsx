@@ -544,7 +544,7 @@ function DokladyPage() {
           <SummaryCard label="Celkom" value={totals.total} highlight />
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="overflow-x-auto rounded-2xl border border-border bg-card">
           {loading ? (
             <div className="p-12 text-center text-sm text-muted-foreground">Načítavam…</div>
           ) : rows.length === 0 ? (
