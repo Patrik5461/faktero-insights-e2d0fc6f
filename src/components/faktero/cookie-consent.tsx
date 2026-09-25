@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useOtvoreneOkno } from "@/hooks/useOtvoreneOkno";
 import { useEffect, useRef, useState } from "react";
 import { Cookie, X, Settings2, ShieldCheck, BarChart3, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -90,16 +91,7 @@ export function CookieConsentBanner() {
    * Nižší z-index by problém presunul inam (pomoc v rohu by zase prekryla ju),
    * takže je správne lištu na ten čas odložiť a po zatvorení okna ju vrátiť.
    */
-  const [okno, setOkno] = useState(false);
-  useEffect(() => {
-    if (!mounted || consent) return;
-    const zisti = () =>
-      setOkno(Boolean(document.querySelector('[role="dialog"]:not([data-cookie-lista])')));
-    zisti();
-    const sledovac = new MutationObserver(zisti);
-    sledovac.observe(document.body, { childList: true, subtree: true });
-    return () => sledovac.disconnect();
-  }, [mounted, consent]);
+  const okno = useOtvoreneOkno();
 
   /**
    * Lišta visí na `position: fixed`, takže sama nezaberá miesto a prekrýva to,
@@ -189,7 +181,7 @@ export function CookieConsentBanner() {
         role="dialog"
         aria-live="polite"
         aria-label="Cookies súhlas"
-        data-cookie-lista=""
+        data-plavajuce=""
         hidden={okno}
         ref={bannerRef}
         /*

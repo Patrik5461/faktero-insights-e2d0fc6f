@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
+import { useOtvoreneOkno } from "@/hooks/useOtvoreneOkno";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
@@ -26,6 +27,7 @@ const SUGGESTED = [
 
 export function FloatingAIButton() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const oknoOtvorene = useOtvoreneOkno();
   const [open, setOpen] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const availabilityFn = useServerFn(getAiAvailabilityFn);
@@ -48,11 +50,17 @@ export function FloatingAIButton() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Na menšej obrazovke sedí tlačidlo presne na tlačidlách v päte okna a klik
+  // chytá ono. Kým je okno otvorené, uhne.
+  if (oknoOtvorene && !open) return null;
   if (pathname.startsWith("/ai-asistent")) return null;
   if (availability.data && !availability.data.available) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div
+      data-plavajuce=""
+      className="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6"
+    >
       {open && <CompactChat companyId={companyId} onClose={() => setOpen(false)} />}
       <button
         type="button"

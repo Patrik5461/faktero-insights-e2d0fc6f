@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useOtvoreneOkno } from "@/hooks/useOtvoreneOkno";
 import ReactMarkdown from "react-markdown";
 import { MessageCircle, X, Send, Loader2, Minus, Mail } from "lucide-react";
 
@@ -22,6 +23,7 @@ const GREETING: Msg = {
 
 export function PublicSupportWidget() {
   const [open, setOpen] = useState(false);
+  const oknoOtvorene = useOtvoreneOkno();
   const [msgs, setMsgs] = useState<Msg[]>([GREETING]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -75,8 +77,15 @@ export function PublicSupportWidget() {
     }
   }
 
+  // Na menšej obrazovke sedí tlačidlo presne na tlačidlách v päte okna a klik
+  // chytá ono. Kým je okno otvorené, uhne.
+  if (oknoOtvorene && !open) return null;
+
   return (
-    <div className="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div
+      data-plavajuce=""
+      className="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6"
+    >
       {open && (
         <div
           className="flex w-[calc(100vw-2rem)] max-w-[360px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10"
