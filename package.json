@@ -17,7 +17,8 @@
     "cap:add:android": "cap add android",
     "build:mobile": "node scripts/build-mobile.mjs",
     "build:jazdy": "node scripts/build-jazdy.mjs",
-    "ktora-apka": "node scripts/ktora-apka.mjs"
+    "ktora-apka": "node scripts/ktora-apka.mjs",
+    "znalosti": "node scripts/znalosti-manualy.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",

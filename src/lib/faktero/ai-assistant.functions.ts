@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getProductCapabilitiesMarkdown, getProductCapabilities } from "./product-capabilities";
+import { getProductCapabilitiesMarkdown } from "./product-capabilities";
 
 const SYSTEM_PROMPT = `Si Faktero AI — asistent pre slovenských živnostníkov a firmy používajúcich Faktero (fakturačný systém).
 Odpovedaj VŽDY v slovenčine, stručne, prakticky, vo formáte markdown.
@@ -8,9 +8,20 @@ Pomáhaš s: faktúrami, opakovanými faktúrami, neuhradenými faktúrami, odbe
 
 Vždy berieš do úvahy KONTEXT FIRMY, ktorý dostaneš v správe — citácia konkrétnych čísel je vítaná.
 
+ZDROJE, KTORÉ DOSTANEŠ:
+1. Zoznam modulov a funkcií (Knowledge Base) — čo Faktero vie.
+2. Obsah manuálov a úryvky z nich k tejto otázke — ako sa to robí. Toto je najpresnejší zdroj; keď v úryvku je postup, drž sa ho doslova a neprerozprávaj ho po svojom.
+3. Kontext firmy — konkrétne čísla používateľa.
+
+AKO ODPOVEDAŤ:
+- Najprv krátka odpoveď (jedna–dve vety), potom kroky, ak treba. Žiadne dlhé úvody.
+- Uveď, kam v aplikácii ísť — cestu z manuálu (napr. Účtovníctvo → Výkazy k DPH) a odkaz na manuál, ak sa hodí (napr. /pomoc/vykazy-dph).
+- Keď postup v úryvkoch nie je, povedz, čo vieš z Knowledge Base, a priznaj, že podrobný návod k tomu nemáš — nedopĺňaj kroky z hlavy.
+- Nevymýšľaj názvy tlačidiel ani obrazoviek; keď ich nevidíš v podkladoch, opíš cieľ, nie kliknutia.
+
 DÔLEŽITÉ: V druhej systémovej správe dostaneš aktuálnu Faktero Knowledge Base. Obsahuje (a) zoznam podporovaných modulov — toto je AUTORITATÍVNY zoznam, na ktorý sa môžeš odvolávať; (b) zoznam funkcií, ktoré ZATIAĽ NIE SÚ dostupné. Pravidlá:
 - Ak sa pýtajú na funkciu z podporovaných modulov, potvrď ju a vymenuj kľúčové funkcie.
-- Ak sa pýtajú na čokoľvek z "Zatiaľ nie je dostupné" (rezervácie skladu, šarže, FIFO/LIFO, výroba, mzdy, plné účtovníctvo, Peppol ostré odosielanie, 2FA), odpovedz presne: "Zatiaľ nie je dostupné vo Faktere." Neuvádzaj plán/dátum, ak nie je v Knowledge Base.
+- Ak sa pýtajú na čokoľvek zo zoznamu "Zatiaľ NIE JE dostupné", odpovedz presne: "Zatiaľ nie je dostupné vo Faktere." Neuvádzaj plán ani dátum, ak nie je v Knowledge Base. Zoznam ber z Knowledge Base, nie z pamäti — mení sa.
 - Ak si nie si istý, či funkcia existuje, povedz "Nie som si istý — overte si to v aplikácii." Nikdy nevymýšľaj funkcionalitu.
 
 DÔLEŽITÉ BEZPEČNOSTNÉ PRAVIDLÁ:
@@ -196,8 +207,8 @@ export const sendChatFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: { conversationId: string; companyId: string; content: string }) => d)
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("AI funkcie momentálne nedostupné");
+    // Poskytovateľa si vyberie spoločná vrstva; keď nie je nastavený ani jeden
+    // kľúč, ozve sa sama zrozumiteľnou chybou.
 
     // Insert user message
     await context.supabase.from("ai_messages").insert({
@@ -220,43 +231,44 @@ export const sendChatFn = createServerFn({ method: "POST" })
     const contextMsg = `KONTEXT FIRMY (nezdieľaj surové JSON, použi prirodzene):
 ${JSON.stringify(ctx, null, 2)}`;
 
+    /*
+      Manuály sú najpresnejší zdroj — bez nich asistent poznal len zoznam
+      funkcií a postupy si domýšľal. Posiela sa obsah pomoci a k tomu plné
+      znenie sekcií, ktoré sedia na poslednú otázku.
+    */
+    const { znalostiKOtazke } = await import("./znalosti");
+    const poslednaOtazka =
+      [...(history ?? [])].reverse().find((m: any) => m.role === "user")?.content ?? data.content;
+
     const messages = [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "system", content: getProductCapabilitiesMarkdown() },
+      { role: "system", content: znalostiKOtazke(String(poslednaOtazka)) },
       { role: "system", content: contextMsg },
       ...(history ?? []).map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-    const zacalo = Date.now();
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model, messages }),
-    });
-
-    if (res.status === 429)
-      throw new Error("Prekročený limit požiadaviek na AI. Skúste o chvíľu znova.");
-    if (res.status === 401) throw new Error("OpenAI API kľúč je neplatný.");
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error(`AI chyba: ${res.status} ${t.slice(0, 200)}`);
-    }
-    const json: any = await res.json();
-    // Meranie využitia AI — zostatok kreditu poskytovateľ nepovie, vlastnú
-    // spotrebu si teda rátame sami.
-    const { zapisPouzitie } = await import("@/lib/faktero/ai-merac.server");
-    zapisPouzitie({
-      poskytovatel: "openai",
-      model,
-      ucel: "asistent",
-      firma: data.companyId,
-      vstupneTokeny: json?.usage?.prompt_tokens ?? null,
-      vystupneTokeny: json?.usage?.completion_tokens ?? null,
-      trvanieMs: Date.now() - zacalo,
-      ok: true,
-    });
-    const reply = json?.choices?.[0]?.message?.content ?? "Bez odpovede.";
+    /*
+      Ide to cez spoločnú vrstvu, nie priamo na OpenAI: tá vyberie schopnejší
+      model a keď prvý poskytovateľ zlyhá, odpovie druhý. Zároveň sa volanie
+      započíta do merania využitia.
+    */
+    const { aiText } = await import("./ai.server");
+    const rozhovor = messages
+      .map((m: any) =>
+        m.role === "system"
+          ? m.content
+          : `${m.role === "user" ? "POUŽÍVATEĽ" : "ASISTENT"}: ${m.content}`,
+      )
+      .join("\n\n");
+    const reply =
+      (
+        await aiText(`${rozhovor}\n\nASISTENT:`, {
+          maxOutputTokens: 1200,
+          ucel: "asistent",
+          firma: data.companyId,
+        })
+      ).trim() || "Bez odpovede.";
 
     const { data: stored } = await context.supabase
       .from("ai_messages")

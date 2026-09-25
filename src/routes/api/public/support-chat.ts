@@ -86,8 +86,8 @@ export const Route = createFileRoute("/api/public/support-chat")({
           });
         }
 
-        const apiKey = process.env.OPENAI_API_KEY;
-        if (!apiKey) {
+        // Stačí ktorýkoľvek poskytovateľ — vrstva si vyberie sama.
+        if (!process.env.GEMINI_API_KEY?.trim() && !process.env.OPENAI_API_KEY?.trim()) {
           return new Response(JSON.stringify({ error: "ai_unavailable" }), {
             status: 503,
             headers: { "Content-Type": "application/json" },
@@ -95,64 +95,35 @@ export const Route = createFileRoute("/api/public/support-chat")({
         }
 
         try {
-          const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-          const zacalo = Date.now();
-          const res = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-              model,
-              messages: [
-                { role: "system", content: SYSTEM },
-                { role: "system", content: getProductCapabilitiesMarkdown() },
-                ...parsed.messages,
-              ],
-              max_tokens: 500,
-            }),
-          });
-          if (res.status === 429) {
-            return new Response(
-              JSON.stringify({
-                error: "rate_limited",
-                message: "Príliš veľa otázok. Skúste o chvíľu.",
-              }),
-              { status: 429, headers: { "Content-Type": "application/json" } },
-            );
-          }
-          if (res.status === 401) {
-            return new Response(
-              JSON.stringify({
-                error: "ai_unavailable",
-                message: "AI podpora je dočasne nedostupná. Napíšte nám na podpora@faktero.sk.",
-              }),
-              { status: 503, headers: { "Content-Type": "application/json" } },
-            );
-          }
-          if (!res.ok) {
-            return new Response(JSON.stringify({ error: "ai_error" }), {
-              status: 502,
-              headers: { "Content-Type": "application/json" },
-            });
-          }
-          const json: any = await res.json();
-          // Meranie využitia AI — zostatok kreditu poskytovateľ nepovie, vlastnú
-          // spotrebu si teda rátame sami.
-          const { zapisPouzitie } = await import("@/lib/faktero/ai-merac.server");
-          zapisPouzitie({
-            poskytovatel: "openai",
-            model,
-            ucel: "podpora",
-            vstupneTokeny: json?.usage?.prompt_tokens ?? null,
-            vystupneTokeny: json?.usage?.completion_tokens ?? null,
-            trvanieMs: Date.now() - zacalo,
-            ok: true,
-          });
+          /*
+            Návštevník sa pýta na to isté, čo je v manuáloch — tie sú preto
+            najlepší podklad. Posiela sa obsah pomoci a úryvky k poslednej
+            otázke; bez nich asistent poznal len zoznam funkcií a postupy si
+            domýšľal.
+          */
+          const { znalostiKOtazke } = await import("@/lib/faktero/znalosti");
+          const poslednaOtazka =
+            [...parsed.messages].reverse().find((m: any) => m.role === "user")?.content ?? "";
+
+          const rozhovor = [
+            SYSTEM,
+            getProductCapabilitiesMarkdown(),
+            znalostiKOtazke(String(poslednaOtazka), 3),
+            ...parsed.messages.map(
+              (m: any) => `${m.role === "user" ? "NÁVŠTEVNÍK" : "PODPORA"}: ${String(m.content)}`,
+            ),
+            "PODPORA:",
+          ].join("\n\n");
+
+          // Spoločná vrstva: schopnejší model a náhrada, keď prvý poskytovateľ
+          // zlyhá. Volanie sa zároveň započíta do merania využitia.
+          const { aiText } = await import("@/lib/faktero/ai.server");
+          const odpoved = (
+            await aiText(rozhovor, { maxOutputTokens: 700, ucel: "podpora" })
+          ).trim();
+
           const content =
-            json?.choices?.[0]?.message?.content ??
-            "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk a ozveme sa vám.";
+            odpoved || "Toto neviem zodpovedať. Napíšte nám na podpora@faktero.sk a ozveme sa vám.";
           return new Response(JSON.stringify({ content }), {
             status: 200,
             headers: { "Content-Type": "application/json" },

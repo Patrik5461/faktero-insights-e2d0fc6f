@@ -12,17 +12,18 @@ export type CapabilityModule = {
   routes?: string[];
 };
 
-export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v1";
+export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v2 (25. 9. 2026)";
 
 /** Features that are explicitly NOT supported yet. AI must say "Zatiaľ nie je dostupné". */
 export const NOT_YET_SUPPORTED: string[] = [
   "Šarže a expirácie",
   "FIFO / LIFO oceňovanie",
   "Výroba / kusovníky",
-  "Mzdy",
+  "Mzdy a mzdové listy (personalistika bez miezd v module Zamestnanci existuje)",
   "Plné podvojné účtovníctvo",
-  "Peppol ostré odosielanie eFaktúr",
-  "Dvojfaktorová autentifikácia (2FA)",
+  "Odosielanie eFaktúr do ostrej prevádzky (pripravené, čaká na ostré prístupy ePoštáka)",
+  "Vlastná registračná pokladnica eKasa (bločky sa len načítavajú)",
+  "Priame podanie výkazov na finančnú správu (XML sa stiahne a nahrá do eDane)",
 ];
 
 export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
@@ -33,6 +34,9 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
     features: [
       "Faktúry (vystavenie, úprava, storno, dobropisy)",
       "Cenové ponuky s konverziou na faktúru",
+      "Odberateľ prijme alebo zamietne ponuku tlačidlom v e-maile",
+      "Odberateľom môže byť firma aj fyzická osoba bez IČO",
+      "Viac bankových účtov firmy a výber účtu na faktúre",
       "Opakované faktúry s automatickým vystavovaním",
       "Generovanie PDF",
       "Odosielanie faktúr e-mailom",
@@ -288,10 +292,56 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Viac firiem pod jedným prihlásením",
       "Pozvánky e-mailom (odkaz platí 14 dní)",
       "Rola majiteľ a účtovník; účtovník nevidí banku ani kľúče",
+      "Vlastný prístup: po oblastiach sa vyklikne, kto čo vidí a smie meniť",
+      "Dobrovoľné dvojfaktorové overenie kódom z aplikácie a dôveryhodné zariadenia",
+      "Stiahnutie všetkých dát firmy v ZIP (CSV agend a PDF faktúr)",
       "Audit log (plán Premium a vyšší)",
       "Zrušenie účtu s 14-dňovým odkladom",
     ],
     routes: ["/firmy", "/firma", "/nastavenia"],
+  },
+  {
+    key: "dph",
+    name: "DPH, výkazy a OSS",
+    summary: "Postavenie firmy k DPH, priznanie, kontrolný a súhrnný výkaz v XML a predaj do EÚ.",
+    features: [
+      "Platiteľ DPH a typ registrácie (§ 4, § 4b, § 5, § 7, § 7a; CZ plátce a identifikovaná osoba)",
+      "Neplatiteľ fakturuje bez dane a doklad nesie vetu prečo",
+      "Priznanie k DPH (vzor DPHv21) ako XML pre eDane",
+      "Kontrolný výkaz (KVDPH 2025) vrátane častí A.1, A.2, B.1, B.2, B.3, C.1 a C.2",
+      "Súhrnný výkaz (SVDPHv20) pre dodania do EÚ",
+      "Prehľad DPH za mesiac alebo štvrťrok a upozornenia na chýbajúce údaje",
+      "Režim OSS: sadzby 27 členských štátov, prehľad za štvrťrok, hranica 10 000 €",
+      "Overenie IČ DPH odberateľa vo VIES aj s dôkazom o overení",
+      "Kurz ECB a daň v eurách pri faktúre v cudzej mene",
+      "Zaokrúhľovanie hotovosti na päť centov a upozornenie na limit 5 000 €",
+      "Vety osobitných úprav (§ 68d, § 65, § 66)",
+    ],
+    routes: ["/uctovnictvo/dph", "/uctovnictvo/vykazy", "/uctovnictvo/oss", "/firma"],
+  },
+  {
+    key: "ostatne-doklady",
+    name: "Ostatné doklady",
+    summary: "Listy úradov, predpisy poistného, exekúcie a zmluvy na jednom mieste.",
+    features: [
+      "Rozpoznanie dokumentu AI (druh, odosielateľ, suma, lehota)",
+      "Príjem e-mailom na rovnakú adresu ako doklady",
+      "Väzba na zamestnanca alebo na leasingovú zmluvu",
+      "Upozornenia na lehoty",
+    ],
+    routes: ["/ostatne-doklady"],
+  },
+  {
+    key: "zamestnanci",
+    name: "Zamestnanci (personalistika bez miezd)",
+    summary: "Karty zamestnancov, zmluvy zo šablón, dochádzka a lehoty.",
+    features: [
+      "Karta zamestnanca vrátane šifrovaného rodného čísla a čísla dokladu",
+      "Dokumenty zo šablón (zmluva, dodatok, výpoveď, potvrdenie o príjme, prihlášky)",
+      "Dochádzka, dovolenka, náhradné voľno a mesačný súhrn",
+      "Pripomienky: koniec pomeru, skúšobná doba, lekárska prehliadka, BOZP",
+    ],
+    routes: ["/zamestnanci"],
   },
   {
     key: "ai",

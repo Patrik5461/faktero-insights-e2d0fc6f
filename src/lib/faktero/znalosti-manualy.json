@@ -1,0 +1,1073 @@
+{
+ "vytvorene": "2026-09-25",
+ "clanky": [
+  {
+   "cesta": "/pomoc/ai-asistent",
+   "titulok": "Faktero AI",
+   "sekcie": [
+    {
+     "nadpis": "Načo to je",
+     "text": "<>\nFaktero AI (/ai-asistent) je pomocník, ktorý sa pozerá na\nvaše vlastné dáta a odpovedá slovom. Namiesto preklikávania zoznamov a\nfiltrov sa spýtate tak, ako by ste sa spýtali kolegu:\n- „Ktoré faktúry sú po splatnosti?“\n- „Ktorí zákazníci mi dlhujú najviac?“\n- „Čo mám poslať účtovníčke?“\n- „Navrhni mi opakované faktúry.“\nOdpovedá vždy za vybranú firmu — tú, ktorá je prepnutá hore v lište. Keď\nmáte firiem viac, prepnite sa skôr, než sa spýtate."
+    },
+    {
+     "nadpis": "Do čoho vidí",
+     "text": "<>\nPred každou odpoveďou si k otázke vezme prehľad o firme:\n-\nfaktúry po splatnosti aj neodoslané a rozpracované,\n-\nkoľko a komu sa dlhuje ,\n-\nchýbajúce údaje firmy (IČO, IČ DPH, adresa, IBAN), bez ktorých faktúra\nnie je úplná,\n-\nnadchádzajúce opakované faktúry (/opakovane),\n-\nneúspešné webhooky (/webhooky-logy), keď máte napojený vlastný systém.\nTie isté veci ukazuje aj ako odporúčania hneď po otvorení — nemusíte sa\nteda pýtať, aby ste zistili, že niečo horí."
+    },
+    {
+     "nadpis": "Čo nerobí",
+     "text": "<>\nNič nemení. Asistent faktúru nevystaví, neuhradí, nezmaže ani neodošle —\nlen číta a radí. Ukladá si jedine samotnú konverzáciu, aby ste sa k nej vedeli vrátiť.\nNie je to účtovník. Odpoveď je návod, kde sa pozrieť a čo urobiť, nie\ndaňové stanovisko. Čísla si vždy overte na doklade — v účtovníctve platí to, čo je v\nDPH prehľade (/uctovnictvo/dph) a v exportoch, nie to, čo napíše chat.\nVidí len to, čo je vo Faktere. Na otázku o doklade, ktorý ste ešte\nnenahrali, odpovedať nemôže."
+    },
+    {
+     "nadpis": "Konverzácie",
+     "text": "<>\nKaždá otázka patrí do konverzácie a tie sa ukladajú — vľavo si viete staršiu otvoriť,\nzaložiť novú alebo starú zmazať. Konverzácia patrí firme, takže ju vidia aj kolegovia s\nprístupom; nepíšte do nej nič, čo im nemá prísť na oči.\nOdpoveď sa dá skopírovať jedným ťuknutím a poslať ďalej — napríklad účtovníčke ako zoznam\ntoho, čo od vás čaká."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/api",
+   "titulok": "API",
+   "sekcie": [
+    {
+     "nadpis": "Čo je Faktero API",
+     "text": "<>\nFaktero API je REST rozhranie, ktoré umožňuje vašej aplikácii vytvárať faktúry, spravovať\nodberateľov a počúvať na udalosti cez webhooky.\nVšetky endpointy bežia pod https://www.faktero.sk/api/v1 a používajú JSON."
+    },
+    {
+     "nadpis": "Kde nájdem API kľúč",
+     "text": "<>\n-\nOtvorte Nastavenia (/nastavenia) → API kľúče .\n-\nKliknite na Vytvoriť nový kľúč a pomenujte ho (napr. „Eshop\nprodukcia\").\n-\nKľúč sa zobrazí iba raz — uložte ho na bezpečnom mieste.\nKľúč posielajte v hlavičke Authorization: Bearer fkt_… ."
+    },
+    {
+     "nadpis": "Test a live režim",
+     "text": "<>\nPri vytváraní kľúča vyberáte režim:\n-\nTest (sandbox) — faktúry sa nezarátavajú do limitu a nemajú právne\núčinky.\n-\nLive (produkcia) — reálne faktúry, ktoré sa rátajú do mesačného limitu\nplánu.\nTest kľúče majú prefix fkt_test_ , live kľúče fkt_live_ ."
+    },
+    {
+     "nadpis": "Vytvorenie faktúry cez API",
+     "text": "<>\nPríklad cURL volania:\n{`curl -X POST https://www.faktero.sk/api/v1/invoices \\\\\n-H \"Authorization: Bearer fkt_live_…\" \\\\\n-H \"Content-Type: application/json\" \\\\\n-d '{\n\"customer\": ,\n\"items\": [\n],\n\"due_date\": \"2026-07-01\"\n}'`}\nOdpoveď obsahuje id , invoice_number a URL na PDF."
+    },
+    {
+     "nadpis": "Webhooky",
+     "text": "<>\nWebhooky pošlú HTTP POST na vašu URL, keď nastane udalosť:\n-\ninvoice.created\n-\ninvoice.sent\n-\ninvoice.paid\n-\ninvoice.cancelled\nKaždý webhook je podpísaný hlavičkou X-Faktero-Signature (HMAC SHA-256 z tela\nsprávy a tajného kľúča webhooku). Vždy podpis overte pred spracovaním."
+    },
+    {
+     "nadpis": "Kompletná dokumentácia a skúšanie",
+     "text": "<>\nÚplný zoznam endpointov, parametrov a chybových kódov nájdete v\nAPI dokumentácii (/docs/api).\nVolania si viete vyskúšať bez písania kódu v\nAPI playgrounde (/api-playground) — vyberiete endpoint, doplníte parametre\na hneď vidíte odpoveď servera aj hotový príkaz pre curl . Playground volá\nostré dáta vašej firmy , takže zápisové volania naozaj vytvárajú doklady."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/apka",
+   "titulok": "Aplikácia v telefóne",
+   "sekcie": [
+    {
+     "nadpis": "Sú to dve appky",
+     "text": "<>\nFaktero je celá agenda v telefóne — faktúry, doklady, banka aj jazdy.\nKniha jázd je samostatná appka, ktorá vie len jazdy a nič iné.\nDôvod je jednoduchý: vodičovi, ktorý má viesť knihu jázd, netreba dávať do rúk fakturáciu.\nSú to dve ikony, dva záznamy v obchode a každá si pýta len tie povolenia, ktoré naozaj\npotrebuje. Účet je pritom ten istý — prihlásite sa rovnakým e-mailom a jazdy vidíte aj na\nwebe vo Fakturácia → Kniha jázd (/jazdy)."
+    },
+    {
+     "nadpis": "Odkiaľ ju vziať",
+     "text": "<>\nObe appky pre iPhone sú v App Store:\nFaktero\na samostatná\nKniha jázd\n.\nVerzia pre Android sa pripravuje. Dovtedy ju dostanete v testovaní na\npozvánku — napíšte na servis@faktero.sk (mailto:servis@faktero.sk).\nAppka sa neaktualizuje sama . Celé rozhranie je zabalené v nej, aby sa\notvorila aj bez signálu — cenou za to je, že každá oprava znamená nový build. Keď vyjde\nnovšia verzia, appka to sama zbadá a ponúkne ju; dovtedy pokojne používate tú svoju."
+    },
+    {
+     "nadpis": "Čo sa dá v telefóne spraviť",
+     "text": "<>\nV spodnej lište je šesť miest:\n-\nPrehľad — tržba za dnes a včera, kto ešte nezaplatil a rýchle tlačidlá\nna novú faktúru a nový doklad.\n-\nFaktúry — vystavenie aj oprava už vystavenej faktúry, cenové ponuky,\nPDF a odoslanie e-mailom. Opravuje sa na tej istej obrazovke, na ktorej sa vystavuje.\n-\nDoklady — nahraté a rozpoznané výdavkové doklady.\n-\nSkener — odfotíte bloček alebo faktúru a text z nej prečíta server. Pri\nslovenských pokladničných dokladoch stačí naskenovať QR kód: doklad si Faktero vypýta\npriamo z Finančnej správy aj s položkami a sadzbami. Viac v\nmanuáli k pokladni (/pomoc/pokladna).\n-\nBanka — zostatky a posledné pohyby z pripojených účtov.\n-\nJazdy — kniha jázd, vrátane tých, ktoré si telefón všimol sám.\nÚčet aj firmu si v appke založíte sami — na web kvôli tomu chodiť netreba."
+    },
+    {
+     "nadpis": "Keď nie je signál",
+     "text": "<>\nAppka sa otvorí a dá sa v nej pracovať aj úplne bez pripojenia. Prihlásenie, výber firmy\naj rozpracované veci sú uložené priamo v telefóne, takže prežijú aj zatvorenie appky.\nČo sa odloží a odošle samo po pripojení:\n-\njazdy — zapíšu sa lokálne a doplnia sa do knihy jázd,\n-\ndoklady zo skenera — fotka počká vo fronte a pošle sa, keď je obrazovka\nDoklady otvorená,\n-\nfaktúry — uložia sa a vystavia sa po pripojení. Číslo im vtedy pridelí\nserver ako vždy.\nNa to posledné je jedna výnimka — ak musíte doklad odovzdať priamo na mieste, pozrite sa\nna čísla dopredu nižšie."
+    },
+    {
+     "nadpis": "Faktúra s číslom aj bez signálu",
+     "text": "<>\nRemeselník po oprave alebo predajca z auta potrebuje odovzdať hotový doklad, nie prísľub.\nPre nich sa dá zapnúť, aby si appka držala zopár čísel dopredu — faktúra\npotom dostane číslo hneď, aj keď je telefón offline.\nPredvolene je to vypnuté , a je to zámer: bežne stačí, že sa faktúra\nodloží a vystaví sa sama. Rezervované čísla, ktoré sa do dvoch týždňov nepoužijú, prepadnú\na číslo sa vráti do rady — Faktero potom dieru zaplní ďalšou faktúrou, takže rad ostane\nbez medzier."
+    },
+    {
+     "nadpis": "Jazdu si telefón všimne sám",
+     "text": "<>\nAppka rozpozná, že idete autom, a jazdu zapíše bez toho, aby ste čokoľvek stláčali. Trasa\nsa pritom drží v telefóne a nikam sa neposiela, kým ju appka neprevezme\ndo knihy jázd.\nAby to fungovalo, potrebuje appka polohu aj na pozadí — inak sa jazda\nzačne zaznamenávať až vtedy, keď ju otvoríte, čo je väčšinou neskoro. Pri prvom spustení\nsi o to povie a vysvetlí prečo.\nAdresu začiatku a konca aj vodiča dopĺňa server dodatočne, takže sa nemusíte trápiť s\nvypisovaním. Podrobnosti sú v manuáli ku knihe jázd (/pomoc/jazdy)."
+    },
+    {
+     "nadpis": "Prihlásenie a odhlásenie",
+     "text": "<>\nPo prvom prihlásení sa dá zapnúť Face ID / Touch ID (na Androide\nodtlačok) a ďalej sa už heslo nepíše.\nOdhlásenie v appke odhlási len ten telefón . Na počítači ostanete\nprihlásený — to je dôležité, ak appku len požičiavate alebo skúšate."
+    },
+    {
+     "nadpis": "Oznámenia",
+     "text": "<>\nNa iPhone appka posiela upozornenia — napríklad na faktúry po splatnosti. Či registrácia\nnaozaj prešla, uvidíte v appke v stave oznámení; je tam aj tlačidlo, ktorým sa dá\nzopakovať.\nNa Androide oznámenia zatiaľ nechodia. Appka je hotová, ale chýba jej\nnapojenie na doručovaciu službu Googlu. Všetko ostatné na Androide funguje."
+    },
+    {
+     "nadpis": "Jazyky",
+     "text": "Appka hovorí po slovensky, česky, anglicky, nemecky a maďarsky a jazyk si\nberie z telefónu. Ak je telefón v inom jazyku, zostane slovenčina. Jedinou výnimkou je\nobrazovka Diagnostika — tá je vždy po slovensky, pretože jej výstup čítame my."
+    },
+    {
+     "nadpis": "Keď niečo nejde",
+     "text": "<>\nV appke je obrazovka Diagnostika . Povie naraz tri veci, ktoré sa z bežnej\nobrazovky rozlíšiť nedajú: akú verziu balíčka appka beží, či jej funguje pamäť v telefóne\na či má pripojenie. Stačí z nej poslať snímku — je z nej vidieť viac než\nz akéhokoľvek opisu.\nChybu sa dá nahlásiť aj priamo z appky. Správa nám príde na\nservis@faktero.sk (mailto:servis@faktero.sk) spolu s údajmi o telefóne, takže\nju netreba nikam prepisovať."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/banka",
+   "titulok": "Bankové účty",
+   "sekcie": [
+    {
+     "nadpis": "Načo pripájať banku",
+     "text": "<>\nAby ste nemuseli ručne označovať, ktorá faktúra je zaplatená. Faktero stiahne pohyby z\núčtu a spáruje ich s faktúrami podľa variabilného symbolu a sumy.\nÚčty sa spravujú v Účtovníctvo → Bankové účty (/bankove-ucty)."
+    },
+    {
+     "nadpis": "Pripojenie účtu",
+     "text": "<>\nV Pripojiť banku (/bankove-ucty/pripojit) vyberte banku a prejdite jej\nprihlásením. Súhlas na prístup k účtu má obmedzenú platnosť — po jej uplynutí ho treba\nobnoviť, Faktero na to upozorní.\nKtoré banky. Priamo Tatra banka, ďalej Wise, Wallester a Revolut\nBusiness. Ak máte účet v inej banke a v internetbankingu Tatra banky ho máte pripojený cez\nmultibanking (Slovenská sporiteľňa, VÚB, ČSOB a ďalšie), natiahne sa\nspolu s ostatnými — zostatky aj pohyby. Oficiálne výpisy na stiahnutie ale banka vydá len\npre účty vedené v Tatra banke.\nÚčet sa dá viesť aj bez pripojenia , len ako číslo účtu na faktúrach."
+    },
+    {
+     "nadpis": "Wise",
+     "text": "<>\nWise sa nepripája prihlásením ako banka, ale osobným tokenom . Vo Wise\notvorte Settings → API tokens , vytvorte token na čítanie a vložte ho do Faktera.\nPotom je ešte jeden krok, na ktorý sa ľahko zabudne:\nvýpisy vo Wise chráni podpis . Faktero vám ukáže verejný kľúč — stiahnite\nsi ho ako súbor a nahrajte ho vo Wise k tomu istému tokenu. Kým to nespravíte, zostatky sa\nnačítajú, ale pohyby nie.\nKaždá mena je vo Fakteri samostatný účet, pretože tak ich vedie aj Wise. Sumy v rôznych\nmenách sa nikdy nesčítavajú."
+    },
+    {
+     "nadpis": "Wallester",
+     "text": "<>\nWallester vydáva firemné karty a jeho pohyby sú platby kartou — teda presne to, čo sa dá\nspárovať s naskenovanými bločkami podľa mena obchodníka.\nPrístup k ich rozhraniu nie je samoobslužný : treba oň požiadať Wallester\n(podpora alebo váš kontakt). Postup je potom takýto:\n-\nV Pripojiť banku (/bankove-ucty/pripojit) kliknite na\nVyrobiť verejný kľúč a stiahnite si ho ako súbor.\n- Pošlite ten súbor Wallesteru.\n-\nOni vám vrátia issuer ID , audience ID , kód produktu a\nmaximálnu platnosť tokenu.\n- Tie štyri údaje doplňte vo Fakteri a dokončite pripojenie.\nSúkromný kľúč ostáva u nás zašifrovaný a nikam sa neposiela; Wallesteru ide len tá verejná\npolovica. Pripojenie sa hneď skúsi, takže o preklepe v údajoch viete okamžite.\nWallester nie je bežný účet s IBAN-om — je to kartový účet, takže pri ňom neuvidíte číslo\núčtu ani variabilné symboly."
+    },
+    {
+     "nadpis": "Revolut Business",
+     "text": "<>\nRevolut sa pripája certifikátom a potvrdením v prehliadači. Postup má tri kroky, v takomto\nporadí ich vyžaduje Revolut:\n-\nV Pripojiť banku (/bankove-ucty/pripojit) kliknite na\nVyrobiť certifikát a stiahnite si ho.\n-\nV Revolut Business otvorte Settings → APIs → Business API , nahrajte certifikát\na ako návratovú adresu zadajte presne tú , ktorú Faktero na obrazovke\nukazuje. Musí sedieť na znak.\n-\nPortál vám ukáže client ID . Vložte ho do Faktera, kliknite na\nPotvrdiť prístup a v Revolute potvrďte, čo Fakteru dovolíte. Stačí čítanie.\nSúhlas platí približne 90 dní. Keď vyprší, sťahovanie prestane a\npotvrdenie treba zopakovať — je to tá istá cesta, len bez vyrábania certifikátu.\nPrevod medzi vlastnými menami je v Revolute jedna transakcia, ktorá sa dotýka dvoch účtov.\nFaktero ju preto zapíše na oba — z jedného odíde, na druhý príde."
+    },
+    {
+     "nadpis": "Kedy sa pohyby objavia",
+     "text": "<>\nRaz denne predpoludním si Faktero samo stiahne pohyby zo všetkých pripojených účtov. To je\nspodná hranica — nič viac netreba nastavovať.\nPri Tatra banke to býva rýchlejšie: banka dá vedieť, že sa na účte niečo\nstalo, a Faktero si po pohyby siahne v priebehu pár sekúnd . Platba\nprijatá doobeda tak nečaká na ďalšie ráno.\nSťahovanie sa nespúšťa ručne a je to zámer — nie je čo zrýchliť. Banky vydávajú pohyby s\nvlastným oneskorením: čo ešte nezaúčtovali, nepošlú ani na požiadanie. Tlačidlo\nNačítať účty v Bankových účtoch (/bankove-ucty) obnoví\nzoznam účtov a zostatky, nie zoznam pohybov."
+    },
+    {
+     "nadpis": "Transakcie a párovanie",
+     "text": "<>\nBankové transakcie (/bankove-ucty/transakcie) ukazujú pohyby na účte.\nPárovanie sa spúšťa tlačidlom Spárovať platby v prehľade faktúr (alebo\nSpárovať s faktúrami nad transakciami). Nerobí sa samo od seba — úhrada\nmení stav faktúry, a to nemá prebehnúť bez toho, aby o tom niekto vedel.\nFaktero rozdeľuje nájdené dvojice na dve kôpky:\n-\nIsté — sedí variabilný symbol aj suma do haliera a žiadna iná faktúra\nneprichádza do úvahy. Tie sa dajú zapísať naraz tlačidlom „Spárovať isté\".\n-\nNa rozhodnutie — čiastočná platba, chýbajúci variabilný symbol, alebo\nrovnako dobre sedia dve faktúry. Pri každej dvojici je napísané, prečo ju Faktero\nponúka, a rozhodujete vy.\nČiastočná úhrada nechá faktúru otvorenú so zvyškom — ďalšia platba sa napáruje na to, čo\nostalo. Za uhradenú sa faktúra označí, až keď je pokrytá celá.\nPárovanie sa dá vrátiť: v zozname transakcií je pri spárovanom pohybe krížik, ktorý úhradu\nzmaže a faktúru vráti medzi otvorené.\nOdchádzajúce platby sa nepárujú — tie patria k prijatým faktúram, nie k vystaveným.\nPárovanie podľa variabilného symbolu funguje spoľahlivo len vtedy, keď ho odberateľ\nuvedie; preto Faktero predvypĺňa variabilný symbol z čísla faktúry.\nÚhrada sa dá zapísať aj do uzamknutého obdobia (/pomoc/uzavierka) — platby\nchodia aj mesiace po vystavení faktúry."
+    },
+    {
+     "nadpis": "Bankové výpisy",
+     "text": "<>\nBankové výpisy (/bankove-ucty/vypisy) sú mesačné prehľady pre účtovníčku.\nPri bankách, ktoré výpisy poskytujú, sa stiahnu priamo od nich.\nPri ostatných si Faktero zostaví vlastný výpis zo stiahnutých transakcií — vo formáte\ncamt.053 aj ako PDF. Taký výpis je len tak úplný, ako sú úplné transakcie, z ktorých\nvznikol."
+    },
+    {
+     "nadpis": "Odosielanie platieb",
+     "text": "<>\nPri podporovaných bankách sa dá platba odoslať priamo z Fakera. Vyžaduje si to samostatný\nsúhlas — súhlas na čítanie účtu na platby nestačí."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/ceny",
+   "titulok": "Cenník a zľavy",
+   "sekcie": [
+    {
+     "nadpis": "Načo je cenník",
+     "text": "<>\nBez cenníka má produkt jedinú cenu a zľavu prepisujete ručne na každom riadku každej\nfaktúry. Cenník tú istú vec povie raz:\nstavebníci majú −15 %, Novák má tehlu za 0,38 € a cez august beží akcia na tmely .\nDoklad si potom cenu doplní sám.\nCenník nájdete v Sklad → Cenník a zľavy (/ceny), akcie v\nCenové akcie (/ceny/akcie)."
+    },
+    {
+     "nadpis": "V akom poradí sa cena vyberá",
+     "text": "<>\nFaktero prechádza tieto možnosti zhora nadol a zoberie prvú, ktorá platí:\n-\nIndividuálna cena odberateľa — cena dohodnutá práve s ním.\n-\nCena jeho cenovej skupiny .\n-\nZľava v percentách zo základnej ceny. Zľava odberateľa prebíja zľavu\nskupiny — nesčítavajú sa . Kto má vlastných 10 % a je v skupine s 5 %,\ndostane 10 %, nie 15 %.\n-\nZákladná cena z katalógu produktov.\nDohodnutá cena vypína percentuálnu zľavu . Keď má odberateľ na tehlu\ndohodnutých 0,38 €, jeho všeobecná zľava sa na ňu už neuplatní."
+    },
+    {
+     "nadpis": "Dohodnutá cena môže byť aj vyššia",
+     "text": "<>\nNevyhráva najnižšia cena a je to zámer. Stály odberateľ má občas dohodnutú cenu\nvyššiu než pultovú — za prioritné dodanie, servis, dopravu na miesto.\nTaká cena musí prejsť.\nV cenníku takú položku spoznáte podľa oranžového znamienka plus vedľa dohodnutej ceny;\nzelené mínus znamená, že odberateľ platí menej než ostatní."
+    },
+    {
+     "nadpis": "Množstevné ceny",
+     "text": "<>\nPri každej dohodnutej cene sa dá zadať Od množstva . Nula znamená, že cena\nplatí vždy.\nPre ten istý produkt sa dá zadať viac prahov: 0 → 10 €, od 10 ks → 9 €, od 100 ks → 8 €.\nFaktero na riadku dokladu použije ten najvyšší prah, ktorý zadané množstvo dosiahne.\nCena sa prepočíta hneď pri zmene množstva priamo vo formulári — nie až po\nuložení."
+    },
+    {
+     "nadpis": "Cenové skupiny",
+     "text": "<>\nSkupina je spoločné nastavenie pre viacerých odberateľov — veľkoobchod, stáli zákazníci,\ne-shop. Má vlastnú percentuálnu zľavu a môže mať vlastné dohodnuté ceny.\nOdberateľa do skupiny zaradíte v jeho karte v Odberatelia (/odberatelia).\nTam sa nastavuje aj jeho individuálna zľava .\nZmazaním skupiny sa odberatelia iba odviažu a stratia jej zľavu — dohodnuté ceny ostanú v\nhistórii."
+    },
+    {
+     "nadpis": "Cenové akcie",
+     "text": "<>\nAkcia je časovo ohraničená zľava. Má názov, obdobie od–do (prázdne „do\" znamená\nbez konca) a buď percentuálnu zľavu, alebo pevnú akciovú cenu na konkrétne produkty.\nAkcia môže platiť na celý sortiment , alebo len na produkty, ktoré do nej\nvyberiete. Pri vybraných produktoch sa dá zadať pevná akciová cena; keď ju necháte\nprázdnu, platí percentuálna zľava akcie.\nAkcia sa uplatní len vtedy, keď je pre odberateľa výhodnejšia než to, čo\nby dostal podľa cenníka. Akcia je marketing — nemá nikomu zdvihnúť cenu, ktorú má\ndohodnutú. Ak platí viac akcií naraz, vyhrá tá najvýhodnejšia.\nAkciu sa dá dočasne vypnúť bez mazania. Rozhoduje\ndátum dokladu , nie dnešok — faktúra vystavená spätne dostane cenu, ktorá\nplatila v deň jej vystavenia."
+    },
+    {
+     "nadpis": "Ako to vyzerá na doklade",
+     "text": "<>\nKeď na faktúru, ponuku alebo objednávku pridáte produkt, cena sa doplní podľa cenníka a\npod ňou sa zobrazí zeleným, prečo je taká — Zľava odberateľa 10 % ,\nCena cenovej skupiny , Akcia Letný výpredaj −30 % . Ak sa cena líši od\nzákladnej, je vedľa nej preškrtnutá pôvodná.\nCena sa prepočíta aj po zmene odberateľa.\nRiadok, do ktorého ste zasiahli ručne, už cenník neprepisuje — vaša cena\nmá vždy prednosť."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/doklady",
+   "titulok": "Doklady a skenovanie",
+   "sekcie": [
+    {
+     "nadpis": "Čo sú Doklady a čím sa líšia od prijatých faktúr",
+     "text": "<>\nDoklady (/doklady) sú drobné výdavky, ktoré nemajú faktúru — bločky z\nčerpačky, z obchodu, z parkoviska, účtenky z reštaurácie. Odfotíte ich hneď na mieste a\núčtovníčka ich má na konci mesiaca pokope.\nPrijaté faktúry (/pomoc/prijate-faktury) sú naproti tomu doklady so\nsplatnosťou, ktoré niekomu dlžíte. Ak sa z bločku vykľuje faktúra, netreba ju prepisovať —\npozri Presun medzi prijaté faktúry (#presun)."
+    },
+    {
+     "nadpis": "Tri spôsoby, ako doklad dostať dnu",
+     "text": "<>\nV Doklady → Nový doklad (/doklady/novy) máte tri tlačidlá:\n-\nOdfotiť — fotku prečíta AI a doplní dodávateľa, dátum, sumu, sadzby DPH\naj jednotlivé položky.\n-\nQR kód — naskenuje eKasa QR z bločku. To je najpresnejšia cesta, viac\nnižšie.\n-\nNahrať súbor — fotka alebo PDF z počítača. Súbor sa dá aj pretiahnuť\nmyšou do vyznačenej plochy.\nPo načítaní sa formulár vyplní sám, ale zostáva na vás ho skontrolovať .\nDoplňte kategóriu (napríklad „pohonné hmoty“), spôsob platby — hotovosťou, kartou alebo\nprevodom — a prípadne poznámku."
+    },
+    {
+     "nadpis": "eKasa QR kód",
+     "text": "<>\nQR kód na slovenskom bločku nenesie sumu ani položky — nesie\nidentifikátor dokladu (UID) . Faktero si s ním vypýta celý doklad priamo z\nFinančnej správy, takže sa načíta presne to, čo predajca odoslal: dodávateľ, IČO, dátum,\nčas, položky aj rozpis DPH.\nPodľa toho, ako sa doklad podarilo získať, svieti nad formulárom štítok:\n-\n✓ Načítané z Finančnej správy — údaje sú overené, netreba ich\nkontrolovať.\n-\nLen z QR kódu — doklad sa vo Finančnej správe nenašiel (stáva sa pri\nčerstvých bločkoch alebo pri výpadku ich systému). Suma z QR kódu sedí, položky chýbajú.\n-\nOdhadnuté z fotky — QR sa nedal prečítať a údaje odhadla AI.\nTie si prejdite ."
+    },
+    {
+     "nadpis": "Doklady a pokladňa",
+     "text": "<>\nAk dáte spôsob platby hotovosťou , doklad automaticky uberie z hotovosti v\npokladni (/pokladna) — nemusíte k nemu robiť ešte aj výdavkový pokladničný\ndoklad. Podrobne v manuáli k pokladni (/pomoc/pokladna).\nDoklad platený kartou alebo prevodom stav pokladne nemení."
+    },
+    {
+     "nadpis": "Presun medzi prijaté faktúry",
+     "text": "<>\nKeď sa ukáže, že nahratý doklad je v skutočnosti faktúra so splatnosťou, presuniete ho\njedným tlačidlom na riadku v zozname dokladov. Prenesie sa aj s prílohou a\nz Dokladov zmizne — aby sa ten istý náklad nepočítal dvakrát."
+    },
+    {
+     "nadpis": "Ostatné doklady — listy, predpisy, exekúcie",
+     "text": "<>\nNie všetko, z čoho účtovník účtuje, je faktúra alebo bloček. Exekučný príkaz, predpis\npoistného, list z daňového úradu či zmluvu nahráte do\nDoklady → Ostatné doklady (/ostatne-doklady). Vyberiete druh dokladu,\nodosielateľa, dátum doručenia a pripojíte PDF alebo fotky (aj viac strán). Suma a lehota\nsú nepovinné — lehota, ktorá sa blíži alebo už uplynula, sa v zozname zvýrazní.\nÚdaje nemusíte prepisovať: po pridaní prílohy ju prečíta AI a doplní\ndruh, odosielateľa, predmet, sumu, lehotu aj krátke zhrnutie pre účtovníka. V mobilnej\nappke je na skeneri voľba Iný doklad — nafotíte strany a doklad sa uloží\nsem. A keď takýto dokument príde na adresu pre\ndoklady e-mailom (/doklady/mailom), AI ho rozpozná a uloží medzi ostatné\ndoklady namiesto prijatých faktúr.\nExekúciu priradíte k zamestnancovi — AI ho navrhne sama, keď v dokumente\nnájde jeho celé meno — a na karte zamestnanca ju uvidíte v záložke\nExekúcie . Doklad k leasingu či úveru priradíte k zmluve a nájdete ho v\njej detaile v časti Doklady k zmluve . Na lehotu, ktorá príde do siedmich\ndní alebo už uplynula, upozorní zvonček, kým doklad neodovzdáte účtovníkovi.\nAj tu platí Nespracované → Spracované → Odovzdané : účtovník doklad pozrie\na klikne na Spracovať . Ostatné doklady sa do Pohody neposielajú, sú\npodkladom. V mesačnom balíku pre účtovníka sú v priečinku ostatne-doklady\nso súpisom v CSV."
+    },
+    {
+     "nadpis": "Prechod z Doklado — import prijatých dokladov",
+     "text": "<>\nV Účtovníctvo → Import prijatých dokladov (/importy/doklady) nahráte\nexport z Doklado, Pohody alebo tabuľku. Najpresnejšie je nahrať naraz\nXML (Pohoda) a ZIP s PDF : údaje sa vezmú z XML a skeny\nsa priradia k dokladom podľa čísla, alebo podľa sumy, dátumu a dodávateľa. Ide aj\nCSV/XLSX a samotný ZIP so skenmi — ten prečíta AI.\nPrijaté faktúry pôjdu medzi prijaté faktúry, bločky do Dokladov a listy, predpisy či\nexekúcie do Ostatných dokladov. Pred spustením uvidíte, čo sa naimportuje, a zvolíte stav\n(napríklad „Odovzdané účtovníkovi“ pre doklady, ktoré sú už zaúčtované). Doklady, ktoré vo\nFakteri už sú, sa preskočia, takže import sa dá pustiť aj opakovane. Hotovostné bločky sa\ndo pokladne započítajú len vtedy, keď to zaškrtnete."
+    },
+    {
+     "nadpis": "Zoznam, filtre a odovzdanie účtovníčke",
+     "text": "<>\nKaždý nový doklad — z appky, z webu aj naskenovaný — padne najprv do záložky\nNespracované . Tam ho vy alebo účtovník skontrolujete, prípadne doplníte a\nkliknete na Spracovať (viac naraz cez zaškrtnutie a\nOznačiť ako spracované ). Spracovať sa dá doklad so sumou a dátumom; ak\nniečo chýba, zoznam to napíše a ponúkne Doplniť .\nĎalšie záložky sú Spracované , Odovzdané účtovníkovi a\nVšetky , filtrujú sa podľa mesiaca. Nespracované sa ukazujú zo všetkých\nmesiacov, aby žiadny neostal schovaný. Prepojenie s Pohodou si berie len spracované\ndoklady. Pri každom doklade vidno dátum, dodávateľa, sumu a zdroj — teda\nči prišiel z eKasy, z fotky alebo bol nahratý ručne.\nDo balíka pre účtovníčku idú doklady spolu s faktúrami cez\nÚčtovné exporty (/exporty); ak účtujete v Pohode, prenesú sa aj tam —\npozri Prepojenie s Pohodou (/pomoc/pohoda)."
+    },
+    {
+     "nadpis": "Doklady e-mailom",
+     "text": "<>\nNajrýchlejšia cesta, ako dostať faktúru od dodávateľa dnu: nechať ju tam prísť samu. Každá\nfirma má vlastnú adresu, napríklad vasafirma-k7f2p9@doklady.faktero.sk , a čo\nna ňu prepošlete, to sa spracuje.\nAdresu nájdete v Doklady → Doklady e-mailom (/doklady/mailom). Skopírujete\nju a prepošlete na ňu mail od dodávateľa — nič sa nesťahuje a nikam sa neprihlasujete. Z\nPDF v prílohe sa prečíta dodávateľ, IČO, IČ DPH, IBAN, číslo faktúry, variabilný symbol,\ndátum vystavenia aj splatnosti, sumy a jednotlivé položky — tie sú na\ndetaile dokladu len na prezretie, do skladu ani do účtovníctva nevstupujú.\nNa detaile dokladu je aj náhľad prílohy , takže na prezretie nemusíte nič\nsťahovať.\nDoklad potom čaká medzi prijatými faktúrami (/prijate-faktury) ako\nrozpracovaný . Nič sa neschváli samo — prezriete si ho a\nuložíte.\nČo je dobré vedieť:\n-\nAdresa je pre každú firmu iná . Ak máte firiem viac, prepnite sa hore v\nlište a vezmite si tú správnu.\n-\nBerie sa PDF alebo fotka v prílohe. Mail bez prílohy sa v denníku\noznačí ako „bez prílohy“ a nič sa nezaloží.\n-\nViac príloh v jednom maile znamená viac dokladov — každá sa spracuje\nzvlášť, najviac však 15 z jedného e-mailu.\nAdresa sa dá zmeniť na vlastnú — tlačidlom „Zvoliť vlastnú\" si namiesto\nnáhodného konca zadáte svoje slovo a číslo, napríklad\ndoklady-2026@doklady.faktero.sk . Diakritiku, medzery a veľké písmená si\nFaktero opraví samo a hneď ukáže, ako bude adresa naozaj vyzerať.\nPozor, adresa je zároveň heslo. Kto ju pozná, vie vám poslať doklad —\npreto sa predvolene generuje s náhodným koncom, ktorý sa nedá uhádnuť z názvu firmy.\nKrátku a logickú adresu si vie domyslieť aj cudzí človek. Ak vlastnú chcete, pridajte do\nnej niečo svoje, čo nie je na prvý pokus zrejmé.\nNa tej istej stránke je aj denník posledných mailov — pri každom vidno,\nako dopadol. Keď doklad nedorazil, začnite tam. A keby sa adresa dostala tam, kam nemá, dá\nsa vypnúť alebo vymeniť za novú; stará vtedy prestane prijímať."
+    },
+    {
+     "nadpis": "Automatické preposielanie z Gmailu",
+     "text": "<>\nPrepošlite si doklady raz a navždy : Gmail vie posielať kópiu pošty na inú\nadresu sám. Nastavíte to v Gmaile v\nNastavenia → Preposielanie a POP/IMAP → Pridať adresu na preposielanie ,\nkam vložíte svoju adresu z Doklady → Doklady e-mailom (/doklady/mailom).\nGoogle si to musí overiť, a preto pošle potvrdzovací mail — lenže pošle\nho na tú novú adresu, teda k nám. Preto ho Faktero zachytí a ukáže vám ho\n: na stránke Doklady e-mailom sa objaví žltý pruh „Google žiada potvrdenie preposielania“.\nObjaví sa sám, netreba obnovovať stránku.\nV pruhu je to, čo od vás Google chce:\n-\ntlačidlo Potvrdiť preposielanie — odkaz od Googlu. Funguje len v\nprehliadači, kde ste prihlásený do tej istej schránky;\n-\nkód , keď ho Google poslal — dá sa skopírovať a vložiť priamo v Gmaile\nvedľa tlačidla „Overiť“. Google ho ale posiela len niekedy, väčšinou príde iba odkaz;\n-\ntlačidlo Už som potvrdil , ktorým pruh odpracete — Google nám o\npotvrdení nedá vedieť, takže sám nezmizne.\nPotom sa vráťte do Gmailu, zapnite\n„Preposielať kópiu doručenej pošty na…“ a uložte. Samotné overenie\npreposielanie ešte nezapne.\nOdporúčame nepreposielať všetko. V Gmaile si radšej spravte filter (\nVyhľadávanie → Vytvoriť filter → Preposlať na ) napríklad na maily s prílohou\nalebo na konkrétnych dodávateľov. Inak sa Faktero pokúsi spraviť doklad z každého mailu,\nčo vám príde, a denník sa zaplní hláškami „bez prílohy“.\nPotvrdenie platí sedem dní . Keď ho prešvihnete, jednoducho pridajte\nadresu v Gmaile znova — príde nové.\nPrečo je to bezpečné. Potvrdzovací mail prijmeme len od skutočnej adresy\nGooglu a len vtedy, keď sedí jeho elektronický podpis (SPF a DKIM domény\ngoogle.com ). Podvrhnutý mail „od Googlu“ s cudzím odkazom zahodíme. Z mailu\nsi navyše necháme iba kód, odkaz a adresu schránky, z ktorej sa preposiela —\nobsah mailu sa nikam neukladá ."
+    },
+    {
+     "nadpis": "V telefóne",
+     "text": "<>\nSkenovanie je hlavný dôvod, prečo mať Faktero v telefóne — bloček odfotíte hneď pri\npokladni a nemusíte ho nosiť domov. Funguje to aj bez signálu : doklad sa\nuloží do telefónu a odošle sa, keď sa pripojíte.\nFaktúru z PDF viete rovnakým spôsobom načítať aj v\nSkeneri dokladov (/faktury/skener) na webe."
+    },
+    {
+     "nadpis": "Odpočet DPH z bločkov",
+     "text": "<>\nBloček je zjednodušená faktúra — do kontrolného výkazu ide do časti B.3 ,\nnie medzi bežné prijaté faktúry. Do 3 000 € odpočítanej dane za obdobie sa vykazuje\nsumárne, nad túto hranicu sa rozpisuje po dodávateľoch (vtedy je potrebné IČ DPH\ndodávateľa).\nKeď si z dokladu daň neodpočítavate, prepnite na ňom Odpočítanie dane —\ndo výkazu potom nevstúpi."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/dph",
+   "titulok": "DPH",
+   "sekcie": [
+    {
+     "nadpis": "Čo prehľad DPH ukazuje",
+     "text": "<>\nÚčtovníctvo → DPH prehľad (/uctovnictvo/dph) spočíta za zvolené obdobie\ndaň na výstupe (z vydaných faktúr) a daň na vstupe (z\nprijatých faktúr a dokladov) a ukáže rozdiel — teda koľko máte odviesť alebo si nárokovať.\nJe to podklad , nie priznanie. Priznanie podáva účtovníčka; Faktero jej dá\nčísla a rozpis, z ktorých dokladov vznikli."
+    },
+    {
+     "nadpis": "Sadzby DPH",
+     "text": "<>\nPonuka sadzieb sa riadi krajinou firmy z\nNastavení firmy (/firma) a dátumom dokladu — pri staršom doklade teda\ndostanete sadzby, ktoré vtedy platili, nie tie dnešné.\nSlovenská firma:\n-\n23 % — základná,\n-\n19 % — znížená,\n-\n5 % — znížená (napríklad vybrané potraviny a bývanie),\n-\n0 % — oslobodené plnenia.\nTakto to platí od 1. januára 2025. Na dokladoch do konca roka 2024 Faktero ponúkne 20 % a\n10 %.\nČeská firma:\n-\n21 % — základná,\n-\n12 % — znížená (od 1. januára 2024, keď sa obe znížené zlúčili),\n-\n0 % — oslobodené plnenia.\nSadzba sa nastavuje na produkte a dá sa prepísať na riadku faktúry. Predvolená je tá\nzákladná."
+    },
+    {
+     "nadpis": "Ak nie ste platiteľ DPH",
+     "text": "<>\nV Nastaveniach firmy (/firma) nechajte zaškrtávacie pole\nFirma je platiteľ DPH prázdne a vyberte „Neplatiteľ DPH\". Faktúry potom\nvychádzajú bez dane, sadzby sa neponúkajú a na doklade je veta, že dodávateľ nie je\nplatiteľom.\nSamotné IČ DPH o platiteľstve nerozhoduje — registrácia podľa § 7 alebo § 7a ho má tiež.\nPrehľad DPH v tomto prípade nepotrebujete, súhrnný výkaz pri § 7a áno."
+    },
+    {
+     "nadpis": "Prenesenie daňovej povinnosti",
+     "text": "<>\nPri faktúre sa dá zapnúť prenesenie daňovej povinnosti — tuzemské podľa\n§69, dodanie do EÚ alebo vývoz. Faktúra potom ide bez DPH a nesie príslušnú poznámku;\nnamiesto sadzby je na riadkoch PDP .\nTakéto faktúry sa v prehľade DPH vedú zvlášť, lebo daň z nich neodvádzate vy."
+    },
+    {
+     "nadpis": "Do ktorého obdobia doklad patrí",
+     "text": "<>\nRozhoduje dátum dodania , nie dátum vystavenia ani úhrady. Ak dátum\ndodania nevyplníte, Faktero použije dátum vystavenia.\nPreto sa oplatí dátum dodania vypĺňať vždy, keď sa líši — inak sa doklad ocitne v zlom\nmesiaci DPH.\nKeď je priznanie podané, obdobie uzamknite (/pomoc/uzavierka). Zabránite\ntým dodatočným zmenám v sumách a dátumoch."
+    },
+    {
+     "nadpis": "Platiteľ, alebo len registrovaná osoba",
+     "text": "<>\nV Nastaveniach firmy (/firma) sa zaškrtáva, či je firma platiteľ DPH, a\nvyberá sa typ registrácie. Nestačí totiž vyplnené IČ DPH: osoba registrovaná podľa\n§ 7 (nadobudnutie tovaru z EÚ) alebo § 7a (služby v\nrámci EÚ) IČ DPH má, ale platiteľom nie je — faktúry vystavuje bez dane.\n-\nPlatiteľ: § 4 (bežná registrácia), § 4b (skupinová), § 5 (zahraničná\nosoba).\n-\nBez postavenia platiteľa: § 7, § 7a alebo neregistrovaná osoba.\n- Pre českú firmu: plátce, identifikovaná osoba, neplátce.\nNeplatiteľovi sa v doklade ponúka len nulová sadzba a na faktúru pribudne veta, prečo na\nnej daň nie je. Z registra sa ťahá len IČ DPH — paragraf treba vybrať ručne."
+    },
+    {
+     "nadpis": "Faktúra v cudzej mene",
+     "text": "<>\nPri faktúre v inej mene než euro sa daň prepočíta\nkurzom ECB zo dňa predchádzajúceho dňu dodania a na doklade pribudne\nriadok s daňou v eurách, kurzom a dňom, z ktorého je (§ 26 ods. 1 zákona o DPH). Robí sa\nto samo pri vystavení; kurz si faktúra zapamätá, takže sa spätne nemení.\nCez víkend a sviatky sa použije posledný zverejnený kurz. Do výkazov k DPH vstupuje\nprepočítaná suma v eurách."
+    },
+    {
+     "nadpis": "Priznanie a výkazy",
+     "text": "<>\nZ tých istých dokladov sa v\nÚčtovníctve → Výkazy k DPH (/uctovnictvo/vykazy) zostaví priznanie,\nkontrolný výkaz aj súhrnný výkaz a stiahnu sa v XML pre eDane. Podrobne to popisuje\nmanuál k výkazom (/pomoc/vykazy-dph).\nPredaj spotrebiteľom v EÚ cez režim OSS (/pomoc/oss) do priznania ani do\nkontrolného výkazu nevstupuje — má vlastné priznanie."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/efaktura",
+   "titulok": "eFaktúra",
+   "sekcie": [
+    {
+     "nadpis": "Čo je eFaktúra",
+     "text": "<>\neFaktúra je štruktúrovaný elektronický dokument (XML), ktorý si\nvystavovateľ a príjemca vymieňajú strojovo čitateľnou formou. Spĺňa európsku normu\nEN 16931 a v SR sa odovzdáva cez informačný systém Finančnej správy.\nSlovensko zavádza povinnú eFakturáciu pre B2B postupne v roku 2027 ."
+    },
+    {
+     "nadpis": "eFaktúra nie je PDF",
+     "text": "<>\nPDF je obrázok faktúry pre ľudí. eFaktúra je XML súbor pre stroje —\núčtovný systém príjemcu ho vie spracovať automaticky bez ručného prepisovania.\nPDF prílohu môžete posielať aj naďalej, ale právne záväzná bude eFaktúra v XML formáte\npodľa normy EN 16931 / Peppol BIS."
+    },
+    {
+     "nadpis": "Faktero readiness score",
+     "text": "<>\nNa dashboarde vidíte skóre pripravenosti vašej firmy na eFakturáciu.\nSkóre zohľadňuje:\n- Doplnené identifikačné údaje firmy (IČO, DIČ, IČ DPH, adresa).\n- Vyplnené údaje odberateľov.\n- Korektne nastavené sadzby DPH a meny.\n- Validitu vygenerovaných XML dokumentov.\nČím vyššie skóre, tým menej úprav vás čaká pred povinným prechodom."
+    },
+    {
+     "nadpis": "XML / Peppol pripravenosť",
+     "text": "<>\nFaktero už dnes vie vygenerovať XML eFaktúry vo formáte kompatibilnom s normou EN 16931\n(UBL 2.1). Súbor si môžete stiahnuť na detaile faktúry.\nPre Peppol sieť pripravujeme priame napojenie cez akreditovaný Access Point — bude k\ndispozícii pred spustením povinnej eFakturácie."
+    },
+    {
+     "nadpis": "Čo bude dostupné pred rokom 2027",
+     "text": "<>\n-\nValidátor XML voči SK rozšíreniam EN 16931.\n-\nPriame odosielanie do IS Finančnej správy (IS EFA).\n-\nPríjem eFaktúr od dodávateľov priamo do Faktera.\n-\nArchív v zákonom požadovanej lehote.\nAk chcete byť informovaní o spustení, prihláste sa cez\nstránku eFaktúra (/efaktura)."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/exporty",
+   "titulok": "Exporty a importy",
+   "sekcie": [
+    {
+     "nadpis": "Účtovné exporty",
+     "text": "<>\nV Účtovníctvo → Účtovné exporty (/exporty) vyberiete mesiac a Faktero\npovie, koľko z neho ešte neodišlo. Vznikne jeden balík: XML na import, súpisky v CSV na\nkontrolu a samotné doklady v PDF.\nOdovzdanie si pamätá, čo už odišlo , takže nabudúce priloží len nové\ndoklady a nič sa nezaúčtuje dvakrát. Každý export sa uloží do histórie, takže sa dá\nstiahnuť znova.\nBalík sa dá poslať účtovníčke rovno mailom , prípadne nechať odchádzať\nsamo 5. v mesiaci. Ak účtuje v Pohode, oplatí sa ísť ešte ďalej — pozrite si\nprepojenie s Pohodou (/pomoc/pohoda), pri ktorom si doklady vezme sama a\nvráti čísla, ktoré im pridelila.\nPred exportom skontrolujte prehľad DPH (/pomoc/dph) a obdobie potom\nuzamknite (/pomoc/uzavierka)."
+    },
+    {
+     "nadpis": "Prechod z iného systému",
+     "text": "<>\nFaktero vie prevziať dáta zo SuperFaktúry, Money S3, Omega, iDokladu a KROSu.\nImport nájdete v Účtovníctvo → Importy (/importy). Prenášajú sa\nodberatelia, produkty a faktúry — podľa toho, čo daný systém vie vyviezť.\nPo importe skontrolujte číslovanie faktúr , aby nové doklady nadviazali na\nstaré a nezačali od jednotky."
+    },
+    {
+     "nadpis": "Import zo SuperFaktúry krok za krokom",
+     "text": "<>\n-\nVo SuperFaktúre otvorte Nástroje → Export agendy .\n- Vyberte obdobie a stiahnite export.\n-\nDostanete ZIP , v ktorom je každá faktúra ako samostatný súbor\n.isdoc . Nahrajte ho do\nImport zo SuperFaktúry (/importy/superfaktura) celý — rozbaľovať ho\nnetreba.\n-\nFaktero stĺpce rozpozná samo a ukáže náhľad: koľko faktúr, odberateľov a položiek sa\nnaimportuje a za akú sumu. Skontrolujte ho a potvrďte.\nPrijímame aj samotný .isdoc , Excel, CSV a XML. Ak by rozpoznanie niektorý\nstĺpec netrafilo, dá sa priradiť ručne — ale pri exporte zo SuperFaktúry by to nemalo byť\ntreba.\nČo sa prenesie: číslo faktúry a variabilný symbol, dátumy vystavenia,\ndodania a splatnosti, mena, sumy bez DPH aj s DPH, poznámka, odberateľ s IČO, DIČ, IČ DPH\na adresou, a všetky položky s množstvom, mernou jednotkou, cenou a sadzbou DPH."
+    },
+    {
+     "nadpis": "Money S3, iDoklad, Omega a KROS",
+     "text": "<>\nKaždý systém vyváža inak, preto má vlastnú stránku aj vlastný návod:\n-\nMoney S3 (Seyfor) — XML dátový balík MoneyData z\nXML prenosov . Prenesú sa faktúry vydané aj prijaté vrátane položiek, odberateľa\ns adresou a faktúr v cudzej mene.\n-\niDoklad — CSV alebo XLSX zo zoznamu faktúr. iDoklad vyváža tie stĺpce,\nktoré máte práve zobrazené, takže si pred exportom zapnite aspoň číslo dokladu,\nodberateľa, dátumy a sumy.\n-\nOmega a KROS — CSV alebo XML. Zvládneme kódovanie Windows-1250 aj\nUTF-8, dátumy v tvare 04.03.2025 aj 2025-03-04 a desatinnú\nčiarku.\n-\nPohoda — XML z Súbor → Dátová komunikácia → XML import/export ,\nalebo export do ISDOC. Prečítame aj súbor, ktorý Pohoda vydá pri exporte (\nresponsePack ), nielen ten importný.\n-\nmPohoda — nie je to ten istý formát ako Pohoda. mPohoda je cloudová\naplikácia a dáta vydáva cez svoje rozhranie ako JSON . Nahrajte ho na tú\nistú stránku, formát rozpoznáme sami.\nVo všetkých prípadoch Faktero stĺpce rozpozná samo a pred zápisom ukáže náhľad: koľko\nfaktúr, odberateľov a položiek sa naimportuje a za akú sumu.\nStav faktúry sa prekladá — „Uhradená\", „Zaplacena\" aj číselný stav zo\nSuperFaktúry skončia ako uhradená faktúra. Keď je stav nejasný, doklad ostane vystavený;\noznačiť cudziu faktúru za zaplatenú omylom by bolo horšie."
+    },
+    {
+     "nadpis": "Čo import neprenesie",
+     "text": "<>\nPrenášajú sa faktúry, ich položky a odberatelia . Neprenášajú sa úhrady a\nbankové pohyby, sklad a jeho stavy, cenníky ani prílohy a PDF pôvodných faktúr.\nSklad si po prechode založte cez Sklad → Import (/sklad/import), bankový\núčet cez pripojenie banky (/pomoc/banka)."
+    },
+    {
+     "nadpis": "Čo vieme vyviezť my",
+     "text": "<>\nDo Pohody vieme poslať vydané faktúry (aj zálohové a dobropisy), prijaté\ndoklady, pokladňu, a keď si to zapnete, aj adresár, skladové karty a zákazky. Buď súborom,\nmailom, alebo priamym prepojením , pri ktorom si Pohoda doklady vezme sama\n— celé je to v manuáli k Pohode (/pomoc/pohoda).\nĎalej vieme vyviezť do KROS Omegy (textový súbor R00/R01/R02 v kódovaní\nWindows-1250) — ten istý súbor číta aj ALFA plus , jej import sa volá\n„Import faktúr z Omegy\". A do Money S3 ako dátový balík\nMoneyData .\nFormát si vyberiete v Účtovných exportoch (/exporty) nad zoznamom faktúr.\nKaždý export sa uloží do histórie, takže sa dá stiahnuť znova."
+    },
+    {
+     "nadpis": "Import a export skladu",
+     "text": "<>\nSkladové karty sa hromadne zakladajú cez Sklad → Import (/sklad/import) z\nCSV a vyvážajú tlačidlom Export skladu CSV . Podrobnosti sú v\nmanuáli k skladu (/pomoc/sklad)."
+    },
+    {
+     "nadpis": "Napojenie vlastného systému",
+     "text": "<>\nAk potrebujete prenášať dáta priebežne a nie súborom, použite\nAPI a webhooky (/pomoc/api)."
+    },
+    {
+     "nadpis": "Výkazy pre finančnú správu",
+     "text": "<>\nOkrem účtovných exportov vie Faktero pripraviť aj podania: priznanie k DPH, kontrolný\nvýkaz a súhrnný výkaz v XML pre eDane — v\nÚčtovníctve → Výkazy k DPH (/uctovnictvo/vykazy). Popisuje to\nsamostatný manuál (/pomoc/vykazy-dph).\nPrijaté doklady z iného systému (napríklad z Doklada) sa dajú naimportovať aj s prílohami\n— pozri Doklady a skenovanie (/pomoc/doklady)."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/faktury",
+   "titulok": "Faktúry",
+   "sekcie": [
+    {
+     "nadpis": "Ako vytvoriť faktúru",
+     "text": "<>\n-\nV ľavom menu otvorte Fakturácia → Nová faktúra (alebo hore vpravo\nVytvoriť → Nová faktúra ).\n-\nV poli Odberateľ začnite písať názov alebo IČO a vyberte firmu zo\nzoznamu. Nového odberateľa pridáte tlačidlom Vytvoriť nového odberateľa\n.\n-\nDátum vystavenia a dodania sa vyplní sám. Splatnosť nastavíte jedným klikom na\n7d , 14d alebo 30d .\n-\nPridajte položky — ručne (názov, množstvo, cena, sadzba DPH) alebo cez\nZ katalógu . Sumu bez DPH, DPH aj sumu na úhradu Faktero prepočíta hneď.\n-\nKliknite na Vystaviť faktúru . Otvorí sa detail faktúry, odkiaľ ju\nodošlete e-mailom alebo vygenerujete PDF.\nČíslovanie sa generuje automaticky podľa nastavenej rady vo firme."
+    },
+    {
+     "nadpis": "Ako vygenerovať PDF",
+     "text": "<>\nNa detaile faktúry kliknite na Vygenerovať PDF . Ak ešte neexistuje,\nFaktero ho vytvorí automaticky a uloží do priloženého úložiska.\nPDF obsahuje vaše logo, IBAN, variabilný symbol a\nQR kód na platbu prevodom . Zákazník ho naskenuje v mobilnom bankovníctve\na nemusí prepisovať čísla."
+    },
+    {
+     "nadpis": "Ako odoslať faktúru emailom",
+     "text": "<>\n-\nNa detaile faktúry kliknite na Odoslať emailom .\n- Upravte predmet a sprievodnú správu (môžete použiť šablónu z nastavení firmy).\n- Faktero priloží PDF a odošle správu cez Resend.\nV PDF je aj QR kód na platbu , takže zákazník nemusí prepisovať IBAN ani\nvariabilný symbol — naskenuje ho v mobilnom bankovníctve."
+    },
+    {
+     "nadpis": "Ako označiť faktúru ako uhradenú",
+     "text": "<>\nExistujú tri spôsoby:\n-\nSama z banky: keď je banka pripojená, platba sa spáruje podľa\nvariabilného symbolu a sumy a faktúra sa označí za uhradenú (\npárovanie úhrad (/pomoc/banka)).\n-\nZ bankového výpisu: nahratý výpis sa spáruje rovnako ako živé\ntransakcie.\n-\nManuálne: na detaile faktúry otvorte menu … vpravo hore a\nvyberte Označiť ako uhradenú ."
+    },
+    {
+     "nadpis": "Ako od zákazníka dostať peniaze",
+     "text": "<>\nFaktúra ide zákazníkovi s\nIBAN-om, variabilným symbolom a QR kódom na platbu , takže si ju v\nmobilnom bankovníctve naskenuje a neprepisuje čísla ručne.\nKeď peniaze prídu, párovanie úhrad z banky (/bankove-ucty/transakcie)\nfaktúru označí za uhradenú samo — netreba to preklikávať. Ak platba dorazila inak\n(hotovosť, iný účet), označíte ju ručne na detaile faktúry.\nPlatby kartou pre vašich zákazníkov Faktero neponúka. Aby firma mohla\nprijímať karty pod vlastným účtom, potrebuje poskytovateľ platobnej brány zmluvu, ktorá to\nna spoločnej doméne umožňuje — kým ju nemáme, funkciu nesľubujeme. Netýka sa to platenia\npredplatného za Faktero (/pomoc/predplatne), to cez bránu funguje bežne."
+    },
+    {
+     "nadpis": "Zálohové faktúry (proforma)",
+     "text": "<>\nZálohová faktúra je výzva na zaplatenie preddavku , nie daňový doklad.\nVystavíte ju v Zálohové faktúry → Nová zálohová faktúra (/zalohove).\nMá vlastnú číselnú radu ( ZF… ), aby v rade riadnych faktúr\nnevznikali diery. Do obratu ani do DPH sa nepočíta — plnenie nastáva až\nriadnou faktúrou.\nKeď zákazník zálohu zaplatí, vystavíte riadnu faktúru a v nej zálohu\nodpočítate: v novej faktúre je na to voľba Pridať zálohovú faktúru . Zaplatená\nčasť sa odráta, takže zákazník doplatí len rozdiel a tá istá suma nie je vo výnosoch\ndvakrát. V zozname zálohových faktúr potom vidno, ktoré sú už zúčtované."
+    },
+    {
+     "nadpis": "Ako fungujú opakované faktúry",
+     "text": "<>\nV sekcii Fakturácia → Opakované faktúry nastavíte šablónu, frekvenciu\n(mesačne/štvrťročne/ročne) a dátum spustenia.\n- Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.\n-\nVygenerovaná faktúra môže byť automaticky odoslaná emailom, ak je zapnuté\nAuto-send .\n-\nHistória generovania je v záložke Logy pri danom opakovaní."
+    },
+    {
+     "nadpis": "Fakturovanie v mobile bez signálu",
+     "text": "<>\nV mobilnej aplikácii sa faktúra dá vystaviť aj bez internetu. Sú na to dve cesty a líšia\nsa v tom, čo zákazník dostane priamo na mieste.\nOdložená faktúra je predvolená a netreba nič nastavovať. Faktúru vypíšete\nbez signálu, uloží sa do telefónu a odošle sa sama, len čo je pripojenie — pri otvorení\naplikácie alebo obrazovky Vystavené faktúry . Číslo jej pridelí Faktero až vtedy,\ntakže sa zákazníkovi na mieste nedá nadiktovať.\nVydávanie s číslom zapnete v aplikácii v Účte . Telefón\nsi v signáli vypýta päť čísel dopredu a bez signálu z nich vydáva — faktúra má číslo hneď\na dá sa odovzdať alebo nadiktovať. Hodí sa remeselníkovi po oprave alebo predaju z auta.\nRezervované číslo je vaše a nikomu inému sa nepridelí. Ak ho nepoužijete, po dvoch\ntýždňoch prepadne a vráti sa do radu — Faktero prideľuje najnižšie voľné číslo, takže\ndieru samo zaplní. Trvalé diery v číselnom rade tým nevznikajú.\nPozor: PDF vytvára server, takže aj pri vydávaní s číslom príde až so\nsignálom. Na mieste odovzdáte číslo a sumu, nie hotový doklad.\nAby to fungovalo, musí mať telefón uložených odberateľov — aplikácia si ich ukladá pri\nkaždom spustení s internetom. Po inštalácii ju teda raz otvorte v dosahu signálu."
+    },
+    {
+     "nadpis": "Oprava a zmazanie faktúry v mobile",
+     "text": "<>\nPreklep sa nájde aj vtedy, keď je počítač ďaleko. V aplikácii otvorte\nVystavené faktúry , ťuknite na faktúru a dole sú\nUpraviť faktúru a Zmazať faktúru . Opraviť sa dajú\npoložky, dátumy, spôsob úhrady aj poznámka; odberateľ sa nemení — na to\nje web, rovnako ako pri oprave na počítači.\nZmazanie je mäkké. Faktúra zmizne zo zoznamu, ale ostáva v histórii a jej\nčíslo je ďalej obsadené, takže v číselnom rade nevznikne diera.\nDve veci aplikácia neurobí a povie to:\n-\nStornovanú faktúru už neopraví — tá sa len archivuje.\n-\nFaktúru s položkami zo skladu pošle na počítač. Pri nich totiž treba\ndopočítať rozdiel v zásobách a to sa na malej obrazovke robiť nemá.\nOprava potrebuje pripojenie — na rozdiel od vystavenia sa neodkladá do\ntelefónu. Menili by sme doklad, ktorý už na serveri žije, a prepísali by sme aj to, čo\nmedzitým zmenil kolega."
+    },
+    {
+     "nadpis": "Na ktorý účet majú prísť peniaze",
+     "text": "<>\nFirma môže mať viac bankových účtov — spravujú sa v\nNastaveniach firmy (/firma). Pri vystavovaní sa účet dá prehodiť a faktúra\nsi ho zapamätá, takže na PDF, v QR kóde aj v upomienke je ten, ktorý ste vybrali, aj keď\nneskôr zmeníte predvolený účet."
+    },
+    {
+     "nadpis": "Platba v hotovosti",
+     "text": "<>\nKeď ako spôsob platby vyberiete hotovosť, suma sa zaokrúhli na päť centov\n— jedno- a dvojcentové mince sa od 1. 7. 2022 nevydávajú a zákon o cenách to pri hotovosti\nukladá.\nNad 5 000 € sa objaví upozornenie: taká platba v hotovosti je medzi\npodnikateľmi zakázaná (zákon č. 394/2012 Z. z.). Medzi fyzickými osobami mimo podnikania\nje strop 15 000 €."
+    },
+    {
+     "nadpis": "Faktúra do zahraničia",
+     "text": "<>\nTri rôzne situácie, tri rôzne nastavenia:\n-\nFirme v EÚ s IČ DPH — prenesenie daňovej povinnosti, dodanie bez dane.\nVyberie sa aj druh plnenia (tovar, služba, trojstranný obchod) kvôli súhrnnému výkazu a\nodberateľovo IČ DPH sa dá overiť vo VIES priamo z faktúry.\n-\nSpotrebiteľovi v EÚ — zaškrtne sa „Predaj spotrebiteľovi v EÚ (OSS)\" a\nvyberie štát; sadzby položiek sa prepnú na sadzby jeho štátu. Viac v\nmanuáli k OSS (/pomoc/oss).\n-\nMimo EÚ — vývoz oslobodený podľa § 47."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/financovanie",
+   "titulok": "Leasingy a úvery",
+   "sekcie": [
+    {
+     "nadpis": "Načo to je",
+     "text": "<>\nŽe vám každý mesiac odišlo 399,99 €, viete aj z výpisu. Účtovníčka ale potrebuje vedieť,\nkoľko z tej sumy bola istina, koľko úrok a koľko DPH — a aký zostatok\ndlhu ostal na konci roka. To z výpisu nevyčítate.\nFaktero preto zo zmluvy vyrobí celý splátkový kalendár s týmto rozpadom a odchádzajúce\nplatby z banky si k jednotlivým splátkam páruje samo. Nájdete to v\nBanka → Leasingy a úvery (/financovanie)."
+    },
+    {
+     "nadpis": "Zapísanie zmluvy",
+     "text": "<>\nNová zmluva (/financovanie/nova) sa dá vyplniť dvomi spôsobmi — ručne\nalebo nahratím dokumentu.\nRučne stačí päť údajov:\n-\nFinancovaná suma (istina) — koľko vám požičali, teda cena bez\nakontácie.\n-\nÚrok % p. a. — ročná sadzba zo zmluvy. Nula je v poriadku, bezúročné\nsplátky u predajcov sú bežné.\n-\nPočet splátok a dátum prvej splátky .\n-\nVariabilný symbol splátok — podľa neho sa neskôr páruje banka. Bez neho\npárovanie funguje oveľa horšie, oplatí sa ho vyplniť.\nNepovinné je akontácia , zostatková cena ,\nDPH v splátke (pri leasingu obvykle 23 %) a\nsplátka zo zmluvy — tú vyplňte vtedy, keď chcete, aby kalendár sedel na\ncent s papierom; inak si ju Faktero dopočíta."
+    },
+    {
+     "nadpis": "Načítanie zmluvy z PDF",
+     "text": "<>\nNamiesto vypĺňania môžete zmluvu jednoducho nahrať. Faktero z nej prečíta hlavičku aj\ncelý splátkový kalendár , ak je v dokumente uvedený — vtedy sa nič\nneprepočítava a v hlavičke zmluvy svieti „kalendár prevzatý z dokumentu“.\nNahrať sa dá viac súborov naraz . Leasingovky často posielajú zmluvu a\nsplátkový kalendár ako dva samostatné PDF — označte oba a prečítané údaje sa spoja.\nČítanie trvá pol minúty až minútu a beží na pozadí; stránka počas neho ukazuje, koľko\nsekúnd už ubehlo. Zavrieť ju medzitým nemôžete.\nPrečítané údaje sú vždy len návrh — pred uložením si ich prejdite. Ak si\nFaktero niečím nie je isté, napíše to nad formulárom ako výhradu: napríklad že sa v\nkalendári opakuje ten istý dátum, že medzi dvomi splátkami je nezvyčajne veľká medzera\nalebo že sa splatnosť prvej splátky v dokumente vôbec nenašla.\nNahratý dokument ostáva uložený pri zmluve a otvoríte ho tlačidlom Zmluva\nv hlavičke — aj keď sa z neho prečítať nič nepodarilo."
+    },
+    {
+     "nadpis": "Ako sa kalendár počíta",
+     "text": "<>\nPočíta sa anuita: splátka je po celý čas rovnaká, mení sa len jej zloženie. Na začiatku je\nv nej najviac úroku, na konci najviac istiny.\nÚrok sa predvolene počíta zo skutočného počtu dní v období (ACT/365) —\ntak to robia slovenské banky. Preto úrok neklesá plynulo: mesiac s 31 dňami má vyšší úrok\nnež predchádzajúci tridsaťdňový. Ak vaša zmluva počíta rovnakými mesiacmi, prepnite\nVýpočet úroku na 30/360.\nPosledná splátka sa dorovnáva. Keby sa každý riadok počítal nezávisle,\nsúčet istín by sa o pár centov rozišiel s financovanou sumou a ten rozdiel by v\núčtovníctve visel navždy. Posledná splátka preto dostane presne toľko istiny, koľko\nzvýšilo — na cent.\nKeď zmluvu upravíte, kalendár sa prepočíta — ale\nuž zaplatené splátky sa nikdy neprepíšu . Oprava úroku vám teda nezahodí\nspárované platby."
+    },
+    {
+     "nadpis": "Párovanie s bankou",
+     "text": "<>\nPo každom stiahnutí pohybov z banky (/pomoc/banka) Faktero prejde\nodchádzajúce platby a skúsi ich priradiť k splátkam. Ručne to spustíte tlačidlom\nSpárovať s bankou na detaile zmluvy.\nAutomaticky sa spáruje len platba, ktorú niečo identifikuje — sedí\nvariabilný symbol zmluvy alebo meno leasingovky v protistrane — a zároveň\nsedí suma presne na cent.\nPrečo tak prísne: splátky sú každý mesiac rovnaké. Dva leasingy s podobnou splátkou od tej\nistej leasingovky by sa inak pomiešali a peniaze by sedeli na cudzej zmluve. Preto všetko\nostatné — trochu iná suma, žiadny variabilný symbol, dve rovnako dobré možnosti — končí v\nžltom rámiku „Platby, ktoré sem asi patria“ . Pri každom návrhu je\nnapísané, prečo si Faktero myslí, že tam patrí; priradíte ho jedným kliknutím.\nSplátku viete označiť za zaplatenú aj bez banky a spárovanie kedykoľvek zrušiť — vtedy sa\nplatba vráti medzi nespárované."
+    },
+    {
+     "nadpis": "Nenašlo to žiadnu platbu",
+     "text": "<>\nKeď párovanie nič nenájde, povie prečo. Sú dve možnosti:\n-\n„V banke nie sú žiadne nespárované odchádzajúce platby.“ — buď účet nie\nje pripojený, alebo z neho zatiaľ nie sú stiahnuté pohyby. Skontrolujte\nBankové účty (/bankove-ucty).\n-\n„Prezrelo sa N platieb a ani jedna nesedí.“ — platby v banke sú, ale\nnič ich nespája so zmluvou. Skoro vždy je to nevyplnený alebo preklepnutý\nvariabilný symbol splátok , prípadne iná suma, než akú má kalendár.\nPozor aj na dátumy: platba sa k splátke priradí len vtedy, keď je do 45 dní od jej\nsplatnosti. Splátky staršie, než dokedy banka vydá históriu pohybov (spravidla rok až\npätnásť mesiacov dozadu), preto ostanú neoznačené — tie označte ručne."
+    },
+    {
+     "nadpis": "Čo na zmluve uvidíte",
+     "text": "<>\nNa detaile sú štyri čísla: financovaná suma ,\nzaplatíte spolu , z toho úrok a\nzostáva splatiť . Pod nimi je celý kalendár — splátka, istina, úrok, DPH\n(ak je v splátke), zostatok istiny a stav. Nezaplatená splátka po splatnosti je červená.\nNa zozname zmlúv je hore súčet zostáva splatiť za všetky aktívne zmluvy —\nto je vaša záväzková situácia z leasingov a úverov jedným číslom."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/jazdy",
+   "titulok": "Kniha jázd",
+   "sekcie": [
+    {
+     "nadpis": "Než zapíšete prvú jazdu",
+     "text": "<>\nNajprv založte vozidlo v Jazdy → Vozidlá a tankovanie (/jazdy/vozidla).\nOkrem značky a evidenčného čísla vyplňte spotrebu v litroch na 100 km .\nBez spotreby Faktero neurčí, koľko paliva sa minulo — a náklad na dopravu vyjde nula,\nvrátane vyhodnotenia zákaziek (/pomoc/zakazky)."
+    },
+    {
+     "nadpis": "Zápis jazdy",
+     "text": "<>\nV Jazdy → Nová jazda (/jazdy/nova) zadajte vozidlo, dátum, odkiaľ a kam,\npočet kilometrov a účel.\nSpotrebované palivo Faktero dopočíta zo spotreby vozidla. Jazdu možno priradiť na\nzákazku — potom sa jej cena objaví v nákladoch tej zákazky.\nRozlišuje sa služobná a súkromná jazda; do nákladov idú\nlen služobné. Charakter jazdy vyberiete priamo vo formulári a v zozname je súkromná jazda\noznačená štítkom. Jazdy bez uvedeného charakteru sa berú ako služobné — tak vznikali\nstaršie záznamy."
+    },
+    {
+     "nadpis": "Oprava a vymazanie jazdy",
+     "text": "<>\nNa každom riadku v zozname jázd (/jazdy) je ceruzka — otvorí tú istú jazdu\nna úpravu. Opraviť sa dá všetko vrátane tachometra, vozidla, zákazky aj charakteru jazdy.\nPri jazdách stiahnutých z Commandera alebo zaznamenaných GPS-kou\nopravujte, nemažte — vymazaním sa stratí uložená trasa. Nočná\nsynchronizácia ju sama nevráti, lebo sťahuje len čerstvé dni; museli by ste si dané\nobdobie natiahnuť ručne v Integráciách (/jazdy/integracie/commander).\nKôš na jazdy nie je: vymazanie je okamžité a nedá sa vrátiť. Preto sa pýta na potvrdenie."
+    },
+    {
+     "nadpis": "Tankovanie a cena paliva",
+     "text": "<>\nTankovania sa zapisujú pri vozidle. Z nich Faktero berie cenu za liter ,\nktorou oceňuje jazdy.\nPoužije sa posledná cena z tankovaní daného vozidla; ak vozidlo tankovanie nemá, posledná\ncena ktoréhokoľvek vozidla firmy. Kým nie je ani jedno tankovanie, jazdy sa neocenia."
+    },
+    {
+     "nadpis": "GPS a automatický záznam",
+     "text": "<>\nGPS jazda (/jazdy/gps) zaznamená trasu priamo v mobile — stačí spustiť na\nzačiatku a ukončiť na konci cesty. Kilometre sa dopočítajú samy.\nCez Integrácie (/jazdy/integracie) sa dajú jazdy sťahovať automaticky z\njednotky Commander GPS alebo z vozidla Tesla.\nV mobilnej aplikácii si jazdu všimne telefón sám. Keď rozpozná, že idete\nautom, začne merať a spýta sa až na konci — jazdu potom buď potvrdíte, alebo zahodíte. Kým\nmeranie beží, je to vidieť: v aplikácii svieti pruh „Nahrávam jazdu“ a\nna uzamknutej obrazovke beží čas a narastajúce kilometre, takže sa\nnemusíte prepínať do aplikácie ani ju nechať otvorenú. Potrebuje to iPhone s iOS 16.1\nalebo novším.\nAutomatické rozpoznávanie sa dá vypnúť priamo na obrazovke Jazda\nprepínačom „Rozpoznávať jazdy automaticky“; vtedy sa meranie spúšťa ručne tlačidlom."
+    },
+    {
+     "nadpis": "Prehľad a export",
+     "text": "<>\nPrehľad (/jazdy/prehlad) ukazuje najazdené kilometre a náklady po\nvozidlách a obdobiach.\nExport (/jazdy/export) pripraví knihu jázd na odovzdanie účtovníčke alebo\nna kontrolu.\nNa knihu jázd platí uzamknutie období (/pomoc/uzavierka) — po uzavretí sa\nstaré jazdy už nedajú meniť."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/nastavenia",
+   "titulok": "Nastavenia firmy",
+   "sekcie": [
+    {
+     "nadpis": "Údaje firmy",
+     "text": "<>\nFirma → Údaje je jediné miesto, odkiaľ sa berú údaje na doklady. Čo je\ntu, to je na faktúre — meniť to na jednotlivom doklade sa nedá, a je to zámer: dve rôzne\nadresy na dvoch faktúrach tej istej firmy sú problém pri kontrole.\n-\nNázov, IČO, DIČ, IČ DPH — pri zakladaní firmy sa doplnia podľa IČO z\nregistra, takže ich stačí skontrolovať.\n-\nAdresa, e-mail, telefón, web — tlačia sa v hlavičke dokladu.\n-\nIBAN a SWIFT/BIC — bez IBAN-u sa na faktúru nevytlačí platobný QR kód.\nJe to najčastejšia príčina, prečo QR na doklade chýba.\n-\nMena — predvolená mena nových dokladov. Na doklade sa dá zmeniť.\nSadzby DPH sa nenastavujú — Faktero ich ponúka podľa krajiny firmy (SR 23 / 19 / 5 / 0 %,\nČR 21 / 12 / 0 %)."
+    },
+    {
+     "nadpis": "Číslovanie dokladov",
+     "text": "<>\nFormát čísla faktúry je tiež v nastaveniach firmy. Číslo sa neskladá\npočítaním riadkov, ale z radu — vďaka tomu nevznikne diera, keď sa doklad zmaže, a dve\nfaktúry vystavené naraz nedostanú to isté číslo.\nFaktúry vystavené v telefóne bez signálu si číslo rezervujú dopredu. Keď taká faktúra\ndorazí neskôr, zapadne presne na svoje miesto."
+    },
+    {
+     "nadpis": "Vzhľad faktúry",
+     "text": "<>\nNastavenia → Vzhľad faktúry mení PDF, ktoré vidí odberateľ:\n-\nLogo firmy — nahrá sa raz a je na každom doklade.\n-\nFarba akcentu — čiary a nadpisy v doklade.\n-\nPätička dokladu — miesto na zápis v obchodnom registri, poznámku o\nprenesení daňovej povinnosti alebo poďakovanie.\nZmena sa prejaví na novo vygenerovaných PDF. Doklad, ktorý už odišiel e-mailom, sa spätne\nneprekresľuje."
+    },
+    {
+     "nadpis": "E-mailové šablóny",
+     "text": "<>\nNastavenia → Email šablóny určujú, čo príde odberateľovi spolu s PDF —\nzvlášť pre faktúru, ponuku aj upomienku. Do textu sa dajú vložiť premenné (číslo dokladu,\nsuma, splatnosť), takže sa nič neprepisuje ručne.\nMeno odosielateľa a Odpovedať na (Reply-To) sa nastavujú\npri údajoch firmy. Odosiela sa z adresy Faktera, ale odpoveď príde vám — to je dôvod,\nprečo Reply-To netreba nechať prázdne."
+    },
+    {
+     "nadpis": "Fakturácia, kniha jázd, alebo oboje",
+     "text": "<>\nV Nastaveniach účtu sa prepína, čo v aplikácii vidíte: fakturačný systém,\nknihu jázd, alebo oboje. Voľba mení celé menu — kto vedie len jazdy, nemá dôvod pozerať sa\nna faktúry.\nPrepnúť sa dá kedykoľvek a o dáta sa tým nepríde. Ceny sú na\ncenníku\n(/cennik)\n."
+    },
+    {
+     "nadpis": "Kto smie nastavenia meniť",
+     "text": "<>\nÚdaje firmy, vzhľad dokladu a číslovanie mení majiteľ a administrátor .\nÚčtovník vedie doklady v plnom rozsahu, ale do nastavení firmy, bankových účtov ani API\nkľúčov nevidí.\nPodrobne je to v manuáli\nRole a prístupy\n(/pomoc/role)\n."
+    },
+    {
+     "nadpis": "Postavenie k DPH",
+     "text": "<>\nV údajoch firmy sa zaškrtáva Firma je platiteľ DPH a vyberá typ\nregistrácie — § 4, § 4b alebo § 5 pre platiteľa, § 7, § 7a alebo bez registrácie pre\nostatných. Z registra sa ťahá len IČ DPH, paragraf v ňom nie je.\nVoľba rozhoduje o tom, či sa v dokladoch ponúkajú sadzby DPH a aká veta pribudne na\nfaktúru. Podrobnosti sú v manuáli k DPH (/pomoc/dph)."
+    },
+    {
+     "nadpis": "Bankové účty firmy",
+     "text": "<>\nÚčtov môže byť viac — jeden je predvolený a pri vystavovaní faktúry sa dá prehodiť.\nFaktúra si vybraný účet zapamätá, takže neskoršia zmena predvoleného účtu staré doklady\nneprepíše."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/objednavky",
+   "titulok": "Prijaté objednávky",
+   "sekcie": [
+    {
+     "nadpis": "Načo sú prijaté objednávky",
+     "text": "<>\nObjednávka je záväzok odberateľa , že si tovar alebo prácu vezme. Uzatvára\nreťaz ponuka → objednávka → faktúra : ponuka je návrh, ktorý ešte nikto neprijal;\nobjednávka je prijatý návrh, ktorý sa postupne vybavuje.\nObjednávka odpovedá na dve otázky, na ktoré faktúra sama neodpovie:\n- čo sme sľúbili a ešte nedodali,\n- koľko peňazí máme rozpracovaných."
+    },
+    {
+     "nadpis": "Ako objednávka vznikne",
+     "text": "<>\nDvoma spôsobmi:\n-\nručne v Objednávky → Nová objednávka (/objednavky/nova),\n-\nz prijatej cenovej ponuky tlačidlom Vytvoriť objednávku — položky aj\nceny prejdú tak, ako ich odberateľ videl.\nČíslo pridelí Faktero v tvare OBJ . Zvlášť sa eviduje\nčíslo objednávky u odberateľa — to sa potom napíše na faktúru, aby ju\nodberateľ vedel spárovať.\nCeny sa dopĺňajú z cenníka (/pomoc/ceny) rovnako ako na faktúre."
+    },
+    {
+     "nadpis": "Stavy objednávky",
+     "text": "<>\n-\nRozpracovaná — pracujete na nej, dá sa voľne meniť aj zmazať.\n-\nPotvrdená — objednávka platí. Ak je zapnutá rezervácia, tovar sa drží.\n-\nČiastočne vybavená — časť je vyfakturovaná.\n-\nVybavená — vyfakturované je všetko.\n-\nZrušená — z objednávky nebude nič; rezervácie sa uvoľnia.\nStav sa nenastavuje ručne . Faktero ho počíta z toho, koľko je naozaj\nvyfakturované. Ručne nastavený stav by sa skôr či neskôr rozišiel so skutočnosťou."
+    },
+    {
+     "nadpis": "Vybavovanie faktúrami — aj po častiach",
+     "text": "<>\nNa detaile objednávky je tlačidlo Vyfakturovať . Otvorí novú faktúru a\nprenesie do nej len to, čo ešte zostáva — nie celú objednávku.\nMnožstvá vo faktúre sa dajú znížiť. Keď z objednaných 10 kusov vyfakturujete 4, objednávka\nprejde na Čiastočne vybavená a nabudúce vám ponúkne zvyšných 6. Keď dofakturujete\nzvyšok, prepne sa na Vybavená a tlačidlo zmizne.\nVybavenie sa posunie až keď faktúra naozaj vznikne . Ak by sa uloženie\nfaktúry nepodarilo, objednávka ostane, kde bola.\nV detaile objednávky je zoznam všetkých faktúr, ktoré z nej vznikli, a stĺpec\nZostáva pri každej položke."
+    },
+    {
+     "nadpis": "Rezervácia tovaru",
+     "text": "<>\nAk na objednávke zapnete Po potvrdení rezervovať tovar na sklade ,\npotvrdením sa objednané množstvá zarezervujú. Tovar ostane fyzicky na sklade, ale zníži sa\ndostupné množstvo , takže ho niekto iný nepredá omylom.\nRezervujú sa len položky, ktoré majú skladovú kartu so sledovaným stavom. Zrušením\nobjednávky sa rezervácie zrušia, vybavením uvoľnia."
+    },
+    {
+     "nadpis": "Úprava, zrušenie, mazanie",
+     "text": "<>\nObjednávku možno upravovať, kým nie je vybavená alebo zrušená. Pri úprave si\npamätá, čo je už vyfakturované — prepis položiek vybavenie nevynuluje.\nZmazať sa dá len rozpracovaná objednávka. Potvrdená je záväzok voči\nodberateľovi — tá sa ruší , aby po nej ostala stopa."
+    },
+    {
+     "nadpis": "Termíny",
+     "text": "<>\nPožadovaný termín dodania je nepovinný, ale oplatí sa. Objednávka, ktorá je po termíne a\nnie je vybavená, sa v zozname označí červeným po termíne a v detaile upozorní.\nRozpracovaná objednávka sa nesleduje — kým nie je potvrdená, nie je čo vybavovať."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/objednavky-dodavatel",
+   "titulok": "Objednávky u dodávateľov",
+   "sekcie": [
+    {
+     "nadpis": "Načo sú objednávky u dodávateľov",
+     "text": "<>\nObjednávka u dodávateľa je opak prijatej objednávky (/pomoc/objednavky):\ntentokrát ste odberateľom vy. Drží prehľad o tom, čo je objednané, čo už prišlo a čo ešte\nčakáte.\nVďaka nej viete, že tovar je „na ceste\" — a nemusíte ho objednávať druhýkrát len preto, že\nna sklade nie je."
+    },
+    {
+     "nadpis": "Vytvorenie objednávky",
+     "text": "<>\nV Sklad → Objednávky u dodávateľov → Nová (/sklad/objednavky/nova) vyberte\ndodávateľa, sklad, kam tovar príde, a položky.\nRýchlejšia cesta vedie cez Sklad → Pod minimom (/sklad/minimum). Faktero\nnavrhne, čo doobjednať a v akom množstve, aby ste sa dostali na\noptimálny stav karty. Návrh sa dá pred odoslaním upraviť.\nObjednávka sa dá priradiť na zákazku (/pomoc/zakazky). Pozor:\nobjednaný tovar ešte nie je náklad zákazky — nákladom sa stane až jeho\nvýdajom zo skladu."
+    },
+    {
+     "nadpis": "Stavy a príjem tovaru",
+     "text": "<>\n-\nRozpracovaná — dá sa voľne meniť aj zmazať.\n-\nOdoslaná — odteraz je to doklad. Nemaže sa, len ruší.\n-\nČiastočne prijatá — časť tovaru prišla.\n-\nPrijatá — prišlo všetko.\n-\nZrušená .\nStav sa počíta z prijatých množstiev , nenastavuje sa ručne. Príjem\nzapisujte priamo na objednávku — vtedy vznikne skladový pohyb a objednávka si sama posunie\nstav.\nPri príjme vyplňte nákupnú cenu . Bez nej sa pokazí vážená cena skladu a\nmarža na predaji bude nepravdivá."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/odberatelia",
+   "titulok": "Odberatelia",
+   "sekcie": [
+    {
+     "nadpis": "Založenie odberateľa",
+     "text": "<>\nV Kontakty → Odberatelia (/odberatelia) stačí začať písať názov firmy\nalebo zadať IČO — Faktero doplní adresu, DIČ aj IČ DPH z registra. Údaje sa dajú prepísať.\nAk už odberateľ s rovnakým IČOm existuje, Faktero na to upozorní ešte pred uložením. Dva\nrovnaké kontakty znamenajú rozdelenú históriu faktúr.\nE-mail vyplňte vždy, keď chcete posielať faktúry a ponuky z Fakera — bez\nneho sa odoslanie neponúkne."
+    },
+    {
+     "nadpis": "Cenová skupina a zľava",
+     "text": "<>\nNa karte odberateľa sa nastavuje, za koľko nakupuje:\n-\nCenová skupina — spoločné podmienky pre viacerých odberateľov\n(veľkoobchod, stáli zákazníci).\n-\nIndividuálna zľava v % — platí len pre neho a\nprebíja zľavu skupiny ; nesčítavajú sa.\nKonkrétne dohodnuté ceny na jednotlivé produkty sa zadávajú v\ncenníku (/ceny) a prebíjajú obe zľavy. Celé poradie vysvetľuje\nmanuál k cenníku (/pomoc/ceny)."
+    },
+    {
+     "nadpis": "Predvolená zákazka",
+     "text": "<>\nAk pre odberateľa robíte jednu dlhodobú prácu, nastavte mu\npredvolenú zákazku . Každý nový doklad ju potom predvyplní sám.\nJe to najspoľahlivejší spôsob, ako sa vyhnúť tomu, že polovica dokladov zákazku nemá a\nvyhodnotenie práce je nepravdivé. Políčko sa zobrazí, až keď firma nejakú\nzákazku (/pomoc/zakazky) má."
+    },
+    {
+     "nadpis": "Mazanie",
+     "text": "<>\nZmazaný odberateľ zmizne zo zoznamu, ale faktúry ostávajú — nesú si\nvlastný odpis údajov z času vystavenia. Preto premenovanie odberateľa spätne neprepíše\nstaré doklady."
+    },
+    {
+     "nadpis": "Odberatelia v Pohode",
+     "text": "<>\nAdresár sa dá posielať do Pohody, takže tam odberateľ je aj vtedy, keď mu tento mesiac nič\nnefakturujete. Zmenený kontakt sa prepíše , nezaloží sa druhý.\nZapína sa to v Účtovníctvo → Prepojenie s Pohodou (/uctovnictvo/pohoda) —\nviac v manuáli k Pohode (/pomoc/pohoda)."
+    },
+    {
+     "nadpis": "Overenie IČ DPH vo VIES",
+     "text": "<>\nPri odberateľovi z iného členského štátu je vedľa poľa IČ DPH tlačidlo\nOveriť vo VIES . Register Európskej komisie povie, či je číslo platné, a\ndoplní názov firmy.\nNie je to formalita: pri dodaní tovaru do EÚ je platné IČ DPH odberateľa\npodmienkou oslobodenia od dane . Každé overenie sa zapíše aj s dátumom,\ntakže sa dá pri kontrole preukázať; po tridsiatich dňoch sa označí za staršie a pred\nďalším dodaním sa oplatí overiť znova.\nKeď je register nedostupný, Faktero to povie ako výpadok — nie ako neplatné IČ DPH. To sú\ndve rôzne veci a rozhodujú o tom, či faktúra smie ísť bez dane."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/online-platby/gopay",
+   "titulok": "Ako od zákazníkov dostať peniaze",
+   "sekcie": [
+    {
+     "nadpis": "Platby kartou zatiaľ neponúkame",
+     "text": "Aby firma mohla prijímať platby kartou pod vlastným účtom, potrebuje poskytovateľ\nplatobnej brány zmluvu, ktorá to na spoločnej doméne umožňuje. Kým ju nemáme, funkciu\nneponúkame — je to poctivejšie, než sľúbiť ju a nechať vás zlyhať pri prvom pokuse.\nNetýka sa to platenia predplatného za Faktero. To cez platobnú bránu funguje bežne."
+    },
+    {
+     "nadpis": "Čo použiť namiesto toho",
+     "text": "-\nQR platba priamo na faktúre. Na každom PDF je kód PAY by square —\nodberateľ ho naskenuje v mobilnej banke a má predvyplnenú sumu, IBAN aj variabilný\nsymbol. Netreba nič nastavovať.\n-\nPárovanie úhrad z banky. Keď platba príde na účet, Faktero ju priradí\nk faktúre a označí ju za uhradenú. Isté zhody spáruje samo, sporné predloží na\nrozhodnutie.\n-\nUpomienky po splatnosti. Tri úrovne s vlastnými textami — odosielajú\nsa len tým, ktorí naozaj nezaplatili.\nNávod na bankové účty\n(/pomoc/banka)\nSpäť do centra pomoci\n(/pomoc)\n);\n}"
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/opakovane",
+   "titulok": "Opakované faktúry",
+   "sekcie": [
+    {
+     "nadpis": "Načo sú opakované faktúry",
+     "text": "<>\nNa pravidelnú fakturáciu, ktorá sa nemení — paušál, prenájom, servisná zmluva. Šablónu\nnastavíte raz a Faktero z nej vystavuje faktúry samo."
+    },
+    {
+     "nadpis": "Nastavenie šablóny",
+     "text": "<>\nV Opakované → Nová (/opakovane/nova) zadajte odberateľa, položky, interval\na dátum najbližšieho vystavenia .\nFaktúra sa vystaví v ten deň a dátum sa posunie o interval ďalej. Pri mesačnom intervale\nsa deň drží tak, aby dával zmysel: šablóna nastavená na 31. sa vo februári vystaví\nposledný februárový deň, nie začiatkom marca."
+    },
+    {
+     "nadpis": "Automatické vystavovanie",
+     "text": "<>\nFaktero kontroluje šablóny každý deň. Faktúra dostane riadne poradové číslo a správa sa\nako každá iná — dá sa upraviť, odoslať aj stornovať.\nAk má šablóna zapnuté odosielanie, faktúra rovno odíde odberateľovi na e-mail."
+    },
+    {
+     "nadpis": "Pozastavenie a ukončenie",
+     "text": "<>\nŠablónu možno pozastaviť — ostane uložená, ale nevystavuje. Hodí sa, keď\nodberateľ službu dočasne nečerpá.\nZmazaná šablóna prestane fakturovať okamžite. Faktúry, ktoré z nej už\nvznikli, ostávajú — sú to platné doklady."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/oss",
+   "titulok": "OSS, predaj spotrebiteľom v EÚ",
+   "sekcie": [
+    {
+     "nadpis": "Kedy sa OSS týka vás",
+     "text": "<>\nKeď predávate tovar alebo digitálne služby spotrebiteľom (nie firmám s IČ\nDPH) do iných členských štátov EÚ, platí hranica\n10 000 € za kalendárny rok .\n-\nDo hranice sa dá fakturovať so slovenskou daňou ako doma.\n-\nPo prekročení sa predaj zdaňuje sadzbou štátu, kde zákazník býva, a daň\nsa odvádza cez jedno kontaktné miesto (One Stop Shop).\nHranica sa počíta za všetky štáty spolu , nie za každý zvlášť — to je\nčastý omyl. Do OSS sa dá vstúpiť aj dobrovoľne skôr."
+    },
+    {
+     "nadpis": "Ako vystaviť takú faktúru",
+     "text": "<>\nPri vystavovaní zaškrtnite Predaj spotrebiteľovi v EÚ (OSS) a vyberte\nštát spotreby. Sadzby položiek sa prepnú na sadzby toho štátu — napríklad Nemecko 19 %,\nMaďarsko 27 %, Luxembursko 17 %.\nZnížené sadzby sa v každom štáte vzťahujú na iné tovary, takže ktorú použiť, ostáva na\nvás. Tabuľka sadzieb v Fakteru je informatívna a udržiavaná k aktuálnemu roku."
+    },
+    {
+     "nadpis": "Podklady pre priznanie",
+     "text": "<>\nÚčtovníctvo → OSS (/uctovnictvo/oss) ukáže za štvrťrok rozpis podľa štátov\na sadzieb — základ dane a daň — a sleduje, koľko z hranice 10 000 € je vyčerpané.\nPriznanie OSS sa podáva do konca mesiaca nasledujúceho po štvrťroku cez portál finančnej\nsprávy; údaje z tabuľky sa doň prepíšu."
+    },
+    {
+     "nadpis": "Vzťah k priznaniu k DPH",
+     "text": "<>\nFaktúry v režime OSS nevstupujú do slovenského priznania k DPH ani do\nkontrolného výkazu — daň sa odvádza osobitným priznaním. Faktero ich preto z\nvýkazov k DPH (/pomoc/vykazy-dph) vynecháva samo.\nPredaj firme s platným IČ DPH v inom členskom štáte nie je OSS — to je dodanie s\nprenesením daňovej povinnosti a patrí do súhrnného výkazu."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/pohoda",
+   "titulok": "Prepojenie s Pohodou",
+   "sekcie": [
+    {
+     "nadpis": "Tri spôsoby, vyberte si jeden",
+     "text": "<>\nDoklady sa dajú do Pohody dostať tromi spôsobmi. Líšia sa len tým, kto nesie súbor:\n-\nStiahnem a pošlem sám — v\nÚčtovníctvo → Účtovné exporty (/exporty) vyberiete mesiac a stiahnete\nZIP.\n-\nOdíde mailom samo — 5. v mesiaci, keď si to zapnete.\n-\nPohoda si to vezme sama — priame prepojenie, žiadne súbory ani maily.\nVšetky tri si pamätajú, čo už odišlo, takže sa doklad neodovzdá dvakrát. Pokojne ich aj\nkombinujte — keď si účtovníčka niečo natiahne konektorom, mail jej to už znova nepošle."
+    },
+    {
+     "nadpis": "Najprv skratky z Pohody (5 minút, oplatí sa)",
+     "text": "<>\nV Účtovníctvo → Prepojenie s Pohodou (/uctovnictvo/pohoda) vyplňte\nskratky, ktoré má účtovníčka vo svojej Pohode: predkontácie (napr.\n3Fv ) a členenia DPH (napr. UD ).\nBez nich doklady naimportuje bez chyby, ale zaúčtovanie si ku každému doklikáva ručne —\nteda presne tú prácu, ktorú mal export ušetriť. Stačí sa jej raz opýtať a prepísať to sem.\nSem patrí aj e-mail účtovníčky , na ktorý chodia mesačné podklady."
+    },
+    {
+     "nadpis": "Mesačné podklady",
+     "text": "<>\nV Účtovných exportoch (/exporty) vyberiete mesiac a Faktero povie, koľko z\nneho ešte neodišlo. Vznikne jeden ZIP:\n- XML na priamy import do Pohody — vydané faktúry, prijaté doklady, pokladňa\n- súpisky v CSV na kontrolu\n- PDF faktúr a skeny dokladov\nKeď máte zapnuté číselníky (adresár, sklad, zákazky), sú v balíku tiež — každý ako vlastný\nsúbor, aby si účtovníčka naimportovala len to, čo chce. Balík teda nesie to isté čo priame\nprepojenie.\nStiahnuť balík nič nezapisuje, takže sa dá stiahnuť koľkokrát chcete.\nOznačiť za odovzdané a Poslať účtovníčke si už\nzapamätajú, čo odišlo, a nabudúce priložia len nové doklady.\nPri odoslaní mailom platí strop na prílohy. Keď sa PDF a skeny nezmestia, balík odíde bez\nnich a v maile je o tom poznámka — údaje na zaúčtovanie sú dôležitejšie než obrázky a\ndoklady zostanú vo Fakteru."
+    },
+    {
+     "nadpis": "Automatické odosielanie 5. v mesiaci",
+     "text": "<>\nV Účtovníctvo → Prepojenie s Pohodou (/uctovnictvo/pohoda) zaškrtnite\nPosielať automaticky . Podklady za minulý mesiac potom odídu 5. ráno samy\nna adresu účtovníčky.\nPiaty preto, že dovtedy bývajú doklady doplnené a zároveň ostáva čas do daňových termínov.\nJe to vypnuté, kým to nezapnete — e-mail odchádza v mene vašej firmy,\ntakže to musí byť vedomé rozhodnutie. Posiela sa vždy len to, čo ešte neodišlo."
+    },
+    {
+     "nadpis": "Priame prepojenie — Pohoda si doklady vezme sama",
+     "text": "<>\nNajpohodlnejšia cesta. Raz denne v noci si Pohoda stiahne doklady, ktoré v nej ešte nie\nsú, načíta ich a pošle späť správu o tom, ako import dopadol. Vďaka tomu Faktero vie,\nktoré doklady sa naozaj založili a aké čísla dostali .\nNič sa neinštaluje. POHODA vie import spustiť sama z príkazového riadku,\ntakže celé prepojenie je priečinok s dávkovým súborom a jedna naplánovaná úloha Windows.\nNeotvárajú sa žiadne porty — von ide len bežné zabezpečené spojenie, rovnako ako keby si\nniekto otvoril webovú stránku.\nPohoda ani nemusí byť spustená; dávkový súbor si ju otvorí a po skončení zavrie. Počítač\nvšak musí byť v tom čase zapnutý — keď nie je, prenos sa vynechá a doklady prídu ďalšiu\nnoc."
+    },
+    {
+     "nadpis": "Ako prepojenie zapnúť",
+     "text": "<>\n-\nV Účtovníctvo → Prepojenie s Pohodou (/uctovnictvo/pohoda) dole kliknite\nna Stiahnuť balíček pre účtovníčku a pošlite jej ho.\n-\nÚčtovníčka priečinok skopíruje na počítač, kde je POHODA — ideálne\nC:\\Faktero , teda cesta bez medzier a diakritiky.\n-\nV súbore faktero-pohoda.cmd vyplní štyri riadky: cestu k Pohode,\nprihlasovacie meno a heslo do nej a názov databázy účtovnej jednotky (nájde ho v Pohode\nv Súbor → Účtovné jednotky , stĺpec Databáza).\n-\nDvakrát klikne na ten istý súbor a pozrie sa, čo vypíše. Prvý beh najlepšie vtedy, keď v\nPohode nikto nepracuje.\n-\nKeď prvý beh prejde, spustí nastav-ulohu.cmd — založí naplánovanú úlohu na\ndruhú hodinu v noci.\nV priečinku vzniká protokol.txt , kde je vidieť, čo sa kedy stalo. Keď niečo\nnesedí, začnite tam.\nKeď prepojenie prestane chodiť, ozveme sa. Po týždni ticha vám príde\ne-mail — doklady sa medzitým nestratia, čakajú a odídu, hneď ako sa spojenie obnoví.\nKľúč je vložený priamo v súbore a dá sa kedykoľvek zneplatniť v\nNastavenia → API kľúče (/api-kluce). Prepojenie zrušíte zmazaním\nnaplánovanej úlohy alebo celého priečinka."
+    },
+    {
+     "nadpis": "Čo do Pohody chodí",
+     "text": "<>\nVždy:\n-\nvydané faktúry , zálohové faktúry a dobropisy\n-\nprijaté doklady — bločky aj prijaté faktúry, s rozpisom DPH po sadzbách\n-\npokladňa — príjmové a výdavkové doklady\nNaviac, keď si ich zapnete v Účtovníctvo → Prepojenie s Pohodou:\n-\nadresár — odberatelia idú do Pohody aj vtedy, keď im ten mesiac nič\nnefakturujete. Zmenený kontakt sa prepíše, nezaloží sa druhý.\n-\nskladové karty — číselník zásob. Potrebuje vyplnené členenie skladu.\n-\nskladové pohyby — príjemky a výdajky, aby v Pohode sedeli aj\nstavy skladu, nielen karty. Potrebuje zapnuté skladové karty.\n-\nzákazky — a čo je hlavné, faktúra potom v Pohode nesie zákazku, takže z\nnej vidno výnos po zákazkách.\nPri priamom prepojení sa navyše k faktúre pripne odkaz na jej PDF — v\nPohode ho účtovníčka nájde v záložke Dokumenty a otvorí jedným kliknutím. Dá sa vypnúť."
+    },
+    {
+     "nadpis": "Bankový výpis z banky do Pohody",
+     "text": "<>\nÚčtovníctvo → Bankový výpis do Pohody (/uctovnictvo/vypis-do-pohody) vezme\nvýpis stiahnutý z internetbankingu a vyrobí z neho súbor, ktorý POHODA načíta ako bankové\ndoklady.\nKeď banka ponúka XML, nahrajte XML — v internetbankingu mu hovoria\nSEPA XML alebo camt.053 . Suma, variabilný symbol aj protistrana sú v ňom\nvlastnými poľami, takže sa nič nerozpoznáva a nič sa nemôže prečítať zle; načíta sa hneď,\nbez čakania. PDF zvládne tiež, aj naskenované, ale riadky z neho treba\nprejsť očami.\nPopis, protistranu aj symboly si viete pred vývozom prepísať — doklad potom v Pohode rovno\nsedí a účtovník ho neopravuje. Odčiarknutý riadok sa nevyvezie.\nOznačenie platby hovorí, čím ten pohyb je — bankový poplatok, daň, mzda,\núhrada faktúry, platba kartou… Výpis to sám nepovie a pritom práve podľa toho sa účtuje.\nPredvyplní sa odhadom (pri XML aj podľa kódu operácie od banky) a vy ho prepíšete. Do\nPohody ide ako poznámka dokladu , do SEPA XML ako účel platby.\nA hlavne: ku každému označeniu si viete zadať vlastnú predkontáciu z\nPohody. Poplatok, daň a úhrada faktúry sa účtujú každé inam, takže doklad potom príde\nrovno zaúčtovaný a účtovník ho nepredkontováva. Čo necháte prázdne, dostane spoločnú\npredkontáciu. Predkontácie patria firme — vyplní ich jeden človek a majú ich všetci;\nnastavujú sa aj tu na tejto stránke, v sekcii Predkontácie podľa označenia platby\n.\nVon idú dva súbory a každý patrí inam. SEPA XML (camt.053) do\nBanka → Načítanie výpisov : Pohoda ho vezme ako výpis od banky a platby si spáruje\npodľa variabilného symbolu. XML pre Pohodu je dávka dokladov do\nSúbor → Dátová komunikácia → XML import . Keď sa zamenia, Pohoda odpovie jedinou\nvetou — že súbor nezodpovedá stanovenej štruktúre formátu SEPA XML."
+    },
+    {
+     "nadpis": "Čo do Pohody zámerne nechodí",
+     "text": "<>\nBanka. Účtovníčka si výpis načíta priamo z banky (a Faktero jej z neho\nvie vyrobiť súbor pre Pohodu — sekcia vyššie), takže náš export by v Pohode vyrobil druhý\nkomplet bankových dokladov.\nMnožstvá na skladovej karte. Karta ide bez stavu — ten v Pohode vzniká\npríjemkami a výdajkami, takže dosadené číslo by sa rozišlo s dokladmi. Ak chcete mať v\nPohode aj stavy, zapnite skladové pohyby : Faktero pošle príjemky a\nvýdajky a sklad si Pohoda dopočíta sama, tak ako má.\nFaktúry v cudzej mene. Pohoda chce rozpis po sadzbách vždy v domácej mene\na kurz k faktúre neevidujeme — doláre by sa zaúčtovali ako eurá. Taký doklad sa preskočí,\npovieme to a je v súpiske na ručné zadanie."
+    },
+    {
+     "nadpis": "Aby v Pohode sedeli aj stavy skladu",
+     "text": "<>\nSkladové karty samy o sebe idú do Pohody s nulovým stavom. Množstvá tam vznikajú\npríjemkami a výdajkami — a tie vieme posielať tiež, keď vo\nÚčtovníctvo → Prepojenie s Pohodou (/uctovnictvo/pohoda) zapnete\nskladové pohyby .\nPohyby z jedného dňa sa zlejú do jedného dokladu, takže z väčšieho príjmu nevznikne stovka\npríjemiek. Manko z inventúry odíde ako výdajka, prebytok ako príjemka.\nPríjemka sa nezaúčtuje — nesie príznak „neúčtovať\". Náklad je totiž už na\nprijatom doklade a pri sklade vedenom spôsobom A by ho príjemka zaúčtovala druhýkrát.\nVýdajka taký príznak nemá a nepotrebuje ho: úbytok zásob proti výnosu na faktúre nič\nnezdvojí.\nPohyb odíde až vtedy, keď je v Pohode jeho skladová karta. Ak ste karty práve zapli, prvá\ndávka ich pošle a pohyby prídu hneď za nimi."
+    },
+    {
+     "nadpis": "Storno, dobropisy a zálohy",
+     "text": "<>\nZrušená faktúra. Keď faktúru zrušíte po tom, ako už odišla, Faktero\npožiada Pohodu o stornujúci doklad . Pôvodný v účtovníctve ostáva — tak to\nmá byť, doklad z evidencie len tak nezmizne.\nDobropis. Pri jeho vystavení sa dá vybrať, ktorú faktúru opravuje\n(tlačidlo „Ktorú faktúru opravuje\" pri položkách). V Pohode potom vznikne ako opravný\ndoklad naviazaný na pôvodnú faktúru, takže sa spárujú a sedí aj kontrolný výkaz. Bez\nvýberu odíde ako samostatný doklad, ako doteraz.\nZálohová faktúra. Keď si ju konečná faktúra odpočíta, odpočet ide do\nPohody ako vlastný druh položky — nie ako záporná bežná položka. Vďaka\ntomu ho Pohoda spáruje so zálohovou faktúrou a nezaúčtuje ako ďalšie plnenie.\nVšetky tri sa odvolávajú na číslo, ktoré doklad dostal v Pohode. Kým sa jeho import\nnepotvrdí, väzba počká a doklad odíde bez nej — radšej doklad bez väzby než doklad, ktorý\nsa nenaimportuje vôbec."
+    },
+    {
+     "nadpis": "Časté otázky",
+     "text": "<>\nMôže sa doklad naimportovať dvakrát? Nie. Každý doklad má stály\nidentifikátor a Pohoda má zapnutú kontrolu duplicity, takže druhý pokus odmietne — aj keby\nten istý doklad prišiel raz konektorom a raz z mailu.\nČo keď Pohoda doklad odmietne? Dôvod uvidíte v Účtovníctvo → Prepojenie s\nPohodou a doklad sa vráti do fronty — príde znova, keď sa chyba opraví. Nezmizne.\nZmenil som zákazke názov, prepíše sa? Nie. Pohoda vie zákazku založiť,\nale nie prepísať, takže zmenu treba urobiť aj tam. Pri odberateľoch a skladových kartách\nsa zmena prepíše sama.\nOpravil som už odovzdanú faktúru. Oprava sa do Pohody neprenesie — doklad\ntam ostane v pôvodnej podobe. Ak treba, zrušte faktúru (vtedy pošleme storno) a vystavte\nnovú, alebo rozdiel doriešte dobropisom.\nFunguje to s mojou radou Pohody? Áno, aj so základnou. Nepoužívame\nmServer, ktorý býva obmedzený.\nPoužívame mPohodu. Tá je iná aplikácia a doklady si do desktopovej Pohody\nsťahuje sama; naše XML čítať nepotrebuje. Import z mPohody do Faktera zvládame —\nnájdete ho v exportoch a importoch (/pomoc/exporty)."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/pokladna",
+   "titulok": "Pokladňa a doklady",
+   "sekcie": [
+    {
+     "nadpis": "Čo pokladňa robí",
+     "text": "<>\nPokladňa (/pokladna) odpovedá na otázku, koľko máte v hotovosti a ako sa k\ntomu číslu prišlo. Stav skladá z dvoch zdrojov :\n-\npokladničné doklady — vklady, výbery, tržby, ktoré nemajú vlastný\ndoklad,\n-\ndoklady zaplatené hotovosťou z evidencie výdavkov (bločky).\nDoklad zaplatený kartou alebo prevodom je výdavok, ale hotovosť neuberá.\nToto rozlíšenie je jadro celého výpočtu — bez neho by pokladňa ukazovala mínus."
+    },
+    {
+     "nadpis": "Spôsob platby na doklade",
+     "text": "<>\nPri každom doklade v Doklady → Nový doklad (/doklady/novy) vyberte\nPlatené : hotovosťou, kartou alebo prevodom.\nAk spôsob nevyplníte, Faktero berie doklad ako hotovostný — to je pri bločkoch najčastejší\nprípad. Keď vám pokladňa vychádza nižšie, než by mala, prvé miesto, kam sa pozrieť, sú\ndoklady zaplatené kartou označené ako hotovostné."
+    },
+    {
+     "nadpis": "Pokladničné doklady",
+     "text": "<>\nPriamo v pokladni pridávate príjmy a výdaje, ktoré nemajú vlastný doklad — vklad majiteľa,\nodvod tržby do banky, drobný nákup bez bločku.\nČíslujú sa v tvare PD . Suma je vždy kladná, smer určuje\ndruh pohybu.\nHotovostný bloček sa do pokladne neprepisuje. Pokladňa ho číta priamo z\nevidencie dokladov. Jedna suma, jedno miesto na opravu, žiadna synchronizácia — keby ste\nbloček zapísali aj ako pokladničný doklad, hotovosť by odišla dvakrát."
+    },
+    {
+     "nadpis": "Priebeh a zostatok",
+     "text": "<>\nTabuľka ukazuje pohyby vybraného mesiaca a pri každom priebežný zostatok .\nNad ňou je zostatok na začiatku obdobia, aby stav sedel aj pri prezeraní starších\nmesiacov.\nV rámci jedného dňa idú príjmy pred výdavkami . Inak by sa mohlo stať, že\nbloček zoradený pred vklad ukáže v ten deň mínus, hoci v pokladni nikdy nechýbalo.\nZáporná pokladňa je vždy chyba v evidencii — v hotovosti sa do mínusu ísť\nnedá. Faktero na ňu upozorní; hľadajte chýbajúci vklad alebo doklad označený zlým spôsobom\nplatby."
+    },
+    {
+     "nadpis": "Načítanie bločku z eKasa QR kódu",
+     "text": "<>\nKaždý bloček z eKasy má QR kód a v ňom identifikátor dokladu. Faktero ten identifikátor\nprečíta a doklad si vypýta priamo z Finančnej správy — teda z toho istého miesta, kde si\ndoklad overuje aj ich vlastná aplikácia „Overenie pokladničného dokladu\". Späť príde\npredajca, IČO, dátum, sumy, sadzby DPH aj jednotlivé položky , presne tak,\nako ich predajca odoslal. Nič sa nehádá z fotky.\nStačí bločok odfotiť v Skeneri dokladov (/faktury/skener) alebo v\nDoklady → Nový doklad (/doklady/novy); QR kód sa hľadá aj na fotke, takže\nnetreba mieriť zvlášť naň. Odfoťte doklad celý.\nKeď QR kód nie je alebo sa nedá prečítať — pokrčený bloček, vyblednutá\ntermopáska, zahraničný doklad — údaje sa prečítajú z fotky. To je odhad, nie úradný údaj,\na Faktero to pri doklade aj napíše. Vtedy si skontrolujte hlavne dátum a sumu.\nDoklad sa vo Finančnej správe nemusí nájsť ani vtedy, keď ho predajca ešte neodoslal —\npokladnica v režime offline ho posiela až dodatočne. Skúste to o pár hodín neskôr.\nSpôsob úhrady sa z bločku prečítať väčšinou nedá. Pokladnica ho do eKasy\nposielať nemusí a väčšina ho neposiela — na doklade býva vytlačený, ale do údajov sa\nnedostane. Keď ho doklad nesie, Faktero ho predvolí; inak si po naskenovaní vyberiete\nhotovosť, kartu alebo prevod. Nie je to formalita: z pokladne uberá len doklad platený\nhotovosťou.\nPoložky sa ukladajú k dokladu tak, ako prišli, aj s rozpisom DPH po sadzbách. Bloček ich\nmá často viac naraz — jedna sadzba by doklad popísala nesprávne."
+    },
+    {
+     "nadpis": "Pokladňa a uzávierka",
+     "text": "<>\nPokladničný doklad je daňový záznam ako faktúra, takže platí aj naň\nuzamknutie období (/pomoc/uzavierka). Po uzamknutí sa v ňom už nedá meniť\ndátum, suma ani popis."
+    },
+    {
+     "nadpis": "Pokladňa pre účtovníčku",
+     "text": "<>\nPokladničné doklady sú súčasťou mesačných podkladov aj priameho prepojenia s Pohodou — idú\nako príjmové a výdavkové doklady. Pozrite si\nmanuál k Pohode (/pomoc/pohoda).\nRozpis DPH sa k nim nedopĺňa : pohyb v pokladni sadzbu nemá a vymyslená by\nbola tichá chyba v priznaní. Doklady s DPH sú prijaté doklady a faktúry."
+    },
+    {
+     "nadpis": "Zaokrúhľovanie na päť centov",
+     "text": "<>\nPri platbe v hotovosti sa celková suma zaokrúhľuje na päť centov — tak to\nod 1. 7. 2022 ukladá zákon o cenách, lebo jedno- a dvojcentové mince sa už nevydávajú. Keď\nna faktúre vyberiete hotovosť, Faktero prepne zaokrúhlenie samo a rozdiel (najviac dva\ncenty) je vidieť v súčtoch.\nPlatba v hotovosti nad 5 000 € je medzi podnikateľmi zakázaná (zákon č.\n394/2012 Z. z.) — pri takej sume sa objaví upozornenie."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/ponuky",
+   "titulok": "Cenové ponuky",
+   "sekcie": [
+    {
+     "nadpis": "Vystavenie ponuky",
+     "text": "<>\nV Ponuky → Nová cenová ponuka (/ponuky/nova) vyberte odberateľa, dátum\nvystavenia a platnosť. Číslo pridelí Faktero.\nPoložky sa pridávajú z katalógu produktov a ceny sa dopĺňajú z\ncenníka (/pomoc/ceny) — odberateľ dostane rovnakú cenu, akú by mal na\nfaktúre.\nPonuku možno priradiť na zákazku (/pomoc/zakazky); pri premene na faktúru\nzákazka prejde ďalej."
+    },
+    {
+     "nadpis": "PDF a odoslanie",
+     "text": "<>\nNa detaile ponuky vygenerujete PDF a pošlete ho odberateľovi priamo z\nFakera. Vzhľad dokumentu sa nastavuje v\nVzhľad faktúry (/nastavenia/vzhlad-faktury), text e-mailu v\nEmail šablónach (/nastavenia/email-sablony).\nOdberateľ musí mať vyplnený e-mail, inak sa odoslanie neponúkne."
+    },
+    {
+     "nadpis": "Stavy ponuky",
+     "text": "<>\n-\nKoncept — pracujete na nej.\n-\nOdoslaná — odberateľ ju dostal.\n-\nAkceptovaná / Zamietnutá — ako dopadla.\n-\nExpirovaná — uplynula platnosť.\n-\nKonvertovaná — vznikla z nej faktúra."
+    },
+    {
+     "nadpis": "Čo s prijatou ponukou",
+     "text": "<>\nSú dve cesty a líšia sa tým, či sa bude dodávať naraz alebo postupne:\n-\nKonvertovať na faktúru — keď sa dodáva a fakturuje naraz.\n-\nVytvoriť objednávku — keď sa bude dodávať postupne.\nPrijatá objednávka (/pomoc/objednavky) si drží prehľad, čo je už\nvyfakturované a čo ešte zostáva.\nPoložky aj ceny v oboch prípadoch prejdú tak, ako ich odberateľ videl."
+    },
+    {
+     "nadpis": "Rezervácia tovaru",
+     "text": "<>\nNa ponuke sa dá zapnúť rezervácia tovaru . Ponúknuté kusy sa potom\nnezapočítajú do dostupného množstva, takže ich medzitým nepredáte niekomu inému.\nRezervácia sa uvoľní, keď platnosť ponuky uplynie alebo ponuku zamietnete."
+    },
+    {
+     "nadpis": "Ponuka z inej firmy",
+     "text": "<>\nPonuka patrí konkrétnej firme. Ak máte vo Faktere viac firiem a otvoríte odkaz na ponuku\ninej z nich, Faktero to povie a vyzve vás prepnúť firmu hore v lište."
+    },
+    {
+     "nadpis": "Odberateľ ponuku prijme alebo zamietne sám",
+     "text": "<>\nV e-maile s ponukou sú tlačidlá Prijať ponuku a\nZamietnuť a odkaz na stránku, kde odberateľ vidí položky, súčty aj PDF.\nNemusí sa nikde prihlasovať — stačí kliknúť.\nStav ponuky sa prepne sám na „Akceptovaná\" alebo „Zamietnutá\", zapíše sa čas a pri\nzamietnutí aj dôvod, ak ho odberateľ napíše. Vám príde e-mail a upozornenie do zvončeka; v\ndetaile ponuky potom vidno, kedy a ako odpovedal.\nPo uplynutí platnosti ponuky tlačidlá prestanú účinkovať a stránka povie, že ponuka\nvypršala. Druhé kliknutie prvú odpoveď neprepíše."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/predplatne",
+   "titulok": "Predplatné",
+   "sekcie": [
+    {
+     "nadpis": "Skúšobné obdobie (trial)",
+     "text": "<>\nPo registrácii dostáva každá firma 30 dní zadarmo na pláne Premium . Počas\ntrialu môžete využívať všetky funkcie bez obmedzenia.\nTrial sa nepredlžuje automaticky a nepýtame si platobné údaje vopred."
+    },
+    {
+     "nadpis": "Automatické obnovovanie",
+     "text": "<>\nPo aktivácii plateného plánu sa predplatné obnovuje každý mesiac v deň\naktivácie. Karta sa strhne automaticky cez GoPay.\n3 dni pred obnovou vám pošleme pripomienku emailom."
+    },
+    {
+     "nadpis": "GoPay platba predplatného",
+     "text": "<>\nPredplatné Faktera platíte cez GoPay opakovanú platbu . Po prvej úspešnej\nplatbe sa kartové údaje uložia priamo u GoPay (Faktero ich nikdy nevidí).\nDaňový doklad za predplatné nájdete v sekcii Predplatné (/predplatne)."
+    },
+    {
+     "nadpis": "Zmena plánu",
+     "text": "<>\nPlán môžete kedykoľvek zmeniť v sekcii Predplatné (/predplatne).\n-\nUpgrade sa aktivuje okamžite, rozdiel sa pripočíta pomerne.\n-\nDowngrade sa aktivuje od ďalšieho fakturačného obdobia."
+    },
+    {
+     "nadpis": "Zrušenie predplatného",
+     "text": "<>\nV Nastaveniach predplatného kliknite na Zrušiť predplatné . Zostáva vám\naktívne do konca už zaplateného obdobia, potom prejde do read-only režimu.\nVaše dáta sa neodstránia — kedykoľvek sa môžete vrátiť a obnoviť plán."
+    },
+    {
+     "nadpis": "Čo sa stane po skončení trialu",
+     "text": "<>\nAk si nevyberiete platený plán do uplynutia 30 dní:\n-\nÚčet automaticky prejde na plán Starter — aplikácia zostáva plne\nfunkčná.\n-\nPrémiové funkcie (API, webhooky, import zo SuperFaktúry, audit log) sa vypnú, kým si\nnezvolíte Premium.\n- 3 dni pred koncom trialu vám pošleme pripomienku emailom.\n-\nKedykoľvek si môžete aktivovať vyšší plán a všetko pokračuje tam, kde ste skončili."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/prijate-faktury",
+   "titulok": "Prijaté faktúry",
+   "sekcie": [
+    {
+     "nadpis": "Načo evidovať prijaté faktúry",
+     "text": "<>\nPrijatá faktúra je to, čo dlžíte vy. Bez jej evidencie vám chýbajú tri veci:\n- prehľad o tom, čo je splatné a kedy,\n-\nDPH na vstupe — daň, ktorú si môžete odpočítať,\n-\nnáklady zákaziek (/pomoc/zakazky) — subdodávky, materiál od dodávateľa."
+    },
+    {
+     "nadpis": "Zápis faktúry",
+     "text": "<>\nV Prijaté faktúry → Nová (/prijate-faktury/nova) zadajte dodávateľa, číslo\nfaktúry, dátum vystavenia, dodania a splatnosti, sumu bez DPH a sumu celkom.\nDátum dodania rozhoduje o tom, do ktorého obdobia DPH faktúra patrí —\nvypĺňajte ho vždy, keď sa líši od dátumu vystavenia.\nFaktúru priraďte na zákazku , ak patrí ku konkrétnej práci. Ide to aj\ndodatočne, keď je obdobie už uzamknuté."
+    },
+    {
+     "nadpis": "Štyri cesty, ako sa faktúra dostane dnu",
+     "text": "<>\nRučný zápis je len jedna z nich a väčšinou tá najpomalšia.\n-\nE-mailom — faktúru od dodávateľa prepošlete na svoju adresu a zaeviduje\nsa sama. Najrýchlejšia cesta, popísaná v\nmanuáli k dokladom (/pomoc/doklady).\n-\nZo Skenera — PDF alebo fotku nahráte v\nSkeneri dokladov (/faktury/skener).\n-\nPresunom z Dokladov — keď sa z bločku vykľuje faktúra so splatnosťou,\npresuniete ju jedným tlačidlom a z Dokladov zmizne, aby sa náklad nepočítal dvakrát.\n-\nRučne — ako vyššie.\nV zozname je pri každej faktúre stĺpec Zapísal , takže vidíte, odkiaľ\nprišla: „E-mailom“, „Z dokladov“, alebo meno kolegu, ktorý ju vyplnil."
+    },
+    {
+     "nadpis": "Čo je na detaile faktúry",
+     "text": "<>\nOkrem dodávateľa, dátumov a súm sú tam ešte dve veci, kvôli ktorým nemusíte otvárať\nprílohu:\n-\nPoložky z dokladu — riadky tabuľky, ktoré sa prečítali z prílohy. Sú\nlen na prezretie: do skladu ani do účtovníctva nevstupujú a rozhodujú\nsumy v hlavičke. Faktúry zapísané pred zavedením tejto funkcie ich nemajú.\n-\nNáhľad dokladu — PDF aj fotka sa zobrazia priamo na stránke, nič\nnetreba sťahovať. Ak by ho prehliadač nezvládol (občas na mobile), je tam odkaz na\notvorenie."
+    },
+    {
+     "nadpis": "Práca s viacerými naraz",
+     "text": "<>\nZaškrtnite riadky v zozname (alebo políčko v hlavičke pre všetky) a hore sa objaví lišta s\nakciami:\n-\nStiahnuť ZIP — PDF všetkých vybraných faktúr a k tomu súpiska v CSV. To\nje celý balík pre účtovníčku.\n-\nOznačiť ako prijaté — hodí sa po prezretí dávky, ktorá prišla mailom.\nStornované a už prijaté faktúry sa preskočia.\n-\nVymazať — pýta sa na potvrdenie a povie, koľkých faktúr sa to týka.\nDoklady idú do koša, nemažú sa natvrdo.\nZoznam sa dá filtrovať podľa stavu, mesiaca a dodávateľa, a hľadať sa dá aj podľa\nvariabilného symbolu , ktorý je vo vlastnom stĺpci."
+    },
+    {
+     "nadpis": "Splatnosť a úhrady",
+     "text": "<>\nZoznam ukazuje, čo je splatné a čo po splatnosti. Po zaplatení faktúru označte za\nuhradenú.\nAk máte pripojený bankový účet (/pomoc/banka), úhrady sa dajú párovať s\nbankovými transakciami a nemusíte ich zapisovať ručne.\nPri banke, ktorá to podporuje, sa dá faktúra rovno zaplatiť — tlačidlo\n„Zaplatiť cez banku“ na detaile pripraví príkaz a presmeruje vás do banky na podpis.\nZ účtu sa nič nestrhne, kým platbu nepodpíšete. Potrebná je k tomu\nfaktúra s IBAN dodávateľa a samostatný súhlas na platby — súhlas na čítanie účtu nestačí."
+    },
+    {
+     "nadpis": "Rozdiel oproti dokladom",
+     "text": "<>\nPrijatá faktúra je záväzok s dátumom splatnosti — zaplatíte ju neskôr,\nzvyčajne prevodom.\nDoklad (bloček) je už zaplatený výdavok. Patrí medzi\nDoklady (/pomoc/doklady), nie sem.\nKeď sa pomýlite, nič sa nedeje: doklad sa dá jedným tlačidlom presunúť sem a z Dokladov\nzmizne, aby ten istý náklad nefiguroval dvakrát."
+    },
+    {
+     "nadpis": "Údaje pre výkazy k DPH",
+     "text": "<>\nNa prijatej faktúre sú štyri polia, ktoré rozhodujú, ako sa dostane do výkazov:\n-\nRežim DPH — tuzemská faktúra od platiteľa ide do časti B.2 kontrolného\nvýkazu, samozdanenie podľa § 69 do B.1, nadobudnutie tovaru z EÚ do riadkov 05 až 08\npriznania. Keď pole necháte prázdne, režim sa odhadne podľa IČ DPH dodávateľa.\n-\nDátum dodania — rozhoduje o období; keď chýba, použije sa dátum\nvystavenia.\n-\nOdpočítanie dane — keď si daň neodpočítavate, faktúra do časti B.2\nnepatrí.\n-\nOpravuje faktúru číslo — dobropis bez čísla pôvodnej faktúry sa do\nčasti C.2 zapísať nedá.\nFaktúra v cudzej mene sa po uložení prepočíta kurzom ECB — do priznania totiž vstupuje v\neurách. Zostavenie výkazov popisuje\nmanuál k výkazom k DPH (/pomoc/vykazy-dph)."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/role",
+   "titulok": "Role a prístupy",
+   "sekcie": [
+    {
+     "nadpis": "Vlastný prístup",
+     "text": "<>\nKeď nesedí ani jedna rola, zvoľte pri pozvaní alebo pri členovi rolu\nVlastný prístup a vyklikajte oblasti: faktúry a ponuky, prijaté faktúry a\ndoklady, ostatné doklady, kontakty, banka, pokladňa, sklad a cenník, zákazky, kniha jázd,\nzamestnanci, účtovníctvo a exporty. Pri každej zvolíte Bez prístupu ,\nLen čítať alebo Upravovať .\nObmedzenie stráži databáza, nie len menu — oblasť bez prístupu sa nezobrazí ani cez priamy\nodkaz. Kto smie faktúry, vidí aj odberateľov. Pripojenie banky, zmena bankových účtov\nfirmy, API kľúče a správa používateľov ostávajú pri vlastnom prístupe vždy len majiteľovi\na administrátorovi."
+    },
+    {
+     "nadpis": "Kto čo smie",
+     "text": "<>\nRolu priradíte pri pozvaní a kedykoľvek zmeníte v\nNastaveniach firmy (/firma), sekcia Používatelia a pozvánky .\nČo\nMajiteľ\nAdministrátor\nÚčtovník\nZamestnanec\n{RIADKY.map((r) => (\n))}"
+    },
+    {
+     "nadpis": "Účtovník",
+     "text": "<>\nÚčtovník vedie doklady v plnom rozsahu — zaúčtuje, opraví, spáruje\nplatbu, uzavrie obdobie, urobí inventúru. Presne to, čo od účtovníka firma potrebuje.\nNedostane sa k správe firmy : k bankovému napojeniu, k odosielaniu\nplatieb, k API kľúčom ani k používateľom. Je to zámer — externý účtovník nemá mať možnosť\nzmeniť IBAN firmy ani odoslať platbu.\nPoznámka: do 15. augusta 2026 bol účtovník len na čítanie. Ak ste rolu\npriradili vtedy, teraz už doklady meniť môže — nič nemusíte prenastavovať."
+    },
+    {
+     "nadpis": "Zamestnanec",
+     "text": "<>\nZamestnanec má na doklady rovnaké práva ako účtovník: fakturuje, skenuje bločky, zapisuje\njazdy a pracuje so skladom. Na správu firmy nesiaha.\nRozdiel oproti účtovníkovi je v praxi len v tom, komu rolu dáte a čo od neho čakáte —\nprístupovo sú si rovní."
+    },
+    {
+     "nadpis": "Administrátor a majiteľ",
+     "text": "<>\nAdministrátor zvládne všetko okrem zrušenia firmy: spravuje používateľov,\npredplatné, bankové napojenie, API kľúče aj platobnú bránu.\nMajiteľ má navyše zrušenie firmy a účtu. Firma musí mať vždy aspoň\njedného majiteľa — posledného nemožno odobrať ani preradiť na inú rolu."
+    },
+    {
+     "nadpis": "Ako rolu zmeniť",
+     "text": "<>\n-\nOtvorte Nastavenia firmy (/firma) a nájdite sekciu\nPoužívatelia a pozvánky .\n- Pri členovi vyberte novú rolu — zmena platí okamžite.\n-\nNového človeka pozvete e-mailom; odkaz platí 14 dní. Ak sa e-mail nepodarí odoslať,\nFaktero vám ukáže odkaz na skopírovanie.\nKoľko ľudí môžete pozvať, závisí od plánu — pozri\nPredplatné (/pomoc/predplatne)."
+    },
+    {
+     "nadpis": "Dvojfaktorové overenie",
+     "text": "<>\nPrístup sa dá zosilniť overením kódom z aplikácie. Je dobrovoľné a zapína si ho každý sám\nv Nastaveniach → Zabezpečenie (/nastavenia/zabezpecenie); podrobnosti sú v\nmanuáli k zabezpečeniu účtu (/pomoc/zabezpecenie)."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/sklad",
+   "titulok": "Sklad",
+   "sekcie": [
+    {
+     "nadpis": "Čo sklad robí",
+     "text": "<>\nSklad vo Faktere odpovedá na tri otázky: čo mám ,\nkoľko to stálo a kam sa to podelo . Nie je to samostatná\nevidencia vedľa fakturácie — je to tá istá evidencia. Keď vystavíte faktúru na skladovú\npoložku, tovar sa odpíše sám.\nKonkrétne sklad vie:\n- viesť skladové karty so stavom, nákupnou a predajnou cenou,\n-\nevidovať príjem, výdaj, opravu a inventúrny rozdiel — každý pohyb s dátumom, cenou a\npoznámkou,\n-\npočítať váženú nákupnú cenu , takže viete, akú maržu ste na predaji\nnaozaj dosiahli,\n- odpisovať tovar automaticky pri odoslaní faktúry a vracať ho pri dobropise,\n- rezervovať tovar na ponuku alebo prijatú objednávku,\n- presúvať tovar medzi viacerými skladmi,\n- vystavovať dodacie listy,\n- strážiť minimálne zásoby a pripraviť objednávku u dodávateľa,\n- robiť inventúru a rozdiel zaúčtovať,\n- priradiť výdaj na zákazku, aby bolo vidieť skutočný náklad práce."
+    },
+    {
+     "nadpis": "Skladové karty a sledovanie stavu",
+     "text": "<>\nKliknutím na ikonu dokumentu pri položke sa otvorí skladová karta : pohyby\nod začiatku, rezervácie, priemerná aj posledná nákupná cena a export pohybov do CSV.\nKarta vzniká v Sklad → Skladové položky (/sklad/produkty). Má SKU, názov,\nmernú jednotku, nákupnú a predajnú cenu, prípadne čiarový kód, umiestnenie a fotku.\nNajdôležitejší prepínač je Sledovať stav . Iba pri zapnutom sledovaní\npohyby menia množstvo a Faktero bráni tomu, aby stav klesol pod nulu. Služby a položky,\nktoré na sklade nedržíte, nechajte bez sledovania — inak vám každá faktúra spadne na\nnedostatok zásoby.\nKarta sa viaže na produkt z katalógu (\nProdukty a služby (/produkty)). Produkt je to, čo predávate a čo vidíte na\nfaktúre; karta je to, čo fyzicky ležíte na sklade. Vďaka tomu môže mať tá istá karta inú\npredajnú cenu pre rôznych odberateľov — o tom je\ncenník a zľavy (/pomoc/ceny).\nKartu, ktorú už nepoužívate, archivujte , nemažte. Mazanie by odstrihlo\nhistóriu pohybov, ktoré patria k starým faktúram."
+    },
+    {
+     "nadpis": "Príjem, výdaj a oprava",
+     "text": "<>\nPohyby nájdete v Sklad → Pohyby (/sklad/pohyby), nový sa zadáva cez\nPríjem (/sklad/prijem) a Výdaj (/sklad/vydaj).\n-\nPríjem — nákup tovaru. Zadajte množstvo a\nnákupnú cenu za jednotku . Bez nej sa nedá spočítať vážená cena a marža\nna faktúre bude nepravdivá.\n-\nVýdaj — predaj mimo faktúry, spotreba na zákazke, škoda. Znižuje stav.\n-\nOprava — ručná úprava so znamienkom, keď sa niečo zaevidovalo zle.\n-\nFaktúra a dobropis — tieto vytvára Faktero samo, ručne\nsa nezadávajú.\nPri výdaji môžete vybrať zákazku (/pomoc/zakazky). Tovar sa potom objaví v\njej nákladoch a vo vyhodnotení marže."
+    },
+    {
+     "nadpis": "Vážená nákupná cena",
+     "text": "<>\nFaktero oceňuje sklad váženým priemerom . Keď kúpite 10 kusov po 4 € a\nneskôr 10 kusov po 6 €, karta má 20 kusov v priemernej cene 5 €. Každý ďalší výdaj berie\ntúto priemernú cenu.\nPriemer sa prepočítava pri každom príjme, takže hodnota skladu v\nSklad → Hodnota (/sklad/hodnota) zodpovedá tomu, čo ste za tovar naozaj\nzaplatili — nie poslednej cene ani cenníkovej.\nPozor na pohyby bez ceny. Ak sa pri starších pohyboch nákupná cena\nnevyplnila, ostanú bez ocenenia a v hodnote skladu chýbajú. Vyriešite to opravným pohybom\nalebo inventúrou s cenou."
+    },
+    {
+     "nadpis": "Automatický odpočet pri faktúre",
+     "text": "<>\nKeď na faktúru vyberiete položku, ktorá má skladovú kartu, a faktúra prejde do stavu\nOdoslaná alebo Uhradená , Faktero vytvorí pohyb typu\nfaktúra a stav skladu sa zníži.\nPri dobropise sa vytvorí opačný pohyb a tovar sa vráti na sklad — vrátane\nzákazky, na ktorú bol pôvodne vydaný.\nKým je faktúra koncept , sklad sa nehýbe. Až odoslanie je moment, keď tovar\nodišiel.\nSkladové položky odoslanej faktúry sa už nedajú meniť. Keby sa dali, stav skladu by\nprestal zodpovedať dokladom."
+    },
+    {
+     "nadpis": "Rezervácie",
+     "text": "<>\nRezervácia drží tovar pre konkrétny doklad, aby ho medzitým niekto nepredal. Vzniká z\ncenovej ponuky (/pomoc/ponuky) alebo z\nprijatej objednávky (/pomoc/objednavky), keď na nej zapnete\nrezervovať tovar .\nRezervovaný kus stále leží na sklade, ale dostupné množstvo je o neho\nnižšie. Práve dostupné množstvo vidíte pri výbere položky na faktúru.\nRezervácia sa uvoľní, keď sa doklad vybaví, zruší alebo (pri ponuke) uplynie jej platnosť."
+    },
+    {
+     "nadpis": "Viac skladov a prevody",
+     "text": "<>\nFirma môže mať viac skladov — predajňu, dielňu, auto technika. Nastavujú sa v\nSklad → Nastavenia (/sklad/nastavenia).\nPresun tovaru medzi nimi robte cez Sklad → Presuny (/sklad/presuny), nie\ndvojicou výdaj + príjem. Prevod zachová ocenenie a v histórii je vidieť, že tovar firmu\nneopustil."
+    },
+    {
+     "nadpis": "Dodacie listy",
+     "text": "<>\nDodací list v Sklad → Dodacie listy (/sklad/dodacie-listy) je doklad o\nfyzickom odovzdaní tovaru. Používa sa vtedy, keď tovar odchádza skôr, než sa fakturuje —\nnapríklad na stavbu.\nDá sa vytlačiť ako PDF a odovzdať s tovarom."
+    },
+    {
+     "nadpis": "Minimálne zásoby a objednávky u dodávateľov",
+     "text": "<>\nNa karte nastavte minimálny stav a prípadne\noptimálny stav . Zoznam toho, čo je pod limitom, nájdete v\nSklad → Pod minimom (/sklad/minimum); upozornenie sa objaví aj na\nnástenke.\nOdtiaľ sa dá rovno pripraviť objednávka u dodávateľa (/sklad/objednavky).\nFaktero navrhne množstvo tak, aby ste sa dostali na optimálny stav. Príjem tovaru sa potom\nzapíše priamo na objednávku a tá si sama drží prehľad, čo z nej ešte neprišlo."
+    },
+    {
+     "nadpis": "Inventúra",
+     "text": "<>\nInventúra porovná fyzický stav so stavom v systéme a rozdiel zaúčtuje.\n-\nV Sklad → Inventúra (/sklad/inventura) založte novú inventúru.\n- Vyplňte spočítané množstvá pre každú kartu.\n-\nPo uzavretí Faktero vytvorí pohyby typu inventúra s rozdielom.\nInventúrny rozdiel nevstupuje do nákladov zákazky — je to oprava\nevidencie, nie spotreba materiálu."
+    },
+    {
+     "nadpis": "Kategórie, import a export",
+     "text": "<>\nKarty sa dajú triediť do kategórií (/sklad/kategorie). Pri väčšom sklade\nje to jediný spôsob, ako sa v ňom vyznať.\nCelý sklad naraz založíte cez Sklad → Import (/sklad/import) z CSV.\nOpačným smerom je Export skladu CSV v zozname skladových položiek. Súbor\nobsahuje SKU, názov, aktuálny a minimálny stav, nákupnú a predajnú cenu a hodnotu skladu.\nJe v UTF-8 so stredníkom ako oddeľovačom, takže sa otvorí v Exceli."
+    },
+    {
+     "nadpis": "Na čo si dať pozor",
+     "text": "<>\n-\nKarta bez sledovania stavu sa nikdy neodpíše. Ak vám stav „nič nerobí\",\nskontrolujte najprv tento prepínač.\n-\nPríjem bez nákupnej ceny pokazí váženú cenu aj maržu. Cenu doplňte\nhneď, spätne sa dohľadáva ťažko.\n-\nKoncept faktúry sklad nehýbe. Ak tovar odišiel, faktúru odošlite.\n-\nPresun medzi skladmi nerobte výdajom a príjmom — pokazíte tým ocenenie\naj históriu.\n-\nUzamknuté obdobie ( uzávierka (/pomoc/uzavierka))\nnepustí zmeny do starých dokladov. Ak sa pohyb nedá uložiť spätne, býva to práve toto."
+    },
+    {
+     "nadpis": "Skladové karty do Pohody",
+     "text": "<>\nAk účtovníčka vedie sklad v Pohode, karty jej vieme posielať priamo — zapína sa to vo\nÚčtovníctvo → Prepojenie s Pohodou (/uctovnictvo/pohoda) a treba k tomu\nvyplniť členenie skladu.\nPosiela sa číselník zásob, nie stav skladu . Množstvá v Pohode vznikajú\npríjemkami a výdajkami, takže dosadené číslo by sa s dokladmi rozišlo. Viac v\nmanuáli k Pohode (/pomoc/pohoda)."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/uzavierka",
+   "titulok": "Uzávierka",
+   "sekcie": [
+    {
+     "nadpis": "Načo je uzávierka",
+     "text": "<>\nKeď je podané daňové priznanie alebo kontrolný výkaz, doklady za to obdobie sa už nesmú\nmeniť. Uzávierka je poistka proti tomu, aby niekto — aj omylom — nezmenil faktúru, ktorá\nje už odovzdaná úradu.\nNastavuje sa v Účtovníctvo → Uzávierka (/uctovnictvo/uzavierka) jediným\ndátumom: uzamknuté do . Všetko s dátumom do tohto dňa vrátane je zamknuté."
+    },
+    {
+     "nadpis": "Čo sa zamkne",
+     "text": "<>\nV dokladoch s dátumom v uzamknutom období sa už nedajú meniť:\n- dátumy — vystavenia, dodania, splatnosti,\n- sumy a položky vydaných aj prijatých faktúr,\n- odberateľ a sadzby DPH,\n- záznamy v knihe jázd,\n- pokladničné doklady,\n- mazanie takýchto dokladov.\nZákaz je v databáze, nie len vo formulári . Nedá sa obísť ani iným\nprogramom, ani rozhraním API."
+    },
+    {
+     "nadpis": "Čo ostane možné",
+     "text": "<>\nZamykajú sa sumy a dátumy, nie práca s dokladom. Naďalej sa dá:\n-\noznačiť faktúru za uhradenú a zapísať dátum úhrady — platba prichádza\naj mesiace po vystavení,\n- meniť stav dokladu,\n- dopísať poznámku,\n- priradiť doklad na zákazku.\nBez týchto výnimiek by uzavretie obdobia znamenalo, že staré faktúry sa už nikdy nespárujú\ns platbami."
+    },
+    {
+     "nadpis": "Ako obdobie uzamknúť",
+     "text": "<>\nNa stránke sú rýchle tlačidlá — koniec predošlého mesiaca, štvrťroka alebo roka — alebo si\nzadajte vlastný dátum.\nUzávierku môže nastaviť len majiteľ alebo správca firmy . Bežný člen ju\nvidí, ale nemení.\nPred uzamknutím stránka ukáže, koľkých dokladov sa to týka. Oplatí sa najprv skontrolovať\nprehľad DPH (/uctovnictvo/dph) za dané obdobie."
+    },
+    {
+     "nadpis": "Odomknutie",
+     "text": "<>\nOdomknúť sa dá kedykoľvek — posunutím dátumu dozadu alebo úplným zrušením zámku. Faktero\nsi pri tom vyžiada potvrdenie.\nOdomknutie je legitímne, napríklad pri dodatočnom daňovom priznaní. Po oprave nezabudnite\nobdobie zamknúť späť."
+    },
+    {
+     "nadpis": "Výkazy a uzamknutie",
+     "text": "<>\nPoradie je jednoduché: najprv sa v\nÚčtovníctve → Výkazy k DPH (/uctovnictvo/vykazy) zostaví priznanie,\nkontrolný a súhrnný výkaz, podajú sa cez eDane a označia ako podané — a až potom sa\nobdobie uzamkne.\nDodatočná zmena dokladu po podaní by rozišla účtovníctvo s tým, čo už má finančná správa;\nak je zmena naozaj potrebná, podáva sa dodatočné priznanie alebo opravný výkaz."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/videa",
+   "titulok": "Video návody",
+   "sekcie": [
+    {
+     "nadpis": "Aké videá sú k dispozícii",
+     "text": "Krátke videá so slovenským komentárom a titulkami, kde je krok za krokom ukázané, ako vo Faktere urobiť bežné veci. Nájdete ich na /pomoc/videa. Zoznam návodov:\n- Vytvorenie prvej faktúry\n- Pridanie nového odberateľa\n- Označenie faktúry ako uhradenej"
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/vykazy-dph",
+   "titulok": "Výkazy k DPH",
+   "sekcie": [
+    {
+     "nadpis": "Tri výkazy z tých istých dokladov",
+     "text": "<>\nÚčtovníctvo → Výkazy k DPH (/uctovnictvo/vykazy) zostaví za zvolený mesiac\nalebo štvrťrok tri podania naraz:\n-\nPriznanie k DPH (vzor DPHv21) — riadky 01 až 37,\n-\nKontrolný výkaz (schéma KVDPH 2025) — časti A.1, A.2, B.1, B.2, B.3 a\nC.1, C.2,\n-\nSúhrnný výkaz (SVDPHv20) — dodania do iného členského štátu.\nKaždý sa dá stiahnuť ako XML a nahrať do eDane alebo na portál finančnej\nsprávy. Faktero nič neodosiela samo — podpis a podanie ostávajú na vás."
+    },
+    {
+     "nadpis": "Čo musí byť na dokladoch",
+     "text": "<>\nTri údaje sa z dokladu vypočítať nedajú a bez nich by výkaz bol nesprávny:\n-\nDodanie do EÚ — pri faktúre s prenesením daňovej povinnosti do EÚ\nvyberte, či išlo o tovar, službu alebo trojstranný obchod. Rozhoduje to o kóde plnenia v\nsúhrnnom výkaze; tovar ide navyše do riadkov 13 a 14 priznania, služba do priznania\nnevstupuje vôbec.\n-\nRežim DPH na prijatej faktúre — tuzemská faktúra od platiteľa ide do\nčasti B.2, samozdanenie podľa § 69 do B.1, nadobudnutie tovaru z EÚ do riadkov 05 až 08\npriznania. Keď pole necháte prázdne, Faktero režim odhadne podľa IČ DPH dodávateľa.\n-\nČíslo opravovanej faktúry — dobropis bez nej sa do častí C.1 a C.2\nzapísať nedá.\nDoplniť sa dá aj dátum dodania prijatej faktúry a či si z nej\nodpočítavate daň ."
+    },
+    {
+     "nadpis": "Upozornenia pred podaním",
+     "text": "<>\nNad výkazmi sa vypíše, čo chýba: faktúra bez IČ DPH odberateľa pri dodaní do EÚ, prijatá\nfaktúra bez čísla, dobropis bez väzby na pôvodný doklad, doklad v cudzej mene. Výkaz sa dá\nstiahnuť aj tak, ale tie riadky budú neúplné — cudzia mena sa navyše do výkazov uvádza\nprepočítaná na eurá."
+    },
+    {
+     "nadpis": "Riadky, ktoré Faktero nevie",
+     "text": "<>\nNiektoré riadky priznania z dokladov nevyplývajú — dovoz tovaru, nevymožiteľná pohľadávka,\nodpočet dane pri registrácii, daň vrátená cestujúcim alebo nadmerný odpočet z minulého\nobdobia. Vyplnia sa ručne v rozbaľovacej časti pod priznaním a hneď sa premietnu do\nvýsledku."
+    },
+    {
+     "nadpis": "Po podaní",
+     "text": "<>\nTlačidlo Podané si výkaz uloží aj s dátumom, takže je dohľadateľné, čo a\nkedy sa odoslalo. Potom sa oplatí obdobie uzamknúť (/pomoc/uzavierka) —\ndodatočná zmena dokladu by inak rozišla účtovníctvo s tým, čo už má finančná správa.\nLehota je do 25 dní po skončení zdaňovacieho obdobia; kontrolný výkaz sa podáva aj vtedy,\nkeď je priznanie nulové, ak v ňom sú plnenia."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/zabezpecenie",
+   "titulok": "Zabezpečenie účtu",
+   "sekcie": [
+    {
+     "nadpis": "Dvojfaktorové overenie",
+     "text": "<>\nV Nastaveniach → Zabezpečenie (/nastavenia/zabezpecenie) sa dá zapnúť\noverenie kódom z aplikácie (Google Authenticator, 1Password a podobne). Je\ndobrovoľné — kto ho nechce, prihlasuje sa ako doteraz.\nPo zapnutí sa pri prihlásení pýta šesťmiestny kód. Zariadenie sa dá označiť za\ndôveryhodné, aby sa kód na ňom nepýtal zakaždým.\nKeď je dvojfaktor zapnutý, chráni celý účet vrátane dokladov — aj keby niekto poznal\nheslo, bez kódu sa k dátam nedostane."
+    },
+    {
+     "nadpis": "Heslo a prihlásenie",
+     "text": "<>\nZabudnuté heslo sa obnovuje odkazom z prihlasovacej stránky; e-mail príde do pár minút a\nodkaz vedie späť na Faktero. Odhlásenie sa týka len zariadenia, na ktorom ho urobíte — v\ntelefóne teda ostanete prihlásený."
+    },
+    {
+     "nadpis": "Kto vidí vaše dáta",
+     "text": "<>\nDo firmy sa ľudia dostanú len cez pozvánku a v rozsahu roly alebo\nvlastného prístupu (/pomoc/role), ktorý im nastavíte. Prístup sa dá\nkedykoľvek odobrať.\nCitlivé údaje v module zamestnancov (rodné číslo, číslo dokladu) sú šifrované aj v\ndatabáze a ich zobrazenie sa zaznamenáva."
+    },
+    {
+     "nadpis": "Stiahnutie všetkých dát",
+     "text": "<>\nV Nastaveniach (/nastavenia) je tlačidlo\nStiahnuť všetky dáta . Pripraví balík ZIP s tabuľkami všetkých agend v CSV\n— faktúry a ich položky, prijaté faktúry, doklady, odberatelia, cenník, pokladňa, banka,\njazdy, zákazky — a voliteľne aj s PDF vystavených faktúr.\nSúbory otvorí Excel bez nastavovania. Odkaz na stiahnutie platí sedem dní; balík sa dá\npripraviť kedykoľvek znova."
+    },
+    {
+     "nadpis": "Zrušenie účtu",
+     "text": "<>\nÚčet sa dá zrušiť z nastavení. Mazanie má 14-dňový odklad — do tej doby\nsa dá vrátiť späť prihlásením.\nPred zrušením si stiahnite doklady. Povinnosť uchovávať účtovné doklady\ndesať rokov platí ďalej a zrušením účtu nezaniká."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/zakazky",
+   "titulok": "Zákazky",
+   "sekcie": [
+    {
+     "nadpis": "Načo sú zákazky",
+     "text": "<>\nZákazka je jedna práca, jedna stavba, jeden projekt. Odpovedá na otázku, ktorú účtovníctvo\nnevie: zarobili sme na tomto konkrétnom prípade?\nFaktero k zákazke zbiera výnosy aj náklady z celého systému — vydané faktúry, prijaté\nfaktúry, materiál zo skladu a jazdy — a spočíta zisk a maržu."
+    },
+    {
+     "nadpis": "Založenie zákazky",
+     "text": "<>\nV Zákazky → Nová zákazka (/zakazky/nova) stačí názov. Číslo pridelí\nFaktero samo v tvare ZAK .\nNepovinne pridajte:\n-\nodberateľa — potom sa zákazka dá nastaviť ako jeho predvolená,\n-\nzačiatok a predpokladaný koniec ,\n-\nplánované výnosy a náklady — bez nich vidíte len skutočnosť, s nimi aj\nto, ako ďaleko ste od plánu."
+    },
+    {
+     "nadpis": "Priradenie dokladov",
+     "text": "<>\nVýber zákazky sa objaví na faktúre, prijatej faktúre, cenovej ponuke, prijatej objednávke,\nskladovom pohybe aj jazde — ale až vtedy, keď firma nejakú zákazku má .\nKým nie je založená ani jedna, políčko sa nezobrazuje, aby zbytočne nezavadzalo.\nOdberateľovi sa dá nastaviť predvolená zákazka . Nový doklad ju potom\npredvyplní sám — to je najspoľahlivejší spôsob, ako sa vyhnúť tomu, že polovica dokladov\nzákazku nemá.\nDo uzavretej zákazky sa nové doklady priradiť nedajú. Výnimkou je pohyb,\nktorý vznikol z faktúry — ten prejde vždy, aby sa faktúra nezasekla."
+    },
+    {
+     "nadpis": "Ako sa počíta zisk",
+     "text": "<>\nVýnosy sú sumy bez DPH z vydaných faktúr priradených k zákazke. Dobropis\nsa odpočítava. Zálohová faktúra sa nepočíta — záloha nie je výnos,\nvýnosom sa stane až vyúčtovacia faktúra. Koncepty a zrušené faktúry sa preskakujú.\nNáklady sú tri:\n-\nmateriál zo skladu — výdaje ocenené váženou nákupnou cenou, nie\npredajnou,\n-\nprijaté faktúry priradené k zákazke, sumy bez DPH,\n-\ndoprava — jazdy priradené k zákazke, spotrebované litre × cena paliva.\nObjednávka u dodávateľa nie je náklad. Objednaný tovar sa nákladom stane\naž jeho výdajom zo skladu. V detaile zákazky ju vidíte len informatívne."
+    },
+    {
+     "nadpis": "Prečo mi doprava vychádza nula",
+     "text": "<>\nNa výpočet dopravy treba dve veci a obe chýbajú najčastejšie:\n-\nspotrebu vozidla v Jazdy → Vozidlá (/jazdy/vozidla),\n-\naspoň jedno tankovanie , z ktorého Faktero zoberie cenu paliva.\nCena sa berie najprv z tankovaní daného vozidla, potom z ktoréhokoľvek vozidla firmy. Kým\nnie je ani jedno, doprava vyjde nula."
+    },
+    {
+     "nadpis": "Uzavretie a zrušenie",
+     "text": "<>\nHotovú zákazku uzavrite . Ostane v prehľade s konečným ziskom, ale nové\ndoklady sa na ňu už nepriradia. Uzavretie sa dá vrátiť.\nZmazať sa dá len zákazka bez dokladov. Ak sú na ňu naviazané faktúry\nalebo pohyby, Faktero mazanie odmietne — inak by tie doklady stratili súvislosť."
+    },
+    {
+     "nadpis": "Zákazky v Pohode",
+     "text": "<>\nZákazky sa dajú posielať aj do Pohody a faktúra tam potom nesie zákazku, takže je z\núčtovníctva vidieť výnos po zákazkách. Zapína sa to vo\nÚčtovníctvo → Prepojenie s Pohodou (/uctovnictvo/pohoda), podrobnosti sú v\nmanuáli k Pohode (/pomoc/pohoda).\nZákazka odchádza raz — Pohoda ju vie založiť, ale nie prepísať. Keď jej\nneskôr zmeníte názov, prepíšte ho aj tam."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/zamestnanci",
+   "titulok": "Zamestnanci",
+   "sekcie": [
+    {
+     "nadpis": "Čo modul rieši",
+     "text": "<>\nPersonalistiku bez miezd — karty zamestnancov, zmluvy a dokumenty,\ndochádzku, neprítomnosti a lehoty, ktoré nesmú ujsť. Mzdy sa počítajú inde; Faktero má\npodklady, z ktorých sa počítajú.\nModul má zapnutý každá firma; vypnúť sa dá na požiadanie."
+    },
+    {
+     "nadpis": "Karta zamestnanca",
+     "text": "<>\nOsobné a kontaktné údaje, druh pracovnoprávneho vzťahu (pracovná zmluva, dohoda o vykonaní\npráce, brigádnická práca študentov), miesto výkonu práce, odmena a skúšobná doba.\nRodné číslo a číslo dokladu sú šifrované aj v databáze a ich zobrazenie\nsa zaznamenáva. Kto ich uvidí, určuje rola alebo\nvlastný prístup (/pomoc/role) — oblasť „Zamestnanci\" sa dá zapnúť\nsamostatne."
+    },
+    {
+     "nadpis": "Zmluvy a dokumenty zo šablón",
+     "text": "<>\nV šablónach sa pripraví text raz a Faktero doň doplní údaje zamestnanca — pracovná zmluva,\ndodatok, výpoveď, potvrdenie o príjme, prihláška do zdravotnej a Sociálnej poisťovne,\nškolenie BOZP a ďalšie. Hotový dokument sa uloží ku karte ako PDF."
+    },
+    {
+     "nadpis": "Dochádzka a neprítomnosti",
+     "text": "<>\nZapisuje sa práca, dovolenka, náhradné voľno, neplatené voľno, služobná cesta, sviatok aj\nhome office; hodiny sa dajú zadať priamo alebo časom od–do s prestávkou. Mesačný súhrn\nukáže odpracované hodiny a čerpanú dovolenku a dá sa vyexportovať pre mzdovú účtovníčku."
+    },
+    {
+     "nadpis": "Lehoty, ktoré sa pripomínajú",
+     "text": "<>\nKoniec pracovného pomeru, koniec skúšobnej doby, lekárska prehliadka a školenie BOZP —\nFaktero na ne upozorní vopred, aby sa nezmeškali. Pripomienky vidno v prehľade\nzamestnancov aj na zvončeku."
+    }
+   ]
+  }
+ ]
+}
