@@ -138,7 +138,8 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
     const ctaPlain = paymentLinkUrl
       ? `\n\nFaktúru môžete zaplatiť online kliknutím na tento odkaz: ${paymentLinkUrl}`
       : "";
-    const finalPlain = finalMessage + ctaPlain;
+    const { podpisHtml, podpisText } = await import("./email-podpis");
+    const finalPlain = finalMessage + ctaPlain + podpisText(company ?? {});
     const ctaHtml = paymentLinkUrl
       ? `<div style="margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb">
          <p style="margin:0 0 12px;font-family:Inter,Arial,sans-serif;font-size:14px;color:#111">
@@ -154,7 +155,8 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       : "";
     const bodyHtml =
       `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;white-space:pre-wrap">${escapeHtml(finalMessage)}</div>` +
-      ctaHtml;
+      ctaHtml +
+      podpisHtml(company ?? {});
 
     const senderName = company?.email_sender_name || company?.name || "Faktero";
     const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";

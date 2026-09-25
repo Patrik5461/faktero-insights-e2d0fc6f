@@ -1,5 +1,6 @@
 import { runInBatches, selectByIds } from "./batch.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { podpisHtml, podpisText } from "./email-podpis";
 import { sUctomFaktury } from "./platobny-ucet";
 
 export type ReminderNumber = 1 | 2 | 3;
@@ -79,7 +80,9 @@ export function buildReminderContent({
   const message = applyVars(messageTpl, invoice, company);
 
   const paymentDetails = [
-    sUctomFaktury(company ?? {}, invoice).iban ? `IBAN: ${sUctomFaktury(company ?? {}, invoice).iban}` : null,
+    sUctomFaktury(company ?? {}, invoice).iban
+      ? `IBAN: ${sUctomFaktury(company ?? {}, invoice).iban}`
+      : null,
     invoice?.variable_symbol
       ? `VS: ${invoice.variable_symbol}`
       : `VS: ${invoice.invoice_number ?? ""}`,
@@ -89,7 +92,8 @@ export function buildReminderContent({
     .filter(Boolean)
     .join("\n");
 
-  const plain = `${message}\n\nPlatobné údaje:\n${paymentDetails}`;
+  // Podpis odosielateľa — upomienka bez kontaktu je pre príjemcu slepá ulička.
+  const plain = `${message}\n\nPlatobné údaje:\n${paymentDetails}${podpisText(company ?? {})}`;
 
   const html = `
     <div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;white-space:pre-wrap">${escapeHtml(message)}</div>
@@ -97,6 +101,7 @@ export function buildReminderContent({
       <div style="font-weight:600;margin-bottom:8px">Platobné údaje</div>
       <div style="white-space:pre-wrap">${escapeHtml(paymentDetails)}</div>
     </div>
+    ${podpisHtml(company ?? {})}
   `;
 
   return { subject, plain, html };

@@ -121,6 +121,12 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
       await import("./ponuka-odpoved.server");
     const token = await zabezpecToken(q.id, (q as any).approval_token);
 
+    /*
+      Odosielacia adresa je spoločná (faktury@faktero.sk), takže bez podpisu
+      príjemca nevie, komu má odpísať alebo zavolať.
+    */
+    const { podpisHtml, podpisText } = await import("./email-podpis");
+
     const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -130,10 +136,11 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
         to: [data.recipient_email],
         subject,
         reply_to: company?.email_reply_to || undefined,
-        text: message + "\n" + tlacidlaDoTextu(token, q.valid_until),
+        text: message + "\n" + tlacidlaDoTextu(token, q.valid_until) + podpisText(company ?? {}),
         html: `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;max-width:560px">
           <div style="white-space:pre-wrap">${escapeHtml(message)}</div>
           ${tlacidlaDoMailu(token, q.valid_until)}
+          ${podpisHtml(company ?? {})}
         </div>`,
         attachments: [{ filename: `${q.quote_number}.pdf`, content: pdfB64 }],
       }),
