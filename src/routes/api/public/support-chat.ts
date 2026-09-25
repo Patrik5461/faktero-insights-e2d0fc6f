@@ -119,7 +119,7 @@ export const Route = createFileRoute("/api/public/support-chat")({
           // zlyhá. Volanie sa zároveň započíta do merania využitia.
           const { aiText } = await import("@/lib/faktero/ai.server");
           const odpoved = (
-            await aiText(rozhovor, { maxOutputTokens: 700, ucel: "podpora" })
+            await aiText(rozhovor, { maxOutputTokens: 900, bezUvazovania: true, ucel: "podpora" })
           ).trim();
 
           const content =

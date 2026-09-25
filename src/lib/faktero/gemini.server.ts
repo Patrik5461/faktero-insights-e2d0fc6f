@@ -15,6 +15,8 @@ export async function geminiVision(
     maxOutputTokens?: number;
     /** Vypýta si čistý JSON, takže odpoveď nechodí zabalená v apostrofoch. */
     json?: boolean;
+    /** Vypne uvažovanie modelu — pri rozhovore zožerie strop a spomalí odpoveď. */
+    bezUvazovania?: boolean;
   },
   merac?: MeracTokenov,
 ): Promise<string> {
@@ -34,7 +36,7 @@ export async function geminiVision(
  */
 export async function geminiText(
   prompt: string,
-  nastavenie?: { maxOutputTokens?: number; json?: boolean },
+  nastavenie?: { maxOutputTokens?: number; json?: boolean; bezUvazovania?: boolean },
   merac?: MeracTokenov,
 ): Promise<string> {
   return volaj([{ text: prompt }], nastavenie, merac);
@@ -42,7 +44,7 @@ export async function geminiText(
 
 async function volaj(
   parts: unknown[],
-  nastavenie?: { maxOutputTokens?: number; json?: boolean },
+  nastavenie?: { maxOutputTokens?: number; json?: boolean; bezUvazovania?: boolean },
   merac?: MeracTokenov,
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
@@ -69,6 +71,13 @@ async function volaj(
                   ? { maxOutputTokens: nastavenie.maxOutputTokens }
                   : {}),
                 ...(nastavenie.json ? { responseMimeType: "application/json" } : {}),
+                /*
+                  Model s uvažovaním minie na premýšľanie aj šesťsto tokenov
+                  navyše. Pri čítaní dokumentu sa to oplatí, pri rozhovore nie:
+                  strop sa vyčerpá myslením a odpoveď sa odreže ako „nezmestila
+                  sa", hoci otázka bola jednoduchá.
+                */
+                ...(nastavenie.bezUvazovania ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
               },
             }
           : {}),

@@ -108,6 +108,20 @@ describe("výber poskytovateľa", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("rozhovor si vypýta odpoveď bez uvažovania modelu", async () => {
+    // Model s uvažovaním minie stovky tokenov na premýšľanie a odpoveď sa
+    // odreže — pri chate je to tá najčastejšia príčina „nezmestila sa".
+    geminiText.mockResolvedValueOnce("ok");
+    const { aiText } = await import("./ai.server");
+
+    await aiText("otázka", { bezUvazovania: true, maxOutputTokens: 900 });
+
+    expect(geminiText.mock.calls[0][1]).toMatchObject({
+      bezUvazovania: true,
+      maxOutputTokens: 900,
+    });
+  });
+
   it("výpadok Gemini kľúč neumlčí — skúsi sa nabudúce znova", async () => {
     geminiText.mockRejectedValueOnce(new Error("Gemini 503: service unavailable"));
     const { aiText } = await import("./ai.server");

@@ -25,6 +25,8 @@ export type AiNastavenie = {
   ucel?: string;
   /** Firma, ktorej sa dokument týka; pri verejných volaniach chýba. */
   firma?: string | null;
+  /** Rozhovor nepotrebuje, aby model najprv premýšľal — len by minul strop. */
+  bezUvazovania?: boolean;
 };
 
 /**

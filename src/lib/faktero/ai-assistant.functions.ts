@@ -264,7 +264,8 @@ ${JSON.stringify(ctx, null, 2)}`;
     const reply =
       (
         await aiText(`${rozhovor}\n\nASISTENT:`, {
-          maxOutputTokens: 1200,
+          maxOutputTokens: 1800,
+          bezUvazovania: true,
           ucel: "asistent",
           firma: data.companyId,
         })
