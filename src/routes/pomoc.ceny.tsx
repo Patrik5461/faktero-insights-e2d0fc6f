@@ -168,6 +168,26 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "desatinne-miesta",
+    title: "Ceny s viac ako dvoma desatinnými miestami",
+    body: (
+      <>
+        <p>
+          Jednotková cena znesie <strong>päť desatinných miest</strong> — 0,12345 €. Používa sa to
+          pri tovare, ktorý sa predáva po tisícoch kusov (spojovací materiál, drobné diely) alebo
+          keď je cena prepočítaná na minútu či gram; zaokrúhlenie na centy by na veľkom množstve
+          urobilo rozdiel v desiatkach eur.
+        </p>
+        <p>
+          Platí to rovnako v katalógu, na skladovej karte, v dohodnutých cenách aj priamo v riadku
+          faktúry či ponuky. Na doklade sa vytlačia len tie miesta, ktoré cena naozaj má — 12,50 €
+          ostane 12,50 €. <strong>Súčty sa naďalej zaokrúhľujú na centy</strong>, zaokrúhľuje sa až
+          celý riadok, nie cena za kus.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

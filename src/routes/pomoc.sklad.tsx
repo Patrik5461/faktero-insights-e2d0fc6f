@@ -103,7 +103,16 @@ const sections: HelpSection[] = [
       <>
         <p>
           Pohyby nájdete v <Link to="/sklad/pohyby">Sklad → Pohyby</Link>, nový sa zadáva cez{" "}
-          <Link to="/sklad/prijem">Príjem</Link> a <Link to="/sklad/vydaj">Výdaj</Link>.
+          <Link to="/sklad/prijem">Príjem</Link> a <Link to="/sklad/vydaj">Výdaj</Link>. Rýchlejšie
+          je to zo samotnej položky: v zozname skladových položiek má každý riadok tlačidlo{" "}
+          <strong>Naskladniť</strong> a to isté nájdete v jej karte spolu s tlačidlom{" "}
+          <strong>Vydať</strong>. Položka aj nákupná cena sú potom vopred vyplnené.
+        </p>
+        <p>
+          <strong>Stav na sklade sa nikde nezadáva ako číslo.</strong> Je to súčet pohybov — inak by
+          sa rozišiel s hodnotou skladu a chýbal by riadok, ktorý ho zmenil. Prvý stav zapíšete pri
+          zakladaní tovaru (pole <strong>Počiatočný stav</strong>), potom ho meníte príjmom a
+          výdajom a rozdiel oproti skutočnosti zrovnáte <Link to="/sklad/inventura">inventúrou</Link>.
         </p>
         <ul>
           <li>

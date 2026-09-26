@@ -12,7 +12,7 @@ export type CapabilityModule = {
   routes?: string[];
 };
 
-export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v2 (25. 9. 2026)";
+export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v2 (26. 9. 2026)";
 
 /** Features that are explicitly NOT supported yet. AI must say "Zatiaľ nie je dostupné". */
 export const NOT_YET_SUPPORTED: string[] = [
@@ -84,7 +84,9 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
     name: "Sklad",
     summary: "Skladové hospodárstvo s automatickým odpočtom z faktúr.",
     features: [
-      "Skladové karty / produkty",
+      "Skladové karty tovaru napojené na katalóg Produkty a služby (služba kartu nemá)",
+      "Stav na sklade sa nezadáva ručne — počíta sa z pohybov (počiatočný stav, príjem, výdaj, inventúra)",
+      "Jednotková cena až na päť desatinných miest; predajná cena je spoločná pre katalóg aj kartu",
       "Pohyby skladu",
       "Inventúra",
       "Príjem na sklad",

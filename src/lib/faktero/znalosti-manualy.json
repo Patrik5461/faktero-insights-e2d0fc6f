@@ -172,6 +172,10 @@
     {
      "nadpis": "Ako to vyzerá na doklade",
      "text": "<>\nKeď na faktúru, ponuku alebo objednávku pridáte produkt, cena sa doplní podľa cenníka a\npod ňou sa zobrazí zeleným, prečo je taká — Zľava odberateľa 10 % ,\nCena cenovej skupiny , Akcia Letný výpredaj −30 % . Ak sa cena líši od\nzákladnej, je vedľa nej preškrtnutá pôvodná.\nCena sa prepočíta aj po zmene odberateľa.\nRiadok, do ktorého ste zasiahli ručne, už cenník neprepisuje — vaša cena\nmá vždy prednosť."
+    },
+    {
+     "nadpis": "Ceny s viac ako dvoma desatinnými miestami",
+     "text": "<>\nJednotková cena znesie päť desatinných miest — 0,12345 €. Používa sa to\npri tovare, ktorý sa predáva po tisícoch kusov (spojovací materiál, drobné diely) alebo\nkeď je cena prepočítaná na minútu či gram; zaokrúhlenie na centy by na veľkom množstve\nurobilo rozdiel v desiatkach eur.\nPlatí to rovnako v katalógu, na skladovej karte, v dohodnutých cenách aj priamo v riadku\nfaktúry či ponuky. Na doklade sa vytlačia len tie miesta, ktoré cena naozaj má — 12,50 €\nostane 12,50 €. Súčty sa naďalej zaokrúhľujú na centy , zaokrúhľuje sa až\ncelý riadok, nie cena za kus."
     }
    ]
   },
@@ -873,7 +877,7 @@
     },
     {
      "nadpis": "Príjem, výdaj a oprava",
-     "text": "<>\nPohyby nájdete v Sklad → Pohyby (/sklad/pohyby), nový sa zadáva cez\nPríjem (/sklad/prijem) a Výdaj (/sklad/vydaj).\n-\nPríjem — nákup tovaru. Zadajte množstvo a\nnákupnú cenu za jednotku . Bez nej sa nedá spočítať vážená cena a marža\nna faktúre bude nepravdivá.\n-\nVýdaj — predaj mimo faktúry, spotreba na zákazke, škoda. Znižuje stav.\n-\nOprava — ručná úprava so znamienkom, keď sa niečo zaevidovalo zle.\n-\nFaktúra a dobropis — tieto vytvára Faktero samo, ručne\nsa nezadávajú.\nPri výdaji môžete vybrať zákazku (/pomoc/zakazky). Tovar sa potom objaví v\njej nákladoch a vo vyhodnotení marže."
+     "text": "<>\nPohyby nájdete v Sklad → Pohyby (/sklad/pohyby), nový sa zadáva cez\nPríjem (/sklad/prijem) a Výdaj (/sklad/vydaj). Rýchlejšie\nje to zo samotnej položky: v zozname skladových položiek má každý riadok tlačidlo\nNaskladniť a to isté nájdete v jej karte spolu s tlačidlom\nVydať . Položka aj nákupná cena sú potom vopred vyplnené.\nStav na sklade sa nikde nezadáva ako číslo. Je to súčet pohybov — inak by\nsa rozišiel s hodnotou skladu a chýbal by riadok, ktorý ho zmenil. Prvý stav zapíšete pri\nzakladaní tovaru (pole Počiatočný stav ), potom ho meníte príjmom a\nvýdajom a rozdiel oproti skutočnosti zrovnáte inventúrou (/sklad/inventura).\n-\nPríjem — nákup tovaru. Zadajte množstvo a\nnákupnú cenu za jednotku . Bez nej sa nedá spočítať vážená cena a marža\nna faktúre bude nepravdivá.\n-\nVýdaj — predaj mimo faktúry, spotreba na zákazke, škoda. Znižuje stav.\n-\nOprava — ručná úprava so znamienkom, keď sa niečo zaevidovalo zle.\n-\nFaktúra a dobropis — tieto vytvára Faktero samo, ručne\nsa nezadávajú.\nPri výdaji môžete vybrať zákazku (/pomoc/zakazky). Tovar sa potom objaví v\njej nákladoch a vo vyhodnotení marže."
     },
     {
      "nadpis": "Vážená nákupná cena",
