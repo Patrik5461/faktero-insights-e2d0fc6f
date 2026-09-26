@@ -99,7 +99,14 @@ async function handle(request: Request): Promise<Response> {
   // 2. Optional shared-secret check. GoPay itself does NOT send a secret —
   // this only guards manual re-triggers. If configured AND provided, verify.
   // Never 500 on a real GoPay notification just because the secret is unset.
-  const expected = process.env.GOPAY_WEBHOOK_SECRET;
+  // Tajomstvo je v nastavení brány (admin), v prostredí býva prázdne.
+  let expected = process.env.GOPAY_WEBHOOK_SECRET ?? "";
+  try {
+    const { loadPlatformGopayConfig } = await import("@/lib/faktero/gopay.server");
+    expected = (await loadPlatformGopayConfig()).webhookSecret ?? expected;
+  } catch {
+    /* nastavenie sa nenačítalo — platí, čo je v prostredí */
+  }
   const provided =
     url.searchParams.get("secret") ?? request.headers.get("x-faktero-gopay-secret") ?? "";
   if (expected && provided && !timingSafeEqualStr(provided, expected)) {
@@ -107,7 +114,7 @@ async function handle(request: Request): Promise<Response> {
   }
   if (!expected) {
     console.warn(
-      "[gopay-webhook] GOPAY_WEBHOOK_SECRET not configured — accepting notification without secret verification",
+      "[gopay-webhook] tajomstvo webhooku nie je nastavené ani v admine, ani v prostredí — notifikácia sa prijíma bez overenia",
     );
   }
 

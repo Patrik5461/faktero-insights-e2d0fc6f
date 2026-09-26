@@ -144,6 +144,15 @@ export type GoPayCreatePaymentInput = {
   opakovane?: boolean;
 };
 
+/**
+ * Brána nemá na účte povolenú službu opakovaných platieb.
+ *
+ * Rozlišuje sa zámerne od ostatných chýb: nie je to problém platby ani karty,
+ * ale nastavenia účtu u GoPay. Volajúci to vie obísť jednorazovou platbou,
+ * aby zákazník mohol zaplatiť aspoň tento mesiac.
+ */
+export const OPAKOVANIE_NEPOVOLENE = "GOPAY_RECURRENCE_NOT_ENABLED";
+
 export type GoPayPayment = {
   id: number | string;
   state: string;
@@ -201,6 +210,18 @@ export async function gopayCreatePayment(input: GoPayCreatePaymentInput): Promis
   });
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
+    if (
+      input.opakovane &&
+      /PAYMENT_RECURRENCE_NOT_ENABLED|PAYMENT_RECURRENCE_NOT_SUPPORTED|"error_code":\s*34[14]/.test(
+        txt,
+      )
+    ) {
+      const e: any = new Error(
+        `GoPay nemá na účte povolené opakované platby: ${res.status} ${txt.slice(0, 300)}`,
+      );
+      e.code = OPAKOVANIE_NEPOVOLENE;
+      throw e;
+    }
     throw new Error(`GoPay create payment failed: ${res.status} ${txt}`);
   }
   return (await res.json()) as GoPayPayment;

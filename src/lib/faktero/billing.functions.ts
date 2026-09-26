@@ -27,9 +27,22 @@ function publicBaseUrl(): string {
   return "https://faktero.sk";
 }
 
-function gopayNotifyUrl(): string {
+/**
+ * Adresa, na ktorú GoPay hlási zmenu stavu platby.
+ *
+ * Tajomstvo sa berie z nastavenia brány, nie z premennej prostredia — odkedy
+ * sa údaje brány zadávajú v admine, býva v prostredí prázdne a notifikácie by
+ * chodili bez overenia.
+ */
+async function gopayNotifyUrl(): Promise<string> {
   const base = publicBaseUrl();
-  const secret = process.env.GOPAY_WEBHOOK_SECRET;
+  let secret = process.env.GOPAY_WEBHOOK_SECRET ?? "";
+  try {
+    const { loadPlatformGopayConfig } = await import("@/lib/faktero/gopay.server");
+    secret = (await loadPlatformGopayConfig()).webhookSecret ?? secret;
+  } catch {
+    // Bez nastavenia brány sa aj tak nedá platiť; adresa ostane bez tajomstva.
+  }
   return secret
     ? `${base}/api/webhooks/gopay?secret=${encodeURIComponent(secret)}`
     : `${base}/api/webhooks/gopay`;
@@ -152,20 +165,41 @@ export const createCheckout = createServerFn({ method: "POST" })
     */
     const { sumaSDph } = await import("@/lib/faktero/predplatne-cena");
     const naUhradu = sumaSDph(plan.price_monthly_cents);
-    const { gopayCreatePayment } = await import("@/lib/faktero/gopay.server");
-    const payment = await gopayCreatePayment({
+    const { gopayCreatePayment, OPAKOVANIE_NEPOVOLENE } = await import(
+      "@/lib/faktero/gopay.server"
+    );
+    const poziadavka = {
       amountCents: naUhradu,
       currency: "EUR",
       orderNumber,
       orderDescription: `Faktero ${plan.name} — mesačné predplatné`,
-      // Karta sa uloží a ďalšie mesiace sa strhnú samy.
-      opakovane: true,
       returnUrl: `${base}/predplatne?payment=return`,
-      notifyUrl: gopayNotifyUrl(),
+      notifyUrl: await gopayNotifyUrl(),
       payerEmail,
       payerFullName: profile?.full_name ?? undefined,
-      lang: "SK",
-    });
+      lang: "SK" as const,
+    };
+
+    /*
+      Keď GoPay na účte nemá zapnutú službu opakovaných platieb, odmietne celú
+      platbu — nie len súhlas. Zákazník by potom nezaplatil ani prvý mesiac,
+      hoci s bránou je inak všetko v poriadku. Vtedy sa platba pošle znovu ako
+      jednorazová a do udalostí sa zapíše, že sa tá služba má u GoPay vyžiadať.
+    */
+    let payment;
+    let jednorazova = false;
+    try {
+      payment = await gopayCreatePayment({ ...poziadavka, opakovane: true });
+    } catch (e: any) {
+      if (e?.code !== OPAKOVANIE_NEPOVOLENE) throw e;
+      jednorazova = true;
+      await supabaseAdmin.from("billing_events").insert({
+        company_id: data.companyId,
+        event_type: "gopay_recurrence_not_enabled",
+        payload: { error: String(e?.message ?? e).slice(0, 300) },
+      });
+      payment = await gopayCreatePayment({ ...poziadavka, opakovane: false });
+    }
 
     // Pre-create pending billing_payments row
     await supabaseAdmin.from("billing_payments").upsert(
@@ -195,6 +229,7 @@ export const createCheckout = createServerFn({ method: "POST" })
           prišlo až o mesiac, keď platba nepríde.
         */
         recurrence: Boolean((payment as any)?.recurrence),
+        jednorazova,
       },
     });
 
