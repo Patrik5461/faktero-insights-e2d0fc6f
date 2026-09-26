@@ -17,13 +17,25 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
  */
 
 /** Všetky súkromné úložiská. Cesta v každom začína identifikátorom firmy. */
+/*
+  Priečinky úložiska, v ktorých sú súbory uložené pod id firmy.
+
+  Zoznam sa musí dopĺňať pri každej novej agende so súbormi — čo v ňom nie je,
+  to po zmazaní firmy ostane v úložisku navždy. Takto sa stratil doklad z
+  „Ostatných dokladov" pri zmazaní testovacej firmy 2026-09-26; chýbali tu aj
+  zmluvy k leasingom, doklady zamestnancov a stiahnuté exporty.
+*/
 const BUCKETY = [
   "bank-statements",
   "company-logos",
   "efaktura-xml",
+  "employee-docs",
   "expense-receipts",
+  "export-firmy",
+  "financing-documents",
   "imports",
   "invoice-pdfs",
+  "other-docs",
   "product-photos",
   "purchase-invoices",
 ];
