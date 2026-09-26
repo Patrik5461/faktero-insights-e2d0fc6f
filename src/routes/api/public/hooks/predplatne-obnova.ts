@@ -1,7 +1,8 @@
 /**
  * Cron endpoint — denne:
- *  1. Upozorní 7 dní pred automatickou obnovou predplatného.
+ *  1. Upozorní 7 dní pred koncom obdobia (automatická obnova aj ručná platba).
  *  2. Strhne mesačnú platbu z karty uloženej pri prvej úhrade.
+ *  3. Označí predplatné, ktorému obdobie uplynulo a platba neprišla.
  *
  * Chránené hlavičkou `x-faktero-cron-token: <FAKTERO_CRON_TOKEN>`.
  */
@@ -21,12 +22,13 @@ export const Route = createFileRoute("/api/public/hooks/predplatne-obnova")({
           });
         }
         try {
-          const { posliUpozorneniaNaObnovu, strhniObnovy } = await import(
+          const { posliUpozorneniaNaObnovu, strhniObnovy, oznacNezaplatene } = await import(
             "@/lib/faktero/predplatne-obnova.server"
           );
           const upozornenia = await posliUpozorneniaNaObnovu();
           const obnovy = await strhniObnovy();
-          return new Response(JSON.stringify({ ok: true, upozornenia, obnovy }), {
+          const nezaplatene = await oznacNezaplatene();
+          return new Response(JSON.stringify({ ok: true, upozornenia, obnovy, nezaplatene }), {
             status: 200,
             headers: { "content-type": "application/json" },
           });

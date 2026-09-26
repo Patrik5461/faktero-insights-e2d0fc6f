@@ -56,7 +56,6 @@ export async function posliUpozorneniaNaObnovu() {
     .eq("status", "active")
     .eq("cancel_at_period_end", false)
     .is("renewal_reminder_sent_at", null)
-    .not("gopay_subscription_id", "is", null)
     .gte("next_billing_at", od)
     .lt("next_billing_at", do_);
 
@@ -80,19 +79,34 @@ export async function posliUpozorneniaNaObnovu() {
         .eq("company_id", r.company_id);
       continue;
     }
+    /*
+      Keď brána nemá povolené opakované platby, kartu si neuložila a nie je
+      z čoho strhnúť. Upozornenie musí prísť aj tak — inak by predplatné ticho
+      dobehlo a nikto by nevedel, že treba zaplatiť.
+    */
+    const automaticky = Boolean(r.gopay_subscription_id);
+    const predmet = automaticky
+      ? `Predplatné Faktero sa o ${DNI_VOPRED} dní obnoví`
+      : `Predplatné Faktero končí o ${DNI_VOPRED} dní`;
+    const telo = automaticky
+      ? `<p>predplatné pre <strong>${firma}</strong> sa automaticky obnoví <strong>${den}</strong>.
+         Z vašej platobnej karty strhneme <strong>${eur(suma)}</strong> s DPH.</p>
+         <p>Ak pokračovať nechcete, zrušte predplatné do tohto dátumu — bez poplatku,
+         v sekcii Predplatné. Služba vám pobeží do konca zaplateného obdobia.</p>`
+      : `<p>predplatné pre <strong>${firma}</strong> platí do <strong>${den}</strong>.
+         Platba sa nestrhne sama — ak chcete pokračovať, uhraďte ďalšie obdobie
+         (<strong>${eur(suma)}</strong> s DPH) v sekcii Predplatné.</p>
+         <p>Ak nezaplatíte, nič sa nestratí: doklady aj údaje vám ostanú prístupné.</p>`;
     const html = `
       <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#0f172a">
-        <h1 style="font-size:20px;margin:0 0 12px">Predplatné Faktero sa o ${DNI_VOPRED} dní obnoví</h1>
+        <h1 style="font-size:20px;margin:0 0 12px">${predmet}</h1>
         <p>Dobrý deň,</p>
-        <p>predplatné pre <strong>${firma}</strong> sa automaticky obnoví <strong>${den}</strong>.
-        Z vašej platobnej karty strhneme <strong>${eur(suma)}</strong> s DPH.</p>
-        <p>Ak pokračovať nechcete, zrušte predplatné do tohto dátumu — bez poplatku,
-        v sekcii Predplatné. Služba vám pobeží do konca zaplateného obdobia.</p>
+        ${telo}
         <p><a href="${appUrl()}/predplatne" style="display:inline-block;background:#0f172a;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Otvoriť predplatné</a></p>
         <p style="color:#64748b;font-size:12px;margin-top:24px">Faktero · Tobify s. r. o. · podpora@faktero.sk · +421902101967</p>
       </div>`;
     try {
-      await posliMail(email, `Predplatné Faktero sa o ${DNI_VOPRED} dní obnoví`, html);
+      await posliMail(email, predmet, html);
       await supabaseAdmin
         .from("subscriptions")
         .update({ renewal_reminder_sent_at: new Date().toISOString() })
@@ -108,6 +122,41 @@ export async function posliUpozorneniaNaObnovu() {
     }
   }
   return { odoslane, zlyhalo };
+}
+
+/**
+ * Predplatné, ktorému uplynulo obdobie a nemá sa z čoho strhnúť.
+ *
+ * Kým brána nemá povolené opakované platby, platí sa ručne. Bez tejto kontroly
+ * by predplatné po uplynutí obdobia ticho bežalo ďalej zadarmo a nikto by o
+ * tom nevedel — ani zákazník, ani my.
+ */
+export async function oznacNezaplatene() {
+  // Tri dni odkladu: platba cez víkend alebo pomalý prevod nemajú nikoho hneď
+  // označiť za neplatiča.
+  const hranica = new Date(Date.now() - 3 * 86_400_000).toISOString();
+  const { data: riadky } = await supabaseAdmin
+    .from("subscriptions")
+    .select("company_id, next_billing_at, gopay_subscription_id")
+    .eq("status", "active")
+    .eq("cancel_at_period_end", false)
+    .is("gopay_subscription_id", null)
+    .lt("next_billing_at", hranica);
+
+  let oznacene = 0;
+  for (const r of riadky ?? []) {
+    await supabaseAdmin
+      .from("subscriptions")
+      .update({ status: "past_due", last_renewal_error: "Obdobie uplynulo, platba neprišla." })
+      .eq("company_id", r.company_id);
+    await supabaseAdmin.from("billing_events").insert({
+      company_id: r.company_id,
+      event_type: "subscription_past_due",
+      payload: { dovod: "bez_automatickej_platby", platilo_do: r.next_billing_at },
+    });
+    oznacene += 1;
+  }
+  return { oznacene };
 }
 
 /** Strhnutie ďalšieho mesiaca z uloženej karty. */
