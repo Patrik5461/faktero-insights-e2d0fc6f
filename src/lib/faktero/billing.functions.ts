@@ -145,12 +145,21 @@ export const createCheckout = createServerFn({ method: "POST" })
 
     const orderNumber = `FK-${data.companyId.slice(0, 8)}-${Date.now()}`;
     const base = publicBaseUrl();
+    /*
+      Ceny v pláne sú bez DPH, tak ako ich uvádza cenník. Z karty musí odísť
+      suma s daňou, inak zákazník zaplatí menej, než čo mu web sľúbil, a doklad
+      by na tú istú sumu vykázal nižší základ.
+    */
+    const { sumaSDph } = await import("@/lib/faktero/predplatne-cena");
+    const naUhradu = sumaSDph(plan.price_monthly_cents);
     const { gopayCreatePayment } = await import("@/lib/faktero/gopay.server");
     const payment = await gopayCreatePayment({
-      amountCents: plan.price_monthly_cents,
+      amountCents: naUhradu,
       currency: "EUR",
       orderNumber,
       orderDescription: `Faktero ${plan.name} — mesačné predplatné`,
+      // Karta sa uloží a ďalšie mesiace sa strhnú samy.
+      opakovane: true,
       returnUrl: `${base}/predplatne?payment=return`,
       notifyUrl: gopayNotifyUrl(),
       payerEmail,
@@ -163,7 +172,7 @@ export const createCheckout = createServerFn({ method: "POST" })
       {
         company_id: data.companyId,
         plan_slug: plan.slug,
-        amount_cents: plan.price_monthly_cents,
+        amount_cents: naUhradu,
         currency: "EUR",
         status: String(payment.state ?? "CREATED"),
         provider: "gopay",
@@ -189,15 +198,41 @@ export const cancelSubscription = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertCompanyAdmin(supabaseAdmin, data.companyId, context.userId);
+    const { data: sub } = await supabaseAdmin
+      .from("subscriptions")
+      .select("gopay_subscription_id")
+      .eq("company_id", data.companyId)
+      .maybeSingle();
+
     const { error } = await supabaseAdmin
       .from("subscriptions")
       .update({ cancel_at_period_end: true })
       .eq("company_id", data.companyId);
     if (error) throw error;
+
+    /*
+      Súhlas s opakovanou platbou treba odvolať aj v bráne. Keby ostal visieť,
+      zákazník má u seba v prehľade platieb aktívne povolenie na strhávanie,
+      hoci sme predplatné zrušili — a to je presne to, čo ľudí na opakovaných
+      platbách desí. Zlyhanie u brány nesmie zhodiť zrušenie u nás.
+    */
+    if (sub?.gopay_subscription_id) {
+      try {
+        const { gopayVoidRecurrence } = await import("@/lib/faktero/gopay.server");
+        await gopayVoidRecurrence(sub.gopay_subscription_id);
+      } catch (e: any) {
+        await supabaseAdmin.from("billing_events").insert({
+          company_id: data.companyId,
+          event_type: "gopay_void_recurrence_failed",
+          payload: { error: String(e?.message ?? e) },
+        });
+      }
+    }
+
     await supabaseAdmin.from("billing_events").insert({
       company_id: data.companyId,
       event_type: "subscription_cancel_scheduled",
-      payload: {},
+      payload: { recurrence_voided: Boolean(sub?.gopay_subscription_id) },
     });
     return { ok: true };
   });

@@ -29,6 +29,7 @@ import {
   syncMyLatestPayment,
 } from "@/lib/faktero/billing.functions";
 import { plDni } from "@/lib/faktero/plan-enforcement";
+import { sumaSDph } from "@/lib/faktero/predplatne-cena";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveProduct } from "@/lib/faktero/active-product";
@@ -346,12 +347,40 @@ function PredplatnePage() {
           )}
 
           {plan?.is_active && (
+            /*
+              Konkrétny dátum a suma, nie len veta o tom, že sa niečo obnovuje.
+              Podmienky sľubujú upozornenie 7 dní vopred; kto sem príde skôr,
+              má to vidieť rovno tu.
+            */
             <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-900 dark:text-blue-100">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
-              <p>
-                Predplatné sa automaticky obnovuje každý mesiac. Platba je spracovaná cez GoPay
-                (Visa/Mastercard). Zrušiť môžete kedykoľvek kliknutím na „Zrušiť predplatné“.
-              </p>
+              <div className="space-y-1">
+                {plan.cancel_at_period_end ? (
+                  <p>
+                    Predplatné je zrušené k{" "}
+                    <strong>{fmtDate(plan.current_period_end ?? plan.next_billing_at)}</strong>.
+                    Do toho dňa funguje všetko ako doteraz a nič sa už nestrhne.
+                  </p>
+                ) : plan.next_billing_at && plan.ma_ulozenu_kartu ? (
+                  <p>
+                    Najbližšia platba <strong>{fmtDate(plan.next_billing_at)}</strong> —{" "}
+                    <strong>{fmtEurSDph(planPriceFromSlug(plans, plan?.plan_slug))}</strong> s DPH
+                    z uloženej karty cez GoPay. Upozornenie pošleme 7 dní vopred, zrušiť môžete
+                    kedykoľvek.
+                  </p>
+                ) : (
+                  <p>
+                    Predplatné sa obnovuje každý mesiac. Platba je spracovaná cez GoPay
+                    (Visa/Mastercard). Zrušiť môžete kedykoľvek kliknutím na „Zrušiť predplatné“.
+                  </p>
+                )}
+                {(plan.renewal_attempts ?? 0) > 0 && (
+                  <p className="text-destructive">
+                    Posledné strhnutie neprešlo ({plan.renewal_attempts}.&nbsp;pokus). Skúsime to
+                    znovu zajtra — ak kartu medzitým vymeníte, zaplatiť sa dá aj hneď nižšie.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -527,6 +556,12 @@ function PredplatnePage() {
       </p>
     </div>
   );
+}
+
+/** Suma, ktorá naozaj odíde z karty — ceny plánov sú bez DPH. */
+function fmtEurSDph(centyBezDph: number | null) {
+  if (centyBezDph == null) return "—";
+  return fmtEur(sumaSDph(centyBezDph));
 }
 
 function planPriceFromSlug(plans: any[], slug: string | undefined) {

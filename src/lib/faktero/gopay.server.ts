@@ -136,6 +136,12 @@ export type GoPayCreatePaymentInput = {
   payerEmail: string;
   payerFullName?: string;
   lang?: "SK" | "CS" | "EN";
+  /**
+   * Mesačné opakovanie. Bez neho brána kartu neuloží a ďalší mesiac by musel
+   * človek znovu preklikať platbu — hoci podmienky sľubujú automatické
+   * strhnutie.
+   */
+  opakovane?: boolean;
 };
 
 export type GoPayPayment = {
@@ -172,6 +178,17 @@ export async function gopayCreatePayment(input: GoPayCreatePaymentInput): Promis
     callback: { return_url: input.returnUrl, notification_url: input.notifyUrl },
     lang: input.lang ?? "SK",
     target: { type: "ACCOUNT", goid: Number(cfg.goid) },
+    ...(input.opakovane
+      ? {
+          recurrence: {
+            recurrence_cycle: "MONTH",
+            recurrence_period: 1,
+            // Súhlas musí mať koniec; päť rokov je horný strop, dovtedy
+            // predplatné buď skončí, alebo sa obnoví novým súhlasom.
+            recurrence_date_to: datumOPatRokov(),
+          },
+        }
+      : {}),
   };
   const res = await fetch(`${cfg.baseUrl}/payments/payment`, {
     method: "POST",
@@ -187,6 +204,73 @@ export async function gopayCreatePayment(input: GoPayCreatePaymentInput): Promis
     throw new Error(`GoPay create payment failed: ${res.status} ${txt}`);
   }
   return (await res.json()) as GoPayPayment;
+}
+
+/** `YYYY-MM-DD` o päť rokov — koniec platnosti súhlasu s opakovanou platbou. */
+function datumOPatRokov(): string {
+  const d = new Date();
+  d.setUTCFullYear(d.getUTCFullYear() + 5);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Strhnutie ďalšieho mesiaca z karty uloženej pri prvej platbe.
+ *
+ * GoPay to volá „create-recurrence" a chce id **rodičovskej** platby, nie tej
+ * poslednej — reťaz sa teda nevetví, všetky mesiace visia na prvej.
+ */
+export async function gopayCreateRecurrence(
+  parentPaymentId: string | number,
+  input: {
+    amountCents: number;
+    currency?: string;
+    orderNumber: string;
+    orderDescription: string;
+  },
+): Promise<GoPayPayment> {
+  const cfg = await loadPlatformGopayConfig();
+  const token = await getToken("payment-all");
+  const res = await fetch(
+    `${cfg.baseUrl}/payments/payment/${parentPaymentId}/create-recurrence`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        amount: input.amountCents,
+        currency: input.currency ?? "EUR",
+        order_number: input.orderNumber,
+        order_description: input.orderDescription,
+      }),
+    },
+  );
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`GoPay create-recurrence failed: ${res.status} ${txt.slice(0, 400)}`);
+  }
+  return (await res.json()) as GoPayPayment;
+}
+
+/**
+ * Zrušenie súhlasu s opakovanou platbou.
+ *
+ * Volá sa, keď človek zruší predplatné. Bez toho by súhlas v GoPay ostal
+ * visieť aj po tom, čo sme prestali strhávať.
+ */
+export async function gopayVoidRecurrence(parentPaymentId: string | number): Promise<void> {
+  const cfg = await loadPlatformGopayConfig();
+  const token = await getToken("payment-all");
+  const res = await fetch(`${cfg.baseUrl}/payments/payment/${parentPaymentId}/void-recurrence`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`GoPay void-recurrence failed: ${res.status} ${txt.slice(0, 300)}`);
+  }
 }
 
 export async function gopayGetPayment(id: string | number): Promise<GoPayPayment> {

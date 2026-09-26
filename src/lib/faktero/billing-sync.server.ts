@@ -44,8 +44,10 @@ export async function syncGopayPaymentById(paymentId: string) {
       .eq("slug", existing.plan_slug)
       .maybeSingle();
     const now = new Date();
-    const periodEnd = new Date(now);
-    periodEnd.setUTCMonth(periodEnd.getUTCMonth() + 1);
+    // Rovnaké pravidlo ako vo webhooku: koniec mesiaca, nie pretečenie do
+    // ďalšieho (31. 1. → 28. 2.).
+    const { oMesiacNeskor } = await import("./predplatne-cena");
+    const periodEnd = oMesiacNeskor(now);
     await supabaseAdmin
       .from("subscriptions")
       .update({

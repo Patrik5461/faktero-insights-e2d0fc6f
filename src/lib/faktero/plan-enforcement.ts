@@ -14,6 +14,12 @@ export type CompanyPlanInfo = {
   status: SubscriptionStatus;
   trial_ends_at: string | null;
   current_period_end: string | null;
+  /* Kedy a za koľko sa strhne ďalšia platba — na obrazovke Predplatné. */
+  next_billing_at?: string | null;
+  cancel_at_period_end?: boolean;
+  renewal_attempts?: number;
+  last_renewal_error?: string | null;
+  ma_ulozenu_kartu?: boolean;
   invoice_limit: number | null;
   user_limit: number | null;
   company_limit: number | null;
@@ -61,7 +67,7 @@ export async function getCompanyPlan(
   const { data: sub } = await supabase
     .from("subscriptions")
     .select(
-      `status, trial_ends_at, current_period_end, plan, is_post_trial_free, subscription_plans(${PLAN_COLS})`,
+      `status, trial_ends_at, current_period_end, next_billing_at, cancel_at_period_end, renewal_attempts, last_renewal_error, gopay_subscription_id, plan, is_post_trial_free, subscription_plans(${PLAN_COLS})`,
     )
     .eq("company_id", companyId)
     .maybeSingle();
@@ -84,6 +90,11 @@ export async function getCompanyPlan(
     status,
     trial_ends_at: (sub as any).trial_ends_at,
     current_period_end: (sub as any).current_period_end,
+    next_billing_at: (sub as any).next_billing_at,
+    cancel_at_period_end: !!(sub as any).cancel_at_period_end,
+    renewal_attempts: Number((sub as any).renewal_attempts ?? 0),
+    last_renewal_error: (sub as any).last_renewal_error ?? null,
+    ma_ulozenu_kartu: Boolean((sub as any).gopay_subscription_id),
     invoice_limit: plan?.invoice_limit ?? null,
     user_limit: plan?.user_limit ?? null,
     company_limit: plan?.company_limit ?? null,

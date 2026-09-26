@@ -250,6 +250,7 @@ import { Route as ApiPublicHooksEfakturaSyncRouteImport } from './routes/api/pub
 import { Route as ApiPublicHooksJazdyDoplnenieRouteImport } from './routes/api/public/hooks/jazdy-doplnenie'
 import { Route as ApiPublicHooksOdovzdanieMesacneRouteImport } from './routes/api/public/hooks/odovzdanie-mesacne'
 import { Route as ApiPublicHooksPohodaStrazcaRouteImport } from './routes/api/public/hooks/pohoda-strazca'
+import { Route as ApiPublicHooksPredplatneObnovaRouteImport } from './routes/api/public/hooks/predplatne-obnova'
 import { Route as ApiPublicHooksPushOverdueRouteImport } from './routes/api/public/hooks/push-overdue'
 import { Route as ApiPublicHooksRecurringRunRouteImport } from './routes/api/public/hooks/recurring-run'
 import { Route as ApiPublicHooksRemindersRouteImport } from './routes/api/public/hooks/reminders'
@@ -1593,6 +1594,12 @@ const ApiPublicHooksPohodaStrazcaRoute =
     path: '/api/public/hooks/pohoda-strazca',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksPredplatneObnovaRoute =
+  ApiPublicHooksPredplatneObnovaRouteImport.update({
+    id: '/api/public/hooks/predplatne-obnova',
+    path: '/api/public/hooks/predplatne-obnova',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksPushOverdueRoute =
   ApiPublicHooksPushOverdueRouteImport.update({
     id: '/api/public/hooks/push-overdue',
@@ -2017,6 +2024,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
+  '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
@@ -2285,6 +2293,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
+  '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
@@ -2564,6 +2573,7 @@ export interface FileRoutesById {
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
+  '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
   '/api/public/hooks/push-overdue': typeof ApiPublicHooksPushOverdueRoute
   '/api/public/hooks/recurring-run': typeof ApiPublicHooksRecurringRunRoute
   '/api/public/hooks/reminders': typeof ApiPublicHooksRemindersRoute
@@ -2843,6 +2853,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/pohoda-strazca'
+    | '/api/public/hooks/predplatne-obnova'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
@@ -3111,6 +3122,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/pohoda-strazca'
+    | '/api/public/hooks/predplatne-obnova'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
@@ -3389,6 +3401,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/jazdy-doplnenie'
     | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/pohoda-strazca'
+    | '/api/public/hooks/predplatne-obnova'
     | '/api/public/hooks/push-overdue'
     | '/api/public/hooks/recurring-run'
     | '/api/public/hooks/reminders'
@@ -3531,6 +3544,7 @@ export interface RootRouteChildren {
   ApiPublicHooksJazdyDoplnenieRoute: typeof ApiPublicHooksJazdyDoplnenieRoute
   ApiPublicHooksOdovzdanieMesacneRoute: typeof ApiPublicHooksOdovzdanieMesacneRoute
   ApiPublicHooksPohodaStrazcaRoute: typeof ApiPublicHooksPohodaStrazcaRoute
+  ApiPublicHooksPredplatneObnovaRoute: typeof ApiPublicHooksPredplatneObnovaRoute
   ApiPublicHooksPushOverdueRoute: typeof ApiPublicHooksPushOverdueRoute
   ApiPublicHooksRecurringRunRoute: typeof ApiPublicHooksRecurringRunRoute
   ApiPublicHooksRemindersRoute: typeof ApiPublicHooksRemindersRoute
@@ -5243,6 +5257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksPohodaStrazcaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/predplatne-obnova': {
+      id: '/api/public/hooks/predplatne-obnova'
+      path: '/api/public/hooks/predplatne-obnova'
+      fullPath: '/api/public/hooks/predplatne-obnova'
+      preLoaderRoute: typeof ApiPublicHooksPredplatneObnovaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/push-overdue': {
       id: '/api/public/hooks/push-overdue'
       path: '/api/public/hooks/push-overdue'
@@ -6112,6 +6133,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksJazdyDoplnenieRoute: ApiPublicHooksJazdyDoplnenieRoute,
   ApiPublicHooksOdovzdanieMesacneRoute: ApiPublicHooksOdovzdanieMesacneRoute,
   ApiPublicHooksPohodaStrazcaRoute: ApiPublicHooksPohodaStrazcaRoute,
+  ApiPublicHooksPredplatneObnovaRoute: ApiPublicHooksPredplatneObnovaRoute,
   ApiPublicHooksPushOverdueRoute: ApiPublicHooksPushOverdueRoute,
   ApiPublicHooksRecurringRunRoute: ApiPublicHooksRecurringRunRoute,
   ApiPublicHooksRemindersRoute: ApiPublicHooksRemindersRoute,

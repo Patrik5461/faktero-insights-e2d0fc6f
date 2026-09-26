@@ -177,8 +177,24 @@ async function processGopayPayment(paymentId: string): Promise<void> {
         .maybeSingle();
 
       const now = new Date();
-      const periodEnd = new Date(now);
-      periodEnd.setUTCMonth(periodEnd.getUTCMonth() + 1);
+      // `setUTCMonth(+1)` pretečie (31. 1. → 3. 3.); podmienky sľubujú posledný
+      // deň mesiaca, tak sa dátum počíta pomocnou funkciou.
+      const { oMesiacNeskor } = await import("@/lib/faktero/predplatne-cena");
+      const periodEnd = oMesiacNeskor(now);
+
+      /*
+        Ďalšie mesiace sa strhávajú z **rodičovskej** platby, nie z poslednej.
+        Preto sa `gopay_subscription_id` zapíše len raz, pri prvej úhrade, a
+        obnovy ho už neprepisujú — inak by sa reťaz súhlasu stratila.
+        `recurrence` v odpovedi má len platba, pri ktorej si brána kartu uložila.
+      */
+      const { data: predosle } = await supabaseAdmin
+        .from("subscriptions")
+        .select("gopay_subscription_id")
+        .eq("company_id", existing.company_id)
+        .maybeSingle();
+      const maSuhlas = Boolean((payment as any)?.recurrence);
+      const rodic = predosle?.gopay_subscription_id ?? (maSuhlas ? String(payment.id) : null);
 
       await supabaseAdmin
         .from("subscriptions")
@@ -192,8 +208,14 @@ async function processGopayPayment(paymentId: string): Promise<void> {
           current_period_end: periodEnd.toISOString(),
           next_billing_at: periodEnd.toISOString(),
           gopay_payment_id: String(payment.id),
+          gopay_subscription_id: rodic,
           cancel_at_period_end: false,
           payment_provider: "gopay",
+          // Úspešná platba vynuluje počítadlo pokusov aj poslanú pripomienku.
+          renewal_attempts: 0,
+          last_renewal_at: now.toISOString(),
+          last_renewal_error: null,
+          renewal_reminder_sent_at: null,
         })
         .eq("company_id", existing.company_id);
     }

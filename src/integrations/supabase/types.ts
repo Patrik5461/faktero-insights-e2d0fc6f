@@ -6676,11 +6676,15 @@ export type Database = {
           gopay_subscription_id: string | null
           id: string
           is_post_trial_free: boolean
+          last_renewal_at: string | null
+          last_renewal_error: string | null
           monthly_price_cents: number | null
           next_billing_at: string | null
           payment_provider: string | null
           plan: string
           plan_id: string | null
+          renewal_attempts: number
+          renewal_reminder_sent_at: string | null
           status: Database["public"]["Enums"]["subscription_status"]
           trial_ends_at: string | null
           trial_reminder_sent_at: string | null
@@ -6698,9 +6702,13 @@ export type Database = {
           gopay_subscription_id?: string | null
           id?: string
           is_post_trial_free?: boolean
+          last_renewal_at?: string | null
+          last_renewal_error?: string | null
           monthly_price_cents?: number | null
           next_billing_at?: string | null
           payment_provider?: string | null
+          renewal_attempts?: number
+          renewal_reminder_sent_at?: string | null
           plan?: string
           plan_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
@@ -6720,9 +6728,13 @@ export type Database = {
           gopay_subscription_id?: string | null
           id?: string
           is_post_trial_free?: boolean
+          last_renewal_at?: string | null
+          last_renewal_error?: string | null
           monthly_price_cents?: number | null
           next_billing_at?: string | null
           payment_provider?: string | null
+          renewal_attempts?: number
+          renewal_reminder_sent_at?: string | null
           plan?: string
           plan_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
