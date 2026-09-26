@@ -355,7 +355,14 @@ function PredplatnePage() {
             <div className="flex items-start gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-blue-900 dark:text-blue-100">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
               <div className="space-y-1">
-                {plan.cancel_at_period_end ? (
+                {plan.zdarma ? (
+                  /* Pridelený plán sa neúčtuje — veta o mesačnej obnove by tu
+                     len strašila. */
+                  <p>
+                    Tento plán máte pridelený <strong>zadarmo a natrvalo</strong>. Nič sa
+                    neúčtuje a nič netreba obnovovať.
+                  </p>
+                ) : plan.cancel_at_period_end ? (
                   <p>
                     Predplatné je zrušené k{" "}
                     <strong>{fmtDate(plan.current_period_end ?? plan.next_billing_at)}</strong>.
@@ -407,7 +414,7 @@ function PredplatnePage() {
             <FeaturePill enabled={plan?.bank_matching_enabled} label="Bankové párovanie" />
           </div>
 
-          {isAdminLike && plan?.status === "active" && (
+          {isAdminLike && plan?.status === "active" && !plan?.zdarma && (
             <div className="flex flex-wrap gap-2 pt-3">
               <Button variant="outline" size="sm" onClick={doCancel}>
                 Zrušiť predplatné
