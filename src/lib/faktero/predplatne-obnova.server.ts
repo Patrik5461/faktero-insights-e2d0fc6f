@@ -129,6 +129,8 @@ export async function strhniObnovy() {
   let spustene = 0;
   let zlyhane = 0;
   let poSplatnosti = 0;
+  /* Účet v bráne nemá zapnuté opakované platby — iná vec než zamietnutá karta. */
+  let nepodporovane = 0;
 
   for (const r of riadky ?? []) {
     const cenaBezDph = Number(r.monthly_price_cents ?? 0);
@@ -171,6 +173,30 @@ export async function strhniObnovy() {
       });
       spustene += 1;
     } catch (e: any) {
+      const sprava = String(e?.message ?? e);
+      /*
+        „PAYMENT_RECURRENCE_NOT_SUPPORTED" nie je problém karty — brána
+        opakované platby na tomto účte nemá zapnuté. Skúšať to zajtra znovu
+        nemá zmysel: súhlas sa zahodí, aby cron prestal biť do zamknutých
+        dverí, a zákazník dostane odkaz na ručnú platbu.
+      */
+      if (/PAYMENT_RECURRENCE_NOT_SUPPORTED|error_code.{0,3}341/.test(sprava)) {
+        nepodporovane += 1;
+        await supabaseAdmin
+          .from("subscriptions")
+          .update({
+            gopay_subscription_id: null,
+            last_renewal_error: "Brána nemá povolené opakované platby.",
+            next_billing_at: r.next_billing_at,
+          })
+          .eq("company_id", r.company_id);
+        await supabaseAdmin.from("billing_events").insert({
+          company_id: r.company_id,
+          event_type: "subscription_recurrence_unsupported",
+          payload: { error: sprava.slice(0, 300) },
+        });
+        continue;
+      }
       zlyhane += 1;
       const pokusy = Number(r.renewal_attempts ?? 0) + 1;
       const vycerpane = pokusy >= MAX_POKUSOV;
@@ -178,7 +204,7 @@ export async function strhniObnovy() {
         .from("subscriptions")
         .update({
           renewal_attempts: pokusy,
-          last_renewal_error: String(e?.message ?? e).slice(0, 500),
+          last_renewal_error: sprava.slice(0, 500),
           ...(vycerpane ? { status: "past_due" as const } : {}),
           /*
             Ďalší pokus zajtra. Bez posunu by cron skúšal to isté každých
@@ -190,7 +216,7 @@ export async function strhniObnovy() {
       await supabaseAdmin.from("billing_events").insert({
         company_id: r.company_id,
         event_type: vycerpane ? "subscription_past_due" : "subscription_renewal_failed",
-        payload: { pokus: pokusy, error: String(e?.message ?? e).slice(0, 300) },
+        payload: { pokus: pokusy, error: sprava.slice(0, 300) },
       });
       if (vycerpane) poSplatnosti += 1;
       if (vycerpane && email) {
@@ -215,5 +241,5 @@ export async function strhniObnovy() {
       }
     }
   }
-  return { spustene, zlyhane, poSplatnosti };
+  return { spustene, zlyhane, poSplatnosti, nepodporovane };
 }
