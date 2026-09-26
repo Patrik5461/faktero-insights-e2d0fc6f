@@ -307,6 +307,39 @@ export async function gopayGetPayment(id: string | number): Promise<GoPayPayment
   return (await res.json()) as GoPayPayment;
 }
 
+/**
+ * Vrátenie platby — celej alebo časti.
+ *
+ * GoPay chce sumu v centoch a formulárové kódovanie, nie JSON. Vracia sa vždy
+ * na pôvodnú kartu; iný účet zadať nemožno, a to je dobre.
+ */
+export async function gopayRefund(
+  paymentId: string | number,
+  amountCents: number,
+): Promise<{ id?: string | number; result?: string; raw: string }> {
+  const cfg = await loadPlatformGopayConfig();
+  const token = await getToken("payment-all");
+  const res = await fetch(`${cfg.baseUrl}/payments/payment/${paymentId}/refund`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: new URLSearchParams({ amount: String(amountCents) }),
+  });
+  const raw = await res.text();
+  if (!res.ok) {
+    throw new Error(`GoPay refund failed: ${res.status} ${raw.slice(0, 300)}`);
+  }
+  try {
+    const j = JSON.parse(raw);
+    return { id: j.id, result: j.result, raw };
+  } catch {
+    return { raw };
+  }
+}
+
 export async function gopayEnv(): Promise<GoPayEnv> {
   try {
     const cfg = await loadPlatformGopayConfig();
