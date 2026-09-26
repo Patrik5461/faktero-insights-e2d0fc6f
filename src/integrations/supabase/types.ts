@@ -6696,6 +6696,7 @@ export type Database = {
           gopay_payment_id: string | null
           gopay_subscription_id: string | null
           id: string
+          free_forever: boolean
           is_post_trial_free: boolean
           last_renewal_at: string | null
           last_renewal_error: string | null
@@ -6722,6 +6723,7 @@ export type Database = {
           gopay_payment_id?: string | null
           gopay_subscription_id?: string | null
           id?: string
+          free_forever?: boolean
           is_post_trial_free?: boolean
           last_renewal_at?: string | null
           last_renewal_error?: string | null
@@ -6748,6 +6750,7 @@ export type Database = {
           gopay_payment_id?: string | null
           gopay_subscription_id?: string | null
           id?: string
+          free_forever?: boolean
           is_post_trial_free?: boolean
           last_renewal_at?: string | null
           last_renewal_error?: string | null

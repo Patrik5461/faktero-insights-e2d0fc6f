@@ -69,7 +69,7 @@ export async function getCompanyPlan(
   const { data: sub } = await supabase
     .from("subscriptions")
     .select(
-      `status, trial_ends_at, current_period_end, next_billing_at, cancel_at_period_end, renewal_attempts, last_renewal_error, gopay_subscription_id, monthly_price_cents, plan, is_post_trial_free, subscription_plans(${PLAN_COLS})`,
+      `status, trial_ends_at, current_period_end, next_billing_at, cancel_at_period_end, renewal_attempts, last_renewal_error, gopay_subscription_id, monthly_price_cents, plan, is_post_trial_free, free_forever, subscription_plans(${PLAN_COLS})`,
     )
     .eq("company_id", companyId)
     .maybeSingle();
@@ -97,9 +97,12 @@ export async function getCompanyPlan(
     renewal_attempts: Number((sub as any).renewal_attempts ?? 0),
     last_renewal_error: (sub as any).last_renewal_error ?? null,
     ma_ulozenu_kartu: Boolean((sub as any).gopay_subscription_id),
-    zdarma:
-      Boolean((sub as any).is_post_trial_free) &&
-      Number((sub as any).monthly_price_cents ?? 0) === 0,
+    /*
+      Pridelený plán zadarmo má vlastný príznak. `is_post_trial_free` znamená
+      niečo iné — spadnutie na Starter po skončení skúšobnej verzie — a pruh
+      nad aplikáciou sa podľa neho riadi.
+    */
+    zdarma: Boolean((sub as any).free_forever),
     invoice_limit: plan?.invoice_limit ?? null,
     user_limit: plan?.user_limit ?? null,
     company_limit: plan?.company_limit ?? null,
