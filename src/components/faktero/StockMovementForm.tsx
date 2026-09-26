@@ -88,10 +88,21 @@ export function MovementForm({
       setWarehouses(wh ?? []);
       setItems(si ?? []);
       if ((wh ?? []).length) setWarehouse(wh![0].id);
-      if (polozkaId && (si ?? []).some((i: any) => i.id === polozkaId)) setStockItem(polozkaId);
+      /*
+        Cenu dopĺňa `onChange` rozbaľovacieho zoznamu, ale predvybraná položka
+        cezeň neprejde — príjem by sa potom zaúčtoval za nulu a zrazil by
+        priemernú nákupnú cenu na nulu. Preto sa tu dopĺňa rovnako.
+      */
+      const predvybrana = polozkaId ? (si ?? []).find((i: any) => i.id === polozkaId) : null;
+      if (predvybrana) {
+        setStockItem(predvybrana.id);
+        setPrice(
+          String(type === "prijem" ? predvybrana.purchase_price : predvybrana.sale_price),
+        );
+      }
       setLoading(false);
     })();
-  }, []);
+  }, [polozkaId, type]);
 
   useEffect(() => {
     setAvailability(null);
