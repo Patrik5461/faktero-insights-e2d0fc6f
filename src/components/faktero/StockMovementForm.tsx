@@ -73,9 +73,14 @@ export function MovementForm({
         } else if (error) toast.error(error.message);
       }
       const [{ data: si }, { data: prods }] = await Promise.all([
+        /*
+          Archivovanú kartu ponúkať netreba — firma ten tovar prestala viesť a
+          v zozname len zavadzia. Predvybraná položka z odkazu je výnimka: keď
+          na ňu niekto klikol z karty, nech si ju nájde aj tak.
+        */
         supabase
           .from("stock_items")
-          .select("id, sku, product_id, sale_price, purchase_price")
+          .select("id, sku, product_id, sale_price, purchase_price, archived_at")
           .eq("company_id", cid)
           .order("sku"),
         supabase.from("products").select("id, name").eq("company_id", cid).is("deleted_at", null),
@@ -86,7 +91,9 @@ export function MovementForm({
       });
       setProductMap(pm);
       setWarehouses(wh ?? []);
-      setItems(si ?? []);
+      setItems(
+        (si ?? []).filter((i: any) => !i.archived_at || i.id === polozkaId),
+      );
       if ((wh ?? []).length) setWarehouse(wh![0].id);
       /*
         Cenu dopĺňa `onChange` rozbaľovacieho zoznamu, ale predvybraná položka
@@ -205,7 +212,8 @@ export function MovementForm({
   function itemLabel(i: any) {
     const name = i.product_id ? productMap[i.product_id] : null;
     if (name && i.sku) return `${name} (${i.sku})`;
-    return name ?? i.sku ?? i.id.slice(0, 8);
+    // Kus identifikátora („d09c0368") nikomu nepovie, o ktorý tovar ide.
+    return name ?? i.sku ?? "(karta bez názvu)";
   }
 
   return (

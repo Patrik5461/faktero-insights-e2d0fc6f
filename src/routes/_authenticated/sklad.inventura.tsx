@@ -8,6 +8,7 @@ import {
   startInventory,
   completeInventory,
   lookupStockItemByCode,
+  zahodInventuru,
 } from "@/lib/faktero/stock.functions";
 import { toast } from "sonner";
 import { ScanLine } from "lucide-react";
@@ -21,6 +22,9 @@ function InventoryPage() {
   const start = useServerFn(startInventory);
   const complete = useServerFn(completeInventory);
   const lookup = useServerFn(lookupStockItemByCode);
+  const zahod = useServerFn(zahodInventuru);
+  /* Kedy sa inventúra začala — pri pokračovaní to je to hlavné, čo treba vedieť. */
+  const [zacata, setZacata] = useState<string | null>(null);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [warehouse, setWarehouse] = useState("");
   const [countId, setCountId] = useState<string | null>(null);
@@ -52,10 +56,15 @@ function InventoryPage() {
     setItems(data ?? []);
     const ids = (data ?? []).map((d: any) => d.stock_item_id);
     if (ids.length) {
-      const { data: si } = await supabase.from("stock_items").select("id, sku").in("id", ids);
+      const { data: si } = await supabase
+        .from("stock_items")
+        .select("id, sku, products(name)")
+        .in("id", ids);
       const m: Record<string, string> = {};
       (si ?? []).forEach((x: any) => {
-        m[x.id] = x.sku ?? x.id.slice(0, 8);
+        // Kus identifikátora („d09c0368") človeku nepovie nič; názov áno.
+        const nazov = x.products?.name ?? null;
+        m[x.id] = nazov ? (x.sku ? `${nazov} · ${x.sku}` : nazov) : (x.sku ?? "(bez názvu)");
       });
       setSkuMap(m);
     }
@@ -68,8 +77,10 @@ function InventoryPage() {
     try {
       const r = await start({ data: { company_id: cid, warehouse_id: warehouse } });
       setCountId(r.id);
+      setZacata(r.zacata ?? null);
       await loadItems(r.id);
       if (r.resumed) toast.message("Pokračujete v otvorenej inventúre.");
+      if (r.doplnene) toast.message(`Doplnené nové karty: ${r.doplnene}.`);
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba");
     } finally {
@@ -92,7 +103,28 @@ function InventoryPage() {
       const r = await complete({ data: { company_id: cid, inventory_count_id: countId } });
       toast.success(`Inventúra ukončená. ${r.adjustments} úprav.`);
       setCountId(null);
+      setZacata(null);
       setItems([]);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Chyba");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onZahodit() {
+    const cid = getActiveCompanyId();
+    if (!cid || !countId) return;
+    if (!confirm("Zahodiť rozpočítanú inventúru? Spočítané hodnoty sa stratia, stavy ostanú.")) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await zahod({ data: { company_id: cid, inventory_count_id: countId } });
+      setCountId(null);
+      setZacata(null);
+      setItems([]);
+      toast.success("Inventúra zahodená.");
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba");
     } finally {
@@ -158,6 +190,27 @@ function InventoryPage() {
           </div>
         ) : (
           <>
+            {zacata && (
+              /*
+                Otvorená inventúra prežije aj týždne. Kým sa tu nepísalo, kedy
+                začala, dalo sa omylom „ukončiť" mesiac starý súpis a prepísať
+                ním skutočné stavy.
+              */
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+                <span>
+                  Inventúra začatá <strong>{new Date(zacata).toLocaleString("sk-SK")}</strong>.
+                  Očakávané stavy sú z tohto času.
+                </span>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={onZahodit}
+                  className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
+                >
+                  Zahodiť inventúru
+                </button>
+              </div>
+            )}
             <div className="mb-4 flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
               <ScanLine className="h-4 w-4 text-primary" />
               <input

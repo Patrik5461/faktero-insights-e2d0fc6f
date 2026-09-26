@@ -506,12 +506,30 @@ export const startInventory = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: existingOpen } = await supabase
       .from("inventory_counts")
-      .select("id")
+      .select("id, created_at")
       .eq("company_id", data.company_id)
       .eq("warehouse_id", data.warehouse_id)
       .eq("status", "open")
       .maybeSingle();
-    if (existingOpen) return { id: existingOpen.id, resumed: true };
+    if (existingOpen) {
+      /*
+        Otvorená inventúra môže byť aj týždne stará a medzitým pribudli karty.
+        Doteraz sa jednoducho načítal starý zoznam a nová položka sa v ňom
+        nikdy neobjavila — počítalo by sa podľa zoznamu, ktorý už neplatí.
+      */
+      const doplnene = await doplnChybajucePolozky(
+        supabase,
+        data.company_id,
+        data.warehouse_id,
+        existingOpen.id,
+      );
+      return {
+        id: existingOpen.id,
+        resumed: true,
+        zacata: existingOpen.created_at as string,
+        doplnene,
+      };
+    }
     const { data: count, error } = await supabase
       .from("inventory_counts")
       .insert({
@@ -523,24 +541,87 @@ export const startInventory = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error || !count) throw new Error(error?.message ?? "Nepodarilo sa vytvoriť inventúru.");
-    const { data: items } = await supabase
+    const doplnene = await doplnChybajucePolozky(
+      supabase,
+      data.company_id,
+      data.warehouse_id,
+      count.id,
+    );
+    return { id: count.id, resumed: false, zacata: count.created_at as string, doplnene };
+  });
+
+/**
+ * Doplní do inventúry karty, ktoré v nej ešte nie sú, aj s očakávaným stavom.
+ *
+ * Archivované karty sa vynechávajú — počítať tovar, ktorý firma prestala viesť,
+ * nikto nechce a v zozname len prekáža.
+ */
+async function doplnChybajucePolozky(
+  supabase: any,
+  companyId: string,
+  warehouseId: string,
+  countId: string,
+) {
+  const [{ data: items }, { data: levels }, { data: uz }] = await Promise.all([
+    supabase
       .from("stock_items")
       .select("id")
-      .eq("company_id", data.company_id)
-      .eq("track_stock", true);
-    const { data: levels } = await supabase
-      .from("stock_levels")
-      .select("stock_item_id, quantity")
-      .eq("warehouse_id", data.warehouse_id);
-    const levelMap = new Map<string, number>();
-    (levels ?? []).forEach((l) => levelMap.set(l.stock_item_id, Number(l.quantity)));
-    const rows = (items ?? []).map((it) => ({
-      inventory_count_id: count.id,
+      .eq("company_id", companyId)
+      .eq("track_stock", true)
+      .is("archived_at", null),
+    supabase.from("stock_levels").select("stock_item_id, quantity").eq("warehouse_id", warehouseId),
+    supabase.from("inventory_count_items").select("stock_item_id").eq("inventory_count_id", countId),
+  ]);
+  const levelMap = new Map<string, number>();
+  (levels ?? []).forEach((l: any) => levelMap.set(l.stock_item_id, Number(l.quantity)));
+  const uzTam = new Set((uz ?? []).map((r: any) => r.stock_item_id));
+  const rows = (items ?? [])
+    .filter((it: any) => !uzTam.has(it.id))
+    .map((it: any) => ({
+      inventory_count_id: countId,
       stock_item_id: it.id,
       expected_quantity: levelMap.get(it.id) ?? 0,
     }));
-    if (rows.length) await supabase.from("inventory_count_items").insert(rows);
-    return { id: count.id, resumed: false };
+  if (rows.length) await supabase.from("inventory_count_items").insert(rows);
+  return rows.length;
+}
+
+const ZahodInput = z.object({
+  company_id: z.string().uuid(),
+  inventory_count_id: z.string().uuid(),
+});
+
+/**
+ * Zahodí rozpočítanú inventúru.
+ *
+ * Bez toho sa z raz otvorenej inventúry nedalo vycúvať: „Začať inventúru" v nej
+ * len pokračovalo a jediné tlačidlo vedľa bolo „Ukončiť a vytvoriť úpravy",
+ * ktoré by podľa zabudnutého súpisu prepísalo skutočné stavy.
+ */
+export const zahodInventuru = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => ZahodInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: count } = await supabase
+      .from("inventory_counts")
+      .select("id, status")
+      .eq("id", data.inventory_count_id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!count) throw new Error("Inventúra sa nenašla.");
+    if (count.status !== "open") throw new Error("Ukončenú inventúru už zahodiť nemožno.");
+    await supabase
+      .from("inventory_count_items")
+      .delete()
+      .eq("inventory_count_id", data.inventory_count_id);
+    const { error } = await supabase
+      .from("inventory_counts")
+      .delete()
+      .eq("id", data.inventory_count_id)
+      .eq("company_id", data.company_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 // Link or create a stock_item for an existing product
@@ -787,6 +868,13 @@ export const getMovementDetail = createServerFn({ method: "POST" })
     return { movement: m, stockItem: si, warehouse: wh, product, invoice, createdByEmail };
   });
 
+/** Názov do prehľadov — zmazaný produkt sa označí, nezmizne. */
+function nazovProduktu(it: any, productMap: Map<string, any>) {
+  const p = it.product_id ? productMap.get(it.product_id) : null;
+  if (p?.name) return p.deleted_at ? `${p.name} (zmazaný)` : p.name;
+  return it.sku ?? "(karta bez názvu)";
+}
+
 export const getStockValuation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => CompanyScoped.parse(d))
@@ -803,11 +891,11 @@ export const getStockValuation = createServerFn({ method: "POST" })
           .select("warehouse_id, stock_item_id, quantity")
           .eq("company_id", data.company_id),
         supabase.from("warehouses").select("id, name").eq("company_id", data.company_id),
-        supabase
-          .from("products")
-          .select("id, name")
-          .eq("company_id", data.company_id)
-          .is("deleted_at", null),
+        /*
+          Aj zmazaný produkt tu musí mať meno: karta so zásobou ostáva
+          v ocenení a riadok „—" nepovie, čoho je na sklade za 15 €.
+        */
+        supabase.from("products").select("id, name, deleted_at").eq("company_id", data.company_id),
       ]);
     const itemMap = new Map<string, any>();
     (items ?? []).forEach((i) => itemMap.set(i.id, i));
@@ -860,7 +948,7 @@ export const getStockValuation = createServerFn({ method: "POST" })
       const pEntry = byProduct.get(it.id) ?? {
         stock_item_id: it.id,
         sku: it.sku,
-        name: (it.product_id ? productMap.get(it.product_id)?.name : null) ?? it.sku ?? "—",
+        name: nazovProduktu(it, productMap),
         qty: 0,
         purchase: 0,
         sale: 0,
