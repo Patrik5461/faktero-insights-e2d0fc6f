@@ -186,7 +186,13 @@ function RootShell({ children }: { children: ReactNode }) {
       a prehliadač na tomto prvku nikdy nezhodnú. Je to zámer, nie nesúlad —
       bez potlačenia by React hlásil chybu pri každom načítaní stránky.
     */
-    <html lang="en" suppressHydrationWarning>
+    /*
+      Natívny výber dátumu v `input[type=date]` sa riadi jazykom dokumentu —
+      pri „en" ho prehliadač vyrenderoval podľa svojho nastavenia a ľuďom s
+      českým prehliadačom vyskakoval český kalendár. Web je po slovensky, tak
+      to má stáť aj tu; appka si `lang` prepisuje podľa zvoleného jazyka.
+    */
+    <html lang="sk" suppressHydrationWarning>
       <head>
         <HeadContent />
         {/*

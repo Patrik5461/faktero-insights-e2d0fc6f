@@ -63,6 +63,19 @@ export function ulozJazyk(j: Jazyk): void {
   } catch {
     /* voľba potom platí len pre túto reláciu */
   }
+  nastavJazykDokumentu(j);
+}
+
+/**
+ * Prepíše `lang` na dokumente.
+ *
+ * Natívny kalendár v `input[type=date]` aj čítačka obrazovky sa riadia týmto
+ * atribútom, nie našimi prekladmi. Bez toho dostal človek s českým
+ * prehliadačom český kalendár aj v slovenskej appke.
+ */
+export function nastavJazykDokumentu(j: Jazyk): void {
+  if (typeof document === "undefined") return;
+  document.documentElement.lang = j;
 }
 
 /** Locale na formátovanie čísel a dátumov. */

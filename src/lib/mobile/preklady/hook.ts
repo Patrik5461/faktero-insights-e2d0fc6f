@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { nacitajJazyk, ulozJazyk, locale, tvar, type Jazyk, type Tvary } from "../jazyk";
+import {
+  nacitajJazyk,
+  ulozJazyk,
+  nastavJazykDokumentu,
+  locale,
+  tvar,
+  type Jazyk,
+  type Tvary,
+} from "../jazyk";
 import { prelozit, type Kluc } from "./index";
 
 /**
@@ -24,8 +32,16 @@ export function usePreklad() {
   const [jazyk, setJazyk] = useState<Jazyk>("sk");
 
   useEffect(() => {
-    setJazyk(nacitajJazyk());
-    const naZmenu = () => setJazyk(nacitajJazyk());
+    const prvy = nacitajJazyk();
+    setJazyk(prvy);
+    // Natívny kalendár aj čítačka sa riadia `lang` na dokumente, nie našimi
+    // prekladmi — inak dostane človek s českým prehliadačom český kalendár.
+    nastavJazykDokumentu(prvy);
+    const naZmenu = () => {
+      const j = nacitajJazyk();
+      setJazyk(j);
+      nastavJazykDokumentu(j);
+    };
     window.addEventListener(UDALOST, naZmenu);
     return () => window.removeEventListener(UDALOST, naZmenu);
   }, []);
