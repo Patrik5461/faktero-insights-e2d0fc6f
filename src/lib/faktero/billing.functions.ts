@@ -184,7 +184,18 @@ export const createCheckout = createServerFn({ method: "POST" })
     await supabaseAdmin.from("billing_events").insert({
       company_id: data.companyId,
       event_type: "checkout_created",
-      payload: { payment_id: String(payment.id), plan: plan.slug, order_number: orderNumber },
+      payload: {
+        payment_id: String(payment.id),
+        plan: plan.slug,
+        order_number: orderNumber,
+        amount_cents: naUhradu,
+        /*
+          Či brána prijala súhlas s mesačným opakovaním. Keď tu bude `false`,
+          ďalšie mesiace sa nemajú z čoho strhnúť — a bez záznamu by sa na to
+          prišlo až o mesiac, keď platba nepríde.
+        */
+        recurrence: Boolean((payment as any)?.recurrence),
+      },
     });
 
     if (!payment.gw_url) throw new Error("GoPay nevrátil URL platobnej brány");
