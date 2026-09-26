@@ -18,10 +18,17 @@ export function MovementForm({
   type,
   title,
   onDone,
+  /*
+    Položka predvybraná z odkazu (`?polozka=`). Zo skladovej karty sa sem chodí
+    presne preto, aby sa naskladnila tá jedna položka — hľadať ju znovu v
+    rozbaľovacom zozname je zbytočný krok, pri stovkách kariet aj otrava.
+  */
+  polozkaId,
 }: {
   type: MovementType;
   title: string;
   onDone?: () => void;
+  polozkaId?: string;
 }) {
   const createMovement = useServerFn(createStockMovementDebug);
   const [warehouses, setWarehouses] = useState<any[]>([]);
@@ -29,7 +36,7 @@ export function MovementForm({
   const [productMap, setProductMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [warehouse, setWarehouse] = useState("");
-  const [stockItem, setStockItem] = useState("");
+  const [stockItem, setStockItem] = useState(polozkaId ?? "");
   const [quantity, setQuantity] = useState("1");
   const [price, setPrice] = useState("0");
   const [sideCosts, setSideCosts] = useState("0");
@@ -81,6 +88,7 @@ export function MovementForm({
       setWarehouses(wh ?? []);
       setItems(si ?? []);
       if ((wh ?? []).length) setWarehouse(wh![0].id);
+      if (polozkaId && (si ?? []).some((i: any) => i.id === polozkaId)) setStockItem(polozkaId);
       setLoading(false);
     })();
   }, []);

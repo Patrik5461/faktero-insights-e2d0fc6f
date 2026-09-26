@@ -515,6 +515,25 @@ function EditStockProduct() {
                 </label>
               </Field>
             </div>
+            {/*
+              Tu sa dá nastaviť minimum a optimum, nie samotný stav — ten je
+              súčtom pohybov. Bez tejto vety to vyzerá, že sa stav zadať zabudlo.
+            */}
+            <p className="mt-3 text-xs text-muted-foreground">
+              Množstvo na sklade sa počíta z pohybov, preto sa tu nezadáva. Tovar pridáte{" "}
+              <Link to="/sklad/prijem" className="text-primary hover:underline">
+                príjmom
+              </Link>
+              , uberiete{" "}
+              <Link to="/sklad/vydaj" className="text-primary hover:underline">
+                výdajom
+              </Link>{" "}
+              a rozdiel oproti skutočnosti zrovnáte{" "}
+              <Link to="/sklad/inventura" className="text-primary hover:underline">
+                inventúrou
+              </Link>
+              .
+            </p>
           </div>
 
           <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-background/95 py-3 backdrop-blur">

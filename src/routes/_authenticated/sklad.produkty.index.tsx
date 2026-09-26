@@ -937,6 +937,14 @@ function StockItemsPage() {
                                 <FileText className="h-4 w-4" />
                               </Link>
                             )}
+                            <Link
+                              to="/sklad/prijem"
+                              search={{ polozka: s.id }}
+                              className="rounded p-1.5 hover:bg-muted"
+                              title="Naskladniť"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Link>
                             <button
                               onClick={() => setEditing(s)}
                               className="rounded p-1.5 hover:bg-muted"
@@ -1053,6 +1061,50 @@ function StockItemsPage() {
                 value={String(editing.min_stock)}
                 onChange={(v) => setEditing({ ...editing, min_stock: Number(v) })}
               />
+              {editing.id && (
+                /*
+                  Stav sa tu nedá prepísať zámerne — počíta sa z pohybov, inak
+                  by sa rozišiel s hodnotou skladu a v pohyboch by chýbal
+                  riadok, ktorý ho zmenil. Doteraz to ale nikde nebolo povedané
+                  a z tohto okna neviedla na naskladnenie žiadna cesta.
+                */
+                <div className="sm:col-span-2 rounded-lg border border-border bg-muted/20 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Stav na sklade
+                      </div>
+                      <div className="text-lg font-semibold tabular-nums">
+                        {(levels[editing.id] ?? 0).toLocaleString("sk-SK")} {editing.unit}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        to="/sklad/prijem"
+                        search={{ polozka: editing.id }}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+                      >
+                        <Plus className="h-4 w-4" /> Naskladniť
+                      </Link>
+                      <Link
+                        to="/sklad/vydaj"
+                        search={{ polozka: editing.id }}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+                      >
+                        Vydať
+                      </Link>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Stav sa počíta z pohybov, preto sa nedá prepísať ručne. Tovar pridáte príjmom,
+                    uberiete výdajom a rozdiel oproti skutočnosti zrovnáte{" "}
+                    <Link to="/sklad/inventura" className="text-primary hover:underline">
+                      inventúrou
+                    </Link>
+                    .
+                  </p>
+                </div>
+              )}
               <label className="sm:col-span-2 inline-flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"

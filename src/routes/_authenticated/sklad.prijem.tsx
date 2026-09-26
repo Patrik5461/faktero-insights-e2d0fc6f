@@ -4,11 +4,16 @@ import { ScanLine } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sklad/prijem")({
   head: () => ({ meta: [{ title: "Príjem na sklad — Faktero" }] }),
+  /* `?polozka=` nesie skladovú kartu, z ktorej sa sem prišlo naskladniť. */
+  validateSearch: (s: Record<string, unknown>): { polozka?: string } => ({
+    polozka: typeof s.polozka === "string" && s.polozka ? s.polozka : undefined,
+  }),
   component: PrijemPage,
 });
 
 function PrijemPage() {
   const nav = useNavigate();
+  const { polozka } = Route.useSearch();
   return (
     <>
       <div className="mx-auto mt-4 flex max-w-xl justify-end px-4">
@@ -22,6 +27,7 @@ function PrijemPage() {
       <MovementForm
         type="prijem"
         title="Príjem na sklad"
+        polozkaId={polozka}
         onDone={() => nav({ to: "/sklad/pohyby" })}
       />
     </>
