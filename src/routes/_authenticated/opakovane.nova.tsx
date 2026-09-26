@@ -9,7 +9,7 @@ import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
-import { MENY } from "@/lib/faktero/mena";
+import { MENY, KROK_CENY } from "@/lib/faktero/mena";
 export const Route = createFileRoute("/_authenticated/opakovane/nova")({
   head: () => ({ meta: [{ title: "Nová opakovaná faktúra — Faktero" }] }),
   component: NewRecurring,
@@ -259,6 +259,7 @@ function NewRecurring() {
                   <In
                     label="Cena"
                     type="number"
+                    step={KROK_CENY}
                     value={String(it.unit_price)}
                     onChange={(v) => setItem(idx, { unit_price: Number(v) })}
                   />
@@ -339,17 +340,20 @@ function In({
   value,
   onChange,
   type = "text",
+  step,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
+  step?: string;
 }) {
   return (
     <label className="block">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <input
         type={type}
+        step={step}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"

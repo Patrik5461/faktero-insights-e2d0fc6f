@@ -71,6 +71,24 @@ function fmt(n: number, currency = "EUR") {
   return `${sign}${grouped},${decPart}\u00A0${currency}`;
 }
 
+/**
+ * Jednotková cena na doklade.
+ *
+ * Suma sa zaokrúhľuje na centy, jednotková cena nie — kto predáva po kusoch za
+ * zlomky centa, má v cenníku päť desatinných miest a na faktúre by potom
+ * „0,13 × 1 000 = 125,00" vyzeralo ako chyba v počítaní. Zobrazia sa len
+ * miesta, ktoré cena naozaj má.
+ */
+function fmtCena(n: number, currency = "EUR") {
+  const v = Number.isFinite(n) ? n : 0;
+  const zaokruhlena = Math.abs(v).toFixed(5);
+  const orezana = zaokruhlena.replace(/(\.\d{2}\d*?)0+$/, "$1");
+  const [intPart, decPart] = orezana.split(".");
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
+  const sign = v < 0 ? "-" : "";
+  return `${sign}${grouped},${decPart}\u00A0${currency}`;
+}
+
 // Unicode-safe — Roboto TTF embedded via fontkit supports full Slovak/Czech diacritics.
 function san(s: any): string {
   if (s == null) return "";
@@ -366,7 +384,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawAligned(
       cur,
       font,
-      fmt(Number(it.unit_price), invoice.currency),
+      fmtCena(Number(it.unit_price), invoice.currency),
       cols.price.x + cols.price.w - PAD,
       numBaseline,
       10,

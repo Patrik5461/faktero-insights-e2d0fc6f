@@ -12,7 +12,7 @@ import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
-import { MENY } from "@/lib/faktero/mena";
+import { MENY, KROK_CENY } from "@/lib/faktero/mena";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
@@ -373,6 +373,7 @@ function NewQuote() {
                     <In
                       label="Cena"
                       type="number"
+                      step={KROK_CENY}
                       value={String(it.unit_price)}
                       onChange={(v) => setItem(idx, { unit_price: Number(v), _cena_rucne: true })}
                     />
@@ -480,12 +481,14 @@ function In({
   value,
   onChange,
   type = "text",
+  step,
   required,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
+  step?: string;
   required?: boolean;
 }) {
   return (
@@ -493,6 +496,7 @@ function In({
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <input
         type={type}
+        step={step}
         required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}

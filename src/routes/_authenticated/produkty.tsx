@@ -1,3 +1,4 @@
+import { KROK_CENY, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -236,7 +237,7 @@ function ProductsPage() {
                   <td className="p-3 font-medium">{p.name}</td>
                   <td className="p-3 text-muted-foreground">{p.code ?? "—"}</td>
                   <td className="p-3">{p.unit}</td>
-                  <td className="p-3 text-right">{Number(p.unit_price).toFixed(2)} €</td>
+                  <td className="p-3 text-right">{formatujJednotkovuCenu(p.unit_price)} €</td>
                   <td className="p-3 text-right">{p.vat_rate} %</td>
                   <td className="p-3 text-right">
                     {!list.showDeleted && (
@@ -331,6 +332,7 @@ function ProductsPage() {
               <In
                 label="Jedn. cena"
                 type="number"
+                step={KROK_CENY}
                 value={String(editing.unit_price)}
                 onChange={(v) => setEditing({ ...editing, unit_price: Number(v) })}
               />
@@ -418,6 +420,7 @@ function In({
   value,
   onChange,
   type = "text",
+  step,
   required,
   full,
 }: {
@@ -425,6 +428,7 @@ function In({
   value: string;
   onChange: (v: string) => void;
   type?: string;
+  step?: string;
   required?: boolean;
   full?: boolean;
 }) {
@@ -433,6 +437,7 @@ function In({
       <span className="text-sm font-medium">{label}</span>
       <input
         type={type}
+        step={step}
         required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}

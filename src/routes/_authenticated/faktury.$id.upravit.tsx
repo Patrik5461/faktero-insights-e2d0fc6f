@@ -1,3 +1,4 @@
+import { KROK_CENY } from "@/lib/faktero/mena";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useState } from "react";
@@ -384,7 +385,7 @@ function EditInvoice() {
                       <td className="py-2 pl-3">
                         <input
                           type="number"
-                          step="0.01"
+                          step={KROK_CENY}
                           value={it.unit_price}
                           disabled={it._locked}
                           onChange={(e) => setItem(idx, { unit_price: Number(e.target.value) })}
@@ -459,7 +460,7 @@ function EditInvoice() {
                     />
                     <input
                       type="number"
-                      step="0.01"
+                      step={KROK_CENY}
                       value={it.unit_price}
                       disabled={it._locked}
                       onChange={(e) => setItem(idx, { unit_price: Number(e.target.value) })}

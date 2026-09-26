@@ -1,3 +1,4 @@
+import { formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
 import { useEffect, useState } from "react";
@@ -71,7 +72,7 @@ function ProductStockDetail() {
           new Date(m.created_at).toLocaleString("sk-SK"),
           TYPE_LABEL[m.type] ?? m.type,
           String(m.quantity),
-          Number(m.unit_price).toFixed(4),
+          Number(m.unit_price).toFixed(5),
           Number(m.total_value).toFixed(2),
           (m.note ?? "").replaceAll(";", ","),
         ].join(";"),
@@ -149,18 +150,18 @@ function ProductStockDetail() {
           />
           <Stat
             label="Nákupná cena"
-            value={si ? `${Number(si.purchase_price).toFixed(2)} €` : "—"}
+            value={si ? `${formatujJednotkovuCenu(si.purchase_price)} €` : "—"}
           />
-          <Stat label="Predajná cena" value={si ? `${Number(si.sale_price).toFixed(2)} €` : "—"} />
+          <Stat label="Predajná cena" value={si ? `${formatujJednotkovuCenu(si.sale_price)} €` : "—"} />
           <Stat
             label="Priemerná nákupná cena"
-            value={si ? `${Number(si.avg_purchase_price ?? 0).toFixed(4)} €` : "—"}
+            value={si ? `${formatujJednotkovuCenu(si.avg_purchase_price ?? 0)} €` : "—"}
           />
           <Stat
             label="Posledná nákupná cena"
             value={
               si?.last_purchase_price != null
-                ? `${Number(si.last_purchase_price).toFixed(4)} €`
+                ? `${formatujJednotkovuCenu(si.last_purchase_price)} €`
                 : "—"
             }
           />
@@ -312,7 +313,7 @@ function ProductStockDetail() {
                       {pohybText(m.type, m.quantity)}
                     </td>
                     <td className="p-2 text-right tabular-nums">
-                      {m.unit_cost != null ? Number(m.unit_cost).toFixed(4) : "—"}
+                      {m.unit_cost != null ? formatujJednotkovuCenu(m.unit_cost) : "—"}
                     </td>
                     <td className="p-2 text-right tabular-nums">
                       {Number(m.total_value).toFixed(2)} €

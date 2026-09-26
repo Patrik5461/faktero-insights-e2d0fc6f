@@ -16,7 +16,7 @@ import { suctyObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { vatRateOptions, zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { ArrowLeft, Plus, Sparkles, Trash2 } from "lucide-react";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/nova")({
@@ -320,7 +320,7 @@ function NewPurchaseOrder() {
                   />
                   <input
                     type="number"
-                    step="0.01"
+                    step={KROK_CENY}
                     min="0"
                     value={it.unit_price}
                     onChange={(e) => uprav(i, { unit_price: Number(e.target.value) })}

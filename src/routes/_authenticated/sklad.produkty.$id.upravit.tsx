@@ -1,3 +1,4 @@
+import { KROK_CENY } from "@/lib/faktero/mena";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -355,7 +356,7 @@ function EditStockProduct() {
               <Field label="Nákupná cena (€)">
                 <input
                   type="number"
-                  step="0.0001"
+                  step={KROK_CENY}
                   min="0"
                   value={form.purchase_price}
                   onChange={(e) => set("purchase_price", Number(e.target.value))}
@@ -365,7 +366,7 @@ function EditStockProduct() {
               <Field label="Predajná cena (€)">
                 <input
                   type="number"
-                  step="0.01"
+                  step={KROK_CENY}
                   min="0"
                   value={form.sale_price}
                   onChange={(e) => set("sale_price", Number(e.target.value))}

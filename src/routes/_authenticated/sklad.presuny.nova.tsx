@@ -1,3 +1,4 @@
+import { KROK_CENY } from "@/lib/faktero/mena";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -380,7 +381,7 @@ function NewTransferPage() {
                     />
                     <input
                       type="number"
-                      step="0.01"
+                      step={KROK_CENY}
                       min="0"
                       placeholder="Cena"
                       className="w-full rounded-md border px-2 py-1.5 text-sm"

@@ -10,7 +10,7 @@ import { ArrowLeft, Plus, Pencil, Trash2, X } from "lucide-react";
 import { PRODUKTY, sPoctom } from "@/lib/faktero/mnozne";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ceny/akcie")({
   head: () => ({ meta: [{ title: "Cenové akcie — Faktero" }] }),
@@ -376,7 +376,7 @@ function AkciePage() {
                           </span>
                           <input
                             type="number"
-                            step="0.01"
+                            step={KROK_CENY}
                             min="0"
                             placeholder="akciová cena"
                             className="w-36 rounded-md border border-border bg-background px-2 py-1.5 text-sm"

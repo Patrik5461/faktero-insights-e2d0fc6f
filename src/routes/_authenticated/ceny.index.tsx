@@ -16,7 +16,7 @@ import { cislo } from "@/lib/faktero/ceny";
 import { Plus, Pencil, Trash2, Tag, Percent } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/ceny/")({
   head: () => ({ meta: [{ title: "Cenník — Faktero" }] }),
@@ -467,7 +467,7 @@ function CennikPage() {
                 <label className={popis}>Cena bez DPH (€)</label>
                 <input
                   type="number"
-                  step="0.01"
+                  step={KROK_CENY}
                   min="0"
                   className={pole}
                   value={cenaForm.unit_price ?? ""}

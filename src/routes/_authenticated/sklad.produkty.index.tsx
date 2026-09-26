@@ -1,3 +1,4 @@
+import { KROK_CENY, formatujJednotkovuCenu } from "@/lib/faktero/mena";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { pohybDelta, pohybText } from "@/lib/faktero/stock-pohyb";
 import { useEffect, useState } from "react";
@@ -880,15 +881,15 @@ function StockItemsPage() {
                     </td>
                     <td className="p-3 text-right">{Number(s.min_stock).toFixed(2)}</td>
                     <td className="p-3 text-right tabular-nums">
-                      {Number(s.purchase_price).toFixed(2)} €
+                      {formatujJednotkovuCenu(s.purchase_price)} €
                     </td>
                     <td className="p-3 text-right tabular-nums text-muted-foreground">
                       {s.avg_purchase_price != null
-                        ? `${Number(s.avg_purchase_price).toFixed(4)} €`
+                        ? `${formatujJednotkovuCenu(s.avg_purchase_price)} €`
                         : "—"}
                     </td>
                     <td className="p-3 text-right tabular-nums">
-                      {Number(s.sale_price).toFixed(2)} €
+                      {formatujJednotkovuCenu(s.sale_price)} €
                     </td>
                     <td className="p-3 text-right">
                       <div className="inline-flex items-center gap-1">
@@ -1024,12 +1025,14 @@ function StockItemsPage() {
               <In
                 label="Nákupná cena"
                 type="number"
+                step={KROK_CENY}
                 value={String(editing.purchase_price)}
                 onChange={(v) => setEditing({ ...editing, purchase_price: Number(v) })}
               />
               <In
                 label="Predajná cena"
                 type="number"
+                step={KROK_CENY}
                 value={String(editing.sale_price)}
                 onChange={(v) => setEditing({ ...editing, sale_price: Number(v) })}
               />
@@ -1174,12 +1177,14 @@ function StockItemsPage() {
               <In
                 label="Predajná cena"
                 type="number"
+                step={KROK_CENY}
                 value={String(creating.sale_price)}
                 onChange={(v) => setCreating({ ...creating, sale_price: Number(v) || 0 })}
               />
               <In
                 label="Nákupná cena"
                 type="number"
+                step={KROK_CENY}
                 value={String(creating.purchase_price)}
                 onChange={(v) => setCreating({ ...creating, purchase_price: Number(v) || 0 })}
               />
@@ -1256,17 +1261,20 @@ function In({
   value,
   onChange,
   type = "text",
+  step,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
+  step?: string;
 }) {
   return (
     <label className="block">
       <span className="text-sm font-medium">{label}</span>
       <input
         type={type}
+        step={step}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"

@@ -1,3 +1,4 @@
+import { KROK_CENY } from "@/lib/faktero/mena";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -637,7 +638,7 @@ function DeliveryNoteScanPage() {
                             <td className="p-1.5 text-right">
                               <input
                                 type="number"
-                                step="0.0001"
+                                step={KROK_CENY}
                                 value={r.unit_price ?? 0}
                                 onChange={(e) =>
                                   updateRow(i, { unit_price: Number(e.target.value) })

@@ -1,3 +1,4 @@
+import { KROK_CENY } from "@/lib/faktero/mena";
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -268,7 +269,7 @@ export function MovementForm({
                 <span className="text-sm font-medium">Jedn. cena</span>
                 <input
                   type="number"
-                  step="0.0001"
+                  step={KROK_CENY}
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"

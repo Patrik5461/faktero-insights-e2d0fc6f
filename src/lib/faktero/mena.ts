@@ -67,3 +67,42 @@ export const MENY: { code: string; symbol: string; flag: string; name: string }[
   { code: "HUF", symbol: "Ft", flag: "🇭🇺", name: "Forint" },
   { code: "CHF", symbol: "₣", flag: "🇨🇭", name: "Frank" },
 ];
+
+/**
+ * Krok pre políčka s jednotkovou cenou.
+ *
+ * Prehliadač pri `type="number"` bez `step` počíta s celými číslami a cenu
+ * „0,125" odmietne s hláškou „Zadajte platnú hodnotu" — pole vyzerá vyplnené,
+ * ale formulár sa neuloží. Päť desatinných miest znesie aj databáza
+ * (`numeric(15,5)`), tak nech ich znesie aj políčko.
+ */
+export const KROK_CENY = "0.00001";
+
+/** Koľko desatinných miest sa na cene udrží. Musí sedieť s `KROK_CENY`. */
+export const DESATINNE_MIESTA_CENY = 5;
+
+/**
+ * Jednotková cena na zobrazenie.
+ *
+ * Dve miesta sú základ (tak sa cena číta), ďalšie tri sa ukážu len vtedy, keď
+ * v nej naozaj sú — inak by bol každý cenník samá nula.
+ */
+export function formatujJednotkovuCenu(hodnota: unknown, mena?: unknown, locale = "sk-SK"): string {
+  const n = Number(hodnota);
+  const cislo = Number.isFinite(n) ? n : 0;
+  const kod = typeof mena === "string" && KOD_MENY.test(mena) ? mena.toUpperCase() : null;
+  const nastavenie: Intl.NumberFormatOptions = {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: DESATINNE_MIESTA_CENY,
+  };
+
+  if (kod) {
+    try {
+      return new Intl.NumberFormat(locale, { ...nastavenie, style: "currency", currency: kod })
+        .format(cislo);
+    } catch {
+      return `${new Intl.NumberFormat(locale, nastavenie).format(cislo)} ${kod}`;
+    }
+  }
+  return new Intl.NumberFormat(locale, nastavenie).format(cislo);
+}

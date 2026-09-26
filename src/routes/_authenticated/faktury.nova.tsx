@@ -38,7 +38,7 @@ import { aiParseInvoiceFn } from "@/lib/faktero/ai-invoice.functions";
 import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombobox";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
-import { MENY } from "@/lib/faktero/mena";
+import { MENY, KROK_CENY } from "@/lib/faktero/mena";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
@@ -1280,6 +1280,7 @@ function NewInvoice() {
                           onChange={(v) => setItem(idx, { unit_price: v, _cena_rucne: true })}
                           w="w-24"
                           align="right"
+                          step={KROK_CENY}
                         />
                         {it._dovod && (
                           <div className="pr-2 text-right text-[10px] leading-tight text-emerald-600">
@@ -1359,6 +1360,7 @@ function NewInvoice() {
                     <CellNum
                       value={it.unit_price}
                       onChange={(v) => setItem(idx, { unit_price: v, _cena_rucne: true })}
+                      step={KROK_CENY}
                     />
                     {form.reverse_charge ? (
                       <span className="inline-flex items-center justify-center rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900 dark:text-amber-100">
@@ -1583,16 +1585,19 @@ function CellNum({
   onChange,
   w = "w-20",
   align = "left",
+  /* Množstvo si vystačí s dvoma miestami, cena ich potrebuje päť. */
+  step = "0.01",
 }: {
   value: number;
   onChange: (v: number) => void;
   w?: string;
   align?: "left" | "right";
+  step?: string;
 }) {
   return (
     <input
       type="number"
-      step="0.01"
+      step={step}
       inputMode="decimal"
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}

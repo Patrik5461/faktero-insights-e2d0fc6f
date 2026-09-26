@@ -11,7 +11,7 @@ import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 import { suctyObjednavky } from "@/lib/faktero/objednavky-odberatel";
 import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
-import { formatovacMeny } from "@/lib/faktero/mena";
+import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { sadzbyRezimu } from "@/lib/faktero/dph-rezim";
@@ -405,7 +405,7 @@ function NewOrder() {
                       <td className="py-2 pl-3 text-right">
                         <input
                           type="number"
-                          step="0.01"
+                          step={KROK_CENY}
                           min="0"
                           className="w-24 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-right hover:border-input focus:border-input focus:bg-background"
                           value={p.unit_price}
