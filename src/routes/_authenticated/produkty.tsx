@@ -17,7 +17,7 @@ import {
 } from "@/components/faktero/ListControls";
 import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { setProductStockTracking } from "@/lib/faktero/stock.functions";
+import { setProductStockTracking, zosuladPredajnuCenu } from "@/lib/faktero/stock.functions";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
@@ -72,6 +72,7 @@ function ProductsPage() {
     }
   }
   const trackFn = useServerFn(setProductStockTracking);
+  const zosuladFn = useServerFn(zosuladPredajnuCenu);
 
   // Príchod z menu cez `?new=1`. Parameter hneď odstránime, aby sa formulár
   // po zavretí neotvoril znova pri obnovení stránky alebo návrate späť.
@@ -117,6 +118,19 @@ function ProductsPage() {
       await trackFn({
         data: { company_id: cid, product_id: saved!.id, track_stock: !!track_stock },
       });
+      /*
+        Tovar má tú istú cenu ešte raz na skladovej karte. Bez tohto by karta
+        ukazovala starú cenu, hoci faktúra ide už za novú.
+      */
+      await zosuladFn({
+        data: {
+          company_id: cid,
+          product_id: saved!.id,
+          sale_price: Number(p.unit_price),
+          vat_rate: Number(p.vat_rate),
+          unit: p.unit || "ks",
+        },
+      });
     } catch (e: any) {
       toast.error(e?.message ?? "Chyba pri synchronizácii skladu.");
     }
@@ -152,7 +166,7 @@ function ProductsPage() {
     <>
       <PageHeader
         title="Produkty a služby"
-        description="Cenník, ktorý môžete vkladať do faktúr."
+        description="Cenník na faktúry — tovar aj služby. Pri tovare zapnite „Sledovať sklad“ a Faktero mu založí skladovú kartu."
         action={
           <button
             onClick={() => setEditing({ ...EMPTY, vat_rate: zakladnaSadzbaRezimu(rezim) })}

@@ -74,10 +74,20 @@ const sections: HelpSection[] = [
         </p>
         <p>
           Karta sa viaže na <strong>produkt z katalógu</strong> (
-          <Link to="/produkty">Produkty a služby</Link>). Produkt je to, čo predávate a čo vidíte na
-          faktúre; karta je to, čo fyzicky ležíte na sklade. Vďaka tomu môže mať tá istá karta inú
-          predajnú cenu pre rôznych odberateľov — o tom je{" "}
-          <Link to="/pomoc/ceny">cenník a zľavy</Link>.
+          <Link to="/produkty">Produkty a služby</Link>). Produkt je to, čo predávate a čo ide na
+          faktúru — cena, merná jednotka, DPH. Karta je to isté z pohľadu skladu — SKU, nákupná
+          cena, minimum, stav a pohyby. Služba má len produkt, tovar oboje.
+        </p>
+        <p>
+          <strong>Predajná cena je jedna.</strong> Či ju zmeníte v katalógu alebo na karte, prepíše
+          sa na oboch miestach. Iné ceny pre rôznych odberateľov alebo pri väčších množstvách sa
+          nerobia druhou cenou na karte, ale v <Link to="/pomoc/ceny">cenníku a zľavách</Link>.
+        </p>
+        <p>
+          Tovar sa dá založiť z oboch strán: v katalógu zaškrtnutím{" "}
+          <strong>Sledovať sklad</strong> (karta vznikne sama), alebo v Skladových položkách
+          tlačidlom <strong>Pridať tovar</strong>, ktoré vytvorí naraz produkt aj kartu a vie hneď
+          zapísať počiatočný stav.
         </p>
         <p>
           Kartu, ktorú už nepoužívate, <strong>archivujte</strong>, nemažte. Mazanie by odstrihlo

@@ -1920,3 +1920,52 @@ export const lookupStockItemByCode = createServerFn({ method: "POST" })
       .maybeSingle();
     return bySku ?? null;
   });
+
+const ZosuladenieInput = z.object({
+  company_id: z.string().uuid(),
+  product_id: z.string().uuid(),
+  sale_price: z.coerce.number().nonnegative(),
+  vat_rate: z.coerce.number().min(0).max(100),
+  unit: z.string().trim().min(1).max(20),
+});
+
+/**
+ * Zrovná predajnú cenu cenníka a skladovej karty.
+ *
+ * Tá istá položka má cenu na dvoch miestach — `products.unit_price` (cenník,
+ * z ktorého berie cenu faktúra) a `stock_items.sale_price` (skladová karta).
+ * Pri zakladaní sa jedna od druhej odpísala, ďalšie úpravy sa už neprenášali:
+ * kto zmenil cenu na karte, fakturoval naďalej za starú a nemal ako na to
+ * prísť. Po každej úprave sa preto obe strany prepíšu na tú istú hodnotu.
+ *
+ * Rôzne ceny pre rôznych odberateľov sa nerobia takto — na to je Cenník a
+ * zľavy.
+ */
+export const zosuladPredajnuCenu = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => ZosuladenieInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error: pErr } = await supabase
+      .from("products")
+      .update({ unit_price: data.sale_price, vat_rate: data.vat_rate, unit: data.unit })
+      .eq("id", data.product_id)
+      .eq("company_id", data.company_id);
+    if (pErr) throw new Error(pErr.message);
+
+    const { data: karta } = await supabase
+      .from("stock_items")
+      .select("id")
+      .eq("company_id", data.company_id)
+      .eq("product_id", data.product_id)
+      .maybeSingle();
+    // Služba skladovú kartu nemá — vtedy niet čo dorovnávať.
+    if (!karta) return { ok: true, stock_item_id: null };
+
+    const { error: sErr } = await supabase
+      .from("stock_items")
+      .update({ sale_price: data.sale_price, vat_rate: data.vat_rate, unit: data.unit })
+      .eq("id", karta.id);
+    if (sErr) throw new Error(sErr.message);
+    return { ok: true, stock_item_id: karta.id };
+  });

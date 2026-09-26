@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-09-25",
+ "vytvorene": "2026-09-26",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -869,7 +869,7 @@
     },
     {
      "nadpis": "Skladové karty a sledovanie stavu",
-     "text": "<>\nKliknutím na ikonu dokumentu pri položke sa otvorí skladová karta : pohyby\nod začiatku, rezervácie, priemerná aj posledná nákupná cena a export pohybov do CSV.\nKarta vzniká v Sklad → Skladové položky (/sklad/produkty). Má SKU, názov,\nmernú jednotku, nákupnú a predajnú cenu, prípadne čiarový kód, umiestnenie a fotku.\nNajdôležitejší prepínač je Sledovať stav . Iba pri zapnutom sledovaní\npohyby menia množstvo a Faktero bráni tomu, aby stav klesol pod nulu. Služby a položky,\nktoré na sklade nedržíte, nechajte bez sledovania — inak vám každá faktúra spadne na\nnedostatok zásoby.\nKarta sa viaže na produkt z katalógu (\nProdukty a služby (/produkty)). Produkt je to, čo predávate a čo vidíte na\nfaktúre; karta je to, čo fyzicky ležíte na sklade. Vďaka tomu môže mať tá istá karta inú\npredajnú cenu pre rôznych odberateľov — o tom je\ncenník a zľavy (/pomoc/ceny).\nKartu, ktorú už nepoužívate, archivujte , nemažte. Mazanie by odstrihlo\nhistóriu pohybov, ktoré patria k starým faktúram."
+     "text": "<>\nKliknutím na ikonu dokumentu pri položke sa otvorí skladová karta : pohyby\nod začiatku, rezervácie, priemerná aj posledná nákupná cena a export pohybov do CSV.\nKarta vzniká v Sklad → Skladové položky (/sklad/produkty). Má SKU, názov,\nmernú jednotku, nákupnú a predajnú cenu, prípadne čiarový kód, umiestnenie a fotku.\nNajdôležitejší prepínač je Sledovať stav . Iba pri zapnutom sledovaní\npohyby menia množstvo a Faktero bráni tomu, aby stav klesol pod nulu. Služby a položky,\nktoré na sklade nedržíte, nechajte bez sledovania — inak vám každá faktúra spadne na\nnedostatok zásoby.\nKarta sa viaže na produkt z katalógu (\nProdukty a služby (/produkty)). Produkt je to, čo predávate a čo ide na\nfaktúru — cena, merná jednotka, DPH. Karta je to isté z pohľadu skladu — SKU, nákupná\ncena, minimum, stav a pohyby. Služba má len produkt, tovar oboje.\nPredajná cena je jedna. Či ju zmeníte v katalógu alebo na karte, prepíše\nsa na oboch miestach. Iné ceny pre rôznych odberateľov alebo pri väčších množstvách sa\nnerobia druhou cenou na karte, ale v cenníku a zľavách (/pomoc/ceny).\nTovar sa dá založiť z oboch strán: v katalógu zaškrtnutím\nSledovať sklad (karta vznikne sama), alebo v Skladových položkách\ntlačidlom Pridať tovar , ktoré vytvorí naraz produkt aj kartu a vie hneď\nzapísať počiatočný stav.\nKartu, ktorú už nepoužívate, archivujte , nemažte. Mazanie by odstrihlo\nhistóriu pohybov, ktoré patria k starým faktúram."
     },
     {
      "nadpis": "Príjem, výdaj a oprava",

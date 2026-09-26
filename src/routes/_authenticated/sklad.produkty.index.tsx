@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { createStockProductDebug, getStockDebugSnapshot } from "@/lib/faktero/stock.functions";
+import {
+  createStockProductDebug,
+  getStockDebugSnapshot,
+  zosuladPredajnuCenu,
+} from "@/lib/faktero/stock.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
@@ -99,6 +103,7 @@ function StockItemsPage() {
   const { filter: urlFilter } = Route.useSearch();
   const createProductWithDebug = useServerFn(createStockProductDebug);
   const fetchDebugSnapshot = useServerFn(getStockDebugSnapshot);
+  const zosuladFn = useServerFn(zosuladPredajnuCenu);
   /* Sadzby DPH podľa krajiny registrácie firmy. */
   const rezim = useRezimDph();
   const [rows, setRows] = useState<any[]>([]);
@@ -253,6 +258,25 @@ function StockItemsPage() {
       : supabase.from("stock_items").insert(payload);
     const { error } = await op;
     if (error) return toast.error(error.message);
+    /*
+      Cena, za ktorú sa fakturuje, je v cenníku (`products`). Bez tohto kroku
+      by sa tu dala prepísať predajná cena a faktúra by aj tak išla za starú.
+    */
+    if (s.product_id) {
+      try {
+        await zosuladFn({
+          data: {
+            company_id: cid,
+            product_id: s.product_id,
+            sale_price: Number(s.sale_price),
+            vat_rate: Number(s.vat_rate),
+            unit: s.unit || "ks",
+          },
+        });
+      } catch (e: any) {
+        toast.error(e?.message ?? "Cenu sa nepodarilo prepísať do cenníka.");
+      }
+    }
     toast.success("Uložené");
     setEditing(null);
     load();
@@ -566,7 +590,7 @@ function StockItemsPage() {
     <>
       <PageHeader
         title="Skladové položky"
-        description="Skladové karty napojené na produkty."
+        description="Karty tovaru, ktorý sa počíta na sklade — stav, pohyby, nákupná cena a minimum. Služby kartu nemajú, tie sú len v Produktoch a službách."
         action={
           <div className="flex flex-wrap gap-2">
             <div className="relative">
@@ -1038,7 +1062,7 @@ function StockItemsPage() {
                 onChange={(v) => setEditing({ ...editing, purchase_price: Number(v) })}
               />
               <In
-                label="Predajná cena"
+                label="Predajná cena (aj v cenníku)"
                 type="number"
                 step={KROK_CENY}
                 value={String(editing.sale_price)}
