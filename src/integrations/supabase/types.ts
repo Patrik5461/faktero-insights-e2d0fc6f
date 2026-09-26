@@ -4576,6 +4576,27 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_free_accounts: {
+        Row: {
+          created_at: string
+          email: string
+          note: string | null
+          plan_slug: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          note?: string | null
+          plan_slug?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          note?: string | null
+          plan_slug?: string
+        }
+        Relationships: []
+      }
       platform_invoices: {
         Row: {
           billing_payment_id: string | null

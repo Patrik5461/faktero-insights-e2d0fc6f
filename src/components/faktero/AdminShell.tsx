@@ -18,6 +18,7 @@ import {
   Handshake,
   Receipt,
   Sparkles,
+  Gift,
 } from "lucide-react";
 
 const NAV = [
@@ -34,6 +35,7 @@ const NAV = [
   { to: "/admin/audit-log", label: "Audit log", icon: ScrollText },
   { to: "/admin/legal", label: "Právne dokumenty", icon: FileText },
   { to: "/admin/seo", label: "SEO", icon: Search },
+  { to: "/admin/ucty-zdarma", label: "Účty zadarmo", icon: Gift },
   { to: "/admin/partneri", label: "Partneri", icon: Handshake },
 ];
 

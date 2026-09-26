@@ -62,6 +62,7 @@ import { Route as AdminPaymentProvidersRouteImport } from './routes/admin.paymen
 import { Route as AdminPlatformInvoicesRouteImport } from './routes/admin.platform-invoices'
 import { Route as AdminSeoRouteImport } from './routes/admin.seo'
 import { Route as AdminSubscriptionsRouteImport } from './routes/admin.subscriptions'
+import { Route as AdminUctyZdarmaRouteImport } from './routes/admin.ucty-zdarma'
 import { Route as AdminUsageRouteImport } from './routes/admin.usage'
 import { Route as AuthPotvrdenieRouteImport } from './routes/auth.potvrdenie'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
@@ -554,6 +555,11 @@ const AdminSeoRoute = AdminSeoRouteImport.update({
 const AdminSubscriptionsRoute = AdminSubscriptionsRouteImport.update({
   id: '/subscriptions',
   path: '/subscriptions',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUctyZdarmaRoute = AdminUctyZdarmaRouteImport.update({
+  id: '/ucty-zdarma',
+  path: '/ucty-zdarma',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsageRoute = AdminUsageRouteImport.update({
@@ -1842,6 +1848,7 @@ export interface FileRoutesByFullPath {
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/ucty-zdarma': typeof AdminUctyZdarmaRoute
   '/admin/usage': typeof AdminUsageRoute
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -2112,6 +2119,7 @@ export interface FileRoutesByTo {
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/ucty-zdarma': typeof AdminUctyZdarmaRoute
   '/admin/usage': typeof AdminUsageRoute
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -2391,6 +2399,7 @@ export interface FileRoutesById {
   '/admin/platform-invoices': typeof AdminPlatformInvoicesRoute
   '/admin/seo': typeof AdminSeoRoute
   '/admin/subscriptions': typeof AdminSubscriptionsRoute
+  '/admin/ucty-zdarma': typeof AdminUctyZdarmaRoute
   '/admin/usage': typeof AdminUsageRoute
   '/auth/potvrdenie': typeof AuthPotvrdenieRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -2671,6 +2680,7 @@ export interface FileRouteTypes {
     | '/admin/platform-invoices'
     | '/admin/seo'
     | '/admin/subscriptions'
+    | '/admin/ucty-zdarma'
     | '/admin/usage'
     | '/auth/potvrdenie'
     | '/blog/$slug'
@@ -2941,6 +2951,7 @@ export interface FileRouteTypes {
     | '/admin/platform-invoices'
     | '/admin/seo'
     | '/admin/subscriptions'
+    | '/admin/ucty-zdarma'
     | '/admin/usage'
     | '/auth/potvrdenie'
     | '/blog/$slug'
@@ -3219,6 +3230,7 @@ export interface FileRouteTypes {
     | '/admin/platform-invoices'
     | '/admin/seo'
     | '/admin/subscriptions'
+    | '/admin/ucty-zdarma'
     | '/admin/usage'
     | '/auth/potvrdenie'
     | '/blog/$slug'
@@ -3939,6 +3951,13 @@ declare module '@tanstack/react-router' {
       path: '/subscriptions'
       fullPath: '/admin/subscriptions'
       preLoaderRoute: typeof AdminSubscriptionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/ucty-zdarma': {
+      id: '/admin/ucty-zdarma'
+      path: '/ucty-zdarma'
+      fullPath: '/admin/ucty-zdarma'
+      preLoaderRoute: typeof AdminUctyZdarmaRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/usage': {
@@ -5818,6 +5837,7 @@ interface AdminRouteChildren {
   AdminPlatformInvoicesRoute: typeof AdminPlatformInvoicesRoute
   AdminSeoRoute: typeof AdminSeoRoute
   AdminSubscriptionsRoute: typeof AdminSubscriptionsRoute
+  AdminUctyZdarmaRoute: typeof AdminUctyZdarmaRoute
   AdminUsageRoute: typeof AdminUsageRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCompaniesIdRoute: typeof AdminCompaniesIdRoute
@@ -5839,6 +5859,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPlatformInvoicesRoute: AdminPlatformInvoicesRoute,
   AdminSeoRoute: AdminSeoRoute,
   AdminSubscriptionsRoute: AdminSubscriptionsRoute,
+  AdminUctyZdarmaRoute: AdminUctyZdarmaRoute,
   AdminUsageRoute: AdminUsageRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminCompaniesIdRoute: AdminCompaniesIdRoute,
