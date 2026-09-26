@@ -134,7 +134,10 @@ const features = [
   {
     icon: Landmark,
     title: "Bankové párovanie",
-    text: "Automatické párovanie platieb s faktúrami. Prepojenie s Tatra bankou, ČSOB, SLSP, VÚB a ďalšími bankami.",
+    /* Priamo sa pripája Tatra banka, Wise a Revolut Business. Účty v SLSP, VÚB
+       či ČSOB natiahne Faktero vtedy, keď ich má človek v TB cez multibanking —
+       sľubovať ich ako samostatné pripojenie by bolo klamlivé. */
+    text: "Automatické párovanie platieb s faktúrami. Priame pripojenie Tatra banky, Wise a Revolut Business; účty v SLSP, VÚB či ČSOB natiahneme cez multibanking v Tatra banke.",
   },
   {
     icon: Receipt,
@@ -304,7 +307,8 @@ const plans = [
     features: [
       "Neobmedzene firiem",
       "SLA a dedikovaná podpora",
-      "SSO a audit logy",
+      // SSO (SAML) Faktero nemá; prihlasovanie chráni dvojfaktorové overenie.
+      "Vlastné role, dvojfaktor a audit log",
       "Konzultácie pri integrácii",
       "Vlastné podmienky",
     ],
@@ -938,14 +942,18 @@ function EFakturaSection() {
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl">
               eFaktúra <span className="text-primary">zadarmo</span> v každom pláne
             </h2>
+            {/* Odosielanie beží proti testovacej prevádzke ePoštáka — ostrý kanál
+                zapneme pred 1.1.2027. Cenový sľub platí už dnes, tvrdiť ale, že
+                faktúry už dnes odchádzajú cez Peppol, by nebola pravda. */}
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Faktero automaticky odošle každú faktúru cez Peppol sieť. Žiadna extra registrácia,
-              žiadne skryté poplatky —{" "}
+              Faktúry vo formáte eFaktúry pripraví Faktero za vás a odošle ich cez Peppol. Žiadna
+              extra registrácia, žiadne skryté poplatky —{" "}
               <span className="font-semibold text-foreground">eFaktúra je zahrnutá v cene</span>.
+              Kanál je v testovacej prevádzke a naostro ho zapneme pred termínom.
             </p>
             <ul className="mt-8 space-y-3 text-sm">
               {[
-                "Automatické odoslanie cez sieť Peppol — bez extra krokov.",
+                "Odoslanie cez sieť Peppol bez extra krokov — spúšťame pred 1.1.2027.",
                 "Žiadne poplatky za odoslanú eFaktúru, v každom pláne.",
                 "Strojovo čitateľný XML formát (UBL 2.1) namiesto PDF prílohy.",
                 "Pripravené na povinnosť pre B2B a B2G od 1.1.2027.",

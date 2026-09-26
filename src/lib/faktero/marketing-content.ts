@@ -281,8 +281,8 @@ export const funkcie: HubContent = {
         },
         {
           type: "callout",
-          title: "Aplikácia je pred vydaním",
-          body: "Verziu pre iPhone dokončujeme a čaká na schválenie v App Store. Ohlásime ju hneď, ako bude dostupná.",
+          title: "Kde ju stiahnete",
+          body: "Appka je v App Store — Faktero aj samostatná Kniha jázd pre vodičov, ktorí faktúry nerobia. Verzia pre Android sa pripravuje; kým nebude v Google Play, dostanete ju v testovaní na pozvánku.",
         },
       ],
     },
@@ -708,7 +708,7 @@ export const efakturacia: HubContent = {
         {
           type: "section",
           title: "Koho sa povinnosť týka?",
-          body: "Od 1.1.2027 musí každý platiteľ DPH na Slovensku vystavovať a prijímať eFaktúry pre B2B transakcie (firma firme) a B2G (firma štátu). Povinnosť sa vzťahuje na všetkých podnikateľov bez ohľadu na veľkosť — od SZČO až po veľké korporácie. Faktúry pre koncových spotrebiteľov (B2C) ostávajú v pôvodnom režime.",
+          body: "Od 1.1.2027 musí každý platiteľ DPH usadený na Slovensku vystavovať a prijímať eFaktúry pri tuzemských B2B transakciách (firma firme) a B2G (firma štátu). Rozhoduje registrácia na DPH, nie veľkosť firmy — týka sa to rovnako SZČO-platiteľa ako korporácie, neplatiteľa DPH zatiaľ nie. Faktúry pre koncových spotrebiteľov (B2C) ostávajú v pôvodnom režime. Prechodné obdobie trvá do 30.6.2030; od 1.7.2030 sa podľa európskych pravidiel ViDA pridajú aj cezhraničné dodania v rámci EÚ.",
         },
         {
           type: "bullets",

@@ -91,15 +91,36 @@ function Page() {
 
       <h2>7. Prenos údajov tretím stranám</h2>
       <p>Údaje zdieľame výhradne so spracovateľmi nevyhnutnými na prevádzku Služby:</p>
+      {/*
+        Zoznam musí sedieť so zmluvou o spracúvaní údajov (/pravne/spracovanie-udajov).
+        Chýbali v ňom server, na ktorom Faktero beží, a poskytovatelia AI, ktorí
+        čítajú nahraté doklady — teda práve tí, na ktorých sa človek pýta.
+      */}
       <ul>
         <li>
-          <strong>Supabase</strong> (databáza a autentifikácia) — Supabase Inc., USA, EU servery.
+          <strong>Supabase</strong> (databáza, prihlasovanie a úložisko súborov) — Supabase Inc.,
+          servery v EÚ (Frankfurt).
         </li>
         <li>
-          <strong>Resend</strong> (rozosielanie e-mailov a faktúr) — Resend Inc., USA.
+          <strong>Hetzner Online</strong> (server, na ktorom aplikácia beží) — Hetzner Online GmbH,
+          Nemecko.
         </li>
         <li>
-          <strong>GoPay</strong> (platobná brána pre predplatné a online platby) — GoPay s.r.o., ČR.
+          <strong>Resend</strong> (rozosielanie a príjem e-mailov, faktúry a doklady poštou) —
+          Resend Inc., USA, štandardné zmluvné doložky.
+        </li>
+        <li>
+          <strong>Google (Gemini API)</strong> a <strong>OpenAI</strong> (rozpoznávanie údajov z
+          nahratých dokladov a asistent) — Google Ireland Ltd. a OpenAI Ireland Ltd., štandardné
+          zmluvné doložky. Doklady sa neposkytujú na trénovanie modelov.
+        </li>
+        <li>
+          <strong>GoPay</strong> (platobná brána pre predplatné Faktero) — GOPAY s.r.o., ČR. Platby
+          kartou pre zákazníkov vašej firmy Faktero neponúka.
+        </li>
+        <li>
+          <strong>Apple / Google</strong> (distribúcia mobilnej aplikácie a doručovanie upozornení)
+          — Apple Inc. a Google Ireland Ltd.
         </li>
         <li>
           <strong>Google Analytics</strong> (ak bude aktivovaný) — Google Ireland Ltd., Írsko. Údaje

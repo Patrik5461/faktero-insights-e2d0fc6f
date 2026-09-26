@@ -89,7 +89,7 @@ const LOGBOOK_PLANS = [
 const FAQ = [
   {
     q: "Koľko stojí odoslanie eFaktúry?",
-    a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero. Žiadne skryté poplatky za odoslanú faktúru.",
+    a: "Nič extra — eFaktúra cez Peppol je zahrnutá v cene každého plánu Faktero a nikdy si za odoslanú faktúru nepripočítame poplatok. Odosielací kanál je zatiaľ v testovacej prevádzke; naostro ho zapneme pred termínom 1.1.2027.",
   },
   {
     q: "Je naozaj 30 dní zdarma bez karty?",
@@ -97,7 +97,7 @@ const FAQ = [
   },
   {
     q: "Môžem kedykoľvek zmeniť plán?",
-    a: "Áno, plán meníte v sekcii Predplatné. Rozdiel doúčtujeme alikvótne.",
+    a: "Áno, plán meníte v sekcii Predplatné. Zmena sa prejaví od najbližšieho zúčtovacieho obdobia — rozdiel za rozbehnutý mesiac nedoúčtovávame.",
   },
   {
     q: "Môžem mať fakturáciu aj knihu jázd súčasne?",
