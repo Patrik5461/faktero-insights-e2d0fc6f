@@ -34,6 +34,8 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
     features: [
       "Faktúry (vystavenie, úprava, storno, dobropisy)",
       "Zálohová faktúra (rada ZF…) a daňový doklad k prijatej platbe (rada DDP…) — daň sa prizná v období platby a na vyúčtovaní sa už nepočíta druhýkrát",
+      "Upozornenie na zaplatenú nezúčtovanú zálohu odberateľa a odpočet viacerých záloh na jednej faktúre",
+      "Doklad v slovenčine, češtine, angličtine, nemčine alebo maďarčine (prekladajú sa popisky, nie názvy položiek)",
       "Cenové ponuky s konverziou na faktúru",
       "Odberateľ prijme alebo zamietne ponuku tlačidlom v e-maile",
       "Odberateľom môže byť firma aj fyzická osoba bez IČO",

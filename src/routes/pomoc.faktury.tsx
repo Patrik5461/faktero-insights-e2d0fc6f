@@ -167,6 +167,16 @@ const sections: HelpSection[] = [
           časť sa odráta, takže zákazník doplatí len rozdiel a tá istá suma nie je vo výnosoch
           dvakrát. V zozname zálohových faktúr potom vidno, ktoré sú už zúčtované.
         </p>
+        <p>
+          <strong>Nemusíte si pamätať, že záloha existuje.</strong> Keď na faktúre vyberiete
+          odberateľa, ktorý má zaplatenú a ešte nezúčtovanú zálohu, Faktero to napíše nad položkami
+          a jedným tlačidlom ju odpočíta. Bez odpočtu by zákazník to isté plnenie zaplatil druhýkrát.
+        </p>
+        <p>
+          Na jednej faktúre môže byť <strong>aj viac záloh</strong> — pri etapovej dodávke sa
+          pripoja postupne a doklad ukáže každú zvlášť aj ich súčet. Každá záloha sa dá minúť len
+          raz; keď z nej odpočítate len časť, zvyšok sa ponúkne pri ďalšej faktúre.
+        </p>
       </>
     ),
   },
@@ -195,6 +205,34 @@ const sections: HelpSection[] = [
         <p>
           Pri <strong>čiastočnej platbe</strong> zadáte prijatú sumu a položky sa rozpočítajú
           rovnakým pomerom, aby sedel rozpis po sadzbách. Ku každej zálohe patrí jeden doklad.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "jazyk",
+    title: "Faktúra v cudzom jazyku",
+    body: (
+      <>
+        <p>
+          Doklad sa dá vystaviť v <strong>slovenčine, češtine, angličtine, nemčine alebo
+          maďarčine</strong>. Jazyk vyberiete na faktúre v časti <em>Rozšírené nastavenia</em>, a
+          keď ho nastavíte odberateľovi v jeho karte, predvolí sa na všetkých jeho ďalších
+          faktúrach.
+        </p>
+        <p>
+          Prekladajú sa <strong>popisky</strong> — nadpis dokladu, hlavičky stĺpcov, dátumy, spôsob
+          úhrady, súčty a platobné údaje. <strong>Názvy položiek, poznámky a adresy ostávajú tak,
+          ako ste ich napísali</strong>; tie Faktero neprekladá, lebo by menilo obsah dokladu.
+        </p>
+        <p>
+          Sumy sa píšu podľa zvyklostí jazyka — Nemec číta <em>1.234,56</em>, Angličan{" "}
+          <em>1,234.56</em>. Vety o prenose daňovej povinnosti sú preložené, ale odkaz na slovenský
+          paragraf v nich ostáva: ten robí doklad platným.
+        </p>
+        <p>
+          Jazyk sa uloží k faktúre, takže aj o rok sa PDF vygeneruje rovnako. Mena je nezávislá —
+          faktúru v eurách môžete poslať po nemecky a naopak.
         </p>
       </>
     ),
