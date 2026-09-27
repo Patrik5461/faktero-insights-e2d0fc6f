@@ -236,7 +236,7 @@ function EditInvoice() {
         }
       />
       <PageBody>
-        <form onSubmit={submit} className="mx-auto max-w-5xl space-y-6">
+        <form onSubmit={submit} className="mx-auto max-w-6xl space-y-6">
           {/*
             Koncept je interný, ale vystavenú faktúru už mohol odberateľ dostať.
             Nech je vidieť, že sa mení hotový doklad, nie rozpracovaný.
@@ -255,71 +255,85 @@ function EditInvoice() {
               )}
             </div>
           )}
-          <section className="rounded-2xl border border-border bg-card p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">Základné údaje</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Lbl label="Dátum vystavenia">
-                <input
-                  type="date"
-                  required
-                  value={form.issue_date}
-                  onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
-                  className={inputCls}
+          {/*
+            Základné a platobné údaje stoja vedľa seba rovnako ako pri vystavovaní —
+            na širokej obrazovke sa tak položky nezosúvajú kamsi pod prehyb.
+          */}
+          <div className="grid items-start gap-6 lg:grid-cols-2">
+            <section className="rounded-2xl border border-border bg-card p-5">
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">Základné údaje</h3>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                <Lbl label="Dátum vystavenia">
+                  <input
+                    type="date"
+                    required
+                    value={form.issue_date}
+                    onChange={(e) => setForm({ ...form, issue_date: e.target.value })}
+                    className={inputCls}
+                  />
+                </Lbl>
+                <Lbl label="Splatnosť">
+                  <input
+                    type="date"
+                    required
+                    value={form.due_date}
+                    onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                    className={inputCls}
+                  />
+                </Lbl>
+                <Lbl label="Dátum dodania">
+                  <input
+                    type="date"
+                    value={form.delivery_date}
+                    onChange={(e) => setForm({ ...form, delivery_date: e.target.value })}
+                    className={inputCls}
+                  />
+                </Lbl>
+                <JobPicker
+                  className="sm:col-span-2"
+                  value={form.job_id}
+                  onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
+                  customerId={inv?.customer_id ?? null}
+                  companyId={inv?.company_id ?? null}
                 />
-              </Lbl>
-              <Lbl label="Splatnosť">
-                <input
-                  type="date"
-                  required
-                  value={form.due_date}
-                  onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                  className={inputCls}
-                />
-              </Lbl>
-              <Lbl label="Dátum dodania">
-                <input
-                  type="date"
-                  value={form.delivery_date}
-                  onChange={(e) => setForm({ ...form, delivery_date: e.target.value })}
-                  className={inputCls}
-                />
-              </Lbl>
-              <Lbl label="Variabilný symbol">
-                <input
-                  value={form.variable_symbol}
-                  onChange={(e) => setForm({ ...form, variable_symbol: e.target.value })}
-                  className={inputCls}
-                />
-              </Lbl>
-              <Lbl label="Mena">
-                <input
-                  value={form.currency}
-                  onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                  className={inputCls}
-                />
-              </Lbl>
-              <Lbl label="Spôsob platby">
-                <select
-                  value={form.payment_method}
-                  onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
-                  className={inputCls}
-                >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              </Lbl>
-              <JobPicker
-                className="sm:col-span-2"
-                value={form.job_id}
-                onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
-                customerId={inv?.customer_id ?? null}
-                companyId={inv?.company_id ?? null}
-              />
-            </div>
-          </section>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-border bg-card p-5">
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">
+                Platobné údaje a symboly
+              </h3>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                <Lbl label="Spôsob platby">
+                  <select
+                    value={form.payment_method}
+                    onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
+                    className={inputCls}
+                  >
+                    {PAYMENT_METHODS.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </Lbl>
+                <Lbl label="Mena">
+                  <input
+                    value={form.currency}
+                    onChange={(e) => setForm({ ...form, currency: e.target.value })}
+                    className={inputCls}
+                  />
+                </Lbl>
+                <Lbl label="Variabilný symbol">
+                  <input
+                    value={form.variable_symbol}
+                    onChange={(e) => setForm({ ...form, variable_symbol: e.target.value })}
+                    className={inputCls}
+                  />
+                </Lbl>
+              </div>
+            </section>
+          </div>
 
           <section className="rounded-2xl border border-border bg-card p-5">
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">
@@ -544,7 +558,9 @@ function EditInvoice() {
             />
           </section>
 
-          <div className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-2xl border border-border bg-card/95 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-end">
+          <div /* Vpravo dole sedí plávajúce tlačidlo pomoci — nech neprekryje „Uložiť". */
+            className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-2xl border border-border bg-card/95 p-4 pr-20 backdrop-blur sm:flex-row sm:items-center sm:justify-end"
+          >
             <Link
               to="/faktury/$id"
               params={{ id }}

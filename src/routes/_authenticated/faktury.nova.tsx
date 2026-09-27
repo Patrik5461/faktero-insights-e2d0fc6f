@@ -1647,7 +1647,12 @@ function NewInvoice() {
           </section>
 
           {/* SECTION 5 — actions */}
-          <div className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-2xl border border-border bg-card/95 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <div /*
+              Plávajúce tlačidlo pomoci sedí v pravom dolnom rohu a prekrývalo
+              „Vystaviť faktúru" — na užšom okne z neho ostalo „Vystaviť fak…".
+              Lišta si preto vpravo nechá miesto.
+            */
+            className="sticky bottom-4 z-10 flex flex-col-reverse gap-2 rounded-2xl border border-border bg-card/95 p-4 pr-20 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs text-muted-foreground">
               <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">⌘↵</kbd> uložiť ·
               <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono">⌘K</kbd> AI
