@@ -3,6 +3,7 @@ import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { nezuctovaneZalohyFn, type NezuctovanaZaloha } from "@/lib/faktero/zalohy-odberatela.functions";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import {
   getSalesOrderForInvoice,
@@ -253,6 +254,9 @@ function NewInvoice() {
       .catch((e: any) => toast.error(e?.message ?? "Objednávku sa nepodarilo načítať"));
   }, [search.sales_order, nacitajObjednavku]);
   const nacitajCennik = useServerFn(getPriceContext);
+  const nacitajZalohy = useServerFn(nezuctovaneZalohyFn);
+  /* Zaplatené zálohy odberateľa, ktoré ešte nikto nezúčtoval. */
+  const [nezuctovane, setNezuctovane] = useState<NezuctovanaZaloha[]>([]);
   // Pri prvom načítaní sa ceny už zadaných riadkov neprepisujú — mohli prísť
   // z kópie faktúry alebo zo skenera a prepísať ich by bola tichá zmena sumy.
   const cennikPrvyRaz = useRef(true);
@@ -274,6 +278,30 @@ function NewInvoice() {
       zrusene = true;
     };
   }, [form.customer_id, form.issue_date, nacitajCennik]);
+
+  /*
+    Nezúčtované zálohy odberateľa. Bez upozornenia sa na zaplatenú zálohu ľahko
+    zabudne a to isté plnenie sa vyfakturuje druhýkrát — chyba, ktorá sa hľadá
+    ťažko, lebo oba doklady vyzerajú v poriadku.
+  */
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid || !form.customer_id || form.type !== "regular") {
+      setNezuctovane([]);
+      return;
+    }
+    let zrusene = false;
+    nacitajZalohy({ data: { company_id: cid, customer_id: form.customer_id } })
+      .then((z: any) => {
+        if (!zrusene) setNezuctovane(z ?? []);
+      })
+      .catch(() => {
+        if (!zrusene) setNezuctovane([]);
+      });
+    return () => {
+      zrusene = true;
+    };
+  }, [form.customer_id, form.type, nacitajZalohy]);
 
   // Po zmene odberateľa sa prepočítajú riadky, do ktorých používateľ nesiahol.
   useEffect(() => {
@@ -891,6 +919,52 @@ function NewInvoice() {
                 <Link2 className="h-4 w-4" />{" "}
                 {form.advance_invoice_id ? "Zmeniť zálohovú faktúru" : "Pridať zálohovú faktúru"}
               </button>
+              {!form.advance_invoice_id && nezuctovane.length > 0 && (
+                /*
+                  Upozornenie, nie zákaz: sú prípady, keď sa záloha zámerne
+                  vyúčtuje inou faktúrou. Odpočet je preto na jedno kliknutie,
+                  ale nikto ho nevnucuje.
+                */
+                <div className="w-full rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100">
+                  <div className="font-medium">
+                    {nezuctovane.length === 1
+                      ? "Odberateľ má zaplatenú zálohu, ktorá ešte nie je zúčtovaná."
+                      : `Odberateľ má ${nezuctovane.length} zaplatené zálohy, ktoré ešte nie sú zúčtované.`}
+                  </div>
+                  <ul className="mt-2 space-y-1">
+                    {nezuctovane.map((z) => (
+                      <li key={z.id} className="flex flex-wrap items-center gap-2">
+                        <span className="tabular-nums">
+                          <strong>{z.invoice_number}</strong> · {z.issue_date} ·{" "}
+                          {z.total.toFixed(2)} {z.currency}
+                        </span>
+                        {z.doklad_k_platbe && (
+                          <span className="text-xs opacity-80">
+                            daň priznaná dokladom {z.doklad_k_platbe}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm((f) => ({
+                              ...f,
+                              advance_invoice_id: z.id,
+                              advance_amount: z.total,
+                            }));
+                            toast.success(`Záloha ${z.invoice_number} pripojená`);
+                          }}
+                          className="rounded-md bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:opacity-90"
+                        >
+                          Odpočítať
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-xs opacity-80">
+                    Bez odpočtu zaplatí zákazník to isté plnenie druhýkrát.
+                  </p>
+                </div>
+              )}
               {form.type === "credit_note" && (
                 <button
                   type="button"
