@@ -938,6 +938,12 @@ function NewInvoice() {
                   ))}
                 </select>
               </div>
+              <JobPicker
+                className="sm:col-span-2"
+                value={form.job_id}
+                onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
+                customerId={form.customer_id || null}
+              />
             </div>
 
             {/* Quick action links */}
@@ -1133,12 +1139,6 @@ function NewInvoice() {
                   <option value="electronic">Elektronicky</option>
                 </select>
               </div>
-              <JobPicker
-                className="sm:col-span-2"
-                value={form.job_id}
-                onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
-                customerId={form.customer_id || null}
-              />
               <div className="sm:col-span-2">
                 <label className="text-xs font-medium text-muted-foreground">
                   Spôsob zaokrúhľovania
