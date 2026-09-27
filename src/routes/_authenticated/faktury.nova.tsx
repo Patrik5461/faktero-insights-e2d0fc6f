@@ -847,15 +847,17 @@ function NewInvoice() {
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Splatnosť</label>
-                <div className="mt-1 flex gap-2">
+                {/* V polovičnom stĺpci sa dátum a rýchle tlačidlá do jedného
+                    riadku nezmestia — nech sa radšej zalomia, než orežú. */}
+                <div className="mt-1 flex flex-wrap items-center gap-2">
                   <input
                     type="date"
                     required
                     value={form.due_date}
                     onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="min-w-[10rem] flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
-                  <div className="flex gap-1">
+                  <div className="flex shrink-0 gap-1">
                     {[7, 14, 30].map((d) => (
                       <button
                         key={d}
@@ -875,17 +877,6 @@ function NewInvoice() {
                     ))}
                   </div>
                 </div>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground">
-                  Variabilný symbol
-                </label>
-                <input
-                  value={form.variable_symbol}
-                  onChange={(e) => setForm({ ...form, variable_symbol: e.target.value })}
-                  placeholder="Automaticky podľa čísla faktúry"
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Spôsob platby</label>
@@ -1069,6 +1060,17 @@ function NewInvoice() {
           <section className="rounded-2xl border border-border bg-card p-5">
             <SectionHeader icon={CreditCard} title="Platobné údaje a symboly" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Variabilný symbol
+                </label>
+                <input
+                  value={form.variable_symbol}
+                  onChange={(e) => setForm({ ...form, variable_symbol: e.target.value })}
+                  placeholder="Automaticky podľa čísla faktúry"
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">
                   Konštantný symbol
