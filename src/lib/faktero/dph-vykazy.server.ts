@@ -17,6 +17,7 @@ import {
   type Vstup,
   type Vytka,
   type VystavenaFaktura,
+  odpocitajZdanenuZalohu,
 } from "./dph-vykazy";
 
 type Klient = {
@@ -65,7 +66,7 @@ export async function nacitajVstup(
     supabase
       .from("invoices")
       .select(
-        "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, invoice_items(vat_rate, subtotal, quantity, unit_price)",
+        "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, invoice_items(vat_rate, subtotal, quantity, unit_price)",
       )
       .eq("company_id", companyId)
       .is("deleted_at", null)
@@ -95,6 +96,17 @@ export async function nacitajVstup(
   const cisla = new Map<string, string>();
   for (const f of fakturyRes.data ?? []) cisla.set(f.id, f.invoice_number);
 
+  /*
+    Zálohy, ktoré už boli zdanené dokladom k prijatej platbe. Doklad býva z
+    iného obdobia než vyúčtovanie, preto sa mapa stavia zo všetkých faktúr
+    firmy, nie len z tých v období.
+  */
+  const zdaneneZalohy = new Map<string, SadzbovyRiadok[]>();
+  for (const f of (fakturyRes.data ?? []) as any[]) {
+    if (f.type !== "advance_payment" || !f.advance_invoice_id) continue;
+    zdaneneZalohy.set(f.advance_invoice_id, riadkyZPoloziek(f.invoice_items ?? []));
+  }
+
   const vystavene: VystavenaFaktura[] = [];
   for (const f of (fakturyRes.data ?? []) as any[]) {
     const den = f.delivery_date || f.issue_date;
@@ -122,6 +134,15 @@ export async function nacitajVstup(
         });
       }
     }
+    /*
+      Vyúčtovanie zálohy, z ktorej sa už daň priznala: do výkazu ide len
+      rozdiel, inak by tá istá daň prešla dvakrát.
+    */
+    if (f.type === "regular" && f.advance_invoice_id) {
+      const zaloha = zdaneneZalohy.get(f.advance_invoice_id);
+      if (zaloha?.length) riadky = odpocitajZdanenuZalohu(riadky, zaloha);
+    }
+
     vystavene.push({
       cislo: String(f.invoice_number),
       typ: String(f.type),

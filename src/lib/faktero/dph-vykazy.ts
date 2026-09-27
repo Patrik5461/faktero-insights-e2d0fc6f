@@ -26,7 +26,10 @@ export type SadzbovyRiadok = { sadzba: number; zaklad: number; dan: number };
 
 export type VystavenaFaktura = {
   cislo: string;
-  /** `regular`, `proforma`, `credit_note` — zálohová do výkazov nevstupuje. */
+  /**
+   * `regular`, `proforma`, `credit_note`, `advance_payment` — zálohová faktúra
+   * do výkazov nevstupuje, doklad k prijatej platbe áno.
+   */
   typ: string;
   /** Dátum dodania; keď chýba, dátum vyhotovenia. */
   datumDodania: string;
@@ -114,6 +117,49 @@ function jeZakladna(sadzba: number, den: string): boolean {
  */
 function doVykazov(f: VystavenaFaktura): boolean {
   return f.typ !== "proforma" && !f.oss;
+}
+
+/**
+ * Odpočíta zálohu, ktorá už bola zdanená dokladom k prijatej platbe.
+ *
+ * Bez toho by sa tá istá daň priznala dvakrát: raz pri prijatí platby a znovu
+ * pri dodaní. Vyúčtovacia faktúra nesie celé plnenie, do výkazu z nej má ísť
+ * len rozdiel. Odpočítava sa po sadzbách — záloha aj dodanie môžu mať viac
+ * sadzieb a miešať ich by rozhodilo riadky priznania.
+ */
+export function odpocitajZdanenuZalohu(
+  riadky: SadzbovyRiadok[],
+  zaloha: SadzbovyRiadok[],
+): SadzbovyRiadok[] {
+  if (!zaloha.length) return riadky;
+  const podlaSadzby = new Map<number, SadzbovyRiadok>();
+  for (const r of riadky) {
+    const m = podlaSadzby.get(r.sadzba);
+    if (m) {
+      m.zaklad += r.zaklad;
+      m.dan += r.dan;
+    } else {
+      podlaSadzby.set(r.sadzba, { ...r });
+    }
+  }
+  for (const z of zaloha) {
+    const m = podlaSadzby.get(z.sadzba);
+    if (m) {
+      m.zaklad -= z.zaklad;
+      m.dan -= z.dan;
+    } else {
+      // Sadzba, ktorá na vyúčtovaní nie je: záporný riadok je správnejší než
+      // ticho zahodená daň — v priznaní sa aspoň ozve.
+      podlaSadzby.set(z.sadzba, { sadzba: z.sadzba, zaklad: -z.zaklad, dan: -z.dan });
+    }
+  }
+  return [...podlaSadzby.values()]
+    .map((r) => ({
+      sadzba: r.sadzba,
+      zaklad: Math.round(r.zaklad * 100) / 100,
+      dan: Math.round(r.dan * 100) / 100,
+    }))
+    .filter((r) => r.zaklad !== 0 || r.dan !== 0);
 }
 
 function jeOpravna(f: VystavenaFaktura): boolean {

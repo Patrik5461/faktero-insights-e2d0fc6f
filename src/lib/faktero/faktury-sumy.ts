@@ -24,6 +24,12 @@ export function jeZapocitatelny(f: DokladRiadok): boolean {
   if (f.status === "draft" || f.status === "cancelled") return false;
   // Zálohová faktúra je výzva na zaplatenie preddavku, nie plnenie.
   if (f.type === "proforma") return false;
+  /*
+    Daňový doklad k prijatej platbe do obratu nepatrí — výnosom je až
+    vyúčtovacia faktúra za dodanie. Do priznania k DPH naopak patrí, tam sa
+    posudzuje zvlášť (`dph-vykazy`), lebo daňová povinnosť vzniká už platbou.
+  */
+  if (f.type === "advance_payment") return false;
   return true;
 }
 

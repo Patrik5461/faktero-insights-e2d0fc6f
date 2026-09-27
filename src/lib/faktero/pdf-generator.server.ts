@@ -99,7 +99,19 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   const { invoice, items } = input;
   // Účet, na ktorý majú prísť peniaze, je ten z faktúry (ak ho má).
   const company = sUctomFaktury(input.company, invoice);
-  const docLabel = input.documentLabel ?? "FAKTÚRA";
+  /*
+    Nadpis podľa typu dokladu. Zálohová faktúra a doklad k prijatej platbe sa
+    doteraz tlačili ako „FAKTÚRA" — na zálohovej je to mätúce (nie je daňový
+    doklad) a na doklade k platbe priam nesprávne, lebo z názvu musí byť
+    jasné, čoho sa daň týka.
+  */
+  const podlaTypu: Record<string, string> = {
+    proforma: "ZÁLOHOVÁ FAKTÚRA",
+    advance_payment: "DAŇOVÝ DOKLAD K PRIJATEJ PLATBE",
+    credit_note: "DOBROPIS",
+  };
+  const docLabel =
+    input.documentLabel ?? podlaTypu[String((invoice as any).type ?? "")] ?? "FAKTÚRA";
   const numberLabel =
     input.numberLabel ?? `č. ${invoice.invoice_number ?? invoice.quote_number ?? ""}`;
   const doc = await PDFDocument.create();

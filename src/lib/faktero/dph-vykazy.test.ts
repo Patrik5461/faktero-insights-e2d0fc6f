@@ -4,6 +4,7 @@ import { XmlDocument, XsdValidator } from "libxml2-wasm";
 import {
   hraniceObdobia,
   kontrolnyVykaz,
+  odpocitajZdanenuZalohu,
   priznanie,
   suhrnnyVykaz,
   type PrijataFaktura,
@@ -336,5 +337,62 @@ describe("názov firmy v tlačive", () => {
     const r = rozdelNaRiadky("Veľmi dlhý názov spoločnosti s ručením obmedzeným a prívlastkom", 4, 20);
     expect(r).toHaveLength(4);
     expect(r.join(" ").trim().startsWith("Veľmi dlhý názov")).toBe(true);
+  });
+});
+
+describe("daňový doklad k prijatej platbe", () => {
+  const riadok = (sadzba: number, zaklad: number) => ({
+    sadzba,
+    zaklad,
+    dan: Math.round(zaklad * (sadzba / 100) * 100) / 100,
+  });
+
+  it("vyúčtovanie priznáva len rozdiel oproti zdanenej zálohe", () => {
+    const vysledok = odpocitajZdanenuZalohu([riadok(23, 1000)], [riadok(23, 400)]);
+    expect(vysledok).toEqual([{ sadzba: 23, zaklad: 600, dan: 138 }]);
+  });
+
+  it("záloha na celé plnenie nechá vyúčtovanie bez dane", () => {
+    expect(odpocitajZdanenuZalohu([riadok(23, 1000)], [riadok(23, 1000)])).toEqual([]);
+  });
+
+  it("odpočítava po sadzbách, nie dokopy", () => {
+    const vysledok = odpocitajZdanenuZalohu(
+      [riadok(23, 1000), riadok(19, 500)],
+      [riadok(23, 300)],
+    );
+    expect(vysledok).toContainEqual({ sadzba: 23, zaklad: 700, dan: 161 });
+    expect(vysledok).toContainEqual({ sadzba: 19, zaklad: 500, dan: 95 });
+  });
+
+  it("sadzba, ktorá na vyúčtovaní nie je, sa ozve záporným riadkom", () => {
+    const vysledok = odpocitajZdanenuZalohu([riadok(23, 100)], [riadok(19, 50)]);
+    expect(vysledok).toContainEqual({ sadzba: 19, zaklad: -50, dan: -9.5 });
+  });
+
+  it("bez zálohy sa nič nemení", () => {
+    const riadky = [riadok(23, 100)];
+    expect(odpocitajZdanenuZalohu(riadky, [])).toBe(riadky);
+  });
+
+  it("doklad k prijatej platbe do priznania vstupuje, zálohová faktúra nie", () => {
+    const sDokladom = priznanie(
+      vstup({
+        vystavene: [
+          faktura({ cislo: "DDP20260001", typ: "advance_payment", riadky: [riadok(23, 400)] }),
+        ],
+      }),
+    );
+    expect(sDokladom.r03).toBe(400);
+    expect(sDokladom.r04).toBe(92);
+
+    const soZalohou = priznanie(
+      vstup({
+        vystavene: [
+          faktura({ cislo: "ZF20260001", typ: "proforma", riadky: [riadok(23, 400)] }),
+        ],
+      }),
+    );
+    expect(soZalohou.r03).toBeUndefined();
   });
 });

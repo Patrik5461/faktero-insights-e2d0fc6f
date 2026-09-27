@@ -72,3 +72,17 @@ describe("znamienkoDokladu", () => {
     expect(znamienkoDokladu(null)).toBe(1);
   });
 });
+
+describe("daňový doklad k prijatej platbe", () => {
+  it("do obratu nevstupuje — výnosom je až vyúčtovanie", () => {
+    expect(jeZapocitatelny(f({ type: "advance_payment" }))).toBe(false);
+  });
+
+  it("v súčte sa neprejaví", () => {
+    const doklady = [
+      f({ total: 1000, type: "regular" }),
+      f({ total: 400, type: "advance_payment" }),
+    ];
+    expect(sucetDokladov(doklady as any, "total")).toBe(1000);
+  });
+});

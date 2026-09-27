@@ -1,0 +1,11 @@
+-- Daňový doklad k prijatej platbe.
+--
+-- Zálohová faktúra nie je daňový doklad — daňová povinnosť vzniká už prijatím
+-- platby (§ 19 ods. 4) a platiteľ DPH musí do 15 dní vyhotoviť faktúru k tej
+-- platbe (§ 73 ods. 2). Faktero vedelo len zálohovú faktúru a vyúčtovanie,
+-- takže tento doklad musel človek robiť mimo aplikácie a DPH z prijatej zálohy
+-- sa priznávala ručne.
+--
+-- Nová hodnota sa pridáva samostatnou migráciou: použiť ju možno až po
+-- potvrdení transakcie, ktorá ju zaviedla.
+alter type invoice_type add value if not exists 'advance_payment';

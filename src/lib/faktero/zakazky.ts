@@ -58,6 +58,9 @@ export function vynosZFaktury(f: FakturaRiadok): number {
   if (f.deleted_at) return 0;
   if (f.status === "cancelled" || f.status === "draft") return 0;
   if (f.type === "proforma") return 0;
+  // Doklad k prijatej platbe je daňový doklad k zálohe, nie výnos zákazky —
+  // ten prinesie až vyúčtovacia faktúra.
+  if (f.type === "advance_payment") return 0;
   const suma = cislo(f.subtotal);
   return f.type === "credit_note" ? -Math.abs(suma) : suma;
 }

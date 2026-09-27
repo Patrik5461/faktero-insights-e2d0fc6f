@@ -9,6 +9,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { generateInvoicePdf, getInvoicePdfSignedUrl } from "@/lib/faktero/pdf.functions";
 import { sendInvoiceEmailFn, triggerEventFn } from "@/lib/faktero/email.functions";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
+import { vystavDokladKPlatbeFn } from "@/lib/faktero/doklad-k-platbe.functions";
 import {
   Download,
   FileText,
@@ -62,6 +63,14 @@ import { isdocFakturyFn } from "@/lib/faktero/isdoc.functions";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
+/** Ako sa doklad volá — rovnako v hlavičke stránky aj v PDF. */
+const NAZOV_TYPU: Record<string, string> = {
+  proforma: "Zálohová faktúra",
+  credit_note: "Dobropis",
+  advance_payment: "Daňový doklad k platbe",
+  regular: "Faktúra",
+};
+
 export const Route = createFileRoute("/_authenticated/faktury/$id/")({
   head: () => ({ meta: [{ title: "Detail faktúry — Faktero" }] }),
   component: InvoiceDetail,
@@ -115,6 +124,10 @@ function InvoiceDetail() {
   const [hasPayLink, setHasPayLink] = useState(false);
   const [settledIn, setSettledIn] = useState<any | null>(null); // for proforma: invoice that consumed it
   const [advanceProforma, setAdvanceProforma] = useState<any | null>(null); // for regular: linked proforma
+  /* Daňový doklad k prijatej platbe, ak už k tejto zálohe existuje. */
+  const [dokladKPlatbe, setDokladKPlatbe] = useState<any | null>(null);
+  const [vystavujemDoklad, setVystavujemDoklad] = useState(false);
+  const vystavDokladFn = useServerFn(vystavDokladKPlatbeFn);
   const [approvalBusy, setApprovalBusy] = useState(false);
   const requestApprovalFn = useServerFn(requestInvoiceApproval);
 
@@ -278,6 +291,26 @@ function InvoiceDetail() {
     }
   }
 
+  async function vystavDoklad() {
+    if (!inv) return;
+    setVystavujemDoklad(true);
+    try {
+      const doklad: any = await vystavDokladFn({
+        data: {
+          proforma_id: inv.id,
+          // Deň prijatia platby — podľa neho vzniká daňová povinnosť.
+          datum_platby: inv.paid_date ?? new Date().toISOString().slice(0, 10),
+        },
+      });
+      toast.success(`Vystavený doklad ${doklad.invoice_number}`);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Doklad sa nepodarilo vystaviť.");
+    } finally {
+      setVystavujemDoklad(false);
+    }
+  }
+
   async function load() {
     const { data } = await supabase.from("invoices").select("*").eq("id", id).maybeSingle();
     setNenajdene(!data);
@@ -338,16 +371,33 @@ function InvoiceDetail() {
       }
       // Advance linkage
       if (data.type === "proforma") {
-        const { data: consumer } = await supabase
-          .from("invoices")
-          .select("id, invoice_number, status, issue_date, total, currency, type")
-          .eq("advance_invoice_id", data.id)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        /*
+          Na zálohu sa vie odvolávať aj daňový doklad k prijatej platbe, nie
+          len vyúčtovanie — preto sa zúčtovanie hľadá výslovne medzi bežnými
+          faktúrami, inak by sa tu ukázal doklad k platbe ako „zúčtovaná".
+        */
+        const [{ data: consumer }, { data: ddp }] = await Promise.all([
+          supabase
+            .from("invoices")
+            .select("id, invoice_number, status, issue_date, total, currency, type")
+            .eq("advance_invoice_id", data.id)
+            .eq("type", "regular")
+            .is("deleted_at", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from("invoices")
+            .select("id, invoice_number, issue_date, total, currency")
+            .eq("advance_invoice_id", data.id)
+            .eq("type", "advance_payment")
+            .is("deleted_at", null)
+            .maybeSingle(),
+        ]);
         setSettledIn(consumer ?? null);
+        setDokladKPlatbe(ddp ?? null);
         setAdvanceProforma(null);
+        setDokladKPlatbe(null);
       } else if (data.advance_invoice_id) {
         const { data: pf } = await supabase
           .from("invoices")
@@ -676,7 +726,7 @@ function InvoiceDetail() {
   return (
     <>
       <PageHeader
-        title={`${inv.type === "proforma" ? "Zálohová faktúra" : inv.type === "credit_note" ? "Dobropis" : "Faktúra"} ${inv.invoice_number}`}
+        title={`${NAZOV_TYPU[inv.type as string] ?? "Faktúra"} ${inv.invoice_number}`}
         description={`Vystavená ${inv.issue_date} · splatná ${inv.due_date}`}
         action={
           <div className="flex flex-wrap items-center gap-2">
@@ -1144,6 +1194,52 @@ function InvoiceDetail() {
                     zálohovú faktúru".
                   </div>
                 )}
+
+                {/*
+                  Daňová povinnosť vzniká prijatím platby, nie dodaním — platiteľ
+                  DPH musí do 15 dní vystaviť doklad k tejto platbe. Preto je
+                  ponuka priamo pri zálohovej faktúre, hneď ako je uhradená.
+                */}
+                <div className="mt-4 border-t border-border pt-3">
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Daňový doklad k prijatej platbe
+                  </div>
+                  {dokladKPlatbe ? (
+                    <div className="mt-2 space-y-1">
+                      <Link
+                        to="/faktury/$id"
+                        params={{ id: dokladKPlatbe.id }}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {dokladKPlatbe.invoice_number}
+                      </Link>
+                      <div className="text-xs text-muted-foreground">
+                        {dokladKPlatbe.issue_date} · {Number(dokladKPlatbe.total).toFixed(2)}{" "}
+                        {dokladKPlatbe.currency} · daň sa priznáva v tomto období
+                      </div>
+                    </div>
+                  ) : inv.status === "paid" ? (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-muted-foreground">
+                        Záloha je uhradená — ako platiteľ DPH musíte do 15 dní od prijatia platby
+                        vystaviť daňový doklad. Daň sa prizná v období platby a na vyúčtovacej
+                        faktúre sa už znovu nepočíta.
+                      </p>
+                      <button
+                        type="button"
+                        disabled={vystavujemDoklad}
+                        onClick={vystavDoklad}
+                        className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                      >
+                        {vystavujemDoklad ? "Vystavujem…" : "Vystaviť daňový doklad"}
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-muted-foreground">
+                      Vystaví sa až po úhrade zálohy — daňová povinnosť vzniká prijatím platby.
+                    </p>
+                  )}
+                </div>
               </div>
             )}
             {advanceProforma && (
