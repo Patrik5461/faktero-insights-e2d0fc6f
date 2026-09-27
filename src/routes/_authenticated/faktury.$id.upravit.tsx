@@ -337,7 +337,7 @@ function EditInvoice() {
 
           <section className="rounded-2xl border border-border bg-card p-5">
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">
-              Poznámka nad položkami
+              Text nad položkami
             </h3>
             <textarea
               rows={2}

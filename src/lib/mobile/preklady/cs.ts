@@ -174,7 +174,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "nf.splatnostSkor": "Splatnost nemůže být dříve než vystavení.",
   "nf.sposobUhrady": "Způsob úhrady",
   "nf.hotovost": "Hotovost",
-  "nf.poznamkaNad": "Poznámka nad položkami",
+  "nf.poznamkaNad": "Text nad položkami",
   "nf.poznamkaPod": "Poznámka pod položkami",
   "nf.priklad": "Například: podle objednávky č. 2026/114",
   "nf.zaklad": "Základ",

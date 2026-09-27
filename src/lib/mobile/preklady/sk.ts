@@ -186,7 +186,7 @@ export const sk = {
   "nf.splatnostSkor": "Splatnosť nemôže byť skôr ako vystavenie.",
   "nf.sposobUhrady": "Spôsob úhrady",
   "nf.hotovost": "Hotovosť",
-  "nf.poznamkaNad": "Poznámka nad položkami",
+  "nf.poznamkaNad": "Text nad položkami",
   "nf.poznamkaPod": "Poznámka pod položkami",
   "nf.priklad": "Napríklad: podľa objednávky č. 2026/114",
   "nf.zaklad": "Základ",

@@ -31,6 +31,7 @@ import {
   CreditCard,
   Link2,
   FileDown,
+  Percent,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
@@ -1153,7 +1154,18 @@ function NewInvoice() {
                   <option value="retail">Maloobchod (na 0,05 €, SK pravidlá)</option>
                 </select>
               </div>
-              <div className="sm:col-span-2 rounded-md border border-border bg-muted/30 p-3">
+            </div>
+          </section>
+          </div>
+
+          {/*
+            Daňový režim stojí samostatne pod hlavičkou — je to voľba, ktorá mení
+            sadzby na položkách, nie ďalší symbol k platbe.
+          */}
+          <section className="rounded-2xl border border-border bg-card p-5">
+            <SectionHeader icon={Percent} title="Daňový režim" />
+            <div className="grid items-start gap-4 md:grid-cols-2">
+              <div className="rounded-md border border-border bg-muted/30 p-3">
                 <label className="flex items-start gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1176,75 +1188,6 @@ function NewInvoice() {
                     </span>
                   </span>
                 </label>
-                {!form.reverse_charge && rezim.platitel && (
-                  <label className="mt-3 block">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Osobitná úprava (nepovinné)
-                    </span>
-                    <select
-                      value={form.osobitna_uprava}
-                      onChange={(e) => setForm({ ...form, osobitna_uprava: e.target.value })}
-                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="">Bez osobitnej úpravy</option>
-                      {UPRAVY_NA_VYBER.map((u) => (
-                        <option key={u.kod} value={u.kod}>
-                          {u.nazov}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      Veta sa vytlačí na faktúru; zdaňuje sa len prirážka, nie celá cena.
-                    </span>
-                  </label>
-                )}
-                {!form.reverse_charge && (
-                  <label className="mt-3 flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      checked={form.oss}
-                      onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          oss: e.target.checked,
-                          oss_country: e.target.checked ? f.oss_country || "AT" : "",
-                        }))
-                      }
-                      className="mt-0.5 h-4 w-4 rounded border-input"
-                    />
-                    <span className="text-sm">
-                      Predaj spotrebiteľovi v EÚ (OSS)
-                      <span className="block text-xs text-muted-foreground">
-                        Sadzba štátu zákazníka; daň sa odvádza cez jedno kontaktné miesto, nie v
-                        slovenskom priznaní.
-                      </span>
-                    </span>
-                  </label>
-                )}
-                {form.oss && !form.reverse_charge && (
-                  <label className="mt-3 block">
-                    <span className="text-xs font-medium text-muted-foreground">Štát spotreby</span>
-                    <select
-                      value={form.oss_country}
-                      onChange={(e) => {
-                        const stat = e.target.value;
-                        const zakl = zakladnaSadzbaStatu(stat);
-                        setForm((f) => ({ ...f, oss_country: stat }));
-                        // Sadzby položiek sa prepnú na sadzby zvoleného štátu.
-                        setItems((rs) =>
-                          rs.map((r) => (r._dph_rucne ? r : { ...r, vat_rate: zakl })),
-                        );
-                      }}
-                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      {SADZBY_EU.filter((x) => x.kod !== "SK").map((x) => (
-                        <option key={x.kod} value={x.kod}>
-                          {x.nazov} — základná {x.zakladna} %
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
                 {form.reverse_charge && (
                   <>
                     <select
@@ -1323,6 +1266,79 @@ function NewInvoice() {
                   </>
                 )}
               </div>
+              {!form.reverse_charge && (
+                <div className="rounded-md border border-border bg-muted/30 p-3">
+                  {!form.reverse_charge && rezim.platitel && (
+                    <label className="mt-3 block">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Osobitná úprava (nepovinné)
+                      </span>
+                      <select
+                        value={form.osobitna_uprava}
+                        onChange={(e) => setForm({ ...form, osobitna_uprava: e.target.value })}
+                        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        <option value="">Bez osobitnej úpravy</option>
+                        {UPRAVY_NA_VYBER.map((u) => (
+                          <option key={u.kod} value={u.kod}>
+                            {u.nazov}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        Veta sa vytlačí na faktúru; zdaňuje sa len prirážka, nie celá cena.
+                      </span>
+                    </label>
+                  )}
+                  {!form.reverse_charge && (
+                    <label className="mt-3 flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        checked={form.oss}
+                        onChange={(e) =>
+                          setForm((f) => ({
+                            ...f,
+                            oss: e.target.checked,
+                            oss_country: e.target.checked ? f.oss_country || "AT" : "",
+                          }))
+                        }
+                        className="mt-0.5 h-4 w-4 rounded border-input"
+                      />
+                      <span className="text-sm">
+                        Predaj spotrebiteľovi v EÚ (OSS)
+                        <span className="block text-xs text-muted-foreground">
+                          Sadzba štátu zákazníka; daň sa odvádza cez jedno kontaktné miesto, nie v
+                          slovenskom priznaní.
+                        </span>
+                      </span>
+                    </label>
+                  )}
+                  {form.oss && !form.reverse_charge && (
+                    <label className="mt-3 block">
+                      <span className="text-xs font-medium text-muted-foreground">Štát spotreby</span>
+                      <select
+                        value={form.oss_country}
+                        onChange={(e) => {
+                          const stat = e.target.value;
+                          const zakl = zakladnaSadzbaStatu(stat);
+                          setForm((f) => ({ ...f, oss_country: stat }));
+                          // Sadzby položiek sa prepnú na sadzby zvoleného štátu.
+                          setItems((rs) =>
+                            rs.map((r) => (r._dph_rucne ? r : { ...r, vat_rate: zakl })),
+                          );
+                        }}
+                        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      >
+                        {SADZBY_EU.filter((x) => x.kod !== "SK").map((x) => (
+                          <option key={x.kod} value={x.kod}>
+                            {x.nazov} — základná {x.zakladna} %
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
+              )}
             </div>
           </section>
 
@@ -1334,7 +1350,7 @@ function NewInvoice() {
           <section className="rounded-2xl border border-border bg-card p-5">
             <label className="block">
               <span className="text-xs font-medium text-muted-foreground">
-                Poznámka nad položkami
+                Text nad položkami
               </span>
               <textarea
                 rows={2}
@@ -1346,7 +1362,6 @@ function NewInvoice() {
             </label>
           </section>
 
-          </div>
 
           {/* SECTION 2 — items */}
           <section className="rounded-2xl border border-border bg-card p-5">
