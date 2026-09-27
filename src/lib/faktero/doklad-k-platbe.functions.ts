@@ -84,24 +84,25 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
     );
 
     type NovaPolozka = {
-      description: string;
+      name: string;
+      description: string | null;
       quantity: number;
-      unit: string | null;
+      unit: string;
       unit_price: number;
       vat_rate: number;
       position: number;
       product_id: string | null;
-      stock_item_id: string | null;
     };
     const novePolozky: NovaPolozka[] = polozky.map((p: any, i: number) => ({
-      description: p.description,
+      name: p.name,
+      description: p.description ?? null,
       quantity: Number(p.quantity),
-      unit: p.unit,
+      unit: p.unit || "ks",
       unit_price: Math.round(Number(p.unit_price) * pomer * 100000) / 100000,
       vat_rate: Number(p.vat_rate),
       position: i,
       product_id: p.product_id ?? null,
-      stock_item_id: null, // Zo zálohy sa tovar neodpisuje, ten odíde až dodaním.
+      // Zo zálohy sa tovar zo skladu neodpisuje — ten odíde až dodaním.
     }));
     const sumy = computeInvoiceTotals(
       novePolozky.map((p) => ({
@@ -154,10 +155,20 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
       .single();
     if (chyba || !doklad) throw new Error(chyba?.message ?? "Doklad sa nepodarilo vystaviť.");
 
-    const { error: chybaPoloziek } = await supabase
-      .from("invoice_items")
-      .insert(novePolozky.map((p) => ({ ...p, invoice_id: doklad.id })));
-    if (chybaPoloziek) throw new Error(chybaPoloziek.message);
+    const { error: chybaPoloziek } = await supabase.from("invoice_items").insert(
+      novePolozky.map((p, i) => ({
+        ...p,
+        invoice_id: doklad.id,
+        subtotal: sumy.enriched[i].subtotal,
+        vat_amount: sumy.enriched[i].vat_amount,
+        total: sumy.enriched[i].total,
+      })),
+    );
+    if (chybaPoloziek) {
+      // Doklad bez položiek by vyzeral platne a v PDF bol prázdny.
+      await supabase.from("invoices").delete().eq("id", doklad.id);
+      throw new Error(chybaPoloziek.message);
+    }
 
     return {
       id: doklad.id,
