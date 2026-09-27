@@ -94,14 +94,18 @@ function sumaVJazyku(n: number, currency = "EUR", jazyk: JazykDokladu = "sk") {
  * „0,13 × 1 000 = 125,00" vyzeralo ako chyba v počítaní. Zobrazia sa len
  * miesta, ktoré cena naozaj má.
  */
-function fmtCena(n: number, currency = "EUR") {
+function cenaVJazyku(n: number, currency = "EUR", jazyk: JazykDokladu = "sk") {
   const v = Number.isFinite(n) ? n : 0;
-  const zaokruhlena = Math.abs(v).toFixed(5);
-  const orezana = zaokruhlena.replace(/(\.\d{2}\d*?)0+$/, "$1");
-  const [intPart, decPart] = orezana.split(".");
-  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
-  const sign = v < 0 ? "-" : "";
-  return `${sign}${grouped},${decPart}\u00A0${currency}`;
+  // Koľko desatinných miest cena naozaj má — dve sú základ, päť je strop.
+  const orezana = Math.abs(v).toFixed(5).replace(/(\.\d{2}\d*?)0+$/, "$1");
+  const miest = (orezana.split(".")[1] ?? "").length;
+  const cislo = new Intl.NumberFormat(localeDokladu(jazyk), {
+    minimumFractionDigits: Math.max(2, miest),
+    maximumFractionDigits: Math.max(2, miest),
+  })
+    .format(Math.abs(v))
+    .replace(/\u202F|\s/g, "\u00A0");
+  return `${v < 0 ? "-" : ""}${cislo}\u00A0${currency}`;
 }
 
 // Unicode-safe — Roboto TTF embedded via fontkit supports full Slovak/Czech diacritics.
@@ -128,6 +132,16 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   const jazyk = jazykDokladu((invoice as any).language ?? (input as any).language);
   const t = popisky(jazyk);
   const fmt = (n: number, currency = "EUR") => sumaVJazyku(n, currency, jazyk);
+  const fmtCenaJ = (n: number, currency = "EUR") => cenaVJazyku(n, currency, jazyk);
+  /* Spôsob úhrady číta odberateľ, nie účtovník — preto v jeho jazyku. */
+  const sposobUhrady = (kod?: string | null) => {
+    const k = String(kod ?? "").toLowerCase();
+    if (!k) return "—";
+    if (["bank_transfer", "transfer", "prevod"].includes(k)) return t.uhradaPrevod;
+    if (["card", "karta", "credit_card"].includes(k)) return t.uhradaKarta;
+    if (["cash", "hotovost"].includes(k)) return t.uhradaHotovost;
+    return paymentMethodLabel(kod);
+  };
 
   const podlaTypu: Record<string, string> = {
     proforma: t.zalohovaFaktura,
@@ -136,7 +150,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   };
   const docLabel = input.documentLabel ?? podlaTypu[String((invoice as any).type ?? "")] ?? t.faktura;
   const numberLabel =
-    input.numberLabel ?? `č. ${invoice.invoice_number ?? invoice.quote_number ?? ""}`;
+    input.numberLabel ?? `${t.cislo} ${invoice.invoice_number ?? invoice.quote_number ?? ""}`;
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   const page = doc.addPage([595.28, 841.89]); // A4
@@ -266,14 +280,14 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
           [t.datumVystavenia, invoice.issue_date ?? "—"],
           [t.datumDodania, invoice.delivery_date ?? "—"],
           [t.datumUhrady, paidDate ?? "—"],
-          [t.formaUhrady, paymentMethodLabel(invoice.payment_method)],
+          [t.formaUhrady, sposobUhrady(invoice.payment_method)],
         ]
       : [
           [t.datumVystavenia, invoice.issue_date ?? "—"],
           [t.datumDodania, invoice.delivery_date ?? "—"],
           [t.datumSplatnosti, invoice.due_date ?? "—"],
           [t.variabilnySymbol, invoice.variable_symbol ?? "—"],
-          [t.formaUhrady, paymentMethodLabel(invoice.payment_method)],
+          [t.formaUhrady, sposobUhrady(invoice.payment_method)],
         ]);
   const metaBoxH = 46;
   page.drawRectangle({
@@ -333,7 +347,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     const baseY = top - 17;
     p.drawText(t.polozka, { x: cols.name.x + PAD, y: baseY, size: 8.5, font: bold, color: sub });
     drawAligned(p, bold, t.mnozstvo, cols.qty.x + cols.qty.w - PAD, baseY, 8.5, sub, "right");
-    p.drawText("MJ", { x: cols.unit.x + PAD, y: baseY, size: 8.5, font: bold, color: sub });
+    p.drawText(t.mj, { x: cols.unit.x + PAD, y: baseY, size: 8.5, font: bold, color: sub });
     drawAligned(p, bold, t.cena, cols.price.x + cols.price.w - PAD, baseY, 8.5, sub, "right");
     drawAligned(p, bold, t.dph, cols.vat.x + cols.vat.w - PAD, baseY, 8.5, sub, "right");
     drawAligned(p, bold, t.celkom, cols.tot.x + cols.tot.w - PAD, baseY, 8.5, sub, "right");
@@ -421,7 +435,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawAligned(
       cur,
       font,
-      fmtCena(Number(it.unit_price), invoice.currency),
+      fmtCenaJ(Number(it.unit_price), invoice.currency),
       cols.price.x + cols.price.w - PAD,
       numBaseline,
       10,
@@ -598,7 +612,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     "right",
   );
   if (isPaid) {
-    const paidNote = `Uhradené ${paidDate ?? "—"} · ${paymentMethodLabel(invoice.payment_method)}`;
+    const paidNote = `Uhradené ${paidDate ?? "—"} · ${sposobUhrady(invoice.payment_method)}`;
     cur.drawText(san(paidNote), {
       x: totalsX,
       y: ty - heroH - 14,
@@ -1179,7 +1193,19 @@ function drawPartyCard(
     cy -= 4;
     ids.forEach(([k, v]) => {
       page.drawText(san(k), { x: x + padX, y: cy - 10, size: 8.5, font, color: c.muted });
-      page.drawText(san(v), { x: x + padX + 48, y: cy - 10, size: 9.5, font: bold, color: c.ink });
+      /*
+        Hodnota začína až za popiskom, nie na pevnej pozícii — nemecké
+        „Firmenbuchnummer" je dlhšie než „IČO" a číslo sa naň lepilo bez
+        medzery.
+      */
+      const sirkaPopisku = font.widthOfTextAtSize(san(k), 8.5);
+      page.drawText(san(v), {
+        x: x + padX + Math.max(48, sirkaPopisku + 8),
+        y: cy - 10,
+        size: 9.5,
+        font: bold,
+        color: c.ink,
+      });
       cy -= 13;
     });
   }

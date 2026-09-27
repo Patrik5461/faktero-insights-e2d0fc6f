@@ -31,6 +31,8 @@ export function jazykDokladu(v: unknown): JazykDokladu {
 }
 
 type Popisky = {
+  /** Skratka pred číslom dokladu — „č.", „No.", „Nr." */
+  cislo: string;
   faktura: string;
   zalohovaFaktura: string;
   dokladKPlatbe: string;
@@ -49,6 +51,7 @@ type Popisky = {
   formaUhrady: string;
   polozka: string;
   mnozstvo: string;
+  mj: string;
   cena: string;
   dph: string;
   celkom: string;
@@ -70,9 +73,18 @@ type Popisky = {
   prenosEu: string;
   prenosVyvoz: string;
   prenosTuzemsko: string;
+  /** Spôsoby úhrady — na doklade ich číta odberateľ, nie účtovník. */
+  uhradaPrevod: string;
+  uhradaKarta: string;
+  uhradaHotovost: string;
 };
 
 const SK: Popisky = {
+  mj: "MJ",
+  uhradaPrevod: "Bankový prevod",
+  uhradaKarta: "Karta",
+  uhradaHotovost: "Hotovosť",
+  cislo: "č.",
   faktura: "FAKTÚRA",
   zalohovaFaktura: "ZÁLOHOVÁ FAKTÚRA",
   dokladKPlatbe: "DAŇOVÝ DOKLAD K PRIJATEJ PLATBE",
@@ -119,6 +131,8 @@ const SK: Popisky = {
 
 const CS: Popisky = {
   ...SK,
+  uhradaPrevod: "Bankovní převod",
+  uhradaHotovost: "Hotovost",
   faktura: "FAKTURA",
   zalohovaFaktura: "ZÁLOHOVÁ FAKTURA",
   dokladKPlatbe: "DAŇOVÝ DOKLAD K PŘIJATÉ PLATBĚ",
@@ -157,6 +171,11 @@ const CS: Popisky = {
 };
 
 const EN: Popisky = {
+  mj: "UNIT",
+  uhradaPrevod: "Bank transfer",
+  uhradaKarta: "Card",
+  uhradaHotovost: "Cash",
+  cislo: "No.",
   faktura: "INVOICE",
   zalohovaFaktura: "PROFORMA INVOICE",
   dokladKPlatbe: "TAX DOCUMENT FOR PAYMENT RECEIVED",
@@ -202,6 +221,11 @@ const EN: Popisky = {
 };
 
 const DE: Popisky = {
+  mj: "EINHEIT",
+  uhradaPrevod: "Überweisung",
+  uhradaKarta: "Karte",
+  uhradaHotovost: "Bar",
+  cislo: "Nr.",
   faktura: "RECHNUNG",
   zalohovaFaktura: "ANZAHLUNGSRECHNUNG",
   dokladKPlatbe: "STEUERBELEG ÜBER DIE ERHALTENE ZAHLUNG",
@@ -248,6 +272,11 @@ const DE: Popisky = {
 
 const HU: Popisky = {
   ...EN,
+  mj: "M.E.",
+  uhradaPrevod: "Banki átutalás",
+  uhradaKarta: "Kártya",
+  uhradaHotovost: "Készpénz",
+  cislo: "sz.",
   faktura: "SZÁMLA",
   zalohovaFaktura: "ELŐLEGSZÁMLA",
   dokladKPlatbe: "ADÓÜGYI BIZONYLAT A KAPOTT FIZETÉSRŐL",
