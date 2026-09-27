@@ -14,17 +14,34 @@ export type NextInvoiceNumber = { invoice_number: string; sequence_number: numbe
  * Runs inside a DB transaction with SELECT ... FOR UPDATE on companies, so two
  * concurrent invoices can never get the same number.
  */
+/**
+ * Argumenty berie ako pole zámerne.
+ *
+ * Pri pomenovaných parametroch zostavovač usúdil, že tretí nikto neposiela —
+ * modul sa načítava cez `await import(...)`, takže volania nevidel — a
+ * `typ ?? "regular"` zliepol na konštantu „regular". Zálohová faktúra
+ * vytvorená cez API tak dostala číslo z bežnej rady namiesto „ZF…" a rovnako
+ * by dopadol aj doklad k prijatej platbe. Rozbalenie z poľa sa takto
+ * vyhodnotiť nedá.
+ */
 export async function nextInvoiceNumberDetailed(
-  company_id: string,
-  issue_date?: string | null,
-  /** Zálohové faktúry majú vlastnú radu (ZF…), aby v rade daňových dokladov neboli diery. */
-  type?: string | null,
+  ...argumenty: [company_id: string, issue_date?: string | null, typDokladu?: string | null]
 ): Promise<NextInvoiceNumber> {
+  const [company_id, issue_date, typDokladu] = argumenty;
+  /*
+    Parametre sa skladajú po jednom, nie podmieneným rozbalením objektu.
+    S `...(type ? { _type: type } : {})` a pretypovaním na `never` zostavovač
+    tú vetvu vyhodnotil ako prázdnu už pri builde — do databázy odišlo len
+    `_company_id` a `_issue_date`, takže zálohová faktúra vytvorená cez API
+    dostala číslo z bežnej rady namiesto „ZF…".
+  */
   const { data, error } = await supabaseAdmin.rpc("faktero_next_invoice_number", {
     _company_id: company_id,
-    ...(issue_date ? { _issue_date: issue_date } : {}),
-    ...(type ? { _type: type } : {}),
-  } as never);
+    _issue_date: issue_date ?? undefined,
+    // Bežná faktúra je bez predpony; `proforma` dostane „ZF…", doklad k
+    // prijatej platbe „DDP…".
+    _type: typDokladu ?? "regular",
+  });
   if (error) throw new Error(error.message);
   const row = data as unknown as NextInvoiceNumber | null;
   if (!row?.invoice_number) throw new Error("Nepodarilo sa vygenerovať číslo faktúry.");
