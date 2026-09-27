@@ -1165,7 +1165,12 @@ function NewInvoice() {
           <section className="rounded-2xl border border-border bg-card p-5">
             <SectionHeader icon={Percent} title="Daňový režim" />
             <div className="grid items-start gap-4 md:grid-cols-2">
-              <div className="rounded-md border border-border bg-muted/30 p-3">
+              {/* Pri prenose sa vpravo nič nezobrazuje, tak nech výber typu nie je orezaný. */}
+              <div
+                className={`rounded-md border border-border bg-muted/30 p-3 ${
+                  form.reverse_charge ? "md:col-span-2" : ""
+                }`}
+              >
                 <label className="flex items-start gap-2 cursor-pointer">
                   <input
                     type="checkbox"
