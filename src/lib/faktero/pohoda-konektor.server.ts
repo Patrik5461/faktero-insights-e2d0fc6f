@@ -410,9 +410,28 @@ export async function nacitajVazby(
   const zalohy: Record<string, OdpocetZalohy> = {};
   const opravovane: Record<string, string> = {};
 
-  const zalohoveIds = faktury
-    .filter((f: Riadok) => Number(f.advance_amount ?? 0) > 0 && f.advance_invoice_id)
-    .map((f: Riadok) => String(f.advance_invoice_id));
+  /*
+    Odpočty zálohy sú vo vlastnej tabuľke — faktúra si ich môže odpočítať viac.
+    Starý stĺpec na faktúre by druhú a ďalšiu zálohu zamlčal.
+  */
+  const { data: odpoctyRiadky } = faktury.length
+    ? await supabase
+        .from("invoice_advances")
+        .select("invoice_id, advance_invoice_id, amount")
+        .eq("company_id", companyId)
+        .in(
+          "invoice_id",
+          faktury.map((f: Riadok) => String(f.id)),
+        )
+    : { data: [] as any[] };
+  const odpoctyPodlaFaktury = new Map<string, { zaloha: string; suma: number }[]>();
+  for (const r of odpoctyRiadky ?? []) {
+    const zoz = odpoctyPodlaFaktury.get(String(r.invoice_id)) ?? [];
+    zoz.push({ zaloha: String(r.advance_invoice_id), suma: Number(r.amount) });
+    odpoctyPodlaFaktury.set(String(r.invoice_id), zoz);
+  }
+
+  const zalohoveIds = [...odpoctyPodlaFaktury.values()].flat().map((o) => o.zaloha);
   const opraveneIds = faktury
     .filter((f: Riadok) => f.type === "credit_note" && f.opravuje_fakturu_id)
     .map((f: Riadok) => String(f.opravuje_fakturu_id));
@@ -428,18 +447,35 @@ export async function nacitajVazby(
   const podlaId = new Map<string, Riadok>((suvisiace ?? []).map((f: Riadok) => [String(f.id), f]));
 
   for (const f of faktury) {
-    const suma = Number(f.advance_amount ?? 0);
-    if (suma > 0) {
-      const zalohova = f.advance_invoice_id ? podlaId.get(String(f.advance_invoice_id)) : null;
-      const sadzba = sadzbaZalohy(zalohova);
-      if (sadzba !== null) {
-        // `advance_amount` je suma s daňou — odberateľ ju už zaplatil celú.
+    const odpocty = odpoctyPodlaFaktury.get(String(f.id)) ?? [];
+    if (odpocty.length) {
+      const sadzby = new Set<number>();
+      let suma = 0;
+      const cislaZaloh: string[] = [];
+      for (const o of odpocty) {
+        const zalohova = podlaId.get(o.zaloha);
+        const sadzba = sadzbaZalohy(zalohova);
+        if (sadzba === null) continue;
+        sadzby.add(sadzba);
+        suma += o.suma;
+        const cislo = cisla.get(o.zaloha) ?? (zalohova?.invoice_number as string | undefined);
+        if (cislo) cislaZaloh.push(String(cislo));
+      }
+      /*
+        Pohoda berie odpočet ako jednu položku s jednou sadzbou. Zálohy s
+        rôznymi sadzbami sa do nej nevtesnajú — radšej sa odpočet vynechá a
+        ozve sa to v logu, než aby doklad odišiel s tichou chybou v DPH.
+      */
+      if (sadzby.size > 1) {
+        console.warn(
+          `[pohoda] faktúra ${f.invoice_number ?? f.id}: zálohy majú rôzne sadzby DPH, odpočet do XML nejde`,
+        );
+      } else if (sadzby.size === 1 && suma > 0) {
+        const sadzba = [...sadzby][0];
+        // Odpočítaná suma je s daňou — odberateľ ju už zaplatil celú.
         const zaklad = Math.round((suma / (1 + sadzba / 100)) * 100) / 100;
         zalohy[String(f.id)] = {
-          cislo: f.advance_invoice_id
-            ? (cisla.get(String(f.advance_invoice_id)) ??
-              (zalohova?.invoice_number ? String(zalohova.invoice_number) : null))
-            : null,
+          cislo: cislaZaloh.length === 1 ? cislaZaloh[0] : null,
           zaklad,
           dph: Math.round((suma - zaklad) * 100) / 100,
           sadzba,

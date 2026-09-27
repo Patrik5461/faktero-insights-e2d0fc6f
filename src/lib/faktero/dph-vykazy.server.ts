@@ -101,6 +101,22 @@ export async function nacitajVstup(
     iného obdobia než vyúčtovanie, preto sa mapa stavia zo všetkých faktúr
     firmy, nie len z tých v období.
   */
+  /*
+    Ktoré zálohy si ktorá faktúra odpočítala. Väzba je vo vlastnej tabuľke,
+    lebo faktúra ich môže mať viac; starší stĺpec ostáva len pre doklad k
+    prijatej platbe.
+  */
+  const { data: odpoctyRiadky } = await supabase
+    .from("invoice_advances")
+    .select("invoice_id, advance_invoice_id")
+    .eq("company_id", companyId);
+  const odpoctyFaktury = new Map<string, string[]>();
+  for (const r of odpoctyRiadky ?? []) {
+    const zoz = odpoctyFaktury.get(r.invoice_id) ?? [];
+    zoz.push(r.advance_invoice_id);
+    odpoctyFaktury.set(r.invoice_id, zoz);
+  }
+
   const zdaneneZalohy = new Map<string, SadzbovyRiadok[]>();
   for (const f of (fakturyRes.data ?? []) as any[]) {
     if (f.type !== "advance_payment" || !f.advance_invoice_id) continue;
@@ -138,9 +154,11 @@ export async function nacitajVstup(
       Vyúčtovanie zálohy, z ktorej sa už daň priznala: do výkazu ide len
       rozdiel, inak by tá istá daň prešla dvakrát.
     */
-    if (f.type === "regular" && f.advance_invoice_id) {
-      const zaloha = zdaneneZalohy.get(f.advance_invoice_id);
-      if (zaloha?.length) riadky = odpocitajZdanenuZalohu(riadky, zaloha);
+    if (f.type === "regular") {
+      for (const idZalohy of odpoctyFaktury.get(f.id) ?? []) {
+        const zaloha = zdaneneZalohy.get(idZalohy);
+        if (zaloha?.length) riadky = odpocitajZdanenuZalohu(riadky, zaloha);
+      }
     }
 
     vystavene.push({

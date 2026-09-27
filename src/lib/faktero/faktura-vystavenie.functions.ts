@@ -43,9 +43,22 @@ const NovaFaktura = z.object({
    * opravuje konkrétnu faktúru a to je práca pre web.
    */
   type: z.enum(["regular", "proforma"]).default("regular"),
-  /** Zúčtovanie zálohy: ktorá zálohová faktúra sa od tejto odpočíta. */
+  /**
+   * Zúčtovanie zálohy — jedna (staršie rozhranie, appka aj API) alebo viac
+   * naraz v `advances`. Pri etapovej dodávke býva záloh viac a odpočítať sa
+   * musia všetky, inak zvyšok dopočítava človek ručne.
+   */
   advance_invoice_id: z.string().uuid().nullable().optional(),
   advance_amount: z.number().nonnegative().max(10_000_000).nullable().optional(),
+  advances: z
+    .array(
+      z.object({
+        invoice_id: z.string().uuid(),
+        amount: z.number().positive().max(10_000_000),
+      }),
+    )
+    .max(20)
+    .optional(),
   // Rýchla faktúra zakladá návrh, mobil vystavuje rovno. Ďalšie stavy sem
   // nepatria — tie vznikajú až životom faktúry (odoslaná, uhradená).
   status: z.enum(["draft", "issued"]).default("issued"),
@@ -157,25 +170,61 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       odpočítať cudzia záloha. Suma sa zároveň zastropuje jej celkom — viac,
       než záloha bola, sa odpočítať nedá.
     */
-    let zaloha: { id: string; suma: number } | null = null;
-    if (data.advance_invoice_id) {
+    const ziadaneZalohy =
+      data.advances?.length
+        ? data.advances
+        : data.advance_invoice_id
+          ? [{ invoice_id: data.advance_invoice_id, amount: data.advance_amount ?? 0 }]
+          : [];
+
+    const zalohy: { id: string; suma: number }[] = [];
+    if (ziadaneZalohy.length) {
       if (data.type !== "regular") {
         throw new Error("Zálohu možno zúčtovať len na bežnej faktúre.");
       }
-      const { data: zf } = await supabase
-        .from("invoices")
-        .select("id, total, type, customer_id")
-        .eq("id", data.advance_invoice_id)
-        .eq("company_id", data.company_id)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (!zf || zf.type !== "proforma") throw new Error("Zálohová faktúra sa nenašla.");
-      if (zf.customer_id !== odberatel.id) {
-        throw new Error("Zálohová faktúra patrí inému odberateľovi.");
+      const idcka = [...new Set(ziadaneZalohy.map((z) => z.invoice_id))];
+      if (idcka.length !== ziadaneZalohy.length) {
+        throw new Error("Tú istú zálohovú faktúru nemožno odpočítať dvakrát.");
       }
-      const ziadana = data.advance_amount ?? Number(zf.total);
-      zaloha = { id: zf.id, suma: Math.min(Number(ziadana), Number(zf.total)) };
+      const { data: najdene } = await supabase
+        .from("invoices")
+        .select("id, invoice_number, total, type, customer_id")
+        .in("id", idcka)
+        .eq("company_id", data.company_id)
+        .is("deleted_at", null);
+
+      /*
+        Koľko z každej zálohy už zjedli iné faktúry. Bez tejto kontroly by sa
+        tá istá záloha dala odpočítať na dvoch faktúrach a firma by o ňu
+        prišla — na oboch dokladoch by to pritom vyzeralo správne.
+      */
+      const { data: uzOdpocitane } = await supabase
+        .from("invoice_advances")
+        .select("advance_invoice_id, amount")
+        .in("advance_invoice_id", idcka);
+      const minute = new Map<string, number>();
+      for (const r of uzOdpocitane ?? []) {
+        minute.set(
+          r.advance_invoice_id,
+          (minute.get(r.advance_invoice_id) ?? 0) + Number(r.amount),
+        );
+      }
+
+      for (const ziadana of ziadaneZalohy) {
+        const zf = (najdene ?? []).find((x: any) => x.id === ziadana.invoice_id);
+        if (!zf || zf.type !== "proforma") throw new Error("Zálohová faktúra sa nenašla.");
+        if (zf.customer_id !== odberatel.id) {
+          throw new Error("Zálohová faktúra patrí inému odberateľovi.");
+        }
+        const zostatok = Number(zf.total) - (minute.get(zf.id) ?? 0);
+        if (zostatok <= 0) {
+          throw new Error(`Záloha ${zf.invoice_number} je už celá zúčtovaná.`);
+        }
+        const suma = Math.min(ziadana.amount || Number(zf.total), zostatok);
+        zalohy.push({ id: zf.id, suma: Math.round(suma * 100) / 100 });
+      }
     }
+    const zalohaSpolu = Math.round(zalohy.reduce((s, z) => s + z.suma, 0) * 100) / 100;
 
     const { data: faktura, error: chyba } = await supabase
       .from("invoices")
@@ -209,8 +258,10 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
         total: sucty.total,
         notes: data.notes || null,
         intro_note: data.intro_note || null,
-        advance_invoice_id: zaloha?.id ?? null,
-        advance_amount: zaloha?.suma ?? null,
+        // Prvá záloha ostáva aj v stĺpci kvôli staršiemu rozhraniu; úplný
+        // zoznam je v `invoice_advances` a `advance_amount` je ich súčet.
+        advance_invoice_id: zalohy[0]?.id ?? null,
+        advance_amount: zalohy.length ? zalohaSpolu : null,
         external_id: data.external_id || null,
       })
       .select("id, invoice_number, total, currency, status, customer_id, external_id")
@@ -233,6 +284,22 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       total: sucty.enriched[i].total,
       product_id: it.product_id ?? null,
     }));
+    if (zalohy.length) {
+      const { error: chybaZaloh } = await supabase.from("invoice_advances").insert(
+        zalohy.map((z) => ({
+          company_id: data.company_id,
+          invoice_id: faktura.id,
+          advance_invoice_id: z.id,
+          amount: z.suma,
+        })),
+      );
+      if (chybaZaloh) {
+        // Faktúra bez zapísaných odpočtov by pýtala celú sumu znovu.
+        await supabase.from("invoices").delete().eq("id", faktura.id);
+        throw new Error(chybaZaloh.message);
+      }
+    }
+
     const { error: chybaRiadkov } = await supabase.from("invoice_items").insert(riadky);
     if (chybaRiadkov) {
       // Faktúra bez položiek je horšia než žiadna — v prehľade vyzerá platne

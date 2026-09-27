@@ -257,6 +257,11 @@ function NewInvoice() {
   const nacitajZalohy = useServerFn(nezuctovaneZalohyFn);
   /* Zaplatené zálohy odberateľa, ktoré ešte nikto nezúčtoval. */
   const [nezuctovane, setNezuctovane] = useState<NezuctovanaZaloha[]>([]);
+  /*
+    Zálohy odpočítané na tejto faktúre. Pri etapovej dodávke ich býva viac —
+    doteraz sa dala pripojiť len jedna a zvyšok dopočítaval človek ručne.
+  */
+  const [odpocty, setOdpocty] = useState<{ id: string; cislo: string; suma: number }[]>([]);
   // Pri prvom načítaní sa ceny už zadaných riadkov neprepisujú — mohli prísť
   // z kópie faktúry alebo zo skenera a prepísať ich by bola tichá zmena sumy.
   const cennikPrvyRaz = useRef(true);
@@ -442,10 +447,10 @@ function NewInvoice() {
       vat = r2(vat);
       total = Math.round((sub + vat) * 20) / 20;
     }
-    const advance = Number(form.advance_amount) || 0;
+    const advance = Math.round(odpocty.reduce((a, z) => a + z.suma, 0) * 100) / 100;
     const payable = r2(total - advance);
     return { subtotal: sub, vat_total: vat, total, advance, payable };
-  }, [items, form.rounding_mode, form.advance_amount, form.reverse_charge]);
+  }, [items, form.rounding_mode, odpocty, form.reverse_charge]);
 
   /**
    * Cena z riadku sa počíta z podkladov cenníka, nie na serveri — množstevná
@@ -600,10 +605,12 @@ function NewInvoice() {
           reverse_charge_type: form.reverse_charge
             ? form.reverse_charge_type || "domestic_69"
             : null,
-          advance_invoice_id: form.advance_invoice_id || null,
+          // Prvá záloha aj v stĺpci kvôli staršiemu rozhraniu; celý zoznam sa
+          // zapisuje nižšie do `invoice_advances`.
+          advance_invoice_id: odpocty[0]?.id ?? null,
           payment_account_id: form.payment_account_id || null,
           opravuje_fakturu_id: form.opravuje_fakturu_id || null,
-          advance_amount: form.advance_amount ? Number(form.advance_amount) : null,
+          advance_amount: odpocty.length ? totals.advance : null,
           job_id: form.job_id || null,
           issue_date: form.issue_date,
           // Dátum dodania je nepovinný a dátumové pole sa dá vyprázdniť.
@@ -662,6 +669,23 @@ function NewInvoice() {
         toast.error(e2.message);
         setSubmitting(false);
         return;
+      }
+
+      if (odpocty.length) {
+        const { error: e3 } = await supabase.from("invoice_advances").insert(
+          odpocty.map((z) => ({
+            company_id: cid,
+            invoice_id: inv.id,
+            advance_invoice_id: z.id,
+            amount: z.suma,
+          })),
+        );
+        if (e3) {
+          // Bez zapísaných odpočtov by faktúra pýtala celú sumu znovu.
+          toast.error(`Odpočet zálohy sa nezapísal: ${e3.message}`);
+          setSubmitting(false);
+          return;
+        }
       }
 
       try {
@@ -917,9 +941,9 @@ function NewInvoice() {
                 className="inline-flex items-center gap-1.5 text-primary hover:underline"
               >
                 <Link2 className="h-4 w-4" />{" "}
-                {form.advance_invoice_id ? "Zmeniť zálohovú faktúru" : "Pridať zálohovú faktúru"}
+                {odpocty.length ? "Pridať ďalšiu zálohu" : "Pridať zálohovú faktúru"}
               </button>
-              {!form.advance_invoice_id && nezuctovane.length > 0 && (
+              {nezuctovane.filter((z) => !odpocty.some((o) => o.id === z.id)).length > 0 && (
                 /*
                   Upozornenie, nie zákaz: sú prípady, keď sa záloha zámerne
                   vyúčtuje inou faktúrou. Odpočet je preto na jedno kliknutie,
@@ -932,7 +956,9 @@ function NewInvoice() {
                       : `Odberateľ má ${nezuctovane.length} zaplatené zálohy, ktoré ešte nie sú zúčtované.`}
                   </div>
                   <ul className="mt-2 space-y-1">
-                    {nezuctovane.map((z) => (
+                    {nezuctovane
+                      .filter((z) => !odpocty.some((o) => o.id === z.id))
+                      .map((z) => (
                       <li key={z.id} className="flex flex-wrap items-center gap-2">
                         <span className="tabular-nums">
                           <strong>{z.invoice_number}</strong> · {z.issue_date} ·{" "}
@@ -946,11 +972,11 @@ function NewInvoice() {
                         <button
                           type="button"
                           onClick={() => {
-                            setForm((f) => ({
-                              ...f,
-                              advance_invoice_id: z.id,
-                              advance_amount: z.total,
-                            }));
+                            setOdpocty((zoz) =>
+                              zoz.some((o) => o.id === z.id)
+                                ? zoz
+                                : [...zoz, { id: z.id, cislo: z.invoice_number, suma: z.total }],
+                            );
                             toast.success(`Záloha ${z.invoice_number} pripojená`);
                           }}
                           className="rounded-md bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:opacity-90"
@@ -989,19 +1015,28 @@ function NewInvoice() {
                   </button>
                 </span>
               )}
-              {form.advance_invoice_id && (
+              {odpocty.length > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  Záloha odpočítaná:{" "}
-                  <strong>
-                    {Number(form.advance_amount).toFixed(2)} {form.currency}
-                  </strong>
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, advance_invoice_id: "", advance_amount: 0 })}
-                    className="ml-2 text-destructive hover:underline"
-                  >
-                    Zrušiť
-                  </button>
+                  {odpocty.length === 1 ? "Záloha odpočítaná:" : "Odpočítané zálohy:"}{" "}
+                  {odpocty.map((z) => (
+                    <span key={z.id} className="mr-2 inline-flex items-center gap-1">
+                      <strong>
+                        {z.cislo} · {z.suma.toFixed(2)} {form.currency}
+                      </strong>
+                      <button
+                        type="button"
+                        onClick={() => setOdpocty((zoz) => zoz.filter((o) => o.id !== z.id))}
+                        className="text-destructive hover:underline"
+                      >
+                        Zrušiť
+                      </button>
+                    </span>
+                  ))}
+                  {odpocty.length > 1 && (
+                    <strong className="ml-1">
+                      Spolu {totals.advance.toFixed(2)} {form.currency}
+                    </strong>
+                  )}
                 </span>
               )}
             </div>
@@ -1618,11 +1653,14 @@ function NewInvoice() {
                 setForm((f) => ({ ...f, opravuje_fakturu_id: inv.id }));
                 toast.success(`Dobropis opravuje faktúru ${inv.invoice_number}`);
               } else {
-                setForm((f) => ({
-                  ...f,
-                  advance_invoice_id: inv.id,
-                  advance_amount: Number(inv.total),
-                }));
+                setOdpocty((zoz) =>
+                  zoz.some((o) => o.id === inv.id)
+                    ? zoz
+                    : [
+                        ...zoz,
+                        { id: inv.id, cislo: inv.invoice_number, suma: Number(inv.total) },
+                      ],
+                );
                 toast.success(`Záloha pripojená: ${inv.invoice_number}`);
               }
               setPickerOpen(null);

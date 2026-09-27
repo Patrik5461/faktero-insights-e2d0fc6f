@@ -124,6 +124,8 @@ function InvoiceDetail() {
   const [hasPayLink, setHasPayLink] = useState(false);
   const [settledIn, setSettledIn] = useState<any | null>(null); // for proforma: invoice that consumed it
   const [advanceProforma, setAdvanceProforma] = useState<any | null>(null); // for regular: linked proforma
+  /* Všetky zálohy odpočítané na tejto faktúre — pri etapovej dodávke ich je viac. */
+  const [odpocitaneZalohy, setOdpocitaneZalohy] = useState<any[]>([]);
   /* Daňový doklad k prijatej platbe, ak už k tejto zálohe existuje. */
   const [dokladKPlatbe, setDokladKPlatbe] = useState<any | null>(null);
   const [vystavujemDoklad, setVystavujemDoklad] = useState(false);
@@ -398,17 +400,30 @@ function InvoiceDetail() {
         setDokladKPlatbe(ddp ?? null);
         setAdvanceProforma(null);
         setDokladKPlatbe(null);
-      } else if (data.advance_invoice_id) {
-        const { data: pf } = await supabase
-          .from("invoices")
-          .select("id, invoice_number, status, issue_date, total, currency, type")
-          .eq("id", data.advance_invoice_id)
-          .maybeSingle();
-        setAdvanceProforma(pf ?? null);
-        setSettledIn(null);
       } else {
-        setSettledIn(null);
+        const { data: odpocty } = await supabase
+          .from("invoice_advances")
+          .select("advance_invoice_id, amount")
+          .eq("invoice_id", data.id);
+        if (odpocty?.length) {
+          const { data: zalohy } = await supabase
+            .from("invoices")
+            .select("id, invoice_number, issue_date, currency")
+            .in(
+              "id",
+              odpocty.map((o: any) => o.advance_invoice_id),
+            );
+          setOdpocitaneZalohy(
+            odpocty.map((o: any) => ({
+              ...o,
+              zaloha: (zalohy ?? []).find((z: any) => z.id === o.advance_invoice_id) ?? null,
+            })),
+          );
+        } else {
+          setOdpocitaneZalohy([]);
+        }
         setAdvanceProforma(null);
+        setSettledIn(null);
       }
       const { data: rems } = await supabase
         .from("invoice_reminders")
@@ -1240,6 +1255,41 @@ function InvoiceDetail() {
                     </p>
                   )}
                 </div>
+              </div>
+            )}
+            {odpocitaneZalohy.length > 0 && (
+              <div className="rounded-xl border border-border bg-card p-5 text-sm">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {odpocitaneZalohy.length === 1 ? "Zúčtovaná záloha" : "Zúčtované zálohy"}
+                </div>
+                <ul className="mt-2 space-y-1">
+                  {odpocitaneZalohy.map((o) => (
+                    <li key={o.advance_invoice_id} className="flex flex-wrap items-baseline gap-2">
+                      <Link
+                        to="/faktury/$id"
+                        params={{ id: o.advance_invoice_id }}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {o.zaloha?.invoice_number ?? "zálohová faktúra"}
+                      </Link>
+                      <span className="text-xs text-muted-foreground">
+                        {o.zaloha?.issue_date ?? ""} · odpočítané {Number(o.amount).toFixed(2)}{" "}
+                        {o.zaloha?.currency ?? inv.currency}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {odpocitaneZalohy.length > 1 && (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Spolu odpočítané{" "}
+                    <strong>
+                      {odpocitaneZalohy
+                        .reduce((a: number, o: any) => a + Number(o.amount), 0)
+                        .toFixed(2)}{" "}
+                      {inv.currency}
+                    </strong>
+                  </div>
+                )}
               </div>
             )}
             {advanceProforma && (

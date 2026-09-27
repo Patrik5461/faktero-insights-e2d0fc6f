@@ -3715,6 +3715,33 @@ export type Database = {
           },
         ]
       }
+      invoice_advances: {
+        Row: {
+          advance_invoice_id: string
+          amount: number
+          company_id: string
+          created_at: string
+          id: string
+          invoice_id: string
+        }
+        Insert: {
+          advance_invoice_id: string
+          amount: number
+          company_id: string
+          created_at?: string
+          id?: string
+          invoice_id: string
+        }
+        Update: {
+          advance_invoice_id?: string
+          amount?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           created_at: string

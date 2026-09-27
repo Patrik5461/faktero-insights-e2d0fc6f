@@ -36,7 +36,11 @@ function ProformaListPage() {
   >({});
   const [rowDelete, setRowDelete] = useState<any | null>(null);
 
-  // Look up which proformas have been settled (referenced by another invoice's advance_invoice_id)
+  /*
+    Ktoré zálohy sú už zúčtované. Väzba je v `invoice_advances` — faktúra si
+    môže odpočítať viac záloh naraz, takže starý stĺpec na faktúre by tie
+    ďalšie zamlčal.
+  */
   useEffect(() => {
     const cid = getActiveCompanyId();
     if (!cid || !list.rows.length) {
@@ -46,12 +50,21 @@ function ProformaListPage() {
     const ids = list.rows.map((r) => r.id);
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("invoices")
-        .select("id, invoice_number, advance_invoice_id")
+      const { data: odpocty } = await supabase
+        .from("invoice_advances")
+        .select("invoice_id, advance_invoice_id")
         .eq("company_id", cid)
-        .is("deleted_at", null)
         .in("advance_invoice_id", ids);
+      const fakturyIds = [...new Set((odpocty ?? []).map((o: any) => o.invoice_id))];
+      const { data: faktury } = fakturyIds.length
+        ? await supabase.from("invoices").select("id, invoice_number").in("id", fakturyIds)
+        : { data: [] as any[] };
+      const cisla = new Map((faktury ?? []).map((f: any) => [f.id, f.invoice_number]));
+      const data = (odpocty ?? []).map((o: any) => ({
+        id: o.invoice_id,
+        invoice_number: cisla.get(o.invoice_id) ?? "",
+        advance_invoice_id: o.advance_invoice_id,
+      }));
       if (cancelled) return;
       const m: Record<string, { id: string; invoice_number: string }> = {};
       for (const row of data ?? []) {

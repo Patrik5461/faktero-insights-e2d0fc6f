@@ -49,27 +49,39 @@ export const nezuctovaneZalohyFn = createServerFn({ method: "GET" })
       nespotrebuje, len z nej prizná daň.
     */
     const ids = zalohy.map((z: any) => z.id);
-    const { data: odkazy } = await supabase
-      .from("invoices")
-      .select("advance_invoice_id, type, invoice_number")
-      .in("advance_invoice_id", ids)
-      .is("deleted_at", null);
+    const [{ data: odpocty }, { data: doklad }] = await Promise.all([
+      supabase
+        .from("invoice_advances")
+        .select("advance_invoice_id, amount")
+        .in("advance_invoice_id", ids),
+      supabase
+        .from("invoices")
+        .select("advance_invoice_id, invoice_number")
+        .eq("type", "advance_payment")
+        .in("advance_invoice_id", ids)
+        .is("deleted_at", null),
+    ]);
 
-    const zuctovane = new Set<string>();
-    const doklady = new Map<string, string>();
-    for (const o of odkazy ?? []) {
-      if (o.type === "regular") zuctovane.add(o.advance_invoice_id);
-      if (o.type === "advance_payment") doklady.set(o.advance_invoice_id, o.invoice_number);
+    /*
+      Zúčtovaná je záloha, ktorú si už nejaká faktúra odpočítala — celú.
+      Čiastočne odpočítaná ostáva v zozname so zvyškom, lebo práve na ten sa
+      pri ďalšej faktúre zabúda.
+    */
+    const odpocitane = new Map<string, number>();
+    for (const o of odpocty ?? []) {
+      odpocitane.set(o.advance_invoice_id, (odpocitane.get(o.advance_invoice_id) ?? 0) + Number(o.amount));
     }
+    const doklady = new Map<string, string>();
+    for (const d of doklad ?? []) doklady.set(d.advance_invoice_id, d.invoice_number);
 
     return zalohy
-      .filter((z: any) => !zuctovane.has(z.id))
       .map((z: any) => ({
         id: z.id,
         invoice_number: z.invoice_number,
         issue_date: z.issue_date,
-        total: Number(z.total),
+        total: Math.round((Number(z.total) - (odpocitane.get(z.id) ?? 0)) * 100) / 100,
         currency: z.currency,
         doklad_k_platbe: doklady.get(z.id) ?? null,
-      }));
+      }))
+      .filter((z: NezuctovanaZaloha) => z.total > 0);
   });

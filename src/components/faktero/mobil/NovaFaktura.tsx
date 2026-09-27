@@ -1448,12 +1448,15 @@ function VyberZalohy({
           .is("deleted_at", null)
           .order("issue_date", { ascending: false })
           .limit(20),
+        /*
+          Zúčtované zálohy sú v `invoice_advances` — faktúra si ich môže
+          odpočítať viac a starý stĺpec by druhú a ďalšiu zamlčal, takže by
+          sa v telefóne ponúkla znovu.
+        */
         supabase
-          .from("invoices")
+          .from("invoice_advances")
           .select("advance_invoice_id")
-          .eq("company_id", firmaId)
-          .not("advance_invoice_id", "is", null)
-          .is("deleted_at", null),
+          .eq("company_id", firmaId),
       ]);
       if (zrusene) return;
       const pouzite = new Set(
