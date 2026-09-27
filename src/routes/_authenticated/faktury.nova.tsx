@@ -193,17 +193,26 @@ function NewInvoice() {
       },
     ];
   });
-  useEffect(() => {
-    const zakl = zakladnaSadzbaRezimu(rezim);
-    setItems((rs) =>
-      rs.some((r) => !r._dph_rucne && r.vat_rate !== zakl)
-        ? rs.map((r) => (r._dph_rucne ? r : { ...r, vat_rate: zakl }))
-        : rs,
-    );
-  }, [krajina, rezim.platitel]);
   /* Pri predaji do EÚ cez OSS sa účtuje sadzbami štátu zákazníka. */
   const sadzbyPolozky =
     form.oss && form.oss_country ? sadzbyStatu(form.oss_country) : sadzbyRezimu(rezim);
+  /**
+    Základná sadzba, ktorú má dostať riadok, ktorého sa človek nedotkol.
+    Pri OSS je to sadzba štátu spotreby — inak by na faktúre do Rakúska
+    ostalo slovenských 23 %, hoci sa má odviesť rakúskych 20 %.
+  */
+  const zakladnaSadzba =
+    form.oss && form.oss_country ? zakladnaSadzbaStatu(form.oss_country) : zakladnaSadzbaRezimu(rezim);
+  /* Skratka ⌘I visí na listeneri bez závislostí, tak jej sadzbu podávam cez ref. */
+  const sadzbaRef = useRef(zakladnaSadzba);
+  sadzbaRef.current = zakladnaSadzba;
+  useEffect(() => {
+    setItems((rs) =>
+      rs.some((r) => !r._dph_rucne && r.vat_rate !== zakladnaSadzba)
+        ? rs.map((r) => (r._dph_rucne ? r : { ...r, vat_rate: zakladnaSadzba }))
+        : rs,
+    );
+  }, [krajina, rezim.platitel, form.oss, form.oss_country]);
 
   const [pickerOpen, setPickerOpen] = useState<null | "copy" | "advance" | "opravuje">(null);
 
@@ -429,7 +438,7 @@ function NewInvoice() {
         setAiOpen(true);
       } else if (e.key.toLowerCase() === "i") {
         e.preventDefault();
-        setItems((arr) => [...arr, { ...EMPTY_ITEM }]);
+        setItems((arr) => [...arr, { ...EMPTY_ITEM, vat_rate: sadzbaRef.current }]);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -1320,13 +1329,10 @@ function NewInvoice() {
                     <span className="text-xs font-medium text-muted-foreground">Štát spotreby</span>
                     <select
                       value={form.oss_country}
-                      onChange={(e) => {
-                        const stat = e.target.value;
-                        const zakl = zakladnaSadzbaStatu(stat);
-                        setForm((f) => ({ ...f, oss_country: stat }));
-                        // Sadzby položiek sa prepnú na sadzby zvoleného štátu.
-                        setItems((rs) => rs.map((r) => (r._dph_rucne ? r : { ...r, vat_rate: zakl })));
-                      }}
+                      onChange={(e) =>
+                        // Sadzby riadkov dorovná efekt vyššie podľa štátu spotreby.
+                        setForm((f) => ({ ...f, oss_country: e.target.value }))
+                      }
                       className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       {SADZBY_EU.filter((x) => x.kod !== "SK").map((x) => (
@@ -1594,7 +1600,7 @@ function NewInvoice() {
 
             <button
               type="button"
-              onClick={() => setItems([...items, { ...EMPTY_ITEM }])}
+              onClick={() => setItems([...items, { ...EMPTY_ITEM, vat_rate: zakladnaSadzba }])}
               className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted/40 hover:text-foreground"
             >
               <Plus className="h-3.5 w-3.5" /> Pridať položku
