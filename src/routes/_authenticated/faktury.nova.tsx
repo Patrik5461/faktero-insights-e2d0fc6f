@@ -788,11 +788,18 @@ function NewInvoice() {
       />
       <PageBody>
         <PoznamkaRezimuDph />
-        <form onSubmit={submit} className="mx-auto max-w-5xl space-y-6">
+        <form onSubmit={submit} className="mx-auto max-w-6xl space-y-6">
+          {/*
+            Základné a platobné údaje vedľa seba. Pod sebou zaberali na
+            monitore dve obrazovky a k položkám sa človek doscrolloval až po
+            údajoch, ktoré vypĺňa raz za čas. Na úzkej obrazovke sa mriežka
+            zloží späť pod seba.
+          */}
+          <div className="grid items-start gap-6 lg:grid-cols-2">
           {/* SECTION 1 — basic info */}
           <section className="rounded-2xl border border-border bg-card p-5">
             <SectionHeader icon={FileText} title="Základné údaje" />
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Odberateľ *</label>
                 <CustomerSearch
@@ -1061,7 +1068,7 @@ function NewInvoice() {
           {/* SECTION 1b — payment & symbols */}
           <section className="rounded-2xl border border-border bg-card p-5">
             <SectionHeader icon={CreditCard} title="Platobné údaje a symboly" />
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               <div>
                 <label className="text-xs font-medium text-muted-foreground">
                   Konštantný symbol
@@ -1336,6 +1343,8 @@ function NewInvoice() {
               />
             </label>
           </section>
+
+          </div>
 
           {/* SECTION 2 — items */}
           <section className="rounded-2xl border border-border bg-card p-5">
