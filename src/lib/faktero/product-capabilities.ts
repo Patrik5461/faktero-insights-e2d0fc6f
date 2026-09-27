@@ -12,7 +12,7 @@ export type CapabilityModule = {
   routes?: string[];
 };
 
-export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v2 (26. 9. 2026)";
+export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v2 (27. 9. 2026)";
 
 /** Features that are explicitly NOT supported yet. AI must say "Zatiaľ nie je dostupné". */
 export const NOT_YET_SUPPORTED: string[] = [
@@ -33,6 +33,7 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
     summary: "Vystavovanie faktúr, cenových ponúk a opakovaných faktúr s PDF a e-mailom.",
     features: [
       "Faktúry (vystavenie, úprava, storno, dobropisy)",
+      "Zálohová faktúra (rada ZF…) a daňový doklad k prijatej platbe (rada DDP…) — daň sa prizná v období platby a na vyúčtovaní sa už nepočíta druhýkrát",
       "Cenové ponuky s konverziou na faktúru",
       "Odberateľ prijme alebo zamietne ponuku tlačidlom v e-maile",
       "Odberateľom môže byť firma aj fyzická osoba bez IČO",

@@ -171,6 +171,35 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "doklad-k-platbe",
+    title: "Daňový doklad k prijatej platbe",
+    body: (
+      <>
+        <p>
+          Ak ste <strong>platiteľ DPH</strong>, prijatím zálohy vám vzniká daňová povinnosť — ešte
+          pred dodaním. Do 15 dní od pripísania peňazí musíte vystaviť <strong>daňový doklad k
+          prijatej platbe</strong>; samotná zálohová faktúra na to nestačí, tá daňový doklad nie je.
+        </p>
+        <p>
+          Otvorte zaplatenú zálohovú faktúru a kliknite na <strong>Vystaviť daňový doklad</strong>.
+          Doklad prevezme jej položky a sadzby, dátumom dodania je <strong>deň prijatia platby</strong>{" "}
+          a dostane vlastnú radu čísel (<code>DDP…</code>). Kým záloha nie je uhradená, tlačidlo sa
+          neponúka — nie je z čoho daň priznať.
+        </p>
+        <p>
+          Daň sa tak prizná v období, keď peniaze prišli. Na <strong>vyúčtovacej faktúre</strong> sa
+          už tá istá daň druhýkrát nepočíta: Faktero si zdanenú zálohu odpočíta po sadzbách, takže v{" "}
+          <Link to="/uctovnictvo/vykazy">priznaní a kontrolnom výkaze</Link> ostane len rozdiel. Do
+          obratu doklad k platbe nevstupuje — výnosom je až dodanie.
+        </p>
+        <p>
+          Pri <strong>čiastočnej platbe</strong> zadáte prijatú sumu a položky sa rozpočítajú
+          rovnakým pomerom, aby sedel rozpis po sadzbách. Ku každej zálohe patrí jeden doklad.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "opakovane",
     title: "Ako fungujú opakované faktúry",
     body: (

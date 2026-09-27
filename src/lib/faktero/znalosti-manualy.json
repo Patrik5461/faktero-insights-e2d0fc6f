@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-09-26",
+ "vytvorene": "2026-09-27",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -366,6 +366,10 @@
     {
      "nadpis": "Zálohové faktúry (proforma)",
      "text": "<>\nZálohová faktúra je výzva na zaplatenie preddavku , nie daňový doklad.\nVystavíte ju v Zálohové faktúry → Nová zálohová faktúra (/zalohove).\nMá vlastnú číselnú radu ( ZF… ), aby v rade riadnych faktúr\nnevznikali diery. Do obratu ani do DPH sa nepočíta — plnenie nastáva až\nriadnou faktúrou.\nKeď zákazník zálohu zaplatí, vystavíte riadnu faktúru a v nej zálohu\nodpočítate: v novej faktúre je na to voľba Pridať zálohovú faktúru . Zaplatená\nčasť sa odráta, takže zákazník doplatí len rozdiel a tá istá suma nie je vo výnosoch\ndvakrát. V zozname zálohových faktúr potom vidno, ktoré sú už zúčtované."
+    },
+    {
+     "nadpis": "Daňový doklad k prijatej platbe",
+     "text": "<>\nAk ste platiteľ DPH , prijatím zálohy vám vzniká daňová povinnosť — ešte\npred dodaním. Do 15 dní od pripísania peňazí musíte vystaviť daňový doklad k\nprijatej platbe ; samotná zálohová faktúra na to nestačí, tá daňový doklad nie je.\nOtvorte zaplatenú zálohovú faktúru a kliknite na Vystaviť daňový doklad .\nDoklad prevezme jej položky a sadzby, dátumom dodania je deň prijatia platby\na dostane vlastnú radu čísel ( DDP… ). Kým záloha nie je uhradená, tlačidlo sa\nneponúka — nie je z čoho daň priznať.\nDaň sa tak prizná v období, keď peniaze prišli. Na vyúčtovacej faktúre sa\nuž tá istá daň druhýkrát nepočíta: Faktero si zdanenú zálohu odpočíta po sadzbách, takže v\npriznaní a kontrolnom výkaze (/uctovnictvo/vykazy) ostane len rozdiel. Do\nobratu doklad k platbe nevstupuje — výnosom je až dodanie.\nPri čiastočnej platbe zadáte prijatú sumu a položky sa rozpočítajú\nrovnakým pomerom, aby sedel rozpis po sadzbách. Ku každej zálohe patrí jeden doklad."
     },
     {
      "nadpis": "Ako fungujú opakované faktúry",
