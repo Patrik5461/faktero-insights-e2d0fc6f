@@ -299,7 +299,7 @@ function InvoiceDetail() {
         data: {
           proforma_id: inv.id,
           // Deň prijatia platby — podľa neho vzniká daňová povinnosť.
-          datum_platby: inv.paid_date ?? new Date().toISOString().slice(0, 10),
+          datum_platby: (inv.paid_at ?? "").slice(0, 10) || new Date().toISOString().slice(0, 10),
         },
       });
       toast.success(`Vystavený doklad ${doklad.invoice_number}`);

@@ -126,7 +126,7 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
         issue_date: data.datum_platby,
         delivery_date: data.datum_platby,
         due_date: data.datum_platby,
-        paid_date: data.datum_platby,
+        paid_at: data.datum_platby,
         currency: zf.currency,
         payment_method: zf.payment_method,
         customer_name: zf.customer_name,
