@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { nezuctovaneZalohyFn, type NezuctovanaZaloha } from "@/lib/faktero/zalohy-odberatela.functions";
+import { JAZYKY_DOKLADU, jazykDokladu } from "@/lib/faktero/faktura-jazyk";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import {
   getSalesOrderForInvoice,
@@ -163,6 +164,8 @@ function NewInvoice() {
     oss_country: "",
     /* Úprava zdaňovania prirážky — cestovné kancelárie a použitý tovar. */
     osobitna_uprava: "",
+    /* Jazyk PDF dokladu; predvolí sa z odberateľa. */
+    language: "sk",
     advance_invoice_id: "" as string | "",
     opravuje_fakturu_id: "" as string | "",
     advance_amount: 0,
@@ -285,6 +288,18 @@ function NewInvoice() {
   }, [form.customer_id, form.issue_date, nacitajCennik]);
 
   /*
+    Jazyk dokladu sa predvolí podľa odberateľa — kto fakturuje do Rakúska,
+    nemá ho prepínať pri každej faktúre znovu. Ručnú zmenu to neprepisuje,
+    lebo beží len pri zmene odberateľa.
+  */
+  useEffect(() => {
+    if (!form.customer_id) return;
+    const odb = customers.find((c) => c.id === form.customer_id) as any;
+    if (!odb) return;
+    setForm((f) => ({ ...f, language: jazykDokladu(odb.invoice_language) }));
+  }, [form.customer_id, customers]);
+
+  /*
     Nezúčtované zálohy odberateľa. Bez upozornenia sa na zaplatenú zálohu ľahko
     zabudne a to isté plnenie sa vyfakturuje druhýkrát — chyba, ktorá sa hľadá
     ťažko, lebo oba doklady vyzerajú v poriadku.
@@ -341,7 +356,7 @@ function NewInvoice() {
     supabase
       .from("customers")
       .select(
-        "id, name, ico, dic, ic_dph, street, city, zip, country, email, vies_platne, vies_overene_at",
+        "id, name, ico, dic, ic_dph, street, city, zip, country, email, invoice_language, vies_platne, vies_overene_at",
       )
       .eq("company_id", cid)
       .order("name")
@@ -602,6 +617,7 @@ function NewInvoice() {
           oss: form.oss,
           oss_country: form.oss ? form.oss_country : null,
           osobitna_uprava: form.osobitna_uprava || null,
+          language: form.language || null,
           reverse_charge_type: form.reverse_charge
             ? form.reverse_charge_type || "domestic_69"
             : null,
@@ -1076,6 +1092,23 @@ function NewInvoice() {
                   onChange={(e) => setForm({ ...form, order_number: e.target.value })}
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Jazyk dokladu</label>
+                <select
+                  value={form.language}
+                  onChange={(e) => setForm({ ...form, language: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {JAZYKY_DOKLADU.map((j) => (
+                    <option key={j.kod} value={j.kod}>
+                      {j.nazov}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Prekladajú sa popisky v PDF, nie názvy položiek a poznámky.
+                </p>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground">Spôsob dodania</label>

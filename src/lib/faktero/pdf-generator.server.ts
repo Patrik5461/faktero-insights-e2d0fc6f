@@ -9,6 +9,12 @@ import { maZuctovanuZalohu, zostavaUhradit } from "./zaloha";
 import { rezimFirmy, type FirmaDph } from "./dph-rezim";
 import { textPrepoctu, trebaPrepocet } from "./kurzy";
 import { vetyNaDoklad } from "./faktura-nalezitosti";
+import {
+  jazykDokladu,
+  localeDokladu,
+  popisky,
+  type JazykDokladu,
+} from "./faktura-jazyk";
 import { krajinaDane } from "./vat-rates";
 import { sUctomFaktury } from "./platobny-ucet";
 
@@ -62,13 +68,22 @@ export type InvoicePdfInput = {
   verejnyOdkaz?: string | null;
 };
 
-function fmt(n: number, currency = "EUR") {
-  // Slovak money format: 20 000,00 EUR (NBSP thousands, comma decimal, NBSP before currency)
+/**
+ * Suma na doklade v jazyku dokladu.
+ *
+ * Nemec číta „1.234,56", Angličan „1,234.56" — s jedným formátom by si jeden
+ * z nich prečítal sumu o tri rády vedľa. Oddeľovač tisícov je pevná medzera,
+ * aby sa číslo nikdy nezlomilo na dva riadky.
+ */
+function sumaVJazyku(n: number, currency = "EUR", jazyk: JazykDokladu = "sk") {
   const v = Number.isFinite(n) ? n : 0;
-  const [intPart, decPart] = Math.abs(v).toFixed(2).split(".");
-  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
-  const sign = v < 0 ? "-" : "";
-  return `${sign}${grouped},${decPart}\u00A0${currency}`;
+  const cislo = new Intl.NumberFormat(localeDokladu(jazyk), {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+    .format(Math.abs(v))
+    .replace(/\u202F|\s/g, "\u00A0");
+  return `${v < 0 ? "-" : ""}${cislo}\u00A0${currency}`;
 }
 
 /**
@@ -105,13 +120,21 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     doklad) a na doklade k platbe priam nesprávne, lebo z názvu musí byť
     jasné, čoho sa daň týka.
   */
+  /*
+    Jazyk dokladu. Berie sa z faktúry, inak z odberateľa — prekladajú sa len
+    popisky, nie údaje; názvy položiek a poznámky ostávajú tak, ako ich firma
+    napísala.
+  */
+  const jazyk = jazykDokladu((invoice as any).language ?? (input as any).language);
+  const t = popisky(jazyk);
+  const fmt = (n: number, currency = "EUR") => sumaVJazyku(n, currency, jazyk);
+
   const podlaTypu: Record<string, string> = {
-    proforma: "ZÁLOHOVÁ FAKTÚRA",
-    advance_payment: "DAŇOVÝ DOKLAD K PRIJATEJ PLATBE",
-    credit_note: "DOBROPIS",
+    proforma: t.zalohovaFaktura,
+    advance_payment: t.dokladKPlatbe,
+    credit_note: t.dobropis,
   };
-  const docLabel =
-    input.documentLabel ?? podlaTypu[String((invoice as any).type ?? "")] ?? "FAKTÚRA";
+  const docLabel = input.documentLabel ?? podlaTypu[String((invoice as any).type ?? "")] ?? t.faktura;
   const numberLabel =
     input.numberLabel ?? `č. ${invoice.invoice_number ?? invoice.quote_number ?? ""}`;
   const doc = await PDFDocument.create();
@@ -192,7 +215,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     margin,
     y,
     colW,
-    "DODÁVATEĽ",
+    t.dodavatel,
     {
       name: company.name,
       lines: addressLines(company.street, company.zip, company.city, company.country),
@@ -203,6 +226,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       phone: company.phone,
     },
     { ink, sub, muted, hairline, primary, surface },
+    { ico: t.ico, dic: t.dic, icDph: t.icDph },
   );
   const partyH2 = drawPartyCard(
     page,
@@ -211,7 +235,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     margin + colW + gap,
     y,
     colW,
-    "ODBERATEĽ",
+    t.odberatel,
     {
       name: invoice.customer_name,
       lines: addressLines(
@@ -226,6 +250,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       email: invoice.customer_email,
     },
     { ink, sub, muted, hairline, primary, surface },
+    { ico: t.ico, dic: t.dic, icDph: t.icDph },
   );
   y -= Math.max(partyH, partyH2) + 22;
 
@@ -238,17 +263,17 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     input.metaOverride ??
     (isPaid
       ? [
-          ["Dátum vystavenia", invoice.issue_date ?? "—"],
-          ["Dátum dodania", invoice.delivery_date ?? "—"],
-          ["Dátum úhrady", paidDate ?? "—"],
-          ["Forma úhrady", paymentMethodLabel(invoice.payment_method)],
+          [t.datumVystavenia, invoice.issue_date ?? "—"],
+          [t.datumDodania, invoice.delivery_date ?? "—"],
+          [t.datumUhrady, paidDate ?? "—"],
+          [t.formaUhrady, paymentMethodLabel(invoice.payment_method)],
         ]
       : [
-          ["Dátum vystavenia", invoice.issue_date ?? "—"],
-          ["Dátum dodania", invoice.delivery_date ?? "—"],
-          ["Dátum splatnosti", invoice.due_date ?? "—"],
-          ["Variabilný symbol", invoice.variable_symbol ?? "—"],
-          ["Forma úhrady", paymentMethodLabel(invoice.payment_method)],
+          [t.datumVystavenia, invoice.issue_date ?? "—"],
+          [t.datumDodania, invoice.delivery_date ?? "—"],
+          [t.datumSplatnosti, invoice.due_date ?? "—"],
+          [t.variabilnySymbol, invoice.variable_symbol ?? "—"],
+          [t.formaUhrady, paymentMethodLabel(invoice.payment_method)],
         ]);
   const metaBoxH = 46;
   page.drawRectangle({
@@ -306,12 +331,12 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       color: rgb(0.96, 0.97, 0.965),
     });
     const baseY = top - 17;
-    p.drawText("POLOŽKA", { x: cols.name.x + PAD, y: baseY, size: 8.5, font: bold, color: sub });
-    drawAligned(p, bold, "MNOŽSTVO", cols.qty.x + cols.qty.w - PAD, baseY, 8.5, sub, "right");
+    p.drawText(t.polozka, { x: cols.name.x + PAD, y: baseY, size: 8.5, font: bold, color: sub });
+    drawAligned(p, bold, t.mnozstvo, cols.qty.x + cols.qty.w - PAD, baseY, 8.5, sub, "right");
     p.drawText("MJ", { x: cols.unit.x + PAD, y: baseY, size: 8.5, font: bold, color: sub });
-    drawAligned(p, bold, "CENA", cols.price.x + cols.price.w - PAD, baseY, 8.5, sub, "right");
-    drawAligned(p, bold, "DPH", cols.vat.x + cols.vat.w - PAD, baseY, 8.5, sub, "right");
-    drawAligned(p, bold, "CELKOM", cols.tot.x + cols.tot.w - PAD, baseY, 8.5, sub, "right");
+    drawAligned(p, bold, t.cena, cols.price.x + cols.price.w - PAD, baseY, 8.5, sub, "right");
+    drawAligned(p, bold, t.dph, cols.vat.x + cols.vat.w - PAD, baseY, 8.5, sub, "right");
+    drawAligned(p, bold, t.celkom, cols.tot.x + cols.tot.w - PAD, baseY, 8.5, sub, "right");
     return top - headerH;
   };
 
@@ -457,7 +482,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   drawTotalRow(
     cur,
     font,
-    "Medzisúčet",
+    t.medzisucet,
     fmt(Number(invoice.subtotal), invoice.currency),
     totalsX,
     ty,
@@ -470,7 +495,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawTotalRow(
       cur,
       font,
-      "DPH",
+      t.dph,
       fmt(Number(invoice.vat_total), invoice.currency),
       totalsX,
       ty,
@@ -483,7 +508,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawTotalRow(
       cur,
       font,
-      "DPH (PDP)",
+      `${t.dph} (PDP)`,
       "0,00\u00A0" + invoice.currency,
       totalsX,
       ty,
@@ -497,7 +522,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawTotalRow(
       cur,
       font,
-      "Zľava",
+      t.zlava,
       `− ${fmt(discount, invoice.currency)}`,
       totalsX,
       ty,
@@ -515,7 +540,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawTotalRow(
       cur,
       font,
-      "Spolu",
+      t.spolu,
       fmt(Number(invoice.total), invoice.currency),
       totalsX,
       ty,
@@ -527,7 +552,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     drawTotalRow(
       cur,
       font,
-      "Zúčtovaná záloha",
+      t.zuctovanaZaloha,
       `− ${fmt(zaloha, invoice.currency)}`,
       totalsX,
       ty,
@@ -555,7 +580,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     color: primary,
   });
   cur.drawRectangle({ x: totalsX, y: ty - heroH, width: 4, height: heroH, color: primaryDark });
-  cur.drawText(isPaid ? "UHRADENÉ" : "SPOLU K ÚHRADE", {
+  cur.drawText(isPaid ? t.uhradene : t.spoluKUhrade, {
     x: totalsX + 16,
     y: ty - 22,
     size: 9,
@@ -600,7 +625,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       const mierka = Math.min(maxW / img.width, maxH / img.height, 1);
       const sw = img.width * mierka;
       const sh = img.height * mierka;
-      const popis = "Pečiatka a podpis";
+      const popis = t.peciatkaPodpis;
       const pw = font.widthOfTextAtSize(popis, 7.5);
       const sirka = Math.max(sw, pw);
       const stredX = margin + 12 + sirka / 2;
@@ -641,7 +666,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       borderWidth: 0.7,
     });
     cur.drawRectangle({ x: payX, y: payY - payH, width: 3, height: payH, color: primary });
-    cur.drawText("PLATOBNÉ ÚDAJE", {
+    cur.drawText(t.platobneUdaje, {
       x: payX + 16,
       y: payY - 20,
       size: 8,
@@ -650,10 +675,10 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     });
 
     const rows: [string, string][] = [
-      ["IBAN", company.iban ?? "—"],
-      ["SWIFT/BIC", company.swift ?? "—"],
-      ["Variabilný symbol", invoice.variable_symbol ?? "—"],
-      ["Dátum splatnosti", invoice.due_date ?? "—"],
+      [t.iban, company.iban ?? "—"],
+      [t.swift, company.swift ?? "—"],
+      [t.variabilnySymbol, invoice.variable_symbol ?? "—"],
+      [t.datumSplatnosti, invoice.due_date ?? "—"],
     ];
     const labelColW = 110;
     const valueColW = Math.max(80, dataColW - labelColW - 16);
@@ -691,7 +716,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
         const qrX = payX + payW - qrSize - 16;
         const qrY = payY - payH + (payH - qrSize) / 2;
         cur.drawImage(png, { x: qrX, y: qrY, width: qrSize, height: qrSize });
-        cur.drawText("QR PLATBA PREVODOM", {
+        cur.drawText(t.qrPlatba, {
           x: qrX,
           y: qrY + qrSize + 6,
           size: 7,
@@ -791,10 +816,10 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   if (invoice.reverse_charge) {
     const rcText =
       invoice.reverse_charge_type === "eu_b2b"
-        ? "Intrakomunitárne dodanie tovaru/služby oslobodené od DPH podľa §43 zákona č. 222/2004 Z. z. Daň je povinný priznať odberateľ."
+        ? t.prenosEu
         : invoice.reverse_charge_type === "export"
-          ? "Vývoz tovaru mimo územia EÚ oslobodený od DPH podľa §47 zákona č. 222/2004 Z. z."
-          : "Prenesenie daňovej povinnosti podľa §69 ods. 12 zákona č. 222/2004 Z. z. o DPH. Daň je povinný priznať a odviesť odberateľ.";
+          ? t.prenosVyvoz
+          : t.prenosTuzemsko;
     const rcLines = wrapLines(rcText, bold, 9.5, innerW - 16);
     const needed = 18 + rcLines.length * 12 + 16;
     ensureSpace(needed);
@@ -890,7 +915,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     const noteLines = wrapLines(String(invoice.notes), font, 9.5, innerW);
     const needed = 18 + noteLines.length * 12 + 12;
     ensureSpace(needed);
-    cur.drawText("POZNÁMKY", { x: margin, y, size: 8, font: bold, color: muted });
+    cur.drawText(t.poznamky, { x: margin, y, size: 8, font: bold, color: muted });
     y -= 14;
     noteLines.forEach((ln) => {
       cur.drawText(ln, { x: margin, y, size: 9.5, font, color: sub });
@@ -924,14 +949,14 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       borderColor: hairline,
       borderWidth: 0.7,
     });
-    cur.drawText("FAKTÚRA ONLINE", {
+    cur.drawText(t.fakturaOnline, {
       x: vX + 16,
       y: vY - 22,
       size: 8,
       font: bold,
       color: muted,
     });
-    cur.drawText("Naskenujte kód a faktúra sa otvorí v prehliadači.", {
+    cur.drawText(t.naskenujteKod, {
       x: vX + 16,
       y: vY - 42,
       size: 9,
@@ -963,7 +988,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     y -= vH + 12;
   }
 
-  const footerText = company.invoice_footer ?? "Vystavené cez Faktero — faktero.app";
+  const footerText = company.invoice_footer ?? t.vystaveneCez;
   pages.forEach((p, i) => {
     p.drawLine({
       start: { x: margin, y: 52 },
@@ -1115,6 +1140,8 @@ function drawPartyCard(
     phone?: string;
   },
   c: { ink: any; sub: any; muted: any; hairline: any; primary: any; surface: any },
+  /* Popisky identifikátorov v jazyku dokladu — „IČO" Nemcovi nič nepovie. */
+  popis: { ico: string; dic: string; icDph: string },
 ): number {
   const padX = 16;
   const padTop = 16;
@@ -1138,9 +1165,9 @@ function drawPartyCard(
 
   // Tax IDs (compact)
   const ids: [string, string][] = [];
-  if (p.ico) ids.push(["IČO", String(p.ico)]);
-  if (p.dic) ids.push(["DIČ", String(p.dic)]);
-  if (p.ic_dph) ids.push(["IČ DPH", String(p.ic_dph)]);
+  if (p.ico) ids.push([popis.ico, String(p.ico)]);
+  if (p.dic) ids.push([popis.dic, String(p.dic)]);
+  if (p.ic_dph) ids.push([popis.icDph, String(p.ic_dph)]);
   if (ids.length) {
     cy -= 6;
     page.drawLine({

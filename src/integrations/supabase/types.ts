@@ -1665,6 +1665,7 @@ export type Database = {
           external_id: string | null
           ic_dph: string | null
           ico: string | null
+          invoice_language: string | null
           id: string
           name: string
           notes: string | null
@@ -1691,6 +1692,7 @@ export type Database = {
           external_id?: string | null
           ic_dph?: string | null
           ico?: string | null
+          invoice_language?: string | null
           id?: string
           name: string
           notes?: string | null
@@ -1717,6 +1719,7 @@ export type Database = {
           external_id?: string | null
           ic_dph?: string | null
           ico?: string | null
+          invoice_language?: string | null
           id?: string
           name?: string
           notes?: string | null
@@ -4059,6 +4062,7 @@ export type Database = {
           invoice_number: string
           issue_date: string
           job_id: string | null
+          language: string | null
           notes: string | null
           opravuje_fakturu_id: string | null
           order_number: string | null
@@ -4135,6 +4139,7 @@ export type Database = {
           invoice_number: string
           issue_date?: string
           job_id?: string | null
+          language?: string | null
           notes?: string | null
           opravuje_fakturu_id?: string | null
           order_number?: string | null
@@ -4211,6 +4216,7 @@ export type Database = {
           invoice_number?: string
           issue_date?: string
           job_id?: string | null
+          language?: string | null
           notes?: string | null
           opravuje_fakturu_id?: string | null
           order_number?: string | null

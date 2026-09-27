@@ -1,3 +1,4 @@
+import { JAZYKY_DOKLADU } from "@/lib/faktero/faktura-jazyk";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +63,8 @@ type Customer = {
   price_group_id?: string | null;
   /** Individuálna zľava v %. Prebíja zľavu cenovej skupiny, nesčítava sa s ňou. */
   discount_percent?: number | string | null;
+  /** Predvolený jazyk dokladov pre tohto odberateľa. */
+  invoice_language?: string | null;
 };
 
 const EMPTY: Customer = { name: "", country: "SK", typ: "firma" };
@@ -585,6 +588,23 @@ function CustomerDialog({
             />
             <span className="mt-1 block text-xs text-muted-foreground">
               Prebíja zľavu cenovej skupiny. Dohodnutá cena v cenníku prebíja obe.
+            </span>
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">Jazyk dokladov</span>
+            <select
+              value={c.invoice_language ?? "sk"}
+              onChange={(e) => f("invoice_language", e.target.value === "sk" ? null : e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {JAZYKY_DOKLADU.map((j) => (
+                <option key={j.kod} value={j.kod}>
+                  {j.nazov}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Predvolí sa na jeho faktúrach; prekladajú sa popisky v PDF, nie názvy položiek.
             </span>
           </label>
           <label className="sm:col-span-2 block">
