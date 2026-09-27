@@ -259,7 +259,7 @@ function EditInvoice() {
             Základné a platobné údaje stoja vedľa seba rovnako ako pri vystavovaní —
             na širokej obrazovke sa tak položky nezosúvajú kamsi pod prehyb.
           */}
-          <div className="grid items-start gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
             <section className="rounded-2xl border border-border bg-card p-5">
               <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">Základné údaje</h3>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">

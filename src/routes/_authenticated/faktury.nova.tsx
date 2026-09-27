@@ -796,7 +796,8 @@ function NewInvoice() {
             údajoch, ktoré vypĺňa raz za čas. Na úzkej obrazovke sa mriežka
             zloží späť pod seba.
           */}
-          <div className="grid items-start gap-6 lg:grid-cols-2">
+          {/* items-stretch: obe karty končia na tej istej čiare, aj keď má jedna menej polí. */}
+          <div className="grid gap-6 lg:grid-cols-2">
           {/* SECTION 1 — basic info */}
           <section className="rounded-2xl border border-border bg-card p-5">
             <SectionHeader icon={FileText} title="Základné údaje" />
@@ -1160,191 +1161,206 @@ function NewInvoice() {
 
           {/*
             Daňový režim stojí samostatne pod hlavičkou — je to voľba, ktorá mení
-            sadzby na položkách, nie ďalší symbol k platbe.
+            sadzby na položkách, nie ďalší symbol k platbe. Prepínače sú dlaždice,
+            nech je na prvý pohľad vidieť, ktorý režim je zapnutý.
           */}
           <section className="rounded-2xl border border-border bg-card p-5">
             <SectionHeader icon={Percent} title="Daňový režim" />
-            <div className="grid items-start gap-4 md:grid-cols-2">
-              {/* Pri prenose sa vpravo nič nezobrazuje, tak nech výber typu nie je orezaný. */}
-              <div
-                className={`rounded-md border border-border bg-muted/30 p-3 ${
-                  form.reverse_charge ? "md:col-span-2" : ""
+            <p className="-mt-1 mb-4 text-xs text-muted-foreground">
+              Bežne sa fakturuje so slovenskou DPH. Prepnite len vtedy, keď daň odvedie odberateľ
+              alebo predávate spotrebiteľovi v inom štáte EÚ.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label
+                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                  form.reverse_charge
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-muted/20 hover:border-primary/40"
                 }`}
               >
-                <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.reverse_charge}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      reverse_charge: e.target.checked,
+                      reverse_charge_type: e.target.checked
+                        ? form.reverse_charge_type || "domestic_69"
+                        : "",
+                    })
+                  }
+                  className="mt-0.5 h-4 w-4 rounded border-input"
+                />
+                <span className="text-sm">
+                  <strong>Prenos daňovej povinnosti (PDP)</strong>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    DPH neúčtujem — daň odvedie odberateľ. Sadzba na položkách bude 0 %.
+                  </span>
+                </span>
+              </label>
+              {!form.reverse_charge && (
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                    form.oss
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-muted/20 hover:border-primary/40"
+                  }`}
+                >
                   <input
                     type="checkbox"
-                    checked={form.reverse_charge}
+                    checked={form.oss}
                     onChange={(e) =>
-                      setForm({
-                        ...form,
-                        reverse_charge: e.target.checked,
-                        reverse_charge_type: e.target.checked
-                          ? form.reverse_charge_type || "domestic_69"
-                          : "",
-                      })
+                      setForm((f) => ({
+                        ...f,
+                        oss: e.target.checked,
+                        oss_country: e.target.checked ? f.oss_country || "AT" : "",
+                      }))
                     }
-                    className="mt-0.5"
+                    className="mt-0.5 h-4 w-4 rounded border-input"
                   />
                   <span className="text-sm">
-                    <strong>Prenos daňovej povinnosti (PDP)</strong>
-                    <span className="block text-xs text-muted-foreground">
-                      DPH neúčtujem — daň odvedie odberateľ. Sadzba na položkách bude 0 %.
+                    <strong>Predaj spotrebiteľovi v EÚ (OSS)</strong>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      Sadzba štátu zákazníka; daň sa odvádza cez jedno kontaktné miesto, nie v
+                      slovenskom priznaní.
                     </span>
                   </span>
                 </label>
-                {form.reverse_charge && (
-                  <>
-                    <select
-                      value={form.reverse_charge_type || "domestic_69"}
-                      onChange={(e) =>
-                        setForm({ ...form, reverse_charge_type: e.target.value as any })
-                      }
-                      className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="domestic_69">
-                        Tuzemský prenos podľa §69 zákona o DPH (stavebné práce, kovový odpad…)
-                      </option>
-                      <option value="eu_b2b">
-                        Intrakomunitárne dodanie do EÚ (B2B, odberateľ má IČ DPH)
-                      </option>
-                      <option value="export">Vývoz mimo EÚ (oslobodené podľa §47)</option>
-                    </select>
-                    {form.reverse_charge_type === "eu_b2b" && (
-                      <label className="mt-3 block">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          Druh plnenia do súhrnného výkazu
-                        </span>
-                        <select
-                          value={form.eu_plnenie}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              eu_plnenie: e.target.value as typeof form.eu_plnenie,
-                            })
-                          }
-                          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        >
-                          <option value="tovar">Dodanie tovaru</option>
-                          <option value="sluzba">Dodanie služby (§ 15 ods. 1)</option>
-                          <option value="trojstranny">Trojstranný obchod</option>
-                        </select>
-                        <span className="mt-1 block text-xs text-muted-foreground">
-                          Tovar ide aj do priznania (r. 13 a 14), služba len do súhrnného výkazu.
-                        </span>
-                      </label>
-                    )}
-                    {form.reverse_charge_type === "eu_b2b" &&
-                      (() => {
-                        const cust = customers.find((c) => c.id === form.customer_id);
-                        if (!cust?.ic_dph) return null;
-                        return (
-                          <OverenieVies
-                            companyId={getActiveCompanyId()}
-                            icDph={cust.ic_dph}
-                            customerId={cust.id}
-                            posledne={{
-                              platne: cust.vies_platne ?? null,
-                              kedy: cust.vies_overene_at ?? null,
-                            }}
-                          />
-                        );
-                      })()}
-                    {form.reverse_charge_type === "eu_b2b" &&
-                      (() => {
-                        const cust = customers.find((c) => c.id === form.customer_id);
-                        const vat = (cust?.ic_dph || "").trim();
-                        const ok = vat && /^[A-Z]{2}[A-Z0-9]{2,}$/i.test(vat) && !/^SK/i.test(vat);
-                        if (ok) return null;
-                        return (
-                          <p className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                            {!cust
-                              ? "Vyberte odberateľa s platným IČ DPH z iného členského štátu EÚ."
-                              : !vat
-                                ? "Odberateľ nemá vyplnené IČ DPH. Pri intrakomunitárnom dodaní je povinné — doplňte ho v karte odberateľa."
-                                : /^SK/i.test(vat)
-                                  ? "Odberateľ má slovenské IČ DPH. Intrakomunitárne dodanie sa vzťahuje len na iné členské štáty EÚ."
-                                  : "IČ DPH odberateľa nie je v platnom EU formáte (napr. CZ12345678)."}
-                          </p>
-                        );
-                      })()}
-                  </>
-                )}
-              </div>
-              {!form.reverse_charge && (
-                <div className="rounded-md border border-border bg-muted/30 p-3">
-                  {!form.reverse_charge && rezim.platitel && (
-                    <label className="mt-3 block">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        Osobitná úprava (nepovinné)
-                      </span>
-                      <select
-                        value={form.osobitna_uprava}
-                        onChange={(e) => setForm({ ...form, osobitna_uprava: e.target.value })}
-                        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="">Bez osobitnej úpravy</option>
-                        {UPRAVY_NA_VYBER.map((u) => (
-                          <option key={u.kod} value={u.kod}>
-                            {u.nazov}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="mt-1 block text-xs text-muted-foreground">
-                        Veta sa vytlačí na faktúru; zdaňuje sa len prirážka, nie celá cena.
-                      </span>
-                    </label>
-                  )}
-                  {!form.reverse_charge && (
-                    <label className="mt-3 flex items-start gap-2">
-                      <input
-                        type="checkbox"
-                        checked={form.oss}
-                        onChange={(e) =>
-                          setForm((f) => ({
-                            ...f,
-                            oss: e.target.checked,
-                            oss_country: e.target.checked ? f.oss_country || "AT" : "",
-                          }))
-                        }
-                        className="mt-0.5 h-4 w-4 rounded border-input"
-                      />
-                      <span className="text-sm">
-                        Predaj spotrebiteľovi v EÚ (OSS)
-                        <span className="block text-xs text-muted-foreground">
-                          Sadzba štátu zákazníka; daň sa odvádza cez jedno kontaktné miesto, nie v
-                          slovenskom priznaní.
-                        </span>
-                      </span>
-                    </label>
-                  )}
-                  {form.oss && !form.reverse_charge && (
-                    <label className="mt-3 block">
-                      <span className="text-xs font-medium text-muted-foreground">Štát spotreby</span>
-                      <select
-                        value={form.oss_country}
-                        onChange={(e) => {
-                          const stat = e.target.value;
-                          const zakl = zakladnaSadzbaStatu(stat);
-                          setForm((f) => ({ ...f, oss_country: stat }));
-                          // Sadzby položiek sa prepnú na sadzby zvoleného štátu.
-                          setItems((rs) =>
-                            rs.map((r) => (r._dph_rucne ? r : { ...r, vat_rate: zakl })),
-                          );
-                        }}
-                        className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        {SADZBY_EU.filter((x) => x.kod !== "SK").map((x) => (
-                          <option key={x.kod} value={x.kod}>
-                            {x.nazov} — základná {x.zakladna} %
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                </div>
               )}
             </div>
+
+            {/* Podrobnosti k zvolenému režimu — pod dlaždicami, nech sa nerozhadzuje mriežka. */}
+            {form.reverse_charge && (
+              <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
+                <label className="block">
+                  <span className="text-xs font-medium text-muted-foreground">Druh prenosu</span>
+                  <select
+                    value={form.reverse_charge_type || "domestic_69"}
+                    onChange={(e) =>
+                      setForm({ ...form, reverse_charge_type: e.target.value as any })
+                    }
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="domestic_69">
+                      Tuzemský prenos podľa §69 zákona o DPH (stavebné práce, kovový odpad…)
+                    </option>
+                    <option value="eu_b2b">
+                      Intrakomunitárne dodanie do EÚ (B2B, odberateľ má IČ DPH)
+                    </option>
+                    <option value="export">Vývoz mimo EÚ (oslobodené podľa §47)</option>
+                  </select>
+                </label>
+                {form.reverse_charge_type === "eu_b2b" && (
+                  <label className="block">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Druh plnenia do súhrnného výkazu
+                    </span>
+                    <select
+                      value={form.eu_plnenie}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          eu_plnenie: e.target.value as typeof form.eu_plnenie,
+                        })
+                      }
+                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="tovar">Dodanie tovaru</option>
+                      <option value="sluzba">Dodanie služby (§ 15 ods. 1)</option>
+                      <option value="trojstranny">Trojstranný obchod</option>
+                    </select>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Tovar ide aj do priznania (r. 13 a 14), služba len do súhrnného výkazu.
+                    </span>
+                  </label>
+                )}
+                {form.reverse_charge_type === "eu_b2b" &&
+                  (() => {
+                    const cust = customers.find((c) => c.id === form.customer_id);
+                    if (!cust?.ic_dph) return null;
+                    return (
+                      <div className="md:col-span-2">
+                        <OverenieVies
+                          companyId={getActiveCompanyId()}
+                          icDph={cust.ic_dph}
+                          customerId={cust.id}
+                          posledne={{
+                            platne: cust.vies_platne ?? null,
+                            kedy: cust.vies_overene_at ?? null,
+                          }}
+                        />
+                      </div>
+                    );
+                  })()}
+                {form.reverse_charge_type === "eu_b2b" &&
+                  (() => {
+                    const cust = customers.find((c) => c.id === form.customer_id);
+                    const vat = (cust?.ic_dph || "").trim();
+                    const ok = vat && /^[A-Z]{2}[A-Z0-9]{2,}$/i.test(vat) && !/^SK/i.test(vat);
+                    if (ok) return null;
+                    return (
+                      <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive md:col-span-2">
+                        {!cust
+                          ? "Vyberte odberateľa s platným IČ DPH z iného členského štátu EÚ."
+                          : !vat
+                            ? "Odberateľ nemá vyplnené IČ DPH. Pri intrakomunitárnom dodaní je povinné — doplňte ho v karte odberateľa."
+                            : /^SK/i.test(vat)
+                              ? "Odberateľ má slovenské IČ DPH. Intrakomunitárne dodanie sa vzťahuje len na iné členské štáty EÚ."
+                              : "IČ DPH odberateľa nie je v platnom EU formáte (napr. CZ12345678)."}
+                      </p>
+                    );
+                  })()}
+              </div>
+            )}
+            {!form.reverse_charge && (form.oss || rezim.platitel) && (
+              <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
+                {form.oss && (
+                  <label className="block">
+                    <span className="text-xs font-medium text-muted-foreground">Štát spotreby</span>
+                    <select
+                      value={form.oss_country}
+                      onChange={(e) => {
+                        const stat = e.target.value;
+                        const zakl = zakladnaSadzbaStatu(stat);
+                        setForm((f) => ({ ...f, oss_country: stat }));
+                        // Sadzby položiek sa prepnú na sadzby zvoleného štátu.
+                        setItems((rs) => rs.map((r) => (r._dph_rucne ? r : { ...r, vat_rate: zakl })));
+                      }}
+                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      {SADZBY_EU.filter((x) => x.kod !== "SK").map((x) => (
+                        <option key={x.kod} value={x.kod}>
+                          {x.nazov} — základná {x.zakladna} %
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {rezim.platitel && (
+                  <label className="block">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Osobitná úprava (nepovinné)
+                    </span>
+                    <select
+                      value={form.osobitna_uprava}
+                      onChange={(e) => setForm({ ...form, osobitna_uprava: e.target.value })}
+                      className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      <option value="">Bez osobitnej úpravy</option>
+                      {UPRAVY_NA_VYBER.map((u) => (
+                        <option key={u.kod} value={u.kod}>
+                          {u.nazov}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Veta sa vytlačí na faktúru; zdaňuje sa len prirážka, nie celá cena.
+                    </span>
+                  </label>
+                )}
+              </div>
+            )}
           </section>
 
           {/*
