@@ -25,7 +25,14 @@ function addDays(iso: string, d: number) {
  * Bez úpravy sa preklep v sume dal opraviť len zmazaním a napísaním odznova,
  * čo je na účtovnom doklade zbytočne drsné.
  */
-export function PrijataFakturaForm({ id }: { id?: string }) {
+export function PrijataFakturaForm({
+  id,
+  druh = "regular",
+}: {
+  id?: string;
+  /** Predvolený druh dokladu pri zakladaní — zo zoznamu prijatých záloh. */
+  druh?: "regular" | "proforma";
+}) {
   const upravujeme = Boolean(id);
   const prepocitaj = useServerFn(prepocitajPrijatuFn);
   const navigate = useNavigate();
@@ -53,7 +60,18 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
     delivery_date: "",
     odpocet: true,
     opravuje_cislo: "",
+    /*
+      Zálohová faktúra od dodávateľa nie je daňový doklad — platí sa, ale daň
+      prinesie až ostrá faktúra. Preto má vlastný typ a do výkazov nevstupuje.
+    */
+    type: druh as "regular" | "proforma",
+    /** Prijatá záloha, ktorú táto faktúra zúčtováva. */
+    advance_invoice_id: "",
   });
+  /** Nezúčtované prijaté zálohy toho istého dodávateľa. */
+  const [zalohy, setZalohy] = useState<
+    { id: string; invoice_number: string; amount_total: number; currency: string }[]
+  >([]);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [nacitavam, setNacitavam] = useState(Boolean(id));
@@ -123,6 +141,8 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
         delivery_date: data.delivery_date ?? "",
         odpocet: data.odpocet !== false,
         opravuje_cislo: data.opravuje_cislo ?? "",
+        type: ((data as any).type ?? "regular") as "regular" | "proforma",
+        advance_invoice_id: (data as any).advance_invoice_id ?? "",
       });
       setPrilohaCesta(data.file_path ?? null);
       setNacitavam(false);
@@ -132,6 +152,62 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  /*
+    Nezúčtované zálohy toho istého dodávateľa. Hľadá sa podľa IČO, a keď ho
+    dodávateľ nemá vyplnené, podľa názvu — inak by sa ponúkali zálohy od
+    cudzích firiem.
+  */
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    const ico = form.supplier_ico.trim();
+    const nazov = form.supplier_name.trim();
+    if (!cid || form.type !== "regular" || (!ico && !nazov)) {
+      setZalohy([]);
+      return;
+    }
+    let zrusene = false;
+    const t = setTimeout(async () => {
+      let q = supabase
+        .from("purchase_invoices")
+        .select("id, invoice_number, amount_total, currency")
+        .eq("company_id", cid)
+        .eq("type", "proforma")
+        .is("deleted_at", null)
+        .order("issue_date", { ascending: false })
+        .limit(20);
+      q = ico ? q.eq("supplier_ico", ico) : q.ilike("supplier_name", nazov);
+      const { data: proformy } = await q;
+      if (zrusene) return;
+      const ids = (proformy ?? []).map((z: any) => z.id);
+      /* Záloha, ktorú už niekto zúčtoval, sa druhýkrát ponúkať nemá. */
+      const { data: pouzite } = ids.length
+        ? await supabase
+            .from("purchase_invoices")
+            .select("advance_invoice_id")
+            .eq("company_id", cid)
+            .is("deleted_at", null)
+            .in("advance_invoice_id", ids)
+        : { data: [] as any[] };
+      if (zrusene) return;
+      const obsadene = new Set((pouzite ?? []).map((r: any) => r.advance_invoice_id));
+      setZalohy(
+        (proformy ?? [])
+          .filter((z: any) => !obsadene.has(z.id) || z.id === form.advance_invoice_id)
+          .map((z: any) => ({
+            id: z.id,
+            invoice_number: z.invoice_number,
+            amount_total: Number(z.amount_total ?? 0),
+            currency: z.currency ?? "EUR",
+          })),
+      );
+    }, 400);
+    return () => {
+      zrusene = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.supplier_ico, form.supplier_name, form.type]);
 
   // auto-compute amount_total when net/vat change
   useEffect(() => {
@@ -195,8 +271,12 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
         status: form.status,
         dph_rezim: form.dph_rezim || null,
         delivery_date: form.delivery_date || null,
-        odpocet: form.odpocet,
+        // Zo zálohovej faktúry sa daň neodpočítava a výkazy ju nevidia.
+        odpocet: form.type === "proforma" ? false : form.odpocet,
         opravuje_cislo: form.opravuje_cislo.trim() || null,
+        type: form.type,
+        advance_invoice_id:
+          form.type === "regular" && form.advance_invoice_id ? form.advance_invoice_id : null,
         file_path,
         file_mime,
         file_size,
@@ -263,15 +343,25 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
   return (
     <>
       <PageHeader
-        title={upravujeme ? "Úprava prijatej faktúry" : "Nová prijatá faktúra"}
+        title={
+          form.type === "proforma"
+            ? upravujeme
+              ? "Úprava prijatej zálohovej faktúry"
+              : "Nová prijatá zálohová faktúra"
+            : upravujeme
+              ? "Úprava prijatej faktúry"
+              : "Nová prijatá faktúra"
+        }
         description={
-          upravujeme
-            ? "Opravte údaje dokladu. Doklad z uzamknutého obdobia sa zmeniť nedá."
-            : "Zaevidujte faktúru od dodávateľa (nákup / výdavok)."
+          form.type === "proforma"
+            ? "Zálohová faktúra od dodávateľa — platí sa, ale daň z nej neodpočítavate."
+            : upravujeme
+              ? "Opravte údaje dokladu. Doklad z uzamknutého obdobia sa zmeniť nedá."
+              : "Zaevidujte faktúru od dodávateľa (nákup / výdavok)."
         }
         action={
           <Link
-            to="/prijate-faktury"
+            to={form.type === "proforma" ? "/prijate-zalohove" : "/prijate-faktury"}
             className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
           >
             <ArrowLeft className="h-4 w-4" /> Späť
@@ -348,6 +438,37 @@ export function PrijataFakturaForm({ id }: { id?: string }) {
               Faktúra
             </h3>
             <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Druh dokladu">
+                <select
+                  value={form.type}
+                  onChange={(e) => set("type", e.target.value as "regular" | "proforma")}
+                  className="input"
+                >
+                  <option value="regular">Prijatá faktúra (daňový doklad)</option>
+                  <option value="proforma">Prijatá zálohová faktúra</option>
+                </select>
+                {form.type === "proforma" && (
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Do výkazov k DPH nevstupuje. Daň si odpočítate až z ostrej faktúry.
+                  </span>
+                )}
+              </Field>
+              {form.type === "regular" && zalohy.length > 0 && (
+                <Field label="Zúčtováva prijatú zálohu">
+                  <select
+                    value={form.advance_invoice_id}
+                    onChange={(e) => set("advance_invoice_id", e.target.value)}
+                    className="input"
+                  >
+                    <option value="">— žiadnu —</option>
+                    {zalohy.map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.invoice_number} · {z.amount_total.toFixed(2)} {z.currency}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
               <Field label="Číslo faktúry dodávateľa *">
                 <input
                   required

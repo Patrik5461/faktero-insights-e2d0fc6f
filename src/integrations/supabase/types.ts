@@ -5130,6 +5130,8 @@ export type Database = {
           exchange_rate: number | null
           amount_without_vat_eur: number | null
           vat_amount_eur: number | null
+          advance_invoice_id: string | null
+          type: string
         }
         Insert: {
           amount_total?: number
@@ -5172,6 +5174,8 @@ export type Database = {
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
           vat_amount_eur?: number | null
+          advance_invoice_id?: string | null
+          type?: string
         }
         Update: {
           amount_total?: number
@@ -5214,6 +5218,8 @@ export type Database = {
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
           vat_amount_eur?: number | null
+          advance_invoice_id?: string | null
+          type?: string
         }
         Relationships: [
           {

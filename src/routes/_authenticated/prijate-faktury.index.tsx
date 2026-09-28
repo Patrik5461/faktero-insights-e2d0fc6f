@@ -306,6 +306,8 @@ function PurchaseInvoicesPage() {
       .from("purchase_invoices")
       .select("*")
       .eq("company_id", cid)
+      // Prijaté zálohy majú vlastný zoznam — tu by len nafukovali sumy.
+      .eq("type", "regular")
       .is("deleted_at", null)
       .order("issue_date", { ascending: false })
       .limit(500);

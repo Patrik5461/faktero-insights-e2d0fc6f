@@ -84,6 +84,7 @@ export function suhrnOpravneni(opr: unknown): string {
 const CESTY: [string, Oblast][] = [
   ["/efaktura/prijate", "doklady"],
   ["/prijate-faktury", "doklady"],
+  ["/prijate-zalohove", "doklady"],
   ["/doklady", "doklady"],
   ["/ostatne-doklady", "ostatne"],
   ["/faktury", "faktury"],

@@ -78,6 +78,11 @@ export async function nacitajVstup(
         "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate",
       )
       .eq("company_id", companyId)
+      /*
+        Prijatá zálohová faktúra nie je daňový doklad — daň z nej odpočítať
+        nemožno, tú prinesie až ostrá faktúra od dodávateľa.
+      */
+      .eq("type", "regular")
       .is("deleted_at", null)
       .limit(5000),
     supabase

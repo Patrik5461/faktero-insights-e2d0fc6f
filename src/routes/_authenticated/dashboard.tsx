@@ -279,11 +279,21 @@ function Dashboard() {
     (async () => {
       const cid = getActiveCompanyId();
       if (!cid) return;
-      const { data } = await supabase
+      const { data: vsetky } = await supabase
         .from("purchase_invoices")
-        .select("id, amount_total, status, due_date, supplier_name, invoice_number")
+        .select("id, amount_total, status, due_date, supplier_name, invoice_number, type, advance_invoice_id")
         .eq("company_id", cid)
         .is("deleted_at", null);
+      /*
+        Zálohu treba zaplatiť, takže do záväzkov patrí — ale len dovtedy, kým
+        ju nezúčtuje ostrá faktúra. Inak by tá istá dodávka visela dvakrát.
+      */
+      const zuctovane = new Set(
+        (vsetky ?? []).map((r: any) => r.advance_invoice_id).filter(Boolean),
+      );
+      const data = (vsetky ?? []).filter(
+        (r: any) => r.type !== "proforma" || !zuctovane.has(r.id),
+      );
       setPurchaseInvoices(data ?? []);
       const today = new Date().toISOString().slice(0, 10);
       let unpaid = 0,

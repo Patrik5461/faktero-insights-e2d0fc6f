@@ -67,6 +67,8 @@ async function podkladyKVyhodnoteniu(supabase: any, companyId: string, jobIds: s
         "id, job_id, invoice_number, supplier_name, issue_date, amount_without_vat, amount_total, deleted_at",
       )
       .eq("company_id", companyId)
+      // Náklad zákazky nesie ostrá faktúra; záloha by ho zdvojila.
+      .eq("type", "regular")
       .in("job_id", jobIds),
     supabase
       .from("stock_movements")

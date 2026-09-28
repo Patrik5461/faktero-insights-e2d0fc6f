@@ -297,8 +297,12 @@ function PurchaseInvoiceDetail() {
   return (
     <>
       <PageHeader
-        title={`Prijatá faktúra ${row.invoice_number}`}
-        description={`Dodávateľ: ${row.supplier_name} · Vystavená ${row.issue_date}`}
+        title={`${(row as any).type === "proforma" ? "Prijatá zálohová faktúra" : "Prijatá faktúra"} ${row.invoice_number}`}
+        description={
+          (row as any).type === "proforma"
+            ? `Dodávateľ: ${row.supplier_name} · Vystavená ${row.issue_date} · Nie je daňový doklad — daň prinesie ostrá faktúra.`
+            : `Dodávateľ: ${row.supplier_name} · Vystavená ${row.issue_date}`
+        }
         action={
           <div className="flex flex-wrap gap-2">
             <span
