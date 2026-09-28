@@ -1,4 +1,4 @@
-import { KROK_CENY } from "@/lib/faktero/mena";
+import { KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useState } from "react";
@@ -140,6 +140,13 @@ function EditInvoice() {
     }
     return { subtotal: sub, vat_total: vat, total: sub + vat };
   }, [riadkyDokladu]);
+
+  /** Suma s DPH napísaná do stĺpca Spolu dopočíta jednotkovú cenu bez dane. */
+  function nastavSpolu(idx: number, spolu: number) {
+    const it = items[idx];
+    if (!it || it._locked) return;
+    setItem(idx, { unit_price: cenaZoSumySDph(spolu, it.quantity, it.vat_rate) });
+  }
 
   function setItem(idx: number, patch: Partial<Item>) {
     setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
@@ -372,7 +379,7 @@ function EditInvoice() {
                     <th className="py-2 pl-3 font-medium">MJ</th>
                     <th className="py-2 pl-3 font-medium text-right">Cena</th>
                     <th className="py-2 pl-3 font-medium">DPH</th>
-                    <th className="py-2 pl-3 font-medium text-right">Spolu</th>
+                    <th className="py-2 pl-3 font-medium text-right">Spolu s DPH</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -433,8 +440,13 @@ function EditInvoice() {
                           ))}
                         </select>
                       </td>
-                      <td className="py-2 pl-3 text-right tabular-nums font-medium">
-                        {(it.quantity * it.unit_price * (1 + it.vat_rate / 100)).toFixed(2)}
+                      <td className="py-2 pl-3">
+                        <CellSpolu
+                          hodnota={it.quantity * it.unit_price * (1 + it.vat_rate / 100)}
+                          onZmena={(v) => nastavSpolu(idx, v)}
+                          disabled={it._locked}
+                          w="w-28"
+                        />
                       </td>
                       <td className="py-2 pl-2">
                         <button
@@ -456,6 +468,11 @@ function EditInvoice() {
                 </tbody>
               </table>
             </div>
+
+            <p className="mt-3 text-xs text-muted-foreground md:mt-0">
+              Do stĺpca <strong>Spolu s DPH</strong> sa dá napísať suma, na ktorej ste sa dohodli —
+              jednotková cena bez dane sa dopočíta sama.
+            </p>
 
             <div className="space-y-3 md:hidden">
               {items.map((it, idx) => (
@@ -507,9 +524,15 @@ function EditInvoice() {
                     </select>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
-                    <span className="font-medium tabular-nums">
-                      {(it.quantity * it.unit_price * (1 + it.vat_rate / 100)).toFixed(2)}{" "}
-                      {form.currency}
+                    <span className="flex items-center gap-2">
+                      <span className="text-[13px] font-semibold text-foreground">Spolu s DPH</span>
+                      <CellSpolu
+                        hodnota={it.quantity * it.unit_price * (1 + it.vat_rate / 100)}
+                        onZmena={(v) => nastavSpolu(idx, v)}
+                        disabled={it._locked}
+                        w="w-28"
+                      />
+                      <span className="text-muted-foreground">{form.currency}</span>
                     </span>
                     <button
                       type="button"
@@ -598,6 +621,40 @@ function EditInvoice() {
 
 const inputCls =
   "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none";
+
+/**
+ * Suma riadku s DPH, ktorú možno prepísať — cena bez dane sa dopočíta.
+ * Kým sa píše, pole si drží vlastný text, nech číslo pod prstami neposkakuje.
+ */
+function CellSpolu({
+  hodnota,
+  onZmena,
+  disabled,
+  w = "w-24",
+}: {
+  hodnota: number;
+  onZmena: (v: number) => void;
+  disabled?: boolean;
+  w?: string;
+}) {
+  const [rozpisane, setRozpisane] = useState<string | null>(null);
+  return (
+    <input
+      type="number"
+      step="0.01"
+      inputMode="decimal"
+      disabled={disabled}
+      title="Suma s DPH — cena bez dane sa dopočíta"
+      value={rozpisane ?? (Number.isFinite(hodnota) ? hodnota.toFixed(2) : "0.00")}
+      onChange={(e) => {
+        setRozpisane(e.target.value);
+        onZmena(Number(e.target.value));
+      }}
+      onBlur={() => setRozpisane(null)}
+      className={`${w} rounded-md border border-transparent bg-transparent px-2 py-1.5 text-right text-sm font-medium tabular-nums hover:border-input focus:border-input focus:bg-background disabled:opacity-60`}
+    />
+  );
+}
 
 function Lbl({ label, children }: { label: string; children: React.ReactNode }) {
   return (

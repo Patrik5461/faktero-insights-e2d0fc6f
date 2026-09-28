@@ -106,3 +106,27 @@ export function formatujJednotkovuCenu(hodnota: unknown, mena?: unknown, locale 
   }
   return new Intl.NumberFormat(locale, nastavenie).format(cislo);
 }
+
+/**
+ * Z celkovej sumy riadku (s DPH) dopočíta jednotkovú cenu bez dane.
+ *
+ * Ľudia sa často dohodnú na sume, ktorú má zákazník zaplatiť — „dvesto eur
+ * aj s daňou" — a cenu bez dane potom hľadajú na kalkulačke. Tu ju zadajú
+ * rovno do stĺpca Spolu.
+ *
+ * Zaokrúhľuje sa na päť desatinných miest ako ostatné jednotkové ceny, aby
+ * sa súčet vrátil na pôvodnú sumu. Množstvo 0 (alebo nečíslo) by znamenalo
+ * delenie nulou — vtedy sa počíta s jedným kusom.
+ */
+export function cenaZoSumySDph(spoluSDph: unknown, mnozstvo: unknown, sadzbaDph: unknown): number {
+  const spolu = Number(spoluSDph);
+  const mn = Number(mnozstvo);
+  const sadzba = Number(sadzbaDph);
+  if (!Number.isFinite(spolu)) return 0;
+  const pocet = Number.isFinite(mn) && mn > 0 ? mn : 1;
+  const nasobok = 1 + (Number.isFinite(sadzba) ? sadzba : 0) / 100;
+  const cena = spolu / (pocet * nasobok);
+  if (!Number.isFinite(cena)) return 0;
+  const presnost = 10 ** DESATINNE_MIESTA_CENY;
+  return Math.round(cena * presnost) / presnost;
+}

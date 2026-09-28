@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatujMenu, formatujJednotkovuCenu, KROK_CENY } from "./mena";
+import { formatujMenu, formatujJednotkovuCenu, KROK_CENY, cenaZoSumySDph } from "./mena";
 
 const bezMedzier = (s: string) => s.replace(/ | /g, " ");
 
@@ -59,5 +59,24 @@ describe("formatujJednotkovuCenu", () => {
 
   it("krok políčka pustí päť desatinných miest", () => {
     expect(KROK_CENY).toBe("0.00001");
+  });
+});
+
+describe("cenaZoSumySDph", () => {
+  it("z sumy s DPH dopočíta jednotkovú cenu", () => {
+    expect(cenaZoSumySDph(123, 1, 23)).toBe(100);
+    expect(cenaZoSumySDph(120, 1, 20)).toBe(100);
+    expect(cenaZoSumySDph(246, 2, 23)).toBe(100);
+  });
+  it("pri nulovej sadzbe (prenos daňovej povinnosti) vráti sumu delenú množstvom", () => {
+    expect(cenaZoSumySDph(250, 2, 0)).toBe(125);
+  });
+  it("suma sa po prepočte vráti späť na to isté euro", () => {
+    const cena = cenaZoSumySDph(100, 3, 23);
+    expect(+(cena * 3 * 1.23).toFixed(2)).toBe(100);
+  });
+  it("bez množstva počíta s jedným kusom a nečíslo nezhodí výpočet", () => {
+    expect(cenaZoSumySDph(123, 0, 23)).toBe(100);
+    expect(cenaZoSumySDph("x", 1, 23)).toBe(0);
   });
 });

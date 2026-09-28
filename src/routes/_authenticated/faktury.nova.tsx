@@ -41,7 +41,7 @@ import { aiParseInvoiceFn } from "@/lib/faktero/ai-invoice.functions";
 import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombobox";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
-import { MENY, KROK_CENY } from "@/lib/faktero/mena";
+import { MENY, KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
@@ -505,6 +505,21 @@ function NewInvoice() {
       _dovod: r.zdroj === "zakladna" ? undefined : r.dovod,
       _zakladna: r.zdroj === "zakladna" ? undefined : r.zakladna,
     };
+  }
+
+  /**
+    Do stĺpca Spolu sa dá napísať suma, ktorú má zákazník za riadok zaplatiť —
+    jednotková cena bez dane sa z nej dopočíta. Ľudia sa dohadujú na sume
+    s daňou a cenu bez nej inak hľadajú na kalkulačke.
+  */
+  function nastavSpolu(idx: number, spolu: number) {
+    const it = items[idx];
+    if (!it) return;
+    const sadzba = form.reverse_charge ? 0 : it.vat_rate;
+    setItem(idx, {
+      unit_price: cenaZoSumySDph(spolu, it.quantity, sadzba),
+      _cena_rucne: true,
+    });
   }
 
   function setItem(idx: number, patch: Partial<Item>) {
@@ -1462,7 +1477,7 @@ function NewInvoice() {
                     <th className="py-2 pl-3 font-medium">MJ</th>
                     <th className="py-2 pl-3 font-medium text-right">Cena</th>
                     <th className="py-2 pl-3 font-medium">DPH</th>
-                    <th className="py-2 pl-3 font-medium text-right">Spolu</th>
+                    <th className="py-2 pl-3 font-medium text-right">Spolu s DPH</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -1535,12 +1550,16 @@ function NewInvoice() {
                           </select>
                         )}
                       </td>
-                      <td className="py-2 pl-3 text-right tabular-nums font-medium">
-                        {(
-                          it.quantity *
-                          it.unit_price *
-                          (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)
-                        ).toFixed(2)}
+                      <td className="py-2 pl-3">
+                        <CellSpolu
+                          hodnota={
+                            it.quantity *
+                            it.unit_price *
+                            (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)
+                          }
+                          onZmena={(v) => nastavSpolu(idx, v)}
+                          w="w-28"
+                        />
                       </td>
                       <td className="py-2 pl-2">
                         <button
@@ -1601,13 +1620,18 @@ function NewInvoice() {
                     )}
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">
-                    <span className="font-medium tabular-nums">
-                      {(
-                        it.quantity *
-                        it.unit_price *
-                        (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)
-                      ).toFixed(2)}{" "}
-                      {form.currency}
+                    <span className="flex items-center gap-2">
+                      <span className="text-[13px] font-semibold text-foreground">Spolu s DPH</span>
+                      <CellSpolu
+                        hodnota={
+                          it.quantity *
+                          it.unit_price *
+                          (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)
+                        }
+                        onZmena={(v) => nastavSpolu(idx, v)}
+                        w="w-28"
+                      />
+                      <span className="text-muted-foreground">{form.currency}</span>
                     </span>
                     <button
                       type="button"
@@ -1621,6 +1645,10 @@ function NewInvoice() {
               ))}
             </div>
 
+            <p className="mt-3 text-xs text-muted-foreground">
+              Do stĺpca <strong>Spolu s DPH</strong> sa dá napísať suma, na ktorej ste sa dohodli —
+              jednotková cena bez dane sa dopočíta sama.
+            </p>
             <button
               type="button"
               onClick={() => setItems([...items, { ...EMPTY_ITEM, vat_rate: zakladnaSadzba }])}
@@ -1828,6 +1856,40 @@ function CellNum({
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
       className={`${w} rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm tabular-nums hover:border-input focus:border-input focus:bg-background ${align === "right" ? "text-right" : ""}`}
+    />
+  );
+}
+
+/**
+ * Suma riadku s DPH, ktorá sa dá aj prepísať.
+ *
+ * Kým sa v poli píše, drží si vlastný text — inak by prepočet jednotkovej
+ * ceny vrátil zaokrúhlenú hodnotu späť a číslo pod prstami by poskakovalo.
+ * Po opustení poľa sa ukáže presne to, čo z riadku vychádza.
+ */
+function CellSpolu({
+  hodnota,
+  onZmena,
+  w = "w-24",
+}: {
+  hodnota: number;
+  onZmena: (v: number) => void;
+  w?: string;
+}) {
+  const [rozpisane, setRozpisane] = useState<string | null>(null);
+  return (
+    <input
+      type="number"
+      step="0.01"
+      inputMode="decimal"
+      title="Suma s DPH — cena bez dane sa dopočíta"
+      value={rozpisane ?? (Number.isFinite(hodnota) ? hodnota.toFixed(2) : "0.00")}
+      onChange={(e) => {
+        setRozpisane(e.target.value);
+        onZmena(Number(e.target.value));
+      }}
+      onBlur={() => setRozpisane(null)}
+      className={`${w} rounded-md border border-transparent bg-transparent px-2 py-1.5 text-right text-sm font-medium tabular-nums hover:border-input focus:border-input focus:bg-background`}
     />
   );
 }
