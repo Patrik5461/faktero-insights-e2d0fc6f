@@ -413,6 +413,22 @@ function QuoteDetail() {
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Sumár</div>
               <div className="mt-3 space-y-1 text-sm">
+                {Number(q.discount_total ?? 0) > 0 && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Medzisúčet</span>
+                      <span>
+                        {(Number(q.subtotal) + Number(q.discount_total)).toFixed(2)} {q.currency}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Zľava</span>
+                      <span>
+                        −{Number(q.discount_total).toFixed(2)} {q.currency}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Bez DPH</span>
                   <span>

@@ -42,6 +42,14 @@ import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombo
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { MENY, KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
+import {
+  koeficientZlavy,
+  maZlavu,
+  percentoZlavy,
+  sumaZlavyDokladu,
+  zakladRiadku,
+  type TypZlavy,
+} from "@/lib/faktero/zlavy";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
@@ -91,6 +99,8 @@ type Item = {
   unit: string;
   unit_price: number;
   vat_rate: number;
+  /** Zľava tohto riadku v percentách; jednotková cena ostáva pôvodná. */
+  discount_percent?: number;
   product_id?: string | null;
   stock_item_id?: string | null;
   // UI hints (not persisted):
@@ -112,6 +122,7 @@ const EMPTY_ITEM: Item = {
   unit: "ks",
   unit_price: 0,
   vat_rate: DEFAULT_VAT_RATE,
+  discount_percent: 0,
 };
 
 type StockMeta = {
@@ -173,6 +184,9 @@ function NewInvoice() {
     job_id: "",
     notes: "",
     intro_note: "",
+    /* Zľava na celý doklad — percento alebo pevná suma bez DPH. */
+    discount_type: "" as "" | TypZlavy,
+    discount_value: 0,
   });
   /*
     Krajina firmy dobehne až po načítaní. Prvé vykreslenie preto nesie
@@ -461,7 +475,9 @@ function NewInvoice() {
     let sub = 0,
       vat = 0;
     for (const it of riadkyDokladu) {
-      let s = Number(it.quantity) * Number(it.unit_price);
+      // Riadková zľava je už v základe; jednotková cena ostáva pôvodná, nech
+      // je na doklade vidieť, z čoho sa zľavovalo.
+      let s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
       let v = rc ? 0 : s * (Number(it.vat_rate) / 100);
       if (mode === "per_item") {
         s = r2(s);
@@ -469,6 +485,21 @@ function NewInvoice() {
       }
       sub += s;
       vat += v;
+    }
+    /*
+      Zľava na celý doklad sa nerozdeľuje po riadkoch — prenásobí základ aj
+      daň tým istým koeficientom. Pomer medzi sadzbami tak ostane a DPH vyjde
+      rovnako, ako keby bola dohodnutá nižšia cena od začiatku.
+    */
+    const medzisucet = r2(sub);
+    const zlava = sumaZlavyDokladu(sub, {
+      typ: form.discount_type || null,
+      hodnota: Number(form.discount_value),
+    });
+    if (zlava > 0) {
+      const k = koeficientZlavy(sub, zlava);
+      sub = sub * k;
+      vat = vat * k;
     }
     let total = sub + vat;
     if (mode === "per_document") {
@@ -483,8 +514,15 @@ function NewInvoice() {
     }
     const advance = Math.round(odpocty.reduce((a, z) => a + z.suma, 0) * 100) / 100;
     const payable = r2(total - advance);
-    return { subtotal: sub, vat_total: vat, total, advance, payable };
-  }, [riadkyDokladu, form.rounding_mode, odpocty, form.reverse_charge]);
+    return { subtotal: sub, vat_total: vat, total, advance, payable, medzisucet, zlava };
+  }, [
+    riadkyDokladu,
+    form.rounding_mode,
+    odpocty,
+    form.reverse_charge,
+    form.discount_type,
+    form.discount_value,
+  ]);
 
   /**
    * Cena z riadku sa počíta z podkladov cenníka, nie na serveri — množstevná
@@ -516,8 +554,11 @@ function NewInvoice() {
     const it = items[idx];
     if (!it) return;
     const sadzba = form.reverse_charge ? 0 : it.vat_rate;
+    // So zľavou riadku sa počíta späť: napísaná suma je to, čo zákazník platí.
+    const zlava = percentoZlavy(it.discount_percent);
+    const cena = cenaZoSumySDph(spolu, it.quantity, sadzba);
     setItem(idx, {
-      unit_price: cenaZoSumySDph(spolu, it.quantity, sadzba),
+      unit_price: zlava >= 100 ? cena : Number((cena / (1 - zlava / 100)).toFixed(5)),
       _cena_rucne: true,
     });
   }
@@ -692,6 +733,11 @@ function NewInvoice() {
           total: Number(totals.total.toFixed(2)),
           notes: form.notes,
           intro_note: form.intro_note.trim() || null,
+          // Zľava na doklad: typ a zadaná hodnota kvôli doúčtovaniu a PDF,
+          // discount_total je jej suma bez DPH, ktorú súčty už odpočítali.
+          discount_type: totals.zlava > 0 ? form.discount_type || "percent" : null,
+          discount_value: totals.zlava > 0 ? Number(form.discount_value) : 0,
+          discount_total: totals.zlava,
         })
         .select()
         .single();
@@ -703,7 +749,9 @@ function NewInvoice() {
       }
 
       const rows = riadkyDokladu.map((it, idx) => {
-        const s = Number(it.quantity) * Number(it.unit_price);
+        // Sumy riadku sú po jeho vlastnej zľave; zľava na doklad sa do
+        // riadkov nepremieta, tá sedí v hlavičke.
+        const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
         const effRate = form.reverse_charge ? 0 : Number(it.vat_rate);
         const v = s * (effRate / 100);
         return {
@@ -716,6 +764,7 @@ function NewInvoice() {
           quantity: it.quantity,
           unit: it.unit,
           unit_price: it.unit_price,
+          discount_percent: percentoZlavy(it.discount_percent),
           vat_rate: effRate,
           subtotal: Number(s.toFixed(2)),
           vat_amount: Number(v.toFixed(2)),
@@ -1476,6 +1525,7 @@ function NewInvoice() {
                     <th className="py-2 pl-3 font-medium">Mn.</th>
                     <th className="py-2 pl-3 font-medium">MJ</th>
                     <th className="py-2 pl-3 font-medium text-right">Cena</th>
+                    <th className="py-2 pl-3 font-medium text-right">Zľava %</th>
                     <th className="py-2 pl-3 font-medium">DPH</th>
                     <th className="py-2 pl-3 font-medium text-right">Spolu s DPH</th>
                     <th></th>
@@ -1527,6 +1577,14 @@ function NewInvoice() {
                         )}
                       </td>
                       <td className="py-2 pl-3">
+                        <CellNum
+                          value={it.discount_percent ?? 0}
+                          onChange={(v) => setItem(idx, { discount_percent: percentoZlavy(v) })}
+                          w="w-16"
+                          align="right"
+                        />
+                      </td>
+                      <td className="py-2 pl-3">
                         {form.reverse_charge ? (
                           <span
                             className="inline-block rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900 dark:text-amber-100"
@@ -1553,8 +1611,7 @@ function NewInvoice() {
                       <td className="py-2 pl-3">
                         <CellSpolu
                           hodnota={
-                            it.quantity *
-                            it.unit_price *
+                            zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
                             (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)
                           }
                           onZmena={(v) => nastavSpolu(idx, v)}
@@ -1587,7 +1644,7 @@ function NewInvoice() {
                     className="mb-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
                   <StockHint item={it} warehouseName={warehouseName} />
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-5 gap-2">
                     <CellNum value={it.quantity} onChange={(v) => setItem(idx, { quantity: v })} />
                     <input
                       value={it.unit}
@@ -1598,6 +1655,11 @@ function NewInvoice() {
                       value={it.unit_price}
                       onChange={(v) => setItem(idx, { unit_price: v, _cena_rucne: true })}
                       step={KROK_CENY}
+                    />
+                    <CellNum
+                      value={it.discount_percent ?? 0}
+                      onChange={(v) => setItem(idx, { discount_percent: percentoZlavy(v) })}
+                      title="Zľava v %"
                     />
                     {form.reverse_charge ? (
                       <span className="inline-flex items-center justify-center rounded bg-amber-100 px-2 py-1 text-[10px] font-semibold text-amber-900 dark:text-amber-100">
@@ -1624,8 +1686,7 @@ function NewInvoice() {
                       <span className="text-[13px] font-semibold text-foreground">Spolu s DPH</span>
                       <CellSpolu
                         hodnota={
-                          it.quantity *
-                          it.unit_price *
+                          zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
                           (form.reverse_charge ? 1 : 1 + it.vat_rate / 100)
                         }
                         onZmena={(v) => nastavSpolu(idx, v)}
@@ -1664,6 +1725,59 @@ function NewInvoice() {
           {/* SECTION 3 — totals */}
           <section className="rounded-2xl border border-border bg-gradient-to-br from-card to-primary/[0.03] p-5">
             <div className="ml-auto max-w-sm space-y-2 text-sm">
+              {/*
+                Zľava na celý doklad — dohodne sa až na konci, preto stojí
+                pri súčtoch, nie v hlavičke. Rozpočíta sa pomerne medzi
+                sadzby DPH, riadky ostanú nedotknuté.
+              */}
+              <div className="flex items-center justify-between gap-2 pb-1">
+                <span className="text-[13px] font-semibold text-foreground">Zľava na doklad</span>
+                <span className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    inputMode="decimal"
+                    value={form.discount_value || ""}
+                    placeholder="0"
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setForm((f) => ({
+                        ...f,
+                        discount_value: v,
+                        discount_type: v > 0 ? f.discount_type || "percent" : f.discount_type,
+                      }));
+                    }}
+                    className="w-24 rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums"
+                  />
+                  <select
+                    value={form.discount_type || "percent"}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, discount_type: e.target.value as TypZlavy }))
+                    }
+                    className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                  >
+                    <option value="percent">%</option>
+                    <option value="amount">{form.currency}</option>
+                  </select>
+                </span>
+              </div>
+              {totals.zlava > 0 && (
+                <>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Medzisúčet</span>
+                    <span className="tabular-nums">
+                      {totals.medzisucet.toFixed(2)} {form.currency}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Zľava</span>
+                    <span className="tabular-nums">
+                      −{totals.zlava.toFixed(2)} {form.currency}
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Bez DPH</span>
                 <span className="tabular-nums">
@@ -1841,18 +1955,21 @@ function CellNum({
   align = "left",
   /* Množstvo si vystačí s dvoma miestami, cena ich potrebuje päť. */
   step = "0.01",
+  title,
 }: {
   value: number;
   onChange: (v: number) => void;
   w?: string;
   align?: "left" | "right";
   step?: string;
+  title?: string;
 }) {
   return (
     <input
       type="number"
       step={step}
       inputMode="decimal"
+      title={title}
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
       className={`${w} rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm tabular-nums hover:border-input focus:border-input focus:bg-background ${align === "right" ? "text-right" : ""}`}

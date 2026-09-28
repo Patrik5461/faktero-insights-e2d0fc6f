@@ -388,6 +388,17 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     const descLines = it.description
       ? wrapLines(String(it.description), font, DESC_SIZE, cols.name.w - PAD * 2)
       : [];
+    /*
+      Zľava riadku ide pod názov, nie do vlastného stĺpca — tabuľka má šírky
+      vyladené na sumy a ďalší stĺpec by ich stlačil. Jednotková cena ostáva
+      pôvodná, takže bez tohto riadku by odberateľ nevedel, prečo je súčet nižší.
+    */
+    const zlavaRiadku = Number((it as any).discount_percent ?? 0);
+    if (zlavaRiadku > 0) {
+      descLines.push(
+        `${t.zlava} ${new Intl.NumberFormat(localeDokladu(jazyk), { maximumFractionDigits: 2 }).format(zlavaRiadku)} %`,
+      );
+    }
     const textH =
       nameLines.length * (NAME_SIZE + 2) +
       (descLines.length ? 2 + descLines.length * (DESC_SIZE + 2) : 0);
@@ -492,17 +503,22 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   };
 
   // Estimate totals block height
-  const totalsRows = 2 + (discount > 0 ? 1 : 0);
+  const totalsRows = 2 + (discount > 0 ? 2 : 0);
   const totalsH = totalsRows * 18 + 8 + 60;
   ensureSpace(totalsH);
 
   const totalsTop = y;
   let ty = y;
+  /*
+    So zľavou na doklad sa najprv ukáže, z čoho sa zľavovalo, potom zľava a až
+    potom základ dane. Sumy v `invoice` už zľavu obsahujú, preto sa medzisúčet
+    dopočítava naspäť.
+  */
   drawTotalRow(
     cur,
     font,
     t.medzisucet,
-    fmt(Number(invoice.subtotal), invoice.currency),
+    fmt(Number(invoice.subtotal) + discount, invoice.currency),
     totalsX,
     ty,
     totalsBlockW,
@@ -510,6 +526,32 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     sub,
   );
   ty -= 18;
+  if (discount > 0) {
+    drawTotalRow(
+      cur,
+      font,
+      t.zlava,
+      `− ${fmt(discount, invoice.currency)}`,
+      totalsX,
+      ty,
+      totalsBlockW,
+      ink,
+      sub,
+    );
+    ty -= 18;
+    drawTotalRow(
+      cur,
+      font,
+      t.zakladDane,
+      fmt(Number(invoice.subtotal), invoice.currency),
+      totalsX,
+      ty,
+      totalsBlockW,
+      ink,
+      sub,
+    );
+    ty -= 18;
+  }
   if (!invoice.reverse_charge) {
     drawTotalRow(
       cur,
@@ -529,20 +571,6 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       font,
       `${t.dph} (PDP)`,
       "0,00\u00A0" + invoice.currency,
-      totalsX,
-      ty,
-      totalsBlockW,
-      ink,
-      sub,
-    );
-    ty -= 18;
-  }
-  if (discount > 0) {
-    drawTotalRow(
-      cur,
-      font,
-      t.zlava,
-      `− ${fmt(discount, invoice.currency)}`,
       totalsX,
       ty,
       totalsBlockW,

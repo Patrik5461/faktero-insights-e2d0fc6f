@@ -3762,6 +3762,7 @@ export type Database = {
           unit_price: number
           vat_amount: number
           vat_rate: number
+          discount_percent: number
         }
         Insert: {
           created_at?: string
@@ -3779,6 +3780,7 @@ export type Database = {
           unit_price?: number
           vat_amount?: number
           vat_rate?: number
+          discount_percent?: number
         }
         Update: {
           created_at?: string
@@ -3796,6 +3798,7 @@ export type Database = {
           unit_price?: number
           vat_amount?: number
           vat_rate?: number
+          discount_percent?: number
         }
         Relationships: [
           {
@@ -4097,6 +4100,9 @@ export type Database = {
           oss: boolean
           oss_country: string | null
           osobitna_uprava: string | null
+          discount_total: number
+          discount_type: string | null
+          discount_value: number
         }
         Insert: {
           advance_amount?: number | null
@@ -4174,6 +4180,9 @@ export type Database = {
           oss?: boolean
           oss_country?: string | null
           osobitna_uprava?: string | null
+          discount_total?: number
+          discount_type?: string | null
+          discount_value?: number
         }
         Update: {
           advance_amount?: number | null
@@ -4251,6 +4260,9 @@ export type Database = {
           oss?: boolean
           oss_country?: string | null
           osobitna_uprava?: string | null
+          discount_total?: number
+          discount_type?: string | null
+          discount_value?: number
         }
         Relationships: [
           {
@@ -5446,6 +5458,7 @@ export type Database = {
           unit_price: number
           vat_amount: number
           vat_rate: number
+          discount_percent: number
         }
         Insert: {
           created_at?: string
@@ -5462,6 +5475,7 @@ export type Database = {
           unit_price?: number
           vat_amount?: number
           vat_rate?: number
+          discount_percent?: number
         }
         Update: {
           created_at?: string
@@ -5478,6 +5492,7 @@ export type Database = {
           unit_price?: number
           vat_amount?: number
           vat_rate?: number
+          discount_percent?: number
         }
         Relationships: [
           {
@@ -5533,6 +5548,9 @@ export type Database = {
           approval_token: string | null
           responded_at: string | null
           response_note: string | null
+          discount_total: number
+          discount_type: string | null
+          discount_value: number
         }
         Insert: {
           company_id: string
@@ -5570,6 +5588,9 @@ export type Database = {
           approval_token?: string | null
           responded_at?: string | null
           response_note?: string | null
+          discount_total?: number
+          discount_type?: string | null
+          discount_value?: number
         }
         Update: {
           company_id?: string
@@ -5607,6 +5628,9 @@ export type Database = {
           approval_token?: string | null
           responded_at?: string | null
           response_note?: string | null
+          discount_total?: number
+          discount_type?: string | null
+          discount_value?: number
         }
         Relationships: [
           {

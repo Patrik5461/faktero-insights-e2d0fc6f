@@ -8,6 +8,7 @@ import {
   type KrajinaDane,
 } from "./vat-rates";
 import { sUctomFaktury } from "./platobny-ucet";
+import { riadkySoZlavou } from "./zlavy";
 type InvoiceRow = any;
 type ItemRow = any;
 type CompanyRow = any;
@@ -314,7 +315,13 @@ export function polozkyFaktur(opts: {
   const invoices = opts.invoices.filter(({ invoice }) => !pohodaPrekazka(invoice, company));
 
   return invoices
-    .map(({ invoice, items }, idx) => {
+    .map(({ invoice, items: povodneRiadky }, idx) => {
+      /*
+        Zľava na doklad žije v hlavičke, ale Pohoda skladá rekapituláciu DPH
+        z položiek. Bez rozpočítania by riadky dali vyššiu sumu než doklad a
+        import by spadol na nesúlade.
+      */
+      const items = riadkySoZlavou(povodneRiadky, (invoice as any).discount_total);
       const typ = String(invoice.type ?? "regular");
       const invoiceType = TYPY_DOKLADU[typ] ?? "issuedInvoice";
       // Dobropis sa zapisuje záporne; otáča sa množstvo, nie jednotková cena,

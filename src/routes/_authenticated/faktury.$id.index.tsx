@@ -1053,6 +1053,11 @@ function InvoiceDetail() {
                         {it.description && (
                           <div className="text-xs text-muted-foreground">{it.description}</div>
                         )}
+                        {Number((it as any).discount_percent ?? 0) > 0 && (
+                          <div className="text-xs text-emerald-600">
+                            Zľava {Number((it as any).discount_percent)} %
+                          </div>
+                        )}
                       </td>
                       <td className="p-3 text-right">{Number(it.quantity)}</td>
                       <td className="p-3">{it.unit}</td>
@@ -1088,6 +1093,18 @@ function InvoiceDetail() {
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Sumár</div>
               <div className="mt-3 space-y-1 text-sm">
+                {Number(inv.discount_total ?? 0) > 0 && (
+                  <>
+                    <Row
+                      label="Medzisúčet"
+                      value={`${(Number(inv.subtotal) + Number(inv.discount_total)).toFixed(2)} ${inv.currency}`}
+                    />
+                    <Row
+                      label="Zľava"
+                      value={`−${Number(inv.discount_total).toFixed(2)} ${inv.currency}`}
+                    />
+                  </>
+                )}
                 <Row label="Bez DPH" value={`${Number(inv.subtotal).toFixed(2)} ${inv.currency}`} />
                 <Row label="DPH" value={`${Number(inv.vat_total).toFixed(2)} ${inv.currency}`} />
                 {maZuctovanuZalohu(inv.advance_amount) && (

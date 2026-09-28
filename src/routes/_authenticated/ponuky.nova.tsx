@@ -13,6 +13,13 @@ import { JobPicker } from "@/components/faktero/JobPicker";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 import { MENY, KROK_CENY } from "@/lib/faktero/mena";
+import {
+  koeficientZlavy,
+  percentoZlavy,
+  sumaZlavyDokladu,
+  zakladRiadku,
+  type TypZlavy,
+} from "@/lib/faktero/zlavy";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { PoznamkaRezimuDph } from "@/components/faktero/PoznamkaRezimuDph";
@@ -29,6 +36,8 @@ type Item = {
   unit: string;
   unit_price: number;
   vat_rate: number;
+  /** Zľava riadku v %; jednotková cena ostáva pôvodná. */
+  discount_percent?: number;
   /** Väzba na katalóg — z nej žije cenník aj rezervácia tovaru. */
   product_id?: string | null;
   /** Do ceny siahol človek, cenník ju už neprepíše. */
@@ -50,6 +59,9 @@ function NewQuote() {
     currency: "EUR",
     notes: "",
     job_id: "",
+    /* Zľava na celú ponuku — percento alebo pevná suma bez DPH. */
+    discount_type: "" as "" | TypZlavy,
+    discount_value: 0,
   });
   const [items, setItems] = useState<Item[]>([{ ...EMPTY }]);
   useEffect(() => {
@@ -155,12 +167,21 @@ function NewQuote() {
     let sub = 0,
       vat = 0;
     for (const it of items) {
-      const s = Number(it.quantity) * Number(it.unit_price);
+      const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
       sub += s;
       vat += s * (Number(it.vat_rate) / 100);
     }
-    return { subtotal: sub, vat_total: vat, total: sub + vat };
-  }, [items]);
+    // Zľava na celú ponuku znižuje základ aj daň rovnakým koeficientom.
+    const medzisucet = Math.round(sub * 100) / 100;
+    const zlava = sumaZlavyDokladu(sub, {
+      typ: form.discount_type || null,
+      hodnota: Number(form.discount_value),
+    });
+    const k = koeficientZlavy(sub, zlava);
+    sub = sub * k;
+    vat = vat * k;
+    return { subtotal: sub, vat_total: vat, total: sub + vat, medzisucet, zlava };
+  }, [items, form.discount_type, form.discount_value]);
 
   function setItem(i: number, patch: Partial<Item>) {
     setItems((arr) =>
@@ -214,6 +235,9 @@ function NewQuote() {
         subtotal: Number(totals.subtotal.toFixed(2)),
         vat_total: Number(totals.vat_total.toFixed(2)),
         total: Number(totals.total.toFixed(2)),
+        discount_type: totals.zlava > 0 ? form.discount_type || "percent" : null,
+        discount_value: totals.zlava > 0 ? Number(form.discount_value) : 0,
+        discount_total: totals.zlava,
         reserve_stock: reserveStock,
         notes: form.notes,
         job_id: form.job_id || null,
@@ -226,7 +250,7 @@ function NewQuote() {
     }
 
     const rows = items.map((it, i) => {
-      const s = Number(it.quantity) * Number(it.unit_price);
+      const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
       const v = s * (Number(it.vat_rate) / 100);
       return {
         quote_id: q.id,
@@ -237,6 +261,7 @@ function NewQuote() {
         quantity: it.quantity,
         unit: it.unit,
         unit_price: it.unit_price,
+        discount_percent: percentoZlavy(it.discount_percent),
         vat_rate: it.vat_rate,
         subtotal: +s.toFixed(2),
         vat_amount: +v.toFixed(2),
@@ -359,7 +384,7 @@ function NewQuote() {
               {items.map((it, idx) => (
                 <div
                   key={idx}
-                  className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-[2fr_80px_80px_100px_80px_120px_auto] sm:items-end"
+                  className="grid gap-2 rounded-md border border-border p-3 sm:grid-cols-[2fr_70px_70px_100px_80px_80px_120px_auto] sm:items-end"
                 >
                   <In label="Názov" value={it.name} onChange={(v) => setItem(idx, { name: v })} />
                   <In
@@ -384,13 +409,22 @@ function NewQuote() {
                     )}
                   </div>
                   <In
+                    label="Zľava %"
+                    type="number"
+                    value={String(it.discount_percent ?? 0)}
+                    onChange={(v) => setItem(idx, { discount_percent: percentoZlavy(v) })}
+                  />
+                  <In
                     label="DPH %"
                     type="number"
                     value={String(it.vat_rate)}
                     onChange={(v) => setItem(idx, { vat_rate: Number(v) })}
                   />
                   <div className="text-right text-sm font-medium">
-                    {(it.quantity * it.unit_price * (1 + it.vat_rate / 100)).toFixed(2)}{" "}
+                    {(
+                      zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
+                      (1 + it.vat_rate / 100)
+                    ).toFixed(2)}{" "}
                     {form.currency}
                   </div>
                   <button
@@ -404,6 +438,47 @@ function NewQuote() {
               ))}
             </div>
             <div className="mt-4 space-y-1 text-right text-sm">
+              {/* Zľava na celú ponuku — rozpočíta sa pomerne medzi sadzby DPH. */}
+              <div className="flex items-center justify-end gap-2 pb-1">
+                <span className="text-[13px] font-semibold text-foreground">Zľava na ponuku</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  inputMode="decimal"
+                  value={form.discount_value || ""}
+                  placeholder="0"
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setForm((f) => ({
+                      ...f,
+                      discount_value: v,
+                      discount_type: v > 0 ? f.discount_type || "percent" : f.discount_type,
+                    }));
+                  }}
+                  className="w-24 rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums"
+                />
+                <select
+                  value={form.discount_type || "percent"}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, discount_type: e.target.value as TypZlavy }))
+                  }
+                  className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                >
+                  <option value="percent">%</option>
+                  <option value="amount">{form.currency}</option>
+                </select>
+              </div>
+              {totals.zlava > 0 && (
+                <>
+                  <div className="text-muted-foreground">
+                    Medzisúčet: {totals.medzisucet.toFixed(2)} {form.currency}
+                  </div>
+                  <div className="text-muted-foreground">
+                    Zľava: −{totals.zlava.toFixed(2)} {form.currency}
+                  </div>
+                </>
+              )}
               <div>
                 Bez DPH:{" "}
                 <span className="font-medium">

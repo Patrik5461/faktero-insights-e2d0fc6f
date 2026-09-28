@@ -6,6 +6,7 @@
  */
 import type { EN16931Invoice, EN16931Line, EN16931Party, EN16931TaxSubtotal } from "./types";
 import { sUctomFaktury } from "../platobny-ucet";
+import { riadkySoZlavou } from "../zlavy";
 
 type CompanyRow = {
   id: string;
@@ -215,7 +216,9 @@ export function mapToEN16931(args: {
   customizationId?: string;
   profileId?: string;
 }): EN16931Invoice {
-  const { profile, invoice, items } = args;
+  const { profile, invoice } = args;
+  /* Zľava na doklad sa rozpočíta do riadkov — UBL sumáre vychádzajú z nich. */
+  const items = riadkySoZlavou(args.items, (invoice as any).discount_total);
   // Účet z faktúry, ak si ho zapamätala — inak účet firmy.
   const company = sUctomFaktury(args.company, invoice as any);
   const customizationId =

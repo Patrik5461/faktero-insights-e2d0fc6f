@@ -1,5 +1,6 @@
 import { krajinaDane } from "./vat-rates";
 import { sUctomFaktury } from "./platobny-ucet";
+import { riadkySoZlavou } from "./zlavy";
 
 /**
  * ISDOC — český národný formát elektronickej faktúry.
@@ -169,7 +170,12 @@ export function buildIsdoc(opts: {
   company: Riadok;
   customer?: Riadok | null;
 }): string {
-  const { invoice, items } = opts;
+  const { invoice } = opts;
+  /*
+    Zľava na doklad je v hlavičke; rekapitulácia ISDOC-u sa ale skladá z
+    riadkov, tak sa musí rozpočítať, inak dokument nesedí sám so sebou.
+  */
+  const items = riadkySoZlavou(opts.items, (invoice as any).discount_total);
   // Účet z faktúry, ak si ho zapamätala — inak účet firmy.
   const company = sUctomFaktury(opts.company, invoice);
   /*

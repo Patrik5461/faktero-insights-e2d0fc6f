@@ -93,6 +93,11 @@ export const convertQuoteToInvoice = createServerFn({ method: "POST" })
         subtotal: quote.subtotal,
         vat_total: quote.vat_total,
         total: quote.total,
+        // Zľavy idú s ponukou na faktúru — dohodnutá cena je to, čo zákazník
+        // odsúhlasil; bez nich by faktúra pýtala viac než ponuka.
+        discount_type: quote.discount_type ?? null,
+        discount_value: quote.discount_value ?? 0,
+        discount_total: quote.discount_total ?? 0,
         notes: quote.notes ?? null,
         // Zákazka prechádza z ponuky na faktúru. Keby ju bolo treba vyberať
         // znova, vypadla by práve pri doklade, ktorý nesie výnos.
@@ -112,6 +117,7 @@ export const convertQuoteToInvoice = createServerFn({ method: "POST" })
         quantity: it.quantity,
         unit: it.unit,
         unit_price: it.unit_price,
+        discount_percent: it.discount_percent ?? 0,
         vat_rate: it.vat_rate,
         subtotal: it.subtotal,
         vat_amount: it.vat_amount,
@@ -191,6 +197,9 @@ export const duplicateQuote = createServerFn({ method: "POST" })
         subtotal: q.subtotal,
         vat_total: q.vat_total,
         total: q.total,
+        discount_type: q.discount_type ?? null,
+        discount_value: q.discount_value ?? 0,
+        discount_total: q.discount_total ?? 0,
       })
       .select()
       .single();
@@ -205,6 +214,7 @@ export const duplicateQuote = createServerFn({ method: "POST" })
         quantity: it.quantity,
         unit: it.unit,
         unit_price: it.unit_price,
+        discount_percent: it.discount_percent ?? 0,
         vat_rate: it.vat_rate,
         subtotal: it.subtotal,
         vat_amount: it.vat_amount,

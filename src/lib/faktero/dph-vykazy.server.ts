@@ -1,3 +1,4 @@
+import { riadkySoZlavou } from "./zlavy";
 /**
  * Doklady za zdaňovacie obdobie pre výkazy k DPH.
  *
@@ -66,7 +67,7 @@ export async function nacitajVstup(
     supabase
       .from("invoices")
       .select(
-        "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, invoice_items(vat_rate, subtotal, quantity, unit_price)",
+        "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, invoice_items(vat_rate, subtotal, quantity, unit_price)",
       )
       .eq("company_id", companyId)
       .is("deleted_at", null)
@@ -120,7 +121,10 @@ export async function nacitajVstup(
   const zdaneneZalohy = new Map<string, SadzbovyRiadok[]>();
   for (const f of (fakturyRes.data ?? []) as any[]) {
     if (f.type !== "advance_payment" || !f.advance_invoice_id) continue;
-    zdaneneZalohy.set(f.advance_invoice_id, riadkyZPoloziek(f.invoice_items ?? []));
+    zdaneneZalohy.set(
+      f.advance_invoice_id,
+      riadkyZPoloziek(riadkySoZlavou(f.invoice_items ?? [], f.discount_total)),
+    );
   }
 
   const vystavene: VystavenaFaktura[] = [];
@@ -134,7 +138,11 @@ export async function nacitajVstup(
       rovnakým pomerom — chýbajúci prepočet sa ozve, nezamlčí.
     */
     const cudzia = Boolean(f.currency && f.currency !== "EUR");
-    let riadky = riadkyZPoloziek(f.invoice_items ?? []);
+    /*
+      Zľava na doklad znižuje základ dane, ale v položkách nie je — do výkazu
+      by inak išla vyššia daň, než faktúra pýta.
+    */
+    let riadky = riadkyZPoloziek(riadkySoZlavou(f.invoice_items ?? [], f.discount_total));
     if (cudzia) {
       const kurz = Number(f.exchange_rate ?? 0);
       if (kurz > 0) {

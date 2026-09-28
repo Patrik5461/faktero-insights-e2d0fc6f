@@ -1,4 +1,11 @@
 import { KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
+import {
+  koeficientZlavy,
+  percentoZlavy,
+  sumaZlavyDokladu,
+  zakladRiadku,
+  type TypZlavy,
+} from "@/lib/faktero/zlavy";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
 import { useEffect, useMemo, useState } from "react";
@@ -24,6 +31,8 @@ type Item = {
   unit: string;
   unit_price: number;
   vat_rate: number;
+  /** Zľava riadku v %; jednotková cena ostáva pôvodná. */
+  discount_percent?: number;
   stock_item_id?: string | null;
   _original_quantity?: number;
   _original_stock_item_id?: string | null;
@@ -37,6 +46,7 @@ const EMPTY: Item = {
   unit: "ks",
   unit_price: 0,
   vat_rate: DEFAULT_VAT_RATE,
+  discount_percent: 0,
 };
 
 function EditInvoice() {
@@ -61,6 +71,9 @@ function EditInvoice() {
     job_id: "",
     notes: "",
     intro_note: "",
+    /* Zľava na celý doklad — percento alebo pevná suma bez DPH. */
+    discount_type: "" as "" | TypZlavy,
+    discount_value: 0,
   });
 
   useEffect(() => {
@@ -92,6 +105,8 @@ function EditInvoice() {
         job_id: i.job_id ?? "",
         notes: i.notes ?? "",
         intro_note: i.intro_note ?? "",
+        discount_type: (i.discount_type as TypZlavy | null) ?? "",
+        discount_value: Number(i.discount_value ?? 0),
       });
       setItems(
         (its ?? []).map((r: any) => ({
@@ -102,6 +117,7 @@ function EditInvoice() {
           unit: r.unit ?? "ks",
           unit_price: Number(r.unit_price),
           vat_rate: Number(r.vat_rate),
+          discount_percent: Number(r.discount_percent ?? 0),
           stock_item_id: r.stock_item_id ?? null,
           _original_quantity: Number(r.quantity),
           _original_stock_item_id: r.stock_item_id ?? null,
@@ -134,18 +150,32 @@ function EditInvoice() {
     let sub = 0,
       vat = 0;
     for (const it of riadkyDokladu) {
-      const s = Number(it.quantity) * Number(it.unit_price);
+      const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
       sub += s;
       vat += s * (Number(it.vat_rate) / 100);
     }
-    return { subtotal: sub, vat_total: vat, total: sub + vat };
-  }, [riadkyDokladu]);
+    // Zľava na doklad prenásobí základ aj daň rovnakým koeficientom, takže
+    // pomer medzi sadzbami DPH ostane nedotknutý.
+    const medzisucet = Math.round(sub * 100) / 100;
+    const zlava = sumaZlavyDokladu(sub, {
+      typ: form.discount_type || null,
+      hodnota: Number(form.discount_value),
+    });
+    const k = koeficientZlavy(sub, zlava);
+    sub = sub * k;
+    vat = vat * k;
+    return { subtotal: sub, vat_total: vat, total: sub + vat, medzisucet, zlava };
+  }, [riadkyDokladu, form.discount_type, form.discount_value]);
 
   /** Suma s DPH napísaná do stĺpca Spolu dopočíta jednotkovú cenu bez dane. */
   function nastavSpolu(idx: number, spolu: number) {
     const it = items[idx];
     if (!it || it._locked) return;
-    setItem(idx, { unit_price: cenaZoSumySDph(spolu, it.quantity, it.vat_rate) });
+    const zlava = percentoZlavy(it.discount_percent);
+    const cena = cenaZoSumySDph(spolu, it.quantity, it.vat_rate);
+    setItem(idx, {
+      unit_price: zlava >= 100 ? cena : Number((cena / (1 - zlava / 100)).toFixed(5)),
+    });
   }
 
   function setItem(idx: number, patch: Partial<Item>) {
@@ -194,6 +224,9 @@ function EditInvoice() {
           job_id: form.job_id || null,
           notes: form.notes,
           intro_note: form.intro_note.trim() || null,
+          discount_type: totals.zlava > 0 ? form.discount_type || "percent" : null,
+          discount_value: totals.zlava > 0 ? Number(form.discount_value) : 0,
+          discount_total: totals.zlava,
           subtotal: Number(totals.subtotal.toFixed(2)),
           vat_total: Number(totals.vat_total.toFixed(2)),
           total: Number(totals.total.toFixed(2)),
@@ -206,7 +239,7 @@ function EditInvoice() {
       if (delErr) throw delErr;
 
       const rows = riadkyDokladu.map((it, idx) => {
-        const s = Number(it.quantity) * Number(it.unit_price);
+        const s = zakladRiadku(it.quantity, it.unit_price, it.discount_percent);
         const v = s * (Number(it.vat_rate) / 100);
         return {
           invoice_id: id,
@@ -216,6 +249,7 @@ function EditInvoice() {
           quantity: it.quantity,
           unit: it.unit,
           unit_price: it.unit_price,
+          discount_percent: percentoZlavy(it.discount_percent),
           vat_rate: it.vat_rate,
           stock_item_id: it.stock_item_id ?? null,
           subtotal: Number(s.toFixed(2)),
@@ -378,6 +412,7 @@ function EditInvoice() {
                     <th className="py-2 pl-3 font-medium">Mn.</th>
                     <th className="py-2 pl-3 font-medium">MJ</th>
                     <th className="py-2 pl-3 font-medium text-right">Cena</th>
+                    <th className="py-2 pl-3 font-medium text-right">Zľava %</th>
                     <th className="py-2 pl-3 font-medium">DPH</th>
                     <th className="py-2 pl-3 font-medium text-right">Spolu s DPH</th>
                     <th></th>
@@ -427,6 +462,20 @@ function EditInvoice() {
                         />
                       </td>
                       <td className="py-2 pl-3">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          value={it.discount_percent ?? 0}
+                          disabled={it._locked}
+                          onChange={(e) =>
+                            setItem(idx, { discount_percent: percentoZlavy(e.target.value) })
+                          }
+                          className="w-16 rounded-md border border-transparent bg-transparent px-2 py-1.5 text-right text-sm tabular-nums hover:border-input focus:border-input focus:bg-background"
+                        />
+                      </td>
+                      <td className="py-2 pl-3">
                         <select
                           value={it.vat_rate}
                           disabled={it._locked}
@@ -442,7 +491,7 @@ function EditInvoice() {
                       </td>
                       <td className="py-2 pl-3">
                         <CellSpolu
-                          hodnota={it.quantity * it.unit_price * (1 + it.vat_rate / 100)}
+                          hodnota={zakladRiadku(it.quantity, it.unit_price, it.discount_percent) * (1 + it.vat_rate / 100)}
                           onZmena={(v) => nastavSpolu(idx, v)}
                           disabled={it._locked}
                           w="w-28"
@@ -487,7 +536,7 @@ function EditInvoice() {
                     placeholder="Názov položky"
                     className="mb-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   />
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-5 gap-2">
                     <input
                       type="number"
                       step="0.01"
@@ -510,6 +559,19 @@ function EditInvoice() {
                       onChange={(e) => setItem(idx, { unit_price: Number(e.target.value) })}
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                     />
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      title="Zľava v %"
+                      value={it.discount_percent ?? 0}
+                      disabled={it._locked}
+                      onChange={(e) =>
+                        setItem(idx, { discount_percent: percentoZlavy(e.target.value) })
+                      }
+                      className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                    />
                     <select
                       value={it.vat_rate}
                       disabled={it._locked}
@@ -527,7 +589,7 @@ function EditInvoice() {
                     <span className="flex items-center gap-2">
                       <span className="text-[13px] font-semibold text-foreground">Spolu s DPH</span>
                       <CellSpolu
-                        hodnota={it.quantity * it.unit_price * (1 + it.vat_rate / 100)}
+                        hodnota={zakladRiadku(it.quantity, it.unit_price, it.discount_percent) * (1 + it.vat_rate / 100)}
                         onZmena={(v) => nastavSpolu(idx, v)}
                         disabled={it._locked}
                         w="w-28"
@@ -563,6 +625,55 @@ function EditInvoice() {
 
           <section className="rounded-2xl border border-border bg-gradient-to-br from-card to-primary/[0.03] p-5">
             <div className="ml-auto max-w-sm space-y-2 text-sm">
+              {/* Zľava na celý doklad — rozpočíta sa pomerne medzi sadzby DPH. */}
+              <div className="flex items-center justify-between gap-2 pb-1">
+                <span className="text-[13px] font-semibold text-foreground">Zľava na doklad</span>
+                <span className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    inputMode="decimal"
+                    value={form.discount_value || ""}
+                    placeholder="0"
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      setForm((f) => ({
+                        ...f,
+                        discount_value: v,
+                        discount_type: v > 0 ? f.discount_type || "percent" : f.discount_type,
+                      }));
+                    }}
+                    className="w-24 rounded-md border border-input bg-background px-2 py-1.5 text-right text-sm tabular-nums"
+                  />
+                  <select
+                    value={form.discount_type || "percent"}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, discount_type: e.target.value as TypZlavy }))
+                    }
+                    className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                  >
+                    <option value="percent">%</option>
+                    <option value="amount">{form.currency}</option>
+                  </select>
+                </span>
+              </div>
+              {totals.zlava > 0 && (
+                <>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Medzisúčet</span>
+                    <span className="tabular-nums">
+                      {totals.medzisucet.toFixed(2)} {form.currency}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Zľava</span>
+                    <span className="tabular-nums">
+                      −{totals.zlava.toFixed(2)} {form.currency}
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Bez DPH</span>
                 <span className="tabular-nums">

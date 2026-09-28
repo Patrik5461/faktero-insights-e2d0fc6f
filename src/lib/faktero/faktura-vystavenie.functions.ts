@@ -24,6 +24,8 @@ const Polozka = z.object({
   unit: z.string().max(20).default("ks"),
   unit_price: z.number().nonnegative().max(10_000_000),
   vat_rate: z.number().min(0).max(100).default(23),
+  /** Zľava riadku v %; jednotková cena ostáva pôvodná. */
+  discount_percent: z.number().min(0).max(100).default(0),
   product_id: z.string().uuid().nullable().optional(),
 });
 
@@ -37,6 +39,13 @@ const NovaFaktura = z.object({
   notes: z.string().max(2000).nullable().optional(),
   /** Text nad tabuľkou položiek — čoho sa dodávka týka. `notes` ostáva pod nimi. */
   intro_note: z.string().max(2000).nullable().optional(),
+  /**
+   * Zľava na celý doklad. `percent` berie `discount_value` ako percento,
+   * `amount` ako sumu bez DPH. Rozpočíta sa pomerne medzi sadzby DPH, takže
+   * riadky ostanú také, ako ich človek zadal.
+   */
+  discount_type: z.enum(["percent", "amount"]).nullable().optional(),
+  discount_value: z.number().min(0).max(10_000_000).default(0),
   /**
    * Zálohová faktúra nie je daňový doklad a má vlastnú radu čísel (ZF…), aby
    * v rade daňových dokladov neostávali diery. Dobropis sem nepatrí — ten
@@ -136,13 +145,28 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
 
     const { computeInvoiceTotals, nextInvoiceNumberDetailed } =
       await import("./invoice-numbering.server");
+    /*
+      Riadková zľava je už v základe riadku; zľava na celý doklad sa odpočíta
+      až zo súčtov a rozpočíta sa pomerne, nech pomer medzi sadzbami DPH
+      ostane. Riadky v databáze ju preto neobsahujú — rovnako ako na webe.
+    */
     const sucty = computeInvoiceTotals(
       data.items.map((i) => ({
         quantity: i.quantity,
-        unit_price: i.unit_price,
+        unit_price: Number(i.unit_price) * (1 - (i.discount_percent ?? 0) / 100),
         vat_rate: i.vat_rate,
       })),
     );
+    const { koeficientZlavy, sumaZlavyDokladu } = await import("./zlavy");
+    const zlavaDokladu = sumaZlavyDokladu(sucty.subtotal, {
+      typ: data.discount_type ?? null,
+      hodnota: data.discount_value,
+    });
+    const kZlavy = koeficientZlavy(sucty.subtotal, zlavaDokladu);
+    const suctyPoZlave = {
+      subtotal: Math.round(sucty.subtotal * kZlavy * 100) / 100,
+      vat_total: Math.round(sucty.vat_total * kZlavy * 100) / 100,
+    };
     // Číslo dáva RPC v transakcii — počítať ho z počtu faktúr alebo si ho
     // vymyslieť z času znamená duplicitu alebo dieru v rade. Výnimkou je
     // faktúra vystavená bez signálu: tá si číslo priniesla z rezervácie.
@@ -259,9 +283,12 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
         customer_city: odberatel.city,
         customer_zip: odberatel.zip,
         customer_country: odberatel.country ?? "SK",
-        subtotal: sucty.subtotal,
-        vat_total: sucty.vat_total,
-        total: sucty.total,
+        subtotal: suctyPoZlave.subtotal,
+        vat_total: suctyPoZlave.vat_total,
+        total: Math.round((suctyPoZlave.subtotal + suctyPoZlave.vat_total) * 100) / 100,
+        discount_type: zlavaDokladu > 0 ? (data.discount_type ?? "percent") : null,
+        discount_value: zlavaDokladu > 0 ? data.discount_value : 0,
+        discount_total: zlavaDokladu,
         notes: data.notes || null,
         intro_note: data.intro_note || null,
         // Prvá záloha ostáva aj v stĺpci kvôli staršiemu rozhraniu; úplný
@@ -284,6 +311,7 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       quantity: it.quantity,
       unit: it.unit || "ks",
       unit_price: it.unit_price,
+      discount_percent: it.discount_percent ?? 0,
       vat_rate: it.vat_rate,
       subtotal: sucty.enriched[i].subtotal,
       vat_amount: sucty.enriched[i].vat_amount,

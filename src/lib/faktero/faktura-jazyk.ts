@@ -56,6 +56,7 @@ type Popisky = {
   dph: string;
   celkom: string;
   medzisucet: string;
+  zakladDane: string;
   zlava: string;
   spolu: string;
   zuctovanaZaloha: string;
@@ -107,6 +108,7 @@ const SK: Popisky = {
   dph: "DPH",
   celkom: "CELKOM",
   medzisucet: "Medzisúčet",
+  zakladDane: "Základ dane",
   zlava: "Zľava",
   spolu: "Spolu",
   zuctovanaZaloha: "Zúčtovaná záloha",
@@ -152,6 +154,7 @@ const CS: Popisky = {
   cena: "CENA",
   celkom: "CELKEM",
   medzisucet: "Mezisoučet",
+  zakladDane: "Základ daně",
   zlava: "Sleva",
   spolu: "Celkem",
   zuctovanaZaloha: "Zúčtovaná záloha",
@@ -198,6 +201,7 @@ const EN: Popisky = {
   dph: "VAT",
   celkom: "TOTAL",
   medzisucet: "Subtotal",
+  zakladDane: "Taxable amount",
   zlava: "Discount",
   spolu: "Total",
   zuctovanaZaloha: "Advance settled",
@@ -248,6 +252,7 @@ const DE: Popisky = {
   dph: "USt.",
   celkom: "GESAMT",
   medzisucet: "Zwischensumme",
+  zakladDane: "Nettobetrag",
   zlava: "Rabatt",
   spolu: "Summe",
   zuctovanaZaloha: "Verrechnete Anzahlung",
@@ -299,6 +304,7 @@ const HU: Popisky = {
   dph: "ÁFA",
   celkom: "ÖSSZESEN",
   medzisucet: "Részösszeg",
+  zakladDane: "Adóalap",
   zlava: "Kedvezmény",
   spolu: "Összesen",
   zuctovanaZaloha: "Beszámított előleg",
