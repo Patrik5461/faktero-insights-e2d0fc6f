@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-09-27",
+ "vytvorene": "2026-09-28",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -345,7 +345,7 @@
    "sekcie": [
     {
      "nadpis": "Ako vytvoriť faktúru",
-     "text": "<>\n-\nV ľavom menu otvorte Fakturácia → Nová faktúra (alebo hore vpravo\nVytvoriť → Nová faktúra ).\n-\nV poli Odberateľ začnite písať názov alebo IČO a vyberte firmu zo\nzoznamu. Nového odberateľa pridáte tlačidlom Vytvoriť nového odberateľa\n.\n-\nDátum vystavenia a dodania sa vyplní sám. Splatnosť nastavíte jedným klikom na\n7d , 14d alebo 30d .\n-\nPridajte položky — ručne (názov, množstvo, cena, sadzba DPH) alebo cez\nZ katalógu . Sumu bez DPH, DPH aj sumu na úhradu Faktero prepočíta hneď.\n-\nKliknite na Vystaviť faktúru . Otvorí sa detail faktúry, odkiaľ ju\nodošlete e-mailom alebo vygenerujete PDF.\nČíslovanie sa generuje automaticky podľa nastavenej rady vo firme."
+     "text": "<>\n-\nV ľavom menu otvorte Fakturácia → Nová faktúra (alebo hore vpravo\nVytvoriť → Nová faktúra ).\n-\nV poli Odberateľ začnite písať názov alebo IČO a vyberte firmu zo\nzoznamu. Nového odberateľa pridáte tlačidlom Vytvoriť nového odberateľa\n.\n-\nDátum vystavenia a dodania sa vyplní sám. Splatnosť nastavíte jedným klikom na\n7d , 14d alebo 30d .\n-\nVyplňte Text nad položkami — je povinný a hovorí, čo sa fakturuje\n(napríklad „Nájomné za september 2026 podľa zmluvy č. 4/2021“). Vytlačí sa nad\ntabuľkou položiek.\n-\nPridajte položky — ručne (názov, množstvo, cena, sadzba DPH) alebo cez\nZ katalógu . Sumu bez DPH, DPH aj sumu na úhradu Faktero prepočíta\nhneď. Položky povinné nie sú : doklad môže znieť len na text nad nimi.\nRiadok, ktorý má sumu, ale nemá názov, faktúru nepustí — aby sa suma ticho nestratila.\n-\nKliknite na Vystaviť faktúru . Otvorí sa detail faktúry, odkiaľ ju\nodošlete e-mailom alebo vygenerujete PDF.\nČíslovanie sa generuje automaticky podľa nastavenej rady vo firme."
     },
     {
      "nadpis": "Ako vygenerovať PDF",

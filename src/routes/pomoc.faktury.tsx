@@ -50,8 +50,15 @@ const sections: HelpSection[] = [
             <strong>7d</strong>, <strong>14d</strong> alebo <strong>30d</strong>.
           </li>
           <li>
+            Vyplňte <strong>Text nad položkami</strong> — je povinný a hovorí, čo sa fakturuje
+            (napríklad „Nájomné za september 2026 podľa zmluvy č. 4/2021“). Vytlačí sa nad
+            tabuľkou položiek.
+          </li>
+          <li>
             Pridajte položky — ručne (názov, množstvo, cena, sadzba DPH) alebo cez{" "}
-            <strong>Z katalógu</strong>. Sumu bez DPH, DPH aj sumu na úhradu Faktero prepočíta hneď.
+            <strong>Z katalógu</strong>. Sumu bez DPH, DPH aj sumu na úhradu Faktero prepočíta
+            hneď. <strong>Položky povinné nie sú</strong>: doklad môže znieť len na text nad nimi.
+            Riadok, ktorý má sumu, ale nemá názov, faktúru nepustí — aby sa suma ticho nestratila.
           </li>
           <li>
             Kliknite na <strong>Vystaviť faktúru</strong>. Otvorí sa detail faktúry, odkiaľ ju
