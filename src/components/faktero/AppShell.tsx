@@ -111,8 +111,9 @@ const NAV: NavGroup[] = [
       "/objednavky",
     ],
     children: [
+      // Novú faktúru otvára tlačidlo na zozname aj rýchle „Vytvoriť“ v hlavičke,
+      // tak nech sa tá istá vec neponúka v menu tretíkrát.
       { to: "/faktury", label: "Faktúry" },
-      { to: "/faktury/nova", label: "Nová faktúra" },
       { to: "/faktury/rychla", label: "Rýchla faktúra" },
       { to: "/zalohove", label: "Zálohové faktúry" },
       { to: "/ponuky", label: "Cenové ponuky" },
