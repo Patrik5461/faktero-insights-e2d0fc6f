@@ -30,6 +30,7 @@ import {
   Receipt,
   Route,
   IdCard,
+  Send,
 } from "lucide-react";
 import { oblastPodlaCesty, vidiOblast } from "@/lib/faktero/opravnenia";
 import { HLADANIE_OD, filtrujFirmy } from "@/lib/faktero/hladanie-firiem";
@@ -127,6 +128,24 @@ const NAV: NavGroup[] = [
     ],
   },
   {
+    key: "efaktura",
+    label: "eFaktúra",
+    /*
+      Vlastná skupina: eFaktúra je samostatná agenda so svojím prehľadom,
+      odoslanými, prijatými aj doručenkami — pod Dokladmi sa strácala medzi
+      bločkami. Celá je len pre slovenské firmy (LEN_SK), takže českej firme
+      sa vyprázdni a zo lišty vypadne.
+    */
+    icon: Send,
+    match: ["/efaktura"],
+    children: [
+      { to: "/efaktura", label: "Prehľad eFaktúry" },
+      { to: "/efaktura/odoslane", label: "Odoslané eFaktúry" },
+      { to: "/efaktura/prijate", label: "Prijaté eFaktúry" },
+      { to: "/efaktura/dorucenia", label: "Doručenia eFaktúr" },
+    ],
+  },
+  {
     key: "doklady",
     label: "Doklady",
     /*
@@ -135,17 +154,13 @@ const NAV: NavGroup[] = [
       rozoznať vôbec. Doklady majú bloček, rovnako ako v mobilnej appke.
     */
     icon: Receipt,
-    match: ["/doklady", "/ostatne-doklady", "/efaktura"],
+    match: ["/doklady", "/ostatne-doklady"],
     children: [
       { to: "/doklady", label: "Prehľad dokladov" },
       { to: "/doklady", search: { stav: "nespracovane" }, label: "Nespracované doklady" },
       { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
       { to: "/doklady/mailom", label: "Doklady e-mailom" },
       { to: "/ostatne-doklady", label: "Ostatné doklady" },
-      { to: "/efaktura", label: "Prehľad eFaktúry" },
-      { to: "/efaktura/odoslane", label: "Odoslané eFaktúry" },
-      { to: "/efaktura/prijate", label: "Prijaté eFaktúry" },
-      { to: "/efaktura/dorucenia", label: "Doručenia eFaktúr" },
     ],
   },
   {
@@ -352,6 +367,7 @@ export type ProductMode = "invoicing" | "logbook" | "both";
 const INVOICING_KEYS = new Set([
   "prehlad",
   "fakturacia",
+  "efaktura",
   "doklady",
   "kontakty",
   "zakazky",
