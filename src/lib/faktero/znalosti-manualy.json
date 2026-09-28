@@ -836,6 +836,10 @@
      "text": "<>\nPrijatá faktúra je záväzok s dátumom splatnosti — zaplatíte ju neskôr,\nzvyčajne prevodom.\nDoklad (bloček) je už zaplatený výdavok. Patrí medzi\nDoklady (/pomoc/doklady), nie sem.\nKeď sa pomýlite, nič sa nedeje: doklad sa dá jedným tlačidlom presunúť sem a z Dokladov\nzmizne, aby ten istý náklad nefiguroval dvakrát."
     },
     {
+     "nadpis": "Prijaté zálohové faktúry",
+     "text": "<>\nKeď vám dodávateľ pošle zálohovú faktúru , zaevidujete ju rovnako ako\nbežnú — pri Druhu dokladu vyberiete Prijatá zálohová faktúra . Má vlastný\nzoznam Fakturácia → Prijaté zálohové faktúry , aby sa nemiešala s daňovými\ndokladmi.\nZálohová faktúra nie je daňový doklad : zaplatíte ju, ale daň si z nej\nneodpočítavate — tú prinesie až ostrá faktúra alebo doklad k prijatej platbe. Preto do\nvýkazov k DPH ani do nákladov zákazky nevstupuje.\nKeď príde ostrá faktúra, pri jej zápise vyberiete v poli\nZúčtováva prijatú zálohu tú zálohu, ktorú vyrovnáva. Ponúknu sa len\nnezúčtované zálohy toho istého dodávateľa. Záloha sa potom v zozname označí ako\nZúčtovaná a v záväzkoch na prehľade sa už nepočíta druhýkrát."
+    },
+    {
      "nadpis": "Údaje pre výkazy k DPH",
      "text": "<>\nNa prijatej faktúre sú štyri polia, ktoré rozhodujú, ako sa dostane do výkazov:\n-\nRežim DPH — tuzemská faktúra od platiteľa ide do časti B.2 kontrolného\nvýkazu, samozdanenie podľa § 69 do B.1, nadobudnutie tovaru z EÚ do riadkov 05 až 08\npriznania. Keď pole necháte prázdne, režim sa odhadne podľa IČ DPH dodávateľa.\n-\nDátum dodania — rozhoduje o období; keď chýba, použije sa dátum\nvystavenia.\n-\nOdpočítanie dane — keď si daň neodpočítavate, faktúra do časti B.2\nnepatrí.\n-\nOpravuje faktúru číslo — dobropis bez čísla pôvodnej faktúry sa do\nčasti C.2 zapísať nedá.\nFaktúra v cudzej mene sa po uložení prepočíta kurzom ECB — do priznania totiž vstupuje v\neurách. Zostavenie výkazov popisuje\nmanuál k výkazom k DPH (/pomoc/vykazy-dph)."
     }

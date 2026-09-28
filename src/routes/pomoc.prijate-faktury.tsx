@@ -184,6 +184,31 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "prijate-zalohy",
+    title: "Prijaté zálohové faktúry",
+    body: (
+      <>
+        <p>
+          Keď vám dodávateľ pošle <strong>zálohovú faktúru</strong>, zaevidujete ju rovnako ako
+          bežnú — pri <em>Druhu dokladu</em> vyberiete <em>Prijatá zálohová faktúra</em>. Má vlastný
+          zoznam <strong>Fakturácia → Prijaté zálohové faktúry</strong>, aby sa nemiešala s daňovými
+          dokladmi.
+        </p>
+        <p>
+          Zálohová faktúra <strong>nie je daňový doklad</strong>: zaplatíte ju, ale daň si z nej
+          neodpočítavate — tú prinesie až ostrá faktúra alebo doklad k prijatej platbe. Preto do
+          výkazov k DPH ani do nákladov zákazky nevstupuje.
+        </p>
+        <p>
+          Keď príde ostrá faktúra, pri jej zápise vyberiete v poli{" "}
+          <strong>Zúčtováva prijatú zálohu</strong> tú zálohu, ktorú vyrovnáva. Ponúknu sa len
+          nezúčtované zálohy toho istého dodávateľa. Záloha sa potom v zozname označí ako{" "}
+          <em>Zúčtovaná</em> a v záväzkoch na prehľade sa už nepočíta druhýkrát.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "udaje-pre-dph",
     title: "Údaje pre výkazy k DPH",
     body: (
