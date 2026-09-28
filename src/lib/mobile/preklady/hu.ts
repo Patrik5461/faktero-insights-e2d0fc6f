@@ -170,6 +170,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "nf.sposobUhrady": "Fizetési mód",
   "nf.hotovost": "Készpénz",
   "nf.poznamkaNad": "Megjegyzés a tételek felett",
+  "nf.textNadPovinny": "Töltse ki a tételek feletti szöveget — ez mondja meg, miről szól a számla.",
   "nf.poznamkaPod": "Megjegyzés a tételek alatt",
   "nf.priklad": "Például: a 2026/114 sz. megrendelés szerint",
   "nf.zaklad": "Nettó",

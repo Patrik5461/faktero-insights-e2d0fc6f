@@ -27,7 +27,8 @@ function QuickInvoicePage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("Služby");
+  /* Text nad položkami je povinný; suma ide ako jediný riadok dokladu. */
+  const [description, setDescription] = useState("");
   const [vatRate, setVatRate] = useState<number>(DEFAULT_VAT_RATE);
   const [dphRucne, setDphRucne] = useState(false);
   /*
@@ -62,6 +63,9 @@ function QuickInvoicePage() {
     if (!customerId) return toast.error("Vyberte odberateľa");
     const amt = Number(String(amount).replace(",", "."));
     if (!amt || amt <= 0) return toast.error("Zadajte sumu");
+    if (!description.trim()) {
+      return toast.error("Vyplňte text nad položkami — hovorí, čo sa fakturuje.");
+    }
     setSaving(true);
     const today = new Date().toISOString().slice(0, 10);
     const due = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
@@ -82,9 +86,10 @@ function QuickInvoicePage() {
           payment_method: "bank_transfer" as const,
           currency: "EUR",
           status: "draft" as const,
+          intro_note: description.trim(),
           items: [
             {
-              name: description.trim() || "Služby",
+              name: "Fakturovaná suma",
               quantity: 1,
               unit: "ks",
               unit_price: unitPrice,
@@ -175,12 +180,17 @@ function QuickInvoicePage() {
                 </select>
               </label>
               <label className="block text-sm">
-                Popis
+                Text nad položkami <span className="text-destructive">*</span>
                 <input
+                  required
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Napríklad: Práce podľa objednávky č. 2026/114"
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Vytlačí sa nad tabuľkou; suma pod ním pôjde ako jeden riadok.
+                </span>
               </label>
               <div className="flex gap-2">
                 <button
@@ -190,7 +200,7 @@ function QuickInvoicePage() {
                   Späť
                 </button>
                 <button
-                  disabled={!amount}
+                  disabled={!amount || !description.trim()}
                   onClick={() => setStep(3)}
                   className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
@@ -208,7 +218,7 @@ function QuickInvoicePage() {
                   label="Odberateľ"
                   value={customers.find((c) => c.id === customerId)?.name ?? ""}
                 />
-                <Row label="Popis" value={description} />
+                <Row label="Text nad položkami" value={description} />
                 <Row label="Suma" value={`${amount} € (vrátane ${vatRate}% DPH)`} />
               </div>
               <div className="flex gap-2">

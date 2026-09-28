@@ -187,6 +187,7 @@ export const sk = {
   "nf.sposobUhrady": "Spôsob úhrady",
   "nf.hotovost": "Hotovosť",
   "nf.poznamkaNad": "Text nad položkami",
+  "nf.textNadPovinny": "Vyplňte text nad položkami — hovorí, čo sa fakturuje.",
   "nf.poznamkaPod": "Poznámka pod položkami",
   "nf.priklad": "Napríklad: podľa objednávky č. 2026/114",
   "nf.zaklad": "Základ",

@@ -374,7 +374,12 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     y -= 10;
   }
 
-  y = drawTableHeader(cur, y);
+  /*
+    Doklad bez položiek (napríklad nájomné popísané textom) nemá čo dať do
+    tabuľky. Prázdna hlavička s čiarami vyzerá ako chyba tlače, tak sa
+    nekreslí vôbec.
+  */
+  if (items.length) y = drawTableHeader(cur, y);
 
   // Pre-wrap name + description per item to compute row height
   for (let idx = 0; idx < items.length; idx++) {

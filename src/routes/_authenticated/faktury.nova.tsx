@@ -445,13 +445,22 @@ function NewInvoice() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  /*
+    Riadok bez názvu aj bez sumy je len prázdne miesto vo formulári — do
+    dokladu ani do súčtov nepatrí. Riadok so sumou bez názvu prepustíme do
+    súčtov a odoslanie ho zastaví hláškou, nech sa suma ticho nestratí.
+  */
+  const riadkyDokladu = useMemo(
+    () => items.filter((it) => it.name.trim() !== "" || Number(it.unit_price) !== 0),
+    [items],
+  );
   const totals = useMemo(() => {
     const mode = form.rounding_mode;
     const rc = form.reverse_charge;
     const r2 = (n: number) => Math.round(n * 100) / 100;
     let sub = 0,
       vat = 0;
-    for (const it of items) {
+    for (const it of riadkyDokladu) {
       let s = Number(it.quantity) * Number(it.unit_price);
       let v = rc ? 0 : s * (Number(it.vat_rate) / 100);
       if (mode === "per_item") {
@@ -475,7 +484,7 @@ function NewInvoice() {
     const advance = Math.round(odpocty.reduce((a, z) => a + z.suma, 0) * 100) / 100;
     const payable = r2(total - advance);
     return { subtotal: sub, vat_total: vat, total, advance, payable };
-  }, [items, form.rounding_mode, odpocty, form.reverse_charge]);
+  }, [riadkyDokladu, form.rounding_mode, odpocty, form.reverse_charge]);
 
   /**
    * Cena z riadku sa počíta z podkladov cenníka, nie na serveri — množstevná
@@ -559,7 +568,15 @@ function NewInvoice() {
     if (!cid) return;
     const cust = customers.find((c) => c.id === form.customer_id);
     if (!cust) return toast.error("Vyberte odberateľa");
-    if (!items.length || !items[0].name) return toast.error("Pridajte aspoň jednu položku");
+    /*
+      Položky povinné nie sú — doklad môže znieť len na text nad položkami
+      (nájomné, paušál, práce podľa zmluvy). Povinný je preto ten text.
+    */
+    if (!form.intro_note.trim()) {
+      return toast.error("Vyplňte text nad položkami — hovorí, čo sa fakturuje.");
+    }
+    const bezNazvu = riadkyDokladu.find((it) => !it.name.trim());
+    if (bezNazvu) return toast.error("Položka so sumou musí mať názov.");
     // Dátum dodania je na faktúre platiteľa povinný a určuje obdobie DPH.
     const datumy = skontrolujDatumy({
       platitel: rezim.platitel,
@@ -670,7 +687,7 @@ function NewInvoice() {
         return;
       }
 
-      const rows = items.map((it, idx) => {
+      const rows = riadkyDokladu.map((it, idx) => {
         const s = Number(it.quantity) * Number(it.unit_price);
         const effRate = form.reverse_charge ? 0 : Number(it.vat_rate);
         const v = s * (effRate / 100);
@@ -690,7 +707,9 @@ function NewInvoice() {
           total: Number((s + v).toFixed(2)),
         };
       });
-      const { error: e2 } = await supabase.from("invoice_items").insert(rows);
+      const { error: e2 } = rows.length
+        ? await supabase.from("invoice_items").insert(rows)
+        : { error: null };
       if (e2) {
         toast.error(e2.message);
         setSubmitting(false);
@@ -1377,15 +1396,19 @@ function NewInvoice() {
           <section className="rounded-2xl border border-border bg-card p-5">
             <label className="block">
               <span className="text-xs font-medium text-muted-foreground">
-                Text nad položkami
+                Text nad položkami <span className="text-destructive">*</span>
               </span>
               <textarea
                 rows={2}
+                required
                 value={form.intro_note}
                 onChange={(e) => setForm({ ...form, intro_note: e.target.value })}
                 placeholder="Napríklad: Fakturujeme vám práce podľa objednávky č. 2026/114 za obdobie 1. – 31. 8. 2026."
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Povinný — hovorí, čo sa fakturuje. Položky pod ním sú nepovinné.
+              </span>
             </label>
           </section>
 

@@ -175,6 +175,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "nf.sposobUhrady": "Způsob úhrady",
   "nf.hotovost": "Hotovost",
   "nf.poznamkaNad": "Text nad položkami",
+  "nf.textNadPovinny": "Vyplňte text nad položkami — říká, co se fakturuje.",
   "nf.poznamkaPod": "Poznámka pod položkami",
   "nf.priklad": "Například: podle objednávky č. 2026/114",
   "nf.zaklad": "Základ",

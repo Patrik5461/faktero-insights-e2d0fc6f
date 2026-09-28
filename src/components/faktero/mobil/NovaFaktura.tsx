@@ -413,7 +413,12 @@ export function NovaFaktura({
   }
 
   async function uloz() {
-    if (!odberatel || pouzitelne.length === 0) return;
+    if (!odberatel) return;
+    /* Povinný je text nad položkami, samotné položky nie. */
+    if (!poznamkaNad.trim()) {
+      toast.error(t("nf.textNadPovinny"));
+      return;
+    }
     if (splatnost < vystavenie) {
       toast.error(t("nf.splatnostSkor"));
       return;
@@ -942,9 +947,8 @@ function KrokPolozky({
                 {suma(sucty.spolu, mena, loc)}
               </span>
             </div>
-            <HlavneTlacidlo onClick={onDalej} disabled={pocetPouzitelnych === 0}>
-              {pocetPouzitelnych === 0 ? t("nf.pridajtePolozku") : t("nf.dalej")}
-            </HlavneTlacidlo>
+            {/* Položky povinné nie sú — doklad môže znieť len na text nad nimi. */}
+            <HlavneTlacidlo onClick={onDalej}>{t("nf.dalej")}</HlavneTlacidlo>
           </div>
         }
       >
@@ -1256,7 +1260,7 @@ function KrokSuhrn({
       }
       onBack={onSpat}
       footer={
-        <HlavneTlacidlo onClick={onUloz}>
+        <HlavneTlacidlo onClick={onUloz} disabled={!poznamkaNad.trim()}>
           {uprava
             ? t("nf.ulozitZmeny")
             : druh === "proforma"
@@ -1380,7 +1384,7 @@ function KrokSuhrn({
 
         <label className="block">
           <span className="mb-1 block text-[13px] font-medium text-app-text-2">
-            {t("nf.poznamkaNad")}
+            {t("nf.poznamkaNad")} *
           </span>
           <textarea
             value={poznamkaNad}

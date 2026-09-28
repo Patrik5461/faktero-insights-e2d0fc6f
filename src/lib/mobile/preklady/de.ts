@@ -170,6 +170,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "nf.sposobUhrady": "Zahlungsart",
   "nf.hotovost": "Bar",
   "nf.poznamkaNad": "Notiz über den Positionen",
+  "nf.textNadPovinny": "Füllen Sie den Text über den Positionen aus — er sagt, was berechnet wird.",
   "nf.poznamkaPod": "Notiz unter den Positionen",
   "nf.priklad": "Zum Beispiel: gemäß Bestellung Nr. 2026/114",
   "nf.zaklad": "Nettobetrag",

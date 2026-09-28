@@ -62,7 +62,13 @@ const NovaFaktura = z.object({
   // Rýchla faktúra zakladá návrh, mobil vystavuje rovno. Ďalšie stavy sem
   // nepatria — tie vznikajú až životom faktúry (odoslaná, uhradená).
   status: z.enum(["draft", "issued"]).default("issued"),
-  items: z.array(Polozka).min(1).max(50),
+  /*
+    Položky povinné nie sú — doklad môže znieť len na text nad nimi (nájomné,
+    paušál, práce podľa zmluvy). Povinnosť textu drží rozhranie, nie server:
+    appka v telefóne sa aktualizuje až novým buildom a staršia verzia posiela
+    payload bez neho.
+  */
+  items: z.array(Polozka).max(50).default([]),
   /**
    * Kľúč proti duplicite. Appka ho dáva odloženej faktúre — keď sa signál
    * pretrhne po zápise, ale pred doručením odpovede, fronta pošle to isté
@@ -300,12 +306,14 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       }
     }
 
-    const { error: chybaRiadkov } = await supabase.from("invoice_items").insert(riadky);
-    if (chybaRiadkov) {
-      // Faktúra bez položiek je horšia než žiadna — v prehľade vyzerá platne
-      // a v PDF je prázdna tabuľka.
-      await supabase.from("invoices").delete().eq("id", faktura.id);
-      throw new Error(chybaRiadkov.message);
+    if (riadky.length) {
+      const { error: chybaRiadkov } = await supabase.from("invoice_items").insert(riadky);
+      if (chybaRiadkov) {
+        // Polovičná faktúra je horšia než žiadna — v prehľade vyzerá platne
+        // a v PDF je prázdna tabuľka. Doklad zámerne bez položiek je iná vec.
+        await supabase.from("invoices").delete().eq("id", faktura.id);
+        throw new Error(chybaRiadkov.message);
+      }
     }
 
     // Rezervácia sa značí až tu. Keby sa značila pred zápisom a ten by zlyhal,

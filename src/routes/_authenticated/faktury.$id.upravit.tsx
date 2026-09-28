@@ -125,16 +125,21 @@ function EditInvoice() {
     })();
   }, [id]);
 
+  /* Prázdny riadok (bez názvu aj bez sumy) do dokladu nepatrí — položky povinné nie sú. */
+  const riadkyDokladu = useMemo(
+    () => items.filter((it) => it.name.trim() !== "" || Number(it.unit_price) !== 0),
+    [items],
+  );
   const totals = useMemo(() => {
     let sub = 0,
       vat = 0;
-    for (const it of items) {
+    for (const it of riadkyDokladu) {
       const s = Number(it.quantity) * Number(it.unit_price);
       sub += s;
       vat += s * (Number(it.vat_rate) / 100);
     }
     return { subtotal: sub, vat_total: vat, total: sub + vat };
-  }, [items]);
+  }, [riadkyDokladu]);
 
   function setItem(idx: number, patch: Partial<Item>) {
     setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
@@ -143,7 +148,12 @@ function EditInvoice() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (saving) return;
-    if (!items.length || !items[0].name) return toast.error("Pridajte aspoň jednu položku");
+    /* Povinný je text nad položkami, samotné položky nie. */
+    if (!form.intro_note.trim()) {
+      return toast.error("Vyplňte text nad položkami — hovorí, čo sa fakturuje.");
+    }
+    const bezNazvu = riadkyDokladu.find((it) => !it.name.trim());
+    if (bezNazvu) return toast.error("Položka so sumou musí mať názov.");
     // Lock: stock-linked lines cannot be removed or modified after sent/paid
     if ((inv?.status as string) === "sent") {
       const violation = originalLocked.some((orig) => {
@@ -188,7 +198,7 @@ function EditInvoice() {
       const { error: delErr } = await supabase.from("invoice_items").delete().eq("invoice_id", id);
       if (delErr) throw delErr;
 
-      const rows = items.map((it, idx) => {
+      const rows = riadkyDokladu.map((it, idx) => {
         const s = Number(it.quantity) * Number(it.unit_price);
         const v = s * (Number(it.vat_rate) / 100);
         return {
@@ -206,8 +216,10 @@ function EditInvoice() {
           total: Number((s + v).toFixed(2)),
         };
       });
-      const { error: insErr } = await supabase.from("invoice_items").insert(rows);
-      if (insErr) throw insErr;
+      if (rows.length) {
+        const { error: insErr } = await supabase.from("invoice_items").insert(rows);
+        if (insErr) throw insErr;
+      }
 
       toast.success("Faktúra upravená. PDF treba pregenerovať.");
       navigate({ to: "/faktury/$id", params: { id } });
@@ -337,10 +349,11 @@ function EditInvoice() {
 
           <section className="rounded-2xl border border-border bg-card p-5">
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide">
-              Text nad položkami
+              Text nad položkami <span className="text-destructive">*</span>
             </h3>
             <textarea
               rows={2}
+              required
               value={form.intro_note}
               onChange={(e) => setForm({ ...form, intro_note: e.target.value })}
               placeholder="Text, ktorý sa vytlačí nad tabuľkou položiek"

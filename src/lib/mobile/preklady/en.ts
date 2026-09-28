@@ -176,6 +176,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "nf.sposobUhrady": "Payment method",
   "nf.hotovost": "Cash",
   "nf.poznamkaNad": "Note above the items",
+  "nf.textNadPovinny": "Fill in the text above the items — it says what is being invoiced.",
   "nf.poznamkaPod": "Note below the items",
   "nf.priklad": "For example: as per order no. 2026/114",
   "nf.zaklad": "Subtotal",
