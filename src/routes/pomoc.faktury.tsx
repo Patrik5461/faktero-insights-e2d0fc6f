@@ -217,6 +217,42 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "zlavy",
+    title: "Zľavy na faktúre a v ponuke",
+    body: (
+      <>
+        <p>
+          Zľavu viete dať <strong>na jednotlivú položku</strong> aj <strong>na celý doklad</strong>
+          . Obe fungujú rovnako na faktúre, zálohovej faktúre aj v cenovej ponuke.
+        </p>
+        <p>
+          <strong>Zľava na položke</strong> sa zadáva do stĺpca <em>Zľava %</em> v riadku. Znižuje
+          základ toho riadku, jednotková cena ostáva pôvodná — na PDF je pod názvom položky vidieť
+          „Zľava 10 %“, takže odberateľ vie, z čoho ste zľavovali.
+        </p>
+        <p>
+          <strong>Zľava na doklad</strong> je pri súčtoch. Prepínačom vedľa poľa si vyberiete{" "}
+          <em>%</em> alebo menu dokladu, takže sa dá zadať aj pevná suma („dám to o 20 € lacnejšie“
+          ). Rozpočíta sa pomerne medzi sadzby DPH, takže daň vyjde tak, ako keby ste sa na nižšej
+          cene dohodli od začiatku. Na PDF sa ukáže medzisúčet, zľava a základ dane.
+        </p>
+        <p>
+          Zľava nikdy nespraví doklad záporný — viac, než je základ, sa odpočítať nedá. Na vrátenie
+          peňazí slúži dobropis.
+        </p>
+        <p>
+          Zľavy prechádzajú <strong>z ponuky na faktúru</strong>, keď ponuku konvertujete, aj do
+          exportov do účtovníctva (Pohoda, ISDOC, eFaktúra) a do výkazov k DPH — všade sa počíta so
+          zníženým základom.
+        </p>
+        <p>
+          Toto je iné než <em>zľava na karte odberateľa</em> a zľava cenovej skupiny: tie sa
+          premietnu rovno do jednotkovej ceny cez cenník. Zľava na doklade sa počíta až z nej.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "jazyk",
     title: "Faktúra v cudzom jazyku",
     body: (
