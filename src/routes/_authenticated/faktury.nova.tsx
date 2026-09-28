@@ -831,7 +831,7 @@ function NewInvoice() {
             <SectionHeader icon={FileText} title="Základné údaje" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Odberateľ *</label>
+                <label className="text-[13px] font-semibold text-foreground">Odberateľ *</label>
                 <CustomerSearch
                   customers={customers}
                   value={form.customer_id}
@@ -843,7 +843,7 @@ function NewInvoice() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Typ dokladu</label>
+                <label className="text-[13px] font-semibold text-foreground">Typ dokladu</label>
                 <select
                   value={form.type}
                   onChange={(e) => setForm({ ...form, type: e.target.value as any })}
@@ -855,7 +855,7 @@ function NewInvoice() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-[13px] font-semibold text-foreground">
                   Dátum vystavenia
                 </label>
                 <input
@@ -867,7 +867,7 @@ function NewInvoice() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Dátum dodania</label>
+                <label className="text-[13px] font-semibold text-foreground">Dátum dodania</label>
                 <input
                   type="date"
                   value={form.delivery_date}
@@ -876,7 +876,7 @@ function NewInvoice() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Splatnosť</label>
+                <label className="text-[13px] font-semibold text-foreground">Splatnosť</label>
                 {/* V polovičnom stĺpci sa dátum a rýchle tlačidlá do jedného
                     riadku nezmestia — nech sa radšej zalomia, než orežú. */}
                 <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -909,7 +909,7 @@ function NewInvoice() {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Spôsob platby</label>
+                <label className="text-[13px] font-semibold text-foreground">Spôsob platby</label>
                 <select
                   value={form.payment_method}
                   onChange={(e) => {
@@ -955,7 +955,7 @@ function NewInvoice() {
                 />
               )}
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Mena</label>
+                <label className="text-[13px] font-semibold text-foreground">Mena</label>
                 <select
                   value={form.currency}
                   onChange={(e) => setForm({ ...form, currency: e.target.value })}
@@ -1097,7 +1097,7 @@ function NewInvoice() {
             <SectionHeader icon={CreditCard} title="Platobné údaje a symboly" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               <div>
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-[13px] font-semibold text-foreground">
                   Variabilný symbol
                 </label>
                 <input
@@ -1108,7 +1108,7 @@ function NewInvoice() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-[13px] font-semibold text-foreground">
                   Konštantný symbol
                 </label>
                 <div className="mt-1">
@@ -1119,7 +1119,7 @@ function NewInvoice() {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-[13px] font-semibold text-foreground">
                   Špecifický symbol
                 </label>
                 <input
@@ -1129,7 +1129,7 @@ function NewInvoice() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-[13px] font-semibold text-foreground">
                   Číslo objednávky
                 </label>
                 <input
@@ -1139,7 +1139,7 @@ function NewInvoice() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Jazyk dokladu</label>
+                <label className="text-[13px] font-semibold text-foreground">Jazyk dokladu</label>
                 <select
                   value={form.language}
                   onChange={(e) => setForm({ ...form, language: e.target.value })}
@@ -1156,7 +1156,7 @@ function NewInvoice() {
                 </p>
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Spôsob dodania</label>
+                <label className="text-[13px] font-semibold text-foreground">Spôsob dodania</label>
                 <select
                   value={form.delivery_method}
                   onChange={(e) => setForm({ ...form, delivery_method: e.target.value })}
@@ -1170,7 +1170,7 @@ function NewInvoice() {
                 </select>
               </div>
               <div className="sm:col-span-2">
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-[13px] font-semibold text-foreground">
                   Spôsob zaokrúhľovania
                 </label>
                 <select
@@ -1262,7 +1262,7 @@ function NewInvoice() {
             {form.reverse_charge && (
               <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
                 <label className="block">
-                  <span className="text-xs font-medium text-muted-foreground">Druh prenosu</span>
+                  <span className="text-[13px] font-semibold text-foreground">Druh prenosu</span>
                   <select
                     value={form.reverse_charge_type || "domestic_69"}
                     onChange={(e) =>
@@ -1281,7 +1281,7 @@ function NewInvoice() {
                 </label>
                 {form.reverse_charge_type === "eu_b2b" && (
                   <label className="block">
-                    <span className="text-xs font-medium text-muted-foreground">
+                    <span className="text-[13px] font-semibold text-foreground">
                       Druh plnenia do súhrnného výkazu
                     </span>
                     <select
@@ -1345,7 +1345,7 @@ function NewInvoice() {
               <div className="mt-4 grid items-start gap-4 md:grid-cols-2">
                 {form.oss && (
                   <label className="block">
-                    <span className="text-xs font-medium text-muted-foreground">Štát spotreby</span>
+                    <span className="text-[13px] font-semibold text-foreground">Štát spotreby</span>
                     <select
                       value={form.oss_country}
                       onChange={(e) =>
@@ -1364,7 +1364,7 @@ function NewInvoice() {
                 )}
                 {rezim.platitel && (
                   <label className="block">
-                    <span className="text-xs font-medium text-muted-foreground">
+                    <span className="text-[13px] font-semibold text-foreground">
                       Osobitná úprava (nepovinné)
                     </span>
                     <select
@@ -1395,7 +1395,7 @@ function NewInvoice() {
           */}
           <section className="rounded-2xl border border-border bg-card p-5">
             <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">
+              <span className="text-[13px] font-semibold text-foreground">
                 Text nad položkami <span className="text-destructive">*</span>
               </span>
               <textarea
@@ -1456,7 +1456,7 @@ function NewInvoice() {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-foreground">
                     <th className="py-2 font-medium">Názov</th>
                     <th className="py-2 pl-3 font-medium">Mn.</th>
                     <th className="py-2 pl-3 font-medium">MJ</th>
@@ -1698,7 +1698,7 @@ function NewInvoice() {
             {advancedOpen && (
               <div className="grid gap-4 p-5 pt-0">
                 <label className="block">
-                  <span className="text-xs font-medium text-muted-foreground">Poznámka</span>
+                  <span className="text-[13px] font-semibold text-foreground">Poznámka</span>
                   <textarea
                     rows={3}
                     value={form.notes}
@@ -1969,7 +1969,7 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <label className="text-[13px] font-semibold text-foreground">{label}</label>
       <div className="mt-1">{children}</div>
     </div>
   );

@@ -48,7 +48,7 @@ const PRAZDNA: Polozka = {
 };
 
 const pole = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
-const popis = "mb-1 block text-xs font-medium text-muted-foreground";
+const popis = "mb-1 block text-[13px] font-semibold text-foreground";
 
 /** Dnešok v miestnom čase — `toISOString()` by po polnoci vrátil včerajšok. */
 function dnesLokalne(): string {

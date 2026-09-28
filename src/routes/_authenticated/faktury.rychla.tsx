@@ -150,7 +150,7 @@ function QuickInvoicePage() {
           {step === 2 && (
             <div className="space-y-3 rounded-xl border border-border bg-card p-4">
               <h2 className="font-medium">Suma a popis</h2>
-              <label className="block text-sm">
+              <label className="block text-[13px] font-semibold text-foreground">
                 Suma (s DPH)
                 <input
                   type="number"
@@ -158,11 +158,11 @@ function QuickInvoicePage() {
                   step="0.01"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-base"
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-base font-normal"
                   autoFocus
                 />
               </label>
-              <label className="block text-sm">
+              <label className="block text-[13px] font-semibold text-foreground">
                 DPH
                 <select
                   value={vatRate}
@@ -170,7 +170,7 @@ function QuickInvoicePage() {
                     setVatRate(Number(e.target.value));
                     setDphRucne(true);
                   }}
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal"
                 >
                   {sadzbyRezimu(rezim).map((r) => (
                     <option key={r} value={r}>
@@ -179,16 +179,16 @@ function QuickInvoicePage() {
                   ))}
                 </select>
               </label>
-              <label className="block text-sm">
+              <label className="block text-[13px] font-semibold text-foreground">
                 Text nad položkami <span className="text-destructive">*</span>
                 <input
                   required
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Napríklad: Práce podľa objednávky č. 2026/114"
-                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal"
                 />
-                <span className="mt-1 block text-xs text-muted-foreground">
+                <span className="mt-1 block text-xs font-normal text-muted-foreground">
                   Vytlačí sa nad tabuľkou; suma pod ním pôjde ako jeden riadok.
                 </span>
               </label>

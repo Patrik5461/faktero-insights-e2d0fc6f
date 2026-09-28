@@ -366,7 +366,7 @@ function EditInvoice() {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-foreground">
                     <th className="py-2 font-medium">Názov</th>
                     <th className="py-2 pl-3 font-medium">Mn.</th>
                     <th className="py-2 pl-3 font-medium">MJ</th>
@@ -602,7 +602,7 @@ const inputCls =
 function Lbl({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="text-[13px] font-semibold text-foreground">{label}</span>
       {children}
     </label>
   );

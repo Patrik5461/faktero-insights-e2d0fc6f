@@ -312,7 +312,7 @@ function NewQuote() {
               kde sa taká ponuka objavila. Rovnaký výber ako na faktúre.
             */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Mena</label>
+              <label className="text-[13px] font-semibold text-foreground">Mena</label>
               <select
                 value={form.currency}
                 onChange={(e) => setForm({ ...form, currency: e.target.value })}
@@ -493,7 +493,7 @@ function In({
 }) {
   return (
     <label className="block">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="text-[13px] font-semibold text-foreground">{label}</span>
       <input
         type={type}
         step={step}
