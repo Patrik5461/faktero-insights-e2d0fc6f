@@ -74,6 +74,12 @@ const SEKCIE: HelpSection[] = [
           platbe, cenová ponuka, prijatá objednávka, objednávka u dodávateľa a pokladničný doklad.
         </p>
         <p className="mt-3">
+          <strong>Pri vystavovaní si rad vyberiete</strong> — rozbaľovacie menu je na faktúre,
+          cenovej ponuke, prijatej objednávke, objednávke u dodávateľa, pokladničnom doklade aj na
+          šablóne opakovanej faktúry. Predvolený rad je prvý, takže kto nič nemení, nič navyše
+          nerobí. Doklad si uloží, z ktorého radu číslo dostal.
+        </p>
+        <p className="mt-3">
           Na jeden druh môžete mať <strong>viac radov</strong> (pobočka, prevádzka, oddelený rad) a
           pri vystavovaní faktúry si vyberiete, z ktorého sa číslo vezme. Jeden rad je{" "}
           <strong>predvolený</strong> — z neho číslujú cesty, ktoré sa nepýtajú: appka, API aj
