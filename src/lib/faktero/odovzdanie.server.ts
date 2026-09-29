@@ -261,7 +261,7 @@ export async function zostavBalik(
       invoice,
       items: (polozky ?? []).filter((p: Riadok) => p.invoice_id === invoice.id),
     }));
-    const vystup = EXPORT_STRATEGIES.pohoda_xml.build({
+    const vystup = await EXPORT_STRATEGIES.pohoda_xml.build({
       company,
       invoices: balikFaktur,
       nastavenia,

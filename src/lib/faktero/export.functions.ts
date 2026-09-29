@@ -1,7 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export type ExportFormat = "pohoda_xml" | "omega_txt" | "money_s3_xml";
+export type ExportFormat =
+  | "pohoda_xml"
+  | "omega_txt"
+  | "money_s3_xml"
+  | "isdoc_zip"
+  | "flexi_xml"
+  | "csv_univerzal";
 
 export const exportInvoicesFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -45,7 +51,7 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
 
     // Predkontácie a členenie DPH sú kódy z Pohody účtovníka; bez nich sa
     // doklad naimportuje, ale všetko okolo účtovania si musí doklikať sám.
-    const built = strategy.build({
+    const built = await strategy.build({
       company,
       invoices: bundle,
       nastavenia: {

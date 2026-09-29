@@ -167,14 +167,29 @@ function doCp1250(text: string): Uint8Array {
   return out;
 }
 
+/** Base64 späť na bajty — ISDOC chodí ako ZIP, ktorý história drží ako text. */
+function zBase64(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
 function downloadFile(
   name: string,
   content: string,
   mime = "application/xml",
-  encoding: "utf-8" | "windows-1250" = "utf-8",
+  encoding: "utf-8" | "windows-1250" | "base64" = "utf-8",
 ) {
-  const data: BlobPart = encoding === "windows-1250" ? (doCp1250(content) as BlobPart) : content;
-  const blob = new Blob([data], { type: `${mime};charset=${encoding}` });
+  const data: BlobPart =
+    encoding === "windows-1250"
+      ? (doCp1250(content) as BlobPart)
+      : encoding === "base64"
+        ? (zBase64(content) as BlobPart)
+        : content;
+  const blob = new Blob([data], {
+    type: encoding === "base64" ? mime : `${mime};charset=${encoding}`,
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -198,6 +213,21 @@ const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
     note: "Ten istý súbor číta aj ALFA plus — Evidencie → Pohľadávky → Import faktúr z Omegy.",
   },
   { format: "money_s3_xml", label: "Money S3 XML" },
+  {
+    format: "isdoc_zip",
+    label: "ISDOC (ZIP)",
+    note: "Univerzálny formát — načíta ho Pohoda, Money, ABRA, Helios aj Premier. Jeden súbor .isdoc na doklad.",
+  },
+  {
+    format: "flexi_xml",
+    label: "ABRA Flexi XML",
+    note: "Import v ABRA Flexi: Nástroje → Import → XML.",
+  },
+  {
+    format: "csv_univerzal",
+    label: "Súpiska CSV (Excel, MRP, Premier…)",
+    note: "Jeden riadok na doklad s rozpisom po sadzbách DPH, oddeľovač bodkočiarka, kódovanie Windows-1250.",
+  },
 ];
 
 function ExportsPage() {

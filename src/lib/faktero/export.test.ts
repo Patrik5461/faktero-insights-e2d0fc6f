@@ -181,8 +181,8 @@ describe("Pohoda XML export", () => {
     expect(parser.parse(d).dataPack.dataPackItem).toHaveLength(2);
   });
 
-  it("stratégia vráti súbor s príponou a typom", () => {
-    const r = EXPORT_STRATEGIES.pohoda_xml.build({
+  it("stratégia vráti súbor s príponou a typom", async () => {
+    const r = await EXPORT_STRATEGIES.pohoda_xml.build({
       company: firma,
       invoices: [{ invoice: faktura, items: polozky }],
     });
@@ -278,10 +278,10 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
     expect(nove.invoiceDetail.invoiceItem.rateVAT).toBe("historyHigh");
   });
 
-  it("faktúra v cudzej mene sa radšej vynechá, než by sa vyviezla zle", () => {
+  it("faktúra v cudzej mene sa radšej vynechá, než by sa vyviezla zle", async () => {
     // Pohoda chce rozpis po sadzbách v domácej mene a kurz k faktúre nemáme —
     // v `homeCurrency` by čítala doláre ako eurá a nikto by si to nevšimol.
-    const r = EXPORT_STRATEGIES.pohoda_xml.build({
+    const r = await EXPORT_STRATEGIES.pohoda_xml.build({
       company: firma,
       invoices: [
         { invoice: faktura, items: polozky },
@@ -644,23 +644,33 @@ describe("Money S3 XML", () => {
 });
 
 describe("stratégie", () => {
-  it("všetky tri sú zapojené a majú kódovanie", () => {
+  it("všetky formáty sú zapojené a majú kódovanie", () => {
     expect(Object.keys(EXPORT_STRATEGIES).sort()).toEqual([
+      "csv_univerzal",
+      "flexi_xml",
+      "isdoc_zip",
       "money_s3_xml",
       "omega_txt",
       "pohoda_xml",
     ]);
-    // Omega slovenskú diakritiku v UTF-8 neprečíta.
+    // Omega slovenskú diakritiku v UTF-8 neprečíta; v Exceli to platí rovnako.
     expect(EXPORT_STRATEGIES.omega_txt.encoding).toBe("windows-1250");
+    expect(EXPORT_STRATEGIES.csv_univerzal.encoding).toBe("windows-1250");
     expect(EXPORT_STRATEGIES.pohoda_xml.encoding).toBe("utf-8");
     expect(EXPORT_STRATEGIES.money_s3_xml.encoding).toBe("utf-8");
+    expect(EXPORT_STRATEGIES.flexi_xml.encoding).toBe("utf-8");
+    // ISDOC je ZIP — história exportov drží text, tak ide v base64.
+    expect(EXPORT_STRATEGIES.isdoc_zip.encoding).toBe("base64");
   });
 
-  it("každá vyrobí súbor so správnou príponou", () => {
+  it("každá vyrobí súbor so správnou príponou", async () => {
     const vstup = { company: { ico: "1" }, invoices: [{ invoice: faktura, items: polozky }] };
-    expect(EXPORT_STRATEGIES.omega_txt.build(vstup).fileName).toMatch(/\.txt$/);
-    expect(EXPORT_STRATEGIES.money_s3_xml.build(vstup).fileName).toMatch(/\.xml$/);
-    expect(EXPORT_STRATEGIES.pohoda_xml.build(vstup).fileName).toMatch(/\.xml$/);
+    expect((await EXPORT_STRATEGIES.omega_txt.build(vstup)).fileName).toMatch(/\.txt$/);
+    expect((await EXPORT_STRATEGIES.money_s3_xml.build(vstup)).fileName).toMatch(/\.xml$/);
+    expect((await EXPORT_STRATEGIES.pohoda_xml.build(vstup)).fileName).toMatch(/\.xml$/);
+    expect((await EXPORT_STRATEGIES.csv_univerzal.build(vstup)).fileName).toMatch(/\.csv$/);
+    expect((await EXPORT_STRATEGIES.flexi_xml.build(vstup)).fileName).toMatch(/\.xml$/);
+    expect((await EXPORT_STRATEGIES.isdoc_zip.build(vstup)).fileName).toMatch(/\.zip$/);
   });
 });
 

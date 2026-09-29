@@ -9,6 +9,7 @@ import {
 } from "./vat-rates";
 import { sUctomFaktury } from "./platobny-ucet";
 import { riadkySoZlavou } from "./zlavy";
+import { buildFlexiXml, buildUniverzalCsv } from "./export-dalsie";
 type InvoiceRow = any;
 type ItemRow = any;
 type CompanyRow = any;
@@ -1366,7 +1367,13 @@ export function buildPohodaDavkaXml(opts: {
   });
 }
 
-export type ExportFormat = "pohoda_xml" | "omega_txt" | "money_s3_xml";
+export type ExportFormat =
+  | "pohoda_xml"
+  | "omega_txt"
+  | "money_s3_xml"
+  | "isdoc_zip"
+  | "flexi_xml"
+  | "csv_univerzal";
 
 export interface ExportStrategy {
   format: ExportFormat;
@@ -1379,7 +1386,7 @@ export interface ExportStrategy {
    * Kódovanie súboru. Omega vyžaduje Windows-1250; obsah sa všade nesie ako
    * bežný reťazec a prevedie sa až pri stiahnutí.
    */
-  encoding: "utf-8" | "windows-1250";
+  encoding: "utf-8" | "windows-1250" | "base64";
   /** Typ súboru — potrebný aj pri sťahovaní z histórie, bez prestavania obsahu. */
   mime: string;
   build(input: {
@@ -1391,13 +1398,20 @@ export interface ExportStrategy {
     zalohy?: Record<string, OdpocetZalohy>;
     opravovane?: Record<string, string>;
     zakazky?: Record<string, string>;
-  }): {
-    content: string;
-    fileName: string;
-    mime: string;
-    /** Doklady, ktoré do súboru neprešli, aj s dôvodom. */
-    preskocene?: string[];
-  };
+  }):
+    | {
+        content: string;
+        fileName: string;
+        mime: string;
+        /** Doklady, ktoré do súboru neprešli, aj s dôvodom. */
+        preskocene?: string[];
+      }
+    | Promise<{
+        content: string;
+        fileName: string;
+        mime: string;
+        preskocene?: string[];
+      }>;
 }
 
 export const POHODA_XML: ExportStrategy = {
@@ -1457,10 +1471,82 @@ export const MONEY_S3_XML: ExportStrategy = {
   },
 };
 
+/**
+ * ISDOC — český štandard, ktorý číta Pohoda, Money, ABRA, Helios, Premier aj
+ * iDoklad. Každý doklad je vlastný súbor, tak ide dávka ako ZIP; obsah sa
+ * nesie v base64, lebo história exportov drží text.
+ */
+export const ISDOC_ZIP: ExportStrategy = {
+  format: "isdoc_zip",
+  target_system: "other",
+  label: "ISDOC (ZIP)",
+  note: "Univerzálny formát — načíta ho Pohoda, Money, ABRA, Helios aj Premier. Jeden súbor .isdoc na doklad.",
+  encoding: "base64",
+  mime: "application/zip",
+  async build({ company, invoices }) {
+    const { buildIsdoc } = await import("./isdoc-export");
+    const JSZip = (await import("jszip")).default;
+    const zip = new JSZip();
+    const preskocene: string[] = [];
+
+    for (const { invoice, items } of invoices) {
+      try {
+        zip.file(
+          `${String(invoice.invoice_number).replace(/[^\w.-]+/g, "-")}.isdoc`,
+          buildIsdoc({ invoice, items, company }),
+        );
+      } catch (e: any) {
+        // Doklad, ktorý ISDOC neunesie (chýba IČO dodávateľa), nesmie zhodiť celú dávku.
+        preskocene.push(`${invoice.invoice_number} — ${e?.message ?? "nepodarilo sa vytvoriť"}`);
+      }
+    }
+    if (preskocene.length === invoices.length) {
+      throw new Error(`Do ISDOC-u sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
+    }
+
+    const content = await zip.generateAsync({ type: "base64", compression: "DEFLATE" });
+    const stamp = new Date().toISOString().slice(0, 10);
+    return { content, fileName: `isdoc-faktury-${stamp}.zip`, mime: "application/zip", preskocene };
+  },
+};
+
+/** ABRA Flexi (winstrom) — dávka vydaných faktúr v jednom XML. */
+export const FLEXI_XML: ExportStrategy = {
+  format: "flexi_xml",
+  target_system: "other",
+  label: "ABRA Flexi XML",
+  note: "Import v ABRA Flexi: Nástroje → Import → XML.",
+  encoding: "utf-8",
+  mime: "application/xml",
+  build({ invoices }) {
+    const content = buildFlexiXml({ invoices: invoices as never });
+    const stamp = new Date().toISOString().slice(0, 10);
+    return { content, fileName: `flexi-faktury-${stamp}.xml`, mime: "application/xml" };
+  },
+};
+
+/** Súpiska pre všetko ostatné — MRP, Premier, Helios aj obyčajný Excel. */
+export const CSV_UNIVERZAL: ExportStrategy = {
+  format: "csv_univerzal",
+  target_system: "other",
+  label: "Súpiska CSV (Excel, MRP, Premier…)",
+  note: "Jeden riadok na doklad s rozpisom po sadzbách DPH. Oddeľovač je bodkočiarka a kódovanie Windows-1250, aby sa v Exceli otvorila správne.",
+  encoding: "windows-1250",
+  mime: "text/csv",
+  build({ invoices }) {
+    const content = buildUniverzalCsv({ invoices: invoices as never });
+    const stamp = new Date().toISOString().slice(0, 10);
+    return { content, fileName: `faktury-${stamp}.csv`, mime: "text/csv" };
+  },
+};
+
 export const EXPORT_STRATEGIES: Record<ExportFormat, ExportStrategy> = {
   pohoda_xml: POHODA_XML,
   omega_txt: OMEGA_TXT,
   money_s3_xml: MONEY_S3_XML,
+  isdoc_zip: ISDOC_ZIP,
+  flexi_xml: FLEXI_XML,
+  csv_univerzal: CSV_UNIVERZAL,
 };
 
 // =========================================================
