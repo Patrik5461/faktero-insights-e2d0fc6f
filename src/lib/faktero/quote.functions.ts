@@ -16,13 +16,23 @@ const Input = z.object({ quoteId: z.string().uuid() });
  */
 export const nextQuoteNumberFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        /** Z ktorého radu má ponuka dostať číslo; prázdne = predvolený. */
+        number_series_id: z.string().uuid().nullish(),
+      })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     // Číslo dáva rad cenových ponúk; predvolene má tvar Q{rok}{poradie} ako
     // doteraz. Ide to cez klienta prihláseného používateľa, takže cudziu
     // firmu odfiltruje RLS — `supabaseAdmin` tu netreba.
     const { cisloZRadu } = await import("./cislo-z-radu.server");
-    const { cislo, seriesId } = await cisloZRadu(context.supabase, data.company_id, "quote");
+    const { cislo, seriesId } = await cisloZRadu(context.supabase, data.company_id, "quote", {
+      seriesId: data.number_series_id,
+    });
     return { quote_number: cislo, number_series_id: seriesId };
   });
 

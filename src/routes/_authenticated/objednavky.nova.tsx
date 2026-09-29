@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { JobPicker } from "@/components/faktero/JobPicker";
+import { VyberRadu } from "@/components/faktero/VyberRadu";
 import { getSalesOrder, saveSalesOrder } from "@/lib/faktero/sales-orders.functions";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
@@ -86,6 +87,8 @@ function NewOrder() {
     job_id: "",
     reserve_stock: false,
     note: "",
+    /* Číselný rad objednávky; prázdne = predvolený. */
+    number_series_id: "",
   });
   const [polozky, setPolozky] = useState<Polozka[]>([{ ...PRAZDNA }]);
 
@@ -120,6 +123,7 @@ function NewOrder() {
           order_date: o.order_date,
           requested_date: o.requested_date ?? "",
           job_id: o.job_id ?? "",
+          number_series_id: o.number_series_id ?? "",
           reserve_stock: !!o.reserve_stock,
           note: o.note ?? "",
         });
@@ -236,6 +240,7 @@ function NewOrder() {
           job_id: form.job_id || null,
           reserve_stock: form.reserve_stock,
           note: form.note || null,
+          number_series_id: form.number_series_id || null,
           polozky: platne.map((p) => ({
             product_id: p.product_id ?? null,
             name: p.name.trim(),
@@ -331,6 +336,11 @@ function NewOrder() {
                   onChange={(e) => setForm({ ...form, requested_date: e.target.value })}
                 />
               </div>
+              <VyberRadu
+                druh="sales_order"
+                hodnota={form.number_series_id}
+                onZmena={(idRadu) => setForm({ ...form, number_series_id: idRadu })}
+              />
               <JobPicker
                 className="sm:col-span-2"
                 label="Zákazka"

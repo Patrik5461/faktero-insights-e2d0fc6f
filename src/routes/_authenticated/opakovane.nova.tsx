@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { ArrowLeft, CreditCard, FileText, Package, Plus, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CustomerSearch } from "@/components/faktero/OdberatelPicker";
+import { VyberRadu } from "@/components/faktero/VyberRadu";
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { sadzbyDoVyberu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
 import { MENY, KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
@@ -52,6 +53,8 @@ function NewRecurring() {
     intro_note: "",
     notes: "",
     active: true,
+    /* Číselný rad faktúr z tejto šablóny; prázdne = predvolený. */
+    number_series_id: "",
   });
   /* Sadzby DPH podľa krajiny registrácie firmy. */
   const rezim = useRezimDph();
@@ -145,6 +148,7 @@ function NewRecurring() {
         currency: form.currency,
         due_days: form.due_days,
         payment_method: form.payment_method,
+        number_series_id: form.number_series_id || null,
         intro_note: form.intro_note.trim(),
         notes: form.notes,
         active: form.active,
@@ -226,6 +230,13 @@ function NewRecurring() {
                     ))}
                   </select>
                 </div>
+                <VyberRadu
+                  druh="invoice"
+                  hodnota={form.number_series_id}
+                  onZmena={(id) => setForm({ ...form, number_series_id: id })}
+                  label="Číselný rad faktúr"
+                  className="sm:col-span-2 lg:col-span-1 xl:col-span-2"
+                />
                 <div>
                   <label className="text-[13px] font-semibold text-foreground">Spôsob platby</label>
                   <select

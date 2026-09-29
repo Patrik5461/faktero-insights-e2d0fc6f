@@ -13,6 +13,7 @@ import { JobPicker } from "@/components/faktero/JobPicker";
 import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 import { MENY, KROK_CENY } from "@/lib/faktero/mena";
+import { VyberRadu } from "@/components/faktero/VyberRadu";
 import {
   koeficientZlavy,
   percentoZlavy,
@@ -62,6 +63,8 @@ function NewQuote() {
     /* Zľava na celú ponuku — percento alebo pevná suma bez DPH. */
     discount_type: "" as "" | TypZlavy,
     discount_value: 0,
+    /* Číselný rad ponuky; prázdne = predvolený. */
+    number_series_id: "",
   });
   const [items, setItems] = useState<Item[]>([{ ...EMPTY }]);
   useEffect(() => {
@@ -212,7 +215,9 @@ function NewQuote() {
     if (!cid) return;
     const cust = customers.find((c) => c.id === form.customer_id);
     if (!cust) return toast.error("Vyberte odberateľa");
-    const { quote_number } = await dalsieCislo({ data: { company_id: cid } });
+    const { quote_number, number_series_id } = await dalsieCislo({
+      data: { company_id: cid, number_series_id: form.number_series_id || null },
+    });
     const { data: q, error } = await supabase
       .from("quotes")
       .insert({
@@ -220,6 +225,7 @@ function NewQuote() {
         customer_id: cust.id,
         status: "draft",
         quote_number,
+        number_series_id,
         issue_date: form.issue_date,
         valid_until: form.valid_until,
         currency: form.currency,
@@ -350,6 +356,11 @@ function NewQuote() {
                 ))}
               </select>
             </div>
+            <VyberRadu
+              druh="quote"
+              hodnota={form.number_series_id}
+              onZmena={(id) => setForm({ ...form, number_series_id: id })}
+            />
           </div>
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex items-center justify-between">

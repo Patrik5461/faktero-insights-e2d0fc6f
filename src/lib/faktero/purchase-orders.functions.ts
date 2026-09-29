@@ -35,8 +35,12 @@ async function nacitajObjednavku(supabase: any, companyId: string, id: string) {
 }
 
 /** Číslo z radu objednávok u dodávateľa — predvolene OBJ{rok}{poradie}. */
-async function dalsieCislo(supabase: any, companyId: string): Promise<string> {
-  return (await cisloZRadu(supabase, companyId, "purchase_order")).cislo;
+async function dalsieCislo(
+  supabase: any,
+  companyId: string,
+  seriesId?: string | null,
+): Promise<{ cislo: string; seriesId: string | null }> {
+  return cisloZRadu(supabase, companyId, "purchase_order", { seriesId });
 }
 
 export const listPurchaseOrders = createServerFn({ method: "POST" })
@@ -158,6 +162,8 @@ export const createPurchaseOrder = createServerFn({ method: "POST" })
       job_id: z.string().uuid().nullable().optional(),
       expected_date: z.string().date().nullable().optional(),
       note: z.string().trim().max(2000).nullable().optional(),
+      /** Z ktorého číselného radu má objednávka dostať číslo. */
+      number_series_id: z.string().uuid().nullish(),
       items: z.array(PolozkaVstup).min(1),
     }).parse(d),
   )
@@ -188,11 +194,13 @@ export const createPurchaseOrder = createServerFn({ method: "POST" })
       supplierName = s?.name ?? null;
     }
 
+    const cislo = await dalsieCislo(supabase, data.company_id, data.number_series_id);
     const { data: order, error } = await supabase
       .from("purchase_orders")
       .insert({
         company_id: data.company_id,
-        order_number: await dalsieCislo(supabase, data.company_id),
+        order_number: cislo.cislo,
+        number_series_id: cislo.seriesId,
         supplier_id: data.supplier_id ?? null,
         supplier_name: supplierName,
         warehouse_id: data.warehouse_id ?? null,

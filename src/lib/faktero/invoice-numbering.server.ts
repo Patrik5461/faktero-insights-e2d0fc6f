@@ -25,9 +25,14 @@ export type NextInvoiceNumber = { invoice_number: string; sequence_number: numbe
  * vyhodnotiť nedá.
  */
 export async function nextInvoiceNumberDetailed(
-  ...argumenty: [company_id: string, issue_date?: string | null, typDokladu?: string | null]
+  ...argumenty: [
+    company_id: string,
+    issue_date?: string | null,
+    typDokladu?: string | null,
+    seriesId?: string | null,
+  ]
 ): Promise<NextInvoiceNumber> {
-  const [company_id, issue_date, typDokladu] = argumenty;
+  const [company_id, issue_date, typDokladu, seriesId] = argumenty;
   /*
     Parametre sa skladajú po jednom, nie podmieneným rozbalením objektu.
     S `...(type ? { _type: type } : {})` a pretypovaním na `never` zostavovač
@@ -41,6 +46,8 @@ export async function nextInvoiceNumberDetailed(
     // Bežná faktúra je bez predpony; `proforma` dostane „ZF…", doklad k
     // prijatej platbe „DDP…".
     _type: typDokladu ?? "regular",
+    // Rad zo šablóny opakovanej faktúry; bez neho sa berie predvolený.
+    _series_id: seriesId ?? null,
   });
   if (error) throw new Error(error.message);
   const row = data as unknown as NextInvoiceNumber | null;

@@ -13,6 +13,7 @@ import {
   listStockItemsForOrder,
 } from "@/lib/faktero/purchase-orders.functions";
 import { suctyObjednavky } from "@/lib/faktero/objednavky-dodavatel";
+import { VyberRadu } from "@/components/faktero/VyberRadu";
 import { vatRateOptions, zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { ArrowLeft, Plus, Sparkles, Trash2 } from "lucide-react";
@@ -72,6 +73,8 @@ function NewPurchaseOrder() {
   const [expectedDate, setExpectedDate] = useState("");
   const [jobId, setJobId] = useState("");
   const [note, setNote] = useState("");
+  /* Číselný rad objednávky; prázdne = predvolený. */
+  const [seriesId, setSeriesId] = useState("");
   const [items, setItems] = useState<Riadok[]>([{ ...PRAZDNY }]);
   /*
     Krajina firmy dobehne až po načítaní, takže prvé vykreslenie nesie
@@ -173,6 +176,7 @@ function NewPurchaseOrder() {
           job_id: jobId || null,
           expected_date: expectedDate || null,
           note: note || null,
+          number_series_id: seriesId || null,
           items: platne,
         },
       });
@@ -254,6 +258,7 @@ function NewPurchaseOrder() {
                 placeholder="napr. dodať na stavbu"
               />
             </label>
+            <VyberRadu druh="purchase_order" hodnota={seriesId} onZmena={setSeriesId} />
             {/* Zákazka je tu informatívna: naskladnenie ešte nie je náklad,
                 ten vznikne až výdajom tovaru na stavbu. */}
             <JobPicker value={jobId} onChange={setJobId} label="Zákazka" />

@@ -12,8 +12,12 @@ import { cisloZRadu } from "./cislo-z-radu.server";
 const CompanyScoped = z.object({ company_id: z.string().uuid() });
 
 /** Číslo z pokladničného radu — predvolene PD{rok}{poradie} ako doteraz. */
-async function dalsieCislo(supabase: any, companyId: string): Promise<string> {
-  return (await cisloZRadu(supabase, companyId, "cash")).cislo;
+async function dalsieCislo(
+  supabase: any,
+  companyId: string,
+  seriesId?: string | null,
+): Promise<{ cislo: string; seriesId: string | null }> {
+  return cisloZRadu(supabase, companyId, "cash", { seriesId });
 }
 
 export const getCashBook = createServerFn({ method: "POST" })
@@ -84,15 +88,19 @@ export const createCashEntry = createServerFn({ method: "POST" })
       entry_date: z.string().date(),
       category: z.string().trim().max(80).nullable().optional(),
       note: z.string().trim().max(2000).nullable().optional(),
+      /** Z ktorého číselného radu má doklad dostať číslo. */
+      number_series_id: z.string().uuid().nullish(),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const cislo = await dalsieCislo(supabase, data.company_id, data.number_series_id);
     const { data: row, error } = await supabase
       .from("cash_entries")
       .insert({
         company_id: data.company_id,
-        entry_number: await dalsieCislo(supabase, data.company_id),
+        entry_number: cislo.cislo,
+        number_series_id: cislo.seriesId,
         entry_date: data.entry_date,
         type: data.type,
         amount: data.amount,

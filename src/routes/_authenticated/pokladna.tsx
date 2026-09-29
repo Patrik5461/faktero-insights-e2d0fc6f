@@ -8,6 +8,7 @@ import { formatujDatum } from "@/lib/faktero/uzavierka";
 import { Wallet, Plus, Trash2, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
+import { VyberRadu } from "@/components/faktero/VyberRadu";
 
 export const Route = createFileRoute("/_authenticated/pokladna")({
   head: () => ({ meta: [{ title: "Pokladňa — Faktero" }] }),
@@ -39,6 +40,8 @@ function PokladnaPage() {
     description: "",
     entry_date: new Date().toISOString().slice(0, 10),
     category: "",
+    /* Číselný rad dokladu; prázdne = predvolený. */
+    number_series_id: "",
   });
 
   const cid = useMemo(() => getActiveCompanyId(), []);
@@ -71,6 +74,7 @@ function PokladnaPage() {
           description: form.description.trim(),
           entry_date: form.entry_date,
           category: form.category.trim() || null,
+          number_series_id: form.number_series_id || null,
         },
       });
       setForm({ ...form, amount: "", description: "", category: "" });
@@ -218,6 +222,11 @@ function PokladnaPage() {
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
               />
             </label>
+            <VyberRadu
+              druh="cash"
+              hodnota={form.number_series_id}
+              onZmena={(id) => setForm({ ...form, number_series_id: id })}
+            />
             <div className="sm:col-span-2">
               <button
                 type="submit"

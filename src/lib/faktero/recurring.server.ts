@@ -47,6 +47,8 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
   const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
     rec.company_id,
     today,
+    "regular",
+    rec.number_series_id ?? null,
   );
   const variable_symbol = invoice_number.replace(/\D/g, "");
 
@@ -57,6 +59,7 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
       customer_id: rec.customer_id ?? null,
       invoice_number,
       sequence_number,
+      number_series_id: rec.number_series_id ?? null,
       variable_symbol,
       issue_date: today,
       due_date: due,

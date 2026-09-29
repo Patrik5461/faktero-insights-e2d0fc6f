@@ -36,9 +36,14 @@ const Polozka = z.object({
 });
 
 /** Číslo z radu prijatých objednávok — predvolene OBJ{rok}{poradie}. */
-async function dalsieCislo(supabase: any, companyId: string, rok: number): Promise<string> {
+async function dalsieCislo(
+  supabase: any,
+  companyId: string,
+  rok: number,
+  seriesId?: string | null,
+): Promise<{ cislo: string; seriesId: string | null }> {
   const datum = `${rok}-01-01`;
-  return (await cisloZRadu(supabase, companyId, "sales_order", { datum })).cislo;
+  return cisloZRadu(supabase, companyId, "sales_order", { datum, seriesId });
 }
 
 async function nacitajObjednavku(supabase: any, companyId: string, id: string) {
@@ -123,6 +128,8 @@ const Ulozenie = CompanyScoped.extend({
   quote_id: z.preprocess(prazdneNaNull, z.string().uuid().nullable().optional()),
   reserve_stock: z.boolean().default(false),
   note: z.string().nullable().optional(),
+  /** Z ktorého číselného radu má objednávka dostať číslo. */
+  number_series_id: z.preprocess(prazdneNaNull, z.string().uuid().nullable().optional()),
   polozky: z.array(Polozka).min(1, "Objednávka musí mať aspoň jednu položku."),
 }).refine((v) => !v.requested_date || v.requested_date >= v.order_date, {
   message: "Požadovaný termín nemôže byť skôr ako dátum objednávky.",
@@ -185,11 +192,14 @@ export const saveSalesOrder = createServerFn({ method: "POST" })
         .eq("company_id", data.company_id);
       if (error) throw new Error(error.message);
     } else {
-      hlavicka.order_number = await dalsieCislo(
+      const cislo = await dalsieCislo(
         sb,
         data.company_id,
         Number(data.order_date.slice(0, 4)) || new Date().getFullYear(),
+        data.number_series_id,
       );
+      hlavicka.order_number = cislo.cislo;
+      hlavicka.number_series_id = cislo.seriesId;
       hlavicka.created_by = context.userId;
       const { data: row, error } = await sb
         .from("sales_orders")
@@ -503,7 +513,7 @@ export const createSalesOrderFromQuote = createServerFn({ method: "POST" })
       .from("sales_orders")
       .insert({
         company_id: data.company_id,
-        order_number: await dalsieCislo(sb, data.company_id, dnes.getFullYear()),
+        order_number: (await dalsieCislo(sb, data.company_id, dnes.getFullYear())).cislo,
         customer_id: q.customer_id,
         customer_name: q.customer_name,
         customer_ico: q.customer_ico,
