@@ -219,6 +219,28 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "starsie-sadzby",
+    title: "Staršie sadzby DPH",
+    body: (
+      <>
+        <p>
+          Vo výbere sadzby je pod platnými sadzbami skupina <strong>Staršie sadzby</strong> —
+          posledné tri, ktoré už neplatia, aj s rokom, do ktorého platili (na Slovensku 20 % a
+          10 % do roku 2024).
+        </p>
+        <p>
+          Hodí sa, keď vystavujete faktúru k <strong>zálohovej faktúre z minulého roka</strong>,
+          robíte <strong>dobropis k starej dodávke</strong> alebo opravujete doklad spred zmeny
+          zákona — plnenie vtedy podliehalo inej sadzbe a doklad ju musí niesť.
+        </p>
+        <p>
+          Sú zámerne zvlášť, aby si ich nikto nevybral omylom namiesto dnešných. Pri predaji
+          spotrebiteľovi v EÚ (OSS) sa neponúkajú — tam rozhodujú sadzby štátu zákazníka.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "cislo-opravit",
     title: "Oprava čísla faktúry",
     body: (
