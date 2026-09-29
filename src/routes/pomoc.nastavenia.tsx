@@ -80,9 +80,15 @@ const SEKCIE: HelpSection[] = [
           opakované faktúry.
         </p>
         <p className="mt-3">
-          V šablóne sa dajú použiť tokeny <code>{"{YYYY}"}</code> rok, <code>{"{YY}"}</code> rok
-          dvojčíslím, <code>{"{MM}"}</code> mesiac a <code>{"{NN}"}</code> až{" "}
-          <code>{"{NNNNNN}"}</code> poradie, kde počet písmen N určuje počet číslic. Text okolo
+          Tvar čísla sa vyberá zo <strong>zoznamu vzorov</strong>, kde je pri každom rovno vidieť
+          výsledné číslo — 20260001, 202609001 (mesačný reset), 2026/001 a podobne. Predpona sa
+          prispôsobí druhu dokladu, takže zálohová faktúra ponúka ZF…, pokladňa PD….
+        </p>
+        <p className="mt-3">
+          Keď vám žiadny vzor nesedí, vyberte <strong>Vlastná šablóna…</strong> a napíšte si
+          vlastný. V šablóne sa dajú použiť tokeny <code>{"{YYYY}"}</code> rok,{" "}
+          <code>{"{YY}"}</code> rok dvojčíslím, <code>{"{MM}"}</code> mesiac a <code>{"{NN}"}</code>{" "}
+          až <code>{"{NNNNNN}"}</code> poradie, kde počet písmen N určuje počet číslic. Text okolo
           tokenov je predpona, napríklad{" "}
           <code>
             TT{"{YYYY}"}
