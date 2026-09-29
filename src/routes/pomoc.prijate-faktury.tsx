@@ -200,6 +200,13 @@ const sections: HelpSection[] = [
           výkazov k DPH ani do nákladov zákazky nevstupuje.
         </p>
         <p>
+          Faktúru nemusíte prepisovať: na oboch zoznamoch je tlačidlo{" "}
+          <strong>Nahrať</strong> — vyberiete PDF alebo fotku a doklad prečíta tá istá AI ako pri
+          doklade z pošty. Zálohovú faktúru spozná sama (podľa nadpisu, čísla aj názvu súboru) a
+          zaradí ju medzi prijaté zálohy. To isté platí pre <strong>skener v appke</strong>:
+          naskenovaná zálohová faktúra neskončí medzi bločkami, ale rovno tu.
+        </p>
+        <p>
           Keď príde ostrá faktúra, pri jej zápise vyberiete v poli{" "}
           <strong>Zúčtováva prijatú zálohu</strong> tú zálohu, ktorú vyrovnáva. Ponúknu sa len
           nezúčtované zálohy toho istého dodávateľa. Záloha sa potom v zozname označí ako{" "}

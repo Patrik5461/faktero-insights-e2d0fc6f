@@ -454,6 +454,8 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
         .from("purchase_invoices")
         .insert({
           ...faktura,
+          // Zo zálohovej faktúry sa daň neodpočítava.
+          odpocet: faktura.type === "regular",
           company_id: adresa.company_id,
           created_by: adresa.user_id,
           // `created_by` je majiteľ adresy, nie ten, kto doklad zapísal — bez

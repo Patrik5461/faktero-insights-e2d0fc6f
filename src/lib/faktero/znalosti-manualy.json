@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-09-28",
+ "vytvorene": "2026-09-29",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -837,7 +837,7 @@
     },
     {
      "nadpis": "Prijaté zálohové faktúry",
-     "text": "<>\nKeď vám dodávateľ pošle zálohovú faktúru , zaevidujete ju rovnako ako\nbežnú — pri Druhu dokladu vyberiete Prijatá zálohová faktúra . Má vlastný\nzoznam Fakturácia → Prijaté zálohové faktúry , aby sa nemiešala s daňovými\ndokladmi.\nZálohová faktúra nie je daňový doklad : zaplatíte ju, ale daň si z nej\nneodpočítavate — tú prinesie až ostrá faktúra alebo doklad k prijatej platbe. Preto do\nvýkazov k DPH ani do nákladov zákazky nevstupuje.\nKeď príde ostrá faktúra, pri jej zápise vyberiete v poli\nZúčtováva prijatú zálohu tú zálohu, ktorú vyrovnáva. Ponúknu sa len\nnezúčtované zálohy toho istého dodávateľa. Záloha sa potom v zozname označí ako\nZúčtovaná a v záväzkoch na prehľade sa už nepočíta druhýkrát."
+     "text": "<>\nKeď vám dodávateľ pošle zálohovú faktúru , zaevidujete ju rovnako ako\nbežnú — pri Druhu dokladu vyberiete Prijatá zálohová faktúra . Má vlastný\nzoznam Fakturácia → Prijaté zálohové faktúry , aby sa nemiešala s daňovými\ndokladmi.\nZálohová faktúra nie je daňový doklad : zaplatíte ju, ale daň si z nej\nneodpočítavate — tú prinesie až ostrá faktúra alebo doklad k prijatej platbe. Preto do\nvýkazov k DPH ani do nákladov zákazky nevstupuje.\nFaktúru nemusíte prepisovať: na oboch zoznamoch je tlačidlo\nNahrať — vyberiete PDF alebo fotku a doklad prečíta tá istá AI ako pri\ndoklade z pošty. Zálohovú faktúru spozná sama (podľa nadpisu, čísla aj názvu súboru) a\nzaradí ju medzi prijaté zálohy. To isté platí pre skener v appke :\nnaskenovaná zálohová faktúra neskončí medzi bločkami, ale rovno tu.\nKeď príde ostrá faktúra, pri jej zápise vyberiete v poli\nZúčtováva prijatú zálohu tú zálohu, ktorú vyrovnáva. Ponúknu sa len\nnezúčtované zálohy toho istého dodávateľa. Záloha sa potom v zozname označí ako\nZúčtovaná a v záväzkoch na prehľade sa už nepočíta druhýkrát."
     },
     {
      "nadpis": "Údaje pre výkazy k DPH",

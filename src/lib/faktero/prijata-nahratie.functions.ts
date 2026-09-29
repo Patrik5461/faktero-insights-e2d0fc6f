@@ -88,6 +88,8 @@ export const nahrajPrijatuFakturuFn = createServerFn({ method: "POST" })
       .insert({
         ...faktura,
         type: typ,
+        // Zo zálohovej faktúry sa daň neodpočítava — tú prinesie ostrá faktúra.
+        odpocet: typ === "regular",
         company_id: data.company_id,
         created_by: userId,
         // Zdroj odlišuje nahraté doklady od ručne prepísaných aj od pošty.
