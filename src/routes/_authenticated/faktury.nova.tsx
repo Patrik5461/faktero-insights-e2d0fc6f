@@ -42,6 +42,8 @@ import { ConstantSymbolCombobox } from "@/components/faktero/ConstantSymbolCombo
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { MENY, KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
+import { NAZVY_DRUHOV, druhPodlaTypuFaktury, type CiselnyRad } from "@/lib/faktero/ciselne-rady";
+import { ciselneRadyFn } from "@/lib/faktero/ciselne-rady.functions";
 import {
   koeficientZlavy,
   maZlavu,
@@ -187,7 +189,11 @@ function NewInvoice() {
     /* Zľava na celý doklad — percento alebo pevná suma bez DPH. */
     discount_type: "" as "" | TypZlavy,
     discount_value: 0,
+    /* Číselný rad, z ktorého sa vezme číslo. Prázdny = predvolený pre druh. */
+    number_series_id: "",
   });
+  /* Číselné rady firmy — výber sa ukáže len tam, kde je z čoho vyberať. */
+  const [rady, setRady] = useState<CiselnyRad[]>([]);
   /*
     Krajina firmy dobehne až po načítaní. Prvé vykreslenie preto nesie
     slovenskú predvolenú sadzbu a českej firme by v položke ostalo 23 % —
@@ -459,6 +465,25 @@ function NewInvoice() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const nacitajRady = useServerFn(ciselneRadyFn);
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    let zrusene = false;
+    nacitajRady({ data: { company_id: cid } })
+      .then((v) => !zrusene && setRady(v.rady.filter((r) => r.active)))
+      .catch(() => setRady([]));
+    return () => {
+      zrusene = true;
+    };
+  }, [nacitajRady]);
+
+  /* Rady pre práve vybraný druh dokladu; pri jednom sa nie je z čoho rozhodovať. */
+  const radyDruhu = useMemo(
+    () => rady.filter((r) => r.kind === druhPodlaTypuFaktury(form.type)),
+    [rady, form.type],
+  );
+
   /*
     Riadok bez názvu aj bez sumy je len prázdne miesto vo formulári — do
     dokladu ani do súčtov nepatrí. Riadok so sumou bez názvu prepustíme do
@@ -577,18 +602,32 @@ function NewInvoice() {
     );
   }
 
-  async function generateNumber(companyId: string, issueDate: string, typ: string) {
+  async function generateNumber(
+    companyId: string,
+    issueDate: string,
+    typ: string,
+    seriesId?: string,
+  ) {
     // Server-side, transactional (SELECT ... FOR UPDATE) — supports {YYYY} {YY} {MM} {NN}-{NNNN}
     // Zálohová faktúra si berie číslo z vlastnej rady (ZF…).
     const { data, error } = await supabase.rpc("faktero_next_invoice_number", {
       _company_id: companyId,
       _issue_date: issueDate,
       _type: typ,
+      _series_id: seriesId || null,
     } as never);
     if (error) throw new Error(error.message);
-    const row = data as unknown as { invoice_number: string; sequence_number: number } | null;
+    const row = data as unknown as {
+      invoice_number: string;
+      sequence_number: number;
+      series_id?: string | null;
+    } | null;
     if (!row?.invoice_number) throw new Error("Nepodarilo sa vygenerovať číslo faktúry.");
-    return { invoice_number: row.invoice_number, sequence_number: Number(row.sequence_number) };
+    return {
+      invoice_number: row.invoice_number,
+      sequence_number: Number(row.sequence_number),
+      series_id: row.series_id ?? null,
+    };
   }
 
   async function runAi() {
@@ -672,10 +711,11 @@ function NewInvoice() {
     setSubmitting(true);
 
     try {
-      const { invoice_number, sequence_number } = await generateNumber(
+      const { invoice_number, sequence_number, series_id } = await generateNumber(
         cid,
         form.issue_date,
         form.type,
+        form.number_series_id,
       );
       const variable_symbol = form.variable_symbol || invoice_number.replace(/\D/g, "");
 
@@ -688,6 +728,7 @@ function NewInvoice() {
           status: "issued",
           invoice_number,
           sequence_number,
+          number_series_id: series_id,
           variable_symbol,
           constant_symbol: form.constant_symbol || null,
           specific_symbol: form.specific_symbol || null,
@@ -918,6 +959,27 @@ function NewInvoice() {
                   <option value="credit_note">Dobropis</option>
                 </select>
               </div>
+              {radyDruhu.length > 1 && (
+                <div>
+                  <label className="text-[13px] font-semibold text-foreground">Číselný rad</label>
+                  <select
+                    value={form.number_series_id}
+                    onChange={(e) => setForm({ ...form, number_series_id: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    {/* Prázdna hodnota = predvolený rad; ten je v zozname prvý. */}
+                    {radyDruhu
+                      .slice()
+                      .sort((a, b) => Number(b.is_default) - Number(a.is_default))
+                      .map((r) => (
+                        <option key={r.id} value={r.is_default ? "" : r.id}>
+                          {r.name}
+                          {r.is_default ? " (predvolený)" : ""} · {r.format}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="text-[13px] font-semibold text-foreground">
                   Dátum vystavenia

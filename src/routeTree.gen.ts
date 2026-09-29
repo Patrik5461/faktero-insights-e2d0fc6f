@@ -130,6 +130,7 @@ import { Route as AuthenticatedBankoveUctyTransakcieRouteImport } from './routes
 import { Route as AuthenticatedBankoveUctyVypisyRouteImport } from './routes/_authenticated/bankove-ucty.vypisy'
 import { Route as AuthenticatedCenyIndexRouteImport } from './routes/_authenticated/ceny.index'
 import { Route as AuthenticatedCenyAkcieRouteImport } from './routes/_authenticated/ceny.akcie'
+import { Route as AuthenticatedCiselneRadyIndexRouteImport } from './routes/_authenticated/ciselne-rady.index'
 import { Route as AuthenticatedDokladyIndexRouteImport } from './routes/_authenticated/doklady.index'
 import { Route as AuthenticatedDokladyMailomRouteImport } from './routes/_authenticated/doklady.mailom'
 import { Route as AuthenticatedDokladyNovyRouteImport } from './routes/_authenticated/doklady.novy'
@@ -906,6 +907,12 @@ const AuthenticatedCenyAkcieRoute = AuthenticatedCenyAkcieRouteImport.update({
   path: '/ceny/akcie',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCiselneRadyIndexRoute =
+  AuthenticatedCiselneRadyIndexRouteImport.update({
+    id: '/ciselne-rady/',
+    path: '/ciselne-rady/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDokladyIndexRoute =
   AuthenticatedDokladyIndexRouteImport.update({
     id: '/doklady/',
@@ -2000,6 +2007,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/bankove-ucty/': typeof AuthenticatedBankoveUctyIndexRoute
   '/ceny/': typeof AuthenticatedCenyIndexRoute
+  '/ciselne-rady/': typeof AuthenticatedCiselneRadyIndexRoute
   '/doklady/': typeof AuthenticatedDokladyIndexRoute
   '/efaktura/': typeof AuthenticatedEfakturaIndexRoute
   '/faktury/': typeof AuthenticatedFakturyIndexRoute
@@ -2271,6 +2279,7 @@ export interface FileRoutesByTo {
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/bankove-ucty': typeof AuthenticatedBankoveUctyIndexRoute
   '/ceny': typeof AuthenticatedCenyIndexRoute
+  '/ciselne-rady': typeof AuthenticatedCiselneRadyIndexRoute
   '/doklady': typeof AuthenticatedDokladyIndexRoute
   '/efaktura': typeof AuthenticatedEfakturaIndexRoute
   '/faktury': typeof AuthenticatedFakturyIndexRoute
@@ -2553,6 +2562,7 @@ export interface FileRoutesById {
   '/pomoc/online-platby/gopay': typeof PomocOnlinePlatbyGopayRoute
   '/_authenticated/bankove-ucty/': typeof AuthenticatedBankoveUctyIndexRoute
   '/_authenticated/ceny/': typeof AuthenticatedCenyIndexRoute
+  '/_authenticated/ciselne-rady/': typeof AuthenticatedCiselneRadyIndexRoute
   '/_authenticated/doklady/': typeof AuthenticatedDokladyIndexRoute
   '/_authenticated/efaktura/': typeof AuthenticatedEfakturaIndexRoute
   '/_authenticated/faktury/': typeof AuthenticatedFakturyIndexRoute
@@ -2835,6 +2845,7 @@ export interface FileRouteTypes {
     | '/pomoc/online-platby/gopay'
     | '/bankove-ucty/'
     | '/ceny/'
+    | '/ciselne-rady/'
     | '/doklady/'
     | '/efaktura/'
     | '/faktury/'
@@ -3106,6 +3117,7 @@ export interface FileRouteTypes {
     | '/pomoc/online-platby/gopay'
     | '/bankove-ucty'
     | '/ceny'
+    | '/ciselne-rady'
     | '/doklady'
     | '/efaktura'
     | '/faktury'
@@ -3387,6 +3399,7 @@ export interface FileRouteTypes {
     | '/pomoc/online-platby/gopay'
     | '/_authenticated/bankove-ucty/'
     | '/_authenticated/ceny/'
+    | '/_authenticated/ciselne-rady/'
     | '/_authenticated/doklady/'
     | '/_authenticated/efaktura/'
     | '/_authenticated/faktury/'
@@ -4440,6 +4453,13 @@ declare module '@tanstack/react-router' {
       path: '/ceny/akcie'
       fullPath: '/ceny/akcie'
       preLoaderRoute: typeof AuthenticatedCenyAkcieRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ciselne-rady/': {
+      id: '/_authenticated/ciselne-rady/'
+      path: '/ciselne-rady'
+      fullPath: '/ciselne-rady/'
+      preLoaderRoute: typeof AuthenticatedCiselneRadyIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/doklady/': {
@@ -5719,6 +5739,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedZamestnanciSablonyRoute: typeof AuthenticatedZamestnanciSablonyRoute
   AuthenticatedBankoveUctyIndexRoute: typeof AuthenticatedBankoveUctyIndexRoute
   AuthenticatedCenyIndexRoute: typeof AuthenticatedCenyIndexRoute
+  AuthenticatedCiselneRadyIndexRoute: typeof AuthenticatedCiselneRadyIndexRoute
   AuthenticatedDokladyIndexRoute: typeof AuthenticatedDokladyIndexRoute
   AuthenticatedFakturyIndexRoute: typeof AuthenticatedFakturyIndexRoute
   AuthenticatedFinancovanieIndexRoute: typeof AuthenticatedFinancovanieIndexRoute
@@ -5820,6 +5841,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedZamestnanciSablonyRoute: AuthenticatedZamestnanciSablonyRoute,
   AuthenticatedBankoveUctyIndexRoute: AuthenticatedBankoveUctyIndexRoute,
   AuthenticatedCenyIndexRoute: AuthenticatedCenyIndexRoute,
+  AuthenticatedCiselneRadyIndexRoute: AuthenticatedCiselneRadyIndexRoute,
   AuthenticatedDokladyIndexRoute: AuthenticatedDokladyIndexRoute,
   AuthenticatedFakturyIndexRoute: AuthenticatedFakturyIndexRoute,
   AuthenticatedFinancovanieIndexRoute: AuthenticatedFinancovanieIndexRoute,

@@ -1,9 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { dalsieCisloDokladu } from "./cislovanie";
 import { priebehPokladne, stavPokladne } from "./pokladna";
-import { nacitajPouziteCisla } from "./cislovanie-nacitanie";
+import { cisloZRadu } from "./cislo-z-radu.server";
 
 /**
  * Pokladňa. Všetko ide cez klienta prihláseného používateľa, takže cudziu
@@ -12,17 +11,9 @@ import { nacitajPouziteCisla } from "./cislovanie-nacitanie";
 
 const CompanyScoped = z.object({ company_id: z.string().uuid() });
 
-/** Číslovanie PD{rok}{poradie}, rovnaký tvar ako ostatné doklady. */
+/** Číslo z pokladničného radu — predvolene PD{rok}{poradie} ako doteraz. */
 async function dalsieCislo(supabase: any, companyId: string): Promise<string> {
-  const prefix = `PD${new Date().getFullYear()}`;
-  const rows = await nacitajPouziteCisla(
-    supabase,
-    "cash_entries",
-    "entry_number",
-    companyId,
-    prefix,
-  );
-  return dalsieCisloDokladu(prefix, rows);
+  return (await cisloZRadu(supabase, companyId, "cash")).cislo;
 }
 
 export const getCashBook = createServerFn({ method: "POST" })

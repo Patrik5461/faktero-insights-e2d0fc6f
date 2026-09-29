@@ -85,6 +85,7 @@ const CESTY: [string, Oblast][] = [
   ["/efaktura/prijate", "doklady"],
   ["/prijate-faktury", "doklady"],
   ["/prijate-zalohove", "doklady"],
+  ["/ciselne-rady", "faktury"],
   ["/doklady", "doklady"],
   ["/ostatne-doklady", "ostatne"],
   ["/faktury", "faktury"],

@@ -1007,6 +1007,7 @@ export type Database = {
           pohoda_cislo: string | null
           type: Database["public"]["Enums"]["cash_entry_type"]
           updated_at: string
+          number_series_id: string | null
         }
         Insert: {
           amount: number
@@ -1024,6 +1025,7 @@ export type Database = {
           pohoda_cislo?: string | null
           type: Database["public"]["Enums"]["cash_entry_type"]
           updated_at?: string
+          number_series_id?: string | null
         }
         Update: {
           amount?: number
@@ -1041,6 +1043,7 @@ export type Database = {
           pohoda_cislo?: string | null
           type?: Database["public"]["Enums"]["cash_entry_type"]
           updated_at?: string
+          number_series_id?: string | null
         }
         Relationships: [
           {
@@ -4103,6 +4106,7 @@ export type Database = {
           discount_total: number
           discount_type: string | null
           discount_value: number
+          number_series_id: string | null
         }
         Insert: {
           advance_amount?: number | null
@@ -4183,6 +4187,7 @@ export type Database = {
           discount_total?: number
           discount_type?: string | null
           discount_value?: number
+          number_series_id?: string | null
         }
         Update: {
           advance_amount?: number | null
@@ -4263,6 +4268,7 @@ export type Database = {
           discount_total?: number
           discount_type?: string | null
           discount_value?: number
+          number_series_id?: string | null
         }
         Relationships: [
           {
@@ -5088,6 +5094,42 @@ export type Database = {
         }
         Relationships: []
       }
+      number_series: {
+        Row: {
+          id: string
+          company_id: string
+          kind: string
+          name: string
+          format: string
+          is_default: boolean
+          active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          kind: string
+          name: string
+          format: string
+          is_default?: boolean
+          active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          kind?: string
+          name?: string
+          format?: string
+          is_default?: boolean
+          active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       purchase_invoices: {
         Row: {
           amount_total: number
@@ -5321,6 +5363,7 @@ export type Database = {
           supplier_name: string | null
           updated_at: string
           warehouse_id: string | null
+          number_series_id: string | null
         }
         Insert: {
           company_id: string
@@ -5340,6 +5383,7 @@ export type Database = {
           supplier_name?: string | null
           updated_at?: string
           warehouse_id?: string | null
+          number_series_id?: string | null
         }
         Update: {
           company_id?: string
@@ -5359,6 +5403,7 @@ export type Database = {
           supplier_name?: string | null
           updated_at?: string
           warehouse_id?: string | null
+          number_series_id?: string | null
         }
         Relationships: [
           {
@@ -5557,6 +5602,7 @@ export type Database = {
           discount_total: number
           discount_type: string | null
           discount_value: number
+          number_series_id: string | null
         }
         Insert: {
           company_id: string
@@ -5597,6 +5643,7 @@ export type Database = {
           discount_total?: number
           discount_type?: string | null
           discount_value?: number
+          number_series_id?: string | null
         }
         Update: {
           company_id?: string
@@ -5637,6 +5684,7 @@ export type Database = {
           discount_total?: number
           discount_type?: string | null
           discount_value?: number
+          number_series_id?: string | null
         }
         Relationships: [
           {
@@ -5948,6 +5996,7 @@ export type Database = {
           total: number
           updated_at: string
           vat_total: number
+          number_series_id: string | null
         }
         Insert: {
           company_id: string
@@ -5974,6 +6023,7 @@ export type Database = {
           total?: number
           updated_at?: string
           vat_total?: number
+          number_series_id?: string | null
         }
         Update: {
           company_id?: string
@@ -6000,6 +6050,7 @@ export type Database = {
           total?: number
           updated_at?: string
           vat_total?: number
+          number_series_id?: string | null
         }
         Relationships: [
           {
@@ -7680,8 +7731,26 @@ export type Database = {
         Returns: string
       }
       faktero_next_invoice_number: {
-        Args: { _company_id: string; _issue_date?: string; _type?: string }
+        Args: {
+          _company_id: string
+          _issue_date?: string
+          _type?: string
+          _series_id?: string | null
+        }
         Returns: Json
+      }
+      faktero_next_series_number: {
+        Args: {
+          _company_id: string
+          _kind: string
+          _series_id?: string | null
+          _date?: string | null
+        }
+        Returns: Json
+      }
+      faktero_rad_pre_druh: {
+        Args: { _company_id: string; _kind: string }
+        Returns: string
       }
       faktero_process_trial_expiry: { Args: never; Returns: number }
       faktero_recurring_cron_status: { Args: never; Returns: Json }

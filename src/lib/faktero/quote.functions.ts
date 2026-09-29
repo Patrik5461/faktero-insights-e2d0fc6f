@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { nacitajPouziteCisla } from "./cislovanie-nacitanie";
 
 const Input = z.object({ quoteId: z.string().uuid() });
 
@@ -19,18 +18,12 @@ export const nextQuoteNumberFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    const { dalsieCisloDokladu } = await import("./cislovanie");
-    const prefix = `Q${new Date().getFullYear()}`;
-    // Ide to cez klienta prihláseného používateľa, takže cudziu firmu
-    // odfiltruje RLS — `supabaseAdmin` tu netreba.
-    const rows = await nacitajPouziteCisla(
-      context.supabase,
-      "quotes",
-      "quote_number",
-      data.company_id,
-      prefix,
-    );
-    return { quote_number: dalsieCisloDokladu(prefix, rows) };
+    // Číslo dáva rad cenových ponúk; predvolene má tvar Q{rok}{poradie} ako
+    // doteraz. Ide to cez klienta prihláseného používateľa, takže cudziu
+    // firmu odfiltruje RLS — `supabaseAdmin` tu netreba.
+    const { cisloZRadu } = await import("./cislo-z-radu.server");
+    const { cislo, seriesId } = await cisloZRadu(context.supabase, data.company_id, "quote");
+    return { quote_number: cislo, number_series_id: seriesId };
   });
 
 /**

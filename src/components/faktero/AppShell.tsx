@@ -321,6 +321,7 @@ const ACCOUNT_API_LINKS: NavChild[] = [
 
 const ACCOUNT_SETTINGS_LINKS: NavChild[] = [
   { to: "/firma", label: "Firma" },
+  { to: "/ciselne-rady", label: "Číselné rady" },
   { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry" },
   { to: "/nastavenia/email-sablony", label: "Email šablóny" },
   { to: "/nastavenia/zabezpecenie", label: "Zabezpečenie účtu" },
