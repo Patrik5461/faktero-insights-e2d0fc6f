@@ -91,11 +91,13 @@ const SEKCIE: HelpSection[] = [
           prispôsobí druhu dokladu, takže zálohová faktúra ponúka ZF…, pokladňa PD….
         </p>
         <p className="mt-3">
-          Keď vám žiadny vzor nesedí, vyberte <strong>Vlastná šablóna…</strong> a napíšte si
-          vlastný. V šablóne sa dajú použiť tokeny <code>{"{YYYY}"}</code> rok,{" "}
-          <code>{"{YY}"}</code> rok dvojčíslím, <code>{"{MM}"}</code> mesiac a <code>{"{NN}"}</code>{" "}
-          až <code>{"{NNNNNN}"}</code> poradie, kde počet písmen N určuje počet číslic. Text okolo
-          tokenov je predpona, napríklad{" "}
+          Keď vám žiadny vzor nesedí, vyberte <strong>Vlastná šablóna…</strong> a napíšte si číslo
+          tak, ako ho chcete mať — aj s medzerami či vlastným textom. Doplní sa len poradie, keď ho
+          vynecháte (na koniec ako {"{NNNN}"}), a jednomiestne {"{N}"} sa rozšíri na dve číslice,
+          aby po deviatich dokladoch nepretieklo; formulár to povie vopred. V šablóne sa dajú použiť
+          tokeny <code>{"{YYYY}"}</code> rok, <code>{"{YY}"}</code> rok dvojčíslím,{" "}
+          <code>{"{MM}"}</code> mesiac a <code>{"{NN}"}</code> až <code>{"{NNNNNN}"}</code> poradie,
+          kde počet písmen N určuje počet číslic. Text okolo tokenov je predpona, napríklad{" "}
           <code>
             TT{"{YYYY}"}
             {"{NNN}"}
