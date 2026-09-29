@@ -139,3 +139,13 @@ describe("hotové vzory číslovania", () => {
     expect(resetujeSaMesacne(m.format)).toBe(true);
   });
 });
+
+describe("upozornenia pri vlastnej šablóne", () => {
+  it("jednomiestne poradie nehlási ako chýbajúce", () => {
+    expect(upozornenieSablony("PON {YYYY}/{N}")).toMatch(/rozšírili/);
+    expect(normalizujSablonu("PON {YYYY}/{N}")).toBe("PON {YYYY}/{NN}");
+  });
+  it("chýbajúce poradie hlási správne", () => {
+    expect(upozornenieSablony("Ponuka Tobify")).toMatch(/doplnili na koniec/);
+  });
+});

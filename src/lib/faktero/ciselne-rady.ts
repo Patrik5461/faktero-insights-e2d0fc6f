@@ -72,6 +72,11 @@ function maPoradie(format: string): boolean {
   return je;
 }
 
+/** Aj jednomiestne `{N}` je poradie — len sa pri ukladaní rozšíri na `{NN}`. */
+function maAkekolvekPoradie(format: string): boolean {
+  return /\{N{1,6}\}/.test(format);
+}
+
 /**
  * Chyba, pre ktorú sa šablóna uložiť nedá.
  *
@@ -92,8 +97,11 @@ export function chybaSablony(format: string): string | null {
 export function upozornenieSablony(format: string): string | null {
   const f = (format ?? "").trim();
   if (!f) return null;
-  if (!maPoradie(f)) {
+  if (!maAkekolvekPoradie(f)) {
     return "Poradie sme doplnili na koniec ako {NNNN} — bez neho by každý doklad dostal to isté číslo.";
+  }
+  if (!maPoradie(f)) {
+    return "Jednomiestne poradie sme rozšírili na {NN} — po deviatich dokladoch by pretieklo.";
   }
   const zvysok = f.replace(/\{(YYYY|YY|MM|N{1,6})\}/g, "");
   if (/[{}]/.test(zvysok)) {
