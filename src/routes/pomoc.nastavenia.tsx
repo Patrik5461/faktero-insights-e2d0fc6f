@@ -69,9 +69,36 @@ const SEKCIE: HelpSection[] = [
     body: (
       <>
         <p>
-          <strong>Formát čísla faktúry</strong> je tiež v nastaveniach firmy. Číslo sa neskladá
-          počítaním riadkov, ale z radu — vďaka tomu nevznikne diera, keď sa doklad zmaže, a dve
-          faktúry vystavené naraz nedostanú to isté číslo.
+          Číselné rady sa spravujú v <strong>Nastavenia → Číselné rady</strong>. Rad je šablóna
+          čísla viazaná na druh dokladu — faktúra, zálohová faktúra, dobropis, doklad k prijatej
+          platbe, cenová ponuka, prijatá objednávka, objednávka u dodávateľa a pokladničný doklad.
+        </p>
+        <p className="mt-3">
+          Na jeden druh môžete mať <strong>viac radov</strong> (pobočka, prevádzka, oddelený rad) a
+          pri vystavovaní faktúry si vyberiete, z ktorého sa číslo vezme. Jeden rad je{" "}
+          <strong>predvolený</strong> — z neho číslujú cesty, ktoré sa nepýtajú: appka, API aj
+          opakované faktúry.
+        </p>
+        <p className="mt-3">
+          V šablóne sa dajú použiť tokeny <code>{"{YYYY}"}</code> rok, <code>{"{YY}"}</code> rok
+          dvojčíslím, <code>{"{MM}"}</code> mesiac a <code>{"{NN}"}</code> až{" "}
+          <code>{"{NNNNNN}"}</code> poradie, kde počet písmen N určuje počet číslic. Text okolo
+          tokenov je predpona, napríklad{" "}
+          <code>
+            TT{"{YYYY}"}
+            {"{NNN}"}
+          </code>{" "}
+          → <code>TT2026001</code>. Keď je v šablóne mesiac, poradie sa resetuje mesačne, inak ročne
+          — obrazovka to pri každom rade ukáže aj s prvým číslom.
+        </p>
+        <p className="mt-3">
+          Číslo sa neskladá počítaním riadkov, ale z radu — vďaka tomu nevznikne diera, keď sa
+          doklad zmaže, a dve faktúry vystavené naraz nedostanú to isté číslo. Rad, z ktorého už
+          doklady visia, sa <strong>zmazať nedá</strong>: dá sa len vypnúť, aby sa prestal ponúkať.
+        </p>
+        <p className="mt-3">
+          Keď ste rady nikdy nenastavovali, nič sa nemení — pri prvom doklade sa rad založí presne z
+          tvaru, ktorý ste mali dovtedy.
         </p>
         <p className="mt-3">
           Faktúry vystavené v telefóne bez signálu si číslo rezervujú dopredu. Keď taká faktúra
