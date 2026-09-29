@@ -217,6 +217,29 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "cislo-opravit",
+    title: "Oprava čísla faktúry",
+    body: (
+      <>
+        <p>
+          Preklep v čísle sa dá opraviť: otvorte <strong>Opraviť faktúru</strong> a prepíšte pole{" "}
+          <strong>Číslo faktúry</strong>. Formulár hneď ukáže, z čoho na čo sa číslo mení.
+        </p>
+        <p>
+          Faktúru s tým istým číslom mať dvakrát nemožno — Faktero to odmietne a povie, že číslo
+          je obsadené. V období uzamknutom uzávierkou sa číslo meniť nedá, rovnako ako dátumy a
+          sumy.
+        </p>
+        <p>
+          <strong>Variabilný symbol sa nemení sám.</strong> Býva zhodný s číslom, ale pod starým
+          symbolom už mohla prísť platba — keď má sedieť s novým číslom, prepíšte ho tiež. Po
+          oprave sa PDF zruší a pri ďalšom otvorení sa vygeneruje nanovo; odberateľovi, ktorý
+          starý doklad dostal, pošlite nové.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "zlavy",
     title: "Zľavy na faktúre a v ponuke",
     body: (
