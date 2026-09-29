@@ -11,6 +11,7 @@ import {
   DRUHY_RADOV,
   NAZVY_DRUHOV,
   chybaSablony,
+  predlohyRadu,
   resetujeSaMesacne,
   ukazkaCisla,
   type CiselnyRad,
@@ -248,6 +249,11 @@ function FormularRadu({
   onZrus: () => void;
 }) {
   const chyba = rad.format ? chybaSablony(rad.format) : null;
+  const predlohy = predlohyRadu(rad.kind as DruhRadu);
+  /* Vlastný tvar sa odomkne buď voľbou, alebo keď rad nesie niečo mimo predlôh. */
+  const [vlastna, setVlastna] = useState(
+    Boolean(rad.format) && !predlohy.some((v) => v.format === rad.format),
+  );
   useZatvorNaEscape(onZrus);
   return (
     <div
@@ -271,23 +277,59 @@ function FormularRadu({
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
           </label>
-          <label className="block">
-            <span className="text-[13px] font-semibold text-foreground">Šablóna čísla</span>
-            <input
-              value={rad.format ?? ""}
-              onChange={(e) => onZmena({ ...rad, format: e.target.value })}
-              placeholder="{YYYY}{NNNN}"
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
-            />
-            <span className="mt-1 block text-xs text-muted-foreground">
-              Tokeny: {"{YYYY}"} rok, {"{YY}"} rok dvojčíslím, {"{MM}"} mesiac, {"{NN}"} až{" "}
-              {"{NNNNNN}"} poradie (počet N = počet číslic). Text okolo je predpona.
-            </span>
+          <div className="block">
+            <label className="text-[13px] font-semibold text-foreground">Šablóna čísla</label>
+            {/*
+              Väčšina firiem si vyberie jeden z bežných tvarov — tokeny sú
+              zrozumiteľné, až keď je vidieť, čo z nich vyjde. Vlastný tvar
+              ostáva pre tých, čo potrebujú niečo svoje.
+            */}
+            <select
+              value={vlastna ? "vlastna" : (rad.format ?? "")}
+              onChange={(e) => {
+                if (e.target.value === "vlastna") {
+                  setVlastna(true);
+                  return;
+                }
+                setVlastna(false);
+                onZmena({ ...rad, format: e.target.value });
+              }}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {!rad.format && <option value="">— vyberte tvar čísla —</option>}
+              {predlohy.map((v) => (
+                <option key={v.format} value={v.format}>
+                  {ukazkaCisla(v.format, 1)} — {v.popis}
+                </option>
+              ))}
+              <option value="vlastna">Vlastná šablóna…</option>
+            </select>
+            {vlastna && (
+              <input
+                autoFocus
+                value={rad.format ?? ""}
+                onChange={(e) => onZmena({ ...rad, format: e.target.value })}
+                placeholder="{YYYY}{NNNN}"
+                className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-sm"
+              />
+            )}
+            {vlastna && (
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Tokeny: {"{YYYY}"} rok, {"{YY}"} rok dvojčíslím, {"{MM}"} mesiac, {"{NN}"} až{" "}
+                {"{NNNNNN}"} poradie (počet N = počet číslic). Text okolo je predpona.
+              </span>
+            )}
             {rad.format && !chyba && (
               <span className="mt-2 block rounded-md bg-muted px-3 py-2 text-sm">
-                Prvé číslo: <strong className="tabular-nums">{ukazkaCisla(rad.format, 1)}</strong>,
-                desiate: <strong className="tabular-nums">{ukazkaCisla(rad.format, 10)}</strong> ·
-                poradie sa resetuje {resetujeSaMesacne(rad.format) ? "mesačne" : "ročne"}
+                Prvé číslo:{" "}
+                <strong className="tabular-nums">
+                  {ukazkaCisla(rad.format, rad.start_from ?? 1)}
+                </strong>
+                , desiate:{" "}
+                <strong className="tabular-nums">
+                  {ukazkaCisla(rad.format, (rad.start_from ?? 1) + 9)}
+                </strong>{" "}
+                · poradie sa resetuje {resetujeSaMesacne(rad.format) ? "mesačne" : "ročne"}
               </span>
             )}
             {chyba && (
@@ -295,7 +337,7 @@ function FormularRadu({
                 {chyba}
               </span>
             )}
-          </label>
+          </div>
           <label className="block">
             <span className="text-[13px] font-semibold text-foreground">Začať od poradia</span>
             <input

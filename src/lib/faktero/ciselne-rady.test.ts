@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
+  DRUHY_RADOV,
   chybaSablony,
+  predlohyRadu,
   druhPodlaTypuFaktury,
   resetujeSaMesacne,
   sablonaZCisla,
@@ -96,5 +98,30 @@ describe("šablóna odvodená z ručne napísaného čísla", () => {
     const v = sablonaZCisla("FA-2026-100", den)!;
     expect(chybaSablony(v.format)).toBeNull();
     expect(ukazkaCisla(v.format, v.poradie + 1, new Date(2026, 8, 29))).toBe("FA-2026-101");
+  });
+});
+
+describe("hotové vzory číslovania", () => {
+  it("faktúry ponúkajú aj tvar s predponou FA", () => {
+    const f = predlohyRadu("invoice").map((x) => x.format);
+    expect(f).toContain("{YYYY}{NNNN}");
+    expect(f).toContain("FA{YYYY}{NNNN}");
+  });
+  it("zálohové faktúry majú predponu ZF, pokladňa PD", () => {
+    expect(predlohyRadu("proforma")[0].format).toBe("ZF{YYYY}{NNNN}");
+    expect(predlohyRadu("cash")[0].format).toBe("PD{YYYY}{NNNN}");
+  });
+  it("každý vzor prejde kontrolou a dá zmysluplné číslo", () => {
+    const den = new Date(2026, 8, 29);
+    for (const kind of DRUHY_RADOV) {
+      for (const v of predlohyRadu(kind)) {
+        expect(chybaSablony(v.format), `${kind}: ${v.format}`).toBeNull();
+        expect(ukazkaCisla(v.format, 1, den)).not.toBe("");
+      }
+    }
+  });
+  it("vzor s mesiacom sa resetuje mesačne", () => {
+    const m = predlohyRadu("invoice").find((v) => v.format.includes("{MM}"))!;
+    expect(resetujeSaMesacne(m.format)).toBe(true);
   });
 });

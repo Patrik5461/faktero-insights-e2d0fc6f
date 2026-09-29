@@ -171,3 +171,36 @@ export function sablonaZCisla(
   const format = `${vzor}{${"N".repeat(Math.min(posledna[0].length, 6))}}`;
   return chybaSablony(format) ? null : { format, poradie };
 }
+
+/**
+ * Hotové vzory číslovania na výber.
+ *
+ * Tokeny v šablóne sú zrozumiteľné, až keď človek vidí, čo z nich vyjde —
+ * väčšina firiem si aj tak vyberie jeden z bežných tvarov. Predpona sa
+ * prispôsobí druhu dokladu, nech si zálohová faktúra neponúka tvar faktúry.
+ */
+export function predlohyRadu(kind: DruhRadu): { format: string; popis: string }[] {
+  const p = PREDPONA[kind];
+  const zaklad: { format: string; popis: string }[] = [
+    { format: `${p}{YYYY}{NNNN}`, popis: "Rok a poradie" },
+    { format: `${p}{YYYY}{MM}{NNN}`, popis: "Rok, mesiac a poradie (mesačný reset)" },
+    { format: `${p}{YY}{NNNN}`, popis: "Rok dvojčíslím a poradie" },
+    { format: `${p}{YYYY}-{NNNN}`, popis: "Rok a poradie s pomlčkou" },
+    { format: `${p}{YYYY}/{NNN}`, popis: "Rok a poradie s lomkou" },
+    { format: `${p}{NNNN}`, popis: "Len poradie (bez roka)" },
+  ];
+  /* Pri faktúrach sa hodí aj tvar s písmenovou predponou, keď firma rozlišuje rady. */
+  if (!p) zaklad.splice(1, 0, { format: "FA{YYYY}{NNNN}", popis: "Predpona FA, rok a poradie" });
+  return zaklad;
+}
+
+const PREDPONA: Record<DruhRadu, string> = {
+  invoice: "",
+  credit_note: "DO",
+  proforma: "ZF",
+  advance_payment: "DDP",
+  quote: "Q",
+  sales_order: "OBJ",
+  purchase_order: "OBJ",
+  cash: "PD",
+};
