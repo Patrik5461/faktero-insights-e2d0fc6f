@@ -75,6 +75,9 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
       vat_total: rec.vat_total,
       total: rec.total,
       notes: rec.notes ?? null,
+      // Text nad položkami zo šablóny — bez neho by faktúra z paušálu
+      // nepovedala, za čo je.
+      intro_note: rec.intro_note ?? null,
       status: "issued",
     })
     .select()

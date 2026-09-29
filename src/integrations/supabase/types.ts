@@ -5807,6 +5807,7 @@ export type Database = {
           total: number
           updated_at: string
           vat_total: number
+          intro_note: string | null
         }
         Insert: {
           active?: boolean
@@ -5839,6 +5840,7 @@ export type Database = {
           total?: number
           updated_at?: string
           vat_total?: number
+          intro_note?: string | null
         }
         Update: {
           active?: boolean
@@ -5871,6 +5873,7 @@ export type Database = {
           total?: number
           updated_at?: string
           vat_total?: number
+          intro_note?: string | null
         }
         Relationships: [
           {
