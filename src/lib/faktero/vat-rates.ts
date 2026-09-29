@@ -147,7 +147,7 @@ export function vatBucketLabel(key: string, krajina: KrajinaDane = "SK"): string
 }
 
 /**
- * Sadzby, ktoré v krajine platili predtým — na doklady k starším plneniam.
+ * Historické sadzby — čo v krajine platilo predtým — na doklady k starším plneniam.
  *
  * Faktúra k zálohovej faktúre z roku 2024, dobropis k starej dodávke či oprava
  * dokladu spred zmeny zákona musia niesť sadzbu, ktorá vtedy platila. Ponúkajú

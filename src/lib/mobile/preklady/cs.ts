@@ -547,7 +547,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "nf.emailPole": "E-mail",
   "nf.spolu": "Celkem",
   "nf.dph": "DPH",
-  "nf.starsieSadzby": "Starší sazby",
+  "nf.starsieSadzby": "Historické sazby",
   "nf.vystavenie": "Vystavení",
   "nf.bezIbanu":
     "Firma nemá vyplněný IBAN — na faktuře nebude kam zaplatit. Doplňte jej na webu v nastavení firmy.",

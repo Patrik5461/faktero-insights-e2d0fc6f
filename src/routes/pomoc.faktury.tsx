@@ -220,11 +220,11 @@ const sections: HelpSection[] = [
   },
   {
     id: "starsie-sadzby",
-    title: "Staršie sadzby DPH",
+    title: "Historické sadzby DPH",
     body: (
       <>
         <p>
-          Vo výbere sadzby je pod platnými sadzbami skupina <strong>Staršie sadzby</strong> —
+          Vo výbere sadzby je pod platnými sadzbami skupina <strong>Historické sadzby</strong> —
           posledné tri, ktoré už neplatia, aj s rokom, do ktorého platili (na Slovensku 20 % a
           10 % do roku 2024).
         </p>

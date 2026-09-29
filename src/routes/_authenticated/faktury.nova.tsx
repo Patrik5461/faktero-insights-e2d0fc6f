@@ -1683,7 +1683,7 @@ function NewInvoice() {
                               </option>
                             ))}
                             {historickeSadzbyDokladu.length > 0 && (
-                              <optgroup label="Staršie sadzby">
+                              <optgroup label="Historické sadzby">
                                 {historickeSadzbyDokladu.map((h) => (
                                   <option key={h.sadzba} value={h.sadzba}>
                                     {h.sadzba}% (do {h.doRoku})
@@ -1765,7 +1765,7 @@ function NewInvoice() {
                           </option>
                         ))}
                         {historickeSadzbyDokladu.length > 0 && (
-                          <optgroup label="Staršie sadzby">
+                          <optgroup label="Historické sadzby">
                             {historickeSadzbyDokladu.map((h) => (
                               <option key={h.sadzba} value={h.sadzba}>
                                 {h.sadzba}% (do {h.doRoku})

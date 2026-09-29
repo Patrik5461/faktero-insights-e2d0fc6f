@@ -549,7 +549,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "nf.emailPole": "E-mail",
   "nf.spolu": "Összesen",
   "nf.dph": "Áfa",
-  "nf.starsieSadzby": "Régebbi kulcsok",
+  "nf.starsieSadzby": "Korábbi kulcsok",
   "nf.vystavenie": "Kiállítás",
   "nf.bezIbanu":
     "A cégnek nincs IBAN-ja — a számlán nem lesz hova fizetni. Adja meg a weben, a cég beállításaiban.",
