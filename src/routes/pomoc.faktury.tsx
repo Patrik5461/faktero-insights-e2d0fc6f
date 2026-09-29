@@ -51,14 +51,14 @@ const sections: HelpSection[] = [
           </li>
           <li>
             Vyplňte <strong>Text nad položkami</strong> — je povinný a hovorí, čo sa fakturuje
-            (napríklad „Nájomné za september 2026 podľa zmluvy č. 4/2021“). Vytlačí sa nad
-            tabuľkou položiek.
+            (napríklad „Nájomné za september 2026 podľa zmluvy č. 4/2021“). Vytlačí sa nad tabuľkou
+            položiek.
           </li>
           <li>
             Pridajte položky — ručne (názov, množstvo, cena, sadzba DPH) alebo cez{" "}
-            <strong>Z katalógu</strong>. Sumu bez DPH, DPH aj sumu na úhradu Faktero prepočíta
-            hneď. <strong>Položky povinné nie sú</strong>: doklad môže znieť len na text nad nimi.
-            Riadok, ktorý má sumu, ale nemá názov, faktúru nepustí — aby sa suma ticho nestratila.
+            <strong>Z katalógu</strong>. Sumu bez DPH, DPH aj sumu na úhradu Faktero prepočíta hneď.{" "}
+            <strong>Položky povinné nie sú</strong>: doklad môže znieť len na text nad nimi. Riadok,
+            ktorý má sumu, ale nemá názov, faktúru nepustí — aby sa suma ticho nestratila.
           </li>
           <li>
             Kliknite na <strong>Vystaviť faktúru</strong>. Otvorí sa detail faktúry, odkiaľ ju
@@ -177,7 +177,8 @@ const sections: HelpSection[] = [
         <p>
           <strong>Nemusíte si pamätať, že záloha existuje.</strong> Keď na faktúre vyberiete
           odberateľa, ktorý má zaplatenú a ešte nezúčtovanú zálohu, Faktero to napíše nad položkami
-          a jedným tlačidlom ju odpočíta. Bez odpočtu by zákazník to isté plnenie zaplatil druhýkrát.
+          a jedným tlačidlom ju odpočíta. Bez odpočtu by zákazník to isté plnenie zaplatil
+          druhýkrát.
         </p>
         <p>
           Na jednej faktúre môže byť <strong>aj viac záloh</strong> — pri etapovej dodávke sa
@@ -194,14 +195,15 @@ const sections: HelpSection[] = [
       <>
         <p>
           Ak ste <strong>platiteľ DPH</strong>, prijatím zálohy vám vzniká daňová povinnosť — ešte
-          pred dodaním. Do 15 dní od pripísania peňazí musíte vystaviť <strong>daňový doklad k
-          prijatej platbe</strong>; samotná zálohová faktúra na to nestačí, tá daňový doklad nie je.
+          pred dodaním. Do 15 dní od pripísania peňazí musíte vystaviť{" "}
+          <strong>daňový doklad k prijatej platbe</strong>; samotná zálohová faktúra na to nestačí,
+          tá daňový doklad nie je.
         </p>
         <p>
           Otvorte zaplatenú zálohovú faktúru a kliknite na <strong>Vystaviť daňový doklad</strong>.
-          Doklad prevezme jej položky a sadzby, dátumom dodania je <strong>deň prijatia platby</strong>{" "}
-          a dostane vlastnú radu čísel (<code>DDP…</code>). Kým záloha nie je uhradená, tlačidlo sa
-          neponúka — nie je z čoho daň priznať.
+          Doklad prevezme jej položky a sadzby, dátumom dodania je{" "}
+          <strong>deň prijatia platby</strong> a dostane vlastnú radu čísel (<code>DDP…</code>). Kým
+          záloha nie je uhradená, tlačidlo sa neponúka — nie je z čoho daň priznať.
         </p>
         <p>
           Daň sa tak prizná v období, keď peniaze prišli. Na <strong>vyúčtovacej faktúre</strong> sa
@@ -226,15 +228,28 @@ const sections: HelpSection[] = [
           <strong>Číslo faktúry</strong>. Formulár hneď ukáže, z čoho na čo sa číslo mení.
         </p>
         <p>
-          Faktúru s tým istým číslom mať dvakrát nemožno — Faktero to odmietne a povie, že číslo
-          je obsadené. V období uzamknutom uzávierkou sa číslo meniť nedá, rovnako ako dátumy a
-          sumy.
+          Faktúru s tým istým číslom mať dvakrát nemožno — Faktero to odmietne a povie, že číslo je
+          obsadené. V období uzamknutom uzávierkou sa číslo meniť nedá, rovnako ako dátumy a sumy.
+        </p>
+        <p>
+          Vedľa poľa je políčko <strong>Pokračovať v tomto číselnom rade</strong>. Zaškrtnuté
+          znamená: odteraz číslujte takto. Z čísla sa odvodí tvar radu a poradie, takže keď
+          prepíšete číslo na <code>FA-2026-100</code>, najbližšia faktúra dostane{" "}
+          <code>FA-2026-101</code> — formulár to ukáže ešte pred uložením. Bez zaškrtnutia je oprava
+          jednorazová a ďalšie doklady idú z pôvodného radu.
+        </p>
+        <p>
+          Aby sa to dalo odvodiť, musí mať číslo na konci{" "}
+          <strong>poradie aspoň o dvoch čísliciach</strong>. Z čísla ako „oprava-final2" sa rad
+          spraviť nedá — doklad sa uloží, ale číslovanie ostane pôvodné a Faktero to povie. Tvar aj
+          poradie sa vždy dajú nastaviť ručne v <strong>Nastavenia → Číselné rady</strong>, kde je
+          aj pole <em>Začať od poradia</em> — hodí sa pri prechode z iného programu.
         </p>
         <p>
           <strong>Variabilný symbol sa nemení sám.</strong> Býva zhodný s číslom, ale pod starým
-          symbolom už mohla prísť platba — keď má sedieť s novým číslom, prepíšte ho tiež. Po
-          oprave sa PDF zruší a pri ďalšom otvorení sa vygeneruje nanovo; odberateľovi, ktorý
-          starý doklad dostal, pošlite nové.
+          symbolom už mohla prísť platba — keď má sedieť s novým číslom, prepíšte ho tiež. Po oprave
+          sa PDF zruší a pri ďalšom otvorení sa vygeneruje nanovo; odberateľovi, ktorý starý doklad
+          dostal, pošlite nové.
         </p>
       </>
     ),
@@ -245,8 +260,8 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Zľavu viete dať <strong>na jednotlivú položku</strong> aj <strong>na celý doklad</strong>
-          . Obe fungujú rovnako na faktúre, zálohovej faktúre aj v cenovej ponuke.
+          Zľavu viete dať <strong>na jednotlivú položku</strong> aj <strong>na celý doklad</strong>.
+          Obe fungujú rovnako na faktúre, zálohovej faktúre aj v cenovej ponuke.
         </p>
         <p>
           <strong>Zľava na položke</strong> sa zadáva do stĺpca <em>Zľava %</em> v riadku. Znižuje
@@ -281,15 +296,16 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Doklad sa dá vystaviť v <strong>slovenčine, češtine, angličtine, nemčine alebo
-          maďarčine</strong>. Jazyk vyberiete na faktúre v časti <em>Rozšírené nastavenia</em>, a
-          keď ho nastavíte odberateľovi v jeho karte, predvolí sa na všetkých jeho ďalších
-          faktúrach.
+          Doklad sa dá vystaviť v{" "}
+          <strong>slovenčine, češtine, angličtine, nemčine alebo maďarčine</strong>. Jazyk vyberiete
+          na faktúre v časti <em>Rozšírené nastavenia</em>, a keď ho nastavíte odberateľovi v jeho
+          karte, predvolí sa na všetkých jeho ďalších faktúrach.
         </p>
         <p>
           Prekladajú sa <strong>popisky</strong> — nadpis dokladu, hlavičky stĺpcov, dátumy, spôsob
-          úhrady, súčty a platobné údaje. <strong>Názvy položiek, poznámky a adresy ostávajú tak,
-          ako ste ich napísali</strong>; tie Faktero neprekladá, lebo by menilo obsah dokladu.
+          úhrady, súčty a platobné údaje.{" "}
+          <strong>Názvy položiek, poznámky a adresy ostávajú tak, ako ste ich napísali</strong>; tie
+          Faktero neprekladá, lebo by menilo obsah dokladu.
         </p>
         <p>
           Sumy sa píšu podľa zvyklostí jazyka — Nemec číta <em>1.234,56</em>, Angličan{" "}
