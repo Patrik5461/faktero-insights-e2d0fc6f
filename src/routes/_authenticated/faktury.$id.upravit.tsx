@@ -62,6 +62,8 @@ function EditInvoice() {
     Array<{ id: string; stock_item_id: string; quantity: number; name: string }>
   >([]);
   const [form, setForm] = useState({
+    /* Číslo dokladu sa dá opraviť — preklep v rade sa inak nedal napraviť inak než zmazaním. */
+    invoice_number: "",
     issue_date: "",
     delivery_date: "",
     due_date: "",
@@ -96,6 +98,7 @@ function EditInvoice() {
       }
       setInv(i);
       setForm({
+        invoice_number: i.invoice_number ?? "",
         issue_date: i.issue_date ?? "",
         delivery_date: i.delivery_date ?? "",
         due_date: i.due_date ?? "",
@@ -185,6 +188,7 @@ function EditInvoice() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (saving) return;
+    if (!form.invoice_number.trim()) return toast.error("Číslo faktúry nesmie byť prázdne.");
     /* Povinný je text nad položkami, samotné položky nie. */
     if (!form.intro_note.trim()) {
       return toast.error("Vyplňte text nad položkami — hovorí, čo sa fakturuje.");
@@ -212,6 +216,7 @@ function EditInvoice() {
       const { error: upErr } = await supabase
         .from("invoices")
         .update({
+          invoice_number: form.invoice_number.trim(),
           issue_date: form.issue_date,
           // Prázdne pole je v HTML formulári "", nie null. Postgres na to
           // odpovie „invalid input syntax for type date" a faktúra bez dátumu
@@ -265,7 +270,7 @@ function EditInvoice() {
       toast.success("Faktúra upravená. PDF treba pregenerovať.");
       navigate({ to: "/faktury/$id", params: { id } });
     } catch (err: any) {
-      toast.error(err?.message ?? "Chyba pri ukladaní");
+      toast.error(zrozumitelnaChyba(err?.message));
     } finally {
       setSaving(false);
     }
@@ -316,6 +321,24 @@ function EditInvoice() {
             <section className="rounded-2xl border border-border bg-card p-5">
               <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide">Základné údaje</h3>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+                  <Lbl label="Číslo faktúry">
+                    <input
+                      required
+                      value={form.invoice_number}
+                      onChange={(e) => setForm({ ...form, invoice_number: e.target.value })}
+                      className={inputCls}
+                    />
+                  </Lbl>
+                  {form.invoice_number.trim() !== (inv?.invoice_number ?? "") && (
+                    <p className="mt-1 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+                      Číslo sa mení z <strong>{inv?.invoice_number}</strong> na{" "}
+                      <strong>{form.invoice_number.trim() || "—"}</strong>. Odberateľ mohol starý
+                      doklad dostať, tak mu pošlite nové PDF. Variabilný symbol sa nemení sám — keď
+                      má sedieť s číslom, prepíšte ho tiež.
+                    </p>
+                  )}
+                </div>
                 <Lbl label="Dátum vystavenia">
                   <input
                     type="date"
@@ -491,7 +514,10 @@ function EditInvoice() {
                       </td>
                       <td className="py-2 pl-3">
                         <CellSpolu
-                          hodnota={zakladRiadku(it.quantity, it.unit_price, it.discount_percent) * (1 + it.vat_rate / 100)}
+                          hodnota={
+                            zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
+                            (1 + it.vat_rate / 100)
+                          }
                           onZmena={(v) => nastavSpolu(idx, v)}
                           disabled={it._locked}
                           w="w-28"
@@ -589,7 +615,10 @@ function EditInvoice() {
                     <span className="flex items-center gap-2">
                       <span className="text-[13px] font-semibold text-foreground">Spolu s DPH</span>
                       <CellSpolu
-                        hodnota={zakladRiadku(it.quantity, it.unit_price, it.discount_percent) * (1 + it.vat_rate / 100)}
+                        hodnota={
+                          zakladRiadku(it.quantity, it.unit_price, it.discount_percent) *
+                          (1 + it.vat_rate / 100)
+                        }
                         onZmena={(v) => nastavSpolu(idx, v)}
                         disabled={it._locked}
                         w="w-28"
@@ -765,6 +794,23 @@ function CellSpolu({
       className={`${w} rounded-md border border-transparent bg-transparent px-2 py-1.5 text-right text-sm font-medium tabular-nums hover:border-input focus:border-input focus:bg-background disabled:opacity-60`}
     />
   );
+}
+
+/**
+ * Databázové hlásenia po slovensky.
+ *
+ * Číslo dokladu stráži jedinečný index a uzamknuté obdobie trigger — človek
+ * z ich pôvodného textu nevyčíta, čo má spraviť.
+ */
+function zrozumitelnaChyba(sprava: string | undefined): string {
+  const s = sprava ?? "Chyba pri ukladaní";
+  if (s.includes("invoices_cislo_uniq") || s.includes("duplicate key")) {
+    return "Faktúra s týmto číslom už existuje. Zvoľte iné číslo.";
+  }
+  if (s.toLowerCase().includes("uzamknut") || s.includes("locked")) {
+    return "Obdobie je uzamknuté uzávierkou — číslo, dátumy ani sumy sa v ňom meniť nedajú.";
+  }
+  return s;
 }
 
 function Lbl({ label, children }: { label: string; children: React.ReactNode }) {
