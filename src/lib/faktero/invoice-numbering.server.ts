@@ -1,6 +1,11 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export type NextInvoiceNumber = { invoice_number: string; sequence_number: number };
+export type NextInvoiceNumber = {
+  invoice_number: string;
+  sequence_number: number;
+  /** Rad, z ktorého číslo prišlo — doklad si ho pamätá. */
+  series_id: string | null;
+};
 
 /**
  * Generates the next invoice number for a company.
@@ -52,7 +57,11 @@ export async function nextInvoiceNumberDetailed(
   if (error) throw new Error(error.message);
   const row = data as unknown as NextInvoiceNumber | null;
   if (!row?.invoice_number) throw new Error("Nepodarilo sa vygenerovať číslo faktúry.");
-  return { invoice_number: row.invoice_number, sequence_number: Number(row.sequence_number) };
+  return {
+    invoice_number: row.invoice_number,
+    sequence_number: Number(row.sequence_number),
+    series_id: row.series_id ?? null,
+  };
 }
 
 export async function nextInvoiceNumber(

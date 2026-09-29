@@ -173,6 +173,8 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
     let rezervacia: { id: string } | null = null;
     let invoice_number: string;
     let sequence_number: number;
+    /* Rad, z ktorého číslo prišlo — doklad si ho pamätá. */
+    let number_series_id: string | null = null;
 
     if (data.reserved_number) {
       const { data: r } = await supabase
@@ -192,6 +194,7 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
       const dalsie = await nextInvoiceNumberDetailed(data.company_id, data.issue_date, data.type);
       invoice_number = dalsie.invoice_number;
       sequence_number = dalsie.sequence_number;
+      number_series_id = dalsie.series_id;
     }
 
     /*
@@ -283,6 +286,7 @@ export const vystavFakturuFn = createServerFn({ method: "POST" })
         customer_city: odberatel.city,
         customer_zip: odberatel.zip,
         customer_country: odberatel.country ?? "SK",
+        number_series_id,
         subtotal: suctyPoZlave.subtotal,
         vat_total: suctyPoZlave.vat_total,
         total: Math.round((suctyPoZlave.subtotal + suctyPoZlave.vat_total) * 100) / 100,

@@ -122,6 +122,7 @@ export const vystavDokladKPlatbeFn = createServerFn({ method: "POST" })
         // Doklad vzniká až po zaplatení, takže je uhradený od prvej chvíle.
         status: "paid",
         invoice_number: cislo.invoice_number,
+        number_series_id: cislo.series_id,
         sequence_number: cislo.sequence_number,
         variable_symbol: cislo.invoice_number.replace(/\D/g, "") || null,
         issue_date: data.datum_platby,

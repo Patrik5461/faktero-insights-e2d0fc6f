@@ -44,7 +44,7 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
   const today = new Date().toISOString().slice(0, 10);
   const dueDays = Number(rec.due_days ?? 14);
   const due = new Date(Date.now() + dueDays * 86400000).toISOString().slice(0, 10);
-  const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
+  const { invoice_number, sequence_number, series_id } = await nextInvoiceNumberDetailed(
     rec.company_id,
     today,
     "regular",
@@ -59,7 +59,8 @@ export async function runRecurring(id: string, runType: "manual" | "automatic" =
       customer_id: rec.customer_id ?? null,
       invoice_number,
       sequence_number,
-      number_series_id: rec.number_series_id ?? null,
+      // Rad, z ktorého číslo naozaj prišlo — aj keď šablóna nemá vybraný vlastný.
+      number_series_id: series_id,
       variable_symbol,
       issue_date: today,
       due_date: due,

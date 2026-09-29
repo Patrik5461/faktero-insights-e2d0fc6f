@@ -37,11 +37,11 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
 
     // New invoice number (server-only helper, service role)
     const { nextInvoiceNumberDetailed } = await import("./invoice-numbering.server");
-    const { invoice_number: newNumber, sequence_number } = await nextInvoiceNumberDetailed(
-      src.company_id,
-      isoToday,
-      src.type,
-    );
+    const {
+      invoice_number: newNumber,
+      sequence_number,
+      series_id,
+    } = await nextInvoiceNumberDetailed(src.company_id, isoToday, src.type);
 
     // Build insert payload — copy everything except id/status/dates/number/lifecycle fields.
     const insertRow: Record<string, any> = {
@@ -75,6 +75,7 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
       total: src.total,
       invoice_number: newNumber,
       sequence_number,
+      number_series_id: series_id,
       issue_date: isoToday,
       due_date: newDue,
       status: "draft" as const,
