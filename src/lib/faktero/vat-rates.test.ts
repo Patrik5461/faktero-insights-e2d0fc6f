@@ -10,6 +10,8 @@ import {
   vatBucketLabel,
   vatBucketOrder,
   vatRateOptions,
+  historickeSadzby,
+  popisSadzby,
 } from "./vat-rates";
 
 describe("sadzby platné v SR", () => {
@@ -155,5 +157,35 @@ describe("vatBucketLabel", () => {
 
   it("historickú sadzbu označí ako historickú, nech je jasné, prečo tam je", () => {
     expect(vatBucketLabel("20")).toBe("20 % (historická)");
+  });
+});
+
+describe("historické sadzby", () => {
+  it("SK ponúkne to, čo platilo pred rokom 2025", () => {
+    expect(historickeSadzby("SK", "2026-09-29")).toEqual([
+      { sadzba: 20, doRoku: 2024 },
+      { sadzba: 10, doRoku: 2024 },
+    ]);
+  });
+  it("CZ ponúkne zrušené znížené sadzby", () => {
+    expect(historickeSadzby("CZ", "2026-09-29")).toEqual([
+      { sadzba: 15, doRoku: 2023 },
+      { sadzba: 10, doRoku: 2023 },
+    ]);
+  });
+  it("sadzba, ktorá platí aj dnes, medzi historické nepatrí", () => {
+    const h = historickeSadzby("CZ", "2026-09-29").map((x) => x.sadzba);
+    expect(h).not.toContain(21);
+  });
+  it("vráti najviac tri", () => {
+    expect(historickeSadzby("SK", "2026-09-29", 1)).toHaveLength(1);
+    expect(historickeSadzby("SK", "2026-09-29").length).toBeLessThanOrEqual(3);
+  });
+  it("k dňu spred zmeny sa história neponúka", () => {
+    expect(historickeSadzby("SK", "2024-06-01")).toEqual([]);
+  });
+  it("popis odlíši historickú sadzbu rokom", () => {
+    expect(popisSadzby(23, "SK", "2026-09-29")).toBe("23 %");
+    expect(popisSadzby(20, "SK", "2026-09-29")).toBe("20 % (do 2024)");
   });
 });

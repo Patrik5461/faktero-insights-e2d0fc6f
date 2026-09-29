@@ -560,6 +560,7 @@ export const sk = {
   "nf.emailPole": "E-mail",
   "nf.spolu": "Spolu",
   "nf.dph": "DPH",
+  "nf.starsieSadzby": "Staršie sadzby",
   "nf.vystavenie": "Vystavenie",
   "nf.bezIbanu":
     "Firma nemá vyplnený IBAN — na faktúre nebude kam zaplatiť. Doplňte ho na webe v nastaveniach firmy.",

@@ -62,6 +62,7 @@ import { OverenieVies } from "@/components/faktero/OverenieVies";
 import { NewCustomerModal } from "@/components/faktero/NewCustomerModal";
 import { SADZBY_EU, sadzbyStatu, zakladnaSadzbaStatu } from "@/lib/faktero/sadzby-eu";
 import { sadzbyRezimu, zakladnaSadzbaRezimu } from "@/lib/faktero/dph-rezim";
+import { historickeSadzby } from "@/lib/faktero/vat-rates";
 import { VyberUctu } from "@/components/faktero/banka/VyberUctu";
 export const Route = createFileRoute("/_authenticated/faktury/nova")({
   head: () => ({ meta: [{ title: "Nová faktúra — Faktero" }] }),
@@ -216,6 +217,20 @@ function NewInvoice() {
   /* Pri predaji do EÚ cez OSS sa účtuje sadzbami štátu zákazníka. */
   const sadzbyPolozky =
     form.oss && form.oss_country ? sadzbyStatu(form.oss_country) : sadzbyRezimu(rezim);
+  /*
+    Historické sadzby patria do zoznamu zvlášť: faktúra k zálohovej faktúre
+    z minulého roka alebo dodávka spred zmeny zákona nesie sadzbu, ktorá vtedy
+    platila. Pri OSS sa neponúkajú — tam rozhoduje štát zákazníka.
+  */
+  const historickeSadzbyDokladu = useMemo(
+    () =>
+      form.oss && form.oss_country
+        ? []
+        : historickeSadzby(rezim.krajina, form.delivery_date || form.issue_date).filter(
+            (h) => !sadzbyPolozky.includes(h.sadzba),
+          ),
+    [form.oss, form.oss_country, rezim.krajina, form.delivery_date, form.issue_date, sadzbyPolozky],
+  );
   /**
     Základná sadzba, ktorú má dostať riadok, ktorého sa človek nedotkol.
     Pri OSS je to sadzba štátu spotreby — inak by na faktúre do Rakúska
@@ -1667,6 +1682,15 @@ function NewInvoice() {
                                 {r}%
                               </option>
                             ))}
+                            {historickeSadzbyDokladu.length > 0 && (
+                              <optgroup label="Staršie sadzby">
+                                {historickeSadzbyDokladu.map((h) => (
+                                  <option key={h.sadzba} value={h.sadzba}>
+                                    {h.sadzba}% (do {h.doRoku})
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
                           </select>
                         )}
                       </td>
@@ -1740,6 +1764,15 @@ function NewInvoice() {
                             {r}%
                           </option>
                         ))}
+                        {historickeSadzbyDokladu.length > 0 && (
+                          <optgroup label="Staršie sadzby">
+                            {historickeSadzbyDokladu.map((h) => (
+                              <option key={h.sadzba} value={h.sadzba}>
+                                {h.sadzba}% (do {h.doRoku})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                     )}
                   </div>

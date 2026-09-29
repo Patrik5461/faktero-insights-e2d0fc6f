@@ -20,7 +20,7 @@ import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
-import { moznostiSadziebRezimu } from "@/lib/faktero/dph-rezim";
+import { sadzbyDoVyberu } from "@/lib/faktero/dph-rezim";
 export const Route = createFileRoute("/_authenticated/faktury/$id/upravit")({
   head: () => ({ meta: [{ title: "Upraviť faktúru — Faktero" }] }),
   component: EditInvoice,
@@ -554,11 +554,27 @@ function EditInvoice() {
                           onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                           className="rounded-md border border-transparent bg-transparent px-2 py-1.5 text-sm hover:border-input focus:border-input focus:bg-background"
                         >
-                          {moznostiSadziebRezimu(rezim, it.vat_rate).map((r) => (
-                            <option key={r} value={r}>
-                              {r}%
-                            </option>
-                          ))}
+                          {(() => {
+                            const v = sadzbyDoVyberu(rezim, it.vat_rate, form.issue_date);
+                            return (
+                              <>
+                                {v.platne.map((r) => (
+                                  <option key={r} value={r}>
+                                    {r}%
+                                  </option>
+                                ))}
+                                {v.historicke.length > 0 && (
+                                  <optgroup label="Staršie sadzby">
+                                    {v.historicke.map((h) => (
+                                      <option key={h.sadzba} value={h.sadzba}>
+                                        {h.sadzba}% (do {h.doRoku})
+                                      </option>
+                                    ))}
+                                  </optgroup>
+                                )}
+                              </>
+                            );
+                          })()}
                         </select>
                       </td>
                       <td className="py-2 pl-3">
@@ -653,11 +669,27 @@ function EditInvoice() {
                       onChange={(e) => setItem(idx, { vat_rate: Number(e.target.value) })}
                       className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                     >
-                      {moznostiSadziebRezimu(rezim, it.vat_rate).map((r) => (
-                        <option key={r} value={r}>
-                          {r}%
-                        </option>
-                      ))}
+                      {(() => {
+                        const v = sadzbyDoVyberu(rezim, it.vat_rate, form.issue_date);
+                        return (
+                          <>
+                            {v.platne.map((r) => (
+                              <option key={r} value={r}>
+                                {r}%
+                              </option>
+                            ))}
+                            {v.historicke.length > 0 && (
+                              <optgroup label="Staršie sadzby">
+                                {v.historicke.map((h) => (
+                                  <option key={h.sadzba} value={h.sadzba}>
+                                    {h.sadzba}% (do {h.doRoku})
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                          </>
+                        );
+                      })()}
                     </select>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-sm">

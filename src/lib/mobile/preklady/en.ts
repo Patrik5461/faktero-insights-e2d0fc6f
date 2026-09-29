@@ -553,6 +553,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "nf.emailPole": "E-mail",
   "nf.spolu": "Total",
   "nf.dph": "VAT",
+  "nf.starsieSadzby": "Older rates",
   "nf.vystavenie": "Issue date",
   "nf.bezIbanu":
     "The company has no IBAN — there will be nowhere to pay on the invoice. Add it on the web in the company settings.",

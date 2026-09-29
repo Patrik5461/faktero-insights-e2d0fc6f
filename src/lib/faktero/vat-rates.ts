@@ -147,6 +147,49 @@ export function vatBucketLabel(key: string, krajina: KrajinaDane = "SK"): string
 }
 
 /**
+ * Sadzby, ktoré v krajine platili predtým — na doklady k starším plneniam.
+ *
+ * Faktúra k zálohovej faktúre z roku 2024, dobropis k starej dodávke či oprava
+ * dokladu spred zmeny zákona musia niesť sadzbu, ktorá vtedy platila. Ponúkajú
+ * sa len posledné tri, nie celá história: staršie sa v praxi nepoužijú a
+ * v rozbaľovacom zozname by len zavadzali.
+ *
+ * Vracia sa aj rok, do ktorého sadzba platila — v zozname sa tým odlíši
+ * „19 % (znížená)" od „20 % (do 2024)".
+ */
+export function historickeSadzby(
+  krajina: KrajinaDane,
+  den?: string | null,
+  kolko = 3,
+): { sadzba: number; doRoku: number }[] {
+  const d = String(den || dnes());
+  const tabulky = TABULKY[krajina];
+  const teraz = new Set(sadzbyKrajiny(krajina, d));
+  const index = tabulky.findIndex((x) => d >= x.od);
+  const staršie = tabulky.slice(index < 0 ? tabulky.length : index + 1);
+
+  const vysledok: { sadzba: number; doRoku: number }[] = [];
+  const videne = new Set<number>();
+  staršie.forEach((t, i) => {
+    /* Dokedy tabuľka platila — deň pred začiatkom tej nasledujúcej. */
+    const nasledujuca = tabulky[(index < 0 ? tabulky.length : index + 1) + i - 1];
+    const doRoku = nasledujuca ? Number(nasledujuca.od.slice(0, 4)) - 1 : new Date().getFullYear();
+    for (const r of [t.high, t.low, ...(t.third == null ? [] : [t.third])]) {
+      if (teraz.has(r) || videne.has(r)) continue;
+      videne.add(r);
+      vysledok.push({ sadzba: r, doRoku });
+    }
+  });
+  return vysledok.sort((a, b) => b.sadzba - a.sadzba).slice(0, kolko);
+}
+
+/** Popis sadzby do zoznamu — historická nesie rok, dokedy platila. */
+export function popisSadzby(sadzba: number, krajina: KrajinaDane, den?: string | null): string {
+  const historicka = historickeSadzby(krajina, den).find((h) => h.sadzba === sadzba);
+  return historicka ? `${sadzba} % (do ${historicka.doRoku})` : `${sadzba} %`;
+}
+
+/**
  * Sadzby do rozbaľovacieho zoznamu.
  * Sadzba, ktorú položka už nesie a dnes neplatí, sa pridá — inak by sa pri
  * úprave staršieho dokladu ticho prepla na inú.

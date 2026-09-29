@@ -12,7 +12,13 @@
  * len jej zjednodušenie a vždy sa z nej dá dopočítať.
  */
 
-import { krajinaDane, sadzbyKrajiny, vatRateOptions, type KrajinaDane } from "./vat-rates";
+import {
+  historickeSadzby,
+  krajinaDane,
+  sadzbyKrajiny,
+  vatRateOptions,
+  type KrajinaDane,
+} from "./vat-rates";
 
 export type SchemaDph =
   | "sk_neplatitel"
@@ -241,4 +247,23 @@ export function moznostiSadziebRezimu(
   if (rezim.platitel) return vatRateOptions(rezim.krajina, aktualna, den);
   const a = aktualna == null ? null : Number(aktualna);
   return a && a > 0 ? [a, 0] : [0];
+}
+
+/**
+ * Sadzby do rozbaľovacieho zoznamu rozdelené na platné a historické.
+ *
+ * Faktúra k starej zálohovej faktúre alebo oprava dokladu spred zmeny zákona
+ * nesie sadzbu, ktorá vtedy platila — bez nej sa taký doklad nedá vystaviť
+ * správne. Historické sadzby sú v zozname zvlášť, aby si ich nikto nevybral
+ * omylom namiesto dnešných.
+ */
+export function sadzbyDoVyberu(
+  rezim: RezimDph,
+  aktualna?: number | null,
+  den?: string | null,
+): { platne: number[]; historicke: { sadzba: number; doRoku: number }[] } {
+  const platne = moznostiSadziebRezimu(rezim, aktualna, den);
+  if (!rezim.platitel) return { platne, historicke: [] };
+  const historicke = historickeSadzby(rezim.krajina, den).filter((h) => !platne.includes(h.sadzba));
+  return { platne, historicke };
 }

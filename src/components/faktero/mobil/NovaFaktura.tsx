@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cenaZPodkladov, PRAZDNE_PODKLADY, type Podklady } from "@/lib/faktero/ceny";
-import { sadzbyKrajiny, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
+import { historickeSadzby, sadzbyKrajiny, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { friendlyError } from "@/lib/faktero/plan-error";
 import { POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
@@ -1110,6 +1110,16 @@ export function RiadokPolozky({
                   {r} %
                 </option>
               ))}
+              {/* Oprava staršieho dokladu či faktúra zo starej zálohy potrebuje sadzbu, ktorá vtedy platila. */}
+              {historickeSadzby(krajina).length > 0 && (
+                <optgroup label={t("nf.starsieSadzby")}>
+                  {historickeSadzby(krajina).map((h) => (
+                    <option key={h.sadzba} value={h.sadzba}>
+                      {h.sadzba} % ({h.doRoku})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </label>
         )}
