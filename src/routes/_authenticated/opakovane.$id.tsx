@@ -97,6 +97,7 @@ function RecurringDetail() {
           currency: rec.currency,
           due_days: rec.due_days,
           notes: rec.notes,
+          intro_note: (rec.intro_note ?? "").trim() || null,
           items: items as any,
           subtotal: totals.subtotal,
           vat_total: totals.vat_total,
@@ -261,6 +262,23 @@ function RecurringDetail() {
               </select>
             </label>
           </div>
+
+          {/*
+            Text nad položkami dostane každá faktúra z tejto šablóny — na
+            faktúre je povinný, takže sa musí dať upraviť aj tu.
+          */}
+          <label className="block rounded-xl border border-border bg-card p-5">
+            <span className="text-[13px] font-semibold text-foreground">
+              Text nad položkami <span className="text-destructive">*</span>
+            </span>
+            <textarea
+              rows={2}
+              value={rec.intro_note ?? ""}
+              onChange={(e) => setRec({ ...rec, intro_note: e.target.value })}
+              placeholder="Napríklad: Fakturujeme vám mesačný paušál za správu serverov."
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
 
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="mb-3 flex items-center justify-between">
