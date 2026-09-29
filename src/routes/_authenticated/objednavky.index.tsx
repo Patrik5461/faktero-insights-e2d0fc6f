@@ -12,6 +12,7 @@ import {
 } from "@/lib/faktero/objednavky-odberatel";
 import { Plus, ClipboardList, AlertTriangle } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 
 export const Route = createFileRoute("/_authenticated/objednavky/")({
   head: () => ({ meta: [{ title: "Prijaté objednávky — Faktero" }] }),
@@ -81,12 +82,15 @@ function OrdersPage() {
         title="Prijaté objednávky"
         description="Čo si u vás odberatelia objednali a čo z toho ešte nie je vyfakturované."
         action={
-          <Link
-            to="/objednavky/nova"
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> Nová objednávka
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <OdkazNaRady />
+            <Link
+              to="/objednavky/nova"
+              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> Nová objednávka
+            </Link>
+          </div>
         }
       />
       <PageBody>

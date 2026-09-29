@@ -7,6 +7,7 @@ import { createCashEntry, deleteCashEntry, getCashBook } from "@/lib/faktero/pok
 import { formatujDatum } from "@/lib/faktero/uzavierka";
 import { Wallet, Plus, Trash2, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 
 export const Route = createFileRoute("/_authenticated/pokladna")({
   head: () => ({ meta: [{ title: "Pokladňa — Faktero" }] }),
@@ -105,13 +106,16 @@ function PokladnaPage() {
         title="Pokladňa"
         description="Stav hotovosti z pokladničných dokladov a z dokladov zaplatených v hotovosti."
         action={
-          <button
-            type="button"
-            onClick={() => setOtvoreny((v) => !v)}
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> Nový pokladničný doklad
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <OdkazNaRady />
+            <button
+              type="button"
+              onClick={() => setOtvoreny((v) => !v)}
+              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> Nový pokladničný doklad
+            </button>
+          </div>
         }
       />
       <PageBody>

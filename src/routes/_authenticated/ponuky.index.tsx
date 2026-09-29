@@ -4,6 +4,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { Plus, Trash2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { usePagedList } from "@/hooks/usePagedList";
+import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import {
   Pagination,
   PageSizeSelect,
@@ -87,12 +88,15 @@ function QuotesPage() {
         title="Cenové ponuky"
         description="Vytvárajte a posielajte cenové ponuky odberateľom."
         action={
-          <Link
-            to="/ponuky/nova"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> Nová ponuka
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <OdkazNaRady />
+            <Link
+              to="/ponuky/nova"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> Nová ponuka
+            </Link>
+          </div>
         }
       />
       <PageBody>

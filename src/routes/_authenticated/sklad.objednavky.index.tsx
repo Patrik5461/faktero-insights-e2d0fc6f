@@ -7,6 +7,7 @@ import { listPurchaseOrders } from "@/lib/faktero/purchase-orders.functions";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { Plus, Truck } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/")({
   head: () => ({ meta: [{ title: "Objednávky u dodávateľov — Faktero" }] }),
@@ -51,12 +52,15 @@ function PurchaseOrdersPage() {
         title="Objednávky u dodávateľov"
         description="Čo je objednané a ešte neprišlo. Otvorené objednávky sa odpočítavajú od návrhu doobjednania."
         action={
-          <Link
-            to="/sklad/objednavky/nova"
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> Nová objednávka
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <OdkazNaRady />
+            <Link
+              to="/sklad/objednavky/nova"
+              className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> Nová objednávka
+            </Link>
+          </div>
         }
       />
       <PageBody>

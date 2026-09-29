@@ -42,6 +42,7 @@ import {
 } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { supabase } from "@/integrations/supabase/client";
+import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 
 type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
 
@@ -606,6 +607,7 @@ function InvoicesPage() {
                 )}
               </Link>
             )}
+            <OdkazNaRady />
             <Link
               to="/exporty"
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"

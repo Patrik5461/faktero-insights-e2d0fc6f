@@ -14,6 +14,7 @@ import {
   DeletedToggle,
 } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
+import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 
 export const Route = createFileRoute("/_authenticated/zalohove/")({
   head: () => ({ meta: [{ title: "Zálohové faktúry — Faktero" }] }),
@@ -103,6 +104,7 @@ function ProformaListPage() {
         description="Proforma / zálohové faktúry. Po prijatí platby ich zúčtujete vo finálnej faktúre."
         action={
           <div className="flex flex-wrap gap-2">
+            <OdkazNaRady />
             <Link
               to="/faktury/nova"
               search={{ type: "proforma" } as any}
