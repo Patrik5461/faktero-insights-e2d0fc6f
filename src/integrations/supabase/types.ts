@@ -5105,6 +5105,7 @@ export type Database = {
           active: boolean
           created_at: string
           updated_at: string
+          start_from: number
         }
         Insert: {
           id?: string
@@ -5116,6 +5117,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           updated_at?: string
+          start_from?: number
         }
         Update: {
           id?: string
@@ -5127,6 +5129,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           updated_at?: string
+          start_from?: number
         }
         Relationships: []
       }

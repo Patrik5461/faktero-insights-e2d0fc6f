@@ -39,6 +39,8 @@ export type CiselnyRad = {
   format: string;
   is_default: boolean;
   active: boolean;
+  /** Od ktorého poradia rad začína. */
+  start_from?: number;
 };
 
 /** Tokeny, ktoré šablóna pozná. Text okolo nich je predpona či oddeľovač. */
@@ -100,4 +102,72 @@ export function druhPodlaTypuFaktury(typ: string | null | undefined): DruhRadu {
     default:
       return "invoice";
   }
+}
+
+/**
+ * Šablóna a poradie odvodené z ručne napísaného čísla.
+ *
+ * Keď človek prepíše číslo na doklade a povie „pokračuj v tomto rade",
+ * treba z toho čísla spraviť vzor. Rok sa spozná podľa dátumu dokladu
+ * (`2026` aj `26`), mesiac len tesne za rokom — inak by sa ako mesiac
+ * čítalo čokoľvek dvojciferné. Poradie je posledná skupina číslic.
+ *
+ * `null` znamená, že sa to odvodiť nedá: bez poradia alebo s jednou
+ * číslicou by ďalšie číslo bolo hádanie, nie pokračovanie.
+ */
+export function sablonaZCisla(
+  cislo: string,
+  datum: string | Date,
+): { format: string; poradie: number } | null {
+  const c = (cislo ?? "").trim();
+  if (!c || c.length > 40) return null;
+
+  const den = typeof datum === "string" ? new Date(`${datum}T00:00:00`) : datum;
+  if (!den || Number.isNaN(den.getTime())) return null;
+  const rok = String(den.getFullYear());
+  const rok2 = rok.slice(2);
+  const mesiac = String(den.getMonth() + 1).padStart(2, "0");
+
+  /*
+    Rok sa z čísla odkrojí ako prvý — v „20260007" je zlepený s poradím a bez
+    tohto kroku by celý blok vyšiel ako poradie dvadsať miliónov.
+  */
+  let predRokom = "";
+  let znackaRoku = "";
+  let zvysok = c;
+  const kandidati: [hodnota: string, znacka: string][] = [
+    [rok + mesiac, "{YYYY}{MM}"],
+    [rok, "{YYYY}"],
+    [rok2 + mesiac, "{YY}{MM}"],
+  ];
+  for (const [hodnota, znacka] of kandidati) {
+    const kde = c.indexOf(hodnota);
+    if (kde === -1) continue;
+    predRokom = c.slice(0, kde);
+    znackaRoku = znacka;
+    zvysok = c.slice(kde + hodnota.length);
+    break;
+  }
+
+  // Poradie je posledná skupina číslic za rokom a musí byť na konci.
+  const poradia = [...zvysok.matchAll(/\d+/g)];
+  const posledna = poradia[poradia.length - 1];
+  if (!posledna || posledna[0].length < 2) return null;
+  const zaciatok = posledna.index ?? 0;
+  if (zaciatok + posledna[0].length !== zvysok.length) return null;
+  const poradie = Number(posledna[0]);
+  if (!Number.isFinite(poradie) || poradie < 1) return null;
+
+  const medzi = zvysok.slice(0, zaciatok);
+  const vzor = `${predRokom}${znackaRoku}${medzi}`;
+
+  /*
+    Zvyšné číslice vo vzore by z neho spravili predponu, ktorá sa o rok
+    rozíde s realitou (napr. cudzí rok v čísle) — vtedy radšej priznať, že
+    sa rad odvodiť nedá.
+  */
+  if (/\d/.test(vzor)) return null;
+
+  const format = `${vzor}{${"N".repeat(Math.min(posledna[0].length, 6))}}`;
+  return chybaSablony(format) ? null : { format, poradie };
 }

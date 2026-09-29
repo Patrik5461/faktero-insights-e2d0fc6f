@@ -1,4 +1,7 @@
 import { KROK_CENY, cenaZoSumySDph } from "@/lib/faktero/mena";
+import { useServerFn } from "@tanstack/react-start";
+import { druhPodlaTypuFaktury, sablonaZCisla, ukazkaCisla } from "@/lib/faktero/ciselne-rady";
+import { pokracujVRaduFn } from "@/lib/faktero/ciselne-rady.functions";
 import {
   koeficientZlavy,
   percentoZlavy,
@@ -56,6 +59,8 @@ function EditInvoice() {
   const rezim = useRezimDph();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  /* Zaškrtnuté = ďalšie doklady majú pokračovať v tvare ručne zadaného čísla. */
+  const [pokracovatVRade, setPokracovatVRade] = useState(false);
   const [inv, setInv] = useState<any>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [originalLocked, setOriginalLocked] = useState<
@@ -185,6 +190,8 @@ function EditInvoice() {
     setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   }
 
+  const pokracujVRade = useServerFn(pokracujVRaduFn);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (saving) return;
@@ -267,6 +274,27 @@ function EditInvoice() {
         if (insErr) throw insErr;
       }
 
+      /*
+        „Pokračovať v tomto rade" — až po uložení dokladu. Keby sa rad zmenil
+        skôr a zápis faktúry potom padol, číslovanie by sa posunulo kvôli
+        dokladu, ktorý nevznikol.
+      */
+      if (pokracovatVRade && form.invoice_number.trim() !== (inv?.invoice_number ?? "")) {
+        try {
+          const v = await pokracujVRade({
+            data: {
+              company_id: inv.company_id,
+              kind: druhPodlaTypuFaktury(inv?.type),
+              cislo: form.invoice_number.trim(),
+              datum: form.issue_date,
+              series_id: inv?.number_series_id ?? null,
+            },
+          });
+          toast.success(`Ďalšie doklady pokračujú v rade ${v.format}.`);
+        } catch (e: any) {
+          toast.warning(e?.message ?? "Číselný rad sa nepodarilo zmeniť.");
+        }
+      }
       toast.success("Faktúra upravená. PDF treba pregenerovať.");
       navigate({ to: "/faktury/$id", params: { id } });
     } catch (err: any) {
@@ -330,6 +358,27 @@ function EditInvoice() {
                       className={inputCls}
                     />
                   </Lbl>
+                  {form.invoice_number.trim() !== (inv?.invoice_number ?? "") && (
+                    <label className="mt-2 flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={pokracovatVRade}
+                        onChange={(e) => setPokracovatVRade(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-input"
+                      />
+                      <span>
+                        Pokračovať v tomto číselnom rade
+                        <span className="block text-xs text-muted-foreground">
+                          {(() => {
+                            const v = sablonaZCisla(form.invoice_number.trim(), form.issue_date);
+                            return v
+                              ? `Ďalšie doklady tohto druhu budú číslované ${v.format} — najbližší dostane ${ukazkaCisla(v.format, v.poradie + 1, new Date(form.issue_date))}.`
+                              : "Z tohto čísla sa rad odvodiť nedá — potrebuje poradie aspoň o dvoch číslach na konci. Doklad sa uloží, číslovanie ostane pôvodné.";
+                          })()}
+                        </span>
+                      </span>
+                    </label>
+                  )}
                   {form.invoice_number.trim() !== (inv?.invoice_number ?? "") && (
                     <p className="mt-1 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
                       Číslo sa mení z <strong>{inv?.invoice_number}</strong> na{" "}

@@ -1,7 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { DRUHY_RADOV, chybaSablony, type CiselnyRad, type DruhRadu } from "./ciselne-rady";
+import {
+  DRUHY_RADOV,
+  NAZVY_DRUHOV,
+  chybaSablony,
+  type CiselnyRad,
+  type DruhRadu,
+} from "./ciselne-rady";
 
 /**
  * Správa číselných radov.
@@ -33,7 +39,7 @@ export const ciselneRadyFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<{ rady: CiselnyRad[] }> => {
     const { data: rows, error } = await context.supabase
       .from("number_series")
-      .select("id, kind, name, format, is_default, active")
+      .select("id, kind, name, format, is_default, active, start_from")
       .eq("company_id", data.company_id)
       .order("kind")
       .order("name");
@@ -49,6 +55,8 @@ const Ulozenie = z.object({
   format: z.string().trim().min(1).max(40),
   is_default: z.boolean().default(false),
   active: z.boolean().default(true),
+  /* Od ktorého poradia rad začína — pri prechode z iného programu sa nadväzuje. */
+  start_from: z.number().int().min(1).max(999999).default(1),
 });
 
 export const ulozCiselnyRadFn = createServerFn({ method: "POST" })
@@ -83,6 +91,7 @@ export const ulozCiselnyRadFn = createServerFn({ method: "POST" })
           format: data.format,
           is_default: data.is_default,
           active: data.active,
+          start_from: data.start_from,
           updated_at: new Date().toISOString(),
         })
         .eq("id", data.id)
@@ -100,6 +109,7 @@ export const ulozCiselnyRadFn = createServerFn({ method: "POST" })
         format: data.format,
         is_default: data.is_default,
         active: data.active,
+        start_from: data.start_from,
       })
       .select("id")
       .single();
@@ -158,3 +168,80 @@ function prelozChybu(sprava: string): string {
   }
   return sprava;
 }
+
+/**
+ * „Odteraz číslujte takto" — rad prevezme tvar ručne zadaného čísla.
+ *
+ * Človek opraví číslo na doklade a zaškrtne, že sa v ňom má pokračovať.
+ * Predvolený rad daného druhu potom dostane odvodenú šablónu a hranicu, od
+ * ktorej sa počíta ďalej: z „FA-2026-100" vyjde `FA-{YYYY}-{NNN}` a ďalšia
+ * faktúra bude FA-2026-101, nie 001.
+ *
+ * Staré doklady sa neprečíslujú — menia sa len tie, čo ešte len vzniknú.
+ */
+export const pokracujVRaduFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        kind: Druh,
+        cislo: z.string().trim().min(1).max(40),
+        /** Dátum dokladu — podľa neho sa v čísle spozná rok a mesiac. */
+        datum: z.string().date(),
+        /** Keď doklad rad pozná, upraví sa ten; inak predvolený pre druh. */
+        series_id: z.string().uuid().nullish(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }): Promise<{ format: string; start_from: number }> => {
+    const { supabase } = context;
+    const { sablonaZCisla } = await import("./ciselne-rady");
+    const odvodene = sablonaZCisla(data.cislo, data.datum);
+    if (!odvodene) {
+      throw new Error(
+        "Z tohto čísla sa číselný rad odvodiť nedá — potrebuje poradie aspoň o dvoch číslach na konci. Šablónu si nastavte v Číselných radoch.",
+      );
+    }
+
+    let radId = data.series_id ?? null;
+    if (!radId) {
+      const { data: rad } = await supabase
+        .from("number_series")
+        .select("id")
+        .eq("company_id", data.company_id)
+        .eq("kind", data.kind)
+        .eq("is_default", true)
+        .maybeSingle();
+      radId = rad?.id ?? null;
+    }
+
+    if (!radId) {
+      const { data: novy, error } = await supabase
+        .from("number_series")
+        .insert({
+          company_id: data.company_id,
+          kind: data.kind,
+          name: NAZVY_DRUHOV[data.kind],
+          format: odvodene.format,
+          start_from: odvodene.poradie + 1,
+          is_default: true,
+        })
+        .select("id")
+        .single();
+      if (error || !novy) throw new Error(prelozChybu(error?.message ?? "Rad sa nepodarilo uložiť."));
+      return { format: odvodene.format, start_from: odvodene.poradie + 1 };
+    }
+
+    const { error } = await supabase
+      .from("number_series")
+      .update({
+        format: odvodene.format,
+        start_from: odvodene.poradie + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", radId)
+      .eq("company_id", data.company_id);
+    if (error) throw new Error(prelozChybu(error.message));
+    return { format: odvodene.format, start_from: odvodene.poradie + 1 };
+  });

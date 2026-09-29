@@ -88,6 +88,7 @@ function CiselneRadyPage() {
           format: (upravovany.format ?? "").trim(),
           is_default: !!upravovany.is_default,
           active: upravovany.active !== false,
+          start_from: Math.max(1, Number(upravovany.start_from ?? 1) || 1),
         },
       });
       toast.success("Číselný rad je uložený");
@@ -178,7 +179,7 @@ function CiselneRadyPage() {
                           </span>
                           <code className="rounded bg-muted px-2 py-1 text-xs">{r.format}</code>
                           <span className="text-sm tabular-nums text-muted-foreground">
-                            → {ukazkaCisla(r.format, 1)}
+                            → {ukazkaCisla(r.format, r.start_from ?? 1)}
                           </span>
                           <span className="flex gap-2">
                             <button
@@ -294,6 +295,20 @@ function FormularRadu({
                 {chyba}
               </span>
             )}
+          </label>
+          <label className="block">
+            <span className="text-[13px] font-semibold text-foreground">Začať od poradia</span>
+            <input
+              type="number"
+              min="1"
+              value={rad.start_from ?? 1}
+              onChange={(e) => onZmena({ ...rad, start_from: Number(e.target.value) || 1 })}
+              className="mt-1 w-32 rounded-md border border-input bg-background px-3 py-2 text-sm tabular-nums"
+            />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Pri prechode z iného programu sem dajte číslo, ktorým chcete nadviazať. Nižšie poradia
+              sa už neponúknu.
+            </span>
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input

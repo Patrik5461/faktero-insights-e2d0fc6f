@@ -3,6 +3,7 @@ import {
   chybaSablony,
   druhPodlaTypuFaktury,
   resetujeSaMesacne,
+  sablonaZCisla,
   ukazkaCisla,
 } from "./ciselne-rady";
 
@@ -55,5 +56,45 @@ describe("reset poradia a druh radu", () => {
     expect(druhPodlaTypuFaktury("credit_note")).toBe("credit_note");
     expect(druhPodlaTypuFaktury("advance_payment")).toBe("advance_payment");
     expect(druhPodlaTypuFaktury(null)).toBe("invoice");
+  });
+});
+
+describe("šablóna odvodená z ručne napísaného čísla", () => {
+  const den = "2026-09-29";
+
+  it("rozpozná rok, predponu aj poradie", () => {
+    expect(sablonaZCisla("FA-2026-100", den)).toEqual({
+      format: "FA-{YYYY}-{NNN}",
+      poradie: 100,
+    });
+    expect(sablonaZCisla("20260007", den)).toEqual({ format: "{YYYY}{NNNN}", poradie: 7 });
+    expect(sablonaZCisla("2026/114", den)).toEqual({ format: "{YYYY}/{NNN}", poradie: 114 });
+    expect(sablonaZCisla("ZF20260001", den)).toEqual({ format: "ZF{YYYY}{NNNN}", poradie: 1 });
+  });
+
+  it("mesiac berie len tesne za rokom", () => {
+    expect(sablonaZCisla("FA-202609-012", den)).toEqual({
+      format: "FA-{YYYY}{MM}-{NNN}",
+      poradie: 12,
+    });
+    expect(sablonaZCisla("2609-0012", den)).toEqual({ format: "{YY}{MM}-{NNNN}", poradie: 12 });
+  });
+
+  it("číslo bez roka je len predpona a poradie", () => {
+    expect(sablonaZCisla("FA-0042", den)).toEqual({ format: "FA-{NNNN}", poradie: 42 });
+  });
+
+  it("z čoho sa vzor odvodiť nedá, vráti null", () => {
+    expect(sablonaZCisla("oprava-final2", den)).toBeNull(); // jedna číslica
+    expect(sablonaZCisla("", den)).toBeNull();
+    expect(sablonaZCisla("bez-cisla", den)).toBeNull();
+    expect(sablonaZCisla("12/2026-ab", den)).toBeNull(); // číslo nie je na konci
+    expect(sablonaZCisla("2024-2026-0001", den)).toBeNull(); // cudzí rok v predpone
+  });
+
+  it("odvodená šablóna prejde kontrolou", () => {
+    const v = sablonaZCisla("FA-2026-100", den)!;
+    expect(chybaSablony(v.format)).toBeNull();
+    expect(ukazkaCisla(v.format, v.poradie + 1, new Date(2026, 8, 29))).toBe("FA-2026-101");
   });
 });
