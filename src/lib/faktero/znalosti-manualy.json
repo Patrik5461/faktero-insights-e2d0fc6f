@@ -389,7 +389,7 @@
     },
     {
      "nadpis": "Ako fungujú opakované faktúry",
-     "text": "<>\nV sekcii Fakturácia → Opakované faktúry nastavíte šablónu, frekvenciu\n(mesačne/štvrťročne/ročne) a dátum spustenia.\n- Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.\n-\nVygenerovaná faktúra môže byť automaticky odoslaná emailom, ak je zapnuté\nAuto-send .\n-\nHistória generovania je v záložke Logy pri danom opakovaní."
+     "text": "<>\nV sekcii Fakturácia → Opakované faktúry nastavíte šablónu, frekvenciu\n(týždenne/mesačne/štvrťročne/ročne) a dátum prvého vystavenia. Zakladá sa rovnako ako\nbežná faktúra — ten istý výber odberateľa, tá istá tabuľka položiek aj stĺpec\nSpolu s DPH , do ktorého sa dá napísať dohodnutá suma a cena bez dane sa\ndopočíta.\nNázov šablóny vidíte len vy v zozname — na faktúre nie je. Čo sa\nfakturuje, povie text nad položkami : je povinný a dostane ho každá\nfaktúra z tejto šablóny, takže paušál povie, za čo je. Dá sa zmeniť aj neskôr na\notvorenej šablóne.\n- Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.\n-\nVygenerovaná faktúra môže byť automaticky odoslaná emailom, ak je zapnuté\nAuto-send .\n-\nHistória generovania je v záložke Logy pri danom opakovaní."
     },
     {
      "nadpis": "Fakturovanie v mobile bez signálu",

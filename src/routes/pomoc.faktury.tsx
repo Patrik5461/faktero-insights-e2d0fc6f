@@ -348,7 +348,16 @@ const sections: HelpSection[] = [
       <>
         <p>
           V sekcii <strong>Fakturácia → Opakované faktúry</strong> nastavíte šablónu, frekvenciu
-          (mesačne/štvrťročne/ročne) a dátum spustenia.
+          (týždenne/mesačne/štvrťročne/ročne) a dátum prvého vystavenia. Zakladá sa rovnako ako
+          bežná faktúra — ten istý výber odberateľa, tá istá tabuľka položiek aj stĺpec{" "}
+          <em>Spolu s DPH</em>, do ktorého sa dá napísať dohodnutá suma a cena bez dane sa
+          dopočíta.
+        </p>
+        <p>
+          <strong>Názov šablóny</strong> vidíte len vy v zozname — na faktúre nie je. Čo sa
+          fakturuje, povie <strong>text nad položkami</strong>: je povinný a dostane ho každá
+          faktúra z tejto šablóny, takže paušál povie, za čo je. Dá sa zmeniť aj neskôr na
+          otvorenej šablóne.
         </p>
         <ul>
           <li>Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.</li>
