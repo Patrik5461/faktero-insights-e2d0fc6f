@@ -11,7 +11,9 @@ import {
   DRUHY_RADOV,
   NAZVY_DRUHOV,
   chybaSablony,
+  normalizujSablonu,
   predlohyRadu,
+  upozornenieSablony,
   resetujeSaMesacne,
   ukazkaCisla,
   type CiselnyRad,
@@ -249,6 +251,9 @@ function FormularRadu({
   onZrus: () => void;
 }) {
   const chyba = rad.format ? chybaSablony(rad.format) : null;
+  /* Nie je to chyba — len nech človek vie, čo z jeho tvaru vyjde. */
+  const upozornenie = rad.format ? upozornenieSablony(rad.format) : null;
+  const hotovaSablona = rad.format ? normalizujSablonu(rad.format) : "";
   const predlohy = predlohyRadu(rad.kind as DruhRadu);
   /* Vlastný tvar sa odomkne buď voľbou, alebo keď rad nesie niečo mimo predlôh. */
   const [vlastna, setVlastna] = useState(
@@ -315,21 +320,28 @@ function FormularRadu({
             )}
             {vlastna && (
               <span className="mt-1 block text-xs text-muted-foreground">
-                Tokeny: {"{YYYY}"} rok, {"{YY}"} rok dvojčíslím, {"{MM}"} mesiac, {"{NN}"} až{" "}
-                {"{NNNNNN}"} poradie (počet N = počet číslic). Text okolo je predpona.
+                Napíšte si číslo, ako chcete. Čo vloží Faktero: {"{YYYY}"} rok, {"{YY}"} rok
+                dvojčíslím, {"{MM}"} mesiac a {"{NN}"} až {"{NNNNNN}"} poradie (počet N = počet
+                číslic). Všetko ostatné sa vytlačí tak, ako to napíšete. Keď poradie vynecháte,
+                doplní sa na koniec.
               </span>
             )}
             {rad.format && !chyba && (
               <span className="mt-2 block rounded-md bg-muted px-3 py-2 text-sm">
                 Prvé číslo:{" "}
                 <strong className="tabular-nums">
-                  {ukazkaCisla(rad.format, rad.start_from ?? 1)}
+                  {ukazkaCisla(hotovaSablona, rad.start_from ?? 1)}
                 </strong>
                 , desiate:{" "}
                 <strong className="tabular-nums">
-                  {ukazkaCisla(rad.format, (rad.start_from ?? 1) + 9)}
+                  {ukazkaCisla(hotovaSablona, (rad.start_from ?? 1) + 9)}
                 </strong>{" "}
-                · poradie sa resetuje {resetujeSaMesacne(rad.format) ? "mesačne" : "ročne"}
+                · poradie sa resetuje {resetujeSaMesacne(hotovaSablona) ? "mesačne" : "ročne"}
+              </span>
+            )}
+            {upozornenie && !chyba && (
+              <span className="mt-2 block rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+                {upozornenie}
               </span>
             )}
             {chyba && (

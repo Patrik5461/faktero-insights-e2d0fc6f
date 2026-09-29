@@ -49,23 +49,56 @@ export const TOKENY = ["{YYYY}", "{YY}", "{MM}", "{NN}", "{NNN}", "{NNNN}", "{NN
 const PORADIE = /\{(N{2,6})\}/g;
 
 /**
- * Chyba v šablóne, alebo `null` keď je v poriadku.
+ * Šablóna pripravená na uloženie.
  *
- * Bez tokenu poradia by každý doklad dostal to isté číslo a druhý zápis by
- * spadol na jedinečnosti — to je najčastejší preklep, preto vlastná veta.
+ * Vlastná šablóna má byť naozaj vlastná — človek si napíše, čo chce, a
+ * doplní sa len to, bez čoho by to nefungovalo: poradie. Bez neho by každý
+ * doklad dostal to isté číslo a druhý zápis by spadol na jedinečnosti, tak
+ * sa `{NNNN}` pridá na koniec. Jedno `{N}` sa rozšíri na `{NN}`, lebo
+ * jednomiestne poradie po deviatich dokladoch pretečie.
+ */
+export function normalizujSablonu(format: string): string {
+  let f = (format ?? "").trim();
+  if (!f) return f;
+  f = f.replace(/\{N\}/g, "{NN}");
+  if (!maPoradie(f)) f = `${f}{NNNN}`;
+  return f;
+}
+
+function maPoradie(format: string): boolean {
+  PORADIE.lastIndex = 0;
+  const je = PORADIE.test(format);
+  PORADIE.lastIndex = 0;
+  return je;
+}
+
+/**
+ * Chyba, pre ktorú sa šablóna uložiť nedá.
+ *
+ * Zostali len dve: prázdna a pridlhá. Všetko ostatné je vec vkusu — číslo
+ * dokladu si firma volí sama a Faktero jej do neho nemá čo hovoriť.
  */
 export function chybaSablony(format: string): string | null {
-  const f = (format ?? "").trim();
+  const f = normalizujSablonu(format);
   if (!f) return "Šablóna nesmie byť prázdna.";
   if (f.length > 40) return "Šablóna je pridlhá — najviac 40 znakov.";
-  if (!PORADIE.test(f)) {
-    PORADIE.lastIndex = 0;
-    return "Šablóna musí obsahovať poradie — {NN} až {NNNNNN}, počet N určuje počet číslic.";
+  return null;
+}
+
+/**
+ * Na čo pri vlastnej šablóne upozorniť. Nie je to chyba — doklad vznikne,
+ * len nech človek nie je prekvapený, čo z čísla vyjde.
+ */
+export function upozornenieSablony(format: string): string | null {
+  const f = (format ?? "").trim();
+  if (!f) return null;
+  if (!maPoradie(f)) {
+    return "Poradie sme doplnili na koniec ako {NNNN} — bez neho by každý doklad dostal to isté číslo.";
   }
-  PORADIE.lastIndex = 0;
-  const zvysok = f.replace(/\{(YYYY|YY|MM|N{2,6})\}/g, "");
-  if (/[{}]/.test(zvysok)) return "Šablóna obsahuje neznámy token v zložených zátvorkách.";
-  if (/\s/.test(f)) return "V čísle dokladu nemajú byť medzery.";
+  const zvysok = f.replace(/\{(YYYY|YY|MM|N{1,6})\}/g, "");
+  if (/[{}]/.test(zvysok)) {
+    return "Text v zložených zátvorkách, ktorý nie je {YYYY}, {YY}, {MM} ani poradie, sa vytlačí tak, ako je.";
+  }
   return null;
 }
 

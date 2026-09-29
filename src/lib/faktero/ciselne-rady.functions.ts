@@ -5,6 +5,7 @@ import {
   DRUHY_RADOV,
   NAZVY_DRUHOV,
   chybaSablony,
+  normalizujSablonu,
   type CiselnyRad,
   type DruhRadu,
 } from "./ciselne-rady";
@@ -66,6 +67,8 @@ export const ulozCiselnyRadFn = createServerFn({ method: "POST" })
     const { supabase } = context;
     const chyba = chybaSablony(data.format);
     if (chyba) throw new Error(chyba);
+    /* Vlastný tvar sa berie, ako je — doplní sa len poradie, bez ktorého by číslo nerástlo. */
+    const format = normalizujSablonu(data.format);
 
     /*
       Predvolený rad smie byť na druh dokladu len jeden — databáza to stráži
@@ -88,7 +91,7 @@ export const ulozCiselnyRadFn = createServerFn({ method: "POST" })
         .from("number_series")
         .update({
           name: data.name,
-          format: data.format,
+          format,
           is_default: data.is_default,
           active: data.active,
           start_from: data.start_from,
@@ -106,7 +109,7 @@ export const ulozCiselnyRadFn = createServerFn({ method: "POST" })
         company_id: data.company_id,
         kind: data.kind,
         name: data.name,
-        format: data.format,
+        format,
         is_default: data.is_default,
         active: data.active,
         start_from: data.start_from,

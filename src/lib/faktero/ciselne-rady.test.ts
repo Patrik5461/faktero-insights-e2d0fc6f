@@ -2,7 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   DRUHY_RADOV,
   chybaSablony,
+  normalizujSablonu,
   predlohyRadu,
+  upozornenieSablony,
   druhPodlaTypuFaktury,
   resetujeSaMesacne,
   sablonaZCisla,
@@ -15,15 +17,27 @@ describe("kontrola šablóny", () => {
     expect(chybaSablony("ZF{YYYY}{NNNN}")).toBeNull();
     expect(chybaSablony("FA-{YY}{MM}-{NNN}")).toBeNull();
   });
-  it("bez poradia to nedáva zmysel", () => {
-    expect(chybaSablony("{YYYY}")).toMatch(/poradie/);
-    expect(chybaSablony("FA2026")).toMatch(/poradie/);
+  it("vlastný tvar prejde — medzery aj cudzie zátvorky sú vec vkusu", () => {
+    expect(chybaSablony("FA {YYYY}{NNNN}")).toBeNull();
+    expect(chybaSablony("{ROK}{NNNN}")).toBeNull();
+    expect(chybaSablony("Faktúra č. {NNN}/{YYYY}")).toBeNull();
   });
-  it("prázdnu, pridlhú, s medzerou ani s neznámym tokenom nepustí", () => {
+  it("chýbajúce poradie sa doplní, nie je to chyba", () => {
+    expect(chybaSablony("{YYYY}")).toBeNull();
+    expect(normalizujSablonu("{YYYY}")).toBe("{YYYY}{NNNN}");
+    expect(normalizujSablonu("Faktura-Tobify")).toBe("Faktura-Tobify{NNNN}");
+    expect(upozornenieSablony("{YYYY}")).toMatch(/Poradie sme doplnili/);
+  });
+  it("jednomiestne poradie sa rozšíri na dve číslice", () => {
+    expect(normalizujSablonu("FA{YYYY}-{N}")).toBe("FA{YYYY}-{NN}");
+  });
+  it("prázdnu a pridlhú nepustí", () => {
     expect(chybaSablony("")).toMatch(/prázdna/);
     expect(chybaSablony("A".repeat(41) + "{NNNN}")).toMatch(/pridlhá/);
-    expect(chybaSablony("FA {YYYY}{NNNN}")).toMatch(/medzery/);
-    expect(chybaSablony("{ROK}{NNNN}")).toMatch(/neznámy token/);
+  });
+  it("cudzí token upozorní, že sa vytlačí doslovne", () => {
+    expect(upozornenieSablony("{ROK}{NNNN}")).toMatch(/vytlačí tak, ako je/);
+    expect(upozornenieSablony("{YYYY}{NNNN}")).toBeNull();
   });
 });
 
