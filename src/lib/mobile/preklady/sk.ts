@@ -636,6 +636,7 @@ export const sk = {
   "app.vyplnteEmailHeslo": "Vyplňte e-mail aj heslo.",
   "app.prilohaNenahrata": "Prílohu sa nepodarilo nahrať, doklad uložím bez nej.",
   "app.dokladUlozeny": "Doklad uložený",
+  "app.zalohaUlozena": "Zálohová faktúra {cislo} je medzi prijatými zálohami",
   "app.bezPripojeniaFirmy":
     "Bez pripojenia a v telefóne zatiaľ nie je uložený zoznam firiem. Otvorte appku raz s internetom.",
   "app.fakturaOdoslana": "Faktúra vystavená bez signálu je odoslaná.",

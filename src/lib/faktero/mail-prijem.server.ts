@@ -101,6 +101,9 @@ jednou vetou po slovensky), "other_due_date" (lehota, YYYY-MM-DD) a "summary" (1
 Kľúče pre "other_kind":
 ${DRUHY_PRE_AI}
 Do JSON pridaj: "document_type", "other_kind", "other_subject", "other_due_date", "summary".
+Pri "faktura" vyplň aj "document_subtype": "zalohova" pre zálohovú, proforma či preddavkovú
+faktúru (nie je daňový doklad), inak "ostra". Faktúra, ktorá len odpočítava zaplatenú zálohu,
+je "ostra". Do "document_title" daj nadpis dokladu tak, ako je vytlačený.
 Do "items" daj riadky tabuľky dokladu v poradí, v akom sú na papieri; keď doklad
 položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie sú položka.
 Čo na doklade nie je, nechaj null — nič si nevymýšľaj.`;

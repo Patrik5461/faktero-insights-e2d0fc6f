@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { jeEetQr, parseEetQr } from "./eet-cz";
 import { firmaZAres } from "./ares.server";
+import { jeZalohovaFaktura } from "./zalohova-rozpoznanie";
 
 /**
  * Prečítanie pokladničného dokladu (bločku).
@@ -61,6 +62,12 @@ export type BlocekVysledok = {
   uid?: string;
   /** Obsah QR kódu, z ktorého doklad vznikol — ukladá sa k dokladu. */
   qr_raw?: string;
+  /**
+   * Doklad je zálohová (proforma, preddavková) faktúra. Nie je daňový doklad,
+   * tak nepatrí medzi bločky ani medzi bežné prijaté faktúry — appka ho podľa
+   * toho zaradí medzi prijaté zálohy.
+   */
+  zalohova?: boolean;
   items: BlocekPolozka[];
 };
 
@@ -264,6 +271,11 @@ export const nacitajBlocekFn = createServerFn({ method: "POST" })
       currency: ocr.currency ?? "EUR",
       date: ocr.date ?? undefined,
       document_number: ocr.document_number ?? undefined,
+      zalohova: jeZalohovaFaktura({
+        druhOdAi: ocr.document_subtype,
+        nazovDokladu: ocr.document_title,
+        cisloDokladu: ocr.document_number,
+      }),
       items,
     };
 

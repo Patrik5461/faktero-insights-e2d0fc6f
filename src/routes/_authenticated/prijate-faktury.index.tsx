@@ -30,6 +30,7 @@ import {
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: () => ({ meta: [{ title: "Prijaté faktúry — Faktero" }] }),
@@ -371,12 +372,15 @@ function PurchaseInvoicesPage() {
         title="Prijaté faktúry"
         description="Evidencia nákupných faktúr od dodávateľov."
         action={
-          <Link
-            to="/prijate-faktury/nova"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> Nová prijatá faktúra
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <NahratDoklad label="Nahrať faktúru" />
+            <Link
+              to="/prijate-faktury/nova"
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> Nová prijatá faktúra
+            </Link>
+          </div>
         }
       />
       <PageBody>

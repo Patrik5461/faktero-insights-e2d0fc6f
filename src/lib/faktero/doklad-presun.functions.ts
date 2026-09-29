@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
 
 /**
  * Presun dokladu medzi prijaté faktúry.
@@ -88,6 +89,16 @@ export const presunDokladDoPrijatychFn = createServerFn({ method: "POST" })
         // Číslo dokladu je na prijatej faktúre povinné; keď ho bloček nemá,
         // radšej zrozumiteľná náhrada než prázdno.
         invoice_number: doklad.document_number ?? `DOKLAD-${String(doklad.id).slice(0, 8)}`,
+        /*
+          Naskenovaná zálohová faktúra sa nemá tváriť ako daňový doklad —
+          rozpozná sa z čísla a poznámky dokladu a zaradí sa medzi prijaté
+          zálohy.
+        */
+        type: druhPrijatehoDokladu({
+          cisloDokladu: doklad.document_number,
+          poznamka: poznamka || doklad.note,
+          nazovSuboru: doklad.file_path ?? null,
+        }),
         issue_date: vystavenie,
         received_date: dnes,
         due_date: oDni(vystavenie, 14),

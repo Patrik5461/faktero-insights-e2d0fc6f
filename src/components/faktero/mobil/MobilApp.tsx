@@ -1513,6 +1513,8 @@ function ZachytDokladu({
   const uloz = useOperacia("vydavok-uloz");
   const hladajDuplikat = useOperacia<NajdenyDoklad | null>("vydavok-duplikat");
   const ulozOstatny = useOperacia<{ id: string }>("ostatny-uloz");
+  /* Zálohová faktúra od dodávateľa nie je bloček — ide rovno medzi prijaté zálohy. */
+  const ulozZalohu = useOperacia<{ id: string; invoice_number: string }>("prijata-zaloha-uloz");
 
   const [stav, setStav] = useState<"start" | "citam" | "potvrdenie">("start");
   const [vysledok, setVysledok] = useState<BlocekVysledok | null>(null);
@@ -1722,8 +1724,43 @@ function ZachytDokladu({
     Zdvojeniu bráni zápis na serveri: doklad s rovnakým QR kódom sa druhý raz
     nezaloží, nech sa pokus zopakuje koľkokrát chce.
   */
+  /**
+    Zálohová faktúra od dodávateľa.
+
+    Nie je daňový doklad, takže medzi bločky nepatrí — daň z nej odpočítať
+    nemožno a v Dokladoch by ju niekto musel prekliknúť ručne. Ukladá sa preto
+    rovno medzi prijaté zálohové faktúry, aj s fotkou. Bez signálu to nejde
+    (treba nahrať prílohu), vtedy doklad ostane vo fronte ako doteraz a
+    zaradí sa pri presune.
+  */
+  async function ulozZalohovuFakturu(): Promise<boolean> {
+    if (!vysledok?.zalohova || !foto) return false;
+    const { isOnline } = await import("@/lib/mobile/offline-queue");
+    if (!(await isOnline())) return false;
+    try {
+      const ciarka = foto.indexOf(",");
+      const mime = foto.slice(5, foto.indexOf(";")) || "image/jpeg";
+      const v = await ulozZalohu({
+        data: {
+          company_id: firma.id,
+          subor: foto.slice(ciarka + 1),
+          nazov: `zalohova-faktura.${mime === "application/pdf" ? "pdf" : "jpg"}`,
+          mime,
+          druh: "proforma",
+        },
+      });
+      toast.success(t("app.zalohaUlozena", { cislo: v.invoice_number }));
+      onUlozene();
+      return true;
+    } catch {
+      /* Keď to zlyhá, doklad sa uloží obvyklou cestou a nič sa nestratí. */
+      return false;
+    }
+  }
+
   async function ulozDoklad() {
     if (!vysledok || !uhrada) return;
+    if (await ulozZalohovuFakturu()) return;
     const { isOnline } = await import("@/lib/mobile/offline-queue");
     const online = await isOnline();
     await odlozDoklad(online ? t("app.dokladSaUklada") : t("app.bezSignaluOdosleSa"));

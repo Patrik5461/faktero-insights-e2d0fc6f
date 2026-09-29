@@ -18,6 +18,10 @@ export type OcrBlocek = {
   currency?: string | null;
   date?: string | null;
   document_number?: string | null;
+  /** Nadpis dokladu tak, ako je vytlačený („ZÁLOHOVÁ FAKTÚRA“). */
+  document_title?: string | null;
+  /** `zalohova` = proforma/preddavková faktúra, `ostra` = daňový doklad. */
+  document_subtype?: string | null;
   items?: Array<{ name: string; quantity: number; unit_price: number; vat_rate: number }>;
 };
 
@@ -40,7 +44,10 @@ Sadzby DPH ${KDE[krajina]} sú ${zoznam} percent — inú nevracaj.
 Dátum vráť tak, ako je na doklade, vo formáte YYYY-MM-DD.
 Keď údaj na doklade nie je, daj null; nič si nevymýšľaj.
 Vráť VÝHRADNE JSON bez sprievodného textu:
-{"supplier":string|null,"ico":string|null,"ic_dph":string|null,"total":number|null,"vat_amount":number|null,"vat_rate":${vyber}|null,"currency":"${mena}","date":"YYYY-MM-DD"|null,"document_number":string|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":${vyber}}]}`;
+{"supplier":string|null,"ico":string|null,"ic_dph":string|null,"total":number|null,"vat_amount":number|null,"vat_rate":${vyber}|null,"currency":"${mena}","date":"YYYY-MM-DD"|null,"document_number":string|null,"document_title":string|null,"document_subtype":"zalohova"|"ostra"|null,"items":[{"name":string,"quantity":number,"unit_price":number,"vat_rate":${vyber}}]}
+Do "document_title" daj nadpis dokladu tak, ako je vytlačený. "document_subtype" je "zalohova"
+pri zálohovej, proforma či preddavkovej faktúre (nie je daňový doklad), inak "ostra"; faktúra,
+ktorá len odpočítava zaplatenú zálohu, je "ostra".`;
 }
 
 export async function ocrBlocek(

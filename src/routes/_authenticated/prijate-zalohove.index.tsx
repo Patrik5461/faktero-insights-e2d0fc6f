@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { formatovacMeny } from "@/lib/faktero/mena";
+import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 
 export const Route = createFileRoute("/_authenticated/prijate-zalohove/")({
   head: () => ({ meta: [{ title: "Prijaté zálohové faktúry — Faktero" }] }),
@@ -111,13 +112,16 @@ function PrijateZalohovePage() {
         title="Prijaté zálohové faktúry"
         description="Zálohy, ktoré vám vystavili dodávatelia. Platia sa, daň prinesie až ostrá faktúra."
         action={
-          <Link
-            to="/prijate-faktury/nova"
-            search={{ typ: "proforma" } as never}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" /> Nová prijatá zálohová faktúra
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <NahratDoklad druh="proforma" label="Nahrať zálohovú faktúru" />
+            <Link
+              to="/prijate-faktury/nova"
+              search={{ typ: "proforma" } as never}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" /> Nová prijatá zálohová faktúra
+            </Link>
+          </div>
         }
       />
       <PageBody>

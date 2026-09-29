@@ -623,6 +623,7 @@ export const cs: Partial<Record<Kluc, string>> = {
   "app.vyplnteEmailHeslo": "Vyplňte e-mail i heslo.",
   "app.prilohaNenahrata": "Přílohu se nepodařilo nahrát, doklad uložím bez ní.",
   "app.dokladUlozeny": "Doklad uložen",
+  "app.zalohaUlozena": "Zálohová faktura {cislo} je mezi přijatými zálohami",
   "app.bezPripojeniaFirmy":
     "Bez připojení a v telefonu zatím není uložen seznam firem. Otevřete aplikaci jednou s internetem.",
   "app.fakturaOdoslana": "Faktura vystavená bez signálu je odeslána.",

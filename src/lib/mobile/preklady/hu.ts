@@ -626,6 +626,7 @@ export const hu: Partial<Record<Kluc, string>> = {
   "app.vyplnteEmailHeslo": "Töltse ki az e-mailt és a jelszót is.",
   "app.prilohaNenahrata": "A mellékletet nem sikerült feltölteni, a bizonylatot enélkül mentem.",
   "app.dokladUlozeny": "Bizonylat mentve",
+  "app.zalohaUlozena": "A(z) {cislo} előlegszámla a beérkezett előlegek közt van",
   "app.bezPripojeniaFirmy":
     "Nincs kapcsolat, és a telefonon még nincs cégjegyzék. Nyissa meg egyszer az alkalmazást internettel.",
   "app.fakturaOdoslana": "A jel nélkül kiállított számlát elküldtük.",

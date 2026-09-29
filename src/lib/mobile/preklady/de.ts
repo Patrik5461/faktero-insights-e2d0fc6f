@@ -632,6 +632,7 @@ export const de: Partial<Record<Kluc, string>> = {
   "app.prilohaNenahrata":
     "Der Anhang konnte nicht hochgeladen werden, der Beleg wird ohne ihn gespeichert.",
   "app.dokladUlozeny": "Beleg gespeichert",
+  "app.zalohaUlozena": "Anzahlungsrechnung {cislo} ist bei den erhaltenen Anzahlungen",
   "app.bezPripojeniaFirmy":
     "Keine Verbindung, und auf dem Telefon ist noch keine Firmenliste gespeichert. Öffnen Sie die App einmal mit Internet.",
   "app.fakturaOdoslana": "Die offline ausgestellte Rechnung wurde gesendet.",

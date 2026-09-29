@@ -1,3 +1,4 @@
+import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
 /**
  * Príjem dokladov e-mailom — čistá logika bez siete a databázy.
  *
@@ -294,6 +295,8 @@ export type PrijataFakturaZMailu = {
   status: string;
   note: string;
   items: PolozkaDokladu[] | null;
+  /** `proforma` = prijatá zálohová faktúra; do výkazov k DPH nevstupuje. */
+  type: "regular" | "proforma";
 };
 
 /**
@@ -348,5 +351,17 @@ export function zostavPrijatuFakturu(args: {
     status: "draft",
     note: `Prijaté e-mailom${odkial}.${args.predmet ? ` Predmet: ${args.predmet.slice(0, 120)}` : ""}`,
     items: polozkyDokladu(ai.items),
+    /*
+      Zálohová faktúra od dodávateľa nie je daňový doklad — keby padla medzi
+      bežné prijaté faktúry, firma by si odpočítala daň, na ktorú ešte nemá
+      nárok, a po ostrej faktúre by ten istý záväzok visel dvakrát.
+    */
+    type: druhPrijatehoDokladu({
+      druhOdAi: ai.document_subtype,
+      nazovDokladu: ai.document_title,
+      cisloDokladu: cisloDokladu,
+      nazovSuboru: args.nazovSuboru,
+      predmetMailu: args.predmet,
+    }),
   };
 }

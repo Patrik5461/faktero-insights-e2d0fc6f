@@ -630,6 +630,7 @@ export const en: Partial<Record<Kluc, string>> = {
   "app.prilohaNenahrata":
     "The attachment could not be uploaded, the receipt will be saved without it.",
   "app.dokladUlozeny": "Receipt saved",
+  "app.zalohaUlozena": "Advance invoice {cislo} saved to received advances",
   "app.bezPripojeniaFirmy":
     "No connection, and no list of companies is stored on the phone yet. Open the app once with internet.",
   "app.fakturaOdoslana": "The invoice issued offline has been sent.",
