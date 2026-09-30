@@ -8,7 +8,7 @@ export const Route = createFileRoute("/pomoc/exporty")({
       {
         name: "description",
         content:
-          "Účtovné exporty pre účtovníčku a prenos dát zo SuperFaktúry, Money S3, Omega, iDoklad a KROS do Fakera.",
+          "Účtovné exporty pre účtovníčku — Pohoda, KROS Omega, Money S3, ISDOC, ABRA Flexi aj súpiska CSV — a prenos dát zo SuperFaktúry, iDokladu a KROSu do Fakera.",
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/exporty" },
     ],
@@ -164,20 +164,48 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Do <strong>Pohody</strong> vieme poslať vydané faktúry (aj zálohové a dobropisy), prijaté
-          doklady, pokladňu, a keď si to zapnete, aj adresár, skladové karty a zákazky. Buď súborom,
-          mailom, alebo <strong>priamym prepojením</strong>, pri ktorom si Pohoda doklady vezme sama
-          — celé je to v <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
-        </p>
-        <p>
-          Ďalej vieme vyviezť do <strong>KROS Omegy</strong> (textový súbor R00/R01/R02 v kódovaní
-          Windows-1250) — <strong>ten istý súbor číta aj ALFA plus</strong>, jej import sa volá
-          „Import faktúr z Omegy". A do <strong>Money S3</strong> ako dátový balík{" "}
-          <code>MoneyData</code>.
-        </p>
-        <p>
           Formát si vyberiete v <Link to="/exporty">Účtovných exportoch</Link> nad zoznamom faktúr.
           Každý export sa uloží do histórie, takže sa dá stiahnuť znova.
+        </p>
+        <ul>
+          <li>
+            <strong>Pohoda XML</strong> — natívny dátový balík. Predkontácie a členenie DPH sa
+            dopĺňajú podľa nastavenia v <em>Účtovníctvo → Prepojenie s Pohodou</em>; bez nich si ich
+            účtovníčka doklikáva sama. Pohoda si vie doklady aj <strong>vyzdvihnúť sama</strong> —
+            celé je to v <Link to="/pomoc/pohoda">manuáli k Pohode</Link>.
+          </li>
+          <li>
+            <strong>KROS Omega (TXT)</strong> — textový súbor R00/R01/R02 v kódovaní Windows-1250.
+            <strong> Ten istý súbor číta aj ALFA plus</strong>, jej import sa volá{" "}
+            <em>Evidencie → Pohľadávky → Import faktúr z Omegy</em>.
+          </li>
+          <li>
+            <strong>Money S3 XML</strong> — dátový balík <code>MoneyData</code>, načíta ho{" "}
+            <em>XML prenosy</em>.
+          </li>
+          <li>
+            <strong>ISDOC (ZIP)</strong> — medzinárodný formát elektronickej faktúry. Jeden súbor{" "}
+            <code>.isdoc</code> na doklad, všetky zabalené v ZIP-e. Prečíta ho{" "}
+            <strong>Pohoda, Money, ABRA, Helios, Premier aj iDoklad</strong> — je to najistejšia
+            cesta, keď účtovníčka používa systém, pre ktorý nemáme vlastný súbor. Doklad, ktorý sa
+            do ISDOC-u nezmestí (napríklad bez položiek), sa vynechá a Faktero to povie.
+          </li>
+          <li>
+            <strong>ABRA Flexi XML</strong> — dávka <code>winstrom</code> s vydanými faktúrami.
+            Import je v <em>Nástroje → Import → XML</em>. Sadzba DPH ide priehradkou (základná,
+            znížená, oslobodené), lebo Flexi si percentá drží vo vlastnom číselníku podľa obdobia.
+          </li>
+          <li>
+            <strong>Súpiska CSV</strong> — jeden riadok na doklad s rozpisom po sadzbách DPH,
+            oddeľovač bodkočiarka, kódovanie Windows-1250. Otvorí ju <strong>Excel</strong> bez
+            čarovania s diakritikou a naimportujú ju <strong>MRP, Premier aj Helios</strong>. Je to
+            zároveň podklad na kontrolu — účtovníčka vidí sumy bez otvárania PDF.
+          </li>
+        </ul>
+        <p>
+          Okrem vydaných faktúr vie mesačný balík priložiť aj <strong>prijaté doklady</strong> a{" "}
+          <strong>pokladňu</strong>, a pri priamom prepojení s Pohodou aj adresár, skladové karty a
+          zákazky.
         </p>
       </>
     ),

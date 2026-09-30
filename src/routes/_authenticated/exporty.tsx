@@ -319,7 +319,7 @@ function ExportsPage() {
     <>
       <PageHeader
         title="Účtovné exporty"
-        description="Exportujte faktúry do účtovných systémov ako Pohoda."
+        description="Exportujte faktúry do Pohody, Omegy, Money S3, ABRA Flexi, do ISDOC-u alebo ako súpisku pre Excel."
       />
       <PageBody>
         <OdovzdanieZaMesiac />
