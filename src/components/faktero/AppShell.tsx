@@ -31,6 +31,7 @@ import {
   Route,
   IdCard,
   Send,
+  Import,
 } from "lucide-react";
 import { oblastPodlaCesty, vidiOblast } from "@/lib/faktero/opravnenia";
 import { HLADANIE_OD, filtrujFirmy } from "@/lib/faktero/hladanie-firiem";
@@ -236,7 +237,7 @@ const NAV: NavGroup[] = [
     key: "uctovnictvo",
     label: "Účtovníctvo",
     icon: FileSpreadsheet,
-    match: ["/pokladna", "/exporty", "/importy", "/uctovnictvo"],
+    match: ["/pokladna", "/exporty", "/uctovnictvo"],
     children: [
       { to: "/pokladna", label: "Pokladňa" },
       { to: "/uctovnictvo/dph", label: "DPH prehľad" },
@@ -247,6 +248,16 @@ const NAV: NavGroup[] = [
       { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
       { to: "/uctovnictvo/pohoda", label: "Prepojenie s Pohodou" },
       { to: "/uctovnictvo/vypis-do-pohody", label: "Bankový výpis do Pohody" },
+    ],
+  },
+  {
+    /* Prechod z iného systému je vlastná agenda — v Účtovníctve to bolo osem
+       položiek zo šestnástich a exporty sa v tom strácali. */
+    key: "uctovne-importy",
+    label: "Účtovné importy",
+    icon: Import,
+    match: ["/importy"],
+    children: [
       { to: "/importy/doklady", label: "Import prijatých dokladov (Doklado…)" },
       { to: "/importy/superfaktura", label: "Import zo SuperFaktúry" },
       { to: "/importy/pohoda", label: "Import z Pohody a mPohody" },
@@ -379,6 +390,7 @@ const INVOICING_KEYS = new Set([
   "sklad",
   "banka",
   "uctovnictvo",
+  "uctovne-importy",
 ]);
 const LOGBOOK_KEYS = new Set(["logbook-prehlad", "jazdy", "vozidla", "integracie"]);
 
