@@ -181,7 +181,9 @@ const sections: HelpSection[] = [
           </li>
           <li>
             <strong>Money S3 XML</strong> — dátový balík <code>MoneyData</code>, načíta ho{" "}
-            <em>XML prenosy</em>.
+            <em>XML prenosy</em>. Faktúra v cudzej mene má hlavičku prepočítanú na menu agendy a
+            pôvodné sumy s kurzom v bloku <code>Valuty</code>, ako to Money čaká; doklad bez kurzu
+            sa vynechá, lebo prepočítať sa nedá.
           </li>
           <li>
             <strong>ISDOC (ZIP)</strong> — medzinárodný formát elektronickej faktúry. Jeden súbor{" "}

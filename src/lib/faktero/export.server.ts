@@ -2,11 +2,7 @@
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
 import { nazovOznacenia, type KodOznacenia } from "./vypis-oznacenie";
 
-import {
-  sadzbyKuDnu as sadzbyKrajinyKuDnu,
-  krajinaDane,
-  type KrajinaDane,
-} from "./vat-rates";
+import { sadzbyKuDnu as sadzbyKrajinyKuDnu, krajinaDane, type KrajinaDane } from "./vat-rates";
 import { sUctomFaktury } from "./platobny-ucet";
 import { riadkySoZlavou } from "./zlavy";
 import { buildFlexiXml, buildUniverzalCsv } from "./export-dalsie";
@@ -1368,12 +1364,7 @@ export function buildPohodaDavkaXml(opts: {
 }
 
 export type ExportFormat =
-  | "pohoda_xml"
-  | "omega_txt"
-  | "money_s3_xml"
-  | "isdoc_zip"
-  | "flexi_xml"
-  | "csv_univerzal";
+  "pohoda_xml" | "omega_txt" | "money_s3_xml" | "isdoc_zip" | "flexi_xml" | "csv_univerzal";
 
 export interface ExportStrategy {
   format: ExportFormat;
@@ -1465,9 +1456,17 @@ export const MONEY_S3_XML: ExportStrategy = {
   encoding: "utf-8",
   mime: "application/xml",
   build({ company, invoices }) {
-    const content = buildMoneyS3Xml({ company, invoices });
+    const { xml, preskocene } = buildMoneyS3Xml({ company, invoices });
+    if (preskocene.length === invoices.length) {
+      throw new Error(`Do Money S3 sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
+    }
     const stamp = new Date().toISOString().slice(0, 10);
-    return { content, fileName: `money-s3-faktury-${stamp}.xml`, mime: "application/xml" };
+    return {
+      content: xml,
+      fileName: `money-s3-faktury-${stamp}.xml`,
+      mime: "application/xml",
+      preskocene,
+    };
   },
 };
 
@@ -1754,60 +1753,125 @@ export function buildOmegaTxt(opts: {
  * Money S3 má v hlavičke len dve sadzby — zníženú (`SazbaDPH1`) a základnú
  * (`SazbaDPH2`). Slovenská druhá znížená sadzba (5 %) sa preto zapisuje do
  * `SeznamDalsiSazby`, na to je tá časť schémy určená.
+ *
+ * **Cudzia mena.** `SouhrnDPH` a `Celkem` v hlavičke sú vždy v domácej mene
+ * agendy; skutočné sumy dokladu idú do bloku `Valuty` spolu s kurzom
+ * (`Valuty/Mena/{Kod,Mnozstvi,Kurs}`) a na položkách do `SouhrnDPH/Valuty`.
+ * Tak to má aj vzorový export z Money, podľa ktorého Faktero tieto súbory číta
+ * — a `MojeFirma/MenaKod` je mena agendy, nie mena faktúry.
  */
 export function buildMoneyS3Xml(opts: {
   company: CompanyRow;
   invoices: { invoice: InvoiceRow; items: ItemRow[] }[];
-}): string {
+}): { xml: string; preskocene: string[] } {
   const { company, invoices } = opts;
+  const domaca = domacaMenaFirmy(company);
+  const preskocene: string[] = [];
 
-  const doklady = invoices
-    .map(({ invoice, items }) => {
-      const sadzby = sadzbyDokladu(items);
-      const vyssia = sadzby[0];
-      const nizsia = sadzby[1];
-      const dalsie = sadzby.slice(2);
+  const doklady: string[] = [];
+  for (const { invoice, items } of invoices) {
+    const mena = String(invoice.currency ?? domaca).toUpperCase() || domaca;
+    const cudzia = mena !== domaca;
+    /*
+     * Kurz je jediná cesta, ako dostať sumy do domácej meny. Bez neho by sme
+     * museli hádať — a zaúčtovaná faktúra s vymysleným kurzom je horšia než
+     * faktúra, ktorá sa menovite vynechá.
+     */
+    const kurz = Number(invoice.exchange_rate ?? 0) || 0;
+    if (cudzia && !kurz) {
+      preskocene.push(`${invoice.invoice_number} — faktúra v mene ${mena} nemá kurz`);
+      continue;
+    }
+    /* `exchange_rate` je počet jednotiek cudzej meny za jedno euro. */
+    const naDomacu = (x: unknown) => (cudzia ? Number(x ?? 0) / kurz : Number(x ?? 0));
 
-      const v = zaSadzbu(items, vyssia);
-      const n = zaSadzbu(items, nizsia);
-      const nulova = items
-        .filter((it) => (Number(it.vat_rate) || 0) === 0)
-        .reduce((a, it) => a + Number(it.subtotal ?? 0), 0);
+    const sadzby = sadzbyDokladu(items);
+    const vyssia = sadzby[0];
+    const nizsia = sadzby[1];
+    const dalsie = sadzby.slice(2);
 
-      const dalsieSadzby = dalsie
-        .map((s) => {
-          const x = zaSadzbu(items, s);
+    const v = zaSadzbu(items, vyssia);
+    const n = zaSadzbu(items, nizsia);
+    const nulova = items
+      .filter((it) => (Number(it.vat_rate) || 0) === 0)
+      .reduce((a, it) => a + Number(it.subtotal ?? 0), 0);
+    const celkom = celkomDokladu(invoice, items);
+
+    const dalsieSadzby = (prepocet: (x: unknown) => number) =>
+      dalsie
+        .map((sd) => {
+          const x = zaSadzbu(items, sd);
           return `
             <DalsiSazba>
-              <Popis>Znížená sadzba ${s} %</Popis>
+              <Popis>Znížená sadzba ${sd} %</Popis>
               <HladinaDPH>1</HladinaDPH>
-              <Sazba>${s}</Sazba>
-              <Zaklad>${fixed2(x.zaklad)}</Zaklad>
-              <DPH>${fixed2(x.dan)}</DPH>
+              <Sazba>${sd}</Sazba>
+              <Zaklad>${fixed2(prepocet(x.zaklad))}</Zaklad>
+              <DPH>${fixed2(prepocet(x.dan))}</DPH>
             </DalsiSazba>`;
         })
         .join("");
 
-      const polozky = items
-        .map(
-          (it) => `
+    const souhrn = (prepocet: (x: unknown) => number, odsadenie: string) =>
+      `<SouhrnDPH>
+${odsadenie}  <Zaklad0>${fixed2(prepocet(nulova))}</Zaklad0>
+${odsadenie}  <Zaklad5>${fixed2(prepocet(n.zaklad))}</Zaklad5>
+${odsadenie}  <Zaklad22>${fixed2(prepocet(v.zaklad))}</Zaklad22>
+${odsadenie}  <DPH5>${fixed2(prepocet(n.dan))}</DPH5>
+${odsadenie}  <DPH22>${fixed2(prepocet(v.dan))}</DPH22>${
+        dalsieSadzby(prepocet)
+          ? `\n${odsadenie}  <SeznamDalsiSazby>${dalsieSadzby(prepocet)}\n${odsadenie}  </SeznamDalsiSazby>`
+          : ""
+      }
+${odsadenie}</SouhrnDPH>`;
+
+    /*
+     * Kurz sa udáva ako „koľko domácej meny stojí `Mnozstvi` jednotiek cudzej".
+     * Pri slabšej mene (koruny, forinty) je to zvykom za sto jednotiek, inak by
+     * kurz vyšiel ako 0,0395 a v Money by sa zaokrúhlil na nulu.
+     */
+    const mnozstvo = kurz >= 10 ? 100 : 1;
+    const valuty = cudzia
+      ? `
+      <Valuty>
+        <Mena>
+          <Kod>${esc(mena)}</Kod>
+          <Mnozstvi>${mnozstvo}</Mnozstvi>
+          <Kurs>${(mnozstvo / kurz).toFixed(4)}</Kurs>
+        </Mena>
+        ${souhrn((x) => Number(x ?? 0), "        ")}
+        <Celkem>${fixed2(celkom)}</Celkem>
+      </Valuty>`
+      : "";
+
+    const polozky = items
+      .map(
+        (it) => `
         <Polozka>
           <Popis>${esc(it.name)}</Popis>
           <PocetMJ>${Number(it.quantity ?? 0)}</PocetMJ>
           <SazbaDPH>${Number(it.vat_rate ?? 0)}</SazbaDPH>
-          <Cena>${fixed2(it.unit_price)}</Cena>
+          <Cena>${fixed2(naDomacu(it.unit_price))}</Cena>
           <SouhrnDPH>
-            <Zaklad>${fixed2(it.subtotal)}</Zaklad>
-            <DPH>${fixed2(it.vat_amount)}</DPH>
-          </SouhrnDPH>
+            <Zaklad>${fixed2(naDomacu(it.subtotal))}</Zaklad>
+            <DPH>${fixed2(naDomacu(it.vat_amount))}</DPH>${
+              cudzia
+                ? `
+            <Valuty>
+              <Zaklad>${fixed2(it.subtotal)}</Zaklad>
+              <DPH>${fixed2(it.vat_amount)}</DPH>
+            </Valuty>`
+                : ""
+            }
+          </SouhrnDPH>${cudzia ? `\n          <Valuty>${fixed2(it.unit_price)}</Valuty>` : ""}
         </Polozka>`,
-        )
-        .join("");
+      )
+      .join("");
 
-      return `
+    doklady.push(`
     <FaktVyd>
       <Doklad>${esc(invoice.invoice_number)}</Doklad>
-      <Popis>${esc(invoice.notes ?? `Faktúra ${invoice.invoice_number}`)}</Popis>
+      <Popis>${esc(invoice.notes ?? invoice.intro_note ?? `Faktúra ${invoice.invoice_number}`)}</Popis>
       <Vystaveno>${esc(invoice.issue_date)}</Vystaveno>
       <PlnenoDPH>${esc(invoice.delivery_date ?? invoice.issue_date)}</PlnenoDPH>
       <Splatno>${esc(invoice.due_date)}</Splatno>
@@ -1815,18 +1879,8 @@ export function buildMoneyS3Xml(opts: {
       <Dobropis>${invoice.type === "credit_note" ? 1 : 0}</Dobropis>
       ${nizsia != null ? `<SazbaDPH1>${nizsia}</SazbaDPH1>` : ""}
       ${vyssia != null ? `<SazbaDPH2>${vyssia}</SazbaDPH2>` : ""}
-      <SouhrnDPH>
-        <Zaklad0>${fixed2(nulova)}</Zaklad0>
-        <Zaklad5>${fixed2(n.zaklad)}</Zaklad5>
-        <Zaklad22>${fixed2(v.zaklad)}</Zaklad22>
-        <DPH5>${fixed2(n.dan)}</DPH5>
-        <DPH22>${fixed2(v.dan)}</DPH22>${
-          dalsieSadzby
-            ? `\n        <SeznamDalsiSazby>${dalsieSadzby}\n        </SeznamDalsiSazby>`
-            : ""
-        }
-      </SouhrnDPH>
-      <Celkem>${fixed2(celkomDokladu(invoice, items))}</Celkem>
+      ${souhrn(naDomacu, "      ")}
+      <Celkem>${fixed2(naDomacu(celkom))}</Celkem>${valuty}
       <DodOdb>
         <ObchNazev>${esc(invoice.customer_name)}</ObchNazev>
         <Adresa>
@@ -1845,15 +1899,15 @@ export function buildMoneyS3Xml(opts: {
         <Nazev>${esc(company?.name ?? "")}</Nazev>
         <ICO>${esc(company?.ico ?? "")}</ICO>
         <DIC>${esc(company?.ic_dph ?? company?.dic ?? "")}</DIC>
-        <MenaKod>${esc(invoice.currency ?? "EUR")}</MenaKod>
+        <MenaKod>${esc(domaca)}</MenaKod>
       </MojeFirma>
-    </FaktVyd>`;
-    })
-    .join("");
+    </FaktVyd>`);
+  }
 
-  return `<?xml version="1.0" encoding="utf-8"?>
+  const xml = `<?xml version="1.0" encoding="utf-8"?>
 <MoneyData ICAgendy="${esc(company?.ico ?? "")}" JazykVerze="SK" GeneratedBy="Faktero">
-  <SeznamFaktVyd>${doklady}
+  <SeznamFaktVyd>${doklady.join("")}
   </SeznamFaktVyd>
 </MoneyData>`;
+  return { xml, preskocene };
 }

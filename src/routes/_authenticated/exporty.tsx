@@ -212,7 +212,11 @@ const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
     label: "KROS Omega (TXT)",
     note: "Ten istý súbor číta aj ALFA plus — Evidencie → Pohľadávky → Import faktúr z Omegy.",
   },
-  { format: "money_s3_xml", label: "Money S3 XML" },
+  {
+    format: "money_s3_xml",
+    label: "Money S3 XML",
+    note: "Dátový balík MoneyData pre XML prenosy. Faktúra v cudzej mene má hlavičku v mene agendy a svoje sumy v bloku Valuty.",
+  },
   {
     format: "isdoc_zip",
     label: "ISDOC (ZIP)",

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { parseVendorFile, summarize } from "./import-vendors.server";
+import { buildMoneyS3Xml } from "./export.server";
 
 /** Oficiálne vzorové súbory Money S3 (money.cz → XML prenosy → vzorové XML). */
 function fixture(meno: string) {
@@ -182,5 +183,52 @@ describe("CSV z iDokladu, Omegy a KROSu", () => {
 
   it("prázdny súbor nespadne", () => {
     expect(parseVendorFile("idoklad", "prazdne.csv", bajty(""))).toEqual([]);
+  });
+});
+
+/*
+ * Vlastný importér je jediný kontrolór, ktorého na Money S3 máme — schéma
+ * `__Faktura.xsd` chodí až s programom. Keď súbor, ktorý vyrobíme, prečítame
+ * naspäť na tie isté čísla, sedí aspoň štruktúra aj umiestnenie cudzej meny.
+ */
+describe("Money S3 — export a import naspäť", () => {
+  const { xml } = buildMoneyS3Xml({
+    company: { name: "Faktero", ico: "56607016", default_currency: "EUR" },
+    invoices: [
+      {
+        invoice: {
+          invoice_number: "20260101",
+          type: "regular",
+          issue_date: "2026-09-14",
+          due_date: "2026-09-28",
+          currency: "CZK",
+          exchange_rate: 25.3,
+          variable_symbol: "20260101",
+          customer_name: "Česká firma a.s.",
+          customer_ico: "12345678",
+          customer_country: "CZ",
+          total: 10000,
+        },
+        items: [
+          {
+            name: "Vývoj softvéru",
+            quantity: 100,
+            unit_price: 100,
+            vat_rate: 0,
+            subtotal: 10000,
+            vat_amount: 0,
+            total: 10000,
+          },
+        ],
+      },
+    ],
+  });
+
+  it("importér prečíta menu dokladu a jej sumy, nie prepočet na eurá", () => {
+    const [r] = parseVendorFile("money-s3", "VF.xml", new TextEncoder().encode(xml));
+    expect(r.invoice_number).toBe("20260101");
+    expect(r.currency).toBe("CZK");
+    expect(Number(r.total)).toBe(10000);
+    expect(r.customer_name).toBe("Česká firma a.s.");
   });
 });

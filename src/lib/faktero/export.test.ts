@@ -576,7 +576,7 @@ describe("Money S3 XML", () => {
   const x = buildMoneyS3Xml({
     company: { name: "Tobify s.r.o.", ico: "56607016" },
     invoices: [{ invoice: faktura, items: polozky }],
-  });
+  }).xml;
   // Bez `parseTagValue: false` by parser z IČO `00151653` urobil číslo.
   const parserText = new XMLParser({
     ignoreAttributes: false,
@@ -638,8 +638,68 @@ describe("Money S3 XML", () => {
     const c = buildMoneyS3Xml({
       company: {},
       invoices: [{ invoice: { ...faktura, type: "credit_note" }, items: polozky }],
-    });
+    }).xml;
     expect(Number(parser.parse(c).MoneyData.SeznamFaktVyd.FaktVyd.Dobropis)).toBe(1);
+  });
+
+  /*
+   * Hlavička je v Money vždy v mene agendy a doklad si nesie svoju menu v
+   * bloku `Valuty` — presne tak, ako vyzerá vzorový export, podľa ktorého
+   * Faktero tieto súbory číta. Keby sme do hlavičky dali koruny, účtovníčka
+   * by mala v EUR agende faktúru na 10 000 €.
+   */
+  it("faktúra v cudzej mene má hlavičku v mene agendy a sumy vo Valutách", () => {
+    const { xml, preskocene } = buildMoneyS3Xml({
+      company: { name: "F", ico: "56607016", default_currency: "EUR" },
+      invoices: [
+        {
+          invoice: {
+            ...faktura,
+            currency: "CZK",
+            exchange_rate: 25.3,
+            total: 10000,
+          },
+          items: [
+            {
+              name: "Vývoj",
+              quantity: 100,
+              unit_price: 100,
+              vat_rate: 0,
+              subtotal: 10000,
+              vat_amount: 0,
+              total: 10000,
+            },
+          ],
+        },
+      ],
+    });
+    expect(preskocene).toEqual([]);
+    const fv = parser.parse(xml).MoneyData.SeznamFaktVyd.FaktVyd;
+    expect(Number(fv.Celkem)).toBeCloseTo(395.26, 2);
+    expect(fv.Valuty.Mena.Kod).toBe("CZK");
+    expect(Number(fv.Valuty.Mena.Mnozstvi)).toBe(100);
+    expect(Number(fv.Valuty.Mena.Kurs)).toBeCloseTo(3.9526, 4);
+    expect(Number(fv.Valuty.Celkem)).toBe(10000);
+    expect(Number(fv.Valuty.SouhrnDPH.Zaklad0)).toBe(10000);
+    /* Mena agendy, nie mena faktúry. */
+    expect(fv.MojeFirma.MenaKod).toBe("EUR");
+    const p = fv.SeznamPolozek.Polozka;
+    expect(Number(p.SouhrnDPH.Zaklad)).toBeCloseTo(395.26, 2);
+    expect(Number(p.SouhrnDPH.Valuty.Zaklad)).toBe(10000);
+    expect(Number(p.Valuty)).toBe(100);
+  });
+
+  it("faktúru v cudzej mene bez kurzu vynechá a povie to", () => {
+    const { xml, preskocene } = buildMoneyS3Xml({
+      company: { default_currency: "EUR" },
+      invoices: [
+        { invoice: faktura, items: polozky },
+        { invoice: { ...faktura, invoice_number: "X9", currency: "USD" }, items: polozky },
+      ],
+    });
+    expect(preskocene).toHaveLength(1);
+    expect(preskocene[0]).toContain("X9");
+    expect(xml.match(/<FaktVyd>/g)).toHaveLength(1);
   });
 });
 
@@ -673,7 +733,6 @@ describe("stratégie", () => {
     expect((await EXPORT_STRATEGIES.isdoc_zip.build(vstup)).fileName).toMatch(/\.zip$/);
   });
 });
-
 
 describe("bankový výpis do Pohody", () => {
   const parser = new XMLParser({
