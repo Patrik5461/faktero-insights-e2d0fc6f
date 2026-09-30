@@ -27,6 +27,15 @@ function fixed2(n: any) {
 }
 
 /**
+ * Jednotková cena na štyri desatinné miesta. Pri prepočte na domácu menu
+ * vyjde cena ako 3,9526 € a zaokrúhlená na haliere by sa základ položky
+ * rozišiel so základom dokladu — vzorový export z Money ju má tiež na štyri.
+ */
+function fixed4(n: any) {
+  return Number(n ?? 0).toFixed(4);
+}
+
+/**
  * Pohoda XML — dátový balík `dataPack` pre XML import v programe POHODA
  * (Súbor → Dátová komunikácia → XML import/export).
  *
@@ -1851,7 +1860,7 @@ ${odsadenie}</SouhrnDPH>`;
           <Popis>${esc(it.name)}</Popis>
           <PocetMJ>${Number(it.quantity ?? 0)}</PocetMJ>
           <SazbaDPH>${Number(it.vat_rate ?? 0)}</SazbaDPH>
-          <Cena>${fixed2(naDomacu(it.unit_price))}</Cena>
+          <Cena>${fixed4(naDomacu(it.unit_price))}</Cena>
           <SouhrnDPH>
             <Zaklad>${fixed2(naDomacu(it.subtotal))}</Zaklad>
             <DPH>${fixed2(naDomacu(it.vat_amount))}</DPH>${
@@ -1863,7 +1872,7 @@ ${odsadenie}</SouhrnDPH>`;
             </Valuty>`
                 : ""
             }
-          </SouhrnDPH>${cudzia ? `\n          <Valuty>${fixed2(it.unit_price)}</Valuty>` : ""}
+          </SouhrnDPH>${cudzia ? `\n          <Valuty>${fixed4(it.unit_price)}</Valuty>` : ""}
         </Polozka>`,
       )
       .join("");

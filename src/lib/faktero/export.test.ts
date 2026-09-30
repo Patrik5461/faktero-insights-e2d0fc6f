@@ -687,6 +687,8 @@ describe("Money S3 XML", () => {
     expect(Number(p.SouhrnDPH.Zaklad)).toBeCloseTo(395.26, 2);
     expect(Number(p.SouhrnDPH.Valuty.Zaklad)).toBe(10000);
     expect(Number(p.Valuty)).toBe(100);
+    /* Cena na štyri desatinné: 100 × 3,95 by dalo 395,00, nie 395,26. */
+    expect(Number(p.Cena)).toBeCloseTo(3.9526, 4);
   });
 
   it("faktúru v cudzej mene bez kurzu vynechá a povie to", () => {
