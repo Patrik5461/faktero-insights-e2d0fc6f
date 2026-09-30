@@ -53,7 +53,8 @@ const sections: HelpSection[] = [
       <>
         <p>Faktero vie prevziať dáta zo SuperFaktúry, Money S3, Omega, iDokladu a KROSu.</p>
         <p>
-          Import nájdete v <Link to="/importy">Účtovníctvo → Importy</Link>. Prenášajú sa
+          Import nájdete v <Link to="/importy/novy">Účtovníctvo → Účtovné importy</Link> — hore si
+          vyberiete program, z ktorého máte export, a návod aj prípony sa prispôsobia. Prenášajú sa
           odberatelia, produkty a faktúry — podľa toho, čo daný systém vie vyviezť.
         </p>
         <p>

@@ -81,7 +81,7 @@ function ImportHistoryPage() {
               <UploadIcon className="h-4 w-4" /> Prijaté doklady (Doklado…)
             </Link>
             <Link
-              to="/importy/superfaktura"
+              to="/importy/novy"
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
               <UploadIcon className="h-4 w-4" /> Nový import
@@ -143,7 +143,7 @@ function ImportHistoryPage() {
                 description="Zatiaľ neboli vykonané žiadne importy alebo žiadne nevyhovujú filtrom."
                 action={
                   <Link
-                    to="/importy/superfaktura"
+                    to="/importy/novy"
                     className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
                   >
                     <UploadIcon className="h-4 w-4" /> Spustiť nový import

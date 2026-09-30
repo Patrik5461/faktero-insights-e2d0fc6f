@@ -151,6 +151,7 @@ import { Route as AuthenticatedImportyDokladyRouteImport } from './routes/_authe
 import { Route as AuthenticatedImportyIdokladRouteImport } from './routes/_authenticated/importy.idoklad'
 import { Route as AuthenticatedImportyKrosRouteImport } from './routes/_authenticated/importy.kros'
 import { Route as AuthenticatedImportyMoneyS3RouteImport } from './routes/_authenticated/importy.money-s3'
+import { Route as AuthenticatedImportyNovyRouteImport } from './routes/_authenticated/importy.novy'
 import { Route as AuthenticatedImportyOmegaRouteImport } from './routes/_authenticated/importy.omega'
 import { Route as AuthenticatedImportyPohodaRouteImport } from './routes/_authenticated/importy.pohoda'
 import { Route as AuthenticatedImportySuperfakturaRouteImport } from './routes/_authenticated/importy.superfaktura'
@@ -1031,6 +1032,12 @@ const AuthenticatedImportyMoneyS3Route =
   AuthenticatedImportyMoneyS3RouteImport.update({
     id: '/importy/money-s3',
     path: '/importy/money-s3',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedImportyNovyRoute =
+  AuthenticatedImportyNovyRouteImport.update({
+    id: '/importy/novy',
+    path: '/importy/novy',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedImportyOmegaRoute =
@@ -1944,6 +1951,7 @@ export interface FileRoutesByFullPath {
   '/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
   '/importy/kros': typeof AuthenticatedImportyKrosRoute
   '/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
+  '/importy/novy': typeof AuthenticatedImportyNovyRoute
   '/importy/omega': typeof AuthenticatedImportyOmegaRoute
   '/importy/pohoda': typeof AuthenticatedImportyPohodaRoute
   '/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
@@ -2217,6 +2225,7 @@ export interface FileRoutesByTo {
   '/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
   '/importy/kros': typeof AuthenticatedImportyKrosRoute
   '/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
+  '/importy/novy': typeof AuthenticatedImportyNovyRoute
   '/importy/omega': typeof AuthenticatedImportyOmegaRoute
   '/importy/pohoda': typeof AuthenticatedImportyPohodaRoute
   '/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
@@ -2499,6 +2508,7 @@ export interface FileRoutesById {
   '/_authenticated/importy/idoklad': typeof AuthenticatedImportyIdokladRoute
   '/_authenticated/importy/kros': typeof AuthenticatedImportyKrosRoute
   '/_authenticated/importy/money-s3': typeof AuthenticatedImportyMoneyS3Route
+  '/_authenticated/importy/novy': typeof AuthenticatedImportyNovyRoute
   '/_authenticated/importy/omega': typeof AuthenticatedImportyOmegaRoute
   '/_authenticated/importy/pohoda': typeof AuthenticatedImportyPohodaRoute
   '/_authenticated/importy/superfaktura': typeof AuthenticatedImportySuperfakturaRoute
@@ -2782,6 +2792,7 @@ export interface FileRouteTypes {
     | '/importy/idoklad'
     | '/importy/kros'
     | '/importy/money-s3'
+    | '/importy/novy'
     | '/importy/omega'
     | '/importy/pohoda'
     | '/importy/superfaktura'
@@ -3055,6 +3066,7 @@ export interface FileRouteTypes {
     | '/importy/idoklad'
     | '/importy/kros'
     | '/importy/money-s3'
+    | '/importy/novy'
     | '/importy/omega'
     | '/importy/pohoda'
     | '/importy/superfaktura'
@@ -3336,6 +3348,7 @@ export interface FileRouteTypes {
     | '/_authenticated/importy/idoklad'
     | '/_authenticated/importy/kros'
     | '/_authenticated/importy/money-s3'
+    | '/_authenticated/importy/novy'
     | '/_authenticated/importy/omega'
     | '/_authenticated/importy/pohoda'
     | '/_authenticated/importy/superfaktura'
@@ -4602,6 +4615,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImportyMoneyS3RouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/importy/novy': {
+      id: '/_authenticated/importy/novy'
+      path: '/importy/novy'
+      fullPath: '/importy/novy'
+      preLoaderRoute: typeof AuthenticatedImportyNovyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/importy/omega': {
       id: '/_authenticated/importy/omega'
       path: '/importy/omega'
@@ -5704,6 +5724,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedImportyIdokladRoute: typeof AuthenticatedImportyIdokladRoute
   AuthenticatedImportyKrosRoute: typeof AuthenticatedImportyKrosRoute
   AuthenticatedImportyMoneyS3Route: typeof AuthenticatedImportyMoneyS3Route
+  AuthenticatedImportyNovyRoute: typeof AuthenticatedImportyNovyRoute
   AuthenticatedImportyOmegaRoute: typeof AuthenticatedImportyOmegaRoute
   AuthenticatedImportyPohodaRoute: typeof AuthenticatedImportyPohodaRoute
   AuthenticatedImportySuperfakturaRoute: typeof AuthenticatedImportySuperfakturaRoute
@@ -5799,6 +5820,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImportyIdokladRoute: AuthenticatedImportyIdokladRoute,
   AuthenticatedImportyKrosRoute: AuthenticatedImportyKrosRoute,
   AuthenticatedImportyMoneyS3Route: AuthenticatedImportyMoneyS3Route,
+  AuthenticatedImportyNovyRoute: AuthenticatedImportyNovyRoute,
   AuthenticatedImportyOmegaRoute: AuthenticatedImportyOmegaRoute,
   AuthenticatedImportyPohodaRoute: AuthenticatedImportyPohodaRoute,
   AuthenticatedImportySuperfakturaRoute: AuthenticatedImportySuperfakturaRoute,

@@ -31,7 +31,6 @@ import {
   Route,
   IdCard,
   Send,
-  Import,
 } from "lucide-react";
 import { oblastPodlaCesty, vidiOblast } from "@/lib/faktero/opravnenia";
 import { HLADANIE_OD, filtrujFirmy } from "@/lib/faktero/hladanie-firiem";
@@ -237,7 +236,7 @@ const NAV: NavGroup[] = [
     key: "uctovnictvo",
     label: "Účtovníctvo",
     icon: FileSpreadsheet,
-    match: ["/pokladna", "/exporty", "/uctovnictvo"],
+    match: ["/pokladna", "/exporty", "/importy", "/uctovnictvo"],
     children: [
       { to: "/pokladna", label: "Pokladňa" },
       { to: "/uctovnictvo/dph", label: "DPH prehľad" },
@@ -246,26 +245,12 @@ const NAV: NavGroup[] = [
       { to: "/uctovnictvo/uzavierka", label: "Uzávierka" },
       { to: "/exporty", label: "Účtovné exporty" },
       { to: "/exporty", search: { tab: "history" }, label: "História exportov" },
+      /* Jedna položka na všetky programy — odkiaľ sa importuje, si človek
+         vyberie na stránke, rovnako ako formát pri exportoch. */
+      { to: "/importy/novy", label: "Účtovné importy" },
+      { to: "/importy", label: "História importov" },
       { to: "/uctovnictvo/pohoda", label: "Prepojenie s Pohodou" },
       { to: "/uctovnictvo/vypis-do-pohody", label: "Bankový výpis do Pohody" },
-    ],
-  },
-  {
-    /* Prechod z iného systému je vlastná agenda — v Účtovníctve to bolo osem
-       položiek zo šestnástich a exporty sa v tom strácali. */
-    key: "uctovne-importy",
-    label: "Účtovné importy",
-    icon: Import,
-    match: ["/importy"],
-    children: [
-      { to: "/importy/doklady", label: "Import prijatých dokladov (Doklado…)" },
-      { to: "/importy/superfaktura", label: "Import zo SuperFaktúry" },
-      { to: "/importy/pohoda", label: "Import z Pohody a mPohody" },
-      { to: "/importy/money-s3", label: "Import z Money S3" },
-      { to: "/importy/omega", label: "Import z Omega" },
-      { to: "/importy/idoklad", label: "Import z iDoklad" },
-      { to: "/importy/kros", label: "Import z KROS" },
-      { to: "/importy", label: "História importov" },
     ],
   },
   {
@@ -390,7 +375,6 @@ const INVOICING_KEYS = new Set([
   "sklad",
   "banka",
   "uctovnictvo",
-  "uctovne-importy",
 ]);
 const LOGBOOK_KEYS = new Set(["logbook-prehlad", "jazdy", "vozidla", "integracie"]);
 

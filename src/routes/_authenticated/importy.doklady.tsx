@@ -110,7 +110,14 @@ function ImportDokladovPage() {
     setPracujem("Spúšťam import…");
     try {
       const { jobId, celkom } = await spustiFn({
-        data: { companyId: cid, subory: nahrate, stav, doPokladne, citatSkeny, zdrojAplikacie: zdroj },
+        data: {
+          companyId: cid,
+          subory: nahrate,
+          stav,
+          doPokladne,
+          citatSkeny,
+          zdrojAplikacie: zdroj,
+        },
       });
       setPracujem(null);
       setPriebeh({ stav: "running", celkom, hotovo: 0, vysledok: null, chyba: null });
@@ -215,7 +222,11 @@ function ImportDokladovPage() {
                   disabled={!subory.length || Boolean(pracujem)}
                   className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
-                  {pracujem ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {pracujem ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
                   {pracujem ?? "Nahrať a pozrieť"}
                 </button>
               )}
@@ -252,7 +263,10 @@ function ImportDokladovPage() {
                       </thead>
                       <tbody>
                         {nahlad.ukazka.map((r, i) => (
-                          <tr key={i} className={`border-t border-border ${r.duplicita ? "opacity-50" : ""}`}>
+                          <tr
+                            key={i}
+                            className={`border-t border-border ${r.duplicita ? "opacity-50" : ""}`}
+                          >
                             <td className="px-3 py-1.5 whitespace-nowrap">
                               {r.typ === "faktura" ? "Faktúra" : "Bloček"}
                               {r.duplicita && " (už je)"}
@@ -282,7 +296,9 @@ function ImportDokladovPage() {
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <label className="block text-sm">
-                    <span className="mb-1 block text-xs text-muted-foreground">Odkiaľ doklady sú</span>
+                    <span className="mb-1 block text-xs text-muted-foreground">
+                      Odkiaľ doklady sú
+                    </span>
                     <select
                       value={zdroj}
                       onChange={(e) => setZdroj(e.target.value)}
@@ -294,7 +310,9 @@ function ImportDokladovPage() {
                     </select>
                   </label>
                   <label className="block text-sm">
-                    <span className="mb-1 block text-xs text-muted-foreground">Stav po importe</span>
+                    <span className="mb-1 block text-xs text-muted-foreground">
+                      Stav po importe
+                    </span>
                     <select
                       value={stav}
                       onChange={(e) => setStav(e.target.value as typeof stav)}
@@ -342,7 +360,11 @@ function ImportDokladovPage() {
                     disabled={Boolean(pracujem)}
                     className="mt-5 inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
                   >
-                    {pracujem ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    {pracujem ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4" />
+                    )}
                     {pracujem ?? "Spustiť import"}
                   </button>
                 )}
@@ -389,13 +411,24 @@ function ImportDokladovPage() {
                 )}
                 {hotovy && (
                   <div className="mt-4 flex flex-wrap gap-2 text-sm">
-                    <Link to="/prijate-faktury" className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary">
+                    <Link
+                      to="/prijate-faktury"
+                      className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
+                    >
                       Prijaté faktúry
                     </Link>
-                    <Link to="/doklady" search={{ stav: "vsetky" }} className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary">
+                    <Link
+                      to="/doklady"
+                      search={{ stav: "vsetky" }}
+                      className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
+                    >
                       Doklady
                     </Link>
-                    <Link to="/ostatne-doklady" search={{ stav: "vsetky" }} className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary">
+                    <Link
+                      to="/ostatne-doklady"
+                      search={{ stav: "vsetky" }}
+                      className="rounded-md border border-border px-3 py-1.5 hover:bg-secondary"
+                    >
                       Ostatné doklady
                     </Link>
                   </div>
@@ -408,7 +441,8 @@ function ImportDokladovPage() {
             <h2 className="font-semibold">Ako vyviezť doklady z Doklado</h2>
             <ol className="mt-3 list-decimal space-y-2 pl-5 text-muted-foreground">
               <li>
-                V Doklado označte doklady (prijaté faktúry, bločky) a zvoľte <strong>Export</strong>.
+                V Doklado označte doklady (prijaté faktúry, bločky) a zvoľte <strong>Export</strong>
+                .
               </li>
               <li>
                 Vyberte formát <strong>XML (Pohoda) SK</strong> — údaje v ňom sú najpresnejšie. Ide

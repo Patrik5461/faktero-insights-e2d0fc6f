@@ -307,7 +307,7 @@
     },
     {
      "nadpis": "Prechod z iného systému",
-     "text": "<>\nFaktero vie prevziať dáta zo SuperFaktúry, Money S3, Omega, iDokladu a KROSu.\nImport nájdete v Účtovníctvo → Importy (/importy). Prenášajú sa\nodberatelia, produkty a faktúry — podľa toho, čo daný systém vie vyviezť.\nPo importe skontrolujte číslovanie faktúr , aby nové doklady nadviazali na\nstaré a nezačali od jednotky."
+     "text": "<>\nFaktero vie prevziať dáta zo SuperFaktúry, Money S3, Omega, iDokladu a KROSu.\nImport nájdete v Účtovníctvo → Účtovné importy (/importy/novy) — hore si\nvyberiete program, z ktorého máte export, a návod aj prípony sa prispôsobia. Prenášajú sa\nodberatelia, produkty a faktúry — podľa toho, čo daný systém vie vyviezť.\nPo importe skontrolujte číslovanie faktúr , aby nové doklady nadviazali na\nstaré a nezačali od jednotky."
     },
     {
      "nadpis": "Import zo SuperFaktúry krok za krokom",

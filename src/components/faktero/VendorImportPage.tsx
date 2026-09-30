@@ -25,6 +25,8 @@ export function VendorImportPage(props: {
   description: string;
   accept: string;
   guide: ReactNode;
+  /** Rozbaľovačka zdroja — na stránke „Účtovné importy". Jednotlivé stránky ju nemajú. */
+  selector?: ReactNode;
 }) {
   const createUrl = useServerFn(createImportUploadUrl);
   const doPreview = useServerFn(previewVendorImport);
@@ -81,6 +83,17 @@ export function VendorImportPage(props: {
       toast.success(
         `Importovaných ${r.imported_invoices} faktúr a ${r.imported_customers} odberateľov.`,
       );
+      /*
+       * Odmietnuté riadky sa musia povedať nahlas. Keď faktúry spadnú
+       * napríklad na uzamknuté obdobie, hláška „importovaných 0 faktúr"
+       * vyzerá ako úspech a dôvod ostane schovaný v histórii.
+       */
+      if (r.failed_rows > 0) {
+        toast.warning(
+          `${r.failed_rows} dokladov sa nezapísalo. Dôvod pri každom nájdete v histórii importov.`,
+          { duration: 12000 },
+        );
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "Import zlyhal.");
     } finally {
@@ -106,6 +119,7 @@ export function VendorImportPage(props: {
         <div className="mx-auto max-w-4xl space-y-6">
           {step === 1 && (
             <>
+              {props.selector}
               <section className="rounded-2xl border border-border bg-card p-6">
                 <h2 className="text-base font-semibold">Návod na export</h2>
                 <div className="mt-3 space-y-2 text-sm text-muted-foreground">{props.guide}</div>
