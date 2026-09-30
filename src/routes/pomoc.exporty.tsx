@@ -187,13 +187,17 @@ const sections: HelpSection[] = [
             <strong>ISDOC (ZIP)</strong> — medzinárodný formát elektronickej faktúry. Jeden súbor{" "}
             <code>.isdoc</code> na doklad, všetky zabalené v ZIP-e. Prečíta ho{" "}
             <strong>Pohoda, Money, ABRA, Helios, Premier aj iDoklad</strong> — je to najistejšia
-            cesta, keď účtovníčka používa systém, pre ktorý nemáme vlastný súbor. Doklad, ktorý sa
-            do ISDOC-u nezmestí (napríklad bez položiek), sa vynechá a Faktero to povie.
+            cesta, keď účtovníčka používa systém, pre ktorý nemáme vlastný súbor. Schéma žiada aspoň
+            jeden riadok, takže faktúra <strong>bez položiek</strong> sa z dávky vynechá a Faktero
+            to povie menovite.
           </li>
           <li>
             <strong>ABRA Flexi XML</strong> — dávka <code>winstrom</code> s vydanými faktúrami.
             Import je v <em>Nástroje → Import → XML</em>. Sadzba DPH ide priehradkou (základná,
             znížená, oslobodené), lebo Flexi si percentá drží vo vlastnom číselníku podľa obdobia.
+            Dobropis ide ako typ <code>DOBROPIS</code> so zápornými sumami.{" "}
+            <strong>Zálohové faktúry a doklady v cudzej mene sa vynechajú</strong> — Flexi pre ne
+            chce vlastný typ dokladu a sumy v domácej mene s kurzom.
           </li>
           <li>
             <strong>Súpiska CSV</strong> — jeden riadok na doklad s rozpisom po sadzbách DPH,

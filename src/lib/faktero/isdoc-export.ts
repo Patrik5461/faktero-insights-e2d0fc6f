@@ -183,12 +183,27 @@ export function buildIsdoc(opts: {
     odmietne. Lepšie to povedať tu než vydať súbor, ktorý nikde neprejde.
   */
   if (!String(company?.ico ?? "").trim()) {
-    throw new Error("Firma nemá vyplnené IČO. Doplňte ho v nastaveniach firmy — bez neho ISDOC neprejde.");
+    throw new Error(
+      "Firma nemá vyplnené IČO. Doplňte ho v nastaveniach firmy — bez neho ISDOC neprejde.",
+    );
+  }
+  /*
+   * Schéma žiada aspoň jeden `InvoiceLine`. Faktúra bez položiek je vo Faktere
+   * bežná (celý doklad popisuje text nad položkami), ale ISDOC ju neunesie —
+   * radšej ju z dávky vynechať a povedať to, než poslať súbor, ktorý sa
+   * u účtovníčky nenaimportuje.
+   */
+  if (!items.length) {
+    throw new Error("faktúra nemá položky — ISDOC vyžaduje aspoň jeden riadok");
   }
   const dobropis = String(invoice.type ?? "") === "credit_note";
   const mena = String(invoice.currency ?? company.default_currency ?? "CZK").toUpperCase();
-  const domaca = krajinaDane(company.country) === "CZ" ? "CZK" : "EUR";
-  const cudzia = mena !== domaca;
+  /*
+   * Sumy v doklade sú vždy v mene faktúry — prepočet na domácu menu Faktero
+   * drží len v hlavičke, nie po položkách. Ako `LocalCurrencyCode` sa preto
+   * hlási mena dokladu a `ForeignCurrencyCode` s kurzom sa nepíše vôbec:
+   * dvojica „domáca mena + kurz 1" by z 10 000 Kč spravila 10 000 €.
+   */
 
   const odberatel = opts.customer ?? {
     name: invoice.customer_name,
@@ -297,8 +312,7 @@ export function buildIsdoc(opts: {
   -->
   <ElectronicPossibilityAgreementReference>${esc(invoice.electronic_agreement_ref ?? "")}</ElectronicPossibilityAgreementReference>
   ${tag("Note", invoice.note)}
-  <LocalCurrencyCode>${esc(domaca)}</LocalCurrencyCode>
-  ${cudzia ? `<ForeignCurrencyCode>${esc(mena)}</ForeignCurrencyCode>` : ""}
+  <LocalCurrencyCode>${esc(mena)}</LocalCurrencyCode>
   <CurrRate>1</CurrRate>
   <RefCurrRate>1</RefCurrRate>${strana(company, "AccountingSupplierParty")}${strana(odberatel, "AccountingCustomerParty")}
   <InvoiceLines>${riadky}

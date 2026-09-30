@@ -216,17 +216,17 @@ const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
   {
     format: "isdoc_zip",
     label: "ISDOC (ZIP)",
-    note: "Univerzálny formát — načíta ho Pohoda, Money, ABRA, Helios aj Premier. Jeden súbor .isdoc na doklad.",
+    note: "Univerzálny formát — načíta ho Pohoda, Money, ABRA, Helios aj Premier. Jeden súbor .isdoc na doklad; faktúra bez položiek doň nejde.",
   },
   {
     format: "flexi_xml",
     label: "ABRA Flexi XML",
-    note: "Import v ABRA Flexi: Nástroje → Import → XML.",
+    note: "Import v ABRA Flexi: Nástroje → Import → XML. Zálohové faktúry a doklady v cudzej mene vynechá.",
   },
   {
     format: "csv_univerzal",
     label: "Súpiska CSV (Excel, MRP, Premier…)",
-    note: "Jeden riadok na doklad s rozpisom po sadzbách DPH, oddeľovač bodkočiarka, kódovanie Windows-1250.",
+    note: "Jeden riadok na doklad s rozpisom po sadzbách DPH, oddeľovač bodkočiarka, kódovanie Windows-1250. Dobropis je záporný, aby sa dal rovno sčítať.",
   },
 ];
 

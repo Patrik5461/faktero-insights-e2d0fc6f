@@ -26,9 +26,36 @@ const faktura = {
     notes: "Ďakujeme; platba prevodom",
   },
   items: [
-    { name: "Práce", quantity: 1, unit: "ks", unit_price: 100, vat_rate: 23, subtotal: 100, vat_amount: 23, total: 123 },
-    { name: "Materiál", quantity: 2, unit: "ks", unit_price: 25, vat_rate: 5, subtotal: 50, vat_amount: 2.5, total: 52.5 },
-    { name: "Oslobodené", quantity: 1, unit: "ks", unit_price: 20, vat_rate: 0, subtotal: 20, vat_amount: 0, total: 20 },
+    {
+      name: "Práce",
+      quantity: 1,
+      unit: "ks",
+      unit_price: 100,
+      vat_rate: 23,
+      subtotal: 100,
+      vat_amount: 23,
+      total: 123,
+    },
+    {
+      name: "Materiál",
+      quantity: 2,
+      unit: "ks",
+      unit_price: 25,
+      vat_rate: 5,
+      subtotal: 50,
+      vat_amount: 2.5,
+      total: 52.5,
+    },
+    {
+      name: "Oslobodené",
+      quantity: 1,
+      unit: "ks",
+      unit_price: 20,
+      vat_rate: 0,
+      subtotal: 20,
+      vat_amount: 0,
+      total: 20,
+    },
   ],
 };
 
@@ -69,8 +96,58 @@ describe("univerzálna súpiska v CSV", () => {
   });
 });
 
+const dobropis = {
+  invoice: {
+    ...faktura.invoice,
+    invoice_number: "20260009",
+    type: "credit_note",
+    subtotal: 100,
+    vat_total: 23,
+    total: 123,
+    discount_total: 0,
+  },
+  items: [
+    {
+      name: "Vrátené práce",
+      quantity: 1,
+      unit: "hod",
+      unit_price: 100,
+      vat_rate: 23,
+      subtotal: 100,
+      vat_amount: 23,
+      total: 123,
+    },
+  ],
+};
+
+const vCudzejMene = {
+  invoice: {
+    ...faktura.invoice,
+    invoice_number: "20260010",
+    currency: "CZK",
+    exchange_rate: 25.3,
+    subtotal: 10000,
+    vat_total: 0,
+    total: 10000,
+    total_eur: 395.26,
+    discount_total: 0,
+  },
+  items: [
+    {
+      name: "Vývoj",
+      quantity: 100,
+      unit: "hod",
+      unit_price: 100,
+      vat_rate: 0,
+      subtotal: 10000,
+      vat_amount: 0,
+      total: 10000,
+    },
+  ],
+};
+
 describe("ABRA Flexi XML", () => {
-  const xml = buildFlexiXml({ invoices: [faktura] });
+  const xml = buildFlexiXml({ invoices: [faktura] }).xml;
 
   it("je obalené vo winstrome a nesie doklad s položkami", () => {
     expect(xml).toContain('<winstrom version="1.0">');
@@ -92,9 +169,54 @@ describe("ABRA Flexi XML", () => {
 
   it("uteká znaky, ktoré by rozbili XML", () => {
     const s = buildFlexiXml({
-      invoices: [{ ...faktura, invoice: { ...faktura.invoice, customer_name: 'A & B <s.r.o.>' } }],
-    });
+      invoices: [{ ...faktura, invoice: { ...faktura.invoice, customer_name: "A & B <s.r.o.>" } }],
+    }).xml;
     expect(s).toContain("A &amp; B &lt;s.r.o.&gt;");
     expect(s).not.toContain("<s.r.o.>");
+  });
+});
+
+describe("dobropis a cudzia mena", () => {
+  it("súpiska dá dobropisu záporné sumy, hoci sú v databáze kladné", () => {
+    const r = buildUniverzalCsv({ invoices: [dobropis] })
+      .trim()
+      .split("\r\n")[1]
+      .split(";");
+    expect(r).toContain("Dobropis");
+    expect(r).toContain("-100,00");
+    expect(r).toContain("-23,00");
+    expect(r).toContain("-123,00");
+  });
+
+  it("súpiska pridá kurz a sumu v eurách, len keď je v dávke cudzia mena", () => {
+    const sCudzou = buildUniverzalCsv({ invoices: [faktura, vCudzejMene] })
+      .trim()
+      .split("\r\n");
+    expect(sCudzou[0]).toContain("Kurz");
+    expect(sCudzou[0]).toContain("Celkom v EUR");
+    expect(sCudzou[2]).toContain("25,30");
+    expect(sCudzou[2]).toContain("395,26");
+    /* Pri eurovej dávke by stĺpce navyše len zavadzali. */
+    expect(buildUniverzalCsv({ invoices: [faktura] }).split("\r\n")[0]).not.toContain("Kurz");
+  });
+
+  it("Flexi pošle dobropis ako DOBROPIS a so zápornými sumami", () => {
+    const { xml, preskocene } = buildFlexiXml({ invoices: [dobropis] });
+    expect(xml).toContain("<typDokl>code:DOBROPIS</typDokl>");
+    expect(xml).toContain("<sumCelkem>-123.00</sumCelkem>");
+    expect(xml).toContain("<mnozMj>-1.00</mnozMj>");
+    expect(preskocene).toEqual([]);
+  });
+
+  it("Flexi vynechá zálohovú faktúru aj doklad v cudzej mene a povie to", () => {
+    const zaloha = {
+      ...faktura,
+      invoice: { ...faktura.invoice, invoice_number: "ZF1", type: "proforma" },
+    };
+    const { xml, preskocene } = buildFlexiXml({ invoices: [faktura, zaloha, vCudzejMene] });
+    expect(xml.match(/<faktura-vydana>/g)).toHaveLength(1);
+    expect(preskocene).toHaveLength(2);
+    expect(preskocene[0]).toContain("ZF1");
+    expect(preskocene[1]).toContain("CZK");
   });
 });

@@ -1519,9 +1519,17 @@ export const FLEXI_XML: ExportStrategy = {
   encoding: "utf-8",
   mime: "application/xml",
   build({ invoices }) {
-    const content = buildFlexiXml({ invoices: invoices as never });
+    const { xml, preskocene } = buildFlexiXml({ invoices: invoices as never });
+    if (preskocene.length === invoices.length) {
+      throw new Error(`Do ABRA Flexi sa nedá vyviezť nič z vybraného: ${preskocene.join(", ")}`);
+    }
     const stamp = new Date().toISOString().slice(0, 10);
-    return { content, fileName: `flexi-faktury-${stamp}.xml`, mime: "application/xml" };
+    return {
+      content: xml,
+      fileName: `flexi-faktury-${stamp}.xml`,
+      mime: "application/xml",
+      preskocene,
+    };
   },
 };
 
@@ -1694,7 +1702,9 @@ export function buildOmegaTxt(opts: {
     set(27, pole(invoice.customer_city, 40));
     set(28, pole(invoice.customer_dic, 12));
     set(40, pole(invoice.currency ?? "EUR", 5));
-    set(41, "1");
+    // Kurz: pri eurovom doklade 1, pri cudzej mene ten, ktorým sa prepočítala
+    // daň. Natvrdo zapísaná jednotka by z 10 000 Kč spravila 10 000 €.
+    set(41, cudzia && invoice.exchange_rate ? cislaSk(Number(invoice.exchange_rate)) : "1");
     set(43, cudzia ? "" : cislaSk(celkomDokladu(invoice, items)));
     set(45, pole(invoice.notes));
     set(47, pole(invoice.customer_country ?? "SK", 30));

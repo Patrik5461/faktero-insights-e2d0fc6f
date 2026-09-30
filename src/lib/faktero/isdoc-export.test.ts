@@ -190,4 +190,31 @@ describe("ISDOC vývoz", () => {
     expect(() => validator.validate(doc)).not.toThrow();
     doc.dispose();
   });
+
+  it("doklad v cudzej mene hlási menu dokladu, nie domácu", () => {
+    /* Slovenská firma fakturuje v korunách: keby sa ako LocalCurrencyCode
+       zapísalo EUR, príjemca prečíta 10 000 Kč ako 10 000 €. */
+    const x = buildIsdoc({
+      invoice: { ...faktura, currency: "CZK", exchange_rate: 25.3 },
+      items: polozky,
+      company: { ...firma, country: "SK", default_currency: "EUR" },
+    });
+    expect(x).toContain("<LocalCurrencyCode>CZK</LocalCurrencyCode>");
+    expect(x).not.toContain("ForeignCurrencyCode");
+    const doc = XmlDocument.fromString(x);
+    expect(() => validator.validate(doc)).not.toThrow();
+    doc.dispose();
+  });
+
+  it("faktúru bez položiek odmietne, lebo schéma žiada aspoň jeden riadok", () => {
+    /* Doklad, ktorý celý popisuje text nad položkami, ISDOC neunesie.
+       Z dávky sa vynechá s hláškou — neplatný súbor by účtovníčke spadol pri importe. */
+    expect(() =>
+      buildIsdoc({
+        invoice: { ...faktura, intro_note: "Paušál za september podľa zmluvy" },
+        items: [],
+        company: firma,
+      }),
+    ).toThrow(/nemá položky/);
+  });
 });
