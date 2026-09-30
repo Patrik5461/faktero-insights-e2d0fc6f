@@ -33,6 +33,8 @@ import {
   Send,
 } from "lucide-react";
 import {
+  MANUALY,
+  manualPre,
   NAV,
   QUICK_CREATE,
   ACCOUNT_API_LINKS,
@@ -44,6 +46,7 @@ import {
   type ProductMode,
 } from "@/components/faktero/nav";
 export type { ProductMode };
+export { manualPre };
 import { HLADANIE_OD, filtrujFirmy } from "@/lib/faktero/hladanie-firiem";
 import { setActiveProduct, landingPathFor, type ActiveProduct } from "@/lib/faktero/active-product";
 import { supabase } from "@/integrations/supabase/client";
@@ -752,62 +755,6 @@ function MobileNav({
  * Poradie nerozhoduje, hľadá sa **najdlhšia zhoda** predpony, takže
  * `/sklad/objednavky` nájde svoj vlastný manuál a nie ten skladový.
  */
-const MANUALY: { prefix: string; to: string }[] = [
-  { prefix: "/nastavenia", to: "/pomoc/nastavenia" },
-  { prefix: "/firma", to: "/pomoc/nastavenia" },
-  // Párovanie platieb je bližšie k banke než k vystavovaniu faktúr.
-  { prefix: "/faktury/parovanie", to: "/pomoc/banka" },
-  { prefix: "/faktury", to: "/pomoc/faktury" },
-  { prefix: "/zalohove", to: "/pomoc/faktury" },
-  { prefix: "/ponuky", to: "/pomoc/ponuky" },
-  { prefix: "/objednavky", to: "/pomoc/objednavky" },
-  { prefix: "/opakovane", to: "/pomoc/opakovane" },
-  { prefix: "/prijate-faktury", to: "/pomoc/prijate-faktury" },
-  { prefix: "/doklady", to: "/pomoc/doklady" },
-  { prefix: "/ostatne-doklady", to: "/pomoc/doklady" },
-  { prefix: "/pokladna", to: "/pomoc/pokladna" },
-  { prefix: "/efaktura", to: "/pomoc/efaktura" },
-  { prefix: "/odberatelia", to: "/pomoc/odberatelia" },
-  { prefix: "/zakazky", to: "/pomoc/zakazky" },
-  { prefix: "/sklad", to: "/pomoc/sklad" },
-  { prefix: "/sklad/objednavky", to: "/pomoc/objednavky-dodavatel" },
-  { prefix: "/produkty", to: "/pomoc/sklad" },
-  { prefix: "/ceny", to: "/pomoc/ceny" },
-  { prefix: "/uctovnictvo/vykazy", to: "/pomoc/vykazy-dph" },
-  { prefix: "/uctovnictvo/oss", to: "/pomoc/oss" },
-  { prefix: "/nastavenia/zabezpecenie", to: "/pomoc/zabezpecenie" },
-  { prefix: "/zamestnanci", to: "/pomoc/zamestnanci" },
-  { prefix: "/uctovnictvo/dph", to: "/pomoc/dph" },
-  { prefix: "/uctovnictvo/uzavierka", to: "/pomoc/uzavierka" },
-  { prefix: "/uctovnictvo/pohoda", to: "/pomoc/pohoda" },
-  { prefix: "/uctovnictvo/vypis-do-pohody", to: "/pomoc/pohoda" },
-  { prefix: "/exporty", to: "/pomoc/exporty" },
-  { prefix: "/importy", to: "/pomoc/exporty" },
-  { prefix: "/bankove-ucty", to: "/pomoc/banka" },
-  { prefix: "/financovanie", to: "/pomoc/financovanie" },
-  { prefix: "/jazdy", to: "/pomoc/jazdy" },
-  { prefix: "/firmy", to: "/pomoc/role" },
-  { prefix: "/api-kluce", to: "/pomoc/api" },
-  { prefix: "/api-dokumentacia", to: "/pomoc/api" },
-  { prefix: "/api-playground", to: "/pomoc/api" },
-  { prefix: "/webhooky", to: "/pomoc/api" },
-  // Zhoda je na presnú cestu alebo `predpona/`; `/webhooky-logy` preto pod
-  // `/webhooky` nespadá a bez vlastného riadku by ostalo bez manuálu.
-  { prefix: "/webhooky-logy", to: "/pomoc/api" },
-  { prefix: "/predplatne", to: "/pomoc/predplatne" },
-  { prefix: "/ai-asistent", to: "/pomoc/ai-asistent" },
-];
-
-export function manualPre(pathname: string): string | null {
-  let najdlhsi: { prefix: string; to: string } | null = null;
-  for (const m of MANUALY) {
-    if (pathname === m.prefix || pathname.startsWith(m.prefix + "/")) {
-      if (!najdlhsi || m.prefix.length > najdlhsi.prefix.length) najdlhsi = m;
-    }
-  }
-  return najdlhsi?.to ?? null;
-}
-
 export function PageHeader({
   title,
   description,

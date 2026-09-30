@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import {
   buildPohodaInvoiceXml,
@@ -904,5 +905,53 @@ describe("rozdelUcet", () => {
     expect(rozdelUcet("DE89370400440532013000")).toBeNull();
     expect(rozdelUcet("bez čísla")).toBeNull();
     expect(rozdelUcet("")).toBeNull();
+  });
+});
+
+/*
+ * Rozbaľovačka na stránke exportov je vlastný zoznam — stratégie sa do
+ * prehliadača dovážať nedajú, sú v `*.server.ts` spolu s prístupom do
+ * databázy. Dva zoznamy vedľa seba sa vedia rozísť: formát v ponuke, ktorý
+ * neexistuje, skončí chybou až po kliknutí, a nový formát bez riadku v ponuke
+ * si nikto nevšimne.
+ */
+describe("ponuka formátov na stránke a stratégie", () => {
+  const stranka = readFileSync("src/routes/_authenticated/exporty.tsx", "utf-8");
+  const vPonuke = [...stranka.matchAll(/format: "(\w+)"/g)].map((m) => m[1]);
+
+  it("zoznam v stránke sa dá prečítať", () => {
+    expect(vPonuke.length).toBeGreaterThan(3);
+  });
+
+  it("ponúkajú sa presne tie formáty, ktoré existujú", () => {
+    expect([...vPonuke].sort()).toEqual(Object.keys(EXPORT_STRATEGIES).sort());
+  });
+
+  it("popis formátu v ponuke sedí s popisom stratégie", () => {
+    for (const [kluc, s] of Object.entries(EXPORT_STRATEGIES)) {
+      expect(stranka, kluc).toContain(`label: "${s.label}"`);
+    }
+  });
+});
+
+describe("stratégie majú, čo prehliadač potrebuje", () => {
+  it("kódovanie je jedno z tých, ktoré sťahovanie vie spracovať", () => {
+    for (const [kluc, s] of Object.entries(EXPORT_STRATEGIES)) {
+      expect(["utf-8", "windows-1250", "base64"], kluc).toContain(s.encoding);
+      expect(s.mime, kluc).toMatch(/^[a-z]+\/[\w.+-]+$/);
+      expect(s.label.length, kluc).toBeGreaterThan(3);
+    }
+  });
+
+  it("názvy formátov sa neopakujú", () => {
+    const popisy = Object.values(EXPORT_STRATEGIES).map((s) => s.label);
+    expect(new Set(popisy).size).toBe(popisy.length);
+  });
+
+  /* Binárka sa do textového stĺpca histórie inak nezmestí. */
+  it("čo ide ako ZIP, musí ísť v base64", () => {
+    for (const [kluc, s] of Object.entries(EXPORT_STRATEGIES)) {
+      if (s.mime.includes("zip")) expect(s.encoding, kluc).toBe("base64");
+    }
   });
 });
