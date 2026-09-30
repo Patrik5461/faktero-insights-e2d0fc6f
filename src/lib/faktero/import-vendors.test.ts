@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { parseVendorFile, summarize } from "./import-vendors.server";
-import { buildMoneyS3Xml } from "./export.server";
+import { buildMoneyS3Xml, buildPohodaInvoiceXml } from "./export.server";
 
 /** Oficiálne vzorové súbory Money S3 (money.cz → XML prenosy → vzorové XML). */
 function fixture(meno: string) {
@@ -230,5 +230,90 @@ describe("Money S3 — export a import naspäť", () => {
     expect(r.currency).toBe("CZK");
     expect(Number(r.total)).toBe(10000);
     expect(r.customer_name).toBe("Česká firma a.s.");
+  });
+});
+
+/*
+ * KROS aj Omega vydávajú CSV v kódovaní Windows-1250. Keby sa čítalo ako
+ * UTF-8, mená odberateľov by prišli s otáznikmi namiesto diakritiky — a to
+ * je práve to, čo sa pri prechode z iného programu nesmie stratiť.
+ */
+describe("CSV vo Windows-1250", () => {
+  const RIADKY = [
+    "Číslo faktúry;Odberateľ;IČO;Dátum vystavenia;Celkom s DPH",
+    "FA1;Ľuboš Žiak — Košický dvor;00151653;07.03.2026;369,00",
+  ].join("\n");
+
+  /*
+   * Zapisovač Windows-1250 sa vyrobí obrátením dekodéra: každý bajt sa raz
+   * prečíta a tým vznikne tabuľka znak → bajt. Ručne písaná tabuľka by bola
+   * len ďalšie miesto, kde sa dá pomýliť.
+   */
+  const NA_BAJT = new Map<string, number>();
+  for (let b = 0; b < 256; b++) {
+    const znak = new TextDecoder("windows-1250").decode(new Uint8Array([b]));
+    if (!NA_BAJT.has(znak)) NA_BAJT.set(znak, b);
+  }
+  const do1250 = (text: string) => new Uint8Array([...text].map((z) => NA_BAJT.get(z) ?? 0x3f));
+
+  it("diakritika prežije v mene odberateľa", () => {
+    for (const zdroj of ["kros", "omega"] as const) {
+      const [r] = parseVendorFile(zdroj, "export.csv", do1250(RIADKY));
+      expect(r.invoice_number, zdroj).toBe("FA1");
+      expect(r.customer_name, zdroj).toBe("Ľuboš Žiak — Košický dvor");
+      expect(r.total, zdroj).toBe("369.00");
+    }
+  });
+
+  it("to isté CSV v UTF-8 dá rovnaký výsledok", () => {
+    const [r] = parseVendorFile("kros", "export.csv", new TextEncoder().encode(RIADKY));
+    expect(r.customer_name).toBe("Ľuboš Žiak — Košický dvor");
+  });
+});
+
+/*
+ * Pohoda XML, ktoré Faktero samo vyrobí, musí vedieť prečítať aj naspäť.
+ * Je to jediná kontrola tvaru, ktorú máme bez programu Pohoda po ruke.
+ */
+describe("Pohoda — export a import naspäť", () => {
+  const xml = buildPohodaInvoiceXml({
+    company: { name: "Faktero", ico: "56607016", default_currency: "EUR", country: "SK" },
+    invoices: [
+      {
+        invoice: {
+          invoice_number: "20260101",
+          type: "regular",
+          issue_date: "2026-09-14",
+          due_date: "2026-09-28",
+          currency: "EUR",
+          variable_symbol: "20260101",
+          customer_name: "Ľuboš Žiak",
+          customer_ico: "00151653",
+          customer_country: "SK",
+          subtotal: 100,
+          vat_total: 23,
+          total: 123,
+        },
+        items: [
+          {
+            name: "Konzultácia",
+            quantity: 1,
+            unit: "hod",
+            unit_price: 100,
+            vat_rate: 23,
+            subtotal: 100,
+            vat_amount: 23,
+            total: 123,
+          },
+        ],
+      },
+    ],
+  });
+
+  it("číslo, odberateľ aj suma sa vrátia nezmenené", () => {
+    const [r] = parseVendorFile("pohoda", "VF.xml", new TextEncoder().encode(xml));
+    expect(r.invoice_number).toBe("20260101");
+    expect(r.customer_name).toBe("Ľuboš Žiak");
+    expect(Number(r.total)).toBe(123);
   });
 });
