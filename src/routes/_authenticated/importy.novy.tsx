@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { History, ArrowRight } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { VendorImportPage, type VendorId } from "@/components/faktero/VendorImportPage";
-import { IMPORT_ZDROJE, zdrojPodlaId } from "@/components/faktero/import-zdroje";
+import { IMPORT_ZDROJE, PREDVOLENY_ZDROJ, zdrojPodlaId } from "@/components/faktero/import-zdroje";
 
 export const Route = createFileRoute("/_authenticated/importy/novy")({
   head: () => ({ meta: [{ title: "Účtovné importy — Faktero" }] }),
@@ -41,7 +41,7 @@ function VyberZdroja({ id, onZmena }: { id: string; onZmena: (v: string) => void
 function Page() {
   const { zdroj } = Route.useSearch();
   const navigate = useNavigate();
-  const z = zdrojPodlaId(zdroj ?? "superfaktura");
+  const z = zdrojPodlaId(zdroj ?? PREDVOLENY_ZDROJ);
   const zmen = (v: string) => navigate({ to: "/importy/novy", search: { zdroj: v } });
 
   /* Zdroje s vlastnou stránkou sem formulár nedostanú — SuperFaktúra si pýta

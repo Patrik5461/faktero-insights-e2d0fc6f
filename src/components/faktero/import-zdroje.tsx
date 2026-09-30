@@ -27,25 +27,6 @@ export type ImportZdroj = {
 
 export const IMPORT_ZDROJE: ImportZdroj[] = [
   {
-    id: "superfaktura",
-    label: "SuperFaktúra",
-    title: "Import zo SuperFaktúry",
-    description: "Naimportujte faktúry a odberateľov z exportu agendy zo SuperFaktúry.",
-    cesta: "/importy/superfaktura",
-    guide: (
-      <ol className="ml-4 list-decimal space-y-1">
-        <li>
-          Vo SuperFaktúre otvorte <strong>Nástroje → Export agendy</strong>.
-        </li>
-        <li>Vyberte obdobie a stiahnite export.</li>
-        <li>
-          Dostanete <strong>ZIP</strong>, v ktorom je každá faktúra ako <code>.isdoc</code>.
-          Nahrajte ho celý — rozbaľovať ho netreba.
-        </li>
-      </ol>
-    ),
-  },
-  {
     id: "pohoda",
     label: "Pohoda a mPohoda",
     title: "Import z Pohody a mPohody",
@@ -75,6 +56,48 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
           sami.
         </p>
       </>
+    ),
+  },
+  {
+    id: "superfaktura",
+    label: "SuperFaktúra",
+    title: "Import zo SuperFaktúry",
+    description: "Naimportujte faktúry a odberateľov z exportu agendy zo SuperFaktúry.",
+    cesta: "/importy/superfaktura",
+    guide: (
+      <ol className="ml-4 list-decimal space-y-1">
+        <li>
+          Vo SuperFaktúre otvorte <strong>Nástroje → Export agendy</strong>.
+        </li>
+        <li>Vyberte obdobie a stiahnite export.</li>
+        <li>
+          Dostanete <strong>ZIP</strong>, v ktorom je každá faktúra ako <code>.isdoc</code>.
+          Nahrajte ho celý — rozbaľovať ho netreba.
+        </li>
+      </ol>
+    ),
+  },
+  {
+    id: "idoklad",
+    label: "iDoklad",
+    title: "Import z iDoklad",
+    description: "Naimportujte faktúry a odberateľov z CSV exportu z iDoklad.",
+    accept: ".csv",
+    guide: (
+      <ol className="ml-4 list-decimal space-y-1">
+        <li>
+          Prihláste sa do iDoklad a otvorte <strong>Faktúry → Vydané faktúry</strong>.
+        </li>
+        <li>
+          Kliknite na <strong>Export → CSV</strong> a zvoľte obdobie.
+        </li>
+        <li>
+          Stiahnutý súbor <code>.csv</code> nahrajte nižšie.
+        </li>
+        <li>
+          Alternatívne môžete exportovať aj odberateľov cez <strong>Kontakty → Export</strong>.
+        </li>
+      </ol>
     ),
   },
   {
@@ -145,29 +168,6 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
     ),
   },
   {
-    id: "idoklad",
-    label: "iDoklad",
-    title: "Import z iDoklad",
-    description: "Naimportujte faktúry a odberateľov z CSV exportu z iDoklad.",
-    accept: ".csv",
-    guide: (
-      <ol className="ml-4 list-decimal space-y-1">
-        <li>
-          Prihláste sa do iDoklad a otvorte <strong>Faktúry → Vydané faktúry</strong>.
-        </li>
-        <li>
-          Kliknite na <strong>Export → CSV</strong> a zvoľte obdobie.
-        </li>
-        <li>
-          Stiahnutý súbor <code>.csv</code> nahrajte nižšie.
-        </li>
-        <li>
-          Alternatívne môžete exportovať aj odberateľov cez <strong>Kontakty → Export</strong>.
-        </li>
-      </ol>
-    ),
-  },
-  {
     id: "doklady",
     label: "Prijaté doklady (Doklado, skeny)",
     title: "Import prijatých dokladov",
@@ -183,6 +183,12 @@ export const IMPORT_ZDROJE: ImportZdroj[] = [
   },
 ];
 
+/**
+ * Predvolený zdroj je prvý, ktorý sa vybavuje priamo na stránke. Keby ním bola
+ * SuperFaktúra, po otvorení by človek nevidel nahrávanie, ale ďalšie tlačidlo.
+ */
+export const PREDVOLENY_ZDROJ = IMPORT_ZDROJE.find((z) => !z.cesta)!.id;
+
 export function zdrojPodlaId(id: string): ImportZdroj {
-  return IMPORT_ZDROJE.find((z) => z.id === id) ?? IMPORT_ZDROJE[0];
+  return IMPORT_ZDROJE.find((z) => z.id === id) ?? zdrojPodlaId(PREDVOLENY_ZDROJ);
 }
