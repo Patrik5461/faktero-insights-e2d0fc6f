@@ -2,6 +2,7 @@ import { unzipSync, strFromU8 } from "fflate";
 import { XMLParser } from "fast-xml-parser";
 import * as XLSX from "xlsx";
 import { isdocNaRiadky, jeIsdoc } from "./isdoc";
+import { krajinaDane, zakladnaSadzba } from "./vat-rates";
 
 // =========================================================
 // Lightweight CSV parser (semicolon / comma autodetect, RFC4180-ish)
@@ -931,6 +932,15 @@ export async function runImport(args: {
   const lenOdberatelia = rozsah === "odberatelia";
   const lenFaktury = rozsah === "faktury";
 
+  /* Sadzba pre položky, pri ktorých súbor žiadnu neuvádza — podľa firmy. */
+  const { data: firma } = await supabaseAdmin
+    .from("companies")
+    .select("vat_payer, country")
+    .eq("id", companyId)
+    .maybeSingle();
+  const predvolenaSadzba: PredvolenaSadzba = (den) =>
+    firma?.vat_payer === false ? 0 : zakladnaSadzba(krajinaDane(firma?.country), den);
+
   // Pre-fetch existing customers + invoices for dup detection
   const { data: existingCustomers } = await supabaseAdmin
     .from("customers")
@@ -1045,7 +1055,7 @@ export async function runImport(args: {
 
       // Build items: prefer per-row item mapping; else synthesize a single line from totals
       const items = group
-        .map((r) => buildItem(r, mapping))
+        .map((r) => buildItem(r, mapping, predvolenaSadzba))
         .filter((it) => it.quantity > 0 || it.unit_price > 0 || it.total > 0);
       let subtotal = num(pick(head, mapping, "subtotal"));
       let vatTotal = num(pick(head, mapping, "vat_total"));
@@ -1168,10 +1178,31 @@ export async function runImport(args: {
   return result;
 }
 
-function buildItem(row: Record<string, string>, mapping: Partial<Record<FieldKey, string>>) {
+/**
+ * Sadzba, keď ju súbor vôbec neuvádza. Platiteľ dostane základnú sadzbu svojej
+ * krajiny ku dňu vystavenia, neplatiteľ nulu — fakturovať DPH nesmie.
+ */
+export type PredvolenaSadzba = (den: string | null) => number;
+
+export function buildItem(
+  row: Record<string, string>,
+  mapping: Partial<Record<FieldKey, string>>,
+  predvolena: PredvolenaSadzba = (den) => zakladnaSadzba("SK", den),
+) {
   const quantity = num(pick(row, mapping, "item_quantity"));
   const unit_price = num(pick(row, mapping, "item_unit_price"));
-  const vat_rate = num(pick(row, mapping, "item_vat_rate")) || 23;
+  /*
+   * Nula je platná sadzba — oslobodené plnenie, prenos daňovej povinnosti,
+   * ojazdené auto v osobitnej úprave, neplatiteľ. Predtým tu bolo `|| 23`
+   * a nula sa tak potichu zmenila na 23 %: neplatiteľovi pribudla DPH, ktorú
+   * nikdy nefakturoval, a výkaz k DPH by ju priznal. Predvolená sadzba patrí
+   * len prázdnej bunke.
+   */
+  const surova = pick(row, mapping, "item_vat_rate");
+  const vat_rate =
+    surova != null && String(surova).trim() !== ""
+      ? num(surova)
+      : predvolena(normDate(pick(row, mapping, "issue_date") ?? ""));
   const total = num(pick(row, mapping, "item_total"));
   const subtotal = quantity * unit_price || (total ? total / (1 + vat_rate / 100) : 0);
   const vat_amount = subtotal * (vat_rate / 100);

@@ -6,6 +6,7 @@ import {
   detectMapping,
   buildPreview,
   stavDokladu,
+  buildItem,
 } from "./import-superfaktura.server";
 
 /**
@@ -422,5 +423,51 @@ describe("prehľad faktúr zo SuperFaktúry", () => {
     expect(p.totalValue).toBeCloseTo(70, 2);
     expect(p.sampleInvoices[0].customer_name).toBe("Ana Bobáňová");
     expect(p.sampleInvoices[0].issue_date).toBe("2026-08-10");
+  });
+});
+
+/*
+ * Nula je platná sadzba. Kým tu bolo `|| 23`, z nuly sa potichu stalo 23 %:
+ * neplatiteľ Tobify dostal pri importe z Pohody do 44 faktúr 4 520,94 € DPH,
+ * ktorú nikdy nefakturoval, a výkaz k DPH by ju priznal.
+ */
+describe("sadzba DPH na importovanej položke", () => {
+  const mapa = {
+    item_name: "nazov",
+    item_quantity: "mnozstvo",
+    item_unit_price: "cena",
+    item_vat_rate: "sadzba",
+    issue_date: "datum",
+  } as const;
+  const riadok = (sadzba: string, datum = "2025-05-20") => ({
+    nazov: "Ojazdené auto",
+    mnozstvo: "1",
+    cena: "21900",
+    sadzba,
+    datum,
+  });
+
+  it("nulová sadzba ostane nulová a DPH sa nevymyslí", () => {
+    const p = buildItem(riadok("0"), mapa);
+    expect(p.vat_rate).toBe(0);
+    expect(p.vat_amount).toBe(0);
+    expect(p.total).toBe(21900);
+  });
+
+  it("uvedená sadzba sa prevezme tak, ako je", () => {
+    expect(buildItem(riadok("23"), mapa).vat_rate).toBe(23);
+    expect(buildItem(riadok("5"), mapa).vat_rate).toBe(5);
+  });
+
+  it("prázdna bunka dostane sadzbu podľa firmy", () => {
+    expect(buildItem(riadok(""), mapa, () => 0).vat_rate).toBe(0);
+    expect(buildItem(riadok(""), mapa, () => 21).vat_rate).toBe(21);
+  });
+
+  /* Platiteľ bez uvedenej sadzby dostane základnú sadzbu ku dňu vystavenia —
+     faktúra z roku 2024 ešte 20 %, nie dnešných 23 %. */
+  it("predvolená sadzba sa riadi dátumom vystavenia", () => {
+    expect(buildItem(riadok("", "2024-06-01"), mapa).vat_rate).toBe(20);
+    expect(buildItem(riadok("", "2025-06-01"), mapa).vat_rate).toBe(23);
   });
 });
