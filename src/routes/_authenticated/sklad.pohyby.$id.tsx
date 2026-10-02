@@ -39,20 +39,22 @@ function MovementDetail() {
     }
     fetchDetail({ data: { company_id: cid, movement_id: id } })
       .then((d) => {
-        console.info("[sklad-debug:movement-detail:success]", {
-          company_id: cid,
-          movement_id: id,
-          result: d,
-        });
+        if (SHOW_STOCK_DEBUG)
+          console.info("[sklad-debug:movement-detail:success]", {
+            company_id: cid,
+            movement_id: id,
+            result: d,
+          });
         setData(d);
         setError(null);
       })
       .catch((e) => {
-        console.error("[sklad-debug:movement-detail:error]", {
-          company_id: cid,
-          movement_id: id,
-          error: e,
-        });
+        if (SHOW_STOCK_DEBUG)
+          console.error("[sklad-debug:movement-detail:error]", {
+            company_id: cid,
+            movement_id: id,
+            error: e,
+          });
         setError(e?.message ?? String(e));
         setData(null);
       })

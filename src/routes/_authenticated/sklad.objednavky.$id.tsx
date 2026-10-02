@@ -50,19 +50,25 @@ function PurchaseOrderDetail() {
       setLoading(false);
       return;
     }
-    return fetchOrder({ data: { company_id: cid, id } })
-      .then((d: any) => {
-        setData(d);
-        setPrijemSklad((s) => s || d?.order?.warehouse_id || "");
-        // Predvyplní sa to, čo ešte neprišlo — najčastejší prípad je, že dorazí
-        // celý zvyšok objednávky.
-        const predvolba: Record<string, number> = {};
-        (d?.items ?? []).forEach((it: any) => {
-          if (it.zostava > 0) predvolba[it.id] = it.zostava;
-        });
-        setPrijem(predvolba);
-      })
-      .finally(() => setLoading(false));
+    return (
+      fetchOrder({ data: { company_id: cid, id } })
+        .then((d: any) => {
+          setData(d);
+          setPrijemSklad((s) => s || d?.order?.warehouse_id || "");
+          // Predvyplní sa to, čo ešte neprišlo — najčastejší prípad je, že dorazí
+          // celý zvyšok objednávky.
+          const predvolba: Record<string, number> = {};
+          (d?.items ?? []).forEach((it: any) => {
+            if (it.zostava > 0) predvolba[it.id] = it.zostava;
+          });
+          setPrijem(predvolba);
+        })
+        /* Neexistujúca alebo cudzia objednávka: server ju odmietne a stránka
+         ukáže „Objednávka sa nenašla". Bez zachytenia odišla chyba ako
+         neošetrená výnimka do konzoly. */
+        .catch(() => setData(null))
+        .finally(() => setLoading(false))
+    );
   }, [cid, id, fetchOrder]);
 
   useEffect(() => {
