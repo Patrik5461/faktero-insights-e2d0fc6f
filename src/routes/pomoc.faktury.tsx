@@ -97,10 +97,42 @@ const sections: HelpSection[] = [
           </li>
           <li>Upravte predmet a sprievodnú správu (môžete použiť šablónu z nastavení firmy).</li>
           <li>Faktero priloží PDF a odošle správu cez Resend.</li>
+          <li>
+            Keď má doklad <strong>prílohy</strong>, pribudne voľba{" "}
+            <em>Odoslať aj prílohy dokladu</em> — pôjdu v tom istom maile ako faktúra.
+          </li>
         </ol>
         <p>
           V PDF je aj <strong>QR kód na platbu</strong>, takže zákazník nemusí prepisovať IBAN ani
           variabilný symbol — naskenuje ho v mobilnom bankovníctve.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "prilohy",
+    title: "Prílohy k faktúre",
+    body: (
+      <>
+        <p>
+          K faktúre sa dá priložiť, čo k nej patrí — <strong>podpísaný dodací list</strong>, zmluva,
+          výkaz prác, fotka z montáže. Na detaile dokladu je karta <strong>Prílohy</strong>: súbory
+          sa pridajú tlačidlom alebo ich stačí pretiahnuť myšou.
+        </p>
+        <p>
+          Berieme PDF, fotky (JPG, PNG, HEIC, WEBP), tabuľky a dokumenty (XLSX, XLS, DOCX, DOC, ODS,
+          ODT), ďalej TXT, CSV, XML a ZIP. Jeden súbor môže mať <strong>najviac 15 MB</strong> a na
+          doklad sa zmestí <strong>10 príloh</strong>.
+        </p>
+        <p>
+          Pri odosielaní faktúry mailom sa zobrazí voľba <em>Odoslať aj prílohy dokladu</em>. Keby
+          sa všetko do jedného mailu nezmestilo, Faktero povie, ktoré súbory vynechalo — tie sa dajú
+          poslať zvlášť.
+        </p>
+        <p>
+          Prílohy vidí každý, kto má prístup k faktúram; pri{" "}
+          <Link to="/pomoc/role">vlastnom prístupe</Link> platí právo na oblasť Faktúry. Zo
+          stornovaného dokladu sa už pridávať ani mazať nedajú.
         </p>
       </>
     ),
@@ -225,8 +257,8 @@ const sections: HelpSection[] = [
       <>
         <p>
           Vo výbere sadzby je pod platnými sadzbami skupina <strong>Historické sadzby</strong> —
-          posledné tri, ktoré už neplatia, aj s rokom, do ktorého platili (na Slovensku 20 % a
-          10 % do roku 2024).
+          posledné tri, ktoré už neplatia, aj s rokom, do ktorého platili (na Slovensku 20 % a 10 %
+          do roku 2024).
         </p>
         <p>
           Hodí sa, keď vystavujete faktúru k <strong>zálohovej faktúre z minulého roka</strong>,
@@ -350,14 +382,13 @@ const sections: HelpSection[] = [
           V sekcii <strong>Fakturácia → Opakované faktúry</strong> nastavíte šablónu, frekvenciu
           (týždenne/mesačne/štvrťročne/ročne) a dátum prvého vystavenia. Zakladá sa rovnako ako
           bežná faktúra — ten istý výber odberateľa, tá istá tabuľka položiek aj stĺpec{" "}
-          <em>Spolu s DPH</em>, do ktorého sa dá napísať dohodnutá suma a cena bez dane sa
-          dopočíta.
+          <em>Spolu s DPH</em>, do ktorého sa dá napísať dohodnutá suma a cena bez dane sa dopočíta.
         </p>
         <p>
           <strong>Názov šablóny</strong> vidíte len vy v zozname — na faktúre nie je. Čo sa
           fakturuje, povie <strong>text nad položkami</strong>: je povinný a dostane ho každá
-          faktúra z tejto šablóny, takže paušál povie, za čo je. Dá sa zmeniť aj neskôr na
-          otvorenej šablóne.
+          faktúra z tejto šablóny, takže paušál povie, za čo je. Dá sa zmeniť aj neskôr na otvorenej
+          šablóne.
         </p>
         <ul>
           <li>Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.</li>

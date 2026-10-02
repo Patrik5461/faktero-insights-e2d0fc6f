@@ -7,7 +7,46 @@ export type SendInvoiceEmailInput = {
   recipient_email: string;
   subject?: string;
   message?: string;
+  /** Priložiť k mailu aj súbory, ktoré visia na doklade. */
+  s_prilohami?: boolean;
 };
+
+/**
+ * Prílohy dokladu pre Resend. Resend berie celú správu do 40 MB, a to je
+ * spolu s PDF faktúry aj s nárastom pri base64 — preto strop na súčet.
+ * Čo sa nezmestí, radšej vynecháme a povieme to, než by mail neodišiel.
+ */
+const STROP_PRILOH = 20 * 1024 * 1024;
+
+async function prilohyDokladu(companyId: string, invoiceId: string) {
+  const { data } = await supabaseAdmin
+    .from("invoice_attachments")
+    .select("path, name, size")
+    .eq("company_id", companyId)
+    .eq("invoice_id", invoiceId)
+    .order("created_at");
+
+  const prilohy: { filename: string; content: string }[] = [];
+  const vynechane: string[] = [];
+  let spolu = 0;
+  for (const p of data ?? []) {
+    if (spolu + Number(p.size ?? 0) > STROP_PRILOH) {
+      vynechane.push(p.name);
+      continue;
+    }
+    const { data: subor } = await supabaseAdmin.storage
+      .from("invoice-attachments")
+      .download(p.path);
+    if (!subor) {
+      vynechane.push(p.name);
+      continue;
+    }
+    const bajty = Buffer.from(await subor.arrayBuffer());
+    spolu += bajty.length;
+    prilohy.push({ filename: p.name, content: bajty.toString("base64") });
+  }
+  return { prilohy, vynechane };
+}
 
 function applyVars(s: string, inv: any, company: any) {
   const total = `${Number(inv.total).toFixed(2)} ${inv.currency}`;
@@ -158,6 +197,10 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       ctaHtml +
       podpisHtml(company ?? {});
 
+    const { prilohy, vynechane } = input.s_prilohami
+      ? await prilohyDokladu(input.company_id, input.invoice_id)
+      : { prilohy: [], vynechane: [] as string[] };
+
     const senderName = company?.email_sender_name || company?.name || "Faktero";
     const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
     const from = `${senderName} <${fromEmail}>`;
@@ -172,7 +215,7 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
         reply_to: company?.email_reply_to || undefined,
         text: finalPlain,
         html: bodyHtml,
-        attachments: [{ filename: `${invoice.invoice_number}.pdf`, content: pdfB64 }],
+        attachments: [{ filename: `${invoice.invoice_number}.pdf`, content: pdfB64 }, ...prilohy],
       }),
     });
     const text = await res.text();
@@ -217,7 +260,7 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       data: invoicePayload(updated ?? invoice),
     });
 
-    return { ok: true, message_id: json?.id ?? null, log_id: log.id };
+    return { ok: true, message_id: json?.id ?? null, log_id: log.id, vynechane };
   } catch (e: any) {
     await supabaseAdmin
       .from("invoice_email_logs")

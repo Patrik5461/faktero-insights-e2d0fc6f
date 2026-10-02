@@ -3664,6 +3664,57 @@ export type Database = {
           },
         ]
       }
+      invoice_attachments: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_id: string
+          mime: string | null
+          name: string
+          path: string
+          size: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id: string
+          mime?: string | null
+          name: string
+          path: string
+          size?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id?: string
+          mime?: string | null
+          name?: string
+          path?: string
+          size?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_attachments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_attachments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_email_logs: {
         Row: {
           company_id: string

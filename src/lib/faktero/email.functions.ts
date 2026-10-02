@@ -7,6 +7,8 @@ const Input = z.object({
   recipient_email: z.string().email().max(255),
   subject: z.string().max(255).optional(),
   message: z.string().max(5000).optional(),
+  /** Priložiť k mailu aj súbory, ktoré visia na doklade. */
+  s_prilohami: z.boolean().optional(),
 });
 
 export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
@@ -28,6 +30,7 @@ export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
       recipient_email: data.recipient_email,
       subject: data.subject,
       message: data.message,
+      s_prilohami: data.s_prilohami,
     });
   });
 

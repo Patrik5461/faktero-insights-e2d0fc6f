@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { StatusBadge } from "./dashboard";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
@@ -90,6 +91,9 @@ function InvoiceDetail() {
   const [zakazka, setZakazka] = useState<any>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
+  /* Koľko príloh doklad má — podľa toho sa v maile ponúkne, či ich priložiť. */
+  const [pocetPriloh, setPocetPriloh] = useState(0);
+  const [posielatPrilohy, setPosielatPrilohy] = useState(true);
   const [reminderOpen, setReminderOpen] = useState(false);
   useZatvorNaEscape(emailOpen ? () => setEmailOpen(false) : null);
   useZatvorNaEscape(reminderOpen ? () => setReminderOpen(false) : null);
@@ -720,15 +724,22 @@ function InvoiceDetail() {
     }
     setEmailBusy(true);
     try {
-      await sendEmail({
+      const odoslane = await sendEmail({
         data: {
           invoiceId: inv.id,
           recipient_email: emailForm.recipient_email,
           subject: emailForm.subject,
           message: emailForm.message,
+          s_prilohami: pocetPriloh > 0 && posielatPrilohy,
         },
       });
       toast.success("E-mail odoslaný");
+      if (odoslane?.vynechane?.length) {
+        /* Mail odišiel, ale nie celý — to sa musí povedať nahlas. */
+        toast.warning(`Do mailu sa nezmestili: ${odoslane.vynechane.join(", ")}`, {
+          duration: 12000,
+        });
+      }
       setEmailOpen(false);
       load();
     } catch (e: any) {
@@ -1075,6 +1086,12 @@ function InvoiceDetail() {
                 {inv.notes}
               </div>
             )}
+
+            <PrilohyFaktury
+              invoiceId={inv.id}
+              mozeMenit={inv.status !== "cancelled"}
+              onZmena={setPocetPriloh}
+            />
           </div>
 
           <aside className="space-y-4">
@@ -1422,6 +1439,25 @@ function InvoiceDetail() {
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </label>
+            {pocetPriloh > 0 && (
+              <label className="flex items-start gap-2 rounded-md border border-border bg-secondary/30 p-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={posielatPrilohy}
+                  onChange={(e) => setPosielatPrilohy(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="font-medium">Odoslať aj prílohy dokladu</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {pocetPriloh === 1
+                      ? "K dokladu visí 1 príloha"
+                      : `K dokladu visia prílohy: ${pocetPriloh}`}
+                    . Pôjdu v tom istom maile ako faktúra.
+                  </span>
+                </span>
+              </label>
+            )}
             <p className="text-xs text-muted-foreground">
               PDF faktúry sa pripojí automaticky. Ak ešte neexistuje, vygeneruje sa pred odoslaním.
             </p>

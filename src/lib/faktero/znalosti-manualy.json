@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-09-30",
+ "vytvorene": "2026-10-02",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -353,7 +353,11 @@
     },
     {
      "nadpis": "Ako odoslať faktúru emailom",
-     "text": "<>\n-\nNa detaile faktúry kliknite na Odoslať emailom .\n- Upravte predmet a sprievodnú správu (môžete použiť šablónu z nastavení firmy).\n- Faktero priloží PDF a odošle správu cez Resend.\nV PDF je aj QR kód na platbu , takže zákazník nemusí prepisovať IBAN ani\nvariabilný symbol — naskenuje ho v mobilnom bankovníctve."
+     "text": "<>\n-\nNa detaile faktúry kliknite na Odoslať emailom .\n- Upravte predmet a sprievodnú správu (môžete použiť šablónu z nastavení firmy).\n- Faktero priloží PDF a odošle správu cez Resend.\n-\nKeď má doklad prílohy , pribudne voľba\nOdoslať aj prílohy dokladu — pôjdu v tom istom maile ako faktúra.\nV PDF je aj QR kód na platbu , takže zákazník nemusí prepisovať IBAN ani\nvariabilný symbol — naskenuje ho v mobilnom bankovníctve."
+    },
+    {
+     "nadpis": "Prílohy k faktúre",
+     "text": "<>\nK faktúre sa dá priložiť, čo k nej patrí — podpísaný dodací list , zmluva,\nvýkaz prác, fotka z montáže. Na detaile dokladu je karta Prílohy : súbory\nsa pridajú tlačidlom alebo ich stačí pretiahnuť myšou.\nBerieme PDF, fotky (JPG, PNG, HEIC, WEBP), tabuľky a dokumenty (XLSX, XLS, DOCX, DOC, ODS,\nODT), ďalej TXT, CSV, XML a ZIP. Jeden súbor môže mať najviac 15 MB a na\ndoklad sa zmestí 10 príloh .\nPri odosielaní faktúry mailom sa zobrazí voľba Odoslať aj prílohy dokladu . Keby\nsa všetko do jedného mailu nezmestilo, Faktero povie, ktoré súbory vynechalo — tie sa dajú\nposlať zvlášť.\nPrílohy vidí každý, kto má prístup k faktúram; pri\nvlastnom prístupe (/pomoc/role) platí právo na oblasť Faktúry. Zo\nstornovaného dokladu sa už pridávať ani mazať nedajú."
     },
     {
      "nadpis": "Ako označiť faktúru ako uhradenú",
@@ -373,7 +377,7 @@
     },
     {
      "nadpis": "Historické sadzby DPH",
-     "text": "<>\nVo výbere sadzby je pod platnými sadzbami skupina Historické sadzby —\nposledné tri, ktoré už neplatia, aj s rokom, do ktorého platili (na Slovensku 20 % a\n10 % do roku 2024).\nHodí sa, keď vystavujete faktúru k zálohovej faktúre z minulého roka ,\nrobíte dobropis k starej dodávke alebo opravujete doklad spred zmeny\nzákona — plnenie vtedy podliehalo inej sadzbe a doklad ju musí niesť.\nSú zámerne zvlášť, aby si ich nikto nevybral omylom namiesto dnešných. Pri predaji\nspotrebiteľovi v EÚ (OSS) sa neponúkajú — tam rozhodujú sadzby štátu zákazníka."
+     "text": "<>\nVo výbere sadzby je pod platnými sadzbami skupina Historické sadzby —\nposledné tri, ktoré už neplatia, aj s rokom, do ktorého platili (na Slovensku 20 % a 10 %\ndo roku 2024).\nHodí sa, keď vystavujete faktúru k zálohovej faktúre z minulého roka ,\nrobíte dobropis k starej dodávke alebo opravujete doklad spred zmeny\nzákona — plnenie vtedy podliehalo inej sadzbe a doklad ju musí niesť.\nSú zámerne zvlášť, aby si ich nikto nevybral omylom namiesto dnešných. Pri predaji\nspotrebiteľovi v EÚ (OSS) sa neponúkajú — tam rozhodujú sadzby štátu zákazníka."
     },
     {
      "nadpis": "Oprava čísla faktúry",
@@ -389,7 +393,7 @@
     },
     {
      "nadpis": "Ako fungujú opakované faktúry",
-     "text": "<>\nV sekcii Fakturácia → Opakované faktúry nastavíte šablónu, frekvenciu\n(týždenne/mesačne/štvrťročne/ročne) a dátum prvého vystavenia. Zakladá sa rovnako ako\nbežná faktúra — ten istý výber odberateľa, tá istá tabuľka položiek aj stĺpec\nSpolu s DPH , do ktorého sa dá napísať dohodnutá suma a cena bez dane sa\ndopočíta.\nNázov šablóny vidíte len vy v zozname — na faktúre nie je. Čo sa\nfakturuje, povie text nad položkami : je povinný a dostane ho každá\nfaktúra z tejto šablóny, takže paušál povie, za čo je. Dá sa zmeniť aj neskôr na\notvorenej šablóne.\n- Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.\n-\nVygenerovaná faktúra môže byť automaticky odoslaná emailom, ak je zapnuté\nAuto-send .\n-\nHistória generovania je v záložke Logy pri danom opakovaní."
+     "text": "<>\nV sekcii Fakturácia → Opakované faktúry nastavíte šablónu, frekvenciu\n(týždenne/mesačne/štvrťročne/ročne) a dátum prvého vystavenia. Zakladá sa rovnako ako\nbežná faktúra — ten istý výber odberateľa, tá istá tabuľka položiek aj stĺpec\nSpolu s DPH , do ktorého sa dá napísať dohodnutá suma a cena bez dane sa dopočíta.\nNázov šablóny vidíte len vy v zozname — na faktúre nie je. Čo sa\nfakturuje, povie text nad položkami : je povinný a dostane ho každá\nfaktúra z tejto šablóny, takže paušál povie, za čo je. Dá sa zmeniť aj neskôr na otvorenej\nšablóne.\n- Faktero každý deň ráno generuje faktúry, ktoré majú spadnúť na daný deň.\n-\nVygenerovaná faktúra môže byť automaticky odoslaná emailom, ak je zapnuté\nAuto-send .\n-\nHistória generovania je v záložke Logy pri danom opakovaní."
     },
     {
      "nadpis": "Fakturovanie v mobile bez signálu",
