@@ -381,4 +381,34 @@ describe.skipIf(bezPristupu)("číslovanie dokladov proti databáze", () => {
       await db.from("companies").delete().eq("id", cudzia);
     }
   });
+
+  /*
+   * Pomocné funkcie generátora bežia s právami vlastníka databázy a samy
+   * členstvo nekontrolujú — spoliehajú sa, že ich volá generátor, ktorý to
+   * urobil. Zvonku preto nesmú byť dostupné: `faktero_rad_pre_druh` by inak
+   * cudzej firme založil číselný rad a `faktero_predvolena_sablona` by
+   * prezradil jej formát čísel.
+   */
+  it("pomocné funkcie generátora sa zvonku zavolať nedajú", async () => {
+    const { data, error: chybaFirmy } = await db
+      .from("companies")
+      .insert({ name: `${PREDPONA}cudzia ${Date.now()}`, default_currency: "EUR" } as never)
+      .select("id")
+      .single();
+    if (chybaFirmy) throw new Error(chybaFirmy.message);
+    const cudzia = (data as { id: string }).id;
+    try {
+      for (const fn of ["faktero_rad_pre_druh", "faktero_predvolena_sablona"]) {
+        const { error } = await ako.rpc(fn, { _company_id: cudzia, _kind: "quote" } as never);
+        expect(error, `${fn} musí odmietnuť`).not.toBeNull();
+      }
+      const { count } = await db
+        .from("number_series")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", cudzia);
+      expect(count, "cudzej firme nesmie vzniknúť rad").toBe(0);
+    } finally {
+      await uprac(db, cudzia);
+    }
+  });
 });
