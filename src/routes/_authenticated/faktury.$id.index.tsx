@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
+import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 import { StatusBadge } from "./dashboard";
 import { toast } from "sonner";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
@@ -197,6 +198,7 @@ function InvoiceDetail() {
   const genXml = useServerFn(generateEfakturaXmlFn);
   const posliEfakturu = useServerFn(posliEfakturuFn);
   const [efakturaBusy, setEfakturaBusy] = useState(false);
+  const efakturaTest = useEfakturaTestovaciRezim();
 
   /**
    * Odoslanie faktúry cez Peppol.
@@ -206,16 +208,22 @@ function InvoiceDetail() {
    */
   async function handleSendEfaktura() {
     if (!inv?.company_id) return;
-    if (
-      !window.confirm(
-        `Odoslať faktúru ${inv.invoice_number ?? ""} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.`,
-      )
-    )
-      return;
+    /* V testovacom režime doklad do siete Peppol nejde — potvrdenie aj hláška
+       to musia povedať, inak človek verí, že odberateľ faktúru dostal. */
+    const otazka = efakturaTest
+      ? `eFaktúra beží v TESTOVACOM režime.\n\nFaktúra ${inv.invoice_number ?? ""} odíde len do skúšobného prostredia — odberateľovi nepríde nič. Pošlite mu ju aj e-mailom.\n\nPokračovať v skúšobnom odoslaní?`
+      : `Odoslať faktúru ${inv.invoice_number ?? ""} cez eFaktúru?\n\nOdíde odberateľovi cez sieť Peppol a odoslanie sa nedá vziať späť.`;
+    if (!window.confirm(otazka)) return;
     setEfakturaBusy(true);
     try {
       const r: any = await posliEfakturu({ data: { company_id: inv.company_id, invoice_id: id } });
-      toast.success(`Odoslané cez eFaktúru — stav ${r.status}.`);
+      if (efakturaTest) {
+        toast.warning("Odoslané len do testovacieho prostredia — odberateľovi nepríde.", {
+          duration: 10000,
+        });
+      } else {
+        toast.success(`Odoslané cez eFaktúru — stav ${r.status}.`);
+      }
       efakturaQuery.refetch();
     } catch (e) {
       toast.error((e as Error).message);
@@ -911,7 +919,11 @@ function InvoiceDetail() {
                 */}
                 <DropdownMenuItem onClick={handleSendEfaktura} disabled={efakturaBusy}>
                   <Send className="mr-2 h-4 w-4" />
-                  {efakturaBusy ? "Odosielam…" : "Odoslať cez eFaktúru"}
+                  {efakturaBusy
+                    ? "Odosielam…"
+                    : efakturaTest
+                      ? "Odoslať cez eFaktúru (test)"
+                      : "Odoslať cez eFaktúru"}
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
@@ -941,6 +953,11 @@ function InvoiceDetail() {
         <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
           <span className="text-muted-foreground">eFaktúra:</span>
           <EfakturaStatusBadge status={efakturaUi} />
+          {efakturaTest && (
+            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-amber-800 dark:text-amber-300">
+              testovací režim — odberateľovi nič nepríde
+            </span>
+          )}
           {payLink && (
             <a
               href={payLink}

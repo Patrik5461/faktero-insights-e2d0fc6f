@@ -22,8 +22,17 @@ import { peppolId, schemaZId } from "./peppol-id";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
+/**
+ * Testovacie prostredie ePoštáka (`dev.epostak.sk`) doklad prijme a tvári sa
+ * ako odoslaný, ale do skutočnej siete Peppol nikdy nejde. Rozhranie to musí
+ * povedať nahlas — inak by človek veril, že odberateľ faktúru dostal.
+ */
+export function jeTestovaciRezim(): boolean {
+  return (process.env.EPOSTAK_ENV ?? "sandbox").toLowerCase() !== "production";
+}
+
 function getConfig() {
-  const env = (process.env.EPOSTAK_ENV ?? "sandbox").toLowerCase();
+  const env = jeTestovaciRezim() ? "sandbox" : "production";
   const baseUrl = env === "production" ? "https://epostak.sk" : "https://dev.epostak.sk";
   const clientId = process.env.EPOSTAK_CLIENT_ID;
   const clientSecret = process.env.EPOSTAK_CLIENT_SECRET;

@@ -21,6 +21,14 @@ async function assertCompanyMember(supabase: Sb, companyId: string, userId: stri
   if (!data) throw new Error("Nemáte prístup k tejto firme.");
 }
 
+/** Či eFaktúra beží v testovacom prostredí ePoštáka — doklady potom nikam neodídu. */
+export const efakturaRezimFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { jeTestovaciRezim } = await import("./epostak.server");
+    return { testovaci: jeTestovaciRezim() };
+  });
+
 export const getEfakturaReadinessFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: { companyId: string }) => d)

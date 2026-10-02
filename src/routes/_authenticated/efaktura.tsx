@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { EfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 
 export const Route = createFileRoute("/_authenticated/efaktura")({
   component: EfakturaLayout,
@@ -36,6 +37,7 @@ function EfakturaLayout() {
           })}
         </div>
       </div>
+      <EfakturaTestovaciRezim className="mx-6 mt-4" />
       <Outlet />
     </>
   );
