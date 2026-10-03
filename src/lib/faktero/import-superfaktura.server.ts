@@ -321,7 +321,12 @@ export type FieldKey =
   | "item_unit"
   | "item_unit_price"
   | "item_vat_rate"
-  | "item_total";
+  | "item_total"
+  /** Základ položky zo súboru — už po zľave; keď ho zdroj dá, neprepočítava sa. */
+  | "item_subtotal"
+  | "item_discount_percent"
+  /** Zúčtovaná záloha na doklade — znižuje sumu na úhradu, nie základ. */
+  | "advance_amount";
 
 const HEURISTICS: Record<FieldKey, RegExp[]> = {
   invoice_number: [/^(invoice_)?number$/i, /\bfakt(u|ú)ra\b/i, /^cislo/i, /\bnumber\b/i],
@@ -353,6 +358,9 @@ const HEURISTICS: Record<FieldKey, RegExp[]> = {
   item_unit_price: [/unit.?price|cena.?jedn/i],
   item_vat_rate: [/vat.?rate|sadzba.?dph/i],
   item_total: [/item.?total|polozka.*spolu/i],
+  item_subtotal: [/^item.?subtotal$/i, /z[aá]klad polo[zž]ky/i],
+  item_discount_percent: [/^(z[lľ]ava|discount)\s*(%|percent|v %)/i],
+  advance_amount: [/uhraden[aá] z[aá]loha|odpo[cč]et z[aá]loh|advance.?amount/i],
 };
 
 export function suggestMapping(headers: string[]): Partial<Record<FieldKey, string>> {
@@ -501,6 +509,9 @@ const SYNONYMS: Record<FieldKey, string[]> = {
     "cena celkom",
     "lineextensionamount",
   ],
+  item_subtotal: ["zaklad polozky", "item subtotal"],
+  item_discount_percent: ["zlava %", "zlava v %", "discount %"],
+  advance_amount: ["uhradena zaloha", "odpocet zalohy", "advance amount"],
 };
 
 /**
@@ -1072,6 +1083,7 @@ export async function runImport(args: {
           // Súbor nemal rozpis položiek — faktúra príde ako jeden riadok.
           name: pick(head, mapping, "item_description") || `Položky faktúry ${invNo}`,
           description: null,
+          discount_percent: 0,
           quantity: 1,
           unit: "ks",
           unit_price: subtotal || total || 0,
@@ -1116,6 +1128,8 @@ export async function runImport(args: {
         vat_total: vatTotal,
         total,
         notes: pick(head, mapping, "notes") || null,
+        /* Zúčtovaná záloha — celé plnenie ostáva v `total`, na úhradu je rozdiel. */
+        advance_amount: num(pick(head, mapping, "advance_amount")) || null,
         import_source: zdroj,
         imported_at: new Date().toISOString(),
         original_external_id: externalId || null,
@@ -1146,6 +1160,7 @@ export async function runImport(args: {
         unit: it.unit,
         unit_price: it.unit_price,
         vat_rate: it.vat_rate,
+        discount_percent: it.discount_percent,
         subtotal: it.subtotal,
         vat_amount: it.vat_amount,
         total: it.total,
@@ -1211,7 +1226,18 @@ export function buildItem(
       ? num(surova)
       : predvolena(normDate(pick(row, mapping, "issue_date") ?? ""));
   const total = num(pick(row, mapping, "item_total"));
-  const subtotal = quantity * unit_price || (total ? total / (1 + vat_rate / 100) : 0);
+  const discount_percent = num(pick(row, mapping, "item_discount_percent"));
+  /*
+   * Základ položky berieme zo súboru, keď ho zdroj dáva — je už po zľave.
+   * Predtým sa vždy prepočítaval `množstvo × cena` a zľava riadku sa tým
+   * potichu stratila: 359 € so zľavou 10 % sa zapísalo ako 359 €.
+   */
+  const zoSuboru = pick(row, mapping, "item_subtotal");
+  const subtotal =
+    zoSuboru !== ""
+      ? num(zoSuboru)
+      : quantity * unit_price * (1 - discount_percent / 100) ||
+        (total ? total / (1 + vat_rate / 100) : 0);
   const vat_amount = subtotal * (vat_rate / 100);
   return {
     name: pick(row, mapping, "item_name") || "Položka",
@@ -1220,9 +1246,10 @@ export function buildItem(
     unit: "ks",
     unit_price: unit_price || subtotal,
     vat_rate,
+    discount_percent,
     subtotal,
     vat_amount,
-    total: total || subtotal + vat_amount,
+    total: zoSuboru !== "" ? subtotal + vat_amount : total || subtotal + vat_amount,
   };
 }
 

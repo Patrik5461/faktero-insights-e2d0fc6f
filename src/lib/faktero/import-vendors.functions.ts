@@ -95,6 +95,9 @@ export const executeVendorImport = createServerFn({ method: "POST" })
       "item_unit_price",
       "item_vat_rate",
       "item_total",
+      "item_subtotal",
+      "item_discount_percent",
+      "advance_amount",
     ];
     const mapping = Object.fromEntries(canonicalKeys.map((k) => [k, k])) as any;
 

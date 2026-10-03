@@ -3,6 +3,7 @@ import { XMLParser } from "fast-xml-parser";
 import { buildPohodaInvoiceXml } from "./export.server";
 import { parseVendorFile, summarize } from "./import-vendors.server";
 import { jeMPohodaJson, jePohodaXml, mpohodaNaRiadky, pohodaNaRiadky } from "./pohoda";
+import { buildItem } from "./import-superfaktura.server";
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -158,21 +159,39 @@ describe("Pohoda XML", () => {
   */
   it("česká firma dostane 21 % do základnej priehradky, nie medzi historické", () => {
     const ceske = [
-      { name: "Práce", quantity: 1, unit: "h", unit_price: 100, vat_rate: 21, subtotal: 100, vat_amount: 21, total: 121 },
-      { name: "Kniha", quantity: 1, unit: "ks", unit_price: 100, vat_rate: 12, subtotal: 100, vat_amount: 12, total: 112 },
+      {
+        name: "Práce",
+        quantity: 1,
+        unit: "h",
+        unit_price: 100,
+        vat_rate: 21,
+        subtotal: 100,
+        vat_amount: 21,
+        total: 121,
+      },
+      {
+        name: "Kniha",
+        quantity: 1,
+        unit: "ks",
+        unit_price: 100,
+        vat_rate: 12,
+        subtotal: 100,
+        vat_amount: 12,
+        total: 112,
+      },
     ];
     const cz = buildPohodaInvoiceXml({
       company: { ico: "12345678", country: "CZ" },
       invoices: [{ invoice: faktura, items: ceske }],
     });
-    expect(cz).toContain('<inv:rateVAT>high</inv:rateVAT>');
-    expect(cz).toContain('<inv:rateVAT>low</inv:rateVAT>');
+    expect(cz).toContain("<inv:rateVAT>high</inv:rateVAT>");
+    expect(cz).toContain("<inv:rateVAT>low</inv:rateVAT>");
     expect(cz).not.toContain("historyHigh");
     expect(cz).not.toContain("historyLow");
   });
 
   it("slovenskej firme ostávajú slovenské priehradky", () => {
-    expect(XML).toContain('<inv:rateVAT>high</inv:rateVAT>');
+    expect(XML).toContain("<inv:rateVAT>high</inv:rateVAT>");
     expect(XML).not.toContain("historyHigh");
   });
 
@@ -321,5 +340,105 @@ describe("mPohoda JSON", () => {
 
   it("poškodený JSON nespadne", () => {
     expect(parseVendorFile("pohoda", "x.json", bajty('{"DocumentNumber": '))).toEqual([]);
+  });
+});
+
+/*
+ * Tri tvary z ozajstného exportu z Pohody, ktoré import zapisoval zle. Každý
+ * test ide až cez zápis položky (`buildItem`), lebo tam sa čísla stratili.
+ */
+describe("Pohoda — zľava, cena s DPH a odpočet zálohy", () => {
+  const polozka = (vnutro: string) => `
+    <inv:invoiceItem>${vnutro}</inv:invoiceItem>`;
+  const xml = (polozky: string, suhrn: string) => `<?xml version="1.0"?>
+    <dat:dataPack xmlns:dat="d" xmlns:inv="i" xmlns:typ="t"><dat:dataPackItem><inv:invoice>
+      <inv:invoiceHeader>
+        <inv:invoiceType>issuedInvoice</inv:invoiceType>
+        <inv:number><typ:numberRequested>F1</typ:numberRequested></inv:number>
+        <inv:date>2023-07-03</inv:date>
+      </inv:invoiceHeader>
+      <inv:invoiceDetail>${polozky}</inv:invoiceDetail>
+      <inv:invoiceSummary><inv:homeCurrency>${suhrn}</inv:homeCurrency></inv:invoiceSummary>
+    </inv:invoice></dat:dataPackItem></dat:dataPack>`;
+  const mapa = Object.fromEntries(
+    [
+      "item_name",
+      "item_quantity",
+      "item_unit_price",
+      "item_vat_rate",
+      "item_total",
+      "item_subtotal",
+      "item_discount_percent",
+      "issue_date",
+    ].map((k) => [k, k]),
+  );
+  const riadkyZ = (x: string) => pohodaNaRiadky(parser.parse(x));
+
+  it("zľava riadku sa zachová a základ ide zo súboru", () => {
+    const [r] = riadkyZ(
+      xml(
+        polozka(`<inv:text>Macbook</inv:text><inv:quantity>1</inv:quantity>
+          <inv:rateVAT>none</inv:rateVAT><inv:discountPercentage>10</inv:discountPercentage>
+          <inv:homeCurrency><typ:unitPrice>359</typ:unitPrice><typ:price>323.1</typ:price>
+          <typ:priceVAT>0</typ:priceVAT><typ:priceSum>323.1</typ:priceSum></inv:homeCurrency>`),
+        "<typ:priceNone>323.1</typ:priceNone>",
+      ),
+    );
+    const p = buildItem(r as never, mapa as never, () => 0);
+    expect(p.unit_price).toBe(359);
+    expect(p.discount_percent).toBe(10);
+    expect(p.subtotal).toBe(323.1);
+    expect(p.total).toBe(323.1);
+  });
+
+  it("cena s DPH sa rozloží na základ a daň", () => {
+    const [r] = riadkyZ(
+      xml(
+        polozka(`<inv:text>Servis</inv:text><inv:quantity>1</inv:quantity>
+          <inv:payVAT>true</inv:payVAT><inv:rateVAT>high</inv:rateVAT>
+          <inv:homeCurrency><typ:unitPrice>504</typ:unitPrice><typ:price>420</typ:price>
+          <typ:priceVAT>84</typ:priceVAT></inv:homeCurrency>`),
+        "<typ:priceHigh>420</typ:priceHigh><typ:priceHighVAT>84</typ:priceHighVAT>",
+      ),
+    );
+    const p = buildItem(r as never, mapa as never, () => 23);
+    expect(p.vat_rate).toBe(20);
+    expect(p.unit_price).toBe(420);
+    expect(p.subtotal).toBe(420);
+    expect(p.vat_amount).toBe(84);
+    expect(p.total).toBe(504);
+  });
+
+  it("odpočet zálohy nie je položka, ale zúčtovaná záloha", () => {
+    const riadky = riadkyZ(
+      xml(
+        polozka(`<inv:text>Práce</inv:text><inv:quantity>1</inv:quantity>
+          <inv:homeCurrency><typ:unitPrice>360</typ:unitPrice><typ:price>360</typ:price>
+          <typ:priceVAT>0</typ:priceVAT></inv:homeCurrency>`) +
+          polozka(`<inv:text>Uhradená záloha</inv:text><inv:quantity>1</inv:quantity>
+          <inv:homeCurrency><typ:unitPrice>-360</typ:unitPrice><typ:price>-360</typ:price>
+          <typ:priceVAT>0</typ:priceVAT></inv:homeCurrency>`),
+        "<typ:priceNone>360</typ:priceNone>",
+      ),
+    );
+    expect(riadky).toHaveLength(1);
+    expect(riadky[0].item_name).toBe("Práce");
+    expect(riadky[0].advance_amount).toBe("360");
+    /* Celé plnenie ostáva v sume dokladu; na úhradu je rozdiel. */
+    expect(riadky[0].total).toBe("360");
+  });
+
+  it("obyčajná záporná položka (zľava, dobropis riadku) ostane položkou", () => {
+    const riadky = riadkyZ(
+      xml(
+        polozka(`<inv:text>Práce</inv:text><inv:homeCurrency><typ:unitPrice>100</typ:unitPrice>
+          <typ:price>100</typ:price></inv:homeCurrency>`) +
+          polozka(`<inv:text>Zľava za vernosť</inv:text><inv:homeCurrency>
+          <typ:unitPrice>-10</typ:unitPrice><typ:price>-10</typ:price></inv:homeCurrency>`),
+        "<typ:priceNone>90</typ:priceNone>",
+      ),
+    );
+    expect(riadky).toHaveLength(2);
+    expect(riadky[0].advance_amount).toBeUndefined();
   });
 });

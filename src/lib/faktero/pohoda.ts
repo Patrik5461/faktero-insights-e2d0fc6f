@@ -156,17 +156,49 @@ export function pohodaNaRiadky(doc: any): PohodaRiadok[] {
       continue;
     }
 
-    for (const p of polozky) {
+    /*
+     * Odpočet zálohy („Uhradená záloha" so zápornou sumou) nie je položka —
+     * Faktero ho vedie ako zúčtovanú zálohu na doklade. Ako položka by stiahol
+     * súčet riadkov pod základ dokladu a na úhradu by vyšla celá suma.
+     */
+    const jeOdpocetZalohy = (p: any) => {
+      const mena = uzol(p, "homeCurrency") ?? {};
+      return cislo(hodnota(mena, "price")) < 0 && /z[aá]loh|advance/i.test(hodnota(p, "text"));
+    };
+    const zaloha = polozky.filter(jeOdpocetZalohy).reduce((a: number, p: any) => {
+      const mena = uzol(p, "homeCurrency") ?? {};
+      return a - cislo(hodnota(mena, "price")) - cislo(hodnota(mena, "priceVAT"));
+    }, 0);
+    if (zaloha > 0) hlavicka.advance_amount = suma(zaloha);
+
+    const skutocne = polozky.filter((p: any) => !jeOdpocetZalohy(p));
+    if (!skutocne.length) riadky.push(hlavicka);
+
+    for (const p of skutocne) {
       const mena = uzol(p, "homeCurrency") ?? {};
       const zaklad = cislo(hodnota(mena, "price"));
       const dan = cislo(hodnota(mena, "priceVAT"));
+      const sadzba = sadzbaPolozky(hodnota(p, "rateVAT"), zaklad, dan);
+      /*
+       * `payVAT` znamená, že jednotková cena je s DPH. Bez prepočtu sa cena
+       * s DPH zapísala ako základ — 504 € namiesto 420 € + 84 € DPH.
+       */
+      const sDph = /^true$/i.test(hodnota(p, "payVAT"));
+      const jc = cislo(hodnota(mena, "unitPrice"));
+      const jcBezDph = sDph && sadzba > 0 ? jc / (1 + sadzba / 100) : jc;
       riadky.push({
         ...hlavicka,
         item_name: hodnota(p, "text"),
         item_quantity: hodnota(p, "quantity") || "1",
         item_unit: hodnota(p, "unit") || "ks",
-        item_unit_price: hodnota(mena, "unitPrice"),
-        item_vat_rate: String(sadzbaPolozky(hodnota(p, "rateVAT"), zaklad, dan)),
+        item_unit_price:
+          jcBezDph === jc
+            ? hodnota(mena, "unitPrice")
+            : String(Math.round(jcBezDph * 10000) / 10000),
+        item_vat_rate: String(sadzba),
+        /* Základ položky už po zľave — Pohoda ho počíta sama, netreba hádať. */
+        item_subtotal: suma(zaklad),
+        item_discount_percent: hodnota(p, "discountPercentage"),
         item_total: suma(cislo(hodnota(mena, "priceSum")) || zaklad + dan),
         item_sku: hodnota(p, "code"),
       });
