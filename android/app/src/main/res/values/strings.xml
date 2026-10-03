@@ -4,4 +4,6 @@
     <string name="title_activity_main">Faktero</string>
     <string name="package_name">sk.tobify.faktero</string>
     <string name="custom_url_scheme">sk.tobify.faktero</string>
+    <string name="skratka_skener">Naskenovať bloček</string>
+    <string name="skratka_skener_kratko">Bloček</string>
 </resources>

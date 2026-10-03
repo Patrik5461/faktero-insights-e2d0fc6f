@@ -174,6 +174,7 @@ import { Logo } from "@/components/faktero/Logo";
 import { VYCHODZI_APKA, nacitajMotiv, nasadMotiv, sledujSystem } from "@/lib/faktero/motiv";
 
 import { usePreklad } from "@/lib/mobile/preklady/hook";
+import { UDALOST_RYCHLEJ_AKCIE, vyzdvihniAkciu } from "@/lib/mobile/rychla-akcia";
 import type { Kluc } from "@/lib/mobile/preklady";
 /**
  * Mobilná aplikácia — prihlásenie, výber firmy a skenovanie dokladov.
@@ -207,6 +208,19 @@ export type Krok =
   | "ucet"
   | "zmazanieUctu";
 type Zachyt = "blocek" | "pdf" | "strany" | "ostatny";
+
+/** Obrazovky bez rozpísaných údajov — z nich smie rýchla akcia odskočiť na skener. */
+const KROKY_PRE_RYCHLU_AKCIU = new Set<Krok>([
+  "prehlad",
+  "domov",
+  "skener",
+  "doklady",
+  "faktury",
+  "ponuky",
+  "jazda",
+  "banka",
+  "ucet",
+]);
 
 /** Doklad, ktorý vo firme už je — toľko z neho stačí, aby sa dal spoznať. */
 type NajdenyDoklad = {
@@ -325,6 +339,26 @@ function ObsahApky() {
    * lebo iOS sa druhýkrát nepýta. Čakať treba aj na odomknutie: dve systémové
    * okná naraz (Face ID a notifikácie) si preliezajú cez seba.
    */
+  /*
+    Rýchla akcia z ikony („Naskenovať bloček"). Prísť môže kedykoľvek — pri
+    studenom štarte ešte pred prihlásením, alebo uprostred rozpísanej faktúry.
+    Vyzdvihne sa až na obrazovke, z ktorej sa dá odísť bez straty: rozpísaný
+    doklad by skok na kameru zahodil, tak akcia počká, kým ho človek dokončí.
+  */
+  const [akciaTik, setAkciaTik] = useState(0);
+  useEffect(() => {
+    const ozvi = () => setAkciaTik((t) => t + 1);
+    window.addEventListener(UDALOST_RYCHLEJ_AKCIE, ozvi);
+    return () => window.removeEventListener(UDALOST_RYCHLEJ_AKCIE, ozvi);
+  }, []);
+  useEffect(() => {
+    if (!firma || zamknute || !KROKY_PRE_RYCHLU_AKCIU.has(krok)) return;
+    if (vyzdvihniAkciu() === "skener") {
+      setQrZoSkenera(null);
+      setKrok("skener");
+    }
+  }, [akciaTik, firma, zamknute, krok]);
+
   const pytaliSmeSaNaPush = useRef(false);
   useEffect(() => {
     if (krok !== "domov" || zamknute || pytaliSmeSaNaPush.current) return;

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Rýchla akcia na ikone. Otvorí appku s adresou `faktero://akcia/skener`;
+  plugin App ju pri behu ohlási ako `appUrlOpen`, pri studenom štarte ju vydá
+  `getLaunchUrl`. Čo s ňou, rozhoduje `src/lib/mobile/rychla-akcia.ts` —
+  intent je explicitný (targetClass), takže nepotrebuje intent-filter
+  a iná appka sa naň nenapojí.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="skener"
+        android:enabled="true"
+        android:icon="@drawable/ic_skratka_skener"
+        android:shortcutShortLabel="@string/skratka_skener_kratko"
+        android:shortcutLongLabel="@string/skratka_skener">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="faktero://akcia/skener"
+            android:targetPackage="sk.tobify.faktero"
+            android:targetClass="sk.tobify.faktero.MainActivity" />
+    </shortcut>
+</shortcuts>

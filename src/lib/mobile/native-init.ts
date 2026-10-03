@@ -85,8 +85,11 @@ export async function initNativePlatform(): Promise<void> {
     // Deep linking — faktero://faktury/<id> → navigácia v appke
     try {
       const { App } = await import("@capacitor/app");
+      const { prijmiAdresu } = await import("./rychla-akcia");
       App.addListener("appUrlOpen", (event) => {
         try {
+          // Rýchla akcia z ikony nie je stránka — obrazovku otvorí MobilApp.
+          if (prijmiAdresu(event.url)) return;
           const url = new URL(event.url);
           const path = url.pathname || "/";
           if (typeof window !== "undefined") {
@@ -96,6 +99,12 @@ export async function initNativePlatform(): Promise<void> {
           // poškodený deep link nesmie zhodiť handler — používateľ zostane tam, kde je
         }
       });
+      /*
+        Android pri studenom štarte `appUrlOpen` nepošle — adresa, ktorou sa
+        appka otvorila, je len v `getLaunchUrl`. (iOS ju doručí udalosťou.)
+      */
+      const spustenie = await App.getLaunchUrl().catch(() => undefined);
+      if (spustenie?.url) prijmiAdresu(spustenie.url);
     } catch (e) {
       console.warn("[native-init] App deep links:", e);
     }
