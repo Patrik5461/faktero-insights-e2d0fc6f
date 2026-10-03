@@ -293,16 +293,24 @@ describe("stavDokladu", () => {
     expect(stavDokladu("Zaplaceno")).toBe("paid");
     expect(stavDokladu("Neuhradená")).toBe("issued");
     expect(stavDokladu("Nezaplatená")).toBe("issued");
-    expect(stavDokladu("Po splatnosti")).toBe("overdue");
+    // Po splatnosti je odvodený stav — uloží sa ako neuhradená, nie `overdue`.
+    expect(stavDokladu("Po splatnosti")).toBe("issued");
+    expect(stavDokladu("Neuhradená po splatnosti")).toBe("issued");
     expect(stavDokladu("Stornovaná")).toBe("cancelled");
     expect(stavDokladu("Koncept")).toBe("draft");
     expect(stavDokladu("Odoslaná")).toBe("sent");
   });
 
   it("anglické kódy prejdú nezmenené", () => {
-    for (const s of ["draft", "issued", "sent", "paid", "cancelled", "overdue"]) {
+    for (const s of ["draft", "issued", "sent", "paid", "cancelled"]) {
       expect(stavDokladu(s)).toBe(s);
     }
+  });
+
+  /* Uložené `overdue` vypadne z filtrov na neuhradené — bez upomienky a párovania. */
+  it("`overdue` sa nikdy neuloží", () => {
+    expect(stavDokladu("overdue")).toBe("issued");
+    expect(stavDokladu("OVERDUE")).toBe("issued");
   });
 
   // SuperFaktúra vracia stav číslom.

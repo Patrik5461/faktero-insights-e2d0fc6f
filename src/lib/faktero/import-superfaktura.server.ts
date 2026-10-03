@@ -762,7 +762,14 @@ export function stavDokladu(hodnota: string | undefined): string {
     .trim();
   if (!v) return "issued";
 
-  const ANGLICKE = ["draft", "issued", "sent", "paid", "cancelled", "overdue"];
+  /*
+   * „Po splatnosti" sa neukladá — je to neuhradená faktúra so splatnosťou
+   * v minulosti a tak sa aj všade počíta. Uložená ako `overdue` vypadla zo
+   * všetkých filtrov na `issued`/`sent`: nedostala by upomienku ani by sa
+   * spárovala s platbou. Databáza ju už ani neprijme.
+   */
+  if (v === "overdue") return "issued";
+  const ANGLICKE = ["draft", "issued", "sent", "paid", "cancelled"];
   if (ANGLICKE.includes(v)) return v;
 
   // SuperFaktúra vracia stav číslom; 3 je uhradená, 2 je čiastočne uhradená.
@@ -771,11 +778,11 @@ export function stavDokladu(hodnota: string | undefined): string {
 
   if (/^(ne|not|un)/.test(v)) {
     // „neuhradená", „nezaplatená" — otvorená pohľadávka.
-    return /splatnost/.test(v) ? "overdue" : "issued";
+    return "issued";
   }
   if (/uhraden|zaplaten|zaplacen|uhrazen/.test(v)) return "paid";
   if (/storn|zrusen|zruseny/.test(v)) return "cancelled";
-  if (/po splatnosti|omeskan|overdue/.test(v)) return "overdue";
+  if (/po splatnosti|omeskan/.test(v)) return "issued";
   if (/koncept|rozpracovan|draft/.test(v)) return "draft";
   if (/odoslan|odeslan|sent/.test(v)) return "sent";
   return "issued";
@@ -1084,7 +1091,7 @@ export async function runImport(args: {
       const dueDate = normDate(pick(head, mapping, "due_date")) || issueDate;
       const deliveryDate = normDate(pick(head, mapping, "delivery_date"));
       const knownStatus = stavDokladu(pick(head, mapping, "status")) as
-        "draft" | "issued" | "sent" | "paid" | "cancelled" | "overdue";
+        "draft" | "issued" | "sent" | "paid" | "cancelled";
 
       const payload = {
         company_id: companyId,
