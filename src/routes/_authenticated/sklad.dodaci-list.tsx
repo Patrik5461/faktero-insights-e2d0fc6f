@@ -384,7 +384,23 @@ function DeliveryNoteScanPage() {
       toast.success(
         `Naskladnené: ${sPoctom(res.movements, POHYBY)}, ${sPoctom(res.createdProducts, NOVE_PRODUKTY)}.`,
       );
-      nav({ to: "/sklad/pohyby" });
+      /* Riadok, ktorý sa nenaskladnil, sa musí povedať nahlas — inak by sklad
+         ticho nesedel s dodacím listom. */
+      if (res.errors > 0) {
+        toast.error(
+          `Nenaskladnené riadky: ${res.errorList.map((e) => `${e.row} (${e.reason})`).join(", ")}`,
+          { duration: 15000 },
+        );
+      }
+      /* Cena z dodacieho listu je nákupná; predajnú musí človek doplniť sám,
+         inak by faktúra produkt predvyplnila nulou. */
+      if (res.bezPredajnejCeny?.length) {
+        toast.warning(
+          `Doplňte predajnú cenu nových produktov: ${res.bezPredajnejCeny.join(", ")}.`,
+          { duration: 15000 },
+        );
+      }
+      nav({ to: res.bezPredajnejCeny?.length ? "/produkty" : "/sklad/pohyby" });
     } catch (e: any) {
       toast.error(e?.message ?? "Import zlyhal.");
     } finally {

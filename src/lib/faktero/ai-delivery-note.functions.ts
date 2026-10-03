@@ -59,6 +59,24 @@ export const importDeliveryNoteFn = createServerFn({ method: "POST" })
     }
     if (!whId) throw new Error("Nepodarilo sa určiť sklad.");
 
+    /*
+     * Sadzba DPH pre nový produkt podľa firmy — neplatiteľ nulu, platiteľ
+     * základnú sadzbu svojej krajiny. Predtým tu bolo 23 % napevno, čo českej
+     * firme ani neplatiteľovi nesedí.
+     */
+    const { data: firma } = await supabase
+      .from("companies")
+      .select("vat_payer, country")
+      .eq("id", cid)
+      .maybeSingle();
+    const { krajinaDane, zakladnaSadzba } = await import("./vat-rates");
+    const predvolenaSadzba =
+      firma?.vat_payer === false ? 0 : zakladnaSadzba(krajinaDane(firma?.country));
+
+    /* Hodnota do `ilike` bez zástupných znakov — „Skrutka 10%" nesmie chytiť všetko. */
+    const presne = (t: string) => t.replace(/[\\%_]/g, (z) => `\\${z}`);
+    const bezPredajnejCeny: string[] = [];
+
     let createdProducts = 0,
       updatedProducts = 0,
       createdItems = 0,
@@ -79,6 +97,8 @@ export const importDeliveryNoteFn = createServerFn({ method: "POST" })
             .maybeSingle();
           product = p;
         }
+        /* `limit(1)`: pri dvoch zhodách by `maybeSingle` vrátil chybu a vznikol
+           by tretí, duplicitný produkt. */
         if (!product && it.code) {
           const { data: p } = await supabase
             .from("products")
@@ -86,76 +106,99 @@ export const importDeliveryNoteFn = createServerFn({ method: "POST" })
             .eq("company_id", cid)
             .eq("code", it.code)
             .is("deleted_at", null)
-            .maybeSingle();
-          product = p;
+            .order("created_at")
+            .limit(1);
+          product = p?.[0] ?? null;
         }
         if (!product) {
           const { data: p } = await supabase
             .from("products")
             .select("*")
             .eq("company_id", cid)
-            .ilike("name", it.name)
+            .ilike("name", presne(it.name))
             .is("deleted_at", null)
-            .maybeSingle();
-          product = p;
+            .order("created_at")
+            .limit(1);
+          product = p?.[0] ?? null;
         }
         if (product) {
           updatedProducts++;
         } else {
-          const { data: np } = await supabase
+          /*
+           * Cena z dodacieho listu je nákupná. Predtým sa zapísala aj ako
+           * predajná, takže faktúra by produkt predvyplnila za nákup — predaj
+           * bez marže, ktorý si nikto nevšimne. Predajná cena ostane prázdna
+           * a výsledok importu povie, ktoré produkty ju treba doplniť.
+           */
+          const { data: np, error: chybaProduktu } = await supabase
             .from("products")
             .insert({
               company_id: cid,
               name: it.name,
               code: it.code ?? null,
               unit: it.unit ?? "ks",
-              unit_price: it.unit_price ?? 0,
-              vat_rate: 23,
+              unit_price: 0,
+              vat_rate: predvolenaSadzba,
               active: true,
             })
             .select()
             .single();
+          if (chybaProduktu || !np)
+            throw new Error(chybaProduktu?.message ?? "Produkt sa nepodarilo založiť.");
           product = np;
           createdProducts++;
+          bezPredajnejCeny.push(it.name);
         }
 
-        let { data: stockItem } = await supabase
+        /* Aktívna karta má prednosť; archivovanú tovar, ktorý práve prišiel,
+           vráti do skladu — inak by príjem skončil v karte, ktorú nikto nevidí. */
+        const { data: karty } = await supabase
           .from("stock_items")
           .select("*")
           .eq("company_id", cid)
           .eq("product_id", product.id)
-          .maybeSingle();
+          .order("archived_at", { ascending: false, nullsFirst: true })
+          .limit(1);
+        let stockItem: any = karty?.[0] ?? null;
         if (!stockItem) {
-          const { data: ni } = await supabase
+          const { data: ni, error: chybaKarty } = await supabase
             .from("stock_items")
             .insert({
               company_id: cid,
               product_id: product.id,
               sku: it.code ?? null,
               purchase_price: it.unit_price ?? 0,
-              sale_price: it.unit_price ?? 0,
-              vat_rate: 23,
+              /* Predajná cena patrí produktu — rovnako ako pri ručnom založení karty. */
+              sale_price: product.unit_price ?? 0,
+              vat_rate: product.vat_rate ?? predvolenaSadzba,
               unit: it.unit ?? "ks",
               min_stock: 0,
               track_stock: true,
             })
             .select()
             .single();
+          if (chybaKarty || !ni)
+            throw new Error(chybaKarty?.message ?? "Skladovú kartu sa nepodarilo založiť.");
           stockItem = ni;
           createdItems++;
-        } else if (it.unit_price != null) {
-          await supabase
-            .from("stock_items")
-            .update({ purchase_price: it.unit_price })
-            .eq("id", stockItem.id);
+        } else {
+          const zmena: Record<string, unknown> = {};
+          if (it.unit_price != null) zmena.purchase_price = it.unit_price;
+          if (stockItem.archived_at) zmena.archived_at = null;
+          if (Object.keys(zmena).length) {
+            const { error: chybaZmeny } = await supabase
+              .from("stock_items")
+              .update(zmena as never)
+              .eq("id", stockItem.id);
+            if (chybaZmeny) throw new Error(chybaZmeny.message);
+          }
         }
-        if (!stockItem) throw new Error("stock_item not created");
 
         const unitPrice = it.unit_price ?? 0;
         const unitCost =
           typeof it.unit_price === "number" && it.unit_price > 0 ? it.unit_price : null;
         const totalValue = it.unit_price != null ? it.quantity * unitPrice : null;
-        await supabase.from("stock_movements").insert({
+        const { error: chybaPohybu } = await supabase.from("stock_movements").insert({
           company_id: cid,
           warehouse_id: whId,
           stock_item_id: stockItem.id,
@@ -167,6 +210,8 @@ export const importDeliveryNoteFn = createServerFn({ method: "POST" })
           note: `AI dodací list${data.supplier ? " – " + data.supplier : ""}${data.delivery_number ? " (" + data.delivery_number + ")" : ""}`,
           created_by: userId,
         });
+        /* Bez kontroly by sa nezapísaný pohyb započítal ako naskladnený. */
+        if (chybaPohybu) throw new Error(chybaPohybu.message);
         movements++;
       } catch (e: any) {
         errors++;
@@ -195,7 +240,15 @@ export const importDeliveryNoteFn = createServerFn({ method: "POST" })
       },
     });
 
-    return { createdProducts, updatedProducts, createdItems, movements, errors, errorList };
+    return {
+      createdProducts,
+      updatedProducts,
+      createdItems,
+      movements,
+      errors,
+      errorList,
+      bezPredajnejCeny,
+    };
   });
 
 /**
