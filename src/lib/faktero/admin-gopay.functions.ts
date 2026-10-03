@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { prostredieGopay } from "@/lib/faktero/gopay-prostredie";
 
 function mask(v?: string | null, keep = 3) {
   if (!v) return null;
@@ -53,7 +54,7 @@ export const getPlatformGopayStatus = createServerFn({ method: "POST" })
     };
 
     // Resolve effective config (DB overrides env per-field)
-    const env = (stored?.env ?? process.env.GOPAY_ENV ?? "sandbox").toLowerCase();
+    const env = prostredieGopay(stored?.env, process.env.GOPAY_ENV);
     const goid = stored?.goid ?? process.env.GOPAY_GOID ?? null;
     const clientId = safeDecrypt(stored?.client_id_enc) ?? process.env.GOPAY_CLIENT_ID ?? null;
     const clientSecret =
@@ -100,7 +101,7 @@ export const getPlatformGopayStatus = createServerFn({ method: "POST" })
         webhookSecretMasked: mask(webhookSecret, 0),
         webhookUrl: appUrl ? `${appUrl.replace(/\/$/, "")}/api/webhooks/gopay` : null,
         sources: {
-          env: stored?.env ? "db" : process.env.GOPAY_ENV ? "env" : "default",
+          env: stored?.env?.trim() ? "db" : process.env.GOPAY_ENV?.trim() ? "env" : "default",
           goid: sourceOf(stored?.goid, process.env.GOPAY_GOID),
           clientId: sourceOf(stored?.client_id_enc, process.env.GOPAY_CLIENT_ID),
           clientSecret: sourceOf(stored?.client_secret_enc, process.env.GOPAY_CLIENT_SECRET),

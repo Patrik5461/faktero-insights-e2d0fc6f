@@ -648,7 +648,7 @@ export const getBillingDiagnostics = createServerFn({ method: "GET" })
     await getAdmin(context);
     const appUrl = process.env.APP_PUBLIC_URL ?? null;
     const webhookSecret = process.env.GOPAY_WEBHOOK_SECRET ?? null;
-    const gopayEnv = process.env.GOPAY_ENV ?? null;
+    const gopayEnv = process.env.GOPAY_ENV?.trim() || null;
 
     function maskUrl(u: string | null): string | null {
       if (!u) return null;
@@ -749,7 +749,7 @@ export const getBetaChecklistStatus = createServerFn({ method: "GET" })
       gopay_client_id: !!process.env.GOPAY_CLIENT_ID,
       gopay_client_secret: !!process.env.GOPAY_CLIENT_SECRET,
       gopay_goid: !!process.env.GOPAY_GOID,
-      gopay_env: process.env.GOPAY_ENV ?? null,
+      gopay_env: process.env.GOPAY_ENV?.trim() || null,
       finstat_public_key: !!process.env.FINSTAT_PUBLIC_KEY,
       finstat_private_key: !!process.env.FINSTAT_PRIVATE_KEY,
       resend_api_key: !!process.env.RESEND_API_KEY,

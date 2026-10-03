@@ -10,7 +10,7 @@
  */
 import { decryptSecret } from "./payment-crypto.server";
 
-type GoPayEnv = "sandbox" | "production";
+import { prostredieGopay, type GoPayEnv } from "./gopay-prostredie";
 
 type Config = {
   clientId: string;
@@ -51,12 +51,12 @@ export async function loadPlatformGopayConfig(): Promise<Config> {
   let clientId = process.env.GOPAY_CLIENT_ID ?? "";
   let clientSecret = process.env.GOPAY_CLIENT_SECRET ?? "";
   let goid = process.env.GOPAY_GOID ?? "";
-  let env: GoPayEnv = (process.env.GOPAY_ENV ?? "sandbox").toLowerCase() as GoPayEnv;
+  let env: GoPayEnv = prostredieGopay(process.env.GOPAY_ENV);
   let webhookSecret: string | null = process.env.GOPAY_WEBHOOK_SECRET ?? null;
 
   if (dbCfg) {
     source = "db";
-    if (dbCfg.env) env = dbCfg.env.toLowerCase() as GoPayEnv;
+    if (dbCfg.env?.trim()) env = prostredieGopay(dbCfg.env);
     if (dbCfg.goid) goid = dbCfg.goid;
     if (dbCfg.client_id_enc) {
       try {
@@ -251,23 +251,20 @@ export async function gopayCreateRecurrence(
 ): Promise<GoPayPayment> {
   const cfg = await loadPlatformGopayConfig();
   const token = await getToken("payment-all");
-  const res = await fetch(
-    `${cfg.baseUrl}/payments/payment/${parentPaymentId}/create-recurrence`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        amount: input.amountCents,
-        currency: input.currency ?? "EUR",
-        order_number: input.orderNumber,
-        order_description: input.orderDescription,
-      }),
+  const res = await fetch(`${cfg.baseUrl}/payments/payment/${parentPaymentId}/create-recurrence`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
     },
-  );
+    body: JSON.stringify({
+      amount: input.amountCents,
+      currency: input.currency ?? "EUR",
+      order_number: input.orderNumber,
+      order_description: input.orderDescription,
+    }),
+  });
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
     throw new Error(`GoPay create-recurrence failed: ${res.status} ${txt.slice(0, 400)}`);
@@ -345,6 +342,6 @@ export async function gopayEnv(): Promise<GoPayEnv> {
     const cfg = await loadPlatformGopayConfig();
     return cfg.env;
   } catch {
-    return (process.env.GOPAY_ENV ?? "sandbox").toLowerCase() as GoPayEnv;
+    return prostredieGopay(process.env.GOPAY_ENV);
   }
 }
