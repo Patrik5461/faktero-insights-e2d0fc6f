@@ -19,6 +19,8 @@ import {
   type LookupResult,
 } from "./peppol-provider.server";
 import { peppolId, schemaZId } from "./peppol-id";
+import { sUctomFaktury } from "@/lib/faktero/platobny-ucet";
+import { createHash } from "node:crypto";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -124,6 +126,23 @@ async function epostakFetchText(url: string, firmId: string): Promise<string> {
   return await r.text();
 }
 
+/*
+  ePošták vracia chybu ako `{ error: { code, message, message_sk } }`. Čítali sme
+  len `message` na vrchu, takže z každej chyby ostalo holé „HTTP 422" a nedalo sa
+  zistiť, čo mu prekáža.
+*/
+export function chybaEPostaka(parsed: unknown, status: number): string {
+  if (typeof parsed === "string" && parsed.trim()) return parsed.slice(0, 300);
+  const p = (parsed && typeof parsed === "object" ? parsed : {}) as any;
+  const e = p.error && typeof p.error === "object" ? p.error : p;
+  if (e.code === "DUPLICATE_INVOICE_NUMBER") {
+    return "ePošták už má odoslanú faktúru s týmto číslom. Odoslanú faktúru nemožno poslať znova pod tým istým číslom — vystavte opravný doklad alebo faktúru s novým číslom.";
+  }
+  const text = e.message_sk || e.message || (typeof p.error === "string" ? p.error : "");
+  if (text) return e.code ? `${text} (${e.code})` : text;
+  return `HTTP ${status}`;
+}
+
 async function epostakFetch<T>(path: string, opts: FetchOpts = {}): Promise<T> {
   const { baseUrl } = getConfig();
   const url = new URL(`${baseUrl}${path}`);
@@ -168,10 +187,8 @@ async function epostakFetch<T>(path: string, opts: FetchOpts = {}): Promise<T> {
   }
 
   if (!res.ok) {
-    const msg =
-      (parsed && typeof parsed === "object" && (parsed as any).message) ||
-      (typeof parsed === "string" ? parsed : "") ||
-      `HTTP ${res.status}`;
+    const msg = chybaEPostaka(parsed, res.status);
+    console.error(`[epostak] ${opts.method ?? "GET"} ${path} → ${res.status}`, text.slice(0, 1000));
     const err = new Error(`ePošták ${path} zlyhal: ${msg}`) as Error & {
       status?: number;
       response?: unknown;
@@ -264,7 +281,7 @@ export async function sendEfaktura(
     issueDate: invoice.issue_date,
     dueDate: invoice.due_date,
     currency: invoice.currency ?? "EUR",
-    iban: (company as any).iban ?? undefined,
+    iban: sUctomFaktury(company as any, invoice as any).iban ?? undefined,
     items: (items ?? []).map((it: any) => ({
       description: it.name + (it.description ? ` — ${it.description}` : ""),
       quantity: Number(it.quantity),
@@ -281,7 +298,14 @@ export async function sendEfaktura(
   }>("/api/v1/documents/send", {
     method: "POST",
     firmId: firmEpostakId,
-    idempotencyKey: invoice.invoice_number,
+    /*
+      Kľúč chráni pred dvojitým odoslaním tej istej faktúry (dvojklik, opakovanie
+      po výpadku). Číslo faktúry naň nestačilo: ePošták ho viaže na svoju firmu,
+      kde mu ho mohla zabrať iná firma s tými istými údajmi, a kľúč po zlyhanej
+      požiadavke ostal „v spracovaní" — opravenú faktúru už nepustil. Preto ID
+      faktúry a odtlačok obsahu: rovnaká požiadavka má rovnaký kľúč, opravená nový.
+    */
+    idempotencyKey: `${invoice.id}:${createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 16)}`,
     body,
   });
 
@@ -312,7 +336,7 @@ export async function sendEfaktura(
   /*
     Faktúra je v tejto chvíli **už u odberateľa** — zlyhal len náš zápis. Holá
     databázová chyba tu tvrdila, že odoslanie zlyhalo, a človek to skúšal znova.
-    (Duplikát u odberateľa nevznikne, `idempotencyKey` je číslo faktúry, ale
+    (Duplikát u odberateľa nevznikne — ePošták odmietne zopakované číslo faktúry, ale
     hlásenie aj tak klamalo.)
   */
   if (docErr)
