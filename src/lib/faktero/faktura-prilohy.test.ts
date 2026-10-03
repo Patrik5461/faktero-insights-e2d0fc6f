@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync, readdirSync } from "node:fs";
 import {
+  DRUHY_S_PRILOHAMI,
   MAX_PRILOH,
   POVOLENE_TYPY,
   PRIPONY_PRE_VYBER,
@@ -107,5 +109,32 @@ describe("veľkosť pre človeka", () => {
     expect(velkost(null)).toBe("");
     expect(velkost(0)).toBe("");
     expect(velkost("nieco")).toBe("");
+  });
+});
+
+describe("druhy dokladov s prílohami", () => {
+  /*
+   * Každý druh má v tabuľke príloh vlastný stĺpec s cudzím kľúčom a databáza
+   * pustí len riadok s práve jedným z nich. Keby kód poznal druh, ktorý
+   * databáza nie, nahratie by spadlo až u zákazníka.
+   */
+  it("každý stĺpec dokladu je v podmienke „práve jeden doklad“", () => {
+    const migracie = readdirSync("supabase/migrations")
+      .filter((f) => f.endsWith(".sql"))
+      .map((f) => readFileSync(`supabase/migrations/${f}`, "utf-8"))
+      .join("\n");
+    const podmienka =
+      migracie.match(
+        /invoice_attachments_prave_jeden_doklad\s+check\s*\(num_nonnulls\(([^)]+)\)/,
+      )?.[1] ?? "";
+    for (const { stlpec } of Object.values(DRUHY_S_PRILOHAMI)) {
+      expect(podmienka, stlpec).toContain(stlpec);
+    }
+    expect(podmienka.split(",").length).toBe(Object.keys(DRUHY_S_PRILOHAMI).length);
+  });
+
+  it("názvy druhov sa neopakujú", () => {
+    const nazvy = Object.values(DRUHY_S_PRILOHAMI).map((d) => d.nazov);
+    expect(new Set(nazvy).size).toBe(nazvy.length);
   });
 });

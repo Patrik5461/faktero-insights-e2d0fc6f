@@ -145,32 +145,33 @@ export async function zostavBalik(
 
   const faktury = (vsetky ?? []).filter((f: Riadok) => !vstup.lenNove || !odovzdaneIds.has(f.id));
 
-  const [{ data: vsetkyDoklady }, { data: pokladnica }, { data: vsetkyOstatne }] = await Promise.all([
-    supabase
-      .from("expense_documents")
-      .select("*")
-      .eq("company_id", vstup.companyId)
-      .gte("issue_date", od)
-      .lt("issue_date", doDatumu)
-      .order("issue_date"),
-    supabase
-      .from("cash_entries")
-      .select("*")
-      .eq("company_id", vstup.companyId)
-      .gte("entry_date", od)
-      .lt("entry_date", doDatumu)
-      .order("entry_date"),
-    // Ostatné doklady sa radia podľa dňa doručenia — dátum vystavenia nemajú.
-    supabase
-      .from("other_documents")
-      .select(
-        "*, other_document_files(path, name, position), zamestnanec:employees(first_name, last_name), zmluva:financing_contracts(name, provider_name, contract_number)",
-      )
-      .eq("company_id", vstup.companyId)
-      .gte("received_date", od)
-      .lt("received_date", doDatumu)
-      .order("received_date"),
-  ]);
+  const [{ data: vsetkyDoklady }, { data: pokladnica }, { data: vsetkyOstatne }] =
+    await Promise.all([
+      supabase
+        .from("expense_documents")
+        .select("*")
+        .eq("company_id", vstup.companyId)
+        .gte("issue_date", od)
+        .lt("issue_date", doDatumu)
+        .order("issue_date"),
+      supabase
+        .from("cash_entries")
+        .select("*")
+        .eq("company_id", vstup.companyId)
+        .gte("entry_date", od)
+        .lt("entry_date", doDatumu)
+        .order("entry_date"),
+      // Ostatné doklady sa radia podľa dňa doručenia — dátum vystavenia nemajú.
+      supabase
+        .from("other_documents")
+        .select(
+          "*, other_document_files(path, name, position), zamestnanec:employees(first_name, last_name), zmluva:financing_contracts(name, provider_name, contract_number)",
+        )
+        .eq("company_id", vstup.companyId)
+        .gte("received_date", od)
+        .lt("received_date", doDatumu)
+        .order("received_date"),
+    ]);
   const doklady = (vsetkyDoklady ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at);
   const ostatne = (vsetkyOstatne ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at);
 
@@ -420,6 +421,53 @@ export async function zostavBalik(
     } catch {
       // Jedna nevydarená faktúra nesmie zhodiť celé odovzdanie.
       vynechanePrilohy++;
+    }
+  }
+
+  /*
+   * Prílohy vydaných faktúr (dodací list, zmluva, výkaz) patria účtovníčke
+   * rovnako ako samotné PDF — bez podpísaného dodacieho listu faktúru často
+   * nezaúčtuje. Každá faktúra má vlastný priečinok, aby sa súbory rovnakého
+   * mena z rôznych faktúr neprebili.
+   */
+  if (vyvezene.length) {
+    const { data: prilohy } = await supabaseAdmin
+      .from("invoice_attachments")
+      .select("invoice_id, path, name, size")
+      .in(
+        "invoice_id",
+        vyvezene.map((f: Riadok) => f.id),
+      )
+      .order("created_at");
+    const cisla = new Map(vyvezene.map((f: Riadok) => [f.id, String(f.invoice_number ?? f.id)]));
+    const prilohyPriecinok = zip.folder("faktury-prilohy")!;
+    const pouzite = new Set<string>();
+    for (const p of prilohy ?? []) {
+      if (velkost >= strop) {
+        vynechanePrilohy++;
+        continue;
+      }
+      try {
+        const { data: subor } = await supabaseAdmin.storage
+          .from("invoice-attachments")
+          .download(p.path);
+        if (!subor) {
+          vynechanePrilohy++;
+          continue;
+        }
+        const priecinok = (cisla.get(p.invoice_id as string) ?? "bez-cisla").replace(
+          /[\\/:*?"<>|]/g,
+          "-",
+        );
+        let meno = `${priecinok}/${p.name}`;
+        for (let i = 2; pouzite.has(meno); i++) meno = `${priecinok}/${i}-${p.name}`;
+        pouzite.add(meno);
+        const bajty = await subor.arrayBuffer();
+        velkost += bajty.byteLength;
+        prilohyPriecinok.file(meno, bajty);
+      } catch {
+        vynechanePrilohy++;
+      }
     }
   }
 

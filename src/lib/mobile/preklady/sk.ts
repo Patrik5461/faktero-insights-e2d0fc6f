@@ -591,9 +591,11 @@ export const sk = {
   "app.zabudnuteHeslo": "Zabudnuté heslo si obnovíte na faktero.sk.",
   "app.zabudliHeslo": "Zabudli ste heslo?",
   "app.zadajteEmailPreHeslo": "Najprv zadajte e-mail, na ktorý pošleme odkaz na nové heslo.",
-  "app.odkazNaHesloOdoslany": "Ak k adrese {email} existuje účet, poslali sme na ňu odkaz na nové heslo.",
+  "app.odkazNaHesloOdoslany":
+    "Ak k adrese {email} existuje účet, poslali sme na ňu odkaz na nové heslo.",
   "app.overenieNadpis": "Dvojfaktorové overenie",
-  "app.overenieText": "Zadajte 6-miestny kód z overovacej appky (Google Authenticator, Microsoft Authenticator…). V tomto telefóne sa znova vypýta až po odhlásení.",
+  "app.overenieText":
+    "Zadajte 6-miestny kód z overovacej appky (Google Authenticator, Microsoft Authenticator…). V tomto telefóne sa znova vypýta až po odhlásení.",
   "app.overit": "Overiť",
   "app.overujem": "Overujem…",
   "app.inyUcet": "Prihlásiť sa iným účtom",
@@ -656,17 +658,20 @@ export const sk = {
   "app.viacstranovyDoklad": "Viacstranový doklad",
   "sken.inyDoklad": "Iný doklad",
   "app.inyDoklad": "Iný doklad",
-  "app.inyDokladPopis": "Exekúcia, predpis poistného, list z úradu, zmluva… Uloží sa medzi ostatné doklady a údaje doplní AI.",
+  "app.inyDokladPopis":
+    "Exekúcia, predpis poistného, list z úradu, zmluva… Uloží sa medzi ostatné doklady a údaje doplní AI.",
   "app.ulozitOstatny": "Uložiť ako ostatný doklad",
   "app.ostatnyUlozeny": "Uložené medzi ostatné doklady",
   "app.ostatnyBezSignalu": "Iný doklad sa dá uložiť len so signálom.",
   "bp.nadpisXiaomi": "Aby Xiaomi nezastavilo detekciu jázd",
   "bp.nadpisIny": "Povoľte appke beh na pozadí",
-  "bp.uvodXiaomi": "Telefóny Xiaomi, Redmi a POCO appku po zatvorení úplne zastavia a jazdu potom nezaznamenajú. Nastavte tieto tri veci:",
+  "bp.uvodXiaomi":
+    "Telefóny Xiaomi, Redmi a POCO appku po zatvorení úplne zastavia a jazdu potom nezaznamenajú. Nastavte tieto tri veci:",
   "bp.uvodIny": "Systém appke obmedzuje beh na pozadí, a tak môže jazdu vynechať.",
   "bp.autostart": "Automatické spúšťanie — zapnite ho pre túto appku",
   "bp.bateria": "Batéria — zvoľte „Bez obmedzení“",
-  "bp.zamok": "Zamknite appku v spustených aplikáciách: otvorte ich zoznam, podržte kartu appky a ťuknite na zámok.",
+  "bp.zamok":
+    "Zamknite appku v spustených aplikáciách: otvorte ich zoznam, podržte kartu appky a ťuknite na zámok.",
   "bp.otvorit": "Otvoriť",
   "bp.hotovo": "Hotovo, už nepripomínať",
   "bp.vseobecne": "Otvorili sa všeobecné nastavenia — nájdite v nich túto appku.",
@@ -684,13 +689,16 @@ export const sk = {
   "app.precitaneZDokladu": "Prečítané z dokladu",
   "app.dokladSaUklada": "Doklad sa ukladá — pokojne skenujte ďalej",
   "app.dokladUzMate": "Tento doklad už máte",
-  "app.dokladUzMatePopis": "Uložený {datum}, {suma}. Ak ho uložíte znova, bude v účtovníctve dvakrát.",
+  "app.dokladUzMatePopis":
+    "Uložený {datum}, {suma}. Ak ho uložíte znova, bude v účtovníctve dvakrát.",
   "app.ulozitAjTak": "Uložiť aj tak",
   "zrus.nadpis": "Zmazanie účtu",
-  "zrus.popis": "Zmazanie má {dni}-dňový odklad. Kým lehota beží, nič sa nemaže a žiadosť sa dá odvolať prihlásením.",
+  "zrus.popis":
+    "Zmazanie má {dni}-dňový odklad. Kým lehota beží, nič sa nemaže a žiadosť sa dá odvolať prihlásením.",
   "zrus.chcem": "Chcem zmazať účet",
   "zrus.naozaj": "Naozaj zmazať účet?",
-  "zrus.naozajPopis": "Účet {email} sa zmaže o {dni} dní. Dovtedy sa nič nemaže a stačí sa prihlásiť a žiadosť odvolať.",
+  "zrus.naozajPopis":
+    "Účet {email} sa zmaže o {dni} dní. Dovtedy sa nič nemaže a stačí sa prihlásiť a žiadosť odvolať.",
   "zrus.zmazeSa": "Po uplynutí lehoty sa zmaže",
   "zrus.zmazePrihlasenie": "prihlásenie, e-mail a meno,",
   "zrus.zmazePristup": "prístup do všetkých firiem, kde ste členom,",
@@ -698,7 +706,8 @@ export const sk = {
   "zrus.ostava": "Ostáva",
   "zrus.ostavaFirmy": "firmy, ktoré majú aj iných členov — tým sa nič nestane,",
   "zrus.ostavaDoklady": "doklady, ktoré ste už stiahli alebo poslali odberateľom.",
-  "zrus.stiahnite": "Údaje si stiahnite ešte pred zmazaním. Po zmazaní ich už nemáme odkiaľ obnoviť.",
+  "zrus.stiahnite":
+    "Údaje si stiahnite ešte pred zmazaním. Po zmazaní ich už nemáme odkiaľ obnoviť.",
   "zrus.potvrdit": "Zmazať účet o {dni} dní",
   "zrus.zapisujem": "Zapisujem…",
   "zrus.nechat": "Nechať účet",
@@ -901,6 +910,17 @@ export const sk = {
   "kj.nezapisanePopis": "Ťuknutím ju doplníte do knihy — kým tam nie je, nepočíta sa do mesiaca.",
   "kj.bezJazd": "Tento mesiac zatiaľ bez jazdy",
   "kj.bezJazdPopis": "Prvú spustíte zeleným tlačidlom dole.",
+  "pril.nadpis": "Prílohy",
+  "pril.pridat": "Pridať prílohu",
+  "pril.pridatPopis": "Dodací list, zmluva, výkaz alebo fotka",
+  "pril.ziadne": "Faktúra zatiaľ nemá prílohy.",
+  "pril.nahravam": "Nahrávam…",
+  "pril.zmazat": "Zmazať",
+  "pril.naozajZmazat": "Zmazať prílohu {nazov}?",
+  "pril.ponechat": "Ponechať",
+  "pril.zmazana": "Príloha zmazaná.",
+  "pril.chybaNahratia": "Prílohu sa nepodarilo nahrať.",
+  "pril.chybaOtvorenia": "Prílohu sa nepodarilo otvoriť.",
 } as const;
 
 export type Kluc = keyof typeof sk;

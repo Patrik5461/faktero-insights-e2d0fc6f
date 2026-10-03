@@ -1105,7 +1105,7 @@ function InvoiceDetail() {
             )}
 
             <PrilohyFaktury
-              invoiceId={inv.id}
+              dokladId={inv.id}
               mozeMenit={inv.status !== "cancelled"}
               onZmena={setPocetPriloh}
             />

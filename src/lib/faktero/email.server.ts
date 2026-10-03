@@ -11,43 +11,6 @@ export type SendInvoiceEmailInput = {
   s_prilohami?: boolean;
 };
 
-/**
- * Prílohy dokladu pre Resend. Resend berie celú správu do 40 MB, a to je
- * spolu s PDF faktúry aj s nárastom pri base64 — preto strop na súčet.
- * Čo sa nezmestí, radšej vynecháme a povieme to, než by mail neodišiel.
- */
-const STROP_PRILOH = 20 * 1024 * 1024;
-
-async function prilohyDokladu(companyId: string, invoiceId: string) {
-  const { data } = await supabaseAdmin
-    .from("invoice_attachments")
-    .select("path, name, size")
-    .eq("company_id", companyId)
-    .eq("invoice_id", invoiceId)
-    .order("created_at");
-
-  const prilohy: { filename: string; content: string }[] = [];
-  const vynechane: string[] = [];
-  let spolu = 0;
-  for (const p of data ?? []) {
-    if (spolu + Number(p.size ?? 0) > STROP_PRILOH) {
-      vynechane.push(p.name);
-      continue;
-    }
-    const { data: subor } = await supabaseAdmin.storage
-      .from("invoice-attachments")
-      .download(p.path);
-    if (!subor) {
-      vynechane.push(p.name);
-      continue;
-    }
-    const bajty = Buffer.from(await subor.arrayBuffer());
-    spolu += bajty.length;
-    prilohy.push({ filename: p.name, content: bajty.toString("base64") });
-  }
-  return { prilohy, vynechane };
-}
-
 function applyVars(s: string, inv: any, company: any) {
   const total = `${Number(inv.total).toFixed(2)} ${inv.currency}`;
   const pairs: Array<[string, string]> = [
@@ -198,7 +161,9 @@ export async function sendInvoiceEmail(input: SendInvoiceEmailInput) {
       podpisHtml(company ?? {});
 
     const { prilohy, vynechane } = input.s_prilohami
-      ? await prilohyDokladu(input.company_id, input.invoice_id)
+      ? await (
+          await import("./prilohy-mail.server")
+        ).prilohyDoMailu("invoice", input.company_id, input.invoice_id)
       : { prilohy: [], vynechane: [] as string[] };
 
     const senderName = company?.email_sender_name || company?.name || "Faktero";

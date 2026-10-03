@@ -7,6 +7,7 @@ import {
   PRIPONY_PRE_VYBER,
   chybaPrilohy,
   velkost,
+  type DruhSPrilohou,
 } from "@/lib/faktero/faktura-prilohy";
 import {
   prilohyFakturyFn,
@@ -39,17 +40,20 @@ function naBase64(subor: File): Promise<string> {
 }
 
 /**
- * Prílohy k dokladu — dodací list, zmluva, výkaz prác, fotka.
+ * Prílohy k dokladu — dodací list, zmluva, výkaz prác, fotka, výkres.
  *
- * Pri odoslaní faktúry mailom sa dá zaškrtnúť, že majú ísť s ňou; preto
+ * Pri odoslaní dokladu mailom sa dá zaškrtnúť, že majú ísť s ním; preto
  * stránka o nich vie aj mimo tejto karty (`onZmena`).
  */
 export function PrilohyFaktury({
-  invoiceId,
+  druh = "invoice",
+  dokladId,
   mozeMenit,
   onZmena,
 }: {
-  invoiceId: string;
+  /** Faktúra, cenová ponuka alebo prijatá objednávka. */
+  druh?: DruhSPrilohou;
+  dokladId: string;
   /** Stornovaný alebo odovzdaný doklad sa už needituje. */
   mozeMenit: boolean;
   onZmena?: (pocet: number) => void;
@@ -66,13 +70,13 @@ export function PrilohyFaktury({
 
   const obnov = useCallback(async () => {
     try {
-      const r = await nacitaj({ data: { invoiceId } });
+      const r = await nacitaj({ data: { druh, dokladId } });
       setPrilohy(r.prilohy as Priloha[]);
       onZmena?.(r.prilohy.length);
     } catch {
       /* Zoznam príloh nie je dôvod zhodiť celú stránku dokladu. */
     }
-  }, [invoiceId, nacitaj, onZmena]);
+  }, [druh, dokladId, nacitaj, onZmena]);
 
   useEffect(() => {
     void obnov();
@@ -91,7 +95,8 @@ export function PrilohyFaktury({
         }
         await nahraj({
           data: {
-            invoiceId,
+            druh,
+            dokladId,
             name: subor.name.slice(0, 200),
             mime: subor.type || "",
             base64: await naBase64(subor),
@@ -181,7 +186,11 @@ export function PrilohyFaktury({
               nadSchrankou ? "border-primary bg-primary/5" : "border-border"
             }`}
           >
-            Pretiahnite sem dodací list, zmluvu alebo výkaz — alebo ich vyberte tlačidlom.
+            {druh === "invoice"
+              ? "Pretiahnite sem dodací list, zmluvu alebo výkaz — alebo ich vyberte tlačidlom."
+              : druh === "quote"
+                ? "Pretiahnite sem výkres, špecifikáciu alebo fotky — alebo ich vyberte tlačidlom."
+                : "Pretiahnite sem objednávku zákazníka alebo podklady — alebo ich vyberte tlačidlom."}
           </div>
         ) : (
           <p className="mt-3 text-sm text-muted-foreground">Doklad nemá prílohy.</p>

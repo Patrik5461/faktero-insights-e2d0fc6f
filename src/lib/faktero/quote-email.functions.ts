@@ -7,6 +7,8 @@ const Input = z.object({
   recipient_email: z.string().email().max(255),
   subject: z.string().max(255).optional(),
   message: z.string().max(5000).optional(),
+  /** Priložiť k mailu aj súbory, ktoré visia na ponuke. */
+  s_prilohami: z.boolean().optional(),
 });
 
 function escapeHtml(s: string) {
@@ -127,6 +129,10 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
     */
     const { podpisHtml, podpisText } = await import("./email-podpis");
 
+    const { prilohy, vynechane } = data.s_prilohami
+      ? await (await import("./prilohy-mail.server")).prilohyDoMailu("quote", q.company_id, q.id)
+      : { prilohy: [], vynechane: [] as string[] };
+
     const fromEmail = process.env.RESEND_FROM_EMAIL || "faktury@faktero.sk";
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -142,7 +148,7 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
           ${tlacidlaDoMailu({ token, cislo: q.quote_number, suma: q.total, mena: q.currency, platiDo: q.valid_until })}
           ${podpisHtml(company ?? {})}
         </div>`,
-        attachments: [{ filename: `${q.quote_number}.pdf`, content: pdfB64 }],
+        attachments: [{ filename: `${q.quote_number}.pdf`, content: pdfB64 }, ...prilohy],
       }),
     });
     const text = await res.text();
@@ -184,5 +190,5 @@ export const sendQuoteEmailFn = createServerFn({ method: "POST" })
         sent_at: new Date().toISOString(),
       })
       .eq("id", q.id);
-    return { ok: true, message_id: json?.id ?? null };
+    return { ok: true, message_id: json?.id ?? null, vynechane };
   });

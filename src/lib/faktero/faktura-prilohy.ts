@@ -3,6 +3,18 @@
  * aj v prehliadači, nech sa človek nedozvie o zamietnutí až po nahratí.
  */
 
+/**
+ * Doklady, ku ktorým sa dá priložiť súbor. Každý má v tabuľke príloh vlastný
+ * stĺpec s cudzím kľúčom — tak sa príloha pri zmazaní dokladu zmaže s ním.
+ */
+export const DRUHY_S_PRILOHAMI = {
+  invoice: { stlpec: "invoice_id", tabulka: "invoices", nazov: "Faktúra" },
+  quote: { stlpec: "quote_id", tabulka: "quotes", nazov: "Cenová ponuka" },
+  sales_order: { stlpec: "sales_order_id", tabulka: "sales_orders", nazov: "Objednávka" },
+} as const;
+
+export type DruhSPrilohou = keyof typeof DRUHY_S_PRILOHAMI;
+
 /** 15 MB na súbor; toľko znesie aj úložisko (`invoice-attachments`). */
 export const MAX_PRILOHA = 15 * 1024 * 1024;
 
@@ -76,7 +88,7 @@ export function velkost(bajty: unknown): string {
  * robia problémy, tak sa súbor uloží pod náhodným menom — pôvodný názov
  * drží databáza a používa sa pri sťahovaní aj v maile.
  */
-export function cestaPrilohy(companyId: string, invoiceId: string, mime: string): string {
+export function cestaPrilohy(companyId: string, dokladId: string, mime: string): string {
   const pripona = POVOLENE_TYPY[mime] ?? "bin";
-  return `${companyId}/${invoiceId}/${crypto.randomUUID()}.${pripona}`;
+  return `${companyId}/${dokladId}/${crypto.randomUUID()}.${pripona}`;
 }

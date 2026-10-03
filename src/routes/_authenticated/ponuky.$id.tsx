@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { useServerFn } from "@tanstack/react-start";
 import { generateQuotePdf, getQuotePdfSignedUrl } from "@/lib/faktero/quote-pdf.functions";
 import { convertQuoteToInvoice, duplicateQuote } from "@/lib/faktero/quote.functions";
@@ -53,6 +54,9 @@ function QuoteDetail() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [emailOpen, setEmailOpen] = useState(false);
+  /* Koľko príloh ponuka má — podľa toho sa v maile ponúkne, či ich priložiť. */
+  const [pocetPriloh, setPocetPriloh] = useState(0);
+  const [posielatPrilohy, setPosielatPrilohy] = useState(true);
   useZatvorNaEscape(emailOpen ? () => setEmailOpen(false) : null);
   const [emailForm, setEmailForm] = useState({ recipient_email: "", subject: "", message: "" });
 
@@ -164,8 +168,14 @@ function QuoteDetail() {
   async function submitEmail() {
     setBusy("mail");
     try {
-      await send({ data: { quoteId: id, ...emailForm } });
+      const r: any = await send({
+        data: { quoteId: id, ...emailForm, s_prilohami: pocetPriloh > 0 && posielatPrilohy },
+      });
       toast.success("E-mail odoslaný");
+      if (r?.vynechane?.length) {
+        /* Mail odišiel, ale nie celý — to sa musí povedať nahlas. */
+        toast.warning(`Do mailu sa nezmestili: ${r.vynechane.join(", ")}`, { duration: 12000 });
+      }
       setEmailOpen(false);
       load();
     } catch (e: any) {
@@ -407,6 +417,13 @@ function QuoteDetail() {
                 )}
               </div>
             )}
+
+            <PrilohyFaktury
+              druh="quote"
+              dokladId={q.id}
+              mozeMenit={!converted}
+              onZmena={setPocetPriloh}
+            />
           </div>
 
           <aside className="space-y-4">
@@ -496,6 +513,25 @@ function QuoteDetail() {
                 className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </label>
+            {pocetPriloh > 0 && (
+              <label className="flex items-start gap-2 rounded-md border border-border bg-secondary/30 p-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={posielatPrilohy}
+                  onChange={(e) => setPosielatPrilohy(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="font-medium">Odoslať aj prílohy ponuky</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {pocetPriloh === 1
+                      ? "K ponuke visí 1 príloha"
+                      : `K ponuke visia prílohy: ${pocetPriloh}`}
+                    . Pôjdu v tom istom maile.
+                  </span>
+                </span>
+              </label>
+            )}
             <p className="text-xs text-muted-foreground">PDF ponuky sa pripojí automaticky.</p>
             <div className="flex justify-end gap-2 pt-2">
               <button

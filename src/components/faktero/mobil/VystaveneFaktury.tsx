@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
+import { PrilohyAppka } from "./PrilohyAppka";
 import { datum } from "./PrijateDoklady";
 import { otvorPdfFaktury, zdielajPdfFaktury } from "./pdf-faktury";
 import type { OdlozenaFaktura } from "@/lib/mobile/faktury-fronta";
@@ -322,10 +323,7 @@ export function VystaveneFaktury({
           popis={nedostupne && !hladanie ? t("faktury.bezZoznamu") : undefined}
           akcia={
             !hladanie && !nedostupne ? (
-              <button
-                onClick={onNova}
-                className="text-[15px] font-medium text-app-zelena"
-              >
+              <button onClick={onNova} className="text-[15px] font-medium text-app-zelena">
                 {t("faktury.vystavPrvu")}
               </button>
             ) : undefined
@@ -358,7 +356,9 @@ export function VystaveneFaktury({
                               <StatusBadge text={t(s.kluc)} ton="cervena" />
                             ) : (
                               <span className="shrink-0">
-                                {t("faktury.splatnostSkratka", { den: datumKratky(f.due_date, loc) })}
+                                {t("faktury.splatnostSkratka", {
+                                  den: datumKratky(f.due_date, loc),
+                                })}
                               </span>
                             )}
                           </span>
@@ -479,7 +479,14 @@ function DetailFaktury({
     if (!faktura.customer_email) return;
     setBusy("mail");
     try {
-      await mailFn({ data: { invoiceId: faktura.id, recipient_email: faktura.customer_email } });
+      /* Prílohy idú s faktúrou rovnako ako na webe, kde je voľba predvolene zapnutá. */
+      await mailFn({
+        data: {
+          invoiceId: faktura.id,
+          recipient_email: faktura.customer_email,
+          s_prilohami: true,
+        },
+      });
       toast.success(t("nf.odoslaneNa", { email: faktura.customer_email ?? "" }));
       onZmena();
     } catch (e: any) {
@@ -525,9 +532,7 @@ function DetailFaktury({
     return (
       <Pracujem
         text={
-          busy === "pdf" || busy === "zdielam"
-            ? t("faktury.pripravujemPdf")
-            : t("faktury.pracujem")
+          busy === "pdf" || busy === "zdielam" ? t("faktury.pripravujemPdf") : t("faktury.pracujem")
         }
       />
     );
@@ -551,8 +556,12 @@ function DetailFaktury({
         <div className="space-y-2 rounded-app border border-app-ramik bg-app-karta p-4 text-[14px] shadow-app">
           <Riadok label={t("faktury.vystavena")} value={datum(faktura.issue_date, loc)} />
           <Riadok label={t("faktury.splatna")} value={datum(faktura.due_date, loc)} />
-          {faktura.paid_at && <Riadok label={t("faktury.uhradena")} value={datum(faktura.paid_at, loc)} />}
-          {faktura.sent_at && <Riadok label={t("faktury.odoslana")} value={datum(faktura.sent_at, loc)} />}
+          {faktura.paid_at && (
+            <Riadok label={t("faktury.uhradena")} value={datum(faktura.paid_at, loc)} />
+          )}
+          {faktura.sent_at && (
+            <Riadok label={t("faktury.odoslana")} value={datum(faktura.sent_at, loc)} />
+          )}
         </div>
 
         <div className="space-y-2">
@@ -585,7 +594,9 @@ function DetailFaktury({
               icon={BellRing}
               label={t("faktury.poslatUpomienku", { n: Math.min(3, poslanych + 1) })}
               hint={
-                poslanych ? t("faktury.zatialOdoslane", { pocet: poslanych }) : faktura.customer_email
+                poslanych
+                  ? t("faktury.zatialOdoslane", { pocet: poslanych })
+                  : faktura.customer_email
               }
               onClick={posliUpomienku}
             />
@@ -627,14 +638,14 @@ function DetailFaktury({
           })()}
         </div>
 
+        <PrilohyAppka invoiceId={faktura.id} mozeMenit={faktura.status !== "cancelled"} />
+
         {mazem ? (
           <div className="rounded-app border border-destructive/40 bg-destructive/5 p-4">
             <p className="text-sm font-medium">
               {t("faktury.naozajZmazat", { cislo: faktura.invoice_number })}
             </p>
-            <p className="mt-1 text-xs text-app-text-2">
-              {t("faktury.cisloOstava")}
-            </p>
+            <p className="mt-1 text-xs text-app-text-2">{t("faktury.cisloOstava")}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <button
                 onClick={() => setMazem(false)}

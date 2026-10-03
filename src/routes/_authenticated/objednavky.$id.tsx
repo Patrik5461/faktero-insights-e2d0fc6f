@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
+import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import {
   deleteSalesOrder,
@@ -299,6 +300,8 @@ function OrderDetail() {
               </ul>
             )}
           </div>
+
+          <PrilohyFaktury druh="sales_order" dokladId={id} mozeMenit={stav !== "cancelled"} />
 
           {/* Nebezpečné akcie */}
           <div className="flex flex-wrap gap-2">

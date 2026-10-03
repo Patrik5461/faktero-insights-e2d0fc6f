@@ -3670,10 +3670,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
-          invoice_id: string
+          invoice_id: string | null
           mime: string | null
           name: string
           path: string
+          quote_id: string | null
+          sales_order_id: string | null
           size: number | null
         }
         Insert: {
@@ -3681,10 +3683,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          invoice_id: string
+          invoice_id?: string | null
           mime?: string | null
           name: string
           path: string
+          quote_id?: string | null
+          sales_order_id?: string | null
           size?: number | null
         }
         Update: {
@@ -3692,10 +3696,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          invoice_id?: string
+          invoice_id?: string | null
           mime?: string | null
           name?: string
           path?: string
+          quote_id?: string | null
+          sales_order_id?: string | null
           size?: number | null
         }
         Relationships: [

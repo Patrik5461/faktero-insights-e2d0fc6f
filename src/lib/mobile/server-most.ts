@@ -47,6 +47,12 @@ import {
   zrusParovanieDokladu,
 } from "@/lib/faktero/doklad-parovanie.functions";
 import { ulozOstatnyZAppkyFn } from "@/lib/faktero/ostatne-doklady.functions";
+import {
+  prilohyFakturyFn,
+  nahrajPrilohuFn,
+  odkazNaPrilohuFn,
+  zmazPrilohuFn,
+} from "@/lib/faktero/faktura-prilohy.functions";
 import type { Operacia } from "./operacie";
 
 /** Jediné miesto, kde sa kľúč operácie stretáva so serverovou funkciou. */
@@ -89,6 +95,10 @@ export const SERVEROVE_FUNKCIE: Record<Operacia, any> = {
   "doklad-sparuj": potvrdParovanieDokladu,
   "doklad-zrus-parovanie": zrusParovanieDokladu,
   "doklady-uhrady": uhradyDokladov,
+  "prilohy-zoznam": prilohyFakturyFn,
+  "priloha-nahraj": nahrajPrilohuFn,
+  "priloha-odkaz": odkazNaPrilohuFn,
+  "priloha-zmaz": zmazPrilohuFn,
 };
 
 export function useOperacia<T = any>(kluc: Operacia): (vstup: { data: any }) => Promise<T> {

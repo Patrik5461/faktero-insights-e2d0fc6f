@@ -54,6 +54,11 @@ export const OPERACIE = [
   "doklad-sparuj",
   "doklad-zrus-parovanie",
   "doklady-uhrady",
+  // Prílohy k faktúre — tie isté ako na webe, nahrávajú sa cez server.
+  "prilohy-zoznam",
+  "priloha-nahraj",
+  "priloha-odkaz",
+  "priloha-zmaz",
 ] as const;
 
 export type Operacia = (typeof OPERACIE)[number];
