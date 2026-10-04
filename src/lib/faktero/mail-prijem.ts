@@ -128,6 +128,9 @@ export function overVlastnyLocalPart(vstup: string): OverenieAdresy {
   if (upravene.length > VLASTNA_ADRESA_MAX)
     return { ok: false, chyba: `Adresa môže mať najviac ${VLASTNA_ADRESA_MAX} znakov.` };
   if (ZAKAZANE.has(upravene)) return { ok: false, chyba: "Toto meno je vyhradené, zvoľte si iné." };
+  // „podpora-…" patrí odpovediam na požiadavky v help desku.
+  if (upravene.startsWith("podpora-"))
+    return { ok: false, chyba: "Toto meno je vyhradené, zvoľte si iné." };
 
   return { ok: true, hodnota: upravene };
 }
@@ -163,7 +166,8 @@ export function vyberLocalPart(
   `logo.png`) a bývajú malé. Fotka dokladu z telefónu má stovky kilobajtov.
   Čo prejde sem, preveruje ešte raz čítanie cez AI.
 */
-const MENA_PODPISOV = /(image\d+|logo|signature|podpis|ikona|icon|banner|footer|header|avatar|emblem|facebook|instagram|linkedin|twitter|youtube)/i;
+const MENA_PODPISOV =
+  /(image\d+|logo|signature|podpis|ikona|icon|banner|footer|header|avatar|emblem|facebook|instagram|linkedin|twitter|youtube)/i;
 /** Menší obrázok než toto je podpis alebo ikona, nie doklad. */
 export const MIN_BAJTOV_OBRAZKA = 60 * 1024;
 
@@ -195,11 +199,11 @@ export function maPouzitelneUdaje(ai: Record<string, unknown> | null | undefined
   const text = (v: unknown) => (typeof v === "string" && v.trim().length > 1 ? v.trim() : null);
   return Boolean(
     text(ai.supplier_name) ||
-      text(ai.supplier_ico) ||
-      text(ai.invoice_number) ||
-      text(ai.variable_symbol) ||
-      cislo(ai.amount_total) ||
-      cislo(ai.amount_without_vat),
+    text(ai.supplier_ico) ||
+    text(ai.invoice_number) ||
+    text(ai.variable_symbol) ||
+    cislo(ai.amount_total) ||
+    cislo(ai.amount_without_vat),
   );
 }
 

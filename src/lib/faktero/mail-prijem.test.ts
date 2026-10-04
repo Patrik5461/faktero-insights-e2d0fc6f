@@ -281,7 +281,9 @@ describe("prílohy, ktoré nie sú doklad", () => {
   });
   it("bez údajov sa doklad nezaloží", () => {
     expect(maPouzitelneUdaje(null)).toBe(false);
-    expect(maPouzitelneUdaje({ supplier_name: null, invoice_number: "", amount_total: null })).toBe(false);
+    expect(maPouzitelneUdaje({ supplier_name: null, invoice_number: "", amount_total: null })).toBe(
+      false,
+    );
     expect(maPouzitelneUdaje({ supplier_name: "Slovnaft, a.s." })).toBe(true);
     expect(maPouzitelneUdaje({ amount_total: "63,96" })).toBe(true);
   });

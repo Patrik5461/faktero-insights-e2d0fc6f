@@ -84,7 +84,9 @@ const sections: HelpSection[] = [
         </ul>
         <p>
           Odpoveď podpory uvidíte v <em>Moje požiadavky</em> (s označením <em>Nová odpoveď</em>), v
-          zvončeku notifikácií aj v e-maile. Odpísať môžete priamo pod ňou.
+          zvončeku notifikácií aj v e-maile. Odpísať môžete priamo pod ňou vo Fakteri —{" "}
+          <strong>alebo jednoducho odpovedzte na e-mail</strong>. Odpoveď sa zapíše do tej istej
+          požiadavky; staršia citovaná pošta pod ňou sa vynechá.
         </p>
       </>
     ),

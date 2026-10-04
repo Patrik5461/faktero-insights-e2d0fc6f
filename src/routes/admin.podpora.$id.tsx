@@ -130,6 +130,7 @@ function AdminPoziadavka() {
                       ? `Podpora${s.autor ? ` · ${s.autor}` : ""}`
                       : (s.autor ?? p.meno ?? p.email)}
                     {s.interna && " · interná poznámka"}
+                    {s.cez_email && " · e-mailom"}
                   </span>
                   <span>{new Date(s.created_at).toLocaleString("sk-SK")}</span>
                 </div>

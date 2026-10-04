@@ -91,7 +91,7 @@ export const adminPoziadavkaFn = createServerFn({ method: "POST" })
     const poz = p as any;
     const { data: spravy } = await db
       .from("podpora_spravy" as any)
-      .select("id, autor_id, od_podpory, interna, text, created_at")
+      .select("id, autor_id, od_podpory, interna, text, created_at, cez_email")
       .eq("poziadavka_id", data.id)
       .order("created_at");
     const autori = [...new Set(((spravy ?? []) as any[]).map((s) => s.autor_id).filter(Boolean))];

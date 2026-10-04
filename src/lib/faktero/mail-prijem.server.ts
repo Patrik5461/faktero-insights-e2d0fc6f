@@ -129,7 +129,7 @@ export async function precitajDoklad(
  * text, HTML ani `Authentication-Results` v ňom nie sú, a práve tie treba na
  * potvrdenie preposielania a na overenie, že mail je naozaj od Googlu.
  */
-async function obsahMailu(emailId: string, apiKey: string): Promise<Record<string, any>> {
+export async function obsahMailu(emailId: string, apiKey: string): Promise<Record<string, any>> {
   const r = await fetch(`https://api.resend.com/emails/receiving/${emailId}`, {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
@@ -246,6 +246,22 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
     podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA),
   );
   if (!localPart) return { stav: "neznama_adresa", vytvorenych: 0 };
+
+  /*
+    Odpoveď na požiadavku v help desku (`podpora-<token>@…`). Nie je to doklad
+    a s adresami firiem nemá nič spoločné — ide rovno do vlákna.
+  */
+  const { tokenZAdresy } = await import("./podpora");
+  const token = tokenZAdresy(localPart);
+  if (token) {
+    const { prijmiOdpovedEmailom } = await import("./podpora.server");
+    const stav = await prijmiOdpovedEmailom({
+      emailId: mail.email_id,
+      od: mail.from ?? null,
+      token,
+    });
+    return { stav, vytvorenych: 0 };
+  }
 
   const { data: adresa } = await supabaseAdmin
     .from("inbox_addresses")

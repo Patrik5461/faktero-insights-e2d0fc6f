@@ -4,9 +4,13 @@
   aj kontaktný formulár na webe, aby všetko skončilo v jednej schránke.
 */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { podomenaDokladov } from "./mail-prijem";
 import {
+  adresaOdpovede,
   cisloPoziadavky,
+  emailOdosielatela,
   nazovKategorie,
+  orezCitaciu,
   stavPoSprave,
   type KategoriaPoziadavky,
   type StavPoziadavky,
@@ -16,6 +20,12 @@ const web = () => (process.env.APP_PUBLIC_URL ?? "https://www.faktero.sk").repla
 /** Kam chodia nové požiadavky — tá istá servisná adresa ako doteraz hlásenia chýb. */
 const schrankaPodpory = () => process.env.FEEDBACK_TO_EMAIL || "servis@faktero.sk";
 const odosielatel = () => process.env.RESEND_FROM_NOREPLY || "noreply@faktero.sk";
+/*
+  Na každý e-mail help desku sa dá odpovedať priamo z pošty: odpoveď príde na
+  tajnú adresu požiadavky a zapíše sa do vlákna (`prijmiOdpovedEmailom`).
+*/
+const adresaPreOdpoved = (token: string) =>
+  adresaOdpovede(token, podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA));
 
 function html(v: string): string {
   return v.replace(
@@ -98,10 +108,10 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
       posledna_od: "zakaznik",
       zakaznik_videl_at: new Date().toISOString(),
     })
-    .select("id, cislo")
+    .select("id, cislo, odpoved_token")
     .single();
   if (error) throw new Error(error.message);
-  const poz = p as unknown as { id: string; cislo: number };
+  const poz = p as unknown as { id: string; cislo: number; odpoved_token: string };
 
   const { error: e2 } = await supabaseAdmin.from("podpora_spravy" as any).insert({
     poziadavka_id: poz.id,
@@ -133,20 +143,25 @@ export async function zalozPoziadavku(n: NovaPoziadavka): Promise<{ id: string; 
       ].filter(Boolean),
       text: n.text,
       odkaz: { url: `${web()}/admin/podpora/${poz.id}`, popis: `Otvoriť ${c} v administrácii` },
-      odpovedatNa: n.email,
+      // Odpoveď z pošty podpory ide do vlákna a odtiaľ zákazníkovi.
+      odpovedatNa: adresaPreOdpoved(poz.odpoved_token),
     });
     // Potvrdenie zákazníkovi z appky — vie, že správa neodišla do prázdna.
     if (n.userId) {
       await posliMail({
         komu: n.email,
         predmet: `Prijali sme vašu požiadavku ${c}`,
-        riadky: [`Ďakujeme, požiadavku ${c} sme prijali. Odpoveď uvidíte vo Fakteri aj v e-maile.`],
+        riadky: [
+          `Ďakujeme, požiadavku ${c} sme prijali. Odpoveď uvidíte vo Fakteri aj v e-maile.`,
+          "Ak chcete niečo doplniť, stačí odpovedať na tento e-mail.",
+        ],
         text: n.text,
         odkaz: { url: `${web()}/podpora/${poz.id}`, popis: "Zobraziť požiadavku" },
+        odpovedatNa: adresaPreOdpoved(poz.odpoved_token),
       });
     }
   }
-  return poz;
+  return { id: poz.id, cislo: poz.cislo };
 }
 
 type Poziadavka = {
@@ -156,12 +171,13 @@ type Poziadavka = {
   email: string;
   predmet: string;
   stav: StavPoziadavky;
+  odpoved_token: string;
 };
 
 export async function nacitajPoziadavku(id: string): Promise<Poziadavka | null> {
   const { data } = await supabaseAdmin
     .from("podpora_poziadavky" as any)
-    .select("id, cislo, user_id, email, predmet, stav")
+    .select("id, cislo, user_id, email, predmet, stav, odpoved_token")
     .eq("id", id)
     .maybeSingle();
   return (data as unknown as Poziadavka) ?? null;
@@ -170,11 +186,13 @@ export async function nacitajPoziadavku(id: string): Promise<Poziadavka | null> 
 /** Nová správa vo vlákne; postará sa o stav, „prečítané" aj e-mail druhej strane. */
 export async function pridajSpravu(args: {
   poziadavka: Poziadavka;
-  autorId: string;
+  autorId: string | null;
   od: "zakaznik" | "podpora";
   text: string;
   interna?: boolean;
-}) {
+  /** Id mailu od Resendu, keď správa prišla e-mailom — opakovaný webhook ju nezdvojí. */
+  providerEmailId?: string | null;
+}): Promise<{ zapisana: boolean }> {
   const { poziadavka: p, od } = args;
   const interna = od === "podpora" && !!args.interna;
   const { error } = await supabaseAdmin.from("podpora_spravy" as any).insert({
@@ -183,7 +201,11 @@ export async function pridajSpravu(args: {
     od_podpory: od === "podpora",
     interna,
     text: args.text.slice(0, 10000),
+    provider_email_id: args.providerEmailId ?? null,
+    cez_email: !!args.providerEmailId,
   });
+  // Tá istá odpoveď z opakovaného webhooku — už je vo vlákne, nič ďalšie.
+  if (error && (error as any).code === "23505" && args.providerEmailId) return { zapisana: false };
   if (error) throw new Error(error.message);
 
   const teraz = new Date().toISOString();
@@ -193,7 +215,7 @@ export async function pridajSpravu(args: {
       .from("podpora_poziadavky" as any)
       .update({ podpora_videla_at: teraz, updated_at: teraz })
       .eq("id", p.id);
-    return;
+    return { zapisana: true };
   }
   const stav = stavPoSprave(od, p.stav);
   await supabaseAdmin
@@ -215,10 +237,10 @@ export async function pridajSpravu(args: {
       riadky: [`Podpora Faktera odpovedala na vašu požiadavku ${c}.`],
       text: args.text,
       odkaz: p.user_id
-        ? { url: `${web()}/podpora/${p.id}`, popis: "Odpovedať vo Fakteri" }
+        ? { url: `${web()}/podpora/${p.id}`, popis: "Zobraziť vo Fakteri" }
         : undefined,
-      // Kontakt z webu nemá účet — odpovedať môže len e-mailom.
-      odpovedatNa: schrankaPodpory(),
+      // Odpovedať sa dá rovno na e-mail — príde do vlákna.
+      odpovedatNa: adresaPreOdpoved(p.odpoved_token),
     });
   } else {
     await posliMail({
@@ -227,7 +249,103 @@ export async function pridajSpravu(args: {
       riadky: [`Zákazník ${p.email} odpísal na ${c}.`],
       text: args.text,
       odkaz: { url: `${web()}/admin/podpora/${p.id}`, popis: `Otvoriť ${c} v administrácii` },
-      odpovedatNa: p.email,
+      odpovedatNa: adresaPreOdpoved(p.odpoved_token),
     });
+  }
+  return { zapisana: true };
+}
+
+/** Holý text z HTML tela, keď mail textovú časť nemá. */
+function htmlNaText(h: string): string {
+  return h
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|tr|h\d)>/gi, "\n")
+    .replace(/<blockquote[\s\S]*$/i, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/[ \t]+/g, " ");
+}
+
+/**
+ * Odpoveď e-mailom na tajnú adresu požiadavky. Kto píše, rozhoduje odosielateľ:
+ * e-mail požiadavky je zákazník, servisná schránka alebo platform admin je
+ * podpora. Ktokoľvek iný (preposlaný mail, kolega zákazníka) sa zapíše ako
+ * interná poznámka — podpora ho uvidí, zákazníkovi sa nič neodošle.
+ */
+export async function prijmiOdpovedEmailom(args: {
+  emailId: string;
+  od: string | null;
+  token: string;
+}): Promise<"hotovo" | "neznama_adresa" | "chyba"> {
+  const { data } = await supabaseAdmin
+    .from("podpora_poziadavky" as any)
+    .select("id, cislo, user_id, email, predmet, stav, odpoved_token")
+    .eq("odpoved_token", args.token)
+    .maybeSingle();
+  const p = data as unknown as Poziadavka | null;
+  if (!p) return "neznama_adresa";
+
+  try {
+    const kluc = (process.env.RESEND_INBOUND_API_KEY || process.env.RESEND_API_KEY)?.trim();
+    if (!kluc) throw new Error("RESEND_INBOUND_API_KEY ani RESEND_API_KEY nie je nastavený");
+    const { obsahMailu } = await import("./mail-prijem.server");
+    const { rozbalTelo } = await import("./mail-potvrdenie");
+    const obsah = await obsahMailu(args.emailId, kluc);
+    const surovy = rozbalTelo(obsah.text) || htmlNaText(rozbalTelo(obsah.html));
+    const text = orezCitaciu(surovy);
+    if (!text) {
+      console.warn(`[podpora] prázdna odpoveď e-mailom na ${cisloPoziadavky(p.cislo)}`);
+      return "hotovo";
+    }
+
+    const odosielatelMailu = emailOdosielatela(args.od);
+    let od: "zakaznik" | "podpora" = "zakaznik";
+    let autorId: string | null = null;
+    let interna = false;
+    let telo = text;
+    if (odosielatelMailu === p.email.toLowerCase()) {
+      autorId = p.user_id;
+    } else {
+      const { data: profil } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .ilike("email", odosielatelMailu)
+        .maybeSingle();
+      const { data: admin } = profil
+        ? await supabaseAdmin
+            .from("platform_admins")
+            .select("user_id")
+            .eq("user_id", profil.id)
+            .maybeSingle()
+        : { data: null };
+      if (admin || odosielatelMailu === schrankaPodpory().toLowerCase()) {
+        od = "podpora";
+        autorId = profil?.id ?? null;
+      } else {
+        od = "podpora";
+        interna = true;
+        telo = `E-mail od ${odosielatelMailu || "neznámeho odosielateľa"} (nie je to zákazník ani podpora):\n\n${text}`;
+      }
+    }
+    await pridajSpravu({
+      poziadavka: p,
+      autorId,
+      od,
+      text: telo,
+      interna,
+      providerEmailId: args.emailId,
+    });
+    return "hotovo";
+  } catch (e: any) {
+    console.error(
+      `[podpora] odpoveď e-mailom na ${cisloPoziadavky(p.cislo)} zlyhala:`,
+      e?.message ?? e,
+    );
+    return "chyba";
   }
 }

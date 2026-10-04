@@ -98,3 +98,73 @@ export function kategoriaSpatnejVazby(kind: string, url?: string | null): Katego
   if (url === "app://diagnostika") return "diagnostika";
   return kind === "napad" ? "napad" : "chyba";
 }
+
+/* ---------------- Odpovede e-mailom ---------------- */
+
+const PREDPONA_ODPOVEDE = "podpora-";
+
+/** Adresa, na ktorú odpoveď z e-mailu dorazí do vlákna požiadavky. */
+export function adresaOdpovede(token: string, domena: string): string {
+  return `${PREDPONA_ODPOVEDE}${token}@${domena}`;
+}
+
+/** Token z lokálnej časti adresy, alebo `null`, keď to nie je adresa help desku. */
+export function tokenZAdresy(localPart: string | null | undefined): string | null {
+  const l = String(localPart ?? "").toLowerCase();
+  if (!l.startsWith(PREDPONA_ODPOVEDE)) return null;
+  const t = l.slice(PREDPONA_ODPOVEDE.length);
+  return /^[0-9a-f]{18}$/.test(t) ? t : null;
+}
+
+/** Je to (rezervovaná) adresa help desku? Doklady e-mailom si ju zabrať nesmú. */
+export function jeAdresaPodpory(localPart: string): boolean {
+  return String(localPart).toLowerCase().startsWith(PREDPONA_ODPOVEDE);
+}
+
+/** „Meno <adresa@x.sk>" → „adresa@x.sk". */
+export function emailOdosielatela(od: string | null | undefined): string {
+  const s = String(od ?? "");
+  return (s.match(/<([^>]+)>/)?.[1] ?? s).trim().toLowerCase();
+}
+
+/*
+  Riadky, od ktorých začína citovaná staršia korešpondencia. Poštoví klienti
+  ju pripájajú pod odpoveď a do vlákna nepatrí — bola by tam každá správa
+  znova a znova.
+*/
+const ZACIATOK_CITACIE = [
+  /^on\s.+\swrote:\s*$/i,
+  /^.{0,200}\s(napísal|napísala|napísal\(a\)|napsal|napsala|napsal\(a\)):\s*$/i,
+  /^(dňa|dna|dne)\s.+$/i,
+  /^-{2,}\s*(original message|pôvodná správa|původní zpráva|forwarded message|preposlaná správa)/i,
+  /^_{10,}\s*$/,
+  /^(from|od):\s.+@/i,
+  /^podpora faktera odpovedala na vašu požiadavku/i,
+  /^zákazník .+ odpísal na p-\d+/i,
+];
+
+/**
+ * Z odpovede e-mailom nechá len to, čo človek napísal: bez citovanej staršej
+ * pošty a bez podpisu za oddeľovačom „-- ".
+ */
+export function orezCitaciu(text: string): string {
+  const riadky = String(text ?? "")
+    .replace(/\r\n?/g, "\n")
+    .split("\n");
+  const out: string[] = [];
+  for (let i = 0; i < riadky.length; i++) {
+    const r = riadky[i]!;
+    const t = r.trim();
+    if (t === "--" || r === "-- ") break;
+    if (t.startsWith(">")) break;
+    // Gmail láme „On … <adresa@…> wrote:" na dva riadky.
+    const sDalsim = `${t} ${(riadky[i + 1] ?? "").trim()}`;
+    if (ZACIATOK_CITACIE.some((re) => re.test(t))) break;
+    if (/^on\s/i.test(t) && /^on\s.+\swrote:\s*$/i.test(sDalsim)) break;
+    out.push(r);
+  }
+  return out
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}

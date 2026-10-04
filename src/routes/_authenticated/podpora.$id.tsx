@@ -18,7 +18,13 @@ export const Route = createFileRoute("/_authenticated/podpora/$id")({
   component: DetailPoziadavky,
 });
 
-type Sprava = { id: string; od_podpory: boolean; text: string; created_at: string };
+type Sprava = {
+  id: string;
+  od_podpory: boolean;
+  text: string;
+  created_at: string;
+  cez_email: boolean;
+};
 
 function DetailPoziadavky() {
   const { id } = Route.useParams();
@@ -34,12 +40,12 @@ function DetailPoziadavky() {
     const [{ data: poz }, { data: sp }] = await Promise.all([
       supabase
         .from("podpora_poziadavky" as any)
-        .select("*")
+        .select("id, cislo, predmet, stav, kategoria, created_at") // token adresy klient čítať nesmie
         .eq("id", id)
         .maybeSingle(),
       supabase
         .from("podpora_spravy" as any)
-        .select("id, od_podpory, text, created_at")
+        .select("id, od_podpory, text, created_at, cez_email")
         .eq("poziadavka_id", id)
         .order("created_at"),
     ]);
@@ -131,6 +137,7 @@ function DetailPoziadavky() {
                   <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">
                       {s.od_podpory ? "Podpora Faktera" : "Vy"}
+                      {s.cez_email && <span className="font-normal text-muted-foreground"> · e-mailom</span>}
                     </span>
                     <span>{new Date(s.created_at).toLocaleString("sk-SK")}</span>
                   </div>
