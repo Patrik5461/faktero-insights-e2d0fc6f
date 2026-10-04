@@ -8,9 +8,10 @@ defined( 'ABSPATH' ) || exit;
 class Faktero_Objednavka {
 
 	/** Meta kľúče, pod ktorými IČO/DIČ/IČ DPH ukladajú bežné slovenské doplnky pokladne. */
-	const KLUCE_ICO    = array( '_billing_ico', 'billing_ico', '_billing_company_id', '_billing_ic', 'billing_ic' );
-	const KLUCE_DIC    = array( '_billing_dic', 'billing_dic', '_billing_tax_id' );
-	const KLUCE_IC_DPH = array( '_billing_ic_dph', 'billing_ic_dph', '_billing_icdph', '_billing_dic_dph', '_billing_vat_number', '_vat_number', 'vat_number' );
+	/* Prvé sú polia z pokladne z blokov (`_wc_other/…`), potom klasická pokladňa. */
+	const KLUCE_ICO    = array( '_wc_other/faktero/ico', '_billing_ico', 'billing_ico', '_billing_company_id', '_billing_ic', 'billing_ic' );
+	const KLUCE_DIC    = array( '_wc_other/faktero/dic', '_billing_dic', 'billing_dic', '_billing_tax_id' );
+	const KLUCE_IC_DPH = array( '_wc_other/faktero/ic_dph', '_billing_ic_dph', 'billing_ic_dph', '_billing_icdph', '_billing_dic_dph', '_billing_vat_number', '_vat_number', 'vat_number' );
 
 	/**
 	 * Jednoznačná značka objednávky pre `external_id`. Faktero podľa nej
@@ -34,6 +35,18 @@ class Faktero_Objednavka {
 				// Platobné brány (karta, Google Pay, GoPay, Besteron, PayPal…).
 				return 'card';
 		}
+	}
+
+	/*
+	  Je objednávka naozaj zaplatená? WooCommerce za zaplatenú považuje každú
+	  v stave „Spracováva sa" — aj dobierku, ktorú kuriér ešte nevybral. Tá je
+	  zaplatená až po doručení, teda keď je objednávka vybavená.
+	*/
+	public static function zaplatena( WC_Order $o ) {
+		if ( 'cod' === $o->get_payment_method() ) {
+			return $o->has_status( 'completed' );
+		}
+		return $o->is_paid();
 	}
 
 	private static function meta( WC_Order $o, array $kluce ) {
@@ -70,12 +83,18 @@ class Faktero_Objednavka {
 
 	private static function riadok( $nazov, $mnozstvo, $zaklad, $dan, $sadzba, $jednotka = 'ks' ) {
 		$mnozstvo = $mnozstvo > 0 ? (float) $mnozstvo : 1;
+		// Štyri desatinné miesta stačia, kým súčin s množstvom sedí na cent;
+		// pri veľkom množstve treba piate (viac Faktero neuloží).
+		$cena = round( $zaklad / $mnozstvo, 4 );
+		if ( abs( $cena * $mnozstvo - $zaklad ) > 0.005 ) {
+			$cena = round( $zaklad / $mnozstvo, 5 );
+		}
 		return array(
 			'name'       => mb_substr( wp_strip_all_tags( $nazov ), 0, 255 ),
 			'quantity'   => $mnozstvo,
 			'unit'       => $jednotka,
-			// Cena za kus po zľave z kupónu, bez DPH (Faktero ukladá 5 desatinných miest).
-			'unit_price' => round( $zaklad / $mnozstvo, 5 ),
+			// Cena za kus po zľave z kupónu, bez DPH.
+			'unit_price' => $cena,
 			'vat_rate'   => $sadzba,
 			/*
 			  Základ a DPH presne podľa obchodu. WooCommerce ráta daň z
@@ -155,13 +174,14 @@ class Faktero_Objednavka {
 		);
 
 		$dnes      = current_time( 'Y-m-d' );
-		$zaplatena = $o->is_paid();
+		$zaplatena = self::zaplatena( $o );
 		$dni       = max( 0, (int) $nastavenia['splatnost'] );
 		$dodanie   = $o->get_date_paid() ? $o->get_date_paid() : $o->get_date_created();
 
 		$poznamka = str_replace( '{cislo}', $o->get_order_number(), (string) $nastavenia['poznamka'] );
 		if ( 'cod' === $o->get_payment_method() ) {
-			$poznamka = trim( $poznamka . "\nÚhrada na dobierku." );
+			// PDF zalomenia riadkov nezachová, preto oddeľovač v texte.
+			$poznamka = '' !== trim( $poznamka ) ? rtrim( $poznamka, ' .' ) . '. Úhrada na dobierku.' : 'Úhrada na dobierku.';
 		}
 
 		return array(

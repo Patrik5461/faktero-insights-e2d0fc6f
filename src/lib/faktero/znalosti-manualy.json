@@ -1037,11 +1037,11 @@
     },
     {
      "nadpis": "Spôsob úhrady na faktúre",
-     "text": "<>\n-\nBankový prevod (BACS) — faktúra má platobné údaje a QR kód na\nzaplatenie.\n-\nDobierka — na faktúre je hotovosť a veta „Úhrada na dobierku\".\n-\nPlatobné brány (karta, GoPay, Besteron, PayPal…) — karta; faktúra je po\nzaplatení hneď uhradená."
+     "text": "<>\n-\nBankový prevod (BACS) — faktúra má platobné údaje a QR kód na\nzaplatenie.\n-\nDobierka — na faktúre je hotovosť a veta „Úhrada na dobierku\". Za\nuhradenú sa označí, až keď objednávku nastavíte ako vybavenú — vtedy už kuriér peniaze\nvybral.\n-\nPlatobné brány (karta, GoPay, Besteron, PayPal…) — karta; faktúra je po\nzaplatení hneď uhradená."
     },
     {
      "nadpis": "Keď faktúra nevznikne",
-     "text": "<>\nDoplnok zapisuje všetko do poznámok objednávky — tam uvidíte číslo\nvystavenej faktúry aj dôvod, prečo nevznikla.\n-\nKeď je Faktero chvíľu nedostupné, doplnok to sám skúsi znova po 5, 10, 20 a 40 minútach.\nDvakrát faktúru nevystaví ani pri opakovaní.\n-\nNeplatný kľúč alebo neaktívne predplatné doplnok nahlási v poznámke; po náprave použite\nakciu Vystaviť faktúru vo Fakteri .\n-\nObjednávka so zápornou položkou (zľava pridaná iným doplnkom ako\npoplatok) sa automaticky nevystaví — faktúru treba spraviť ručne. Kupóny WooCommerce\nfungujú normálne.\n-\nPolia IČO/DIČ/IČ DPH sa pridávajú do klasickej pokladne . Pokladňa z\nblokov ich zatiaľ nezobrazí; IČO z iných slovenských doplnkov pokladne doplnok načíta\nsám."
+     "text": "<>\nDoplnok zapisuje všetko do poznámok objednávky — tam uvidíte číslo\nvystavenej faktúry aj dôvod, prečo nevznikla.\n-\nKeď je Faktero chvíľu nedostupné, doplnok to sám skúsi znova po 5, 10, 20 a 40 minútach.\nDvakrát faktúru nevystaví ani pri opakovaní.\n-\nNeplatný kľúč alebo neaktívne predplatné doplnok nahlási v poznámke; po náprave použite\nakciu Vystaviť faktúru vo Fakteri .\n-\nObjednávka so zápornou položkou (zľava pridaná iným doplnkom ako\npoplatok) sa automaticky nevystaví — faktúru treba spraviť ručne. Kupóny WooCommerce\nfungujú normálne.\n-\nPolia IČO, DIČ a IČ DPH doplnok pridá do klasickej pokladne aj do pokladne z blokov (v\nblokoch sú pri kontaktných údajoch). IČO z iných slovenských doplnkov pokladne načíta\nsám."
     }
    ]
   },

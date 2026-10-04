@@ -11,7 +11,7 @@
  * License:           GPL-2.0-or-later
  * Text Domain:       faktero-woocommerce
  * WC requires at least: 7.0
- * WC tested up to:   10.2
+ * WC tested up to:   11.1
  */
 
 defined( 'ABSPATH' ) || exit;

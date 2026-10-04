@@ -42,6 +42,7 @@ class Faktero_Plugin {
 
 		if ( 'yes' === $n['polia_firmy'] ) {
 			add_filter( 'woocommerce_billing_fields', array( $this, 'polia_firmy' ) );
+			add_action( 'woocommerce_init', array( $this, 'polia_firmy_bloky' ) );
 		}
 	}
 
@@ -101,7 +102,7 @@ class Faktero_Plugin {
 				);
 			}
 
-			if ( 'yes' === $n['zaplatena'] && $order->is_paid() ) {
+			if ( 'yes' === $n['zaplatena'] && Faktero_Objednavka::zaplatena( $order ) ) {
 				$api->oznac_zaplatenu( $faktura['id'] );
 			}
 			if ( 'yes' === $n['poslat'] && $order->get_billing_email() ) {
@@ -132,16 +133,26 @@ class Faktero_Plugin {
 	}
 
 	public function zmena_stavu( $order_id, $z, $na ) {
+		$n     = Faktero_Nastavenia::hodnoty();
+		$order = wc_get_order( $order_id );
+		if ( 'completed' === $na && $order && 'cod' === $order->get_payment_method() && 'yes' === $n['zaplatena'] && $order->get_meta( self::META_ID ) ) {
+			// Dobierka je vybavená — kuriér peniaze vybral, faktúra je uhradená.
+			try {
+				$this->api()->oznac_zaplatenu( $order->get_meta( self::META_ID ) );
+				$order->add_order_note( 'Faktero: faktúra za dobierku označená ako uhradená.' );
+			} catch ( Faktero_Api_Chyba $e ) {
+				$order->add_order_note( 'Faktero: faktúru sa nepodarilo označiť ako uhradenú — ' . $e->getMessage() );
+			}
+			return;
+		}
 		if ( 'cancelled' !== $na ) {
 			return;
 		}
-		$n = Faktero_Nastavenia::hodnoty();
-		$order = wc_get_order( $order_id );
 		if ( 'yes' !== $n['storno'] || ! $order ) {
 			return;
 		}
 		$id = $order->get_meta( self::META_ID );
-		if ( ! $id || $order->is_paid() ) {
+		if ( ! $id || Faktero_Objednavka::zaplatena( $order ) ) {
 			return;
 		}
 		try {
@@ -239,6 +250,28 @@ class Faktero_Plugin {
 			echo "\nFaktúra (PDF): " . esc_url_raw( $url ) . "\n";
 		} else {
 			printf( '<p><a href="%s">Stiahnuť faktúru %s (PDF)</a></p>', esc_url( $url ), esc_html( $order->get_meta( self::META_CISLO ) ) );
+		}
+	}
+
+	/*
+	  Tie isté polia v pokladni z blokov (predvolená od WooCommerce 8.3). Klasický
+	  filter ju neovplyvní; bloky majú vlastné rozhranie na doplnkové polia.
+	  Sekcia „contact" — pri adrese by sa polia zopakovali aj v dodacej adrese.
+	*/
+	public function polia_firmy_bloky() {
+		if ( ! function_exists( 'woocommerce_register_additional_checkout_field' ) ) {
+			return;
+		}
+		foreach ( array( 'ico' => 'IČO (nákup na firmu)', 'dic' => 'DIČ', 'ic_dph' => 'IČ DPH' ) as $kluc => $nazov ) {
+			woocommerce_register_additional_checkout_field(
+				array(
+					'id'       => 'faktero/' . $kluc,
+					'label'    => $nazov,
+					'location' => 'contact',
+					'type'     => 'text',
+					'required' => false,
+				)
+			);
 		}
 	}
 

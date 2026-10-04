@@ -120,7 +120,9 @@ const sections: HelpSection[] = [
             zaplatenie.
           </li>
           <li>
-            <strong>Dobierka</strong> — na faktúre je hotovosť a veta „Úhrada na dobierku".
+            <strong>Dobierka</strong> — na faktúre je hotovosť a veta „Úhrada na dobierku". Za
+            uhradenú sa označí, až keď objednávku nastavíte ako vybavenú — vtedy už kuriér peniaze
+            vybral.
           </li>
           <li>
             <strong>Platobné brány</strong> (karta, GoPay, Besteron, PayPal…) — karta; faktúra je po
@@ -154,8 +156,8 @@ const sections: HelpSection[] = [
             fungujú normálne.
           </li>
           <li>
-            Polia IČO/DIČ/IČ DPH sa pridávajú do <strong>klasickej pokladne</strong>. Pokladňa z
-            blokov ich zatiaľ nezobrazí; IČO z iných slovenských doplnkov pokladne doplnok načíta
+            Polia IČO, DIČ a IČ DPH doplnok pridá do klasickej pokladne aj do pokladne z blokov (v
+            blokoch sú pri kontaktných údajoch). IČO z iných slovenských doplnkov pokladne načíta
             sám.
           </li>
         </ul>
