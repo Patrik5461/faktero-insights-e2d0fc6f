@@ -35,6 +35,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   ListChecks,
+  Download,
   ArrowLeftRight,
   Smartphone,
   Sparkles,
@@ -263,7 +264,7 @@ const accounting = [
   {
     icon: Upload,
     title: "Import faktúr",
-    text: "Hromadný import faktúr a odberateľov z doterajšieho systému, CSV alebo XML.",
+    text: "Faktúry, odberatelia aj prijaté doklady zo SuperFaktúry, iDokladu, Pohody, Money S3, Omegy, KROSu či Doklada.",
   },
   {
     icon: TrendingUp,
@@ -271,7 +272,7 @@ const accounting = [
     text: "Daňové priznanie, kontrolný a súhrnný výkaz v XML na podanie, s rozpadom po sadzbách a obdobiach.",
   },
   {
-    icon: Upload,
+    icon: Download,
     title: "Šesť účtovných exportov",
     text: "Pohoda, Omega, Money S3, ABRA Flexi, ISDOC a CSV súpiska pre MRP, Helios či Excel.",
   },
