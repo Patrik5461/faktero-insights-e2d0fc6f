@@ -317,7 +317,36 @@ export const funkcie: HubContent = {
         {
           type: "section",
           title: "A potom aj platby",
-          body: "Výpis zo Stripe, PayPalu či GoPay nahráte do Faktera a platby sa spárujú s faktúrami podľa čísla objednávky. Poplatky brány a výbery na účet pôjdu do účtovníctva zvlášť.",
+          body: "Výpis zo Stripe, PayPalu či GoPay nahráte do Faktera (Účtovníctvo → Výpis z platobnej brány) a platby sa spárujú s faktúrami podľa čísla objednávky. Poplatky brány a výbery na účet pôjdu do účtovníctva zvlášť.",
+        },
+      ],
+    },
+    {
+      slug: "platobne-brany",
+      label: "Platby cez Stripe, PayPal a GoPay",
+      summary:
+        "Export z platobnej brány ako bankový výpis — platby, poplatky a výbery na účet zvlášť.",
+      icon: ArrowLeftRight,
+      blocks: [
+        {
+          type: "lead",
+          text: "Kto predáva cez e-shop, má peniaze najprv na bráne a až potom na účte. Nahrajte export z brány a Faktero z neho spraví výpis, aký by poslala banka — bez prepisovania riadok po riadku.",
+        },
+        {
+          type: "bullets",
+          title: "Čo z exportu vznikne",
+          items: [
+            "Platby zákazníkov s variabilným symbolom z čísla objednávky",
+            "Poplatky brány ako samostatné výdavky",
+            "Výbery na bankový účet ako prevod medzi vlastnými účtami",
+            "Platby sa spárujú s faktúrami — aj s tými, ktoré vystavil doplnok pre WooCommerce",
+            "Pre účtovníčku dávka do Pohody alebo SEPA XML (camt.053)",
+          ],
+        },
+        {
+          type: "section",
+          title: "Ktoré brány",
+          body: "Stripe, PayPal, GoPay, Comgate a Barion — stačí CSV export z ich administrácie. Nájdete to v Účtovníctvo → Výpis z platobnej brány.",
         },
       ],
     },
