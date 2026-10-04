@@ -232,7 +232,13 @@ export function buildCamt053(input: OwnStatementInput): string {
     `<CreDtTm>${created}</CreDtTm>` +
     `<FrToDt><FrDtTm>${periodStart}T00:00:00</FrDtTm><ToDtTm>${periodEnd}T23:59:59</ToDtTm></FrToDt>` +
     "<Acct><Id>" +
-    (iban ? `<IBAN>${escapeXml(iban)}</IBAN>` : "<Othr><Id>NOTPROVIDED</Id></Othr>") +
+    /*
+      Účet platobnej brány (Stripe, PayPal…) IBAN nemá — schéma by „STRIPE"
+      v poli IBAN odmietla a Pohoda s ňou celý výpis. Ide ako iný identifikátor.
+    */
+    (/^[A-Z]{2}\d{2}[A-Z0-9]{1,30}$/.test(iban)
+      ? `<IBAN>${escapeXml(iban)}</IBAN>`
+      : `<Othr>${tag("Id", iban || "NOTPROVIDED", 34)}</Othr>`) +
     `</Id>${tag("Ccy", ccy)}${tag("Nm", account.account_name)}` +
     `<Ownr>${tag("Nm", company.name)}${addr}${orgId}</Ownr></Acct>` +
     balance("OPBD", input.opening, ccy, periodStart) +

@@ -128,6 +128,16 @@ describe("camt.053 proti schéme", () => {
     expect(overSchemou(xml)).toBeNull();
   });
 
+  it("účet platobnej brány (bez IBAN-u) ide ako iný identifikátor", () => {
+    const i = vstup();
+    const xml = buildCamt053({
+      ...i,
+      account: { ...i.account, iban: "Stripe", account_name: "Stripe" },
+    });
+    expect(overSchemou(xml)).toBeNull();
+    expect(xml).toContain("<Othr><Id>STRIPE</Id></Othr>");
+  });
+
   it("výpis bez pohybov a bez IBAN-u ostáva platný", () => {
     const i = vstup();
     const xml = buildCamt053({
