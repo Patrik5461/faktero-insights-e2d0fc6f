@@ -8,7 +8,9 @@ const Item = z.object({
   quantity: z.number().positive().max(1000000),
   unit: z.string().max(20).optional().default("ks"),
   unit_price: z.number().nonnegative().max(10000000),
-  vat_rate: z.number().min(0).max(100).optional().default(23),
+  // Bez sadzby platí základná sadzba krajiny firmy (neplatiteľ 0 %) — pevných
+  // 23 % by českej firme alebo neplatiteľovi vyrobilo chybnú faktúru.
+  vat_rate: z.number().min(0).max(100).optional(),
 });
 const InvoiceInput = z.object({
   customer_id: z.string().uuid().optional().nullable(),
@@ -30,6 +32,8 @@ const InvoiceInput = z.object({
   delivery_date: z.string().optional().nullable(),
   due_date: z.string().optional(),
   variable_symbol: z.string().max(40).optional().nullable(),
+  /** Číslo objednávky odberateľa (napr. z e-shopu) — tlačí sa na faktúru a ide do eFaktúry. */
+  order_number: z.string().max(60).optional().nullable(),
   currency: z.string().length(3).optional().default("EUR"),
   payment_method: z.string().max(40).optional().default("bank_transfer"),
   notes: z.string().max(5000).optional().nullable(),
@@ -98,15 +102,29 @@ export const Route = createFileRoute("/api/v1/invoices")({
             return err("validation_error", "Vyžaduje sa customer_id alebo customer.", 400);
           }
 
+          const today = new Date().toISOString().slice(0, 10);
+          const issue_date = d.issue_date ?? today;
+          let predvolenaSadzba = 23;
+          if (d.items.some((i) => i.vat_rate === undefined)) {
+            const { krajinaDane, zakladnaSadzba } = await import("@/lib/faktero/vat-rates");
+            const { data: firma } = await ctx.supabase
+              .from("companies")
+              .select("vat_payer, country")
+              .eq("id", ctx.company_id)
+              .maybeSingle();
+            predvolenaSadzba =
+              firma?.vat_payer === false
+                ? 0
+                : zakladnaSadzba(krajinaDane(firma?.country), issue_date);
+          }
+          const polozky = d.items.map((i) => ({ ...i, vat_rate: i.vat_rate ?? predvolenaSadzba }));
           const totals = computeInvoiceTotals(
-            d.items.map((i) => ({
+            polozky.map((i) => ({
               quantity: i.quantity,
               unit_price: i.unit_price,
               vat_rate: i.vat_rate,
             })),
           );
-          const today = new Date().toISOString().slice(0, 10);
-          const issue_date = d.issue_date ?? today;
           const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
             ctx.company_id,
             issue_date,
@@ -141,6 +159,7 @@ export const Route = createFileRoute("/api/v1/invoices")({
               vat_total: totals.vat_total,
               total: totals.total,
               notes: d.notes ?? null,
+              order_number: d.order_number ?? null,
               external_id: d.external_id ?? null,
               job_id: d.job_id ?? null,
               status: "issued",
@@ -150,7 +169,7 @@ export const Route = createFileRoute("/api/v1/invoices")({
           if (insErr || !created)
             return err("db_error", insErr?.message ?? "Vloženie zlyhalo.", 500);
 
-          const itemRows = d.items.map((it, i) => ({
+          const itemRows = polozky.map((it, i) => ({
             invoice_id: created.id,
             position: i,
             name: it.name,

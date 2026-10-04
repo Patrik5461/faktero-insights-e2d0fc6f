@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-10-02",
+ "vytvorene": "2026-10-04",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -837,7 +837,7 @@
     },
     {
      "nadpis": "Práca s viacerými naraz",
-     "text": "<>\nZaškrtnite riadky v zozname (alebo políčko v hlavičke pre všetky) a hore sa objaví lišta s\nakciami:\n-\nStiahnuť ZIP — PDF všetkých vybraných faktúr a k tomu súpiska v CSV. To\nje celý balík pre účtovníčku.\n-\nOznačiť ako prijaté — hodí sa po prezretí dávky, ktorá prišla mailom.\nStornované a už prijaté faktúry sa preskočia.\n-\nVymazať — pýta sa na potvrdenie a povie, koľkých faktúr sa to týka.\nDoklady idú do koša, nemažú sa natvrdo.\nZoznam sa dá filtrovať podľa stavu, mesiaca a dodávateľa, a hľadať sa dá aj podľa\nvariabilného symbolu , ktorý je vo vlastnom stĺpci."
+     "text": "<>\nZaškrtnite riadky v zozname (alebo políčko v hlavičke pre všetky) a hore sa objaví lišta s\nakciami:\n-\nStiahnuť ZIP — PDF všetkých vybraných faktúr a k tomu súpiska v CSV. To\nje celý balík pre účtovníčku.\n-\nHromadný príkaz na úhradu — súbor SEPA XML, ktorý nahráte do\ninternetbankingu (býva to „Import príkazov\" alebo „Hromadný príkaz\") a zaplatíte všetky\nvybrané faktúry naraz. Vyberiete účet, z ktorého sa platí, a dátum; faktúry môžu ísť aj\nkaždá až v deň splatnosti. Variabilný, špecifický a konštantný symbol sa prenesú tak,\nako ich dodávateľ uvidí vo výpise. Faktúry bez IBAN-u, v inej mene než euro, už\nzaplatené alebo platené hotovosťou či kartou sa do príkazu nedostanú — okno povie ktoré\na prečo. Za zaplatené sa faktúry neoznačia hneď — až keď platbu z účtu spárujete s\nfaktúrou (Faktero to samo navrhne).\n-\nOznačiť ako prijaté — hodí sa po prezretí dávky, ktorá prišla mailom.\nStornované a už prijaté faktúry sa preskočia.\n-\nVymazať — pýta sa na potvrdenie a povie, koľkých faktúr sa to týka.\nDoklady idú do koša, nemažú sa natvrdo.\nZoznam sa dá filtrovať podľa stavu, mesiaca a dodávateľa, a hľadať sa dá aj podľa\nvariabilného symbolu , ktorý je vo vlastnom stĺpci."
     },
     {
      "nadpis": "Splatnosť a úhrady",
@@ -849,7 +849,7 @@
     },
     {
      "nadpis": "Prijaté zálohové faktúry",
-     "text": "<>\nKeď vám dodávateľ pošle zálohovú faktúru , zaevidujete ju rovnako ako\nbežnú — pri Druhu dokladu vyberiete Prijatá zálohová faktúra . Má vlastný\nzoznam Fakturácia → Prijaté zálohové faktúry , aby sa nemiešala s daňovými\ndokladmi.\nZálohová faktúra nie je daňový doklad : zaplatíte ju, ale daň si z nej\nneodpočítavate — tú prinesie až ostrá faktúra alebo doklad k prijatej platbe. Preto do\nvýkazov k DPH ani do nákladov zákazky nevstupuje.\nFaktúru nemusíte prepisovať: na oboch zoznamoch je tlačidlo\nNahrať — vyberiete PDF alebo fotku a doklad prečíta tá istá AI ako pri\ndoklade z pošty. Zálohovú faktúru spozná sama (podľa nadpisu, čísla aj názvu súboru) a\nzaradí ju medzi prijaté zálohy. To isté platí pre skener v appke :\nnaskenovaná zálohová faktúra neskončí medzi bločkami, ale rovno tu.\nKeď príde ostrá faktúra, pri jej zápise vyberiete v poli\nZúčtováva prijatú zálohu tú zálohu, ktorú vyrovnáva. Ponúknu sa len\nnezúčtované zálohy toho istého dodávateľa. Záloha sa potom v zozname označí ako\nZúčtovaná a v záväzkoch na prehľade sa už nepočíta druhýkrát."
+     "text": "<>\nKeď vám dodávateľ pošle zálohovú faktúru , zaevidujete ju rovnako ako\nbežnú — pri Druhu dokladu vyberiete Prijatá zálohová faktúra . Má vlastný\nzoznam Fakturácia → Prijaté zálohové faktúry , aby sa nemiešala s daňovými\ndokladmi.\nZálohová faktúra nie je daňový doklad : zaplatíte ju, ale daň si z nej\nneodpočítavate — tú prinesie až ostrá faktúra alebo doklad k prijatej platbe. Preto do\nvýkazov k DPH ani do nákladov zákazky nevstupuje.\nFaktúru nemusíte prepisovať: na oboch zoznamoch je tlačidlo Nahrať —\nvyberiete PDF alebo fotku a doklad prečíta tá istá AI ako pri doklade z pošty. Zálohovú\nfaktúru spozná sama (podľa nadpisu, čísla aj názvu súboru) a zaradí ju medzi prijaté\nzálohy. To isté platí pre skener v appke : naskenovaná zálohová faktúra\nneskončí medzi bločkami, ale rovno tu.\nKeď príde ostrá faktúra, pri jej zápise vyberiete v poli\nZúčtováva prijatú zálohu tú zálohu, ktorú vyrovnáva. Ponúknu sa len\nnezúčtované zálohy toho istého dodávateľa. Záloha sa potom v zozname označí ako\nZúčtovaná a v záväzkoch na prehľade sa už nepočíta druhýkrát."
     },
     {
      "nadpis": "Údaje pre výkazy k DPH",

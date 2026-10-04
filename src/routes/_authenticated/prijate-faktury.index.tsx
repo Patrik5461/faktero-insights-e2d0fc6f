@@ -31,6 +31,7 @@ import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
+import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: () => ({ meta: [{ title: "Prijaté faktúry — Faktero" }] }),
@@ -92,6 +93,7 @@ function PurchaseInvoicesPage() {
   const [zipBusy, setZipBusy] = useState(false);
   const [hromadneBusy, setHromadneBusy] = useState(false);
   const [mazanie, setMazanie] = useState(false);
+  const [prikaz, setPrikaz] = useState(false);
   /** Meno k `created_by`; profily číta server, RLS pustí každého len k sebe. */
   const [mena, setMena] = useState<Record<string, string>>({});
   const nacitajMena = useServerFn(menaClenovFirmy);
@@ -429,7 +431,7 @@ function PurchaseInvoicesPage() {
         </div>
 
         {selected.size > 0 && (
-          <div className="mt-4 flex items-center gap-3 rounded-md border border-primary/40 bg-primary/5 p-3 text-sm">
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-primary/40 bg-primary/5 p-3 text-sm">
             <span className="font-medium">{selected.size} vybraných</span>
             <button
               onClick={runBulkZip}
@@ -442,6 +444,12 @@ function PurchaseInvoicesPage() {
                 <Archive className="h-3.5 w-3.5" />
               )}
               Stiahnuť ZIP (PDF + CSV)
+            </button>
+            <button
+              onClick={() => setPrikaz(true)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+            >
+              <Landmark className="h-3.5 w-3.5" /> Hromadný príkaz na úhradu
             </button>
             <button
               onClick={hromadnePrijat}
@@ -623,6 +631,13 @@ function PurchaseInvoicesPage() {
         onConfirm={hromadneVymazat}
         busy={hromadneBusy}
       />
+      {prikaz && getActiveCompanyId() && (
+        <HromadnyPrikaz
+          companyId={getActiveCompanyId()!}
+          faktury={rows.filter((r) => selected.has(r.id))}
+          onClose={() => setPrikaz(false)}
+        />
+      )}
     </>
   );
 }

@@ -126,6 +126,16 @@ const sections: HelpSection[] = [
             je celý balík pre účtovníčku.
           </li>
           <li>
+            <strong>Hromadný príkaz na úhradu</strong> — súbor SEPA XML, ktorý nahráte do
+            internetbankingu (býva to „Import príkazov" alebo „Hromadný príkaz") a zaplatíte všetky
+            vybrané faktúry naraz. Vyberiete účet, z ktorého sa platí, a dátum; faktúry môžu ísť aj
+            každá až v deň splatnosti. Variabilný, špecifický a konštantný symbol sa prenesú tak,
+            ako ich dodávateľ uvidí vo výpise. Faktúry bez IBAN-u, v inej mene než euro, už
+            zaplatené alebo platené hotovosťou či kartou sa do príkazu nedostanú — okno povie ktoré
+            a prečo. Za zaplatené sa faktúry neoznačia hneď — až keď platbu z účtu spárujete s
+            faktúrou (Faktero to samo navrhne).
+          </li>
+          <li>
             <strong>Označiť ako prijaté</strong> — hodí sa po prezretí dávky, ktorá prišla mailom.
             Stornované a už prijaté faktúry sa preskočia.
           </li>
@@ -200,11 +210,11 @@ const sections: HelpSection[] = [
           výkazov k DPH ani do nákladov zákazky nevstupuje.
         </p>
         <p>
-          Faktúru nemusíte prepisovať: na oboch zoznamoch je tlačidlo{" "}
-          <strong>Nahrať</strong> — vyberiete PDF alebo fotku a doklad prečíta tá istá AI ako pri
-          doklade z pošty. Zálohovú faktúru spozná sama (podľa nadpisu, čísla aj názvu súboru) a
-          zaradí ju medzi prijaté zálohy. To isté platí pre <strong>skener v appke</strong>:
-          naskenovaná zálohová faktúra neskončí medzi bločkami, ale rovno tu.
+          Faktúru nemusíte prepisovať: na oboch zoznamoch je tlačidlo <strong>Nahrať</strong> —
+          vyberiete PDF alebo fotku a doklad prečíta tá istá AI ako pri doklade z pošty. Zálohovú
+          faktúru spozná sama (podľa nadpisu, čísla aj názvu súboru) a zaradí ju medzi prijaté
+          zálohy. To isté platí pre <strong>skener v appke</strong>: naskenovaná zálohová faktúra
+          neskončí medzi bločkami, ale rovno tu.
         </p>
         <p>
           Keď príde ostrá faktúra, pri jej zápise vyberiete v poli{" "}
