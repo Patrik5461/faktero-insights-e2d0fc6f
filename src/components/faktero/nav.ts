@@ -201,6 +201,11 @@ export const NAV: NavGroup[] = [
       { to: "/importy", label: "História importov" },
       { to: "/uctovnictvo/pohoda", label: "Prepojenie s Pohodou" },
       { to: "/uctovnictvo/vypis-do-pohody", label: "Bankový výpis do Pohody" },
+      {
+        to: "/uctovnictvo/vypis-do-pohody",
+        search: { zdroj: "brana" },
+        label: "Výpis z platobnej brány",
+      },
       { to: "/uctovnictvo/pravidla", label: "Pravidlá účtovania" },
     ],
   },

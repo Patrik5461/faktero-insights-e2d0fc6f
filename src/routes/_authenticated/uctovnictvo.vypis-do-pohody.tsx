@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -15,8 +15,28 @@ import { Download, FileUp, Loader2, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/uctovnictvo/vypis-do-pohody")({
   head: () => ({ meta: [{ title: "Bankový výpis do Pohody — Faktero" }] }),
+  /*
+    `?zdroj=brana` je tá istá stránka otvorená z položky „Výpis z platobnej
+    brány". Čítanie je spoločné — rozdiel je len v tom, čo sa človeku povie:
+    odkiaľ export z brány stiahnuť a čo s ním Faktero spraví.
+  */
+  validateSearch: (s: Record<string, unknown>): { zdroj?: "brana" } => ({
+    zdroj: s.zdroj === "brana" ? "brana" : undefined,
+  }),
   component: VypisDoPohodyPage,
 });
+
+/** Kde v ktorej bráne stiahnuť export, ktorému Faktero rozumie. */
+const EXPORTY_BRAN: { brana: string; kde: string }[] = [
+  {
+    brana: "Stripe",
+    kde: "Reports → Balance → Itemized balance change from activity → Download (CSV)",
+  },
+  { brana: "PayPal", kde: "Activity → Statements / Download → CSV, všetky transakcie" },
+  { brana: "GoPay", kde: "Obchodné účty → Výpisy → formát CSV (B a vyšší)" },
+  { brana: "Comgate", kde: "Platby → Export (CSV)" },
+  { brana: "Barion", kde: "Výpisy → denný výpis (CSV)" },
+];
 
 /**
  * Záloha nastavenia v prehliadači.
@@ -103,6 +123,7 @@ function VypisDoPohodyPage() {
   const stav = useServerFn(stavCitaniaVypisuFn);
   const doXml = useServerFn(vypisDoPohodyFn);
 
+  const brana = Route.useSearch().zdroj === "brana";
   const cid = useMemo(() => getActiveCompanyId(), []);
   const [nacitavam, setNacitavam] = useState(false);
   const [vyvazam, setVyvazam] = useState<"pohoda" | "sepa" | null>(null);
@@ -366,12 +387,40 @@ function VypisDoPohodyPage() {
 
   return (
     <>
-      <PageHeader
-        title="Bankový výpis do Pohody"
-        description="Z výpisu z banky (XML aj PDF) vyrobí XML, ktoré POHODA načíta ako bankové doklady."
-      />
+      {brana ? (
+        <PageHeader
+          title="Výpis z platobnej brány"
+          description="Z exportu Stripe, PayPal, GoPay, Comgate alebo Barion spraví bankový výpis — platby, poplatky a výbery na účet zvlášť, pripravené do Pohody."
+        />
+      ) : (
+        <PageHeader
+          title="Bankový výpis do Pohody"
+          description="Z výpisu z banky (XML aj PDF) vyrobí XML, ktoré POHODA načíta ako bankové doklady."
+        />
+      )}
       <PageBody>
         <div className="space-y-6">
+          {brana && riadky.length === 0 && (
+            <div className="rounded-2xl border border-border/70 bg-card p-5 text-sm">
+              <div className="font-medium">Odkiaľ stiahnuť export</div>
+              <ul className="mt-2 space-y-1 text-muted-foreground">
+                {EXPORTY_BRAN.map((e) => (
+                  <li key={e.brana}>
+                    <strong className="text-foreground">{e.brana}</strong> — {e.kde}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-muted-foreground">
+                Každá platba bude príjem s variabilným symbolom z čísla objednávky, poplatok brány
+                samostatný výdaj a výber na váš účet prevod medzi vlastnými účtami. Chcete platby aj
+                spárovať s faktúrami vo Fakteri? Ten istý súbor nahrajte v{" "}
+                <Link to="/bankove-ucty/import" className="text-primary hover:underline">
+                  Bankové účty → Nahrať výpis
+                </Link>
+                .
+              </p>
+            </div>
+          )}
           <div className="rounded-2xl border border-border/70 bg-card p-5">
             <label className="flex cursor-pointer flex-col items-center gap-3 rounded-xl border border-dashed border-border px-4 py-8 text-center">
               {nacitavam ? (
@@ -382,9 +431,11 @@ function VypisDoPohodyPage() {
               <span className="text-sm font-medium">
                 {nacitavam
                   ? "Čítam výpis…"
-                  : "Vyberte výpis — XML, PDF alebo CSV z platobnej brány"}
+                  : brana
+                    ? "Vyberte CSV export z platobnej brány"
+                    : "Vyberte výpis — XML, PDF alebo CSV z platobnej brány"}
               </span>
-              <span className="text-xs text-muted-foreground">
+              <span className={`text-xs text-muted-foreground ${brana ? "hidden" : ""}`}>
                 <strong>XML z internetbankingu</strong> (banky mu hovoria SEPA XML alebo camt.053)
                 je presné — sumy, symboly aj protistrany sú priamo od banky a prečíta sa hneď. PDF
                 sa rozpoznáva, naskenované ešte aj z obrazu, takže riadky treba prejsť.{" "}
@@ -393,7 +444,11 @@ function VypisDoPohodyPage() {
               </span>
               <input
                 type="file"
-                accept="application/pdf,.pdf,application/xml,text/xml,.xml,.csv,text/csv"
+                accept={
+                  brana
+                    ? ".csv,text/csv"
+                    : "application/pdf,.pdf,application/xml,text/xml,.xml,.csv,text/csv"
+                }
                 className="hidden"
                 disabled={nacitavam}
                 onChange={(e) => void nahraj(e.target.files?.[0] ?? null)}
