@@ -41,6 +41,18 @@ export type Platba = {
 
 export type Preskocena = { id: string; cisloFaktury: string; dovod: string };
 
+/*
+  Variabilný symbol. Bez neho sa vezme číslo faktúry — ale len keď je celé
+  z číslic. Z „FA-2026/42" by vyskladané číslice dali symbol, ktorý dodávateľ
+  nikdy nevystavil, a platbu by spároval s inou faktúrou alebo s ničím.
+*/
+function variabilnySymbol(f: FakturaNaUhradu): string {
+  const zadany = iba(f.variable_symbol, 10);
+  if (zadany) return zadany;
+  const cislo = String(f.invoice_number ?? "").replace(/\s/g, "");
+  return /^\d{1,10}$/.test(cislo) ? cislo : "";
+}
+
 /** Spôsoby úhrady, pri ktorých sa už nič neposiela — zaplatené na mieste. */
 const ZAPLATENE_NA_MIESTE = new Set(["hotovost", "karta", "dobierka", "zapocet"]);
 
@@ -97,7 +109,7 @@ export function pripravPlatby(faktury: FakturaNaUhradu[]): {
       iban,
       suma,
       splatnost: f.due_date,
-      vs: iba(f.variable_symbol || f.invoice_number, 10),
+      vs: variabilnySymbol(f),
       ss: iba(f.specific_symbol, 10),
       ks: iba(f.constant_symbol, 4),
     });

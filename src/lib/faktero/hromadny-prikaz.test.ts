@@ -83,8 +83,14 @@ describe("pripravPlatby", () => {
     ]);
   });
 
-  it("bez variabilného symbolu ho vezme z čísel v čísle faktúry", () => {
-    expect(pripravPlatby([f({ variable_symbol: null })]).platby[0].vs).toBe("20260042");
+  it("bez variabilného symbolu vezme číslo faktúry, len keď je celé z číslic", () => {
+    expect(
+      pripravPlatby([f({ variable_symbol: null, invoice_number: "2026 0042" })]).platby[0].vs,
+    ).toBe("20260042");
+    expect(pripravPlatby([f({ variable_symbol: null })]).platby[0].vs).toBe("");
+    expect(
+      pripravPlatby([f({ variable_symbol: null, invoice_number: "QA-PRIKAZ-2" })]).platby[0].vs,
+    ).toBe("");
   });
 });
 

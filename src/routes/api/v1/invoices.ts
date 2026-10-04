@@ -11,6 +11,15 @@ const Item = z.object({
   // Bez sadzby platí základná sadzba krajiny firmy (neplatiteľ 0 %) — pevných
   // 23 % by českej firme alebo neplatiteľovi vyrobilo chybnú faktúru.
   vat_rate: z.number().min(0).max(100).optional(),
+  /*
+    Presný základ a DPH riadku tak, ako ich spočítal obchod. E-shop s cenami
+    s DPH ráta daň z nezaokrúhleného základu, Faktero zo zaokrúhleného — bez
+    týchto polí by faktúra vyšla o cent inak, než zákazník zaplatil. Overujú
+    sa proti cene a sadzbe, takže iné sumy než tie, čo z nich vyplývajú,
+    neprejdú.
+  */
+  subtotal: z.number().nonnegative().max(1000000000).optional(),
+  vat_amount: z.number().nonnegative().max(1000000000).optional(),
 });
 const InvoiceInput = z.object({
   customer_id: z.string().uuid().optional().nullable(),
@@ -118,13 +127,18 @@ export const Route = createFileRoute("/api/v1/invoices")({
                 : zakladnaSadzba(krajinaDane(firma?.country), issue_date);
           }
           const polozky = d.items.map((i) => ({ ...i, vat_rate: i.vat_rate ?? predvolenaSadzba }));
-          const totals = computeInvoiceTotals(
-            polozky.map((i) => ({
-              quantity: i.quantity,
-              unit_price: i.unit_price,
-              vat_rate: i.vat_rate,
-            })),
-          );
+          const { sumyRiadkov } = await import("@/lib/faktero/api-sumy-riadkov");
+          const presne = sumyRiadkov(polozky);
+          if ("chyba" in presne) return err("validation_error", presne.chyba, 400);
+          const totals =
+            presne.sumy ??
+            computeInvoiceTotals(
+              polozky.map((i) => ({
+                quantity: i.quantity,
+                unit_price: i.unit_price,
+                vat_rate: i.vat_rate,
+              })),
+            );
           const { invoice_number, sequence_number } = await nextInvoiceNumberDetailed(
             ctx.company_id,
             issue_date,

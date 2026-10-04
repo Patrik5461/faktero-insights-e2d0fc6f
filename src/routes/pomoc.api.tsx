@@ -131,6 +131,16 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "woocommerce",
+    title: "E-shop na WooCommerce",
+    body: (
+      <p>
+        Na WooCommerce netreba nič programovať — hotový doplnok vystavuje faktúry z objednávok sám.
+        Návod a stiahnutie: <Link to="/pomoc/woocommerce">Faktúry z e-shopu na WooCommerce</Link>.
+      </p>
+    ),
+  },
+  {
     id: "dokumentacia",
     title: "Kompletná dokumentácia a skúšanie",
     body: (

@@ -284,6 +284,14 @@ const CATS: Cat[] = [
     skupina: "Účet a vývoj",
   },
   {
+    to: "/pomoc/woocommerce",
+    label: "E-shop na WooCommerce",
+    desc: "Faktúry z objednávok e-shopu vznikajú samy, aj s PDF pre zákazníka.",
+    icon: Code2,
+    available: true,
+    skupina: "Účet a vývoj",
+  },
+  {
     to: "/pomoc/api",
     label: "API a webhooky",
     desc: "Napojenie vlastného systému na Faktero.",

@@ -48,6 +48,10 @@
      "text": "<>\nWebhooky pošlú HTTP POST na vašu URL, keď nastane udalosť:\n-\ninvoice.created\n-\ninvoice.sent\n-\ninvoice.paid\n-\ninvoice.cancelled\nKaždý webhook je podpísaný hlavičkou X-Faktero-Signature (HMAC SHA-256 z tela\nsprávy a tajného kľúča webhooku). Vždy podpis overte pred spracovaním."
     },
     {
+     "nadpis": "E-shop na WooCommerce",
+     "text": "Na WooCommerce netreba nič programovať — hotový doplnok vystavuje faktúry z objednávok sám.\nNávod a stiahnutie: Faktúry z e-shopu na WooCommerce (/pomoc/woocommerce)."
+    },
+    {
      "nadpis": "Kompletná dokumentácia a skúšanie",
      "text": "<>\nÚplný zoznam endpointov, parametrov a chybových kódov nájdete v\nAPI dokumentácii (/docs/api).\nVolania si viete vyskúšať bez písania kódu v\nAPI playgrounde (/api-playground) — vyberiete endpoint, doplníte parametre\na hneď vidíte odpoveď servera aj hotový príkaz pre curl . Playground volá\nostré dáta vašej firmy , takže zápisové volania naozaj vytvárajú doklady."
     }
@@ -1012,6 +1016,32 @@
     {
      "nadpis": "Po podaní",
      "text": "<>\nTlačidlo Podané si výkaz uloží aj s dátumom, takže je dohľadateľné, čo a\nkedy sa odoslalo. Potom sa oplatí obdobie uzamknúť (/pomoc/uzavierka) —\ndodatočná zmena dokladu by inak rozišla účtovníctvo s tým, čo už má finančná správa.\nLehota je do 25 dní po skončení zdaňovacieho obdobia; kontrolný výkaz sa podáva aj vtedy,\nkeď je priznanie nulové, ak v ňom sú plnenia."
+    }
+   ]
+  },
+  {
+   "cesta": "/pomoc/woocommerce",
+   "titulok": "WooCommerce",
+   "sekcie": [
+    {
+     "nadpis": "Čo doplnok robí",
+     "text": "<>\nZ každej objednávky vo WooCommerce vystaví faktúru vo Fakteri — bez prepisovania. Faktúra\nvznikne, keď objednávka prejde do zvoleného stavu (predvolene Spracováva sa , teda\npo zaplatení kartou alebo po potvrdení platby prevodom).\n- Položky, kupóny, doprava aj poplatky so sadzbami DPH podľa obchodu.\n- Sumy na faktúre sedia na cent s objednávkou.\n- Zaplatená objednávka má faktúru hneď uhradenú.\n-\nZákazník nájde odkaz na PDF v e-maile o objednávke aj vo svojom účte; vy v detaile\nobjednávky.\n- Pokladňa dostane polia IČO, DIČ a IČ DPH pre nákup na firmu."
+    },
+    {
+     "nadpis": "Inštalácia za päť minút",
+     "text": "<>\n-\nStiahnite doplnok\n(/doplnky/faktero-woocommerce.zip)\n(súbor ZIP — nerozbaľujte ho).\n-\nVo Fakteri otvorte API kľúče (/api-kluce) (menu pod avatarom) a vytvorte\nLive kľúč. Faktúry sa budú vystavovať vo firme, v ktorej kľúč\nvytvoríte.\n-\nVo WordPresse: Doplnky → Pridať nový → Nahrať doplnok , vyberte stiahnutý ZIP a\ndoplnok aktivujte.\n-\nWooCommerce → Nastavenia → Faktero : vložte kľúč a uložte. Faktero hneď overí\npripojenie a povie, či kľúč prijalo.\nHotovo — ďalšia objednávka už faktúru dostane. Staršie objednávky vystavíte v detaile\nobjednávky cez akciu Vystaviť faktúru vo Fakteri ."
+    },
+    {
+     "nadpis": "Nastavenia",
+     "text": "<>\n-\nPri stave objednávky — kedy faktúra vznikne. Kto chce faktúru až po\nodoslaní tovaru, zvolí Vybavená .\n-\nZaplatené objednávky — faktúra zaplatenej objednávky je hneď uhradená a\nsplatná dňom vystavenia. Nezaplatená dostane nastavenú splatnosť.\n-\nZrušená objednávka — môže stornovať svoju faktúru, ak ešte nie je\nzaplatená. Zaplatenú treba opraviť dobropisom vo Fakteri.\n-\nOdkaz v e-maile a E-mail z Faktera — zákazník dostane\nodkaz na PDF v e-maile z obchodu, prípadne aj samostatný e-mail s faktúrou z Faktera.\n-\nPoznámka na faktúre — predvolene „Objednávka č. \". Číslo\nobjednávky sa navyše ukladá do faktúry samostatne a ide aj do eFaktúry."
+    },
+    {
+     "nadpis": "Spôsob úhrady na faktúre",
+     "text": "<>\n-\nBankový prevod (BACS) — faktúra má platobné údaje a QR kód na\nzaplatenie.\n-\nDobierka — na faktúre je hotovosť a veta „Úhrada na dobierku\".\n-\nPlatobné brány (karta, GoPay, Besteron, PayPal…) — karta; faktúra je po\nzaplatení hneď uhradená."
+    },
+    {
+     "nadpis": "Keď faktúra nevznikne",
+     "text": "<>\nDoplnok zapisuje všetko do poznámok objednávky — tam uvidíte číslo\nvystavenej faktúry aj dôvod, prečo nevznikla.\n-\nKeď je Faktero chvíľu nedostupné, doplnok to sám skúsi znova po 5, 10, 20 a 40 minútach.\nDvakrát faktúru nevystaví ani pri opakovaní.\n-\nNeplatný kľúč alebo neaktívne predplatné doplnok nahlási v poznámke; po náprave použite\nakciu Vystaviť faktúru vo Fakteri .\n-\nObjednávka so zápornou položkou (zľava pridaná iným doplnkom ako\npoplatok) sa automaticky nevystaví — faktúru treba spraviť ručne. Kupóny WooCommerce\nfungujú normálne.\n-\nPolia IČO/DIČ/IČ DPH sa pridávajú do klasickej pokladne . Pokladňa z\nblokov ich zatiaľ nezobrazí; IČO z iných slovenských doplnkov pokladne doplnok načíta\nsám."
     }
    ]
   },

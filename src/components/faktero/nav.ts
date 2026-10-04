@@ -263,6 +263,7 @@ export const ACCOUNT_API_LINKS: NavChild[] = [
   { to: "/api-playground", label: "API playground" },
   { to: "/webhooky", label: "Webhooky" },
   { to: "/webhooky-logy", label: "Webhook delivery logy" },
+  { to: "/pomoc/woocommerce", label: "Doplnok pre WooCommerce" },
 ];
 
 export const ACCOUNT_SETTINGS_LINKS: NavChild[] = [

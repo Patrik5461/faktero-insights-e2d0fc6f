@@ -104,6 +104,7 @@ import { Route as PomocSkladRouteImport } from './routes/pomoc.sklad'
 import { Route as PomocUzavierkaRouteImport } from './routes/pomoc.uzavierka'
 import { Route as PomocVideaRouteImport } from './routes/pomoc.videa'
 import { Route as PomocVykazyDphRouteImport } from './routes/pomoc.vykazy-dph'
+import { Route as PomocWoocommerceRouteImport } from './routes/pomoc.woocommerce'
 import { Route as PomocZabezpecenieRouteImport } from './routes/pomoc.zabezpecenie'
 import { Route as PomocZakazkyRouteImport } from './routes/pomoc.zakazky'
 import { Route as PomocZamestnanciRouteImport } from './routes/pomoc.zamestnanci'
@@ -769,6 +770,11 @@ const PomocVideaRoute = PomocVideaRouteImport.update({
 const PomocVykazyDphRoute = PomocVykazyDphRouteImport.update({
   id: '/pomoc/vykazy-dph',
   path: '/pomoc/vykazy-dph',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PomocWoocommerceRoute = PomocWoocommerceRouteImport.update({
+  id: '/pomoc/woocommerce',
+  path: '/pomoc/woocommerce',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PomocZabezpecenieRoute = PomocZabezpecenieRouteImport.update({
@@ -1907,6 +1913,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
   '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
+  '/pomoc/woocommerce': typeof PomocWoocommerceRoute
   '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pomoc/zamestnanci': typeof PomocZamestnanciRoute
@@ -2181,6 +2188,7 @@ export interface FileRoutesByTo {
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
   '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
+  '/pomoc/woocommerce': typeof PomocWoocommerceRoute
   '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pomoc/zamestnanci': typeof PomocZamestnanciRoute
@@ -2464,6 +2472,7 @@ export interface FileRoutesById {
   '/pomoc/uzavierka': typeof PomocUzavierkaRoute
   '/pomoc/videa': typeof PomocVideaRoute
   '/pomoc/vykazy-dph': typeof PomocVykazyDphRoute
+  '/pomoc/woocommerce': typeof PomocWoocommerceRoute
   '/pomoc/zabezpecenie': typeof PomocZabezpecenieRoute
   '/pomoc/zakazky': typeof PomocZakazkyRoute
   '/pomoc/zamestnanci': typeof PomocZamestnanciRoute
@@ -2748,6 +2757,7 @@ export interface FileRouteTypes {
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
     | '/pomoc/vykazy-dph'
+    | '/pomoc/woocommerce'
     | '/pomoc/zabezpecenie'
     | '/pomoc/zakazky'
     | '/pomoc/zamestnanci'
@@ -3022,6 +3032,7 @@ export interface FileRouteTypes {
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
     | '/pomoc/vykazy-dph'
+    | '/pomoc/woocommerce'
     | '/pomoc/zabezpecenie'
     | '/pomoc/zakazky'
     | '/pomoc/zamestnanci'
@@ -3304,6 +3315,7 @@ export interface FileRouteTypes {
     | '/pomoc/uzavierka'
     | '/pomoc/videa'
     | '/pomoc/vykazy-dph'
+    | '/pomoc/woocommerce'
     | '/pomoc/zabezpecenie'
     | '/pomoc/zakazky'
     | '/pomoc/zamestnanci'
@@ -3553,6 +3565,7 @@ export interface RootRouteChildren {
   PomocUzavierkaRoute: typeof PomocUzavierkaRoute
   PomocVideaRoute: typeof PomocVideaRoute
   PomocVykazyDphRoute: typeof PomocVykazyDphRoute
+  PomocWoocommerceRoute: typeof PomocWoocommerceRoute
   PomocZabezpecenieRoute: typeof PomocZabezpecenieRoute
   PomocZakazkyRoute: typeof PomocZakazkyRoute
   PomocZamestnanciRoute: typeof PomocZamestnanciRoute
@@ -4284,6 +4297,13 @@ declare module '@tanstack/react-router' {
       path: '/pomoc/vykazy-dph'
       fullPath: '/pomoc/vykazy-dph'
       preLoaderRoute: typeof PomocVykazyDphRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pomoc/woocommerce': {
+      id: '/pomoc/woocommerce'
+      path: '/pomoc/woocommerce'
+      fullPath: '/pomoc/woocommerce'
+      preLoaderRoute: typeof PomocWoocommerceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pomoc/zabezpecenie': {
@@ -6178,6 +6198,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocUzavierkaRoute: PomocUzavierkaRoute,
   PomocVideaRoute: PomocVideaRoute,
   PomocVykazyDphRoute: PomocVykazyDphRoute,
+  PomocWoocommerceRoute: PomocWoocommerceRoute,
   PomocZabezpecenieRoute: PomocZabezpecenieRoute,
   PomocZakazkyRoute: PomocZakazkyRoute,
   PomocZamestnanciRoute: PomocZamestnanciRoute,

@@ -85,7 +85,7 @@ export function HromadnyPrikaz({
       a.remove();
       URL.revokeObjectURL(url);
       toast.success(
-        `Príkaz na ${platby.length} ${platby.length === 1 ? "platbu" : "platieb"} stiahnutý. Nahrajte ho v internetbankingu.`,
+        `Príkaz na ${platby.length} ${platby.length === 1 ? "platbu" : platby.length >= 2 && platby.length <= 4 ? "platby" : "platieb"} stiahnutý. Nahrajte ho v internetbankingu.`,
       );
       onClose();
     } catch (e) {
@@ -113,10 +113,26 @@ export function HromadnyPrikaz({
         <div className="mt-4 rounded-md bg-secondary/50 p-3 text-sm">
           <span className="font-medium">
             {platby.length}{" "}
-            {platby.length === 1 ? "platba" : platby.length < 5 ? "platby" : "platieb"}
+            {platby.length === 1
+              ? "platba"
+              : platby.length >= 2 && platby.length <= 4
+                ? "platby"
+                : "platieb"}
           </span>{" "}
           spolu <span className="font-semibold tabular-nums">{eur(spolu)}</span>
         </div>
+
+        {platby.some((p) => !p.vs) && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Bez variabilného symbolu pôjde{" "}
+            {platby
+              .filter((p) => !p.vs)
+              .map((p) => p.cisloFaktury)
+              .join(", ")}{" "}
+            — dodávateľ platbu spozná len podľa čísla faktúry v správe pre príjemcu. Symbol doplníte
+            v detaile faktúry.
+          </p>
+        )}
 
         {preskocene.length > 0 && (
           <div className="mt-3 flex gap-2 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
