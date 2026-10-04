@@ -33,6 +33,9 @@ import {
   ScanLine,
   Send,
   ShieldCheck,
+  ShoppingCart,
+  ListChecks,
+  ArrowLeftRight,
   Smartphone,
   Sparkles,
   Tags,
@@ -109,7 +112,7 @@ const features = [
   {
     icon: FileText,
     title: "Faktúry a PDF",
-    text: "Profesionálne PDF s logom, QR platbou, IBAN a rozpisom DPH. Odošlite jedným klikom.",
+    text: "Profesionálne PDF s logom, QR platbou, IBAN a rozpisom DPH. Pripojte dodací list či zmluvu a odošlite jedným klikom.",
   },
   {
     icon: Quote,
@@ -137,7 +140,7 @@ const features = [
     /* Priamo sa pripája Tatra banka, Wise a Revolut Business. Účty v SLSP, VÚB
        či ČSOB natiahne Faktero vtedy, keď ich má človek v TB cez multibanking —
        sľubovať ich ako samostatné pripojenie by bolo klamlivé. */
-    text: "Automatické párovanie platieb s faktúrami. Priame pripojenie Tatra banky, Wise a Revolut Business; účty v SLSP, VÚB či ČSOB natiahneme cez multibanking v Tatra banke.",
+    text: "Automatické párovanie platieb s faktúrami. Priame pripojenie Tatra banky, Wise, Revolut Business a Wallesteru; účty v SLSP, VÚB či ČSOB natiahneme cez multibanking v Tatra banke.",
   },
   {
     icon: Receipt,
@@ -165,6 +168,11 @@ const features = [
     text: "Označte, odošlite alebo exportujte desiatky faktúr naraz. Ušetrite hodiny manuálnej práce.",
   },
   {
+    icon: ShoppingCart,
+    title: "E-shop na WooCommerce",
+    text: "Hotový doplnok pre WordPress: z každej objednávky vznikne faktúra sama, so sumami na cent a s PDF pre zákazníka.",
+  },
+  {
     icon: Plug,
     title: "Prepojenie s Pohodou",
     text: "Pohoda si doklady stiahne sama každú noc a vráti čísla, ktoré im pridelila. Účtovníčka pritom nič neinštaluje.",
@@ -177,7 +185,7 @@ const features = [
   {
     icon: ShieldCheck,
     title: "eFaktúra 2027",
-    text: "Štruktúrované XML, Peppol and Digitálny poštár. Sme pripravení, aby ste nemuseli vy.",
+    text: "Štruktúrované XML, Peppol a Digitálny poštár. Sme pripravení, aby ste nemuseli vy.",
   },
   {
     icon: ScanLine,
@@ -259,8 +267,28 @@ const accounting = [
   },
   {
     icon: TrendingUp,
-    title: "Prehľady DPH",
-    text: "Sumáre DPH s rozpadom po sadzbách a obdobiach, pripravené pre kontrolný výkaz.",
+    title: "Výkazy k DPH",
+    text: "Daňové priznanie, kontrolný a súhrnný výkaz v XML na podanie, s rozpadom po sadzbách a obdobiach.",
+  },
+  {
+    icon: Upload,
+    title: "Šesť účtovných exportov",
+    text: "Pohoda, Omega, Money S3, ABRA Flexi, ISDOC a CSV súpiska pre MRP, Helios či Excel.",
+  },
+  {
+    icon: ArrowLeftRight,
+    title: "Výpisy z platobných brán",
+    text: "Export zo Stripe, PayPal, GoPay, Comgate či Barionu ako bankový výpis — platby, poplatky a výbery zvlášť.",
+  },
+  {
+    icon: ListChecks,
+    title: "Pravidlá účtovania",
+    text: "Doklad od známeho dodávateľa dostane predkontáciu, kategóriu a členenie DPH sám, hneď ako vznikne.",
+  },
+  {
+    icon: Send,
+    title: "Hromadný príkaz na úhradu",
+    text: "Vyberte prijaté faktúry a stiahnite SEPA XML pre internetbanking — zaplatíte ich naraz, so symbolmi.",
   },
 ] as const;
 
@@ -1077,8 +1105,8 @@ function AccountingSection() {
               Mesačné podklady <span className="text-primary">jedným klikom</span>.
             </h2>
             <p className="mt-5 max-w-md text-muted-foreground">
-              Pohoda XML export, prehľady DPH a hromadný import faktúr — pripravené pre desiatky
-              klientov bez ručného prepisovania.
+              Pohoda konektor aj XML, šesť formátov exportu, výkazy k DPH, pravidlá účtovania a
+              výpisy z platobných brán — pripravené pre desiatky klientov bez ručného prepisovania.
             </p>
             <Link
               to="/registracia"
@@ -1320,7 +1348,11 @@ function MobileAppSection() {
                 aria-label="Stiahnuť Faktero v App Store"
                 className="inline-block rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
-                <img src={APP_STORE_ODZNAK} alt="Download on the App Store" className="h-12 w-auto" />
+                <img
+                  src={APP_STORE_ODZNAK}
+                  alt="Download on the App Store"
+                  className="h-12 w-auto"
+                />
               </a>
               <button
                 type="button"
@@ -1354,7 +1386,11 @@ function MobileAppSection() {
                 aria-label="Stiahnuť Knihu jázd v App Store"
                 className="inline-block shrink-0 rounded-lg transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
-                <img src={APP_STORE_ODZNAK} alt="Download on the App Store" className="h-10 w-auto" />
+                <img
+                  src={APP_STORE_ODZNAK}
+                  alt="Download on the App Store"
+                  className="h-10 w-auto"
+                />
               </a>
             </div>
           </div>
@@ -1968,7 +2004,12 @@ function IntegrationsTrust() {
       icon: FileSpreadsheet,
     },
     { name: "eFaktúra 2027", desc: "UBL 2.1 / Peppol pripravenosť.", icon: ShieldCheck },
-    { name: "REST API", desc: "Vystavujte faktúry z e-shopu či CRM.", icon: Code2 },
+    {
+      name: "WooCommerce",
+      desc: "Doplnok pre e-shop: faktúra z každej objednávky vznikne sama.",
+      icon: ShoppingCart,
+    },
+    { name: "REST API", desc: "Vystavujte faktúry z vlastného e-shopu či CRM.", icon: Code2 },
   ];
   return (
     <section id="integracie" className="relative">
@@ -1978,7 +2019,7 @@ function IntegrationsTrust() {
           title="Navrhnuté pre slovenské firmy"
           subtitle="Pracujeme s nástrojmi, ktoré už dnes používate."
         />
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((i) => (
             <div
               key={i.name}
@@ -2040,7 +2081,7 @@ function FaqSection() {
     },
     {
       q: "Môžem prejsť zo SuperFaktúry?",
-      a: "Áno. Faktero podporuje hromadný import faktúr, odberateľov a číselných radov zo SuperFaktúry, CSV alebo XML — bez straty histórie.",
+      a: "Áno. Faktúry, odberateľov aj prijaté doklady prenesiete zo SuperFaktúry, iDokladu, Pohody, Money S3, Omegy, KROSu aj Doklada — bez straty histórie.",
     },
     {
       q: "Máte API?",

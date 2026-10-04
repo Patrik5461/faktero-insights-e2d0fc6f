@@ -26,6 +26,10 @@ import {
   ClipboardList,
   Wallet,
   Calculator,
+  ShoppingCart,
+  ArrowLeftRight,
+  ListChecks,
+  Send,
   type LucideIcon,
 } from "lucide-react";
 
@@ -59,7 +63,7 @@ export const funkcie: HubContent = {
   hubSlug: "funkcie",
   hubTitle: "Funkcie Faktero",
   hubDescription:
-    "Faktúry, ponuky, skener bločkov z eKasy, párovanie platieb z banky, cenník a zľavy, zákazky, sklad, pokladňa, DPH prehľad, kniha jázd a aplikácia do telefónu — v jednom systéme.",
+    "Faktúry, ponuky, skener bločkov z eKasy, párovanie platieb z banky, faktúry z e-shopu na WooCommerce, hromadný príkaz na úhradu, cenník a zľavy, zákazky, sklad, pokladňa, DPH, kniha jázd a aplikácia do telefónu — v jednom systéme.",
   hubLead:
     "Všetko, čo potrebujete na fakturáciu a prevádzku modernej firmy — bez kompromisov, pripravené na eFaktúru 2027.",
   items: [
@@ -82,6 +86,7 @@ export const funkcie: HubContent = {
             "Viacero sadzieb DPH na jednej faktúre vrátane reverse-charge",
             "Odoslanie e-mailom z vašej adresy a sledovanie doručenia",
             "Označenie zaplatených faktúr a evidencia úhrad",
+            "Prílohy k faktúre aj ponuke — dodací list, zmluva, výkaz prác — odídu spolu s ňou v e-maile",
           ],
         },
         {
@@ -287,6 +292,58 @@ export const funkcie: HubContent = {
       ],
     },
     {
+      slug: "eshop-woocommerce",
+      label: "E-shop na WooCommerce",
+      summary:
+        "Z každej objednávky vznikne faktúra sama — so sumami na cent a s PDF pre zákazníka.",
+      icon: ShoppingCart,
+      blocks: [
+        {
+          type: "lead",
+          text: "Hotový doplnok pre WordPress. Nahráte ho, vložíte API kľúč a odteraz sa faktúry z objednávok vystavujú vo Fakteri samy — bez prepisovania a bez programovania.",
+        },
+        {
+          type: "bullets",
+          title: "Čo doplnok robí",
+          items: [
+            "Faktúra vznikne, keď objednávka prejde do zvoleného stavu — napríklad po zaplatení kartou",
+            "Položky, kupóny, doprava aj poplatky so sadzbami DPH presne podľa obchodu",
+            "Zaplatená objednávka má faktúru hneď uhradenú, dobierka až po vybavení",
+            "Odkaz na PDF v e-maile o objednávke, v účte zákazníka aj v administrácii",
+            "Polia IČO, DIČ a IČ DPH v pokladni — klasickej aj z blokov",
+            "Pri výpadku sa vystavenie samo zopakuje a faktúra nikdy nevznikne dvakrát",
+          ],
+        },
+        {
+          type: "section",
+          title: "A potom aj platby",
+          body: "Výpis zo Stripe, PayPalu či GoPay nahráte do Faktera a platby sa spárujú s faktúrami podľa čísla objednávky. Poplatky brány a výbery na účet pôjdu do účtovníctva zvlášť.",
+        },
+      ],
+    },
+    {
+      slug: "hromadny-prikaz",
+      label: "Hromadný príkaz na úhradu",
+      summary: "Prijaté faktúry zaplatíte naraz jedným súborom pre internetbanking.",
+      icon: Send,
+      blocks: [
+        {
+          type: "lead",
+          text: "Označte prijaté faktúry a stiahnite SEPA XML. V internetbankingu ho nahráte ako hromadný príkaz — prijme ho každá slovenská aj česká banka.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Variabilný, špecifický a konštantný symbol tak, ako ich dodávateľ uvidí vo výpise",
+            "Platba hneď alebo každá faktúra až v deň splatnosti",
+            "Výber účtu, z ktorého sa platí",
+            "Faktúry bez IBAN-u, už zaplatené či v inej mene nepustí — a povie prečo",
+            "Súbor overený proti oficiálnej schéme ISO 20022 aj pravidlám SEPA",
+          ],
+        },
+      ],
+    },
+    {
       slug: "bankove-parovanie",
       label: "Banka a párovanie úhrad",
       summary: "Faktero pozná pohyby na účte a samo označí zaplatené faktúry.",
@@ -300,7 +357,8 @@ export const funkcie: HubContent = {
           type: "bullets",
           title: "Ako to pracuje",
           items: [
-            "Priame napojenie na Tatra banku, pre ostatné banky import výpisu",
+            "Priame napojenie na Tatra banku, Revolut Business, Wise a Wallester, pre ostatné banky import výpisu",
+            "Výpisy z platobných brán (Stripe, PayPal, GoPay, Comgate, Barion) ako ďalší účet",
             "Párovanie podľa variabilného symbolu, sumy a názvu odberateľa",
             "Čiastočné úhrady sa odrátajú, faktúra ostane otvorená na zvyšok",
             "Nesprávne spárovanie sa dá vrátiť jedným klikom",
@@ -840,7 +898,7 @@ export const uctovnici: HubContent = {
   hubSlug: "uctovnici",
   hubTitle: "Pre účtovníkov",
   hubDescription:
-    "Pohoda export, mesačné podklady a integrácie — Faktero pripraví všetko, čo potrebujete.",
+    "Pohoda export aj konektor, šesť formátov exportu, pravidlá účtovania, výpisy z platobných brán a mesačné podklady — Faktero pripraví všetko, čo potrebujete.",
   hubLead:
     "Spolupracujte so svojimi klientmi efektívnejšie. Faktero generuje účtovné podklady jedným klikom.",
   items: [
@@ -890,6 +948,73 @@ export const uctovnici: HubContent = {
       ],
     },
     {
+      slug: "uctovne-exporty",
+      label: "Šesť účtovných exportov",
+      summary: "Pohoda, Omega, Money S3, ABRA Flexi, ISDOC a CSV — vyberiete program a stiahnete.",
+      icon: Upload,
+      blocks: [
+        {
+          type: "lead",
+          text: "Faktúry za zvolené obdobie v tvare, aký čaká váš účtovný program. Formáty sú overené proti schémam výrobcov, nie len „nejako poskladané“.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Pohoda XML a priame prepojenie, ktoré si doklady berie samo",
+            "KROS Omega (TXT) a Money S3 (XML) vrátane faktúr v cudzej mene",
+            "ISDOC pre české programy a ABRA Flexi XML",
+            "CSV súpiska pre MRP, Helios, Premier alebo Excel",
+            "Zálohové faktúry, dobropisy a zľavy rozpočítané správne v každom formáte",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "pravidla-uctovania",
+      label: "Pravidlá účtovania",
+      summary:
+        "Doklad od známeho dodávateľa sa zaúčtuje sám — predkontácia, kategória, členenie DPH.",
+      icon: ListChecks,
+      blocks: [
+        {
+          type: "lead",
+          text: "„Keď je dodávateľ Slovnaft, doplň predkontáciu PHM a kategóriu Palivo“. Pravidlo nastavíte raz a zaberie pri každom novom doklade.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Podmienky: časť názvu dodávateľa, IČO alebo spôsob úhrady",
+            "Doplní predkontáciu a členenie DPH pre Pohodu, kategóriu, odpočet DPH a poznámku",
+            "Zaberie pri skene na webe aj v appke, pri doklade z e-mailu aj z importu",
+            "Dopĺňa len prázdne políčka — čo vyplní človek, neprepíše",
+            "Jedným klikom ho uplatníte aj na doklady, ktoré už vo Fakteri sú",
+          ],
+        },
+      ],
+    },
+    {
+      slug: "vypisy-platobnych-bran",
+      label: "Výpisy z platobných brán",
+      summary: "Export zo Stripe, PayPal, GoPay, Comgate či Barionu ako bankový výpis do Pohody.",
+      icon: ArrowLeftRight,
+      blocks: [
+        {
+          type: "lead",
+          text: "Brána je pre účtovníctvo samostatný účet. Faktero z jej exportu spraví výpis, aký by poslala banka — a nikto ho už neprepisuje riadok po riadku.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Každá platba zákazníka ako príjem s variabilným symbolom z čísla objednávky",
+            "Poplatok brány ako samostatný výdaj s vlastnou predkontáciou",
+            "Výber na bankový účet ako prevod medzi vlastnými účtami",
+            "Do Pohody ako dávka dokladov alebo SEPA XML (camt.053)",
+            "Ten istý export uložený vo Fakteri spáruje platby s faktúrami",
+          ],
+        },
+      ],
+    },
+    {
       slug: "mesacne-podklady",
       label: "Mesačné podklady",
       summary: "Jedným klikom pripravíte balík faktúr, ponúk a nákladov za zvolený mesiac.",
@@ -918,7 +1043,7 @@ export const uctovnici: HubContent = {
       blocks: [
         {
           type: "lead",
-          text: "Okrem Pohody vieme prevziať dáta z Money S3, Omegy, KROSu, iDokladu aj SuperFaktúry — a čokoľvek ďalšie sa dá cez REST API.",
+          text: "Okrem Pohody vieme prevziať dáta z Money S3, Omegy, KROSu, iDokladu, SuperFaktúry aj Doklada, vystaviť faktúry z e-shopu a prečítať výpisy platobných brán — a čokoľvek ďalšie sa dá cez REST API.",
         },
         {
           type: "bullets",
@@ -928,6 +1053,10 @@ export const uctovnici: HubContent = {
             "iDoklad — CSV alebo XLSX zo zoznamu faktúr",
             "SuperFaktúra — ZIP s ISDOC dokladmi",
             "Pohoda — export XML aj konektor a bankový výpis",
+            "Doklado — prijaté doklady zo XML, CSV aj ZIP so skenmi",
+            "Export do Pohody, Omegy, Money S3, ABRA Flexi, ISDOC a CSV",
+            "WooCommerce — doplnok, ktorý vystaví faktúru z každej objednávky",
+            "Stripe, PayPal, GoPay, Comgate, Barion — výpisy z platobných brán",
             "Vlastné integrácie cez REST API",
           ],
         },
