@@ -542,8 +542,8 @@ export function AppShell({
                   ))}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to={"/pomoc" as any}>
-                      <HelpCircle className="mr-2 h-3.5 w-3.5" /> Pomoc
+                    <Link to={"/podpora" as any}>
+                      <HelpCircle className="mr-2 h-3.5 w-3.5" /> Pomoc a podpora
                     </Link>
                   </DropdownMenuItem>
                   {/* Nahlásiť sa dá z každej stránky — chyba sa nájde tam, kde človek pracuje. */}

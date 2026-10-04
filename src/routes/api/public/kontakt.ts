@@ -155,6 +155,29 @@ export const Route = createFileRoute("/api/public/kontakt")({
           return odpoved({ error: "send_failed" }, 502, origin);
         }
 
+        /*
+          Dopyt z webu ide aj do help desku, aby ho podpora mala v jednej
+          schránke s ostatnými požiadavkami a mohla naň odpovedať odtiaľ.
+          E-mail už odišiel vyššie, takže bez ďalšieho upozornenia; a keď sa
+          zápis nepodarí, odosielateľovi to neprekáža — správa je v schránke.
+        */
+        try {
+          const { predmetZoSpravy } = await import("@/lib/faktero/podpora");
+          const { zalozPoziadavku } = await import("@/lib/faktero/podpora.server");
+          await zalozPoziadavku({
+            userId: null,
+            email: data.email,
+            meno: data.name,
+            predmet: predmetZoSpravy(data.message),
+            kategoria: "kontakt",
+            zdroj: "web",
+            text: data.message,
+            bezUpozornenia: true,
+          });
+        } catch (e) {
+          console.error("[kontakt] požiadavka sa nezaložila", e);
+        }
+
         return odpoved({ ok: true }, 200, origin);
       },
     },

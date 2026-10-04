@@ -33,6 +33,10 @@ import {
 
 export const Route = createFileRoute("/_authenticated/ai-asistent")({
   head: () => ({ meta: [{ title: "Faktero AI — Faktero" }] }),
+  // Otázka z Pomoc a podpora — predvyplní sa, odošle ju až človek.
+  validateSearch: (s: Record<string, unknown>): { otazka?: string } => ({
+    otazka: typeof s.otazka === "string" && s.otazka.trim() ? s.otazka.slice(0, 500) : undefined,
+  }),
   component: AiAssistantPage,
 });
 
@@ -108,7 +112,8 @@ function ChatView({ companyId }: { companyId: string }) {
   const sendFn = useServerFn(sendChatFn);
 
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [input, setInput] = useState("");
+  const { otazka } = Route.useSearch();
+  const [input, setInput] = useState(otazka ?? "");
 
   const conversations = useQuery({
     queryKey: ["ai-conv", companyId],

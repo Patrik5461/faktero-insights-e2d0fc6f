@@ -258,21 +258,52 @@ async function notifikacieOdpovediNaPonuky(companyId: string): Promise<AppNotifi
 const PORADIE_ZAVAZNOSTI = { danger: 0, warning: 1, info: 2 } as const;
 
 /** Faktúry, banka aj zamestnanci v jednom zozname, zoradené rovnako. */
+/*
+  Odpoveď podpory na požiadavku človeka. Patrí jemu, nie firme — preto podľa
+  `user_id`. Kľúč nesie čas poslednej správy, takže každá ďalšia odpoveď je
+  nová notifikácia, hoci tú predošlú si už prečítal.
+*/
+async function notifikacieOdpovediPodpory(userId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("podpora_poziadavky" as any)
+    .select(
+      "id, cislo, predmet, posledna_od, posledna_sprava_at, zakaznik_videl_at, podpora_videla_at",
+    )
+    .eq("user_id", userId)
+    .eq("posledna_od", "podpora")
+    .limit(50);
+  const { neprecitanaPreZakaznika, cisloPoziadavky } = await import("./podpora");
+  return ((data ?? []) as any[])
+    .filter((p) => neprecitanaPreZakaznika(p))
+    .map((p) => ({
+      key: `podpora:${p.id}:${p.posledna_sprava_at}`,
+      severity: "info" as const,
+      title: `Podpora odpovedala na ${cisloPoziadavky(p.cislo)}`,
+      detail: p.predmet,
+      to: `/podpora/${p.id}`,
+      date: String(p.posledna_sprava_at).slice(0, 10),
+    }));
+}
+
 async function vsetkyNotifikacie(companyId: string, userId: string): Promise<AppNotification[]> {
   const zoznam = await (async () => {
-    const [signaly, zamestnanci, doklady, ponuky] = await Promise.all([
+    const [signaly, zamestnanci, doklady, ponuky, podpora] = await Promise.all([
       zozbierajSignaly(companyId),
       notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
       notifikaciaNespracovanychDokladov(companyId).catch(() => [] as AppNotification[]),
       notifikacieOdpovediNaPonuky(companyId).catch(() => [] as AppNotification[]),
+      notifikacieOdpovediPodpory(userId).catch(() => [] as AppNotification[]),
     ]);
     // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
     // inak najstaršie (najdlhšie po termíne).
-    return [...buildNotifications(signaly), ...zamestnanci, ...doklady, ...ponuky].sort((a, b) => {
-      const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];
-      if (podlaZavaznosti !== 0) return podlaZavaznosti;
-      return a.severity === "info" ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
-    });
+    return [...buildNotifications(signaly), ...zamestnanci, ...doklady, ...ponuky, ...podpora].sort(
+      (a, b) => {
+        const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];
+        if (podlaZavaznosti !== 0) return podlaZavaznosti;
+        return a.severity === "info" ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
+      },
+    );
   })();
   /*
     Signály sa zbierajú servisným kľúčom, ktorý obchádza oprávnenia v databáze.

@@ -103,14 +103,43 @@ export const posliSpatnuVazbu = createServerFn({ method: "POST" })
         : Promise.resolve({ data: null }),
     ]);
 
-    await posliMailom({
-      kind: data.kind,
-      message: data.message,
-      url: data.url,
-      userAgent: data.user_agent,
-      email: profil?.email ?? null,
-      firma: firma?.name ?? null,
-    });
-
-    return { ok: true };
+    /*
+      Hlásenie je odteraz požiadavka v help desku — zákazník vidí jej stav aj
+      odpoveď a podpora ju má v jednej schránke s ostatnými. E-mail podpore
+      posiela help desk. Keď sa požiadavka nezaloží (napríklad účet bez
+      e-mailu), ide aspoň pôvodný e-mail, aby sa hlásenie nestratilo.
+    */
+    try {
+      if (!profil?.email) throw new Error("bez e-mailu");
+      const { kategoriaSpatnejVazby, predmetZoSpravy } = await import("./podpora");
+      const { zalozPoziadavku } = await import("./podpora.server");
+      const kategoria = kategoriaSpatnejVazby(data.kind, data.url);
+      const zMobilu = /^(app:|capacitor:)|^https:\/\/localhost/.test(data.url ?? "");
+      const p = await zalozPoziadavku({
+        userId,
+        companyId: data.company_id ?? null,
+        email: profil.email,
+        predmet:
+          kategoria === "diagnostika"
+            ? "Diagnostika z mobilnej aplikácie"
+            : predmetZoSpravy(data.message),
+        kategoria,
+        zdroj: zMobilu ? "mobil" : "aplikacia",
+        text: data.message,
+        url: data.url ?? null,
+        userAgent: data.user_agent ?? null,
+      });
+      return { ok: true, poziadavkaId: p.id, cislo: p.cislo };
+    } catch (e: any) {
+      console.error("[spatna-vazba] požiadavka sa nezaložila:", e?.message ?? e);
+      await posliMailom({
+        kind: data.kind,
+        message: data.message,
+        url: data.url,
+        userAgent: data.user_agent,
+        email: profil?.email ?? null,
+        firma: firma?.name ?? null,
+      });
+      return { ok: true };
+    }
   });

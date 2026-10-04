@@ -94,6 +94,7 @@ import { Route as PomocObjednavkyDodavatelRouteImport } from './routes/pomoc.obj
 import { Route as PomocOdberateliaRouteImport } from './routes/pomoc.odberatelia'
 import { Route as PomocOpakovaneRouteImport } from './routes/pomoc.opakovane'
 import { Route as PomocOssRouteImport } from './routes/pomoc.oss'
+import { Route as PomocPodporaRouteImport } from './routes/pomoc.podpora'
 import { Route as PomocPohodaRouteImport } from './routes/pomoc.pohoda'
 import { Route as PomocPokladnaRouteImport } from './routes/pomoc.pokladna'
 import { Route as PomocPonukyRouteImport } from './routes/pomoc.ponuky'
@@ -176,6 +177,8 @@ import { Route as AuthenticatedOpakovaneIdRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOpakovaneNovaRouteImport } from './routes/_authenticated/opakovane.nova'
 import { Route as AuthenticatedOstatneDokladyIndexRouteImport } from './routes/_authenticated/ostatne-doklady.index'
 import { Route as AuthenticatedOstatneDokladyNovyRouteImport } from './routes/_authenticated/ostatne-doklady.novy'
+import { Route as AuthenticatedPodporaIndexRouteImport } from './routes/_authenticated/podpora.index'
+import { Route as AuthenticatedPodporaIdRouteImport } from './routes/_authenticated/podpora.$id'
 import { Route as AuthenticatedPonukyIndexRouteImport } from './routes/_authenticated/ponuky.index'
 import { Route as AuthenticatedPonukyIdRouteImport } from './routes/_authenticated/ponuky.$id'
 import { Route as AuthenticatedPonukyNovaRouteImport } from './routes/_authenticated/ponuky.nova'
@@ -211,6 +214,8 @@ import { Route as AuthenticatedZamestnanciNovyRouteImport } from './routes/_auth
 import { Route as AuthenticatedZamestnanciSablonyRouteImport } from './routes/_authenticated/zamestnanci.sablony'
 import { Route as AdminCompaniesIndexRouteImport } from './routes/admin.companies.index'
 import { Route as AdminCompaniesIdRouteImport } from './routes/admin.companies.$id'
+import { Route as AdminPodporaIndexRouteImport } from './routes/admin.podpora.index'
+import { Route as AdminPodporaIdRouteImport } from './routes/admin.podpora.$id'
 import { Route as AdminUsersIndexRouteImport } from './routes/admin.users.index'
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
 import { Route as ApiAdminMigrationExportRouteImport } from './routes/api/admin/migration-export'
@@ -723,6 +728,11 @@ const PomocOssRoute = PomocOssRouteImport.update({
   path: '/pomoc/oss',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PomocPodporaRoute = PomocPodporaRouteImport.update({
+  id: '/pomoc/podpora',
+  path: '/pomoc/podpora',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PomocPohodaRoute = PomocPohodaRouteImport.update({
   id: '/pomoc/pohoda',
   path: '/pomoc/pohoda',
@@ -1182,6 +1192,17 @@ const AuthenticatedOstatneDokladyNovyRoute =
     path: '/ostatne-doklady/novy',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPodporaIndexRoute =
+  AuthenticatedPodporaIndexRouteImport.update({
+    id: '/podpora/',
+    path: '/podpora/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPodporaIdRoute = AuthenticatedPodporaIdRouteImport.update({
+  id: '/podpora/$id',
+  path: '/podpora/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPonukyIndexRoute =
   AuthenticatedPonukyIndexRouteImport.update({
     id: '/ponuky/',
@@ -1383,6 +1404,16 @@ const AdminCompaniesIndexRoute = AdminCompaniesIndexRouteImport.update({
 const AdminCompaniesIdRoute = AdminCompaniesIdRouteImport.update({
   id: '/companies/$id',
   path: '/companies/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPodporaIndexRoute = AdminPodporaIndexRouteImport.update({
+  id: '/podpora/',
+  path: '/podpora/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPodporaIdRoute = AdminPodporaIdRouteImport.update({
+  id: '/podpora/$id',
+  path: '/podpora/$id',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
@@ -1910,6 +1941,7 @@ export interface FileRoutesByFullPath {
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
   '/pomoc/oss': typeof PomocOssRoute
+  '/pomoc/podpora': typeof PomocPodporaRoute
   '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
@@ -1984,6 +2016,7 @@ export interface FileRoutesByFullPath {
   '/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/ostatne-doklady/novy': typeof AuthenticatedOstatneDokladyNovyRoute
+  '/podpora/$id': typeof AuthenticatedPodporaIdRoute
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
@@ -2011,6 +2044,7 @@ export interface FileRoutesByFullPath {
   '/zamestnanci/novy': typeof AuthenticatedZamestnanciNovyRoute
   '/zamestnanci/sablony': typeof AuthenticatedZamestnanciSablonyRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
+  '/admin/podpora/$id': typeof AdminPodporaIdRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
@@ -2041,6 +2075,7 @@ export interface FileRoutesByFullPath {
   '/objednavky/': typeof AuthenticatedObjednavkyIndexRoute
   '/opakovane/': typeof AuthenticatedOpakovaneIndexRoute
   '/ostatne-doklady/': typeof AuthenticatedOstatneDokladyIndexRoute
+  '/podpora/': typeof AuthenticatedPodporaIndexRoute
   '/ponuky/': typeof AuthenticatedPonukyIndexRoute
   '/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
   '/prijate-zalohove/': typeof AuthenticatedPrijateZalohoveIndexRoute
@@ -2049,6 +2084,7 @@ export interface FileRoutesByFullPath {
   '/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/zamestnanci/': typeof AuthenticatedZamestnanciIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
+  '/admin/podpora/': typeof AdminPodporaIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
@@ -2186,6 +2222,7 @@ export interface FileRoutesByTo {
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
   '/pomoc/oss': typeof PomocOssRoute
+  '/pomoc/podpora': typeof PomocPodporaRoute
   '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
@@ -2259,6 +2296,7 @@ export interface FileRoutesByTo {
   '/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/ostatne-doklady/novy': typeof AuthenticatedOstatneDokladyNovyRoute
+  '/podpora/$id': typeof AuthenticatedPodporaIdRoute
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
@@ -2286,6 +2324,7 @@ export interface FileRoutesByTo {
   '/zamestnanci/novy': typeof AuthenticatedZamestnanciNovyRoute
   '/zamestnanci/sablony': typeof AuthenticatedZamestnanciSablonyRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
+  '/admin/podpora/$id': typeof AdminPodporaIdRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
@@ -2316,6 +2355,7 @@ export interface FileRoutesByTo {
   '/objednavky': typeof AuthenticatedObjednavkyIndexRoute
   '/opakovane': typeof AuthenticatedOpakovaneIndexRoute
   '/ostatne-doklady': typeof AuthenticatedOstatneDokladyIndexRoute
+  '/podpora': typeof AuthenticatedPodporaIndexRoute
   '/ponuky': typeof AuthenticatedPonukyIndexRoute
   '/prijate-faktury': typeof AuthenticatedPrijateFakturyIndexRoute
   '/prijate-zalohove': typeof AuthenticatedPrijateZalohoveIndexRoute
@@ -2324,6 +2364,7 @@ export interface FileRoutesByTo {
   '/zalohove': typeof AuthenticatedZalohoveIndexRoute
   '/zamestnanci': typeof AuthenticatedZamestnanciIndexRoute
   '/admin/companies': typeof AdminCompaniesIndexRoute
+  '/admin/podpora': typeof AdminPodporaIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
   '/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
@@ -2471,6 +2512,7 @@ export interface FileRoutesById {
   '/pomoc/odberatelia': typeof PomocOdberateliaRoute
   '/pomoc/opakovane': typeof PomocOpakovaneRoute
   '/pomoc/oss': typeof PomocOssRoute
+  '/pomoc/podpora': typeof PomocPodporaRoute
   '/pomoc/pohoda': typeof PomocPohodaRoute
   '/pomoc/pokladna': typeof PomocPokladnaRoute
   '/pomoc/ponuky': typeof PomocPonukyRoute
@@ -2545,6 +2587,7 @@ export interface FileRoutesById {
   '/_authenticated/opakovane/$id': typeof AuthenticatedOpakovaneIdRoute
   '/_authenticated/opakovane/nova': typeof AuthenticatedOpakovaneNovaRoute
   '/_authenticated/ostatne-doklady/novy': typeof AuthenticatedOstatneDokladyNovyRoute
+  '/_authenticated/podpora/$id': typeof AuthenticatedPodporaIdRoute
   '/_authenticated/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/_authenticated/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/_authenticated/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
@@ -2572,6 +2615,7 @@ export interface FileRoutesById {
   '/_authenticated/zamestnanci/novy': typeof AuthenticatedZamestnanciNovyRoute
   '/_authenticated/zamestnanci/sablony': typeof AuthenticatedZamestnanciSablonyRoute
   '/admin/companies/$id': typeof AdminCompaniesIdRoute
+  '/admin/podpora/$id': typeof AdminPodporaIdRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/admin/migration-export': typeof ApiAdminMigrationExportRoute
   '/api/mobil/$operacia': typeof ApiMobilOperaciaRoute
@@ -2602,6 +2646,7 @@ export interface FileRoutesById {
   '/_authenticated/objednavky/': typeof AuthenticatedObjednavkyIndexRoute
   '/_authenticated/opakovane/': typeof AuthenticatedOpakovaneIndexRoute
   '/_authenticated/ostatne-doklady/': typeof AuthenticatedOstatneDokladyIndexRoute
+  '/_authenticated/podpora/': typeof AuthenticatedPodporaIndexRoute
   '/_authenticated/ponuky/': typeof AuthenticatedPonukyIndexRoute
   '/_authenticated/prijate-faktury/': typeof AuthenticatedPrijateFakturyIndexRoute
   '/_authenticated/prijate-zalohove/': typeof AuthenticatedPrijateZalohoveIndexRoute
@@ -2610,6 +2655,7 @@ export interface FileRoutesById {
   '/_authenticated/zalohove/': typeof AuthenticatedZalohoveIndexRoute
   '/_authenticated/zamestnanci/': typeof AuthenticatedZamestnanciIndexRoute
   '/admin/companies/': typeof AdminCompaniesIndexRoute
+  '/admin/podpora/': typeof AdminPodporaIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
   '/_authenticated/faktury/$id/upravit': typeof AuthenticatedFakturyIdUpravitRoute
   '/_authenticated/jazdy/integracie/commander': typeof AuthenticatedJazdyIntegracieCommanderRoute
@@ -2757,6 +2803,7 @@ export interface FileRouteTypes {
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
     | '/pomoc/oss'
+    | '/pomoc/podpora'
     | '/pomoc/pohoda'
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
@@ -2831,6 +2878,7 @@ export interface FileRouteTypes {
     | '/opakovane/$id'
     | '/opakovane/nova'
     | '/ostatne-doklady/novy'
+    | '/podpora/$id'
     | '/ponuky/$id'
     | '/ponuky/nova'
     | '/prijate-faktury/nova'
@@ -2858,6 +2906,7 @@ export interface FileRouteTypes {
     | '/zamestnanci/novy'
     | '/zamestnanci/sablony'
     | '/admin/companies/$id'
+    | '/admin/podpora/$id'
     | '/admin/users/$id'
     | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
@@ -2888,6 +2937,7 @@ export interface FileRouteTypes {
     | '/objednavky/'
     | '/opakovane/'
     | '/ostatne-doklady/'
+    | '/podpora/'
     | '/ponuky/'
     | '/prijate-faktury/'
     | '/prijate-zalohove/'
@@ -2896,6 +2946,7 @@ export interface FileRouteTypes {
     | '/zalohove/'
     | '/zamestnanci/'
     | '/admin/companies/'
+    | '/admin/podpora/'
     | '/admin/users/'
     | '/faktury/$id/upravit'
     | '/jazdy/integracie/commander'
@@ -3033,6 +3084,7 @@ export interface FileRouteTypes {
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
     | '/pomoc/oss'
+    | '/pomoc/podpora'
     | '/pomoc/pohoda'
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
@@ -3106,6 +3158,7 @@ export interface FileRouteTypes {
     | '/opakovane/$id'
     | '/opakovane/nova'
     | '/ostatne-doklady/novy'
+    | '/podpora/$id'
     | '/ponuky/$id'
     | '/ponuky/nova'
     | '/prijate-faktury/nova'
@@ -3133,6 +3186,7 @@ export interface FileRouteTypes {
     | '/zamestnanci/novy'
     | '/zamestnanci/sablony'
     | '/admin/companies/$id'
+    | '/admin/podpora/$id'
     | '/admin/users/$id'
     | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
@@ -3163,6 +3217,7 @@ export interface FileRouteTypes {
     | '/objednavky'
     | '/opakovane'
     | '/ostatne-doklady'
+    | '/podpora'
     | '/ponuky'
     | '/prijate-faktury'
     | '/prijate-zalohove'
@@ -3171,6 +3226,7 @@ export interface FileRouteTypes {
     | '/zalohove'
     | '/zamestnanci'
     | '/admin/companies'
+    | '/admin/podpora'
     | '/admin/users'
     | '/faktury/$id/upravit'
     | '/jazdy/integracie/commander'
@@ -3317,6 +3373,7 @@ export interface FileRouteTypes {
     | '/pomoc/odberatelia'
     | '/pomoc/opakovane'
     | '/pomoc/oss'
+    | '/pomoc/podpora'
     | '/pomoc/pohoda'
     | '/pomoc/pokladna'
     | '/pomoc/ponuky'
@@ -3391,6 +3448,7 @@ export interface FileRouteTypes {
     | '/_authenticated/opakovane/$id'
     | '/_authenticated/opakovane/nova'
     | '/_authenticated/ostatne-doklady/novy'
+    | '/_authenticated/podpora/$id'
     | '/_authenticated/ponuky/$id'
     | '/_authenticated/ponuky/nova'
     | '/_authenticated/prijate-faktury/nova'
@@ -3418,6 +3476,7 @@ export interface FileRouteTypes {
     | '/_authenticated/zamestnanci/novy'
     | '/_authenticated/zamestnanci/sablony'
     | '/admin/companies/$id'
+    | '/admin/podpora/$id'
     | '/admin/users/$id'
     | '/api/admin/migration-export'
     | '/api/mobil/$operacia'
@@ -3448,6 +3507,7 @@ export interface FileRouteTypes {
     | '/_authenticated/objednavky/'
     | '/_authenticated/opakovane/'
     | '/_authenticated/ostatne-doklady/'
+    | '/_authenticated/podpora/'
     | '/_authenticated/ponuky/'
     | '/_authenticated/prijate-faktury/'
     | '/_authenticated/prijate-zalohove/'
@@ -3456,6 +3516,7 @@ export interface FileRouteTypes {
     | '/_authenticated/zalohove/'
     | '/_authenticated/zamestnanci/'
     | '/admin/companies/'
+    | '/admin/podpora/'
     | '/admin/users/'
     | '/_authenticated/faktury/$id/upravit'
     | '/_authenticated/jazdy/integracie/commander'
@@ -3568,6 +3629,7 @@ export interface RootRouteChildren {
   PomocOdberateliaRoute: typeof PomocOdberateliaRoute
   PomocOpakovaneRoute: typeof PomocOpakovaneRoute
   PomocOssRoute: typeof PomocOssRoute
+  PomocPodporaRoute: typeof PomocPodporaRoute
   PomocPohodaRoute: typeof PomocPohodaRoute
   PomocPokladnaRoute: typeof PomocPokladnaRoute
   PomocPonukyRoute: typeof PomocPonukyRoute
@@ -4242,6 +4304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PomocOssRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pomoc/podpora': {
+      id: '/pomoc/podpora'
+      path: '/pomoc/podpora'
+      fullPath: '/pomoc/podpora'
+      preLoaderRoute: typeof PomocPodporaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pomoc/pohoda': {
       id: '/pomoc/pohoda'
       path: '/pomoc/pohoda'
@@ -4816,6 +4885,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOstatneDokladyNovyRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/podpora/': {
+      id: '/_authenticated/podpora/'
+      path: '/podpora'
+      fullPath: '/podpora/'
+      preLoaderRoute: typeof AuthenticatedPodporaIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/podpora/$id': {
+      id: '/_authenticated/podpora/$id'
+      path: '/podpora/$id'
+      fullPath: '/podpora/$id'
+      preLoaderRoute: typeof AuthenticatedPodporaIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ponuky/': {
       id: '/_authenticated/ponuky/'
       path: '/ponuky'
@@ -5059,6 +5142,20 @@ declare module '@tanstack/react-router' {
       path: '/companies/$id'
       fullPath: '/admin/companies/$id'
       preLoaderRoute: typeof AdminCompaniesIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/podpora/': {
+      id: '/admin/podpora/'
+      path: '/podpora'
+      fullPath: '/admin/podpora/'
+      preLoaderRoute: typeof AdminPodporaIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/podpora/$id': {
+      id: '/admin/podpora/$id'
+      path: '/podpora/$id'
+      fullPath: '/admin/podpora/$id'
+      preLoaderRoute: typeof AdminPodporaIdRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/users/': {
@@ -5783,6 +5880,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOpakovaneIdRoute: typeof AuthenticatedOpakovaneIdRoute
   AuthenticatedOpakovaneNovaRoute: typeof AuthenticatedOpakovaneNovaRoute
   AuthenticatedOstatneDokladyNovyRoute: typeof AuthenticatedOstatneDokladyNovyRoute
+  AuthenticatedPodporaIdRoute: typeof AuthenticatedPodporaIdRoute
   AuthenticatedPonukyIdRoute: typeof AuthenticatedPonukyIdRoute
   AuthenticatedPonukyNovaRoute: typeof AuthenticatedPonukyNovaRoute
   AuthenticatedPrijateFakturyNovaRoute: typeof AuthenticatedPrijateFakturyNovaRoute
@@ -5811,6 +5909,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedObjednavkyIndexRoute: typeof AuthenticatedObjednavkyIndexRoute
   AuthenticatedOpakovaneIndexRoute: typeof AuthenticatedOpakovaneIndexRoute
   AuthenticatedOstatneDokladyIndexRoute: typeof AuthenticatedOstatneDokladyIndexRoute
+  AuthenticatedPodporaIndexRoute: typeof AuthenticatedPodporaIndexRoute
   AuthenticatedPonukyIndexRoute: typeof AuthenticatedPonukyIndexRoute
   AuthenticatedPrijateFakturyIndexRoute: typeof AuthenticatedPrijateFakturyIndexRoute
   AuthenticatedPrijateZalohoveIndexRoute: typeof AuthenticatedPrijateZalohoveIndexRoute
@@ -5885,6 +5984,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOpakovaneIdRoute: AuthenticatedOpakovaneIdRoute,
   AuthenticatedOpakovaneNovaRoute: AuthenticatedOpakovaneNovaRoute,
   AuthenticatedOstatneDokladyNovyRoute: AuthenticatedOstatneDokladyNovyRoute,
+  AuthenticatedPodporaIdRoute: AuthenticatedPodporaIdRoute,
   AuthenticatedPonukyIdRoute: AuthenticatedPonukyIdRoute,
   AuthenticatedPonukyNovaRoute: AuthenticatedPonukyNovaRoute,
   AuthenticatedPrijateFakturyNovaRoute: AuthenticatedPrijateFakturyNovaRoute,
@@ -5915,6 +6015,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedObjednavkyIndexRoute: AuthenticatedObjednavkyIndexRoute,
   AuthenticatedOpakovaneIndexRoute: AuthenticatedOpakovaneIndexRoute,
   AuthenticatedOstatneDokladyIndexRoute: AuthenticatedOstatneDokladyIndexRoute,
+  AuthenticatedPodporaIndexRoute: AuthenticatedPodporaIndexRoute,
   AuthenticatedPonukyIndexRoute: AuthenticatedPonukyIndexRoute,
   AuthenticatedPrijateFakturyIndexRoute: AuthenticatedPrijateFakturyIndexRoute,
   AuthenticatedPrijateZalohoveIndexRoute:
@@ -5950,8 +6051,10 @@ interface AdminRouteChildren {
   AdminUsageRoute: typeof AdminUsageRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCompaniesIdRoute: typeof AdminCompaniesIdRoute
+  AdminPodporaIdRoute: typeof AdminPodporaIdRoute
   AdminUsersIdRoute: typeof AdminUsersIdRoute
   AdminCompaniesIndexRoute: typeof AdminCompaniesIndexRoute
+  AdminPodporaIndexRoute: typeof AdminPodporaIndexRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
 }
 
@@ -5972,8 +6075,10 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminUsageRoute: AdminUsageRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminCompaniesIdRoute: AdminCompaniesIdRoute,
+  AdminPodporaIdRoute: AdminPodporaIdRoute,
   AdminUsersIdRoute: AdminUsersIdRoute,
   AdminCompaniesIndexRoute: AdminCompaniesIndexRoute,
+  AdminPodporaIndexRoute: AdminPodporaIndexRoute,
   AdminUsersIndexRoute: AdminUsersIndexRoute,
 }
 
@@ -6210,6 +6315,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocOdberateliaRoute: PomocOdberateliaRoute,
   PomocOpakovaneRoute: PomocOpakovaneRoute,
   PomocOssRoute: PomocOssRoute,
+  PomocPodporaRoute: PomocPodporaRoute,
   PomocPohodaRoute: PomocPohodaRoute,
   PomocPokladnaRoute: PomocPokladnaRoute,
   PomocPonukyRoute: PomocPonukyRoute,

@@ -92,7 +92,7 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
     }
     setPosielam(true);
     try {
-      await posli({
+      const r: any = await posli({
         data: {
           kind: druh,
           message: sprava,
@@ -102,7 +102,28 @@ export function NahlasitChybu({ otvorene, onZavri }: { otvorene: boolean; onZavr
           company_id: getActiveCompanyId() ?? undefined,
         },
       });
-      toast.success(druh === "chyba" ? "Chyba nahlásená, ďakujeme." : "Návrh odoslaný, ďakujeme.");
+      /*
+        Hlásenie je požiadavka v help desku. Na webe vedie odkaz na jej vlákno;
+        appka obrazovku požiadaviek nemá, tam stačí číslo — odpoveď príde e-mailom.
+      */
+      const naWebe = typeof window !== "undefined" && !window.location.pathname.startsWith("/app");
+      if (r?.cislo) {
+        toast.success(
+          `Požiadavka P-${r.cislo} je založená, ďakujeme. Odpoveď príde e-mailom${naWebe ? " a uvidíte ju v Pomoc a podpora" : ""}.`,
+          naWebe && r.poziadavkaId
+            ? {
+                action: {
+                  label: "Zobraziť",
+                  onClick: () => window.location.assign(`/podpora/${r.poziadavkaId}`),
+                },
+              }
+            : undefined,
+        );
+      } else {
+        toast.success(
+          druh === "chyba" ? "Chyba nahlásená, ďakujeme." : "Návrh odoslaný, ďakujeme.",
+        );
+      }
       setText("");
       onZavri();
     } catch (e: any) {

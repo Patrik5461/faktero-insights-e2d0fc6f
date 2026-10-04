@@ -664,6 +664,32 @@
    ]
   },
   {
+   "cesta": "/pomoc/podpora",
+   "titulok": "Pomoc a podpora",
+   "sekcie": [
+    {
+     "nadpis": "Kde to nájdete",
+     "text": "<>\nVo Fakteri v menu Viac → Pomoc a podpora alebo pod avatarom vpravo hore. Na\njednom mieste je hľadanie v manuáloch, Faktero AI, vaše požiadavky a kontakt."
+    },
+    {
+     "nadpis": "Hľadanie v manuáloch",
+     "text": "<>\nNapíšte, s čím potrebujete pomôcť — stačí slovo, napríklad dobropis alebo\npárovanie . Diakritiku písať netreba. Výsledky vedú priamo na tú časť manuálu,\nktorá o tom hovorí.\nKeď v manuáloch odpoveď nie je, tou istou otázkou sa môžete opýtať\nFaktero AI (vidí aj vaše faktúry) alebo ju jedným klikom poslať podpore."
+    },
+    {
+     "nadpis": "Napísať podpore",
+     "text": "<>\nTlačidlo Napísať podpore (alebo Nahlásiť chybu alebo návrh pod avatarom,\nz ktorejkoľvek stránky) založí požiadavku s číslom, napríklad P-1024.\nVyberiete, o čo ide — otázka, chyba, návrh, predplatné — a popíšete to. Firmu, stránku a\nprehliadač pripojíme sami.\nHneď príde potvrdenie e-mailom. Odpovedáme v pracovné dni, spravidla do 24 hodín."
+    },
+    {
+     "nadpis": "Stavy požiadavky",
+     "text": "<>\n-\nNová — dostali sme ju, ešte sme neodpovedali.\n-\nRieši sa — pracujeme na nej.\n-\nČaká na vás — odpovedali sme a čakáme na vašu reakciu.\n-\nVyriešená — hotovo. Keď napíšete znova, požiadavka sa otvorí.\nOdpoveď podpory uvidíte v Moje požiadavky (s označením Nová odpoveď ), v\nzvončeku notifikácií aj v e-maile. Odpísať môžete priamo pod ňou."
+    },
+    {
+     "nadpis": "Z mobilnej aplikácie",
+     "text": "Nahlásenie chyby a odoslanie diagnostiky z appky založí požiadavku rovnako. V appke\ndostanete jej číslo, odpoveď príde e-mailom a celé vlákno uvidíte vo Fakteri na webe."
+    }
+   ]
+  },
+  {
    "cesta": "/pomoc/pohoda",
    "titulok": "Prepojenie s Pohodou",
    "sekcie": [

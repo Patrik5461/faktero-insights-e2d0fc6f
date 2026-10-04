@@ -252,8 +252,9 @@ export const NAV: NavGroup[] = [
     key: "viac",
     label: "Viac",
     icon: Menu,
-    match: ["/ai-asistent", "/firmy", "/predplatne", "/diagnostika"],
+    match: ["/ai-asistent", "/firmy", "/predplatne", "/diagnostika", "/podpora"],
     children: [
+      { to: "/podpora", label: "Pomoc a podpora" },
       { to: "/ai-asistent", label: "Faktero AI" },
       { to: "/firmy", label: "Správa firiem" },
       { to: "/predplatne", label: "Predplatné" },
@@ -414,6 +415,7 @@ export const MANUALY: { prefix: string; to: string }[] = [
   { prefix: "/uctovnictvo/pohoda", to: "/pomoc/pohoda" },
   { prefix: "/uctovnictvo/vypis-do-pohody", to: "/pomoc/pohoda" },
   { prefix: "/uctovnictvo/pravidla", to: "/pomoc/pohoda" },
+  { prefix: "/podpora", to: "/pomoc/podpora" },
   { prefix: "/exporty", to: "/pomoc/exporty" },
   { prefix: "/importy", to: "/pomoc/exporty" },
   { prefix: "/bankove-ucty", to: "/pomoc/banka" },

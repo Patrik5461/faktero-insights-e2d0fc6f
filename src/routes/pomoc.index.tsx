@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { MarketingShell } from "@/components/faktero/MarketingShell";
 import {
+  LifeBuoy,
   Settings,
   CreditCard,
   FileText,
@@ -280,6 +281,14 @@ const CATS: Cat[] = [
     label: "Role a prístupy",
     desc: "Kto vo firme čo smie — majiteľ, administrátor, účtovník, zamestnanec.",
     icon: Users,
+    available: true,
+    skupina: "Účet a vývoj",
+  },
+  {
+    to: "/pomoc/podpora",
+    label: "Pomoc a podpora",
+    desc: "Hľadanie v manuáloch, Faktero AI a požiadavky na podporu s odpoveďou.",
+    icon: LifeBuoy,
     available: true,
     skupina: "Účet a vývoj",
   },
