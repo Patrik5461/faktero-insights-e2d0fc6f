@@ -107,3 +107,25 @@ describe("import bankového výpisu", () => {
     expect(rovnakyUcet(null, "SK0375000000004032809427")).toBe(false);
   });
 });
+
+describe("export z platobnej brány", () => {
+  const csv = [
+    "balance_transaction_id,created_utc,currency,gross,fee,net,reporting_category,description",
+    "txn_1,2026-10-01 09:12:00,eur,45.91,0.94,44.97,charge,Order 1234",
+    "txn_2,2026-10-03 06:00:00,eur,-44.97,0.00,-44.97,payout,STRIPE PAYOUT",
+  ].join("\n");
+
+  it("pohyby majú značku brány, takže opakované nahranie nič nezdvojí", () => {
+    const r = rozberVypis(csv);
+    expect(r.format).toBe("export Stripe");
+    expect(r.ucet).toBe("Stripe");
+    expect(r.pohyby.map((p) => [p.transaction_reference, p.amount, p.variable_symbol])).toEqual([
+      ["stripe:txn_1:platba", 45.91, "1234"],
+      ["stripe:txn_1:poplatok", -0.94, null],
+      ["stripe:txn_2:vyber", -44.97, null],
+    ]);
+    expect(rozberVypis(csv).pohyby.map((p) => p.transaction_reference)).toEqual(
+      r.pohyby.map((p) => p.transaction_reference),
+    );
+  });
+});

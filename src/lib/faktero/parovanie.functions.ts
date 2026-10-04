@@ -45,7 +45,7 @@ async function podklady(supabase: any, companyId: string) {
     supabase
       .from("invoices")
       .select(
-        "id, invoice_number, variable_symbol, total, currency, status, issue_date, due_date, customer_name",
+        "id, invoice_number, variable_symbol, order_number, total, currency, status, issue_date, due_date, customer_name",
       )
       .eq("company_id", companyId)
       .is("deleted_at", null)
@@ -84,6 +84,7 @@ async function podklady(supabase: any, companyId: string) {
     id: f.id,
     invoice_number: f.invoice_number,
     variable_symbol: f.variable_symbol,
+    order_number: f.order_number ?? null,
     total: cislo(f.total),
     uhradene: uhradene.get(f.id) ?? 0,
     currency: f.currency || "EUR",

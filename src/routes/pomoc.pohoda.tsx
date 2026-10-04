@@ -272,6 +272,88 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "brany",
+    title: "Výpis z platobnej brány (Stripe, PayPal, GoPay, Comgate, Barion)",
+    body: (
+      <>
+        <p>
+          Na tej istej stránke nahrajte namiesto bankového výpisu{" "}
+          <strong>CSV export z brány</strong>. Faktero z neho spraví výpis, aký by poslala banka:
+          každá platba zákazníka je príjem, poplatok brány je samostatný výdaj s označením{" "}
+          <em>Bankový poplatok</em> a výber na váš bankový účet je výdaj s označením{" "}
+          <em>Prevod medzi vlastnými účtami</em>. S predkontáciami podľa označenia tak príde do
+          Pohody rovno zaúčtovaný.
+        </p>
+        <ul>
+          <li>
+            <strong>Stripe</strong> — Reports → Balance →{" "}
+            <em>Itemized balance change from activity</em> (CSV). Export platieb z prehľadu Payments
+            výbery na účet neobsahuje.
+          </li>
+          <li>
+            <strong>PayPal</strong> — Activity → Download → CSV (všetky transakcie). Čakajúce a
+            zablokované sumy sa vynechajú.
+          </li>
+          <li>
+            <strong>GoPay</strong> — Obchodné účty → Výpisy → CSV (formát B a vyšší).
+          </li>
+          <li>
+            <strong>Comgate</strong> — export platieb v CSV; výbery na účet sa poskladajú z dátumu a
+            sumy prevodu.
+          </li>
+          <li>
+            <strong>Barion</strong> — denný výpis v CSV.
+          </li>
+        </ul>
+        <p>
+          Variabilný symbol sa vezme z čísla objednávky (napr. <em>WC-1234</em> → 1234), takže
+          Pohoda aj Faktero platbu spárujú s faktúrou. Výpis je vždy v jednej mene — pohyby v inej
+          mene sa vynechajú a stránka to povie. V Pohode zvoľte banku, ktorú máte pre bránu
+          založenú.
+        </p>
+        <p>
+          Ten istý export sa dá nahrať aj do Faktera (<em>Bankové účty → Nahrať výpis</em>). Brána
+          sa založí ako ďalší účet, platby sa spárujú s faktúrami a mesačne z nej vznikne aj vlastný
+          výpis. Opakované nahranie toho istého exportu nič nezdvojí.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "pravidla",
+    title: "Pravidlá účtovania prijatých dokladov",
+    body: (
+      <>
+        <p>
+          <Link to="/uctovnictvo/pravidla">Účtovníctvo → Pravidlá účtovania</Link>: napríklad „keď
+          dodávateľ obsahuje <em>Slovnaft</em>, doplň kategóriu Palivo a predkontáciu PHM" alebo
+          „platené kartou v reštaurácii → bez odpočtu DPH".
+        </p>
+        <ul>
+          <li>
+            Podmienky: časť názvu dodávateľa, IČO, spôsob úhrady. Vyplnené musia platiť naraz.
+          </li>
+          <li>
+            Doplní: kategóriu, predkontáciu a členenie DPH pre Pohodu, odpočet DPH a poznámku.
+          </li>
+          <li>
+            Zaberie pri každom novom doklade — zo skenu na webe aj v appke, z e-mailu, z importu —
+            aj keď dodávateľa dopíše AI až chvíľu po nahratí.
+          </li>
+          <li>
+            Dopĺňa len prázdne políčka; čo vyplníte sami, neprepíše. Keď sedí viac pravidiel, platí
+            to s menším poradím.
+          </li>
+          <li>
+            Predkontácia a členenie z pravidla idú do Pohody namiesto spoločných z nastavení
+            prepojenia. Tlačidlo <em>Uplatniť na doklady, ktoré už sú</em> doplní aj doklady, ktoré
+            ešte neodišli do účtovníctva.
+          </li>
+        </ul>
+      </>
+    ),
+  },
+  {
     id: "co-nechodi",
     title: "Čo do Pohody zámerne nechodí",
     body: (

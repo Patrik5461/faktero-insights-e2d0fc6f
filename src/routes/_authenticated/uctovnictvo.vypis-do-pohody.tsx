@@ -87,6 +87,7 @@ function suborNaBase64(file: File): Promise<string> {
  * zle. Súbor pritom neopustí počítač.
  */
 const jeXml = (f: File) => /\.xml$/i.test(f.name) || /xml/i.test(f.type);
+const jeCsv = (f: File) => /\.csv$/i.test(f.name) || /csv/i.test(f.type);
 
 /** Výpis za dvadsať megabajtov XML nie je — to je omylom nahratý iný súbor. */
 const STROP_XML = 20 * 1024 * 1024;
@@ -228,10 +229,46 @@ function VypisDoPohodyPage() {
     }
   }
 
+  /*
+    Export z platobnej brány. Brána je pre Pohodu samostatná banka — výpis má
+    platby, poplatky zvlášť a výbery na bankový účet ako prevod medzi vlastnými
+    účtami. Číta sa v prehliadači, nič sa nerozpoznáva.
+  */
+  async function nahrajCsv(file: File) {
+    setNacitavam(true);
+    try {
+      if (file.size > STROP_XML) throw new Error("Súbor je väčší než 20 MB — je to naozaj výpis?");
+      const { citajVypisBrany, dekodujCsv, NAZVY_BRAN } = await import("@/lib/faktero/vypis-brany");
+      const v = citajVypisBrany(dekodujCsv(await file.arrayBuffer()));
+      if (!v.pohyby.length) throw new Error("V exporte nie je ani jeden dokončený pohyb.");
+      prevezmi(v);
+      setVarovanie(v.varovanie);
+      const { platby, poplatky, vybery, vratenia } = v.pocty;
+      const n = (k: number, t1: string, t2: string, t5: string) =>
+        `${k} ${k === 1 ? t1 : k >= 2 && k <= 4 ? t2 : t5}`;
+      const casti = [
+        n(platby, "platba", "platby", "platieb"),
+        n(poplatky, "poplatok", "poplatky", "poplatkov"),
+        n(vybery, "výber na účet", "výbery na účet", "výberov na účet"),
+        vratenia ? n(vratenia, "vrátenie", "vrátenia", "vrátení") : "",
+      ].filter(Boolean);
+      setZdroj(
+        `Prečítané z exportu ${NAZVY_BRAN[v.brana]} (${v.mena}) — ${casti.join(", ")}. Poplatky a výbery majú vlastné riadky a označenie; v Pohode vyberte banku, ktorú máte pre túto bránu.`,
+      );
+    } catch (e: any) {
+      setChyba(e?.message ?? "Export sa nepodarilo prečítať.");
+      setVarovanie(null);
+      setRiadky([]);
+    } finally {
+      setNacitavam(false);
+    }
+  }
+
   async function nahraj(file: File | null) {
     if (!file) return;
     setChyba(null);
     if (jeXml(file)) return void (await nahrajXml(file));
+    if (jeCsv(file)) return void (await nahrajCsv(file));
     if (!cid) return setChyba("Najprv vyberte firmu.");
     setNacitavam(true);
     try {
@@ -343,16 +380,20 @@ function VypisDoPohodyPage() {
                 <FileUp className="h-6 w-6 text-primary" />
               )}
               <span className="text-sm font-medium">
-                {nacitavam ? "Čítam výpis…" : "Vyberte výpis — XML alebo PDF"}
+                {nacitavam
+                  ? "Čítam výpis…"
+                  : "Vyberte výpis — XML, PDF alebo CSV z platobnej brány"}
               </span>
               <span className="text-xs text-muted-foreground">
                 <strong>XML z internetbankingu</strong> (banky mu hovoria SEPA XML alebo camt.053)
                 je presné — sumy, symboly aj protistrany sú priamo od banky a prečíta sa hneď. PDF
-                sa rozpoznáva, naskenované ešte aj z obrazu, takže riadky treba prejsť.
+                sa rozpoznáva, naskenované ešte aj z obrazu, takže riadky treba prejsť.{" "}
+                <strong>CSV z platobnej brány</strong> (Stripe, PayPal, GoPay, Comgate, Barion) sa
+                prevedie na výpis s platbami, poplatkami a výbermi na účet.
               </span>
               <input
                 type="file"
-                accept="application/pdf,.pdf,application/xml,text/xml,.xml"
+                accept="application/pdf,.pdf,application/xml,text/xml,.xml,.csv,text/csv"
                 className="hidden"
                 disabled={nacitavam}
                 onChange={(e) => void nahraj(e.target.files?.[0] ?? null)}

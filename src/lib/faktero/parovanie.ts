@@ -30,6 +30,11 @@ export type Doklad = {
   id: string;
   invoice_number: string;
   variable_symbol: string | null;
+  /**
+   * Číslo objednávky z e-shopu. Platobná brána nesie ako symbol práve to —
+   * číslo faktúry v čase platby ešte nebolo.
+   */
+  order_number?: string | null;
   total: number;
   /** Koľko už je na faktúre zaplatené (súčet úhrad). */
   uhradene: number;
@@ -76,7 +81,9 @@ export function normVs(v: string | null | undefined): string {
 
 /** Symboly, pod ktorými môže faktúra prísť zaplatená. */
 function symboly(d: Doklad): string[] {
-  return [normVs(d.variable_symbol), normVs(d.invoice_number)].filter((s) => s.length >= 3);
+  return [normVs(d.variable_symbol), normVs(d.invoice_number), normVs(d.order_number)].filter(
+    (s) => s.length >= 3,
+  );
 }
 
 /** Meno bez diakritiky, právnej formy a interpunkcie — na hrubé porovnanie. */

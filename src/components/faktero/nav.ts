@@ -201,6 +201,7 @@ export const NAV: NavGroup[] = [
       { to: "/importy", label: "História importov" },
       { to: "/uctovnictvo/pohoda", label: "Prepojenie s Pohodou" },
       { to: "/uctovnictvo/vypis-do-pohody", label: "Bankový výpis do Pohody" },
+      { to: "/uctovnictvo/pravidla", label: "Pravidlá účtovania" },
     ],
   },
   {
@@ -407,6 +408,7 @@ export const MANUALY: { prefix: string; to: string }[] = [
   { prefix: "/uctovnictvo/uzavierka", to: "/pomoc/uzavierka" },
   { prefix: "/uctovnictvo/pohoda", to: "/pomoc/pohoda" },
   { prefix: "/uctovnictvo/vypis-do-pohody", to: "/pomoc/pohoda" },
+  { prefix: "/uctovnictvo/pravidla", to: "/pomoc/pohoda" },
   { prefix: "/exporty", to: "/pomoc/exporty" },
   { prefix: "/importy", to: "/pomoc/exporty" },
   { prefix: "/bankove-ucty", to: "/pomoc/banka" },

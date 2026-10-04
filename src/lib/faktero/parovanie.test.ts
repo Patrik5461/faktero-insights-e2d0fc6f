@@ -56,6 +56,19 @@ describe("ohodnotenie dvojice", () => {
     expect(o.skore).toBeGreaterThan(0.9);
   });
 
+  it("platba z brány so symbolom = číslo objednávky z e-shopu", () => {
+    const o = ohodnot(
+      pohyb({
+        variable_symbol: "1234",
+        counterparty: "Jana Malá",
+        description: "Stripe: Order 1234",
+      }),
+      doklad({ order_number: "1234" }),
+    )!;
+    expect(o.vsSedi).toBe(true);
+    expect(o.skore).toBeGreaterThan(0.85);
+  });
+
   it("odchádzajúca platba sa nepáruje", () => {
     expect(ohodnot(pohyb({ amount: -4810 }), doklad())).toBeNull();
   });

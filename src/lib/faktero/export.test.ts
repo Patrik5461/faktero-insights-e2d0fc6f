@@ -388,6 +388,21 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(h.partnerIdentity.address.company).toBe("STORX s. r. o.");
   });
 
+  it("predkontácia a členenie z pravidla prebijú nastavenie firmy", () => {
+    const nast = { predkontaciaPrijata: "1Fp", clenenieDphPrijata: "PD" };
+    const vlastne = posli(
+      [{ ...bloček, pohoda_predkontacia: "PHM", pohoda_clenenie_dph: "PN", category: "palivo" }],
+      nast,
+    ).dataPackItem.invoice.invoiceHeader;
+    expect(vlastne.accounting.ids).toBe("PHM");
+    expect(vlastne.classificationVAT.ids).toBe("PN");
+    // Kategória ide do textu názvom, nie kódom.
+    expect(vlastne.text).toContain("Palivo");
+    const bez = posli([bloček], nast).dataPackItem.invoice.invoiceHeader;
+    expect(bez.accounting.ids).toBe("1Fp");
+    expect(bez.classificationVAT.ids).toBe("PD");
+  });
+
   it("položky bločku sa nevyvážajú", () => {
     // Sú v cenách s daňou a „Záloh plech" v účtovníctve nikto nepotrebuje.
     expect(posli([bloček]).dataPackItem.invoice.invoiceDetail).toBeUndefined();

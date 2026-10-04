@@ -45,7 +45,10 @@ function ImportVypisuPage() {
     setNahlad(null);
     setCitam(true);
     try {
-      const text = await f.text();
+      // CSV z českých brán býva vo Windows-1250; XML si kódovanie nesie samo.
+      const text = /\.csv$/i.test(f.name)
+        ? (await import("@/lib/faktero/vypis-brany")).dekodujCsv(await f.arrayBuffer())
+        : await f.text();
       setObsah(text);
       setNazovSuboru(f.name);
       const r: any = await rozober({ data: { company_id: companyId, obsah: text } });
@@ -108,7 +111,7 @@ function ImportVypisuPage() {
               <span className="text-sm font-medium">Súbor s výpisom</span>
               <input
                 type="file"
-                accept=".xml,text/xml,application/xml"
+                accept=".xml,text/xml,application/xml,.csv,text/csv"
                 onChange={(e) => vyberSubor(e.target.files?.[0] ?? null)}
                 className="mt-2 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground"
               />
@@ -116,6 +119,10 @@ function ImportVypisuPage() {
             <p className="mt-2 text-xs text-muted-foreground">
               XML vo formáte camt.053 — v internetbankingu býva ako „SEPA XML“, „XML výpis“ alebo
               „ISO 20022“. Z PDF sa suma ani symboly spoľahlivo prečítať nedajú.
+              <br />
+              Funguje aj <strong>CSV export platobnej brány</strong> (Stripe, PayPal, GoPay,
+              Comgate, Barion): brána sa založí ako ďalší účet, platby sa spárujú s faktúrami a
+              poplatky aj výbery na bankový účet budú vo výpise zvlášť.
             </p>
             {citam && <p className="mt-2 text-sm text-muted-foreground">Čítam výpis…</p>}
           </div>

@@ -59,9 +59,54 @@ function precitaj(obsah: string, mena?: string | null) {
     return rozberVypis(obsah, mena);
   } catch {
     throw new Error(
-      "Súbor sa nepodarilo prečítať. Čaká sa výpis v XML (camt.053) — v banke býva ako „SEPA XML“, „XML výpis“ alebo „ISO 20022“.",
+      "Súbor sa nepodarilo prečítať. Čaká sa výpis v XML (camt.053) — v banke býva ako „SEPA XML“, „XML výpis“ alebo „ISO 20022“ — alebo CSV export platobnej brány (Stripe, PayPal, GoPay, Comgate, Barion).",
     );
   }
+}
+
+async function obnovZostatok(
+  admin: any,
+  uctuId: string,
+  r: { konecnyZostatok: number | null; doDna: string | null; format: string },
+) {
+  const { data: u } = await admin
+    .from("bank_accounts")
+    .select("id, bank_connections(provider)")
+    .eq("id", uctuId)
+    .maybeSingle();
+  if (u?.bank_connections?.provider !== "import") return;
+  const { data: posledny } = await admin
+    .from("bank_transactions")
+    .select("booking_date")
+    .eq("bank_account_id", uctuId)
+    .order("booking_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  // Zostatok zo súboru platí, len keď je súbor najnovší, aký účet má.
+  if (r.konecnyZostatok != null && (!posledny || (r.doDna ?? "") >= posledny.booking_date)) {
+    await admin
+      .from("bank_accounts")
+      .update({ balance: r.konecnyZostatok, booked_balance: r.konecnyZostatok })
+      .eq("id", uctuId);
+    return;
+  }
+  // Súčet pohybov len pri bráne — účet brány začínal na nule. Pri banke by
+  // súčet bez staršej histórie vymyslel zostatok, tak sa nechá, ako je.
+  if (r.konecnyZostatok != null || !r.format.startsWith("export ")) return;
+  // Export bez zostatkov (Stripe): zostatok je súčet pohybov.
+  const { data: vsetky } = await admin
+    .from("bank_transactions")
+    .select("amount")
+    .eq("bank_account_id", uctuId)
+    .limit(50000);
+  const sucet =
+    Math.round(
+      ((vsetky ?? []) as { amount: number }[]).reduce((a, t) => a + Number(t.amount), 0) * 100,
+    ) / 100;
+  await admin
+    .from("bank_accounts")
+    .update({ balance: sucet, booked_balance: sucet })
+    .eq("id", uctuId);
 }
 
 export const rozberVypisFn = createServerFn({ method: "POST" })
@@ -160,6 +205,13 @@ export const importujVypisFn = createServerFn({ method: "POST" })
     // Ten istý zápis, aký používa nočná synchronizácia: preskočí duplicity a
     // nezhodí celý import kvôli jednému pohybu, ktorý tam už je.
     const vlozenych = await vlozPohyby(supabaseAdmin, riadky);
+
+    /*
+      Zostatok účtu, ktorý vznikol z nahrávania (brána, banka bez napojenia).
+      Nikto iný ho nedopĺňa a vlastné mesačné výpisy z neho rátajú počiatočný
+      a konečný stav. Účty z napojenej banky sa nechávajú tak — tie vedie banka.
+    */
+    await obnovZostatok(supabaseAdmin, ucet.id, r);
 
     return {
       vlozenych,

@@ -1,4 +1,5 @@
 import { citajBankoveXml } from "./vypis-xml";
+import { citajVypisBrany, jeVypisBrany, NAZVY_BRAN } from "./vypis-brany";
 import { zostatkyVypisu } from "./vypis-pohyby";
 import type { VypisPohyb } from "./export.server";
 
@@ -61,6 +62,36 @@ export function odtlacok(p: VypisPohyb, poradie: number): string {
 
 /** Prevedie prečítaný výpis na riadky, ktoré sa dajú zapísať. */
 export function rozberVypis(obsah: string, menaUctu?: string | null): RozborVypisu {
+  /*
+    Export z platobnej brány (CSV). Brána je pre Faktero ďalší účet — pohyby
+    majú vlastné identifikátory, takže odtlačok netreba a opakované nahranie
+    toho istého exportu nič nezdvojí.
+  */
+  if (!obsah.trimStart().startsWith("<") && jeVypisBrany(obsah)) {
+    const v = citajVypisBrany(obsah);
+    const pohyby = v.pohyby.map((p) => ({
+      booking_date: p.datum,
+      amount: p.smer === "vydaj" ? -p.suma : p.suma,
+      currency: (v.mena ?? menaUctu ?? "EUR").toUpperCase(),
+      variable_symbol: p.vs ?? null,
+      counterparty: p.protistrana ?? null,
+      description: p.popis ?? null,
+      transaction_reference: `${v.brana}:${p.id}`,
+    }));
+    const datumy = pohyby.map((p) => p.booking_date).sort();
+    const sozostatkom = [...v.pohyby].reverse().find((p) => p.zostatok != null);
+    return {
+      konecnyZostatok: sozostatkom?.zostatok ?? null,
+      ucet: v.ucet,
+      mena: v.mena,
+      format: `export ${NAZVY_BRAN[v.brana]}`,
+      odDna: datumy[0] ?? null,
+      doDna: datumy[datumy.length - 1] ?? null,
+      pohyby,
+      varovanie: v.varovanie,
+    };
+  }
+
   const { vypis, varovanie, format } = citajBankoveXml(obsah);
 
   /*

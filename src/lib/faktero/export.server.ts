@@ -1,6 +1,7 @@
 // Server-only helpers for accounting exports.
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
 import { nazovOznacenia, type KodOznacenia } from "./vypis-oznacenie";
+import { nazovKategorie } from "@/lib/mobile/kategorie-vydavkov";
 
 import { sadzbyKuDnu as sadzbyKrajinyKuDnu, krajinaDane, type KrajinaDane } from "./vat-rates";
 import { sUctomFaktury } from "./platobny-ucet";
@@ -874,11 +875,24 @@ export function polozkyDokladov(opts: {
         .replace(/\D/g, "")
         .slice(0, 20);
       const popis = skrat(
-        [d?.supplier_name, d?.document_number ? `č. ${d.document_number}` : "", d?.category]
+        [
+          d?.supplier_name,
+          d?.document_number ? `č. ${d.document_number}` : "",
+          nazovKategorie(d?.category),
+        ]
           .filter(Boolean)
           .join(" "),
         240,
       );
+
+      /*
+        Vlastná predkontácia a členenie dokladu (doplní ich pravidlo účtovania
+        alebo človek) prebíjajú nastavenie firmy pre všetky prijaté doklady.
+      */
+      const predkontacia =
+        String(d?.pohoda_predkontacia ?? "").trim() || nastavenia?.predkontaciaPrijata;
+      const clenenie =
+        String(d?.pohoda_clenenie_dph ?? "").trim() || nastavenia?.clenenieDphPrijata;
 
       const adresa = [
         el("typ:company", skrat(d?.supplier_name, 96), "            "),
@@ -897,12 +911,12 @@ export function polozkyDokladov(opts: {
           popis || "Prijatý doklad",
           "        ",
         )}${el("inv:note", skrat(d?.note, 200), "        ")}${
-          nastavenia?.predkontaciaPrijata
-            ? `\n        <inv:accounting><typ:ids>${esc(nastavenia.predkontaciaPrijata)}</typ:ids></inv:accounting>`
+          predkontacia
+            ? `\n        <inv:accounting><typ:ids>${esc(predkontacia)}</typ:ids></inv:accounting>`
             : ""
         }${
-          nastavenia?.clenenieDphPrijata
-            ? `\n        <inv:classificationVAT><typ:ids>${esc(nastavenia.clenenieDphPrijata)}</typ:ids></inv:classificationVAT>`
+          clenenie
+            ? `\n        <inv:classificationVAT><typ:ids>${esc(clenenie)}</typ:ids></inv:classificationVAT>`
             : ""
         }${
           adresa
