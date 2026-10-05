@@ -18,6 +18,15 @@ import { Trash2, Plus, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
+import { CustomerSearch } from "@/components/faktero/OdberatelPicker";
+import {
+  odberatelNaZapis,
+  odberatelZAdresara,
+  odberatelZFaktury,
+  upozorneniaZmeny,
+  zmenilSaOdberatel,
+  type OdberatelFaktury,
+} from "@/lib/faktero/odberatel-faktury";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
 import { sadzbyDoVyberu } from "@/lib/faktero/dph-rezim";
@@ -66,6 +75,11 @@ function EditInvoice() {
   const [originalLocked, setOriginalLocked] = useState<
     Array<{ id: string; stock_item_id: string; quantity: number; name: string }>
   >([]);
+  /* Odberateľ: kópia na faktúre, pôvodná na porovnanie a adresár na výber iného. */
+  const [odberatel, setOdberatel] = useState<OdberatelFaktury | null>(null);
+  const [povodnyOdberatel, setPovodnyOdberatel] = useState<OdberatelFaktury | null>(null);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [efakturaOdoslana, setEfakturaOdoslana] = useState(false);
   const [form, setForm] = useState({
     /* Číslo dokladu sa dá opraviť — preklep v rade sa inak nedal napraviť inak než zmazaním. */
     invoice_number: "",
@@ -102,6 +116,20 @@ function EditInvoice() {
         return;
       }
       setInv(i);
+      const o = odberatelZFaktury(i);
+      setOdberatel(o);
+      setPovodnyOdberatel(o);
+      const [{ data: odb }, { data: ef }] = await Promise.all([
+        supabase
+          .from("customers")
+          .select("*")
+          .eq("company_id", i.company_id)
+          .is("deleted_at", null)
+          .order("name"),
+        supabase.from("efaktura_documents").select("id").eq("invoice_id", id).limit(1),
+      ]);
+      setCustomers(odb ?? []);
+      setEfakturaOdoslana((ef ?? []).length > 0);
       setForm({
         invoice_number: i.invoice_number ?? "",
         issue_date: i.issue_date ?? "",
@@ -200,6 +228,7 @@ function EditInvoice() {
     if (!form.intro_note.trim()) {
       return toast.error("Vyplňte text nad položkami — hovorí, čo sa fakturuje.");
     }
+    if (!odberatel?.customer_name.trim()) return toast.error("Odberateľ musí mať názov.");
     const bezNazvu = riadkyDokladu.find((it) => !it.name.trim());
     if (bezNazvu) return toast.error("Položka so sumou musí mať názov.");
     // Lock: stock-linked lines cannot be removed or modified after sent/paid
@@ -239,6 +268,7 @@ function EditInvoice() {
           discount_type: totals.zlava > 0 ? form.discount_type || "percent" : null,
           discount_value: totals.zlava > 0 ? Number(form.discount_value) : 0,
           discount_total: totals.zlava,
+          ...(odberatel ? odberatelNaZapis(odberatel) : {}),
           subtotal: Number(totals.subtotal.toFixed(2)),
           vat_total: Number(totals.vat_total.toFixed(2)),
           total: Number(totals.total.toFixed(2)),
@@ -341,6 +371,38 @@ function EditInvoice() {
               )}
             </div>
           )}
+          {odberatel && povodnyOdberatel && (
+            <OdberatelSekcia
+              odberatel={odberatel}
+              povodny={povodnyOdberatel}
+              customers={customers}
+              stav={String(inv.status)}
+              reverseCharge={!!inv.reverse_charge}
+              efakturaOdoslana={efakturaOdoslana}
+              onZmena={setOdberatel}
+              onVyber={async (c) => {
+                setOdberatel(odberatelZAdresara(c));
+                /*
+                  Zákazka patrí odberateľovi. Keď ostala vybraná zákazka
+                  pôvodného, faktúra by sa započítala do cudzej ziskovosti.
+                */
+                if (form.job_id) {
+                  const { data: z } = await supabase
+                    .from("jobs")
+                    .select("customer_id")
+                    .eq("id", form.job_id)
+                    .maybeSingle();
+                  if (z?.customer_id && z.customer_id !== c.id) {
+                    setForm((f) => ({ ...f, job_id: "" }));
+                    toast.info(
+                      "Zákazka patrila pôvodnému odberateľovi, tak sa z faktúry odobrala.",
+                    );
+                  }
+                }
+              }}
+              onNovy={(c) => setCustomers((prev) => [c, ...prev])}
+            />
+          )}
           {/*
             Základné a platobné údaje stoja vedľa seba rovnako ako pri vystavovaní —
             na širokej obrazovke sa tak položky nezosúvajú kamsi pod prehyb.
@@ -418,7 +480,7 @@ function EditInvoice() {
                   className="sm:col-span-2"
                   value={form.job_id}
                   onChange={(v) => setForm((f) => ({ ...f, job_id: v }))}
-                  customerId={inv?.customer_id ?? null}
+                  customerId={odberatel?.customer_id ?? inv?.customer_id ?? null}
                   companyId={inv?.company_id ?? null}
                 />
               </div>
@@ -900,5 +962,102 @@ function Lbl({ label, children }: { label: string; children: React.ReactNode }) 
       <span className="text-[13px] font-semibold text-foreground">{label}</span>
       {children}
     </label>
+  );
+}
+
+/**
+ * Odberateľ na opravovanej faktúre: výber iného z adresára alebo oprava údajov
+ * len na tejto faktúre. Adresár sa tu nemení — to je kópia na doklade.
+ */
+function OdberatelSekcia({
+  odberatel,
+  povodny,
+  customers,
+  stav,
+  reverseCharge,
+  efakturaOdoslana,
+  onZmena,
+  onVyber,
+  onNovy,
+}: {
+  odberatel: OdberatelFaktury;
+  povodny: OdberatelFaktury;
+  customers: any[];
+  stav: string;
+  reverseCharge: boolean;
+  efakturaOdoslana: boolean;
+  onZmena: (o: OdberatelFaktury) => void;
+  onVyber: (c: any) => void;
+  onNovy: (c: any) => void;
+}) {
+  const pole = (k: keyof OdberatelFaktury, label: string, extra = "") => (
+    <Lbl label={label}>
+      <input
+        value={String(odberatel[k] ?? "")}
+        onChange={(e) => onZmena({ ...odberatel, [k]: e.target.value })}
+        className={`${inputCls} ${extra}`}
+      />
+    </Lbl>
+  );
+  const upozornenia = upozorneniaZmeny({
+    povodny,
+    novy: odberatel,
+    stav,
+    reverseCharge,
+    efakturaOdoslana,
+  });
+  const zmeneny = zmenilSaOdberatel(povodny, odberatel);
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold uppercase tracking-wide">Odberateľ</h3>
+        {zmeneny && (
+          <button
+            type="button"
+            onClick={() => onZmena(povodny)}
+            className="text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            Vrátiť pôvodného ({povodny.customer_name || "bez názvu"})
+          </button>
+        )}
+      </div>
+      <div className="max-w-xl">
+        <span className="text-xs font-medium text-muted-foreground">Vybrať iného z adresára</span>
+        <CustomerSearch
+          customers={customers}
+          value={odberatel.customer_id ?? ""}
+          onChange={(cid) => {
+            const c = customers.find((x) => x.id === cid);
+            if (c) onVyber(c);
+          }}
+          onCreated={(c) => {
+            onNovy(c);
+            onVyber(c);
+          }}
+        />
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Údaje nižšie sú tie, ktoré sú na faktúre. Opravíte ich len na tomto doklade — v adresári
+        ostanú, ako sú.
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="sm:col-span-2">{pole("customer_name", "Názov / meno")}</div>
+        {pole("customer_ico", "IČO")}
+        {pole("customer_dic", "DIČ")}
+        {pole("customer_ic_dph", "IČ DPH")}
+        <div className="sm:col-span-2">{pole("customer_street", "Ulica a číslo")}</div>
+        {pole("customer_zip", "PSČ")}
+        {pole("customer_city", "Mesto")}
+        {pole("customer_country", "Krajina (kód)", "uppercase")}
+        <div className="sm:col-span-2">{pole("customer_email", "E-mail")}</div>
+      </div>
+      {upozornenia.length > 0 && (
+        <ul className="mt-4 space-y-1 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+          {upozornenia.map((u) => (
+            <li key={u}>{u}</li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

@@ -1034,8 +1034,17 @@ function InvoiceDetail() {
                 {company?.ic_dph && <div className="text-sm">IČ DPH: {company.ic_dph}</div>}
               </div>
               <div>
-                <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
                   Odberateľ
+                  {inv.status !== "cancelled" && (
+                    <Link
+                      to="/faktury/$id/upravit"
+                      params={{ id }}
+                      className="normal-case tracking-normal text-primary hover:underline print:hidden"
+                    >
+                      Zmeniť
+                    </Link>
+                  )}
                 </div>
                 <div className="mt-1 font-medium">{inv.customer_name}</div>
                 {/* Prázdne časti adresy sa vynechajú — inak tam ostane holá čiarka. */}
