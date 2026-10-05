@@ -759,8 +759,11 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       cur.drawText(valStr, { x: payX + 16 + labelColW, y: ry, size: 10, font: bold, color: ink });
     });
 
-    // QR on the right with a clear gap from data column
-    if (company.iban) {
+    /*
+      QR na platbu len keď je čo platiť: dobropis vracia peniaze opačným smerom
+      a QR na IBAN vystavovateľa by odberateľa naviedol poslať ich ešte raz.
+    */
+    if (company.iban && naUhradu > 0) {
       try {
         /*
           Formát podľa krajiny firmy: slovenská banka číta PAY by square,

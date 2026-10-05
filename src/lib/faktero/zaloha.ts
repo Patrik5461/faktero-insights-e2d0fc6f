@@ -11,10 +11,17 @@ function cislo(x: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Suma, ktorú má odberateľ ešte poslať. Nikdy nie záporná. */
+/**
+ * Suma, ktorú má odberateľ ešte poslať.
+ *
+ * Záloha vyššia než faktúra nespraví záporný predpis — orezáva sa na nulu.
+ * Dobropis je však záporný sám od seba a tak sa aj ukáže: predtým sa orezal
+ * tiež, takže každý dobropis tvrdil „Spolu k úhrade 0,00“.
+ */
 export function zostavaUhradit(total: unknown, zaloha: unknown): number {
-  const zvysok = cislo(total) - cislo(zaloha);
-  return Math.round(Math.max(0, zvysok) * 100) / 100;
+  const t = cislo(total);
+  const zvysok = cislo(zaloha) > 0 ? Math.max(0, t - cislo(zaloha)) : t;
+  return Math.round(zvysok * 100) / 100;
 }
 
 /** Má zmysel zálohu na doklade vôbec ukazovať? */

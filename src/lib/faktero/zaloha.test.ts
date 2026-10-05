@@ -16,6 +16,11 @@ describe("zostavaUhradit", () => {
     expect(zostavaUhradit(100, 246)).toBe(0);
   });
 
+  it("dobropis ostáva záporný", () => {
+    expect(zostavaUhradit(-45, null)).toBe(-45);
+    expect(zostavaUhradit(-45.005, 0)).toBe(-45.01);
+  });
+
   it("zaokrúhľuje na centy", () => {
     expect(zostavaUhradit(120.55, 40.181)).toBe(80.37);
   });

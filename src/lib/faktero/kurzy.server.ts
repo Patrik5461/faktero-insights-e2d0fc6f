@@ -82,8 +82,13 @@ export async function kurzPreDoklad(
   };
 
   const najdene = await zDb();
-  // Kurz starší než dva týždne znamená, že v pamäti chýbajú čerstvé dni.
-  if (najdene && rozdielDni(najdene.den, hranica) <= 14) return najdene;
+  /*
+    ECB nevydáva kurz cez víkend a sviatky — najdlhšia medzera je Veľká noc
+    (štvrtok → utorok). Starší kurz v pamäti znamená, že chýbajú čerstvé dni,
+    nie že kurz neexistuje. Pri tolerancii 14 dní sa na faktúru z 5. 10.
+    dostal kurz z 23. 9., lebo pamäť sa dopĺňa len pri doklade.
+  */
+  if (najdene && rozdielDni(najdene.den, hranica) <= 5) return najdene;
 
   for (const url of [POSLEDNYCH_90, CELA_HISTORIA]) {
     try {
@@ -121,7 +126,7 @@ export async function prepocitajDoklad(
   };
 }
 
-/** Denné kurzy do pamäte — volá sa z nočného cronu. */
+/** Denné kurzy do pamäte. Nočný cron na to zatiaľ nie je — pamäť sa dopĺňa pri doklade. */
 export async function stiahniDenneKurzy(): Promise<number> {
   const kurzy = await stiahni(DENNE);
   await uloz(kurzy);
