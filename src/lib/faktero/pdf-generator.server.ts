@@ -217,7 +217,21 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     color: sub,
   });
 
-  y = Math.min(headerLogoBottom, y - 50) - 24;
+  /*
+    Samofaktúra nesie vetu o vyhotovení odberateľom hneď pod číslom — dole pod
+    súčtami by pri dlhšej faktúre odpadla na druhú stranu, a je to prvá vec,
+    ktorú má dodávateľ pri odsúhlasení vidieť.
+  */
+  let hlavickaDole = y - 50;
+  if (invoice.samofakturacia) {
+    for (const veta of vetyNaDoklad({ samofakturacia: true })) {
+      const w = bold.widthOfTextAtSize(san(veta), 10);
+      page.drawText(san(veta), { x: width - margin - w, y: y - 46, size: 10, font: bold, color: sub });
+    }
+    hlavickaDole = y - 60;
+  }
+
+  y = Math.min(headerLogoBottom, hlavickaDole) - 24;
 
   // ── Parties: side-by-side cards ──
   const gap = 16;
@@ -901,7 +915,6 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   for (const veta of vetyNaDoklad({
     danZPrijatejPlatby: (company as any).dan_z_prijatej_platby,
     osobitnaUprava: invoice.osobitna_uprava,
-    samofakturacia: invoice.samofakturacia,
   })) {
     const lines = wrapLines(veta, bold, 9.5, innerW);
     ensureSpace(14 + lines.length * 12 + 6);

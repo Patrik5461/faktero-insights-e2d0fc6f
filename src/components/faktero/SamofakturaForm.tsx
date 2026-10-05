@@ -337,7 +337,15 @@ export function SamofakturaForm({ id }: { id?: string }) {
                   <span className="text-sm font-medium">IČ DPH</span>
                   <input
                     value={f.supplier_ic_dph}
-                    onChange={(e) => set("supplier_ic_dph", e.target.value)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      // Dodávateľ sa stal platiteľom — nulové riadky dostanú jeho základnú sadzbu.
+                      if (!platitel && dodavatelPlatitel(v)) {
+                        const zaklad = String(zakladnaSadzba(krajina, f.issue_date));
+                        setRiadky((rs) => rs.map((r) => (r.vat_rate === "0" ? { ...r, vat_rate: zaklad } : r)));
+                      }
+                      set("supplier_ic_dph", v);
+                    }}
                     className={vstup}
                   />
                   <span className="mt-1 block text-xs text-muted-foreground">
