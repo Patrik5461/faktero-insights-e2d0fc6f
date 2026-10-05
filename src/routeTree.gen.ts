@@ -261,6 +261,7 @@ import { Route as ApiPublicHooksBankSyncRouteImport } from './routes/api/public/
 import { Route as ApiPublicHooksCommanderSyncRouteImport } from './routes/api/public/hooks/commander-sync'
 import { Route as ApiPublicHooksEfakturaSyncRouteImport } from './routes/api/public/hooks/efaktura-sync'
 import { Route as ApiPublicHooksJazdyDoplnenieRouteImport } from './routes/api/public/hooks/jazdy-doplnenie'
+import { Route as ApiPublicHooksKurzyEcbRouteImport } from './routes/api/public/hooks/kurzy-ecb'
 import { Route as ApiPublicHooksOdovzdanieMesacneRouteImport } from './routes/api/public/hooks/odovzdanie-mesacne'
 import { Route as ApiPublicHooksPohodaStrazcaRouteImport } from './routes/api/public/hooks/pohoda-strazca'
 import { Route as ApiPublicHooksPredplatneObnovaRouteImport } from './routes/api/public/hooks/predplatne-obnova'
@@ -1666,6 +1667,11 @@ const ApiPublicHooksJazdyDoplnenieRoute =
     path: '/api/public/hooks/jazdy-doplnenie',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksKurzyEcbRoute = ApiPublicHooksKurzyEcbRouteImport.update({
+  id: '/api/public/hooks/kurzy-ecb',
+  path: '/api/public/hooks/kurzy-ecb',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksOdovzdanieMesacneRoute =
   ApiPublicHooksOdovzdanieMesacneRouteImport.update({
     id: '/api/public/hooks/odovzdanie-mesacne',
@@ -2119,6 +2125,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
+  '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
@@ -2401,6 +2408,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
+  '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
@@ -2694,6 +2702,7 @@ export interface FileRoutesById {
   '/api/public/hooks/commander-sync': typeof ApiPublicHooksCommanderSyncRoute
   '/api/public/hooks/efaktura-sync': typeof ApiPublicHooksEfakturaSyncRoute
   '/api/public/hooks/jazdy-doplnenie': typeof ApiPublicHooksJazdyDoplnenieRoute
+  '/api/public/hooks/kurzy-ecb': typeof ApiPublicHooksKurzyEcbRoute
   '/api/public/hooks/odovzdanie-mesacne': typeof ApiPublicHooksOdovzdanieMesacneRoute
   '/api/public/hooks/pohoda-strazca': typeof ApiPublicHooksPohodaStrazcaRoute
   '/api/public/hooks/predplatne-obnova': typeof ApiPublicHooksPredplatneObnovaRoute
@@ -2987,6 +2996,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/jazdy-doplnenie'
+    | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/predplatne-obnova'
@@ -3269,6 +3279,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/jazdy-doplnenie'
+    | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/predplatne-obnova'
@@ -3561,6 +3572,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/commander-sync'
     | '/api/public/hooks/efaktura-sync'
     | '/api/public/hooks/jazdy-doplnenie'
+    | '/api/public/hooks/kurzy-ecb'
     | '/api/public/hooks/odovzdanie-mesacne'
     | '/api/public/hooks/pohoda-strazca'
     | '/api/public/hooks/predplatne-obnova'
@@ -3707,6 +3719,7 @@ export interface RootRouteChildren {
   ApiPublicHooksCommanderSyncRoute: typeof ApiPublicHooksCommanderSyncRoute
   ApiPublicHooksEfakturaSyncRoute: typeof ApiPublicHooksEfakturaSyncRoute
   ApiPublicHooksJazdyDoplnenieRoute: typeof ApiPublicHooksJazdyDoplnenieRoute
+  ApiPublicHooksKurzyEcbRoute: typeof ApiPublicHooksKurzyEcbRoute
   ApiPublicHooksOdovzdanieMesacneRoute: typeof ApiPublicHooksOdovzdanieMesacneRoute
   ApiPublicHooksPohodaStrazcaRoute: typeof ApiPublicHooksPohodaStrazcaRoute
   ApiPublicHooksPredplatneObnovaRoute: typeof ApiPublicHooksPredplatneObnovaRoute
@@ -5499,6 +5512,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksJazdyDoplnenieRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/kurzy-ecb': {
+      id: '/api/public/hooks/kurzy-ecb'
+      path: '/api/public/hooks/kurzy-ecb'
+      fullPath: '/api/public/hooks/kurzy-ecb'
+      preLoaderRoute: typeof ApiPublicHooksKurzyEcbRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/odovzdanie-mesacne': {
       id: '/api/public/hooks/odovzdanie-mesacne'
       path: '/api/public/hooks/odovzdanie-mesacne'
@@ -6412,6 +6432,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksCommanderSyncRoute: ApiPublicHooksCommanderSyncRoute,
   ApiPublicHooksEfakturaSyncRoute: ApiPublicHooksEfakturaSyncRoute,
   ApiPublicHooksJazdyDoplnenieRoute: ApiPublicHooksJazdyDoplnenieRoute,
+  ApiPublicHooksKurzyEcbRoute: ApiPublicHooksKurzyEcbRoute,
   ApiPublicHooksOdovzdanieMesacneRoute: ApiPublicHooksOdovzdanieMesacneRoute,
   ApiPublicHooksPohodaStrazcaRoute: ApiPublicHooksPohodaStrazcaRoute,
   ApiPublicHooksPredplatneObnovaRoute: ApiPublicHooksPredplatneObnovaRoute,

@@ -18,6 +18,9 @@ const Polozka = z.object({
   unit_price: z.coerce.number().finite(),
   discount_percent: z.coerce.number().min(0).max(100).nullish(),
   vat_rate: z.coerce.number().min(0).max(100),
+  /** Položka z cenníka / skladu — kvôli naskladneniu. */
+  product_id: z.string().uuid().nullish(),
+  stock_item_id: z.string().uuid().nullish(),
 });
 
 const Ulozenie = z.object({
@@ -52,6 +55,10 @@ const Ulozenie = z.object({
   osobitna_uprava: z.enum(["65", "66_tovar", "66_umenie", "66_starozitnosti"]).nullish(),
   /** Dobropis: samofaktúra, ktorú opravuje. */
   opravuje_id: z.string().uuid().nullish(),
+  discount_type: z.enum(["percent", "amount"]).nullish(),
+  discount_value: z.coerce.number().min(0).nullish(),
+  /** Prijatá zálohová faktúra od toho istého dodávateľa, ktorú táto zúčtováva. */
+  advance_invoice_id: z.string().uuid().nullish(),
   items: z.array(Polozka).min(1, "Pridajte aspoň jednu položku.").max(200),
 });
 
@@ -72,6 +79,7 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
       rezimDphSamofaktury,
       sumySamofaktury,
       sumyNaZapis,
+      zlavaDokladuSuma,
     } = await import("./samofakturacia");
 
     const { data: kontakt } = await supabase
@@ -90,8 +98,13 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
     if (typPrenesenia === "eu_b2b" && !String(data.supplier_country ?? "").match(/^[A-Z]{2}$/i)) {
       throw new Error("Pri dodávateľovi z EÚ vyplňte jeho krajinu.");
     }
-    const polozky = data.items.map((p) => prepocitajPolozku(p, platitel));
-    const sumy = sumySamofaktury(polozky);
+    const polozky = data.items.map((p) => ({
+      ...prepocitajPolozku(p, platitel),
+      product_id: p.product_id ?? null,
+      stock_item_id: p.stock_item_id ?? null,
+    }));
+    const zlava = zlavaDokladuSuma(polozky, data.discount_type, data.discount_value);
+    const sumy = sumySamofaktury(polozky, zlava);
     const naZapis = sumyNaZapis(sumy, prenesenie);
 
     /*
@@ -111,6 +124,37 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
         throw new Error("Dobropis musí ísť tomu istému dodávateľovi ako pôvodná faktúra.");
       }
       opravuje = { id: povodna.id, invoice_number: povodna.invoice_number };
+    }
+
+    /*
+      Zúčtovaná záloha: prijatá zálohová faktúra toho istého dodávateľa, ktorú
+      sme už zaplatili. Celková suma faktúry ostáva (kvôli DPH), na úhradu ide
+      len zvyšok — rovnako ako pri vydanej faktúre so zálohou.
+    */
+    let zaloha: { id: string; suma: number } | null = null;
+    if (data.advance_invoice_id) {
+      const { data: z } = await supabase
+        .from("purchase_invoices")
+        .select("id, type, amount_total, currency, supplier_ico, supplier_name, deleted_at")
+        .eq("id", data.advance_invoice_id)
+        .eq("company_id", data.company_id)
+        .maybeSingle();
+      const ten = (a: unknown, b: unknown) =>
+        String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
+      if (!z || z.deleted_at || z.type !== "proforma") throw new Error("Záloha sa nenašla.");
+      if (!(data.supplier_ico ? ten(z.supplier_ico, data.supplier_ico) : ten(z.supplier_name, data.supplier_name))) {
+        throw new Error("Záloha je od iného dodávateľa.");
+      }
+      if ((z.currency ?? "EUR") !== data.currency) throw new Error("Záloha je v inej mene.");
+      const { count } = await supabase
+        .from("purchase_invoices")
+        .select("id", { count: "exact", head: true })
+        .eq("company_id", data.company_id)
+        .eq("advance_invoice_id", z.id)
+        .is("deleted_at", null)
+        .neq("id", data.id ?? "00000000-0000-0000-0000-000000000000");
+      if ((count ?? 0) > 0) throw new Error("Túto zálohu už zúčtováva iná faktúra.");
+      zaloha = { id: z.id, suma: Number(z.amount_total ?? 0) };
     }
 
     /*
@@ -165,6 +209,11 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
       eu_plnenie: typPrenesenia === "eu_b2b" ? (data.eu_plnenie ?? "tovar") : null,
       osobitna_uprava: platitel && !prenesenie ? (data.osobitna_uprava ?? null) : null,
       opravuje_id: opravuje?.id ?? null,
+      discount_type: zlava > 0 ? (data.discount_type ?? null) : null,
+      discount_value: zlava > 0 ? (data.discount_value ?? null) : null,
+      discount_total: zlava > 0 ? zlava : null,
+      advance_invoice_id: zaloha?.id ?? null,
+      advance_amount: zaloha?.suma ?? null,
       opravuje_cislo: opravuje?.invoice_number ?? null,
       // Daň nesie režim dodávateľa: neplatiteľ fakturuje bez dane, pri
       // prenesení ju platíme my.
@@ -376,6 +425,9 @@ export const samofakturaPodlaTokenuFn = createServerFn({ method: "GET" })
         opravuje: (sf.opravuje_cislo ?? null) as string | null,
         prenesenie: Boolean(sf.reverse_charge),
         uvod: (sf.intro_note ?? null) as string | null,
+        jazyk: (sf.language ?? "sk") as string,
+        zaloha: sf.advance_amount != null ? Number(sf.advance_amount) : null,
+        zlava: sf.discount_total != null ? Number(sf.discount_total) : null,
       },
       dodavatel: {
         nazov: sf.supplier_name as string,

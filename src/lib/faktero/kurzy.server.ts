@@ -126,7 +126,7 @@ export async function prepocitajDoklad(
   };
 }
 
-/** Denné kurzy do pamäte. Nočný cron na to zatiaľ nie je — pamäť sa dopĺňa pri doklade. */
+/** Denné kurzy do pamäte — volá ich cron `faktero-kurzy-ecb` (hook `kurzy-ecb`). */
 export async function stiahniDenneKurzy(): Promise<number> {
   const kurzy = await stiahni(DENNE);
   await uloz(kurzy);

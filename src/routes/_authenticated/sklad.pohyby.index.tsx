@@ -400,6 +400,14 @@ function MovementsPage() {
                       >
                         Faktúra {invoices[m.source_document_id ?? m.reference_id].number}
                       </Link>
+                    ) : m.source_document_type === "self_billing" && m.source_document_id ? (
+                      <Link
+                        to="/prijate-faktury/$id"
+                        params={{ id: m.source_document_id }}
+                        className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-700 hover:underline"
+                      >
+                        Samofaktúra
+                      </Link>
                     ) : m.source_document_type ? (
                       <span className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-700">
                         {(

@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Package, Plus, Search, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -15,6 +15,7 @@ import {
   prepocitajPolozku,
   stavSamofaktury,
   sumySamofaktury,
+  zlavaDokladuSuma,
 } from "@/lib/faktero/samofakturacia";
 import { krajinaDane, sadzbyKrajiny, zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { MENY, formatovacMeny } from "@/lib/faktero/mena";
@@ -38,6 +39,9 @@ type Riadok = {
   unit_price: string;
   discount_percent: string;
   vat_rate: string;
+  /** Položka z cenníka / skladu — skladová sa dá po odsúhlasení naskladniť. */
+  product_id?: string | null;
+  stock_item_id?: string | null;
 };
 
 const prazdnyRiadok = (sadzba: number): Riadok => ({
@@ -59,6 +63,8 @@ const riadokZUlozeneho = (p: any, otoc = false): Riadok => ({
   unit_price: String(p.unit_price ?? ""),
   discount_percent: p.discount_percent ? String(p.discount_percent) : "",
   vat_rate: String(p.vat_rate ?? 0),
+  product_id: p.product_id ?? null,
+  stock_item_id: p.stock_item_id ?? null,
 });
 
 const cislo = (v: string) => Number(String(v).replace(",", ".")) || 0;
@@ -108,7 +114,17 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
     eu_plnenie: "tovar" as "tovar" | "sluzba",
     osobitna_uprava: "" as "" | "65" | "66_tovar" | "66_umenie" | "66_starozitnosti",
     opravuje_id: "",
+    discount_type: "" as "" | "percent" | "amount",
+    discount_value: "",
+    advance_invoice_id: "",
   });
+  /** Cenník a skladové karty na výber položiek. */
+  const [katalog, setKatalog] = useState<
+    { id: string; product_id: string | null; stock_item_id: string | null; name: string; unit: string; cena: number; sklad: boolean }[]
+  >([]);
+  const [zalohy, setZalohy] = useState<
+    { id: string; invoice_number: string; amount_total: number; currency: string }[]
+  >([]);
   const [riadky, setRiadky] = useState<Riadok[]>(() => [prazdnyRiadok(zakladnaSadzba("SK", dnes()))]);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
 
@@ -123,6 +139,43 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
         .is("deleted_at", null)
         .order("name");
       setKontakty(k ?? []);
+      /*
+        Pri výkupe je cena nákupná: skladová karta má poslednú nákupnú cenu,
+        tovar mimo skladu len predajnú z cenníka (človek ju prepíše).
+      */
+      const [{ data: produkty }, { data: karty }] = await Promise.all([
+        supabase
+          .from("products")
+          .select("id, name, unit, unit_price")
+          .eq("company_id", cid)
+          .is("deleted_at", null)
+          .eq("active", true)
+          .order("name")
+          .limit(500),
+        (supabase as any)
+          .from("stock_items")
+          .select("id, product_id, unit, purchase_price, last_purchase_price, track_stock")
+          .eq("company_id", cid)
+          .is("archived_at", null)
+          .limit(1000),
+      ]);
+      const kartaPodlaProduktu = new Map<string, any>(
+        (karty ?? []).filter((x: any) => x.product_id).map((x: any) => [x.product_id, x]),
+      );
+      setKatalog(
+        (produkty ?? []).map((pr: any) => {
+          const karta = kartaPodlaProduktu.get(pr.id);
+          return {
+            id: pr.id,
+            product_id: pr.id,
+            stock_item_id: karta?.id ?? null,
+            name: pr.name,
+            unit: karta?.unit ?? pr.unit ?? "ks",
+            cena: Number(karta?.last_purchase_price ?? karta?.purchase_price ?? pr.unit_price ?? 0),
+            sklad: Boolean(karta?.track_stock),
+          };
+        }),
+      );
       const zdrojId = id ?? opravuje;
       if (zdrojId) {
         const { data: sf } = await (supabase as any)
@@ -174,6 +227,9 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           eu_plnenie: sf.eu_plnenie === "sluzba" ? "sluzba" : "tovar",
           osobitna_uprava: sf.osobitna_uprava ?? "",
           opravuje_id: dobropis ? sf.id : (sf.opravuje_id ?? ""),
+          discount_type: dobropis ? "" : (sf.discount_type ?? ""),
+          discount_value: dobropis ? "" : sf.discount_value != null ? String(sf.discount_value) : "",
+          advance_invoice_id: dobropis ? "" : (sf.advance_invoice_id ?? ""),
         });
         const pol = Array.isArray(sf.items) ? sf.items : [];
         if (pol.length) setRiadky(pol.map((p: any) => riadokZUlozeneho(p, dobropis)));
@@ -205,9 +261,65 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
       ),
     [riadky, platitel],
   );
-  const sumy = sumySamofaktury(polozky);
+  const zlava = zlavaDokladuSuma(polozky, f.discount_type || null, cislo(f.discount_value));
+  const sumy = sumySamofaktury(polozky, zlava);
   const prenesenie = platitel && f.reverse_charge;
-  const naUhradu = prenesenie ? sumy.zaklad : sumy.spolu;
+  const zaloha = zalohy.find((z) => z.id === f.advance_invoice_id) ?? null;
+  const spoluDoklad = prenesenie ? sumy.zaklad : sumy.spolu;
+  const naUhradu = zaloha ? Math.max(0, Math.round((spoluDoklad - zaloha.amount_total) * 100) / 100) : spoluDoklad;
+
+  /*
+    Prijaté zálohové faktúry toho istého dodávateľa, ktoré ešte nikto
+    nezúčtoval — ako pri bežnej prijatej faktúre.
+  */
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    const ico = f.supplier_ico.trim();
+    const nazov = f.supplier_name.trim();
+    if (!cid || opravujeCislo || (!ico && !nazov)) {
+      setZalohy([]);
+      return;
+    }
+    let zrusene = false;
+    (async () => {
+      let q = supabase
+        .from("purchase_invoices")
+        .select("id, invoice_number, amount_total, currency")
+        .eq("company_id", cid)
+        .eq("type", "proforma")
+        .is("deleted_at", null)
+        .order("issue_date", { ascending: false })
+        .limit(20);
+      q = ico ? q.eq("supplier_ico", ico) : q.ilike("supplier_name", nazov);
+      const { data: proformy } = await q;
+      const ids = (proformy ?? []).map((z: any) => z.id);
+      const { data: pouzite } = ids.length
+        ? await supabase
+            .from("purchase_invoices")
+            .select("id, advance_invoice_id")
+            .eq("company_id", cid)
+            .is("deleted_at", null)
+            .in("advance_invoice_id", ids)
+        : { data: [] as any[] };
+      if (zrusene) return;
+      const obsadene = new Set(
+        (pouzite ?? []).filter((r: any) => r.id !== id).map((r: any) => r.advance_invoice_id),
+      );
+      setZalohy(
+        (proformy ?? [])
+          .filter((z: any) => !obsadene.has(z.id))
+          .map((z: any) => ({
+            id: z.id,
+            invoice_number: z.invoice_number,
+            amount_total: Number(z.amount_total ?? 0),
+            currency: z.currency ?? "EUR",
+          })),
+      );
+    })();
+    return () => {
+      zrusene = true;
+    };
+  }, [f.supplier_ico, f.supplier_name, opravujeCislo, id]);
   const mena = formatovacMeny(f.currency);
 
   async function vyberDodavatela(kid: string) {
@@ -252,7 +364,13 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
     if (!cid) return toast.error("Vyberte firmu.");
     if (!f.customer_id) return toast.error("Vyberte dodávateľa z adresára.");
     if (chyba) return toast.error(chyba);
-    const plne = polozky.filter((p) => p.name);
+    const plne = polozky
+      .map((p, i) => ({
+        ...p,
+        product_id: riadky[i]?.product_id ?? null,
+        stock_item_id: riadky[i]?.stock_item_id ?? null,
+      }))
+      .filter((p) => p.name);
     if (!plne.length) return toast.error("Pridajte aspoň jednu položku.");
     setBusy(true);
     try {
@@ -265,6 +383,9 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
           reverse_charge: prenesenie,
           osobitna_uprava: f.osobitna_uprava || null,
           opravuje_id: f.opravuje_id || null,
+          discount_type: f.discount_type || null,
+          discount_value: f.discount_type ? cislo(f.discount_value) : null,
+          advance_invoice_id: f.advance_invoice_id || null,
           items: plne.map(({ total: _t, ...p }) => p),
         },
       });
@@ -770,8 +891,77 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
             >
               <Plus className="h-4 w-4" /> Pridať položku
             </button>
+            {katalog.length > 0 && (
+              <Katalog
+                polozky={katalog}
+                onPick={(k) =>
+                  setRiadky((rs) => {
+                    const novy: Riadok = {
+                      ...prazdnyRiadok(platitel ? zakladnaSadzba(krajina, f.issue_date) : 0),
+                      name: k.name,
+                      unit: k.unit,
+                      unit_price: k.cena ? String(k.cena) : "",
+                      product_id: k.product_id,
+                      stock_item_id: k.stock_item_id,
+                    };
+                    // Prázdny prvý riadok sa nahradí, inak sa pridá nový.
+                    return rs.length === 1 && !rs[0].name.trim() ? [novy] : [...rs, novy];
+                  })
+                }
+              />
+            )}
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="flex items-end gap-2">
+                <label className="block flex-1">
+                  <span className="text-sm font-medium">Zľava na celú faktúru</span>
+                  <input
+                    inputMode="decimal"
+                    value={f.discount_value}
+                    placeholder="žiadna"
+                    onChange={(e) => {
+                      set("discount_value", e.target.value);
+                      if (!f.discount_type && e.target.value) set("discount_type", "percent");
+                    }}
+                    className={vstup}
+                  />
+                </label>
+                <select
+                  aria-label="Druh zľavy"
+                  value={f.discount_type || "percent"}
+                  onChange={(e) => set("discount_type", e.target.value as any)}
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                >
+                  <option value="percent">%</option>
+                  <option value="amount">{f.currency} bez DPH</option>
+                </select>
+              </div>
+              {zalohy.length > 0 && (
+                <label className="block">
+                  <span className="text-sm font-medium">Zúčtovať zaplatenú zálohu</span>
+                  <select
+                    value={f.advance_invoice_id}
+                    onChange={(e) => set("advance_invoice_id", e.target.value)}
+                    className={vstup}
+                  >
+                    <option value="">— žiadnu —</option>
+                    {zalohy.map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.invoice_number} · {z.amount_total.toFixed(2)} {z.currency}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
 
             <div className="mt-5 ml-auto max-w-xs space-y-1 text-sm">
+              {zlava > 0 && (
+                <div className="flex justify-between gap-4 text-muted-foreground">
+                  <span>Zľava na faktúru</span>
+                  <span className="tabular-nums">− {mena(zlava)}</span>
+                </div>
+              )}
               {sumy.sadzby.map((s) => (
                 <div key={s.sadzba} className="flex justify-between gap-4 text-muted-foreground">
                   <span>
@@ -787,8 +977,14 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
                   Daň {mena(sumy.dan)} samozdaníte vy — na faktúre nebude a dodávateľovi sa neplatí.
                 </div>
               )}
+              {zaloha && (
+                <div className="flex justify-between gap-4 text-muted-foreground">
+                  <span>Záloha {zaloha.invoice_number}</span>
+                  <span className="tabular-nums">− {mena(zaloha.amount_total)}</span>
+                </div>
+              )}
               <div className="flex justify-between gap-4 border-t border-border pt-2 text-base font-semibold">
-                <span>{prenesenie ? "Na úhradu" : "Spolu"}</span>
+                <span>{prenesenie || zaloha ? "Na úhradu" : "Spolu"}</span>
                 <span className="tabular-nums">{mena(naUhradu)}</span>
               </div>
             </div>
@@ -827,5 +1023,77 @@ export function SamofakturaForm({ id, opravuje }: { id?: string; opravuje?: stri
         </form>
       </PageBody>
     </>
+  );
+}
+
+type PolozkaKatalogu = {
+  id: string;
+  product_id: string | null;
+  stock_item_id: string | null;
+  name: string;
+  unit: string;
+  cena: number;
+  sklad: boolean;
+};
+
+/** Výber položky z cenníka a skladových kariet. */
+function Katalog({
+  polozky,
+  onPick,
+}: {
+  polozky: PolozkaKatalogu[];
+  onPick: (p: PolozkaKatalogu) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const holy = (v: string) => v.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const filtrovane = (q ? polozky.filter((p) => holy(p.name).includes(holy(q))) : polozky).slice(0, 12);
+  return (
+    <div className="relative ml-2 inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+      >
+        <Search className="h-4 w-4" /> Z cenníka / skladu
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card shadow-lg">
+          <input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Hľadať položku…"
+            className="w-full border-b border-border bg-transparent px-3 py-2 text-sm outline-none"
+          />
+          <ul className="max-h-64 overflow-auto py-1">
+            {filtrovane.length === 0 && (
+              <li className="px-3 py-2 text-sm text-muted-foreground">Nič sa nenašlo</li>
+            )}
+            {filtrovane.map((p) => (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPick(p);
+                    setOpen(false);
+                    setQ("");
+                  }}
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60"
+                >
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    {p.sklad && <Package className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+                    <span className="truncate">{p.name}</span>
+                  </span>
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {p.cena.toFixed(2)} / {p.unit}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }

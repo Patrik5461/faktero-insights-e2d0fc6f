@@ -5240,6 +5240,11 @@ export type Database = {
           opravuje_cislo: string | null
           exchange_rate: number | null
           amount_without_vat_eur: number | null
+          advance_amount: number | null
+          discount_total: number | null
+          discount_type: string | null
+          discount_value: number | null
+          naskladnene_at: string | null
           eu_plnenie: string | null
           intro_note: string | null
           language: string | null
@@ -5305,6 +5310,11 @@ export type Database = {
           opravuje_cislo?: string | null
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
+          advance_amount?: number | null
+          discount_total?: number | null
+          discount_type?: string | null
+          discount_value?: number | null
+          naskladnene_at?: string | null
           eu_plnenie?: string | null
           intro_note?: string | null
           language?: string | null
@@ -5370,6 +5380,11 @@ export type Database = {
           opravuje_cislo?: string | null
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
+          advance_amount?: number | null
+          discount_total?: number | null
+          discount_type?: string | null
+          discount_value?: number | null
+          naskladnene_at?: string | null
           eu_plnenie?: string | null
           intro_note?: string | null
           language?: string | null

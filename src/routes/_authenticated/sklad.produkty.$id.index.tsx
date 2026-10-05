@@ -379,12 +379,20 @@ function SourceBadge({ type, id }: { type: string | null; id: string | null }) {
     issue_note: "Výdajka",
     manual: "Manuálne",
     inventory: "Inventúra",
+    self_billing: "Samofaktúra",
   };
   const cls =
     "inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-700";
   if (type === "invoice" && id) {
     return (
       <Link to="/faktury/$id" params={{ id }} className={cls + " hover:underline"}>
+        {label[type]}
+      </Link>
+    );
+  }
+  if (type === "self_billing" && id) {
+    return (
+      <Link to="/prijate-faktury/$id" params={{ id }} className={cls + " hover:underline"}>
         {label[type]}
       </Link>
     );

@@ -239,7 +239,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   });
   const navyse = Math.max(0, podCislom.length - 1) * 11;
 
-  y = Math.min(headerLogoBottom, y - 50 - navyse) - 24;
+  y = Math.min(headerLogoBottom, y - 50 - navyse) - 18;
 
   // ── Parties: side-by-side cards ──
   const gap = 16;
@@ -288,7 +288,9 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     { ink, sub, muted, hairline, primary, surface },
     { ico: t.ico, dic: t.dic, icDph: t.icDph },
   );
-  y -= Math.max(partyH, partyH2) + 22;
+  // Medzery medzi blokmi sú úsporné — o pár bodov viac posielalo platobné
+  // údaje bežnej faktúry s textom nad položkami na druhú stranu.
+  y -= Math.max(partyH, partyH2) + 16;
 
   // ── Meta strip (compact, divided) ──
   // A paid invoice must not look like a payment request (double-payment risk):
@@ -335,7 +337,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       });
     }
   });
-  y -= metaBoxH + 22;
+  y -= metaBoxH + 16;
 
   // ── Items table ──
   // Fixed column widths (sum = innerW = 507.28pt). Right-aligned numeric.
@@ -510,7 +512,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     });
   }
 
-  y -= 22;
+  y -= 16;
 
   // ── Totals (right-aligned block, full width below table) ──
   const totalsBlockW = 260;
@@ -683,6 +685,9 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     Zmestí sa do výšky bloku súčtov a najviac 150 bodov šírky, pomer strán
     obrázka ostane zachovaný.
   */
+  const kresliPeciatku = Boolean(
+    input.stampBytes && input.stampMime && (company as any).invoice_show_stamp !== false,
+  );
   if (input.stampBytes && input.stampMime && (company as any).invoice_show_stamp !== false) {
     try {
       const img = input.stampMime.includes("png")
@@ -711,7 +716,45 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     }
   }
 
-  y = ty - heroH - (isPaid ? 38 : 24);
+  /*
+    Prenesenie daňovej povinnosti vľavo vedľa súčtov, kde je inak prázdno
+    (ak tam nesedí pečiatka). Pod platobnými údajmi rámik pridával vlastný
+    riadok výšky a faktúra s textom nad položkami kvôli nemu mala dve strany.
+  */
+  const textPrenesenia = invoice.reverse_charge
+    ? invoice.reverse_charge_type === "eu_b2b"
+      ? t.prenosEu
+      : invoice.reverse_charge_type === "export"
+        ? t.prenosVyvoz
+        : t.prenosTuzemsko
+    : null;
+  let prenesenieHotove = false;
+  if (textPrenesenia && !kresliPeciatku) {
+    const sirka = totalsX - margin - 20;
+    const riadky = wrapLines(textPrenesenia, bold, 9, sirka - 16);
+    const vyska = riadky.length * 11.5 + 14;
+    const dostupne = totalsTop - (ty - heroH);
+    if (sirka >= 160 && vyska <= dostupne) {
+      const hore = totalsTop + 4;
+      cur.drawRectangle({
+        x: margin,
+        y: hore - vyska,
+        width: sirka,
+        height: vyska,
+        color: rgb(0.98, 0.94, 0.84),
+        borderColor: rgb(0.85, 0.7, 0.3),
+        borderWidth: 0.7,
+      });
+      let ry = hore - 13;
+      for (const ln of riadky) {
+        cur.drawText(ln, { x: margin + 8, y: ry, size: 9, font: bold, color: rgb(0.4, 0.28, 0.05) });
+        ry -= 11.5;
+      }
+      prenesenieHotove = true;
+    }
+  }
+
+  y = ty - heroH - (isPaid ? 38 : 18);
 
   /*
     Faktúra v cudzej mene musí mať daň vyčíslenú aj v eurách, prepočítanú
@@ -744,7 +787,13 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
 
   // ── Payment card (full width, two columns: data | QR) ──
   if (!input.hidePayment && !isPaid) {
-    const payH = 140;
+    /*
+      Výška karty je tesne na štyri riadky údajov a QR s popiskom. Pôvodných
+      140 bodov s QR v strede nechávalo prázdny pás, pre ktorý sa faktúra s
+      textom nad položkami a prenesením nezmestila na jednu stranu.
+    */
+    const kresliQr = Boolean(company.iban) && naUhradu > 0;
+    const payH = kresliQr ? 126 : 116;
     ensureSpace(payH + 12);
     const payX = margin;
     const payY = y;
@@ -792,7 +841,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
       QR na platbu len keď je čo platiť: dobropis vracia peniaze opačným smerom
       a QR na IBAN vystavovateľa by odberateľa naviedol poslať ich ešte raz.
     */
-    if (company.iban && naUhradu > 0) {
+    if (kresliQr) {
       try {
         /*
           Formát podľa krajiny firmy: slovenská banka číta PAY by square,
@@ -815,7 +864,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
         const dataUrl = await QRCode.toDataURL(qr.text, { margin: 0, width: 240 });
         const png = await doc.embedPng(dataUrl);
         const qrX = payX + payW - qrSize - 16;
-        const qrY = payY - payH + (payH - qrSize) / 2;
+        const qrY = payY - payH + 10;
         cur.drawImage(png, { x: qrX, y: qrY, width: qrSize, height: qrSize });
         cur.drawText(t.qrPlatba, {
           x: qrX,
@@ -913,14 +962,9 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     }
   }
 
-  // ── Reverse charge legal text ──
-  if (invoice.reverse_charge) {
-    const rcText =
-      invoice.reverse_charge_type === "eu_b2b"
-        ? t.prenosEu
-        : invoice.reverse_charge_type === "export"
-          ? t.prenosVyvoz
-          : t.prenosTuzemsko;
+  // ── Reverse charge legal text (keď sa nezmestil vedľa súčtov) ──
+  if (textPrenesenia && !prenesenieHotove) {
+    const rcText = textPrenesenia;
     const rcLines = wrapLines(rcText, bold, 9.5, innerW - 16);
     const needed = 18 + rcLines.length * 12 + 16;
     ensureSpace(needed);

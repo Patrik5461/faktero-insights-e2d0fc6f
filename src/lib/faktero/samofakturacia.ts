@@ -122,15 +122,44 @@ export type SumySamofaktury = {
   sadzby: { sadzba: number; zaklad: number; dan: number }[];
 };
 
-export function sumySamofaktury(polozky: PolozkaSamofaktury[]): SumySamofaktury {
+/**
+ * Súčty samofaktúry. Zľava na celý doklad (suma bez DPH) sa rozpočíta na
+ * sadzby pomerne k ich základu — inak by daň vyšla z nezľavneného základu.
+ * Halier zo zaokrúhlenia dorovná posledná sadzba.
+ */
+export function sumySamofaktury(
+  polozky: PolozkaSamofaktury[],
+  zlavaDokladu = 0,
+): SumySamofaktury & { zlava: number } {
   const mapa = new Map<number, number>();
   for (const p of polozky) mapa.set(p.vat_rate, r2((mapa.get(p.vat_rate) ?? 0) + p.total));
-  const sadzby = [...mapa.entries()]
-    .sort((a, b) => b[0] - a[0])
-    .map(([sadzba, zaklad]) => ({ sadzba, zaklad, dan: r2((zaklad * sadzba) / 100) }));
+  const povodne = [...mapa.entries()].sort((a, b) => b[0] - a[0]);
+  const zakladSpolu = r2(povodne.reduce((s, [, z]) => s + z, 0));
+  const zlava = zakladSpolu > 0 ? r2(Math.min(Math.max(zlavaDokladu, 0), zakladSpolu)) : 0;
+  const k = zakladSpolu > 0 ? (zakladSpolu - zlava) / zakladSpolu : 1;
+  const ciel = r2(zakladSpolu - zlava);
+  let pocitane = 0;
+  const sadzby = povodne.map(([sadzba, z], i) => {
+    const zaklad = i === povodne.length - 1 ? r2(ciel - pocitane) : r2(z * k);
+    pocitane = r2(pocitane + zaklad);
+    return { sadzba, zaklad, dan: r2((zaklad * sadzba) / 100) };
+  });
   const zaklad = r2(sadzby.reduce((s, x) => s + x.zaklad, 0));
   const dan = r2(sadzby.reduce((s, x) => s + x.dan, 0));
-  return { zaklad, dan, spolu: r2(zaklad + dan), sadzby };
+  return { zaklad, dan, spolu: r2(zaklad + dan), sadzby, zlava };
+}
+
+/** Zľava na doklad v sume bez DPH — z percent alebo pevnej sumy. */
+export function zlavaDokladuSuma(
+  polozky: PolozkaSamofaktury[],
+  typ: string | null | undefined,
+  hodnota: unknown,
+): number {
+  const zaklad = r2(polozky.reduce((s, p) => s + p.total, 0));
+  const h = Number(hodnota) || 0;
+  if (!typ || h <= 0 || zaklad <= 0) return 0;
+  const suma = typ === "percent" ? (zaklad * Math.min(h, 100)) / 100 : h;
+  return r2(Math.min(suma, zaklad));
 }
 
 /** Dodávateľ je platiteľ, keď má IČ DPH — samofaktúra nesie jeho režim, nie náš. */

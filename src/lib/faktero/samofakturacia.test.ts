@@ -8,6 +8,7 @@ import {
   rezimDphSamofaktury,
   stavSamofaktury,
   sumyNaZapis,
+  zlavaDokladuSuma,
   sumySamofaktury,
   zapocitatelna,
 } from "./samofakturacia";
@@ -87,5 +88,24 @@ describe("samofakturácia", () => {
     const sumy = sumySamofaktury([prepocitajPolozku({ name: "Šrot", quantity: 1, unit_price: 100, vat_rate: 23 }, true)]);
     expect(sumyNaZapis(sumy, true)).toEqual({ amount_without_vat: 100, vat_amount: 23, amount_total: 100 });
     expect(sumyNaZapis(sumy, false).amount_total).toBe(123);
+  });
+
+  it("zľava na doklad sa rozpočíta na sadzby a daň ide zo zľavneného základu", () => {
+    const pol = [
+      prepocitajPolozku({ name: "a", quantity: 1, unit_price: 100, vat_rate: 23 }, true),
+      prepocitajPolozku({ name: "b", quantity: 1, unit_price: 50, vat_rate: 5 }, true),
+    ];
+    expect(zlavaDokladuSuma(pol, "percent", 10)).toBe(15);
+    expect(zlavaDokladuSuma(pol, "amount", 500)).toBe(150);
+    expect(zlavaDokladuSuma(pol, null, 10)).toBe(0);
+    const s = sumySamofaktury(pol, 15);
+    expect(s.sadzby).toEqual([
+      { sadzba: 23, zaklad: 90, dan: 20.7 },
+      { sadzba: 5, zaklad: 45, dan: 2.25 },
+    ]);
+    expect(s).toMatchObject({ zaklad: 135, dan: 22.95, spolu: 157.95, zlava: 15 });
+    // Zľava 1/3 — halier dorovná posledná sadzba, súčet sedí presne.
+    const t = sumySamofaktury(pol, 50);
+    expect(t.zaklad).toBe(100);
   });
 });

@@ -3,12 +3,19 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { CheckCircle2, Download, Loader2, Pencil, Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { createStockMovementDebug } from "@/lib/faktero/stock.functions";
 import {
   odoslatSamofakturuFn,
   oznacitOdsuhlasenuFn,
   pdfSamofakturyFn,
 } from "@/lib/faktero/samofakturacia.functions";
-import { NAZVY_STAVOV, stavSamofaktury } from "@/lib/faktero/samofakturacia";
+import {
+  NAZVY_STAVOV,
+  prepocitajPolozku,
+  stavSamofaktury,
+  sumySamofaktury,
+} from "@/lib/faktero/samofakturacia";
 
 const FARBY: Record<string, string> = {
   koncept: "border-border bg-muted/40",
@@ -41,7 +48,57 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
   const pdf = useServerFn(pdfSamofakturyFn);
   const [email, setEmail] = useState<string>(row.supplier_email ?? "");
   const [sprava, setSprava] = useState("");
-  const [busy, setBusy] = useState<null | "posli" | "pdf" | "ok">(null);
+  const [busy, setBusy] = useState<null | "posli" | "pdf" | "ok" | "sklad">(null);
+  const pohyb = useServerFn(createStockMovementDebug);
+  /*
+    Skladové položky odsúhlasenej samofaktúry (výkup tovaru). Cena na sklad je
+    základ riadku po zľave riadku aj pomernej časti zľavy na doklad.
+  */
+  const skladove = (Array.isArray(row.items) ? row.items : []).filter(
+    (p: any) => p.stock_item_id && Number(p.quantity) > 0,
+  );
+  const mozeNaskladnit =
+    stav === "odsuhlasena" && !row.opravuje_cislo && !row.naskladnene_at && skladove.length > 0;
+
+  async function naskladni() {
+    setBusy("sklad");
+    try {
+      const polozky = (row.items as any[]).map((p) => prepocitajPolozku(p, true));
+      const zaklad = polozky.reduce((s, p) => s + p.total, 0);
+      const k =
+        zaklad > 0 ? sumySamofaktury(polozky, Number(row.discount_total ?? 0)).zaklad / zaklad : 1;
+      for (const p of skladove) {
+        const mnozstvo = Number(p.quantity);
+        const zakladRiadku = prepocitajPolozku(p, true).total * k;
+        const r = await pohyb({
+          data: {
+            company_id: row.company_id,
+            stock_item_id: p.stock_item_id,
+            type: "prijem",
+            quantity: mnozstvo,
+            unit_price: Math.round((zakladRiadku / mnozstvo) * 10000) / 10000,
+            note: `Samofaktúra ${row.invoice_number} — ${row.supplier_name}`,
+            source_document_type: "self_billing",
+            source_document_id: row.id,
+            job_id: row.job_id ?? null,
+          },
+        });
+        if (!r.ok) throw new Error(`${p.name}: ${r.error}`);
+      }
+      const { error } = await (supabase as any)
+        .from("purchase_invoices")
+        .update({ naskladnene_at: new Date().toISOString() })
+        .eq("id", row.id);
+      if (error) throw error;
+      const n = skladove.length;
+      toast.success(`Na sklad prijaté: ${n} ${n === 1 ? "položka" : n < 5 ? "položky" : "položiek"}.`);
+      onZmena();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Naskladnenie zlyhalo");
+    } finally {
+      setBusy(null);
+    }
+  }
   const [rucne, setRucne] = useState(false);
   const [rucnePozn, setRucnePozn] = useState("");
 
@@ -106,6 +163,21 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
             {busy === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             PDF faktúry
           </button>
+          {mozeNaskladnit && (
+            <button
+              type="button"
+              onClick={naskladni}
+              disabled={busy !== null}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              {busy === "sklad" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
+              Prijať na sklad
+            </button>
+          )}
           {stav === "odsuhlasena" && !row.opravuje_cislo && (
             <Link
               to="/prijate-faktury/samofaktura"
@@ -156,6 +228,7 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
             : `Označené ako odsúhlasené ${kedy(row.samofakturacia_rozhodnutie_at)}.`}
           {row.samofakturacia_poznamka ? ` Poznámka: ${row.samofakturacia_poznamka}` : ""} PDF v
           odsúhlasenej podobe je uložené ako príloha.
+          {row.naskladnene_at ? ` Tovar prijatý na sklad ${kedy(row.naskladnene_at)}.` : ""}
         </p>
       )}
 

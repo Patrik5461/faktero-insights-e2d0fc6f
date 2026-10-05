@@ -76,7 +76,7 @@ export async function nacitajVstup(
     supabase
       .from("purchase_invoices")
       .select(
-        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav",
+        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total",
       )
       .eq("company_id", companyId)
       /*
@@ -275,6 +275,7 @@ function riadkyPrijatej(
   if (p.samofakturacia && !cudziaMena && Array.isArray(p.items) && p.items.length) {
     const sadzby = sumySamofaktury(
       p.items.map((x: any) => prepocitajPolozku(x, Number(x.vat_rate) > 0)),
+      Number(p.discount_total ?? 0),
     ).sadzby;
     if (sadzby.length > 1) {
       return sadzby.map((x) => ({ sadzba: x.sadzba, zaklad: x.zaklad, dan: x.dan }));
