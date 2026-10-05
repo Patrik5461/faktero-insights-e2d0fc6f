@@ -147,15 +147,15 @@ function SamofakturaPage() {
               {T.dodavatelVy}
             </div>
             <div className="mt-1 font-medium">{d.nazov}</div>
-            {d.ico && <div>IČO: {d.ico}</div>}
-            {d.dic && <div>DIČ: {d.dic}</div>}
-            {d.icDph ? <div>IČ DPH: {d.icDph}</div> : <div>{T.neplatitel}</div>}
+            {d.ico && <div>{T.ico}: {d.ico}</div>}
+            {d.dic && <div>{T.dic}: {d.dic}</div>}
+            {d.icDph ? <div>{T.icDph}: {d.icDph}</div> : <div>{T.neplatitel}</div>}
           </div>
           <div>
             <div className="text-xs uppercase tracking-wide text-muted-foreground">{T.odberatel}</div>
             <div className="mt-1 font-medium">{o?.name}</div>
-            {o?.ico && <div>IČO: {o.ico}</div>}
-            {o?.ic_dph && <div>IČ DPH: {o.ic_dph}</div>}
+            {o?.ico && <div>{T.ico}: {o.ico}</div>}
+            {o?.ic_dph && <div>{T.icDph}: {o.ic_dph}</div>}
           </div>
         </div>
 

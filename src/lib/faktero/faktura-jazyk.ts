@@ -37,6 +37,12 @@ type Popisky = {
   zalohovaFaktura: string;
   dokladKPlatbe: string;
   dobropis: string;
+  /**
+   * Dodávateľ z iného štátu EÚ (samofaktúra) — slovenský § 43 sa naňho
+   * nevzťahuje, odkazuje sa na smernicu: tovar čl. 138, služba čl. 196.
+   */
+  prenosEuTovarSmernica: string;
+  prenosEuSluzbaSmernica: string;
   /** Opravný doklad musí uviesť číslo faktúry, ktorú opravuje (§ 71 ods. 2). */
   opravujeFakturu: string;
   /** Samofaktúra — znenie podľa čl. 226 bod 10a smernice 2006/112/ES v jazyku dokladu. */
@@ -94,6 +100,8 @@ const SK: Popisky = {
   zalohovaFaktura: "ZÁLOHOVÁ FAKTÚRA",
   dokladKPlatbe: "DAŇOVÝ DOKLAD K PRIJATEJ PLATBE",
   dobropis: "DOBROPIS",
+  prenosEuTovarSmernica: "Oslobodené dodanie tovaru do iného členského štátu – čl. 138 smernice 2006/112/ES. Daň platí odberateľ.",
+  prenosEuSluzbaSmernica: "Prenesenie daňovej povinnosti – čl. 196 smernice 2006/112/ES. Daň platí odberateľ.",
   opravujeFakturu: "Opravuje faktúru č.",
   vyhotovenieOdberatelom: "Vyhotovenie faktúry odberateľom",
   cenovaPonuka: "CENOVÁ PONUKA",
@@ -145,6 +153,8 @@ const CS: Popisky = {
   zalohovaFaktura: "ZÁLOHOVÁ FAKTURA",
   dokladKPlatbe: "DAŇOVÝ DOKLAD K PŘIJATÉ PLATBĚ",
   dobropis: "DOBROPIS",
+  prenosEuTovarSmernica: "Osvobozené dodání zboží do jiného členského státu – čl. 138 směrnice 2006/112/ES. Daň odvede zákazník.",
+  prenosEuSluzbaSmernica: "Přenesení daňové povinnosti – čl. 196 směrnice 2006/112/ES. Daň odvede zákazník.",
   opravujeFakturu: "Opravuje fakturu č.",
   vyhotovenieOdberatelom: "Vystaveno zákazníkem",
   cenovaPonuka: "CENOVÁ NABÍDKA",
@@ -191,6 +201,8 @@ const EN: Popisky = {
   zalohovaFaktura: "PROFORMA INVOICE",
   dokladKPlatbe: "TAX DOCUMENT FOR PAYMENT RECEIVED",
   dobropis: "CREDIT NOTE",
+  prenosEuTovarSmernica: "Exempt intra-Community supply of goods – Article 138 of Directive 2006/112/EC. VAT is due from the customer.",
+  prenosEuSluzbaSmernica: "Reverse charge – Article 196 of Directive 2006/112/EC. VAT is due from the customer.",
   opravujeFakturu: "Corrects invoice No.",
   vyhotovenieOdberatelom: "Self-billing",
   cenovaPonuka: "QUOTATION",
@@ -244,6 +256,8 @@ const DE: Popisky = {
   zalohovaFaktura: "ANZAHLUNGSRECHNUNG",
   dokladKPlatbe: "STEUERBELEG ÜBER DIE ERHALTENE ZAHLUNG",
   dobropis: "GUTSCHRIFT",
+  prenosEuTovarSmernica: "Steuerfreie innergemeinschaftliche Lieferung – Art. 138 Richtlinie 2006/112/EG. Die Steuer schuldet der Leistungsempfänger.",
+  prenosEuSluzbaSmernica: "Steuerschuldnerschaft des Leistungsempfängers – Art. 196 Richtlinie 2006/112/EG.",
   opravujeFakturu: "Berichtigt Rechnung Nr.",
   vyhotovenieOdberatelom: "Gutschrift",
   cenovaPonuka: "ANGEBOT",
@@ -298,6 +312,8 @@ const HU: Popisky = {
   zalohovaFaktura: "ELŐLEGSZÁMLA",
   dokladKPlatbe: "ADÓÜGYI BIZONYLAT A KAPOTT FIZETÉSRŐL",
   dobropis: "JÓVÁÍRÁS",
+  prenosEuTovarSmernica: "Adómentes Közösségen belüli termékértékesítés – 2006/112/EK irányelv 138. cikk. Az adót a vevő fizeti.",
+  prenosEuSluzbaSmernica: "Fordított adózás – 2006/112/EK irányelv 196. cikk. Az adót a vevő fizeti.",
   opravujeFakturu: "Helyesbíti a számlát, sz.",
   vyhotovenieOdberatelom: "Önszámlázás",
   cenovaPonuka: "ÁRAJÁNLAT",

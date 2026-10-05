@@ -90,6 +90,7 @@ export async function pdfSamofaktury(
     advance_amount: sf.advance_amount ?? null,
     reverse_charge: prenesenie,
     reverse_charge_type: sf.reverse_charge_type,
+    eu_plnenie: sf.eu_plnenie,
     osobitna_uprava: sf.osobitna_uprava,
     exchange_rate: kurz?.kurz ?? null,
     exchange_rate_date: kurz?.den ?? null,

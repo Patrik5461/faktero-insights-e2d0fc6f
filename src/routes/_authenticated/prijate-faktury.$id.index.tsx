@@ -657,8 +657,9 @@ function PolozkyDokladu({
         </table>
       </div>
       <p className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
-        Položky sú len na prezretie — do skladu ani do účtovníctva nevstupujú. Rozhodujú sumy v
-        hlavičke dokladu.
+        {samo
+          ? "Položky samofaktúry určujú jej sumy a DPH po sadzbách. Skladové položky sa po odsúhlasení dajú prijať na sklad."
+          : "Položky sú len na prezretie — do skladu ani do účtovníctva nevstupujú. Rozhodujú sumy v hlavičke dokladu."}
       </p>
     </div>
   );

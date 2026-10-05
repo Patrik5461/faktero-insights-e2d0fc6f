@@ -17,6 +17,9 @@ export type TextyDodavatela = {
   opravuje: (cislo: string) => string;
   dodavatelVy: string;
   odberatel: string;
+  ico: string;
+  dic: string;
+  icDph: string;
   neplatitel: string;
   vyhotovena: string;
   dodanie: string;
@@ -61,6 +64,9 @@ const SK: TextyDodavatela = {
   uvod: (o) =>
     `${o} za Vás podľa dohody o samofakturácii vyhotovil faktúru. Je Vaša — za správnosť dane zodpovedáte Vy, preto ju prosím skontrolujte a odsúhlaste.`,
   opravuje: (c) => `Opravuje faktúru ${c}`,
+  ico: "IČO",
+  dic: "DIČ",
+  icDph: "IČ DPH",
   dodavatelVy: "Dodávateľ (Vy)",
   odberatel: "Odberateľ",
   neplatitel: "Neplatiteľ DPH",
@@ -108,6 +114,9 @@ const CS: TextyDodavatela = {
   uvod: (o) =>
     `${o} za Vás podle dohody o vystavování faktur zákazníkem (self-billing) vystavil fakturu. Je Vaše — za správnost daně odpovídáte Vy, proto ji prosím zkontrolujte a schvalte.`,
   opravuje: (c) => `Opravuje fakturu ${c}`,
+  ico: "IČO",
+  dic: "DIČ",
+  icDph: "DIČ (DPH)",
   dodavatelVy: "Dodavatel (Vy)",
   odberatel: "Odběratel",
   neplatitel: "Neplátce DPH",
@@ -155,6 +164,9 @@ const EN: TextyDodavatela = {
   uvod: (o) =>
     `${o} has issued this invoice on your behalf under your self-billing agreement. It is your invoice and you are responsible for the VAT on it, so please review and approve it.`,
   opravuje: (c) => `Corrects invoice ${c}`,
+  ico: "Company ID",
+  dic: "Tax ID",
+  icDph: "VAT ID",
   dodavatelVy: "Supplier (you)",
   odberatel: "Customer",
   neplatitel: "Not registered for VAT",
@@ -202,6 +214,9 @@ const DE: TextyDodavatela = {
   uvod: (o) =>
     `${o} hat diese Rechnung gemäß Ihrer Gutschriftvereinbarung in Ihrem Namen ausgestellt. Es ist Ihre Rechnung und Sie sind für die Umsatzsteuer verantwortlich — bitte prüfen und bestätigen Sie sie.`,
   opravuje: (c) => `Berichtigt Rechnung ${c}`,
+  ico: "Firmennummer",
+  dic: "Steuernummer",
+  icDph: "USt-IdNr.",
   dodavatelVy: "Lieferant (Sie)",
   odberatel: "Kunde",
   neplatitel: "Nicht umsatzsteuerpflichtig",
@@ -250,6 +265,9 @@ const HU: TextyDodavatela = {
   uvod: (o) =>
     `${o} az önszámlázási megállapodás alapján az Ön nevében kiállította ezt a számlát. A számla az Öné, az adóért Ön felel — kérjük, ellenőrizze és hagyja jóvá.`,
   opravuje: (c) => `Helyesbíti a(z) ${c} számlát`,
+  ico: "Cégjegyzékszám",
+  dic: "Adószám",
+  icDph: "Közösségi adószám",
   dodavatelVy: "Szállító (Ön)",
   odberatel: "Vevő",
   neplatitel: "Nem ÁFA-alany",

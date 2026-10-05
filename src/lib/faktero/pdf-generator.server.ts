@@ -721,9 +721,16 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     (ak tam nesedí pečiatka). Pod platobnými údajmi rámik pridával vlastný
     riadok výšky a faktúra s textom nad položkami kvôli nemu mala dve strany.
   */
+  // Vystavovateľ mimo Slovenska (samofaktúra za dodávateľa z EÚ): odkaz na smernicu.
+  const cudziVystavovatel =
+    Boolean(invoice.samofakturacia) && String(company.country ?? "SK").toUpperCase() !== "SK";
   const textPrenesenia = invoice.reverse_charge
     ? invoice.reverse_charge_type === "eu_b2b"
-      ? t.prenosEu
+      ? cudziVystavovatel
+        ? invoice.eu_plnenie === "sluzba"
+          ? t.prenosEuSluzbaSmernica
+          : t.prenosEuTovarSmernica
+        : t.prenosEu
       : invoice.reverse_charge_type === "export"
         ? t.prenosVyvoz
         : t.prenosTuzemsko
