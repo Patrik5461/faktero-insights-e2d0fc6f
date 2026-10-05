@@ -273,6 +273,28 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "odberatel-zmenit",
+    title: "Zmena odberateľa na vystavenej faktúre",
+    body: (
+      <>
+        <p>
+          Pri odberateľovi v detaile faktúry je odkaz <strong>Zmeniť</strong> (alebo{" "}
+          <strong>Opraviť faktúru</strong>). V sekcii <em>Odberateľ</em> vyberiete iného z adresára
+          — jeho údaje sa na faktúru prevezmú celé — alebo opravíte údaje len na tomto doklade,
+          napríklad preklep v adrese. Adresár sa tým nemení. Kým neuložíte, ide sa vrátiť k
+          pôvodnému odberateľovi.
+        </p>
+        <p>
+          Faktero upozorní na to, čo zmena sama nevyrieši: pôvodný odberateľ mohol faktúru dostať
+          (novému pošlite nové PDF), pri inej krajine treba skontrolovať DPH a prenesenie daňovej
+          povinnosti a <strong>faktúru odoslanú cez eFaktúru</strong> má pôvodný odberateľ vo svojom
+          systéme — tam je správny postup dobropis a nová faktúra. Zákazka pôvodného odberateľa sa z
+          faktúry odoberie sama.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "cislo-opravit",
     title: "Oprava čísla faktúry",
     body: (

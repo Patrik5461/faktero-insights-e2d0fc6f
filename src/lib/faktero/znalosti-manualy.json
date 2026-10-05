@@ -1,5 +1,5 @@
 {
- "vytvorene": "2026-10-04",
+ "vytvorene": "2026-10-05",
  "clanky": [
   {
    "cesta": "/pomoc/ai-asistent",
@@ -382,6 +382,10 @@
     {
      "nadpis": "Historické sadzby DPH",
      "text": "<>\nVo výbere sadzby je pod platnými sadzbami skupina Historické sadzby —\nposledné tri, ktoré už neplatia, aj s rokom, do ktorého platili (na Slovensku 20 % a 10 %\ndo roku 2024).\nHodí sa, keď vystavujete faktúru k zálohovej faktúre z minulého roka ,\nrobíte dobropis k starej dodávke alebo opravujete doklad spred zmeny\nzákona — plnenie vtedy podliehalo inej sadzbe a doklad ju musí niesť.\nSú zámerne zvlášť, aby si ich nikto nevybral omylom namiesto dnešných. Pri predaji\nspotrebiteľovi v EÚ (OSS) sa neponúkajú — tam rozhodujú sadzby štátu zákazníka."
+    },
+    {
+     "nadpis": "Zmena odberateľa na vystavenej faktúre",
+     "text": "<>\nPri odberateľovi v detaile faktúry je odkaz Zmeniť (alebo\nOpraviť faktúru ). V sekcii Odberateľ vyberiete iného z adresára\n— jeho údaje sa na faktúru prevezmú celé — alebo opravíte údaje len na tomto doklade,\nnapríklad preklep v adrese. Adresár sa tým nemení. Kým neuložíte, ide sa vrátiť k\npôvodnému odberateľovi.\nFaktero upozorní na to, čo zmena sama nevyrieši: pôvodný odberateľ mohol faktúru dostať\n(novému pošlite nové PDF), pri inej krajine treba skontrolovať DPH a prenesenie daňovej\npovinnosti a faktúru odoslanú cez eFaktúru má pôvodný odberateľ vo svojom\nsystéme — tam je správny postup dobropis a nová faktúra. Zákazka pôvodného odberateľa sa z\nfaktúry odoberie sama."
     },
     {
      "nadpis": "Oprava čísla faktúry",
