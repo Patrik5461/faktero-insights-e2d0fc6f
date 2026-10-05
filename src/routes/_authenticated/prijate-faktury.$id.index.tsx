@@ -306,7 +306,7 @@ function PurchaseInvoiceDetail() {
   return (
     <>
       <PageHeader
-        title={`${samo ? "Samofaktúra" : (row as any).type === "proforma" ? "Prijatá zálohová faktúra" : "Prijatá faktúra"} ${row.invoice_number}`}
+        title={`${samo ? (row.opravuje_cislo ? "Dobropis (samofaktúra)" : "Samofaktúra") : (row as any).type === "proforma" ? "Prijatá zálohová faktúra" : "Prijatá faktúra"} ${row.invoice_number}`}
         description={
           (row as any).type === "proforma"
             ? `Dodávateľ: ${row.supplier_name} · Vystavená ${row.issue_date} · Nie je daňový doklad — daň prinesie ostrá faktúra.`

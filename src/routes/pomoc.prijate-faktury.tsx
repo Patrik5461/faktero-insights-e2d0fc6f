@@ -295,6 +295,14 @@ const sections: HelpSection[] = [
           samofaktúry tomu istému dodávateľovi.
         </p>
         <p>
+          Samofaktúra vie všetko, čo bežná faktúra: text nad položkami, popis a zľavu na položke,
+          konštantný a špecifický symbol, jazyk faktúry (aj pre zahraničného dodávateľa — veta o
+          vyhotovení odberateľom sa preloží), cudziu menu s prepočtom dane kurzom ECB a osobitnú
+          úpravu podľa § 65 a § 66. Pri <strong>prenesení daňovej povinnosti</strong> (kovový šrot
+          a odpad, stavebné práce podľa § 69 ods. 12, alebo dodávateľ z iného štátu EÚ) daň na
+          faktúre nebude — samozdaníte ju vy a dodávateľovi platíte len základ.
+        </p>
+        <p>
           <strong>3. Odsúhlasenie.</strong> Na detaile faktúry kliknite na{" "}
           <em>Poslať na odsúhlasenie</em>. Dodávateľ dostane e-mail s PDF a odkazom — bez
           registrácie klikne <em>Súhlasím</em>, alebo faktúru vráti s poznámkou, čo nesedí. Vy
@@ -309,7 +317,9 @@ const sections: HelpSection[] = [
           <strong>Čo sa deje potom.</strong> Odsúhlasená samofaktúra je obyčajná prijatá faktúra:
           vstupuje do DPH na vstupe a kontrolného výkazu (časť B.2, pri viacerých sadzbách
           rozpísaná po sadzbách), dá sa uhradiť z banky aj hromadným príkazom a PDF v odsúhlasenej
-          podobe sa uloží ako príloha. Meniť sa už nedá — chyba sa opravuje dobropisom. Kým nie je
+          podobe sa uloží ako príloha. Meniť sa už nedá — chyba sa opravuje dobropisom: na detaile
+          kliknite na <em>Vystaviť dobropis</em>, položky sa predvyplnia so záporným množstvom a na
+          dobropise bude číslo opravovanej faktúry. Aj dobropis musí dodávateľ odsúhlasiť. Kým nie je
           odsúhlasená, do výkazov ani do príkazu na úhradu nevstúpi a výkaz na ňu upozorní.
         </p>
         <p>

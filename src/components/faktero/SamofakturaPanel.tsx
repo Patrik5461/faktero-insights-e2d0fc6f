@@ -90,7 +90,9 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-xs uppercase tracking-wide text-muted-foreground">
-            Samofaktúra · vyhotovenie faktúry odberateľom
+            {row.opravuje_cislo
+              ? `Dobropis k samofaktúre ${row.opravuje_cislo}`
+              : "Samofaktúra · vyhotovenie faktúry odberateľom"}
           </div>
           <div className="mt-1 text-base font-semibold">{NAZVY_STAVOV[stav]}</div>
         </div>
@@ -104,6 +106,15 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
             {busy === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             PDF faktúry
           </button>
+          {stav === "odsuhlasena" && !row.opravuje_cislo && (
+            <Link
+              to="/prijate-faktury/samofaktura"
+              search={{ opravuje: row.id }}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              <Pencil className="h-4 w-4" /> Vystaviť dobropis
+            </Link>
+          )}
           {stav !== "odsuhlasena" && (
             <Link
               to="/prijate-faktury/samofaktura"

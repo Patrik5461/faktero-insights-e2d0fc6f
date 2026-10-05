@@ -68,30 +68,49 @@ function datumSk(d: string | null | undefined): string {
 
 export type PolozkaSamofaktury = {
   name: string;
+  description?: string | null;
   quantity: number;
   unit?: string | null;
   unit_price: number;
+  /** Zľava na riadku v %; je už v sume riadku (`total`). */
+  discount_percent?: number | null;
   vat_rate: number;
-  /** Suma bez DPH za riadok. */
+  /** Suma bez DPH za riadok po zľave. */
   total: number;
 };
 
 const r2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
-/** Riadok s dopočítaným základom; neplatiteľ dane má sadzbu vždy 0. */
+/**
+ * Riadok s dopočítaným základom; neplatiteľ dane má sadzbu vždy 0.
+ *
+ * Pri prenesení daňovej povinnosti sadzba ostáva — daň z nej si vypočítame
+ * my (samozdanenie), na doklade sa len nevyčísli.
+ */
 export function prepocitajPolozku(
-  p: { name?: string; quantity?: unknown; unit?: string | null; unit_price?: unknown; vat_rate?: unknown },
+  p: {
+    name?: string;
+    description?: string | null;
+    quantity?: unknown;
+    unit?: string | null;
+    unit_price?: unknown;
+    discount_percent?: unknown;
+    vat_rate?: unknown;
+  },
   platitel: boolean,
 ): PolozkaSamofaktury {
   const quantity = Number(p.quantity) || 0;
   const unit_price = Number(p.unit_price) || 0;
+  const zlava = Math.min(Math.max(Number(p.discount_percent) || 0, 0), 100);
   return {
     name: String(p.name ?? "").trim(),
+    description: String(p.description ?? "").trim() || null,
     quantity,
     unit: p.unit ? String(p.unit) : null,
     unit_price,
+    discount_percent: zlava || null,
     vat_rate: platitel ? Number(p.vat_rate) || 0 : 0,
-    total: r2(quantity * unit_price),
+    total: r2(quantity * unit_price * (1 - zlava / 100)),
   };
 }
 
@@ -128,4 +147,45 @@ export function zapocitatelna(r: {
   samofakturacia_stav?: string | null;
 }): boolean {
   return !r.samofakturacia || r.samofakturacia_stav === "odsuhlasena";
+}
+
+export type PrenesenieSamofaktury = {
+  reverse_charge?: boolean | null;
+  reverse_charge_type?: string | null;
+  eu_plnenie?: string | null;
+};
+
+/**
+ * Režim pre výkazy k DPH z pohľadu nás ako odberateľa.
+ *
+ * Pri prenesení daňovej povinnosti daň platíme my: tuzemské § 69 ods. 12
+ * (kovový šrot, stavebné práce…) aj služba od dodávateľa z EÚ idú do r. 09/10
+ * priznania, tovar z EÚ je nadobudnutie (r. 05–08). Neplatiteľ fakturuje bez
+ * dane; inak sa režim odhadne podľa IČ DPH dodávateľa (`null`).
+ */
+export function rezimDphSamofaktury(
+  r: PrenesenieSamofaktury,
+  platitel: boolean,
+): "samozdanenie" | "nadobudnutie" | "bez_dane" | null {
+  if (r.reverse_charge) {
+    return r.reverse_charge_type === "eu_b2b" && r.eu_plnenie === "tovar"
+      ? "nadobudnutie"
+      : "samozdanenie";
+  }
+  return platitel ? null : "bez_dane";
+}
+
+/**
+ * Sumy, ktoré sa zapíšu na prijatú faktúru. Pri prenesení je daň tá, ktorú
+ * si samozdaníme (do výkazu), ale dodávateľovi sa platí len základ.
+ */
+export function sumyNaZapis(
+  sumy: SumySamofaktury,
+  prenesenie: boolean,
+): { amount_without_vat: number; vat_amount: number; amount_total: number } {
+  return {
+    amount_without_vat: sumy.zaklad,
+    vat_amount: sumy.dan,
+    amount_total: prenesenie ? sumy.zaklad : sumy.spolu,
+  };
 }

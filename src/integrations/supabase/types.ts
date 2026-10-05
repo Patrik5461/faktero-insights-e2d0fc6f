@@ -5240,6 +5240,13 @@ export type Database = {
           opravuje_cislo: string | null
           exchange_rate: number | null
           amount_without_vat_eur: number | null
+          eu_plnenie: string | null
+          intro_note: string | null
+          language: string | null
+          opravuje_id: string | null
+          osobitna_uprava: string | null
+          reverse_charge: boolean
+          reverse_charge_type: string | null
           customer_id: string | null
           number_series_id: string | null
           samofakturacia: boolean
@@ -5298,6 +5305,13 @@ export type Database = {
           opravuje_cislo?: string | null
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
+          eu_plnenie?: string | null
+          intro_note?: string | null
+          language?: string | null
+          opravuje_id?: string | null
+          osobitna_uprava?: string | null
+          reverse_charge?: boolean
+          reverse_charge_type?: string | null
           customer_id?: string | null
           number_series_id?: string | null
           samofakturacia?: boolean
@@ -5356,6 +5370,13 @@ export type Database = {
           opravuje_cislo?: string | null
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
+          eu_plnenie?: string | null
+          intro_note?: string | null
+          language?: string | null
+          opravuje_id?: string | null
+          osobitna_uprava?: string | null
+          reverse_charge?: boolean
+          reverse_charge_type?: string | null
           customer_id?: string | null
           number_series_id?: string | null
           samofakturacia?: boolean

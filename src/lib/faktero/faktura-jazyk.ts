@@ -37,6 +37,10 @@ type Popisky = {
   zalohovaFaktura: string;
   dokladKPlatbe: string;
   dobropis: string;
+  /** Opravný doklad musí uviesť číslo faktúry, ktorú opravuje (§ 71 ods. 2). */
+  opravujeFakturu: string;
+  /** Samofaktúra — znenie podľa čl. 226 bod 10a smernice 2006/112/ES v jazyku dokladu. */
+  vyhotovenieOdberatelom: string;
   cenovaPonuka: string;
   dodavatel: string;
   odberatel: string;
@@ -90,6 +94,8 @@ const SK: Popisky = {
   zalohovaFaktura: "ZÁLOHOVÁ FAKTÚRA",
   dokladKPlatbe: "DAŇOVÝ DOKLAD K PRIJATEJ PLATBE",
   dobropis: "DOBROPIS",
+  opravujeFakturu: "Opravuje faktúru č.",
+  vyhotovenieOdberatelom: "Vyhotovenie faktúry odberateľom",
   cenovaPonuka: "CENOVÁ PONUKA",
   dodavatel: "DODÁVATEĽ",
   odberatel: "ODBERATEĽ",
@@ -139,6 +145,8 @@ const CS: Popisky = {
   zalohovaFaktura: "ZÁLOHOVÁ FAKTURA",
   dokladKPlatbe: "DAŇOVÝ DOKLAD K PŘIJATÉ PLATBĚ",
   dobropis: "DOBROPIS",
+  opravujeFakturu: "Opravuje fakturu č.",
+  vyhotovenieOdberatelom: "Vystaveno zákazníkem",
   cenovaPonuka: "CENOVÁ NABÍDKA",
   dodavatel: "DODAVATEL",
   odberatel: "ODBĚRATEL",
@@ -183,6 +191,8 @@ const EN: Popisky = {
   zalohovaFaktura: "PROFORMA INVOICE",
   dokladKPlatbe: "TAX DOCUMENT FOR PAYMENT RECEIVED",
   dobropis: "CREDIT NOTE",
+  opravujeFakturu: "Corrects invoice No.",
+  vyhotovenieOdberatelom: "Self-billing",
   cenovaPonuka: "QUOTATION",
   dodavatel: "SUPPLIER",
   odberatel: "CUSTOMER",
@@ -234,6 +244,8 @@ const DE: Popisky = {
   zalohovaFaktura: "ANZAHLUNGSRECHNUNG",
   dokladKPlatbe: "STEUERBELEG ÜBER DIE ERHALTENE ZAHLUNG",
   dobropis: "GUTSCHRIFT",
+  opravujeFakturu: "Berichtigt Rechnung Nr.",
+  vyhotovenieOdberatelom: "Gutschrift",
   cenovaPonuka: "ANGEBOT",
   dodavatel: "LIEFERANT",
   odberatel: "KUNDE",
@@ -286,6 +298,8 @@ const HU: Popisky = {
   zalohovaFaktura: "ELŐLEGSZÁMLA",
   dokladKPlatbe: "ADÓÜGYI BIZONYLAT A KAPOTT FIZETÉSRŐL",
   dobropis: "JÓVÁÍRÁS",
+  opravujeFakturu: "Helyesbíti a számlát, sz.",
+  vyhotovenieOdberatelom: "Önszámlázás",
   cenovaPonuka: "ÁRAJÁNLAT",
   dodavatel: "SZÁLLÍTÓ",
   odberatel: "VEVŐ",

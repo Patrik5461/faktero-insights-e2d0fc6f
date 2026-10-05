@@ -18,7 +18,7 @@ export function odkazNaOdsuhlasenie(token: string): string {
 }
 
 export const STLPCE_SAMOFAKTURY =
-  "id, company_id, invoice_number, issue_date, delivery_date, due_date, currency, variable_symbol, payment_method, note, items, amount_without_vat, vat_amount, amount_total, status, deleted_at, samofakturacia, samofakturacia_stav, samofakturacia_token, samofakturacia_poznamka, samofakturacia_odoslana_at, samofakturacia_rozhodnutie_at, samofakturacia_rozhodol, customer_id, supplier_name, supplier_ico, supplier_dic, supplier_ic_dph, supplier_iban, supplier_street, supplier_city, supplier_zip, supplier_country, supplier_email, file_path";
+  "id, company_id, invoice_number, issue_date, delivery_date, due_date, currency, variable_symbol, payment_method, note, items, amount_without_vat, vat_amount, amount_total, status, deleted_at, samofakturacia, samofakturacia_stav, samofakturacia_token, samofakturacia_poznamka, samofakturacia_odoslana_at, samofakturacia_rozhodnutie_at, samofakturacia_rozhodol, customer_id, supplier_name, supplier_ico, supplier_dic, supplier_ic_dph, supplier_iban, supplier_street, supplier_city, supplier_zip, supplier_country, supplier_email, file_path, constant_symbol, specific_symbol, intro_note, language, reverse_charge, reverse_charge_type, eu_plnenie, osobitna_uprava, opravuje_id, opravuje_cislo, exchange_rate, amount_without_vat_eur, vat_amount_eur";
 
 export type Samofaktura = Record<string, any>;
 
@@ -34,10 +34,25 @@ export async function pdfSamofaktury(
   if (!firma) throw new Error("Firma nenájdená");
 
   const platitel = dodavatelPlatitel(sf.supplier_ic_dph);
+  const prenesenie = Boolean(sf.reverse_charge);
   const polozky = (Array.isArray(sf.items) ? sf.items : []).map((p: any) =>
     prepocitajPolozku(p, platitel),
   );
   const sumy = sumySamofaktury(polozky);
+  // Pri prenesení daň na doklade nie je — vyčísli si ju odberateľ (my).
+  const dan = prenesenie ? 0 : sumy.dan;
+  const mena = sf.currency || "EUR";
+
+  let kurz: { kurz: number; den: string; dan: number } | null = null;
+  if (mena !== "EUR" && dan !== 0) {
+    const { prepocitajDoklad } = await import("./kurzy.server");
+    const p = await prepocitajDoklad(mena, String(sf.delivery_date || sf.issue_date), {
+      zaklad: sumy.zaklad,
+      dan,
+      celkom: sumy.zaklad + dan,
+    });
+    if (p) kurz = { kurz: p.kurz, den: p.den, dan: p.dan };
+  }
 
   const dodavatel = {
     name: sf.supplier_name,
@@ -54,17 +69,29 @@ export async function pdfSamofaktury(
   };
   const doklad = {
     invoice_number: sf.invoice_number,
+    type: sf.opravuje_cislo ? "credit_note" : "regular",
+    opravuje_cislo: sf.opravuje_cislo,
     issue_date: sf.issue_date,
     delivery_date: sf.delivery_date || sf.issue_date,
     due_date: sf.due_date,
-    currency: sf.currency || "EUR",
+    currency: mena,
+    language: sf.language || "sk",
     variable_symbol: sf.variable_symbol,
+    constant_symbol: sf.constant_symbol,
+    specific_symbol: sf.specific_symbol,
     payment_method: sf.payment_method || "prevod",
+    intro_note: sf.intro_note,
     notes: sf.note,
     status: sf.status === "paid" ? "paid" : "issued",
     subtotal: sumy.zaklad,
-    vat_total: sumy.dan,
-    total: sumy.spolu,
+    vat_total: dan,
+    total: Math.round((sumy.zaklad + dan) * 100) / 100,
+    reverse_charge: prenesenie,
+    reverse_charge_type: sf.reverse_charge_type,
+    osobitna_uprava: sf.osobitna_uprava,
+    exchange_rate: kurz?.kurz ?? null,
+    exchange_rate_date: kurz?.den ?? null,
+    vat_total_eur: kurz?.dan ?? null,
     samofakturacia: true,
     customer_name: firma.name,
     customer_ico: firma.ico,
@@ -81,7 +108,20 @@ export async function pdfSamofaktury(
   const bytes = await generateInvoicePdfBytes({
     company: dodavatel,
     invoice: doklad,
-    items: polozky.map((p, i) => ({ ...p, position: i })),
+    /*
+      Stĺpec „Celkom“ je na faktúre s DPH (ako `invoice_items.total`); položka
+      samofaktúry si drží sumu bez DPH, tak sa daň pripočíta tu.
+    */
+    items: polozky.map((p, i) => {
+      const sadzba = prenesenie ? 0 : p.vat_rate;
+      return {
+        ...p,
+        vat_rate: sadzba,
+        subtotal: p.total,
+        total: Math.round(p.total * (1 + sadzba / 100) * 100) / 100,
+        position: i,
+      };
+    }),
   });
   return { bytes, fileName: safePdfFileName(sf.invoice_number ?? "samofaktura") };
 }
@@ -123,13 +163,14 @@ export async function posliDodavatelovi(opts: {
   const odkaz = odkazNaOdsuhlasenie(token);
   const nazovFirmy = firma?.name ?? "Odberateľ";
   const spolu = suma(Number(sf.amount_total ?? 0), sf.currency ?? "EUR");
-  const predmet = `Faktúra ${sf.invoice_number} na odsúhlasenie — vyhotovil ${nazovFirmy}`;
+  const druh = sf.opravuje_cislo ? "Dobropis" : "Faktúra";
+  const predmet = `${druh} ${sf.invoice_number} na odsúhlasenie — vyhotovil ${nazovFirmy}`;
   const sprava = String(opts.sprava ?? "").trim();
 
   const text = [
     "Dobrý deň,",
     "",
-    `podľa dohody o samofakturácii sme za Vás vyhotovili faktúru ${sf.invoice_number} na ${spolu}. Je v prílohe.`,
+    `podľa dohody o samofakturácii sme za Vás vyhotovili ${druh.toLowerCase()} ${sf.invoice_number} na ${spolu}${sf.opravuje_cislo ? ` k faktúre ${sf.opravuje_cislo}` : ""}. Je v prílohe.`,
     sprava ? `\n${sprava}\n` : "",
     "Prosíme o odsúhlasenie — faktúra je Vaša a za správnosť dane zodpovedáte Vy:",
     `  ${odkaz}`,
@@ -148,13 +189,13 @@ export async function posliDodavatelovi(opts: {
 
   const html = `<div style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#111;max-width:560px;line-height:1.5">
     <p>Dobrý deň,</p>
-    <p>podľa dohody o samofakturácii sme za Vás vyhotovili faktúru
-      <strong>${escapeHtml(sf.invoice_number)}</strong>. Je v prílohe.</p>
+    <p>podľa dohody o samofakturácii sme za Vás vyhotovili ${druh.toLowerCase()}
+      <strong>${escapeHtml(sf.invoice_number)}</strong>${sf.opravuje_cislo ? ` k faktúre ${escapeHtml(sf.opravuje_cislo)}` : ""}. Je v prílohe.</p>
     ${sprava ? `<p style="white-space:pre-wrap">${escapeHtml(sprava)}</p>` : ""}
     <p>Faktúra je Vaša a za správnosť dane zodpovedáte Vy — preto Vás prosíme o odsúhlasenie.</p>
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:20px">
       <tr><td style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:20px 22px">
-        <div style="font-size:13px;color:#6b7280;margin-bottom:2px">Faktúra ${escapeHtml(sf.invoice_number)}</div>
+        <div style="font-size:13px;color:#6b7280;margin-bottom:2px">${druh} ${escapeHtml(sf.invoice_number)}</div>
         <div style="font-size:22px;font-weight:700;color:#111;margin-bottom:16px">${escapeHtml(spolu)}</div>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
           <td style="padding-right:10px">${tlacidlo(`${odkaz}?odpoved=suhlas`, "Súhlasím", true)}</td>

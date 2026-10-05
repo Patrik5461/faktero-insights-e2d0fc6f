@@ -218,20 +218,28 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   });
 
   /*
-    Samofaktúra nesie vetu o vyhotovení odberateľom hneď pod číslom — dole pod
-    súčtami by pri dlhšej faktúre odpadla na druhú stranu, a je to prvá vec,
-    ktorú má dodávateľ pri odsúhlasení vidieť.
+    Pod číslom ide veta o vyhotovení odberateľom (samofaktúra) a číslo
+    opravovanej faktúry (dobropis, § 71 ods. 2). Dole pod súčtami by pri dlhšej
+    faktúre odpadli na druhú stranu. Jeden riadok sa zmestí do medzery nad
+    rámikmi; každý ďalší hlavičku zvýši — vyššia hlavička by platobné údaje
+    dvojpoložkovej faktúry odsunula na druhú stranu, preto čo najmenej.
   */
-  if (invoice.samofakturacia) {
-    // Zmestí sa do medzery nad rámikmi; vyššia hlavička by platobné údaje
-    // dvojpoložkovej faktúry odsunula na druhú stranu.
-    for (const veta of vetyNaDoklad({ samofakturacia: true })) {
-      const w = bold.widthOfTextAtSize(san(veta), 9);
-      page.drawText(san(veta), { x: width - margin - w, y: y - 44, size: 9, font: bold, color: sub });
-    }
-  }
+  const podCislom: string[] = [];
+  if (invoice.samofakturacia) podCislom.push(t.vyhotovenieOdberatelom);
+  if (invoice.opravuje_cislo) podCislom.push(`${t.opravujeFakturu} ${invoice.opravuje_cislo}`);
+  podCislom.forEach((riadok, i) => {
+    const w = bold.widthOfTextAtSize(san(riadok), 9);
+    page.drawText(san(riadok), {
+      x: width - margin - w,
+      y: y - 44 - i * 11,
+      size: 9,
+      font: bold,
+      color: sub,
+    });
+  });
+  const navyse = Math.max(0, podCislom.length - 1) * 11;
 
-  y = Math.min(headerLogoBottom, y - 50) - 24;
+  y = Math.min(headerLogoBottom, y - 50 - navyse) - 24;
 
   // ── Parties: side-by-side cards ──
   const gap = 16;

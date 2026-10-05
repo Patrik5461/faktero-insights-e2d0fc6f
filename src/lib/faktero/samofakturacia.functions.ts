@@ -12,9 +12,11 @@ const Datum = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const Polozka = z.object({
   name: z.string().trim().min(1).max(500),
+  description: z.string().max(2000).nullish(),
   quantity: z.coerce.number().finite(),
   unit: z.string().max(20).nullish(),
   unit_price: z.coerce.number().finite(),
+  discount_percent: z.coerce.number().min(0).max(100).nullish(),
   vat_rate: z.coerce.number().min(0).max(100),
 });
 
@@ -37,9 +39,19 @@ const Ulozenie = z.object({
   due_date: Datum,
   currency: z.string().length(3).default("EUR"),
   variable_symbol: z.string().max(20).nullish(),
+  constant_symbol: z.string().max(10).nullish(),
+  specific_symbol: z.string().max(20).nullish(),
   payment_method: z.string().max(20).default("prevod"),
   note: z.string().max(2000).nullish(),
+  intro_note: z.string().max(2000).nullish(),
+  language: z.string().max(5).nullish(),
   job_id: z.string().uuid().nullish(),
+  reverse_charge: z.boolean().default(false),
+  reverse_charge_type: z.enum(["domestic_69", "eu_b2b"]).nullish(),
+  eu_plnenie: z.enum(["tovar", "sluzba"]).nullish(),
+  osobitna_uprava: z.enum(["65", "66_tovar", "66_umenie", "66_starozitnosti"]).nullish(),
+  /** Dobropis: samofaktúra, ktorú opravuje. */
+  opravuje_id: z.string().uuid().nullish(),
   items: z.array(Polozka).min(1, "Pridajte aspoň jednu položku.").max(200),
 });
 
@@ -53,9 +65,14 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
   .validator((d: unknown) => Ulozenie.parse(d))
   .handler(async ({ data, context }): Promise<{ id: string; cislo: string }> => {
     const supabase = context.supabase as any;
-    const { chybaDohody, dodavatelPlatitel, prepocitajPolozku, sumySamofaktury } = await import(
-      "./samofakturacia"
-    );
+    const {
+      chybaDohody,
+      dodavatelPlatitel,
+      prepocitajPolozku,
+      rezimDphSamofaktury,
+      sumySamofaktury,
+      sumyNaZapis,
+    } = await import("./samofakturacia");
 
     const { data: kontakt } = await supabase
       .from("customers")
@@ -68,8 +85,53 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
     if (chyba) throw new Error(chyba);
 
     const platitel = dodavatelPlatitel(data.supplier_ic_dph);
+    const prenesenie = platitel && data.reverse_charge;
+    const typPrenesenia = prenesenie ? (data.reverse_charge_type ?? "domestic_69") : null;
+    if (typPrenesenia === "eu_b2b" && !String(data.supplier_country ?? "").match(/^[A-Z]{2}$/i)) {
+      throw new Error("Pri dodávateľovi z EÚ vyplňte jeho krajinu.");
+    }
     const polozky = data.items.map((p) => prepocitajPolozku(p, platitel));
     const sumy = sumySamofaktury(polozky);
+    const naZapis = sumyNaZapis(sumy, prenesenie);
+
+    /*
+      Dobropis k samofaktúre: opravuje odsúhlasenú samofaktúru toho istého
+      dodávateľa. Číslo pôvodnej ide na doklad aj do kontrolného výkazu (C.2).
+    */
+    let opravuje: { id: string; invoice_number: string } | null = null;
+    if (data.opravuje_id) {
+      const { data: povodna } = await supabase
+        .from("purchase_invoices")
+        .select("id, invoice_number, samofakturacia, samofakturacia_stav, customer_id")
+        .eq("id", data.opravuje_id)
+        .eq("company_id", data.company_id)
+        .maybeSingle();
+      if (!povodna?.samofakturacia) throw new Error("Opravovaná samofaktúra sa nenašla.");
+      if (povodna.customer_id !== data.customer_id) {
+        throw new Error("Dobropis musí ísť tomu istému dodávateľovi ako pôvodná faktúra.");
+      }
+      opravuje = { id: povodna.id, invoice_number: povodna.invoice_number };
+    }
+
+    /*
+      Cudzia mena: daň musí byť aj v eurách, kurzom ECB zo dňa pred dodaním
+      (§ 26 ods. 1). Výkazy berú eurá, PDF si prepočet vypíše.
+    */
+    let eur: Record<string, number | null> = {
+      exchange_rate: null,
+      amount_without_vat_eur: null,
+      vat_amount_eur: null,
+    };
+    if (data.currency !== "EUR") {
+      const { prepocitajDoklad } = await import("./kurzy.server");
+      const p = await prepocitajDoklad(data.currency, data.delivery_date || data.issue_date, {
+        zaklad: naZapis.amount_without_vat,
+        dan: naZapis.vat_amount,
+        celkom: naZapis.amount_total,
+      });
+      if (!p) throw new Error(`Kurz ECB pre ${data.currency} sa nepodarilo zistiť — skúste o chvíľu.`);
+      eur = { exchange_rate: p.kurz, amount_without_vat_eur: p.zaklad, vat_amount_eur: p.dan };
+    }
 
     const spolocne = {
       customer_id: data.customer_id,
@@ -91,12 +153,25 @@ export const ulozSamofakturuFn = createServerFn({ method: "POST" })
       payment_method: data.payment_method,
       note: prazdne(data.note),
       job_id: data.job_id || null,
+      constant_symbol: prazdne(data.constant_symbol),
+      specific_symbol: prazdne(data.specific_symbol),
+      intro_note: prazdne(data.intro_note),
+      language: data.language && data.language !== "sk" ? data.language : null,
       items: polozky,
-      amount_without_vat: sumy.zaklad,
-      vat_amount: sumy.dan,
-      amount_total: sumy.spolu,
-      // Daň nesie režim dodávateľa: neplatiteľ fakturuje bez dane.
-      dph_rezim: platitel ? null : "bez_dane",
+      ...naZapis,
+      ...eur,
+      reverse_charge: prenesenie,
+      reverse_charge_type: typPrenesenia,
+      eu_plnenie: typPrenesenia === "eu_b2b" ? (data.eu_plnenie ?? "tovar") : null,
+      osobitna_uprava: platitel && !prenesenie ? (data.osobitna_uprava ?? null) : null,
+      opravuje_id: opravuje?.id ?? null,
+      opravuje_cislo: opravuje?.invoice_number ?? null,
+      // Daň nesie režim dodávateľa: neplatiteľ fakturuje bez dane, pri
+      // prenesení ju platíme my.
+      dph_rezim: rezimDphSamofaktury(
+        { reverse_charge: prenesenie, reverse_charge_type: typPrenesenia, eu_plnenie: data.eu_plnenie },
+        platitel,
+      ),
     };
 
     if (data.id) {
@@ -298,6 +373,9 @@ export const samofakturaPodlaTokenuFn = createServerFn({ method: "GET" })
         stav: sf.samofakturacia_stav as string | null,
         poznamka: (sf.samofakturacia_poznamka ?? null) as string | null,
         rozhodnutie: (sf.samofakturacia_rozhodnutie_at ?? null) as string | null,
+        opravuje: (sf.opravuje_cislo ?? null) as string | null,
+        prenesenie: Boolean(sf.reverse_charge),
+        uvod: (sf.intro_note ?? null) as string | null,
       },
       dodavatel: {
         nazov: sf.supplier_name as string,

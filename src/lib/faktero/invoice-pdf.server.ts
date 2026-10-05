@@ -175,6 +175,19 @@ export async function ensureInvoicePdf(
     }
   }
 
+  /*
+    Dobropis musí uviesť číslo faktúry, ktorú opravuje (§ 71 ods. 2) — v
+    databáze je len odkaz, číslo sa dočíta tu.
+  */
+  if ((invoice as any).opravuje_fakturu_id) {
+    const { data: povodna } = await supabaseAdmin
+      .from("invoices")
+      .select("invoice_number")
+      .eq("id", (invoice as any).opravuje_fakturu_id)
+      .maybeSingle();
+    if (povodna?.invoice_number) (invoice as any).opravuje_cislo = povodna.invoice_number;
+  }
+
   const { generateInvoicePdfBytes } = await import("./pdf-generator.server");
   const bytes = await generateInvoicePdfBytes({
     company,

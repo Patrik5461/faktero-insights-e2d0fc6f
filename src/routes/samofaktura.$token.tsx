@@ -121,7 +121,12 @@ function SamofakturaPage() {
         <div className="text-xs uppercase tracking-wide text-muted-foreground">
           Faktúra na odsúhlasenie · vyhotovenie faktúry odberateľom
         </div>
-        <h1 className="mt-1 text-2xl font-semibold">Faktúra {f.cislo}</h1>
+        <h1 className="mt-1 text-2xl font-semibold">
+          {f.opravuje ? "Dobropis" : "Faktúra"} {f.cislo}
+        </h1>
+        {f.opravuje && (
+          <p className="text-sm text-muted-foreground">Opravuje faktúru {f.opravuje}</p>
+        )}
         <p className="mt-2 text-sm text-muted-foreground">
           {o?.name ?? "Odberateľ"} za Vás podľa dohody o samofakturácii vyhotovil faktúru. Je Vaša
           — za správnosť dane zodpovedáte Vy, preto ju prosím skontrolujte a odsúhlaste.
@@ -184,14 +189,16 @@ function SamofakturaPage() {
               </tr>
             </thead>
             <tbody>
-              {polozky.map((p, i) => (
+              {polozky.map((p: (typeof polozky)[number], i: number) => (
                 <tr key={i} className="border-b border-border/60">
                   <td className="py-2">{p.nazov}</td>
                   <td className="py-2 text-right tabular-nums">
                     {p.mnozstvo.toLocaleString("sk-SK")} {p.jednotka ?? ""}
                   </td>
                   <td className="py-2 text-right tabular-nums">{suma(p.cena, f.mena)}</td>
-                  <td className="py-2 text-right tabular-nums">{p.sadzba} %</td>
+                  <td className="py-2 text-right tabular-nums">
+                    {f.prenesenie ? "PDP" : `${p.sadzba} %`}
+                  </td>
                   <td className="py-2 text-right tabular-nums">{suma(p.spolu, f.mena)}</td>
                 </tr>
               ))}
@@ -203,10 +210,16 @@ function SamofakturaPage() {
             <span className="text-muted-foreground">Základ</span>
             <span className="tabular-nums">{suma(f.zaklad, f.mena)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">DPH</span>
-            <span className="tabular-nums">{suma(f.dan, f.mena)}</span>
-          </div>
+          {f.prenesenie ? (
+            <div className="text-xs text-muted-foreground">
+              Prenesenie daňovej povinnosti — daň odvedie odberateľ.
+            </div>
+          ) : (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">DPH</span>
+              <span className="tabular-nums">{suma(f.dan, f.mena)}</span>
+            </div>
+          )}
           <div className="flex justify-between border-t border-border pt-2 text-lg font-semibold">
             <span>Spolu</span>
             <span className="tabular-nums">{suma(f.spolu, f.mena)}</span>

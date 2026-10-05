@@ -5,7 +5,9 @@ import {
   dohodaPlati,
   dodavatelPlatitel,
   prepocitajPolozku,
+  rezimDphSamofaktury,
   stavSamofaktury,
+  sumyNaZapis,
   sumySamofaktury,
   zapocitatelna,
 } from "./samofakturacia";
@@ -59,5 +61,31 @@ describe("samofakturácia", () => {
     expect(vetyNaDoklad({ samofakturacia: true })).toEqual([VETA_SAMOFAKTURACIA]);
     expect(vetyNaDoklad({ samofakturacia: true, danZPrijatejPlatby: true })).toHaveLength(2);
     expect(vetyNaDoklad({})).toEqual([]);
+  });
+
+  it("zľava na riadku je v jeho sume, popis ostáva", () => {
+    const p = prepocitajPolozku(
+      { name: "Kov", description: "DL 15/2026", quantity: 4, unit_price: 25, discount_percent: 10, vat_rate: 23 },
+      true,
+    );
+    expect(p).toMatchObject({ total: 90, discount_percent: 10, description: "DL 15/2026" });
+    expect(prepocitajPolozku({ name: "x", quantity: 1, unit_price: 10, discount_percent: 150 }, true).total).toBe(0);
+  });
+
+  it("prenesenie: daň samozdaníme, dodávateľovi len základ", () => {
+    expect(rezimDphSamofaktury({ reverse_charge: true, reverse_charge_type: "domestic_69" }, true)).toBe(
+      "samozdanenie",
+    );
+    expect(
+      rezimDphSamofaktury({ reverse_charge: true, reverse_charge_type: "eu_b2b", eu_plnenie: "tovar" }, true),
+    ).toBe("nadobudnutie");
+    expect(
+      rezimDphSamofaktury({ reverse_charge: true, reverse_charge_type: "eu_b2b", eu_plnenie: "sluzba" }, true),
+    ).toBe("samozdanenie");
+    expect(rezimDphSamofaktury({}, true)).toBeNull();
+    expect(rezimDphSamofaktury({}, false)).toBe("bez_dane");
+    const sumy = sumySamofaktury([prepocitajPolozku({ name: "Šrot", quantity: 1, unit_price: 100, vat_rate: 23 }, true)]);
+    expect(sumyNaZapis(sumy, true)).toEqual({ amount_without_vat: 100, vat_amount: 23, amount_total: 100 });
+    expect(sumyNaZapis(sumy, false).amount_total).toBe(123);
   });
 });
