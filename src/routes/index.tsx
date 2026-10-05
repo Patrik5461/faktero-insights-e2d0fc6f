@@ -248,6 +248,11 @@ const features = [
     title: "Leasingy a úvery",
     text: "Splátkový kalendár s rozpadom na istinu, úrok a DPH. Zmluvu načítate z PDF a splátky si Faktero páruje s platbami z banky.",
   },
+  {
+    icon: BadgeCheck,
+    title: "Samofakturácia",
+    text: "Faktúru za dodávateľa vyhotovíte vy podľa § 72 ods. 4, on ju odsúhlasí jedným klikom z e-mailu. Potom ide rovno do DPH a na úhradu.",
+  },
 ] as const;
 
 const accounting = [
@@ -290,11 +295,6 @@ const accounting = [
     icon: Send,
     title: "Hromadný príkaz na úhradu",
     text: "Vyberte prijaté faktúry a stiahnite SEPA XML pre internetbanking — zaplatíte ich naraz, so symbolmi.",
-  },
-  {
-    icon: BadgeCheck,
-    title: "Samofakturácia",
-    text: "Faktúru za dodávateľa vyhotovíte vy podľa § 72 ods. 4, on ju odsúhlasí jedným klikom z e-mailu. Potom ide rovno do DPH a na úhradu.",
   },
 ] as const;
 
