@@ -286,7 +286,8 @@ const sections: HelpSection[] = [
         </p>
         <p>
           <strong>2. Vyhotovenie.</strong> V{" "}
-          <Link to="/prijate-faktury">Prijaté faktúry → Samofaktúra</Link> vyberte dodávateľa a
+          <Link to="/prijate-faktury">Prijaté faktúry → Samofaktúra</Link> (to isté tlačidlo je aj
+          vo <Link to="/faktury">Faktúrach</Link> a v ponuke „Vytvoriť“) vyberte dodávateľa a
           zadajte položky. Faktúra je <em>jeho</em>: v hlavičke je on ako dodávateľ, vy ako
           odberateľ, sadzby DPH sú podľa jeho krajiny a keď nemá IČ DPH, faktúra je bez dane. Číslo
           dostane z vášho radu <strong>Samofaktúry</strong> (SF2026…), ktorý si upravíte v{" "}

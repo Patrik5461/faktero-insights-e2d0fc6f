@@ -614,6 +614,17 @@ function InvoicesPage() {
             >
               <FileCode2 className="h-4 w-4" /> Účtovné exporty
             </Link>
+            {/*
+              Samofaktúra sa eviduje medzi prijatými (pre nás je to nákup), ale
+              vystavujeme ju my — preto aj tu, kde ju človek hľadá.
+            */}
+            <Link
+              to="/prijate-faktury/samofaktura"
+              title="Faktúra za dodávateľa podľa dohody o samofakturácii — uloží sa medzi prijaté faktúry"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+            >
+              <Plus className="h-4 w-4" /> Samofaktúra
+            </Link>
             {/* Krátka cesta pre jednu položku — plný formulár je na zvyšok. */}
             <Link
               to="/faktury/rychla"

@@ -309,6 +309,9 @@ export const QUICK_CREATE = [
   // napísaním adresy, takže o nej nikto nevedel.
   { to: "/faktury/rychla", label: "Rýchla faktúra" },
   { to: "/ponuky/nova", label: "Nová cenová ponuka" },
+  // Faktúra za dodávateľa (§ 72 ods. 4). Eviduje sa medzi prijatými, ale
+  // vystavuje ju človek sám — hľadá ju preto pri vystavovaní, nie pri nákupoch.
+  { to: "/prijate-faktury/samofaktura", label: "Nová samofaktúra" },
   { to: "/odberatelia", search: { new: "1" }, label: "Nový odberateľ" },
   { to: "/produkty", search: { new: "1" }, label: "Nový produkt" },
   { to: "/opakovane/nova", label: "Nová opakovaná faktúra" },
