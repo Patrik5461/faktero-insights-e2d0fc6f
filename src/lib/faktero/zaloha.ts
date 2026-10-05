@@ -21,7 +21,8 @@ function cislo(x: unknown): number {
 export function zostavaUhradit(total: unknown, zaloha: unknown): number {
   const t = cislo(total);
   const zvysok = cislo(zaloha) > 0 ? Math.max(0, t - cislo(zaloha)) : t;
-  return Math.round(zvysok * 100) / 100;
+  // Polovica halierika od nuly, aj pri zápornej sume (Math.round ide k +∞).
+  return (Math.sign(zvysok) * Math.round(Math.abs(zvysok) * 100)) / 100 || 0;
 }
 
 /** Má zmysel zálohu na doklade vôbec ukazovať? */
