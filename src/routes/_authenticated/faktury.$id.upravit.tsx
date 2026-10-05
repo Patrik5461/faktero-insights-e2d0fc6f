@@ -11,10 +11,10 @@ import {
 } from "@/lib/faktero/zlavy";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PAYMENT_METHODS } from "@/lib/faktero/payment-method";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { Trash2, Plus, Loader2, Save } from "lucide-react";
+import { Trash2, Plus, Loader2, Save, Send } from "lucide-react";
 import { toast } from "sonner";
 import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
@@ -75,6 +75,11 @@ function EditInvoice() {
   const [originalLocked, setOriginalLocked] = useState<
     Array<{ id: string; stock_item_id: string; quantity: number; name: string }>
   >([]);
+  /*
+    Koncept (napr. kópia faktúry) sa dal doteraz len uložiť znova ako koncept —
+    vystaviť sa nedal nikde, a tak ľudia kópie mazali a písali faktúru nanovo.
+  */
+  const vystavitRef = useRef(false);
   /* Odberateľ: kópia na faktúre, pôvodná na porovnanie a adresár na výber iného. */
   const [odberatel, setOdberatel] = useState<OdberatelFaktury | null>(null);
   const [povodnyOdberatel, setPovodnyOdberatel] = useState<OdberatelFaktury | null>(null);
@@ -269,6 +274,7 @@ function EditInvoice() {
           discount_value: totals.zlava > 0 ? Number(form.discount_value) : 0,
           discount_total: totals.zlava,
           ...(odberatel ? odberatelNaZapis(odberatel) : {}),
+          ...(inv?.status === "draft" && vystavitRef.current ? { status: "issued" } : {}),
           subtotal: Number(totals.subtotal.toFixed(2)),
           vat_total: Number(totals.vat_total.toFixed(2)),
           total: Number(totals.total.toFixed(2)),
@@ -325,7 +331,11 @@ function EditInvoice() {
           toast.warning(e?.message ?? "Číselný rad sa nepodarilo zmeniť.");
         }
       }
-      toast.success("Faktúra upravená. PDF treba pregenerovať.");
+      toast.success(
+        inv?.status === "draft" && vystavitRef.current
+          ? `Faktúra ${form.invoice_number.trim()} je vystavená.`
+          : "Faktúra upravená. PDF treba pregenerovať.",
+      );
       navigate({ to: "/faktury/$id", params: { id } });
     } catch (err: any) {
       toast.error(zrozumitelnaChyba(err?.message));
@@ -357,6 +367,13 @@ function EditInvoice() {
             Koncept je interný, ale vystavenú faktúru už mohol odberateľ dostať.
             Nech je vidieť, že sa mení hotový doklad, nie rozpracovaný.
           */}
+          {inv.status === "draft" && (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+              <strong>Toto je koncept.</strong> Skontrolujte odberateľa, položky a dátumy a
+              tlačidlom <strong>Vystaviť faktúru</strong> ho vystavíte. Kým je to koncept, odberateľ
+              ho nemá a do prehľadov sa nepočíta.
+            </div>
+          )}
           {inv.status !== "draft" && (
             <div className="rounded-xl border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
               <strong>
@@ -887,14 +904,45 @@ function EditInvoice() {
             >
               Zrušiť
             </Link>
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Uložiť zmeny
-            </button>
+            {inv.status === "draft" ? (
+              <>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  onClick={() => (vystavitRef.current = false)}
+                  className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-60"
+                >
+                  <Save className="h-4 w-4" />
+                  Uložiť koncept
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  onClick={() => (vystavitRef.current = true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+                >
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  Vystaviť faktúru
+                </button>
+              </>
+            ) : (
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                Uložiť zmeny
+              </button>
+            )}
           </div>
         </form>
       </PageBody>

@@ -59,8 +59,21 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
       customer_country: src.customer_country,
       currency: src.currency,
       notes: src.notes,
+      /*
+        Text nad položkami je povinný a kópia bez neho sa nedala uložiť ani
+        vystaviť. Mesiac sa v ňom posunie rovnako ako v položkách
+        (napr. „9/2026" → „10/2026").
+      */
+      intro_note: incrementMonthInText(src.intro_note) || null,
+      language: src.language,
+      payment_account_id: src.payment_account_id ?? null,
+      job_id: src.job_id ?? null,
+      discount_type: src.discount_type ?? null,
+      discount_value: src.discount_value ?? 0,
+      discount_total: src.discount_total ?? 0,
       payment_method: src.payment_method,
-      variable_symbol: null, // reset — bound to old number
+      // Variabilný symbol patrí k novému číslu — prázdny by platbu nespároval.
+      variable_symbol: newNumber.replace(/\D/g, "") || null,
       constant_symbol: src.constant_symbol,
       specific_symbol: src.specific_symbol,
       order_number: null,
@@ -98,6 +111,7 @@ export const cloneInvoiceFn = createServerFn({ method: "POST" })
         quantity: it.quantity,
         unit: it.unit,
         unit_price: it.unit_price,
+        discount_percent: it.discount_percent ?? 0,
         vat_rate: it.vat_rate,
         vat_amount: it.vat_amount,
         subtotal: it.subtotal,

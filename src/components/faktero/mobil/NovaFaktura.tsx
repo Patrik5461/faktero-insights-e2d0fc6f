@@ -21,7 +21,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { cenaZPodkladov, PRAZDNE_PODKLADY, type Podklady } from "@/lib/faktero/ceny";
 import { historickeSadzby, sadzbyKrajiny, DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
 import { friendlyError } from "@/lib/faktero/plan-error";
-import { POLOZKY, sPoctom } from "@/lib/faktero/mnozne";
 import { HlavneTlacidlo, MobilObrazovka, Pracujem, VelkeTlacidlo } from "./MobilChrome";
 import type { OdlozenaFaktura } from "@/lib/mobile/faktury-fronta";
 import { riadkyNaZapis, suctyFaktury } from "@/lib/mobile/faktura-uprava";
@@ -1191,7 +1190,7 @@ export function RiadokPolozky({
         </label>
         <label className="block">
           <span className="mb-1 block text-[12px] text-app-text-2">
-            Cena{platca ? " bez DPH" : ""}
+            {platca ? t("nf.cenaBezDph") : t("nf.cena")}
           </span>
           <input
             value={riadok.unit_price}
@@ -1219,7 +1218,7 @@ export function RiadokPolozky({
                 <optgroup label={t("nf.starsieSadzby")}>
                   {historickeSadzby(krajina).map((h) => (
                     <option key={h.sadzba} value={h.sadzba}>
-                      {h.sadzba} % ({h.doRoku})
+                      {t("nf.sadzbaDo", { sadzba: h.sadzba, rok: h.doRoku })}
                     </option>
                   ))}
                 </optgroup>
@@ -1366,7 +1365,7 @@ function KrokSuhrn({
   onUloz: () => void;
   uprava?: { invoice_number: string };
 }) {
-  const { t, locale: loc } = usePreklad();
+  const { t, locale: loc, mnozne } = usePreklad();
   const dni = Math.round(
     (new Date(`${splatnost}T00:00:00`).getTime() - new Date(`${vystavenie}T00:00:00`).getTime()) /
       86400000,
@@ -1411,7 +1410,12 @@ function KrokSuhrn({
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-2 text-[14px] text-app-text-2">
             <span>
-              {odberatel.name} · {sPoctom(pocetPoloziek, POLOZKY)}
+              {odberatel.name} · {pocetPoloziek}{" "}
+              {mnozne(pocetPoloziek, {
+                one: t("spolocne.polozka1"),
+                few: t("spolocne.polozka2"),
+                other: t("spolocne.polozka5"),
+              })}
             </span>
             {onZmenOdberatela && (
               <button
@@ -1453,7 +1457,9 @@ function KrokSuhrn({
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="mb-1 block text-[13px] font-medium text-app-text-2">Vystavenie</span>
+            <span className="mb-1 block text-[13px] font-medium text-app-text-2">
+              {t("nf.vystavenie")}
+            </span>
             <input
               type="date"
               value={vystavenie}

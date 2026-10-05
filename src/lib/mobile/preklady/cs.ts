@@ -727,6 +727,12 @@ export const cs: Partial<Record<Kluc, string>> = {
   "spolocne.faktura1": "faktura",
   "spolocne.faktura2": "faktury",
   "spolocne.faktura5": "faktur",
+  "spolocne.polozka1": "položka",
+  "spolocne.polozka2": "položky",
+  "spolocne.polozka5": "položek",
+  "nf.cena": "Cena",
+  "nf.cenaBezDph": "Cena bez DPH",
+  "nf.sadzbaDo": "{sadzba} % (do {rok})",
 
   /* appka — drobnosti */
   "app.odstranitStranu": "Odstranit stranu {n}",

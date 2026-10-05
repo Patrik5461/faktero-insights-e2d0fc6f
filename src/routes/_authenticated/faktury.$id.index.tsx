@@ -524,7 +524,11 @@ function InvoiceDetail() {
     if (status === "sent") patch.sent_at = new Date().toISOString();
     const { error } = await supabase.from("invoices").update(patch).eq("id", id);
     if (error) return toast.error(friendlyError(error, error.message));
-    toast.success("Stav aktualizovaný");
+    toast.success(
+      status === "issued"
+        ? `Faktúra ${inv?.invoice_number ?? ""} je vystavená.`
+        : "Stav aktualizovaný",
+    );
     // Trigger webhook
     const event =
       status === "paid"
@@ -950,6 +954,41 @@ function InvoiceDetail() {
         }
       />
       <PageBody>
+        {inv.status === "draft" && (
+          /*
+            Koncept (najčastejšie kópia inej faktúry) sa dal doteraz len upraviť
+            a uložiť znova ako koncept — vystaviť sa nedal nikde. Ľudia ho preto
+            mazali a faktúru písali nanovo.
+          */
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+            <span>
+              <strong>Toto je koncept.</strong> Odberateľ ho nemá a do prehľadov sa nepočíta.
+            </span>
+            <span className="flex flex-wrap gap-2">
+              <Link
+                to="/faktury/$id/upravit"
+                params={{ id }}
+                className="rounded-md border border-border bg-background px-3 py-1.5 font-medium hover:bg-secondary"
+              >
+                Upraviť
+              </Link>
+              <button
+                onClick={() => {
+                  // Bez textu nad položkami faktúra nevznikne — ten sa doplní v úprave.
+                  if (!String(inv.intro_note ?? "").trim()) {
+                    toast.info("Doplňte text nad položkami a vystavte faktúru z úpravy.");
+                    navigate({ to: "/faktury/$id/upravit", params: { id } });
+                    return;
+                  }
+                  void setStatus("issued");
+                }}
+                className="rounded-md bg-primary px-3 py-1.5 font-semibold text-primary-foreground hover:opacity-90"
+              >
+                Vystaviť faktúru
+              </button>
+            </span>
+          </div>
+        )}
         <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
           <span className="text-muted-foreground">eFaktúra:</span>
           <EfakturaStatusBadge status={efakturaUi} />

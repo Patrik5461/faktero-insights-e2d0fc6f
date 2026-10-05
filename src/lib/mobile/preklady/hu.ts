@@ -733,6 +733,12 @@ export const hu: Partial<Record<Kluc, string>> = {
   "spolocne.faktura1": "számla",
   "spolocne.faktura2": "számla",
   "spolocne.faktura5": "számla",
+  "spolocne.polozka1": "tétel",
+  "spolocne.polozka2": "tétel",
+  "spolocne.polozka5": "tétel",
+  "nf.cena": "Ár",
+  "nf.cenaBezDph": "Nettó ár",
+  "nf.sadzbaDo": "{sadzba} % ({rok}-ig)",
 
   /* appka — drobnosti */
   "app.odstranitStranu": "{n}. oldal eltávolítása",

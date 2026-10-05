@@ -741,6 +741,12 @@ export const sk = {
   "spolocne.faktura1": "faktúra",
   "spolocne.faktura2": "faktúry",
   "spolocne.faktura5": "faktúr",
+  "spolocne.polozka1": "položka",
+  "spolocne.polozka2": "položky",
+  "spolocne.polozka5": "položiek",
+  "nf.cena": "Cena",
+  "nf.cenaBezDph": "Cena bez DPH",
+  "nf.sadzbaDo": "{sadzba} % (do {rok})",
 
   /* appka — drobnosti */
   "app.odstranitStranu": "Odstrániť stranu {n}",

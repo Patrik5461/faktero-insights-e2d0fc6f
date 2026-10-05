@@ -735,6 +735,12 @@ export const en: Partial<Record<Kluc, string>> = {
   "spolocne.faktura1": "invoice",
   "spolocne.faktura2": "invoices",
   "spolocne.faktura5": "invoices",
+  "spolocne.polozka1": "item",
+  "spolocne.polozka2": "items",
+  "spolocne.polozka5": "items",
+  "nf.cena": "Price",
+  "nf.cenaBezDph": "Price excl. VAT",
+  "nf.sadzbaDo": "{sadzba} % (until {rok})",
 
   /* appka — drobnosti */
   "app.odstranitStranu": "Remove page {n}",
