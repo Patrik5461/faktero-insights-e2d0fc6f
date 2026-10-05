@@ -291,6 +291,11 @@ const accounting = [
     title: "Hromadný príkaz na úhradu",
     text: "Vyberte prijaté faktúry a stiahnite SEPA XML pre internetbanking — zaplatíte ich naraz, so symbolmi.",
   },
+  {
+    icon: BadgeCheck,
+    title: "Samofakturácia",
+    text: "Faktúru za dodávateľa vyhotovíte vy podľa § 72 ods. 4, on ju odsúhlasí jedným klikom z e-mailu. Potom ide rovno do DPH a na úhradu.",
+  },
 ] as const;
 
 const plans = [

@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
+import { NAZVY_STAVOV, stavSamofaktury, zapocitatelna } from "@/lib/faktero/samofakturacia";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
   head: () => ({ meta: [{ title: "Prijaté faktúry — Faktero" }] }),
@@ -377,6 +378,13 @@ function PurchaseInvoicesPage() {
           <div className="flex flex-wrap gap-2">
             <NahratDoklad label="Nahrať faktúru" />
             <Link
+              to="/prijate-faktury/samofaktura"
+              title="Faktúru za dodávateľa vyhotovíte vy, on ju odsúhlasí (§ 72 ods. 4 zákona o DPH)"
+              className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+            >
+              <Plus className="h-4 w-4" /> Samofaktúra
+            </Link>
+            <Link
               to="/prijate-faktury/nova"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
@@ -595,6 +603,19 @@ function PurchaseInvoicesPage() {
                   </td>
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <StatusBadge status={r.status} />
+                    {r.samofakturacia && (
+                      <span
+                        className={`mt-1 block text-xs ${
+                          stavSamofaktury(r) === "odsuhlasena"
+                            ? "text-emerald-700 dark:text-emerald-300"
+                            : stavSamofaktury(r) === "zamietnuta"
+                              ? "text-rose-700 dark:text-rose-300"
+                              : "text-amber-700 dark:text-amber-300"
+                        }`}
+                      >
+                        Samofaktúra · {NAZVY_STAVOV[stavSamofaktury(r)].toLowerCase()}
+                      </span>
+                    )}
                     {/*
                       Keď faktúru uhradil pohyb z účtu, je to vidieť priamo tu —
                       inak by sa väzba dala len vytvoriť, nie skontrolovať ani
@@ -634,7 +655,8 @@ function PurchaseInvoicesPage() {
       {prikaz && getActiveCompanyId() && (
         <HromadnyPrikaz
           companyId={getActiveCompanyId()!}
-          faktury={rows.filter((r) => selected.has(r.id))}
+          // Neodsúhlasená samofaktúra ešte nie je dlh — do príkazu nepatrí.
+          faktury={rows.filter((r) => selected.has(r.id) && zapocitatelna(r))}
           onClose={() => setPrikaz(false)}
         />
       )}

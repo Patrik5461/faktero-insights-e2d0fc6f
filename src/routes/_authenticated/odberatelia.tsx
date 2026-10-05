@@ -65,6 +65,10 @@ type Customer = {
   discount_percent?: number | string | null;
   /** Predvolený jazyk dokladov pre tohto odberateľa. */
   invoice_language?: string | null;
+  /** Písomná dohoda o samofakturácii — od kedy smieme vyhotovovať faktúry za neho. */
+  samofakturacia_od?: string | null;
+  samofakturacia_do?: string | null;
+  samofakturacia_dohoda?: string | null;
 };
 
 const EMPTY: Customer = { name: "", country: "SK", typ: "firma" };
@@ -114,6 +118,10 @@ function CustomersPage() {
       company_id: cid,
       discount_percent: Number.isFinite(zlava as number) ? (zlava as number) : null,
       typ: c.typ ?? "firma",
+      // Prázdny dátum do date stĺpca nejde — musí to byť NULL.
+      samofakturacia_od: c.samofakturacia_od || null,
+      samofakturacia_do: c.samofakturacia_od ? c.samofakturacia_do || null : null,
+      samofakturacia_dohoda: c.samofakturacia_od ? c.samofakturacia_dohoda?.trim() || null : null,
       /*
         Fyzická osoba IČO ani daňové čísla nemá. Keby sa po prepnutí typu
         nevyčistili, ostali by na karte skryté a vyšli by na faktúre.
@@ -607,6 +615,7 @@ function CustomerDialog({
               Predvolí sa na jeho faktúrach; prekladajú sa popisky v PDF, nie názvy položiek.
             </span>
           </label>
+          <SamofakturaciaDohoda c={c} f={f} />
           <label className="sm:col-span-2 block">
             <span className="text-sm font-medium">Poznámky</span>
             <textarea
@@ -634,6 +643,85 @@ function CustomerDialog({
         </form>
       </div>
     </div>
+  );
+}
+
+/**
+ * Dohoda o samofakturácii (§ 72 ods. 4 zákona o DPH). Kým nie je zapísaná,
+ * samofaktúra pre tohto dodávateľa nejde vyhotoviť.
+ */
+function SamofakturaciaDohoda({
+  c,
+  f,
+}: {
+  c: Customer;
+  f: <K extends keyof Customer>(k: K, v: any) => void;
+}) {
+  const [otvorena, setOtvorena] = useState(Boolean(c.samofakturacia_od));
+  if (!otvorena) {
+    return (
+      <div className="sm:col-span-2">
+        <button
+          type="button"
+          onClick={() => setOtvorena(true)}
+          className="text-sm text-primary hover:underline"
+        >
+          + Dohoda o samofakturácii (faktúry za tohto dodávateľa vyhotovujete vy)
+        </button>
+      </div>
+    );
+  }
+  return (
+    <fieldset className="sm:col-span-2 rounded-md border border-border p-3">
+      <legend className="px-1 text-sm font-medium">Dohoda o samofakturácii</legend>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Faktúry za tohto dodávateľa vyhotovujete vy a on ich odsúhlasí. Zákon chce písomnú dohodu
+        uzavretú vopred — zapíšte, od kedy platí.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="text-sm font-medium">Platí od</span>
+          <input
+            type="date"
+            value={c.samofakturacia_od ?? ""}
+            onChange={(e) => f("samofakturacia_od", e.target.value || null)}
+            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-sm font-medium">Platí do (nepovinné)</span>
+          <input
+            type="date"
+            value={c.samofakturacia_do ?? ""}
+            min={c.samofakturacia_od ?? undefined}
+            onChange={(e) => f("samofakturacia_do", e.target.value || null)}
+            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          />
+        </label>
+        <label className="block sm:col-span-2">
+          <span className="text-sm font-medium">Dohoda (číslo, dátum podpisu, poznámka)</span>
+          <input
+            value={c.samofakturacia_dohoda ?? ""}
+            placeholder="napr. Zmluva o samofakturácii č. 3/2026 zo dňa 1. 10. 2026"
+            onChange={(e) => f("samofakturacia_dohoda", e.target.value)}
+            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          />
+        </label>
+      </div>
+      {c.samofakturacia_od ? null : (
+        <button
+          type="button"
+          onClick={() => {
+            f("samofakturacia_do", null);
+            f("samofakturacia_dohoda", null);
+            setOtvorena(false);
+          }}
+          className="mt-2 text-xs text-muted-foreground hover:underline"
+        >
+          Bez dohody
+        </button>
+      )}
+    </fieldset>
   );
 }
 

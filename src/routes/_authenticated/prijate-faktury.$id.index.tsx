@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
+import { SamofakturaPanel } from "@/components/faktero/SamofakturaPanel";
+import { zapocitatelna } from "@/lib/faktero/samofakturacia";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listBankData } from "@/lib/faktero/tatrabanka.functions";
 import { JobPicker } from "@/components/faktero/JobPicker";
@@ -294,10 +296,17 @@ function PurchaseInvoiceDetail() {
     );
   if (!row) return <PageBody>Načítavam…</PageBody>;
 
+  /*
+    Samofaktúra pred odsúhlasením je len návrh — prijatou faktúrou sa stane
+    až súhlasom dodávateľa. Dovtedy ju nemožno označiť ako prijatú ani platiť.
+  */
+  const samo = Boolean(row.samofakturacia);
+  const navrh = !zapocitatelna(row);
+
   return (
     <>
       <PageHeader
-        title={`${(row as any).type === "proforma" ? "Prijatá zálohová faktúra" : "Prijatá faktúra"} ${row.invoice_number}`}
+        title={`${samo ? "Samofaktúra" : (row as any).type === "proforma" ? "Prijatá zálohová faktúra" : "Prijatá faktúra"} ${row.invoice_number}`}
         description={
           (row as any).type === "proforma"
             ? `Dodávateľ: ${row.supplier_name} · Vystavená ${row.issue_date} · Nie je daňový doklad — daň prinesie ostrá faktúra.`
@@ -310,7 +319,7 @@ function PurchaseInvoiceDetail() {
             >
               {STATUS_LABEL[row.status] ?? row.status}
             </span>
-            {row.status !== "cancelled" && (
+            {row.status !== "cancelled" && !samo && (
               <Link
                 to="/prijate-faktury/$id/upravit"
                 params={{ id }}
@@ -319,7 +328,7 @@ function PurchaseInvoiceDetail() {
                 <Pencil className="h-4 w-4" /> Upraviť
               </Link>
             )}
-            {row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
+            {!navrh && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
               <button
                 onClick={() => setStatus("received")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
@@ -327,7 +336,7 @@ function PurchaseInvoiceDetail() {
                 Označiť ako prijaté
               </button>
             )}
-            {row.status !== "paid" && row.status !== "cancelled" && (
+            {!navrh && row.status !== "paid" && row.status !== "cancelled" && (
               <button
                 onClick={markPaid}
                 className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700"
@@ -369,12 +378,20 @@ function PurchaseInvoiceDetail() {
       <PageBody>
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
+            {samo && <SamofakturaPanel row={row} onZmena={load} />}
             <div className="grid gap-6 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">
                   Dodávateľ
                 </div>
                 <div className="mt-1 font-medium">{row.supplier_name}</div>
+                {(row.supplier_street || row.supplier_city) && (
+                  <div className="text-sm text-muted-foreground">
+                    {[row.supplier_street, [row.supplier_zip, row.supplier_city].filter(Boolean).join(" ")]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </div>
+                )}
                 <div className="mt-2 text-sm">
                   IČO: {row.supplier_ico ?? "—"} · DIČ: {row.supplier_dic ?? "—"}
                 </div>
@@ -414,7 +431,7 @@ function PurchaseInvoiceDetail() {
               </div>
             </div>
 
-            <PolozkyDokladu items={row.items} mena={row.currency} />
+            <PolozkyDokladu items={row.items} mena={row.currency} samo={samo} />
 
             <NahladPrilohy
               url={nahlad}
@@ -460,7 +477,7 @@ function PurchaseInvoiceDetail() {
               {row.payment_date && <div>Uhradené: {row.payment_date}</div>}
             </div>
 
-            {accounts.length > 0 && row.status !== "cancelled" && (
+            {accounts.length > 0 && row.status !== "cancelled" && !navrh && (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 dark:border-emerald-900/40">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
                   <Landmark className="h-3.5 w-3.5" /> Zaplatiť cez banku
@@ -588,7 +605,16 @@ function Row({ label, value }: { label: string; value: string | number }) {
  * Sú informatívne — needitujú sa a nespájajú so skladom. Zmysel majú v tom, že
  * pri kontrole nemusí človek otvárať PDF, keď chce len vidieť, za čo to je.
  */
-function PolozkyDokladu({ items, mena }: { items: unknown; mena?: string | null }) {
+function PolozkyDokladu({
+  items,
+  mena,
+  samo,
+}: {
+  items: unknown;
+  mena?: string | null;
+  /** Samofaktúru sme písali my — položky nie sú prečítané z prílohy. */
+  samo?: boolean;
+}) {
   if (!Array.isArray(items) || items.length === 0) return null;
   const cena = (n: unknown) =>
     typeof n === "number" && Number.isFinite(n) ? formatovacMeny(mena || "EUR", "sk-SK")(n) : "—";
@@ -596,9 +622,10 @@ function PolozkyDokladu({ items, mena }: { items: unknown; mena?: string | null 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex items-center justify-between gap-2 border-b border-border px-5 py-3">
-        <h2 className="text-sm font-medium">Položky z dokladu</h2>
+        <h2 className="text-sm font-medium">{samo ? "Položky" : "Položky z dokladu"}</h2>
         <span className="text-xs text-muted-foreground">
-          {items.length === 1 ? "1 položka" : `${items.length} položiek`} · prečítané z prílohy
+          {items.length === 1 ? "1 položka" : items.length < 5 ? `${items.length} položky` : `${items.length} položiek`}
+          {samo ? " · ceny bez DPH" : " · prečítané z prílohy"}
         </span>
       </div>
       <div className="overflow-x-auto">

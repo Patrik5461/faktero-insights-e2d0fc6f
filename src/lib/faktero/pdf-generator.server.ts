@@ -901,6 +901,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   for (const veta of vetyNaDoklad({
     danZPrijatejPlatby: (company as any).dan_z_prijatej_platby,
     osobitnaUprava: invoice.osobitna_uprava,
+    samofakturacia: invoice.samofakturacia,
   })) {
     const lines = wrapLines(veta, bold, 9.5, innerW);
     ensureSpace(14 + lines.length * 12 + 6);

@@ -32,6 +32,7 @@ const KDE: Record<DruhRadu, { tabulka: string; stlpec: string }> = {
   sales_order: { tabulka: "sales_orders", stlpec: "number_series_id" },
   purchase_order: { tabulka: "purchase_orders", stlpec: "number_series_id" },
   cash: { tabulka: "cash_entries", stlpec: "number_series_id" },
+  self_billing: { tabulka: "purchase_invoices", stlpec: "number_series_id" },
 };
 
 export const ciselneRadyFn = createServerFn({ method: "POST" })

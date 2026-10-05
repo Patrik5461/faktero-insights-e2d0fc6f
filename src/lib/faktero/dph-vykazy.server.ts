@@ -1,4 +1,5 @@
 import { riadkySoZlavou } from "./zlavy";
+import { prepocitajPolozku, sumySamofaktury, zapocitatelna } from "./samofakturacia";
 /**
  * Doklady za zdaňovacie obdobie pre výkazy k DPH.
  *
@@ -75,7 +76,7 @@ export async function nacitajVstup(
     supabase
       .from("purchase_invoices")
       .select(
-        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate",
+        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav",
       )
       .eq("company_id", companyId)
       /*
@@ -194,6 +195,17 @@ export async function nacitajVstup(
   for (const p of (prijateRes.data ?? []) as any[]) {
     const den = p.delivery_date || p.issue_date;
     if (!vDobe(den)) continue;
+    /*
+      Samofaktúra je daňový doklad až po odsúhlasení dodávateľom. Dovtedy sa
+      z nej daň odpočítať nedá — pripomenie sa, aby sa na ňu nezabudlo.
+    */
+    if (!zapocitatelna(p)) {
+      vytky.push({
+        doklad: p.invoice_number ?? p.supplier_name ?? "samofaktúra",
+        text: "Samofaktúra ešte nie je odsúhlasená dodávateľom — do výkazu sa započíta až po odsúhlasení.",
+      });
+      continue;
+    }
     const cudziaP = Boolean(p.currency && p.currency !== "EUR");
     const maPrepocet = p.vat_amount_eur != null || p.amount_without_vat_eur != null;
     if (cudziaP && !maPrepocet) {
@@ -216,7 +228,7 @@ export async function nacitajVstup(
       rezim: (p.dph_rezim as PrijataFaktura["rezim"]) ?? odvodRezimPrijatej(p.supplier_ic_dph, dan),
       odpocet: p.odpocet !== false,
       opravujeCislo: p.opravuje_cislo,
-      riadky: [riadokZoSum(zaklad, dan, den)],
+      riadky: riadkyPrijatej(p, zaklad, dan, den, cudziaP),
     });
     if (!p.invoice_number) {
       vytky.push({
@@ -246,4 +258,27 @@ export async function nacitajVstup(
   }
 
   return { vstup: { obdobie, vystavene, prijate, doklady }, vytky };
+}
+
+/**
+ * Samofaktúru sme písali my, takže jej položky so sadzbami poznáme presne —
+ * rozpíše sa po sadzbách. Ostatné prijaté faktúry majú len súčty, sadzba sa
+ * z nich odhaduje.
+ */
+function riadkyPrijatej(
+  p: any,
+  zaklad: number,
+  dan: number,
+  den: string,
+  cudziaMena: boolean,
+): SadzbovyRiadok[] {
+  if (p.samofakturacia && !cudziaMena && Array.isArray(p.items) && p.items.length) {
+    const sadzby = sumySamofaktury(
+      p.items.map((x: any) => prepocitajPolozku(x, Number(x.vat_rate) > 0)),
+    ).sadzby;
+    if (sadzby.length > 1) {
+      return sadzby.map((x) => ({ sadzba: x.sadzba, zaklad: x.zaklad, dan: x.dan }));
+    }
+  }
+  return [riadokZoSum(zaklad, dan, den)];
 }

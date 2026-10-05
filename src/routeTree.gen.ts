@@ -119,6 +119,7 @@ import { Route as PravneOpakovanePlatbyRouteImport } from './routes/pravne.opako
 import { Route as PravneReklamacnyPoriadokRouteImport } from './routes/pravne.reklamacny-poriadok'
 import { Route as PravneSpracovanieUdajovRouteImport } from './routes/pravne.spracovanie-udajov'
 import { Route as PravneTeslaPodmienkyRouteImport } from './routes/pravne.tesla-podmienky'
+import { Route as SamofakturaTokenRouteImport } from './routes/samofaktura.$token'
 import { Route as SchvalitTokenRouteImport } from './routes/schvalit.$token'
 import { Route as UctovniciIndexRouteImport } from './routes/uctovnici.index'
 import { Route as UctovniciSlugRouteImport } from './routes/uctovnici.$slug'
@@ -184,6 +185,7 @@ import { Route as AuthenticatedPonukyIdRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedPonukyNovaRouteImport } from './routes/_authenticated/ponuky.nova'
 import { Route as AuthenticatedPrijateFakturyIndexRouteImport } from './routes/_authenticated/prijate-faktury.index'
 import { Route as AuthenticatedPrijateFakturyNovaRouteImport } from './routes/_authenticated/prijate-faktury.nova'
+import { Route as AuthenticatedPrijateFakturySamofakturaRouteImport } from './routes/_authenticated/prijate-faktury.samofaktura'
 import { Route as AuthenticatedPrijateZalohoveIndexRouteImport } from './routes/_authenticated/prijate-zalohove.index'
 import { Route as AuthenticatedSkladIndexRouteImport } from './routes/_authenticated/sklad.index'
 import { Route as AuthenticatedSkladDodaciListRouteImport } from './routes/_authenticated/sklad.dodaci-list'
@@ -854,6 +856,11 @@ const PravneTeslaPodmienkyRoute = PravneTeslaPodmienkyRouteImport.update({
   path: '/pravne/tesla-podmienky',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SamofakturaTokenRoute = SamofakturaTokenRouteImport.update({
+  id: '/samofaktura/$token',
+  path: '/samofaktura/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SchvalitTokenRoute = SchvalitTokenRouteImport.update({
   id: '/schvalit/$token',
   path: '/schvalit/$token',
@@ -1229,6 +1236,12 @@ const AuthenticatedPrijateFakturyNovaRoute =
   AuthenticatedPrijateFakturyNovaRouteImport.update({
     id: '/prijate-faktury/nova',
     path: '/prijate-faktury/nova',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPrijateFakturySamofakturaRoute =
+  AuthenticatedPrijateFakturySamofakturaRouteImport.update({
+    id: '/prijate-faktury/samofaktura',
+    path: '/prijate-faktury/samofaktura',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPrijateZalohoveIndexRoute =
@@ -1965,6 +1978,7 @@ export interface FileRoutesByFullPath {
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/spracovanie-udajov': typeof PravneSpracovanieUdajovRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
+  '/samofaktura/$token': typeof SamofakturaTokenRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
   '/vyvojari/$slug': typeof VyvojariSlugRoute
@@ -2020,6 +2034,7 @@ export interface FileRoutesByFullPath {
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
+  '/prijate-faktury/samofaktura': typeof AuthenticatedPrijateFakturySamofakturaRoute
   '/sklad/dodaci-list': typeof AuthenticatedSkladDodaciListRoute
   '/sklad/dodacie-listy': typeof AuthenticatedSkladDodacieListyRoute
   '/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
@@ -2246,6 +2261,7 @@ export interface FileRoutesByTo {
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/spracovanie-udajov': typeof PravneSpracovanieUdajovRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
+  '/samofaktura/$token': typeof SamofakturaTokenRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
   '/vyvojari/$slug': typeof VyvojariSlugRoute
@@ -2300,6 +2316,7 @@ export interface FileRoutesByTo {
   '/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
+  '/prijate-faktury/samofaktura': typeof AuthenticatedPrijateFakturySamofakturaRoute
   '/sklad/dodaci-list': typeof AuthenticatedSkladDodaciListRoute
   '/sklad/dodacie-listy': typeof AuthenticatedSkladDodacieListyRoute
   '/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
@@ -2536,6 +2553,7 @@ export interface FileRoutesById {
   '/pravne/reklamacny-poriadok': typeof PravneReklamacnyPoriadokRoute
   '/pravne/spracovanie-udajov': typeof PravneSpracovanieUdajovRoute
   '/pravne/tesla-podmienky': typeof PravneTeslaPodmienkyRoute
+  '/samofaktura/$token': typeof SamofakturaTokenRoute
   '/schvalit/$token': typeof SchvalitTokenRoute
   '/uctovnici/$slug': typeof UctovniciSlugRoute
   '/vyvojari/$slug': typeof VyvojariSlugRoute
@@ -2591,6 +2609,7 @@ export interface FileRoutesById {
   '/_authenticated/ponuky/$id': typeof AuthenticatedPonukyIdRoute
   '/_authenticated/ponuky/nova': typeof AuthenticatedPonukyNovaRoute
   '/_authenticated/prijate-faktury/nova': typeof AuthenticatedPrijateFakturyNovaRoute
+  '/_authenticated/prijate-faktury/samofaktura': typeof AuthenticatedPrijateFakturySamofakturaRoute
   '/_authenticated/sklad/dodaci-list': typeof AuthenticatedSkladDodaciListRoute
   '/_authenticated/sklad/dodacie-listy': typeof AuthenticatedSkladDodacieListyRoute
   '/_authenticated/sklad/hodnota': typeof AuthenticatedSkladHodnotaRoute
@@ -2827,6 +2846,7 @@ export interface FileRouteTypes {
     | '/pravne/reklamacny-poriadok'
     | '/pravne/spracovanie-udajov'
     | '/pravne/tesla-podmienky'
+    | '/samofaktura/$token'
     | '/schvalit/$token'
     | '/uctovnici/$slug'
     | '/vyvojari/$slug'
@@ -2882,6 +2902,7 @@ export interface FileRouteTypes {
     | '/ponuky/$id'
     | '/ponuky/nova'
     | '/prijate-faktury/nova'
+    | '/prijate-faktury/samofaktura'
     | '/sklad/dodaci-list'
     | '/sklad/dodacie-listy'
     | '/sklad/hodnota'
@@ -3108,6 +3129,7 @@ export interface FileRouteTypes {
     | '/pravne/reklamacny-poriadok'
     | '/pravne/spracovanie-udajov'
     | '/pravne/tesla-podmienky'
+    | '/samofaktura/$token'
     | '/schvalit/$token'
     | '/uctovnici/$slug'
     | '/vyvojari/$slug'
@@ -3162,6 +3184,7 @@ export interface FileRouteTypes {
     | '/ponuky/$id'
     | '/ponuky/nova'
     | '/prijate-faktury/nova'
+    | '/prijate-faktury/samofaktura'
     | '/sklad/dodaci-list'
     | '/sklad/dodacie-listy'
     | '/sklad/hodnota'
@@ -3397,6 +3420,7 @@ export interface FileRouteTypes {
     | '/pravne/reklamacny-poriadok'
     | '/pravne/spracovanie-udajov'
     | '/pravne/tesla-podmienky'
+    | '/samofaktura/$token'
     | '/schvalit/$token'
     | '/uctovnici/$slug'
     | '/vyvojari/$slug'
@@ -3452,6 +3476,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ponuky/$id'
     | '/_authenticated/ponuky/nova'
     | '/_authenticated/prijate-faktury/nova'
+    | '/_authenticated/prijate-faktury/samofaktura'
     | '/_authenticated/sklad/dodaci-list'
     | '/_authenticated/sklad/dodacie-listy'
     | '/_authenticated/sklad/hodnota'
@@ -3653,6 +3678,7 @@ export interface RootRouteChildren {
   PravneReklamacnyPoriadokRoute: typeof PravneReklamacnyPoriadokRoute
   PravneSpracovanieUdajovRoute: typeof PravneSpracovanieUdajovRoute
   PravneTeslaPodmienkyRoute: typeof PravneTeslaPodmienkyRoute
+  SamofakturaTokenRoute: typeof SamofakturaTokenRoute
   SchvalitTokenRoute: typeof SchvalitTokenRoute
   PomocIndexRoute: typeof PomocIndexRoute
   PravneIndexRoute: typeof PravneIndexRoute
@@ -4479,6 +4505,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PravneTeslaPodmienkyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/samofaktura/$token': {
+      id: '/samofaktura/$token'
+      path: '/samofaktura/$token'
+      fullPath: '/samofaktura/$token'
+      preLoaderRoute: typeof SamofakturaTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/schvalit/$token': {
       id: '/schvalit/$token'
       path: '/schvalit/$token'
@@ -4932,6 +4965,13 @@ declare module '@tanstack/react-router' {
       path: '/prijate-faktury/nova'
       fullPath: '/prijate-faktury/nova'
       preLoaderRoute: typeof AuthenticatedPrijateFakturyNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/prijate-faktury/samofaktura': {
+      id: '/_authenticated/prijate-faktury/samofaktura'
+      path: '/prijate-faktury/samofaktura'
+      fullPath: '/prijate-faktury/samofaktura'
+      preLoaderRoute: typeof AuthenticatedPrijateFakturySamofakturaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/prijate-zalohove/': {
@@ -5884,6 +5924,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPonukyIdRoute: typeof AuthenticatedPonukyIdRoute
   AuthenticatedPonukyNovaRoute: typeof AuthenticatedPonukyNovaRoute
   AuthenticatedPrijateFakturyNovaRoute: typeof AuthenticatedPrijateFakturyNovaRoute
+  AuthenticatedPrijateFakturySamofakturaRoute: typeof AuthenticatedPrijateFakturySamofakturaRoute
   AuthenticatedUctovnictvoDphRoute: typeof AuthenticatedUctovnictvoDphRoute
   AuthenticatedUctovnictvoOssRoute: typeof AuthenticatedUctovnictvoOssRoute
   AuthenticatedUctovnictvoPohodaRoute: typeof AuthenticatedUctovnictvoPohodaRoute
@@ -5988,6 +6029,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPonukyIdRoute: AuthenticatedPonukyIdRoute,
   AuthenticatedPonukyNovaRoute: AuthenticatedPonukyNovaRoute,
   AuthenticatedPrijateFakturyNovaRoute: AuthenticatedPrijateFakturyNovaRoute,
+  AuthenticatedPrijateFakturySamofakturaRoute:
+    AuthenticatedPrijateFakturySamofakturaRoute,
   AuthenticatedUctovnictvoDphRoute: AuthenticatedUctovnictvoDphRoute,
   AuthenticatedUctovnictvoOssRoute: AuthenticatedUctovnictvoOssRoute,
   AuthenticatedUctovnictvoPohodaRoute: AuthenticatedUctovnictvoPohodaRoute,
@@ -6339,6 +6382,7 @@ const rootRouteChildren: RootRouteChildren = {
   PravneReklamacnyPoriadokRoute: PravneReklamacnyPoriadokRoute,
   PravneSpracovanieUdajovRoute: PravneSpracovanieUdajovRoute,
   PravneTeslaPodmienkyRoute: PravneTeslaPodmienkyRoute,
+  SamofakturaTokenRoute: SamofakturaTokenRoute,
   SchvalitTokenRoute: SchvalitTokenRoute,
   PomocIndexRoute: PomocIndexRoute,
   PravneIndexRoute: PravneIndexRoute,

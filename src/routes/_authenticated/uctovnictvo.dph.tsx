@@ -168,6 +168,8 @@ function DphPage() {
           .gte("issue_date", period.from)
           .lte("issue_date", period.to)
           .is("deleted_at", null)
+          // Samofaktúra sa odpočíta až po odsúhlasení dodávateľom.
+          .or("samofakturacia.eq.false,samofakturacia_stav.eq.odsuhlasena")
           .order("issue_date", { ascending: true }),
       ]);
       const invIds = (invs ?? []).map((i) => i.id);

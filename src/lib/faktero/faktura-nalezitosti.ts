@@ -1,3 +1,5 @@
+import { VETA_SAMOFAKTURACIA } from "./samofakturacia";
+
 /**
  * Náležitosti faktúry, ktoré zákon vyžaduje a program ich vie ustrážiť.
  *
@@ -85,8 +87,11 @@ export const VETA_68D = "Daň sa uplatňuje na základe prijatia platby";
 export function vetyNaDoklad(vstup: {
   danZPrijatejPlatby?: boolean | null;
   osobitnaUprava?: string | null;
+  /** Faktúru vyhotovil odberateľ za dodávateľa (§ 72 ods. 4, § 74 ods. 1 písm. n). */
+  samofakturacia?: boolean | null;
 }): string[] {
   const von: string[] = [];
+  if (vstup.samofakturacia) von.push(VETA_SAMOFAKTURACIA);
   if (vstup.danZPrijatejPlatby) von.push(VETA_68D);
   const u = vstup.osobitnaUprava as OsobitnaUprava | null | undefined;
   if (u && VETY_UPRAV[u]) von.push(VETY_UPRAV[u]);

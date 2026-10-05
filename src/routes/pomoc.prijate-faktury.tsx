@@ -8,7 +8,7 @@ export const Route = createFileRoute("/pomoc/prijate-faktury")({
       {
         name: "description",
         content:
-          "Prijaté faktúry vo Faktere: zápis ručne aj e-mailom, položky a náhľad dokladu, hromadné akcie, splatnosť, úhrady, platba z banky a DPH na vstupe.",
+          "Prijaté faktúry vo Faktere: zápis ručne aj e-mailom, položky a náhľad dokladu, hromadné akcie, splatnosť, úhrady, platba z banky, DPH na vstupe a samofakturácia.",
       },
       { property: "og:url", content: "https://faktero.sk/pomoc/prijate-faktury" },
     ],
@@ -254,6 +254,66 @@ const sections: HelpSection[] = [
           Faktúra v cudzej mene sa po uložení prepočíta kurzom ECB — do priznania totiž vstupuje v
           eurách. Zostavenie výkazov popisuje{" "}
           <Link to="/pomoc/vykazy-dph">manuál k výkazom k DPH</Link>.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "samofakturacia",
+    title: "Samofakturácia — faktúru za dodávateľa vyhotovíte vy",
+    body: (
+      <>
+        <p>
+          Niekedy faktúru nepíše dodávateľ, ale odberateľ: výkupca dreva či kovov od drobných
+          dodávateľov, firma, ktorá vypláca provízie obchodným zástupcom, vydavateľ autorom. Zákon o
+          DPH to dovoľuje (§ 72 ods. 4), ak sú splnené tri veci:
+        </p>
+        <ul>
+          <li>
+            s dodávateľom máte <strong>písomnú dohodu uzavretú vopred</strong>,
+          </li>
+          <li>
+            dodávateľ <strong>každú faktúru odsúhlasí</strong>,
+          </li>
+          <li>
+            na faktúre je veta <strong>„Vyhotovenie faktúry odberateľom“</strong>.
+          </li>
+        </ul>
+        <p>
+          <strong>1. Dohoda.</strong> V <Link to="/odberatelia">adresári</Link> otvorte kontakt
+          dodávateľa a kliknite na <em>Dohoda o samofakturácii</em>. Zapíšte, od kedy platí (a
+          prípadne do kedy) a číslo či dátum zmluvy. Bez platnej dohody samofaktúru vyhotoviť nedá.
+        </p>
+        <p>
+          <strong>2. Vyhotovenie.</strong> V{" "}
+          <Link to="/prijate-faktury">Prijaté faktúry → Samofaktúra</Link> vyberte dodávateľa a
+          zadajte položky. Faktúra je <em>jeho</em>: v hlavičke je on ako dodávateľ, vy ako
+          odberateľ, sadzby DPH sú podľa jeho krajiny a keď nemá IČ DPH, faktúra je bez dane. Číslo
+          dostane z vášho radu <strong>Samofaktúry</strong> (SF2026…), ktorý si upravíte v{" "}
+          <Link to="/ciselne-rady">číselných radoch</Link>. IBAN si Faktero pamätá z poslednej
+          samofaktúry tomu istému dodávateľovi.
+        </p>
+        <p>
+          <strong>3. Odsúhlasenie.</strong> Na detaile faktúry kliknite na{" "}
+          <em>Poslať na odsúhlasenie</em>. Dodávateľ dostane e-mail s PDF a odkazom — bez
+          registrácie klikne <em>Súhlasím</em>, alebo faktúru vráti s poznámkou, čo nesedí. Vy
+          dostanete správu, ako rozhodol. Vrátenú faktúru opravíte a pošlete znova; úprava po
+          odoslaní zruší starý odkaz, aby dodávateľ neodsúhlasil inú verziu.
+        </p>
+        <p>
+          Keď dodávateľ odsúhlasí inak — podpíše papierovú faktúru, potvrdí e-mailom, alebo dohoda
+          hovorí, že mlčanie v lehote je súhlas — použite <em>Odsúhlasil inak</em> a zapíšte ako.
+        </p>
+        <p>
+          <strong>Čo sa deje potom.</strong> Odsúhlasená samofaktúra je obyčajná prijatá faktúra:
+          vstupuje do DPH na vstupe a kontrolného výkazu (časť B.2, pri viacerých sadzbách
+          rozpísaná po sadzbách), dá sa uhradiť z banky aj hromadným príkazom a PDF v odsúhlasenej
+          podobe sa uloží ako príloha. Meniť sa už nedá — chyba sa opravuje dobropisom. Kým nie je
+          odsúhlasená, do výkazov ani do príkazu na úhradu nevstúpi a výkaz na ňu upozorní.
+        </p>
+        <p>
+          Dodávateľ si faktúru zaeviduje medzi svoje <em>vydané</em> faktúry pod číslom, ktoré
+          dostala u vás, a daň z nej odvádza on.
         </p>
       </>
     ),

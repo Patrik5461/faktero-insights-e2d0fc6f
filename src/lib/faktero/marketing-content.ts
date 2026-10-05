@@ -373,6 +373,28 @@ export const funkcie: HubContent = {
       ],
     },
     {
+      slug: "samofakturacia",
+      label: "Samofakturácia",
+      summary: "Faktúru za dodávateľa vyhotovíte vy, on ju jedným klikom odsúhlasí.",
+      icon: ListChecks,
+      blocks: [
+        {
+          type: "lead",
+          text: "Výkup od drobných dodávateľov, provízie obchodných zástupcov, honoráre autorov — faktúru vyhotovíte za dodávateľa podľa § 72 ods. 4 zákona o DPH a on ju odsúhlasí cez odkaz v e-maile, bez registrácie.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Dohoda o samofakturácii pri kontakte v adresári — bez platnej dohody faktúru vyhotoviť nedá",
+            "Vlastný číselný rad SF, v hlavičke dodávateľ s jeho IČ DPH a sadzbami, veta „Vyhotovenie faktúry odberateľom“",
+            "Dodávateľ dostane PDF a odkaz: Súhlasím, alebo vráti s poznámkou na opravu",
+            "Odsúhlasená sa sama stane prijatou faktúrou — DPH na vstupe, kontrolný výkaz, úhrada z banky",
+            "Neodsúhlasená do výkazov ani do príkazu na úhradu nepustí",
+          ],
+        },
+      ],
+    },
+    {
       slug: "bankove-parovanie",
       label: "Banka a párovanie úhrad",
       summary: "Faktero pozná pohyby na účte a samo označí zaplatené faktúry.",

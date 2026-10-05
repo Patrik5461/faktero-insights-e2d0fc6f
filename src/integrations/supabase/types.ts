@@ -1656,6 +1656,9 @@ export type Database = {
       customers: {
         Row: {
           city: string | null
+          samofakturacia_od: string | null
+          samofakturacia_do: string | null
+          samofakturacia_dohoda: string | null
           company_id: string
           contact_person: string | null
           country: string | null
@@ -1683,6 +1686,9 @@ export type Database = {
         }
         Insert: {
           city?: string | null
+          samofakturacia_od?: string | null
+          samofakturacia_do?: string | null
+          samofakturacia_dohoda?: string | null
           company_id: string
           contact_person?: string | null
           country?: string | null
@@ -1710,6 +1716,9 @@ export type Database = {
         }
         Update: {
           city?: string | null
+          samofakturacia_od?: string | null
+          samofakturacia_do?: string | null
+          samofakturacia_dohoda?: string | null
           company_id?: string
           contact_person?: string | null
           country?: string | null
@@ -5231,6 +5240,20 @@ export type Database = {
           opravuje_cislo: string | null
           exchange_rate: number | null
           amount_without_vat_eur: number | null
+          customer_id: string | null
+          number_series_id: string | null
+          samofakturacia: boolean
+          samofakturacia_odoslana_at: string | null
+          samofakturacia_poznamka: string | null
+          samofakturacia_rozhodnutie_at: string | null
+          samofakturacia_rozhodol: string | null
+          samofakturacia_stav: string | null
+          samofakturacia_token: string | null
+          supplier_city: string | null
+          supplier_country: string | null
+          supplier_email: string | null
+          supplier_street: string | null
+          supplier_zip: string | null
           vat_amount_eur: number | null
           advance_invoice_id: string | null
           type: string
@@ -5275,6 +5298,20 @@ export type Database = {
           opravuje_cislo?: string | null
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
+          customer_id?: string | null
+          number_series_id?: string | null
+          samofakturacia?: boolean
+          samofakturacia_odoslana_at?: string | null
+          samofakturacia_poznamka?: string | null
+          samofakturacia_rozhodnutie_at?: string | null
+          samofakturacia_rozhodol?: string | null
+          samofakturacia_stav?: string | null
+          samofakturacia_token?: string | null
+          supplier_city?: string | null
+          supplier_country?: string | null
+          supplier_email?: string | null
+          supplier_street?: string | null
+          supplier_zip?: string | null
           vat_amount_eur?: number | null
           advance_invoice_id?: string | null
           type?: string
@@ -5319,6 +5356,20 @@ export type Database = {
           opravuje_cislo?: string | null
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
+          customer_id?: string | null
+          number_series_id?: string | null
+          samofakturacia?: boolean
+          samofakturacia_odoslana_at?: string | null
+          samofakturacia_poznamka?: string | null
+          samofakturacia_rozhodnutie_at?: string | null
+          samofakturacia_rozhodol?: string | null
+          samofakturacia_stav?: string | null
+          samofakturacia_token?: string | null
+          supplier_city?: string | null
+          supplier_country?: string | null
+          supplier_email?: string | null
+          supplier_street?: string | null
+          supplier_zip?: string | null
           vat_amount_eur?: number | null
           advance_invoice_id?: string | null
           type?: string
