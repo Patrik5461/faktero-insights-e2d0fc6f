@@ -77,35 +77,52 @@ export function zmenilSaOdberatel(a: OdberatelFaktury, b: OdberatelFaktury): boo
   return (Object.keys(z1) as (keyof typeof z1)[]).some((k) => (z1[k] ?? "") !== (z2[k] ?? ""));
 }
 
-/**
- * Čo treba človeku povedať, keď mení odberateľa na už vystavenej faktúre.
- * Zmena sama nič z toho neopraví — DPH režim ani poslaný doklad.
- */
-export function upozorneniaZmeny(args: {
+export type UpozornenieZmeny =
+  | { kod: "efaktura" }
+  | { kod: "pdf" }
+  | { kod: "krajina"; z: string; na: string }
+  | { kod: "prenesenie" };
+
+type VstupZmeny = {
   povodny: OdberatelFaktury;
   novy: OdberatelFaktury;
   stav: string;
   reverseCharge: boolean;
   efakturaOdoslana: boolean;
-}): string[] {
+};
+
+/**
+ * Čo treba človeku povedať, keď mení odberateľa na už vystavenej faktúre.
+ * Zmena sama nič z toho neopraví — DPH režim ani poslaný doklad. Kódy, aby
+ * ich appka vedela preložiť; web ich vypíše cez `upozorneniaZmeny`.
+ */
+export function kodyUpozorneni(args: VstupZmeny): UpozornenieZmeny[] {
   const { povodny: p, novy: n } = args;
-  const out: string[] = [];
+  const out: UpozornenieZmeny[] = [];
   const iny = p.customer_id !== n.customer_id || p.customer_ico.trim() !== n.customer_ico.trim();
   if (!iny) return out;
-  if (args.efakturaOdoslana) {
-    out.push(
-      "Faktúra už odišla cez eFaktúru pôvodnému odberateľovi — v jeho systéme ostane. Správne je vystaviť dobropis a novú faktúru.",
-    );
-  } else if (args.stav !== "draft") {
-    out.push("Pôvodný odberateľ mohol faktúru dostať — novému pošlite nové PDF.");
-  }
+  if (args.efakturaOdoslana) out.push({ kod: "efaktura" });
+  else if (args.stav !== "draft") out.push({ kod: "pdf" });
   const krajina = (v: string) => v.trim().toUpperCase() || "SK";
   if (krajina(p.customer_country) !== krajina(n.customer_country)) {
-    out.push(
-      `Mení sa krajina odberateľa (${krajina(p.customer_country)} → ${krajina(n.customer_country)}) — skontrolujte sadzby DPH a prenesenie daňovej povinnosti.`,
-    );
+    out.push({ kod: "krajina", z: krajina(p.customer_country), na: krajina(n.customer_country) });
   } else if (!!p.customer_ic_dph.trim() !== !!n.customer_ic_dph.trim() && args.reverseCharge) {
-    out.push("Faktúra je v režime prenesenia daňovej povinnosti — nový odberateľ musí mať IČ DPH.");
+    out.push({ kod: "prenesenie" });
   }
   return out;
+}
+
+export function upozorneniaZmeny(args: VstupZmeny): string[] {
+  return kodyUpozorneni(args).map((u) => {
+    switch (u.kod) {
+      case "efaktura":
+        return "Faktúra už odišla cez eFaktúru pôvodnému odberateľovi — v jeho systéme ostane. Správne je vystaviť dobropis a novú faktúru.";
+      case "pdf":
+        return "Pôvodný odberateľ mohol faktúru dostať — novému pošlite nové PDF.";
+      case "krajina":
+        return `Mení sa krajina odberateľa (${u.z} → ${u.na}) — skontrolujte sadzby DPH a prenesenie daňovej povinnosti.`;
+      case "prenesenie":
+        return "Faktúra je v režime prenesenia daňovej povinnosti — nový odberateľ musí mať IČ DPH.";
+    }
+  });
 }

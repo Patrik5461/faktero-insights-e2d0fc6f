@@ -751,6 +751,17 @@ export const sk = {
 
   /* drobnosti — kroky a stavy */
   "nf.oprava": "Oprava {cislo}",
+  "nf.zmenitOdberatela": "Zmeniť",
+  "nf.zmenaOdberatela": "Zmena odberateľa",
+  "nf.odberatelZmeneny": "Pôvodne: {meno}",
+  "nf.upozornenieEfaktura":
+    "Faktúra už odišla cez eFaktúru pôvodnému odberateľovi a v jeho systéme ostane. Správne je vystaviť dobropis a novú faktúru.",
+  "nf.upozorneniePdf": "Pôvodný odberateľ mohol faktúru dostať — novému pošlite nové PDF.",
+  "nf.upozornenieKrajina":
+    "Mení sa krajina odberateľa ({z} → {na}) — skontrolujte sadzby DPH a prenesenie daňovej povinnosti.",
+  "nf.upozorneniePrenesenie":
+    "Faktúra je v režime prenesenia daňovej povinnosti — nový odberateľ musí mať IČ DPH.",
+  "nf.zakazkaOdobrata": "Zákazka patrila pôvodnému odberateľovi, tak sa z faktúry odobrala.",
   "nf.fakturaCislo": "Faktúra {cislo}",
   "faktury.pracujem": "Pracujem…",
   "faktury.pripravujemPdf": "Pripravujem PDF…",

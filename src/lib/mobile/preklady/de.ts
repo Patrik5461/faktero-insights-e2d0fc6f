@@ -752,6 +752,19 @@ export const de: Partial<Record<Kluc, string>> = {
 
   /* drobnosti — kroky a stavy */
   "nf.oprava": "Korrektur {cislo}",
+  "nf.zmenitOdberatela": "Ändern",
+  "nf.zmenaOdberatela": "Kunde ändern",
+  "nf.odberatelZmeneny": "Ursprünglich: {meno}",
+  "nf.upozornenieEfaktura":
+    "Die Rechnung wurde bereits als E-Rechnung an den ursprünglichen Kunden gesendet und bleibt in seinem System. Richtig sind eine Gutschrift und eine neue Rechnung.",
+  "nf.upozorneniePdf":
+    "Der ursprüngliche Kunde hat die Rechnung eventuell schon erhalten — senden Sie dem neuen ein neues PDF.",
+  "nf.upozornenieKrajina":
+    "Das Land des Kunden ändert sich ({z} → {na}) — prüfen Sie Steuersätze und Reverse-Charge.",
+  "nf.upozorneniePrenesenie":
+    "Die Rechnung ist im Reverse-Charge-Verfahren — der neue Kunde braucht eine USt-IdNr.",
+  "nf.zakazkaOdobrata":
+    "Der Auftrag gehörte dem ursprünglichen Kunden und wurde von der Rechnung entfernt.",
   "nf.fakturaCislo": "Rechnung {cislo}",
   "faktury.pracujem": "Wird bearbeitet…",
   "faktury.pripravujemPdf": "PDF wird vorbereitet…",

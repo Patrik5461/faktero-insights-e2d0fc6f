@@ -745,6 +745,19 @@ export const en: Partial<Record<Kluc, string>> = {
 
   /* drobnosti — kroky a stavy */
   "nf.oprava": "Editing {cislo}",
+  "nf.zmenitOdberatela": "Change",
+  "nf.zmenaOdberatela": "Change customer",
+  "nf.odberatelZmeneny": "Originally: {meno}",
+  "nf.upozornenieEfaktura":
+    "The invoice was already sent as an e-invoice to the original customer and stays in their system. The correct way is a credit note and a new invoice.",
+  "nf.upozorneniePdf":
+    "The original customer may have received the invoice — send the new one a fresh PDF.",
+  "nf.upozornenieKrajina":
+    "The customer's country changes ({z} → {na}) — check VAT rates and reverse charge.",
+  "nf.upozorneniePrenesenie":
+    "The invoice uses reverse charge — the new customer must have a VAT ID.",
+  "nf.zakazkaOdobrata":
+    "The job belonged to the original customer, so it was removed from the invoice.",
   "nf.fakturaCislo": "Invoice {cislo}",
   "faktury.pracujem": "Working…",
   "faktury.pripravujemPdf": "Preparing the PDF…",

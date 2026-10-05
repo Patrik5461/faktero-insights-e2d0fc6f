@@ -743,6 +743,16 @@ export const hu: Partial<Record<Kluc, string>> = {
 
   /* drobnosti — kroky a stavy */
   "nf.oprava": "{cislo} javítása",
+  "nf.zmenitOdberatela": "Módosítás",
+  "nf.zmenaOdberatela": "Vevő módosítása",
+  "nf.odberatelZmeneny": "Eredetileg: {meno}",
+  "nf.upozornenieEfaktura":
+    "A számla e-számlaként már elment az eredeti vevőnek, és a rendszerében marad. A helyes megoldás jóváíró számla és új számla.",
+  "nf.upozorneniePdf": "Az eredeti vevő megkaphatta a számlát — az újnak küldjön új PDF-et.",
+  "nf.upozornenieKrajina":
+    "Változik a vevő országa ({z} → {na}) — ellenőrizze az ÁFA-kulcsokat és a fordított adózást.",
+  "nf.upozorneniePrenesenie": "A számla fordított adózású — az új vevőnek közösségi adószám kell.",
+  "nf.zakazkaOdobrata": "A munka az eredeti vevőhöz tartozott, ezért lekerült a számláról.",
   "nf.fakturaCislo": "{cislo} számla",
   "faktury.pracujem": "Dolgozom…",
   "faktury.pripravujemPdf": "PDF előkészítése…",

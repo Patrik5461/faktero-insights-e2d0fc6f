@@ -737,6 +737,17 @@ export const cs: Partial<Record<Kluc, string>> = {
 
   /* drobnosti — kroky a stavy */
   "nf.oprava": "Oprava {cislo}",
+  "nf.zmenitOdberatela": "Změnit",
+  "nf.zmenaOdberatela": "Změna odběratele",
+  "nf.odberatelZmeneny": "Původně: {meno}",
+  "nf.upozornenieEfaktura":
+    "Faktura už odešla přes e-fakturu původnímu odběrateli a v jeho systému zůstane. Správně je vystavit dobropis a novou fakturu.",
+  "nf.upozorneniePdf": "Původní odběratel mohl fakturu dostat — novému pošlete nové PDF.",
+  "nf.upozornenieKrajina":
+    "Mění se země odběratele ({z} → {na}) — zkontrolujte sazby DPH a přenesení daňové povinnosti.",
+  "nf.upozorneniePrenesenie":
+    "Faktura je v režimu přenesení daňové povinnosti — nový odběratel musí mít DIČ.",
+  "nf.zakazkaOdobrata": "Zakázka patřila původnímu odběrateli, proto se z faktury odebrala.",
   "nf.fakturaCislo": "Faktura {cislo}",
   "faktury.pracujem": "Pracuji…",
   "faktury.pripravujemPdf": "Připravuji PDF…",

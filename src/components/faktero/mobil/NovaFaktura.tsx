@@ -31,6 +31,13 @@ import { formatovacMeny } from "@/lib/faktero/mena";
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import { usePreklad } from "@/lib/mobile/preklady/hook";
 import { SectionHeader, StepIndicator } from "./ui";
+import {
+  kodyUpozorneni,
+  odberatelNaZapis,
+  odberatelZAdresara,
+  odberatelZFaktury,
+  type OdberatelFaktury,
+} from "@/lib/faktero/odberatel-faktury";
 /**
  * Vystavenie faktúry v telefóne.
  *
@@ -188,6 +195,19 @@ export function NovaFaktura({
   } | null>(null);
   /** Faktúra vystavená bez signálu — leží v telefóne a čaká na odoslanie. */
   const [odlozena, setOdlozena] = useState<OdlozenaFaktura | null>(null);
+  /*
+    Oprava: odberateľ, ako je na faktúre (kópia), a či už odišla cez eFaktúru.
+    Podľa toho sa pri zmene odberateľa ukážu upozornenia.
+  */
+  const [povodny, setPovodny] = useState<OdberatelFaktury | null>(null);
+  const [povodnaFaktura, setPovodnaFaktura] = useState<{
+    status: string;
+    reverse_charge: boolean;
+    job_id: string | null;
+    efaktura: boolean;
+  } | null>(null);
+  /** Odberateľ sa mení z obrazovky Kontrola — po výbere sa vráti späť na ňu. */
+  const [meniOdberatela, setMeniOdberatela] = useState(false);
 
   const platca = podklady?.firma.platcaDph ?? true;
   const mena = podklady?.firma.mena ?? "EUR";
@@ -236,10 +256,12 @@ export function NovaFaktura({
     if (!upravuje || !podklady) return;
     let zrusene = false;
     (async () => {
-      const [{ data: f, error: chybaF }, { data: polozky }] = await Promise.all([
+      const [{ data: f, error: chybaF }, { data: polozky }, { data: ef }] = await Promise.all([
         supabase
           .from("invoices")
-          .select("customer_id, issue_date, due_date, payment_method, notes, intro_note, status")
+          .select(
+            "customer_id, customer_name, customer_ico, customer_dic, customer_ic_dph, customer_street, customer_city, customer_zip, customer_country, customer_email, issue_date, due_date, payment_method, notes, intro_note, status, reverse_charge, job_id",
+          )
           .eq("id", upravuje.id)
           .single(),
         supabase
@@ -247,6 +269,7 @@ export function NovaFaktura({
           .select("name, quantity, unit, unit_price, vat_rate, product_id")
           .eq("invoice_id", upravuje.id)
           .order("position"),
+        supabase.from("efaktura_documents").select("id").eq("invoice_id", upravuje.id).limit(1),
       ]);
       if (zrusene) return;
       if (chybaF || !f) {
@@ -256,8 +279,15 @@ export function NovaFaktura({
       }
       const o =
         podklady.odberatelia.find((x) => x.id === f.customer_id) ??
-        ({ id: f.customer_id, name: t("nf.odberatel") } as Odberatel);
+        ({ id: f.customer_id, name: f.customer_name || t("nf.odberatel") } as Odberatel);
       setOdberatel(o);
+      setPovodny(odberatelZFaktury(f));
+      setPovodnaFaktura({
+        status: String(f.status),
+        reverse_charge: !!(f as any).reverse_charge,
+        job_id: (f as any).job_id ?? null,
+        efaktura: (ef ?? []).length > 0,
+      });
       setVystavenie(f.issue_date ?? dnes());
       setSplatnost(f.due_date ?? oDni(dnes(), 14));
       setUhrada((f.payment_method as typeof uhrada) ?? "bank_transfer");
@@ -286,6 +316,12 @@ export function NovaFaktura({
   /* Cenník sa načíta až keď je známy odberateľ — dohodnuté ceny a zľavy sú jeho. */
   async function vyberOdberatela(o: Odberatel) {
     setOdberatel(o);
+    // Pri oprave sa mení len odberateľ — položky ostávajú, vráti sa na Kontrolu.
+    if (meniOdberatela) {
+      setMeniOdberatela(false);
+      setKrok("suhrn");
+      return;
+    }
     setKrok("polozky");
     if (riadky.length === 0) setRiadky([prazdnyRiadok(zakladnaSadzba)]);
     setPosledna(null);
@@ -377,6 +413,26 @@ export function NovaFaktura({
 
     setUkladam(true);
     try {
+      /*
+        Iný odberateľ: na faktúru ide celá jeho kópia z adresára, rovnako ako
+        pri vystavení. Zákazka patrí odberateľovi — cudzia sa z faktúry odoberie.
+      */
+      let zmenaOdberatela: Record<string, unknown> = {};
+      if (odberatel && povodny && odberatel.id !== povodny.customer_id) {
+        zmenaOdberatela = odberatelNaZapis(odberatelZAdresara(odberatel));
+        const jobId = povodnaFaktura?.job_id;
+        if (jobId) {
+          const { data: z } = await supabase
+            .from("jobs")
+            .select("customer_id")
+            .eq("id", jobId)
+            .maybeSingle();
+          if (z?.customer_id && z.customer_id !== odberatel.id) {
+            zmenaOdberatela.job_id = null;
+            toast.message(t("nf.zakazkaOdobrata"));
+          }
+        }
+      }
       const { error: chybaHlavicky } = await supabase
         .from("invoices")
         .update({
@@ -388,6 +444,7 @@ export function NovaFaktura({
           subtotal: s.subtotal,
           vat_total: s.vat_total,
           total: s.total,
+          ...zmenaOdberatela,
         })
         .eq("id", upravuje.id);
       if (chybaHlavicky) throw new Error(chybaHlavicky.message);
@@ -523,11 +580,17 @@ export function NovaFaktura({
   if (krok === "odberatel") {
     return (
       <KrokOdberatel
+        zmena={meniOdberatela && upravuje ? { invoice_number: upravuje.invoice_number } : undefined}
         firma={firma}
         druh={druh}
         setDruh={setDruh}
         odberatelia={podklady.odberatelia}
-        onSpat={onSpat}
+        onSpat={() => {
+          if (meniOdberatela) {
+            setMeniOdberatela(false);
+            setKrok("suhrn");
+          } else onSpat();
+        }}
         onVyber={vyberOdberatela}
         onPridany={(o) => {
           setPodklady({ ...podklady, odberatelia: [o, ...podklady.odberatelia] });
@@ -585,6 +648,30 @@ export function NovaFaktura({
       maIban={podklady.firma.maIban}
       onSpat={() => setKrok("polozky")}
       onUloz={uloz}
+      onZmenOdberatela={
+        upravuje
+          ? () => {
+              setMeniOdberatela(true);
+              setKrok("odberatel");
+            }
+          : undefined
+      }
+      povodnyOdberatel={
+        upravuje && povodny && odberatel && odberatel.id !== povodny.customer_id
+          ? povodny.customer_name
+          : null
+      }
+      upozornenia={
+        upravuje && povodny && povodnaFaktura && odberatel
+          ? kodyUpozorneni({
+              povodny,
+              novy: odberatelZAdresara(odberatel),
+              stav: povodnaFaktura.status,
+              reverseCharge: povodnaFaktura.reverse_charge,
+              efakturaOdoslana: povodnaFaktura.efaktura,
+            })
+          : []
+      }
     />
   );
 }
@@ -592,6 +679,7 @@ export function NovaFaktura({
 /* ------------------------- Krok 1: odberateľ ------------------------- */
 
 function KrokOdberatel({
+  zmena,
   firma,
   druh,
   setDruh,
@@ -607,6 +695,8 @@ function KrokOdberatel({
   onSpat: () => void;
   onVyber: (o: Odberatel) => void;
   onPridany: (o: Odberatel) => void;
+  /** Zmena odberateľa na opravovanej faktúre — bez druhu dokladu a krokov. */
+  zmena?: { invoice_number: string };
 }) {
   const { t, locale: loc } = usePreklad();
   const [hladanie, setHladanie] = useState("");
@@ -633,20 +723,28 @@ function KrokOdberatel({
 
   return (
     <MobilObrazovka
-      title={t("nf.komuFakturujete")}
-      subtitle={druh === "proforma" ? t("nf.krokZalohova") : t("nf.krok", { n: 1 })}
+      title={zmena ? t("nf.zmenaOdberatela") : t("nf.komuFakturujete")}
+      subtitle={
+        zmena
+          ? t("nf.oprava", { cislo: zmena.invoice_number })
+          : druh === "proforma"
+            ? t("nf.krokZalohova")
+            : t("nf.krok", { n: 1 })
+      }
       onBack={onSpat}
     >
-      <StepIndicator
-        aktivny={1}
-        kroky={[t("nf.krokOdberatel"), t("nf.krokPolozky"), t("nf.krokKontrola")]}
-      />
+      {!zmena && (
+        <StepIndicator
+          aktivny={1}
+          kroky={[t("nf.krokOdberatel"), t("nf.krokPolozky"), t("nf.krokKontrola")]}
+        />
+      )}
       {/*
         Druh dokladu patrí na začiatok — mení celý doklad, nielen jeho text.
         Zálohová faktúra nie je daňový doklad a číslo dostane z vlastnej rady,
         takže sa to nedá prepnúť až na konci.
       */}
-      <div className="mb-4 grid grid-cols-2 gap-2">
+      <div className={`mb-4 grid grid-cols-2 gap-2 ${zmena ? "hidden" : ""}`}>
         {(
           [
             ["regular", t("nf.faktura")],
@@ -666,7 +764,7 @@ function KrokOdberatel({
           </button>
         ))}
       </div>
-      {druh === "proforma" && (
+      {druh === "proforma" && !zmena && (
         <p className="mb-4 rounded-app-sm bg-app-pozadie px-3 py-2 text-[12px] leading-snug text-app-text-2">
           {t("nf.zalohovaVysvetlenie")}
         </p>
@@ -698,30 +796,32 @@ function KrokOdberatel({
         </p>
       ) : (
         <>
-        <SectionHeader title={t("nf.vsetciOdberatelia")} />
-        <div className="overflow-hidden rounded-app border border-app-ramik bg-app-karta shadow-app">
-          {najdene.map((o, i) => (
-            <button
-              key={o.id}
-              onClick={() => onVyber(o)}
-              className={`flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-app-pozadie ${
-                i > 0 ? "border-t border-app-ramik" : ""
-              }`}
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-app-sm bg-app-zelena-jemna text-app-zelena">
-                <Building2 className="h-4 w-4" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[15px] font-medium leading-tight">
-                  {o.name}
+          <SectionHeader title={t("nf.vsetciOdberatelia")} />
+          <div className="overflow-hidden rounded-app border border-app-ramik bg-app-karta shadow-app">
+            {najdene.map((o, i) => (
+              <button
+                key={o.id}
+                onClick={() => onVyber(o)}
+                className={`flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-app-pozadie ${
+                  i > 0 ? "border-t border-app-ramik" : ""
+                }`}
+              >
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-app-sm bg-app-zelena-jemna text-app-zelena">
+                  <Building2 className="h-4 w-4" />
                 </span>
-                <span className="mt-0.5 block truncate text-[13px] text-app-text-2">
-                  {[o.ico ? t("nf.icoS", { ico: o.ico }) : null, o.city].filter(Boolean).join(" · ") || "—"}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-medium leading-tight">
+                    {o.name}
+                  </span>
+                  <span className="mt-0.5 block truncate text-[13px] text-app-text-2">
+                    {[o.ico ? t("nf.icoS", { ico: o.ico }) : null, o.city]
+                      .filter(Boolean)
+                      .join(" · ") || "—"}
+                  </span>
                 </span>
-              </span>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
         </>
       )}
     </MobilObrazovka>
@@ -845,7 +945,11 @@ export function NovyOdberatel({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Pole label={t("nf.dic")} value={f.dic} onChange={(v) => setF({ ...f, dic: v })} />
-          <Pole label={t("nf.icDph")} value={f.ic_dph} onChange={(v) => setF({ ...f, ic_dph: v })} />
+          <Pole
+            label={t("nf.icDph")}
+            value={f.ic_dph}
+            onChange={(v) => setF({ ...f, ic_dph: v })}
+          />
         </div>
         <Pole
           label={t("nf.emailPole")}
@@ -1231,7 +1335,13 @@ function KrokSuhrn({
   maIban,
   onSpat,
   onUloz,
+  onZmenOdberatela,
+  povodnyOdberatel,
+  upozornenia = [],
 }: {
+  onZmenOdberatela?: () => void;
+  povodnyOdberatel?: string | null;
+  upozornenia?: ReturnType<typeof kodyUpozorneni>;
   odberatel: Odberatel;
   mena: string;
   platca: boolean;
@@ -1280,13 +1390,44 @@ function KrokSuhrn({
       }
     >
       <div className="space-y-4">
+        {upozornenia.length > 0 && (
+          <ul className="space-y-1 rounded-app border border-amber-300/60 bg-amber-50 px-3 py-2 text-[13px] leading-snug text-amber-900">
+            {upozornenia.map((u) => (
+              <li key={u.kod}>
+                {u.kod === "efaktura"
+                  ? t("nf.upozornenieEfaktura")
+                  : u.kod === "pdf"
+                    ? t("nf.upozorneniePdf")
+                    : u.kod === "krajina"
+                      ? t("nf.upozornenieKrajina", { z: u.z, na: u.na })
+                      : t("nf.upozorneniePrenesenie")}
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="rounded-app border border-app-ramik bg-app-karta p-4 shadow-app">
           <div className="text-[32px] font-semibold leading-none tabular-nums">
             {suma(sucty.spolu, mena, loc)}
           </div>
-          <div className="mt-2 text-[14px] text-app-text-2">
-            {odberatel.name} · {sPoctom(pocetPoloziek, POLOZKY)}
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 text-[14px] text-app-text-2">
+            <span>
+              {odberatel.name} · {sPoctom(pocetPoloziek, POLOZKY)}
+            </span>
+            {onZmenOdberatela && (
+              <button
+                type="button"
+                onClick={onZmenOdberatela}
+                className="font-medium text-app-zelena active:opacity-70"
+              >
+                {t("nf.zmenitOdberatela")}
+              </button>
+            )}
           </div>
+          {povodnyOdberatel && (
+            <div className="mt-1 text-[12px] text-app-text-2">
+              {t("nf.odberatelZmeneny", { meno: povodnyOdberatel })}
+            </div>
+          )}
           {platca && (
             <div className="mt-1 text-[12px] text-app-text-2">
               {t("nf.zakladDph", {
@@ -1312,9 +1453,7 @@ function KrokSuhrn({
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="mb-1 block text-[13px] font-medium text-app-text-2">
-              Vystavenie
-            </span>
+            <span className="mb-1 block text-[13px] font-medium text-app-text-2">Vystavenie</span>
             <input
               type="date"
               value={vystavenie}
@@ -1376,9 +1515,7 @@ function KrokSuhrn({
             ))}
           </div>
           {uhrada === "bank_transfer" && !maIban && (
-            <p className="mt-1.5 text-xs text-app-chyba">
-              {t("nf.bezIbanu")}
-            </p>
+            <p className="mt-1.5 text-xs text-app-chyba">{t("nf.bezIbanu")}</p>
           )}
         </div>
 
@@ -1467,10 +1604,7 @@ function VyberZalohy({
           odpočítať viac a starý stĺpec by druhú a ďalšiu zamlčal, takže by
           sa v telefóne ponúkla znovu.
         */
-        supabase
-          .from("invoice_advances")
-          .select("advance_invoice_id")
-          .eq("company_id", firmaId),
+        supabase.from("invoice_advances").select("advance_invoice_id").eq("company_id", firmaId),
       ]);
       if (zrusene) return;
       const pouzite = new Set(
@@ -1496,7 +1630,9 @@ function VyberZalohy({
     return (
       <div className="flex items-center justify-between gap-3 rounded-app border border-app-ramik bg-app-karta p-4">
         <div className="min-w-0">
-          <div className="text-[14px] font-medium">{t("nf.zalohaCislo", { cislo: zaloha.invoice_number })}</div>
+          <div className="text-[14px] font-medium">
+            {t("nf.zalohaCislo", { cislo: zaloha.invoice_number })}
+          </div>
           <div className="text-[13px] text-app-text-2">
             {t("nf.odpocitaSa", { suma: suma(zaloha.total, mena, loc) })}
           </div>
@@ -1610,16 +1746,12 @@ function Odlozena({
                 {faktura.cislo}
               </p>
             </div>
-            <p className="text-[14px] leading-snug text-app-text-2">
-              {t("nf.cisloJeVase")}
-            </p>
+            <p className="text-[14px] leading-snug text-app-text-2">{t("nf.cisloJeVase")}</p>
           </>
         ) : (
           <>
             <p className="text-[17px] font-semibold">{t("nf.odlozena")}</p>
-            <p className="text-[14px] leading-snug text-app-text-2">
-              {t("nf.odlozenaPopis")}
-            </p>
+            <p className="text-[14px] leading-snug text-app-text-2">{t("nf.odlozenaPopis")}</p>
           </>
         )}
 
@@ -1747,11 +1879,7 @@ function Vystavena({
           />
         </div>
 
-        {!faktura.customer_email && (
-          <p className="text-xs text-app-text-2">
-            {t("nf.bezEmailu")}
-          </p>
-        )}
+        {!faktura.customer_email && <p className="text-xs text-app-text-2">{t("nf.bezEmailu")}</p>}
       </div>
     </MobilObrazovka>
   );
