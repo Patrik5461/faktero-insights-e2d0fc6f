@@ -108,4 +108,30 @@ describe("faktúra na jednu stranu", () => {
     });
     expect(await strany(b)).toBe(1);
   });
+
+  it("bežná faktúra s textom nad položkami, platobným QR a odkazom Faktúra online", async () => {
+    const b = await generateInvoicePdfBytes({
+      company: { ...dodavatel, vat_payer: true },
+      invoice: {
+        ...odberatel,
+        invoice_number: "20260004",
+        issue_date: "2026-10-05",
+        delivery_date: "2026-10-05",
+        due_date: "2026-10-19",
+        variable_symbol: "20260004",
+        payment_method: "bank_transfer",
+        currency: "EUR",
+        intro_note: "Fakturujeme Vám montážne práce podľa objednávky č. 15/2026.",
+        subtotal: 300,
+        vat_total: 69,
+        total: 369,
+      },
+      items: [
+        { name: "Montáž", description: "Výjazd a práca", quantity: 10, unit: "h", unit_price: 25, vat_rate: 23, total: 307.5 },
+        { name: "Materiál", quantity: 1, unit: "ks", unit_price: 50, vat_rate: 23, total: 61.5 },
+      ],
+      verejnyOdkaz: "https://www.faktero.sk/faktura/52376f872a9b372e59b67e3cf58ee86b",
+    });
+    expect(await strany(b)).toBe(1);
+  });
 });

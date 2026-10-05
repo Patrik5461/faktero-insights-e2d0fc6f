@@ -735,6 +735,52 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
         ? t.prenosVyvoz
         : t.prenosTuzemsko
     : null;
+  /*
+    Rámik „Faktúra online“ s QR na otvorenie dokladu. Široký (pod platobnými
+    údajmi) nesie aj odkaz textom; úzky (vľavo vedľa súčtov) len výzvu a QR —
+    odkaz by sa doň nezmestil a orezaný odkaz vyzerá ako chyba.
+  */
+  const kresliOnline = async (strana: PDFPage, x: number, hore: number, w: number, h: number) => {
+    const vQR = 68;
+    strana.drawRectangle({
+      x,
+      y: hore - h,
+      width: w,
+      height: h,
+      color: white,
+      borderColor: hairline,
+      borderWidth: 0.7,
+    });
+    strana.drawText(t.fakturaOnline, { x: x + 16, y: hore - 22, size: 8, font: bold, color: muted });
+    const textW = w - vQR - 48;
+    const siroky = textW > 260;
+    const vyzva = wrapLines(t.naskenujteKod, font, 9, textW);
+    vyzva.forEach((ln, i) =>
+      strana.drawText(ln, { x: x + 16, y: hore - 42 - i * 11, size: 9, font, color: ink }),
+    );
+    if (siroky) {
+      strana.drawText(ellipsize(String(input.verejnyOdkaz), font, 8.5, textW), {
+        x: x + 16,
+        y: hore - 42 - vyzva.length * 11 - 5,
+        size: 8.5,
+        font: bold,
+        color: primaryDark,
+      });
+    }
+    try {
+      const dataUrl = await QRCode.toDataURL(String(input.verejnyOdkaz), { margin: 0, width: 200 });
+      const png = await doc.embedPng(dataUrl);
+      strana.drawImage(png, {
+        x: x + w - vQR - 16,
+        y: hore - h + (h - vQR) / 2,
+        width: vQR,
+        height: vQR,
+      });
+    } catch {
+      /* bez QR ostane aspoň odkaz napísaný textom */
+    }
+  };
+
   let prenesenieHotove = false;
   if (textPrenesenia && !kresliPeciatku) {
     const sirka = totalsX - margin - 20;
@@ -758,6 +804,21 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
         ry -= 11.5;
       }
       prenesenieHotove = true;
+    }
+  }
+
+  /*
+    Rámik „Faktúra online“ tiež do voľného miesta vedľa súčtov — pod
+    platobnými údajmi sám posúval bežnú faktúru s textom nad položkami na
+    druhú stranu.
+  */
+  let onlineHotove = false;
+  if (input.verejnyOdkaz && !kresliPeciatku && !prenesenieHotove) {
+    const sirka = totalsX - margin - 20;
+    const vyska = 92;
+    if (sirka >= 200 && vyska <= totalsTop - (ty - heroH) + 4) {
+      await kresliOnline(cur, margin, totalsTop + 4, sirka, vyska);
+      onlineHotove = true;
     }
   }
 
@@ -1059,57 +1120,10 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     predvyplní platbu v banke, tento otvorí samotný doklad. Preto sú oba
     popísané, nech si ich nikto nepomýli.
   */
-  if (input.verejnyOdkaz) {
+  if (input.verejnyOdkaz && !onlineHotove) {
     const vH = 92;
     ensureSpace(vH + 12);
-    const vX = margin;
-    const vY = y;
-    const vQR = 68;
-    cur.drawRectangle({
-      x: vX,
-      y: vY - vH,
-      width: innerW,
-      height: vH,
-      color: white,
-      borderColor: hairline,
-      borderWidth: 0.7,
-    });
-    cur.drawText(t.fakturaOnline, {
-      x: vX + 16,
-      y: vY - 22,
-      size: 8,
-      font: bold,
-      color: muted,
-    });
-    cur.drawText(t.naskenujteKod, {
-      x: vX + 16,
-      y: vY - 42,
-      size: 9,
-      font,
-      color: ink,
-    });
-    cur.drawText(ellipsize(String(input.verejnyOdkaz), font, 8.5, innerW - vQR - 64), {
-      x: vX + 16,
-      y: vY - 58,
-      size: 8.5,
-      font: bold,
-      color: primaryDark,
-    });
-    try {
-      const dataUrl = await QRCode.toDataURL(String(input.verejnyOdkaz), {
-        margin: 0,
-        width: 200,
-      });
-      const png = await doc.embedPng(dataUrl);
-      cur.drawImage(png, {
-        x: vX + innerW - vQR - 16,
-        y: vY - vH + (vH - vQR) / 2,
-        width: vQR,
-        height: vQR,
-      });
-    } catch {
-      /* bez QR ostane aspoň odkaz napísaný textom */
-    }
+    await kresliOnline(cur, margin, y, innerW, vH);
     y -= vH + 12;
   }
 
