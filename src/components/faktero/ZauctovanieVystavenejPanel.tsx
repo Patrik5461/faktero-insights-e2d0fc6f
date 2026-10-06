@@ -153,7 +153,10 @@ export function ZauctovanieVystavenejPanel({
   }
 
   return (
-    <div id="zauctovanie" className="scroll-mt-24 rounded-xl border border-border bg-card p-5 text-sm transition-shadow">
+    <div
+      id="zauctovanie"
+      className="scroll-mt-24 rounded-xl border border-border bg-card p-5 text-sm transition-shadow"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
           <BookCheck className="h-3.5 w-3.5" /> Zaúčtovanie
@@ -221,6 +224,7 @@ export function ZauctovanieVystavenejPanel({
             <label className="block">
               <span className="text-xs text-muted-foreground">Predkontácia (Pohoda)</span>
               <KodPohody
+                odkazNaCiselnik
                 value={h.predkontacia}
                 onChange={(v) => setH({ ...h, predkontacia: v })}
                 moznosti={navrhy?.predkontacie ?? []}

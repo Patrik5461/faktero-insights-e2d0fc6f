@@ -825,7 +825,10 @@ function NovyDokladPage() {
                   </div>
                 </div>
               ) : null}
-              <div id="zauctovanie" className="sm:col-span-2 scroll-mt-24 rounded-md border border-border p-3 transition-shadow">
+              <div
+                id="zauctovanie"
+                className="sm:col-span-2 scroll-mt-24 rounded-md border border-border p-3 transition-shadow"
+              >
                 <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Zaúčtovanie (Pohoda)
                 </div>
@@ -846,6 +849,7 @@ function NovyDokladPage() {
                     <span className="mb-1 block text-xs text-muted-foreground">Predkontácia</span>
                     <KodPohody
                       ariaLabel="Predkontácia"
+                      odkazNaCiselnik
                       value={form.pohoda_predkontacia}
                       onChange={(v) => updateForm("pohoda_predkontacia", v)}
                       moznosti={kody?.predkontacie ?? []}

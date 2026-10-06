@@ -18,6 +18,7 @@ export function KodPohody({
   bezPopisu,
   ariaLabel,
   vyber,
+  odkazNaCiselnik,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -31,6 +32,8 @@ export function KodPohody({
    * „Iný kód…“ prepne na písanie. Bez číselníka ostane políčko na písanie.
    */
   vyber?: boolean;
+  /** Pri prázdnom číselníku ukáže odkaz na jeho načítanie (len pri hlavnej predkontácii). */
+  odkazNaCiselnik?: boolean;
 }) {
   const id = useId();
   const [pisat, setPisat] = useState(false);
@@ -113,11 +116,10 @@ export function KodPohody({
             : [vybrany?.popis, vybrany?.ucty].filter(Boolean).join(" · ")}
         </span>
       ) : null}
-      {vyber && !moznosti.length && !bezPopisu ? (
+      {vyber && odkazNaCiselnik && !moznosti.length && !bezPopisu ? (
         <span className="mt-0.5 block text-xs text-muted-foreground">
-          Zatiaľ niet z čoho vyberať —{" "}
           <Link to="/uctovnictvo/predkontacie" className="text-primary hover:underline">
-            načítajte číselník z Pohody
+            Načítať číselník z Pohody
           </Link>
         </span>
       ) : null}
