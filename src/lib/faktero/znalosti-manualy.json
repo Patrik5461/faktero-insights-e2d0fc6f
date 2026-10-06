@@ -296,6 +296,10 @@
      "text": "<>\nFaktero už dnes vie vygenerovať XML eFaktúry vo formáte kompatibilnom s normou EN 16931\n(UBL 2.1). Súbor si môžete stiahnuť na detaile faktúry.\nPre Peppol sieť pripravujeme priame napojenie cez akreditovaný Access Point — bude k\ndispozícii pred spustením povinnej eFakturácie."
     },
     {
+     "nadpis": "Dobropis a samofaktúra cez eFaktúru",
+     "text": "<>\nDobropis odchádza ako samostatný doklad CreditNote (typ 381) a nesie číslo\npôvodnej faktúry (pole BT-25) — finančná správa to vyžaduje. Bez vyplnenej pôvodnej\nfaktúry ho Faktero neodošle. Opravný doklad s kladnou sumou (napríklad vrátenie opravy\npodľa § 25a) ide ako ťarchopis (typ 383).\nPrijatý dobropis sa pri zaevidovaní uloží medzi prijaté faktúry so zápornou sumou a s\nčíslom faktúry, ktorú opravuje — do výkazu DPH tak ide ako oprava odpočtu, nie ako ďalší\nnákup.\nOdsúhlasenú samofaktúru (/pomoc/prijate-faktury) pošlete dodávateľovi aj\ncez eFaktúru tlačidlom Poslať cez eFaktúru na jej detaile (typ self-billing)."
+    },
+    {
      "nadpis": "Čo bude dostupné pred rokom 2027",
      "text": "<>\n-\nValidátor XML voči SK rozšíreniam EN 16931.\n-\nPriame odosielanie do IS Finančnej správy (IS EFA).\n-\nPríjem eFaktúr od dodávateľov priamo do Faktera.\n-\nArchív v zákonom požadovanej lehote.\nAk chcete byť informovaní o spustení, prihláste sa cez\nstránku eFaktúra (/efaktura)."
     }
@@ -1052,8 +1056,12 @@
      "text": "<>\nNad výkazmi sa vypíše, čo chýba: faktúra bez IČ DPH odberateľa pri dodaní do EÚ, prijatá\nfaktúra bez čísla, dobropis bez väzby na pôvodný doklad, doklad v cudzej mene. Výkaz sa dá\nstiahnuť aj tak, ale tie riadky budú neúplné — cudzia mena sa navyše do výkazov uvádza\nprepočítaná na eurá."
     },
     {
+     "nadpis": "Nezaplatené faktúry — § 25a a § 53b",
+     "text": "<>\nVy dlžíte (§ 53b, povinné). Keď prijatú faktúru od platiteľa\nnezaplatíte ani na 101. deň po splatnosti, musíte štátu vrátiť odpočítanú daň. Faktero to\nurobí samo: v období, v ktorom 101. deň nastal, pridá opravu do r. 29 priznania a do časti\nC.2 kontrolného výkazu (číslo dokladu „0“, záporné sumy, označenie nevymožiteľnej\npohľadávky). Doklad sa nevystavuje a cez eFaktúru sa nič neposiela. Keď faktúru neskôr\nzaplatíte, v období úhrady si daň odpočítate znova — aj to Faktero doplní samo. Rozhoduje\ndátum úhrady na prijatej faktúre, preto ju označujte ako zaplatenú s dátumom.\nVám dlžia (§ 25a, môžete). Keď odberateľ nezaplatí ani 150 dní po\nsplatnosti, môžete si daň z nezaplatenej časti vrátiť. Do 1 000 € s DPH stačí doložiť\núkon na vymoženie — napríklad upomienku odoslanú z Faktera; nad 1 000 € musí byť podaná\nžaloba alebo vedená exekúcia. Na detaile faktúry sa vtedy objaví\nVystaviť opravný doklad (§ 25a) : vznikne doklad s textom „oprava základu dane\npodľa § 25a“, ktorý musíte odberateľovi odoslať (e-mailom alebo cez eFaktúru ako dobropis\ns číslom pôvodnej faktúry) do lehoty na podanie priznania. Vo výkazoch ide do r. 26 a 27\na do C.1. Keď odberateľ neskôr zaplatí, opravu treba vrátiť — Faktero na to upozorní a\ndoklad o vrátení vystaví jedným klikom. Pri uplatňovaní dane na základe prijatia platby\n(§ 68d) a pri prenesení daňovej povinnosti sa nič z toho neuplatní."
+    },
+    {
      "nadpis": "Riadky, ktoré Faktero nevie",
-     "text": "<>\nNiektoré riadky priznania z dokladov nevyplývajú — dovoz tovaru, nevymožiteľná pohľadávka,\nodpočet dane pri registrácii, daň vrátená cestujúcim alebo nadmerný odpočet z minulého\nobdobia. Vyplnia sa ručne v rozbaľovacej časti pod priznaním a hneď sa premietnu do\nvýsledku."
+     "text": "<>\nNiektoré riadky priznania z dokladov nevyplývajú — dovoz tovaru, odpočet dane pri\nregistrácii, daň vrátená cestujúcim alebo nadmerný odpočet z minulého obdobia. Vyplnia sa\nručne v rozbaľovacej časti pod priznaním a hneď sa premietnu do výsledku. Riadky 26, 27 a\n29 (nezaplatené faktúry) dopĺňa Faktero samo — ručne len to, čo vo Fakteri nie je."
     },
     {
      "nadpis": "Po podaní",

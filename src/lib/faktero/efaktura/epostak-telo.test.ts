@@ -86,6 +86,12 @@ describe("telo pre ePoštáka", () => {
   it("doklad k prijatej platbe a druh z typu faktúry", () => {
     expect(teloOdoslania({ ...zaklad, druh: "advance_payment" }).taxPointDate).toBe("2026-10-04");
     expect(druhZFaktury("credit_note")).toBe("credit_note");
+    expect(druhZFaktury("credit_note", -12.3)).toBe("credit_note");
+    // Vrátenie opravy podľa § 25a ods. 10 má kladnú sumu → ťarchopis 383.
+    expect(druhZFaktury("credit_note", 12.3)).toBe("debit_note");
+    expect(
+      teloOdoslania({ ...zaklad, druh: "debit_note", povodneCislo: "20260004" }),
+    ).toMatchObject({ documentType: "debit_note", precedingInvoiceRef: "20260004" });
     expect(druhZFaktury("regular")).toBe("invoice");
     expect(() => druhZFaktury("proforma")).toThrow(/nie je daňový doklad/);
   });

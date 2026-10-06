@@ -119,12 +119,12 @@ export function kvNaXml(
   }
   for (const c of vykaz.c1) {
     riadky.push(
-      `<C1${atr("Odb", sPredponou(c.odb) || null)} FO="${esc(c.fo)}" FP="${esc(c.fp)}" ZR="${suma(c.zr)}" DR="${suma(c.dr)}" S="${c.s}"/>`,
+      `<C1${atr("Odb", sPredponou(c.odb) || null)} FO="${esc(c.fo)}" FP="${esc(c.fp)}" ZR="${suma(c.zr)}" DR="${suma(c.dr)}" S="${c.s}"${c.onp ? ' ONP="x"' : ""}/>`,
     );
   }
   for (const c of vykaz.c2) {
     riadky.push(
-      `<C2${atr("Dod", sPredponou(c.dod) || null)} FO="${esc(c.fo)}" FP="${esc(c.fp)}" ZR="${suma(c.zr)}" DR="${suma(c.dr)}" S="${c.s}" OR="${suma(c.or)}"/>`,
+      `<C2${atr("Dod", sPredponou(c.dod) || null)} FO="${esc(c.fo)}" FP="${esc(c.fp)}" ZR="${suma(c.zr)}" DR="${suma(c.dr)}" S="${c.s}" OR="${suma(c.or)}"${c.onp ? ' ONP="x"' : ""}/>`,
     );
   }
 

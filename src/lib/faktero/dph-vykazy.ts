@@ -14,6 +14,7 @@
  */
 
 import { najblizsiaSadzba, sadzbyKuDnu } from "./vat-rates";
+import type { Oprava53b } from "./dph-nezaplatene";
 
 export type Obdobie = {
   rok: number;
@@ -41,6 +42,8 @@ export type VystavenaFaktura = {
   euPlnenie?: "tovar" | "sluzba" | "trojstranny" | null;
   /** Číslo faktúry, ktorú tento doklad opravuje (dobropis). */
   opravujeCislo?: string | null;
+  /** Oprava základu dane podľa § 25a (nevymožiteľná pohľadávka) — r. 26/27, C.1 ONP. */
+  oprava25a?: boolean | null;
   /** Predaj spotrebiteľovi v EÚ — daň sa odvádza cez OSS, nie tu. */
   oss?: boolean | null;
   ossStat?: string | null;
@@ -73,6 +76,8 @@ export type Vstup = {
   vystavene: VystavenaFaktura[];
   prijate: PrijataFaktura[];
   doklady: PrijatyDoklad[];
+  /** Opravy odpočtu podľa § 53b, ktoré patria do obdobia (r. 29, C.2 ONP). */
+  opravy53b?: Oprava53b[];
 };
 
 /** Čo chýba alebo nesedí. Výkaz sa dá pozrieť, ale nemá sa podať naslepo. */
@@ -188,7 +193,16 @@ export type KvB1B2 = {
 };
 export type KvB31 = { z: number; d: number; o: number };
 export type KvB32 = { dod: string; z: number; d: number; o: number };
-export type KvC1 = { odb?: string; fo: string; fp: string; zr: number; dr: number; s: number };
+export type KvC1 = {
+  odb?: string;
+  fo: string;
+  fp: string;
+  zr: number;
+  dr: number;
+  s: number;
+  /** Oprava z dôvodu nevymožiteľnej pohľadávky (§ 25a) — atribút ONP = „x“. */
+  onp?: boolean;
+};
 export type KvC2 = {
   dod?: string;
   fo: string;
@@ -197,6 +211,8 @@ export type KvC2 = {
   dr: number;
   s: number;
   or: number;
+  /** Oprava odpočtu podľa § 53b — atribút ONP = „x“. */
+  onp?: boolean;
 };
 
 export type KontrolnyVykaz = {
@@ -248,6 +264,7 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
           zr: centy(r.zaklad),
           dr: centy(r.dan),
           s: Math.round(r.sadzba),
+          ...(f.oprava25a ? { onp: true } : {}),
         });
       }
       continue;
@@ -333,6 +350,26 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
         }
         vykaz.b2.push(riadok);
       }
+    }
+  }
+
+  /*
+    C.2 — oprava odpočtu podľa § 53b bez dokladu: číslo opravnej faktúry „0“
+    (podľa FS), číslo pôvodnej faktúry, záporné hodnoty pri vrátení a kladné
+    pri opätovnom odpočte, ONP = „x“.
+  */
+  for (const o of vstup.opravy53b ?? []) {
+    for (const r of o.riadky) {
+      vykaz.c2.push({
+        dod: o.dodavatelIcDph?.trim() || undefined,
+        fo: "0",
+        fp: o.cislo,
+        zr: centy(r.zaklad),
+        dr: centy(r.dan),
+        s: Math.round(r.sadzba),
+        or: centy(r.dan),
+        onp: true,
+      });
     }
   }
 
@@ -476,6 +513,13 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
     for (const x of f.riadky) {
       if (x.sadzba <= 0) continue;
       if (jeOpravna(f)) {
+        if (f.oprava25a) {
+          // § 25a — nevymožiteľná pohľadávka: r. 26 a r. 27 (zníženie mínus,
+          // vrátenie opravy po úhrade plus).
+          pripocitaj("r26", x.zaklad);
+          pripocitaj("r27", x.dan);
+          continue;
+        }
         // Oprava základu dane a dane podľa § 25 — so znamienkom mínus.
         pripocitaj("r24", x.zaklad);
         pripocitaj("r25", x.dan);
@@ -523,6 +567,11 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
       if (p.rezim === "tuzemsko") pripocitaj(znizena ? "r20" : "r21", x.dan);
       if (p.rezim === "dovoz") pripocitaj(znizena ? "r22" : "r23", x.dan);
     }
+  }
+
+  // § 53b — vrátenie odpočtu je r. 29 so znamienkom plus, opätovný odpočet mínus.
+  for (const o of vstup.opravy53b ?? []) {
+    for (const x of o.riadky) pripocitaj("r29", -x.dan);
   }
 
   for (const d of vstup.doklady) {

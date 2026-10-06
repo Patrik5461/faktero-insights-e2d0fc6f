@@ -91,6 +91,29 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "dobropis",
+    title: "Dobropis a samofaktúra cez eFaktúru",
+    body: (
+      <>
+        <p>
+          Dobropis odchádza ako samostatný doklad <strong>CreditNote (typ 381)</strong> a nesie číslo
+          pôvodnej faktúry (pole BT-25) — finančná správa to vyžaduje. Bez vyplnenej pôvodnej
+          faktúry ho Faktero neodošle. Opravný doklad s kladnou sumou (napríklad vrátenie opravy
+          podľa § 25a) ide ako ťarchopis (typ 383).
+        </p>
+        <p>
+          Prijatý dobropis sa pri zaevidovaní uloží medzi prijaté faktúry so zápornou sumou a s
+          číslom faktúry, ktorú opravuje — do výkazu DPH tak ide ako oprava odpočtu, nie ako ďalší
+          nákup.
+        </p>
+        <p>
+          Odsúhlasenú <Link to="/pomoc/prijate-faktury">samofaktúru</Link> pošlete dodávateľovi aj
+          cez eFaktúru tlačidlom <em>Poslať cez eFaktúru</em> na jej detaile (typ self-billing).
+        </p>
+      </>
+    ),
+  },
+  {
     id: "2027",
     title: "Čo bude dostupné pred rokom 2027",
     body: (

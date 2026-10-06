@@ -279,7 +279,7 @@ export async function sendEfaktura(
     odišiel ako obyčajná faktúra so zápornými sumami.
   */
   const { druhZFaktury, teloOdoslania, zlavaNaPercento } = await import("./epostak-telo");
-  const druh = druhZFaktury((invoice as any).type);
+  const druh = druhZFaktury((invoice as any).type, Number((invoice as any).total ?? 0));
   let povodneCislo: string | null = null;
   if ((invoice as any).opravuje_fakturu_id) {
     const { data: povodna } = await supabaseAdmin

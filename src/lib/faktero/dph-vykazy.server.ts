@@ -68,7 +68,7 @@ export async function nacitajVstup(
     supabase
       .from("invoices")
       .select(
-        "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, invoice_items(vat_rate, subtotal, quantity, unit_price)",
+        "id, invoice_number, type, status, issue_date, delivery_date, currency, customer_ic_dph, customer_name, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, opravuje_fakturu_id, advance_invoice_id, discount_total, subtotal, vat_total, subtotal_eur, vat_total_eur, exchange_rate, oprava_25a, invoice_items(vat_rate, subtotal, quantity, unit_price)",
       )
       .eq("company_id", companyId)
       .is("deleted_at", null)
@@ -76,7 +76,7 @@ export async function nacitajVstup(
     supabase
       .from("purchase_invoices")
       .select(
-        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total",
+        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, status, payment_date",
       )
       .eq("company_id", companyId)
       /*
@@ -187,6 +187,7 @@ export async function nacitajVstup(
       oss: Boolean(f.oss),
       ossStat: f.oss_country,
       opravujeCislo: f.opravuje_fakturu_id ? (cisla.get(f.opravuje_fakturu_id) ?? null) : null,
+      oprava25a: Boolean(f.oprava_25a),
       riadky,
     });
   }
@@ -257,7 +258,50 @@ export async function nacitajVstup(
     });
   }
 
-  return { vstup: { obdobie, vystavene, prijate, doklady }, vytky };
+  /*
+    § 53b — povinná oprava odpočtu z prijatých faktúr nezaplatených ani na
+    101. deň po splatnosti (a opätovný odpočet po neskoršej úhrade). Prechádzajú
+    sa všetky prijaté faktúry, nie len tie s dodaním v období: oprava patrí do
+    obdobia 101. dňa alebo úhrady.
+  */
+  const { data: firmaDph } = await supabase
+    .from("companies")
+    .select("dan_z_prijatej_platby")
+    .eq("id", companyId)
+    .maybeSingle();
+  const { opravy53b } = await import("./dph-nezaplatene");
+  const naKontrolu = ((prijateRes.data ?? []) as any[])
+    .filter((p) => zapocitatelna(p) && p.due_date)
+    .map((p) => {
+      const den = p.delivery_date || p.issue_date;
+      const cudziaP = Boolean(p.currency && p.currency !== "EUR");
+      const maPrepocet = p.vat_amount_eur != null || p.amount_without_vat_eur != null;
+      const dan = cudziaP && maPrepocet ? Number(p.vat_amount_eur ?? 0) : Number(p.vat_amount ?? 0);
+      const zaklad =
+        cudziaP && maPrepocet ? Number(p.amount_without_vat_eur ?? 0) : Number(p.amount_without_vat ?? 0);
+      return {
+        cislo: String(p.invoice_number ?? ""),
+        dodavatelIcDph: p.supplier_ic_dph,
+        rezim: ((p.dph_rezim as PrijataFaktura["rezim"]) ?? odvodRezimPrijatej(p.supplier_ic_dph, dan)) as PrijataFaktura["rezim"],
+        odpocet: p.odpocet !== false,
+        dobropis: Boolean(p.opravuje_cislo) || zaklad < 0,
+        splatnost: String(p.due_date),
+        zaplatenaDna: p.payment_date ? String(p.payment_date).slice(0, 10) : null,
+        zaplatena: p.status === "paid",
+        riadky: riadkyPrijatej(p, zaklad, dan, den, cudziaP),
+      };
+    });
+  const opravy = opravy53b(naKontrolu, od, doDna, Boolean((firmaDph as any)?.dan_z_prijatej_platby));
+  for (const o of opravy) {
+    if (!o.dodavatelIcDph) {
+      vytky.push({
+        doklad: o.cislo,
+        text: "Oprava odpočtu podľa § 53b: prijatá faktúra nemá IČ DPH dodávateľa — časť C.2 ho vyžaduje.",
+      });
+    }
+  }
+
+  return { vstup: { obdobie, vystavene, prijate, doklady, opravy53b: opravy }, vytky };
 }
 
 /**

@@ -91,15 +91,44 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "nezaplatene",
+    title: "Nezaplatené faktúry — § 25a a § 53b",
+    body: (
+      <>
+        <p>
+          <strong>Vy dlžíte (§ 53b, povinné).</strong> Keď prijatú faktúru od platiteľa
+          nezaplatíte ani na 101. deň po splatnosti, musíte štátu vrátiť odpočítanú daň. Faktero to
+          urobí samo: v období, v ktorom 101. deň nastal, pridá opravu do r. 29 priznania a do časti
+          C.2 kontrolného výkazu (číslo dokladu „0“, záporné sumy, označenie nevymožiteľnej
+          pohľadávky). Doklad sa nevystavuje a cez eFaktúru sa nič neposiela. Keď faktúru neskôr
+          zaplatíte, v období úhrady si daň odpočítate znova — aj to Faktero doplní samo. Rozhoduje
+          dátum úhrady na prijatej faktúre, preto ju označujte ako zaplatenú s dátumom.
+        </p>
+        <p>
+          <strong>Vám dlžia (§ 25a, môžete).</strong> Keď odberateľ nezaplatí ani 150 dní po
+          splatnosti, môžete si daň z nezaplatenej časti vrátiť. Do 1 000 € s DPH stačí doložiť
+          úkon na vymoženie — napríklad upomienku odoslanú z Faktera; nad 1 000 € musí byť podaná
+          žaloba alebo vedená exekúcia. Na detaile faktúry sa vtedy objaví{" "}
+          <em>Vystaviť opravný doklad (§ 25a)</em>: vznikne doklad s textom „oprava základu dane
+          podľa § 25a“, ktorý musíte odberateľovi odoslať (e-mailom alebo cez eFaktúru ako dobropis
+          s číslom pôvodnej faktúry) do lehoty na podanie priznania. Vo výkazoch ide do r. 26 a 27
+          a do C.1. Keď odberateľ neskôr zaplatí, opravu treba vrátiť — Faktero na to upozorní a
+          doklad o vrátení vystaví jedným klikom. Pri uplatňovaní dane na základe prijatia platby
+          (§ 68d) a pri prenesení daňovej povinnosti sa nič z toho neuplatní.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "rucne-riadky",
     title: "Riadky, ktoré Faktero nevie",
     body: (
       <>
         <p>
-          Niektoré riadky priznania z dokladov nevyplývajú — dovoz tovaru, nevymožiteľná pohľadávka,
-          odpočet dane pri registrácii, daň vrátená cestujúcim alebo nadmerný odpočet z minulého
-          obdobia. Vyplnia sa ručne v rozbaľovacej časti pod priznaním a hneď sa premietnu do
-          výsledku.
+          Niektoré riadky priznania z dokladov nevyplývajú — dovoz tovaru, odpočet dane pri
+          registrácii, daň vrátená cestujúcim alebo nadmerný odpočet z minulého obdobia. Vyplnia sa
+          ručne v rozbaľovacej časti pod priznaním a hneď sa premietnu do výsledku. Riadky 26, 27 a
+          29 (nezaplatené faktúry) dopĺňa Faktero samo — ručne len to, čo vo Fakteri nie je.
         </p>
       </>
     ),

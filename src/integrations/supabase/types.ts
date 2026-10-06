@@ -4140,6 +4140,7 @@ export type Database = {
           language: string | null
           notes: string | null
           opravuje_fakturu_id: string | null
+          oprava_25a: boolean
           order_number: string | null
           original_external_id: string | null
           paid_at: string | null
@@ -4221,6 +4222,7 @@ export type Database = {
           language?: string | null
           notes?: string | null
           opravuje_fakturu_id?: string | null
+          oprava_25a?: boolean
           order_number?: string | null
           original_external_id?: string | null
           paid_at?: string | null
@@ -4302,6 +4304,7 @@ export type Database = {
           language?: string | null
           notes?: string | null
           opravuje_fakturu_id?: string | null
+          oprava_25a?: boolean
           order_number?: string | null
           original_external_id?: string | null
           paid_at?: string | null

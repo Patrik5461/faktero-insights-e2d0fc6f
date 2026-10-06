@@ -17,6 +17,7 @@
 export type DruhEdokladu =
   | "invoice"
   | "credit_note"
+  | "debit_note"
   | "advance_payment"
   | "self_billing"
   | "self_billing_credit_note";
@@ -58,9 +59,13 @@ export function jeDobropis(druh: DruhEdokladu): boolean {
   return druh === "credit_note" || druh === "self_billing_credit_note";
 }
 
-/** Druh e-dokladu z typu faktúry vo Fakteri. Zálohová faktúra sa neposiela. */
-export function druhZFaktury(typ: string | null | undefined): DruhEdokladu {
-  if (typ === "credit_note") return "credit_note";
+/**
+ * Druh e-dokladu z typu faktúry vo Fakteri. Zálohová faktúra sa neposiela.
+ * Opravný doklad s kladnou sumou (napr. vrátenie opravy podľa § 25a ods. 10)
+ * je ťarchopis (383), nie dobropis.
+ */
+export function druhZFaktury(typ: string | null | undefined, spolu?: number | null): DruhEdokladu {
+  if (typ === "credit_note") return Number(spolu ?? 0) > 0 ? "debit_note" : "credit_note";
   if (typ === "advance_payment") return "advance_payment";
   if (typ === "proforma") {
     throw new Error(
@@ -72,7 +77,7 @@ export function druhZFaktury(typ: string | null | undefined): DruhEdokladu {
 
 export function teloOdoslania(d: DokladNaOdoslanie): Record<string, unknown> {
   const dobropis = jeDobropis(d.druh);
-  if (dobropis && !String(d.povodneCislo ?? "").trim()) {
+  if ((dobropis || d.druh === "debit_note") && !String(d.povodneCislo ?? "").trim()) {
     throw new Error(
       "Dobropis musí mať číslo pôvodnej faktúry (BT-25) — vyberte, ktorú faktúru opravuje.",
     );
@@ -145,7 +150,7 @@ export function teloOdoslania(d: DokladNaOdoslanie): Record<string, unknown> {
   if (d.vs) body.variableSymbol = d.vs;
   if (d.iban) body.iban = d.iban;
   if (d.poznamka) body.note = d.poznamka.slice(0, 1000);
-  if (dobropis) body.precedingInvoiceRef = String(d.povodneCislo).trim();
+  if (dobropis || d.druh === "debit_note") body.precedingInvoiceRef = String(d.povodneCislo).trim();
   if (d.zlavaDokladuPercent && d.zlavaDokladuPercent > 0) {
     body.documentDiscountPercent = r6(Math.min(d.zlavaDokladuPercent, 100));
   }

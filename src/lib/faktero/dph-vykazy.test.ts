@@ -180,6 +180,46 @@ describe("kontrolný výkaz", () => {
     expect(velke.b32).toHaveLength(2);
   });
 
+  it("nevymožiteľná pohľadávka (§ 25a) a oprava odpočtu (§ 53b) — r. 26, 27, 29, C.1/C.2 s ONP a schéma", () => {
+    const v = vstup({
+      vystavene: [
+        faktura({
+          cislo: "OD2026001",
+          typ: "credit_note",
+          opravujeCislo: "2026001",
+          oprava25a: true,
+          riadky: [{ sadzba: 23, zaklad: -100, dan: -23 }],
+        }),
+      ],
+      opravy53b: [
+        {
+          cislo: "FA-77",
+          dodavatelIcDph: "SK2020000000",
+          druh: "vratenie",
+          den: "2026-09-10",
+          riadky: [{ sadzba: 23, zaklad: -200, dan: -46 }],
+        },
+      ],
+    });
+    const kv = kontrolnyVykaz(v);
+    expect(kv.c1).toEqual([
+      expect.objectContaining({ fo: "OD2026001", fp: "2026001", zr: -100, dr: -23, onp: true }),
+    ]);
+    expect(kv.c2).toEqual([
+      expect.objectContaining({ fo: "0", fp: "FA-77", zr: -200, dr: -46, or: -46, onp: true }),
+    ]);
+    const dp = priznanie(v);
+    expect(dp.r26).toBe(-100);
+    expect(dp.r27).toBe(-23);
+    expect(dp.r24 ?? 0).toBe(0);
+    expect(dp.r29).toBe(46);
+    const xml = kvNaXml(kv, firma, { rok: 2026, mesiac: 9 });
+    expect(xml).toContain('ONP="x"');
+    const doc = XmlDocument.fromString(xml);
+    expect(() => validator("kv_dph_2025.xsd").validate(doc)).not.toThrow();
+    doc.dispose();
+  });
+
   it("prejde oficiálnou schémou KVDPH 2025", () => {
     const kv = kontrolnyVykaz(
       vstup({

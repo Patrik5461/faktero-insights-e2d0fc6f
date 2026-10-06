@@ -9,6 +9,7 @@ import { maZuctovanuZalohu, zostavaUhradit } from "./zaloha";
 import { rezimFirmy, type FirmaDph } from "./dph-rezim";
 import { textPrepoctu, trebaPrepocet } from "./kurzy";
 import { vetyNaDoklad } from "./faktura-nalezitosti";
+import { VETA_25A } from "./dph-nezaplatene";
 import {
   jazykDokladu,
   localeDokladu,
@@ -148,7 +149,12 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     advance_payment: t.dokladKPlatbe,
     credit_note: t.dobropis,
   };
-  const docLabel = input.documentLabel ?? podlaTypu[String((invoice as any).type ?? "")] ?? t.faktura;
+  // Doklad podľa § 25a nie je opravná faktúra (§ 71 ods. 2) — vlastný nadpis.
+  const docLabel =
+    input.documentLabel ??
+    ((invoice as any).oprava_25a ? "OPRAVNÝ DOKLAD" : undefined) ??
+    podlaTypu[String((invoice as any).type ?? "")] ??
+    t.faktura;
   const numberLabel =
     input.numberLabel ?? `${t.cislo} ${invoice.invoice_number ?? invoice.quote_number ?? ""}`;
   const doc = await PDFDocument.create();
@@ -227,6 +233,8 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   const podCislom: string[] = [];
   if (invoice.samofakturacia) podCislom.push(t.vyhotovenieOdberatelom);
   if (invoice.opravuje_cislo) podCislom.push(`${t.opravujeFakturu} ${invoice.opravuje_cislo}`);
+  // § 25a ods. 9 — presné znenie, po slovensky bez ohľadu na jazyk dokladu.
+  if (invoice.oprava_25a) podCislom.push(VETA_25A);
   podCislom.forEach((riadok, i) => {
     const w = bold.widthOfTextAtSize(san(riadok), 9);
     page.drawText(san(riadok), {
