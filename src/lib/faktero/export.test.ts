@@ -203,6 +203,45 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
       buildPohodaInvoiceXml({ company: firma, invoices: [{ invoice, items }], nastavenia }),
     ).dataPack.dataPackItem.invoice;
 
+  it("text nad položkami ide do textu dokladu, popis položky do jej poznámky", () => {
+    const [prva, ...zvysok] = polozky as any[];
+    const d = posli(
+      { ...faktura, intro_note: "Fakturujeme vám práce za september", notes: "Ďakujeme" },
+      [{ ...prva, description: "Montáž a doprava" }, ...zvysok],
+    );
+    expect(d.invoiceHeader.text).toBe("Fakturujeme vám práce za september");
+    expect(d.invoiceHeader.note).toContain("Ďakujeme");
+    expect([].concat(d.invoiceDetail.invoiceItem)[0]).toMatchObject({ note: "Montáž a doprava" });
+  });
+
+  it("zľava položky ide ako percento, účet ako skratka z Pohody", () => {
+    const [prva, ...zvysok] = polozky as any[];
+    const d = posli(faktura, [{ ...prva, discount_percent: 10 }, ...zvysok], { banka: "TB" });
+    expect(Number([].concat(d.invoiceDetail.invoiceItem)[0].discountPercentage)).toBe(10);
+    expect(d.invoiceHeader.account.ids).toBe("TB");
+    expect(posli(faktura).invoiceHeader.account).toBeUndefined();
+  });
+
+  it("zaúčtovanie faktúry prebije predvolené kódy, položka môže mať vlastné", () => {
+    const nast = { predkontacia: "3Fv", clenenieDph: "UD" };
+    const vlastne = posli(
+      { ...faktura, pohoda_predkontacia: "2Fv", pohoda_clenenie_dph: "UDA5", kv_clenenie: "A1" },
+      polozky,
+      nast,
+    ).invoiceHeader;
+    expect(vlastne.accounting.ids).toBe("2Fv");
+    expect(vlastne.classificationVAT.ids).toBe("UDA5");
+    expect(vlastne.classificationKVDPH.ids).toBe("A1");
+
+    const [prva, ...zvysok] = polozky as any[];
+    const rozuct = posli(faktura, [{ ...prva, pohoda_predkontacia: "4Fv", kv_clenenie: "A2" }, ...zvysok], nast);
+    expect(rozuct.invoiceHeader.accounting.ids).toBe("Rozúčtovať");
+    const pol = [].concat(rozuct.invoiceDetail.invoiceItem);
+    expect((pol[0] as any).accounting.ids).toBe("4Fv");
+    expect((pol[0] as any).classificationKVDPH.ids).toBe("A2");
+    if (pol[1]) expect((pol[1] as any).accounting.ids).toBe("3Fv");
+  });
+
   it("zálohová faktúra nie je bežná faktúra", () => {
     // Ako `issuedInvoice` by sa záloha zaúčtovala ako výnos, hoci ním nie je.
     expect(posli({ ...faktura, type: "proforma" }).invoiceHeader.invoiceType).toBe(

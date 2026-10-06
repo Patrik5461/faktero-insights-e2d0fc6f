@@ -18,7 +18,12 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) =>
     z
-      .object({ company_id: z.string().uuid(), pre: z.enum(["prijata", "doklad"]).optional() })
+      .object({
+        company_id: z.string().uuid(),
+        pre: z.enum(["prijata", "doklad", "vystavena"]).optional(),
+        /** Typ vystavenej faktúry — zálohová a dobropis majú vlastné predvolené kódy. */
+        typ: z.string().max(30).optional(),
+      })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -34,7 +39,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         supabase
           .from("companies")
           .select(
-            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady",
+            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia, pohoda_predkontacia_zaloha, pohoda_predkontacia_dobropis, pohoda_clenenie_dph, pohoda_clenenie_dph_pdp",
           )
           .eq("id", data.company_id)
           .maybeSingle(),
@@ -67,10 +72,17 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
       return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k).slice(0, 40);
     };
     const doklad = data.pre === "doklad";
-    const predvolenaPredkontacia: string | null =
-      (doklad ? firma?.pohoda_predkontacia_doklady : null) || firma?.pohoda_predkontacia_prijata || null;
-    const predvoleneClenenie: string | null =
-      (doklad ? firma?.pohoda_clenenie_dph_doklady : null) || firma?.pohoda_clenenie_dph_prijata || null;
+    const vystavena = data.pre === "vystavena";
+    const predvolenaPredkontacia: string | null = vystavena
+      ? (data.typ === "proforma"
+          ? firma?.pohoda_predkontacia_zaloha
+          : data.typ === "credit_note"
+            ? firma?.pohoda_predkontacia_dobropis
+            : firma?.pohoda_predkontacia) || null
+      : (doklad ? firma?.pohoda_predkontacia_doklady : null) || firma?.pohoda_predkontacia_prijata || null;
+    const predvoleneClenenie: string | null = vystavena
+      ? firma?.pohoda_clenenie_dph || null
+      : (doklad ? firma?.pohoda_clenenie_dph_doklady : null) || firma?.pohoda_clenenie_dph_prijata || null;
     const vsetky = [...(pravidla ?? []), ...(faktury ?? []), ...(doklady ?? [])];
     const doplnene = (zoCiselnika: MoznostKodu[], pouzite: string[]): MoznostKodu[] => {
       const zname = new Set(zoCiselnika.map((m) => m.kod));
@@ -79,14 +91,29 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         ...pouzite.filter((k) => !zname.has(k)).map((kod) => ({ kod, popis: null, agenda: "", ucty: null })),
       ];
     };
-    const agendy = doklad ? ["receivedInvoice", "cashPaid", "internalDocument"] : ["receivedInvoice"];
+    const agendy = vystavena
+      ? data.typ === "proforma"
+        ? ["issuedAdvanceInvoice", "issuedInvoice"]
+        : ["issuedInvoice"]
+      : doklad
+        ? ["receivedInvoice", "cashPaid", "internalDocument"]
+        : ["receivedInvoice"];
+    const kluc = vystavena
+      ? data.typ === "proforma"
+        ? "zaloha"
+        : data.typ === "credit_note"
+          ? "dobropis"
+          : "faktura"
+      : doklad
+        ? "doklady"
+        : "prijata";
     return {
       predkontacie: doplnene(
-        ponuka(ciselnik ?? [], "predkontacia", agendy, doklad ? "doklady" : "prijata"),
+        ponuka(ciselnik ?? [], "predkontacia", agendy, kluc),
         pocet([predvolenaPredkontacia, ...vsetky.map((r: any) => r.predkontacia ?? r.pohoda_predkontacia)]),
       ),
       clenenia: doplnene(
-        ponuka(ciselnik ?? [], "clenenie_dph", [], doklad ? "doklady" : "prijata"),
+        ponuka(ciselnik ?? [], "clenenie_dph", [], kluc),
         pocet([predvoleneClenenie, ...vsetky.map((r: any) => r.clenenie_dph ?? r.pohoda_clenenie_dph)]),
       ),
       predvolenaPredkontacia,
@@ -313,4 +340,163 @@ export const ulozRozuctovanieFn = createServerFn({ method: "POST" })
       .eq("company_id", data.company_id);
     if (e2) throw new Error(e2.message);
     return { ok: true, riadkov: riadky.length };
+  });
+
+
+/** Je faktúra už v Pohode? (konektor alebo export ju potvrdil) */
+async function vPohode(supabase: any, invoiceId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("export_logs")
+    .select("id")
+    .eq("invoice_id", invoiceId)
+    .eq("status", "ok")
+    .limit(1);
+  return Boolean(data?.length);
+}
+
+/**
+ * Zaúčtovanie vystavenej faktúry — kódy na hlavičke a voliteľne na
+ * položkách (ako „účtovné nastavenia položky" v Doklado). Faktúra, ktorá už
+ * je v Pohode, sa nemení; najprv sa vráti.
+ */
+export const zauctujVystavenuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        id: z.string().uuid(),
+        predkontacia: kod,
+        clenenie: kod,
+        kv: z.string().trim().max(5).optional().nullable(),
+        polozky: z
+          .array(
+            z.object({
+              id: z.string().uuid(),
+              predkontacia: kod,
+              clenenie: kod,
+              kv: z.string().trim().max(5).optional().nullable(),
+            }),
+          )
+          .max(500)
+          .optional(),
+        lenUlozit: z.boolean().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { data: f } = await supabase
+      .from("invoices")
+      .select("id, status, deleted_at")
+      .eq("company_id", data.company_id)
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!f || f.deleted_at) throw new Error("Faktúra sa nenašla.");
+    if (await vPohode(supabase, f.id))
+      throw new Error("Faktúra je už v Pohode — najprv ju vráťte z Pohody.");
+    if (!data.lenUlozit && f.status === "draft") throw new Error("Koncept sa zaúčtovať nedá — najprv ho vystavte.");
+
+    const zmena: Record<string, unknown> = {
+      pohoda_predkontacia: data.predkontacia?.trim() || null,
+      pohoda_clenenie_dph: data.clenenie?.trim() || null,
+      kv_clenenie: data.kv?.trim() || null,
+    };
+    if (!data.lenUlozit) {
+      zmena.zauctovane_at = new Date().toISOString();
+      zmena.zauctoval = context.userId;
+    }
+    const { error } = await supabase.from("invoices").update(zmena).eq("id", f.id);
+    if (error) throw new Error(error.message);
+
+    for (const p of data.polozky ?? []) {
+      const { error: e2 } = await supabase
+        .from("invoice_items")
+        .update({
+          pohoda_predkontacia: p.predkontacia?.trim() || null,
+          pohoda_clenenie_dph: p.clenenie?.trim() || null,
+          kv_clenenie: p.kv?.trim() || null,
+        })
+        .eq("id", p.id)
+        .eq("invoice_id", f.id);
+      if (e2) throw new Error(e2.message);
+    }
+    return { ok: true };
+  });
+
+export const zrusZauctovanieVystavenejFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ company_id: z.string().uuid(), id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    if (await vPohode(supabase, data.id))
+      throw new Error("Faktúra je už v Pohode — najprv ju vráťte z Pohody.");
+    const { error } = await supabase
+      .from("invoices")
+      .update({ zauctovane_at: null, zauctoval: null })
+      .eq("company_id", data.company_id)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/**
+ * Vystavená faktúra späť z Pohody — história odovzdania sa označí ako
+ * vrátená, takže ju konektor aj balík pošlú znova. V Pohode ju treba zmazať.
+ */
+export const vratVystavenuZPohodyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ company_id: z.string().uuid(), id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    // Faktúru musí prihlásený vidieť (RLS) — až potom sa história mení
+    // servisným kľúčom; členovia ju meniť nesmú (len čítať a zapisovať).
+    const { data: f } = await supabase
+      .from("invoices")
+      .select("id")
+      .eq("company_id", data.company_id)
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!f) throw new Error("Faktúra sa nenašla.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("export_logs")
+      .update({ status: "returned" })
+      .eq("company_id", data.company_id)
+      .eq("invoice_id", data.id)
+      .eq("status", "ok");
+    if (error) throw new Error(error.message);
+    await supabase
+      .from("invoices")
+      .update({ zauctovane_at: null, zauctoval: null })
+      .eq("company_id", data.company_id)
+      .eq("id", data.id);
+    return { ok: true };
+  });
+
+/** Stav pre panel: je v Pohode, kedy a pod akým číslom. */
+export const stavVystavenejFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const [{ data: log }, { data: polozky }] = await Promise.all([
+      supabase
+        .from("export_logs")
+        .select("created_at, pohoda_cislo")
+        .eq("invoice_id", data.id)
+        .eq("status", "ok")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("invoice_items")
+        .select("id, name, subtotal, vat_rate, pohoda_predkontacia, pohoda_clenenie_dph, kv_clenenie")
+        .eq("invoice_id", data.id)
+        .order("position"),
+    ]);
+    return {
+      vPohode: log ? { kedy: log.created_at as string, cislo: (log.pohoda_cislo ?? null) as string | null } : null,
+      polozky: (polozky ?? []) as any[],
+    };
   });

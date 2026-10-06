@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { Oprava25aPanel } from "@/components/faktero/Oprava25aPanel";
+import { ZauctovanieVystavenejPanel } from "@/components/faktero/ZauctovanieVystavenejPanel";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
 import { popisSplatnosti, predlzena } from "@/lib/faktero/splatnost";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
@@ -1225,6 +1226,11 @@ function InvoiceDetail() {
               </div>
             </div>
             <Oprava25aPanel invoice={inv} />
+            <ZauctovanieVystavenejPanel
+              inv={inv}
+              onZmena={() => void load()}
+              onStiahnut={handlePohodaExport}
+            />
             {inv.status === "paid" ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100 dark:border-emerald-900/40">
                 <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">

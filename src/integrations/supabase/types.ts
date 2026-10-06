@@ -3865,6 +3865,9 @@ export type Database = {
           vat_amount: number
           vat_rate: number
           discount_percent: number
+          pohoda_predkontacia: string | null
+          pohoda_clenenie_dph: string | null
+          kv_clenenie: string | null
         }
         Insert: {
           created_at?: string
@@ -3883,6 +3886,9 @@ export type Database = {
           vat_amount?: number
           vat_rate?: number
           discount_percent?: number
+          pohoda_predkontacia?: string | null
+          pohoda_clenenie_dph?: string | null
+          kv_clenenie?: string | null
         }
         Update: {
           created_at?: string
@@ -3901,6 +3907,9 @@ export type Database = {
           vat_amount?: number
           vat_rate?: number
           discount_percent?: number
+          pohoda_predkontacia?: string | null
+          pohoda_clenenie_dph?: string | null
+          kv_clenenie?: string | null
         }
         Relationships: [
           {
@@ -4211,6 +4220,11 @@ export type Database = {
           discount_type: string | null
           discount_value: number
           number_series_id: string | null
+          pohoda_predkontacia: string | null
+          pohoda_clenenie_dph: string | null
+          kv_clenenie: string | null
+          zauctovane_at: string | null
+          zauctoval: string | null
         }
         Insert: {
           advance_amount?: number | null
@@ -4297,6 +4311,11 @@ export type Database = {
           discount_type?: string | null
           discount_value?: number
           number_series_id?: string | null
+          pohoda_predkontacia?: string | null
+          pohoda_clenenie_dph?: string | null
+          kv_clenenie?: string | null
+          zauctovane_at?: string | null
+          zauctoval?: string | null
         }
         Update: {
           advance_amount?: number | null
@@ -4383,6 +4402,11 @@ export type Database = {
           discount_type?: string | null
           discount_value?: number
           number_series_id?: string | null
+          pohoda_predkontacia?: string | null
+          pohoda_clenenie_dph?: string | null
+          kv_clenenie?: string | null
+          zauctovane_at?: string | null
+          zauctoval?: string | null
         }
         Relationships: [
           {

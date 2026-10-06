@@ -5,7 +5,6 @@ import { nazovOznacenia, type KodOznacenia } from "./vypis-oznacenie";
 import { nazovKategorie } from "@/lib/mobile/kategorie-vydavkov";
 
 import { sadzbyKuDnu as sadzbyKrajinyKuDnu, krajinaDane, type KrajinaDane } from "./vat-rates";
-import { sUctomFaktury } from "./platobny-ucet";
 import { riadkySoZlavou } from "./zlavy";
 import { buildFlexiXml, buildUniverzalCsv } from "./export-dalsie";
 type InvoiceRow = any;
@@ -170,7 +169,10 @@ export type PohodaNastavenia = {
   predkontaciaPokladna?: string | null;
   /** Členenie skladu v Pohode (`storage`); bez neho sa skladová karta nezaloží. */
   sklad?: string | null;
-  /** Skratka bankového účtu v Pohode — do ktorého účtu pohyby z výpisu patria. */
+  /**
+   * Skratka bankového účtu v Pohode — do ktorého účtu pohyby z výpisu patria
+   * a na ktorý má odberateľ platiť vystavenú faktúru.
+   */
   banka?: string | null;
   /** Predkontácia pre bankový doklad. */
   predkontaciaBanka?: string | null;
@@ -385,15 +387,47 @@ export function polozkyFaktur(opts: {
       // medzi hlavičkou a položkami ostáva ten istý.
       const zaokruhlenie = Math.round((celkom - zPoloziek) * 100) / 100;
 
-      const predkontacia =
-        typ === "proforma"
+      /*
+        Kódy zo zaúčtovania faktúry prebíjajú predvolené pre druh dokladu.
+        Keď má niektorá položka vlastnú predkontáciu (účtovné nastavenia
+        položky), hlavička dostane „Rozúčtovať" a kódy nesú položky.
+      */
+      const predkontaciaJedna =
+        String((invoice as any).pohoda_predkontacia ?? "").trim() ||
+        (typ === "proforma"
           ? nastavenia?.predkontaciaZaloha
           : typ === "credit_note"
             ? nastavenia?.predkontaciaDobropis
-            : nastavenia?.predkontacia;
-      const clenenie = invoice.reverse_charge
-        ? (nastavenia?.clenenieDphPdp ?? nastavenia?.clenenieDph)
-        : nastavenia?.clenenieDph;
+            : nastavenia?.predkontacia);
+      const clenenieJedno =
+        String((invoice as any).pohoda_clenenie_dph ?? "").trim() ||
+        (invoice.reverse_charge
+          ? (nastavenia?.clenenieDphPdp ?? nastavenia?.clenenieDph)
+          : nastavenia?.clenenieDph);
+      const poPolozkach = items.some(
+        (it) =>
+          String((it as any).pohoda_predkontacia ?? "").trim() &&
+          String((it as any).pohoda_predkontacia).trim() !== predkontaciaJedna,
+      );
+      const predkontacia = poPolozkach
+        ? nastavenia?.predkontaciaRozuctovat?.trim() ||
+          (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")
+        : predkontaciaJedna;
+      const clenenie = clenenieJedno;
+      const kvDokl = String((invoice as any).kv_clenenie ?? "").trim();
+      const kvHlavicka = kvDokl && kvDokl !== "X" ? kvDokl : "";
+      const kodyPolozky = (it: ItemRow) => {
+        const pk = String((it as any).pohoda_predkontacia ?? "").trim() || (poPolozkach ? predkontaciaJedna : "");
+        const cl = String((it as any).pohoda_clenenie_dph ?? "").trim();
+        const kvp = String((it as any).kv_clenenie ?? "").trim();
+        return `${pk ? `\n          <inv:accounting><typ:ids>${esc(pk)}</typ:ids></inv:accounting>` : ""}${
+          cl ? `\n          <inv:classificationVAT><typ:ids>${esc(cl)}</typ:ids></inv:classificationVAT>` : ""
+        }${
+          kvp && kvp !== "X"
+            ? `\n          <inv:classificationKVDPH><typ:ids>${esc(kvp)}</typ:ids></inv:classificationKVDPH>`
+            : ""
+        }`;
+      };
 
       const forma = FORMY_UHRADY[String(invoice.payment_method ?? "")] ?? "draft";
 
@@ -404,7 +438,14 @@ export function polozkyFaktur(opts: {
           return `
         <inv:invoiceItem>${el("inv:text", skrat(it.name, 90), "          ")}
           <inv:quantity>${mnozstvo}</inv:quantity>${el("inv:unit", skrat(it.unit ?? "ks", 10), "          ")}
-          <inv:rateVAT>${kod}</inv:rateVAT>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>${kod}</inv:rateVAT>${
+            // Zľava riadku: jednotková cena je pred zľavou, Pohoda si cenu
+            // položky prepočíta sama — bez percenta by vyšla vyššia suma.
+            Number((it as any).discount_percent ?? 0) > 0
+              ? `\n          <inv:discountPercentage>${Number((it as any).discount_percent)}</inv:discountPercentage>`
+              : ""
+          }${el("inv:note", skrat((it as any).description, 240), "          ")}
           <inv:homeCurrency>${elSuma("typ:unitPrice", it.unit_price, "            ")}${elSuma(
             "typ:price",
             zn * Number(it.subtotal ?? 0),
@@ -414,7 +455,7 @@ export function polozkyFaktur(opts: {
             zn * Number(it.total ?? 0),
             "            ",
           )}
-          </inv:homeCurrency>
+          </inv:homeCurrency>${kodyPolozky(it)}
         </inv:invoiceItem>`;
         })
         .join("");
@@ -501,7 +542,14 @@ export function polozkyFaktur(opts: {
           "        ",
         )}${el("inv:dateDue", invoice.due_date, "        ")}${el(
           "inv:text",
-          skrat(invoice.notes ?? `Faktúra ${invoice.invoice_number}`, 240),
+          // „Text nad položkami" je to, čo sa fakturuje — patrí do textu
+          // dokladu v Pohode. Poznámka ide do poznámky.
+          skrat(
+            String((invoice as any).intro_note ?? "").trim() ||
+              String(invoice.notes ?? "").trim() ||
+              `Faktúra ${invoice.invoice_number}`,
+            240,
+          ),
           "        ",
         )}${el("inv:note", poznamky, "        ")}${
           predkontacia
@@ -510,6 +558,10 @@ export function polozkyFaktur(opts: {
         }${
           clenenie
             ? `\n        <inv:classificationVAT><typ:ids>${esc(clenenie)}</typ:ids></inv:classificationVAT>`
+            : ""
+        }${
+          kvHlavicka
+            ? `\n        <inv:classificationKVDPH><typ:ids>${esc(kvHlavicka)}</typ:ids></inv:classificationKVDPH>`
             : ""
         }${
           opts.zakazky?.[String(invoice.job_id ?? "")]
@@ -527,8 +579,13 @@ export function polozkyFaktur(opts: {
           </typ:address>
         </inv:partnerIdentity>
         <inv:paymentType><typ:paymentType>${forma}</typ:paymentType></inv:paymentType>${
-          sUctomFaktury(company ?? {}, invoice).iban
-            ? `\n        <inv:account><typ:accountNo>${esc(sUctomFaktury(company ?? {}, invoice).iban)}</typ:accountNo></inv:account>`
+          /*
+            Účet sa v Pohode vyberá skratkou jej bankového účtu (vzor
+            Stormware: <typ:ids>KB</typ:ids>). IBAN bez kódu banky Pohoda
+            nenájde a doklad odmietne; bez skratky použije účet z nastavenia.
+          */
+          nastavenia?.banka
+            ? `\n        <inv:account><typ:ids>${esc(nastavenia.banka)}</typ:ids></inv:account>`
             : ""
         }
       </inv:invoiceHeader>

@@ -334,6 +334,7 @@ export async function zostavDavku(
     predkontaciaDobropis: company.pohoda_predkontacia_dobropis,
     clenenieDph: company.pohoda_clenenie_dph,
     clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
+    banka: company.pohoda_banka,
     predkontaciaPrijata: company.pohoda_predkontacia_prijata,
     clenenieDphPrijata: company.pohoda_clenenie_dph_prijata,
     predkontaciaDoklady: company.pohoda_predkontacia_doklady,
