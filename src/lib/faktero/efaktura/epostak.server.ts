@@ -273,22 +273,54 @@ export async function sendEfaktura(
   const buyerReference =
     (invoice as any).order_number || (invoice as any).variable_symbol || invoice.invoice_number;
 
-  const body = {
-    receiverPeppolId,
-    receiverName: (invoice as any).customer_name ?? undefined,
+  /*
+    Dobropis potrebuje číslo pôvodnej faktúry (BT-25) — vo faktúre je len
+    odkaz, číslo sa dočíta. Bez neho by ePošták dobropis odmietol a predtým
+    odišiel ako obyčajná faktúra so zápornými sumami.
+  */
+  const { druhZFaktury, teloOdoslania, zlavaNaPercento } = await import("./epostak-telo");
+  const druh = druhZFaktury((invoice as any).type);
+  let povodneCislo: string | null = null;
+  if ((invoice as any).opravuje_fakturu_id) {
+    const { data: povodna } = await supabaseAdmin
+      .from("invoices")
+      .select("invoice_number")
+      .eq("id", (invoice as any).opravuje_fakturu_id)
+      .maybeSingle();
+    povodneCislo = povodna?.invoice_number ?? null;
+  }
+  const zakladPredZlavou = (items ?? []).reduce((s: number, it: any) => s + Number(it.subtotal ?? 0), 0);
+
+  const body = teloOdoslania({
+    druh,
+    cislo: invoice.invoice_number,
+    vystavena: invoice.issue_date,
+    splatnost: invoice.due_date ?? null,
+    dodanie: (invoice as any).delivery_date ?? null,
+    mena: invoice.currency ?? "EUR",
+    vs: (invoice as any).variable_symbol ?? null,
+    iban: sUctomFaktury(company as any, invoice as any).iban ?? null,
+    poznamka: (invoice as any).notes ?? null,
     buyerReference,
-    invoiceNumber: invoice.invoice_number,
-    issueDate: invoice.issue_date,
-    dueDate: invoice.due_date,
-    currency: invoice.currency ?? "EUR",
-    iban: sUctomFaktury(company as any, invoice as any).iban ?? undefined,
-    items: (items ?? []).map((it: any) => ({
-      description: it.name + (it.description ? ` — ${it.description}` : ""),
+    protistranaPeppolId: receiverPeppolId,
+    protistranaNazov: (invoice as any).customer_name ?? "",
+    povodneCislo,
+    prenesenie: (invoice as any).reverse_charge ? ((invoice as any).reverse_charge_type ?? "domestic_69") : null,
+    zlavaDokladuPercent: zlavaNaPercento(
+      (invoice as any).discount_type,
+      (invoice as any).discount_value,
+      zakladPredZlavou,
+    ),
+    zaplatenaZaloha: Number((invoice as any).advance_amount ?? 0) || null,
+    polozky: (items ?? []).map((it: any) => ({
+      name: it.name,
+      description: it.description,
       quantity: Number(it.quantity),
-      unitPrice: Number(it.unit_price),
-      vatRate: Number(it.vat_rate),
+      unit_price: Number(it.unit_price),
+      vat_rate: Number(it.vat_rate),
+      discount_percent: it.discount_percent,
     })),
-  };
+  });
 
   const response = await epostakFetch<{
     id?: string;
@@ -780,4 +812,120 @@ export async function vytvorWebhookFirmy(
   const secret = String(r?.secret ?? w?.secret ?? "");
   if (!id || !secret) throw new Error("ePošták nevrátil id alebo tajomstvo webhooku.");
   return { id, secret };
+}
+
+// ─── Samofaktúra cez eFaktúru (Peppol self_billing) ─────────────────────────
+
+/**
+ * Odošle odsúhlasenú samofaktúru (alebo jej dobropis) dodávateľovi cez Peppol.
+ * Odosielateľ je naša firma ako odberateľ; adresát je dodávateľ podľa DIČ.
+ */
+export async function sendSamofakturaEfaktura(
+  samofakturaId: string,
+  firmEpostakId: string,
+): Promise<SendEfakturaResult> {
+  const { data: sf } = await (supabaseAdmin as any)
+    .from("purchase_invoices")
+    .select("*")
+    .eq("id", samofakturaId)
+    .maybeSingle();
+  if (!sf?.samofakturacia) throw new Error("Samofaktúra sa nenašla.");
+  if (sf.samofakturacia_stav !== "odsuhlasena") {
+    throw new Error("Cez eFaktúru sa posiela až samofaktúra odsúhlasená dodávateľom.");
+  }
+  const supplierPeppolId = peppolId({ dic: sf.supplier_dic, icDph: sf.supplier_ic_dph });
+  if (!supplierPeppolId) {
+    throw new Error("Dodávateľ nemá DIČ ani IČ DPH — bez nich sa eFaktúra nemá kam poslať.");
+  }
+
+  const { teloOdoslania } = await import("./epostak-telo");
+  const { dodavatelPlatitel, prepocitajPolozku } = await import("../samofakturacia");
+  const platitel = dodavatelPlatitel(sf.supplier_ic_dph);
+  const polozky = (Array.isArray(sf.items) ? sf.items : []).map((p: any) => prepocitajPolozku(p, platitel));
+  const zakladPredZlavou = polozky.reduce((s: number, p: any) => s + p.total, 0);
+  const dobropis = Boolean(sf.opravuje_cislo);
+
+  const body = teloOdoslania({
+    druh: dobropis ? "self_billing_credit_note" : "self_billing",
+    cislo: sf.invoice_number,
+    vystavena: sf.issue_date,
+    splatnost: sf.due_date ?? null,
+    dodanie: sf.delivery_date ?? null,
+    mena: sf.currency ?? "EUR",
+    vs: sf.variable_symbol ?? null,
+    iban: sf.supplier_iban ?? null,
+    poznamka: [sf.intro_note, sf.note].filter(Boolean).join(" — ") || null,
+    buyerReference: sf.variable_symbol || sf.invoice_number,
+    protistranaPeppolId: supplierPeppolId,
+    protistranaNazov: sf.supplier_name,
+    povodneCislo: sf.opravuje_cislo ?? null,
+    prenesenie: sf.reverse_charge ? (sf.reverse_charge_type ?? "domestic_69") : null,
+    zlavaDokladuPercent:
+      Number(sf.discount_total ?? 0) > 0 && zakladPredZlavou > 0
+        ? (Number(sf.discount_total) / zakladPredZlavou) * 100
+        : null,
+    zaplatenaZaloha: Number(sf.advance_amount ?? 0) || null,
+    polozky: polozky.map((p: any) => ({
+      name: p.name,
+      description: p.description,
+      quantity: p.quantity,
+      unit_price: p.unit_price,
+      vat_rate: p.vat_rate,
+      discount_percent: p.discount_percent,
+    })),
+  });
+
+  const response = await epostakFetch<{
+    id?: string;
+    documentId?: string;
+    status?: string;
+    transport_status?: string;
+  }>("/api/v1/documents/send", {
+    method: "POST",
+    firmId: firmEpostakId,
+    idempotencyKey: `${sf.id}:${createHash("sha256").update(JSON.stringify(body)).digest("hex").slice(0, 16)}`,
+    body,
+  });
+  const providerMessageId = response.documentId ?? response.id ?? null;
+  const transportStatus = response.transport_status ?? response.status ?? "pending";
+
+  const { data: doc, error: docErr } = await (supabaseAdmin as any)
+    .from("efaktura_documents")
+    .upsert(
+      {
+        company_id: sf.company_id,
+        purchase_invoice_id: sf.id,
+        document_number: sf.invoice_number,
+        issue_date: sf.issue_date,
+        currency: sf.currency ?? "EUR",
+        total: sf.amount_total,
+        status: "generated",
+        format: "peppol_bis_3",
+        schema_version: "1.0",
+        generated_at: new Date().toISOString(),
+      },
+      { onConflict: "purchase_invoice_id" },
+    )
+    .select()
+    .single();
+  if (docErr) {
+    throw new Error(
+      `Samofaktúra bola odoslaná, ale nepodarilo sa ju zapísať do evidencie: ${docErr.message}. Neodosielajte ju znova — nahláste to, prosím, na servis@faktero.sk.`,
+    );
+  }
+  await supabaseAdmin.from("efaktura_deliveries").insert({
+    company_id: sf.company_id,
+    document_id: doc.id,
+    channel: "peppol" as any,
+    provider: "epostak",
+    provider_message_id: providerMessageId,
+    recipient_participant_id: supplierPeppolId,
+    recipient_scheme: schemaZId(supplierPeppolId),
+    status: mapTransportStatus(transportStatus),
+    sent_at: new Date().toISOString(),
+    raw_response: response as any,
+    attempt_count: 1,
+  } as any);
+
+  return { documentId: providerMessageId ?? doc.id, status: transportStatus, providerResponse: response };
 }

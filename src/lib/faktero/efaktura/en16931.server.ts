@@ -215,6 +215,8 @@ export function mapToEN16931(args: {
   items: InvoiceItemRow[];
   customizationId?: string;
   profileId?: string;
+  /** Pôvodná faktúra pri dobropise (BT-25, BT-26). */
+  povodnaFaktura?: { cislo: string; vystavena?: string | null } | null;
 }): EN16931Invoice {
   const { profile, invoice } = args;
   /* Zľava na doklad sa rozpočíta do riadkov — UBL sumáre vychádzajú z nich. */
@@ -226,9 +228,12 @@ export function mapToEN16931(args: {
     "urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0";
   const profileId = args.profileId ?? "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0";
 
-  return {
+  const dto: EN16931Invoice = {
     customizationId,
     profileId,
+    precedingInvoice: args.povodnaFaktura
+      ? { id: args.povodnaFaktura.cislo, issueDate: args.povodnaFaktura.vystavena ?? null }
+      : undefined,
     documentNumber: invoice.invoice_number,
     issueDate: invoice.issue_date,
     dueDate: invoice.due_date,
@@ -261,4 +266,26 @@ export function mapToEN16931(args: {
         .filter(Boolean)
         .join(" | ") || undefined,
   };
+  /*
+    Dobropis (381) sa v UBL píše ako CreditNote s kladnými sumami — „mínus“
+    nesie typ dokladu. Vo Fakteri má dobropis sumy záporné, tak sa otočia.
+  */
+  if (dto.documentType === "381") {
+    const a = (n: number) => Math.abs(Number(n) || 0);
+    dto.lines = dto.lines.map((l) => ({
+      ...l,
+      quantity: a(l.quantity),
+      lineExtensionAmount: a(l.lineExtensionAmount),
+      unitPrice: a(l.unitPrice),
+    }));
+    dto.taxSubtotals = dto.taxSubtotals.map((t) => ({
+      ...t,
+      taxableAmount: a(t.taxableAmount),
+      taxAmount: a(t.taxAmount),
+    }));
+    dto.totals = Object.fromEntries(
+      Object.entries(dto.totals).map(([k, v]) => [k, a(v as number)]),
+    ) as EN16931Invoice["totals"];
+  }
+  return dto;
 }

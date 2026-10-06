@@ -61,6 +61,11 @@ function validate(inv: EN16931Invoice): XmlGenerationResult["validationErrors"] 
   need(!!inv.seller?.name, "BR-06", "Seller name is required");
   need(!!inv.buyer?.name, "BR-07", "Buyer name is required");
   need(inv.lines.length > 0, "BR-16", "At least one invoice line is required");
+  need(
+    inv.documentType !== "381" || !!inv.precedingInvoice?.id,
+    "SK-BT-25",
+    "Dobropis musí obsahovať číslo pôvodnej faktúry (BT-25)",
+  );
   need(!!inv.seller?.address?.countryCode, "BR-09", "Seller country code is required");
   need(!!inv.buyer?.address?.countryCode, "BR-10", "Buyer country code is required");
 
@@ -84,11 +89,20 @@ function validate(inv: EN16931Invoice): XmlGenerationResult["validationErrors"] 
 }
 
 export function generatePeppolBisXml(inv: EN16931Invoice): XmlGenerationResult {
+  /*
+    Dobropis (381) je v Peppol BIS samostatný dokument CreditNote — v syntaxi
+    Invoice typ 381 neprejde. Riadky sú CreditNoteLine s CreditedQuantity a
+    hlavička nemá DueDate.
+  */
+  const dobropis = inv.documentType === "381";
+  const koren = dobropis ? "CreditNote" : "Invoice";
+  const riadok = dobropis ? "CreditNoteLine" : "InvoiceLine";
+  const mnozstvo = dobropis ? "CreditedQuantity" : "InvoicedQuantity";
   const linesXml = inv.lines
     .map(
-      (l) => `  <cac:InvoiceLine>
+      (l) => `  <cac:${riadok}>
     <cbc:ID>${esc(l.id)}</cbc:ID>
-    <cbc:InvoicedQuantity unitCode="${esc(l.unitCode)}">${l.quantity}</cbc:InvoicedQuantity>
+    <cbc:${mnozstvo} unitCode="${esc(l.unitCode)}">${l.quantity}</cbc:${mnozstvo}>
     <cbc:LineExtensionAmount currencyID="${esc(inv.currency)}">${fmt(l.lineExtensionAmount)}</cbc:LineExtensionAmount>
     <cac:Item>
       <cbc:Name>${esc(l.name)}</cbc:Name>
@@ -101,7 +115,7 @@ ${l.description ? `      <cbc:Description>${esc(l.description)}</cbc:Description
     <cac:Price>
       <cbc:PriceAmount currencyID="${esc(inv.currency)}">${fmt(l.unitPrice)}</cbc:PriceAmount>
     </cac:Price>
-  </cac:InvoiceLine>`,
+  </cac:${riadok}>`,
     )
     .join("\n");
 
@@ -135,17 +149,24 @@ ${inv.paymentMeans.accountName ? `      <cbc:Name>${esc(inv.paymentMeans.account
     : "";
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+<${koren} xmlns="urn:oasis:names:specification:ubl:schema:xsd:${koren}-2"
   xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
   xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
   <cbc:CustomizationID>${esc(inv.customizationId)}</cbc:CustomizationID>
   <cbc:ProfileID>${esc(inv.profileId)}</cbc:ProfileID>
   <cbc:ID>${esc(inv.documentNumber)}</cbc:ID>
   <cbc:IssueDate>${esc(inv.issueDate)}</cbc:IssueDate>
-  <cbc:DueDate>${esc(inv.dueDate)}</cbc:DueDate>
-  <cbc:InvoiceTypeCode>${esc(inv.documentType)}</cbc:InvoiceTypeCode>
+${dobropis ? "" : `  <cbc:DueDate>${esc(inv.dueDate)}</cbc:DueDate>\n`}  <cbc:${koren}TypeCode>${esc(inv.documentType)}</cbc:${koren}TypeCode>
 ${inv.note ? `  <cbc:Note>${esc(inv.note)}</cbc:Note>\n` : ""}  <cbc:DocumentCurrencyCode>${esc(inv.currency)}</cbc:DocumentCurrencyCode>
-${inv.buyerReference ? `  <cbc:BuyerReference>${esc(inv.buyerReference)}</cbc:BuyerReference>\n` : ""}${partyXml(inv.seller, "AccountingSupplierParty")}
+${inv.buyerReference ? `  <cbc:BuyerReference>${esc(inv.buyerReference)}</cbc:BuyerReference>\n` : ""}${
+    inv.precedingInvoice
+      ? `  <cac:BillingReference>
+    <cac:InvoiceDocumentReference>
+      <cbc:ID>${esc(inv.precedingInvoice.id)}</cbc:ID>
+${inv.precedingInvoice.issueDate ? `      <cbc:IssueDate>${esc(inv.precedingInvoice.issueDate)}</cbc:IssueDate>\n` : ""}    </cac:InvoiceDocumentReference>
+  </cac:BillingReference>\n`
+      : ""
+  }${partyXml(inv.seller, "AccountingSupplierParty")}
 ${partyXml(inv.buyer, "AccountingCustomerParty")}
 ${paymentXml}
 ${taxXml}
@@ -156,7 +177,7 @@ ${taxXml}
     <cbc:PayableAmount currencyID="${esc(inv.currency)}">${fmt(inv.totals.payableAmount)}</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
 ${linesXml}
-</Invoice>
+</${koren}>
 `;
 
   const errors = validate(inv);

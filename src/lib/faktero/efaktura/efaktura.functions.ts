@@ -163,7 +163,17 @@ export const generateEfakturaXmlFn = createServerFn({ method: "POST" })
     if (!company) throw new Error("Firma neexistuje.");
     if (!invoice) throw new Error("Faktúra neexistuje.");
 
-    const dto = mapToEN16931({ company, profile, invoice, items: items ?? [] });
+    // Dobropis nesie číslo a dátum pôvodnej faktúry (BT-25, BT-26).
+    let povodnaFaktura: { cislo: string; vystavena: string | null } | null = null;
+    if ((invoice as any).opravuje_fakturu_id) {
+      const { data: p } = await supabase
+        .from("invoices")
+        .select("invoice_number, issue_date")
+        .eq("id", (invoice as any).opravuje_fakturu_id)
+        .maybeSingle();
+      if (p) povodnaFaktura = { cislo: p.invoice_number, vystavena: p.issue_date };
+    }
+    const dto = mapToEN16931({ company, profile, invoice, items: items ?? [], povodnaFaktura });
     const result = generatePeppolBisXml(dto);
 
     // Extra Faktero-side validation (basic completeness).

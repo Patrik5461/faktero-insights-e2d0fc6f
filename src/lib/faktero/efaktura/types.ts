@@ -44,6 +44,8 @@ export type EN16931Invoice = {
   documentType: "380" | "381" | "384" | "389"; // UNCL1001: 380=invoice, 381=credit, 384=corrected, 389=self-billed
   currency: string;
   buyerReference?: string;
+  /** BT-25/BT-26 — pôvodná faktúra, ktorú dobropis opravuje (povinné pri 381). */
+  precedingInvoice?: { id: string; issueDate?: string | null };
   seller: EN16931Party;
   buyer: EN16931Party;
   paymentMeans?: {

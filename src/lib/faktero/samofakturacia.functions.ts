@@ -496,3 +496,50 @@ export const rozhodniSamofakturuFn = createServerFn({ method: "POST" })
     await oznamRozhodnutie({ sf, suhlas: data.suhlas, poznamka });
     return { suhlas: data.suhlas };
   });
+
+/** Odoslanie odsúhlasenej samofaktúry dodávateľovi cez eFaktúru (Peppol). */
+export const odoslatSamofakturuEfakturouFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => PodlaId.parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const sf = await nacitajVlastnu(supabase, data.id);
+    const { data: profil } = await supabase
+      .from("efaktura_profiles")
+      .select("epostak_firm_id")
+      .eq("company_id", sf.company_id)
+      .maybeSingle();
+    if (!profil?.epostak_firm_id) {
+      throw new Error("Firma nemá zapnutú eFaktúru — spárujte ju v Nastavenia → eFaktúra.");
+    }
+    const { sendSamofakturaEfaktura } = await import("./efaktura/epostak.server");
+    const r = await sendSamofakturaEfaktura(sf.id, profil.epostak_firm_id);
+    return { status: r.status };
+  });
+
+/** Stav eFaktúry k samofaktúre (či a kedy odišla). */
+export const stavSamofakturyEfakturaFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => PodlaId.parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const sf = await nacitajVlastnu(supabase, data.id);
+    const [{ data: profil }, { data: doc }] = await Promise.all([
+      supabase.from("efaktura_profiles").select("epostak_firm_id").eq("company_id", sf.company_id).maybeSingle(),
+      supabase
+        .from("efaktura_documents")
+        .select("id, efaktura_deliveries(status, sent_at, delivered_at, error_message)")
+        .eq("purchase_invoice_id", sf.id)
+        .maybeSingle(),
+    ]);
+    const d = (doc?.efaktura_deliveries ?? []).sort((a: any, b: any) =>
+      String(b.sent_at ?? "").localeCompare(String(a.sent_at ?? "")),
+    )[0];
+    return {
+      efakturaZapnuta: Boolean(profil?.epostak_firm_id),
+      odoslana: Boolean(doc),
+      stav: (d?.status ?? null) as string | null,
+      odoslanaAt: (d?.sent_at ?? null) as string | null,
+      chyba: (d?.error_message ?? null) as string | null,
+    };
+  });

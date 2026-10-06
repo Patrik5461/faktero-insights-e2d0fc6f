@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { CheckCircle2, Download, Loader2, Pencil, Send } from "lucide-react";
@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { createStockMovementDebug } from "@/lib/faktero/stock.functions";
 import {
   odoslatSamofakturuFn,
+  odoslatSamofakturuEfakturouFn,
+  stavSamofakturyEfakturaFn,
   oznacitOdsuhlasenuFn,
   pdfSamofakturyFn,
 } from "@/lib/faktero/samofakturacia.functions";
@@ -48,7 +50,35 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
   const pdf = useServerFn(pdfSamofakturyFn);
   const [email, setEmail] = useState<string>(row.supplier_email ?? "");
   const [sprava, setSprava] = useState("");
-  const [busy, setBusy] = useState<null | "posli" | "pdf" | "ok" | "sklad">(null);
+  const [busy, setBusy] = useState<null | "posli" | "pdf" | "ok" | "sklad" | "efaktura">(null);
+  const posliEfakturou = useServerFn(odoslatSamofakturuEfakturouFn);
+  const stavEfaktury = useServerFn(stavSamofakturyEfakturaFn);
+  const [efaktura, setEfaktura] = useState<{
+    efakturaZapnuta: boolean;
+    odoslana: boolean;
+    stav: string | null;
+    odoslanaAt: string | null;
+    chyba: string | null;
+  } | null>(null);
+  useEffect(() => {
+    if (stav !== "odsuhlasena") return;
+    stavEfaktury({ data: { id: row.id } })
+      .then(setEfaktura)
+      .catch(() => setEfaktura(null));
+  }, [row.id, stav, stavEfaktury]);
+
+  async function odosliEfakturou() {
+    setBusy("efaktura");
+    try {
+      await posliEfakturou({ data: { id: row.id } });
+      toast.success("Odoslané cez eFaktúru — dodávateľ ju dostane do svojho systému.");
+      setEfaktura(await stavEfaktury({ data: { id: row.id } }));
+    } catch (e: any) {
+      toast.error(e?.message ?? "Odoslanie cez eFaktúru zlyhalo");
+    } finally {
+      setBusy(null);
+    }
+  }
   const pohyb = useServerFn(createStockMovementDebug);
   /*
     Skladové položky odsúhlasenej samofaktúry (výkup tovaru). Cena na sklad je
@@ -163,6 +193,18 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
             {busy === "pdf" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             PDF faktúry
           </button>
+          {stav === "odsuhlasena" && efaktura?.efakturaZapnuta && !efaktura.odoslana && (
+            <button
+              type="button"
+              onClick={odosliEfakturou}
+              disabled={busy !== null}
+              title="Od 1. 1. 2027 sa aj samofaktúra medzi platiteľmi posiela cez eFaktúru (Peppol)"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              {busy === "efaktura" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Poslať cez eFaktúru
+            </button>
+          )}
           {mozeNaskladnit && (
             <button
               type="button"
@@ -229,6 +271,9 @@ export function SamofakturaPanel({ row, onZmena }: { row: any; onZmena: () => vo
           {row.samofakturacia_poznamka ? ` Poznámka: ${row.samofakturacia_poznamka}` : ""} PDF v
           odsúhlasenej podobe je uložené ako príloha.
           {row.naskladnene_at ? ` Tovar prijatý na sklad ${kedy(row.naskladnene_at)}.` : ""}
+          {efaktura?.odoslana
+            ? ` Cez eFaktúru odoslaná ${kedy(efaktura.odoslanaAt)}${efaktura.stav ? ` (${efaktura.stav})` : ""}.`
+            : ""}
         </p>
       )}
 

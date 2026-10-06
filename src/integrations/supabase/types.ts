@@ -1907,6 +1907,7 @@ export type Database = {
           issue_date: string | null
           payload_hash: string | null
           profile_id: string | null
+          purchase_invoice_id: string | null
           schema_version: string
           status: Database["public"]["Enums"]["efaktura_doc_status"]
           total: number | null
@@ -1927,6 +1928,7 @@ export type Database = {
           issue_date?: string | null
           payload_hash?: string | null
           profile_id?: string | null
+          purchase_invoice_id?: string | null
           schema_version?: string
           status?: Database["public"]["Enums"]["efaktura_doc_status"]
           total?: number | null
@@ -1947,6 +1949,7 @@ export type Database = {
           issue_date?: string | null
           payload_hash?: string | null
           profile_id?: string | null
+          purchase_invoice_id?: string | null
           schema_version?: string
           status?: Database["public"]["Enums"]["efaktura_doc_status"]
           total?: number | null
