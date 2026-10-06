@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import { useEffect, useMemo, useState } from "react";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { jeZapnute } from "@/lib/faktero/search-parametre";
@@ -248,9 +249,15 @@ function InvoicesPage() {
     (r) => list.selected[r.id] && (r.status === "paid" || r.status === "sent"),
   ).length;
 
+  const program = useExportDoProgramu();
   async function bulkExport() {
     const cid = getActiveCompanyId();
     if (!cid || !list.selectedIds.length) return;
+    // Firma s iným programom než Pohoda dostane zaúčtovaný súbor pre svoj program.
+    if (program.inyProgram) {
+      if (await program.spusti("vystavena", list.selectedIds)) list.clearSelection();
+      return;
+    }
     setBusy(true);
     try {
       const r = await exportFn({
@@ -608,7 +615,7 @@ function InvoicesPage() {
                 ) : (
                   <FileCode2 className="h-4 w-4" />
                 )}
-                Export {list.selectedIds.length} do Pohody XML
+                Export {list.selectedIds.length} do {program.inyProgram ? program.nazov : "Pohody XML"}
               </button>
             )}
             {maBanku && (

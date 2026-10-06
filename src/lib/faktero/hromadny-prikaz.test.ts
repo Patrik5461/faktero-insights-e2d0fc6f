@@ -151,3 +151,24 @@ describe("zostavPain001", () => {
     ).toThrow(/IBAN/);
   });
 });
+
+describe("referencia platiteľa", () => {
+  it("dlhý alebo nečíselný symbol sa neoreže, ide ako referencia", async () => {
+    const { referenciaPlatitela, jeRfReferencia } = await import("./hromadny-prikaz");
+    expect(referenciaPlatitela({ variable_symbol: "2026042" })).toBe("");
+    expect(referenciaPlatitela({ variable_symbol: "123456789012" })).toBe("123456789012");
+    expect(jeRfReferencia("RF18539007547034")).toBe(true);
+    expect(jeRfReferencia("RF19539007547034")).toBe(false);
+    const { platby } = pripravPlatby([
+      f({ variable_symbol: "123456789012" }),
+      f({ invoice_number: "INV-7", variable_symbol: "RF18539007547034" }),
+    ]);
+    expect(platby[0]!.vs).toBe("");
+    expect(platby[0]!.referencia).toBe("123456789012");
+    const xml = zostavPain001(platby, nastavenie);
+    expect(xml).toContain("<Ustrd>123456789012 Faktura FA2026/0042</Ustrd>");
+    expect(xml).toContain("<Ref>RF18539007547034</Ref>");
+    expect(overSchemou(xml, "pain.001.001.03.xsd")).toBeNull();
+    expect(overSchemou(xml, "pain.001.001.03-sepa.xsd")).toBeNull();
+  });
+});

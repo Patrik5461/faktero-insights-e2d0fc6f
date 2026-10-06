@@ -37,6 +37,12 @@ export type Platba = {
   vs: string;
   ss: string;
   ks: string;
+  /**
+   * Referencia platiteľa (ako v Doklado): symbol, ktorý sa do variabilného
+   * nezmestí — dlhší než 10 číslic, s písmenami, alebo štruktúrovaná
+   * referencia `RF…` (ISO 11649). Ide do správy pre príjemcu.
+   */
+  referencia: string;
 };
 
 export type Preskocena = { id: string; cisloFaktury: string; dovod: string };
@@ -47,10 +53,36 @@ export type Preskocena = { id: string; cisloFaktury: string; dovod: string };
   nikdy nevystavil, a platbu by spároval s inou faktúrou alebo s ničím.
 */
 function variabilnySymbol(f: FakturaNaUhradu): string {
+  // Dlhší či nečíselný symbol by sa orezaním zmenil na iný — ide ako referencia.
+  if (referenciaPlatitela(f)) return "";
   const zadany = iba(f.variable_symbol, 10);
   if (zadany) return zadany;
   const cislo = String(f.invoice_number ?? "").replace(/\s/g, "");
   return /^\d{1,10}$/.test(cislo) ? cislo : "";
+}
+
+/**
+ * Referencia platiteľa: variabilný symbol, ktorý nie je 1–10 číslic.
+ * Predtým sa takýto symbol orezal na 10 číslic a platba sa u dodávateľa
+ * nespárovala — s cudzím alebo dlhým symbolom je správne poslať ho celý.
+ */
+export function referenciaPlatitela(f: Pick<FakturaNaUhradu, "variable_symbol">): string {
+  const v = String(f.variable_symbol ?? "").replace(/\s/g, "");
+  if (!v || /^\d{1,10}$/.test(v)) return "";
+  return v.slice(0, 35);
+}
+
+/** Štruktúrovaná referencia ISO 11649 (`RF` + kontrolné číslice + až 21 znakov). */
+export function jeRfReferencia(v: string): boolean {
+  const s = v.toUpperCase();
+  if (!/^RF\d{2}[A-Z0-9]{1,21}$/.test(s)) return false;
+  const preusporiadane = (s.slice(4) + s.slice(0, 4))
+    .split("")
+    .map((z) => (/[A-Z]/.test(z) ? String(z.charCodeAt(0) - 55) : z))
+    .join("");
+  let zvysok = 0;
+  for (const c of preusporiadane) zvysok = (zvysok * 10 + Number(c)) % 97;
+  return zvysok === 1;
 }
 
 /** Spôsoby úhrady, pri ktorých sa už nič neposiela — zaplatené na mieste. */
@@ -112,6 +144,7 @@ export function pripravPlatby(faktury: FakturaNaUhradu[]): {
       vs: variabilnySymbol(f),
       ss: iba(f.specific_symbol, 10),
       ks: iba(f.constant_symbol, 4),
+      referencia: referenciaPlatitela(f),
     });
   }
   return { platby, preskocene };
@@ -130,6 +163,18 @@ export function sepaText(v: string, max: number): string {
     .replace(/\s+/g, " ")
     .trim();
   return t.slice(0, max).trim();
+}
+
+/**
+ * Správa pre príjemcu: referencia `RF…` štruktúrovane (banka ju odovzdá
+ * dodávateľovi na spárovanie), iná referencia platiteľa na začiatok textu.
+ */
+function spravaPrijemcovi(p: Pick<Platba, "cisloFaktury" | "referencia">): string {
+  const ref = String(p.referencia ?? "");
+  if (ref && jeRfReferencia(ref))
+    return `<Strd><CdtrRefInf><Tp><CdOrPrtry><Cd>SCOR</Cd></CdOrPrtry></Tp><Ref>${xml(ref.toUpperCase())}</Ref></CdtrRefInf></Strd>`;
+  const text = ref ? `${ref} Faktura ${p.cisloFaktury}` : `Faktura ${p.cisloFaktury}`;
+  return `<Ustrd>${xml(sepaText(text, 140))}</Ustrd>`;
 }
 
 const xml = (v: string) =>
@@ -192,7 +237,7 @@ export function zostavPain001(platby: Platba[], n: NastaveniePrikazu): string {
         <Amt><InstdAmt Ccy="EUR">${suma2(p.suma)}</InstdAmt></Amt>
         <Cdtr><Nm>${xml(sepaText(p.prijemca, 70) || "Prijemca")}</Nm></Cdtr>
         <CdtrAcct><Id><IBAN>${p.iban}</IBAN></Id></CdtrAcct>
-        <RmtInf><Ustrd>${xml(sepaText(`Faktura ${p.cisloFaktury}`, 140))}</Ustrd></RmtInf>
+        <RmtInf>${spravaPrijemcovi(p)}</RmtInf>
       </CdtTrfTxInf>`,
         )
         .join("\n");

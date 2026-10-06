@@ -15,6 +15,10 @@ import {
   posliOdovzdanieMailomFn,
   prehladOdovzdaniaFn,
 } from "@/lib/faktero/odovzdanie.functions";
+import { exportUctovanieFn, programUctovaniaFn } from "@/lib/faktero/uctovanie-export.functions";
+import { PROGRAMY_UCTOVANIA, type AgendaExportu } from "@/lib/faktero/uctovanie-programy";
+import { NastaveniaProgramu } from "@/components/faktero/NastaveniaProgramu";
+import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { Download, FileCode2, Loader2, FileSpreadsheet, ChevronRight, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/exporty")({
@@ -25,180 +29,6 @@ export const Route = createFileRoute("/_authenticated/exporty")({
   }),
   component: ExportsPage,
 });
-
-/**
- * Windows-1250. Omega slovenskú diakritiku v UTF-8 neprečíta a v súbore by
- * boli namiesto písmen otázniky. Prevádzajú sa len znaky, ktoré sa od ASCII
- * líšia — zvyšok je zhodný.
- */
-const CP1250: Record<string, number> = {
-  "\u20AC": 0x80,
-  "\u201A": 0x82,
-  "\u201E": 0x84,
-  "\u2026": 0x85,
-  "\u2020": 0x86,
-  "\u2021": 0x87,
-  "\u2030": 0x89,
-  "\u0160": 0x8a,
-  "\u2039": 0x8b,
-  "\u015A": 0x8c,
-  "\u0164": 0x8d,
-  "\u017D": 0x8e,
-  "\u0179": 0x8f,
-  "\u2018": 0x91,
-  "\u2019": 0x92,
-  "\u201C": 0x93,
-  "\u201D": 0x94,
-  "\u2022": 0x95,
-  "\u2013": 0x96,
-  "\u2014": 0x97,
-  "\u0161": 0x9a,
-  "\u203A": 0x9b,
-  "\u015B": 0x9c,
-  "\u0165": 0x9d,
-  "\u017E": 0x9e,
-  "\u017A": 0x9f,
-  "\u00A0": 0xa0,
-  "\u02C7": 0xa1,
-  "\u02D8": 0xa2,
-  "\u0141": 0xa3,
-  "\u00A4": 0xa4,
-  "\u0104": 0xa5,
-  "\u00A6": 0xa6,
-  "\u00A7": 0xa7,
-  "\u00A8": 0xa8,
-  "\u00A9": 0xa9,
-  "\u015E": 0xaa,
-  "\u00AB": 0xab,
-  "\u00AC": 0xac,
-  "\u00AD": 0xad,
-  "\u00AE": 0xae,
-  "\u017B": 0xaf,
-  "\u00B0": 0xb0,
-  "\u00B1": 0xb1,
-  "\u02DB": 0xb2,
-  "\u0142": 0xb3,
-  "\u00B4": 0xb4,
-  "\u00B5": 0xb5,
-  "\u00B6": 0xb6,
-  "\u00B7": 0xb7,
-  "\u00B8": 0xb8,
-  "\u0105": 0xb9,
-  "\u015F": 0xba,
-  "\u00BB": 0xbb,
-  "\u013D": 0xbc,
-  "\u02DD": 0xbd,
-  "\u013E": 0xbe,
-  "\u017C": 0xbf,
-  "\u0154": 0xc0,
-  "\u00C1": 0xc1,
-  "\u00C2": 0xc2,
-  "\u0102": 0xc3,
-  "\u00C4": 0xc4,
-  "\u0139": 0xc5,
-  "\u0106": 0xc6,
-  "\u00C7": 0xc7,
-  "\u010C": 0xc8,
-  "\u00C9": 0xc9,
-  "\u0118": 0xca,
-  "\u00CB": 0xcb,
-  "\u011A": 0xcc,
-  "\u00CD": 0xcd,
-  "\u00CE": 0xce,
-  "\u010E": 0xcf,
-  "\u0110": 0xd0,
-  "\u0143": 0xd1,
-  "\u0147": 0xd2,
-  "\u00D3": 0xd3,
-  "\u00D4": 0xd4,
-  "\u0150": 0xd5,
-  "\u00D6": 0xd6,
-  "\u00D7": 0xd7,
-  "\u0158": 0xd8,
-  "\u016E": 0xd9,
-  "\u00DA": 0xda,
-  "\u0170": 0xdb,
-  "\u00DC": 0xdc,
-  "\u00DD": 0xdd,
-  "\u0162": 0xde,
-  "\u00DF": 0xdf,
-  "\u0155": 0xe0,
-  "\u00E1": 0xe1,
-  "\u00E2": 0xe2,
-  "\u0103": 0xe3,
-  "\u00E4": 0xe4,
-  "\u013A": 0xe5,
-  "\u0107": 0xe6,
-  "\u00E7": 0xe7,
-  "\u010D": 0xe8,
-  "\u00E9": 0xe9,
-  "\u0119": 0xea,
-  "\u00EB": 0xeb,
-  "\u011B": 0xec,
-  "\u00ED": 0xed,
-  "\u00EE": 0xee,
-  "\u010F": 0xef,
-  "\u0111": 0xf0,
-  "\u0144": 0xf1,
-  "\u0148": 0xf2,
-  "\u00F3": 0xf3,
-  "\u00F4": 0xf4,
-  "\u0151": 0xf5,
-  "\u00F6": 0xf6,
-  "\u00F7": 0xf7,
-  "\u0159": 0xf8,
-  "\u016F": 0xf9,
-  "\u00FA": 0xfa,
-  "\u0171": 0xfb,
-  "\u00FC": 0xfc,
-  "\u00FD": 0xfd,
-  "\u0163": 0xfe,
-  "\u02D9": 0xff,
-};
-
-function doCp1250(text: string): Uint8Array {
-  const out = new Uint8Array(text.length);
-  for (let i = 0; i < text.length; i++) {
-    const z = text[i];
-    const kod = z.charCodeAt(0);
-    // Znak, ktorý v CP1250 nie je, nahradíme otáznikom — inak by sa posunuli bajty.
-    out[i] = kod < 0x80 ? kod : (CP1250[z] ?? 0x3f);
-  }
-  return out;
-}
-
-/** Base64 späť na bajty — ISDOC chodí ako ZIP, ktorý história drží ako text. */
-function zBase64(b64: string): Uint8Array {
-  const bin = atob(b64);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
-
-function downloadFile(
-  name: string,
-  content: string,
-  mime = "application/xml",
-  encoding: "utf-8" | "windows-1250" | "base64" = "utf-8",
-) {
-  const data: BlobPart =
-    encoding === "windows-1250"
-      ? (doCp1250(content) as BlobPart)
-      : encoding === "base64"
-        ? (zBase64(content) as BlobPart)
-        : content;
-  const blob = new Blob([data], {
-    type: encoding === "base64" ? mime : `${mime};charset=${encoding}`,
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
 /** Ponuka formátov. `note` vysvetlí, komu ešte súbor sadne. */
 const FORMATY: { format: ExportFormat; label: string; note?: string }[] = [
@@ -326,6 +156,7 @@ function ExportsPage() {
         description="Exportujte faktúry do Pohody, Omegy, Money S3, ABRA Flexi, do ISDOC-u alebo ako súpisku pre Excel."
       />
       <PageBody>
+        <ZauctovaneDoProgramu />
         <OdovzdanieZaMesiac />
         {/* `min-w-0` na stĺpcoch: bez neho má položka mriežky min-width auto,
             takže široká tabuľka stĺpec roztiahne a na mobile presiahne stránku. */}
@@ -737,3 +568,327 @@ function OdovzdanieZaMesiac() {
     </div>
   );
 }
+
+/**
+ * Zaúčtované doklady do iného programu než Pohoda (Omega, Money S3, ABRA
+ * Flexi, súpiska CSV) — vystavené faktúry, prijaté faktúry aj bločky
+ * s predkontáciou, členením, strediskom a zákazkou. Program si firma vyberie
+ * raz a pamätá sa.
+ */
+function ZauctovaneDoProgramu() {
+  const nacitajProgram = useServerFn(programUctovaniaFn);
+  const exportuj = useServerFn(exportUctovanieFn);
+  const [program, setProgram] = useState<string>("pohoda");
+  const [nastavenia, setNastavenia] = useState<Record<string, Record<string, unknown>>>({});
+  const [agenda, setAgenda] = useState<AgendaExportu>("prijata");
+  const [od, setOd] = useState(
+    new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toISOString().slice(0, 10),
+  );
+  const [doDna, setDoDna] = useState(new Date().toISOString().slice(0, 10));
+  const [riadky, setRiadky] = useState<any[]>([]);
+  const [vyber, setVyber] = useState<Record<string, boolean>>({});
+  const [oznacit, setOznacit] = useState(true);
+  const [lenNove, setLenNove] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [otvoreneNastavenia, setOtvoreneNastavenia] = useState(false);
+
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    nacitajProgram({ data: { company_id: cid } })
+      .then((r) => {
+        setProgram(r.program);
+        setNastavenia(r.nastavenia as any);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function nacitaj() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    let data: any[] = [];
+    if (agenda === "vystavena") {
+      const r = await supabase
+        .from("invoices")
+        .select("id, invoice_number, customer_name, issue_date, total, currency, zauctovane_at")
+        .eq("company_id", cid)
+        .gte("issue_date", od)
+        .lte("issue_date", doDna)
+        .neq("status", "draft")
+        .is("deleted_at", null)
+        .order("issue_date", { ascending: false });
+      data = (r.data ?? []).map((x: any) => ({
+        id: x.id,
+        cislo: x.invoice_number,
+        partner: x.customer_name,
+        datum: x.issue_date,
+        suma: x.total,
+        mena: x.currency,
+        zauctovany: Boolean(x.zauctovane_at),
+        odovzdany: false,
+      }));
+    } else if (agenda === "prijata") {
+      const r = await supabase
+        .from("purchase_invoices")
+        .select("id, invoice_number, supplier_name, issue_date, amount_total, currency, zauctovane_at, exported_at, type")
+        .eq("company_id", cid)
+        .gte("issue_date", od)
+        .lte("issue_date", doDna)
+        .eq("type", "regular")
+        .is("deleted_at", null)
+        .order("issue_date", { ascending: false });
+      data = (r.data ?? []).map((x: any) => ({
+        id: x.id,
+        cislo: x.invoice_number,
+        partner: x.supplier_name,
+        datum: x.issue_date,
+        suma: x.amount_total,
+        mena: x.currency,
+        zauctovany: Boolean(x.zauctovane_at),
+        odovzdany: Boolean(x.exported_at),
+      }));
+    } else {
+      const r = await supabase
+        .from("expense_documents")
+        .select("id, document_number, supplier_name, issue_date, total_amount, currency, status, exported_at, pohoda_predkontacia")
+        .eq("company_id", cid)
+        .gte("issue_date", od)
+        .lte("issue_date", doDna)
+        .neq("status", "new")
+        .order("issue_date", { ascending: false });
+      data = (r.data ?? []).map((x: any) => ({
+        id: x.id,
+        cislo: x.document_number || "bloček",
+        partner: x.supplier_name,
+        datum: x.issue_date,
+        suma: x.total_amount,
+        mena: x.currency,
+        zauctovany: Boolean(x.pohoda_predkontacia),
+        odovzdany: Boolean(x.exported_at) || x.status === "exported",
+      }));
+    }
+    setRiadky(data);
+    setVyber({});
+  }
+  useEffect(() => {
+    if (program !== "pohoda") void nacitaj();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agenda, od, doDna, program]);
+
+  async function zmenProgram(p: string) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setProgram(p);
+    try {
+      await nacitajProgram({ data: { company_id: cid, program: p as any } });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Program sa nepodarilo uložiť");
+    }
+  }
+
+  const zobrazene = riadky.filter((r) => !lenNove || !r.odovzdany);
+  const ids = zobrazene.filter((r) => vyber[r.id]).map((r) => r.id);
+  const def = PROGRAMY_UCTOVANIA.find((p) => p.program === program);
+
+  async function spusti() {
+    const cid = getActiveCompanyId();
+    if (!cid || !ids.length || program === "pohoda") return;
+    setBusy(true);
+    try {
+      const r = await exportuj({
+        data: { company_id: cid, program: program as any, agenda, ids, oznacit },
+      });
+      downloadFile(r.fileName, r.content, r.mime, r.encoding);
+      toast.success(`Vyvezených ${r.pocet} dokladov`);
+      if (r.preskocene.length)
+        toast.warning(`Do súboru sa nedostali: ${r.preskocene.join(" · ")}`, { duration: 12000 });
+      void nacitaj();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Export zlyhal");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mb-6 rounded-2xl border border-border bg-card p-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">Zaúčtované doklady do vášho programu</h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            Vystavené faktúry, prijaté faktúry aj bločky s predkontáciou, členením DPH, strediskom a
+            zákazkou — tak, ako ste ich zaúčtovali vo Fakteri.
+          </p>
+        </div>
+        <label className="text-sm">
+          <span className="block text-xs text-muted-foreground">Účtovný program</span>
+          <select
+            aria-label="Účtovný program"
+            value={program}
+            onChange={(e) => void zmenProgram(e.target.value)}
+            className="mt-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+          >
+            {PROGRAMY_UCTOVANIA.map((p) => (
+              <option key={p.program} value={p.program}>
+                {p.nazov}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {program === "pohoda" ? (
+        <p className="mt-4 rounded-md bg-muted/40 p-3 text-sm text-muted-foreground">
+          Do Pohody idú zaúčtované doklady konektorom alebo mesačným balíkom nižšie; jednotlivo
+          tlačidlom <em>Stiahnuť XML pre Pohodu</em> pri doklade či v zozname. Používate iný program?
+          Vyberte ho vpravo hore.
+        </p>
+      ) : (
+        <>
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <div className="flex rounded-md border border-border p-0.5 text-sm">
+              {(
+                [
+                  ["vystavena", "Vystavené faktúry"],
+                  ["prijata", "Prijaté faktúry"],
+                  ["doklad", "Bločky a doklady"],
+                ] as const
+              ).map(([k, n]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setAgenda(k)}
+                  className={`rounded px-3 py-1.5 ${agenda === k ? "bg-primary text-primary-foreground" : "hover:bg-secondary"}`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <label className="text-xs text-muted-foreground">
+              Od
+              <input
+                type="date"
+                value={od}
+                onChange={(e) => setOd(e.target.value)}
+                className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+              />
+            </label>
+            <label className="text-xs text-muted-foreground">
+              Do
+              <input
+                type="date"
+                value={doDna}
+                onChange={(e) => setDoDna(e.target.value)}
+                className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5 text-sm text-foreground"
+              />
+            </label>
+            {agenda !== "vystavena" && (
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={lenNove} onChange={(e) => setLenNove(e.target.checked)} />
+                Len ešte neodovzdané
+              </label>
+            )}
+            <button
+              type="button"
+              onClick={() => setOtvoreneNastavenia((o) => !o)}
+              className="ml-auto rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              Nastavenia pre {def?.nazov.split(" — ")[0]}
+            </button>
+          </div>
+
+          {otvoreneNastavenia && (
+            <NastaveniaProgramu
+              program={program as any}
+              hodnoty={(nastavenia[program] ?? {}) as Record<string, unknown>}
+              onUlozit={async (h) => {
+                const cid = getActiveCompanyId();
+                if (!cid) return;
+                const r = await nacitajProgram({ data: { company_id: cid, nastavenia: h } });
+                setNastavenia(r.nastavenia as any);
+                toast.success("Nastavenia sú uložené");
+              }}
+            />
+          )}
+
+          <div className="mt-4 max-h-96 overflow-auto rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-muted/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="w-10 p-2">
+                    <input
+                      type="checkbox"
+                      aria-label="Vybrať všetko"
+                      checked={zobrazene.length > 0 && ids.length === zobrazene.length}
+                      onChange={(e) =>
+                        setVyber(e.target.checked ? Object.fromEntries(zobrazene.map((r) => [r.id, true])) : {})
+                      }
+                    />
+                  </th>
+                  <th className="p-2">Číslo</th>
+                  <th className="p-2">{agenda === "vystavena" ? "Odberateľ" : "Dodávateľ"}</th>
+                  <th className="p-2">Dátum</th>
+                  <th className="p-2 text-right">Suma</th>
+                  <th className="p-2">Stav</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {zobrazene.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-6 text-center text-muted-foreground">
+                      V tomto období tu nič nie je.
+                    </td>
+                  </tr>
+                )}
+                {zobrazene.map((r) => (
+                  <tr key={r.id} className="hover:bg-muted/30">
+                    <td className="p-2">
+                      <input
+                        type="checkbox"
+                        checked={!!vyber[r.id]}
+                        onChange={(e) => setVyber({ ...vyber, [r.id]: e.target.checked })}
+                      />
+                    </td>
+                    <td className="p-2 font-medium">{r.cislo}</td>
+                    <td className="p-2">{r.partner ?? "—"}</td>
+                    <td className="p-2">{r.datum}</td>
+                    <td className="p-2 text-right tabular-nums">
+                      {Number(r.suma ?? 0).toFixed(2)} {r.mena}
+                    </td>
+                    <td className="p-2 text-xs">
+                      {r.odovzdany ? (
+                        <span className="text-emerald-700">odovzdaný</span>
+                      ) : r.zauctovany ? (
+                        <span className="text-sky-700">zaúčtovaný</span>
+                      ) : (
+                        <span className="text-muted-foreground">predvolené kódy</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={oznacit} onChange={(e) => setOznacit(e.target.checked)} />
+              Označiť ako odovzdané (zamknú sa a nepôjdu druhýkrát)
+            </label>
+            <button
+              type="button"
+              onClick={spusti}
+              disabled={busy || !ids.length}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCode2 className="h-4 w-4" />}
+              Stiahnuť pre {def?.nazov.split(" — ")[0]} ({ids.length})
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+

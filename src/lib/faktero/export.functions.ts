@@ -142,10 +142,16 @@ export const getExportContentFn = createServerFn({ method: "POST" })
     // Starší súbor z histórie sa musí stiahnuť v tom kódovaní, v akom vznikol.
     const { EXPORT_STRATEGIES: STRATEGIE } = await import("./export.server");
     const strategia = STRATEGIE[job.format as ExportFormat];
+    // Zaúčtované doklady do iných programov majú vlastné formáty.
+    const { PROGRAMY_UCTOVANIA } = await import("./uctovanie-programy");
+    const program = PROGRAMY_UCTOVANIA.find((p) => p.format === job.format);
     return {
       fileName: job.file_name,
       content: job.file_content,
-      mime: strategia?.mime ?? "application/xml",
-      encoding: strategia?.encoding ?? ("utf-8" as const),
+      mime: strategia?.mime ?? program?.mime ?? "application/xml",
+      encoding: (strategia?.encoding ?? program?.encoding ?? "utf-8") as
+        | "utf-8"
+        | "windows-1250"
+        | "base64",
     };
   });

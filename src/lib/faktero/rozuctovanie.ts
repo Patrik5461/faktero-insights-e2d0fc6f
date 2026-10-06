@@ -16,6 +16,8 @@ export type RiadokRozuctovania = {
   text?: string | null;
   /** Členenie kontrolného výkazu riadku; prázdne = z dokladu. */
   kv?: string | null;
+  /** Pri účtovaní pomerom: či si z tejto časti firma odpočíta DPH. */
+  odpocet?: boolean;
 };
 
 export type RozpisSadzby = { sadzba: number; zaklad: number; dph: number };
@@ -269,6 +271,7 @@ export function rozuctovaniePodlaPomeru(
         zaklad: z,
         dph: d,
         text: `${c.podiel} %`,
+        odpocet: Boolean(c.odpocet),
       });
     });
   }

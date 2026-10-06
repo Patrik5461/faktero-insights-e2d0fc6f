@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
+import { useRadenie } from "@/hooks/useRadenie";
+import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -139,6 +141,19 @@ function DokladyPage() {
   }, [vsetkyRiadky, hladaj, platba]);
   const zobrazenie = useNastaveniaZoznamu("doklady", STLPCE_DOKLADOV);
   const je = zobrazenie.je;
+  const program = useExportDoProgramu();
+  const rad = useRadenie(rows, {
+    datum: (r: any) => r.issue_date,
+    dodavatel: (r: any) => r.supplier_name,
+    cislo: (r: any) => r.document_number,
+    kategoria: (r: any) => r.category,
+    zaklad: (r: any) => (r.net_amount == null ? null : Number(r.net_amount)),
+    dph: (r: any) => (r.vat_amount == null ? null : Number(r.vat_amount)),
+    celkom: (r: any) => (r.total_amount == null ? null : Number(r.total_amount)),
+    platba: (r: any) => r.payment_method,
+    stav: (r: any) => r.status,
+    zdroj: (r: any) => r.source,
+  });
   const sch = useStavSchvalovania(
     getActiveCompanyId(),
     "doklad",
@@ -499,6 +514,18 @@ function DokladyPage() {
               Predkontácia ({selected.size})
             </button>
           )}
+          {selected.size > 0 && program.inyProgram && (
+            <button
+              onClick={async () => {
+                if (await program.spusti("doklad", Array.from(selected))) await refresh();
+              }}
+              disabled={program.busy}
+              title="Spracované doklady so zaúčtovaním; označia sa ako odovzdané"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" /> Export pre {program.nazov} ({selected.size})
+            </button>
+          )}
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Hľadať</label>
             <input
@@ -692,22 +719,22 @@ function DokladyPage() {
                       onChange={toggleAll}
                     />
                   </th>
-                  {je("datum") && <th className="px-3 py-2 text-left">Dátum</th>}
-                  <th className="px-3 py-2 text-left">Dodávateľ</th>
-                  {je("cislo") && <th className="px-3 py-2 text-left">Číslo</th>}
-                  {je("kategoria") && <th className="px-3 py-2 text-left">Kategória</th>}
-                  {je("zaklad") && <th className="px-3 py-2 text-right">Základ</th>}
-                  {je("dph") && <th className="px-3 py-2 text-right">DPH</th>}
-                  {je("celkom") && <th className="px-3 py-2 text-right">Celkom</th>}
-                  {je("platba") && <th className="px-3 py-2 text-left">Spôsob úhrady</th>}
-                  <th className="px-3 py-2 text-left">Stav</th>
-                  {je("zdroj") && <th className="px-3 py-2 text-left">Zdroj</th>}
+                  {je("datum") && <th className="px-3 py-2 text-left">{rad.hlavicka("datum", "Dátum")}</th>}
+                  <th className="px-3 py-2 text-left">{rad.hlavicka("dodavatel", "Dodávateľ")}</th>
+                  {je("cislo") && <th className="px-3 py-2 text-left">{rad.hlavicka("cislo", "Číslo")}</th>}
+                  {je("kategoria") && <th className="px-3 py-2 text-left">{rad.hlavicka("kategoria", "Kategória")}</th>}
+                  {je("zaklad") && <th className="px-3 py-2 text-right">{rad.hlavicka("zaklad", "Základ")}</th>}
+                  {je("dph") && <th className="px-3 py-2 text-right">{rad.hlavicka("dph", "DPH")}</th>}
+                  {je("celkom") && <th className="px-3 py-2 text-right">{rad.hlavicka("celkom", "Celkom")}</th>}
+                  {je("platba") && <th className="px-3 py-2 text-left">{rad.hlavicka("platba", "Spôsob úhrady")}</th>}
+                  <th className="px-3 py-2 text-left">{rad.hlavicka("stav", "Stav")}</th>
+                  {je("zdroj") && <th className="px-3 py-2 text-left">{rad.hlavicka("zdroj", "Zdroj")}</th>}
                   {je("uhrada") && <th className="px-3 py-2 text-left">Úhrada z účtu</th>}
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
+                {rad.zoradene.map((r) => (
                   <tr key={r.id} className="border-t border-border">
                     <td className="px-3 py-2">
                       <input

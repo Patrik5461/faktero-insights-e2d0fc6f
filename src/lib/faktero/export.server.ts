@@ -2247,7 +2247,7 @@ ${odsadenie}</SouhrnDPH>`;
   }
 
   const xml = `<?xml version="1.0" encoding="utf-8"?>
-<MoneyData ICAgendy="${esc(company?.ico ?? "")}" JazykVerze="SK" GeneratedBy="Faktero">
+<MoneyData ICAgendy="${esc(company?.ico ?? "")}" JazykVerze="SK">
   <SeznamFaktVyd>${doklady.join("")}
   </SeznamFaktVyd>
 </MoneyData>`;

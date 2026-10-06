@@ -1203,6 +1203,8 @@ export type Database = {
       }
       companies: {
         Row: {
+          uctovny_program: string
+          uctovanie_nastavenia: Json
           city: string | null
           country: string | null
           created_at: string
@@ -1294,6 +1296,8 @@ export type Database = {
           poznamky_sablony: string[]
         }
         Insert: {
+          uctovny_program?: string
+          uctovanie_nastavenia?: Json
           city?: string | null
           country?: string | null
           created_at?: string
@@ -1385,6 +1389,8 @@ export type Database = {
           poznamky_sablony?: string[]
         }
         Update: {
+          uctovny_program?: string
+          uctovanie_nastavenia?: Json
           city?: string | null
           country?: string | null
           created_at?: string

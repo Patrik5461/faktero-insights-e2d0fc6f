@@ -6,6 +6,8 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrijemMailom } from "@/components/faktero/PrijemMailom";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
+import { useRadenie } from "@/hooks/useRadenie";
+import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import {
   Plus,
@@ -125,6 +127,20 @@ function PurchaseInvoicesPage() {
   const zobrazenie = useNastaveniaZoznamu("prijate-faktury", STLPCE_PRIJATYCH);
   const je = zobrazenie.je;
   const pocetStlpcov = zobrazenie.viditelne.length + 1;
+  const rad = useRadenie(rows, {
+    cislo: (r: any) => r.invoice_number,
+    dodavatel: (r: any) => r.supplier_name,
+    ico: (r: any) => r.supplier_ico,
+    vs: (r: any) => r.variable_symbol,
+    vystavena: (r: any) => r.issue_date,
+    duzp: (r: any) => r.delivery_date,
+    splatnost: (r: any) => r.due_date,
+    zaklad: (r: any) => Number(r.amount_without_vat ?? 0),
+    dph: (r: any) => Number(r.vat_amount ?? 0),
+    suma: (r: any) => Number(r.amount_total ?? 0),
+    predkontacia: (r: any) => r.pohoda_predkontacia,
+    stav: (r: any) => r.status,
+  });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [zipBusy, setZipBusy] = useState(false);
   const [hromadneBusy, setHromadneBusy] = useState(false);
@@ -302,9 +318,14 @@ function PurchaseInvoicesPage() {
   }
 
   const exportujXml = useServerFn(exportPrijatychPohodaFn);
+  const program = useExportDoProgramu();
   async function hromadneXml() {
     const cid = getActiveCompanyId();
     if (!cid || !selected.size) return;
+    if (program.inyProgram) {
+      if (await program.spusti("prijata", [...selected])) await load();
+      return;
+    }
     setHromadneBusy(true);
     try {
       const r = await exportujXml({ data: { company_id: cid, ids: [...selected], oznacit: true } });
@@ -601,10 +622,11 @@ function PurchaseInvoicesPage() {
             <button
               onClick={hromadneXml}
               disabled={hromadneBusy}
-              title="Zaúčtované faktúry ako XML pre Pohodu; označia sa ako odovzdané"
+              title={`Zaúčtované faktúry pre ${program.inyProgram ? program.nazov : "Pohodu"}; označia sa ako odovzdané`}
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
             >
-              <Download className="h-3.5 w-3.5" /> XML pre Pohodu
+              <Download className="h-3.5 w-3.5" />{" "}
+              {program.inyProgram ? `Export pre ${program.nazov}` : "XML pre Pohodu"}
             </button>
             <button
               onClick={() => setMazanie(true)}
@@ -682,19 +704,19 @@ function PurchaseInvoicesPage() {
                     onChange={toggleAll}
                   />
                 </th>
-                <th className="p-3">Číslo</th>
-                <th className="p-3">Dodávateľ</th>
-                {je("ico") && <th className="p-3">IČO</th>}
-                {je("vs") && <th className="p-3">VS</th>}
-                {je("vystavena") && <th className="p-3">Vystavená</th>}
-                {je("duzp") && <th className="p-3">DUZP</th>}
-                {je("splatnost") && <th className="p-3">Splatnosť</th>}
-                {je("zaklad") && <th className="p-3 text-right">Základ</th>}
-                {je("dph") && <th className="p-3 text-right">DPH</th>}
-                {je("suma") && <th className="p-3 text-right">Suma</th>}
-                {je("predkontacia") && <th className="p-3">Predkontácia</th>}
+                <th className="p-3">{rad.hlavicka("cislo", "Číslo")}</th>
+                <th className="p-3">{rad.hlavicka("dodavatel", "Dodávateľ")}</th>
+                {je("ico") && <th className="p-3">{rad.hlavicka("ico", "IČO")}</th>}
+                {je("vs") && <th className="p-3">{rad.hlavicka("vs", "VS")}</th>}
+                {je("vystavena") && <th className="p-3">{rad.hlavicka("vystavena", "Vystavená")}</th>}
+                {je("duzp") && <th className="p-3">{rad.hlavicka("duzp", "DUZP")}</th>}
+                {je("splatnost") && <th className="p-3">{rad.hlavicka("splatnost", "Splatnosť")}</th>}
+                {je("zaklad") && <th className="p-3 text-right">{rad.hlavicka("zaklad", "Základ")}</th>}
+                {je("dph") && <th className="p-3 text-right">{rad.hlavicka("dph", "DPH")}</th>}
+                {je("suma") && <th className="p-3 text-right">{rad.hlavicka("suma", "Suma")}</th>}
+                {je("predkontacia") && <th className="p-3">{rad.hlavicka("predkontacia", "Predkontácia")}</th>}
                 {je("zapisal") && <th className="p-3">Zapísal</th>}
-                {je("stav") && <th className="p-3">Stav</th>}
+                {je("stav") && <th className="p-3">{rad.hlavicka("stav", "Stav")}</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -713,7 +735,7 @@ function PurchaseInvoicesPage() {
                   </td>
                 </tr>
               )}
-              {rows.map((r) => (
+              {rad.zoradene.map((r) => (
                 /*
                   Otvárať detail vedeli len dve bunky z deviatich a robili to
                   cez `window.location`, teda celým znovunačítaním stránky.
