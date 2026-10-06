@@ -39,7 +39,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         supabase
           .from("companies")
           .select(
-            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia, pohoda_predkontacia_zaloha, pohoda_predkontacia_dobropis, pohoda_clenenie_dph, pohoda_clenenie_dph_pdp",
+            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia, pohoda_predkontacia_zaloha, pohoda_predkontacia_dobropis, pohoda_clenenie_dph, pohoda_clenenie_dph_pdp, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady",
           )
           .eq("id", data.company_id)
           .maybeSingle(),
@@ -119,6 +119,18 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
       predvolenaPredkontacia,
       predvoleneClenenie,
       maCiselnik: (ciselnik ?? []).length > 0,
+      strediska: ponuka(ciselnik ?? [], "stredisko"),
+      cinnosti: ponuka(ciselnik ?? [], "cinnost"),
+      // Číselné rady: vhodná agenda Pohody prvá (prijaté či vydané faktúry, pokladňa…).
+      rady: ponuka(ciselnik ?? [], "ciselny_rad").sort(
+        (a, b) =>
+          Number(b.agenda.startsWith(vystavena ? "vydane" : "prijate")) -
+          Number(a.agenda.startsWith(vystavena ? "vydane" : "prijate")),
+      ),
+      predvoleneStredisko: (firma?.pohoda_stredisko ?? null) as string | null,
+      predvolenyRad: ((doklad ? firma?.pohoda_rad_doklady : null) || firma?.pohoda_rad_prijate || null) as
+        | string
+        | null,
       // Kategória nákladu → kódy (Predkontácie → „použiť sám pre kategóriu").
       podlaKategorie: Object.fromEntries(
         Object.entries(
@@ -151,6 +163,10 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
         kategoria: z.string().trim().max(40).optional().nullable(),
         odpocet: z.boolean().optional(),
         kv: z.string().max(5).optional().nullable(),
+        stredisko: kod,
+        cinnost: kod,
+        rad: kod,
+        intPoznamka: z.string().max(240).optional().nullable(),
         lenUlozit: z.boolean().optional(),
       })
       .parse(d),
@@ -191,6 +207,10 @@ export const zauctujPrijateFn = createServerFn({ method: "POST" })
       if (data.kategoria !== undefined) zmena.category = data.kategoria?.trim() || null;
       if (data.odpocet !== undefined) zmena.odpocet = data.odpocet;
       if (data.kv !== undefined) zmena.kv_clenenie = data.kv?.trim() || null;
+      if (data.stredisko !== undefined) zmena.stredisko = data.stredisko?.trim() || null;
+      if (data.cinnost !== undefined) zmena.cinnost = data.cinnost?.trim() || null;
+      if (data.rad !== undefined) zmena.pohoda_rad = data.rad?.trim() || null;
+      if (data.intPoznamka !== undefined) zmena.int_poznamka = data.intPoznamka?.trim() || null;
       // Hromadne sa prázdne pole neprepisuje — nesmie zmazať kód doplnený pravidlom.
       if (data.ids.length > 1) {
         for (const k of Object.keys(zmena)) if (zmena[k] === null) delete zmena[k];
@@ -251,6 +271,9 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
         clenenie: kod,
         kategoria: z.string().trim().max(40).optional().nullable(),
         kv: z.string().trim().max(5).optional().nullable(),
+        stredisko: kod,
+        cinnost: kod,
+        rad: kod,
       })
       .parse(d),
   )
@@ -258,6 +281,9 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
     const supabase = context.supabase as any;
     const zmena: Record<string, unknown> = {};
     if (data.kv?.trim()) zmena.kv_clenenie = data.kv.trim() === "auto" ? null : data.kv.trim();
+    if (data.stredisko?.trim()) zmena.stredisko = data.stredisko.trim();
+    if (data.cinnost?.trim()) zmena.cinnost = data.cinnost.trim();
+    if (data.rad?.trim()) zmena.pohoda_rad = data.rad.trim();
     if (data.predkontacia?.trim()) zmena.pohoda_predkontacia = data.predkontacia.trim();
     if (data.clenenie?.trim()) zmena.pohoda_clenenie_dph = data.clenenie.trim();
     if (data.kategoria?.trim()) zmena.category = data.kategoria.trim();
@@ -369,6 +395,9 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
         predkontacia: kod,
         clenenie: kod,
         kv: z.string().trim().max(5).optional().nullable(),
+        stredisko: kod,
+        cinnost: kod,
+        intPoznamka: z.string().max(240).optional().nullable(),
         polozky: z
           .array(
             z.object({
@@ -401,6 +430,9 @@ export const zauctujVystavenuFn = createServerFn({ method: "POST" })
       pohoda_predkontacia: data.predkontacia?.trim() || null,
       pohoda_clenenie_dph: data.clenenie?.trim() || null,
       kv_clenenie: data.kv?.trim() || null,
+      stredisko: data.stredisko?.trim() || null,
+      cinnost: data.cinnost?.trim() || null,
+      int_poznamka: data.intPoznamka?.trim() || null,
     };
     if (!data.lenUlozit) {
       zmena.zauctovane_at = new Date().toISOString();

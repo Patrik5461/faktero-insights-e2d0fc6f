@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { KodPohody } from "@/components/faktero/KodPohody";
+import { JobPicker } from "@/components/faktero/JobPicker";
 import { RozuctovaniePanel } from "@/components/faktero/RozuctovaniePanel";
 import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
@@ -58,6 +59,11 @@ type Form = {
   pohoda_predkontacia: string;
   pohoda_clenenie_dph: string;
   kv_clenenie: string;
+  job_id: string;
+  stredisko: string;
+  cinnost: string;
+  pohoda_rad: string;
+  int_poznamka: string;
   note: string;
 };
 
@@ -83,6 +89,11 @@ const EMPTY: Form = {
   pohoda_predkontacia: "",
   pohoda_clenenie_dph: "",
   kv_clenenie: "",
+  job_id: "",
+  stredisko: "",
+  cinnost: "",
+  pohoda_rad: "",
+  int_poznamka: "",
   note: "",
 };
 
@@ -186,6 +197,11 @@ function NovyDokladPage() {
         pohoda_predkontacia: (data as any).pohoda_predkontacia ?? "",
         pohoda_clenenie_dph: (data as any).pohoda_clenenie_dph ?? "",
         kv_clenenie: (data as any).kv_clenenie ?? "",
+        job_id: (data as any).job_id ?? "",
+        stredisko: (data as any).stredisko ?? "",
+        cinnost: (data as any).cinnost ?? "",
+        pohoda_rad: (data as any).pohoda_rad ?? "",
+        int_poznamka: (data as any).int_poznamka ?? "",
         note: data.note ?? "",
       });
       setUlozeny(data);
@@ -441,6 +457,11 @@ function NovyDokladPage() {
         pohoda_predkontacia: form.pohoda_predkontacia.trim() || null,
         pohoda_clenenie_dph: form.pohoda_clenenie_dph.trim() || null,
         kv_clenenie: form.kv_clenenie || null,
+        job_id: form.job_id || null,
+        stredisko: form.stredisko.trim() || null,
+        cinnost: form.cinnost.trim() || null,
+        pohoda_rad: form.pohoda_rad.trim() || null,
+        int_poznamka: form.int_poznamka.trim() || null,
         note: form.note || null,
         file_path: uploadedFile?.path ?? null,
         file_mime: uploadedFile?.mime ?? null,
@@ -834,6 +855,58 @@ function NovyDokladPage() {
                     ))}
                   </select>
                 </label>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-muted-foreground">Stredisko</span>
+                    <KodPohody
+                      ariaLabel="Stredisko"
+                      value={form.stredisko}
+                      onChange={(v) => updateForm("stredisko", v)}
+                      moznosti={kody?.strediska ?? []}
+                      placeholder={kody?.predvoleneStredisko ?? "—"}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      vyber
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-muted-foreground">Činnosť</span>
+                    <KodPohody
+                      ariaLabel="Činnosť"
+                      value={form.cinnost}
+                      onChange={(v) => updateForm("cinnost", v)}
+                      moznosti={kody?.cinnosti ?? []}
+                      placeholder="—"
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      vyber
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-muted-foreground">Číselný rad v Pohode</span>
+                    <KodPohody
+                      ariaLabel="Číselný rad v Pohode"
+                      value={form.pohoda_rad}
+                      onChange={(v) => updateForm("pohoda_rad", v)}
+                      moznosti={kody?.rady ?? []}
+                      placeholder={kody?.predvolenyRad ?? "predvolený v Pohode"}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      vyber
+                    />
+                  </label>
+                </div>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <JobPicker value={form.job_id} onChange={(v) => updateForm("job_id", v)} label="Zákazka" />
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-muted-foreground">
+                      Interná poznámka pre účtovníka
+                    </span>
+                    <input
+                      value={form.int_poznamka}
+                      onChange={(e) => updateForm("int_poznamka", e.target.value)}
+                      maxLength={240}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Prázdne = podľa kategórie alebo predvolené pre bločky z{" "}
                   <Link to="/uctovnictvo/predkontacie" className="underline">

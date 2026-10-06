@@ -34,6 +34,11 @@ export type ExpenseInput = {
   pohoda_predkontacia?: string | null;
   pohoda_clenenie_dph?: string | null;
   kv_clenenie?: string | null;
+  job_id?: string | null;
+  stredisko?: string | null;
+  cinnost?: string | null;
+  pohoda_rad?: string | null;
+  int_poznamka?: string | null;
 };
 
 const inputSchema = z.object({
@@ -56,6 +61,11 @@ const inputSchema = z.object({
   pohoda_predkontacia: z.string().max(30).nullable().optional(),
   pohoda_clenenie_dph: z.string().max(30).nullable().optional(),
   kv_clenenie: z.string().max(5).nullable().optional(),
+  job_id: z.string().uuid().nullable().optional(),
+  stredisko: z.string().max(30).nullable().optional(),
+  cinnost: z.string().max(30).nullable().optional(),
+  pohoda_rad: z.string().max(30).nullable().optional(),
+  int_poznamka: z.string().max(240).nullable().optional(),
   note: z.string().nullable().optional(),
   file_path: z.string().nullable().optional(),
   file_mime: z.string().nullable().optional(),
@@ -252,15 +262,116 @@ export const deleteExpenseFn = createServerFn({ method: "POST" })
       odpovedali „Doklad zmazaný", hoci doklad ostal ležať v databáze a ďalej
       sa hlásil ako „čaká na kontrolu".
     */
-    const { data: zmazane, error } = await context.supabase
+    /*
+      Kôš: doklad sa pred zmazaním odloží celý aj s párovaním na pohyb v
+      banke, aby sa dal obnoviť. Sken v úložisku ostáva, kým sa kôš nevysype.
+    */
+    const supabase = context.supabase as any;
+    const { data: doklad } = await supabase
+      .from("expense_documents")
+      .select("*")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!doklad) throw new Error("Doklad sa nezmazal — buď už neexistuje, alebo naň nemáte právo.");
+    const { data: pohyby } = await supabase
+      .from("bank_transactions")
+      .select("id")
+      .eq("matched_expense_id", data.id);
+    const { data: vKosi, error: chybaKosa } = await supabase
+      .from("kos_dokladov")
+      .insert({
+        company_id: doklad.company_id,
+        druh: "doklad",
+        zaznam_id: doklad.id,
+        zaznam: doklad,
+        vazby: { banka: (pohyby ?? []).map((p: any) => p.id) },
+        popis: [doklad.supplier_name, doklad.document_number].filter(Boolean).join(" · ") || "Doklad",
+        zmazal: context.userId,
+      })
+      .select("id")
+      .single();
+    if (chybaKosa) throw new Error(chybaKosa.message);
+
+    const { data: zmazane, error } = await supabase
       .from("expense_documents")
       .delete()
       .eq("id", data.id)
       .select("id");
-    if (error) throw new Error(error.message);
-    if (!zmazane?.length) {
+    if (error || !zmazane?.length) {
+      await supabase.from("kos_dokladov").delete().eq("id", vKosi.id);
+      if (error) throw new Error(error.message);
       throw new Error("Doklad sa nezmazal — buď už neexistuje, alebo naň nemáte právo.");
     }
+    return { ok: true };
+  });
+
+/** Kôš dokladov — po 90 dňoch sa vysype sám (aj sken). */
+export const kosDokladovFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { company_id: string }) => z.object({ company_id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const hranica = new Date(Date.now() - 90 * 86400000).toISOString();
+    const { data: stare } = await supabase
+      .from("kos_dokladov")
+      .select("id, zaznam")
+      .eq("company_id", data.company_id)
+      .lt("zmazane_at", hranica);
+    for (const r of stare ?? []) {
+      const cesta = r.zaznam?.file_path;
+      if (cesta) await supabase.storage.from("expense-receipts").remove([cesta]);
+      await supabase.from("kos_dokladov").delete().eq("id", r.id);
+    }
+    const { data: riadky, error } = await supabase
+      .from("kos_dokladov")
+      .select("id, popis, zmazane_at, zmazal, zaznam")
+      .eq("company_id", data.company_id)
+      .order("zmazane_at", { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+    return (riadky ?? []).map((r: any) => ({
+      id: r.id as string,
+      popis: r.popis as string,
+      zmazaneAt: r.zmazane_at as string,
+      datum: (r.zaznam?.issue_date ?? null) as string | null,
+      suma: r.zaznam?.total_amount != null ? Number(r.zaznam.total_amount) : null,
+      mena: (r.zaznam?.currency ?? "EUR") as string,
+    }));
+  });
+
+/** Obnovenie z koša — doklad sa vráti s tým istým id aj párovaním na banku. */
+export const obnovZKosaFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { data: r } = await supabase.from("kos_dokladov").select("*").eq("id", data.id).maybeSingle();
+    if (!r) throw new Error("Doklad v koši nie je.");
+    const { error } = await supabase.from("expense_documents").insert(r.zaznam);
+    if (error) throw new Error(error.message);
+    const banka: string[] = r.vazby?.banka ?? [];
+    if (banka.length) {
+      await supabase
+        .from("bank_transactions")
+        .update({ matched_expense_id: r.zaznam_id })
+        .in("id", banka)
+        .is("matched_expense_id", null);
+    }
+    await supabase.from("kos_dokladov").delete().eq("id", r.id);
+    return { ok: true };
+  });
+
+/** Natrvalo z koša — so skenom. */
+export const zmazZKosaFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { data: r } = await supabase.from("kos_dokladov").select("id, zaznam").eq("id", data.id).maybeSingle();
+    if (!r) throw new Error("Doklad v koši nie je.");
+    if (r.zaznam?.file_path) await supabase.storage.from("expense-receipts").remove([r.zaznam.file_path]);
+    const { error } = await supabase.from("kos_dokladov").delete().eq("id", r.id);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 
@@ -437,7 +548,7 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const { data: firma } = await supabase
       .from("companies")
       .select(
-        "ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia_rozuctovat, pohoda_blocky_agenda, pohoda_pokladna",
+        "ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia_rozuctovat, pohoda_blocky_agenda, pohoda_pokladna, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, pohoda_rad_pokladna, pohoda_rad_interne, pohoda_posielat_zakazky, pohoda_odkaz_na_doklady, id",
       )
       .eq("id", data.company_id)
       .single();
@@ -455,7 +566,11 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
           predkontaciaRozuctovat: (firma as any)?.pohoda_predkontacia_rozuctovat,
           blockyPodlaPlatby: (firma as any)?.pohoda_blocky_agenda === "podla_platby",
           pokladna: (firma as any)?.pohoda_pokladna,
-          podlaKategorie: await (await import("./predkontacie.server")).kodyPodlaKategorie(supabase, data.company_id),
+          ...(await (await import("./predkontacie.server")).nastaveniaDokladov(
+            supabase,
+            { ...(firma ?? {}), id: data.company_id },
+            rows,
+          )),
         },
       }),
     );

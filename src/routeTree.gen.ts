@@ -256,6 +256,7 @@ import { Route as AuthenticatedSkladPresunyNovaRouteImport } from './routes/_aut
 import { Route as AuthenticatedSkladProduktyIndexRouteImport } from './routes/_authenticated/sklad.produkty.index'
 import { Route as ApiAdminSeoCallbackRouteImport } from './routes/api/admin/seo.callback'
 import { Route as ApiBankoveUctyTatrabankaWebhookRouteImport } from './routes/api/bankove-ucty/tatrabanka/webhook'
+import { Route as ApiPublicDokladTokenRouteImport } from './routes/api/public/doklad.$token'
 import { Route as ApiPublicEfakturaEpostakRouteImport } from './routes/api/public/efaktura/epostak'
 import { Route as ApiPublicEfakturaPdsRouteImport } from './routes/api/public/efaktura/pds'
 import { Route as ApiPublicFakturaTokenRouteImport } from './routes/api/public/faktura.$token'
@@ -1642,6 +1643,11 @@ const ApiBankoveUctyTatrabankaWebhookRoute =
     path: '/api/bankove-ucty/tatrabanka/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicDokladTokenRoute = ApiPublicDokladTokenRouteImport.update({
+  id: '/api/public/doklad/$token',
+  path: '/api/public/doklad/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicEfakturaEpostakRoute =
   ApiPublicEfakturaEpostakRouteImport.update({
     id: '/api/public/efaktura/epostak',
@@ -2146,6 +2152,7 @@ export interface FileRoutesByFullPath {
   '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/doklad/$token': typeof ApiPublicDokladTokenRoute
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
@@ -2433,6 +2440,7 @@ export interface FileRoutesByTo {
   '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/doklad/$token': typeof ApiPublicDokladTokenRoute
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
@@ -2731,6 +2739,7 @@ export interface FileRoutesById {
   '/_authenticated/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/doklad/$token': typeof ApiPublicDokladTokenRoute
   '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
   '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
@@ -3029,6 +3038,7 @@ export interface FileRouteTypes {
     | '/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/doklad/$token'
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
@@ -3316,6 +3326,7 @@ export interface FileRouteTypes {
     | '/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/doklad/$token'
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
@@ -3613,6 +3624,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/doklad/$token'
     | '/api/public/efaktura/epostak'
     | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
@@ -3762,6 +3774,7 @@ export interface RootRouteChildren {
   PomocOnlinePlatbyGopayRoute: typeof PomocOnlinePlatbyGopayRoute
   ApiAdminSeoCallbackRoute: typeof ApiAdminSeoCallbackRoute
   ApiBankoveUctyTatrabankaWebhookRoute: typeof ApiBankoveUctyTatrabankaWebhookRoute
+  ApiPublicDokladTokenRoute: typeof ApiPublicDokladTokenRoute
   ApiPublicEfakturaEpostakRoute: typeof ApiPublicEfakturaEpostakRoute
   ApiPublicEfakturaPdsRoute: typeof ApiPublicEfakturaPdsRoute
   ApiPublicFakturaTokenRoute: typeof ApiPublicFakturaTokenRoute
@@ -5529,6 +5542,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBankoveUctyTatrabankaWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/doklad/$token': {
+      id: '/api/public/doklad/$token'
+      path: '/api/public/doklad/$token'
+      fullPath: '/api/public/doklad/$token'
+      preLoaderRoute: typeof ApiPublicDokladTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/efaktura/epostak': {
       id: '/api/public/efaktura/epostak'
       path: '/api/public/efaktura/epostak'
@@ -6509,6 +6529,7 @@ const rootRouteChildren: RootRouteChildren = {
   PomocOnlinePlatbyGopayRoute: PomocOnlinePlatbyGopayRoute,
   ApiAdminSeoCallbackRoute: ApiAdminSeoCallbackRoute,
   ApiBankoveUctyTatrabankaWebhookRoute: ApiBankoveUctyTatrabankaWebhookRoute,
+  ApiPublicDokladTokenRoute: ApiPublicDokladTokenRoute,
   ApiPublicEfakturaEpostakRoute: ApiPublicEfakturaEpostakRoute,
   ApiPublicEfakturaPdsRoute: ApiPublicEfakturaPdsRoute,
   ApiPublicFakturaTokenRoute: ApiPublicFakturaTokenRoute,

@@ -1278,6 +1278,12 @@ export type Database = {
           vat_scheme: string | null
           dan_z_prijatej_platby: boolean
           pohoda_blocky_agenda: string
+          pohoda_rad_prijate: string | null
+          pohoda_rad_doklady: string | null
+          pohoda_rad_pokladna: string | null
+          pohoda_rad_interne: string | null
+          pohoda_stredisko: string | null
+          pohoda_odkaz_na_doklady: boolean
         }
         Insert: {
           city?: string | null
@@ -1355,6 +1361,12 @@ export type Database = {
           vat_scheme?: string | null
           dan_z_prijatej_platby?: boolean
           pohoda_blocky_agenda?: string
+          pohoda_rad_prijate?: string | null
+          pohoda_rad_doklady?: string | null
+          pohoda_rad_pokladna?: string | null
+          pohoda_rad_interne?: string | null
+          pohoda_stredisko?: string | null
+          pohoda_odkaz_na_doklady?: boolean
         }
         Update: {
           city?: string | null
@@ -1432,6 +1444,12 @@ export type Database = {
           vat_scheme?: string | null
           dan_z_prijatej_platby?: boolean
           pohoda_blocky_agenda?: string
+          pohoda_rad_prijate?: string | null
+          pohoda_rad_doklady?: string | null
+          pohoda_rad_pokladna?: string | null
+          pohoda_rad_interne?: string | null
+          pohoda_stredisko?: string | null
+          pohoda_odkaz_na_doklady?: boolean
         }
         Relationships: []
       }
@@ -2777,6 +2795,12 @@ export type Database = {
           pohoda_predkontacia: string | null
           pohoda_clenenie_dph: string | null
           kv_clenenie: string | null
+          job_id: string | null
+          stredisko: string | null
+          cinnost: string | null
+          pohoda_rad: string | null
+          int_poznamka: string | null
+          pdf_token: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -2817,6 +2841,12 @@ export type Database = {
           pohoda_predkontacia?: string | null
           pohoda_clenenie_dph?: string | null
           kv_clenenie?: string | null
+          job_id?: string | null
+          stredisko?: string | null
+          cinnost?: string | null
+          pohoda_rad?: string | null
+          int_poznamka?: string | null
+          pdf_token?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -2857,6 +2887,12 @@ export type Database = {
           pohoda_predkontacia?: string | null
           pohoda_clenenie_dph?: string | null
           kv_clenenie?: string | null
+          job_id?: string | null
+          stredisko?: string | null
+          cinnost?: string | null
+          pohoda_rad?: string | null
+          int_poznamka?: string | null
+          pdf_token?: string | null
         }
         Relationships: [
           {
@@ -4225,6 +4261,9 @@ export type Database = {
           kv_clenenie: string | null
           zauctovane_at: string | null
           zauctoval: string | null
+          stredisko: string | null
+          cinnost: string | null
+          int_poznamka: string | null
         }
         Insert: {
           advance_amount?: number | null
@@ -4316,6 +4355,9 @@ export type Database = {
           kv_clenenie?: string | null
           zauctovane_at?: string | null
           zauctoval?: string | null
+          stredisko?: string | null
+          cinnost?: string | null
+          int_poznamka?: string | null
         }
         Update: {
           advance_amount?: number | null
@@ -4407,6 +4449,9 @@ export type Database = {
           kv_clenenie?: string | null
           zauctovane_at?: string | null
           zauctoval?: string | null
+          stredisko?: string | null
+          cinnost?: string | null
+          int_poznamka?: string | null
         }
         Relationships: [
           {
@@ -4622,6 +4667,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      kos_dokladov: {
+        Row: {
+          company_id: string
+          druh: string
+          id: string
+          popis: string | null
+          vazby: Json | null
+          zaznam: Json
+          zaznam_id: string
+          zmazal: string | null
+          zmazane_at: string
+        }
+        Insert: {
+          company_id: string
+          druh: string
+          id?: string
+          popis?: string | null
+          vazby?: Json | null
+          zaznam: Json
+          zaznam_id: string
+          zmazal?: string | null
+          zmazane_at?: string
+        }
+        Update: {
+          company_id?: string
+          druh?: string
+          id?: string
+          popis?: string | null
+          vazby?: Json | null
+          zaznam?: Json
+          zaznam_id?: string
+          zmazal?: string | null
+          zmazane_at?: string
+        }
+        Relationships: []
       }
       partners: {
         Row: {
@@ -5410,6 +5491,11 @@ export type Database = {
           type: string
           rozuctovanie: Json | null
           kv_clenenie: string | null
+          stredisko: string | null
+          cinnost: string | null
+          pohoda_rad: string | null
+          int_poznamka: string | null
+          pdf_token: string | null
         }
         Insert: {
           amount_total?: number
@@ -5495,6 +5581,11 @@ export type Database = {
           type?: string
           rozuctovanie?: Json | null
           kv_clenenie?: string | null
+          stredisko?: string | null
+          cinnost?: string | null
+          pohoda_rad?: string | null
+          int_poznamka?: string | null
+          pdf_token?: string | null
         }
         Update: {
           amount_total?: number
@@ -5580,6 +5671,11 @@ export type Database = {
           type?: string
           rozuctovanie?: Json | null
           kv_clenenie?: string | null
+          stredisko?: string | null
+          cinnost?: string | null
+          pohoda_rad?: string | null
+          int_poznamka?: string | null
+          pdf_token?: string | null
         }
         Relationships: [
           {

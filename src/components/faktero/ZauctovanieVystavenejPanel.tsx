@@ -49,7 +49,14 @@ export function ZauctovanieVystavenejPanel({
   const vrat = useServerFn(vratVystavenuZPohodyFn);
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
   const [stav, setStav] = useState<{ vPohode: { kedy: string; cislo: string | null } | null } | null>(null);
-  const [h, setH] = useState({ predkontacia: "", clenenie: "", kv: "" });
+  const [h, setH] = useState({
+    predkontacia: "",
+    clenenie: "",
+    kv: "",
+    stredisko: "",
+    cinnost: "",
+    intPoznamka: "",
+  });
   const [polozky, setPolozky] = useState<Polozka[]>([]);
   const [poPolozkach, setPoPolozkach] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -82,8 +89,11 @@ export function ZauctovanieVystavenejPanel({
       predkontacia: inv.pohoda_predkontacia ?? "",
       clenenie: inv.pohoda_clenenie_dph ?? "",
       kv: inv.kv_clenenie ?? "",
+      stredisko: inv.stredisko ?? "",
+      cinnost: inv.cinnost ?? "",
+      intPoznamka: inv.int_poznamka ?? "",
     });
-  }, [inv.pohoda_predkontacia, inv.pohoda_clenenie_dph, inv.kv_clenenie]);
+  }, [inv.pohoda_predkontacia, inv.pohoda_clenenie_dph, inv.kv_clenenie, inv.stredisko, inv.cinnost, inv.int_poznamka]);
 
   if (inv.status === "draft") return null;
   const vPohode = stav?.vPohode;
@@ -100,6 +110,9 @@ export function ZauctovanieVystavenejPanel({
           predkontacia: h.predkontacia,
           clenenie: h.clenenie,
           kv: h.kv,
+          stredisko: h.stredisko,
+          cinnost: h.cinnost,
+          intPoznamka: h.intPoznamka,
           lenUlozit,
           polozky: polozky.map((p) =>
             poPolozkach ? p : { ...p, predkontacia: "", clenenie: "", kv: "" },
@@ -225,6 +238,40 @@ export function ZauctovanieVystavenejPanel({
                   </option>
                 ))}
               </select>
+            </label>
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <label className="block">
+              <span className="text-xs text-muted-foreground">Stredisko</span>
+              <KodPohody
+                value={h.stredisko}
+                onChange={(v) => setH({ ...h, stredisko: v })}
+                moznosti={navrhy?.strediska ?? []}
+                placeholder={navrhy?.predvoleneStredisko ?? "—"}
+                className={vstup}
+                vyber
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs text-muted-foreground">Činnosť</span>
+              <KodPohody
+                value={h.cinnost}
+                onChange={(v) => setH({ ...h, cinnost: v })}
+                moznosti={navrhy?.cinnosti ?? []}
+                placeholder="—"
+                className={vstup}
+                vyber
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs text-muted-foreground">Interná poznámka (do Pohody)</span>
+              <input
+                value={h.intPoznamka}
+                onChange={(e) => setH({ ...h, intPoznamka: e.target.value })}
+                maxLength={240}
+                className={vstup}
+              />
             </label>
           </div>
 

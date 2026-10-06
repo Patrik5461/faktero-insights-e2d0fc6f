@@ -163,6 +163,17 @@ export type PohodaNastavenia = {
    * doklad. Bez toho idú ako prijaté faktúry (Ostatné záväzky).
    */
   blockyPodlaPlatby?: boolean;
+  /** Predvolené stredisko Pohody pre všetky doklady. */
+  stredisko?: string | null;
+  /** Predpona číselného radu Pohody — prijaté faktúry, bločky ako faktúry, pokladňa, interné doklady. */
+  radPrijate?: string | null;
+  radDoklady?: string | null;
+  radPokladna?: string | null;
+  radInterne?: string | null;
+  /** Evidenčné číslo zákazky podľa `job_id` prijatých dokladov. */
+  zakazkyDokladov?: Record<string, string>;
+  /** Odkaz na sken podľa id prijatého dokladu (záložka Dokumenty v Pohode). */
+  odkazyDokladov?: Record<string, string>;
   /** Skratka pokladne v Pohode — do ktorej pokladne pohyby patria. */
   pokladna?: string | null;
   /** Predkontácia pre pokladničný doklad. */
@@ -231,16 +242,22 @@ function obalka(opts: { ico: unknown; note: string; prefixy: string[]; entries: 
  * znakov) — vložiť samotný súbor sa pri importe nedá, `typ:file` je len na
  * export.
  */
-function prilohaOdkaz(nazov: string, url: unknown, odsadenie: string): string {
+function prilohaOdkaz(nazov: string, url: unknown, odsadenie: string, predpona = "inv"): string {
   const u = String(url ?? "").trim();
   if (!u || u.length > 255) return "";
   return `
-${odsadenie}<inv:attachments>
+${odsadenie}<${predpona}:attachments>
 ${odsadenie}  <typ:urlAddress>
 ${odsadenie}    <typ:name>${esc(skrat(nazov, 255))}</typ:name>
 ${odsadenie}    <typ:url>${esc(u)}</typ:url>
 ${odsadenie}  </typ:urlAddress>
-${odsadenie}</inv:attachments>`;
+${odsadenie}</${predpona}:attachments>`;
+}
+
+/** `<x:ids>` odkaz na číselník Pohody (stredisko, činnosť, zákazka…), prázdny = nič. */
+function odkazIds(element: string, kod: unknown, odsadenie: string): string {
+  const k = String(kod ?? "").trim();
+  return k ? `\n${odsadenie}<${element}><typ:ids>${esc(skrat(k, 19))}</typ:ids></${element}>` : "";
 }
 
 /**
@@ -566,6 +583,10 @@ export function polozkyFaktur(opts: {
           kvHlavicka
             ? `\n        <inv:classificationKVDPH><typ:ids>${esc(kvHlavicka)}</typ:ids></inv:classificationKVDPH>`
             : ""
+        }${
+          odkazIds("inv:centre", (invoice as any).stredisko || nastavenia?.stredisko, "        ") +
+          odkazIds("inv:activity", (invoice as any).cinnost, "        ") +
+          el("inv:intNote", skrat((invoice as any).int_poznamka, 240), "        ")
         }${
           opts.zakazky?.[String(invoice.job_id ?? "")]
             ? `\n        <inv:contract><typ:ids>${esc(
@@ -1074,10 +1095,36 @@ export function polozkyDokladov(opts: {
               }`
             : "";
 
+      /*
+        Číselný rad Pohody (predpona) — doklad sa očísluje v správnom rade
+        namiesto predvoleného. Vlastný rad dokladu má prednosť.
+      */
+      const rad =
+        String(d?.pohoda_rad ?? "").trim() ||
+        (p === "vch"
+          ? nastavenia?.radPokladna
+          : p === "int"
+            ? nastavenia?.radInterne
+            : blocek
+              ? nastavenia?.radDoklady || nastavenia?.radPrijate
+              : nastavenia?.radPrijate) ||
+        "";
+      const zakazka = d?.job_id ? nastavenia?.zakazkyDokladov?.[String(d.job_id)] : null;
+      const doplnky = `${odkazIds(`${p}:centre`, d?.stredisko || nastavenia?.stredisko, "        ")}${odkazIds(
+        `${p}:activity`,
+        d?.cinnost,
+        "        ",
+      )}${odkazIds(`${p}:contract`, zakazka, "        ")}${el(`${p}:intNote`, skrat(d?.int_poznamka, 240), "        ")}${
+        // Párovací symbol: Pohoda podľa neho páruje úhradu z banky.
+        symVar ? el(`${p}:symPar`, symVar, "        ") : ""
+      }`;
+
       return `
   <dat:dataPackItem id="${esc(d?.id ?? `DOK${idx + 1}`)}" version="2.0">
     <${p}:${koren} version="2.0">
-      <${p}:${koren}Header>${typ}${p !== "vch" ? el(`${p}:symVar`, symVar, "        ") : ""}${el(
+      <${p}:${koren}Header>${typ}${
+        rad ? `\n        <${p}:number><typ:ids>${esc(skrat(rad, 10))}</typ:ids></${p}:number>` : ""
+      }${p !== "vch" ? el(`${p}:symVar`, symVar, "        ") : ""}${doplnky}${el(
           p === "int" ? "int:originalDocumentNumber" : `${p}:originalDocument`,
           povodne,
           "        ",
@@ -1133,7 +1180,17 @@ export function polozkyDokladov(opts: {
         )}${elSuma("typ:priceHighVAT", dan(sHigh), "          ")}
           <typ:round><typ:priceRound>${fixed2(zaokruhlenie)}</typ:priceRound></typ:round>
         </${p}:homeCurrency>
-      </${p}:${koren}Summary>
+      </${p}:${koren}Summary>${
+        // Interný doklad prílohy nemá; faktúra a pokladňa áno.
+        p !== "int"
+          ? prilohaOdkaz(
+              `Sken dokladu ${skrat(d?.document_number ?? "", 40)}`.trim(),
+              nastavenia?.odkazyDokladov?.[String(d?.id ?? "")],
+              "      ",
+              p,
+            )
+          : ""
+      }
     </${p}:${koren}>
   </dat:dataPackItem>`;
     })

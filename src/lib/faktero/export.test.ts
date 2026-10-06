@@ -519,6 +519,40 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(x[2].invoice.invoiceHeader.invoiceType).toBe("receivedInvoice");
   });
 
+  it("číselný rad, stredisko, činnosť, zákazka, interná poznámka, párovací symbol a odkaz na sken", () => {
+    const nast = {
+      blockyPodlaPlatby: true,
+      pokladna: "HP",
+      radPokladna: "26PV",
+      radInterne: "26ID",
+      radDoklady: "26FPB",
+      stredisko: "BA",
+      zakazkyDokladov: { j1: "ZAK1" },
+      odkazyDokladov: { a: "https://www.faktero.sk/api/public/doklad/abc" },
+    };
+    const x = posli(
+      [
+        { ...bloček, id: "a", payment_method: "hotovost", cinnost: "VYR", job_id: "j1", int_poznamka: "kontrola" },
+        { ...bloček, id: "b", payment_method: "karta", pohoda_rad: "VLASTNY", stredisko: "KE" },
+        { ...bloček, id: "c", payment_method: "prevod" },
+      ],
+      nast,
+    ).dataPackItem;
+    const v = x[0].voucher;
+    expect(v.voucherHeader.number.ids).toBe("26PV");
+    expect(v.voucherHeader.centre.ids).toBe("BA");
+    expect(v.voucherHeader.activity.ids).toBe("VYR");
+    expect(v.voucherHeader.contract.ids).toBe("ZAK1");
+    expect(v.voucherHeader.intNote).toBe("kontrola");
+    expect(String(v.voucherHeader.symPar)).toBe("2516");
+    expect(v.attachments.urlAddress.url).toContain("/api/public/doklad/");
+    const i = x[1].intDoc.intDocHeader;
+    expect(i.number.ids).toBe("VLASTNY");
+    expect(i.centre.ids).toBe("KE");
+    expect(x[1].intDoc.attachments).toBeUndefined();
+    expect(x[2].invoice.invoiceHeader.number.ids).toBe("26FPB");
+  });
+
   it("hotovostný bloček bez skratky pokladne ide ako faktúra — Pohoda by ho odmietla", () => {
     const x = posli([{ ...bloček, payment_method: "hotovost" }], { blockyPodlaPlatby: true })
       .dataPackItem;

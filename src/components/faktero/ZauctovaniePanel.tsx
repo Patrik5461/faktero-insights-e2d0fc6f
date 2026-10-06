@@ -23,9 +23,24 @@ export type Navrhy = {
   predvoleneClenenie: string | null;
   maCiselnik?: boolean;
   podlaKategorie?: Record<string, { predkontacia?: string; clenenie?: string }>;
+  strediska?: MoznostKodu[];
+  cinnosti?: MoznostKodu[];
+  rady?: MoznostKodu[];
+  predvoleneStredisko?: string | null;
+  predvolenyRad?: string | null;
 };
 
-type Hodnoty = { predkontacia: string; clenenie: string; kategoria: string; kv?: string };
+type Hodnoty = {
+  predkontacia: string;
+  clenenie: string;
+  kategoria: string;
+  kv?: string;
+  /** Rozšírené polia Pohody — zobrazia sa, keď sú v hodnotách. */
+  stredisko?: string;
+  cinnost?: string;
+  rad?: string;
+  intPoznamka?: string;
+};
 
 /** Spoločné polia zaúčtovania — na detaile aj v hromadnom okne. */
 export function PoliaZauctovania({
@@ -104,6 +119,56 @@ export function PoliaZauctovania({
           </select>
         </label>
       )}
+      {hodnoty.stredisko !== undefined && (
+        <label className="block">
+          <span className="text-xs text-muted-foreground">Stredisko</span>
+          <KodPohody
+            value={hodnoty.stredisko}
+            onChange={(v) => setHodnoty({ ...hodnoty, stredisko: v })}
+            moznosti={navrhy?.strediska ?? []}
+            placeholder={hromadne ? "nemeniť" : (navrhy?.predvoleneStredisko ?? "—")}
+            className={vstup}
+            vyber
+          />
+        </label>
+      )}
+      {hodnoty.cinnost !== undefined && (
+        <label className="block">
+          <span className="text-xs text-muted-foreground">Činnosť</span>
+          <KodPohody
+            value={hodnoty.cinnost}
+            onChange={(v) => setHodnoty({ ...hodnoty, cinnost: v })}
+            moznosti={navrhy?.cinnosti ?? []}
+            placeholder={hromadne ? "nemeniť" : "—"}
+            className={vstup}
+            vyber
+          />
+        </label>
+      )}
+      {hodnoty.rad !== undefined && (
+        <label className="block">
+          <span className="text-xs text-muted-foreground">Číselný rad v Pohode</span>
+          <KodPohody
+            value={hodnoty.rad}
+            onChange={(v) => setHodnoty({ ...hodnoty, rad: v })}
+            moznosti={navrhy?.rady ?? []}
+            placeholder={hromadne ? "nemeniť" : (navrhy?.predvolenyRad ?? "predvolený v Pohode")}
+            className={vstup}
+            vyber
+          />
+        </label>
+      )}
+      {hodnoty.intPoznamka !== undefined && (
+        <label className="block sm:col-span-full">
+          <span className="text-xs text-muted-foreground">Interná poznámka pre účtovníka (do Pohody)</span>
+          <input
+            value={hodnoty.intPoznamka}
+            onChange={(e) => setHodnoty({ ...hodnoty, intPoznamka: e.target.value })}
+            maxLength={240}
+            className={vstup}
+          />
+        </label>
+      )}
     </div>
   );
 }
@@ -125,6 +190,10 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
     clenenie: row.pohoda_clenenie_dph ?? "",
     kategoria: row.category ?? "",
     kv: row.kv_clenenie ?? "",
+    stredisko: row.stredisko ?? "",
+    cinnost: row.cinnost ?? "",
+    rad: row.pohoda_rad ?? "",
+    intPoznamka: row.int_poznamka ?? "",
   });
   const [busy, setBusy] = useState(false);
 
@@ -137,8 +206,12 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
       clenenie: row.pohoda_clenenie_dph ?? "",
       kategoria: row.category ?? "",
       kv: row.kv_clenenie ?? "",
+      stredisko: row.stredisko ?? "",
+      cinnost: row.cinnost ?? "",
+      rad: row.pohoda_rad ?? "",
+      intPoznamka: row.int_poznamka ?? "",
     });
-  }, [row.pohoda_predkontacia, row.pohoda_clenenie_dph, row.category, row.kv_clenenie]);
+  }, [row.pohoda_predkontacia, row.pohoda_clenenie_dph, row.category, row.kv_clenenie, row.stredisko, row.cinnost, row.pohoda_rad, row.int_poznamka]);
 
   const odovzdana = Boolean(row.exported_at);
   const zauctovana = Boolean(row.zauctovane_at);
@@ -208,6 +281,10 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
           clenenie: h.clenenie,
           kategoria: h.kategoria,
           kv: h.kv ?? "",
+          stredisko: h.stredisko ?? "",
+          cinnost: h.cinnost ?? "",
+          rad: h.rad ?? "",
+          intPoznamka: h.intPoznamka ?? "",
           lenUlozit,
         },
       });

@@ -80,10 +80,10 @@ describe("odpoveď Pohody", () => {
 });
 
 describe("žiadosť do Pohody", () => {
-  it("samostatný súbor má menný priestor list a tri položky", () => {
+  it("samostatný súbor má menný priestor list a šesť položiek", () => {
     const x = ziadostCiselnikov("12345678");
     expect(x).toContain('xmlns:lst="http://www.stormware.cz/schema/version_2/list.xsd"');
-    expect(x.match(/<dat:dataPackItem /g)).toHaveLength(3);
+    expect(x.match(/<dat:dataPackItem /g)).toHaveLength(6);
   });
 
   it("do dávky sa pridá raz a s menným priestorom", () => {
@@ -151,5 +151,29 @@ describe("ponuka", () => {
       kod: "1Fp",
       ucty: "501/321",
     });
+  });
+});
+
+describe("strediská, činnosti a číselné rady z Pohody", () => {
+  it("prečíta itemCentre, itemActivity a numericalSeries", () => {
+    const xml = `<rsp:responsePack><rsp:responsePackItem id="CIS-STREDISKA" state="ok"><lst:listCentre version="2.0"><lst:itemCentre id="1" code="BA" name="Bratislava"/></lst:listCentre></rsp:responsePackItem>
+<rsp:responsePackItem id="CIS-CINNOSTI" state="ok"><lst:listActivity version="2.0"><lst:itemActivity id="2" code="VYR" name="Výroba"/></lst:listActivity></rsp:responsePackItem>
+<rsp:responsePackItem id="CIS-RADY" state="ok"><lst:listNumericalSeries version="2.0"><lst:numericalSeries version="2.0"><nms:numericalSeriesHeader><nms:id>7</nms:id><nms:prefix>26FP</nms:prefix><nms:number>1</nms:number><nms:name>Prijaté faktúry</nms:name><nms:agenda>prijate_faktury</nms:agenda><nms:typeOfDocument>prijate_faktury_faktura</nms:typeOfDocument><nms:period>yearlong</nms:period><nms:year>2026</nms:year></nms:numericalSeriesHeader></lst:numericalSeries></lst:listNumericalSeries></rsp:responsePackItem></rsp:responsePack>`;
+    const z = rozoberCiselnikyPohody(xml, new Date("2026-10-06"));
+    expect(z.find((x) => x.druh === "stredisko")).toMatchObject({ kod: "BA", popis: "Bratislava" });
+    expect(z.find((x) => x.druh === "cinnost")).toMatchObject({ kod: "VYR", popis: "Výroba" });
+    expect(z.find((x) => x.druh === "ciselny_rad")).toMatchObject({
+      kod: "26FP",
+      popis: "Prijaté faktúry · 2026",
+      agenda: "prijate_faktury:prijate_faktury_faktura",
+      aktivne: true,
+    });
+  });
+
+  it("žiadosť pýta aj strediská, činnosti a rady", () => {
+    const x = ziadostCiselnikov("1");
+    expect(x).toContain("listCentreRequest");
+    expect(x).toContain("listActivityRequest");
+    expect(x).toContain("listNumericalSeriesRequest");
   });
 });

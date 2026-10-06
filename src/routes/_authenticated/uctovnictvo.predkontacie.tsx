@@ -15,6 +15,8 @@ import {
   nazovAgendy,
   ponuka,
   ziadostCiselnikov,
+  DRUHY_CISELNIKA,
+  RADY_POHODY,
   type DruhCiselnika,
 } from "@/lib/faktero/predkontacie";
 import {
@@ -124,6 +126,7 @@ function Predvolene({
   const [oznaceni, setOznaceni] = useState<Record<string, string>>({});
   const [blockyAgenda, setBlockyAgenda] = useState<"faktura" | "podla_platby">("podla_platby");
   const [pokladna, setPokladna] = useState("");
+  const [odkazNaDoklady, setOdkazNaDoklady] = useState(true);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -131,6 +134,7 @@ function Predvolene({
     setOznaceni({ ...((firma.pohoda_predkontacie_oznaceni as Record<string, string> | null) ?? {}) });
     setBlockyAgenda(firma.pohoda_blocky_agenda === "faktura" ? "faktura" : "podla_platby");
     setPokladna(String(firma.pohoda_pokladna ?? ""));
+    setOdkazNaDoklady(firma.pohoda_odkaz_na_doklady !== false);
   }, [firma]);
 
   const pocetNaVyber = (kluc: string, druh: DruhCiselnika) =>
@@ -139,7 +143,9 @@ function Predvolene({
   async function ulozit() {
     setBusy(true);
     try {
-      await uloz({ data: { company_id: companyId, hodnoty: h, oznaceni, blockyAgenda, pokladna } });
+      await uloz({
+        data: { company_id: companyId, hodnoty: h, oznaceni, blockyAgenda, pokladna, odkazNaDoklady },
+      });
       toast.success("Uložené");
       onUlozene();
     } catch (e: any) {
@@ -280,6 +286,59 @@ function Predvolene({
         </label>
       </fieldset>
 
+      <fieldset className="mt-4 rounded-md border border-border p-3">
+        <legend className="px-1 text-sm font-medium">Číselné rady a stredisko v Pohode</legend>
+        <p className="text-xs text-muted-foreground">
+          Predpona radu, do ktorého Pohoda doklad očísluje. Prázdne = predvolený rad v Pohode.
+          Doklad môže mať vlastný rad v zaúčtovaní.
+        </p>
+        <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {RADY_POHODY.map((r) => (
+            <label key={r.stlpec} className="block">
+              <span className="text-xs text-muted-foreground">{r.nazov}</span>
+              <KodPohody
+                ariaLabel={`Číselný rad — ${r.nazov}`}
+                value={h[r.stlpec] ?? ""}
+                onChange={(v) => setH({ ...h, [r.stlpec]: v })}
+                moznosti={ponuka(zaznamy, "ciselny_rad").sort(
+                  (a, b) => Number(b.agenda.startsWith(r.agenda)) - Number(a.agenda.startsWith(r.agenda)),
+                )}
+                placeholder="predvolený v Pohode"
+                className={vstup}
+                vyber
+              />
+            </label>
+          ))}
+          <label className="block">
+            <span className="text-xs text-muted-foreground">Predvolené stredisko</span>
+            <KodPohody
+              ariaLabel="Predvolené stredisko"
+              value={h.pohoda_stredisko ?? ""}
+              onChange={(v) => setH({ ...h, pohoda_stredisko: v })}
+              moznosti={ponuka(zaznamy, "stredisko")}
+              placeholder="—"
+              className={vstup}
+              vyber
+            />
+          </label>
+        </div>
+        <label className="mt-3 flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={odkazNaDoklady}
+            onChange={(e) => setOdkazNaDoklady(e.target.checked)}
+            className="mt-1"
+          />
+          <span>
+            Prikladať odkaz na sken bločkov a prijatých faktúr
+            <span className="block text-xs text-muted-foreground">
+              Doklad má v Pohode v záložke Dokumenty odkaz, ktorým sa otvorí sken. Odkaz je dlhý
+              náhodný reťazec.
+            </span>
+          </span>
+        </label>
+      </fieldset>
+
       <label className="mt-4 block max-w-md">
         <span className="text-xs text-muted-foreground">
           Predkontácia hlavičky pri rozúčtovanom doklade
@@ -392,6 +451,7 @@ function Import({
       const r = await importuj({ data: { company_id: companyId, nazov: f.name, base64: btoa(bin) } });
       toast.success(
         `Načítané: ${r.predkontacii} predkontácií, ${r.cleneni} členení DPH` +
+          (r.ostatnych ? `, ${r.ostatnych} stredísk, činností a radov` : "") +
           (r.vypnutych ? ` · ${r.vypnutych} už v Pohode nie je, vypnuté` : ""),
       );
       onZmena();
@@ -531,10 +591,10 @@ function Ciselnik({
   const [form, setForm] = useState<typeof PRAZDNY | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const pocty = {
-    predkontacia: zaznamy.filter((z) => z.druh === "predkontacia").length,
-    clenenie_dph: zaznamy.filter((z) => z.druh === "clenenie_dph").length,
-  };
+  const pocty = Object.fromEntries(
+    DRUHY_CISELNIKA.map((d) => [d.kod, zaznamy.filter((z) => z.druh === d.kod).length]),
+  ) as Record<DruhCiselnika, number>;
+  const jednotne = DRUHY_CISELNIKA.find((d) => d.kod === druh)?.jednotne ?? "kód";
   const agendyVZozname = useMemo(
     () => [...new Set(zaznamy.filter((z) => z.druh === druh).map((z) => z.agenda))].sort(),
     [zaznamy, druh],
@@ -586,12 +646,7 @@ function Ciselnik({
     <section className="rounded-xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex gap-1 rounded-md bg-muted p-1 text-sm" role="tablist">
-          {(
-            [
-              ["predkontacia", "Predkontácie"],
-              ["clenenie_dph", "Členenie DPH"],
-            ] as const
-          ).map(([k, n]) => (
+          {DRUHY_CISELNIKA.map(({ kod: k, nazov: n }) => (
             <button
               key={k}
               role="tab"
@@ -611,7 +666,7 @@ function Ciselnik({
           onClick={() => setForm({ ...PRAZDNY })}
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
         >
-          <Plus className="h-4 w-4" /> Pridať {druh === "predkontacia" ? "predkontáciu" : "členenie"}
+          <Plus className="h-4 w-4" /> Pridať {jednotne}
         </button>
       </div>
 
@@ -623,7 +678,15 @@ function Ciselnik({
               value={form.kod}
               onChange={(e) => setForm({ ...form, kod: e.target.value })}
               className={vstup}
-              placeholder={druh === "predkontacia" ? "1Fp" : "PD"}
+              placeholder={
+                druh === "predkontacia"
+                  ? "1Fp"
+                  : druh === "clenenie_dph"
+                    ? "PD"
+                    : druh === "ciselny_rad"
+                      ? "26FP"
+                      : "BA"
+              }
               autoFocus
             />
           </label>
@@ -691,7 +754,7 @@ function Ciselnik({
               Ponúkať pri dokladoch (nič nezaškrtnuté = všade)
             </span>
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
-              {PREDVOLENE.filter((p) => (druh === "predkontacia" ? p.predkontacia : p.clenenie)).map((p) => (
+              {PREDVOLENE.filter((p) => (druh === "clenenie_dph" ? p.clenenie : p.predkontacia)).map((p) => (
                 <label key={p.kluc} className="flex items-center gap-1.5 text-xs">
                   <input
                     type="checkbox"

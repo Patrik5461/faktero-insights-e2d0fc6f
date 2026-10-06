@@ -246,7 +246,7 @@ export async function zostavDavku(
       ? await nacitajZasoby(supabase, vstup.companyId)
       : [];
   const { nove: zakazkyNove, kody: zakazky } = company.pohoda_posielat_zakazky
-    ? await nacitajZakazky(supabase, vstup.companyId, faktury)
+    ? await nacitajZakazky(supabase, vstup.companyId, [...faktury, ...(doklady ?? []), ...prijate])
     : { nove: [], kody: {} };
 
   // Pohyby majú zmysel len vtedy, keď sú v Pohode karty — položka sa na kartu
@@ -328,7 +328,10 @@ export async function zostavDavku(
         .order("position")
     : { data: [] };
 
+  const dokladyVsetky = [...(doklady ?? []), ...prijate.map(prijataAkoDoklad)];
+  const { nastaveniaDokladov } = await import("./predkontacie.server");
   const nastavenia: PohodaNastavenia = {
+    ...(await nastaveniaDokladov(supabase, company, dokladyVsetky)),
     predkontacia: company.pohoda_predkontacia,
     predkontaciaZaloha: company.pohoda_predkontacia_zaloha,
     predkontaciaDobropis: company.pohoda_predkontacia_dobropis,
@@ -360,7 +363,7 @@ export async function zostavDavku(
       invoice,
       items: (polozky ?? []).filter((p: Riadok) => p.invoice_id === invoice.id),
     })),
-    doklady: [...(doklady ?? []), ...prijate.map(prijataAkoDoklad)],
+    doklady: dokladyVsetky,
     pohyby: pokladnica ?? [],
     zakaznici,
     zasoby,

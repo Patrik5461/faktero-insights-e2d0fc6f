@@ -15,6 +15,7 @@ const STLPCE_FIRMY = [
   "pohoda_nacitat_ciselniky",
   "pohoda_ciselniky_nacitane_at",
   "pohoda_blocky_agenda",
+  "pohoda_odkaz_na_doklady",
   "pohoda_pokladna",
 ].join(", ");
 
@@ -52,7 +53,7 @@ export const ulozPredkontaciuFn = createServerFn({ method: "POST" })
       .object({
         company_id: z.string().uuid(),
         id: z.string().uuid().optional().nullable(),
-        druh: z.enum(["predkontacia", "clenenie_dph"]),
+        druh: z.enum(["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad"]),
         kod,
         popis: kratke(200),
         agenda: z.string().trim().max(40).optional().nullable(),
@@ -118,6 +119,7 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
         oznaceni: z.record(z.string(), z.string().max(30)).optional().nullable(),
         blockyAgenda: z.enum(["faktura", "podla_platby"]).optional(),
         pokladna: z.string().max(20).optional().nullable(),
+        odkazNaDoklady: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -137,6 +139,7 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
     }
     if (data.blockyAgenda) zmena.pohoda_blocky_agenda = data.blockyAgenda;
     if (data.pokladna !== undefined) zmena.pohoda_pokladna = data.pokladna?.trim() || null;
+    if (data.odkazNaDoklady !== undefined) zmena.pohoda_odkaz_na_doklady = data.odkazNaDoklady;
     const { error } = await supabase.from("companies").update(zmena).eq("id", data.company_id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -172,7 +175,7 @@ export const importCiselnikaFn = createServerFn({ method: "POST" })
         company_id: z.string().uuid(),
         nazov: z.string().max(255),
         base64: z.string().max(8_000_000),
-        druh: z.enum(["predkontacia", "clenenie_dph"]).optional(),
+        druh: z.enum(["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad"]).optional(),
       })
       .parse(d),
   )
@@ -192,9 +195,9 @@ export const importCiselnikaFn = createServerFn({ method: "POST" })
           "Toto je žiadosť pre Pohodu, nie jej odpoveď. Načítajte ju v Pohode (Súbor → Dátová komunikácia → XML import) a sem nahrajte súbor, ktorý Pohoda vráti.",
         );
       const r = await ulozCiselnikyZPohody(supabase, { companyId: data.company_id, xml });
-      if (!r || r.predkontacii + r.cleneni === 0)
+      if (!r || r.predkontacii + r.cleneni + r.ostatnych === 0)
         throw new Error("V súbore nie sú predkontácie ani členenia DPH z Pohody.");
-      return { predkontacii: r.predkontacii, cleneni: r.cleneni, vypnutych: r.vypnutych };
+      return { predkontacii: r.predkontacii, cleneni: r.cleneni, ostatnych: r.ostatnych, vypnutych: r.vypnutych };
     }
 
     let riadky: unknown[][];
@@ -219,6 +222,7 @@ export const importCiselnikaFn = createServerFn({ method: "POST" })
     return {
       predkontacii: zaznamy.filter((z) => z.druh === "predkontacia").length,
       cleneni: zaznamy.filter((z) => z.druh === "clenenie_dph").length,
+      ostatnych: zaznamy.filter((z) => !["predkontacia", "clenenie_dph"].includes(z.druh)).length,
       vypnutych: 0,
     };
   });

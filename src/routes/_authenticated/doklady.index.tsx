@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PredkontaciaDokladovOkno } from "@/components/faktero/PredkontaciaDokladovOkno";
+import { KosDokladovOkno } from "@/components/faktero/KosDokladovOkno";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: () => ({ meta: [{ title: "Doklady — Faktero" }] }),
@@ -119,6 +120,7 @@ function DokladyPage() {
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [predkontaciaOkno, setPredkontaciaOkno] = useState(false);
+  const [kos, setKos] = useState(false);
   const [exporting, setExporting] = useState(false);
   const cid = getActiveCompanyId();
 
@@ -332,7 +334,7 @@ function DokladyPage() {
   }
 
   async function del(id: string) {
-    if (!confirm("Naozaj zmazať doklad?")) return;
+    if (!confirm("Presunúť doklad do koša? Do 90 dní sa dá obnoviť.")) return;
     try {
       await deleteFn({ data: { id } });
       refresh();
@@ -348,6 +350,12 @@ function DokladyPage() {
         description="Naskenované a nahraté výdavkové doklady pre účtovníka."
         action={
           <div className="flex gap-2">
+            <button
+              onClick={() => setKos(true)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              <Trash2 className="h-4 w-4" /> Kôš
+            </button>
             <Link
               to="/importy/doklady"
               className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm hover:bg-secondary"
@@ -759,6 +767,9 @@ function DokladyPage() {
             </table>
           )}
         </div>
+        {kos && getActiveCompanyId() && (
+          <KosDokladovOkno companyId={getActiveCompanyId()!} onClose={() => setKos(false)} onObnovene={refresh} />
+        )}
         {predkontaciaOkno && getActiveCompanyId() && (
           <PredkontaciaDokladovOkno
             companyId={getActiveCompanyId()!}

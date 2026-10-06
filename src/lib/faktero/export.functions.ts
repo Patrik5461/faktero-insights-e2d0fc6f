@@ -61,6 +61,7 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
         clenenieDph: company.pohoda_clenenie_dph,
         clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
         banka: company.pohoda_banka,
+        stredisko: company.pohoda_stredisko,
         predkontaciaRozuctovat: company.pohoda_predkontacia_rozuctovat,
       },
     });

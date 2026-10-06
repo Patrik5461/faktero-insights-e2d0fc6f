@@ -9,7 +9,16 @@
   Čisté funkcie bez databázy, aby sa dali skúšať.
 */
 
-export type DruhCiselnika = "predkontacia" | "clenenie_dph";
+export type DruhCiselnika = "predkontacia" | "clenenie_dph" | "stredisko" | "cinnost" | "ciselny_rad";
+
+/** Druhy číselníka v poradí záložiek, s názvom pre ľudí. */
+export const DRUHY_CISELNIKA: { kod: DruhCiselnika; nazov: string; jednotne: string }[] = [
+  { kod: "predkontacia", nazov: "Predkontácie", jednotne: "predkontáciu" },
+  { kod: "clenenie_dph", nazov: "Členenie DPH", jednotne: "členenie" },
+  { kod: "stredisko", nazov: "Strediská", jednotne: "stredisko" },
+  { kod: "cinnost", nazov: "Činnosti", jednotne: "činnosť" },
+  { kod: "ciselny_rad", nazov: "Číselné rady", jednotne: "číselný rad" },
+];
 
 export type ZaznamCiselnika = {
   druh: DruhCiselnika;
@@ -126,12 +135,33 @@ export const STLPCE_PREDVOLENYCH = [
   ...PREDVOLENE.flatMap((p) => [p.predkontacia, p.clenenie].filter((x): x is string => !!x)),
   // Hlavička rozúčtovaného dokladu („Rozúčtovať" v Pohode).
   "pohoda_predkontacia_rozuctovat",
+  // Číselné rady Pohody (predpony) a predvolené stredisko.
+  "pohoda_rad_prijate",
+  "pohoda_rad_doklady",
+  "pohoda_rad_pokladna",
+  "pohoda_rad_interne",
+  "pohoda_stredisko",
+];
+
+/** Predvolené číselné rady Pohody — stĺpec na firme a pre ktorú agendu. */
+export const RADY_POHODY: { stlpec: string; nazov: string; agenda: string }[] = [
+  { stlpec: "pohoda_rad_prijate", nazov: "Prijaté faktúry", agenda: "prijate_faktury" },
+  { stlpec: "pohoda_rad_doklady", nazov: "Bločky ako prijaté faktúry", agenda: "prijate_faktury" },
+  { stlpec: "pohoda_rad_pokladna", nazov: "Pokladňa (hotovostné bločky)", agenda: "pokladna" },
+  { stlpec: "pohoda_rad_interne", nazov: "Interné doklady (bločky kartou)", agenda: "interni_doklady" },
 ];
 
 /* ---------------------------------------------------------------- Pohoda */
 
 /** Identifikátory položiek žiadosti — odpoveď sa podľa nich nemýli s dokladmi. */
-export const ID_CISELNIKOV = ["CIS-PREDKONTACIE", "CIS-PREDKONTACIE-JU", "CIS-CLENENIE"] as const;
+export const ID_CISELNIKOV = [
+  "CIS-PREDKONTACIE",
+  "CIS-PREDKONTACIE-JU",
+  "CIS-CLENENIE",
+  "CIS-STREDISKA",
+  "CIS-CINNOSTI",
+  "CIS-RADY",
+] as const;
 
 export function jeIdCiselnika(id: string | null | undefined): boolean {
   return String(id ?? "").startsWith("CIS-");
@@ -156,6 +186,17 @@ ${o}<dat:dataPackItem id="CIS-CLENENIE" version="2.0">
 ${o}  <lst:listClassificationVATRequest version="2.0" classificationVATVersion="2.0">
 ${o}    <lst:requestClassificationVAT/>
 ${o}  </lst:listClassificationVATRequest>
+${o}</dat:dataPackItem>
+${o}<dat:dataPackItem id="CIS-STREDISKA" version="2.0">
+${o}  <lst:listCentreRequest version="2.0"/>
+${o}</dat:dataPackItem>
+${o}<dat:dataPackItem id="CIS-CINNOSTI" version="2.0">
+${o}  <lst:listActivityRequest version="2.0"/>
+${o}</dat:dataPackItem>
+${o}<dat:dataPackItem id="CIS-RADY" version="2.0">
+${o}  <lst:listNumericalSeriesRequest version="2.0" numericalSeriesVersion="2.0">
+${o}    <lst:requestNumericalSeries/>
+${o}  </lst:listNumericalSeriesRequest>
 ${o}</dat:dataPackItem>`;
 }
 
@@ -273,6 +314,45 @@ export function rozoberCiselnikyPohody(xml: string, dnes = new Date()): ZaznamCi
       ucet_d: null,
       pohoda_id: orez(prvok(hlavicka, "id"), 20),
       aktivne,
+    });
+  }
+  /*
+    Strediská a činnosti: `itemCentre` / `itemActivity` s atribútmi code a
+    name. Číselné rady: celý záznam `numericalSeries` s predponou, názvom,
+    agendou a rokom — na doklad sa zadáva predpona.
+  */
+  const reMeno = /<(?:[\w.-]+:)?item(Centre|Activity)\b([^>]*?)\/?>/gi;
+  while ((m = reMeno.exec(xml))) {
+    const a = atributy(m[2]);
+    const kod = orez(a.code, 30);
+    if (!kod) continue;
+    out.push({
+      druh: m[1].toLowerCase() === "centre" ? "stredisko" : "cinnost",
+      kod,
+      popis: orez(a.name, 200),
+      agenda: "",
+      ucet_md: null,
+      ucet_d: null,
+      pohoda_id: orez(a.id, 20),
+      aktivne: true,
+    });
+  }
+  const reRad = /<(?:[\w.-]+:)?numericalSeries\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?numericalSeries>/gi;
+  while ((m = reRad.exec(xml))) {
+    const telo = m[1];
+    const kod = orez(prvok(telo, "prefix"), 30);
+    if (!kod) continue;
+    const rok = prvok(telo, "year");
+    const typ = prvok(telo, "typeOfDocument");
+    out.push({
+      druh: "ciselny_rad",
+      kod,
+      popis: orez([prvok(telo, "name"), rok].filter(Boolean).join(" · "), 200),
+      agenda: orez([prvok(telo, "agenda"), typ].filter(Boolean).join(":"), 40) ?? "",
+      ucet_md: null,
+      ucet_d: null,
+      pohoda_id: orez(prvok(telo, "id"), 20),
+      aktivne: !rok || Number(rok) >= dnes.getFullYear() - 1,
     });
   }
   return bezDuplicit(out);

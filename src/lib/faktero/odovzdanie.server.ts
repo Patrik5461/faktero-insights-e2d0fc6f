@@ -226,6 +226,7 @@ export async function zostavBalik(
     clenenieDph: company.pohoda_clenenie_dph,
     clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
     banka: company.pohoda_banka,
+    stredisko: company.pohoda_stredisko,
     predkontaciaPrijata: company.pohoda_predkontacia_prijata,
     clenenieDphPrijata: company.pohoda_clenenie_dph_prijata,
     predkontaciaDoklady: company.pohoda_predkontacia_doklady,
@@ -346,7 +347,14 @@ export async function zostavBalik(
   if (doklady.length) {
     zip.file(
       "pohoda-prijate-doklady.xml",
-      buildPohodaExpensesXml({ company, doklady, nastavenia }),
+      buildPohodaExpensesXml({
+        company,
+        doklady,
+        nastavenia: {
+          ...nastavenia,
+          ...(await (await import("./predkontacie.server")).nastaveniaDokladov(supabase, company, doklady)),
+        },
+      }),
     );
     zip.file(
       "prijate-doklady.csv",
@@ -383,7 +391,18 @@ export async function zostavBalik(
     const { prijataAkoDoklad } = await import("./prijate-do-pohody");
     zip.file(
       "pohoda-prijate-faktury.xml",
-      buildPohodaExpensesXml({ company, doklady: prijate.map(prijataAkoDoklad), nastavenia }),
+      buildPohodaExpensesXml({
+        company,
+        doklady: prijate.map(prijataAkoDoklad),
+        nastavenia: {
+          ...nastavenia,
+          ...(await (await import("./predkontacie.server")).nastaveniaDokladov(
+            supabase,
+            company,
+            prijate.map(prijataAkoDoklad),
+          )),
+        },
+      }),
     );
     zip.file(
       "prijate-faktury.csv",

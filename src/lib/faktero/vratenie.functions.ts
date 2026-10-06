@@ -203,7 +203,7 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
 
     const { buildPohodaExpensesXml } = await import("./export.server");
-    const { kodyPodlaKategorie } = await import("./predkontacie.server");
+    const { nastaveniaDokladov } = await import("./predkontacie.server");
     const xml = buildPohodaExpensesXml({
       company: firma,
       doklady: ok.map(prijataAkoDoklad),
@@ -211,7 +211,7 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
         predkontaciaPrijata: firma?.pohoda_predkontacia_prijata,
         clenenieDphPrijata: firma?.pohoda_clenenie_dph_prijata,
         predkontaciaRozuctovat: firma?.pohoda_predkontacia_rozuctovat,
-        podlaKategorie: await kodyPodlaKategorie(supabase, data.company_id),
+        ...(await nastaveniaDokladov(supabase, firma, ok.map(prijataAkoDoklad))),
       },
     });
     if (data.oznacit) {

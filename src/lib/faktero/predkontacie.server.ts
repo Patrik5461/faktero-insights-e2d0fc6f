@@ -77,17 +77,20 @@ export async function ulozCiselnik(
 export async function ulozCiselnikyZPohody(
   supabase: Klient,
   vstup: { companyId: string; xml: string },
-): Promise<{ predkontacii: number; cleneni: number; vypnutych: number } | null> {
+): Promise<{ predkontacii: number; cleneni: number; ostatnych: number; vypnutych: number } | null> {
   const { rozoberCiselnikyPohody } = await import("./predkontacie");
   const zaznamy = rozoberCiselnikyPohody(vstup.xml);
-  const maZoznam = /listAccounting(Double|Single)Entry\b|listClassificationVAT\b/.test(vstup.xml);
+  const maZoznam =
+    /listAccounting(Double|Single)Entry\b|listClassificationVAT\b|listCentre\b|listActivity\b|listNumericalSeries\b/.test(
+      vstup.xml,
+    );
   if (!zaznamy.length && !maZoznam) return null;
 
   const r = await ulozCiselnik(supabase, {
     companyId: vstup.companyId,
     zaznamy,
     zdroj: "pohoda",
-    uplne: ["predkontacia", "clenenie_dph"],
+    uplne: ["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad"],
   });
   await supabase
     .from("companies")
@@ -96,6 +99,8 @@ export async function ulozCiselnikyZPohody(
   return {
     predkontacii: zaznamy.filter((z) => z.druh === "predkontacia").length,
     cleneni: zaznamy.filter((z) => z.druh === "clenenie_dph").length,
+    // Strediská, činnosti a číselné rady.
+    ostatnych: zaznamy.filter((z) => !["predkontacia", "clenenie_dph"].includes(z.druh)).length,
     vypnutych: r.vypnutych,
   };
 }
@@ -121,6 +126,60 @@ export async function kodyPodlaKategorie(
     out[k] = out[k] ?? {};
     if (r.druh === "predkontacia") out[k].predkontacia ??= r.kod;
     else out[k].clenenie ??= r.kod;
+  }
+  return out;
+}
+
+/**
+ * Nastavenia exportu prijatých dokladov, ktoré sa skladajú z firmy aj z
+ * databázy: číselné rady, stredisko, kódy podľa kategórie, zákazky a odkazy
+ * na sken. Jedno miesto pre konektor, balík aj ručný export.
+ */
+export async function nastaveniaDokladov(
+  supabase: Klient,
+  company: Record<string, any>,
+  doklady: Record<string, any>[],
+): Promise<Record<string, unknown>> {
+  const { zakladnaAdresa } = await import("./pohoda-konektor.server");
+  const out: Record<string, unknown> = {
+    stredisko: company.pohoda_stredisko,
+    radPrijate: company.pohoda_rad_prijate,
+    radDoklady: company.pohoda_rad_doklady,
+    radPokladna: company.pohoda_rad_pokladna,
+    radInterne: company.pohoda_rad_interne,
+    podlaKategorie: await kodyPodlaKategorie(supabase, company.id),
+  };
+
+  // Zákazka ide len vtedy, keď ich firma do Pohody posiela — inak by doklad
+  // ukázal na zákazku, ktorú Pohoda nepozná, a import by ho odmietol.
+  const jobIds = [...new Set(doklady.map((d) => d.job_id).filter(Boolean))];
+  if (company.pohoda_posielat_zakazky && jobIds.length) {
+    const { data } = await supabase.from("jobs").select("id, job_number").in("id", jobIds);
+    out.zakazkyDokladov = Object.fromEntries(
+      (data ?? [])
+        .filter((j: any) => j.job_number)
+        .map((j: any) => [String(j.id), String(j.job_number).slice(0, 12)]),
+    );
+  }
+
+  // Odkaz na sken do záložky Dokumenty — krátky, s náhodným tokenom.
+  if (company.pohoda_odkaz_na_doklady !== false) {
+    const zaklad = zakladnaAdresa();
+    const odkazy: Record<string, string> = {};
+    for (const d of doklady) {
+      if (!d.file_path || !d.id) continue;
+      const tabulka = d._typPohody ? "purchase_invoices" : "expense_documents";
+      let token = d.pdf_token as string | null;
+      if (!token) {
+        token = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+          b.toString(16).padStart(2, "0"),
+        ).join("");
+        const { error } = await supabase.from(tabulka).update({ pdf_token: token }).eq("id", d.id);
+        if (error) continue;
+      }
+      odkazy[String(d.id)] = `${zaklad}/api/public/doklad/${token}`;
+    }
+    out.odkazyDokladov = odkazy;
   }
   return out;
 }

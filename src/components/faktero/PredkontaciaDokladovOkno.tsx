@@ -26,11 +26,22 @@ export function PredkontaciaDokladovOkno({
   const nacitaj = useServerFn(navrhyKodovFn);
   const uloz = useServerFn(zauctujDokladyFn);
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
-  const [h, setH] = useState<{ predkontacia: string; clenenie: string; kategoria: string; kv?: string }>({
+  const [h, setH] = useState<{
+    predkontacia: string;
+    clenenie: string;
+    kategoria: string;
+    kv?: string;
+    stredisko?: string;
+    cinnost?: string;
+    rad?: string;
+  }>({
     predkontacia: "",
     clenenie: "",
     kategoria: "",
     kv: "",
+    stredisko: "",
+    cinnost: "",
+    rad: "",
   });
   const [busy, setBusy] = useState(false);
 
