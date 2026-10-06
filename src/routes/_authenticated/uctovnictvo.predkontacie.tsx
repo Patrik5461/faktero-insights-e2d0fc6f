@@ -174,8 +174,8 @@ function Predvolene({
                   {p.nazov}
                   {pocetNaVyber(p.kluc, "predkontacia") + pocetNaVyber(p.kluc, "clenenie_dph") > 0 ? (
                     <span className="block text-xs text-muted-foreground">
-                      na výber {pocetNaVyber(p.kluc, "predkontacia")} predkontácií,{" "}
-                      {pocetNaVyber(p.kluc, "clenenie_dph")} členení
+                      kódov len pre tento doklad:{" "}
+                      {pocetNaVyber(p.kluc, "predkontacia") + pocetNaVyber(p.kluc, "clenenie_dph")}
                     </span>
                   ) : null}
                   {p.kluc === "doklady" && !h[p.predkontacia] && h.pohoda_predkontacia_prijata ? (
