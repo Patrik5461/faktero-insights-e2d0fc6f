@@ -659,7 +659,13 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     color: primary,
   });
   cur.drawRectangle({ x: totalsX, y: ty - heroH, width: 4, height: heroH, color: primaryDark });
-  cur.drawText(isPaid ? t.uhradene : t.spoluKUhrade, {
+  /*
+    Doklad podľa § 25a je len daňová oprava — nič sa podľa neho neplatí
+    (zníženie) alebo sa už zaplatilo (vrátenie). Bez „k úhrade“ a bez
+    platobných údajov, inak by odberateľa naviedol zaplatiť ešte raz.
+  */
+  const lenOprava = Boolean((invoice as any).oprava_25a);
+  cur.drawText(isPaid ? t.uhradene : lenOprava ? t.celkom : t.spoluKUhrade, {
     x: totalsX + 16,
     y: ty - 22,
     size: 9,
@@ -862,7 +868,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
   }
 
   // ── Payment card (full width, two columns: data | QR) ──
-  if (!input.hidePayment && !isPaid) {
+  if (!input.hidePayment && !isPaid && !lenOprava) {
     /*
       Výška karty je tesne na štyri riadky údajov a QR s popiskom. Pôvodných
       140 bodov s QR v strede nechávalo prázdny pás, pre ktorý sa faktúra s
