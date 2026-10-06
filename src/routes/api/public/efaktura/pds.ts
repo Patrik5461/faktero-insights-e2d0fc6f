@@ -20,6 +20,11 @@ const odpoved = (kod: number, popis: string) =>
 export const Route = createFileRoute("/api/public/efaktura/pds")({
   server: {
     handlers: {
+      /*
+        Otvorenie v prehliadači (GET) — adresa žije, len údaje prijíma cez POST.
+        Bez toho ukazovala 404 a pôsobila ako nefunkčná pri vypĺňaní tlačiva.
+      */
+      GET: async () => odpoved(200, "Faktero — webhook PDS je dostupný, údaje prijíma metódou POST."),
       POST: async ({ request }) => {
         const telo = await request.text();
         const { overPdsPodpis } = await import("@/lib/faktero/efaktura/webhooky.server");
