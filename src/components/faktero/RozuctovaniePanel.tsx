@@ -14,6 +14,7 @@ import {
   type RozpisSadzby,
 } from "@/lib/faktero/rozuctovanie";
 import { KodPohody } from "./KodPohody";
+import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import type { Navrhy } from "./ZauctovaniePanel";
 
 const f2 = (n: number) => (Number(n) || 0).toFixed(2);
@@ -131,11 +132,12 @@ export function RozuctovaniePanel({
         </div>
       </div>
       <div className="mt-2 overflow-x-auto">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="text-left text-xs text-muted-foreground">
               <th className="py-1 pr-2 font-medium">Predkontácia</th>
               <th className="py-1 pr-2 font-medium">Členenie DPH</th>
+              <th className="py-1 pr-2 font-medium">KV DPH</th>
               <th className="py-1 pr-2 font-medium">Sadzba</th>
               <th className="py-1 pr-2 text-right font-medium">Základ</th>
               <th className="py-1 pr-2 text-right font-medium">DPH</th>
@@ -162,9 +164,25 @@ export function RozuctovaniePanel({
                     value={r.clenenie ?? ""}
                     onChange={(v) => zmen(i, { clenenie: v })}
                     moznosti={navrhy?.clenenia ?? []}
+                      vyber
                     placeholder={kody.clenenie ?? ""}
                     className={vstup}
                   />
+                </td>
+                <td className="py-1 pr-2 w-24">
+                  <select
+                    value={r.kv ?? ""}
+                    onChange={(e) => zmen(i, { kv: e.target.value || null })}
+                    className={vstup}
+                    aria-label={`Členenie KV riadku ${i + 1}`}
+                  >
+                    <option value="">z dokladu</option>
+                    {KV_PRIJATE.map((k) => (
+                      <option key={k.kod} value={k.kod} title={k.nazov}>
+                        {k.kod === "X" ? "nezahŕňať" : k.kod}
+                      </option>
+                    ))}
+                  </select>
                 </td>
                 <td className="py-1 pr-2 w-20">
                   <select

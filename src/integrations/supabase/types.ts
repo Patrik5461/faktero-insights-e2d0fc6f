@@ -1277,6 +1277,7 @@ export type Database = {
           vat_payer: boolean
           vat_scheme: string | null
           dan_z_prijatej_platby: boolean
+          pohoda_blocky_agenda: string
         }
         Insert: {
           city?: string | null
@@ -1353,6 +1354,7 @@ export type Database = {
           vat_payer?: boolean
           vat_scheme?: string | null
           dan_z_prijatej_platby?: boolean
+          pohoda_blocky_agenda?: string
         }
         Update: {
           city?: string | null
@@ -1429,6 +1431,7 @@ export type Database = {
           vat_payer?: boolean
           vat_scheme?: string | null
           dan_z_prijatej_platby?: boolean
+          pohoda_blocky_agenda?: string
         }
         Relationships: []
       }
@@ -2773,6 +2776,7 @@ export type Database = {
           rozuctovanie: Json | null
           pohoda_predkontacia: string | null
           pohoda_clenenie_dph: string | null
+          kv_clenenie: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -2812,6 +2816,7 @@ export type Database = {
           rozuctovanie?: Json | null
           pohoda_predkontacia?: string | null
           pohoda_clenenie_dph?: string | null
+          kv_clenenie?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -2851,6 +2856,7 @@ export type Database = {
           rozuctovanie?: Json | null
           pohoda_predkontacia?: string | null
           pohoda_clenenie_dph?: string | null
+          kv_clenenie?: string | null
         }
         Relationships: [
           {
@@ -5379,6 +5385,7 @@ export type Database = {
           advance_invoice_id: string | null
           type: string
           rozuctovanie: Json | null
+          kv_clenenie: string | null
         }
         Insert: {
           amount_total?: number
@@ -5463,6 +5470,7 @@ export type Database = {
           advance_invoice_id?: string | null
           type?: string
           rozuctovanie?: Json | null
+          kv_clenenie?: string | null
         }
         Update: {
           amount_total?: number
@@ -5547,6 +5555,7 @@ export type Database = {
           advance_invoice_id?: string | null
           type?: string
           rozuctovanie?: Json | null
+          kv_clenenie?: string | null
         }
         Relationships: [
           {

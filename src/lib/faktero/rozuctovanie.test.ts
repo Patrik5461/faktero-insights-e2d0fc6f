@@ -81,6 +81,7 @@ describe("rozúčtovanie", () => {
       zaklad: 1.01,
       dph: 0.23,
       text: null,
+      kv: null,
     });
   });
 

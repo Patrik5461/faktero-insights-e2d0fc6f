@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import type { MoznostKodu } from "@/lib/faktero/predkontacie";
 
 /**
@@ -16,6 +16,7 @@ export function KodPohody({
   className,
   bezPopisu,
   ariaLabel,
+  vyber,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -24,10 +25,46 @@ export function KodPohody({
   className?: string;
   bezPopisu?: boolean;
   ariaLabel?: string;
+  /**
+   * Rozbaľovacie menu namiesto písania — kódy z číselníka, posledná voľba
+   * „Iný kód…“ prepne na písanie. Bez číselníka ostane políčko na písanie.
+   */
+  vyber?: boolean;
 }) {
   const id = useId();
+  const [pisat, setPisat] = useState(false);
   const vybrany = moznosti.find((m) => m.kod === value.trim());
   const neznamy = value.trim() && moznosti.length > 0 && !vybrany;
+  if (vyber && moznosti.length > 0 && !pisat && !neznamy) {
+    return (
+      <select
+        aria-label={ariaLabel}
+        value={value.trim()}
+        onChange={(e) => {
+          if (e.target.value === "__iny__") {
+            setPisat(true);
+            onChange("");
+          } else onChange(e.target.value);
+        }}
+        className={className ?? "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"}
+      >
+        <option value="">
+          {placeholder && !/^(napr\.|—|nemeniť|predvolen)/.test(placeholder)
+            ? `predvolené: ${placeholder}`
+            : placeholder === "nemeniť"
+              ? "nemeniť"
+              : "—"}
+        </option>
+        {moznosti.map((m) => (
+          <option key={m.kod} value={m.kod}>
+            {m.kod}
+            {m.popis ? ` — ${m.popis}` : ""}
+          </option>
+        ))}
+        <option value="__iny__">Iný kód…</option>
+      </select>
+    );
+  }
   return (
     <>
       <input

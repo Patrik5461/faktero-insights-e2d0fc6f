@@ -77,7 +77,7 @@ describe("formulár", () => {
   it("popis na jeden riadok a uloženie bez prázdnych reťazcov", () => {
     expect(popisPravidla(p({ odpocet: false }))).toEqual({
       ked: 'dodávateľ obsahuje „slovnaft"',
-      doplni: "kategória Palivo, predkontácia PHM, bez odpočtu DPH",
+      doplni: "kategória Nákup PHM, predkontácia PHM, bez odpočtu DPH",
     });
     expect(naUlozenie(p({ dodavatel_ico: "31 322 832", poznamka: "  " }))).toMatchObject({
       dodavatel_ico: "31322832",

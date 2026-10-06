@@ -76,7 +76,7 @@ export async function nacitajVstup(
     supabase
       .from("purchase_invoices")
       .select(
-        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date",
+        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie",
       )
       .eq("company_id", companyId)
       /*
@@ -89,7 +89,7 @@ export async function nacitajVstup(
     supabase
       .from("expense_documents")
       .select(
-        "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet",
+        "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet, kv_clenenie",
       )
       .eq("company_id", companyId)
       .limit(5000),
@@ -230,6 +230,7 @@ export async function nacitajVstup(
       odpocet: p.odpocet !== false,
       opravujeCislo: p.opravuje_cislo,
       riadky: riadkyPrijatej(p, zaklad, dan, den, cudziaP),
+      kv: p.kv_clenenie,
     });
     if (!p.invoice_number) {
       vytky.push({
@@ -247,7 +248,13 @@ export async function nacitajVstup(
     const rozpis = Array.isArray(d.vat_breakdown) ? d.vat_breakdown : null;
     const riadky: SadzbovyRiadok[] = rozpis?.length
       ? rozpis.map((r: any) =>
-          riadokZoSum(Number(r.base ?? r.zaklad ?? 0), Number(r.vat ?? r.dan ?? 0), d.issue_date),
+          // Rozpis z bločku nesie daň v `dph` — predtým sa čítalo len `vat`
+          // a `dan`, takže bloček s rozpisom išiel do odpočtu s nulovou daňou.
+          riadokZoSum(
+            Number(r.base ?? r.zaklad ?? 0),
+            Number(r.dph ?? r.vat ?? r.dan ?? 0),
+            d.issue_date,
+          ),
         )
       : [riadokZoSum(Number(d.net_amount ?? 0), dan, d.issue_date)];
     doklady.push({
@@ -255,6 +262,9 @@ export async function nacitajVstup(
       dodavatelIcDph: d.supplier_ic_dph,
       odpocet: d.odpocet !== false,
       riadky,
+      kv: d.kv_clenenie,
+      cislo: d.document_number,
+      datum: d.issue_date,
     });
   }
 

@@ -397,7 +397,7 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(vlastne.accounting.ids).toBe("PHM");
     expect(vlastne.classificationVAT.ids).toBe("PN");
     // Kategória ide do textu názvom, nie kódom.
-    expect(vlastne.text).toContain("Palivo");
+    expect(vlastne.text).toContain("Nákup PHM");
     const bez = posli([bloček], nast).dataPackItem.invoice.invoiceHeader;
     expect(bez.accounting.ids).toBe("1Fp");
     expect(bez.classificationVAT.ids).toBe("PD");
@@ -455,6 +455,41 @@ describe("Pohoda XML — prijaté doklady", () => {
       .dataPackItem.invoice;
     expect(inv.invoiceDetail).toBeUndefined();
     expect(inv.invoiceHeader.accounting.ids).toBe("5Fp");
+  });
+
+  it("bloček podľa platby: hotovosť do pokladne, karta interný doklad, prevod faktúra", () => {
+    const nast = { blockyPodlaPlatby: true, pokladna: "HOT", predkontaciaDoklady: "1Pv" };
+    const x = posli(
+      [
+        { ...bloček, id: "a", payment_method: "hotovost", kv_clenenie: "B3" },
+        { ...bloček, id: "b", payment_method: "karta" },
+        { ...bloček, id: "c", payment_method: "prevod" },
+      ],
+      nast,
+    ).dataPackItem;
+    const v = x[0].voucher.voucherHeader;
+    expect(v.voucherType).toBe("expense");
+    expect(v.cashAccount.ids).toBe("HOT");
+    expect(v.accounting.ids).toBe("1Pv");
+    expect(v.classificationKVDPH.ids).toBe("B3");
+    expect(String(v.originalDocument)).toBe("2516");
+    expect(Number(x[0].voucher.voucherSummary.homeCurrency.priceHigh)).toBe(18.77);
+    const i = x[1].intDoc.intDocHeader;
+    expect(String(i.symVar)).toBe("2516");
+    expect(i.accounting.ids).toBe("1Pv");
+    expect(x[2].invoice.invoiceHeader.invoiceType).toBe("receivedInvoice");
+  });
+
+  it("prijatá faktúra ostáva faktúrou aj pri bločkoch podľa platby", () => {
+    const h = posli([{ ...bloček, payment_method: "hotovost", _typPohody: "receivedInvoice" }], {
+      blockyPodlaPlatby: true,
+    }).dataPackItem;
+    expect(h.invoice).toBeDefined();
+  });
+
+  it("členenie KV „nezahŕňať“ sa do Pohody nepošle", () => {
+    const h = posli([{ ...bloček, kv_clenenie: "X" }]).dataPackItem.invoice.invoiceHeader;
+    expect(h.classificationKVDPH).toBeUndefined();
   });
 
   it("kategória nákladu dá kód, keď doklad nemá vlastný", () => {

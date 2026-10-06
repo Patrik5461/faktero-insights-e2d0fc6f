@@ -122,11 +122,13 @@ function Predvolene({
   const uloz = useServerFn(ulozPredvoleneFn);
   const [h, setH] = useState<Record<string, string>>({});
   const [oznaceni, setOznaceni] = useState<Record<string, string>>({});
+  const [blockyAgenda, setBlockyAgenda] = useState<"faktura" | "podla_platby">("faktura");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     setH(Object.fromEntries(STLPCE_PREDVOLENYCH.map((s) => [s, String(firma[s] ?? "")])));
     setOznaceni({ ...((firma.pohoda_predkontacie_oznaceni as Record<string, string> | null) ?? {}) });
+    setBlockyAgenda(firma.pohoda_blocky_agenda === "podla_platby" ? "podla_platby" : "faktura");
   }, [firma]);
 
   const pocetNaVyber = (kluc: string, druh: DruhCiselnika) =>
@@ -135,7 +137,7 @@ function Predvolene({
   async function ulozit() {
     setBusy(true);
     try {
-      await uloz({ data: { company_id: companyId, hodnoty: h, oznaceni } });
+      await uloz({ data: { company_id: companyId, hodnoty: h, oznaceni, blockyAgenda } });
       toast.success("Uložené");
       onUlozene();
     } catch (e: any) {
@@ -207,6 +209,7 @@ function Predvolene({
                       value={h[p.clenenie] ?? ""}
                       onChange={(v) => setH({ ...h, [p.clenenie!]: v })}
                       moznosti={ponuka(zaznamy, "clenenie_dph", [], p.kluc)}
+                      vyber
                       placeholder={
                         p.kluc === "doklady" ? h.pohoda_clenenie_dph_prijata || "—" : "—"
                       }
@@ -221,6 +224,42 @@ function Predvolene({
           </tbody>
         </table>
       </div>
+
+      <fieldset className="mt-4 rounded-md border border-border p-3">
+        <legend className="px-1 text-sm font-medium">Bločky do Pohody</legend>
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="radio"
+            name="blocky-agenda"
+            checked={blockyAgenda === "podla_platby"}
+            onChange={() => setBlockyAgenda("podla_platby")}
+            className="mt-1"
+          />
+          <span>
+            Podľa spôsobu platby (ako Doklado)
+            <span className="block text-xs text-muted-foreground">
+              Hotovosť ako výdavkový pokladničný doklad
+              {firma.pohoda_pokladna ? ` do pokladne ${firma.pohoda_pokladna}` : ""}, karta ako interný
+              doklad, prevod ako prijatá faktúra.
+            </span>
+          </span>
+        </label>
+        <label className="mt-2 flex items-start gap-2 text-sm">
+          <input
+            type="radio"
+            name="blocky-agenda"
+            checked={blockyAgenda === "faktura"}
+            onChange={() => setBlockyAgenda("faktura")}
+            className="mt-1"
+          />
+          <span>
+            Všetky ako prijaté faktúry
+            <span className="block text-xs text-muted-foreground">
+              Doklad sa zaúčtuje ako záväzok a úhradu spáruje účtovníčka.
+            </span>
+          </span>
+        </label>
+      </fieldset>
 
       <label className="mt-4 block max-w-md">
         <span className="text-xs text-muted-foreground">

@@ -14,6 +14,8 @@ const STLPCE_FIRMY = [
   "pohoda_predkontacie_oznaceni",
   "pohoda_nacitat_ciselniky",
   "pohoda_ciselniky_nacitane_at",
+  "pohoda_blocky_agenda",
+  "pohoda_pokladna",
 ].join(", ");
 
 export const predkontacieFn = createServerFn({ method: "POST" })
@@ -114,6 +116,7 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
         company_id: z.string().uuid(),
         hodnoty: z.record(z.string(), z.string().max(30).nullable()),
         oznaceni: z.record(z.string(), z.string().max(30)).optional().nullable(),
+        blockyAgenda: z.enum(["faktura", "podla_platby"]).optional(),
       })
       .parse(d),
   )
@@ -131,6 +134,7 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
         .filter(([, v]) => v);
       zmena.pohoda_predkontacie_oznaceni = m.length ? Object.fromEntries(m) : null;
     }
+    if (data.blockyAgenda) zmena.pohoda_blocky_agenda = data.blockyAgenda;
     const { error } = await supabase.from("companies").update(zmena).eq("id", data.company_id);
     if (error) throw new Error(error.message);
     return { ok: true };

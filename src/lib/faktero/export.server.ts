@@ -159,6 +159,11 @@ export type PohodaNastavenia = {
   predkontaciaRozuctovat?: string | null;
   /** Kódy podľa kategórie nákladu (Predkontácie → kategória), keď doklad nemá vlastné. */
   podlaKategorie?: Record<string, { predkontacia?: string | null; clenenie?: string | null }>;
+  /**
+   * Bločky ako v Doklado: hotovosť ako pokladničný doklad, karta ako interný
+   * doklad. Bez toho idú ako prijaté faktúry (Ostatné záväzky).
+   */
+  blockyPodlaPlatby?: boolean;
   /** Skratka pokladne v Pohode — do ktorej pokladne pohyby patria. */
   pokladna?: string | null;
   /** Predkontácia pre pokladničný doklad. */
@@ -195,6 +200,7 @@ const SCHEMY: Record<string, string> = {
   inv: "invoice.xsd",
   bnk: "bank.xsd",
   vch: "voucher.xsd",
+  int: "intDoc.xsd",
   adb: "addressbook.xsd",
   stk: "stock.xsd",
   con: "contract.xsd",
@@ -832,7 +838,7 @@ export function buildPohodaExpensesXml(opts: {
   return obalka({
     ico: opts.company?.ico,
     note: "Prijaté doklady z Faktero",
-    prefixy: ["inv"],
+    prefixy: ["inv", "vch", "int"],
     entries: polozkyDokladov(opts),
   });
 }
@@ -922,18 +928,43 @@ export function polozkyDokladov(opts: {
           (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")
         : predkontaciaJedna;
       const clenenie = rozuctovany ? null : clenenieJedno;
+
+      /*
+        Agenda v Pohode. Prijatá faktúra ide vždy ako faktúra. Bloček ako
+        v Doklado podľa platby: hotovosť ako pokladničný doklad (výdaj z
+        pokladne), karta ako interný doklad, prevod ako prijatá faktúra —
+        ak si to firma zapla; inak ako doteraz prijatá faktúra.
+      */
+      const platba = String(d?.payment_method ?? "");
+      const p: "inv" | "vch" | "int" =
+        blocek && nastavenia?.blockyPodlaPlatby
+          ? platba === "hotovost"
+            ? "vch"
+            : platba === "karta"
+              ? "int"
+              : "inv"
+          : "inv";
+      const koren = p === "inv" ? "invoice" : p === "vch" ? "voucher" : "intDoc";
+      const kv = (r?: string | null) => {
+        const k = String(r ?? "").trim() || String(d?.kv_clenenie ?? "").trim();
+        // „Nezahŕňať" nemá v Pohode skratku — doklad ostane bez členenia KV.
+        return k && k !== "X" ? k : "";
+      };
+      const kvHlavicka = rozuctovany ? "" : kv();
+
       const polozkyRozuct = rozuctovany
         ? `
-      <inv:invoiceDetail>${rozuct
+      <${p}:${koren}Detail>${rozuct
         .map((r) => {
           const pk = r.predkontacia || predkontaciaJedna;
           const cl = r.clenenie || clenenieJedno;
+          const kvr = kv(r.kv);
           return `
-        <inv:invoiceItem>${el("inv:text", skrat(r.text || popis || "Prijatý doklad", 90), "          ")}
-          <inv:quantity>1</inv:quantity>
-          <inv:payVAT>false</inv:payVAT>
-          <inv:rateVAT>${kodSadzby(r.sadzba, tab)}</inv:rateVAT>
-          <inv:homeCurrency>${elSuma("typ:unitPrice", r.zaklad, "            ")}${elSuma(
+        <${p}:${koren}Item>${el(`${p}:text`, skrat(r.text || popis || "Prijatý doklad", 90), "          ")}
+          <${p}:quantity>1</${p}:quantity>
+          <${p}:payVAT>false</${p}:payVAT>
+          <${p}:rateVAT>${kodSadzby(r.sadzba, tab)}</${p}:rateVAT>
+          <${p}:homeCurrency>${elSuma("typ:unitPrice", r.zaklad, "            ")}${elSuma(
             "typ:price",
             r.zaklad,
             "            ",
@@ -942,17 +973,21 @@ export function polozkyDokladov(opts: {
             r.zaklad + r.dph,
             "            ",
           )}
-          </inv:homeCurrency>${
-            pk ? `\n          <inv:accounting><typ:ids>${esc(pk)}</typ:ids></inv:accounting>` : ""
+          </${p}:homeCurrency>${
+            pk ? `\n          <${p}:accounting><typ:ids>${esc(pk)}</typ:ids></${p}:accounting>` : ""
           }${
             cl
-              ? `\n          <inv:classificationVAT><typ:ids>${esc(cl)}</typ:ids></inv:classificationVAT>`
+              ? `\n          <${p}:classificationVAT><typ:ids>${esc(cl)}</typ:ids></${p}:classificationVAT>`
+              : ""
+          }${
+            kvr
+              ? `\n          <${p}:classificationKVDPH><typ:ids>${esc(kvr)}</typ:ids></${p}:classificationKVDPH>`
               : ""
           }
-        </inv:invoiceItem>`;
+        </${p}:${koren}Item>`;
         })
         .join("")}
-      </inv:invoiceDetail>`
+      </${p}:${koren}Detail>`
         : "";
 
       const adresa = [
@@ -961,43 +996,65 @@ export function polozkyDokladov(opts: {
         el("typ:icDph", skrat(d?.supplier_ic_dph, 18), "            "),
       ].join("");
 
+      // Číslo dokladu od dodávateľa: prijatá faktúra ho má vždy, bloček
+      // v pokladni či internom doklade ho nesie tiež, nech sa dá dohľadať.
+      const povodne = skrat(d?._povodneCislo || (p !== "inv" ? d?.document_number : ""), 32);
+      const typ =
+        p === "inv"
+          ? `\n        <inv:invoiceType>${esc(typPohody)}</inv:invoiceType>`
+          : p === "vch"
+            ? `\n        <vch:voucherType>expense</vch:voucherType>${
+                nastavenia?.pokladna
+                  ? `\n        <vch:cashAccount><typ:ids>${esc(nastavenia.pokladna)}</typ:ids></vch:cashAccount>`
+                  : ""
+              }`
+            : "";
+
       return `
   <dat:dataPackItem id="${esc(d?.id ?? `DOK${idx + 1}`)}" version="2.0">
-    <inv:invoice version="2.0">
-      <inv:invoiceHeader>
-        <inv:invoiceType>${esc(typPohody)}</inv:invoiceType>${el("inv:symVar", symVar, "        ")}${el(
-          "inv:originalDocument",
-          skrat(d?._povodneCislo, 32),
+    <${p}:${koren} version="2.0">
+      <${p}:${koren}Header>${typ}${p !== "vch" ? el(`${p}:symVar`, symVar, "        ") : ""}${el(
+          p === "int" ? "int:originalDocumentNumber" : `${p}:originalDocument`,
+          povodne,
           "        ",
         )}
-        <inv:date>${esc(d?.issue_date ?? "")}</inv:date>
-        <inv:dateTax>${esc(datumDph)}</inv:dateTax>${el("inv:dateDue", d?._splatnost, "        ")}${el(
-          "inv:text",
-          popis || "Prijatý doklad",
+        <${p}:date>${esc(d?.issue_date ?? "")}</${p}:date>
+        <${p}:dateTax>${esc(datumDph)}</${p}:dateTax>${
+          p === "inv" ? el("inv:dateDue", d?._splatnost, "        ") : ""
+        }${el(`${p}:text`, popis || "Prijatý doklad", "        ")}${el(
+          `${p}:note`,
+          skrat(d?.note, 200),
           "        ",
-        )}${el("inv:note", skrat(d?.note, 200), "        ")}${
+        )}${
           predkontacia
-            ? `\n        <inv:accounting><typ:ids>${esc(predkontacia)}</typ:ids></inv:accounting>`
+            ? `\n        <${p}:accounting><typ:ids>${esc(predkontacia)}</typ:ids></${p}:accounting>`
             : ""
         }${
           clenenie
-            ? `\n        <inv:classificationVAT><typ:ids>${esc(clenenie)}</typ:ids></inv:classificationVAT>`
+            ? `\n        <${p}:classificationVAT><typ:ids>${esc(clenenie)}</typ:ids></${p}:classificationVAT>`
+            : ""
+        }${
+          kvHlavicka
+            ? `\n        <${p}:classificationKVDPH><typ:ids>${esc(kvHlavicka)}</typ:ids></${p}:classificationKVDPH>`
             : ""
         }${
           adresa
             ? `
-        <inv:partnerIdentity>
+        <${p}:partnerIdentity>
           <typ:address>${adresa}
           </typ:address>
-        </inv:partnerIdentity>`
+        </${p}:partnerIdentity>`
+            : ""
+        }${
+          p === "inv"
+            ? `\n        <inv:paymentType><typ:paymentType>${
+                FORMY_UHRADY[platba] ?? "draft"
+              }</typ:paymentType></inv:paymentType>`
             : ""
         }
-        <inv:paymentType><typ:paymentType>${
-          FORMY_UHRADY[String(d?.payment_method ?? "")] ?? "draft"
-        }</typ:paymentType></inv:paymentType>
-      </inv:invoiceHeader>${polozkyRozuct}
-      <inv:invoiceSummary>
-        <inv:homeCurrency>${elSuma("typ:priceNone", zaklad(s0), "          ")}${elSuma(
+      </${p}:${koren}Header>${polozkyRozuct}
+      <${p}:${koren}Summary>
+        <${p}:homeCurrency>${elSuma("typ:priceNone", zaklad(s0), "          ")}${elSuma(
           "typ:price3",
           zaklad(s3),
           "          ",
@@ -1011,9 +1068,9 @@ export function polozkyDokladov(opts: {
           "          ",
         )}${elSuma("typ:priceHighVAT", dan(sHigh), "          ")}
           <typ:round><typ:priceRound>${fixed2(zaokruhlenie)}</typ:priceRound></typ:round>
-        </inv:homeCurrency>
-      </inv:invoiceSummary>
-    </inv:invoice>
+        </${p}:homeCurrency>
+      </${p}:${koren}Summary>
+    </${p}:${koren}>
   </dat:dataPackItem>`;
     })
     .join("");
@@ -1446,7 +1503,7 @@ export function buildPohodaDavkaXml(opts: {
   return obalka({
     ico: opts.company?.ico,
     note: "Dávka z Faktero",
-    prefixy: ["inv", "vch", "adb", "stk", "con", "pri", "vyd", "ftr"],
+    prefixy: ["inv", "vch", "int", "adb", "stk", "con", "pri", "vyd", "ftr"],
     entries,
   });
 }

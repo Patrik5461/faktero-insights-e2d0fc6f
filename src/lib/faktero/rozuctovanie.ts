@@ -14,6 +14,8 @@ export type RiadokRozuctovania = {
   zaklad: number;
   dph: number;
   text?: string | null;
+  /** Členenie kontrolného výkazu riadku; prázdne = z dokladu. */
+  kv?: string | null;
 };
 
 export type RozpisSadzby = { sadzba: number; zaklad: number; dph: number };
@@ -132,6 +134,7 @@ export function ocisti(riadky: RiadokRozuctovania[]): RiadokRozuctovania[] {
     zaklad: r2(Number(r.zaklad) || 0),
     dph: r2(Number(r.dph) || 0),
     text: String(r.text ?? "").trim().slice(0, 90) || null,
+    kv: String(r.kv ?? "").trim().slice(0, 5) || null,
   }));
 }
 
@@ -147,6 +150,7 @@ export function nacitajRozuctovanie(v: unknown): RiadokRozuctovania[] {
       zaklad: Number(x.zaklad) || 0,
       dph: Number(x.dph) || 0,
       text: x.text ?? null,
+      kv: x.kv ?? null,
     }));
 }
 

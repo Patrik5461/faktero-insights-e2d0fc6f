@@ -85,6 +85,13 @@ const sections: HelpSection[] = [
           „Rozúčtovať“ a kódy nesú položky.
         </p>
         <p>
+          <strong>Bločky do Pohody</strong> idú buď všetky ako prijaté faktúry, alebo ako v Doklado{" "}
+          <em>podľa spôsobu platby</em>: hotovosť ako výdavkový pokladničný doklad, karta ako interný
+          doklad, prevod ako prijatá faktúra. Prepína sa to na stránke Predkontácie. Na doklade sa dá
+          vybrať aj <strong>členenie kontrolného výkazu</strong> (B1, B2, B3, C2 alebo „nezahŕňať“);
+          bloček označený B2 ide aj vo Fakteri do časti B.2 s číslom a IČ DPH dodávateľa.
+        </p>
+        <p>
           Bez predkontácií Pohoda doklady naimportuje bez chyby, ale zaúčtovanie si ku každému
           doklikáva ručne — teda presne tú prácu, ktorú mal export ušetriť.
         </p>

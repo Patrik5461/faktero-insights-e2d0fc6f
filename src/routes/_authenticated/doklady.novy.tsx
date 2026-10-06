@@ -4,6 +4,8 @@ import { RozuctovaniePanel } from "@/components/faktero/RozuctovaniePanel";
 import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
 import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
+import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
+import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -54,6 +56,7 @@ type Form = {
   category: string;
   pohoda_predkontacia: string;
   pohoda_clenenie_dph: string;
+  kv_clenenie: string;
   note: string;
 };
 
@@ -78,6 +81,7 @@ const EMPTY: Form = {
   category: "",
   pohoda_predkontacia: "",
   pohoda_clenenie_dph: "",
+  kv_clenenie: "",
   note: "",
 };
 
@@ -162,6 +166,7 @@ function NovyDokladPage() {
         category: data.category ?? "",
         pohoda_predkontacia: (data as any).pohoda_predkontacia ?? "",
         pohoda_clenenie_dph: (data as any).pohoda_clenenie_dph ?? "",
+        kv_clenenie: (data as any).kv_clenenie ?? "",
         note: data.note ?? "",
       });
       setUlozeny(data);
@@ -416,6 +421,7 @@ function NovyDokladPage() {
         // Predkontácia a členenie pre Pohodu; prázdne = predvolené z nastavení.
         pohoda_predkontacia: form.pohoda_predkontacia.trim() || null,
         pohoda_clenenie_dph: form.pohoda_clenenie_dph.trim() || null,
+        kv_clenenie: form.kv_clenenie || null,
         note: form.note || null,
         file_path: uploadedFile?.path ?? null,
         file_mime: uploadedFile?.mime ?? null,
@@ -647,12 +653,26 @@ function NovyDokladPage() {
                 value={form.issue_date}
                 onChange={(v) => updateForm("issue_date", v)}
               />
-              <Field
-                label="Kategória"
-                value={form.category}
-                onChange={(v) => updateForm("category", v)}
-                placeholder="napr. pohonné hmoty"
-              />
+              {/* Výber ako v Doklado (účtovná položka) — voľný text sa nedal
+                  spárovať s predkontáciou ani s pravidlom. */}
+              <label className="block">
+                <span className="mb-1 block text-xs text-muted-foreground">Kategória</span>
+                <select
+                  value={form.category}
+                  onChange={(e) => updateForm("category", e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">— vyberte —</option>
+                  {form.category && !KATEGORIE_VYDAVKOV.some((k) => k.kod === form.category) && (
+                    <option value={form.category}>{form.category}</option>
+                  )}
+                  {KATEGORIE_VYDAVKOV.map((k) => (
+                    <option key={k.kod} value={k.kod}>
+                      {k.nazov}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <Field
                 label="Suma bez DPH"
                 type="number"
@@ -741,7 +761,11 @@ function NovyDokladPage() {
                       value={form.pohoda_predkontacia}
                       onChange={(v) => updateForm("pohoda_predkontacia", v)}
                       moznosti={kody?.predkontacie ?? []}
-                      placeholder={kody?.predvolenaPredkontacia ?? "predvolená z nastavení"}
+                      placeholder={
+                        kody?.podlaKategorie?.[form.category]?.predkontacia ??
+                        kody?.predvolenaPredkontacia ??
+                        "predvolená z nastavení"
+                      }
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                     />
                   </label>
@@ -752,13 +776,35 @@ function NovyDokladPage() {
                       value={form.pohoda_clenenie_dph}
                       onChange={(v) => updateForm("pohoda_clenenie_dph", v)}
                       moznosti={kody?.clenenia ?? []}
-                      placeholder={kody?.predvoleneClenenie ?? "predvolené z nastavení"}
+                      vyber
+                      placeholder={
+                        kody?.podlaKategorie?.[form.category]?.clenenie ??
+                        kody?.predvoleneClenenie ??
+                        "predvolené z nastavení"
+                      }
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
                     />
                   </label>
                 </div>
+                <label className="mt-3 block sm:max-w-sm">
+                  <span className="mb-1 block text-xs text-muted-foreground">
+                    Členenie kontrolného výkazu DPH
+                  </span>
+                  <select
+                    value={form.kv_clenenie}
+                    onChange={(e) => updateForm("kv_clenenie", e.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">automaticky (B3 — bloček)</option>
+                    {KV_PRIJATE.map((k) => (
+                      <option key={k.kod} value={k.kod}>
+                        {k.nazov}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Prázdne = predvolené pre bločky z{" "}
+                  Prázdne = podľa kategórie alebo predvolené pre bločky z{" "}
                   <Link to="/uctovnictvo/predkontacie" className="underline">
                     nastavení predkontácií
                   </Link>{" "}

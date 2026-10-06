@@ -6,6 +6,7 @@ import { BookCheck, Loader2 } from "lucide-react";
 import { navrhyKodovFn, zauctujPrijateFn, zrusZauctovanieFn } from "@/lib/faktero/zauctovanie.functions";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import type { MoznostKodu } from "@/lib/faktero/predkontacie";
+import { KV_PRIJATE, kvAutomaticky } from "@/lib/faktero/kv-clenenie";
 import { KodPohody } from "./KodPohody";
 import { RozuctovaniePanel } from "./RozuctovaniePanel";
 import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
@@ -16,7 +17,10 @@ export type Navrhy = {
   predvolenaPredkontacia: string | null;
   predvoleneClenenie: string | null;
   maCiselnik?: boolean;
+  podlaKategorie?: Record<string, { predkontacia?: string; clenenie?: string }>;
 };
+
+type Hodnoty = { predkontacia: string; clenenie: string; kategoria: string; kv?: string };
 
 /** Spoločné polia zaúčtovania — na detaile aj v hromadnom okne. */
 export function PoliaZauctovania({
@@ -24,20 +28,26 @@ export function PoliaZauctovania({
   hodnoty,
   setHodnoty,
   hromadne,
+  kvAuto,
 }: {
   navrhy: Navrhy | null;
-  hodnoty: { predkontacia: string; clenenie: string; kategoria: string };
-  setHodnoty: (h: { predkontacia: string; clenenie: string; kategoria: string }) => void;
+  hodnoty: Hodnoty;
+  setHodnoty: (h: Hodnoty) => void;
+  /** Ktorá sadzba členenia KV sa dá automaticky — ukáže sa v ponuke. */
+  kvAuto?: string;
   hromadne?: boolean;
 }) {
   const vstup = "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
+  const zKategorie = navrhy?.podlaKategorie?.[hodnoty.kategoria];
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className={`grid gap-3 ${hodnoty.kv !== undefined ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
       <label className="block">
         <span className="text-xs text-muted-foreground">Predkontácia (Pohoda)</span>
         <KodPohody
           value={hodnoty.predkontacia}
-          placeholder={hromadne ? "nemeniť" : (navrhy?.predvolenaPredkontacia ?? "napr. 1Fp")}
+          placeholder={
+            hromadne ? "nemeniť" : (zKategorie?.predkontacia ?? navrhy?.predvolenaPredkontacia ?? "napr. 1Fp")
+          }
           onChange={(v) => setHodnoty({ ...hodnoty, predkontacia: v })}
           moznosti={navrhy?.predkontacie ?? []}
           className={vstup}
@@ -47,9 +57,12 @@ export function PoliaZauctovania({
         <span className="text-xs text-muted-foreground">Členenie DPH (plnenie)</span>
         <KodPohody
           value={hodnoty.clenenie}
-          placeholder={hromadne ? "nemeniť" : (navrhy?.predvoleneClenenie ?? "napr. PD")}
+          placeholder={
+            hromadne ? "nemeniť" : (zKategorie?.clenenie ?? navrhy?.predvoleneClenenie ?? "napr. PD")
+          }
           onChange={(v) => setHodnoty({ ...hodnoty, clenenie: v })}
           moznosti={navrhy?.clenenia ?? []}
+                      vyber
           className={vstup}
         />
       </label>
@@ -68,6 +81,24 @@ export function PoliaZauctovania({
           ))}
         </select>
       </label>
+      {hodnoty.kv !== undefined && (
+        <label className="block">
+          <span className="text-xs text-muted-foreground">Členenie KV DPH</span>
+          <select
+            value={hodnoty.kv}
+            onChange={(e) => setHodnoty({ ...hodnoty, kv: e.target.value })}
+            className={vstup}
+          >
+            <option value="">{hromadne ? "nemeniť" : `automaticky${kvAuto ? ` (${kvAuto})` : ""}`}</option>
+            {hromadne && <option value="auto">automaticky</option>}
+            {KV_PRIJATE.map((k) => (
+              <option key={k.kod} value={k.kod}>
+                {k.nazov}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
     </div>
   );
 }
@@ -84,10 +115,11 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
   const zauctuj = useServerFn(zauctujPrijateFn);
   const zrus = useServerFn(zrusZauctovanieFn);
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
-  const [h, setH] = useState({
+  const [h, setH] = useState<Hodnoty>({
     predkontacia: row.pohoda_predkontacia ?? "",
     clenenie: row.pohoda_clenenie_dph ?? "",
     kategoria: row.category ?? "",
+    kv: row.kv_clenenie ?? "",
   });
   const [busy, setBusy] = useState(false);
 
@@ -99,8 +131,9 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
       predkontacia: row.pohoda_predkontacia ?? "",
       clenenie: row.pohoda_clenenie_dph ?? "",
       kategoria: row.category ?? "",
+      kv: row.kv_clenenie ?? "",
     });
-  }, [row.pohoda_predkontacia, row.pohoda_clenenie_dph, row.category]);
+  }, [row.pohoda_predkontacia, row.pohoda_clenenie_dph, row.category, row.kv_clenenie]);
 
   const odovzdana = Boolean(row.exported_at);
   const zauctovana = Boolean(row.zauctovane_at);
@@ -115,6 +148,7 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
           predkontacia: h.predkontacia,
           clenenie: h.clenenie,
           kategoria: h.kategoria,
+          kv: h.kv ?? "",
           lenUlozit,
         },
       });
@@ -174,7 +208,15 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
           </p>
         ) : (
           <>
-            <PoliaZauctovania navrhy={navrhy} hodnoty={h} setHodnoty={setH} />
+            <PoliaZauctovania
+              navrhy={navrhy}
+              hodnoty={h}
+              setHodnoty={setH}
+              kvAuto={kvAutomaticky({
+                opravny: Number(row.amount_total ?? 0) < 0 || !!row.opravuje_cislo,
+                prenesenie: row.dph_rezim === "samozdanenie" || row.dph_rezim === "nadobudnutie",
+              })}
+            />
             <p className="mt-2 text-xs text-muted-foreground">
               Prázdne pole = predvolené z{" "}
               <Link to="/uctovnictvo/predkontacie" className="underline">

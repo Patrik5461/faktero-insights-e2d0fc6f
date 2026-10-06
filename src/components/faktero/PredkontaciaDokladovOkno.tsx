@@ -26,7 +26,12 @@ export function PredkontaciaDokladovOkno({
   const nacitaj = useServerFn(navrhyKodovFn);
   const uloz = useServerFn(zauctujDokladyFn);
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
-  const [h, setH] = useState({ predkontacia: "", clenenie: "", kategoria: "" });
+  const [h, setH] = useState<{ predkontacia: string; clenenie: string; kategoria: string; kv?: string }>({
+    predkontacia: "",
+    clenenie: "",
+    kategoria: "",
+    kv: "",
+  });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {

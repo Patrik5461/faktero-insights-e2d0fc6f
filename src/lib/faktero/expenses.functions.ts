@@ -30,6 +30,10 @@ export type ExpenseInput = {
   items?: unknown;
   /** Rozpis základu a DPH po sadzbách; bloček ich má často viac naraz. */
   vat_breakdown?: unknown;
+  /** Zaúčtovanie pre Pohodu; prázdne = predvolené z nastavení predkontácií. */
+  pohoda_predkontacia?: string | null;
+  pohoda_clenenie_dph?: string | null;
+  kv_clenenie?: string | null;
 };
 
 const inputSchema = z.object({
@@ -49,6 +53,9 @@ const inputSchema = z.object({
   // Rozhoduje, či doklad uberie z pokladne — karta ani prevod hotovosť neberú.
   payment_method: z.enum(["hotovost", "karta", "prevod"]).optional(),
   category: z.string().nullable().optional(),
+  pohoda_predkontacia: z.string().max(30).nullable().optional(),
+  pohoda_clenenie_dph: z.string().max(30).nullable().optional(),
+  kv_clenenie: z.string().max(5).nullable().optional(),
   note: z.string().nullable().optional(),
   file_path: z.string().nullable().optional(),
   file_mime: z.string().nullable().optional(),
@@ -430,7 +437,7 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const { data: firma } = await supabase
       .from("companies")
       .select(
-        "ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia_rozuctovat",
+        "ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia_rozuctovat, pohoda_blocky_agenda, pohoda_pokladna",
       )
       .eq("id", data.company_id)
       .single();
@@ -446,6 +453,8 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
           predkontaciaDoklady: (firma as any)?.pohoda_predkontacia_doklady,
           clenenieDphDoklady: (firma as any)?.pohoda_clenenie_dph_doklady,
           predkontaciaRozuctovat: (firma as any)?.pohoda_predkontacia_rozuctovat,
+          blockyPodlaPlatby: (firma as any)?.pohoda_blocky_agenda === "podla_platby",
+          pokladna: (firma as any)?.pohoda_pokladna,
           podlaKategorie: await (await import("./predkontacie.server")).kodyPodlaKategorie(supabase, data.company_id),
         },
       }),

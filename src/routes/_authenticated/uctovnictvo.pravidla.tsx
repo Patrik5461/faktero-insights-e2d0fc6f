@@ -429,6 +429,7 @@ function UpravaPravidla({
               value={p.clenenie_dph ?? ""}
               onChange={(v) => zmen({ clenenie_dph: v })}
               moznosti={kody?.clenenia ?? []}
+                      vyber
               placeholder="napr. PD, PN"
               className={vstup}
             />

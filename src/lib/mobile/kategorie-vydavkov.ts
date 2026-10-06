@@ -11,14 +11,29 @@
 export type Kategoria = { kod: string; nazov: string };
 
 export const KATEGORIE_VYDAVKOV: Kategoria[] = [
-  { kod: "palivo", nazov: "Palivo" },
-  { kod: "vozidlo", nazov: "Vozidlo a servis" },
+  /*
+    Prvé sú účtovné položky, ktoré Doklado zakladá každej firme — účtovníčky
+    ich poznajú a pri prechode z Doklado sa nemusia nič preučiť. Staré kódy
+    ostávajú, aby sa nerozbili doklady a pravidlá, ktoré ich už nesú.
+  */
+  { kod: "kancelarske_potreby", nazov: "Kancelárske potreby" },
+  { kod: "palivo", nazov: "Nákup PHM" },
+  { kod: "spotrebny_material", nazov: "Spotrebný materiál" },
+  { kod: "rezijny_material", nazov: "Režijný materiál" },
+  { kod: "dhm", nazov: "Drobný hmotný majetok" },
   { kod: "material", nazov: "Materiál a tovar" },
+  { kod: "tovar", nazov: "Nákup tovaru na predaj" },
+  { kod: "vozidlo", nazov: "Vozidlo a servis" },
+  { kod: "parkovne", nazov: "Parkovné, mýto a diaľničná známka" },
+  { kod: "opravy", nazov: "Opravy a údržba" },
   { kod: "sluzby", nazov: "Služby a subdodávky" },
   { kod: "kancelaria", nazov: "Kancelária a réžia" },
   { kod: "software", nazov: "Softvér a telekomunikácie" },
+  { kod: "postovne", nazov: "Poštovné a kuriér" },
   { kod: "reprezentacia", nazov: "Reprezentácia a strava" },
   { kod: "cestovne", nazov: "Cestovné a ubytovanie" },
+  { kod: "skolenia", nazov: "Školenia a literatúra" },
+  { kod: "odevy", nazov: "Pracovné odevy a OOPP" },
   { kod: "najom", nazov: "Nájom a energie" },
   { kod: "marketing", nazov: "Marketing a reklama" },
   { kod: "poplatky", nazov: "Poplatky a poistenie" },

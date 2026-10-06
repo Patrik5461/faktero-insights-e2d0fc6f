@@ -60,6 +60,8 @@ export type PrijataFaktura = {
   odpocet: boolean;
   opravujeCislo?: string | null;
   riadky: SadzbovyRiadok[];
+  /** Ručne zvolené členenie KV (B1, B2, X = nezahŕňať); prázdne = automaticky. */
+  kv?: string | null;
 };
 
 /** Zjednodušená faktúra — bloček z registračnej pokladnice, doklad za PHM a pod. */
@@ -69,6 +71,13 @@ export type PrijatyDoklad = {
   dodavatelDic?: string | null;
   odpocet: boolean;
   riadky: SadzbovyRiadok[];
+  /**
+   * Ručne zvolené členenie KV: B2 = doklad je plnohodnotná faktúra (ide do
+   * B.2 s číslom a IČ DPH), X = do výkazu nepatrí; inak B.3.
+   */
+  kv?: string | null;
+  cislo?: string | null;
+  datum?: string | null;
 };
 
 export type Vstup = {
@@ -307,6 +316,7 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
 
   for (const p of vstup.prijate) {
     if (p.rezim === "bez_dane") continue;
+    if (p.kv === "X") continue;
 
     if (p.opravujeCislo) {
       for (const r of p.riadky) {
@@ -323,7 +333,8 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       continue;
     }
 
-    const doB1 = p.rezim === "samozdanenie" || p.rezim === "nadobudnutie";
+    const doB1 =
+      p.kv === "B1" ? true : p.kv === "B2" ? false : p.rezim === "samozdanenie" || p.rezim === "nadobudnutie";
     if (!doB1 && !p.odpocet) continue; // bez odpočtu sa faktúra do B.2 neuvádza
     if (p.rezim === "dovoz") continue; // dovoz sa vykazuje len v priznaní
 
@@ -375,7 +386,35 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
 
   // B.3 — zjednodušené faktúry. Do 3 000 € odpočítanej dane sumárne, nad
   // hranicu po dodávateľoch.
-  const sOdpoctom = vstup.doklady.filter((d) => d.odpocet);
+  /*
+    Doklad označený ako B.2 je plnohodnotná faktúra (napr. faktúra nahratá
+    medzi doklady) — ide po riadkoch s číslom a IČ DPH dodávateľa. „X" do
+    výkazu nejde vôbec. Ostatné sú zjednodušené faktúry v B.3.
+  */
+  for (const d of vstup.doklady) {
+    if (d.kv !== "B2" || !d.odpocet) continue;
+    for (const r of d.riadky) {
+      if (r.sadzba <= 0 && r.dan === 0) continue;
+      const dod = d.dodavatelIcDph?.trim() || undefined;
+      if (!dod || !d.cislo) {
+        vykaz.vytky.push({
+          doklad: d.cislo || d.dodavatelNazov || "doklad",
+          text: "Doklad označený pre B.2 potrebuje číslo a IČ DPH dodávateľa.",
+        });
+        break;
+      }
+      vykaz.b2.push({
+        dod,
+        f: d.cislo,
+        den: String(d.datum ?? ""),
+        z: centy(r.zaklad),
+        d: centy(r.dan),
+        s: Math.round(r.sadzba),
+        o: centy(r.dan),
+      });
+    }
+  }
+  const sOdpoctom = vstup.doklady.filter((d) => d.odpocet && d.kv !== "B2" && d.kv !== "X");
   const danSpolu = centy(
     sOdpoctom.reduce((a, d) => a + d.riadky.reduce((b, r) => b + r.dan, 0), 0),
   );

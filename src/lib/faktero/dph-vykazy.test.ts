@@ -180,6 +180,38 @@ describe("kontrolný výkaz", () => {
     expect(velke.b32).toHaveLength(2);
   });
 
+  it("ručné členenie KV: doklad B2 ide po riadkoch, X do výkazu nejde", () => {
+    const kv = kontrolnyVykaz(
+      vstup({
+        doklady: [
+          { odpocet: true, dodavatelIcDph: "SK1111111111", riadky: [{ sadzba: 23, zaklad: 100, dan: 23 }] },
+          {
+            odpocet: true,
+            dodavatelIcDph: "SK2222222222",
+            kv: "B2",
+            cislo: "F2026/7",
+            datum: "2026-03-05",
+            riadky: [{ sadzba: 23, zaklad: 1000, dan: 230 }],
+          },
+          { odpocet: true, kv: "X", riadky: [{ sadzba: 23, zaklad: 50, dan: 11.5 }] },
+        ],
+        prijate: [prijata({ kv: "X" })],
+      }),
+    );
+    expect(kv.b31).toEqual({ z: 100, d: 23, o: 23 });
+    expect(kv.b2).toEqual([
+      { dod: "SK2222222222", f: "F2026/7", den: "2026-03-05", z: 1000, d: 230, s: 23, o: 230 },
+    ]);
+  });
+
+  it("doklad B2 bez IČ DPH dodávateľa je výtka, nie tichý riadok", () => {
+    const kv = kontrolnyVykaz(
+      vstup({ doklady: [{ odpocet: true, kv: "B2", cislo: "1", riadky: [{ sadzba: 23, zaklad: 10, dan: 2.3 }] }] }),
+    );
+    expect(kv.b2).toHaveLength(0);
+    expect(kv.vytky[0].text).toMatch(/B.2/);
+  });
+
   it("nevymožiteľná pohľadávka (§ 25a) a oprava odpočtu (§ 53b) — r. 26, 27, 29, C.1/C.2 s ONP a schéma", () => {
     const v = vstup({
       vystavene: [
