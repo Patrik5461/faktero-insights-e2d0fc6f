@@ -280,8 +280,9 @@ function PurchaseInvoicesPage() {
         },
       });
       if (r.zauctovanych) {
+        const n = r.zauctovanych;
         toast.success(
-          r.zauctovanych === 1 ? "Zaúčtovaná 1 faktúra" : `Zaúčtovaných ${r.zauctovanych} faktúr`,
+          n === 1 ? "Zaúčtovaná 1 faktúra" : n < 5 ? `Zaúčtované ${n} faktúry` : `Zaúčtovaných ${n} faktúr`,
         );
       }
       if (r.preskocene.length) toast.error(`Vynechané: ${r.preskocene.join(" · ")}`);

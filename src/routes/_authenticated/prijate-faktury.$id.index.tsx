@@ -331,7 +331,7 @@ function PurchaseInvoiceDetail() {
                 <Pencil className="h-4 w-4" /> Upraviť
               </Link>
             )}
-            {!navrh && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
+            {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
               <button
                 onClick={() => setStatus("received")}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
