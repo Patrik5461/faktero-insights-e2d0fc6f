@@ -211,13 +211,13 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
     );
     expect(d.invoiceHeader.text).toBe("Fakturujeme vám práce za september");
     expect(d.invoiceHeader.note).toContain("Ďakujeme");
-    expect([].concat(d.invoiceDetail.invoiceItem)[0]).toMatchObject({ note: "Montáž a doprava" });
+    expect(([] as any[]).concat(d.invoiceDetail.invoiceItem)[0]).toMatchObject({ note: "Montáž a doprava" });
   });
 
   it("zľava položky ide ako percento, účet ako skratka z Pohody", () => {
     const [prva, ...zvysok] = polozky as any[];
     const d = posli(faktura, [{ ...prva, discount_percent: 10 }, ...zvysok], { banka: "TB" });
-    expect(Number([].concat(d.invoiceDetail.invoiceItem)[0].discountPercentage)).toBe(10);
+    expect(Number(([] as any[]).concat(d.invoiceDetail.invoiceItem)[0].discountPercentage)).toBe(10);
     expect(d.invoiceHeader.account.ids).toBe("TB");
     expect(posli(faktura).invoiceHeader.account).toBeUndefined();
   });

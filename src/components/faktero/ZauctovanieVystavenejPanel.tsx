@@ -166,7 +166,7 @@ export function ZauctovanieVystavenejPanel({
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
-              onClick={() => void onStiahnut()}
+              onClick={() => void Promise.resolve(onStiahnut()).then(obnov)}
               disabled={busy}
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
             >
@@ -330,7 +330,7 @@ export function ZauctovanieVystavenejPanel({
               Uložiť bez zaúčtovania
             </button>
             <button
-              onClick={() => void onStiahnut()}
+              onClick={() => void Promise.resolve(onStiahnut()).then(obnov)}
               disabled={busy}
               title="Stiahne XML na import do Pohody a zapíše faktúru ako odovzdanú."
               className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"

@@ -404,20 +404,23 @@ export function polozkyFaktur(opts: {
         (invoice.reverse_charge
           ? (nastavenia?.clenenieDphPdp ?? nastavenia?.clenenieDph)
           : nastavenia?.clenenieDph);
-      const poPolozkach = items.some(
-        (it) =>
-          String((it as any).pohoda_predkontacia ?? "").trim() &&
-          String((it as any).pohoda_predkontacia).trim() !== predkontaciaJedna,
+      // Rozúčtovať treba, len keď položky naozaj vedú na rôzne predkontácie —
+      // keď majú všetky ten istý kód, patrí do hlavičky.
+      const kodyPoloziek = new Set(
+        items.map((it) => String((it as any).pohoda_predkontacia ?? "").trim() || predkontaciaJedna || ""),
       );
+      const poPolozkach = kodyPoloziek.size > 1;
       const predkontacia = poPolozkach
         ? nastavenia?.predkontaciaRozuctovat?.trim() ||
           (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")
-        : predkontaciaJedna;
+        : [...kodyPoloziek][0] || predkontaciaJedna;
       const clenenie = clenenieJedno;
       const kvDokl = String((invoice as any).kv_clenenie ?? "").trim();
       const kvHlavicka = kvDokl && kvDokl !== "X" ? kvDokl : "";
       const kodyPolozky = (it: ItemRow) => {
-        const pk = String((it as any).pohoda_predkontacia ?? "").trim() || (poPolozkach ? predkontaciaJedna : "");
+        const pk = poPolozkach
+          ? String((it as any).pohoda_predkontacia ?? "").trim() || predkontaciaJedna
+          : "";
         const cl = String((it as any).pohoda_clenenie_dph ?? "").trim();
         const kvp = String((it as any).kv_clenenie ?? "").trim();
         return `${pk ? `\n          <inv:accounting><typ:ids>${esc(pk)}</typ:ids></inv:accounting>` : ""}${
