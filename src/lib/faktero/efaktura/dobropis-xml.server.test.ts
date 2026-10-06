@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mapToEN16931 } from "./en16931.server";
 import { generatePeppolBisXml } from "./xml.server";
+import { parseEfakturaEnvelope } from "./inbound.server";
 
 const firma: any = {
   name: "Faktero Demo s.r.o.",
@@ -66,5 +67,32 @@ describe("dobropis v Peppol BIS", () => {
     const r = generatePeppolBisXml(mapToEN16931({ company: firma, invoice: f, items: p }));
     expect(r.xml).toContain("<Invoice ");
     expect(r.xml).toContain("<cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>");
+  });
+});
+
+
+describe("prijatý dobropis z Peppolu", () => {
+  it("rozozná CreditNote a číslo pôvodnej faktúry", () => {
+    const dto = mapToEN16931({
+      company: firma,
+      invoice: dobropis,
+      items: polozky,
+      povodnaFaktura: { cislo: "20260004", vystavena: "2026-09-01" },
+    });
+    const p = parseEfakturaEnvelope(generatePeppolBisXml(dto).xml);
+    expect(p).toMatchObject({
+      documentKind: "credit_note",
+      typeCode: "381",
+      precedingInvoiceNumber: "20260004",
+      documentNumber: "D20260001",
+      total: 12.3,
+    });
+  });
+
+  it("samofaktúra 389 sa nezamení s prijatou faktúrou", () => {
+    const p = parseEfakturaEnvelope(
+      '<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"><cbc:ID>SF1</cbc:ID><cbc:IssueDate>2026-10-01</cbc:IssueDate><cbc:InvoiceTypeCode>389</cbc:InvoiceTypeCode></Invoice>',
+    );
+    expect(p.documentKind).toBe("self_billing");
   });
 });

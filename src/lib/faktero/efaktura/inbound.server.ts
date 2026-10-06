@@ -33,6 +33,15 @@ export type ParsedEfaktura = {
   vatTotal?: number;
   senderName?: string;
   senderVatId?: string;
+  /**
+   * `invoice` faktúra, `credit_note` dobropis (CreditNote / 381 — sumy v UBL
+   * sú kladné, znamienko nesie typ), `self_billing` samofaktúra, ktorú za nás
+   * vyhotovil náš odberateľ (389) — tá je naša vydaná, nie prijatá.
+   */
+  documentKind?: "invoice" | "credit_note" | "self_billing" | "self_billing_credit_note";
+  typeCode?: string;
+  /** BT-25 — číslo pôvodnej faktúry, ktorú dobropis opravuje. */
+  precedingInvoiceNumber?: string;
   errors: { code: string; message: string }[];
 };
 
@@ -52,6 +61,21 @@ export function parseEfakturaEnvelope(xml: string): ParsedEfaktura {
     return Number.isFinite(n) ? n : undefined;
   };
 
+  const dobropisKoren = /<(?:\w+:)?CreditNote[\s>]/.test(xml);
+  const typeCode = pick(/<cbc:(?:Invoice|CreditNote)TypeCode[^>]*>([^<]+)<\/cbc:(?:Invoice|CreditNote)TypeCode>/);
+  const samofaktura = typeCode === "389" || typeCode === "261";
+  const dobropis = dobropisKoren || typeCode === "381" || typeCode === "261";
+  const documentKind = samofaktura
+    ? dobropis
+      ? ("self_billing_credit_note" as const)
+      : ("self_billing" as const)
+    : dobropis
+      ? ("credit_note" as const)
+      : ("invoice" as const);
+  const precedingInvoiceNumber = pick(
+    /<cac:BillingReference>[\s\S]*?<cac:InvoiceDocumentReference>[\s\S]*?<cbc:ID>([^<]+)<\/cbc:ID>/,
+  );
+  // Prvé cbc:ID mimo BillingReference je číslo dokladu (hlavička je pred referenciami).
   const documentNumber = pick(/<cbc:ID>([^<]+)<\/cbc:ID>/);
   const issueDate = pick(/<cbc:IssueDate>([^<]+)<\/cbc:IssueDate>/);
   const dueDate = pick(/<cbc:DueDate>([^<]+)<\/cbc:DueDate>/);
@@ -78,6 +102,9 @@ export function parseEfakturaEnvelope(xml: string): ParsedEfaktura {
     vatTotal,
     senderName,
     senderVatId,
+    documentKind,
+    typeCode,
+    precedingInvoiceNumber,
     errors,
   };
 }

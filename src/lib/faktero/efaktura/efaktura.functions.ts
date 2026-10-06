@@ -543,8 +543,32 @@ export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
     }
 
     const dnes = new Date().toISOString().slice(0, 10);
-    const spolu = Number(doklad.total ?? 0);
-    const dph = Number(doklad.vat_total ?? 0);
+    let rozobrate = ((doklad as any).parsed_data ?? {}) as {
+      documentKind?: string;
+      precedingInvoiceNumber?: string;
+    };
+    // Doklady stiahnuté pred rozlišovaním dobropisov sa prečítajú znova z XML.
+    if (!rozobrate.documentKind && (doklad as any).xml_payload) {
+      const { parseEfakturaEnvelope } = await import("./inbound.server");
+      rozobrate = parseEfakturaEnvelope(String((doklad as any).xml_payload));
+    }
+    /*
+      Samofaktúru za nás vyhotovil náš odberateľ — je to naša vydaná faktúra,
+      medzi prijaté nepatrí. Zaeviduje sa ručne vo Faktúrach.
+    */
+    if (rozobrate.documentKind === "self_billing" || rozobrate.documentKind === "self_billing_credit_note") {
+      throw new Error(
+        "Toto je samofaktúra, ktorú za vás vyhotovil váš odberateľ — je to vaša vydaná faktúra, nie prijatá. Zaevidujte ju vo Faktúrach.",
+      );
+    }
+    /*
+      Dobropis má v UBL kladné sumy (mínus nesie typ 381). Medzi prijatými je
+      záporný a nesie číslo pôvodnej faktúry — inak by výkaz DPH dobropis
+      započítal ako ďalší nákup a odpočet by narástol namiesto poklesu.
+    */
+    const znamienko = rozobrate.documentKind === "credit_note" ? -1 : 1;
+    const spolu = znamienko * Math.abs(Number(doklad.total ?? 0));
+    const dph = znamienko * Math.abs(Number(doklad.vat_total ?? 0));
 
     const { data: faktura, error: chybaZapisu } = await supabase
       .from("purchase_invoices")
@@ -563,7 +587,11 @@ export const zaevidujPrijatuEfakturuFn = createServerFn({ method: "POST" })
         currency: doklad.currency ?? "EUR",
         status: "received",
         source: "efaktura",
-        note: "Prijaté cez eFaktúru (Peppol).",
+        opravuje_cislo: znamienko < 0 ? (rozobrate.precedingInvoiceNumber ?? null) : null,
+        note:
+          znamienko < 0
+            ? `Dobropis prijatý cez eFaktúru (Peppol)${rozobrate.precedingInvoiceNumber ? ` k faktúre ${rozobrate.precedingInvoiceNumber}` : ""}.`
+            : "Prijaté cez eFaktúru (Peppol).",
       } as TablesInsert<"purchase_invoices">)
       .select("id")
       .single();
