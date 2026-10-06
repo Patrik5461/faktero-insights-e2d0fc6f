@@ -254,6 +254,11 @@ export const funkcie: HubContent = {
         },
         {
           type: "callout",
+          title: "Viac firiem, jedna adresa",
+          body: "Rozdeľovač pošle každý doklad tej z vašich firiem, na ktorej IČO alebo IČ DPH je vystavený. Doklad pre neznámeho odberateľa sa nezaloží naslepo — počká na ručné priradenie.",
+        },
+        {
+          type: "callout",
           title: "Nič sa neschváli samo",
           body: "Doklad čaká medzi prijatými faktúrami ako rozpracovaný, kým si ho neprezriete. Stroj pripraví podklad, rozhodnutie ostáva na človeku — a pri každom maile je v denníku vidieť, ako dopadol.",
         },

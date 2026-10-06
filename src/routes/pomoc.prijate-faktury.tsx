@@ -66,7 +66,9 @@ const sections: HelpSection[] = [
           <li>
             <strong>E-mailom</strong> — faktúru od dodávateľa prepošlete na svoju adresu a zaeviduje
             sa sama. Najrýchlejšia cesta, popísaná v{" "}
-            <Link to="/pomoc/doklady">manuáli k dokladom</Link>.
+            <Link to="/pomoc/doklady">manuáli k dokladom</Link>. Kto vedie viac firiem, môže
+            použiť <strong>rozdeľovač</strong> — jednu adresu pre všetky firmy; doklad pôjde tej, na
+            ktorej IČO alebo IČ DPH je vystavený, a čo nesedí na žiadnu, počká na ručné priradenie.
           </li>
           <li>
             <strong>Zo Skenera</strong> — PDF alebo fotku nahráte v{" "}
@@ -83,6 +85,11 @@ const sections: HelpSection[] = [
         <p>
           V zozname je pri každej faktúre stĺpec <strong>Zapísal</strong>, takže vidíte, odkiaľ
           prišla: „E-mailom“, „Z dokladov“, alebo meno kolegu, ktorý ju vyplnil.
+        </p>
+        <p>
+          Cez <strong>Stĺpce</strong> si zvolíte, čo v zozname vidíte (napríklad IČO, DUZP, základ,
+          DPH či predkontáciu), a cez <strong>Uložiť filter</strong> si odložíte často používaný
+          výber. Oboje platí buď pre jednu firmu, alebo pre všetky vaše firmy naraz.
         </p>
       </>
     ),
