@@ -200,6 +200,15 @@ const sections: HelpSection[] = [
           či prišiel z eKasy, z fotky alebo bol nahratý ručne.
         </p>
         <p>
+          Nad zoznamom je <strong>Hľadať</strong> (dodávateľ, IČO, číslo dokladu) a filter podľa{" "}
+          <strong>spôsobu úhrady</strong> — hotovosť, karta, prevod. Tlačidlom{" "}
+          <strong>Stĺpce</strong> si zvolíte, čo v tabuľke vidíte (napríklad kategóriu, základ, DPH
+          či spôsob úhrady), a tlačidlom <strong>Uložiť filter</strong> si odložíte často používaný
+          výber — záložku, mesiac, hľadaný text a úhradu. Uložené filtre potom vyberiete zo zoznamu{" "}
+          <em>Uložené filtre</em>. Stĺpce aj filtre platia buď pre jednu firmu, alebo po zaškrtnutí{" "}
+          <em>Pre všetky moje firmy</em> pre všetky naraz.
+        </p>
+        <p>
           Do balíka pre účtovníčku idú doklady spolu s faktúrami cez{" "}
           <Link to="/exporty">Účtovné exporty</Link>; ak účtujete v Pohode, prenesú sa aj tam —
           pozri <Link to="/pomoc/pohoda">Prepojenie s Pohodou</Link>.
@@ -237,7 +246,7 @@ const sections: HelpSection[] = [
         <ul>
           <li>
             Adresa je pre <strong>každú firmu iná</strong>. Ak máte firiem viac, prepnite sa hore v
-            lište a vezmite si tú správnu.
+            lište a vezmite si tú správnu — alebo použite <strong>rozdeľovač</strong> (nižšie).
           </li>
           <li>
             Berie sa <strong>PDF alebo fotka</strong> v prílohe. Mail bez prílohy sa v denníku
@@ -263,7 +272,33 @@ const sections: HelpSection[] = [
         <p>
           Na tej istej stránke je aj <strong>denník posledných mailov</strong> — pri každom vidno,
           ako dopadol. Keď doklad nedorazil, začnite tam. A keby sa adresa dostala tam, kam nemá, dá
-          sa vypnúť alebo vymeniť za novú; stará vtedy prestane prijímať.
+          sa vypnúť alebo vymeniť za novú; stará vtedy prestane prijímať. Pri každom maile je aj{" "}
+          <strong>zobraziť e-mail</strong> — text pôvodného mailu, napríklad keď dodávateľ do neho
+          napísal niečo k platbe.
+        </p>
+        <p>
+          <strong>Povolení odosielatelia.</strong> Na tej istej stránke môžete zapísať adresy alebo
+          domény (napr. <code>@dodavatel.sk</code>), od ktorých sa doklady prijímajú — jednu na
+          riadok. Mail od niekoho iného sa nezaloží a v denníku bude ako „Odmietnuté — nepovolený
+          odosielateľ“. Prázdny zoznam znamená, že doklad prijme od kohokoľvek, kto adresu pozná.
+        </p>
+        <p>
+          <strong>Kontrola odberateľa.</strong> Keď je na doklade iný odberateľ (iné IČO alebo IČ
+          DPH) než vaša firma, doklad sa založí, ale s upozornením v poznámke aj v denníku mailov —
+          aby sa vám medzi náklady nedostala cudzia faktúra.
+        </p>
+        <p>
+          <strong>Rozdeľovač — jedna adresa pre všetky firmy.</strong> Kto vedie viac firiem (alebo
+          účtovníčka s klientmi), nemusí si pamätať adresu každej. V karte <em>Rozdeľovač</em> na
+          tej istej stránke je vaša osobná adresa v tvare{" "}
+          <code>rozdelovac-…@doklady.faktero.sk</code>. Faktero z každej prílohy prečíta IČO alebo
+          IČ DPH odberateľa a doklad založí v tej z vašich firiem, na ktorú je vystavený — jeden mail
+          tak môže rozdeliť faktúry aj medzi viac firiem. Doklad, ktorý nesedí na žiadnu vašu firmu
+          (alebo sedí na dve s rovnakým IČO), sa naslepo nezaloží: počká v zozname{" "}
+          <em>Nepriradené doklady</em>, kde vyberiete firmu a kliknete na <strong>Priradiť</strong>,
+          prípadne <strong>Zahodiť</strong>. Rozdeľovač sa dá vypnúť a adresa vymeniť za novú.
+          Potvrdenie preposielania z Gmailu treba nastaviť na adresu konkrétnej firmy, nie na
+          rozdeľovač.
         </p>
       </>
     ),
@@ -376,6 +411,12 @@ const sections: HelpSection[] = [
           alebo viac schvaľovateľov. Schválenie vyššou úrovňou platí aj za nižšie. Pravidlá cesty
           (dodávateľ podľa IČO, suma od, predkontácia, druh dokladu) určia, ktorá cesta sa použije;
           inak predvolená. Bez ciest stačí jedno schválenie majiteľom, správcom alebo účtovníkom.
+        </p>
+        <p>
+          Do úrovne cesty sa dá namiesto konkrétneho človeka vybrať <strong>manažér zákazky
+          dokladu</strong> (projektový manažér). Doklad zaradený na zákazku potom schvaľuje jej
+          manažér — ten sa nastavuje na detaile <Link to="/zakazky">zákazky</Link>. Keď doklad na
+          zákazke nie je alebo zákazka manažéra nemá, táto úroveň sa preskočí.
         </p>
         <p>
           Doklady čakajúce na vás sú v <Link to="/schvalovanie">Doklady → Na schválenie</Link> aj

@@ -55,6 +55,12 @@ const sections: HelpSection[] = [
             <strong>plánované výnosy a náklady</strong> — bez nich vidíte len skutočnosť, s nimi aj
             to, ako ďaleko ste od plánu.
           </li>
+          <li>
+            <strong>manažéra zákazky</strong> (projektového manažéra) — vyberá sa na detaile
+            zákazky z ľudí vo firme. Keď v{" "}
+            <Link to="/nastavenia/schvalovanie">schvaľovaní dokladov</Link> dáte do cesty „manažér
+            zákazky dokladu“, doklady na tejto zákazke bude schvaľovať on.
+          </li>
         </ul>
       </>
     ),

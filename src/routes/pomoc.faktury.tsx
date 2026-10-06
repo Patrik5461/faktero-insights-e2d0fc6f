@@ -65,7 +65,10 @@ const sections: HelpSection[] = [
             odošlete e-mailom alebo vygenerujete PDF.
           </li>
         </ol>
-        <p>Číslovanie sa generuje automaticky podľa nastavenej rady vo firme.</p>
+        <p>
+          Číslovanie sa generuje automaticky podľa nastavenej rady vo firme. Keď máte radov viac,
+          pri výbere radu sa hneď ukáže <strong>číslo, ktoré faktúra dostane</strong>.
+        </p>
       </>
     ),
   },
@@ -242,6 +245,38 @@ const sections: HelpSection[] = [
           jej <strong>číslo alebo variabilný symbol</strong> a kliknite na Priradiť (prázdny dobropis
           si rovno vezme jej položky so mínusom), alebo ju vyberte zo zoznamu. Keď väzbu nevyplníte,
           vznikne <strong>samostatný dobropis</strong> — napríklad zľava za celé obdobie.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "zauctovanie",
+    title: "Zaúčtovanie vystavenej faktúry pre Pohodu",
+    body: (
+      <>
+        <p>
+          Na detaile vystavenej faktúry je časť <strong>Zaúčtovanie</strong>: predkontácia (napr.{" "}
+          <code>3Fv</code>), členenie DPH, členenie kontrolného výkazu, stredisko, činnosť a
+          interná poznámka pre účtovníčku. Kódy sa vyberajú z{" "}
+          <Link to="/uctovnictvo/predkontacie">číselníka predkontácií</Link>; prázdne pole znamená
+          predvolený kód pre vydané faktúry, zálohy či dobropisy z toho istého číselníka.
+        </p>
+        <p>
+          Keď faktúra obsahuje rôzne plnenia (tovar aj služby), dá sa predkontácia a členenie zadať
+          aj <strong>po položkách</strong>. Do Pohody potom faktúra ide s hlavičkou „Rozúčtovať“ a
+          každá položka nesie svoje kódy.
+        </p>
+        <p>
+          Viac faktúr naraz zaúčtujete v <Link to="/faktury">zozname faktúr</Link>: označte ich a
+          kliknite na <strong>Zaúčtovať</strong>. Zaúčtovaná faktúra má v zozname značku{" "}
+          <em>Zaúčtovaná</em>. Na detaile sa dá rovno <strong>stiahnuť XML pre Pohodu</strong>, alebo
+          ju odovzdanú <strong>vrátiť z Pohody</strong> na opravu — v Pohode ju predtým zmažte.
+        </p>
+        <p>
+          Do Pohody ide aj text nad položkami faktúry a popis položiek, zľavy, spôsob úhrady a
+          bankový účet — ten ako skratka účtu v Pohode, ktorú zadáte v{" "}
+          <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link> (pole{" "}
+          <em>Bankový účet v Pohode</em>, napr. <code>TB</code>).
         </p>
       </>
     ),

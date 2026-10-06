@@ -12,7 +12,7 @@ export type CapabilityModule = {
   routes?: string[];
 };
 
-export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v2 (27. 9. 2026)";
+export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v3 (6. 10. 2026)";
 
 /** Features that are explicitly NOT supported yet. AI must say "Zatiaľ nie je dostupné". */
 export const NOT_YET_SUPPORTED: string[] = [
@@ -44,6 +44,9 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Generovanie PDF",
       "Odosielanie faktúr e-mailom",
       "QR platby na faktúrach (PAY by square)",
+      "Dobropis z detailu faktúry (Vystaviť dobropis) alebo zo zoznamu Dobropisy — priradenie k faktúre podľa čísla či variabilného symbolu, alebo samostatný dobropis",
+      "Pri výbere číselného radu sa hneď ukáže číslo, ktoré faktúra dostane",
+      "Zaúčtovanie vystavených faktúr pre Pohodu: predkontácia, členenie DPH a kontrolného výkazu, stredisko, činnosť, interná poznámka, kódy aj po položkách; hromadne v zozname (označiť → Zaúčtovať)",
     ],
     routes: ["/faktury", "/ponuky", "/opakovane"],
   },
@@ -173,8 +176,23 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Prijaté faktúry s DPH a splatnosťou",
       "Párovanie dokladov s platbami z banky",
       "Prílohy k dokladom (PDF, foto)",
+      "Nespracované doklady čakajú na kontrolu, do Pohody idú len spracované",
+      "Zaúčtovanie ako v Doklado: predkontácia, členenie DPH, členenie kontrolného výkazu (B1, B2, B3, C2, nezahŕňať), rozúčtovanie na viac predkontácií, účtovanie pomerom (napr. auto 50 % DPH)",
+      "Stiahnutie XML pre Pohodu priamo pri doklade, Vrátiť z Pohody na opravu, presun medzi doklady a prijaté faktúry",
+      "Viacúrovňové schvaľovanie dokladov (cesty podľa dodávateľa, sumy, predkontácie; schvaľovateľom môže byť manažér zákazky); do Pohody a do príkazu na úhradu idú len schválené",
+      "Kôš dokladov (obnova do 90 dní), komentáre s označením kolegu, preddefinované poznámky",
+      "Rozdeľovač — jedna e-mailová adresa pre všetky firmy používateľa, doklad pôjde firme podľa IČO/IČ DPH odberateľa, nesediace čakajú na ručné priradenie",
+      "Povolení odosielatelia pre e-mailovú adresu, upozornenie na doklad vystavený na iného odberateľa, zobrazenie pôvodného e-mailu",
+      "Výber stĺpcov a uložené filtre v zoznamoch Doklady a Prijaté faktúry (pre jednu alebo všetky firmy)",
     ],
-    routes: ["/doklady", "/doklady/novy", "/doklady/mailom", "/prijate-faktury"],
+    routes: [
+      "/doklady",
+      "/doklady/novy",
+      "/doklady/mailom",
+      "/prijate-faktury",
+      "/schvalovanie",
+      "/nastavenia/schvalovanie",
+    ],
   },
   {
     key: "bank",
@@ -205,6 +223,7 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Jazdy zvedené na zákazku",
       "Výnosy, náklady a marža",
       "Zálohová faktúra sa do výnosu nepočíta",
+      "Manažér zákazky (projektový manažér) — môže byť schvaľovateľom dokladov na svojej zákazke",
     ],
     routes: ["/zakazky"],
   },
@@ -241,8 +260,14 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Export do Pohody (XML) a konektor",
       "Bankový výpis do Pohody",
       "Mesačné podklady pre účtovníčku",
+      "Číselník predkontácií a členení DPH načítaný z Pohody (konektorom, XML súborom alebo tabuľkou), predvolené kódy podľa druhu dokladu a kategórie nákladu",
+      "Strediská, činnosti a číselné rady z Pohody; predvolený rad a stredisko",
+      "Bločky do Pohody ako prijaté faktúry, alebo podľa platby: hotovosť ako pokladničný doklad, karta ako interný doklad",
+      "Konektor unesie viac firiem naraz a na prelome rokov posiela doklady minulého roka do databázy minulého roka",
+      "Doklad z uzamknutého obdobia dostane v Pohode dátum zaúčtovania po uzávierke",
     ],
     routes: [
+      "/uctovnictvo/predkontacie",
       "/uctovnictvo/dph",
       "/uctovnictvo/vykazy",
       "/uctovnictvo/uzavierka",

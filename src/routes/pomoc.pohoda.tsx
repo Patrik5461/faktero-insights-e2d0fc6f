@@ -211,9 +211,10 @@ const sections: HelpSection[] = [
             <code>C:\Faktero</code>, teda cesta bez medzier a diakritiky.
           </li>
           <li>
-            V súbore <code>faktero-pohoda.cmd</code> vyplní štyri riadky: cestu k Pohode,
-            prihlasovacie meno a heslo do nej a názov databázy účtovnej jednotky (nájde ho v Pohode
-            v <em>Súbor → Účtovné jednotky</em>, stĺpec Databáza).
+            V súbore <code>faktero-pohoda.cmd</code> vyplní tri riadky: cestu k Pohode a
+            prihlasovacie meno a heslo do nej. V súbore <code>firmy.txt</code> skontroluje názov
+            databázy účtovnej jednotky (nájde ho v Pohode v <em>Súbor → Účtovné jednotky</em>,
+            stĺpec Databáza).
           </li>
           <li>
             Dvakrát klikne na ten istý súbor a pozrie sa, čo vypíše. Prvý beh najlepšie vtedy, keď v
@@ -233,6 +234,20 @@ const sections: HelpSection[] = [
           e-mail — doklady sa medzitým nestratia, čakajú a odídu, hneď ako sa spojenie obnoví.
         </p>
         <p>
+          <strong>Viac firiem v jednom priečinku.</strong> Účtovníčka s viacerými klientmi má jeden
+          priečinok a jednu naplánovanú úlohu. Každá firma je jeden riadok v{" "}
+          <code>firmy.txt</code> v tvare <code>KĽÚČ;DATABÁZA;NÁZOV</code> — ďalšieho klienta pridá
+          tak, že z jeho balíčka skopíruje posledný riadok do svojho <code>firmy.txt</code>.
+        </p>
+        <p>
+          <strong>Prelom rokov.</strong> Na začiatku roka sa ešte účtuje aj do databázy minulého
+          roka. Do riadku firmy stačí pridať štvrté pole — názov databázy minulého roka:{" "}
+          <code>KĽÚČ;DATABÁZA;NÁZOV;DATABÁZA_MINULÝ_ROK</code>. Doklady s dátumom z minulého roka
+          potom pôjdu do nej, tohtoročné do bežnej databázy. Po uzavretí minulého roka štvrté pole
+          zmažte. Balíčky stiahnuté pred 6. 10. 2026 to ešte nevedia — stiahnite si balíček znova
+          (stačí vymeniť <code>faktero-pohoda.cmd</code>, <code>firmy.txt</code> ostáva).
+        </p>
+        <p>
           Kľúč je vložený priamo v súbore a dá sa kedykoľvek zneplatniť v{" "}
           <Link to="/api-kluce">Nastavenia → API kľúče</Link>. Prepojenie zrušíte zmazaním
           naplánovanej úlohy alebo celého priečinka.
@@ -248,7 +263,9 @@ const sections: HelpSection[] = [
         <p>Vždy:</p>
         <ul>
           <li>
-            <strong>vydané faktúry</strong>, zálohové faktúry a dobropisy
+            <strong>vydané faktúry</strong>, zálohové faktúry a dobropisy — s textom faktúry,
+            položkami, zľavami a s predkontáciou, členením, strediskom a činnosťou, ak ste ich{" "}
+            <Link to="/pomoc/faktury">zaúčtovali</Link>
           </li>
           <li>
             <strong>prijaté doklady</strong> — bločky a pokladničné doklady, s rozpisom DPH po sadzbách
@@ -520,6 +537,14 @@ const sections: HelpSection[] = [
           <strong>Opravil som už odovzdanú faktúru.</strong> Oprava sa do Pohody neprenesie — doklad
           tam ostane v pôvodnej podobe. Ak treba, zrušte faktúru (vtedy pošleme storno) a vystavte
           novú, alebo rozdiel doriešte dobropisom.
+        </p>
+        <p>
+          <strong>Pohoda XML nenačíta alebo hlási chybu.</strong> Najčastejšie nesedí{" "}
+          <strong>IČO</strong> — Pohoda prijme súbor len do účtovnej jednotky s rovnakým IČO, aké má
+          firma vo Fakteri. Ďalej skontrolujte, či skratky v predkontáciách, číselných radoch,
+          pokladni a bankovom účte (Účtovníctvo → Predkontácie a Prepojenie s Pohodou) naozaj v
+          Pohode existujú; neznámu skratku Pohoda odmietne. Výsledok importu ukáže Pohoda v okne
+          XML importu, pri konektore je aj v <code>protokol.txt</code>.
         </p>
         <p>
           <strong>Funguje to s mojou radou Pohody?</strong> Áno, aj so základnou. Nepoužívame
