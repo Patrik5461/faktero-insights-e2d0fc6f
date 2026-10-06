@@ -7,6 +7,7 @@ import { PrijemMailom } from "@/components/faktero/PrijemMailom";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
 import { useRadenie } from "@/hooks/useRadenie";
+import { stiahniExcel, tabulka } from "@/lib/faktero/excel-zoznamu";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import {
@@ -570,7 +571,61 @@ function PurchaseInvoicesPage() {
             placeholder="Dodávateľ…"
             className="h-9 w-56 rounded-md border border-input bg-background px-3 text-sm"
           />
-          <div className="ml-auto">
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const r = rad.zoradene as any[];
+                void stiahniExcel(`prijate-faktury-${new Date().toISOString().slice(0, 10)}.xlsx`, [
+                  {
+                    nazov: "Prijaté faktúry",
+                    data: tabulka(r, [
+                      { nazov: "Číslo", hodnota: (x: any) => x.invoice_number },
+                      { nazov: "Dodávateľ", hodnota: (x: any) => x.supplier_name },
+                      { nazov: "IČO", hodnota: (x: any) => x.supplier_ico },
+                      { nazov: "IČ DPH", hodnota: (x: any) => x.supplier_ic_dph },
+                      { nazov: "VS", hodnota: (x: any) => x.variable_symbol },
+                      { nazov: "Vystavená", hodnota: (x: any) => x.issue_date },
+                      { nazov: "DUZP", hodnota: (x: any) => x.delivery_date },
+                      { nazov: "Splatnosť", hodnota: (x: any) => x.due_date },
+                      { nazov: "Základ", hodnota: (x: any) => Number(x.amount_without_vat ?? 0) },
+                      { nazov: "DPH", hodnota: (x: any) => Number(x.vat_amount ?? 0) },
+                      { nazov: "Spolu", hodnota: (x: any) => Number(x.amount_total ?? 0) },
+                      { nazov: "Mena", hodnota: (x: any) => x.currency },
+                      { nazov: "Stav", hodnota: (x: any) => STATUS_LABEL[x.status] ?? x.status },
+                      { nazov: "Predkontácia", hodnota: (x: any) => x.pohoda_predkontacia },
+                      { nazov: "Členenie DPH", hodnota: (x: any) => x.pohoda_clenenie_dph },
+                      { nazov: "Odovzdaná", hodnota: (x: any) => (x.exported_at ? "áno" : "") },
+                    ]),
+                  },
+                  {
+                    nazov: "Položky",
+                    data: tabulka(
+                      r.flatMap((x: any) =>
+                        (Array.isArray(x.items) ? x.items : []).map((p: any) => ({
+                          doklad: x.invoice_number,
+                          dodavatel: x.supplier_name,
+                          p,
+                        })),
+                      ),
+                      [
+                      { nazov: "Doklad", hodnota: (x: any) => x.doklad },
+                      { nazov: "Dodávateľ", hodnota: (x: any) => x.dodavatel },
+                      { nazov: "Položka", hodnota: (x: any) => x.p?.name },
+                      { nazov: "Množstvo", hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
+                      { nazov: "MJ", hodnota: (x: any) => x.p?.unit },
+                      { nazov: "Jedn. cena", hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)) },
+                      { nazov: "Sadzba DPH", hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)) },
+                      { nazov: "Spolu", hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)) },
+                    ],
+                    ),
+                  },
+                ]);
+              }}
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
+            >
+              <Download className="h-4 w-4" /> Excel
+            </button>
             <NastaveniaZoznamu
               nastavenia={zobrazenie}
               stlpce={STLPCE_PRIJATYCH}

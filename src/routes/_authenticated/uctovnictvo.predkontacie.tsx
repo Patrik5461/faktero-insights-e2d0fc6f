@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { KopirovatNastaveniaOkno } from "@/components/faktero/KopirovatNastaveniaOkno";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -67,6 +68,8 @@ function Stranka() {
   const nacitaj = useServerFn(predkontacieFn);
   const [zaznamy, setZaznamy] = useState<Zaznam[] | null>(null);
   const [firma, setFirma] = useState<Record<string, any>>({});
+  const [kopirovat, setKopirovat] = useState(false);
+  const cid = companyId;
 
   const obnov = useCallback(async () => {
     if (!companyId) return;
@@ -99,7 +102,17 @@ function Stranka() {
       <PageHeader
         title="Predkontácie"
         description="Číselník predkontácií a členení DPH z Pohody a čo sa predvolene použije pri faktúrach, prijatých faktúrach, bločkoch, pokladni a banke."
+        action={
+          <button
+            type="button"
+            onClick={() => setKopirovat(true)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
+          >
+            Kopírovať do iných firiem
+          </button>
+        }
       />
+      {kopirovat && cid ? <KopirovatNastaveniaOkno companyId={cid} onClose={() => setKopirovat(false)} /> : null}
       <PageBody>
         <div className="space-y-4">
           <Predvolene companyId={companyId} firma={firma} zaznamy={zaznamy} onUlozene={obnov} />

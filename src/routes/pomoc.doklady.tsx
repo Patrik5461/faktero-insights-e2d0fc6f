@@ -445,6 +445,18 @@ const sections: HelpSection[] = [
           ich len vyberať.
         </p>
         <p>
+          <strong>Prílohy a presun.</strong> K dokladu sa dá priložiť ďalší súbor (dodací list,
+          druhá strana). Keď sa druhá strana či dodací list nahrali ako samostatný doklad,
+          tlačidlom <strong>Presunúť ako prílohu</strong> ho pripojíte k správnemu dokladu,
+          prijatej či vystavenej faktúre — pôvodný záznam ide do koša.
+        </p>
+        <p>
+          <strong>Pravidlo účtovania</strong> doplní kódy samo; doklad, ktorý ich má z pravidla,
+          má pri zaúčtovaní hviezdičku. Keď má dodávateľ pravidiel viac, vyberiete iné cez{" "}
+          <em>Použiť pravidlo</em>. Zoznam sa dá zoradiť kliknutím na hlavičku stĺpca a stiahnuť
+          do Excelu.
+        </p>
+        <p>
           Odovzdaný doklad je <strong>zamknutý</strong> — jeho sumy, dátumy ani zaúčtovanie sa nedajú
           zmeniť, kým ho nevrátite z Pohody.
         </p>

@@ -14,7 +14,13 @@ const nast = {
   predkontaciaDoklady: "1Pv",
   clenenieDph: "UD",
   pomeryPredkontacii: {
-    AUTO: { typ: "dph5050", zaklad: 100, zdanitelna: "AUTO1", lenZaklad: "AUTO2", nezdanitelna: "AUTO3" },
+    AUTO: {
+      typ: "dph5050",
+      zaklad: 100,
+      zdanitelna: "AUTO1",
+      lenZaklad: "AUTO2",
+      nezdanitelna: "AUTO3",
+    },
   },
   podlaKategorie: { fuel: { predkontacia: "PHM" } },
   blockyPodlaPlatby: true,
@@ -39,13 +45,29 @@ describe("doklady na zaúčtovanie", () => {
     expect(d.forma).toBe("pokladna");
     expect(d.datumZauctovania).toBe("2026-09-01");
     expect(d.riadky).toEqual([
-      { sadzba: 23, zaklad: 100, dph: 23, predkontacia: "PHM", clenenie: "PD", kv: null, odpocet: true, text: null },
+      {
+        sadzba: 23,
+        zaklad: 100,
+        dph: 23,
+        predkontacia: "PHM",
+        clenenie: "PD",
+        kv: null,
+        odpocet: true,
+        text: null,
+      },
     ]);
   });
 
   it("prijatá: pomer 50 % DPH rozdelí riadky s odpočtom a bez neho", () => {
     const d = prijataNaUctovanie(
-      { id: "p1", invoice_number: "F1", pohoda_predkontacia: "AUTO", amount_without_vat: 100, vat_amount: 23, amount_total: 123 },
+      {
+        id: "p1",
+        invoice_number: "F1",
+        pohoda_predkontacia: "AUTO",
+        amount_without_vat: 100,
+        vat_amount: 23,
+        amount_total: 123,
+      },
       nast,
     );
     expect(d.rozuctovany).toBe(true);
@@ -58,7 +80,13 @@ describe("doklady na zaúčtovanie", () => {
 
   it("prijatý dobropis má kladné sumy a druh dobropis", () => {
     const d = prijataNaUctovanie(
-      { id: "p2", invoice_number: "D1", amount_without_vat: -10, vat_amount: -2.3, amount_total: -12.3 },
+      {
+        id: "p2",
+        invoice_number: "D1",
+        amount_without_vat: -10,
+        vat_amount: -2.3,
+        amount_total: -12.3,
+      },
       nast,
     );
     expect(d.druh).toBe("dobropis");
@@ -68,7 +96,13 @@ describe("doklady na zaúčtovanie", () => {
 
   it("vystavená: kódy po položkách sa zlúčia po sadzbe a kóde", () => {
     const d = vystavenaNaUctovanie(
-      { id: "v1", type: "regular", invoice_number: "2026001", issue_date: "2026-10-01", total: 246 },
+      {
+        id: "v1",
+        type: "regular",
+        invoice_number: "2026001",
+        issue_date: "2026-10-01",
+        total: 246,
+      },
       [
         { name: "A", subtotal: 100, vat_amount: 23, vat_rate: 23 },
         { name: "B", subtotal: 100, vat_amount: 23, vat_rate: 23, pohoda_predkontacia: "3Fs" },

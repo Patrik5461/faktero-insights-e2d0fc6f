@@ -9,7 +9,11 @@ import { z } from "zod";
   členením, strediskom, zákazkou a činnosťou, ako ich nastavila firma.
 */
 
-import { PROGRAMY_UCTOVANIA, type AgendaExportu, type ProgramUctovania } from "./uctovanie-programy";
+import {
+  PROGRAMY_UCTOVANIA,
+  type AgendaExportu,
+  type ProgramUctovania,
+} from "./uctovanie-programy";
 
 const Vstup = z.object({
   company_id: z.string().uuid(),
@@ -49,8 +53,13 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
       const { data: stavy } = await supabase
         .from("expense_documents")
         .select("id, status, document_number")
-        .in("id", vsetky.map((d) => d.id));
-      const nove = new Set((stavy ?? []).filter((s: any) => s.status === "new").map((s: any) => s.id));
+        .in(
+          "id",
+          vsetky.map((d) => d.id),
+        );
+      const nove = new Set(
+        (stavy ?? []).filter((s: any) => s.status === "new").map((s: any) => s.id),
+      );
       kandidati = vsetky.filter((d) =>
         nove.has(d.id) ? (preskocene.push(`${d.cislo || "bloček"} — nespracovaný`), false) : true,
       );
@@ -59,23 +68,26 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
       const { data: riadky } = await supabase
         .from("purchase_invoices")
         .select("id, samofakturacia, samofakturacia_stav")
-        .in("id", vsetky.map((d) => d.id));
-      const zle = new Set((riadky ?? []).filter((r: any) => !zapocitatelna(r)).map((r: any) => r.id));
+        .in(
+          "id",
+          vsetky.map((d) => d.id),
+        );
+      const zle = new Set(
+        (riadky ?? []).filter((r: any) => !zapocitatelna(r)).map((r: any) => r.id),
+      );
       kandidati = vsetky.filter((d) =>
         zle.has(d.id) ? (preskocene.push(`${d.cislo} — neodsúhlasená samofaktúra`), false) : true,
       );
     }
-    const { ok, cakaju } = await (await import("./schvalovanie.server")).lenSchvalene(
-      supabase,
-      data.company_id,
-      data.agenda,
-      kandidati,
-    );
+    const { ok, cakaju } = await (
+      await import("./schvalovanie.server")
+    ).lenSchvalene(supabase, data.company_id, data.agenda, kandidati);
     if (cakaju) preskocene.push(`${cakaju} čaká na schválenie`);
     if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
 
     const kody = await kodyUctovania(supabase, data.company_id);
-    const nastavenia = ((firma.uctovanie_nastavenia ?? {}) as Record<string, any>)[data.program] ?? {};
+    const nastavenia =
+      ((firma.uctovanie_nastavenia ?? {}) as Record<string, any>)[data.program] ?? {};
     let obsah: string;
     let vynechane: string[] = [];
     if (data.program === "omega") {
@@ -106,7 +118,10 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
     const def = PROGRAMY_UCTOVANIA.find((p) => p.program === data.program)!;
     const den = new Date().toISOString().slice(0, 10);
     const fileName = `${data.program}-${NAZOV_AGENDY[data.agenda]}-${den}.${def.pripona}`;
-    const datumy = vyvezene.map((d) => d.datumVystavenia).filter(Boolean).sort() as string[];
+    const datumy = vyvezene
+      .map((d) => d.datumVystavenia)
+      .filter(Boolean)
+      .sort() as string[];
 
     const { data: job } = await supabase
       .from("export_jobs")
@@ -114,7 +129,8 @@ export const exportUctovanieFn = createServerFn({ method: "POST" })
         company_id: data.company_id,
         created_by: userId,
         format: def.format,
-        target_system: data.program === "omega" ? "omega" : data.program === "money_s3" ? "money" : "other",
+        target_system:
+          data.program === "omega" ? "omega" : data.program === "money_s3" ? "money" : "other",
         status: "completed",
         invoice_count: vyvezene.length,
         date_from: datumy[0] ?? null,
@@ -183,13 +199,22 @@ export const programUctovaniaFn = createServerFn({ method: "POST" })
       const zmena: Record<string, unknown> = {};
       if (data.program) zmena.uctovny_program = data.program;
       if (data.nastavenia)
-        zmena.uctovanie_nastavenia = { ...(f.uctovanie_nastavenia ?? {}), [program]: data.nastavenia };
+        zmena.uctovanie_nastavenia = {
+          ...(f.uctovanie_nastavenia ?? {}),
+          [program]: data.nastavenia,
+        };
       // RLS pustí zápis len tomu, kto smie meniť firmu.
-      const { error: e2 } = await supabase.from("companies").update(zmena).eq("id", data.company_id);
+      const { error: e2 } = await supabase
+        .from("companies")
+        .update(zmena)
+        .eq("id", data.company_id);
       if (e2) throw new Error(e2.message);
       return {
         program: (data.program ?? f.uctovny_program) as ProgramUctovania | "pohoda",
-        nastavenia: { ...(f.uctovanie_nastavenia ?? {}), ...(data.nastavenia ? { [program]: data.nastavenia } : {}) },
+        nastavenia: {
+          ...(f.uctovanie_nastavenia ?? {}),
+          ...(data.nastavenia ? { [program]: data.nastavenia } : {}),
+        },
       };
     }
     return {

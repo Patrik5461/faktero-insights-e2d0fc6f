@@ -137,7 +137,9 @@ const sections: HelpSection[] = [
             internetbankingu (býva to „Import príkazov" alebo „Hromadný príkaz") a zaplatíte všetky
             vybrané faktúry naraz. Vyberiete účet, z ktorého sa platí, a dátum; faktúry môžu ísť aj
             každá až v deň splatnosti. Variabilný, špecifický a konštantný symbol sa prenesú tak,
-            ako ich dodávateľ uvidí vo výpise. Faktúry bez IBAN-u, v inej mene než euro, už
+            ako ich dodávateľ uvidí vo výpise. Symbol dlhší ako 10 číslic alebo s písmenami
+            (napr. referencia <code>RF…</code> zahraničného dodávateľa) sa neoreže — ide celý ako{" "}
+            <strong>referencia platiteľa</strong>. Faktúry bez IBAN-u, v inej mene než euro, už
             zaplatené alebo platené hotovosťou či kartou sa do príkazu nedostanú — okno povie ktoré
             a prečo. Za zaplatené sa faktúry neoznačia hneď — až keď platbu z účtu spárujete s
             faktúrou (Faktero to samo navrhne).

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
 import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
 import { useRadenie } from "@/hooks/useRadenie";
+import { stiahniExcel, tabulka } from "@/lib/faktero/excel-zoznamu";
 import { useExportDoProgramu } from "@/hooks/useExportDoProgramu";
 import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import { useServerFn } from "@tanstack/react-start";
@@ -548,6 +549,59 @@ function DokladyPage() {
               <option value="prevod">Prevod</option>
             </select>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              const r = rad.zoradene as any[];
+              void stiahniExcel(`doklady-${new Date().toISOString().slice(0, 10)}.xlsx`, [
+                {
+                  nazov: "Doklady",
+                  data: tabulka(r, [
+                    { nazov: "Dátum", hodnota: (x: any) => x.issue_date },
+                    { nazov: "Dodávateľ", hodnota: (x: any) => x.supplier_name },
+                    { nazov: "IČO", hodnota: (x: any) => x.supplier_ico },
+                    { nazov: "IČ DPH", hodnota: (x: any) => x.supplier_ic_dph },
+                    { nazov: "Číslo", hodnota: (x: any) => x.document_number },
+                    { nazov: "Kategória", hodnota: (x: any) => x.category },
+                    { nazov: "Základ", hodnota: (x: any) => (x.net_amount == null ? null : Number(x.net_amount)) },
+                    { nazov: "DPH", hodnota: (x: any) => (x.vat_amount == null ? null : Number(x.vat_amount)) },
+                    { nazov: "Spolu", hodnota: (x: any) => (x.total_amount == null ? null : Number(x.total_amount)) },
+                    { nazov: "Mena", hodnota: (x: any) => x.currency },
+                    { nazov: "Úhrada", hodnota: (x: any) => x.payment_method },
+                    { nazov: "Stav", hodnota: (x: any) => STATUS_LABEL[x.status] ?? x.status },
+                    { nazov: "Predkontácia", hodnota: (x: any) => x.pohoda_predkontacia },
+                    { nazov: "Členenie DPH", hodnota: (x: any) => x.pohoda_clenenie_dph },
+                    { nazov: "Zdroj", hodnota: (x: any) => ZDROJ_DOKLADU[x.source] ?? x.source },
+                  ]),
+                },
+                {
+                  nazov: "Položky",
+                  data: tabulka(
+                    r.flatMap((x: any) =>
+                      (Array.isArray(x.items) ? x.items : []).map((p: any) => ({
+                        doklad: x.document_number,
+                        dodavatel: x.supplier_name,
+                        p,
+                      })),
+                    ),
+                    [
+                      { nazov: "Doklad", hodnota: (x: any) => x.doklad },
+                      { nazov: "Dodávateľ", hodnota: (x: any) => x.dodavatel },
+                      { nazov: "Položka", hodnota: (x: any) => x.p?.name },
+                      { nazov: "Množstvo", hodnota: (x: any) => Number(x.p?.quantity ?? 0) },
+                      { nazov: "MJ", hodnota: (x: any) => x.p?.unit },
+                      { nazov: "Jedn. cena", hodnota: (x: any) => (x.p?.unit_price == null ? null : Number(x.p.unit_price)) },
+                      { nazov: "Sadzba DPH", hodnota: (x: any) => (x.p?.vat_rate == null ? null : Number(x.p.vat_rate)) },
+                      { nazov: "Spolu", hodnota: (x: any) => (x.p?.total == null ? null : Number(x.p.total)) },
+                    ],
+                  ),
+                },
+              ]);
+            }}
+            className="inline-flex h-9 items-center gap-1.5 self-end rounded-md border border-border px-3 text-sm hover:bg-secondary"
+          >
+            <Download className="h-4 w-4" /> Excel
+          </button>
           <NastaveniaZoznamu
             nastavenia={zobrazenie}
             stlpce={STLPCE_DOKLADOV}

@@ -162,6 +162,11 @@ export const funkcie: HubContent = {
             "Funguje so všetkými radami Pohody",
           ],
         },
+        {
+          type: "callout",
+          title: "Neúčtujete v Pohode?",
+          body: "Zaúčtované vystavené faktúry, prijaté faktúry aj bločky pošle Faktero aj do KROS Omegy (rovno účtovné zápisy), Money S3 a ABRA Flexi — s predkontáciou, členením DPH, strediskom a zákazkou. Pre MRP, Helios či Premier pripraví zaúčtovanú súpisku CSV.",
+        },
       ],
     },
     {

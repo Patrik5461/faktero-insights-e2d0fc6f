@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
+import { PresunAkoPrilohuOkno } from "@/components/faktero/PresunAkoPrilohuOkno";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,6 +84,7 @@ function fmt(n: number, c = "EUR") {
 function PurchaseInvoiceDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const [presunPrilohy, setPresunPrilohy] = useState(false);
   const [row, setRow] = useState<any | null>(null);
   // Náhľad prílohy priamo na stránke — podpísaný odkaz platí 10 minút.
   const [nahlad, setNahlad] = useState<string | null>(null);
@@ -336,6 +339,16 @@ function PurchaseInvoiceDetail() {
             {(row as any).type === "regular" && !navrh && (
               <TlacidloZauctovat zauctovane={Boolean(row.zauctovane_at)} />
             )}
+            {row.file_path && !row.exported_at && !samo && (
+              <button
+                type="button"
+                onClick={() => setPresunPrilohy(true)}
+                title="Je to druhá strana či dodací list k inej faktúre — pripojí sa k nej ako príloha"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+              >
+                Presunúť ako prílohu
+              </button>
+            )}
             {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
               <button
                 onClick={() => setStatus("received")}
@@ -442,6 +455,14 @@ function PurchaseInvoiceDetail() {
             )}
             {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
             {!navrh && <KomentarePanel companyId={row.company_id} agenda="prijata" id={row.id} />}
+            <PrilohyFaktury druh="purchase_invoice" dokladId={row.id} mozeMenit={!row.exported_at} />
+            {presunPrilohy && (
+              <PresunAkoPrilohuOkno
+                companyId={row.company_id}
+                zdroj={{ agenda: "prijata", id: row.id }}
+                onClose={() => setPresunPrilohy(false)}
+              />
+            )}
 
             <PolozkyDokladu items={row.items} mena={row.currency} samo={samo} />
 

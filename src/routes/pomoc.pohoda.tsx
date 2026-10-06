@@ -105,6 +105,11 @@ const sections: HelpSection[] = [
           <em> Ostatné záväzky</em> pošle faktúru do tejto agendy.
         </p>
         <p>
+          Účtovná kancelária nastaví jednu firmu a ostatným ju skopíruje: tlačidlo{" "}
+          <strong>Kopírovať do iných firiem</strong> na stránke Predkontácie prenesie číselník
+          (aj s účtami a pomermi) a predvolené kódy do vybraných firiem, najviac desiatich naraz.
+        </p>
+        <p>
           Doklad z <strong>uzamknutého obdobia</strong> dostane v Pohode dátum zaúčtovania prvý deň
           po uzávierke. Viac pokladní (záložka Pokladne) a voľbu posielať aj položky bločku nájdete
           tiež na stránke Predkontácie.

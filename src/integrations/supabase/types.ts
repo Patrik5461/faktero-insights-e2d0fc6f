@@ -3620,6 +3620,45 @@ export type Database = {
         }
         Relationships: []
       }
+      prilohy_dokladov: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          expense_document_id: string | null
+          id: string
+          mime: string | null
+          name: string
+          path: string
+          purchase_invoice_id: string | null
+          size: number | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          expense_document_id?: string | null
+          id?: string
+          mime?: string | null
+          name: string
+          path: string
+          purchase_invoice_id?: string | null
+          size?: number | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          expense_document_id?: string | null
+          id?: string
+          mime?: string | null
+          name?: string
+          path?: string
+          purchase_invoice_id?: string | null
+          size?: number | null
+        }
+        Relationships: []
+      }
       inbox_addresses: {
         Row: {
           active: boolean

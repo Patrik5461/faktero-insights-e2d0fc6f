@@ -18,7 +18,9 @@ const dveSk = (n: unknown): string => {
 };
 
 function pole(h: unknown): string {
-  const s = String(h ?? "").trim().replace(/\r?\n/g, " ");
+  const s = String(h ?? "")
+    .trim()
+    .replace(/\r?\n/g, " ");
   return /[";]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

@@ -235,3 +235,75 @@ export const importCiselnikaFn = createServerFn({ method: "POST" })
       vypnutych: 0,
     };
   });
+
+/**
+ * Kopírovanie účtovných nastavení do ďalších firiem (ako v Doklado) —
+ * účtovná kancelária nastaví jednu firmu a ostatné dostanú to isté.
+ * Kopíruje číselník (predkontácie s účtami a pomermi, členenia, strediská,
+ * činnosti, rady, pokladne) a predvolené kódy podľa druhu dokladu. Kód, ktorý
+ * cieľová firma už má, sa prepíše; nič sa nemaže. Zapisuje sa cez práva
+ * prihláseného — do firmy, kde nastavenia meniť nesmie, RLS zápis nepustí.
+ */
+export const kopirujNastaveniaFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        ciele: z.array(z.string().uuid()).min(1).max(10),
+        ciselnik: z.boolean(),
+        predvolene: z.boolean(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const ciele = data.ciele.filter((c) => c !== data.company_id);
+    if (!ciele.length) throw new Error("Vyberte inú firmu, než z ktorej kopírujete.");
+    const vysledok: { firma: string; ok: boolean; chyba?: string; kodov?: number }[] = [];
+
+    const { data: zaznamy } = data.ciselnik
+      ? await supabase
+          .from("predkontacie")
+          .select("druh, kod, popis, agenda, ucet_md, ucet_d, zdroj, aktivne, druhy_dokladov, kategoria, pomer")
+          .eq("company_id", data.company_id)
+      : { data: [] };
+    const STLPCE = [
+      ...STLPCE_PREDVOLENYCH,
+      "pohoda_predkontacie_oznaceni",
+      "pohoda_blocky_agenda",
+      "pohoda_pokladna",
+      "pohoda_polozky_blockov",
+      "pohoda_odkaz_na_doklady",
+      "uctovny_program",
+      "uctovanie_nastavenia",
+    ];
+    const { data: zdroj } = data.predvolene
+      ? await supabase.from("companies").select(STLPCE.join(",")).eq("id", data.company_id).single()
+      : { data: null };
+
+    for (const ciel of ciele) {
+      try {
+        if (data.ciselnik && (zaznamy ?? []).length) {
+          const { error } = await supabase.from("predkontacie").upsert(
+            (zaznamy ?? []).map((z: any) => ({ ...z, company_id: ciel })),
+            { onConflict: "company_id,druh,kod,agenda" },
+          );
+          if (error) throw new Error(error.message);
+        }
+        if (data.predvolene && zdroj) {
+          const { data: upd, error } = await supabase
+            .from("companies")
+            .update(zdroj)
+            .eq("id", ciel)
+            .select("id");
+          if (error) throw new Error(error.message);
+          if (!upd?.length) throw new Error("nemáte právo meniť nastavenia tejto firmy");
+        }
+        vysledok.push({ firma: ciel, ok: true, kodov: (zaznamy ?? []).length });
+      } catch (e: any) {
+        vysledok.push({ firma: ciel, ok: false, chyba: String(e?.message ?? e) });
+      }
+    }
+    return { vysledok };
+  });

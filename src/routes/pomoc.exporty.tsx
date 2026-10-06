@@ -47,6 +47,67 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "iny-program",
+    title: "Zaúčtované doklady do Omegy, Money S3, ABRA Flexi a iných programov",
+    body: (
+      <>
+        <p>
+          Kto neúčtuje v Pohode, nájde v <Link to="/exporty">Účtovné exporty</Link> časť{" "}
+          <strong>Zaúčtované doklady do vášho programu</strong>. Raz vyberiete{" "}
+          <strong>účtovný program</strong> (KROS Omega, Money S3, ABRA Flexi alebo „iný program“
+          so súpiskou CSV) a Faktero si ho zapamätá. Potom zvolíte, čo posielate —{" "}
+          <strong>vystavené faktúry, prijaté faktúry alebo bločky</strong> — obdobie a doklady.
+          Súbor obsahuje zaúčtovanie tak, ako ste ho urobili vo Fakteri: predkontáciu, členenie
+          DPH a kontrolného výkazu, stredisko, zákazku a činnosť, rozúčtovanie aj účtovanie
+          pomerom.
+        </p>
+        <p>
+          Predkontácie a členenia sú pre všetky programy spoločné (
+          <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie</Link>) — zadajte ich s
+          rovnakými skratkami, aké má váš program. Pri každom programe treba ešte vyplniť pár vecí
+          v <em>Nastavenia pre …</em>:
+        </p>
+        <ul>
+          <li>
+            <strong>KROS Omega</strong> dostane rovno <strong>účtovné doklady</strong> (EUD) s
+            účtovnými zápismi a typmi súm pre DPH. Vyplňte kódy evidencií a číselných radov, ktoré
+            v Omege existujú (došlé faktúry, pokladničné, interné…), a účty — odberatelia,
+            dodávatelia, pokladňa, DPH. Pri predkontáciách v číselníku musia byť{" "}
+            <strong>účty MD a Dal</strong>. Import: Firma → Import → Import z textového súboru.
+          </li>
+          <li>
+            <strong>Money S3</strong> dostane prijaté a vydané faktúry, pokladničné a interné
+            doklady s predkontáciou a členením DPH. Vyplňte skratky číselných radov a pokladne;
+            pre interné doklady (bločky kartou) aj účet DPH. Kódy v Money majú najviac 10
+            znakov. Import: XML prenosy.
+          </li>
+          <li>
+            <strong>ABRA Flexi</strong> dostane faktúry prijaté a vydané, pokladničné pohyby a
+            interné doklady s predpisom zaúčtovania a členením DPH. Kódy musia byť z Flexi (napr.
+            členenie „40-41“), nie pohodové PD. Import: Nástroje → Import → XML.
+          </li>
+          <li>
+            <strong>Iný program</strong> (MRP, Helios, Premier, Excel) dostane{" "}
+            <strong>zaúčtovanú súpisku CSV</strong>: riadok na každý riadok zaúčtovania s
+            dokladom, partnerom, sadzbou, základom, DPH, predkontáciou s účtami MD/Dal,
+            členením, strediskom, zákazkou a činnosťou.
+          </li>
+        </ul>
+        <p>
+          Zaškrtnuté <strong>Označiť ako odovzdané</strong> doklady zamkne a nabudúce ich nepošle
+          druhýkrát. Čo do súboru nejde (doklad v cudzej mene, odpočet zálohy, chýbajúce
+          nastavenie), Faktero vymenuje aj s dôvodom. V zoznamoch Faktúry, Prijaté faktúry a
+          Doklady potom tlačidlo pri vybraných dokladoch nesie meno vášho programu namiesto
+          „XML pre Pohodu“.
+        </p>
+        <p>
+          Zoznamy Doklady a Prijaté faktúry majú aj tlačidlo <strong>Excel</strong> — stiahne to,
+          čo práve vidíte (s filtrami aj zoradením), v dvoch hárkoch: doklady a ich položky.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "importy",
     title: "Prechod z iného systému",
     body: (

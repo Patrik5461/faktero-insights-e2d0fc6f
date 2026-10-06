@@ -10,8 +10,8 @@ export const STROP_PRILOH = 20 * 1024 * 1024;
 
 /** Prílohy dokladu pripravené pre Resend a zoznam tých, čo sa nezmestili. */
 export async function prilohyDoMailu(druh: DruhSPrilohou, companyId: string, dokladId: string) {
-  const { data } = await supabaseAdmin
-    .from("invoice_attachments")
+  const { data } = await (supabaseAdmin as any)
+    .from(DRUHY_S_PRILOHAMI[druh].prilohy)
     .select("path, name, size")
     .eq("company_id", companyId)
     .eq(DRUHY_S_PRILOHAMI[druh].stlpec, dokladId)

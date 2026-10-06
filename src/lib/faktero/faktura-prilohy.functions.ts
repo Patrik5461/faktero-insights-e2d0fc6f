@@ -26,7 +26,9 @@ const KOS = "invoice-attachments";
 type Kontext = { supabase: SupabaseClient<Database> };
 
 const Doklad = z.object({
-  druh: z.enum(["invoice", "quote", "sales_order"]).default("invoice"),
+  druh: z
+    .enum(["invoice", "quote", "sales_order", "purchase_invoice", "expense"])
+    .default("invoice"),
   dokladId: z.string().uuid(),
 });
 
@@ -46,8 +48,8 @@ export const prilohyFakturyFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => Doklad.parse(d))
   .handler(async ({ data, context }) => {
-    const { data: riadky, error } = await context.supabase
-      .from("invoice_attachments")
+    const { data: riadky, error } = await (context.supabase as any)
+      .from(DRUHY_S_PRILOHAMI[data.druh].prilohy)
       .select("id, name, mime, size, created_at")
       .eq(DRUHY_S_PRILOHAMI[data.druh].stlpec, data.dokladId)
       .order("created_at");
@@ -76,8 +78,9 @@ export const nahrajPrilohuFn = createServerFn({ method: "POST" })
     if (!bajty.length) throw new Error("Súbor je prázdny.");
     if (bajty.length > MAX_PRILOHA) throw new Error("Súbor je väčší než 15 MB.");
 
-    const { count } = await context.supabase
-      .from("invoice_attachments")
+    const tabulkaPriloh = DRUHY_S_PRILOHAMI[data.druh].prilohy;
+    const { count } = await (context.supabase as any)
+      .from(tabulkaPriloh)
       .select("id", { count: "exact", head: true })
       .eq(stlpec, doklad.id);
     if ((count ?? 0) >= MAX_PRILOH) {
@@ -90,14 +93,12 @@ export const nahrajPrilohuFn = createServerFn({ method: "POST" })
       .upload(cesta, bajty, { contentType: typ, upsert: false });
     if (chybaUlozenia) throw new Error(`Súbor sa nepodarilo uložiť: ${chybaUlozenia.message}`);
 
-    const { data: riadok, error } = await context.supabase
-      .from("invoice_attachments")
+    const { data: riadok, error } = await (context.supabase as any)
+      .from(tabulkaPriloh)
       .insert({
         company_id: doklad.company_id,
         /* Práve jeden stĺpec dokladu — inak to databáza odmietne. */
-        invoice_id: data.druh === "invoice" ? doklad.id : null,
-        quote_id: data.druh === "quote" ? doklad.id : null,
-        sales_order_id: data.druh === "sales_order" ? doklad.id : null,
+        [stlpec]: doklad.id,
         path: cesta,
         name: data.name,
         mime: typ,
@@ -114,12 +115,17 @@ export const nahrajPrilohuFn = createServerFn({ method: "POST" })
     return { priloha: riadok };
   });
 
+const PodlaId = z.object({
+  id: z.string().uuid(),
+  druh: Doklad.shape.druh,
+});
+
 export const odkazNaPrilohuFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => PodlaId.parse(d))
   .handler(async ({ data, context }) => {
-    const { data: riadok } = await context.supabase
-      .from("invoice_attachments")
+    const { data: riadok } = await (context.supabase as any)
+      .from(DRUHY_S_PRILOHAMI[data.druh].prilohy)
       .select("path, name")
       .eq("id", data.id)
       .maybeSingle();
@@ -133,19 +139,17 @@ export const odkazNaPrilohuFn = createServerFn({ method: "POST" })
 
 export const zmazPrilohuFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => PodlaId.parse(d))
   .handler(async ({ data, context }) => {
-    const { data: riadok } = await context.supabase
-      .from("invoice_attachments")
+    const tabulka = DRUHY_S_PRILOHAMI[data.druh].prilohy;
+    const { data: riadok } = await (context.supabase as any)
+      .from(tabulka)
       .select("id, path")
       .eq("id", data.id)
       .maybeSingle();
     if (!riadok) throw new Error("Príloha sa nenašla.");
 
-    const { error } = await context.supabase
-      .from("invoice_attachments")
-      .delete()
-      .eq("id", riadok.id);
+    const { error } = await (context.supabase as any).from(tabulka).delete().eq("id", riadok.id);
     if (error) throw new Error(error.message);
     /* Súbor až po riadku: keby zlyhalo mazanie riadku, príloha by ostala
        v zozname bez obsahu. */

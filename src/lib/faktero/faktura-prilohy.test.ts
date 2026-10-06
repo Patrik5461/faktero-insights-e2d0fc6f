@@ -123,14 +123,17 @@ describe("druhy dokladov s prílohami", () => {
       .filter((f) => f.endsWith(".sql"))
       .map((f) => readFileSync(`supabase/migrations/${f}`, "utf-8"))
       .join("\n");
-    const podmienka =
-      migracie.match(
-        /invoice_attachments_prave_jeden_doklad\s+check\s*\(num_nonnulls\(([^)]+)\)/,
-      )?.[1] ?? "";
-    for (const { stlpec } of Object.values(DRUHY_S_PRILOHAMI)) {
-      expect(podmienka, stlpec).toContain(stlpec);
+    // Každá tabuľka príloh má vlastnú podmienku; druhy sa delia podľa `prilohy`.
+    const PODMIENKY: Record<string, RegExp> = {
+      invoice_attachments: /invoice_attachments_prave_jeden_doklad\s+check\s*\(num_nonnulls\(([^)]+)\)/,
+      prilohy_dokladov: /prilohy_dokladov_prave_jeden\s+check\s*\(num_nonnulls\(([^)]+)\)/,
+    };
+    for (const [tabulka, vzor] of Object.entries(PODMIENKY)) {
+      const podmienka = migracie.match(vzor)?.[1] ?? "";
+      const druhy = Object.values(DRUHY_S_PRILOHAMI).filter((d) => d.prilohy === tabulka);
+      for (const { stlpec } of druhy) expect(podmienka, stlpec).toContain(stlpec);
+      expect(podmienka.split(",").length, tabulka).toBe(druhy.length);
     }
-    expect(podmienka.split(",").length).toBe(Object.keys(DRUHY_S_PRILOHAMI).length);
   });
 
   it("názvy druhov sa neopakujú", () => {

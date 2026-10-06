@@ -28,7 +28,9 @@ export async function nastaveniaUctovania(
   if (jobIds.length) {
     const { data } = await supabase.from("jobs").select("id, job_number").in("id", jobIds);
     zakazkyDokladov = Object.fromEntries(
-      (data ?? []).filter((j: any) => j.job_number).map((j: any) => [String(j.id), String(j.job_number)]),
+      (data ?? [])
+        .filter((j: any) => j.job_number)
+        .map((j: any) => [String(j.id), String(j.job_number)]),
     );
   }
   return {
@@ -42,7 +44,10 @@ export async function nastaveniaUctovania(
     predkontaciaDoklady: company.pohoda_predkontacia_doklady,
     clenenieDphDoklady: company.pohoda_clenenie_dph_doklady,
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
-    podlaKategorie: (await kodyPodlaKategorie(supabase, company.id)) as NastaveniaUctovania["podlaKategorie"],
+    podlaKategorie: (await kodyPodlaKategorie(
+      supabase,
+      company.id,
+    )) as NastaveniaUctovania["podlaKategorie"],
     pomeryPredkontacii: await pomeryPredkontacii(supabase, company.id),
     blockyPodlaPlatby: company.pohoda_blocky_agenda === "podla_platby",
     stredisko: company.pohoda_stredisko,
@@ -57,7 +62,10 @@ export async function nastaveniaUctovania(
 }
 
 /** Číselník predkontácií s účtami — kód → MD/Dal. */
-export async function kodyUctovania(supabase: Klient, companyId: string): Promise<Record<string, KodUctovania>> {
+export async function kodyUctovania(
+  supabase: Klient,
+  companyId: string,
+): Promise<Record<string, KodUctovania>> {
   const { data } = await supabase
     .from("predkontacie")
     .select("kod, popis, ucet_md, ucet_d")
@@ -67,7 +75,12 @@ export async function kodyUctovania(supabase: Klient, companyId: string): Promis
   return Object.fromEntries(
     (data ?? []).map((r: any) => [
       String(r.kod),
-      { kod: String(r.kod), popis: r.popis ?? null, ucetMd: r.ucet_md ?? null, ucetD: r.ucet_d ?? null },
+      {
+        kod: String(r.kod),
+        popis: r.popis ?? null,
+        ucetMd: r.ucet_md ?? null,
+        ucetD: r.ucet_d ?? null,
+      },
     ]),
   );
 }
@@ -95,7 +108,10 @@ export async function nacitajNaUctovanie(
     const { data: items } = await supabase
       .from("invoice_items")
       .select("*")
-      .in("invoice_id", rows.map((i: any) => i.id))
+      .in(
+        "invoice_id",
+        rows.map((i: any) => i.id),
+      )
       .order("position");
     // Dobropis nesie len id opravovanej faktúry — do účtovníctva ide jej číslo.
     const opr = [...new Set(rows.map((i: any) => i.opravuje_fakturu_id).filter(Boolean))];
@@ -107,7 +123,10 @@ export async function nacitajNaUctovanie(
     const nast = await nastaveniaUctovania(supabase, company, rows);
     return rows.map((inv: any) =>
       vystavenaNaUctovanie(
-        { ...inv, _opravujeCislo: inv.opravuje_fakturu_id ? (cisla[inv.opravuje_fakturu_id] ?? null) : null },
+        {
+          ...inv,
+          _opravujeCislo: inv.opravuje_fakturu_id ? (cisla[inv.opravuje_fakturu_id] ?? null) : null,
+        },
         (items ?? []).filter((it: any) => it.invoice_id === inv.id),
         nast,
       ),

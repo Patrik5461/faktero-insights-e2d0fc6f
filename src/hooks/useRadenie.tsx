@@ -29,7 +29,9 @@ export function useRadenie<T>(riadky: T[], hodnoty: Record<string, (r: T) => Hod
   }, [riadky, stav]);
 
   function prepni(kluc: string) {
-    setStav((s) => (!s || s.kluc !== kluc ? { kluc, smer: 1 } : s.smer === 1 ? { kluc, smer: -1 } : null));
+    setStav((s) =>
+      !s || s.kluc !== kluc ? { kluc, smer: 1 } : s.smer === 1 ? { kluc, smer: -1 } : null,
+    );
   }
 
   /** Obsah hlavičky stĺpca s tlačidlom na zoradenie. */

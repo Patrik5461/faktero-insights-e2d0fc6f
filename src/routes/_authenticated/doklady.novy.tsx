@@ -1,4 +1,7 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
+import { PresunAkoPrilohuOkno } from "@/components/faktero/PresunAkoPrilohuOkno";
+import { VyberPravidla } from "@/components/faktero/VyberPravidla";
 import { KodPohody } from "@/components/faktero/KodPohody";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
@@ -144,6 +147,7 @@ function NovyDokladPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const cid = getActiveCompanyId();
   const [ulozeny, setUlozeny] = useState<any>(null);
+  const [presunPrilohy, setPresunPrilohy] = useState(false);
   const sablonyFn = useServerFn(poznamkySablonyFn);
   const [sablony, setSablony] = useState<string[]>([]);
   useEffect(() => {
@@ -540,7 +544,23 @@ function NovyDokladPage() {
       <PageHeader
         title={search.id ? "Upraviť doklad" : "Nový doklad"}
         description="Naskenujte, odfoťte alebo nahrajte bloček — údaje sa doplnia samé."
-        action={search.id ? <TlacidloZauctovat /> : undefined}
+        action={
+          search.id ? (
+            <div className="flex flex-wrap gap-2">
+              <TlacidloZauctovat />
+              {ulozeny?.file_path && !ulozeny?.exported_at ? (
+                <button
+                  type="button"
+                  onClick={() => setPresunPrilohy(true)}
+                  title="Je to druhá strana či dodací list k inému dokladu — pripojí sa k nemu ako príloha"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+                >
+                  Presunúť ako prílohu
+                </button>
+              ) : null}
+            </div>
+          ) : undefined
+        }
       />
       <PageBody>
         <div className="mx-auto max-w-3xl space-y-5">
@@ -823,6 +843,20 @@ function NovyDokladPage() {
                   <div className="mt-3">
                     <KomentarePanel companyId={cid} agenda="doklad" id={search.id} />
                   </div>
+                  <div className="mt-3">
+                    <PrilohyFaktury
+                      druh="expense"
+                      dokladId={search.id}
+                      mozeMenit={!ulozeny?.exported_at}
+                    />
+                  </div>
+                  {presunPrilohy ? (
+                    <PresunAkoPrilohuOkno
+                      companyId={cid}
+                      zdroj={{ agenda: "doklad", id: search.id }}
+                      onClose={() => setPresunPrilohy(false)}
+                    />
+                  ) : null}
                 </div>
               ) : null}
               <div
@@ -844,6 +878,17 @@ function NovyDokladPage() {
                     </button>
                   </div>
                 )}
+                {cid ? (
+                  <VyberPravidla
+                    companyId={cid}
+                    doklad={{ ...form, pravidlo_id: ulozeny?.pravidlo_id ?? null }}
+                    onPouzi={(p) => {
+                      if (p.predkontacia) updateForm("pohoda_predkontacia", p.predkontacia);
+                      if (p.clenenie_dph) updateForm("pohoda_clenenie_dph", p.clenenie_dph);
+                      if (p.kategoria) updateForm("category", p.kategoria as any);
+                    }}
+                  />
+                ) : null}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="block">
                     <span className="mb-1 block text-xs text-muted-foreground">Predkontácia</span>

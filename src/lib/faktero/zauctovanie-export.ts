@@ -114,7 +114,12 @@ export type DokladUctovania = {
 };
 
 /** Kód predkontácie s účtami (MD/Dal) z číselníka firmy. */
-export type KodUctovania = { kod: string; popis: string | null; ucetMd: string | null; ucetD: string | null };
+export type KodUctovania = {
+  kod: string;
+  popis: string | null;
+  ucetMd: string | null;
+  ucetD: string | null;
+};
 
 export type NastaveniaUctovania = {
   predkontacia?: string | null;
@@ -191,7 +196,9 @@ function riadkyPrijatehoDokladu(
   nast: NastaveniaUctovania,
 ): RiadokUctovania[] {
   const rucne = nacitajRozuctovanie(rozuctovanie);
-  const pomer = rucne.length ? null : nacitajPomer(nast.pomeryPredkontacii?.[String(predkontacia ?? "")]);
+  const pomer = rucne.length
+    ? null
+    : nacitajPomer(nast.pomeryPredkontacii?.[String(predkontacia ?? "")]);
   const rozuct = pomer ? rozuctovaniePodlaPomeru(pomer, rozpis, clenenie) : rucne;
   if (rozuct.length > 1 && !chybaRozuctovania(rozuct, rozpis)) {
     return rozuct.map((r) => ({
@@ -236,9 +243,15 @@ function partnerZDodavatela(r: any): PartnerUctovania {
 export function blocekNaUctovanie(d: any, nast: NastaveniaUctovania): DokladUctovania {
   const kat = nast.podlaKategorie?.[String(d?.category ?? "")];
   const predkontacia =
-    t(d?.pohoda_predkontacia) ?? t(kat?.predkontacia) ?? t(nast.predkontaciaDoklady) ?? t(nast.predkontaciaPrijata);
+    t(d?.pohoda_predkontacia) ??
+    t(kat?.predkontacia) ??
+    t(nast.predkontaciaDoklady) ??
+    t(nast.predkontaciaPrijata);
   const clenenie =
-    t(d?.pohoda_clenenie_dph) ?? t(kat?.clenenie) ?? t(nast.clenenieDphDoklady) ?? t(nast.clenenieDphPrijata);
+    t(d?.pohoda_clenenie_dph) ??
+    t(kat?.clenenie) ??
+    t(nast.clenenieDphDoklady) ??
+    t(nast.clenenieDphPrijata);
   const kv = t(d?.kv_clenenie);
   const odpocet = d?.odpocet !== false && kv !== "X";
   const rozpis = rozpisBlocku(d);
@@ -263,7 +276,11 @@ export function blocekNaUctovanie(d: any, nast: NastaveniaUctovania): DokladUcto
     druh: "faktura",
     forma,
     cislo: t(d?.document_number) ?? "",
-    vs: t(String(d?.document_number ?? "").replace(/\D/g, "").slice(0, 10)),
+    vs: t(
+      String(d?.document_number ?? "")
+        .replace(/\D/g, "")
+        .slice(0, 10),
+    ),
     ks: null,
     ss: null,
     opravuje: null,
@@ -290,12 +307,17 @@ export function blocekNaUctovanie(d: any, nast: NastaveniaUctovania): DokladUcto
     zakazka: d?.job_id ? (nast.zakazkyDokladov?.[String(d.job_id)] ?? null) : null,
     rad:
       t(d?.pohoda_rad) ??
-      (forma === "pokladna" ? t(nast.radPokladna) : forma === "interny" ? t(nast.radInterne) : t(nast.radDoklady)),
+      (forma === "pokladna"
+        ? t(nast.radPokladna)
+        : forma === "interny"
+          ? t(nast.radInterne)
+          : t(nast.radDoklady)),
     pokladna: forma === "pokladna" ? (t(d?.pohoda_pokladna) ?? t(nast.pokladna)) : null,
-    text: [t(d?.supplier_name), t(d?.document_number) ? `č. ${d.document_number}` : null]
-      .filter(Boolean)
-      .join(" ")
-      .slice(0, 240) || "Prijatý doklad",
+    text:
+      [t(d?.supplier_name), t(d?.document_number) ? `č. ${d.document_number}` : null]
+        .filter(Boolean)
+        .join(" ")
+        .slice(0, 240) || "Prijatý doklad",
     poznamka: t(d?.note),
     intPoznamka: t(d?.int_poznamka),
     prenesenieDph: false,
@@ -307,7 +329,8 @@ export function blocekNaUctovanie(d: any, nast: NastaveniaUctovania): DokladUcto
 /** Prijatá faktúra (`purchase_invoices`). */
 export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUctovania {
   const kat = nast.podlaKategorie?.[String(p?.category ?? "")];
-  const predkontacia = t(p?.pohoda_predkontacia) ?? t(kat?.predkontacia) ?? t(nast.predkontaciaPrijata);
+  const predkontacia =
+    t(p?.pohoda_predkontacia) ?? t(kat?.predkontacia) ?? t(nast.predkontaciaPrijata);
   const clenenie = t(p?.pohoda_clenenie_dph) ?? t(kat?.clenenie) ?? t(nast.clenenieDphPrijata);
   const kv = t(p?.kv_clenenie);
   const odpocet = p?.odpocet !== false && kv !== "X";
@@ -386,7 +409,11 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
 }
 
 /** Vystavená faktúra (`invoices`) s položkami (`invoice_items`). */
-export function vystavenaNaUctovanie(inv: any, items: any[], nast: NastaveniaUctovania): DokladUctovania {
+export function vystavenaNaUctovanie(
+  inv: any,
+  items: any[],
+  nast: NastaveniaUctovania,
+): DokladUctovania {
   const druh: DokladUctovania["druh"] =
     inv?.type === "credit_note" ? "dobropis" : inv?.type === "proforma" ? "zaloha" : "faktura";
   const prenesenie = Boolean(inv?.reverse_charge);
@@ -399,7 +426,9 @@ export function vystavenaNaUctovanie(inv: any, items: any[], nast: NastaveniaUct
         : null) ??
     t(nast.predkontacia);
   const clenenie =
-    t(inv?.pohoda_clenenie_dph) ?? (prenesenie ? t(nast.clenenieDphPdp) : null) ?? t(nast.clenenieDph);
+    t(inv?.pohoda_clenenie_dph) ??
+    (prenesenie ? t(nast.clenenieDphPdp) : null) ??
+    t(nast.clenenieDph);
   const kv = t(inv?.kv_clenenie);
   const polozky: PolozkaUctovania[] = (items ?? []).map((it) => ({
     nazov: String(it?.name ?? it?.description ?? "").trim() || "Položka",

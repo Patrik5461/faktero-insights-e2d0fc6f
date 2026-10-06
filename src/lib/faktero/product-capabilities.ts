@@ -12,7 +12,7 @@ export type CapabilityModule = {
   routes?: string[];
 };
 
-export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v3 (6. 10. 2026)";
+export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v4 (7. 10. 2026)";
 
 /** Features that are explicitly NOT supported yet. AI must say "Zatiaľ nie je dostupné". */
 export const NOT_YET_SUPPORTED: string[] = [
@@ -183,7 +183,9 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Kôš dokladov (obnova do 90 dní), komentáre s označením kolegu, preddefinované poznámky",
       "Rozdeľovač — jedna e-mailová adresa pre všetky firmy používateľa, doklad pôjde firme podľa IČO/IČ DPH odberateľa, nesediace čakajú na ručné priradenie",
       "Povolení odosielatelia pre e-mailovú adresu, upozornenie na doklad vystavený na iného odberateľa, zobrazenie pôvodného e-mailu",
-      "Výber stĺpcov a uložené filtre v zoznamoch Doklady a Prijaté faktúry (pre jednu alebo všetky firmy)",
+      "Výber stĺpcov a uložené filtre v zoznamoch Doklady a Prijaté faktúry (pre jednu alebo všetky firmy), zoraďovanie kliknutím na stĺpec, export zoznamu do Excelu (doklady aj položky)",
+      "Prílohy k prijatým faktúram a bločkom; presun nahratého dokladu medzi prílohy iného dokladu",
+      "Pri doklade výber z viacerých pravidiel účtovania, doplnené kódy označené hviezdičkou",
     ],
     routes: [
       "/doklady",
@@ -206,6 +208,7 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Čiastočné úhrady",
       "Bankové zostatky (disponibilný zostatok, meny sa nesčítavajú)",
       "Vlastné výpisy camt.053 a PDF z natiahnutých transakcií",
+      "Hromadný príkaz na úhradu (SEPA XML) s referenciou platiteľa pri symbole dlhšom ako 10 číslic",
     ],
     routes: [
       "/bankove-ucty",
@@ -265,6 +268,8 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Bločky do Pohody ako prijaté faktúry, alebo podľa platby: hotovosť ako pokladničný doklad, karta ako interný doklad",
       "Konektor unesie viac firiem naraz a na prelome rokov posiela doklady minulého roka do databázy minulého roka",
       "Doklad z uzamknutého obdobia dostane v Pohode dátum zaúčtovania po uzávierke",
+      "Zaúčtované doklady (vystavené, prijaté faktúry aj bločky) aj do iných programov: KROS Omega (účtovné doklady EUD s účtami MD/Dal a typmi súm), Money S3 (faktúry, pokladničné a interné doklady s predkontáciou a členením), ABRA Flexi (predpis zaúčtovania, členenie DPH) a zaúčtovaná súpiska CSV pre MRP, Helios či Premier; účtovný program si firma vyberie v Účtovné exporty",
+      "Kopírovanie číselníka predkontácií a predvolených kódov do ďalších firiem (účtovné kancelárie)",
     ],
     routes: [
       "/uctovnictvo/predkontacie",

@@ -115,7 +115,7 @@ export function PrilohyFaktury({
 
   async function stiahni(p: Priloha) {
     try {
-      const r = await odkaz({ data: { id: p.id } });
+      const r = await odkaz({ data: { id: p.id, druh } });
       window.open(r.url, "_blank", "noopener");
     } catch (e) {
       toast.error(hlaska(e, "Prílohu sa nepodarilo otvoriť."));
@@ -125,7 +125,7 @@ export function PrilohyFaktury({
   async function odstran(p: Priloha) {
     if (!confirm(`Zmazať prílohu ${p.name}?`)) return;
     try {
-      await zmaz({ data: { id: p.id } });
+      await zmaz({ data: { id: p.id, druh } });
       toast.success("Príloha zmazaná.");
       await obnov();
     } catch (e) {
@@ -190,7 +190,9 @@ export function PrilohyFaktury({
               ? "Pretiahnite sem dodací list, zmluvu alebo výkaz — alebo ich vyberte tlačidlom."
               : druh === "quote"
                 ? "Pretiahnite sem výkres, špecifikáciu alebo fotky — alebo ich vyberte tlačidlom."
-                : "Pretiahnite sem objednávku zákazníka alebo podklady — alebo ich vyberte tlačidlom."}
+                : druh === "purchase_invoice" || druh === "expense"
+                  ? "Pretiahnite sem dodací list, druhú stranu alebo výkaz — alebo ich vyberte tlačidlom."
+                  : "Pretiahnite sem objednávku zákazníka alebo podklady — alebo ich vyberte tlačidlom."}
           </div>
         ) : (
           <p className="mt-3 text-sm text-muted-foreground">Doklad nemá prílohy.</p>

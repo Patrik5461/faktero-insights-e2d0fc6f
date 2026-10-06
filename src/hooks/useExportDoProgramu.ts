@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { exportUctovanieFn, programUctovaniaFn } from "@/lib/faktero/uctovanie-export.functions";
-import { PROGRAMY_UCTOVANIA, type AgendaExportu, type ProgramUctovania } from "@/lib/faktero/uctovanie-programy";
+import {
+  PROGRAMY_UCTOVANIA,
+  type AgendaExportu,
+  type ProgramUctovania,
+} from "@/lib/faktero/uctovanie-programy";
 import { downloadFile } from "@/lib/faktero/stiahnut-subor";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 
@@ -25,7 +29,9 @@ export function useExportDoProgramu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const nazov = (PROGRAMY_UCTOVANIA.find((p) => p.program === program)?.nazov ?? "").split(" — ")[0];
+  const nazov = (PROGRAMY_UCTOVANIA.find((p) => p.program === program)?.nazov ?? "").split(
+    " — ",
+  )[0];
 
   async function spusti(agenda: AgendaExportu, ids: string[]): Promise<boolean> {
     const cid = getActiveCompanyId();

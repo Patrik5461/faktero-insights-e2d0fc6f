@@ -11,10 +11,38 @@ export const PROGRAMY_UCTOVANIA: {
   mime: string;
   encoding: "utf-8" | "windows-1250";
 }[] = [
-  { program: "pohoda", nazov: "POHODA", format: "pohoda_xml", pripona: "xml", mime: "application/xml", encoding: "utf-8" },
-  { program: "omega", nazov: "KROS Omega", format: "omega_eud", pripona: "txt", mime: "text/plain", encoding: "windows-1250" },
-  { program: "money_s3", nazov: "Money S3", format: "money_s3_uct", pripona: "xml", mime: "application/xml", encoding: "utf-8" },
-  { program: "flexi", nazov: "ABRA Flexi", format: "flexi_uct", pripona: "xml", mime: "application/xml", encoding: "utf-8" },
+  {
+    program: "pohoda",
+    nazov: "POHODA",
+    format: "pohoda_xml",
+    pripona: "xml",
+    mime: "application/xml",
+    encoding: "utf-8",
+  },
+  {
+    program: "omega",
+    nazov: "KROS Omega",
+    format: "omega_eud",
+    pripona: "txt",
+    mime: "text/plain",
+    encoding: "windows-1250",
+  },
+  {
+    program: "money_s3",
+    nazov: "Money S3",
+    format: "money_s3_uct",
+    pripona: "xml",
+    mime: "application/xml",
+    encoding: "utf-8",
+  },
+  {
+    program: "flexi",
+    nazov: "ABRA Flexi",
+    format: "flexi_uct",
+    pripona: "xml",
+    mime: "application/xml",
+    encoding: "utf-8",
+  },
   {
     program: "csv",
     nazov: "Iný program (MRP, Helios, Premier…) — súpiska CSV",

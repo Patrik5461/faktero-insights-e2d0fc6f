@@ -8,9 +8,37 @@
  * stĺpec s cudzím kľúčom — tak sa príloha pri zmazaní dokladu zmaže s ním.
  */
 export const DRUHY_S_PRILOHAMI = {
-  invoice: { stlpec: "invoice_id", tabulka: "invoices", nazov: "Faktúra" },
-  quote: { stlpec: "quote_id", tabulka: "quotes", nazov: "Cenová ponuka" },
-  sales_order: { stlpec: "sales_order_id", tabulka: "sales_orders", nazov: "Objednávka" },
+  invoice: {
+    stlpec: "invoice_id",
+    tabulka: "invoices",
+    nazov: "Faktúra",
+    prilohy: "invoice_attachments",
+  },
+  quote: {
+    stlpec: "quote_id",
+    tabulka: "quotes",
+    nazov: "Cenová ponuka",
+    prilohy: "invoice_attachments",
+  },
+  sales_order: {
+    stlpec: "sales_order_id",
+    tabulka: "sales_orders",
+    nazov: "Objednávka",
+    prilohy: "invoice_attachments",
+  },
+  /* Prijaté doklady majú prílohy zvlášť — patria pod oblasť práv „doklady“. */
+  purchase_invoice: {
+    stlpec: "purchase_invoice_id",
+    tabulka: "purchase_invoices",
+    nazov: "Prijatá faktúra",
+    prilohy: "prilohy_dokladov",
+  },
+  expense: {
+    stlpec: "expense_document_id",
+    tabulka: "expense_documents",
+    nazov: "Doklad",
+    prilohy: "prilohy_dokladov",
+  },
 } as const;
 
 export type DruhSPrilohou = keyof typeof DRUHY_S_PRILOHAMI;

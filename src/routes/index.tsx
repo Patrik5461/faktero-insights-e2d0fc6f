@@ -278,8 +278,8 @@ const accounting = [
   },
   {
     icon: Download,
-    title: "Šesť účtovných exportov",
-    text: "Pohoda, Omega, Money S3, ABRA Flexi, ISDOC a CSV súpiska pre MRP, Helios či Excel.",
+    title: "Zaúčtované aj mimo Pohody",
+    text: "Vystavené, prijaté faktúry aj bločky s predkontáciou do Omegy, Money S3, ABRA Flexi, a súpiska pre MRP či Helios.",
   },
   {
     icon: ArrowLeftRight,

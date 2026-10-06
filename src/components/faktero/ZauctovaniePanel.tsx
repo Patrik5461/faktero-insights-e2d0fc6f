@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { VyberPravidla } from "./VyberPravidla";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -405,6 +406,18 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
                 opravny: Number(row.amount_total ?? 0) < 0 || !!row.opravuje_cislo,
                 prenesenie: row.dph_rezim === "samozdanenie" || row.dph_rezim === "nadobudnutie",
               })}
+            />
+            <VyberPravidla
+              companyId={row.company_id}
+              doklad={row}
+              onPouzi={(p) =>
+                setH({
+                  ...h,
+                  predkontacia: p.predkontacia ?? h.predkontacia,
+                  clenenie: p.clenenie_dph ?? h.clenenie,
+                  kategoria: p.kategoria ?? h.kategoria,
+                })
+              }
             />
             <p className="mt-2 text-xs text-muted-foreground">
               Prázdne pole = predvolené z{" "}
