@@ -1285,6 +1285,11 @@ export type Database = {
           pohoda_stredisko: string | null
           pohoda_odkaz_na_doklady: boolean
           pohoda_polozky_blockov: boolean
+          schvalovanie_zapnute: boolean
+          schvalovanie_od: string | null
+          schvalovanie_agendy: string[]
+          schvalovanie_auto_pod: number | null
+          schvalovanie_odoslanie: boolean
         }
         Insert: {
           city?: string | null
@@ -1369,6 +1374,11 @@ export type Database = {
           pohoda_stredisko?: string | null
           pohoda_odkaz_na_doklady?: boolean
           pohoda_polozky_blockov?: boolean
+          schvalovanie_zapnute?: boolean
+          schvalovanie_od?: string | null
+          schvalovanie_agendy?: string[]
+          schvalovanie_auto_pod?: number | null
+          schvalovanie_odoslanie?: boolean
         }
         Update: {
           city?: string | null
@@ -1453,6 +1463,11 @@ export type Database = {
           pohoda_stredisko?: string | null
           pohoda_odkaz_na_doklady?: boolean
           pohoda_polozky_blockov?: boolean
+          schvalovanie_zapnute?: boolean
+          schvalovanie_od?: string | null
+          schvalovanie_agendy?: string[]
+          schvalovanie_auto_pod?: number | null
+          schvalovanie_odoslanie?: boolean
         }
         Relationships: []
       }

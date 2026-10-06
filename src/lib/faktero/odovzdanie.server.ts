@@ -146,7 +146,14 @@ export async function zostavBalik(
     .eq("status", "ok");
   const odovzdaneIds = new Set((uzOdovzdane ?? []).map((r: Riadok) => r.invoice_id));
 
-  const faktury = (vsetky ?? []).filter((f: Riadok) => !vstup.lenNove || !odovzdaneIds.has(f.id));
+  // Schvaľovanie: účtovníčke ide len schválené (doklady spred zapnutia áno).
+  const { lenSchvalene } = await import("./schvalovanie.server");
+  const { ok: faktury, cakaju: cakajuFaktury } = await lenSchvalene(
+    supabase,
+    vstup.companyId,
+    "vystavena",
+    (vsetky ?? []).filter((f: Riadok) => !vstup.lenNove || !odovzdaneIds.has(f.id)),
+  );
 
   const [{ data: vsetkyDoklady }, { data: pokladnica }, { data: vsetkyOstatne }] =
     await Promise.all([
@@ -175,7 +182,12 @@ export async function zostavBalik(
         .lt("received_date", doDatumu)
         .order("received_date"),
     ]);
-  const doklady = (vsetkyDoklady ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at);
+  const { ok: doklady, cakaju: cakajuDoklady } = await lenSchvalene(
+    supabase,
+    vstup.companyId,
+    "doklad",
+    (vsetkyDoklady ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at),
+  );
 
   /*
     Prijaté faktúry za mesiac. Účtovníčka ich v Pohode zaúčtuje sama, preto
@@ -193,9 +205,13 @@ export async function zostavBalik(
     .not("status", "in", "(draft,cancelled)")
     .order("issue_date");
   const { zapocitatelna } = await import("./samofakturacia");
-  const prijate = (vsetkyPrijate ?? []).filter(
-    (p: Riadok) => zapocitatelna(p) && (!vstup.lenNove || !p.exported_at),
+  const { ok: prijate, cakaju: cakajuPrijate } = await lenSchvalene(
+    supabase,
+    vstup.companyId,
+    "prijata",
+    (vsetkyPrijate ?? []).filter((p: Riadok) => zapocitatelna(p) && (!vstup.lenNove || !p.exported_at)),
   );
+  const cakajuNaSchvalenie = cakajuFaktury + cakajuDoklady + cakajuPrijate;
   const ostatne = (vsetkyOstatne ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at);
 
   if (!faktury.length && !doklady.length && !prijate.length && !pokladnica?.length && !ostatne.length) {
@@ -304,6 +320,8 @@ export async function zostavBalik(
     });
     xmlFaktur = vystup.content;
     preskocene = vystup.preskocene ?? [];
+    if (cakajuNaSchvalenie)
+      preskocene.push(`${cakajuNaSchvalenie} dokladov čaká na schválenie — pôjdu v ďalšom odovzdaní`);
     const cislaPreskocenych = new Set(preskocene.map((d) => String(d).split(" — ")[0]));
     vyvezene = faktury.filter((f: Riadok) => !cislaPreskocenych.has(f.invoice_number));
 

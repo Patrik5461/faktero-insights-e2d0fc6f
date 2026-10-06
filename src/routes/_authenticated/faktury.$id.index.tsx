@@ -5,6 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { Oprava25aPanel } from "@/components/faktero/Oprava25aPanel";
 import { ZauctovanieVystavenejPanel } from "@/components/faktero/ZauctovanieVystavenejPanel";
+import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
 import { popisSplatnosti, predlzena } from "@/lib/faktero/splatnost";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
@@ -1220,6 +1221,9 @@ function InvoiceDetail() {
               </div>
             </div>
             <Oprava25aPanel invoice={inv} />
+            {inv.status !== "draft" && (
+              <SchvalovaniePanel companyId={inv.company_id} agenda="vystavena" id={inv.id} onZmena={() => void load()} />
+            )}
             <ZauctovanieVystavenejPanel
               inv={inv}
               onZmena={() => void load()}

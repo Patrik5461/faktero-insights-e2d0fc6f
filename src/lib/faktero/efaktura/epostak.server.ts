@@ -225,6 +225,8 @@ export async function sendEfaktura(
     .maybeSingle();
   if (invErr) throw invErr;
   if (!invoice) throw new Error("Faktúra nenájdená.");
+  // Schvaľovanie: odoslať až po schválení, ak si to firma zapla.
+  await (await import("../schvalovanie.server")).overOdoslanie(invoice.company_id, invoiceId);
 
   const [{ data: items, error: itemsErr }, { data: company, error: compErr }, { data: profile }] =
     await Promise.all([

@@ -37,6 +37,7 @@ import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
 import { exportPrijatychPohodaFn } from "@/lib/faktero/vratenie.functions";
+import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { NAZVY_STAVOV, stavSamofaktury, zapocitatelna } from "@/lib/faktero/samofakturacia";
 
@@ -92,6 +93,7 @@ function monthOptions(): { value: string; label: string }[] {
 function PurchaseInvoicesPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
+  const sch = useStavSchvalovania(getActiveCompanyId(), "prijata", rows.map((r: any) => r.id));
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("");
   const [month, setMonth] = useState<string>("");
@@ -709,6 +711,11 @@ function PurchaseInvoicesPage() {
                   </td>
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <StatusBadge status={r.status} />
+                    {sch.stavy[r.id] ? (
+                      <div className={`mt-1 text-xs ${farbaOdznaku(sch.stavy[r.id].stav)}`} title="Schvaľovanie">
+                        {sch.stavy[r.id].odznak}
+                      </div>
+                    ) : null}
                     {r.exported_at ? (
                       <span className="mt-1 block text-xs text-emerald-700 dark:text-emerald-300">V Pohode</span>
                     ) : r.zauctovane_at && r.status !== "booked" ? (
@@ -814,7 +821,13 @@ function PurchaseInvoicesPage() {
         <HromadnyPrikaz
           companyId={getActiveCompanyId()!}
           // Neodsúhlasená samofaktúra ešte nie je dlh — do príkazu nepatrí.
-          faktury={rows.filter((r) => selected.has(r.id) && zapocitatelna(r))}
+          // Pri zapnutom schvaľovaní ide na úhradu len schválená.
+          faktury={rows.filter(
+            (r) =>
+              selected.has(r.id) &&
+              zapocitatelna(r) &&
+              (!sch.zapnute || !sch.stavy[r.id] || sch.stavy[r.id].stav === "schvaleny"),
+          )}
           onClose={() => setPrikaz(false)}
         />
       )}

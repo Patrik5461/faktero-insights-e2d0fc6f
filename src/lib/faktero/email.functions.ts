@@ -23,6 +23,7 @@ export const sendInvoiceEmailFn = createServerFn({ method: "POST" })
     if (!inv) throw new Error("Faktúra nenájdená");
     const { assertCompanyActive } = await import("./active-check.server");
     await assertCompanyActive(inv.company_id);
+    await (await import("./schvalovanie.server")).overOdoslanie(inv.company_id, inv.id);
     const { sendInvoiceEmail } = await import("./email.server");
     return sendInvoiceEmail({
       company_id: inv.company_id,

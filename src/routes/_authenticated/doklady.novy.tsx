@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { KodPohody } from "@/components/faktero/KodPohody";
 import { JobPicker } from "@/components/faktero/JobPicker";
+import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { RozuctovaniePanel } from "@/components/faktero/RozuctovaniePanel";
 import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
@@ -793,6 +794,11 @@ function NovyDokladPage() {
                   </p>
                 )}
               </div>
+              {search.id && cid ? (
+                <div className="sm:col-span-2">
+                  <SchvalovaniePanel companyId={cid} agenda="doklad" id={search.id} />
+                </div>
+              ) : null}
               <div className="sm:col-span-2 rounded-md border border-border p-3">
                 <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Zaúčtovanie (Pohoda)

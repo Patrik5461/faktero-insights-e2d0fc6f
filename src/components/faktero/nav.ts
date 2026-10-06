@@ -107,10 +107,11 @@ export const NAV: NavGroup[] = [
       rozoznať vôbec. Doklady majú bloček, rovnako ako v mobilnej appke.
     */
     icon: Receipt,
-    match: ["/doklady", "/ostatne-doklady"],
+    match: ["/doklady", "/ostatne-doklady", "/schvalovanie"],
     children: [
       { to: "/doklady", label: "Prehľad dokladov" },
       { to: "/doklady", search: { stav: "nespracovane" }, label: "Nespracované doklady" },
+      { to: "/schvalovanie", label: "Na schválenie" },
       { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
       { to: "/doklady/mailom", label: "Doklady e-mailom" },
       { to: "/ostatne-doklady", label: "Ostatné doklady" },
@@ -277,6 +278,7 @@ export const ACCOUNT_API_LINKS: NavChild[] = [
 export const ACCOUNT_SETTINGS_LINKS: NavChild[] = [
   { to: "/firma", label: "Firma" },
   { to: "/ciselne-rady", label: "Číselné rady" },
+  { to: "/nastavenia/schvalovanie", label: "Schvaľovanie dokladov" },
   { to: "/nastavenia/vzhlad-faktury", label: "Vzhľad faktúry" },
   { to: "/nastavenia/email-sablony", label: "Email šablóny" },
   { to: "/nastavenia/zabezpecenie", label: "Zabezpečenie účtu" },

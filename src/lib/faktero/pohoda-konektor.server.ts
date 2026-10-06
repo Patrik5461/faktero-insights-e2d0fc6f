@@ -193,9 +193,16 @@ export async function zostavDavku(
   if (fErr) throw new Error(fErr.message);
 
   const odovzdane = new Set((uzOdovzdane ?? []).map((r: Riadok) => r.invoice_id));
-  const faktury = (vsetkyFaktury ?? []).filter((f: Riadok) => !odovzdane.has(f.id));
+  // Schvaľovanie: do Pohody ide len schválené (doklady spred zapnutia áno).
+  const { lenSchvalene } = await import("./schvalovanie.server");
+  const { ok: faktury } = await lenSchvalene(
+    supabase,
+    vstup.companyId,
+    "vystavena",
+    (vsetkyFaktury ?? []).filter((f: Riadok) => !odovzdane.has(f.id)),
+  );
 
-  const [{ data: doklady }, { data: pokladnica }] = await Promise.all([
+  const [{ data: dokladyNeschvalene }, { data: pokladnica }] = await Promise.all([
     supabase
       .from("expense_documents")
       .select("*")
@@ -234,7 +241,13 @@ export async function zostavDavku(
     .limit(STROP_DAVKY);
   const { zapocitatelna } = await import("./samofakturacia");
   const { prijataAkoDoklad } = await import("./prijate-do-pohody");
-  const prijate = (prijateRiadky ?? []).filter((p: Riadok) => zapocitatelna(p));
+  const { ok: doklady } = await lenSchvalene(supabase, vstup.companyId, "doklad", dokladyNeschvalene ?? []);
+  const { ok: prijate } = await lenSchvalene(
+    supabase,
+    vstup.companyId,
+    "prijata",
+    (prijateRiadky ?? []).filter((p: Riadok) => zapocitatelna(p)),
+  );
 
   // Číselníky — len keď si ich firma zapla. Sklad navyše potrebuje členenie,
   // bez neho Pohoda kartu nezaloží, tak sa ani neposiela.

@@ -40,6 +40,7 @@ import {
 import { toast } from "sonner";
 import { PredkontaciaDokladovOkno } from "@/components/faktero/PredkontaciaDokladovOkno";
 import { KosDokladovOkno } from "@/components/faktero/KosDokladovOkno";
+import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: () => ({ meta: [{ title: "Doklady — Faktero" }] }),
@@ -104,6 +105,7 @@ function DokladyPage() {
   const [navrhy, setNavrhy] = useState<any[]>([]);
   const [parujem, setParujem] = useState<string | null>(null);
   const [rows, setRows] = useState<any[]>([]);
+  const sch = useStavSchvalovania(getActiveCompanyId(), "doklad", rows.map((r: any) => r.id));
   const [loading, setLoading] = useState(true);
   /** Doklad, ktorý sa práve presúva medzi prijaté faktúry. */
   const [presuvam, setPresuvam] = useState<string | null>(null);
@@ -680,6 +682,11 @@ function DokladyPage() {
                         >
                           {STATUS_LABEL[r.status] ?? r.status}
                         </span>
+                        {sch.stavy[r.id] ? (
+                          <span className={`text-xs ${farbaOdznaku(sch.stavy[r.id].stav)}`} title="Schvaľovanie">
+                            {sch.stavy[r.id].odznak}
+                          </span>
+                        ) : null}
                         {r.status === "new" &&
                           (daSaSpracovat(r) ? (
                             <button

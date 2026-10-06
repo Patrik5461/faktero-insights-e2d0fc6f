@@ -491,9 +491,17 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     let q = supabase.from("expense_documents").select("*").eq("company_id", data.company_id);
     if (data.ids?.length) q = q.in("id", data.ids);
     if (data.month) q = vMesiaci(q, data.month);
-    const { data: rows, error } = await q;
+    const { data: vsetky, error } = await q;
     if (error) throw new Error(error.message);
-    if (!rows?.length) throw new Error("Žiadne doklady na export");
+    if (!vsetky?.length) throw new Error("Žiadne doklady na export");
+    /*
+      Odovzdanie účtovníkovi berie len schválené (keď je schvaľovanie
+      zapnuté); obyčajný ZIP na stiahnutie ostáva archívom všetkého.
+    */
+    const { ok: rows, cakaju } = data.mark_exported
+      ? await (await import("./schvalovanie.server")).lenSchvalene(supabase, data.company_id, "doklad", vsetky)
+      : { ok: vsetky, cakaju: 0 };
+    if (!rows.length) throw new Error(`Vybrané doklady čakajú na schválenie (${cakaju}).`);
 
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();

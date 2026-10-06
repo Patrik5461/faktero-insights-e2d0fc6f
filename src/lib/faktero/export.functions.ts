@@ -19,7 +19,7 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
     if (!strategy) throw new Error("Neznámy formát exportu");
     if (!data.invoiceIds.length) throw new Error("Žiadne faktúry");
 
-    const [{ data: company, error: cErr }, { data: invs, error: iErr }] = await Promise.all([
+    const [{ data: company, error: cErr }, { data: invsVsetky, error: iErr }] = await Promise.all([
       supabase.from("companies").select("*").eq("id", data.companyId).single(),
       supabase
         .from("invoices")
@@ -32,7 +32,15 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
     if (cErr) throw new Error(cErr.message);
     if (iErr) throw new Error(iErr.message);
     if (!company) throw new Error("Firma nenájdená");
-    if (!invs || invs.length === 0) throw new Error("Faktúry nenájdené");
+    if (!invsVsetky || invsVsetky.length === 0) throw new Error("Faktúry nenájdené");
+    // Schvaľovanie: do účtovníctva len schválené.
+    const { ok: invs, cakaju } = await (await import("./schvalovanie.server")).lenSchvalene(
+      supabase,
+      data.companyId,
+      "vystavena",
+      invsVsetky,
+    );
+    if (!invs.length) throw new Error(`Vybrané faktúry čakajú na schválenie (${cakaju}).`);
 
     const { data: items, error: itErr } = await supabase
       .from("invoice_items")

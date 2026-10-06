@@ -45,6 +45,7 @@ import { ResponsiveTable, MobileListCard } from "@/components/faktero/Responsive
 import { supabase } from "@/integrations/supabase/client";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
 import { ZauctovanieFakturOkno } from "@/components/faktero/ZauctovanieFakturOkno";
+import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 
 type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
 
@@ -151,6 +152,11 @@ function InvoicesPage() {
   const [overdueNoReminder, setOverdueNoReminder] = useState(false);
   const exportFn = useServerFn(exportInvoicesFn);
   const [zauctovanie, setZauctovanie] = useState(false);
+  const sch = useStavSchvalovania(
+    getActiveCompanyId(),
+    "vystavena",
+    list.rows.filter((r: any) => r.status !== "draft").map((r: any) => r.id),
+  );
   const cloneFn = useServerFn(cloneInvoiceFn);
   const markPaidFn = useServerFn(bulkMarkPaidFn);
   const emailFn = useServerFn(sendInvoiceEmailFn);
@@ -894,6 +900,11 @@ function InvoicesPage() {
                       </td>
                       <td className="p-3">
                         <StatusBadge status={i.status} />
+                        {sch.stavy[i.id] ? (
+                          <div className={`mt-1 text-xs ${farbaOdznaku(sch.stavy[i.id].stav)}`} title="Schvaľovanie">
+                            {sch.stavy[i.id].odznak}
+                          </div>
+                        ) : null}
                         {i.zauctovane_at ? (
                           <div
                             className="mt-1 text-xs text-sky-700"

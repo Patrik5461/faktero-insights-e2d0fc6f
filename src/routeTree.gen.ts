@@ -46,6 +46,7 @@ import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedPokladnaRouteImport } from './routes/_authenticated/pokladna'
 import { Route as AuthenticatedPredplatneRouteImport } from './routes/_authenticated/predplatne'
 import { Route as AuthenticatedProduktyRouteImport } from './routes/_authenticated/produkty'
+import { Route as AuthenticatedSchvalovanieRouteImport } from './routes/_authenticated/schvalovanie'
 import { Route as AuthenticatedSkladRouteImport } from './routes/_authenticated/sklad'
 import { Route as AuthenticatedWebhookyRouteImport } from './routes/_authenticated/webhooky'
 import { Route as AuthenticatedWebhookyLogyRouteImport } from './routes/_authenticated/webhooky-logy'
@@ -169,6 +170,7 @@ import { Route as AuthenticatedJazdyVozidlaRouteImport } from './routes/_authent
 import { Route as AuthenticatedNastaveniaIndexRouteImport } from './routes/_authenticated/nastavenia.index'
 import { Route as AuthenticatedNastaveniaEmailSablonyRouteImport } from './routes/_authenticated/nastavenia.email-sablony'
 import { Route as AuthenticatedNastaveniaOnlinePlatbyRouteImport } from './routes/_authenticated/nastavenia.online-platby'
+import { Route as AuthenticatedNastaveniaSchvalovanieRouteImport } from './routes/_authenticated/nastavenia.schvalovanie'
 import { Route as AuthenticatedNastaveniaVzhladFakturyRouteImport } from './routes/_authenticated/nastavenia.vzhlad-faktury'
 import { Route as AuthenticatedNastaveniaZabezpecenieRouteImport } from './routes/_authenticated/nastavenia.zabezpecenie'
 import { Route as AuthenticatedObjednavkyIndexRouteImport } from './routes/_authenticated/objednavky.index'
@@ -494,6 +496,12 @@ const AuthenticatedProduktyRoute = AuthenticatedProduktyRouteImport.update({
   path: '/produkty',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSchvalovanieRoute =
+  AuthenticatedSchvalovanieRouteImport.update({
+    id: '/schvalovanie',
+    path: '/schvalovanie',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSkladRoute = AuthenticatedSkladRouteImport.update({
   id: '/sklad',
   path: '/sklad',
@@ -1148,6 +1156,12 @@ const AuthenticatedNastaveniaOnlinePlatbyRoute =
   AuthenticatedNastaveniaOnlinePlatbyRouteImport.update({
     id: '/nastavenia/online-platby',
     path: '/nastavenia/online-platby',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedNastaveniaSchvalovanieRoute =
+  AuthenticatedNastaveniaSchvalovanieRouteImport.update({
+    id: '/nastavenia/schvalovanie',
+    path: '/nastavenia/schvalovanie',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedNastaveniaVzhladFakturyRoute =
@@ -1949,6 +1963,7 @@ export interface FileRoutesByFullPath {
   '/pokladna': typeof AuthenticatedPokladnaRoute
   '/predplatne': typeof AuthenticatedPredplatneRoute
   '/produkty': typeof AuthenticatedProduktyRoute
+  '/schvalovanie': typeof AuthenticatedSchvalovanieRoute
   '/sklad': typeof AuthenticatedSkladRouteWithChildren
   '/webhooky': typeof AuthenticatedWebhookyRoute
   '/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
@@ -2062,6 +2077,7 @@ export interface FileRoutesByFullPath {
   '/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
   '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  '/nastavenia/schvalovanie': typeof AuthenticatedNastaveniaSchvalovanieRoute
   '/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
   '/objednavky/$id': typeof AuthenticatedObjednavkyIdRoute
@@ -2239,6 +2255,7 @@ export interface FileRoutesByTo {
   '/pokladna': typeof AuthenticatedPokladnaRoute
   '/predplatne': typeof AuthenticatedPredplatneRoute
   '/produkty': typeof AuthenticatedProduktyRoute
+  '/schvalovanie': typeof AuthenticatedSchvalovanieRoute
   '/webhooky': typeof AuthenticatedWebhookyRoute
   '/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
   '/admin/ai': typeof AdminAiRoute
@@ -2350,6 +2367,7 @@ export interface FileRoutesByTo {
   '/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
   '/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  '/nastavenia/schvalovanie': typeof AuthenticatedNastaveniaSchvalovanieRoute
   '/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
   '/objednavky/$id': typeof AuthenticatedObjednavkyIdRoute
@@ -2536,6 +2554,7 @@ export interface FileRoutesById {
   '/_authenticated/pokladna': typeof AuthenticatedPokladnaRoute
   '/_authenticated/predplatne': typeof AuthenticatedPredplatneRoute
   '/_authenticated/produkty': typeof AuthenticatedProduktyRoute
+  '/_authenticated/schvalovanie': typeof AuthenticatedSchvalovanieRoute
   '/_authenticated/sklad': typeof AuthenticatedSkladRouteWithChildren
   '/_authenticated/webhooky': typeof AuthenticatedWebhookyRoute
   '/_authenticated/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
@@ -2649,6 +2668,7 @@ export interface FileRoutesById {
   '/_authenticated/jazdy/vozidla': typeof AuthenticatedJazdyVozidlaRoute
   '/_authenticated/nastavenia/email-sablony': typeof AuthenticatedNastaveniaEmailSablonyRoute
   '/_authenticated/nastavenia/online-platby': typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  '/_authenticated/nastavenia/schvalovanie': typeof AuthenticatedNastaveniaSchvalovanieRoute
   '/_authenticated/nastavenia/vzhlad-faktury': typeof AuthenticatedNastaveniaVzhladFakturyRoute
   '/_authenticated/nastavenia/zabezpecenie': typeof AuthenticatedNastaveniaZabezpecenieRoute
   '/_authenticated/objednavky/$id': typeof AuthenticatedObjednavkyIdRoute
@@ -2835,6 +2855,7 @@ export interface FileRouteTypes {
     | '/pokladna'
     | '/predplatne'
     | '/produkty'
+    | '/schvalovanie'
     | '/sklad'
     | '/webhooky'
     | '/webhooky-logy'
@@ -2948,6 +2969,7 @@ export interface FileRouteTypes {
     | '/jazdy/vozidla'
     | '/nastavenia/email-sablony'
     | '/nastavenia/online-platby'
+    | '/nastavenia/schvalovanie'
     | '/nastavenia/vzhlad-faktury'
     | '/nastavenia/zabezpecenie'
     | '/objednavky/$id'
@@ -3125,6 +3147,7 @@ export interface FileRouteTypes {
     | '/pokladna'
     | '/predplatne'
     | '/produkty'
+    | '/schvalovanie'
     | '/webhooky'
     | '/webhooky-logy'
     | '/admin/ai'
@@ -3236,6 +3259,7 @@ export interface FileRouteTypes {
     | '/jazdy/vozidla'
     | '/nastavenia/email-sablony'
     | '/nastavenia/online-platby'
+    | '/nastavenia/schvalovanie'
     | '/nastavenia/vzhlad-faktury'
     | '/nastavenia/zabezpecenie'
     | '/objednavky/$id'
@@ -3421,6 +3445,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pokladna'
     | '/_authenticated/predplatne'
     | '/_authenticated/produkty'
+    | '/_authenticated/schvalovanie'
     | '/_authenticated/sklad'
     | '/_authenticated/webhooky'
     | '/_authenticated/webhooky-logy'
@@ -3534,6 +3559,7 @@ export interface FileRouteTypes {
     | '/_authenticated/jazdy/vozidla'
     | '/_authenticated/nastavenia/email-sablony'
     | '/_authenticated/nastavenia/online-platby'
+    | '/_authenticated/nastavenia/schvalovanie'
     | '/_authenticated/nastavenia/vzhlad-faktury'
     | '/_authenticated/nastavenia/zabezpecenie'
     | '/_authenticated/objednavky/$id'
@@ -4070,6 +4096,13 @@ declare module '@tanstack/react-router' {
       path: '/produkty'
       fullPath: '/produkty'
       preLoaderRoute: typeof AuthenticatedProduktyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/schvalovanie': {
+      id: '/_authenticated/schvalovanie'
+      path: '/schvalovanie'
+      fullPath: '/schvalovanie'
+      preLoaderRoute: typeof AuthenticatedSchvalovanieRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/sklad': {
@@ -4931,6 +4964,13 @@ declare module '@tanstack/react-router' {
       path: '/nastavenia/online-platby'
       fullPath: '/nastavenia/online-platby'
       preLoaderRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nastavenia/schvalovanie': {
+      id: '/_authenticated/nastavenia/schvalovanie'
+      path: '/nastavenia/schvalovanie'
+      fullPath: '/nastavenia/schvalovanie'
+      preLoaderRoute: typeof AuthenticatedNastaveniaSchvalovanieRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/nastavenia/vzhlad-faktury': {
@@ -6000,6 +6040,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPokladnaRoute: typeof AuthenticatedPokladnaRoute
   AuthenticatedPredplatneRoute: typeof AuthenticatedPredplatneRoute
   AuthenticatedProduktyRoute: typeof AuthenticatedProduktyRoute
+  AuthenticatedSchvalovanieRoute: typeof AuthenticatedSchvalovanieRoute
   AuthenticatedSkladRoute: typeof AuthenticatedSkladRouteWithChildren
   AuthenticatedWebhookyRoute: typeof AuthenticatedWebhookyRoute
   AuthenticatedWebhookyLogyRoute: typeof AuthenticatedWebhookyLogyRoute
@@ -6033,6 +6074,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedJazdyVozidlaRoute: typeof AuthenticatedJazdyVozidlaRoute
   AuthenticatedNastaveniaEmailSablonyRoute: typeof AuthenticatedNastaveniaEmailSablonyRoute
   AuthenticatedNastaveniaOnlinePlatbyRoute: typeof AuthenticatedNastaveniaOnlinePlatbyRoute
+  AuthenticatedNastaveniaSchvalovanieRoute: typeof AuthenticatedNastaveniaSchvalovanieRoute
   AuthenticatedNastaveniaVzhladFakturyRoute: typeof AuthenticatedNastaveniaVzhladFakturyRoute
   AuthenticatedNastaveniaZabezpecenieRoute: typeof AuthenticatedNastaveniaZabezpecenieRoute
   AuthenticatedObjednavkyIdRoute: typeof AuthenticatedObjednavkyIdRoute
@@ -6100,6 +6142,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPokladnaRoute: AuthenticatedPokladnaRoute,
   AuthenticatedPredplatneRoute: AuthenticatedPredplatneRoute,
   AuthenticatedProduktyRoute: AuthenticatedProduktyRoute,
+  AuthenticatedSchvalovanieRoute: AuthenticatedSchvalovanieRoute,
   AuthenticatedSkladRoute: AuthenticatedSkladRouteWithChildren,
   AuthenticatedWebhookyRoute: AuthenticatedWebhookyRoute,
   AuthenticatedWebhookyLogyRoute: AuthenticatedWebhookyLogyRoute,
@@ -6137,6 +6180,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedNastaveniaEmailSablonyRoute,
   AuthenticatedNastaveniaOnlinePlatbyRoute:
     AuthenticatedNastaveniaOnlinePlatbyRoute,
+  AuthenticatedNastaveniaSchvalovanieRoute:
+    AuthenticatedNastaveniaSchvalovanieRoute,
   AuthenticatedNastaveniaVzhladFakturyRoute:
     AuthenticatedNastaveniaVzhladFakturyRoute,
   AuthenticatedNastaveniaZabezpecenieRoute:

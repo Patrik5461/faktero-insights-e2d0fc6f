@@ -195,11 +195,18 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     const { zapocitatelna } = await import("./samofakturacia");
     const { prijataAkoDoklad } = await import("./prijate-do-pohody");
     const preskocene: string[] = [];
-    const ok = (riadky ?? []).filter((p: any) => {
+    const kandidati = (riadky ?? []).filter((p: any) => {
       if (!p.zauctovane_at) return preskocene.push(`${p.invoice_number}: nie je zaúčtovaná`), false;
       if (!zapocitatelna(p)) return preskocene.push(`${p.invoice_number}: neodsúhlasená samofaktúra`), false;
       return true;
     });
+    const { ok, cakaju } = await (await import("./schvalovanie.server")).lenSchvalene(
+      supabase,
+      data.company_id,
+      "prijata",
+      kandidati,
+    );
+    if (cakaju) preskocene.push(`${cakaju} čaká na schválenie`);
     if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
 
     const { buildPohodaExpensesXml } = await import("./export.server");
