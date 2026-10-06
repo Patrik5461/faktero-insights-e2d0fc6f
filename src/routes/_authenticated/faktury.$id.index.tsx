@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { Oprava25aPanel } from "@/components/faktero/Oprava25aPanel";
+import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
+import { popisSplatnosti, predlzena } from "@/lib/faktero/splatnost";
 import { useEfakturaTestovaciRezim } from "@/components/faktero/EfakturaTestovaciRezim";
 import { StatusBadge } from "./dashboard";
 import { toast } from "sonner";
@@ -766,7 +768,7 @@ function InvoiceDetail() {
     <>
       <PageHeader
         title={`${inv.oprava_25a ? "Opravný doklad (§ 25a)" : (NAZOV_TYPU[inv.type as string] ?? "Faktúra")} ${inv.invoice_number}`}
-        description={`Vystavená ${inv.issue_date} · splatná ${inv.due_date}`}
+        description={`Vystavená ${inv.issue_date} · splatná ${popisSplatnosti(inv)}${predlzena(inv) && inv.predlzenie_poznamka ? ` — ${inv.predlzenie_poznamka}` : ""}`}
         action={
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={inv.status} />
@@ -1256,7 +1258,16 @@ function InvoiceDetail() {
                 <div>
                   Variabilný symbol: <span className="font-mono">{inv.variable_symbol}</span>
                 </div>
-                <div>Splatnosť: {inv.due_date}</div>
+                <div>Splatnosť: {popisSplatnosti(inv)}</div>
+                {predlzena(inv) && (
+                  <div className="text-xs text-muted-foreground">
+                    Lehoty DPH (§ 25a) sa počítajú od pôvodnej splatnosti.
+                    {inv.predlzenie_poznamka ? ` Dohoda: ${inv.predlzenie_poznamka}` : ""}
+                  </div>
+                )}
+                <div className="my-2">
+                  <PredlzitSplatnost druh="vydana" faktura={inv} onZmena={() => void load()} />
+                </div>
                 <div>Forma úhrady: {paymentMethodLabel(inv.payment_method)}</div>
                 {/*
                   Bez IBAN-u nemá odberateľ kam zaplatiť a na doklade nie je ani

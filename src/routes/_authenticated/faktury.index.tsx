@@ -856,7 +856,14 @@ function InvoicesPage() {
 
                       <td className="p-3">{i.customer_name ?? "—"}</td>
                       <td className="p-3">{i.issue_date}</td>
-                      <td className="p-3">{i.due_date}</td>
+                      <td className="p-3">
+                        {i.due_date}
+                        {i.povodna_splatnost && i.povodna_splatnost !== i.due_date && (
+                          <span className="block text-xs text-muted-foreground" title={`Pôvodne ${i.povodna_splatnost}`}>
+                            predĺžená
+                          </span>
+                        )}
+                      </td>
                       <td className="p-3 text-right">
                         {Number(i.total).toFixed(2)} {i.currency}
                       </td>

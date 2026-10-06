@@ -594,7 +594,14 @@ function PurchaseInvoicesPage() {
                     {r.variable_symbol || "—"}
                   </td>
                   <td className="p-3">{r.issue_date}</td>
-                  <td className="p-3">{r.due_date}</td>
+                  <td className="p-3">
+                    {r.due_date}
+                    {r.povodna_splatnost && r.povodna_splatnost !== r.due_date && (
+                      <span className="block text-xs text-muted-foreground" title={`Pôvodne ${r.povodna_splatnost}`}>
+                        predĺžená
+                      </span>
+                    )}
+                  </td>
                   <td className="p-3 text-right tabular-nums">
                     {fmtMoney(Number(r.amount_total ?? 0), r.currency)}
                   </td>

@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { SamofakturaPanel } from "@/components/faktero/SamofakturaPanel";
+import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
+import { popisSplatnosti, predlzena } from "@/lib/faktero/splatnost";
 import { zapocitatelna } from "@/lib/faktero/samofakturacia";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { listBankData } from "@/lib/faktero/tatrabanka.functions";
@@ -409,7 +411,7 @@ function PurchaseInvoiceDetail() {
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Dátumy</div>
                 <Row label="Vystavenie" value={row.issue_date} />
                 <Row label="Prijatie" value={row.received_date} />
-                <Row label="Splatnosť" value={row.due_date} />
+                <Row label="Splatnosť" value={popisSplatnosti(row)} />
                 {row.payment_date && <Row label="Úhrada" value={row.payment_date} />}
                 {uhrada && (
                   <div className="mt-1 flex items-center justify-between gap-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs">
@@ -473,7 +475,16 @@ function PurchaseInvoiceDetail() {
                 <Wallet className="h-3.5 w-3.5" /> Platba
               </div>
               <div className="mt-2">Spôsob: {row.payment_method ?? "—"}</div>
-              <div>Splatnosť: {row.due_date}</div>
+              <div>Splatnosť: {popisSplatnosti(row)}</div>
+              {predlzena(row) && (
+                <div className="text-xs text-muted-foreground">
+                  Oprava odpočtu podľa § 53b sa počíta od pôvodnej splatnosti.
+                  {row.predlzenie_poznamka ? ` Dohoda: ${row.predlzenie_poznamka}` : ""}
+                </div>
+              )}
+              <div className="mt-2">
+                <PredlzitSplatnost druh="prijata" faktura={row} onZmena={load} />
+              </div>
               {row.payment_date && <div>Uhradené: {row.payment_date}</div>}
             </div>
 

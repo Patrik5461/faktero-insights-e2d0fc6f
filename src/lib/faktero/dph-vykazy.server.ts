@@ -76,7 +76,7 @@ export async function nacitajVstup(
     supabase
       .from("purchase_invoices")
       .select(
-        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, status, payment_date",
+        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date",
       )
       .eq("company_id", companyId)
       /*
@@ -271,7 +271,8 @@ export async function nacitajVstup(
     .maybeSingle();
   const { opravy53b } = await import("./dph-nezaplatene");
   const naKontrolu = ((prijateRes.data ?? []) as any[])
-    .filter((p) => zapocitatelna(p) && p.due_date)
+    // Lehota sa počíta od pôvodnej splatnosti — predĺženie dohodou ju neposúva.
+    .filter((p) => zapocitatelna(p) && (p.povodna_splatnost || p.due_date))
     .map((p) => {
       const den = p.delivery_date || p.issue_date;
       const cudziaP = Boolean(p.currency && p.currency !== "EUR");
@@ -285,7 +286,7 @@ export async function nacitajVstup(
         rezim: ((p.dph_rezim as PrijataFaktura["rezim"]) ?? odvodRezimPrijatej(p.supplier_ic_dph, dan)) as PrijataFaktura["rezim"],
         odpocet: p.odpocet !== false,
         dobropis: Boolean(p.opravuje_cislo) || zaklad < 0,
-        splatnost: String(p.due_date),
+        splatnost: String(p.povodna_splatnost || p.due_date),
         zaplatenaDna: p.payment_date ? String(p.payment_date).slice(0, 10) : null,
         zaplatena: p.status === "paid",
         riadky: riadkyPrijatej(p, zaklad, dan, den, cudziaP),

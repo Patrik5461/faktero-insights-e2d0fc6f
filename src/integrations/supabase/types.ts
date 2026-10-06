@@ -4140,6 +4140,10 @@ export type Database = {
           language: string | null
           notes: string | null
           opravuje_fakturu_id: string | null
+          povodna_splatnost: string | null
+          predlzenie_poznamka: string | null
+          predlzene_at: string | null
+          predlzil: string | null
           oprava_25a: boolean
           order_number: string | null
           original_external_id: string | null
@@ -4222,6 +4226,10 @@ export type Database = {
           language?: string | null
           notes?: string | null
           opravuje_fakturu_id?: string | null
+          povodna_splatnost?: string | null
+          predlzenie_poznamka?: string | null
+          predlzene_at?: string | null
+          predlzil?: string | null
           oprava_25a?: boolean
           order_number?: string | null
           original_external_id?: string | null
@@ -4304,6 +4312,10 @@ export type Database = {
           language?: string | null
           notes?: string | null
           opravuje_fakturu_id?: string | null
+          povodna_splatnost?: string | null
+          predlzenie_poznamka?: string | null
+          predlzene_at?: string | null
+          predlzil?: string | null
           oprava_25a?: boolean
           order_number?: string | null
           original_external_id?: string | null
@@ -5246,6 +5258,10 @@ export type Database = {
           opravuje_cislo: string | null
           exchange_rate: number | null
           amount_without_vat_eur: number | null
+          povodna_splatnost: string | null
+          predlzenie_poznamka: string | null
+          predlzene_at: string | null
+          predlzil: string | null
           advance_amount: number | null
           discount_total: number | null
           discount_type: string | null
@@ -5316,6 +5332,10 @@ export type Database = {
           opravuje_cislo?: string | null
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
+          povodna_splatnost?: string | null
+          predlzenie_poznamka?: string | null
+          predlzene_at?: string | null
+          predlzil?: string | null
           advance_amount?: number | null
           discount_total?: number | null
           discount_type?: string | null
@@ -5386,6 +5406,10 @@ export type Database = {
           opravuje_cislo?: string | null
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
+          povodna_splatnost?: string | null
+          predlzenie_poznamka?: string | null
+          predlzene_at?: string | null
+          predlzil?: string | null
           advance_amount?: number | null
           discount_total?: number | null
           discount_type?: string | null

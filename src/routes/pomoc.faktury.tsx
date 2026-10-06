@@ -273,6 +273,32 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "predlzenie-splatnosti",
+    title: "Predĺženie splatnosti",
+    body: (
+      <>
+        <p>
+          Keď sa s odberateľom dohodnete na neskoršej úhrade, na detaile faktúry kliknite na{" "}
+          <em>Predĺžiť splatnosť</em>, zadajte nový dátum a dohodu (napríklad „e-mail zo 6. 10.“).
+          Faktero si pôvodnú splatnosť zapamätá — na faktúre aj v zozname uvidíte „predĺžená,
+          pôvodne …“. Upomienky a „po splatnosti“ sa riadia novým dátumom. To isté funguje pri
+          prijatých faktúrach.
+        </p>
+        <p>
+          Faktúru odoslanú cez <strong>eFaktúru</strong> Peppol zmeniť nevie — predĺženie je dohoda,
+          nie oprava faktúry, opravný doklad sa nevystavuje. Pri predĺžení preto môžete odberateľovi
+          poslať e-mail s potvrdením novej splatnosti.
+        </p>
+        <p>
+          Lehoty DPH sa počítajú od <strong>pôvodnej</strong> splatnosti dohodnutej pri vzniku
+          záväzku — 150 dní na opravu podľa § 25a aj 101 dní na povinnú opravu odpočtu podľa § 53b.
+          Pôvodnú splatnosť chráni aj zámok uzavretého obdobia; predĺžiť ju môžete aj na faktúre zo
+          zamknutého obdobia.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "odberatel-zmenit",
     title: "Zmena odberateľa na vystavenej faktúre",
     body: (

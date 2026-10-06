@@ -83,7 +83,8 @@ export const stav25aFn = createServerFn({ method: "POST" })
       {
         typ: p.f.type,
         stav: p.f.status,
-        splatnost: p.f.due_date,
+        // Lehota § 25a beží od pôvodnej splatnosti, nie od predĺženej.
+        splatnost: p.f.povodna_splatnost || p.f.due_date,
         datumDodania: String(p.f.delivery_date || p.f.issue_date),
         spoluSDph: Number(p.f.total ?? 0),
         zaplatene: p.zaplateneSpolu,
@@ -156,7 +157,7 @@ export const vystavOpravu25aFn = createServerFn({ method: "POST" })
         {
           typ: f.type,
           stav: f.status,
-          splatnost: f.due_date,
+          splatnost: f.povodna_splatnost || f.due_date,
           datumDodania: String(f.delivery_date || f.issue_date),
           spoluSDph: celkom,
           zaplatene: p.zaplateneSpolu,
@@ -177,7 +178,7 @@ export const vystavOpravu25aFn = createServerFn({ method: "POST" })
       }
       podiel = n.podiel;
       suma = n.nezaplatene;
-      uvod = `${VETA_25A[0].toUpperCase()}${VETA_25A.slice(1)} zákona č. 222/2004 Z. z. o DPH k faktúre ${f.invoice_number} zo dňa ${f.issue_date}. Pohľadávka vo výške ${suma.toFixed(2)} ${f.currency ?? "EUR"} vrátane DPH je nevymožiteľná — od splatnosti ${f.due_date} uplynulo viac ako 150 dní.`;
+      uvod = `${VETA_25A[0].toUpperCase()}${VETA_25A.slice(1)} zákona č. 222/2004 Z. z. o DPH k faktúre ${f.invoice_number} zo dňa ${f.issue_date}. Pohľadávka vo výške ${suma.toFixed(2)} ${f.currency ?? "EUR"} vrátane DPH je nevymožiteľná — od splatnosti ${f.povodna_splatnost || f.due_date} uplynulo viac ako 150 dní.`;
     } else {
       if (!p.znizenie.length) throw new Error("K faktúre nie je opravný doklad podľa § 25a.");
       const prva = p.znizenie[0];
