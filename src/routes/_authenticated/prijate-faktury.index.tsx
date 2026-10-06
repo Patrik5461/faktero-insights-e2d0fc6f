@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrijemMailom } from "@/components/faktero/PrijemMailom";
+import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
+import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
+import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import {
   Plus,
   FileText,
@@ -90,14 +93,38 @@ function monthOptions(): { value: string; label: string }[] {
   return opts;
 }
 
+/** Stĺpce zoznamu na výber (ako v Doklado). */
+const STLPCE_PRIJATYCH: StlpecZoznamu[] = [
+  { kluc: "cislo", nazov: "Číslo", povinny: true },
+  { kluc: "dodavatel", nazov: "Dodávateľ", povinny: true },
+  { kluc: "ico", nazov: "IČO dodávateľa", predvoleny: false },
+  { kluc: "vs", nazov: "VS" },
+  { kluc: "vystavena", nazov: "Vystavená" },
+  { kluc: "duzp", nazov: "Dátum dodania (DUZP)", predvoleny: false },
+  { kluc: "splatnost", nazov: "Splatnosť" },
+  { kluc: "zaklad", nazov: "Základ", predvoleny: false },
+  { kluc: "dph", nazov: "DPH", predvoleny: false },
+  { kluc: "suma", nazov: "Suma" },
+  { kluc: "predkontacia", nazov: "Predkontácia / členenie", predvoleny: false },
+  { kluc: "zapisal", nazov: "Zapísal" },
+  { kluc: "stav", nazov: "Stav" },
+];
+
 function PurchaseInvoicesPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<any[]>([]);
-  const sch = useStavSchvalovania(getActiveCompanyId(), "prijata", rows.map((r: any) => r.id));
+  const sch = useStavSchvalovania(
+    getActiveCompanyId(),
+    "prijata",
+    rows.map((r: any) => r.id),
+  );
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("");
   const [month, setMonth] = useState<string>("");
   const [supplier, setSupplier] = useState<string>("");
+  const zobrazenie = useNastaveniaZoznamu("prijate-faktury", STLPCE_PRIJATYCH);
+  const je = zobrazenie.je;
+  const pocetStlpcov = zobrazenie.viditelne.length + 1;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [zipBusy, setZipBusy] = useState(false);
   const [hromadneBusy, setHromadneBusy] = useState(false);
@@ -268,7 +295,10 @@ function PurchaseInvoicesPage() {
     if (!cid) return;
     setKody({ predkontacia: "", clenenie: "", kategoria: "" });
     setZauctovanie(true);
-    if (!kodyNavrhy) nacitajKody({ data: { company_id: cid } }).then(setKodyNavrhy).catch(() => {});
+    if (!kodyNavrhy)
+      nacitajKody({ data: { company_id: cid } })
+        .then(setKodyNavrhy)
+        .catch(() => {});
   }
 
   const exportujXml = useServerFn(exportPrijatychPohodaFn);
@@ -310,7 +340,11 @@ function PurchaseInvoicesPage() {
       if (r.zauctovanych) {
         const n = r.zauctovanych;
         toast.success(
-          n === 1 ? "Zaúčtovaná 1 faktúra" : n < 5 ? `Zaúčtované ${n} faktúry` : `Zaúčtovaných ${n} faktúr`,
+          n === 1
+            ? "Zaúčtovaná 1 faktúra"
+            : n < 5
+              ? `Zaúčtované ${n} faktúry`
+              : `Zaúčtovaných ${n} faktúr`,
         );
       }
       if (r.preskocene.length) toast.error(`Vynechané: ${r.preskocene.join(" · ")}`);
@@ -515,6 +549,18 @@ function PurchaseInvoicesPage() {
             placeholder="Dodávateľ…"
             className="h-9 w-56 rounded-md border border-input bg-background px-3 text-sm"
           />
+          <div className="ml-auto">
+            <NastaveniaZoznamu
+              nastavenia={zobrazenie}
+              stlpce={STLPCE_PRIJATYCH}
+              aktualne={{ stav: status, mesiac: month, dodavatel: supplier }}
+              pouzi={(h) => {
+                setStatus(h.stav ?? "");
+                setMonth(h.mesiac ?? "");
+                setSupplier(h.dodavatel ?? "");
+              }}
+            />
+          </div>
         </div>
 
         {selected.size > 0 && (
@@ -638,25 +684,30 @@ function PurchaseInvoicesPage() {
                 </th>
                 <th className="p-3">Číslo</th>
                 <th className="p-3">Dodávateľ</th>
-                <th className="p-3">VS</th>
-                <th className="p-3">Vystavená</th>
-                <th className="p-3">Splatnosť</th>
-                <th className="p-3 text-right">Suma</th>
-                <th className="p-3">Zapísal</th>
-                <th className="p-3">Stav</th>
+                {je("ico") && <th className="p-3">IČO</th>}
+                {je("vs") && <th className="p-3">VS</th>}
+                {je("vystavena") && <th className="p-3">Vystavená</th>}
+                {je("duzp") && <th className="p-3">DUZP</th>}
+                {je("splatnost") && <th className="p-3">Splatnosť</th>}
+                {je("zaklad") && <th className="p-3 text-right">Základ</th>}
+                {je("dph") && <th className="p-3 text-right">DPH</th>}
+                {je("suma") && <th className="p-3 text-right">Suma</th>}
+                {je("predkontacia") && <th className="p-3">Predkontácia</th>}
+                {je("zapisal") && <th className="p-3">Zapísal</th>}
+                {je("stav") && <th className="p-3">Stav</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading && (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={pocetStlpcov} className="p-8 text-center text-muted-foreground">
                     Načítavam…
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={pocetStlpcov} className="p-8 text-center text-muted-foreground">
                     <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
                     Žiadne prijaté faktúry. Pridajte prvú cez „Nová prijatá faktúra".
                   </td>
@@ -684,81 +735,130 @@ function PurchaseInvoicesPage() {
                   </td>
                   <td className="p-3 font-medium">{r.invoice_number}</td>
                   <td className="p-3">{r.supplier_name}</td>
-                  <td className="p-3 tabular-nums text-muted-foreground">
-                    {r.variable_symbol || "—"}
-                  </td>
-                  <td className="p-3">
-                    {r.issue_date}
-                    {r.delivery_date && r.delivery_date !== r.issue_date ? (
-                      <div className="text-xs text-muted-foreground" title="Dátum dodania (daňového plnenia)">
-                        DUZP {r.delivery_date}
-                      </div>
-                    ) : null}
-                  </td>
-                  <td className="p-3">
-                    {r.due_date}
-                    {r.povodna_splatnost && r.povodna_splatnost !== r.due_date && (
-                      <span className="block text-xs text-muted-foreground" title={`Pôvodne ${r.povodna_splatnost}`}>
-                        predĺžená
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-3 text-right tabular-nums">
-                    {fmtMoney(Number(r.amount_total ?? 0), r.currency)}
-                  </td>
-                  <td className="p-3">
-                    <Zapisal zdroj={r.source} autor={r.created_by ? mena[r.created_by] : null} />
-                  </td>
-                  <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                    <StatusBadge status={r.status} />
-                    {sch.stavy[r.id] ? (
-                      <div className={`mt-1 text-xs ${farbaOdznaku(sch.stavy[r.id].stav)}`} title="Schvaľovanie">
-                        {sch.stavy[r.id].odznak}
-                      </div>
-                    ) : null}
-                    {r.exported_at ? (
-                      <span className="mt-1 block text-xs text-emerald-700 dark:text-emerald-300">V Pohode</span>
-                    ) : r.zauctovane_at && r.status !== "booked" ? (
-                      <span className="mt-1 block text-xs text-sky-700 dark:text-sky-300">Zaúčtovaná</span>
-                    ) : null}
-                    {(r.pohoda_predkontacia || r.pohoda_clenenie_dph) && (
-                      <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                        {[r.pohoda_predkontacia, r.pohoda_clenenie_dph].filter(Boolean).join(" · ")}
-                      </span>
-                    )}
-                    {r.samofakturacia && (
-                      <span
-                        className={`mt-1 block text-xs ${
-                          stavSamofaktury(r) === "odsuhlasena"
-                            ? "text-emerald-700 dark:text-emerald-300"
-                            : stavSamofaktury(r) === "zamietnuta"
-                              ? "text-rose-700 dark:text-rose-300"
-                              : "text-amber-700 dark:text-amber-300"
-                        }`}
-                      >
-                        Samofaktúra · {NAZVY_STAVOV[stavSamofaktury(r)].toLowerCase()}
-                      </span>
-                    )}
-                    {/*
+                  {je("ico") && (
+                    <td className="p-3 tabular-nums text-muted-foreground">
+                      {r.supplier_ico || "—"}
+                    </td>
+                  )}
+                  {je("vs") && (
+                    <td className="p-3 tabular-nums text-muted-foreground">
+                      {r.variable_symbol || "—"}
+                    </td>
+                  )}
+                  {je("vystavena") && (
+                    <td className="p-3">
+                      {r.issue_date}
+                      {r.delivery_date && r.delivery_date !== r.issue_date ? (
+                        <div
+                          className="text-xs text-muted-foreground"
+                          title="Dátum dodania (daňového plnenia)"
+                        >
+                          DUZP {r.delivery_date}
+                        </div>
+                      ) : null}
+                    </td>
+                  )}
+                  {je("duzp") && <td className="p-3">{r.delivery_date ?? "—"}</td>}
+                  {je("splatnost") && (
+                    <td className="p-3">
+                      {r.due_date}
+                      {r.povodna_splatnost && r.povodna_splatnost !== r.due_date && (
+                        <span
+                          className="block text-xs text-muted-foreground"
+                          title={`Pôvodne ${r.povodna_splatnost}`}
+                        >
+                          predĺžená
+                        </span>
+                      )}
+                    </td>
+                  )}
+                  {je("zaklad") && (
+                    <td className="p-3 text-right tabular-nums">
+                      {fmtMoney(Number(r.amount_without_vat ?? 0), r.currency)}
+                    </td>
+                  )}
+                  {je("dph") && (
+                    <td className="p-3 text-right tabular-nums">
+                      {fmtMoney(Number(r.vat_amount ?? 0), r.currency)}
+                    </td>
+                  )}
+                  {je("suma") && (
+                    <td className="p-3 text-right tabular-nums">
+                      {fmtMoney(Number(r.amount_total ?? 0), r.currency)}
+                    </td>
+                  )}
+                  {je("predkontacia") && (
+                    <td className="p-3 text-xs text-muted-foreground">
+                      {[r.pohoda_predkontacia, r.pohoda_clenenie_dph].filter(Boolean).join(" · ") ||
+                        "—"}
+                    </td>
+                  )}
+                  {je("zapisal") && (
+                    <td className="p-3">
+                      <Zapisal zdroj={r.source} autor={r.created_by ? mena[r.created_by] : null} />
+                    </td>
+                  )}
+                  {je("stav") && (
+                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                      <StatusBadge status={r.status} />
+                      {sch.stavy[r.id] ? (
+                        <div
+                          className={`mt-1 text-xs ${farbaOdznaku(sch.stavy[r.id].stav)}`}
+                          title="Schvaľovanie"
+                        >
+                          {sch.stavy[r.id].odznak}
+                        </div>
+                      ) : null}
+                      {r.exported_at ? (
+                        <span className="mt-1 block text-xs text-emerald-700 dark:text-emerald-300">
+                          V Pohode
+                        </span>
+                      ) : r.zauctovane_at && r.status !== "booked" ? (
+                        <span className="mt-1 block text-xs text-sky-700 dark:text-sky-300">
+                          Zaúčtovaná
+                        </span>
+                      ) : null}
+                      {(r.pohoda_predkontacia || r.pohoda_clenenie_dph) && (
+                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                          {[r.pohoda_predkontacia, r.pohoda_clenenie_dph]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      )}
+                      {r.samofakturacia && (
+                        <span
+                          className={`mt-1 block text-xs ${
+                            stavSamofaktury(r) === "odsuhlasena"
+                              ? "text-emerald-700 dark:text-emerald-300"
+                              : stavSamofaktury(r) === "zamietnuta"
+                                ? "text-rose-700 dark:text-rose-300"
+                                : "text-amber-700 dark:text-amber-300"
+                          }`}
+                        >
+                          Samofaktúra · {NAZVY_STAVOV[stavSamofaktury(r)].toLowerCase()}
+                        </span>
+                      )}
+                      {/*
                       Keď faktúru uhradil pohyb z účtu, je to vidieť priamo tu —
                       inak by sa väzba dala len vytvoriť, nie skontrolovať ani
                       zrušiť.
                     */}
-                    {uhrady[r.id] && (
-                      <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                        <Landmark className="h-3 w-3" />
-                        <span className="tabular-nums">{uhrady[r.id].datum}</span>
-                        <button
-                          onClick={() => rozparuj(uhrady[r.id].transactionId)}
-                          title="Zrušiť väzbu na platbu"
-                          aria-label="Zrušiť väzbu na platbu"
-                          className="rounded p-0.5 hover:bg-muted"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    )}
-                  </td>
+                      {uhrady[r.id] && (
+                        <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                          <Landmark className="h-3 w-3" />
+                          <span className="tabular-nums">{uhrady[r.id].datum}</span>
+                          <button
+                            onClick={() => rozparuj(uhrady[r.id].transactionId)}
+                            title="Zrušiť väzbu na platbu"
+                            aria-label="Zrušiť väzbu na platbu"
+                            className="rounded p-0.5 hover:bg-muted"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -791,8 +891,8 @@ function PurchaseInvoicesPage() {
               Zaúčtovať {selected.size === 1 ? "1 faktúru" : `${selected.size} faktúr`}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Vyplnené pole sa nastaví na všetkých vybraných; prázdne nechá, čo na faktúre je
-              (z pravidla alebo predvolené z nastavení predkontácií). Zaúčtované pôjdu do Pohody pri
+              Vyplnené pole sa nastaví na všetkých vybraných; prázdne nechá, čo na faktúre je (z
+              pravidla alebo predvolené z nastavení predkontácií). Zaúčtované pôjdu do Pohody pri
               najbližšom odovzdaní.
             </p>
             <div className="mt-4">

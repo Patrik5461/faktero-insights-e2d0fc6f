@@ -15,6 +15,7 @@ import {
 import { overVlastnyLocalPart } from "@/lib/faktero/mail-prijem";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PotvrdeniePreposielania } from "./PotvrdeniePreposielania";
+import { RozdelovacMailov } from "./RozdelovacMailov";
 
 const STAVY: Record<string, { text: string; trieda: string }> = {
   hotovo: { text: "Založené", trieda: "text-emerald-700" },
@@ -378,6 +379,8 @@ export function PrijemMailom({
           </div>
         )}
       </div>
+
+      <RozdelovacMailov />
     </>
   );
 }

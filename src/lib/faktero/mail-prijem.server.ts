@@ -141,7 +141,17 @@ export async function obsahMailu(emailId: string, apiKey: string): Promise<Recor
   return (await r.json()) as Record<string, any>;
 }
 
-async function prilohyMailu(emailId: string, apiKey: string): Promise<ResendPrilohaMeta[]> {
+/** Stiahne prílohu z Resendu (odkaz platí hodinu). */
+export async function stiahniPrilohu(
+  priloha: ResendPrilohaMeta,
+): Promise<{ bajty: Buffer } | { chyba: string }> {
+  if (!priloha.download_url) return { chyba: "chýba odkaz na stiahnutie" };
+  const r = await fetch(priloha.download_url);
+  if (!r.ok) return { chyba: `stiahnutie zlyhalo (${r.status})` };
+  return { bajty: Buffer.from(await r.arrayBuffer()) };
+}
+
+export async function prilohyMailu(emailId: string, apiKey: string): Promise<ResendPrilohaMeta[]> {
   const r = await fetch(`https://api.resend.com/emails/receiving/${emailId}/attachments`, {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
@@ -245,7 +255,12 @@ export function odosielatelPovoleny(od: string | null, povoleni: string[]): bool
   const adresa = (m ? m[1] : String(od ?? "")).trim().toLowerCase();
   if (!adresa) return false;
   const domena = adresa.includes("@") ? adresa.slice(adresa.indexOf("@")) : "";
-  return povoleni.some((p) => p === adresa || (p.startsWith("@") && p === domena) || (!p.includes("@") && domena === `@${p}`));
+  return povoleni.some(
+    (p) =>
+      p === adresa ||
+      (p.startsWith("@") && p === domena) ||
+      (!p.includes("@") && domena === `@${p}`),
+  );
 }
 
 /** Výstraha, keď je doklad vystavený na iného odberateľa; inak `null`. */
@@ -254,7 +269,9 @@ export function cudziOdberatel(
   firma: { ico: string; icDph: string },
 ): string | null {
   const ico = String(ai?.buyer_ico ?? "").replace(/\s/g, "");
-  const icDph = String(ai?.buyer_ic_dph ?? "").replace(/\s/g, "").toUpperCase();
+  const icDph = String(ai?.buyer_ic_dph ?? "")
+    .replace(/\s/g, "")
+    .toUpperCase();
   if (ico && firma.ico && ico !== firma.ico)
     return `Pozor: doklad je vystavený na iného odberateľa (IČO ${ico})`;
   if (!ico && icDph && firma.icDph && icDph !== firma.icDph)
@@ -262,38 +279,76 @@ export function cudziOdberatel(
   return null;
 }
 
-export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPrijmu> {
+/** Príloha, ktorú už stiahol a prečítal rozdeľovač — druhýkrát sa nesťahuje ani nečíta. */
+export type PredcitanaPriloha = { bajty: Buffer; ai: Record<string, unknown> | null };
+
+/**
+ * Spracovanie za konkrétnu firmu, keď adresu neurčuje príjemca mailu, ale
+ * rozdeľovač alebo ručné priradenie. `lenPrilohy` obmedzí, ktoré prílohy
+ * patria tejto firme (jeden mail môže niesť doklady viacerých firiem).
+ */
+export type SmerovanieMailu = {
+  adresa: { id: string; company_id: string; user_id: string; active: boolean };
+  lenPrilohy?: string[];
+  predcitane?: Map<string, PredcitanaPriloha>;
+};
+
+export async function spracujPrijatyMail(
+  mail: PrijatyMail,
+  smer?: SmerovanieMailu,
+): Promise<VysledokPrijmu> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-  const localPart = vyberLocalPart(
-    [...(mail.to ?? []), ...(mail.received_for ?? [])],
-    podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA),
-  );
-  if (!localPart) return { stav: "neznama_adresa", vytvorenych: 0 };
+  let adresa: { id: string; company_id: string; user_id: string; active: boolean } | null =
+    smer?.adresa ?? null;
+  let localPart = "";
+  if (!adresa) {
+    localPart =
+      vyberLocalPart(
+        [...(mail.to ?? []), ...(mail.received_for ?? [])],
+        podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA),
+      ) ?? "";
+    if (!localPart) return { stav: "neznama_adresa", vytvorenych: 0 };
 
-  /*
+    /*
     Odpoveď na požiadavku v help desku (`podpora-<token>@…`). Nie je to doklad
     a s adresami firiem nemá nič spoločné — ide rovno do vlákna.
   */
-  const { tokenZAdresy } = await import("./podpora");
-  const token = tokenZAdresy(localPart);
-  if (token) {
-    const { prijmiOdpovedEmailom } = await import("./podpora.server");
-    const stav = await prijmiOdpovedEmailom({
-      emailId: mail.email_id,
-      od: mail.from ?? null,
-      token,
-    });
-    return { stav, vytvorenych: 0 };
+    const { tokenZAdresy } = await import("./podpora");
+    const token = tokenZAdresy(localPart);
+    if (token) {
+      const { prijmiOdpovedEmailom } = await import("./podpora.server");
+      const stav = await prijmiOdpovedEmailom({
+        emailId: mail.email_id,
+        od: mail.from ?? null,
+        token,
+      });
+      return { stav, vytvorenych: 0 };
+    }
+
+    const { data: najdena } = await supabaseAdmin
+      .from("inbox_addresses")
+      .select("id, company_id, user_id, active")
+      .ilike("local_part", localPart)
+      .maybeSingle();
+    adresa = najdena;
+
+    if (!adresa) {
+      // Rozdeľovač: jedna adresa používateľa pre všetky jeho firmy.
+      const { data: rozdelovac } = await supabaseAdmin
+        .from("mail_rozdelovace")
+        .select("user_id, active")
+        .ilike("local_part", localPart)
+        .maybeSingle();
+      if (rozdelovac?.active) {
+        const { rozdelMail } = await import("./mail-rozdelovac.server");
+        return rozdelMail(mail, rozdelovac.user_id);
+      }
+    }
   }
 
-  const { data: adresa } = await supabaseAdmin
-    .from("inbox_addresses")
-    .select("id, company_id, user_id, active")
-    .ilike("local_part", localPart)
-    .maybeSingle();
-
   if (!adresa || !adresa.active) return { stav: "neznama_adresa", vytvorenych: 0 };
+  const adresaFirmy = adresa;
 
   const odosielatel = (mail.from ?? "").trim() || null;
   const predmet = (mail.subject ?? "").trim() || null;
@@ -310,12 +365,18 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
     .maybeSingle();
   const firmaUdaje = {
     ico: String((firma as any)?.ico ?? "").replace(/\s/g, ""),
-    icDph: String((firma as any)?.ic_dph ?? "").replace(/\s/g, "").toUpperCase(),
+    icDph: String((firma as any)?.ic_dph ?? "")
+      .replace(/\s/g, "")
+      .toUpperCase(),
   };
   const povoleni: string[] = ((firma as any)?.mail_povoleni_odosielatelia ?? []).map((x: string) =>
     String(x).trim().toLowerCase(),
   );
-  if (povoleni.length && !poskytovatelPotvrdenia(odosielatel) && !odosielatelPovoleny(odosielatel, povoleni)) {
+  if (
+    povoleni.length &&
+    !poskytovatelPotvrdenia(odosielatel) &&
+    !odosielatelPovoleny(odosielatel, povoleni)
+  ) {
     await supabaseAdmin.from("inbox_messages").insert({
       company_id: adresa.company_id,
       address_id: adresa.id,
@@ -363,7 +424,7 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
     await supabaseAdmin
       .from("inbox_addresses")
       .update({ last_received_at: new Date().toISOString() })
-      .eq("id", adresa!.id);
+      .eq("id", adresaFirmy.id);
   }
 
   try {
@@ -401,8 +462,12 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
     }
 
     const vsetky = await prilohyMailu(mail.email_id, apiKey);
-    const doklady = vsetky.filter((p) => jePrilohaDoklad(p.content_type, p.filename, p.size));
-    const podpisy = vsetky.length - doklady.length;
+    const vsetkyDoklady = vsetky.filter((p) => jePrilohaDoklad(p.content_type, p.filename, p.size));
+    // Pri rozdelenom maile sa o podpisoch a logách hovorí len raz, nie za každú firmu.
+    const podpisy = smer?.lenPrilohy ? 0 : vsetky.length - vsetkyDoklady.length;
+    const doklady = smer?.lenPrilohy
+      ? vsetkyDoklady.filter((p) => smer.lenPrilohy!.includes(p.id))
+      : vsetkyDoklady;
 
     if (!doklady.length) {
       await doprav("bez_prilohy", "Mail neobsahoval PDF ani fotku dokladu.", vsetky.length, []);
@@ -419,17 +484,17 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
         poznamky.push(`${priloha.filename ?? "príloha"}: väčšia než 15 MB, preskočená`);
         continue;
       }
-      if (!priloha.download_url) {
-        poznamky.push(`${priloha.filename ?? "príloha"}: chýba odkaz na stiahnutie`);
-        continue;
+      const uz = smer?.predcitane?.get(priloha.id);
+      let bajty: Buffer;
+      if (uz) bajty = uz.bajty;
+      else {
+        const s = await stiahniPrilohu(priloha);
+        if ("chyba" in s) {
+          poznamky.push(`${priloha.filename ?? "príloha"}: ${s.chyba}`);
+          continue;
+        }
+        bajty = s.bajty;
       }
-
-      const stiahnute = await fetch(priloha.download_url);
-      if (!stiahnute.ok) {
-        poznamky.push(`${priloha.filename ?? "príloha"}: stiahnutie zlyhalo (${stiahnute.status})`);
-        continue;
-      }
-      const bajty = Buffer.from(await stiahnute.arrayBuffer());
       if (bajty.length > MAX_BAJTOV) {
         poznamky.push(`${priloha.filename ?? "príloha"}: väčšia než 15 MB, preskočená`);
         continue;
@@ -440,7 +505,7 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
       const cesta = `${adresa.company_id}/${crypto.randomUUID()}.${pripona}`;
 
       // Čítanie ide pred uložením: od neho závisí, do ktorého kbelíka súbor patrí.
-      const ai = await precitajDoklad(bajty.toString("base64"), mime);
+      const ai = uz ? uz.ai : await precitajDoklad(bajty.toString("base64"), mime);
 
       /*
         Z prílohy, z ktorej sa nedá prečítať ani dodávateľ, ani číslo, ani

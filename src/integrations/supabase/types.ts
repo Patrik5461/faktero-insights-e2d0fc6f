@@ -3521,6 +3521,99 @@ export type Database = {
           },
         ]
       }
+      mail_nepriradene: {
+        Row: {
+          company_id: string | null
+          detail: string | null
+          from_email: string | null
+          id: string
+          prilohy: Json
+          provider_email_id: string
+          received_at: string
+          status: string
+          subject: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          detail?: string | null
+          from_email?: string | null
+          id?: string
+          prilohy?: Json
+          provider_email_id: string
+          received_at?: string
+          status?: string
+          subject?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          detail?: string | null
+          from_email?: string | null
+          id?: string
+          prilohy?: Json
+          provider_email_id?: string
+          received_at?: string
+          status?: string
+          subject?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mail_rozdelovace: {
+        Row: {
+          active: boolean
+          created_at: string
+          last_received_at: string | null
+          local_part: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          last_received_at?: string | null
+          local_part: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          last_received_at?: string | null
+          local_part?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      nastavenia_zoznamov: {
+        Row: {
+          company_id: string | null
+          filtre: Json
+          id: string
+          stlpce: string[] | null
+          updated_at: string
+          user_id: string
+          zoznam: string
+        }
+        Insert: {
+          company_id?: string | null
+          filtre?: Json
+          id?: string
+          stlpce?: string[] | null
+          updated_at?: string
+          user_id: string
+          zoznam: string
+        }
+        Update: {
+          company_id?: string | null
+          filtre?: Json
+          id?: string
+          stlpce?: string[] | null
+          updated_at?: string
+          user_id?: string
+          zoznam?: string
+        }
+        Relationships: []
+      }
       inbox_addresses: {
         Row: {
           active: boolean

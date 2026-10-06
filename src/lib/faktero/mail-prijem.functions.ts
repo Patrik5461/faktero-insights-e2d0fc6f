@@ -242,3 +242,157 @@ export const povoleniOdosielateliaFn = createServerFn({ method: "POST" })
       .maybeSingle();
     return { zoznam: ((f as any)?.mail_povoleni_odosielatelia ?? []) as string[] };
   });
+
+export type StavRozdelovaca = {
+  adresa: string;
+  active: boolean;
+  last_received_at: string | null;
+  firmy: Array<{ id: string; name: string | null; ico: string | null }>;
+  nepriradene: Array<{
+    id: string;
+    from_email: string | null;
+    subject: string | null;
+    received_at: string;
+    status: string;
+    detail: string | null;
+    company_id: string | null;
+    prilohy: Array<{
+      id: string;
+      nazov: string | null;
+      odberatel: string | null;
+      ico: string | null;
+      ic_dph: string | null;
+      dodavatel: string | null;
+      suma: number | null;
+      mena: string | null;
+    }>;
+  }>;
+};
+
+/**
+ * Rozdeľovač (ako v Doklado): jedna adresa používateľa pre všetky jeho firmy.
+ * Zakladá sa pri prvom otvorení, rovnako ako adresa firmy.
+ */
+export const rozdelovacFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z
+      .object({ active: z.boolean().optional(), vymenit: z.boolean().optional() })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data, context }): Promise<StavRozdelovaca> => {
+    const { userId } = context as any;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { localPartRozdelovaca } = await import("./mail-rozdelovac");
+    const { firmyPouzivatela } = await import("./mail-rozdelovac.server");
+
+    let { data: r } = await supabaseAdmin
+      .from("mail_rozdelovace")
+      .select("local_part, active, last_received_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!r || data.vymenit) {
+      for (let pokus = 0; pokus < 5; pokus++) {
+        const { data: novy, error } = await supabaseAdmin
+          .from("mail_rozdelovace")
+          .upsert({ user_id: userId, local_part: localPartRozdelovaca() }, { onConflict: "user_id" })
+          .select("local_part, active, last_received_at")
+          .single();
+        if (!error) {
+          r = novy;
+          break;
+        }
+      }
+      if (!r) throw new Error("Adresu rozdeľovača sa nepodarilo založiť.");
+    }
+    if (data.active !== undefined && data.active !== r.active) {
+      await supabaseAdmin.from("mail_rozdelovace").update({ active: data.active }).eq("user_id", userId);
+      r = { ...r, active: data.active };
+    }
+
+    const { data: nepriradene } = await supabaseAdmin
+      .from("mail_nepriradene")
+      .select("id, from_email, subject, received_at, status, detail, company_id, prilohy")
+      .eq("user_id", userId)
+      .neq("status", "zahodene")
+      .order("received_at", { ascending: false })
+      .limit(30);
+
+    const firmy = await firmyPouzivatela(supabaseAdmin, userId);
+    return {
+      adresa: celaAdresa(r.local_part, podomenaDokladov(process.env.MAIL_PRIJEM_DOMENA)),
+      active: r.active,
+      last_received_at: r.last_received_at,
+      firmy: firmy.map((f) => ({ id: f.id, name: f.name, ico: f.ico })),
+      nepriradene: (nepriradene ?? []) as any,
+    };
+  });
+
+/**
+ * Ručné priradenie dokladu z rozdeľovača k firme. Spracovanie (stiahnutie a
+ * čítanie AI) trvá dlhšie než 30 s strop nginxu, preto beží na pozadí a
+ * stav sa zapíše do riadku.
+ */
+export const priradNepriradenyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        company_id: z.string().uuid().nullable(),
+        zahodit: z.boolean().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: m } = await supabaseAdmin
+      .from("mail_nepriradene")
+      .select("id, provider_email_id, from_email, subject, prilohy, status")
+      .eq("id", data.id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!m) throw new Error("Doklad sa nenašiel.");
+
+    if (data.zahodit) {
+      await supabaseAdmin.from("mail_nepriradene").update({ status: "zahodene" }).eq("id", m.id);
+      return { ok: true };
+    }
+    if (!data.company_id) throw new Error("Vyberte firmu.");
+    if (m.status === "spracuva" || m.status === "priradene") throw new Error("Doklad sa už priraďuje.");
+    await assertMember(supabase, userId, data.company_id);
+
+    const lenPrilohy = ((m.prilohy as any[]) ?? []).map((p) => String(p.id)).filter(Boolean);
+    if (!lenPrilohy.length) throw new Error("V maile nie je doklad na priradenie.");
+    await supabaseAdmin
+      .from("mail_nepriradene")
+      .update({ status: "spracuva", company_id: data.company_id, detail: null })
+      .eq("id", m.id);
+
+    const companyId = data.company_id;
+    void (async () => {
+      try {
+        const { adresaFirmyPouzivatela } = await import("./mail-rozdelovac.server");
+        const { spracujPrijatyMail } = await import("./mail-prijem.server");
+        const adresa = await adresaFirmyPouzivatela(supabaseAdmin, companyId, userId);
+        const v = await spracujPrijatyMail(
+          { email_id: m.provider_email_id, from: m.from_email, subject: m.subject },
+          { adresa: { ...adresa, active: true }, lenPrilohy },
+        );
+        await supabaseAdmin
+          .from("mail_nepriradene")
+          .update({
+            status: v.vytvorenych ? "priradene" : "chyba",
+            detail: v.detail ?? (v.vytvorenych ? null : "Doklad sa nepodarilo založiť."),
+          })
+          .eq("id", m.id);
+      } catch (e: any) {
+        await supabaseAdmin
+          .from("mail_nepriradene")
+          .update({ status: "chyba", detail: String(e?.message ?? e).slice(0, 300) })
+          .eq("id", m.id);
+      }
+    })();
+    return { ok: true };
+  });

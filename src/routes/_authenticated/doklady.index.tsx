@@ -1,5 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
+import { useNastaveniaZoznamu } from "@/hooks/useNastaveniaZoznamu";
+import type { StlpecZoznamu } from "@/lib/faktero/nastavenia-zoznamov";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -61,6 +64,21 @@ export const Route = createFileRoute("/_authenticated/doklady/")({
   component: DokladyPage,
 });
 
+/** Stĺpce zoznamu dokladov na výber (ako v Doklado). */
+const STLPCE_DOKLADOV: StlpecZoznamu[] = [
+  { kluc: "datum", nazov: "Dátum" },
+  { kluc: "dodavatel", nazov: "Dodávateľ", povinny: true },
+  { kluc: "cislo", nazov: "Číslo a predkontácia" },
+  { kluc: "kategoria", nazov: "Kategória", predvoleny: false },
+  { kluc: "zaklad", nazov: "Základ", predvoleny: false },
+  { kluc: "dph", nazov: "DPH", predvoleny: false },
+  { kluc: "celkom", nazov: "Celkom" },
+  { kluc: "platba", nazov: "Spôsob úhrady", predvoleny: false },
+  { kluc: "stav", nazov: "Stav", povinny: true },
+  { kluc: "zdroj", nazov: "Zdroj" },
+  { kluc: "uhrada", nazov: "Úhrada z účtu" },
+];
+
 /** „2026-08" → „august 2026" — do vety, nie do tabuľky. */
 function nazovMesiaca(m: string): string {
   const [r, me] = m.split("-").map(Number);
@@ -104,8 +122,28 @@ function DokladyPage() {
   );
   const [navrhy, setNavrhy] = useState<any[]>([]);
   const [parujem, setParujem] = useState<string | null>(null);
-  const [rows, setRows] = useState<any[]>([]);
-  const sch = useStavSchvalovania(getActiveCompanyId(), "doklad", rows.map((r: any) => r.id));
+  const [vsetkyRiadky, setRows] = useState<any[]>([]);
+  /** Dohľadanie a spôsob úhrady sa filtrujú v prehliadači nad načítaným výberom. */
+  const [hladaj, setHladaj] = useState("");
+  const [platba, setPlatba] = useState("");
+  const rows = useMemo(() => {
+    const h = hladaj.trim().toLowerCase();
+    return vsetkyRiadky.filter(
+      (r) =>
+        (!platba || r.payment_method === platba) &&
+        (!h ||
+          [r.supplier_name, r.supplier_ico, r.document_number, r.note]
+            .filter(Boolean)
+            .some((x) => String(x).toLowerCase().includes(h))),
+    );
+  }, [vsetkyRiadky, hladaj, platba]);
+  const zobrazenie = useNastaveniaZoznamu("doklady", STLPCE_DOKLADOV);
+  const je = zobrazenie.je;
+  const sch = useStavSchvalovania(
+    getActiveCompanyId(),
+    "doklad",
+    rows.map((r: any) => r.id),
+  );
   const [loading, setLoading] = useState(true);
   /** Doklad, ktorý sa práve presúva medzi prijaté faktúry. */
   const [presuvam, setPresuvam] = useState<string | null>(null);
@@ -242,7 +280,10 @@ function DokladyPage() {
     try {
       const v = await stavFn({ data: { company_id: cid, ids, stav } });
       if (stav === "processed") {
-        if (v.zmenene) toast.success(v.zmenene === 1 ? "Doklad je spracovaný." : `Spracovaných ${v.zmenene} dokladov.`);
+        if (v.zmenene)
+          toast.success(
+            v.zmenene === 1 ? "Doklad je spracovaný." : `Spracovaných ${v.zmenene} dokladov.`,
+          );
         if (v.preskocene.length)
           toast.warning(
             `${v.preskocene.length === 1 ? "Jeden doklad nemá" : `${v.preskocene.length} dokladov nemá`} sumu alebo dátum — otvorte ho a doplňte.`,
@@ -374,7 +415,11 @@ function DokladyPage() {
         }
       />
       <PageBody>
-        <div role="tablist" aria-label="Stav dokladov" className="mb-4 flex flex-wrap gap-1 border-b border-border">
+        <div
+          role="tablist"
+          aria-label="Stav dokladov"
+          className="mb-4 flex flex-wrap gap-1 border-b border-border"
+        >
           {ZALOZKY_DOKLADOV.map((z) => (
             <button
               key={z.kluc}
@@ -399,32 +444,32 @@ function DokladyPage() {
 
         {bezMesiaca && (
           <p className="mb-4 text-sm text-muted-foreground">
-            Sem padne každý nový doklad — z appky, z webu aj naskenovaný. Skontrolujte ho a
-            označte ako spracovaný; ukazujú sa tu nespracované zo všetkých mesiacov.
+            Sem padne každý nový doklad — z appky, z webu aj naskenovaný. Skontrolujte ho a označte
+            ako spracovaný; ukazujú sa tu nespracované zo všetkých mesiacov.
           </p>
         )}
 
         <div className="mb-4 flex flex-wrap items-end gap-3">
           {!bezMesiaca && (
-          <div>
-            <label className="mb-1 block text-xs text-muted-foreground">Mesiac</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="month"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-                className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setMonth("")}
-                disabled={!month}
-                className="rounded-md border border-border bg-card px-2 py-1.5 text-xs hover:bg-secondary disabled:opacity-40"
-              >
-                Všetky
-              </button>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">Mesiac</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="month"
+                  value={month}
+                  onChange={(e) => setMonth(e.target.value)}
+                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMonth("")}
+                  disabled={!month}
+                  className="rounded-md border border-border bg-card px-2 py-1.5 text-xs hover:bg-secondary disabled:opacity-40"
+                >
+                  Všetky
+                </button>
+              </div>
             </div>
-          </div>
           )}
           {selected.size > 0 && (zalozka === "nespracovane" || zalozka === "spracovane") && (
             <button
@@ -454,6 +499,40 @@ function DokladyPage() {
               Predkontácia ({selected.size})
             </button>
           )}
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Hľadať</label>
+            <input
+              value={hladaj}
+              onChange={(e) => setHladaj(e.target.value)}
+              placeholder="Dodávateľ, IČO, číslo…"
+              className="w-48 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Úhrada</label>
+            <select
+              value={platba}
+              onChange={(e) => setPlatba(e.target.value)}
+              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+            >
+              <option value="">Všetky</option>
+              <option value="hotovost">Hotovosť</option>
+              <option value="karta">Karta</option>
+              <option value="prevod">Prevod</option>
+            </select>
+          </div>
+          <NastaveniaZoznamu
+            nastavenia={zobrazenie}
+            stlpce={STLPCE_DOKLADOV}
+            aktualne={{ stav: zalozka, mesiac: month, hladaj, platba }}
+            pouzi={(h) => {
+              if (h.stav && ZALOZKY_DOKLADOV.some((z) => z.kluc === h.stav))
+                prepniZalozku(h.stav as ZalozkaDokladov);
+              setMonth(h.mesiac ?? "");
+              setHladaj(h.hladaj ?? "");
+              setPlatba(h.platba ?? "");
+            }}
+          />
           <div className="ml-auto flex gap-2">
             <button
               onClick={() => handleExport(false)}
@@ -573,8 +652,8 @@ function DokladyPage() {
               {bezMesiaca
                 ? "Všetko je spracované — žiadny doklad nečaká na kontrolu."
                 : mimo.pocet > 0
-                ? `Vo výbere nie je žiadny doklad — ${mimo.pocet === 1 ? "jeden je" : `${mimo.pocet} ich je`} v inom mesiaci.`
-                : "Zatiaľ tu nemáte žiadne doklady. Odfoťte blok alebo nahrajte fotku/PDF."}
+                  ? `Vo výbere nie je žiadny doklad — ${mimo.pocet === 1 ? "jeden je" : `${mimo.pocet} ich je`} v inom mesiaci.`
+                  : "Zatiaľ tu nemáte žiadne doklady. Odfoťte blok alebo nahrajte fotku/PDF."}
               <div className="mt-4 flex justify-center gap-2">
                 {bezMesiaca ? (
                   <button
@@ -613,13 +692,17 @@ function DokladyPage() {
                       onChange={toggleAll}
                     />
                   </th>
-                  <th className="px-3 py-2 text-left">Dátum</th>
+                  {je("datum") && <th className="px-3 py-2 text-left">Dátum</th>}
                   <th className="px-3 py-2 text-left">Dodávateľ</th>
-                  <th className="px-3 py-2 text-left">Číslo</th>
-                  <th className="px-3 py-2 text-right">Celkom</th>
+                  {je("cislo") && <th className="px-3 py-2 text-left">Číslo</th>}
+                  {je("kategoria") && <th className="px-3 py-2 text-left">Kategória</th>}
+                  {je("zaklad") && <th className="px-3 py-2 text-right">Základ</th>}
+                  {je("dph") && <th className="px-3 py-2 text-right">DPH</th>}
+                  {je("celkom") && <th className="px-3 py-2 text-right">Celkom</th>}
+                  {je("platba") && <th className="px-3 py-2 text-left">Spôsob úhrady</th>}
                   <th className="px-3 py-2 text-left">Stav</th>
-                  <th className="px-3 py-2 text-left">Zdroj</th>
-                  <th className="px-3 py-2 text-left">Úhrada z účtu</th>
+                  {je("zdroj") && <th className="px-3 py-2 text-left">Zdroj</th>}
+                  {je("uhrada") && <th className="px-3 py-2 text-left">Úhrada z účtu</th>}
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
@@ -633,7 +716,9 @@ function DokladyPage() {
                         onChange={() => toggle(r.id)}
                       />
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap">{r.issue_date ?? "—"}</td>
+                    {je("datum") && (
+                      <td className="px-3 py-2 whitespace-nowrap">{r.issue_date ?? "—"}</td>
+                    )}
                     <td className="px-3 py-2">
                       <button
                         onClick={() =>
@@ -654,22 +739,50 @@ function DokladyPage() {
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-2">
-                      {r.document_number ?? "—"}
-                      {r.pohoda_predkontacia || r.pohoda_clenenie_dph ? (
-                        <div
-                          className="text-xs text-muted-foreground"
-                          title="Predkontácia / členenie DPH pre Pohodu"
-                        >
-                          {[r.pohoda_predkontacia, r.pohoda_clenenie_dph].filter(Boolean).join(" · ")}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {r.total_amount != null
-                        ? `${Number(r.total_amount).toFixed(2)} ${r.currency}`
-                        : "—"}
-                    </td>
+                    {je("cislo") && (
+                      <td className="px-3 py-2">
+                        {r.document_number ?? "—"}
+                        {r.pohoda_predkontacia || r.pohoda_clenenie_dph ? (
+                          <div
+                            className="text-xs text-muted-foreground"
+                            title="Predkontácia / členenie DPH pre Pohodu"
+                          >
+                            {[r.pohoda_predkontacia, r.pohoda_clenenie_dph]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </div>
+                        ) : null}
+                      </td>
+                    )}
+                    {je("kategoria") && (
+                      <td className="px-3 py-2 text-xs text-muted-foreground">
+                        {r.category ?? "—"}
+                      </td>
+                    )}
+                    {je("zaklad") && (
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {r.net_amount != null ? Number(r.net_amount).toFixed(2) : "—"}
+                      </td>
+                    )}
+                    {je("dph") && (
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {r.vat_amount != null ? Number(r.vat_amount).toFixed(2) : "—"}
+                      </td>
+                    )}
+                    {je("celkom") && (
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {r.total_amount != null
+                          ? `${Number(r.total_amount).toFixed(2)} ${r.currency}`
+                          : "—"}
+                      </td>
+                    )}
+                    {je("platba") && (
+                      <td className="px-3 py-2 text-xs text-muted-foreground">
+                        {{ hotovost: "hotovosť", karta: "karta", prevod: "prevod" }[
+                          r.payment_method as string
+                        ] ?? "—"}
+                      </td>
+                    )}
                     <td className="px-3 py-2">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span
@@ -683,7 +796,10 @@ function DokladyPage() {
                           {STATUS_LABEL[r.status] ?? r.status}
                         </span>
                         {sch.stavy[r.id] ? (
-                          <span className={`text-xs ${farbaOdznaku(sch.stavy[r.id].stav)}`} title="Schvaľovanie">
+                          <span
+                            className={`text-xs ${farbaOdznaku(sch.stavy[r.id].stav)}`}
+                            title="Schvaľovanie"
+                          >
                             {sch.stavy[r.id].odznak}
                           </span>
                         ) : null}
@@ -718,30 +834,34 @@ function DokladyPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">
-                      {ZDROJ_DOKLADU[r.source] ?? r.source}
-                    </td>
-                    <td className="px-3 py-2 text-xs whitespace-nowrap">
-                      {uhrady[r.id] ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="text-emerald-700 dark:text-emerald-400">
-                            {uhrady[r.id].datum}
+                    {je("zdroj") && (
+                      <td className="px-3 py-2 text-xs text-muted-foreground">
+                        {ZDROJ_DOKLADU[r.source] ?? r.source}
+                      </td>
+                    )}
+                    {je("uhrada") && (
+                      <td className="px-3 py-2 text-xs whitespace-nowrap">
+                        {uhrady[r.id] ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="text-emerald-700 dark:text-emerald-400">
+                              {uhrady[r.id].datum}
+                            </span>
+                            <button
+                              onClick={() => rozparuj(r.id, uhrady[r.id].transactionId)}
+                              title="Zrušiť párovanie s platbou"
+                              className="text-muted-foreground hover:underline"
+                            >
+                              zrušiť
+                            </button>
                           </span>
-                          <button
-                            onClick={() => rozparuj(r.id, uhrady[r.id].transactionId)}
-                            title="Zrušiť párovanie s platbou"
-                            className="text-muted-foreground hover:underline"
-                          >
-                            zrušiť
-                          </button>
-                        </span>
-                      ) : r.payment_method === "hotovost" ? (
-                        // Hotovosť v banke nikdy nebude — pomlčka by tu vyzerala ako chýbajúci údaj.
-                        <span className="text-muted-foreground">hotovosť</span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
+                        ) : r.payment_method === "hotovost" ? (
+                          // Hotovosť v banke nikdy nebude — pomlčka by tu vyzerala ako chýbajúci údaj.
+                          <span className="text-muted-foreground">hotovosť</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-3 py-2 text-right">
                       {r.file_path && (
                         <button
@@ -775,7 +895,11 @@ function DokladyPage() {
           )}
         </div>
         {kos && getActiveCompanyId() && (
-          <KosDokladovOkno companyId={getActiveCompanyId()!} onClose={() => setKos(false)} onObnovene={refresh} />
+          <KosDokladovOkno
+            companyId={getActiveCompanyId()!}
+            onClose={() => setKos(false)}
+            onObnovene={refresh}
+          />
         )}
         {predkontaciaOkno && getActiveCompanyId() && (
           <PredkontaciaDokladovOkno
