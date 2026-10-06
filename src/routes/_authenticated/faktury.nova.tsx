@@ -326,6 +326,10 @@ function NewInvoice() {
       if ((f as any).type !== "regular")
         return toast.error("Dobropis sa vystavuje k bežnej faktúre, nie k zálohovej ani k dobropisu.");
       setOpravujeCislo(String((f as any).invoice_number ?? ""));
+      // Text nad položkami je povinný — pri dobropise ho dá väzba sama.
+      setForm((x) =>
+        x.intro_note.trim() ? x : { ...x, intro_note: `Dobropis k faktúre č. ${(f as any).invoice_number}` },
+      );
       if (!sPolozkami) {
         setForm((x) => ({ ...x, opravuje_fakturu_id: (f as any).id }));
         return;
