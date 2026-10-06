@@ -772,7 +772,9 @@ export function PageHeader({
   const manual = help === false ? null : (help ?? manualPre(pathname));
   const router = useRouter();
   const navigate = useNavigate();
-  const podstranka = pathname.replace(/\/+$/, "").split("/").filter(Boolean).length > 1;
+  // Späť je všade okrem úvodného prehľadu — aj na stránkach z kategórií menu
+  // (Pokladňa, Exporty…), ktoré majú v adrese len jednu úroveň.
+  const podstranka = !["", "/dashboard", "/onboarding"].includes(pathname.replace(/\/+$/, ""));
 
   /*
     Späť tam, odkiaľ človek prišiel. Keď stránku otvoril priamo (odkaz z
