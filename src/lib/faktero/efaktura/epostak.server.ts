@@ -701,3 +701,83 @@ export async function stiahniPrijate(
   }
   return { novych, preskocenych, problemy };
 }
+
+// ─── White Label: registrácia firmy z webhooku Finančnej správy ─────────────
+
+export type WhiteLabelOperacia = {
+  id: string;
+  status: "processing" | "smp_succeeded" | "succeeded" | "rejected" | "manual_review" | "released";
+  firmId: string | null;
+  participantId: string | null;
+  peppolId: string | null;
+  legalName: string | null;
+  reviewRequired: boolean;
+  error: unknown;
+};
+
+/**
+ * Zaregistruje firmu do SMP z `verification_token`, ktorý nám poslala FS.
+ *
+ * `Idempotency-Key` musí ostať rovnaký pri každom opakovaní tej istej žiadosti,
+ * kým nepríde konečný výsledok — ePošták inak nevie, či SMP už zápis spravil.
+ * Token sa nikam nezapisuje (ani do logu pri chybe — telo požiadavky sa
+ * nevypisuje, len odpoveď).
+ */
+export async function registrujWhiteLabel(v: {
+  customerRef: string;
+  dic: string;
+  companyEmail: string;
+  verificationToken: string;
+  idempotencyKey: string;
+}): Promise<WhiteLabelOperacia> {
+  return epostakFetch<WhiteLabelOperacia>("/api/v1/white-label/participants/registrations", {
+    method: "POST",
+    idempotencyKey: v.idempotencyKey,
+    body: {
+      customerRef: v.customerRef,
+      dic: v.dic,
+      companyEmail: v.companyEmail,
+      verificationToken: v.verificationToken,
+      publishInPeppolDirectory: true,
+    },
+  });
+}
+
+/** Stav rozbehnutej registrácie (odpoveď 202 → dopytuje sa neskôr). */
+export async function stavWhiteLabel(operaciaId: string): Promise<WhiteLabelOperacia> {
+  return epostakFetch<WhiteLabelOperacia>(
+    `/api/v1/white-label/operations/${encodeURIComponent(operaciaId)}`,
+  );
+}
+
+// ─── Webhooky ePoštáka pre firmu ────────────────────────────────────────────
+
+/**
+ * Prihlási odber udalostí o dokladoch firmy na našu adresu. Tajomstvo (HMAC)
+ * vráti ePošták len teraz — volajúci ho musí hneď uložiť.
+ */
+export async function vytvorWebhookFirmy(
+  firmId: string,
+  url: string,
+): Promise<{ id: string; secret: string }> {
+  const r = await epostakFetch<any>("/api/v1/webhooks", {
+    method: "POST",
+    firmId,
+    body: {
+      url,
+      events: [
+        "document.sent",
+        "document.received",
+        "document.delivered",
+        "document.delivery_failed",
+        "document.rejected",
+        "document.response_received",
+      ],
+    },
+  });
+  const w = r?.webhook ?? r?.data ?? r;
+  const id = String(w?.id ?? r?.id ?? "");
+  const secret = String(r?.secret ?? w?.secret ?? "");
+  if (!id || !secret) throw new Error("ePošták nevrátil id alebo tajomstvo webhooku.");
+  return { id, secret };
+}

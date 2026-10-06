@@ -52,6 +52,7 @@ import { Route as AuthenticatedWebhookyLogyRouteImport } from './routes/_authent
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAiRouteImport } from './routes/admin.ai'
 import { Route as AdminAuditLogRouteImport } from './routes/admin.audit-log'
+import { Route as AdminEfakturaRouteImport } from './routes/admin.efaktura'
 import { Route as AdminErrorsRouteImport } from './routes/admin.errors'
 import { Route as AdminGopayRouteImport } from './routes/admin.gopay'
 import { Route as AdminHealthRouteImport } from './routes/admin.health'
@@ -254,6 +255,8 @@ import { Route as AuthenticatedSkladPresunyNovaRouteImport } from './routes/_aut
 import { Route as AuthenticatedSkladProduktyIndexRouteImport } from './routes/_authenticated/sklad.produkty.index'
 import { Route as ApiAdminSeoCallbackRouteImport } from './routes/api/admin/seo.callback'
 import { Route as ApiBankoveUctyTatrabankaWebhookRouteImport } from './routes/api/bankove-ucty/tatrabanka/webhook'
+import { Route as ApiPublicEfakturaEpostakRouteImport } from './routes/api/public/efaktura/epostak'
+import { Route as ApiPublicEfakturaPdsRouteImport } from './routes/api/public/efaktura/pds'
 import { Route as ApiPublicFakturaTokenRouteImport } from './routes/api/public/faktura.$token'
 import { Route as ApiPublicHooksBankStatementsRouteImport } from './routes/api/public/hooks/bank-statements'
 import { Route as ApiPublicHooksBankStatementsRestoreRouteImport } from './routes/api/public/hooks/bank-statements-restore'
@@ -518,6 +521,11 @@ const AdminAiRoute = AdminAiRouteImport.update({
 const AdminAuditLogRoute = AdminAuditLogRouteImport.update({
   id: '/audit-log',
   path: '/audit-log',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEfakturaRoute = AdminEfakturaRouteImport.update({
+  id: '/efaktura',
+  path: '/efaktura',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminErrorsRoute = AdminErrorsRouteImport.update({
@@ -1627,6 +1635,17 @@ const ApiBankoveUctyTatrabankaWebhookRoute =
     path: '/api/bankove-ucty/tatrabanka/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicEfakturaEpostakRoute =
+  ApiPublicEfakturaEpostakRouteImport.update({
+    id: '/api/public/efaktura/epostak',
+    path: '/api/public/efaktura/epostak',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicEfakturaPdsRoute = ApiPublicEfakturaPdsRouteImport.update({
+  id: '/api/public/efaktura/pds',
+  path: '/api/public/efaktura/pds',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicFakturaTokenRoute = ApiPublicFakturaTokenRouteImport.update({
   id: '/api/public/faktura/$token',
   path: '/api/public/faktura/$token',
@@ -1922,6 +1941,7 @@ export interface FileRoutesByFullPath {
   '/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
   '/admin/ai': typeof AdminAiRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
+  '/admin/efaktura': typeof AdminEfakturaRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
@@ -2118,6 +2138,8 @@ export interface FileRoutesByFullPath {
   '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
+  '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
@@ -2206,6 +2228,7 @@ export interface FileRoutesByTo {
   '/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
   '/admin/ai': typeof AdminAiRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
+  '/admin/efaktura': typeof AdminEfakturaRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
@@ -2401,6 +2424,8 @@ export interface FileRoutesByTo {
   '/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
+  '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
@@ -2499,6 +2524,7 @@ export interface FileRoutesById {
   '/_authenticated/webhooky-logy': typeof AuthenticatedWebhookyLogyRoute
   '/admin/ai': typeof AdminAiRoute
   '/admin/audit-log': typeof AdminAuditLogRoute
+  '/admin/efaktura': typeof AdminEfakturaRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/gopay': typeof AdminGopayRoute
   '/admin/health': typeof AdminHealthRoute
@@ -2695,6 +2721,8 @@ export interface FileRoutesById {
   '/_authenticated/sklad/presuny/nova': typeof AuthenticatedSkladPresunyNovaRoute
   '/api/admin/seo/callback': typeof ApiAdminSeoCallbackRoute
   '/api/bankove-ucty/tatrabanka/webhook': typeof ApiBankoveUctyTatrabankaWebhookRoute
+  '/api/public/efaktura/epostak': typeof ApiPublicEfakturaEpostakRoute
+  '/api/public/efaktura/pds': typeof ApiPublicEfakturaPdsRoute
   '/api/public/faktura/$token': typeof ApiPublicFakturaTokenRoute
   '/api/public/hooks/bank-statements': typeof ApiPublicHooksBankStatementsRoute
   '/api/public/hooks/bank-statements-restore': typeof ApiPublicHooksBankStatementsRestoreRoute
@@ -2793,6 +2821,7 @@ export interface FileRouteTypes {
     | '/webhooky-logy'
     | '/admin/ai'
     | '/admin/audit-log'
+    | '/admin/efaktura'
     | '/admin/errors'
     | '/admin/gopay'
     | '/admin/health'
@@ -2989,6 +3018,8 @@ export interface FileRouteTypes {
     | '/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/efaktura/epostak'
+    | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
@@ -3077,6 +3108,7 @@ export interface FileRouteTypes {
     | '/webhooky-logy'
     | '/admin/ai'
     | '/admin/audit-log'
+    | '/admin/efaktura'
     | '/admin/errors'
     | '/admin/gopay'
     | '/admin/health'
@@ -3272,6 +3304,8 @@ export interface FileRouteTypes {
     | '/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/efaktura/epostak'
+    | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
@@ -3369,6 +3403,7 @@ export interface FileRouteTypes {
     | '/_authenticated/webhooky-logy'
     | '/admin/ai'
     | '/admin/audit-log'
+    | '/admin/efaktura'
     | '/admin/errors'
     | '/admin/gopay'
     | '/admin/health'
@@ -3565,6 +3600,8 @@ export interface FileRouteTypes {
     | '/_authenticated/sklad/presuny/nova'
     | '/api/admin/seo/callback'
     | '/api/bankove-ucty/tatrabanka/webhook'
+    | '/api/public/efaktura/epostak'
+    | '/api/public/efaktura/pds'
     | '/api/public/faktura/$token'
     | '/api/public/hooks/bank-statements'
     | '/api/public/hooks/bank-statements-restore'
@@ -3712,6 +3749,8 @@ export interface RootRouteChildren {
   PomocOnlinePlatbyGopayRoute: typeof PomocOnlinePlatbyGopayRoute
   ApiAdminSeoCallbackRoute: typeof ApiAdminSeoCallbackRoute
   ApiBankoveUctyTatrabankaWebhookRoute: typeof ApiBankoveUctyTatrabankaWebhookRoute
+  ApiPublicEfakturaEpostakRoute: typeof ApiPublicEfakturaEpostakRoute
+  ApiPublicEfakturaPdsRoute: typeof ApiPublicEfakturaPdsRoute
   ApiPublicFakturaTokenRoute: typeof ApiPublicFakturaTokenRoute
   ApiPublicHooksBankStatementsRoute: typeof ApiPublicHooksBankStatementsRoute
   ApiPublicHooksBankStatementsRestoreRoute: typeof ApiPublicHooksBankStatementsRestoreRoute
@@ -4047,6 +4086,13 @@ declare module '@tanstack/react-router' {
       path: '/audit-log'
       fullPath: '/admin/audit-log'
       preLoaderRoute: typeof AdminAuditLogRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/efaktura': {
+      id: '/admin/efaktura'
+      path: '/efaktura'
+      fullPath: '/admin/efaktura'
+      preLoaderRoute: typeof AdminEfakturaRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/errors': {
@@ -5463,6 +5509,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBankoveUctyTatrabankaWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/efaktura/epostak': {
+      id: '/api/public/efaktura/epostak'
+      path: '/api/public/efaktura/epostak'
+      fullPath: '/api/public/efaktura/epostak'
+      preLoaderRoute: typeof ApiPublicEfakturaEpostakRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/efaktura/pds': {
+      id: '/api/public/efaktura/pds'
+      path: '/api/public/efaktura/pds'
+      fullPath: '/api/public/efaktura/pds'
+      preLoaderRoute: typeof ApiPublicEfakturaPdsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/faktura/$token': {
       id: '/api/public/faktura/$token'
       path: '/api/public/faktura/$token'
@@ -6100,6 +6160,7 @@ const AuthenticatedRouteRouteWithChildren =
 interface AdminRouteChildren {
   AdminAiRoute: typeof AdminAiRoute
   AdminAuditLogRoute: typeof AdminAuditLogRoute
+  AdminEfakturaRoute: typeof AdminEfakturaRoute
   AdminErrorsRoute: typeof AdminErrorsRoute
   AdminGopayRoute: typeof AdminGopayRoute
   AdminHealthRoute: typeof AdminHealthRoute
@@ -6124,6 +6185,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAiRoute: AdminAiRoute,
   AdminAuditLogRoute: AdminAuditLogRoute,
+  AdminEfakturaRoute: AdminEfakturaRoute,
   AdminErrorsRoute: AdminErrorsRoute,
   AdminGopayRoute: AdminGopayRoute,
   AdminHealthRoute: AdminHealthRoute,
@@ -6424,6 +6486,8 @@ const rootRouteChildren: RootRouteChildren = {
   PomocOnlinePlatbyGopayRoute: PomocOnlinePlatbyGopayRoute,
   ApiAdminSeoCallbackRoute: ApiAdminSeoCallbackRoute,
   ApiBankoveUctyTatrabankaWebhookRoute: ApiBankoveUctyTatrabankaWebhookRoute,
+  ApiPublicEfakturaEpostakRoute: ApiPublicEfakturaEpostakRoute,
+  ApiPublicEfakturaPdsRoute: ApiPublicEfakturaPdsRoute,
   ApiPublicFakturaTokenRoute: ApiPublicFakturaTokenRoute,
   ApiPublicHooksBankStatementsRoute: ApiPublicHooksBankStatementsRoute,
   ApiPublicHooksBankStatementsRestoreRoute:
