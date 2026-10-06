@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { supabase } from "@/integrations/supabase/client";
 import { ciselneRadyFn } from "@/lib/faktero/ciselne-rady.functions";
 import { type CiselnyRad, type DruhRadu } from "@/lib/faktero/ciselne-rady";
 
@@ -21,6 +22,8 @@ export function VyberRadu({
   onZmena,
   label = "Číselný rad",
   className,
+  datum,
+  bezNahladu,
 }: {
   druh: DruhRadu;
   /** Prázdne = predvolený rad. */
@@ -28,6 +31,10 @@ export function VyberRadu({
   onZmena: (id: string) => void;
   label?: string;
   className?: string;
+  /** Dátum dokladu — rad s mesiacom v čísle (`{MM}`) dá v inom mesiaci iné číslo. */
+  datum?: string;
+  /** Opakovaná faktúra číslo dostane až pri vystavení — tam náhľad nedáva zmysel. */
+  bezNahladu?: boolean;
 }) {
   const nacitaj = useServerFn(ciselneRadyFn);
   const [rady, setRady] = useState<CiselnyRad[]>([]);
@@ -51,7 +58,51 @@ export function VyberRadu({
     };
   }, [nacitaj, druh]);
 
-  if (rady.length === 0) return null;
+  /*
+    Náhľad čísla, ktoré doklad dostane — ten istý výpočet, ktorým sa číslo
+    pridelí pri uložení (vrátane zapĺňania dier po zmazaných faktúrach).
+    Nič sa nerezervuje; ak medzitým niekto iný vystaví doklad, pri uložení
+    príde ďalšie voľné.
+  */
+  const [nahlad, setNahlad] = useState<string | null>(null);
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid || bezNahladu) return;
+    let zrusene = false;
+    const t = setTimeout(async () => {
+      const den = datum && /^\d{4}-\d{2}-\d{2}$/.test(datum) ? datum : null;
+      const faktura = ["invoice", "proforma", "advance_payment", "credit_note"].includes(druh);
+      const { data, error } = faktura
+        ? await supabase.rpc("faktero_next_invoice_number", {
+            _company_id: cid,
+            _issue_date: den,
+            _type: druh === "invoice" ? "regular" : druh,
+            _series_id: hodnota || null,
+          } as never)
+        : await supabase.rpc("faktero_next_series_number", {
+            _company_id: cid,
+            _kind: druh,
+            _series_id: hodnota || null,
+            _date: den,
+          } as never);
+      if (zrusene) return;
+      const r = data as { invoice_number?: string; number?: string } | null;
+      setNahlad(error ? null : (r?.invoice_number ?? r?.number ?? null));
+    }, 250);
+    return () => {
+      zrusene = true;
+      clearTimeout(t);
+    };
+  }, [druh, hodnota, datum, bezNahladu, rady.length]);
+
+  const cisloRiadok = nahlad ? (
+    <span className="mt-1 block text-sm">
+      Číslo dokladu: <strong className="font-mono">{nahlad}</strong>
+      <span className="text-xs text-muted-foreground"> — pridelí sa pri uložení</span>
+    </span>
+  ) : null;
+
+  if (rady.length === 0) return cisloRiadok ? <div className={className}>{cisloRiadok}</div> : null;
 
   return (
     <div className={className}>
@@ -69,6 +120,7 @@ export function VyberRadu({
           </option>
         ))}
       </select>
+      {cisloRiadok}
       <span className="mt-1 block text-xs text-muted-foreground">
         Spravujú sa v{" "}
         <Link to="/ciselne-rady" className="text-primary hover:underline">

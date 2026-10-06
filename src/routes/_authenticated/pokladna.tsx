@@ -226,6 +226,7 @@ function PokladnaPage() {
               druh="cash"
               hodnota={form.number_series_id}
               onZmena={(id) => setForm({ ...form, number_series_id: id })}
+              datum={form.entry_date}
             />
             <div className="sm:col-span-2">
               <button

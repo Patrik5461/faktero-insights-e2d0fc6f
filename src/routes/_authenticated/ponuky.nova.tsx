@@ -360,6 +360,7 @@ function NewQuote() {
               druh="quote"
               hodnota={form.number_series_id}
               onZmena={(id) => setForm({ ...form, number_series_id: id })}
+              datum={form.issue_date}
             />
           </div>
           <div className="rounded-xl border border-border bg-card p-5">

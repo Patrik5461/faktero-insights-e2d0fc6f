@@ -332,6 +332,7 @@ function NewOrder() {
                 druh="sales_order"
                 hodnota={form.number_series_id}
                 onZmena={(idRadu) => setForm({ ...form, number_series_id: idRadu })}
+                datum={form.order_date}
               />
               <JobPicker
                 className="sm:col-span-2"

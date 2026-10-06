@@ -227,6 +227,7 @@ function NewRecurring() {
                   hodnota={form.number_series_id}
                   onZmena={(id) => setForm({ ...form, number_series_id: id })}
                   label="Číselný rad faktúr"
+                  bezNahladu
                   className="sm:col-span-2 lg:col-span-1 xl:col-span-2"
                 />
                 <div>

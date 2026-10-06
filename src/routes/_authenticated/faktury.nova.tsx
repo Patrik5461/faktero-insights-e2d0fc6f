@@ -1078,6 +1078,7 @@ function NewInvoice() {
                 druh={druhPodlaTypuFaktury(form.type)}
                 hodnota={form.number_series_id}
                 onZmena={(id) => setForm({ ...form, number_series_id: id })}
+                datum={form.issue_date}
               />
               {form.type === "credit_note" && (
                 <div className="col-span-full rounded-lg border border-primary/30 bg-primary/5 p-3">
