@@ -52,6 +52,8 @@ export type Davka = {
   jobId: string | null;
   faktur: number;
   dokladov: number;
+  /** Zaúčtované prijaté faktúry. */
+  prijatych: number;
   pokladnicnych: number;
   zakaznikov: number;
   zasob: number;
@@ -212,6 +214,26 @@ export async function zostavDavku(
       .limit(STROP_DAVKY),
   ]);
 
+  /*
+    Prijaté faktúry — len zaúčtované (účtovník ich prešiel, ako v Doklado) a
+    započítateľné (samofaktúra až po odsúhlasení). Do Pohody idú v tvare
+    prijatého dokladu, s predkontáciou a členením DPH zo zaúčtovania.
+  */
+  const { data: prijateRiadky } = await supabase
+    .from("purchase_invoices")
+    .select("*")
+    .eq("company_id", vstup.companyId)
+    .gte("issue_date", od)
+    .not("zauctovane_at", "is", null)
+    .is("exported_at", null)
+    .is("deleted_at", null)
+    .eq("type", "regular")
+    .order("issue_date")
+    .limit(STROP_DAVKY);
+  const { zapocitatelna } = await import("./samofakturacia");
+  const { prijataAkoDoklad } = await import("./prijate-do-pohody");
+  const prijate = (prijateRiadky ?? []).filter((p: Riadok) => zapocitatelna(p));
+
   // Číselníky — len keď si ich firma zapla. Sklad navyše potrebuje členenie,
   // bez neho Pohoda kartu nezaloží, tak sa ani neposiela.
   const zakaznici = company.pohoda_posielat_adresar
@@ -243,6 +265,7 @@ export async function zostavDavku(
   const prazdna =
     !faktury.length &&
     !doklady?.length &&
+    !prijate.length &&
     !pokladnica?.length &&
     !zakaznici.length &&
     !zasoby.length &&
@@ -256,6 +279,7 @@ export async function zostavDavku(
       jobId: null,
       faktur: 0,
       dokladov: 0,
+      prijatych: 0,
       pokladnicnych: 0,
       zakaznikov: 0,
       zasob: 0,
@@ -303,7 +327,7 @@ export async function zostavDavku(
       invoice,
       items: (polozky ?? []).filter((p: Riadok) => p.invoice_id === invoice.id),
     })),
-    doklady: doklady ?? [],
+    doklady: [...(doklady ?? []), ...prijate.map(prijataAkoDoklad)],
     pohyby: pokladnica ?? [],
     zakaznici,
     zasoby,
@@ -333,6 +357,7 @@ export async function zostavDavku(
       cislaPreskocenych,
       preskocene,
       dokladyIds: (doklady ?? []).map((d: Riadok) => d.id),
+      prijateIds: prijate.map((p: Riadok) => p.id),
       pokladnicaIds: (pokladnica ?? []).map((p: Riadok) => p.id),
       zakaznici,
       zasoby,
@@ -348,6 +373,7 @@ export async function zostavDavku(
     jobId,
     faktur: vyvezene.length,
     dokladov: doklady?.length ?? 0,
+    prijatych: prijate.length,
     pokladnicnych: pokladnica?.length ?? 0,
     zakaznikov: zakaznici.length,
     zasob: zasoby.length,
@@ -680,6 +706,7 @@ async function zapisOdovzdanie(
     cislaPreskocenych: Set<string>;
     preskocene: string[];
     dokladyIds: string[];
+    prijateIds?: string[];
     pokladnicaIds: string[];
     zakaznici: Riadok[];
     zasoby: Riadok[];
@@ -725,6 +752,12 @@ async function zapisOdovzdanie(
       .from("expense_documents")
       .update({ status: "exported", exported_at: teraz, export_job_id: job.id })
       .in("id", p.dokladyIds);
+  }
+  if (p.prijateIds?.length) {
+    await supabase
+      .from("purchase_invoices")
+      .update({ exported_at: teraz, export_job_id: job.id })
+      .in("id", p.prijateIds);
   }
   if (p.pokladnicaIds.length) {
     await supabase
@@ -927,6 +960,21 @@ export async function spracujOdpoved(
           pohoda_cislo: v.cislo,
           ...(chyba ? { exported_at: null, status: "new" } : {}),
         })
+        .eq("id", id);
+      continue;
+    }
+
+    // Prijatá faktúra — tá istá cesta ako doklad, chybná sa vráti do fronty.
+    const { data: prijata } = await supabase
+      .from("purchase_invoices")
+      .select("id")
+      .eq("company_id", vstup.companyId)
+      .eq("id", id)
+      .maybeSingle();
+    if (prijata) {
+      await supabase
+        .from("purchase_invoices")
+        .update({ pohoda_cislo: v.cislo, ...(chyba ? { exported_at: null } : {}) })
         .eq("id", id);
       continue;
     }

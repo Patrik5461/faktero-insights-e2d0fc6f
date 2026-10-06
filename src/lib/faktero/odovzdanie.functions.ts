@@ -41,6 +41,7 @@ export const odovzdajUctovnikoviFn = createServerFn({ method: "POST" })
       fileName: balik.fileName,
       pocetFaktur: balik.pocetFaktur,
       pocetDokladov: balik.pocetDokladov,
+      pocetPrijatych: balik.pocetPrijatych ?? 0,
       pocetPokladnicnych: balik.pocetPokladnicnych,
       pocetOstatnych: balik.pocetOstatnych,
       preskocene: balik.preskocene,
@@ -98,6 +99,7 @@ export const posliOdovzdanieMailomFn = createServerFn({ method: "POST" })
       prijemca,
       pocetFaktur: balik.pocetFaktur,
       pocetDokladov: balik.pocetDokladov,
+      pocetPrijatych: balik.pocetPrijatych ?? 0,
       pocetPokladnicnych: balik.pocetPokladnicnych,
       pocetOstatnych: balik.pocetOstatnych,
       vynechanePrilohy: balik.vynechanePrilohy,
@@ -120,6 +122,7 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
       { data: pokladnica },
       { data: doklady },
       { data: firma },
+      { data: prijate },
     ] = await Promise.all([
       supabase
         .from("invoices")
@@ -148,7 +151,18 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
         .gte("issue_date", od)
         .lt("issue_date", doDatumu),
       supabase.from("companies").select("uctovnik_email").eq("id", data.companyId).single(),
+      supabase
+        .from("purchase_invoices")
+        .select("id, exported_at, samofakturacia, samofakturacia_stav")
+        .eq("company_id", data.companyId)
+        .gte("issue_date", od)
+        .lt("issue_date", doDatumu)
+        .is("deleted_at", null)
+        .eq("type", "regular")
+        .not("status", "in", "(draft,cancelled)"),
     ]);
+    const { zapocitatelna } = await import("./samofakturacia");
+    const prij = (prijate ?? []).filter((p: Riadok) => zapocitatelna(p));
 
     const odovzdane = new Set((logy ?? []).map((r: Riadok) => r.invoice_id));
     const spolu = faktury ?? [];
@@ -161,6 +175,8 @@ export const prehladOdovzdaniaFn = createServerFn({ method: "POST" })
       pokladnicnych: pokladnica?.length ?? 0,
       dokladov: dok.length,
       dokladovNovych: dok.filter((d: Riadok) => !d.exported_at).length,
+      prijatych: prij.length,
+      prijatychNovych: prij.filter((p: Riadok) => !p.exported_at).length,
       uctovnikEmail: (firma?.uctovnik_email ?? null) as string | null,
     };
   });

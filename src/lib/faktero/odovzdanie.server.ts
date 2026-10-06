@@ -100,6 +100,9 @@ export type Balik = {
   vynechanePrilohy: number;
   fakturyIds: string[];
   dokladyIds: string[];
+  /** Prijaté faktúry v balíku (označia sa ako odovzdané). */
+  prijateIds?: string[];
+  pocetPrijatych?: number;
   /** Číselníky, ktoré v balíku išli — zapisujú sa do `pohoda_odoslane`. */
   ciselniky: { agenda: string; id: string; verzia: string }[];
   pocetCiselnikov: number;
@@ -173,11 +176,32 @@ export async function zostavBalik(
         .order("received_date"),
     ]);
   const doklady = (vsetkyDoklady ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at);
+
+  /*
+    Prijaté faktúry za mesiac. Účtovníčka ich v Pohode zaúčtuje sama, preto
+    idú všetky vystavené (nie len tie zaúčtované vo Fakteri) — predkontácia a
+    členenie sa pridajú, keď ich faktúra má. Samofaktúra až po odsúhlasení.
+  */
+  const { data: vsetkyPrijate } = await supabase
+    .from("purchase_invoices")
+    .select("*")
+    .eq("company_id", vstup.companyId)
+    .gte("issue_date", od)
+    .lt("issue_date", doDatumu)
+    .is("deleted_at", null)
+    .eq("type", "regular")
+    .not("status", "in", "(draft,cancelled)")
+    .order("issue_date");
+  const { zapocitatelna } = await import("./samofakturacia");
+  const prijate = (vsetkyPrijate ?? []).filter(
+    (p: Riadok) => zapocitatelna(p) && (!vstup.lenNove || !p.exported_at),
+  );
   const ostatne = (vsetkyOstatne ?? []).filter((d: Riadok) => !vstup.lenNove || !d.exported_at);
 
-  if (!faktury.length && !doklady.length && !pokladnica?.length && !ostatne.length) {
+  if (!faktury.length && !doklady.length && !prijate.length && !pokladnica?.length && !ostatne.length) {
     throw new Error(
-      vstup.lenNove && (vsetky?.length || vsetkyDoklady?.length || vsetkyOstatne?.length)
+      vstup.lenNove &&
+        (vsetky?.length || vsetkyDoklady?.length || vsetkyOstatne?.length || vsetkyPrijate?.length)
         ? `Za ${nazov} už bolo všetko odovzdané`
         : `Za ${nazov} nie sú žiadne doklady`,
     );
@@ -344,6 +368,51 @@ export async function zostavBalik(
           d.total_amount,
           d.currency,
           d.category ?? "",
+        ]),
+      ),
+    );
+  }
+
+  if (prijate.length) {
+    const { prijataAkoDoklad } = await import("./prijate-do-pohody");
+    zip.file(
+      "pohoda-prijate-faktury.xml",
+      buildPohodaExpensesXml({ company, doklady: prijate.map(prijataAkoDoklad), nastavenia }),
+    );
+    zip.file(
+      "prijate-faktury.csv",
+      csvSubor(
+        [
+          "cislo_faktury",
+          "dodavatel",
+          "ico",
+          "ic_dph",
+          "vystavena",
+          "dodanie",
+          "splatnost",
+          "zaklad",
+          "dph",
+          "celkom",
+          "mena",
+          "predkontacia",
+          "clenenie_dph",
+          "zauctovana",
+        ],
+        prijate.map((p: Riadok) => [
+          p.invoice_number,
+          p.supplier_name ?? "",
+          p.supplier_ico ?? "",
+          p.supplier_ic_dph ?? "",
+          p.issue_date,
+          p.delivery_date ?? "",
+          p.due_date ?? "",
+          p.amount_without_vat,
+          p.vat_amount,
+          p.amount_total,
+          p.currency,
+          p.pohoda_predkontacia ?? "",
+          p.pohoda_clenenie_dph ?? "",
+          p.zauctovane_at ? "áno" : "nie",
         ]),
       ),
     );
@@ -521,6 +590,8 @@ export async function zostavBalik(
       vynechanePrilohy,
       fakturyIds: faktury.map((f: Riadok) => f.id),
       dokladyIds: doklady.map((d: Riadok) => d.id),
+      prijateIds: prijate.map((p: Riadok) => p.id),
+      pocetPrijatych: prijate.length,
       ciselniky: [
         ...zakaznici.map((z: Riadok) => ({
           agenda: "adresar",
@@ -608,6 +679,12 @@ export async function oznacOdovzdane(
         export_job_id: job.id,
       })
       .in("id", balik.dokladyIds);
+  }
+  if (job && balik.prijateIds?.length) {
+    await supabase
+      .from("purchase_invoices")
+      .update({ exported_at: new Date().toISOString(), export_job_id: job.id })
+      .in("id", balik.prijateIds);
   }
   if (job && balik.ostatneIds.length) {
     await supabase

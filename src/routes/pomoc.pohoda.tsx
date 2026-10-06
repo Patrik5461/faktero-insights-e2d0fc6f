@@ -195,7 +195,13 @@ const sections: HelpSection[] = [
             <strong>vydané faktúry</strong>, zálohové faktúry a dobropisy
           </li>
           <li>
-            <strong>prijaté doklady</strong> — bločky aj prijaté faktúry, s rozpisom DPH po sadzbách
+            <strong>prijaté doklady</strong> — bločky a pokladničné doklady, s rozpisom DPH po sadzbách
+          </li>
+          <li>
+            <strong>prijaté faktúry</strong> — konektor posiela tie, ktoré ste vo Fakteri{" "}
+            <Link to="/pomoc/prijate-faktury">zaúčtovali</Link>, s predkontáciou, členením DPH,
+            číslom faktúry dodávateľa a dátumom dodania. V mesačnom odovzdaní účtovníčke idú všetky
+            prijaté faktúry za mesiac.
           </li>
           <li>
             <strong>pokladňa</strong> — príjmové a výdavkové doklady
@@ -333,6 +339,7 @@ const sections: HelpSection[] = [
           <li>
             Podmienky: časť názvu dodávateľa, IČO, spôsob úhrady. Vyplnené musia platiť naraz.
           </li>
+          <li>Platia pre bločky a doklady aj pre prijaté faktúry.</li>
           <li>
             Doplní: kategóriu, predkontáciu a členenie DPH pre Pohodu, odpočet DPH a poznámku.
           </li>

@@ -6,6 +6,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { SamofakturaPanel } from "@/components/faktero/SamofakturaPanel";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
+import { ZauctovaniePanel } from "@/components/faktero/ZauctovaniePanel";
 import { popisSplatnosti, predlzena } from "@/lib/faktero/splatnost";
 import { zapocitatelna } from "@/lib/faktero/samofakturacia";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -432,6 +433,8 @@ function PurchaseInvoiceDetail() {
                 )}
               </div>
             </div>
+
+            {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
 
             <PolozkyDokladu items={row.items} mena={row.currency} samo={samo} />
 

@@ -871,9 +871,17 @@ export function polozkyDokladov(opts: {
       const zaokruhlenie = Math.round((celkom - zRozpisu) * 100) / 100;
 
       // Variabilný symbol je číselný; z čísla dokladu sa berú len číslice.
-      const symVar = String(d?.document_number ?? "")
+      // Prijatá faktúra má vlastný VS od dodávateľa — ten má prednosť.
+      const symVar = String(d?._symVar || d?.document_number || "")
         .replace(/\D/g, "")
         .slice(0, 20);
+      /*
+        Prijatá faktúra (nie bloček) nesie navyše číslo dokladu dodávateľa,
+        dátum dodania (rozhoduje o období DPH) a splatnosť; dobropis ide ako
+        prijatý dobropis so zápornými sumami.
+      */
+      const typPohody = String(d?._typPohody || "receivedInvoice");
+      const datumDph = String(d?._datumDph || d?.issue_date || "");
       const popis = skrat(
         [
           d?.supplier_name,
@@ -904,9 +912,13 @@ export function polozkyDokladov(opts: {
   <dat:dataPackItem id="${esc(d?.id ?? `DOK${idx + 1}`)}" version="2.0">
     <inv:invoice version="2.0">
       <inv:invoiceHeader>
-        <inv:invoiceType>receivedInvoice</inv:invoiceType>${el("inv:symVar", symVar, "        ")}
+        <inv:invoiceType>${esc(typPohody)}</inv:invoiceType>${el("inv:symVar", symVar, "        ")}${el(
+          "inv:originalDocument",
+          skrat(d?._povodneCislo, 32),
+          "        ",
+        )}
         <inv:date>${esc(d?.issue_date ?? "")}</inv:date>
-        <inv:dateTax>${esc(d?.issue_date ?? "")}</inv:dateTax>${el(
+        <inv:dateTax>${esc(datumDph)}</inv:dateTax>${el("inv:dateDue", d?._splatnost, "        ")}${el(
           "inv:text",
           popis || "Prijatý doklad",
           "        ",

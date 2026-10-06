@@ -18,6 +18,7 @@ import {
   Landmark,
   X,
   Upload,
+  BookCheck,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
@@ -32,6 +33,9 @@ import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
+import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
+import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
+import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { NAZVY_STAVOV, stavSamofaktury, zapocitatelna } from "@/lib/faktero/samofakturacia";
 
 export const Route = createFileRoute("/_authenticated/prijate-faktury/")({
@@ -242,6 +246,52 @@ function PurchaseInvoicesPage() {
       setSelected(new Set());
     } finally {
       setZipBusy(false);
+    }
+  }
+
+  /* Hromadné zaúčtovanie — ako v Doklado: vybrať faktúry, dať predkontáciu. */
+  const [zauctovanie, setZauctovanie] = useState(false);
+  const [kodyNavrhy, setKodyNavrhy] = useState<Navrhy | null>(null);
+  const [kody, setKody] = useState({ predkontacia: "", clenenie: "", kategoria: "" });
+  const nacitajKody = useServerFn(navrhyKodovFn);
+  const zauctuj = useServerFn(zauctujPrijateFn);
+  useZatvorNaEscape(zauctovanie ? () => setZauctovanie(false) : null);
+
+  async function otvorZauctovanie() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setKody({ predkontacia: "", clenenie: "", kategoria: "" });
+    setZauctovanie(true);
+    if (!kodyNavrhy) nacitajKody({ data: { company_id: cid } }).then(setKodyNavrhy).catch(() => {});
+  }
+
+  async function hromadneZauctovat() {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    setHromadneBusy(true);
+    try {
+      const r = await zauctuj({
+        data: {
+          company_id: cid,
+          ids: [...selected],
+          predkontacia: kody.predkontacia || undefined,
+          clenenie: kody.clenenie || undefined,
+          kategoria: kody.kategoria || undefined,
+        },
+      });
+      if (r.zauctovanych) {
+        toast.success(
+          r.zauctovanych === 1 ? "Zaúčtovaná 1 faktúra" : `Zaúčtovaných ${r.zauctovanych} faktúr`,
+        );
+      }
+      if (r.preskocene.length) toast.error(`Vynechané: ${r.preskocene.join(" · ")}`);
+      setZauctovanie(false);
+      setSelected(new Set());
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    } finally {
+      setHromadneBusy(false);
     }
   }
 
@@ -467,6 +517,13 @@ function PurchaseInvoicesPage() {
               <Check className="h-3.5 w-3.5" /> Označiť ako prijaté
             </button>
             <button
+              onClick={otvorZauctovanie}
+              disabled={hromadneBusy}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <BookCheck className="h-3.5 w-3.5" /> Zaúčtovať
+            </button>
+            <button
               onClick={() => setMazanie(true)}
               disabled={hromadneBusy}
               className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
@@ -610,6 +667,16 @@ function PurchaseInvoicesPage() {
                   </td>
                   <td className="p-3" onClick={(e) => e.stopPropagation()}>
                     <StatusBadge status={r.status} />
+                    {r.exported_at ? (
+                      <span className="mt-1 block text-xs text-emerald-700 dark:text-emerald-300">V Pohode</span>
+                    ) : r.zauctovane_at && r.status !== "booked" ? (
+                      <span className="mt-1 block text-xs text-sky-700 dark:text-sky-300">Zaúčtovaná</span>
+                    ) : null}
+                    {(r.pohoda_predkontacia || r.pohoda_clenenie_dph) && (
+                      <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                        {[r.pohoda_predkontacia, r.pohoda_clenenie_dph].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
                     {r.samofakturacia && (
                       <span
                         className={`mt-1 block text-xs ${
@@ -659,6 +726,48 @@ function PurchaseInvoicesPage() {
         onConfirm={hromadneVymazat}
         busy={hromadneBusy}
       />
+      {zauctovanie && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setZauctovanie(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Zaúčtovať vybrané faktúry"
+            className="w-full max-w-2xl rounded-xl border border-border bg-card p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold">
+              Zaúčtovať {selected.size === 1 ? "1 faktúru" : `${selected.size} faktúr`}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Vyplnené pole sa nastaví na všetkých vybraných; prázdne nechá, čo na faktúre je
+              (z pravidla alebo predvolené z nastavení Pohody). Zaúčtované pôjdu do Pohody pri
+              najbližšom odovzdaní.
+            </p>
+            <div className="mt-4">
+              <PoliaZauctovania navrhy={kodyNavrhy} hodnoty={kody} setHodnoty={setKody} hromadne />
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setZauctovanie(false)}
+                className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+              >
+                Zrušiť
+              </button>
+              <button
+                onClick={hromadneZauctovat}
+                disabled={hromadneBusy}
+                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                {hromadneBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+                Zaúčtovať
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {prikaz && getActiveCompanyId() && (
         <HromadnyPrikaz
           companyId={getActiveCompanyId()!}

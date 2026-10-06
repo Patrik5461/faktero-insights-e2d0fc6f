@@ -5258,6 +5258,15 @@ export type Database = {
           opravuje_cislo: string | null
           exchange_rate: number | null
           amount_without_vat_eur: number | null
+          pohoda_cislo: string | null
+          export_job_id: string | null
+          category: string | null
+          pohoda_predkontacia: string | null
+          pohoda_clenenie_dph: string | null
+          pravidlo_id: string | null
+          zauctovane_at: string | null
+          zauctoval: string | null
+          exported_at: string | null
           povodna_splatnost: string | null
           predlzenie_poznamka: string | null
           predlzene_at: string | null
@@ -5332,6 +5341,15 @@ export type Database = {
           opravuje_cislo?: string | null
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
+          pohoda_cislo?: string | null
+          export_job_id?: string | null
+          category?: string | null
+          pohoda_predkontacia?: string | null
+          pohoda_clenenie_dph?: string | null
+          pravidlo_id?: string | null
+          zauctovane_at?: string | null
+          zauctoval?: string | null
+          exported_at?: string | null
           povodna_splatnost?: string | null
           predlzenie_poznamka?: string | null
           predlzene_at?: string | null
@@ -5406,6 +5424,15 @@ export type Database = {
           opravuje_cislo?: string | null
           exchange_rate?: number | null
           amount_without_vat_eur?: number | null
+          pohoda_cislo?: string | null
+          export_job_id?: string | null
+          category?: string | null
+          pohoda_predkontacia?: string | null
+          pohoda_clenenie_dph?: string | null
+          pravidlo_id?: string | null
+          zauctovane_at?: string | null
+          zauctoval?: string | null
+          exported_at?: string | null
           povodna_splatnost?: string | null
           predlzenie_poznamka?: string | null
           predlzene_at?: string | null

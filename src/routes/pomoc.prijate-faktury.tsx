@@ -259,6 +259,33 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "zauctovanie",
+    title: "Zaúčtovanie — predkontácia a členenie DPH",
+    body: (
+      <>
+        <p>
+          Ako v Doklado: na detaile prijatej faktúry je časť <strong>Zaúčtovanie</strong> s
+          predkontáciou, členením DPH (plnením) a kategóriou nákladu. Kódy píšete také, aké máte v
+          Pohode; Faktero ponúkne tie, ktoré už používate. Prázdne pole znamená predvolenú hodnotu z{" "}
+          <Link to="/uctovnictvo/pohoda">nastavení prepojenia s Pohodou</Link>.
+        </p>
+        <p>
+          Viac faktúr naraz zaúčtujete v zozname: označte ich a kliknite na <em>Zaúčtovať</em>.
+          Vyplnené pole sa nastaví všetkým, prázdne nechá, čo na faktúre je. Opakujúcich sa
+          dodávateľov zaúčtuje samo{" "}
+          <Link to="/uctovnictvo/pravidla">pravidlo účtovania</Link> (napríklad „Orange →
+          predkontácia 5Fp, členenie PD“).
+        </p>
+        <p>
+          Zaúčtované faktúry si berie konektor do Pohody — ako prijatú faktúru s číslom dodávateľa,
+          dátumom dodania, splatnosťou a rozpisom DPH. Odovzdaná faktúra je označená <em>V Pohode</em>{" "}
+          a vo Fakteri sa jej zaúčtovanie už nemení. Samofaktúra sa dá zaúčtovať až po odsúhlasení
+          dodávateľom.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "samofakturacia",
     title: "Samofakturácia — faktúru za dodávateľa vyhotovíte vy",
     body: (

@@ -533,6 +533,8 @@ type Prehlad = {
   pokladnicnych: number;
   dokladov: number;
   dokladovNovych: number;
+  prijatych?: number;
+  prijatychNovych?: number;
   uctovnikEmail: string | null;
 };
 
@@ -578,12 +580,14 @@ function OdovzdanieZaMesiac() {
   function popisObsahu(r: {
     pocetFaktur: number;
     pocetDokladov: number;
+    pocetPrijatych?: number;
     pocetPokladnicnych: number;
     pocetOstatnych?: number;
   }) {
     return (
       [
         r.pocetFaktur ? `${r.pocetFaktur} faktúr` : "",
+        r.pocetPrijatych ? `${r.pocetPrijatych} prijatých faktúr` : "",
         r.pocetDokladov ? `${r.pocetDokladov} prijatých dokladov` : "",
         r.pocetPokladnicnych ? `${r.pocetPokladnicnych} pokladničných` : "",
         r.pocetOstatnych ? `${r.pocetOstatnych} ostatných dokladov` : "",
@@ -640,8 +644,15 @@ function OdovzdanieZaMesiac() {
     }
   }
 
-  const zostava = prehlad ? prehlad.spolu - prehlad.odovzdanych + prehlad.dokladovNovych : 0;
-  const jeCo = (prehlad?.spolu ?? 0) + (prehlad?.dokladov ?? 0) + (prehlad?.pokladnicnych ?? 0) > 0;
+  const zostava = prehlad
+    ? prehlad.spolu - prehlad.odovzdanych + prehlad.dokladovNovych + (prehlad.prijatychNovych ?? 0)
+    : 0;
+  const jeCo =
+    (prehlad?.spolu ?? 0) +
+      (prehlad?.dokladov ?? 0) +
+      (prehlad?.prijatych ?? 0) +
+      (prehlad?.pokladnicnych ?? 0) >
+    0;
   const pracuje = busy !== null;
 
   return (
@@ -668,6 +679,7 @@ function OdovzdanieZaMesiac() {
               <div className="font-medium">
                 {prehlad.spolu} faktúr ·{" "}
                 {prehlad.suma.toLocaleString("sk-SK", { style: "currency", currency: "EUR" })}
+                {prehlad.prijatych ? ` · ${prehlad.prijatych} prijatých faktúr` : ""}
                 {prehlad.dokladov ? ` · ${prehlad.dokladov} prijatých dokladov` : ""}
                 {prehlad.pokladnicnych ? ` · pokladňa ${prehlad.pokladnicnych}` : ""}
               </div>

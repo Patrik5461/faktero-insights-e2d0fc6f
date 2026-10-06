@@ -234,11 +234,11 @@ function PravidlaPage() {
                 ) : (
                   <Wand2 className="h-4 w-4" />
                 )}
-                Uplatniť na doklady, ktoré už sú
+                Uplatniť na doklady a prijaté faktúry, ktoré už sú
               </button>
               <span className="text-xs text-muted-foreground">
-                Týka sa dokladov, ktoré ešte neodišli do účtovníctva a žiadne pravidlo ich zatiaľ
-                nedoplnilo.
+                Týka sa dokladov a prijatých faktúr, ktoré ešte neodišli do účtovníctva a žiadne
+                pravidlo ich zatiaľ nedoplnilo.
               </span>
             </div>
           </>
