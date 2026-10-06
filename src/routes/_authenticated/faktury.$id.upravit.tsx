@@ -351,15 +351,6 @@ function EditInvoice() {
       <PageHeader
         title={`Upraviť faktúru ${inv.invoice_number}`}
         description="Po uložení sa PDF pregeneruje pri ďalšom otvorení."
-        action={
-          <Link
-            to="/faktury/$id"
-            params={{ id }}
-            className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-          >
-            Späť
-          </Link>
-        }
       />
       <PageBody>
         <form onSubmit={submit} className="mx-auto max-w-6xl space-y-6">

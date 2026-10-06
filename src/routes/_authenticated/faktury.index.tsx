@@ -21,6 +21,7 @@ import {
   Landmark,
   X,
   Zap,
+  BookCheck,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { exportInvoicesFn } from "@/lib/faktero/export.functions";
@@ -43,6 +44,7 @@ import {
 import { ResponsiveTable, MobileListCard } from "@/components/faktero/ResponsiveTable";
 import { supabase } from "@/integrations/supabase/client";
 import { OdkazNaRady } from "@/components/faktero/OdkazNaRady";
+import { ZauctovanieFakturOkno } from "@/components/faktero/ZauctovanieFakturOkno";
 
 type BulkAction = null | "paid" | "email" | "clone" | "reminder" | "zip";
 
@@ -148,6 +150,7 @@ function InvoicesPage() {
   const [reminderMap, setReminderMap] = useState<Record<string, number>>({});
   const [overdueNoReminder, setOverdueNoReminder] = useState(false);
   const exportFn = useServerFn(exportInvoicesFn);
+  const [zauctovanie, setZauctovanie] = useState(false);
   const cloneFn = useServerFn(cloneInvoiceFn);
   const markPaidFn = useServerFn(bulkMarkPaidFn);
   const emailFn = useServerFn(sendInvoiceEmailFn);
@@ -582,6 +585,14 @@ function InvoicesPage() {
             )}
             {list.selectedIds.length > 0 && !list.showDeleted && (
               <button
+                onClick={() => setZauctovanie(true)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-secondary"
+              >
+                <BookCheck className="h-4 w-4" /> Zaúčtovať ({list.selectedIds.length})
+              </button>
+            )}
+            {list.selectedIds.length > 0 && !list.showDeleted && (
+              <button
                 onClick={bulkExport}
                 disabled={busy}
                 className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/15 disabled:opacity-50"
@@ -883,6 +894,15 @@ function InvoicesPage() {
                       </td>
                       <td className="p-3">
                         <StatusBadge status={i.status} />
+                        {i.zauctovane_at ? (
+                          <div
+                            className="mt-1 text-xs text-sky-700"
+                            title={[i.pohoda_predkontacia, i.pohoda_clenenie_dph].filter(Boolean).join(" · ")}
+                          >
+                            Zaúčtovaná
+                            {i.pohoda_predkontacia ? ` · ${i.pohoda_predkontacia}` : ""}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                         {list.showDeleted ? (
@@ -932,6 +952,17 @@ function InvoicesPage() {
           total={list.total}
           onPageChange={list.setPage}
         />
+        {zauctovanie && getActiveCompanyId() && (
+          <ZauctovanieFakturOkno
+            companyId={getActiveCompanyId()!}
+            ids={list.selectedIds}
+            onClose={() => setZauctovanie(false)}
+            onHotovo={() => {
+              list.clearSelection();
+              list.reload();
+            }}
+          />
+        )}
       </PageBody>
 
       <ConfirmDialog

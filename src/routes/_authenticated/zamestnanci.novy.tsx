@@ -65,11 +65,6 @@ function NovyZamestnanec() {
       <PageHeader
         title="Nový zamestnanec"
         description="Stačí meno a priezvisko, ostatné doplníte kedykoľvek neskôr."
-        action={
-          <Link to="/zamestnanci" className={tlacidloObrys}>
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         <form onSubmit={odoslat} className="max-w-3xl space-y-4">

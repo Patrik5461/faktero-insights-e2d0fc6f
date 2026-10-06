@@ -296,12 +296,6 @@ function QuoteDetail() {
                 <XCircle className="h-4 w-4" /> Zamietnutá
               </button>
             )}
-            <Link
-              to="/ponuky"
-              className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-            >
-              Späť
-            </Link>
           </div>
         }
       />

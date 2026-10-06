@@ -196,12 +196,6 @@ function RecurringDetail() {
             >
               <Save className="h-4 w-4" /> {busy === "save" ? "Ukladám…" : "Uložiť"}
             </button>
-            <Link
-              to="/opakovane"
-              className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-            >
-              Späť
-            </Link>
           </div>
         }
       />

@@ -961,12 +961,6 @@ function InvoiceDetail() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Link
-              to="/faktury"
-              className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-            >
-              Späť
-            </Link>
           </div>
         }
       />

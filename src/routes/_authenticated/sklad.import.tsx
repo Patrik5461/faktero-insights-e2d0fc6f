@@ -107,14 +107,6 @@ function ImportStockPage() {
       <PageHeader
         title="Import skladu CSV"
         description="Nahrajte CSV alebo XLSX so skladovými kartami."
-        action={
-          <Link
-            to="/sklad/produkty"
-            className="rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
-          >
-            Späť
-          </Link>
-        }
       />
       <PageBody>
         <div className="rounded-xl border border-border bg-card p-4">

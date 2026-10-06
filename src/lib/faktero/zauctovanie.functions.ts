@@ -500,3 +500,60 @@ export const stavVystavenejFn = createServerFn({ method: "POST" })
       polozky: (polozky ?? []) as any[],
     };
   });
+
+/**
+ * Hromadné zaúčtovanie vystavených faktúr zo zoznamu. Vyplnené pole sa
+ * nastaví na všetkých; prázdne nechá, čo na faktúre je. Faktúry v Pohode a
+ * koncepty sa preskočia a povie sa to.
+ */
+export const zauctujVystaveneHromadneFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        ids: z.array(z.string().uuid()).min(1).max(500),
+        predkontacia: kod,
+        clenenie: kod,
+        kv: z.string().trim().max(5).optional().nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const [{ data: riadky, error }, { data: logy }] = await Promise.all([
+      supabase
+        .from("invoices")
+        .select("id, invoice_number, status, deleted_at")
+        .eq("company_id", data.company_id)
+        .in("id", data.ids),
+      supabase
+        .from("export_logs")
+        .select("invoice_id")
+        .eq("company_id", data.company_id)
+        .eq("status", "ok")
+        .in("invoice_id", data.ids),
+    ]);
+    if (error) throw new Error(error.message);
+    const vPohode = new Set((logy ?? []).map((l: any) => l.invoice_id));
+    const preskocene: string[] = [];
+    const ok: string[] = [];
+    for (const r of riadky ?? []) {
+      if (r.deleted_at) continue;
+      if (r.status === "draft") preskocene.push(`${r.invoice_number}: koncept`);
+      else if (vPohode.has(r.id)) preskocene.push(`${r.invoice_number}: už je v Pohode`);
+      else ok.push(r.id);
+    }
+    if (ok.length) {
+      const zmena: Record<string, unknown> = {
+        zauctovane_at: new Date().toISOString(),
+        zauctoval: context.userId,
+      };
+      if (data.predkontacia?.trim()) zmena.pohoda_predkontacia = data.predkontacia.trim();
+      if (data.clenenie?.trim()) zmena.pohoda_clenenie_dph = data.clenenie.trim();
+      if (data.kv?.trim()) zmena.kv_clenenie = data.kv.trim() === "auto" ? null : data.kv.trim();
+      const { error: e2 } = await supabase.from("invoices").update(zmena).in("id", ok);
+      if (e2) throw new Error(e2.message);
+    }
+    return { zauctovanych: ok.length, preskocene };
+  });
