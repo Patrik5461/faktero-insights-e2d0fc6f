@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import type { MoznostKodu } from "@/lib/faktero/predkontacie";
 
 /**
@@ -110,6 +111,14 @@ export function KodPohody({
           {neznamy
             ? "Kód nie je v číselníku predkontácií"
             : [vybrany?.popis, vybrany?.ucty].filter(Boolean).join(" · ")}
+        </span>
+      ) : null}
+      {vyber && !moznosti.length && !bezPopisu ? (
+        <span className="mt-0.5 block text-xs text-muted-foreground">
+          Zatiaľ niet z čoho vyberať —{" "}
+          <Link to="/uctovnictvo/predkontacie" className="text-primary hover:underline">
+            načítajte číselník z Pohody
+          </Link>
         </span>
       ) : null}
     </>
