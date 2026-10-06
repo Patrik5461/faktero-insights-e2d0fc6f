@@ -28,6 +28,7 @@ import {
   getExpenseFileUrlFn,
 } from "@/lib/faktero/expenses.functions";
 import { Camera, CheckCircle2, Loader2, QrCode, Save, Upload as UploadIcon } from "lucide-react";
+import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
 import { MENY } from "@/lib/faktero/mena";
@@ -539,6 +540,7 @@ function NovyDokladPage() {
       <PageHeader
         title={search.id ? "Upraviť doklad" : "Nový doklad"}
         description="Naskenujte, odfoťte alebo nahrajte bloček — údaje sa doplnia samé."
+        action={search.id ? <TlacidloZauctovat /> : undefined}
       />
       <PageBody>
         <div className="mx-auto max-w-3xl space-y-5">
@@ -823,7 +825,7 @@ function NovyDokladPage() {
                   </div>
                 </div>
               ) : null}
-              <div className="sm:col-span-2 rounded-md border border-border p-3">
+              <div id="zauctovanie" className="sm:col-span-2 scroll-mt-24 rounded-md border border-border p-3 transition-shadow">
                 <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Zaúčtovanie (Pohoda)
                 </div>

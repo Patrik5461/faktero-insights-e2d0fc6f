@@ -341,7 +341,7 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5 text-sm">
+    <div id="zauctovanie" className="scroll-mt-24 rounded-xl border border-border bg-card p-5 text-sm transition-shadow">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
           <BookCheck className="h-3.5 w-3.5" /> Zaúčtovanie

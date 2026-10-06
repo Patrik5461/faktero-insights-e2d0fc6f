@@ -5,6 +5,7 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { Oprava25aPanel } from "@/components/faktero/Oprava25aPanel";
 import { ZauctovanieVystavenejPanel } from "@/components/faktero/ZauctovanieVystavenejPanel";
+import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { KomentarePanel } from "@/components/faktero/KomentarePanel";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
@@ -822,6 +823,9 @@ function InvoiceDetail() {
                 <Pencil className="h-4 w-4" />
                 {inv.status === "draft" ? "Upraviť" : "Opraviť faktúru"}
               </Link>
+            )}
+            {inv.status !== "cancelled" && (
+              <TlacidloZauctovat zauctovane={Boolean(inv.zauctovane_at)} />
             )}
             {/* Dobropis sa vystavuje k bežnej vystavenej faktúre; formulár si
                 odberateľa, väzbu aj položky (so záporným množstvom) predvyplní. */}

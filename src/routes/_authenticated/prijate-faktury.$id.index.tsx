@@ -7,6 +7,7 @@ import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { SamofakturaPanel } from "@/components/faktero/SamofakturaPanel";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
 import { ZauctovaniePanel } from "@/components/faktero/ZauctovaniePanel";
+import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
 import { KomentarePanel } from "@/components/faktero/KomentarePanel";
 import { popisSplatnosti, predlzena } from "@/lib/faktero/splatnost";
@@ -331,6 +332,9 @@ function PurchaseInvoiceDetail() {
               >
                 <Pencil className="h-4 w-4" /> Upraviť
               </Link>
+            )}
+            {(row as any).type === "regular" && !navrh && (
+              <TlacidloZauctovat zauctovane={Boolean(row.zauctovane_at)} />
             )}
             {!navrh && !row.zauctovane_at && row.status !== "received" && row.status !== "paid" && row.status !== "cancelled" && (
               <button
