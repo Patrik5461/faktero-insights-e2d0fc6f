@@ -15,6 +15,7 @@ import {
   STLPCE_PREDVOLENYCH,
   nazovAgendy,
   ponuka,
+  ponukaClenenia,
   ziadostCiselnikov,
   DRUHY_CISELNIKA,
   RADY_POHODY,
@@ -220,7 +221,7 @@ function Predvolene({
                       ariaLabel={`Členenie DPH — ${p.nazov}`}
                       value={h[p.clenenie] ?? ""}
                       onChange={(v) => setH({ ...h, [p.clenenie!]: v })}
-                      moznosti={ponuka(zaznamy, "clenenie_dph", [], p.kluc)}
+                      moznosti={ponukaClenenia(ponuka(zaznamy, "clenenie_dph", [], p.kluc), p.kluc)}
                       vyber
                       placeholder={
                         p.kluc === "doklady" ? h.pohoda_clenenie_dph_prijata || "—" : "—"
@@ -816,7 +817,7 @@ function Ciselnik({
                 value={form.pomer}
                 onChange={(pomer) => setForm({ ...form, pomer })}
                 predkontacie={ponuka(zaznamy, "predkontacia")}
-                clenenia={ponuka(zaznamy, "clenenie_dph")}
+                clenenia={ponukaClenenia(ponuka(zaznamy, "clenenie_dph"), "prijata")}
               />
             </div>
           )}

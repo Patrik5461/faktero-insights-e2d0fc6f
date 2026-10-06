@@ -177,3 +177,17 @@ describe("strediská, činnosti a číselné rady z Pohody", () => {
     expect(x).toContain("listNumericalSeriesRequest");
   });
 });
+
+describe("členenie DPH na výber", () => {
+  it("bez číselníka základné členenia podľa smeru dokladu", async () => {
+    const { ponukaClenenia } = await import("./predkontacie");
+    expect(ponukaClenenia([], "prijata").map((m) => m.kod)).toEqual(["PD", "PN"]);
+    expect(ponukaClenenia([], "doklady").map((m) => m.kod)).toContain("PD");
+    expect(ponukaClenenia([], "faktura").map((m) => m.kod)).toEqual(["UD", "UDpdp", "UKpdp", "UNoslob", "UN"]);
+  });
+  it("číselník firmy má prednosť", async () => {
+    const { ponukaClenenia } = await import("./predkontacie");
+    const vlastne = [{ kod: "PDzjed", popis: "zjednodušený", agenda: "", ucty: null }];
+    expect(ponukaClenenia(vlastne, "prijata")).toEqual(vlastne);
+  });
+});

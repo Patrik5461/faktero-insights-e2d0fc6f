@@ -35,34 +35,52 @@ export function KodPohody({
   const [pisat, setPisat] = useState(false);
   const vybrany = moznosti.find((m) => m.kod === value.trim());
   const neznamy = value.trim() && moznosti.length > 0 && !vybrany;
-  if (vyber && moznosti.length > 0 && !pisat && !neznamy) {
+  /*
+    Kód, ktorý v ponuke nie je (zadaný ručne alebo z pravidla), sa ukáže ako
+    ďalšia voľba — inak by sa menu prepínalo na písanie a po kliknutí by sa
+    nič neponúklo.
+  */
+  if (vyber && moznosti.length > 0 && !pisat) {
     return (
-      <select
-        aria-label={ariaLabel}
-        value={value.trim()}
-        onChange={(e) => {
-          if (e.target.value === "__iny__") {
-            setPisat(true);
-            onChange("");
-          } else onChange(e.target.value);
-        }}
-        className={className ?? "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"}
-      >
-        <option value="">
-          {placeholder && !/^(napr\.|—|nemeniť|predvolen)/.test(placeholder)
-            ? `predvolené: ${placeholder}`
-            : placeholder === "nemeniť"
-              ? "nemeniť"
-              : "—"}
-        </option>
-        {moznosti.map((m) => (
-          <option key={m.kod} value={m.kod}>
-            {m.kod}
-            {m.popis ? ` — ${m.popis}` : ""}
+      <>
+        <select
+          aria-label={ariaLabel}
+          value={value.trim()}
+          onChange={(e) => {
+            if (e.target.value === "__iny__") {
+              setPisat(true);
+              onChange("");
+            } else onChange(e.target.value);
+          }}
+          className={
+            className ??
+            "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          }
+        >
+          <option value="">
+            {placeholder && !/^(napr\.|—|nemeniť|predvolen)/.test(placeholder)
+              ? `predvolené: ${placeholder}`
+              : placeholder === "nemeniť"
+                ? "nemeniť"
+                : "—"}
           </option>
-        ))}
-        <option value="__iny__">Iný kód…</option>
-      </select>
+          {neznamy ? (
+            <option value={value.trim()}>{value.trim()} — nie je v číselníku</option>
+          ) : null}
+          {moznosti.map((m) => (
+            <option key={m.kod} value={m.kod}>
+              {m.kod}
+              {m.popis ? ` — ${m.popis}` : ""}
+            </option>
+          ))}
+          <option value="__iny__">Iný kód…</option>
+        </select>
+        {!bezPopisu && neznamy ? (
+          <span className="mt-0.5 block truncate text-xs text-amber-700">
+            Kód nie je v číselníku — skontrolujte, či ho Pohoda pozná
+          </span>
+        ) : null}
+      </>
     );
   }
   return (
@@ -73,7 +91,9 @@ export function KodPohody({
         placeholder={placeholder}
         aria-label={ariaLabel}
         onChange={(e) => onChange(e.target.value)}
-        className={className ?? "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"}
+        className={
+          className ?? "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        }
       />
       <datalist id={id}>
         {moznosti.map((m) => (
@@ -83,8 +103,12 @@ export function KodPohody({
         ))}
       </datalist>
       {!bezPopisu && (vybrany?.popis || neznamy) ? (
-        <span className={`mt-0.5 block truncate text-xs ${neznamy ? "text-amber-700" : "text-muted-foreground"}`}>
-          {neznamy ? "Kód nie je v číselníku predkontácií" : [vybrany?.popis, vybrany?.ucty].filter(Boolean).join(" · ")}
+        <span
+          className={`mt-0.5 block truncate text-xs ${neznamy ? "text-amber-700" : "text-muted-foreground"}`}
+        >
+          {neznamy
+            ? "Kód nie je v číselníku predkontácií"
+            : [vybrany?.popis, vybrany?.ucty].filter(Boolean).join(" · ")}
         </span>
       ) : null}
     </>

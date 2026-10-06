@@ -28,7 +28,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const { ponuka } = await import("./predkontacie");
+    const { ponuka, ponukaClenenia } = await import("./predkontacie");
     /*
       Ponuka je číselník z Pohody (s popisom, vhodná agenda prvá) a za ním
       kódy, ktoré firma už použila, hoci v číselníku nie sú — žiadne vymyslené
@@ -113,7 +113,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         pocet([predvolenaPredkontacia, ...vsetky.map((r: any) => r.predkontacia ?? r.pohoda_predkontacia)]),
       ),
       clenenia: doplnene(
-        ponuka(ciselnik ?? [], "clenenie_dph", [], kluc),
+        ponukaClenenia(ponuka(ciselnik ?? [], "clenenie_dph", [], kluc), kluc),
         pocet([predvoleneClenenie, ...vsetky.map((r: any) => r.clenenie_dph ?? r.pohoda_clenenie_dph)]),
       ),
       predvolenaPredkontacia,

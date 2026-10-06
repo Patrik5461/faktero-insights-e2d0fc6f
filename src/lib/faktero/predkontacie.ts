@@ -10,12 +10,7 @@
 */
 
 export type DruhCiselnika =
-  | "predkontacia"
-  | "clenenie_dph"
-  | "stredisko"
-  | "cinnost"
-  | "ciselny_rad"
-  | "pokladna";
+  "predkontacia" | "clenenie_dph" | "stredisko" | "cinnost" | "ciselny_rad" | "pokladna";
 
 /** Druhy číselníka v poradí záložiek, s názvom pre ľudí. */
 export const DRUHY_CISELNIKA: { kod: DruhCiselnika; nazov: string; jednotne: string }[] = [
@@ -155,7 +150,11 @@ export const RADY_POHODY: { stlpec: string; nazov: string; agenda: string }[] = 
   { stlpec: "pohoda_rad_prijate", nazov: "Prijaté faktúry", agenda: "prijate_faktury" },
   { stlpec: "pohoda_rad_doklady", nazov: "Bločky ako prijaté faktúry", agenda: "prijate_faktury" },
   { stlpec: "pohoda_rad_pokladna", nazov: "Pokladňa (hotovostné bločky)", agenda: "pokladna" },
-  { stlpec: "pohoda_rad_interne", nazov: "Interné doklady (bločky kartou)", agenda: "interni_doklady" },
+  {
+    stlpec: "pohoda_rad_interne",
+    nazov: "Interné doklady (bločky kartou)",
+    agenda: "interni_doklady",
+  },
 ];
 
 /* ---------------------------------------------------------------- Pohoda */
@@ -259,7 +258,12 @@ function prvok(xml: string, nazov: string): string | null {
     "i",
   ).exec(xml);
   if (!m) return null;
-  const t = odEsc(m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+  const t = odEsc(
+    m[1]
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim(),
+  );
   return t || null;
 }
 
@@ -298,7 +302,8 @@ export function rozoberCiselnikyPohody(xml: string, dnes = new Date()): ZaznamCi
     });
   }
 
-  const reVat = /<(?:[\w.-]+:)?classificationVAT\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?classificationVAT>/gi;
+  const reVat =
+    /<(?:[\w.-]+:)?classificationVAT\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?classificationVAT>/gi;
   while ((m = reVat.exec(xml))) {
     const telo = m[1];
     const hlavicka =
@@ -374,12 +379,7 @@ export function bezDuplicit(z: ZaznamCiselnika[]): ZaznamCiselnika[] {
 
 /* --------------------------------------------------------------- tabuľka */
 
-const bezDiakritiky = (s: string) =>
-  s
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .trim();
+const bezDiakritiky = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
 const STLPCE: Record<string, string[]> = {
   kod: ["kod", "skratka", "zkratka", "code", "predkontacia", "predkontace", "oznacenie"],
@@ -397,7 +397,8 @@ function agendaZTextu(t: string): string {
   const priamo = AGENDY.find((a) => a.kod.toLowerCase() === s.replace(/\s/g, "").toLowerCase());
   if (priamo) return priamo.kod;
   const zal = /zaloh/.test(s);
-  if (/prij|doslo|dosl/.test(s) && /fakt/.test(s)) return zal ? "receivedAdvanceInvoice" : "receivedInvoice";
+  if (/prij|doslo|dosl/.test(s) && /fakt/.test(s))
+    return zal ? "receivedAdvanceInvoice" : "receivedInvoice";
   if (/vyd|vyst/.test(s) && /fakt/.test(s)) return zal ? "issuedAdvanceInvoice" : "issuedInvoice";
   if (/poklad/.test(s)) return /prij/.test(s) ? "cashReceived" : "cashPaid";
   if (/bank/.test(s)) return /prij/.test(s) ? "bankReceived" : "bankIssued";
@@ -506,7 +507,50 @@ export function rozdelCsv(text: string): string[][] {
 
 /* ----------------------------------------------------------------- výber */
 
-export type MoznostKodu = { kod: string; popis: string | null; agenda: string; ucty: string | null };
+export type MoznostKodu = {
+  kod: string;
+  popis: string | null;
+  agenda: string;
+  ucty: string | null;
+};
+
+/**
+ * Základné členenia DPH slovenskej Pohody — ponúkajú sa, kým si firma
+ * nenačíta vlastný číselník z Pohody (ten má potom prednosť). Len kódy
+ * overené v dokumentácii Stormware SK; ostatné doplní import číselníka
+ * alebo voľba „Iný kód…".
+ */
+export const ZAKLADNE_CLENENIA_DPH: { kod: string; popis: string; smer: "vydane" | "prijate" }[] = [
+  { kod: "UD", popis: "Tuzemské plnenie", smer: "vydane" },
+  { kod: "UDpdp", popis: "Prenesenie daňovej povinnosti § 69 ods. 12", smer: "vydane" },
+  {
+    kod: "UKpdp",
+    popis: "Prenesenie daňovej povinnosti § 69 ods. 12 – nezapočítať do koeficientu",
+    smer: "vydane",
+  },
+  { kod: "UNoslob", popis: "Oslobodené plnenie § 65 ods. 7 a § 67 ods. 3", smer: "vydane" },
+  { kod: "UN", popis: "Nezahrnovať do priznania DPH", smer: "vydane" },
+  { kod: "PD", popis: "Tuzemské plnenie s nárokom na odpočet", smer: "prijate" },
+  { kod: "PN", popis: "Nezahrnovať do priznania DPH (bez nároku na odpočet)", smer: "prijate" },
+];
+
+/** Druhy dokladov, ktoré sú výstupom (vydané); ostatné sú prijaté. */
+const VYDANE_DRUHY = ["faktura", "pdp", "zaloha", "dobropis"];
+
+/**
+ * Členenia na výber: z číselníka firmy, a keď ho firma nemá, základné
+ * členenia podľa smeru dokladu — aby sa po kliknutí vždy niečo ukázalo.
+ */
+export function ponukaClenenia(zoCiselnika: MoznostKodu[], preDoklad?: string): MoznostKodu[] {
+  if (zoCiselnika.length) return zoCiselnika;
+  const smer = preDoklad ? (VYDANE_DRUHY.includes(preDoklad) ? "vydane" : "prijate") : null;
+  return ZAKLADNE_CLENENIA_DPH.filter((c) => !smer || c.smer === smer).map((c) => ({
+    kod: c.kod,
+    popis: c.popis,
+    agenda: "",
+    ucty: null,
+  }));
+}
 
 /**
  * Ponuka kódov pre jedno pole: najprv tie z vhodných agend, potom ostatné.
