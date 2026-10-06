@@ -46,20 +46,43 @@ const sections: HelpSection[] = [
   },
   {
     id: "skratky",
-    title: "Najprv skratky z Pohody (5 minút, oplatí sa)",
+    title: "Najprv predkontácie z Pohody (5 minút, oplatí sa)",
     body: (
       <>
         <p>
-          V <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link> vyplňte
-          skratky, ktoré má účtovníčka vo svojej Pohode: <strong>predkontácie</strong> (napr.{" "}
-          <code>3Fv</code>) a <strong>členenia DPH</strong> (napr. <code>UD</code>).
+          V <Link to="/uctovnictvo/predkontacie">Účtovníctvo → Predkontácie a členenie DPH</Link>{" "}
+          si načítajte <strong>číselník predkontácií</strong> (napr. <code>1Fp</code> — nákup
+          materiálu, 501/321) a <strong>členení DPH</strong> (napr. <code>PD</code>) priamo z Pohody
+          účtovníčky. Tri cesty:
+        </p>
+        <ul>
+          <li>
+            <strong>Konektorom</strong> — tlačidlo <em>Načítať pri ďalšom behu</em>; konektor sa
+            Pohody opýta sám a odpoveď uloží.
+          </li>
+          <li>
+            <strong>XML súborom</strong> — stiahnite žiadosť, v Pohode ju načítajte cez Súbor →
+            Dátová komunikácia → XML import a súbor s odpoveďou nahrajte späť.
+          </li>
+          <li>
+            <strong>Tabuľkou</strong> — CSV alebo Excel so stĺpcami Kód, Popis (prípadne Agenda, MD,
+            D). Kódy sa dajú aj ručne pridať a upraviť.
+          </li>
+        </ul>
+        <p>
+          Na tej istej stránke nastavíte, čo sa použije <strong>predvolene podľa druhu dokladu</strong>{" "}
+          — vydaná faktúra, zálohová, dobropis, prijatá faktúra, <strong>bloček</strong>, pokladňa a
+          banka — a predkontácie pre bankové pohyby podľa označenia platby. Pri zaúčtovaní prijatej
+          faktúry, v Dokladoch (tlačidlo <em>Predkontácia</em> pri vybraných bločkoch) aj v
+          pravidlách sa kódy potom vyberajú zo zoznamu s popisom, ako v Doklado.
         </p>
         <p>
-          Bez nich doklady naimportuje bez chyby, ale zaúčtovanie si ku každému doklikáva ručne —
-          teda presne tú prácu, ktorú mal export ušetriť. Stačí sa jej raz opýtať a prepísať to sem.
+          Bez predkontácií Pohoda doklady naimportuje bez chyby, ale zaúčtovanie si ku každému
+          doklikáva ručne — teda presne tú prácu, ktorú mal export ušetriť.
         </p>
         <p>
-          Sem patrí aj <strong>e-mail účtovníčky</strong>, na ktorý chodia mesačné podklady.
+          <strong>E-mail účtovníčky</strong>, na ktorý chodia mesačné podklady, je v{" "}
+          <Link to="/uctovnictvo/pohoda">Účtovníctvo → Prepojenie s Pohodou</Link>.
         </p>
       </>
     ),

@@ -7,6 +7,10 @@ import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { ConfirmDialog } from "@/components/faktero/ListControls";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
+import { useServerFn } from "@tanstack/react-start";
+import { KodPohody } from "@/components/faktero/KodPohody";
+import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
+import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import {
   SPOSOBY_UHRADY_DOKLADU,
@@ -286,6 +290,13 @@ function UpravaPravidla({
   const [p, setP] = useState<Pravidlo>(pravidlo);
   const [busy, setBusy] = useState(false);
   const zmen = (z: Partial<Pravidlo>) => setP((x) => ({ ...x, ...z }));
+  const nacitajKody = useServerFn(navrhyKodovFn);
+  const [kody, setKody] = useState<Navrhy | null>(null);
+  useEffect(() => {
+    nacitajKody({ data: { company_id: companyId, pre: "doklad" } })
+      .then(setKody)
+      .catch(() => {});
+  }, [companyId, nacitajKody]);
   const chyba = chybaPravidla(p);
   const sedi = chybaPravidla({ ...p, nazov: p.nazov || "x" })
     ? null
@@ -404,18 +415,20 @@ function UpravaPravidla({
           </label>
           <label className="block text-sm">
             <span className="text-xs text-muted-foreground">Predkontácia (Pohoda)</span>
-            <input
+            <KodPohody
               value={p.predkontacia ?? ""}
-              onChange={(e) => zmen({ predkontacia: e.target.value })}
+              onChange={(v) => zmen({ predkontacia: v })}
+              moznosti={kody?.predkontacie ?? []}
               placeholder="napr. PHM, 1Fp"
               className={vstup}
             />
           </label>
           <label className="block text-sm">
             <span className="text-xs text-muted-foreground">Členenie DPH (Pohoda)</span>
-            <input
+            <KodPohody
               value={p.clenenie_dph ?? ""}
-              onChange={(e) => zmen({ clenenie_dph: e.target.value })}
+              onChange={(v) => zmen({ clenenie_dph: v })}
+              moznosti={kody?.clenenia ?? []}
               placeholder="napr. PD, PN"
               className={vstup}
             />

@@ -34,6 +34,7 @@ import {
   MoreHorizontal,
   Ban,
   AlertTriangle,
+  Undo2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -817,6 +818,18 @@ function InvoiceDetail() {
               >
                 <Pencil className="h-4 w-4" />
                 {inv.status === "draft" ? "Upraviť" : "Opraviť faktúru"}
+              </Link>
+            )}
+            {/* Dobropis sa vystavuje k bežnej vystavenej faktúre; formulár si
+                odberateľa, väzbu aj položky (so záporným množstvom) predvyplní. */}
+            {inv.type === "regular" && inv.status !== "draft" && inv.status !== "cancelled" && (
+              <Link
+                to="/faktury/nova"
+                search={{ type: "credit_note", opravuje: id } as any}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+              >
+                <Undo2 className="h-4 w-4" />
+                Vystaviť dobropis
               </Link>
             )}
 

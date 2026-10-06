@@ -76,7 +76,10 @@ export const Route = createFileRoute("/_authenticated/faktury/nova")({
     total_hint?: string;
     /** Faktúra vystavovaná z prijatej objednávky. */
     sales_order?: string;
+    /** Dobropis k tejto faktúre — z tlačidla „Vystaviť dobropis“ na detaile. */
+    opravuje?: string;
   } => ({
+    opravuje: typeof s.opravuje === "string" && /^[0-9a-f-]{36}$/i.test(s.opravuje) ? s.opravuje : undefined,
     sales_order: typeof s.sales_order === "string" && s.sales_order ? s.sales_order : undefined,
     type: (s.type === "proforma" || s.type === "credit_note" ? s.type : undefined) as
       "proforma" | "credit_note" | undefined,
@@ -297,6 +300,118 @@ function NewInvoice() {
       })
       .catch((e: any) => toast.error(e?.message ?? "Objednávku sa nepodarilo načítať"));
   }, [search.sales_order, nacitajObjednavku]);
+
+  /*
+    Dobropis z detailu faktúry: odberateľ, mena, režim DPH, väzba na faktúru a
+    položky so záporným množstvom. Človek potom len zmaže, čo sa nevracia —
+    kladný dobropis by eFaktúra poslala ako ťarchopis.
+  */
+  const [opravujeCislo, setOpravujeCislo] = useState("");
+  const [hladajOpravovanu, setHladajOpravovanu] = useState("");
+  const [hladamOpravovanu, setHladamOpravovanu] = useState(false);
+
+  async function predvyplnDobropis(invoiceId: string, sPolozkami: boolean) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    {
+      const { data: f } = await supabase
+        .from("invoices")
+        .select(
+          "id, invoice_number, type, customer_id, currency, language, reverse_charge, reverse_charge_type, eu_plnenie, oss, oss_country, osobitna_uprava, job_id, order_number, rounding_mode",
+        )
+        .eq("company_id", cid)
+        .eq("id", invoiceId)
+        .maybeSingle();
+      if (!f) return toast.error("Faktúru na dobropis sa nepodarilo načítať");
+      if ((f as any).type !== "regular")
+        return toast.error("Dobropis sa vystavuje k bežnej faktúre, nie k zálohovej ani k dobropisu.");
+      setOpravujeCislo(String((f as any).invoice_number ?? ""));
+      if (!sPolozkami) {
+        setForm((x) => ({ ...x, opravuje_fakturu_id: (f as any).id }));
+        return;
+      }
+      const { data: polozky } = await supabase
+        .from("invoice_items")
+        .select("name, description, quantity, unit, unit_price, vat_rate, discount_percent, product_id, stock_item_id")
+        .eq("invoice_id", f.id)
+        .order("position");
+      const ff = f as any;
+      setForm((x) => ({
+        ...x,
+        type: "credit_note",
+        customer_id: ff.customer_id ?? x.customer_id,
+        currency: ff.currency ?? x.currency,
+        language: ff.language ?? x.language,
+        reverse_charge: !!ff.reverse_charge,
+        reverse_charge_type: ff.reverse_charge_type ?? "",
+        eu_plnenie: ff.eu_plnenie ?? x.eu_plnenie,
+        oss: !!ff.oss,
+        oss_country: ff.oss_country ?? "",
+        osobitna_uprava: ff.osobitna_uprava ?? "",
+        job_id: ff.job_id ?? "",
+        order_number: ff.order_number ?? "",
+        rounding_mode: ff.rounding_mode ?? x.rounding_mode,
+        opravuje_fakturu_id: ff.id,
+      }));
+      if (polozky?.length)
+        setItems(
+          polozky.map((p: any) => ({
+            ...EMPTY_ITEM,
+            name: p.name,
+            description: p.description ?? "",
+            quantity: -Math.abs(Number(p.quantity)),
+            unit: p.unit ?? "ks",
+            unit_price: Number(p.unit_price),
+            vat_rate: Number(p.vat_rate),
+            discount_percent: Number(p.discount_percent ?? 0),
+            product_id: p.product_id ?? null,
+            stock_item_id: p.stock_item_id ?? null,
+            _cena_rucne: true,
+          })),
+        );
+      toast.success(`Dobropis k faktúre ${ff.invoice_number} — upravte, čo sa vracia`);
+    }
+  }
+
+  /** Priradenie opravovanej faktúry podľa jej čísla alebo variabilného symbolu. */
+  async function priradPodlaVs() {
+    const cid = getActiveCompanyId();
+    const q = hladajOpravovanu.trim().replace(/[^\w\-/. ]/g, "");
+    if (!cid || !q) return;
+    setHladamOpravovanu(true);
+    try {
+      const { data } = await supabase
+        .from("invoices")
+        .select("id, invoice_number, customer_name, total, currency")
+        .eq("company_id", cid)
+        .eq("type", "regular")
+        .neq("status", "draft")
+        .is("deleted_at", null)
+        .or(`invoice_number.eq.${q},variable_symbol.eq.${q}`)
+        .limit(5);
+      if (!data?.length) return toast.error(`Faktúra s číslom ani VS „${q}“ sa nenašla.`);
+      if (data.length > 1) {
+        toast.message("Tomu zodpovedá viac faktúr — vyberte zo zoznamu.");
+        setPickerOpen("opravuje");
+        return;
+      }
+      const f = data[0] as any;
+      setForm((x) => ({ ...x, opravuje_fakturu_id: f.id, customer_id: x.customer_id || "" }));
+      setOpravujeCislo(f.invoice_number);
+      setHladajOpravovanu("");
+      // Prázdny dobropis si rovno vezme položky faktúry so záporným množstvom.
+      const prazdny = items.every((i) => !i.name.trim() && !Number(i.unit_price));
+      await predvyplnDobropis(f.id, prazdny);
+      if (!prazdny) toast.success(`Dobropis opravuje faktúru ${f.invoice_number}`);
+    } finally {
+      setHladamOpravovanu(false);
+    }
+  }
+
+  useEffect(() => {
+    if (search.opravuje) void predvyplnDobropis(search.opravuje, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.opravuje]);
   const nacitajCennik = useServerFn(getPriceContext);
   const nacitajZalohy = useServerFn(nezuctovaneZalohyFn);
   /* Zaplatené zálohy odberateľa, ktoré ešte nikto nezúčtoval. */
@@ -897,8 +1012,12 @@ function NewInvoice() {
   return (
     <>
       <PageHeader
-        title="Nová faktúra"
-        description="Vytvorte faktúru za menej než 30 sekúnd."
+        title={form.type === "credit_note" ? "Nový dobropis" : form.type === "proforma" ? "Nová zálohová faktúra" : "Nová faktúra"}
+        description={
+          form.type === "credit_note"
+            ? "Opravný doklad k vystavenej faktúre — priraďte ju podľa čísla alebo VS, alebo nechajte dobropis samostatný."
+            : "Vytvorte faktúru za menej než 30 sekúnd."
+        }
         action={
           <button
             type="button"
@@ -956,6 +1075,81 @@ function NewInvoice() {
                 hodnota={form.number_series_id}
                 onZmena={(id) => setForm({ ...form, number_series_id: id })}
               />
+              {form.type === "credit_note" && (
+                <div className="col-span-full rounded-lg border border-primary/30 bg-primary/5 p-3">
+                  <div className="text-[13px] font-semibold text-foreground">Opravovaná faktúra</div>
+                  {form.opravuje_fakturu_id ? (
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                      <span>
+                        Dobropis opravuje faktúru <strong>{opravujeCislo || "vybranú faktúru"}</strong> — v
+                        účtovníctve aj eFaktúre sa spárujú.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => predvyplnDobropis(form.opravuje_fakturu_id, true)}
+                        className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-secondary"
+                      >
+                        Načítať jej položky (so mínusom)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPickerOpen("opravuje")}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Zmeniť
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm({ ...form, opravuje_fakturu_id: "" });
+                          setOpravujeCislo("");
+                        }}
+                        className="text-xs text-muted-foreground hover:underline"
+                      >
+                        Samostatný dobropis
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <input
+                          value={hladajOpravovanu}
+                          onChange={(e) => setHladajOpravovanu(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              void priradPodlaVs();
+                            }
+                          }}
+                          placeholder="Číslo faktúry alebo VS"
+                          aria-label="Číslo faktúry alebo variabilný symbol"
+                          className="w-48 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={priradPodlaVs}
+                          disabled={hladamOpravovanu || !hladajOpravovanu.trim()}
+                          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                        >
+                          {hladamOpravovanu && <Loader2 className="h-4 w-4 animate-spin" />}
+                          Priradiť
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPickerOpen("opravuje")}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:bg-secondary"
+                        >
+                          <Link2 className="h-4 w-4" /> Vybrať zo zoznamu
+                        </button>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Nechajte prázdne pre <strong>samostatný dobropis</strong> bez väzby na faktúru
+                        (napr. zľava za obdobie). Sumy zadávajte so mínusom.
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="text-[13px] font-semibold text-foreground">
                   Dátum vystavenia
@@ -1142,30 +1336,6 @@ function NewInvoice() {
                     Bez odpočtu zaplatí zákazník to isté plnenie druhýkrát.
                   </p>
                 </div>
-              )}
-              {form.type === "credit_note" && (
-                <button
-                  type="button"
-                  onClick={() => setPickerOpen("opravuje")}
-                  className="inline-flex items-center gap-1.5 text-primary hover:underline"
-                >
-                  <Link2 className="h-4 w-4" />{" "}
-                  {form.opravuje_fakturu_id
-                    ? "Zmeniť opravovanú faktúru"
-                    : "Ktorú faktúru opravuje"}
-                </button>
-              )}
-              {form.type === "credit_note" && form.opravuje_fakturu_id && (
-                <span className="text-xs text-muted-foreground">
-                  Opravuje faktúru — v účtovníctve sa spárujú
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, opravuje_fakturu_id: "" })}
-                    className="ml-2 text-destructive hover:underline"
-                  >
-                    Zrušiť
-                  </button>
-                </span>
               )}
               {odpocty.length > 0 && (
                 <span className="text-xs text-muted-foreground">
@@ -1935,7 +2105,11 @@ function NewInvoice() {
                 className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                Vystaviť faktúru
+                {form.type === "credit_note"
+                  ? "Vystaviť dobropis"
+                  : form.type === "proforma"
+                    ? "Vystaviť zálohovú faktúru"
+                    : "Vystaviť faktúru"}
               </button>
             </div>
           </div>
@@ -1963,6 +2137,7 @@ function NewInvoice() {
             onPickAdvance={(inv) => {
               if (pickerOpen === "opravuje") {
                 setForm((f) => ({ ...f, opravuje_fakturu_id: inv.id }));
+                setOpravujeCislo(inv.invoice_number);
                 toast.success(`Dobropis opravuje faktúru ${inv.invoice_number}`);
               } else {
                 setOdpocty((zoz) =>
@@ -2293,7 +2468,7 @@ function InvoicePickerModal({
     if (!cid) return;
     let query = supabase
       .from("invoices")
-      .select("id, invoice_number, customer_name, total, currency, issue_date, type, status")
+      .select("id, invoice_number, variable_symbol, customer_name, total, currency, issue_date, type, status")
       .eq("company_id", cid)
       .order("issue_date", { ascending: false })
       .limit(50);
@@ -2308,7 +2483,9 @@ function InvoicePickerModal({
 
   const filtered = q
     ? list.filter((i) =>
-        `${i.invoice_number} ${i.customer_name ?? ""}`.toLowerCase().includes(q.toLowerCase()),
+        `${i.invoice_number} ${i.variable_symbol ?? ""} ${i.customer_name ?? ""}`
+          .toLowerCase()
+          .includes(q.toLowerCase()),
       )
     : list;
 
@@ -2356,7 +2533,7 @@ function InvoicePickerModal({
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Hľadať podľa čísla alebo odberateľa…"
+              placeholder="Hľadať podľa čísla, VS alebo odberateľa…"
               className="flex-1 bg-transparent text-sm outline-none"
             />
           </div>

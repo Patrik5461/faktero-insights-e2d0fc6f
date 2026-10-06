@@ -5,12 +5,15 @@ import { toast } from "sonner";
 import { BookCheck, Loader2 } from "lucide-react";
 import { navrhyKodovFn, zauctujPrijateFn, zrusZauctovanieFn } from "@/lib/faktero/zauctovanie.functions";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
+import type { MoznostKodu } from "@/lib/faktero/predkontacie";
+import { KodPohody } from "./KodPohody";
 
 export type Navrhy = {
-  predkontacie: string[];
-  clenenia: string[];
+  predkontacie: MoznostKodu[];
+  clenenia: MoznostKodu[];
   predvolenaPredkontacia: string | null;
   predvoleneClenenie: string | null;
+  maCiselnik?: boolean;
 };
 
 /** Spoločné polia zaúčtovania — na detaile aj v hromadnom okne. */
@@ -30,33 +33,23 @@ export function PoliaZauctovania({
     <div className="grid gap-3 sm:grid-cols-3">
       <label className="block">
         <span className="text-xs text-muted-foreground">Predkontácia (Pohoda)</span>
-        <input
-          list="navrhy-predkontacie"
+        <KodPohody
           value={hodnoty.predkontacia}
           placeholder={hromadne ? "nemeniť" : (navrhy?.predvolenaPredkontacia ?? "napr. 1Fp")}
-          onChange={(e) => setHodnoty({ ...hodnoty, predkontacia: e.target.value })}
+          onChange={(v) => setHodnoty({ ...hodnoty, predkontacia: v })}
+          moznosti={navrhy?.predkontacie ?? []}
           className={vstup}
         />
-        <datalist id="navrhy-predkontacie">
-          {(navrhy?.predkontacie ?? []).map((k) => (
-            <option key={k} value={k} />
-          ))}
-        </datalist>
       </label>
       <label className="block">
         <span className="text-xs text-muted-foreground">Členenie DPH (plnenie)</span>
-        <input
-          list="navrhy-clenenia"
+        <KodPohody
           value={hodnoty.clenenie}
           placeholder={hromadne ? "nemeniť" : (navrhy?.predvoleneClenenie ?? "napr. PD")}
-          onChange={(e) => setHodnoty({ ...hodnoty, clenenie: e.target.value })}
+          onChange={(v) => setHodnoty({ ...hodnoty, clenenie: v })}
+          moznosti={navrhy?.clenenia ?? []}
           className={vstup}
         />
-        <datalist id="navrhy-clenenia">
-          {(navrhy?.clenenia ?? []).map((k) => (
-            <option key={k} value={k} />
-          ))}
-        </datalist>
       </label>
       <label className="block">
         <span className="text-xs text-muted-foreground">Kategória nákladu</span>
@@ -179,10 +172,21 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
             <PoliaZauctovania navrhy={navrhy} hodnoty={h} setHodnoty={setH} />
             <p className="mt-2 text-xs text-muted-foreground">
               Prázdne pole = predvolené z{" "}
-              <Link to="/uctovnictvo/pohoda" className="underline">
-                nastavení Pohody
+              <Link to="/uctovnictvo/predkontacie" className="underline">
+                nastavení predkontácií
               </Link>
-              {row.pravidlo_id ? " · doplnené pravidlom účtovania" : ""}. Kódy musia existovať v Pohode.
+              {row.pravidlo_id ? " · doplnené pravidlom účtovania" : ""}.{" "}
+              {navrhy?.maCiselnik === false ? (
+                <>
+                  Číselník je prázdny —{" "}
+                  <Link to="/uctovnictvo/predkontacie" className="underline">
+                    načítajte ho z Pohody
+                  </Link>
+                  , nech sa kódy vyberajú s popisom.
+                </>
+              ) : (
+                "Kódy musia existovať v Pohode."
+              )}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {!zauctovana && (

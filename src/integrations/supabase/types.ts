@@ -1232,6 +1232,10 @@ export type Database = {
           online_payments_enabled: boolean
           phone: string | null
           pohoda_banka: string | null
+          pohoda_ciselniky_nacitane_at: string | null
+          pohoda_clenenie_dph_doklady: string | null
+          pohoda_nacitat_ciselniky: boolean
+          pohoda_predkontacia_doklady: string | null
           pohoda_clenenie_dph: string | null
           pohoda_clenenie_dph_pdp: string | null
           pohoda_clenenie_dph_prijata: string | null
@@ -1303,6 +1307,10 @@ export type Database = {
           online_payments_enabled?: boolean
           phone?: string | null
           pohoda_banka?: string | null
+          pohoda_ciselniky_nacitane_at?: string | null
+          pohoda_clenenie_dph_doklady?: string | null
+          pohoda_nacitat_ciselniky?: boolean
+          pohoda_predkontacia_doklady?: string | null
           pohoda_clenenie_dph?: string | null
           pohoda_clenenie_dph_pdp?: string | null
           pohoda_clenenie_dph_prijata?: string | null
@@ -1374,6 +1382,10 @@ export type Database = {
           online_payments_enabled?: boolean
           phone?: string | null
           pohoda_banka?: string | null
+          pohoda_ciselniky_nacitane_at?: string | null
+          pohoda_clenenie_dph_doklady?: string | null
+          pohoda_nacitat_ciselniky?: boolean
+          pohoda_predkontacia_doklady?: string | null
           pohoda_clenenie_dph?: string | null
           pohoda_clenenie_dph_pdp?: string | null
           pohoda_clenenie_dph_prijata?: string | null
@@ -4868,6 +4880,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      predkontacie: {
+        Row: {
+          agenda: string
+          aktivne: boolean
+          company_id: string
+          created_at: string
+          druh: string
+          id: string
+          kod: string
+          pohoda_id: string | null
+          popis: string | null
+          ucet_d: string | null
+          ucet_md: string | null
+          updated_at: string
+          zdroj: string
+        }
+        Insert: {
+          agenda?: string
+          aktivne?: boolean
+          company_id: string
+          created_at?: string
+          druh: string
+          id?: string
+          kod: string
+          pohoda_id?: string | null
+          popis?: string | null
+          ucet_d?: string | null
+          ucet_md?: string | null
+          updated_at?: string
+          zdroj?: string
+        }
+        Update: {
+          agenda?: string
+          aktivne?: boolean
+          company_id?: string
+          created_at?: string
+          druh?: string
+          id?: string
+          kod?: string
+          pohoda_id?: string | null
+          popis?: string | null
+          ucet_d?: string | null
+          ucet_md?: string | null
+          updated_at?: string
+          zdroj?: string
+        }
+        Relationships: []
       }
       price_action_products: {
         Row: {

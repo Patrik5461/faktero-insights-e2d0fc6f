@@ -227,6 +227,8 @@ export async function zostavBalik(
     clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
     predkontaciaPrijata: company.pohoda_predkontacia_prijata,
     clenenieDphPrijata: company.pohoda_clenenie_dph_prijata,
+    predkontaciaDoklady: company.pohoda_predkontacia_doklady,
+    clenenieDphDoklady: company.pohoda_clenenie_dph_doklady,
     pokladna: company.pohoda_pokladna,
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
     sklad: company.pohoda_sklad,

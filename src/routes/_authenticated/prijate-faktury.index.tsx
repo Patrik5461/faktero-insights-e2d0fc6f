@@ -744,7 +744,7 @@ function PurchaseInvoicesPage() {
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Vyplnené pole sa nastaví na všetkých vybraných; prázdne nechá, čo na faktúre je
-              (z pravidla alebo predvolené z nastavení Pohody). Zaúčtované pôjdu do Pohody pri
+              (z pravidla alebo predvolené z nastavení predkontácií). Zaúčtované pôjdu do Pohody pri
               najbližšom odovzdaní.
             </p>
             <div className="mt-4">

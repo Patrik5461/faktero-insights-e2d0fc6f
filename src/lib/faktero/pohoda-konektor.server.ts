@@ -61,6 +61,8 @@ export type Davka = {
   pohybov: number;
   storien: number;
   preskocene: string[];
+  /** Dávka sa pýta aj na predkontácie a členenia DPH (Nastavenie → Predkontácie). */
+  ciselniky?: boolean;
 };
 
 /**
@@ -272,6 +274,31 @@ export async function zostavDavku(
     !zakazkyNove.length &&
     !pohyby.length &&
     !storna.length;
+  /*
+    Žiadosť o predkontácie a členenia DPH ide s dávkou, kým na ňu Pohoda
+    neodpovie — príznak zhodí až spracovanie odpovede. Keď inak nie je čo
+    poslať, odíde samotná žiadosť bez zápisu do histórie.
+  */
+  const ciselniky = Boolean(company.pohoda_nacitat_ciselniky);
+  if (prazdna && ciselniky) {
+    const { ziadostCiselnikov } = await import("./predkontacie");
+    return {
+      xml: ziadostCiselnikov(company.ico),
+      prazdna: false,
+      jobId: null,
+      faktur: 0,
+      dokladov: 0,
+      prijatych: 0,
+      pokladnicnych: 0,
+      zakaznikov: 0,
+      zasob: 0,
+      zakaziek: 0,
+      pohybov: 0,
+      storien: 0,
+      preskocene: [],
+      ciselniky: true,
+    };
+  }
   if (prazdna) {
     return {
       xml: "",
@@ -309,6 +336,8 @@ export async function zostavDavku(
     clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
     predkontaciaPrijata: company.pohoda_predkontacia_prijata,
     clenenieDphPrijata: company.pohoda_clenenie_dph_prijata,
+    predkontaciaDoklady: company.pohoda_predkontacia_doklady,
+    clenenieDphDoklady: company.pohoda_clenenie_dph_doklady,
     pokladna: company.pohoda_pokladna,
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
     sklad: company.pohoda_sklad,
@@ -321,7 +350,7 @@ export async function zostavDavku(
     .map((f: Riadok) => pohodaPrekazka(f, company))
     .filter((d: string | null): d is string => !!d);
 
-  const xml = buildPohodaDavkaXml({
+  const davkaXml = buildPohodaDavkaXml({
     company,
     invoices: faktury.map((invoice: Riadok) => ({
       invoice,
@@ -340,6 +369,9 @@ export async function zostavDavku(
     zalohy,
     opravovane,
   });
+  const xml = ciselniky
+    ? (await import("./predkontacie")).pridajZiadost(davkaXml, company.ico)
+    : davkaXml;
 
   const cislaPreskocenych = new Set<string>(
     preskocene.map((d: string) => String(d).split(" — ")[0]),
@@ -381,6 +413,7 @@ export async function zostavDavku(
     pohybov: pohyby.length,
     storien: storna.length,
     preskocene,
+    ciselniky,
   };
 }
 
@@ -895,6 +928,8 @@ export type SpracovanieOdpovede = {
   zalozenych: number;
   chybnych: number;
   chyby: string[];
+  /** Načítané predkontácie a členenia DPH, ak sa na ne dávka pýtala. */
+  ciselniky?: { predkontacii: number; cleneni: number; vypnutych: number } | null;
 };
 
 /**
@@ -908,7 +943,12 @@ export async function spracujOdpoved(
   supabase: Klient,
   vstup: { companyId: string; xml: string },
 ): Promise<SpracovanieOdpovede> {
-  const vysledky = rozoberOdpoved(vstup.xml);
+  // Predkontácie a členenia DPH, ak sa na ne dávka pýtala.
+  const { jeIdCiselnika } = await import("./predkontacie");
+  const { ulozCiselnikyZPohody } = await import("./predkontacie.server");
+  const ciselniky = await ulozCiselnikyZPohody(supabase, vstup);
+
+  const vysledky = rozoberOdpoved(vstup.xml).filter((v) => !jeIdCiselnika(v.id));
   const teraz = new Date().toISOString();
   const chyby: string[] = [];
   let zalozenych = 0;
@@ -1012,6 +1052,7 @@ export async function spracujOdpoved(
     zalozenych,
     chybnych: chyby.length,
     chyby: chyby.slice(0, 20),
+    ciselniky,
   };
 }
 

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { MoznostKodu } from "./predkontacie";
 
 /*
   Zaúčtovanie prijatých faktúr — predkontácia, členenie DPH, kategória a
@@ -15,32 +16,48 @@ const kod = z.string().trim().max(30).optional().nullable();
 
 export const navrhyKodovFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((d: unknown) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) =>
+    z
+      .object({ company_id: z.string().uuid(), pre: z.enum(["prijata", "doklad"]).optional() })
+      .parse(d),
+  )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    // Návrhy len z toho, čo firma už používa — žiadne vymyslené kódy Pohody.
-    const [{ data: firma }, { data: pravidla }, { data: faktury }, { data: doklady }] = await Promise.all([
-      supabase
-        .from("companies")
-        .select("pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata")
-        .eq("id", data.company_id)
-        .maybeSingle(),
-      supabase.from("pravidla_uctovania").select("predkontacia, clenenie_dph").eq("company_id", data.company_id),
-      supabase
-        .from("purchase_invoices")
-        .select("pohoda_predkontacia, pohoda_clenenie_dph")
-        .eq("company_id", data.company_id)
-        .not("pohoda_predkontacia", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(500),
-      supabase
-        .from("expense_documents")
-        .select("pohoda_predkontacia, pohoda_clenenie_dph")
-        .eq("company_id", data.company_id)
-        .not("pohoda_predkontacia", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(500),
-    ]);
+    const { ponuka } = await import("./predkontacie");
+    /*
+      Ponuka je číselník z Pohody (s popisom, vhodná agenda prvá) a za ním
+      kódy, ktoré firma už použila, hoci v číselníku nie sú — žiadne vymyslené
+      kódy Pohody.
+    */
+    const [{ data: firma }, { data: ciselnik }, { data: pravidla }, { data: faktury }, { data: doklady }] =
+      await Promise.all([
+        supabase
+          .from("companies")
+          .select(
+            "pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady",
+          )
+          .eq("id", data.company_id)
+          .maybeSingle(),
+        supabase
+          .from("predkontacie")
+          .select("druh, kod, popis, agenda, ucet_md, ucet_d, aktivne")
+          .eq("company_id", data.company_id),
+        supabase.from("pravidla_uctovania").select("predkontacia, clenenie_dph").eq("company_id", data.company_id),
+        supabase
+          .from("purchase_invoices")
+          .select("pohoda_predkontacia, pohoda_clenenie_dph")
+          .eq("company_id", data.company_id)
+          .not("pohoda_predkontacia", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(500),
+        supabase
+          .from("expense_documents")
+          .select("pohoda_predkontacia, pohoda_clenenie_dph")
+          .eq("company_id", data.company_id)
+          .not("pohoda_predkontacia", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(500),
+      ]);
     const pocet = (hodnoty: (string | null | undefined)[]) => {
       const m = new Map<string, number>();
       for (const h of hodnoty) {
@@ -49,18 +66,32 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
       }
       return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k).slice(0, 40);
     };
+    const doklad = data.pre === "doklad";
+    const predvolenaPredkontacia: string | null =
+      (doklad ? firma?.pohoda_predkontacia_doklady : null) || firma?.pohoda_predkontacia_prijata || null;
+    const predvoleneClenenie: string | null =
+      (doklad ? firma?.pohoda_clenenie_dph_doklady : null) || firma?.pohoda_clenenie_dph_prijata || null;
     const vsetky = [...(pravidla ?? []), ...(faktury ?? []), ...(doklady ?? [])];
+    const doplnene = (zoCiselnika: MoznostKodu[], pouzite: string[]): MoznostKodu[] => {
+      const zname = new Set(zoCiselnika.map((m) => m.kod));
+      return [
+        ...zoCiselnika,
+        ...pouzite.filter((k) => !zname.has(k)).map((kod) => ({ kod, popis: null, agenda: "", ucty: null })),
+      ];
+    };
+    const agendy = doklad ? ["receivedInvoice", "cashPaid", "internalDocument"] : ["receivedInvoice"];
     return {
-      predkontacie: pocet([
-        firma?.pohoda_predkontacia_prijata,
-        ...vsetky.map((r: any) => r.predkontacia ?? r.pohoda_predkontacia),
-      ]),
-      clenenia: pocet([
-        firma?.pohoda_clenenie_dph_prijata,
-        ...vsetky.map((r: any) => r.clenenie_dph ?? r.pohoda_clenenie_dph),
-      ]),
-      predvolenaPredkontacia: (firma?.pohoda_predkontacia_prijata ?? null) as string | null,
-      predvoleneClenenie: (firma?.pohoda_clenenie_dph_prijata ?? null) as string | null,
+      predkontacie: doplnene(
+        ponuka(ciselnik ?? [], "predkontacia", agendy),
+        pocet([predvolenaPredkontacia, ...vsetky.map((r: any) => r.predkontacia ?? r.pohoda_predkontacia)]),
+      ),
+      clenenia: doplnene(
+        ponuka(ciselnik ?? [], "clenenie_dph"),
+        pocet([predvoleneClenenie, ...vsetky.map((r: any) => r.clenenie_dph ?? r.pohoda_clenenie_dph)]),
+      ),
+      predvolenaPredkontacia,
+      predvoleneClenenie,
+      maCiselnik: (ciselnik ?? []).length > 0,
     };
   });
 
@@ -158,4 +189,50 @@ export const zrusZauctovanieFn = createServerFn({ method: "POST" })
       .eq("id", r.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/**
+ * Predkontácia, členenie DPH a kategória na bločkoch a výdavkových dokladoch.
+ *
+ * Doklad nemá samostatný krok „zaúčtovať" — do Pohody ide, keď je spracovaný.
+ * Tu sa mu len určí, ako sa zaúčtuje; prázdne pole nechá, čo na ňom je.
+ * Odovzdaný doklad sa nemení, v Pohode by sa rozišiel.
+ */
+export const zauctujDokladyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        ids: z.array(z.string().uuid()).min(1).max(500),
+        predkontacia: kod,
+        clenenie: kod,
+        kategoria: z.string().trim().max(40).optional().nullable(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const zmena: Record<string, unknown> = {};
+    if (data.predkontacia?.trim()) zmena.pohoda_predkontacia = data.predkontacia.trim();
+    if (data.clenenie?.trim()) zmena.pohoda_clenenie_dph = data.clenenie.trim();
+    if (data.kategoria?.trim()) zmena.category = data.kategoria.trim();
+    if (!Object.keys(zmena).length) return { zmenenych: 0, preskocenych: 0 };
+
+    const { data: riadky, error } = await supabase
+      .from("expense_documents")
+      .select("id, exported_at")
+      .eq("company_id", data.company_id)
+      .in("id", data.ids);
+    if (error) throw new Error(error.message);
+    const ok = (riadky ?? []).filter((r: any) => !r.exported_at).map((r: any) => r.id);
+    if (ok.length) {
+      const { error: e2 } = await supabase
+        .from("expense_documents")
+        .update(zmena)
+        .eq("company_id", data.company_id)
+        .in("id", ok);
+      if (e2) throw new Error(e2.message);
+    }
+    return { zmenenych: ok.length, preskocenych: (riadky ?? []).length - ok.length };
   });

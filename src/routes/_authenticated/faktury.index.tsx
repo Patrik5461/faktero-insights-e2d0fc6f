@@ -618,6 +618,7 @@ function InvoicesPage() {
               Samofaktúra sa eviduje medzi prijatými (pre nás je to nákup), ale
               vystavujeme ju my — preto aj tu, kde ju človek hľadá.
             */}
+            {type !== "credit" && (
             <Link
               to="/prijate-faktury/samofaktura"
               title="Faktúra za dodávateľa podľa dohody o samofakturácii — uloží sa medzi prijaté faktúry"
@@ -625,19 +626,32 @@ function InvoicesPage() {
             >
               <Plus className="h-4 w-4" /> Samofaktúra
             </Link>
+            )}
             {/* Krátka cesta pre jednu položku — plný formulár je na zvyšok. */}
+            {type !== "credit" && (
             <Link
               to="/faktury/rychla"
               className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary"
             >
               <Zap className="h-4 w-4" /> Rýchla faktúra
             </Link>
+            )}
+            {type === "credit" ? (
+              <Link
+                to="/faktury/nova"
+                search={{ type: "credit_note" } as any}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                <Plus className="h-4 w-4" /> Vystaviť dobropis
+              </Link>
+            ) : (
             <Link
               to="/faktury/nova"
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
               <Plus className="h-4 w-4" /> Nová faktúra
             </Link>
+            )}
           </div>
         }
       />

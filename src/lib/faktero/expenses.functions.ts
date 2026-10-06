@@ -429,7 +429,9 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     // doklad naimportuje tiež, len ho musí zaúčtovať sama.
     const { data: firma } = await supabase
       .from("companies")
-      .select("ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata")
+      .select(
+        "ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady",
+      )
       .eq("id", data.company_id)
       .single();
     const { buildPohodaExpensesXml } = await import("./export.server");
@@ -441,6 +443,8 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
         nastavenia: {
           predkontaciaPrijata: firma?.pohoda_predkontacia_prijata,
           clenenieDphPrijata: firma?.pohoda_clenenie_dph_prijata,
+          predkontaciaDoklady: (firma as any)?.pohoda_predkontacia_doklady,
+          clenenieDphDoklady: (firma as any)?.pohoda_clenenie_dph_doklady,
         },
       }),
     );

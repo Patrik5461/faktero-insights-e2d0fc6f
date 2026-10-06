@@ -423,6 +423,22 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(h.accounting.ids).toBe("5Fp");
   });
 
+  it("bloček má vlastné predvolené kódy, prijatá faktúra nie", () => {
+    const nast = {
+      predkontaciaPrijata: "5Fp",
+      clenenieDphPrijata: "PD",
+      predkontaciaDoklady: "1Pv",
+      clenenieDphDoklady: "PDb",
+    };
+    const blok = posli([bloček], nast).dataPackItem.invoice.invoiceHeader;
+    expect(blok.accounting.ids).toBe("1Pv");
+    expect(blok.classificationVAT.ids).toBe("PDb");
+    const faktura = posli([{ ...bloček, _typPohody: "receivedInvoice" }], nast).dataPackItem
+      .invoice.invoiceHeader;
+    expect(faktura.accounting.ids).toBe("5Fp");
+    expect(faktura.classificationVAT.ids).toBe("PD");
+  });
+
   it("doklad v cudzej mene sa vynechá", () => {
     const d = posli([bloček, { ...bloček, document_number: "9", currency: "CZK" }]);
     expect(d.dataPackItem.invoice.invoiceHeader.symVar).toBe(2516);

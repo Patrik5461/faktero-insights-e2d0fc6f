@@ -147,6 +147,10 @@ export type PohodaNastavenia = {
   predkontaciaPrijata?: string | null;
   /** Členenie DPH pre prijatý doklad. */
   clenenieDphPrijata?: string | null;
+  /** Predkontácia pre bloček a výdavkový doklad; prázdna = ako prijatá faktúra. */
+  predkontaciaDoklady?: string | null;
+  /** Členenie DPH pre bloček a výdavkový doklad; prázdne = ako prijatá faktúra. */
+  clenenieDphDoklady?: string | null;
   /** Skratka pokladne v Pohode — do ktorej pokladne pohyby patria. */
   pokladna?: string | null;
   /** Predkontácia pre pokladničný doklad. */
@@ -897,10 +901,17 @@ export function polozkyDokladov(opts: {
         Vlastná predkontácia a členenie dokladu (doplní ich pravidlo účtovania
         alebo človek) prebíjajú nastavenie firmy pre všetky prijaté doklady.
       */
+      // Prijatá faktúra nesie `_typPohody`; bez neho je to bloček či výdavkový
+      // doklad a ten má vlastné predvolené kódy (Predkontácie → Bloček).
+      const blocek = !d?._typPohody;
       const predkontacia =
-        String(d?.pohoda_predkontacia ?? "").trim() || nastavenia?.predkontaciaPrijata;
+        String(d?.pohoda_predkontacia ?? "").trim() ||
+        (blocek ? nastavenia?.predkontaciaDoklady : null) ||
+        nastavenia?.predkontaciaPrijata;
       const clenenie =
-        String(d?.pohoda_clenenie_dph ?? "").trim() || nastavenia?.clenenieDphPrijata;
+        String(d?.pohoda_clenenie_dph ?? "").trim() ||
+        (blocek ? nastavenia?.clenenieDphDoklady : null) ||
+        nastavenia?.clenenieDphPrijata;
 
       const adresa = [
         el("typ:company", skrat(d?.supplier_name, 96), "            "),

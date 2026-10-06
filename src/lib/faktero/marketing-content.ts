@@ -155,7 +155,7 @@ export const funkcie: HubContent = {
             "Vydané aj zálohové faktúry, dobropisy, prijaté doklady a pokladňa",
             "Voliteľne adresár, skladové karty, pohyby aj zákazky — faktúra potom nesie zákazku",
             "Späť sa vracajú čísla, ktoré doklady dostali v Pohode",
-            "Predkontácie a členenia DPH, takže sa doklad rovno zaúčtuje",
+            "Číselník predkontácií a členení DPH sa načíta priamo z Pohody — pre faktúry, prijaté faktúry, bločky, pokladňu aj banku zvlášť",
             "Odovzdaný doklad sa neposiela druhýkrát",
             "Funguje so všetkými radami Pohody",
           ],

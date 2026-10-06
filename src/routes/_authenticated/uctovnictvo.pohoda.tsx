@@ -5,7 +5,6 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { KonektorPohody } from "@/components/faktero/KonektorPohody";
 import { toast } from "sonner";
-import { OZNACENIA } from "@/lib/faktero/vypis-oznacenie";
 
 /**
  * Nastavenie účtovania v Pohode a vydanie konektora.
@@ -24,18 +23,8 @@ export const Route = createFileRoute("/_authenticated/uctovnictvo/pohoda")({
 const POLIA = [
   "uctovnik_email",
   "odovzdanie_automaticky",
-  "pohoda_predkontacia",
-  "pohoda_predkontacia_zaloha",
-  "pohoda_predkontacia_dobropis",
-  "pohoda_clenenie_dph",
-  "pohoda_clenenie_dph_pdp",
-  "pohoda_predkontacia_prijata",
-  "pohoda_clenenie_dph_prijata",
   "pohoda_pokladna",
-  "pohoda_predkontacia_pokladna",
   "pohoda_banka",
-  "pohoda_predkontacia_banka",
-  "pohoda_predkontacie_oznaceni",
   "pohoda_sklad",
   "pohoda_posielat_adresar",
   "pohoda_posielat_sklad",
@@ -78,7 +67,6 @@ function Stranka() {
     const patch = Object.fromEntries(
       POLIA.map((k) => {
         const v = c[k];
-        if (k === "pohoda_predkontacie_oznaceni") return [k, ocistiMapu(v)];
         return [k, typeof v === "string" ? v.trim() || null : (v ?? null)];
       }),
     );
@@ -93,18 +81,12 @@ function Stranka() {
 
   const f = (k: string) => (v: string) => setC({ ...c, [k]: v });
 
-  /*
-    Prázdne políčka sa v mape nedržia — zápis `{"karta":""}` by v XML vyzeral
-    ako vyplnená predkontácia a Pohoda by dostala prázdny element.
-  */
-  const predkontacieOznaceni: Record<string, string> =
-    (c.pohoda_predkontacie_oznaceni as Record<string, string> | null) ?? {};
 
   return (
     <>
       <PageHeader
         title="Prepojenie s Pohodou"
-        description="Predkontácie, členenia DPH, čo sa do Pohody posiela a balíček pre účtovníčku."
+        description="Čo sa do Pohody posiela, skratky pokladne, banky a skladu a konektor pre účtovníčku."
       />
       <PageBody>
         <form
@@ -155,59 +137,20 @@ function Stranka() {
               Účtovanie
             </h3>
             <p className="mb-3 text-xs text-muted-foreground">
-              Skratky z Pohody vašej účtovníčky. Keď ich vyplníte, doklady sa po importe rovno
-              zaúčtujú a nemusí ich preklikávať. Nechajte prázdne, ak neviete — export bude fungovať
-              aj tak.
+              Skratky pokladne, bankového účtu a skladu z Pohody vašej účtovníčky.{" "}
+              <strong>Predkontácie a členenia DPH</strong> — aj ich načítanie z Pohody — sú na
+              stránke{" "}
+              <Link to="/uctovnictvo/predkontacie" className="text-primary underline">
+                Predkontácie
+              </Link>
+              .
             </p>
           </div>
-          <In
-            label="Predkontácia — faktúra"
-            value={c.pohoda_predkontacia ?? ""}
-            onChange={f("pohoda_predkontacia")}
-            placeholder="napr. 3Fv"
-          />
-          <In
-            label="Predkontácia — zálohová faktúra"
-            value={c.pohoda_predkontacia_zaloha ?? ""}
-            onChange={f("pohoda_predkontacia_zaloha")}
-          />
-          <In
-            label="Predkontácia — dobropis"
-            value={c.pohoda_predkontacia_dobropis ?? ""}
-            onChange={f("pohoda_predkontacia_dobropis")}
-          />
-          <In
-            label="Členenie DPH"
-            value={c.pohoda_clenenie_dph ?? ""}
-            onChange={f("pohoda_clenenie_dph")}
-            placeholder="napr. UD"
-          />
-          <In
-            label="Členenie DPH — prenesenie daňovej povinnosti"
-            value={c.pohoda_clenenie_dph_pdp ?? ""}
-            onChange={f("pohoda_clenenie_dph_pdp")}
-          />
-          <In
-            label="Predkontácia — prijatý doklad"
-            value={c.pohoda_predkontacia_prijata ?? ""}
-            onChange={f("pohoda_predkontacia_prijata")}
-            placeholder="napr. 5Fp"
-          />
-          <In
-            label="Členenie DPH — prijatý doklad"
-            value={c.pohoda_clenenie_dph_prijata ?? ""}
-            onChange={f("pohoda_clenenie_dph_prijata")}
-          />
           <In
             label="Pokladňa v Pohode"
             value={c.pohoda_pokladna ?? ""}
             onChange={f("pohoda_pokladna")}
             placeholder="napr. HOT"
-          />
-          <In
-            label="Predkontácia — pokladničný doklad"
-            value={c.pohoda_predkontacia_pokladna ?? ""}
-            onChange={f("pohoda_predkontacia_pokladna")}
           />
           <In
             label="Bankový účet v Pohode"
@@ -216,46 +159,12 @@ function Stranka() {
             placeholder="napr. TB"
           />
           <In
-            label="Predkontácia — bankový doklad"
-            value={c.pohoda_predkontacia_banka ?? ""}
-            onChange={f("pohoda_predkontacia_banka")}
-            placeholder="napr. 2Bv"
-          />
-          <In
             label="Členenie skladu v Pohode"
             value={c.pohoda_sklad ?? ""}
             onChange={f("pohoda_sklad")}
             placeholder="napr. TOVAR"
           />
 
-          <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
-            <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Predkontácie podľa označenia platby
-            </h3>
-            <p className="mb-3 text-xs text-muted-foreground">
-              Pri{" "}
-              <Link to="/uctovnictvo/vypis-do-pohody" className="text-primary underline">
-                bankovom výpise
-              </Link>{" "}
-              sa ku každému pohybu vyberá, čím je — poplatok, daň, úhrada faktúry… Keď má označenie
-              vlastnú predkontáciu, doklad príde do Pohody rovno zaúčtovaný. Čo necháte prázdne,
-              dostane predkontáciu bankového dokladu vyššie.
-            </p>
-          </div>
-          {OZNACENIA.map((o) => (
-            <In
-              key={o.kod}
-              label={o.nazov}
-              value={String(predkontacieOznaceni[o.kod] ?? "")}
-              onChange={(v) =>
-                setC({
-                  ...c,
-                  pohoda_predkontacie_oznaceni: { ...predkontacieOznaceni, [o.kod]: v },
-                })
-              }
-              placeholder={c.pohoda_predkontacia_banka || "napr. 3Bv"}
-            />
-          ))}
 
           <div className="sm:col-span-2 mt-2 border-t border-border pt-4">
             <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -361,14 +270,6 @@ function Stranka() {
       </PageBody>
     </>
   );
-}
-
-/** Mapa označenie → predkontácia bez prázdnych hodnôt; prázdna mapa je `null`. */
-function ocistiMapu(v: unknown): Record<string, string> | null {
-  const zaznamy = Object.entries((v as Record<string, unknown> | null) ?? {})
-    .map(([k, x]) => [k, String(x ?? "").trim()] as const)
-    .filter(([, x]) => x);
-  return zaznamy.length ? Object.fromEntries(zaznamy) : null;
 }
 
 function In({

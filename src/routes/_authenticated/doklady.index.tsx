@@ -38,6 +38,7 @@ import {
   Upload as UploadIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PredkontaciaDokladovOkno } from "@/components/faktero/PredkontaciaDokladovOkno";
 
 export const Route = createFileRoute("/_authenticated/doklady/")({
   head: () => ({ meta: [{ title: "Doklady — Faktero" }] }),
@@ -117,6 +118,7 @@ function DokladyPage() {
     mesiac: null,
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [predkontaciaOkno, setPredkontaciaOkno] = useState(false);
   const [exporting, setExporting] = useState(false);
   const cid = getActiveCompanyId();
 
@@ -434,6 +436,14 @@ function DokladyPage() {
               )}
             </button>
           )}
+          {selected.size > 0 && (
+            <button
+              onClick={() => setPredkontaciaOkno(true)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+            >
+              Predkontácia ({selected.size})
+            </button>
+          )}
           <div className="ml-auto flex gap-2">
             <button
               onClick={() => handleExport(false)}
@@ -634,7 +644,17 @@ function DokladyPage() {
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-2">{r.document_number ?? "—"}</td>
+                    <td className="px-3 py-2">
+                      {r.document_number ?? "—"}
+                      {r.pohoda_predkontacia || r.pohoda_clenenie_dph ? (
+                        <div
+                          className="text-xs text-muted-foreground"
+                          title="Predkontácia / členenie DPH pre Pohodu"
+                        >
+                          {[r.pohoda_predkontacia, r.pohoda_clenenie_dph].filter(Boolean).join(" · ")}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="px-3 py-2 text-right tabular-nums">
                       {r.total_amount != null
                         ? `${Number(r.total_amount).toFixed(2)} ${r.currency}`
@@ -739,6 +759,14 @@ function DokladyPage() {
             </table>
           )}
         </div>
+        {predkontaciaOkno && getActiveCompanyId() && (
+          <PredkontaciaDokladovOkno
+            companyId={getActiveCompanyId()!}
+            ids={Array.from(selected)}
+            onClose={() => setPredkontaciaOkno(false)}
+            onHotovo={refresh}
+          />
+        )}
       </PageBody>
     </>
   );
