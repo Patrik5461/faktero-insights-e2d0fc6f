@@ -54,7 +54,10 @@ export function ZauctovanieFakturOkno({
 
   const vstup = "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -82,6 +85,7 @@ export function ZauctovanieFakturOkno({
               moznosti={navrhy?.predkontacie ?? []}
               placeholder="nemeniť"
               className={vstup}
+              vyber
             />
           </label>
           <label className="block">
@@ -97,7 +101,11 @@ export function ZauctovanieFakturOkno({
           </label>
           <label className="block">
             <span className="text-xs text-muted-foreground">Členenie KV DPH</span>
-            <select value={h.kv} onChange={(e) => setH({ ...h, kv: e.target.value })} className={vstup}>
+            <select
+              value={h.kv}
+              onChange={(e) => setH({ ...h, kv: e.target.value })}
+              className={vstup}
+            >
               <option value="">nemeniť</option>
               <option value="auto">automaticky</option>
               {KV_VYDANE.map((k) => (

@@ -81,7 +81,8 @@ export function RozuctovaniePanel({
         if (j !== i) return r;
         const n = { ...r, ...z };
         // Zmena základu alebo sadzby prepočíta DPH; ručne zadaná DPH ostane.
-        if (("zaklad" in z || "sadzba" in z) && !("dph" in z)) n.dph = dphZoZakladu(n.zaklad, n.sadzba);
+        if (("zaklad" in z || "sadzba" in z) && !("dph" in z))
+          n.dph = dphZoZakladu(n.zaklad, n.sadzba);
         return n;
       }),
     );
@@ -128,7 +129,9 @@ export function RozuctovaniePanel({
         </div>
         <div className="text-xs text-muted-foreground">
           Doklad:{" "}
-          {rozpis.map((r) => `${r.sadzba} % — základ ${f2(r.zaklad)}, DPH ${f2(r.dph)}`).join(" · ")}
+          {rozpis
+            .map((r) => `${r.sadzba} % — základ ${f2(r.zaklad)}, DPH ${f2(r.dph)}`)
+            .join(" · ")}
         </div>
       </div>
       <div className="mt-2 overflow-x-auto">
@@ -156,6 +159,7 @@ export function RozuctovaniePanel({
                     moznosti={navrhy?.predkontacie ?? []}
                     placeholder={kody.predkontacia ?? ""}
                     className={vstup}
+                    vyber
                   />
                 </td>
                 <td className="py-1 pr-2 w-32">
@@ -164,7 +168,7 @@ export function RozuctovaniePanel({
                     value={r.clenenie ?? ""}
                     onChange={(v) => zmen(i, { clenenie: v })}
                     moznosti={navrhy?.clenenia ?? []}
-                      vyber
+                    vyber
                     placeholder={kody.clenenie ?? ""}
                     className={vstup}
                   />

@@ -4,7 +4,11 @@ import { KodPohody } from "./KodPohody";
 
 export type PomerHodnota =
   | null
-  | { typ: "pomer"; casti: { podiel: number; predkontacia: string; odpocet: boolean }[]; clenenieBezOdpoctu?: string }
+  | {
+      typ: "pomer";
+      casti: { podiel: number; predkontacia: string; odpocet: boolean }[];
+      clenenieBezOdpoctu?: string;
+    }
   | {
       typ: "dph5050";
       zaklad: number;
@@ -31,7 +35,8 @@ export function PomerEditor({
 }) {
   const vstup = "w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm";
   const typ = value?.typ ?? "";
-  const spolu = value?.typ === "pomer" ? value.casti.reduce((a, c) => a + (Number(c.podiel) || 0), 0) : 100;
+  const spolu =
+    value?.typ === "pomer" ? value.casti.reduce((a, c) => a + (Number(c.podiel) || 0), 0) : 100;
   return (
     <div className="rounded-md border border-border p-3">
       <label className="flex flex-wrap items-center gap-2 text-sm">
@@ -49,7 +54,14 @@ export function PomerEditor({
                   { podiel: 20, predkontacia: "", odpocet: false },
                 ],
               });
-            else onChange({ typ: "dph5050", zaklad: 80, zdanitelna: "", lenZaklad: "", nezdanitelna: "" });
+            else
+              onChange({
+                typ: "dph5050",
+                zaklad: 80,
+                zdanitelna: "",
+                lenZaklad: "",
+                nezdanitelna: "",
+              });
           }}
           className="rounded-md border border-input bg-background px-2 py-1 text-sm"
         >
@@ -72,7 +84,9 @@ export function PomerEditor({
                 onChange={(e) =>
                   onChange({
                     ...value,
-                    casti: value.casti.map((x, j) => (j === i ? { ...x, podiel: Number(e.target.value) } : x)),
+                    casti: value.casti.map((x, j) =>
+                      j === i ? { ...x, podiel: Number(e.target.value) } : x,
+                    ),
                   })
                 }
                 className={vstup}
@@ -81,12 +95,16 @@ export function PomerEditor({
                 ariaLabel={`Predkontácia časti ${i + 1}`}
                 value={c.predkontacia}
                 onChange={(v) =>
-                  onChange({ ...value, casti: value.casti.map((x, j) => (j === i ? { ...x, predkontacia: v } : x)) })
+                  onChange({
+                    ...value,
+                    casti: value.casti.map((x, j) => (j === i ? { ...x, predkontacia: v } : x)),
+                  })
                 }
                 moznosti={predkontacie}
                 placeholder="predkontácia"
                 className={vstup}
                 bezPopisu
+                vyber
               />
               <label className="flex items-center gap-1 text-xs">
                 <input
@@ -95,7 +113,9 @@ export function PomerEditor({
                   onChange={(e) =>
                     onChange({
                       ...value,
-                      casti: value.casti.map((x, j) => (j === i ? { ...x, odpocet: e.target.checked } : x)),
+                      casti: value.casti.map((x, j) =>
+                        j === i ? { ...x, odpocet: e.target.checked } : x,
+                      ),
                     })
                   }
                 />
@@ -115,13 +135,21 @@ export function PomerEditor({
             <button
               type="button"
               onClick={() =>
-                onChange({ ...value, casti: [...value.casti, { podiel: Math.max(0, 100 - spolu), predkontacia: "", odpocet: false }] })
+                onChange({
+                  ...value,
+                  casti: [
+                    ...value.casti,
+                    { podiel: Math.max(0, 100 - spolu), predkontacia: "", odpocet: false },
+                  ],
+                })
               }
               className="inline-flex items-center gap-1 text-primary hover:underline"
             >
               <Plus className="h-3.5 w-3.5" /> Pridať časť
             </button>
-            <span className={spolu === 100 ? "text-emerald-700" : "text-amber-700"}>Spolu {spolu} %</span>
+            <span className={spolu === 100 ? "text-emerald-700" : "text-amber-700"}>
+              Spolu {spolu} %
+            </span>
           </div>
         </div>
       )}
@@ -158,6 +186,7 @@ export function PomerEditor({
                 placeholder="predkontácia"
                 className={vstup}
                 bezPopisu
+                vyber
               />
             </label>
           ))}

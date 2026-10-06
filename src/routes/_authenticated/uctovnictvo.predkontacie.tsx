@@ -135,7 +135,9 @@ function Predvolene({
 
   useEffect(() => {
     setH(Object.fromEntries(STLPCE_PREDVOLENYCH.map((s) => [s, String(firma[s] ?? "")])));
-    setOznaceni({ ...((firma.pohoda_predkontacie_oznaceni as Record<string, string> | null) ?? {}) });
+    setOznaceni({
+      ...((firma.pohoda_predkontacie_oznaceni as Record<string, string> | null) ?? {}),
+    });
     setBlockyAgenda(firma.pohoda_blocky_agenda === "faktura" ? "faktura" : "podla_platby");
     setPokladna(String(firma.pohoda_pokladna ?? ""));
     setOdkazNaDoklady(firma.pohoda_odkaz_na_doklady !== false);
@@ -149,7 +151,15 @@ function Predvolene({
     setBusy(true);
     try {
       await uloz({
-        data: { company_id: companyId, hodnoty: h, oznaceni, blockyAgenda, pokladna, odkazNaDoklady, polozkyBlockov },
+        data: {
+          company_id: companyId,
+          hodnoty: h,
+          oznaceni,
+          blockyAgenda,
+          pokladna,
+          odkazNaDoklady,
+          polozkyBlockov,
+        },
       });
       toast.success("Uložené");
       onUlozene();
@@ -187,7 +197,8 @@ function Predvolene({
               <tr key={p.kluc} className="border-t border-border align-top">
                 <td className="py-2 pr-3">
                   {p.nazov}
-                  {pocetNaVyber(p.kluc, "predkontacia") + pocetNaVyber(p.kluc, "clenenie_dph") > 0 ? (
+                  {pocetNaVyber(p.kluc, "predkontacia") + pocetNaVyber(p.kluc, "clenenie_dph") >
+                  0 ? (
                     <span className="block text-xs text-muted-foreground">
                       kódov len pre tento doklad:{" "}
                       {pocetNaVyber(p.kluc, "predkontacia") + pocetNaVyber(p.kluc, "clenenie_dph")}
@@ -210,6 +221,7 @@ function Predvolene({
                         p.kluc === "doklady" ? h.pohoda_predkontacia_prijata || "napr. 5Fp" : "—"
                       }
                       className={vstup}
+                      vyber
                     />
                   ) : (
                     <span className="text-xs text-muted-foreground">ako vydaná faktúra</span>
@@ -251,8 +263,8 @@ function Predvolene({
           <span>
             Podľa spôsobu platby (ako Doklado)
             <span className="block text-xs text-muted-foreground">
-              Hotovosť ako výdavkový pokladničný doklad, karta ako interný doklad, prevod ako prijatá
-              faktúra.
+              Hotovosť ako výdavkový pokladničný doklad, karta ako interný doklad, prevod ako
+              prijatá faktúra.
             </span>
           </span>
         </label>
@@ -321,7 +333,8 @@ function Predvolene({
                 value={h[r.stlpec] ?? ""}
                 onChange={(v) => setH({ ...h, [r.stlpec]: v })}
                 moznosti={ponuka(zaznamy, "ciselny_rad").sort(
-                  (a, b) => Number(b.agenda.startsWith(r.agenda)) - Number(a.agenda.startsWith(r.agenda)),
+                  (a, b) =>
+                    Number(b.agenda.startsWith(r.agenda)) - Number(a.agenda.startsWith(r.agenda)),
                 )}
                 placeholder="predvolený v Pohode"
                 className={vstup}
@@ -370,6 +383,7 @@ function Predvolene({
           moznosti={ponuka(zaznamy, "predkontacia")}
           placeholder="Rozúčtovať"
           className={vstup}
+          vyber
         />
         <span className="mt-0.5 block text-xs text-muted-foreground">
           Keď je doklad rozúčtovaný na viac predkontácií, hlavička v Pohode dostane tento kód a
@@ -398,6 +412,7 @@ function Predvolene({
                 onChange={(v) => setOznaceni({ ...oznaceni, [o.kod]: v })}
                 moznosti={ponuka(zaznamy, "predkontacia", ["bankIssued", "bankReceived"])}
                 placeholder={h.pohoda_predkontacia_banka || "napr. 3Bv"}
+                vyber
               />
             </label>
           ))}
@@ -467,8 +482,11 @@ function Import({
     try {
       const b = new Uint8Array(await f.arrayBuffer());
       let bin = "";
-      for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
-      const r = await importuj({ data: { company_id: companyId, nazov: f.name, base64: btoa(bin) } });
+      for (let i = 0; i < b.length; i += 0x8000)
+        bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
+      const r = await importuj({
+        data: { company_id: companyId, nazov: f.name, base64: btoa(bin) },
+      });
       toast.success(
         `Načítané: ${r.predkontacii} predkontácií, ${r.cleneni} členení DPH` +
           (r.ostatnych ? `, ${r.ostatnych} stredísk, činností a radov` : "") +
@@ -492,8 +510,8 @@ function Import({
         {firma.pohoda_ciselniky_nacitane_at
           ? `Naposledy načítané z Pohody ${kedy(firma.pohoda_ciselniky_nacitane_at)}.`
           : "Z Pohody sa ešte nič nenačítalo."}{" "}
-        Opakované načítanie prepíše popisy a účty, nič nezdvojí; kódy, ktoré v Pohode už nie sú,
-        sa vypnú.
+        Opakované načítanie prepíše popisy a účty, nič nezdvojí; kódy, ktoré v Pohode už nie sú, sa
+        vypnú.
       </p>
 
       <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -570,7 +588,11 @@ function Import({
             disabled={!!busy}
             className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
           >
-            {busy === "subor" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {busy === "subor" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
             Nahrať súbor
           </button>
         </div>
@@ -625,7 +647,10 @@ function Ciselnik({
     if (!vsetky && !z.aktivne) return false;
     if (agenda && z.agenda !== agenda) return false;
     const q = hladaj.trim().toLowerCase();
-    return !q || `${z.kod} ${z.popis ?? ""} ${z.ucet_md ?? ""} ${z.ucet_d ?? ""}`.toLowerCase().includes(q);
+    return (
+      !q ||
+      `${z.kod} ${z.popis ?? ""} ${z.ucet_md ?? ""} ${z.ucet_d ?? ""}`.toLowerCase().includes(q)
+    );
   });
 
   async function ulozit() {
@@ -777,7 +802,9 @@ function Ciselnik({
               Ponúkať pri dokladoch (nič nezaškrtnuté = všade)
             </span>
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
-              {PREDVOLENE.filter((p) => (druh === "clenenie_dph" ? p.clenenie : p.predkontacia)).map((p) => (
+              {PREDVOLENE.filter((p) =>
+                druh === "clenenie_dph" ? p.clenenie : p.predkontacia,
+              ).map((p) => (
                 <label key={p.kluc} className="flex items-center gap-1.5 text-xs">
                   <input
                     type="checkbox"
@@ -884,7 +911,9 @@ function Ciselnik({
               <tr className="text-left text-xs text-muted-foreground">
                 <th className="py-1 pr-3 font-medium">Kód</th>
                 <th className="py-1 pr-3 font-medium">Popis</th>
-                <th className="py-1 pr-3 font-medium">{druh === "predkontacia" ? "Agenda" : "Typ"}</th>
+                <th className="py-1 pr-3 font-medium">
+                  {druh === "predkontacia" ? "Agenda" : "Typ"}
+                </th>
                 {druh === "predkontacia" && <th className="py-1 pr-3 font-medium">MD / D</th>}
                 <th className="py-1 pr-3 font-medium">Použitie</th>
                 <th className="py-1 pr-3 font-medium">Zdroj</th>
@@ -894,7 +923,10 @@ function Ciselnik({
             </thead>
             <tbody>
               {riadky.map((z) => (
-                <tr key={z.id} className={`border-t border-border ${z.aktivne ? "" : "opacity-50"}`}>
+                <tr
+                  key={z.id}
+                  className={`border-t border-border ${z.aktivne ? "" : "opacity-50"}`}
+                >
                   <td className="py-1.5 pr-3 font-mono font-medium">{z.kod}</td>
                   <td className="py-1.5 pr-3">
                     {z.popis ?? "—"}
@@ -922,11 +954,15 @@ function Ciselnik({
                       : "všade"}
                     {z.kategoria ? (
                       <span className="block text-foreground">
-                        kategória: {KATEGORIE_VYDAVKOV.find((k) => k.kod === z.kategoria)?.nazov ?? z.kategoria}
+                        kategória:{" "}
+                        {KATEGORIE_VYDAVKOV.find((k) => k.kod === z.kategoria)?.nazov ??
+                          z.kategoria}
                       </span>
                     ) : null}
                   </td>
-                  <td className="py-1.5 pr-3 text-xs text-muted-foreground">{ZDROJ[z.zdroj] ?? z.zdroj}</td>
+                  <td className="py-1.5 pr-3 text-xs text-muted-foreground">
+                    {ZDROJ[z.zdroj] ?? z.zdroj}
+                  </td>
                   <td className="py-1.5 pr-3">
                     <input
                       type="checkbox"
@@ -957,7 +993,12 @@ function Ciselnik({
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => zmazat([z.id], `Zmazať ${z.kod} z číselníka? Doklady, ktoré ho už majú, sa nezmenia.`)}
+                      onClick={() =>
+                        zmazat(
+                          [z.id],
+                          `Zmazať ${z.kod} z číselníka? Doklady, ktoré ho už majú, sa nezmenia.`,
+                        )
+                      }
                       className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
                       aria-label={`Zmazať ${z.kod}`}
                     >

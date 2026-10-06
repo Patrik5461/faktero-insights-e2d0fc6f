@@ -421,6 +421,7 @@ function UpravaPravidla({
               moznosti={kody?.predkontacie ?? []}
               placeholder="napr. PHM, 1Fp"
               className={vstup}
+              vyber
             />
           </label>
           <label className="block text-sm">
@@ -429,7 +430,7 @@ function UpravaPravidla({
               value={p.clenenie_dph ?? ""}
               onChange={(v) => zmen({ clenenie_dph: v })}
               moznosti={kody?.clenenia ?? []}
-                      vyber
+              vyber
               placeholder="napr. PD, PN"
               className={vstup}
             />

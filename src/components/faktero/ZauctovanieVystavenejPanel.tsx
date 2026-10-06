@@ -48,7 +48,9 @@ export function ZauctovanieVystavenejPanel({
   const zrus = useServerFn(zrusZauctovanieVystavenejFn);
   const vrat = useServerFn(vratVystavenuZPohodyFn);
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
-  const [stav, setStav] = useState<{ vPohode: { kedy: string; cislo: string | null } | null } | null>(null);
+  const [stav, setStav] = useState<{
+    vPohode: { kedy: string; cislo: string | null } | null;
+  } | null>(null);
   const [h, setH] = useState({
     predkontacia: "",
     clenenie: "",
@@ -93,7 +95,14 @@ export function ZauctovanieVystavenejPanel({
       cinnost: inv.cinnost ?? "",
       intPoznamka: inv.int_poznamka ?? "",
     });
-  }, [inv.pohoda_predkontacia, inv.pohoda_clenenie_dph, inv.kv_clenenie, inv.stredisko, inv.cinnost, inv.int_poznamka]);
+  }, [
+    inv.pohoda_predkontacia,
+    inv.pohoda_clenenie_dph,
+    inv.kv_clenenie,
+    inv.stredisko,
+    inv.cinnost,
+    inv.int_poznamka,
+  ]);
 
   if (inv.status === "draft") return null;
   const vPohode = stav?.vPohode;
@@ -168,8 +177,10 @@ export function ZauctovanieVystavenejPanel({
       {vPohode ? (
         <>
           <p className="mt-3">
-            Predkontácia <strong>{inv.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,
-            členenie DPH <strong>{inv.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
+            Predkontácia{" "}
+            <strong>{inv.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,
+            členenie DPH{" "}
+            <strong>{inv.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
             {inv.kv_clenenie ? (
               <>
                 , KV <strong>{inv.kv_clenenie}</strong>
@@ -215,6 +226,7 @@ export function ZauctovanieVystavenejPanel({
                 moznosti={navrhy?.predkontacie ?? []}
                 placeholder={navrhy?.predvolenaPredkontacia ?? "napr. 3Fv"}
                 className={vstup}
+                vyber
               />
             </label>
             <label className="block">
@@ -230,7 +242,11 @@ export function ZauctovanieVystavenejPanel({
             </label>
             <label className="block">
               <span className="text-xs text-muted-foreground">Členenie KV DPH</span>
-              <select value={h.kv} onChange={(e) => setH({ ...h, kv: e.target.value })} className={vstup}>
+              <select
+                value={h.kv}
+                onChange={(e) => setH({ ...h, kv: e.target.value })}
+                className={vstup}
+              >
                 <option value="">automaticky</option>
                 {KV_VYDANE.map((k) => (
                   <option key={k.kod} value={k.kod}>
@@ -276,7 +292,11 @@ export function ZauctovanieVystavenejPanel({
           </div>
 
           <label className="mt-3 flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={poPolozkach} onChange={(e) => setPoPolozkach(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={poPolozkach}
+              onChange={(e) => setPoPolozkach(e.target.checked)}
+            />
             Účtovať po položkách (každá položka vlastná predkontácia)
           </label>
           {poPolozkach && (
@@ -299,9 +319,13 @@ export function ZauctovanieVystavenejPanel({
                       <tr key={p.id} className="border-t border-border align-top">
                         <td className="py-1.5 pr-2">
                           {p.name}
-                          <span className="block text-xs text-muted-foreground">{p.vat_rate} %</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {p.vat_rate} %
+                          </span>
                         </td>
-                        <td className="py-1.5 pr-2 text-right tabular-nums">{p.subtotal.toFixed(2)}</td>
+                        <td className="py-1.5 pr-2 text-right tabular-nums">
+                          {p.subtotal.toFixed(2)}
+                        </td>
                         <td className="py-1.5 pr-2 w-36">
                           <KodPohody
                             ariaLabel={`Predkontácia položky ${i + 1}`}
@@ -311,6 +335,7 @@ export function ZauctovanieVystavenejPanel({
                             placeholder={h.predkontacia || navrhy?.predvolenaPredkontacia || ""}
                             className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
                             bezPopisu
+                            vyber
                           />
                         </td>
                         <td className="py-1.5 pr-2 w-36">
@@ -345,8 +370,8 @@ export function ZauctovanieVystavenejPanel({
                 </tbody>
               </table>
               <p className="mt-1 text-xs text-muted-foreground">
-                Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, hlavička v
-                Pohode dostane „Rozúčtovať“.
+                Položka bez kódu dostane kód faktúry. Keď majú položky rôzne predkontácie, hlavička
+                v Pohode dostane „Rozúčtovať“.
               </p>
             </div>
           )}

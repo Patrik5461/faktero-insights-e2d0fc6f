@@ -8,7 +8,11 @@ import {
   presunPrijatuDoDokladovFn,
   vratZPohodyFn,
 } from "@/lib/faktero/vratenie.functions";
-import { navrhyKodovFn, zauctujPrijateFn, zrusZauctovanieFn } from "@/lib/faktero/zauctovanie.functions";
+import {
+  navrhyKodovFn,
+  zauctujPrijateFn,
+  zrusZauctovanieFn,
+} from "@/lib/faktero/zauctovanie.functions";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import type { MoznostKodu } from "@/lib/faktero/predkontacie";
 import { KV_PRIJATE, kvAutomaticky } from "@/lib/faktero/kv-clenenie";
@@ -67,11 +71,14 @@ export function PoliaZauctovania({
         <KodPohody
           value={hodnoty.predkontacia}
           placeholder={
-            hromadne ? "nemeniť" : (zKategorie?.predkontacia ?? navrhy?.predvolenaPredkontacia ?? "napr. 1Fp")
+            hromadne
+              ? "nemeniť"
+              : (zKategorie?.predkontacia ?? navrhy?.predvolenaPredkontacia ?? "napr. 1Fp")
           }
           onChange={(v) => setHodnoty({ ...hodnoty, predkontacia: v })}
           moznosti={navrhy?.predkontacie ?? []}
           className={vstup}
+          vyber
         />
       </label>
       <label className="block">
@@ -79,11 +86,13 @@ export function PoliaZauctovania({
         <KodPohody
           value={hodnoty.clenenie}
           placeholder={
-            hromadne ? "nemeniť" : (zKategorie?.clenenie ?? navrhy?.predvoleneClenenie ?? "napr. PD")
+            hromadne
+              ? "nemeniť"
+              : (zKategorie?.clenenie ?? navrhy?.predvoleneClenenie ?? "napr. PD")
           }
           onChange={(v) => setHodnoty({ ...hodnoty, clenenie: v })}
           moznosti={navrhy?.clenenia ?? []}
-                      vyber
+          vyber
           className={vstup}
         />
       </label>
@@ -110,7 +119,9 @@ export function PoliaZauctovania({
             onChange={(e) => setHodnoty({ ...hodnoty, kv: e.target.value })}
             className={vstup}
           >
-            <option value="">{hromadne ? "nemeniť" : `automaticky${kvAuto ? ` (${kvAuto})` : ""}`}</option>
+            <option value="">
+              {hromadne ? "nemeniť" : `automaticky${kvAuto ? ` (${kvAuto})` : ""}`}
+            </option>
             {hromadne && <option value="auto">automaticky</option>}
             {KV_PRIJATE.map((k) => (
               <option key={k.kod} value={k.kod}>
@@ -161,7 +172,9 @@ export function PoliaZauctovania({
       )}
       {hodnoty.intPoznamka !== undefined && (
         <label className="block sm:col-span-full">
-          <span className="text-xs text-muted-foreground">Interná poznámka pre účtovníka (do Pohody)</span>
+          <span className="text-xs text-muted-foreground">
+            Interná poznámka pre účtovníka (do Pohody)
+          </span>
           <input
             value={hodnoty.intPoznamka}
             onChange={(e) => setHodnoty({ ...hodnoty, intPoznamka: e.target.value })}
@@ -199,7 +212,9 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    nacitajNavrhy({ data: { company_id: row.company_id } }).then(setNavrhy).catch(() => {});
+    nacitajNavrhy({ data: { company_id: row.company_id } })
+      .then(setNavrhy)
+      .catch(() => {});
   }, [row.company_id, nacitajNavrhy]);
   useEffect(() => {
     setH({
@@ -212,7 +227,16 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
       rad: row.pohoda_rad ?? "",
       intPoznamka: row.int_poznamka ?? "",
     });
-  }, [row.pohoda_predkontacia, row.pohoda_clenenie_dph, row.category, row.kv_clenenie, row.stredisko, row.cinnost, row.pohoda_rad, row.int_poznamka]);
+  }, [
+    row.pohoda_predkontacia,
+    row.pohoda_clenenie_dph,
+    row.category,
+    row.kv_clenenie,
+    row.stredisko,
+    row.cinnost,
+    row.pohoda_rad,
+    row.int_poznamka,
+  ]);
 
   const odovzdana = Boolean(row.exported_at);
   const zauctovana = Boolean(row.zauctovane_at);
@@ -259,7 +283,8 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
   }
 
   async function doDokladov() {
-    if (!confirm("Presunúť túto faktúru medzi doklady (bločky)? Z prijatých faktúr zmizne.")) return;
+    if (!confirm("Presunúť túto faktúru medzi doklady (bločky)? Z prijatých faktúr zmizne."))
+      return;
     setBusy(true);
     try {
       const r = await presun({ data: { company_id: row.company_id, id: row.id } });
@@ -290,7 +315,10 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
         },
       });
       if (r.preskocene.length) toast.error(r.preskocene.join(" · "));
-      else toast.success(lenUlozit ? "Uložené" : "Zaúčtované — pôjde do Pohody pri najbližšom odovzdaní.");
+      else
+        toast.success(
+          lenUlozit ? "Uložené" : "Zaúčtované — pôjde do Pohody pri najbližšom odovzdaní.",
+        );
       onZmena();
     } catch (e: any) {
       toast.error(e?.message ?? "Nepodarilo sa");
@@ -336,30 +364,32 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
       <div className="mt-3">
         {odovzdana ? (
           <>
-          <p>
-            Predkontácia <strong>{row.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>
-            , členenie DPH <strong>{row.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
-            {Array.isArray(row.rozuctovanie) && row.rozuctovanie.length > 1
-              ? ` (rozúčtovaná na ${row.rozuctovanie.length} riadky)`
-              : ""}
-            . Faktúra je odovzdaná do Pohody.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              onClick={() => stiahniXml(false)}
-              disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-            >
-              <Download className="h-4 w-4" /> Stiahnuť XML znova
-            </button>
-            <button
-              onClick={vratit}
-              disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
-            >
-              <Undo2 className="h-4 w-4" /> Vrátiť z Pohody (opraviť)
-            </button>
-          </div>
+            <p>
+              Predkontácia{" "}
+              <strong>{row.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>,
+              členenie DPH{" "}
+              <strong>{row.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
+              {Array.isArray(row.rozuctovanie) && row.rozuctovanie.length > 1
+                ? ` (rozúčtovaná na ${row.rozuctovanie.length} riadky)`
+                : ""}
+              . Faktúra je odovzdaná do Pohody.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={() => stiahniXml(false)}
+                disabled={busy}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" /> Stiahnuť XML znova
+              </button>
+              <button
+                onClick={vratit}
+                disabled={busy}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+              >
+                <Undo2 className="h-4 w-4" /> Vrátiť z Pohody (opraviť)
+              </button>
+            </div>
           </>
         ) : (
           <>

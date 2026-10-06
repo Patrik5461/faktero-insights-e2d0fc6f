@@ -58,7 +58,7 @@ export function KodPohody({
           }
         >
           <option value="">
-            {placeholder && !/^(napr\.|—|nemeniť|predvolen)/.test(placeholder)
+            {placeholder && /^[\w.\-]{1,20}$/.test(placeholder) && placeholder !== "nemeniť"
               ? `predvolené: ${placeholder}`
               : placeholder === "nemeniť"
                 ? "nemeniť"
@@ -71,6 +71,7 @@ export function KodPohody({
             <option key={m.kod} value={m.kod}>
               {m.kod}
               {m.popis ? ` — ${m.popis}` : ""}
+              {m.ucty ? ` (${m.ucty})` : ""}
             </option>
           ))}
           <option value="__iny__">Iný kód…</option>

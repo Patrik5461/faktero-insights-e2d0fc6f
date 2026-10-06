@@ -180,7 +180,11 @@ function NovyDokladPage() {
   }
   async function obnovUlozeny() {
     if (!search.id) return;
-    const { data } = await supabase.from("expense_documents").select("*").eq("id", search.id).maybeSingle();
+    const { data } = await supabase
+      .from("expense_documents")
+      .select("*")
+      .eq("id", search.id)
+      .maybeSingle();
     if (data) setUlozeny(data);
   }
 
@@ -495,7 +499,8 @@ function NovyDokladPage() {
       if (spracovat && search.id) {
         const v = await stavFn({ data: { company_id: cid, ids: [search.id], stav: "processed" } });
         if (v.zmenene) stav = "processed";
-        else toast.warning("Doklad je uložený, ale bez sumy a dátumu sa nedá označiť ako spracovaný.");
+        else
+          toast.warning("Doklad je uložený, ale bez sumy a dátumu sa nedá označiť ako spracovaný.");
       }
       toast.success(
         stav === "processed" && spracovat
@@ -514,7 +519,12 @@ function NovyDokladPage() {
         to: "/doklady",
         search: {
           mesiac,
-          stav: stav === "processed" ? "spracovane" : stav === "exported" ? "odovzdane" : "nespracovane",
+          stav:
+            stav === "processed"
+              ? "spracovane"
+              : stav === "exported"
+                ? "odovzdane"
+                : "nespracovane",
         },
       });
     } catch (e: any) {
@@ -843,6 +853,7 @@ function NovyDokladPage() {
                         "predvolená z nastavení"
                       }
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      vyber
                     />
                   </label>
                   <label className="block">
@@ -905,7 +916,9 @@ function NovyDokladPage() {
                     />
                   </label>
                   <label className="block">
-                    <span className="mb-1 block text-xs text-muted-foreground">Číselný rad v Pohode</span>
+                    <span className="mb-1 block text-xs text-muted-foreground">
+                      Číselný rad v Pohode
+                    </span>
                     <KodPohody
                       ariaLabel="Číselný rad v Pohode"
                       value={form.pohoda_rad}
@@ -919,7 +932,9 @@ function NovyDokladPage() {
                 </div>
                 {form.payment_method === "hotovost" && (kody?.pokladne?.length ?? 0) > 0 && (
                   <label className="mt-3 block sm:max-w-xs">
-                    <span className="mb-1 block text-xs text-muted-foreground">Pokladňa v Pohode</span>
+                    <span className="mb-1 block text-xs text-muted-foreground">
+                      Pokladňa v Pohode
+                    </span>
                     <KodPohody
                       ariaLabel="Pokladňa v Pohode"
                       value={form.pohoda_pokladna}
@@ -932,7 +947,11 @@ function NovyDokladPage() {
                   </label>
                 )}
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <JobPicker value={form.job_id} onChange={(v) => updateForm("job_id", v)} label="Zákazka" />
+                  <JobPicker
+                    value={form.job_id}
+                    onChange={(v) => updateForm("job_id", v)}
+                    label="Zákazka"
+                  />
                   <label className="block">
                     <span className="mb-1 block text-xs text-muted-foreground">
                       Interná poznámka pre účtovníka
@@ -961,7 +980,8 @@ function NovyDokladPage() {
                     ulozene={ulozeny.rozuctovanie}
                     navrhy={kody}
                     kody={{
-                      predkontacia: form.pohoda_predkontacia || kody?.predvolenaPredkontacia || null,
+                      predkontacia:
+                        form.pohoda_predkontacia || kody?.predvolenaPredkontacia || null,
                       clenenie: form.pohoda_clenenie_dph || kody?.predvoleneClenenie || null,
                     }}
                     zamknute={!!ulozeny.exported_at}
@@ -982,7 +1002,10 @@ function NovyDokladPage() {
                       aria-label="Vložiť preddefinovanú poznámku"
                       onChange={(e) => {
                         if (e.target.value)
-                          updateForm("note", form.note ? `${form.note}\n${e.target.value}` : e.target.value);
+                          updateForm(
+                            "note",
+                            form.note ? `${form.note}\n${e.target.value}` : e.target.value,
+                          );
                       }}
                       className="rounded-md border border-input bg-background px-2 py-0.5 text-xs"
                     >
@@ -999,7 +1022,9 @@ function NovyDokladPage() {
                       type="button"
                       onClick={async () => {
                         if (!cid) return;
-                        const r = await sablonyFn({ data: { company_id: cid, pridat: form.note.trim() } });
+                        const r = await sablonyFn({
+                          data: { company_id: cid, pridat: form.note.trim() },
+                        });
                         setSablony(r.zoznam);
                         toast.success("Poznámka uložená medzi preddefinované");
                       }}
