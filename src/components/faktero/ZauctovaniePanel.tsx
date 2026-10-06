@@ -362,7 +362,7 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
                   Zrušiť zaúčtovanie
                 </button>
               )}
-              {!row.samofakturacia && row.type === "regular" && (
+              {!row.samofakturacia && row.type === "regular" && row.source !== "efaktura" && (
                 <button
                   onClick={doDokladov}
                   disabled={busy}
