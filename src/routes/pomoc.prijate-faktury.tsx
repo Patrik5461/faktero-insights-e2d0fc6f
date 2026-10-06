@@ -290,6 +290,19 @@ const sections: HelpSection[] = [
           Pohody ide faktúra s hlavičkou „Rozúčtovať“ a s položkami, z ktorých každá nesie svoje
           kódy. Rovnako sa dá rozúčtovať aj bloček (Doklady → otvoriť doklad → Zaúčtovanie).
         </p>
+        <p>
+          <strong>Stiahnuť hneď:</strong> zaúčtovaná faktúra má tlačidlo <em>Stiahnuť XML pre Pohodu</em>{" "}
+          (v zozname aj hromadne pre označené). Faktúra sa tým označí ako odovzdaná, aby ju konektor
+          neposlal druhýkrát.
+        </p>
+        <p>
+          <strong>Zle zaúčtované alebo zatriedené:</strong> odovzdanú faktúru vrátite tlačidlom{" "}
+          <em>Vrátiť z Pohody (opraviť)</em> — zaúčtovanie sa zruší a po oprave pôjde znova; v Pohode
+          ju predtým zmažte, inak tam bude dvakrát. Bloček zaradený medzi faktúry presuniete späť
+          tlačidlom <em>Presunúť medzi doklady</em> (aj s prílohou a úhradou z účtu). Odovzdaný bloček
+          sa vracia v úprave dokladu, rovnako tlačidlom <em>Vrátiť z Pohody</em>. Dátum dodania (deň
+          daňového plnenia) je vo formulári hneď pri dátume vystavenia — rozhoduje o období DPH.
+        </p>
       </>
     ),
   },

@@ -10,7 +10,7 @@ import {
 } from "@/lib/faktero/tatrabanka.functions";
 import type { SucetMeny } from "@/lib/faktero/bank-sumy";
 import { toast } from "sonner";
-import { ArrowLeft, RefreshCw, Link2, Unlink } from "lucide-react";
+import { RefreshCw, Link2, Unlink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { zrusParovanie } from "@/lib/faktero/parovanie.functions";
 import { usePagedLogs } from "@/hooks/usePagedLogs";
@@ -192,14 +192,6 @@ function TxPage() {
       <PageHeader
         title="Bankové transakcie"
         description="Posledných 90 dní z Tatra banky."
-        action={
-          <Link
-            to="/bankove-ucty"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         <LogsToolbar

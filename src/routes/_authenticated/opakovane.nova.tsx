@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
-import { ArrowLeft, CreditCard, FileText, Package, Plus, Repeat, Trash2 } from "lucide-react";
+import { CreditCard, FileText, Package, Plus, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CustomerSearch } from "@/components/faktero/OdberatelPicker";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
@@ -173,14 +173,6 @@ function NewRecurring() {
       <PageHeader
         title="Nová opakovaná faktúra"
         description="Šablóna, podľa ktorej bude Faktero pravidelne vystavovať faktúry."
-        action={
-          <Link
-            to="/opakovane"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         <form onSubmit={submit} className="mx-auto max-w-6xl space-y-6">

@@ -1,8 +1,13 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { BookCheck, Loader2 } from "lucide-react";
+import { BookCheck, Download, Loader2, MoveRight, Undo2 } from "lucide-react";
+import {
+  exportPrijatychPohodaFn,
+  presunPrijatuDoDokladovFn,
+  vratZPohodyFn,
+} from "@/lib/faktero/vratenie.functions";
 import { navrhyKodovFn, zauctujPrijateFn, zrusZauctovanieFn } from "@/lib/faktero/zauctovanie.functions";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import type { MoznostKodu } from "@/lib/faktero/predkontacie";
@@ -137,6 +142,60 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
 
   const odovzdana = Boolean(row.exported_at);
   const zauctovana = Boolean(row.zauctovane_at);
+  const exportuj = useServerFn(exportPrijatychPohodaFn);
+  const vrat = useServerFn(vratZPohodyFn);
+  const presun = useServerFn(presunPrijatuDoDokladovFn);
+  const navigate = useNavigate();
+
+  async function stiahniXml(oznacit: boolean) {
+    setBusy(true);
+    try {
+      const r = await exportuj({ data: { company_id: row.company_id, ids: [row.id], oznacit } });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([r.xml], { type: "text/xml;charset=utf-8" }));
+      a.download = r.fileName;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      toast.success(oznacit ? "XML stiahnuté, faktúra je označená ako odovzdaná" : "XML stiahnuté");
+      onZmena();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function vratit() {
+    if (
+      !confirm(
+        "Vrátiť faktúru z Pohody? Zaúčtovanie sa zruší a pri ďalšom odovzdaní pôjde znova — v Pohode ju preto najprv zmažte, inak tam bude dvakrát.",
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      await vrat({ data: { company_id: row.company_id, druh: "prijata", ids: [row.id] } });
+      toast.success("Vrátené — opravte zaúčtovanie a zaúčtujte znova");
+      onZmena();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doDokladov() {
+    if (!confirm("Presunúť túto faktúru medzi doklady (bločky)? Z prijatých faktúr zmizne.")) return;
+    setBusy(true);
+    try {
+      const r = await presun({ data: { company_id: row.company_id, id: row.id } });
+      toast.success("Presunuté medzi doklady");
+      navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+      setBusy(false);
+    }
+  }
 
   async function uloz(lenUlozit: boolean) {
     setBusy(true);
@@ -198,14 +257,32 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
 
       <div className="mt-3">
         {odovzdana ? (
+          <>
           <p>
             Predkontácia <strong>{row.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>
             , členenie DPH <strong>{row.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
             {Array.isArray(row.rozuctovanie) && row.rozuctovanie.length > 1
               ? ` (rozúčtovaná na ${row.rozuctovanie.length} riadky)`
               : ""}
-            . Faktúra je v Pohode — zmeny robte tam.
+            . Faktúra je odovzdaná do Pohody.
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => stiahniXml(false)}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" /> Stiahnuť XML znova
+            </button>
+            <button
+              onClick={vratit}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
+            >
+              <Undo2 className="h-4 w-4" /> Vrátiť z Pohody (opraviť)
+            </button>
+          </div>
+          </>
         ) : (
           <>
             <PoliaZauctovania
@@ -268,11 +345,31 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
               </button>
               {zauctovana && (
                 <button
+                  onClick={() => stiahniXml(true)}
+                  disabled={busy}
+                  title="Stiahne XML na import do Pohody a označí faktúru ako odovzdanú, aby ju konektor neposlal druhýkrát."
+                  className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+                >
+                  <Download className="h-4 w-4" /> Stiahnuť XML pre Pohodu
+                </button>
+              )}
+              {zauctovana && (
+                <button
                   onClick={zrusit}
                   disabled={busy}
                   className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary disabled:opacity-50"
                 >
                   Zrušiť zaúčtovanie
+                </button>
+              )}
+              {!row.samofakturacia && row.type === "regular" && (
+                <button
+                  onClick={doDokladov}
+                  disabled={busy}
+                  title="Zle zatriedené — je to bloček, nie faktúra"
+                  className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-secondary disabled:opacity-50"
+                >
+                  <MoveRight className="h-3.5 w-3.5" /> Presunúť medzi doklady
                 </button>
               )}
             </div>

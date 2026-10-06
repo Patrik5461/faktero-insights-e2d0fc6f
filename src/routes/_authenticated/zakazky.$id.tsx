@@ -8,7 +8,7 @@ import { deleteJob, getJob, setJobStatus, updateJob } from "@/lib/faktero/jobs.f
 import { STAV_ZAKAZKY_POPIS, nakladZJazdy, type StavZakazky } from "@/lib/faktero/zakazky";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { pohybNazov } from "@/lib/faktero/stock-pohyb";
-import { ArrowLeft, Lock, Unlock, Pencil, Trash2 } from "lucide-react";
+import { Lock, Unlock, Pencil, Trash2 } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/zakazky/$id")({
@@ -167,12 +167,6 @@ function JobDetail() {
           .join(" · ")}
         action={
           <div className="flex flex-wrap gap-2">
-            <Link
-              to="/zakazky"
-              className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
-            >
-              <ArrowLeft className="h-4 w-4" /> Späť
-            </Link>
             {otvorena && (
               <>
                 <button

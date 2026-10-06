@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle2, Loader2, Send } from "lucide-react";
+import { CheckCircle2, Loader2, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import {
@@ -104,14 +104,6 @@ function DetailPoziadavky() {
       <PageHeader
         title={p ? `${cisloPoziadavky(p.cislo)} · ${p.predmet}` : "Požiadavka"}
         help="/pomoc/podpora"
-        action={
-          <Link
-            to="/podpora"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         {p === undefined ? (

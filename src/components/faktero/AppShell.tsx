@@ -1,4 +1,4 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState, useNavigate } from "@tanstack/react-router";
 import { Logo } from "@/components/faktero/Logo";
 import {
   LayoutDashboard,
@@ -31,6 +31,7 @@ import {
   Route,
   IdCard,
   Send,
+  ArrowLeft,
 } from "lucide-react";
 import {
   MANUALY,
@@ -769,6 +770,31 @@ export function PageHeader({
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const manual = help === false ? null : (help ?? manualPre(pathname));
+  const router = useRouter();
+  const navigate = useNavigate();
+  const podstranka = pathname.replace(/\/+$/, "").split("/").filter(Boolean).length > 1;
+
+  /*
+    Späť tam, odkiaľ človek prišiel. Keď stránku otvoril priamo (odkaz z
+    mailu, obnovenie), história v aplikácii nie je — vtedy o úroveň vyššie, na
+    prvú nadradenú cestu, ktorá ako stránka existuje.
+  */
+  function spat() {
+    if (router.history.canGoBack()) {
+      router.history.back();
+      return;
+    }
+    const casti = pathname.replace(/\/+$/, "").split("/").filter(Boolean);
+    const trasy = router.routesByPath as unknown as Record<string, unknown>;
+    for (let i = casti.length - 1; i > 0; i--) {
+      const cesta = "/" + casti.slice(0, i).join("/");
+      if (trasy[cesta] || trasy[cesta + "/"]) {
+        navigate({ to: cesta as never });
+        return;
+      }
+    }
+    navigate({ to: "/dashboard" as never });
+  }
 
   return (
     /*
@@ -781,6 +807,18 @@ export function PageHeader({
     <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-6 lg:grid lg:grid-cols-[minmax(20rem,1fr)_minmax(0,auto)] lg:items-end lg:gap-4 lg:px-6">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
+          {podstranka && (
+            <button
+              type="button"
+              onClick={spat}
+              title="Späť"
+              aria-label="Späť"
+              className="-ml-1 inline-flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Späť</span>
+            </button>
+          )}
           <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
           {manual && (
             <a

@@ -16,7 +16,7 @@ import { suctyObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { VyberRadu } from "@/components/faktero/VyberRadu";
 import { vatRateOptions, zakladnaSadzba } from "@/lib/faktero/vat-rates";
 import { JobPicker } from "@/components/faktero/JobPicker";
-import { ArrowLeft, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Plus, Sparkles, Trash2 } from "lucide-react";
 import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
 
 import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
@@ -192,14 +192,6 @@ function NewPurchaseOrder() {
       <PageHeader
         title="Nová objednávka u dodávateľa"
         description="Objednávka sa uloží ako rozpracovaná. Do návrhu doobjednania sa započíta až po odoslaní."
-        action={
-          <Link
-            to="/sklad/objednavky"
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         <form onSubmit={uloz} className="space-y-4">

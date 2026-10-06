@@ -27,7 +27,6 @@ import {
 import { toast } from "sonner";
 import {
   Building2,
-  ArrowLeft,
   ExternalLink,
   Wallet,
   Download,
@@ -73,14 +72,6 @@ function ConnectPage() {
       <PageHeader
         title="Pripojiť banku"
         description="Tatra banka, Wise, Wallester a Revolut Business. Všetky iba na čítanie."
-        action={
-          <Link
-            to="/bankove-ucty"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         {/* Dva a dva vedľa seba: štyri panely pod sebou pôsobili rozhádzane. */}

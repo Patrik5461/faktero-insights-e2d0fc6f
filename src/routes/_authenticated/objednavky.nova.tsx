@@ -11,7 +11,7 @@ import { getPriceContext } from "@/lib/faktero/ceny.functions";
 import { cenaZPodkladov, type Podklady } from "@/lib/faktero/ceny";
 import { suctyObjednavky } from "@/lib/faktero/objednavky-odberatel";
 import { DEFAULT_VAT_RATE } from "@/lib/faktero/vat-rates";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { formatovacMeny, KROK_CENY } from "@/lib/faktero/mena";
 
 import { useRezimDph } from "@/lib/faktero/krajina-firmy";
@@ -273,14 +273,6 @@ function NewOrder() {
       <PageHeader
         title={id ? "Upraviť objednávku" : "Nová prijatá objednávka"}
         description="Číslo pridelí Faktero. Objednávku vybavíte faktúrou — aj po častiach."
-        action={
-          <Link
-            to="/objednavky"
-            className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         <form onSubmit={odosli} className="space-y-4">

@@ -20,7 +20,6 @@ import {
 import { toast } from "sonner";
 import { uhradyPrijatych, zrusParovaniePrijatej } from "@/lib/faktero/prijata-parovanie.functions";
 import {
-  ArrowLeft,
   Download,
   CheckCircle2,
   Ban,
@@ -369,12 +368,6 @@ function PurchaseInvoiceDetail() {
             >
               <Trash2 className="h-4 w-4" /> Vymazať
             </button>
-            <Link
-              to="/prijate-faktury"
-              className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
-            >
-              <ArrowLeft className="h-4 w-4" /> Späť
-            </Link>
           </div>
         }
       />
@@ -411,6 +404,10 @@ function PurchaseInvoiceDetail() {
               <div>
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Dátumy</div>
                 <Row label="Vystavenie" value={row.issue_date} />
+                <Row
+                  label="Dodanie (daňové plnenie)"
+                  value={row.delivery_date || `${row.issue_date} (ako vystavenie)`}
+                />
                 <Row label="Prijatie" value={row.received_date} />
                 <Row label="Splatnosť" value={popisSplatnosti(row)} />
                 {row.payment_date && <Row label="Úhrada" value={row.payment_date} />}

@@ -17,7 +17,7 @@ import {
   zostavaVybavit,
   type StavPrijatejObjednavky,
 } from "@/lib/faktero/objednavky-odberatel";
-import { ArrowLeft, FileText, Pencil, Trash2, Ban, Check } from "lucide-react";
+import { FileText, Pencil, Trash2, Ban, Check } from "lucide-react";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
@@ -125,12 +125,6 @@ function OrderDetail() {
         }
         action={
           <div className="flex flex-wrap gap-2">
-            <Link
-              to="/objednavky"
-              className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
-            >
-              <ArrowLeft className="h-4 w-4" /> Späť
-            </Link>
             {stav !== "completed" && stav !== "cancelled" && (
               <Link
                 to="/objednavky/nova"

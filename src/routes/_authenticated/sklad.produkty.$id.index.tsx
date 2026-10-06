@@ -8,7 +8,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { getProductStockDetail, recomputeStockAvgCost } from "@/lib/faktero/stock.functions";
 import { useStockPermissions } from "@/hooks/useStockPermissions";
 import { ReservationsPanel } from "@/components/faktero/ReservationsPanel";
-import { ArrowLeft, Download, FileText, Package, Pencil, Warehouse, RefreshCw } from "lucide-react";
+import { Download, FileText, Package, Pencil, Warehouse, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/sklad/produkty/$id/")({
@@ -111,12 +111,6 @@ function ProductStockDetail() {
         description={`SKU ${si?.sku ?? p.code ?? "—"}`}
         action={
           <div className="flex flex-wrap gap-2">
-            <Link
-              to="/sklad/produkty"
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
-            >
-              <ArrowLeft className="h-4 w-4" /> Späť
-            </Link>
             {canManage && (
               <Link
                 to="/sklad/produkty/$id/upravit"

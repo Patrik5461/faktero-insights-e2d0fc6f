@@ -3,6 +3,7 @@ import { KodPohody } from "@/components/faktero/KodPohody";
 import { RozuctovaniePanel } from "@/components/faktero/RozuctovaniePanel";
 import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
+import { vratZPohodyFn } from "@/lib/faktero/vratenie.functions";
 import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
 import { KV_PRIJATE } from "@/lib/faktero/kv-clenenie";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
@@ -134,6 +135,24 @@ function NovyDokladPage() {
       .then(setKody)
       .catch(() => {});
   }, [cid, nacitajKody]);
+  const vratFn = useServerFn(vratZPohodyFn);
+  async function vratZPohody() {
+    if (!cid || !search.id) return;
+    if (
+      !confirm(
+        "Vrátiť doklad z Pohody? Pôjde späť medzi nespracované a pri ďalšom odovzdaní znova — v Pohode ho preto najprv zmažte, inak tam bude dvakrát.",
+      )
+    )
+      return;
+    try {
+      await vratFn({ data: { company_id: cid, druh: "doklad", ids: [search.id] } });
+      toast.success("Vrátené medzi nespracované — opravte a spracujte znova");
+      setStavDokladu("new");
+      await obnovUlozeny();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    }
+  }
   async function obnovUlozeny() {
     if (!search.id) return;
     const { data } = await supabase.from("expense_documents").select("*").eq("id", search.id).maybeSingle();
@@ -753,6 +772,18 @@ function NovyDokladPage() {
                 <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Zaúčtovanie (Pohoda)
                 </div>
+                {ulozeny?.exported_at && (
+                  <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900">
+                    Doklad je odovzdaný do Pohody — zmeny sa tam už neprenesú.
+                    <button
+                      type="button"
+                      onClick={vratZPohody}
+                      className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-amber-400 bg-white px-2 py-1 text-xs font-medium hover:bg-amber-100"
+                    >
+                      Vrátiť z Pohody (opraviť)
+                    </button>
+                  </div>
+                )}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="block">
                     <span className="mb-1 block text-xs text-muted-foreground">Predkontácia</span>

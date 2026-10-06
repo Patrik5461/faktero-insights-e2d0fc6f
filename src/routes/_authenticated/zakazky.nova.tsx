@@ -89,14 +89,6 @@ function NewJob() {
       <PageHeader
         title="Nová zákazka"
         description="Číslo pridelí Faktero. Plán je nepovinný — slúži na porovnanie so skutočnosťou."
-        action={
-          <Link
-            to="/zakazky"
-            className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         <form onSubmit={ulozit} className="max-w-2xl space-y-4">

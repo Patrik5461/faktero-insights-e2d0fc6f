@@ -12,7 +12,7 @@ import {
   sendPurchaseOrder,
 } from "@/lib/faktero/purchase-orders.functions";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
-import { ArrowLeft, PackageCheck, Send, Trash2, X } from "lucide-react";
+import { PackageCheck, Send, Trash2, X } from "lucide-react";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
 export const Route = createFileRoute("/_authenticated/sklad/objednavky/$id")({
@@ -117,14 +117,6 @@ function PurchaseOrderDetail() {
       <PageHeader
         title={`Objednávka ${o.order_number}`}
         description={`${o.supplier_name ?? "Bez dodávateľa"} · ${STAV_POPIS[stav] ?? stav}`}
-        action={
-          <Link
-            to="/sklad/objednavky"
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-sm hover:bg-secondary"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         <div className="space-y-4">

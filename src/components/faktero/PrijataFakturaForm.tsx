@@ -486,6 +486,19 @@ export function PrijataFakturaForm({
                   className="input"
                 />
               </Field>
+              {/* Dátum dodania = deň daňového plnenia: rozhoduje o období DPH
+                  a ide do kontrolného výkazu aj do Pohody (dateTax). */}
+              <Field label="Dátum dodania (daňového plnenia)">
+                <input
+                  type="date"
+                  value={form.delivery_date}
+                  onChange={(e) => set("delivery_date", e.target.value)}
+                  className="input"
+                />
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Rozhoduje o období DPH. Prázdne = dátum vystavenia.
+                </span>
+              </Field>
               <Field label="Dátum prijatia">
                 <input
                   type="date"
@@ -602,17 +615,6 @@ export function PrijataFakturaForm({
               onChange={(v) => set("job_id", v)}
               label="Zákazka (náklad sa započíta do jej vyhodnotenia)"
             />
-            <Field label="Dátum dodania (pre kontrolný výkaz)">
-              <input
-                type="date"
-                value={form.delivery_date}
-                onChange={(e) => set("delivery_date", e.target.value)}
-                className="input"
-              />
-              <span className="mt-1 block text-xs text-muted-foreground">
-                Keď ostane prázdny, do výkazu ide dátum vystavenia.
-              </span>
-            </Field>
             <Field label="Režim DPH">
               <select
                 value={form.dph_rezim}

@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   Satellite,
   Link2,
   RefreshCcw,
@@ -238,14 +237,6 @@ function CommanderPage() {
       <PageHeader
         title="Commander GPS"
         description="Automatický import jázd z Commander GPS."
-        action={
-          <Link
-            to="/jazdy/integracie"
-            className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-muted"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         {(state.credentials_invalid || conn?.credentials_invalid || needsReauth) && (

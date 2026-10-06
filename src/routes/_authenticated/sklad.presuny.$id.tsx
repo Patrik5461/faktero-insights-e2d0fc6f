@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getTransferDetail, completeTransfer, cancelTransfer } from "@/lib/faktero/stock.functions";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRightLeft, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, XCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sklad/presuny/$id")({
   head: () => ({ meta: [{ title: "Detail presunu — Faktero" }] }),
@@ -133,14 +133,6 @@ function TransferDetailPage() {
       <PageHeader
         title={`Presun ${transfer.id.slice(0, 8)}`}
         description={`Vytvorený ${new Date(transfer.created_at).toLocaleString("sk-SK")}`}
-        action={
-          <Link
-            to="/sklad/presuny"
-            className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         <div className="mx-auto max-w-4xl space-y-5">

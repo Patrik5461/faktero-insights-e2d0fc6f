@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Upload, ArrowLeft, FileText } from "lucide-react";
+import { Upload, FileText } from "lucide-react";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { supabase } from "@/integrations/supabase/client";
@@ -95,14 +95,6 @@ function ImportVypisuPage() {
       <PageHeader
         title="Nahrať bankový výpis"
         description="Pre banky, ktoré Faktero nepripojí priamo. Pohyby sa potom párujú rovnako ako tie načítané automaticky."
-        action={
-          <Link
-            to="/bankove-ucty"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm hover:bg-secondary"
-          >
-            <ArrowLeft className="h-4 w-4" /> Späť
-          </Link>
-        }
       />
       <PageBody>
         <div className="mx-auto max-w-2xl space-y-4">

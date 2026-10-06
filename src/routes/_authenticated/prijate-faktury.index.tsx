@@ -19,6 +19,7 @@ import {
   X,
   Upload,
   BookCheck,
+  Download,
 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
@@ -35,6 +36,7 @@ import { NahratDoklad } from "@/components/faktero/NahratDoklad";
 import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
+import { exportPrijatychPohodaFn } from "@/lib/faktero/vratenie.functions";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { NAZVY_STAVOV, stavSamofaktury, zapocitatelna } from "@/lib/faktero/samofakturacia";
 
@@ -171,6 +173,7 @@ function PurchaseInvoicesPage() {
       "Dodávateľ",
       "IČO",
       "Vystavená",
+      "Dodanie (DUZP)",
       "Splatnosť",
       "Suma",
       "Mena",
@@ -183,6 +186,7 @@ function PurchaseInvoicesPage() {
         r.supplier_name,
         r.supplier_ico ?? "",
         r.issue_date,
+        r.delivery_date || r.issue_date,
         r.due_date,
         Number(r.amount_total ?? 0).toFixed(2),
         r.currency ?? "EUR",
@@ -263,6 +267,28 @@ function PurchaseInvoicesPage() {
     setKody({ predkontacia: "", clenenie: "", kategoria: "" });
     setZauctovanie(true);
     if (!kodyNavrhy) nacitajKody({ data: { company_id: cid } }).then(setKodyNavrhy).catch(() => {});
+  }
+
+  const exportujXml = useServerFn(exportPrijatychPohodaFn);
+  async function hromadneXml() {
+    const cid = getActiveCompanyId();
+    if (!cid || !selected.size) return;
+    setHromadneBusy(true);
+    try {
+      const r = await exportujXml({ data: { company_id: cid, ids: [...selected], oznacit: true } });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([r.xml], { type: "text/xml;charset=utf-8" }));
+      a.download = r.fileName;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      if (r.preskocene.length) toast.warning(`Vynechané: ${r.preskocene.join(" · ")}`);
+      else toast.success(`XML pre Pohodu: ${r.pocet} faktúr, označené ako odovzdané`);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    } finally {
+      setHromadneBusy(false);
+    }
   }
 
   async function hromadneZauctovat() {
@@ -525,6 +551,14 @@ function PurchaseInvoicesPage() {
               <BookCheck className="h-3.5 w-3.5" /> Zaúčtovať
             </button>
             <button
+              onClick={hromadneXml}
+              disabled={hromadneBusy}
+              title="Zaúčtované faktúry ako XML pre Pohodu; označia sa ako odovzdané"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+            >
+              <Download className="h-3.5 w-3.5" /> XML pre Pohodu
+            </button>
+            <button
               onClick={() => setMazanie(true)}
               disabled={hromadneBusy}
               className="inline-flex items-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
@@ -651,7 +685,14 @@ function PurchaseInvoicesPage() {
                   <td className="p-3 tabular-nums text-muted-foreground">
                     {r.variable_symbol || "—"}
                   </td>
-                  <td className="p-3">{r.issue_date}</td>
+                  <td className="p-3">
+                    {r.issue_date}
+                    {r.delivery_date && r.delivery_date !== r.issue_date ? (
+                      <div className="text-xs text-muted-foreground" title="Dátum dodania (daňového plnenia)">
+                        DUZP {r.delivery_date}
+                      </div>
+                    ) : null}
+                  </td>
                   <td className="p-3">
                     {r.due_date}
                     {r.povodna_splatnost && r.povodna_splatnost !== r.due_date && (
