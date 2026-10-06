@@ -1,5 +1,6 @@
 import {
   nacitajUrovne,
+  rozvinUrovne,
   vyberCestu,
   type AgendaSchvalovania,
   type Cesta,
@@ -54,13 +55,19 @@ export async function zabezpecSchvalovanie(
   const [{ data: doklady }, { data: existujuce }, { data: cesty }] = await Promise.all([
     admin
       .from(t.tabulka)
-      .select(`id, created_at, ${t.ico}, ${t.suma}, pohoda_predkontacia${agenda === "vystavena" ? ", status" : ""}`)
+      .select(`id, created_at, job_id, ${t.ico}, ${t.suma}, pohoda_predkontacia${agenda === "vystavena" ? ", status" : ""}`)
       .eq("company_id", companyId)
       .in("id", ids),
     admin.from("schvalovanie").select("doklad_id").eq("agenda", agenda).in("doklad_id", ids),
     admin.from("schvalovacie_cesty").select("*").eq("company_id", companyId),
   ]);
   const uz = new Set((existujuce ?? []).map((r: any) => r.doklad_id));
+  // Manažéri zákaziek pre „manažér zákazky" v ceste.
+  const jobIds = [...new Set((doklady ?? []).map((d: any) => d.job_id).filter(Boolean))];
+  const { data: zakazky } = jobIds.length
+    ? await admin.from("jobs").select("id, manazer_id").in("id", jobIds)
+    : { data: [] };
+  const manazer = new Map((zakazky ?? []).map((j: any) => [j.id, j.manazer_id]));
   const vsetkyCesty: Cesta[] = (cesty ?? []).map((c: any) => ({ ...c, urovne: nacitajUrovne(c.urovne) }));
   const nove = (doklady ?? []).filter(
     (d: any) =>
@@ -84,7 +91,7 @@ export async function zabezpecSchvalovanie(
         agenda,
         doklad_id: d.id,
         cesta_id: cesta?.id ?? null,
-        urovne: cesta?.urovne ?? [],
+        urovne: rozvinUrovne(cesta?.urovne ?? [], manazer.get(d.job_id) as string | undefined),
         schvalena_uroven: auto ? Math.max(1, cesta?.urovne.length ?? 1) : 0,
         stav: auto ? "schvaleny" : "caka",
       })

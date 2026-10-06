@@ -56,3 +56,12 @@ describe("schvaľovanie po úrovniach", () => {
     expect(odznak({ urovne: [], schvalena_uroven: 0, stav: "caka" })).toBe("0/1");
   });
 });
+
+describe("manažér zákazky v ceste", () => {
+  it("nahradí sa skutočným manažérom, bez neho úroveň vypadne", async () => {
+    const { rozvinUrovne } = await import("./schvalovanie");
+    expect(rozvinUrovne([["manazer"], ["u2"]], "m1")).toEqual([["m1"], ["u2"]]);
+    expect(rozvinUrovne([["manazer"], ["u2"]], null)).toEqual([["u2"]]);
+    expect(rozvinUrovne([["manazer", "u1"]], "u1")).toEqual([["u1"]]);
+  });
+});

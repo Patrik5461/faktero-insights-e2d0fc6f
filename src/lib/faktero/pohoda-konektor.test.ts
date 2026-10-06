@@ -717,8 +717,15 @@ describe("balíček pre viac firiem", () => {
   */
   it("dávkový súbor číta zoznam firiem v cykle", () => {
     expect(cmd).toContain("firmy.txt");
-    expect(cmd).toMatch(/for \/f "usebackq eol=# tokens=1,2,\* delims=;"/);
+    expect(cmd).toMatch(/for \/f "usebackq eol=# tokens=1,2,3,4 delims=;"/);
     expect(cmd).toContain("call :firma");
+  });
+
+  it("na prelome rokov prenáša minulý rok do vlastnej databázy, inak všetko naraz", () => {
+    expect(cmd).toContain('set "PRELOM=%%d"');
+    expect(cmd).toContain('set "URL=%URL%?cast=%CAST%"');
+    expect(cmd).toContain("echo database=%DB%");
+    expect(cmd.indexOf('set "CAST=prelom"')).toBeLessThan(cmd.indexOf('set "CAST=bezny"'));
   });
 
   it("zoznam píše tri hodnoty oddelené bodkočiarkou a poznámky mriežkou", () => {

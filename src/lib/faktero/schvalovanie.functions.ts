@@ -98,7 +98,10 @@ export const ulozCestuFn = createServerFn({ method: "POST" })
         company_id: z.string().uuid(),
         id: z.string().uuid().optional().nullable(),
         nazov: z.string().trim().min(1).max(80),
-        urovne: z.array(z.array(z.string().uuid()).min(1).max(20)).min(1).max(15),
+        urovne: z
+          .array(z.array(z.union([z.string().uuid(), z.literal("manazer")])).min(1).max(20))
+          .min(1)
+          .max(15),
         podmienky: z.object({
           agenda: z.union([Agenda, z.literal("")]).optional(),
           ico: z.string().max(20).optional(),
@@ -120,7 +123,8 @@ export const ulozCestuFn = createServerFn({ method: "POST" })
     const a = await admin();
     const { data: clenovia } = await a.from("company_users").select("user_id").eq("company_id", data.company_id);
     const povoleni = new Set((clenovia ?? []).map((r: any) => r.user_id));
-    if (vsetci.some((u) => !povoleni.has(u))) throw new Error("Schvaľovateľ musí byť členom firmy.");
+    if (vsetci.some((u) => u !== "manazer" && !povoleni.has(u)))
+      throw new Error("Schvaľovateľ musí byť členom firmy.");
     const riadok = {
       company_id: data.company_id,
       nazov: data.nazov,
@@ -317,9 +321,16 @@ export const priraditCestuFn = createServerFn({ method: "POST" })
     const rola = await rolaVoFirme(context.supabase, data.company_id, context.userId);
     if (!["owner", "admin", "accountant"].includes(String(rola))) throw new Error("Cestu prideľuje majiteľ, správca alebo účtovník.");
     const a = await admin();
-    const { data: c } = data.cesta_id
+    const { data: c0 } = data.cesta_id
       ? await a.from("schvalovacie_cesty").select("id, urovne").eq("id", data.cesta_id).eq("company_id", data.company_id).maybeSingle()
       : { data: null };
+    const { tabulkaAgendy } = await import("./schvalovanie.server");
+    const { rozvinUrovne, nacitajUrovne } = await import("./schvalovanie");
+    const { data: dok } = await a.from(tabulkaAgendy(data.agenda).tabulka).select("job_id").eq("id", data.id).maybeSingle();
+    const { data: zak } = dok?.job_id
+      ? await a.from("jobs").select("manazer_id").eq("id", dok.job_id).maybeSingle()
+      : { data: null };
+    const c = c0 ? { ...c0, urovne: rozvinUrovne(nacitajUrovne(c0.urovne), zak?.manazer_id) } : null;
     const { data: r } = await a
       .from("schvalovanie")
       .upsert(

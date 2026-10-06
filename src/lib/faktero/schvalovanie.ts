@@ -13,6 +13,20 @@ export type AgendaSchvalovania = "doklad" | "prijata" | "vystavena";
 export type StavSchvalovania = "caka" | "schvaleny" | "zamietnuty" | "vrateny";
 export type Urovne = string[][];
 
+/** Zástupca v ceste: manažér zákazky, na ktorú je doklad (projektový manažér). */
+export const MANAZER_ZAKAZKY = "manazer";
+
+/**
+ * Cesta pre konkrétny doklad: „manažér zákazky" sa nahradí skutočným
+ * manažérom; keď doklad zákazku s manažérom nemá, z úrovne vypadne a
+ * prázdna úroveň sa vynechá.
+ */
+export function rozvinUrovne(urovne: Urovne, manazerId: string | null | undefined): Urovne {
+  return urovne
+    .map((l) => [...new Set(l.flatMap((u) => (u === MANAZER_ZAKAZKY ? (manazerId ? [manazerId] : []) : [u])))])
+    .filter((l) => l.length > 0);
+}
+
 export const NAZVY_AGEND: Record<AgendaSchvalovania, string> = {
   doklad: "Bločky a doklady",
   prijata: "Prijaté faktúry",

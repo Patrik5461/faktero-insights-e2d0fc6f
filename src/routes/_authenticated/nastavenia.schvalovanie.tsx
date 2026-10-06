@@ -80,7 +80,8 @@ function Stranka() {
 
   const spravca = ["owner", "admin"].includes(d.mojaRola);
   const ludia: Clovek[] = d.ludia;
-  const meno = (id: string) => ludia.find((l) => l.id === id)?.meno ?? "používateľ";
+  const meno = (id: string) =>
+    id === "manazer" ? "manažér zákazky" : (ludia.find((l) => l.id === id)?.meno ?? "používateľ");
 
   async function ulozNastavenie() {
     setBusy(true);
@@ -253,7 +254,7 @@ function Stranka() {
                 <div key={i}>
                   <div className="text-xs text-muted-foreground">{i + 1}. úroveň — schvaľovatelia</div>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
-                    {ludia.map((l) => (
+                    {[...ludia, { id: "manazer", rola: "", meno: "manažér zákazky dokladu" }].map((l) => (
                       <label key={l.id} className="flex items-center gap-1.5 text-sm">
                         <input
                           type="checkbox"

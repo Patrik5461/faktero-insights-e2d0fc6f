@@ -7,6 +7,8 @@
  *   GET /api/v1/pohoda/davka           — dávka a zápis do histórie
  *   GET /api/v1/pohoda/davka?nahlad=1  — to isté, ale bez zápisu (na vyskúšanie)
  *   GET /api/v1/pohoda/davka?od=2026-01-01
+ *   GET /api/v1/pohoda/davka?cast=prelom   — len doklady minulých rokov (databáza minulého roka)
+ *   GET /api/v1/pohoda/davka?cast=bezny    — len tohtoročné doklady a číselníky
  *
  * `204` znamená, že nie je čo posielať — konektor vtedy Pohodu ani nespúšťa.
  */
@@ -28,6 +30,9 @@ export const Route = createFileRoute("/api/v1/pohoda/davka")({
         const url = new URL(request.url);
         const nahlad = url.searchParams.get("nahlad") === "1";
         const od = url.searchParams.get("od");
+        // Prelom rokov: konektor si dávku pýta zvlášť pre minulý a bežný rok.
+        const castParam = url.searchParams.get("cast");
+        const cast = castParam === "prelom" || castParam === "bezny" ? castParam : null;
         if (od && !/^\d{4}-\d{2}-\d{2}$/.test(od)) {
           return new Response("Parameter `od` musí byť dátum v tvare RRRR-MM-DD.", {
             status: 400,
@@ -42,6 +47,7 @@ export const Route = createFileRoute("/api/v1/pohoda/davka")({
             companyId: kluc.company_id,
             od,
             oznacit: !nahlad,
+            cast,
           });
 
           if (davka.prazdna) return new Response(null, { status: 204 });

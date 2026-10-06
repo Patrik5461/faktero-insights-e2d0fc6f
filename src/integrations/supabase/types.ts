@@ -4543,6 +4543,7 @@ export type Database = {
           start_date: string | null
           status: Database["public"]["Enums"]["job_status"]
           updated_at: string
+          manazer_id: string | null
         }
         Insert: {
           closed_at?: string | null
@@ -4561,6 +4562,7 @@ export type Database = {
           start_date?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           updated_at?: string
+          manazer_id?: string | null
         }
         Update: {
           closed_at?: string | null
@@ -4579,6 +4581,7 @@ export type Database = {
           start_date?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           updated_at?: string
+          manazer_id?: string | null
         }
         Relationships: [
           {

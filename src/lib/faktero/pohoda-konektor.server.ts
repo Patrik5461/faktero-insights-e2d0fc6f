@@ -161,8 +161,27 @@ export function zakladnaAdresa(): string {
  */
 export async function zostavDavku(
   supabase: Klient,
-  vstup: { companyId: string; od?: string | null; oznacit: boolean; dnes?: Date },
+  vstup: {
+    companyId: string;
+    od?: string | null;
+    oznacit: boolean;
+    dnes?: Date;
+    /**
+     * Prelom rokov: „prelom" = len doklady minulých rokov (do databázy
+     * minulého roka), „bezny" = len tohtoročné a číselníky. Bez neho všetko.
+     */
+    cast?: "prelom" | "bezny" | null;
+  },
 ): Promise<Davka> {
+  const rokTeraz = (vstup.dnes ?? new Date()).getFullYear();
+  const vCasti = <T,>(riadky: T[], pole: string): T[] =>
+    !vstup.cast
+      ? riadky
+      : riadky.filter((r: any) => {
+          const rok = Number(String(r?.[pole] ?? "").slice(0, 4));
+          return vstup.cast === "prelom" ? Boolean(rok) && rok < rokTeraz : !rok || rok >= rokTeraz;
+        });
+  const lenBezny = vstup.cast !== "prelom";
   const od = vstup.od || predvolenyZaciatok(vstup.dnes ?? new Date());
 
   const { data: company, error: cErr } = await supabase
@@ -195,14 +214,15 @@ export async function zostavDavku(
   const odovzdane = new Set((uzOdovzdane ?? []).map((r: Riadok) => r.invoice_id));
   // Schvaľovanie: do Pohody ide len schválené (doklady spred zapnutia áno).
   const { lenSchvalene } = await import("./schvalovanie.server");
-  const { ok: faktury } = await lenSchvalene(
+  const { ok: fakturySch } = await lenSchvalene(
     supabase,
     vstup.companyId,
     "vystavena",
     (vsetkyFaktury ?? []).filter((f: Riadok) => !odovzdane.has(f.id)),
   );
+  const faktury = vCasti(fakturySch, "issue_date");
 
-  const [{ data: dokladyNeschvalene }, { data: pokladnica }] = await Promise.all([
+  const [{ data: dokladyNeschvalene }, { data: pokladnicaVsetko }] = await Promise.all([
     supabase
       .from("expense_documents")
       .select("*")
@@ -241,31 +261,36 @@ export async function zostavDavku(
     .limit(STROP_DAVKY);
   const { zapocitatelna } = await import("./samofakturacia");
   const { prijataAkoDoklad } = await import("./prijate-do-pohody");
-  const { ok: doklady } = await lenSchvalene(supabase, vstup.companyId, "doklad", dokladyNeschvalene ?? []);
-  const { ok: prijate } = await lenSchvalene(
+  const { ok: dokladySch } = await lenSchvalene(supabase, vstup.companyId, "doklad", dokladyNeschvalene ?? []);
+  const doklady = vCasti(dokladySch, "issue_date");
+  const pokladnica = vCasti(pokladnicaVsetko ?? [], "entry_date");
+  const { ok: prijateSch } = await lenSchvalene(
     supabase,
     vstup.companyId,
     "prijata",
     (prijateRiadky ?? []).filter((p: Riadok) => zapocitatelna(p)),
   );
+  const prijate = vCasti(prijateSch, "issue_date");
 
   // Číselníky — len keď si ich firma zapla. Sklad navyše potrebuje členenie,
   // bez neho Pohoda kartu nezaloží, tak sa ani neposiela.
-  const zakaznici = company.pohoda_posielat_adresar
+  const zakaznici = lenBezny && company.pohoda_posielat_adresar
     ? await nacitajZakaznikov(supabase, vstup.companyId)
     : [];
   const zasoby =
-    company.pohoda_posielat_sklad && company.pohoda_sklad
+    lenBezny && company.pohoda_posielat_sklad && company.pohoda_sklad
       ? await nacitajZasoby(supabase, vstup.companyId)
       : [];
-  const { nove: zakazkyNove, kody: zakazky } = company.pohoda_posielat_zakazky
+  const { nove: zakazkyNoveVsetky, kody: zakazky } = company.pohoda_posielat_zakazky
     ? await nacitajZakazky(supabase, vstup.companyId, [...faktury, ...(doklady ?? []), ...prijate])
     : { nove: [], kody: {} };
+  // Nové zákazky a číselníky idú len do bežnej databázy.
+  const zakazkyNove = lenBezny ? zakazkyNoveVsetky : [];
 
   // Pohyby majú zmysel len vtedy, keď sú v Pohode karty — položka sa na kartu
   // odvoláva. Posielajú sa preto až tie, ktorých karta už odišla.
   const pohyby =
-    company.pohoda_posielat_pohyby && company.pohoda_posielat_sklad && company.pohoda_sklad
+    lenBezny && company.pohoda_posielat_pohyby && company.pohoda_posielat_sklad && company.pohoda_sklad
       ? await nacitajPohyby(supabase, vstup.companyId, zasoby)
       : [];
   const { zoskupPohyby } = await import("./export.server");
@@ -274,7 +299,7 @@ export async function zostavDavku(
   // Väzby na doklady, ktoré v Pohode už sú: storno zrušenej faktúry, dobropis k
   // pôvodnej faktúre a odpočet zálohy na konečnej.
   const cisla = await cislaVPohode(supabase, vstup.companyId);
-  const storna = await nacitajStorna(supabase, vstup.companyId, cisla);
+  const storna = lenBezny ? await nacitajStorna(supabase, vstup.companyId, cisla) : [];
   const { zalohy, opravovane } = await nacitajVazby(supabase, vstup.companyId, faktury, cisla);
 
   const prazdna =
@@ -292,7 +317,7 @@ export async function zostavDavku(
     neodpovie — príznak zhodí až spracovanie odpovede. Keď inak nie je čo
     poslať, odíde samotná žiadosť bez zápisu do histórie.
   */
-  const ciselniky = Boolean(company.pohoda_nacitat_ciselniky);
+  const ciselniky = lenBezny && Boolean(company.pohoda_nacitat_ciselniky);
   if (prazdna && ciselniky) {
     const { ziadostCiselnikov } = await import("./predkontacie");
     return {
@@ -1177,7 +1202,9 @@ set "HESLO="
 
 rem ===========================================================
 rem  Ktore firmy sa prenasaju, je vo firmy.txt vedla tohto suboru.
-rem  Jeden riadok na firmu:  KLUC;DATABAZA;NAZOV
+rem  Jeden riadok na firmu:  KLUC;DATABAZA;NAZOV;DATABAZA_MINULY_ROK
+rem  Posledne pole je volitelne - na prelome rokov sa do nej prenesu
+rem  doklady minuleho roka, do DATABAZA len tohtorocne.
 rem  Dalej uz netreba menit nic.
 rem ===========================================================
 
@@ -1207,10 +1234,11 @@ if not exist "%ZOZNAM%" (
 rem Firmy sa beru po jednej. Pohoda vie naraz spracovat len jeden import,
 rem takze paralelne by to aj tak neslo - a takto sedi kazda odpoved k svojmu
 rem klucu. Riadky zacinajuce na # su poznamky.
-for /f "usebackq eol=# tokens=1,2,* delims=;" %%a in ("%ZOZNAM%") do (
+for /f "usebackq eol=# tokens=1,2,3,4 delims=;" %%a in ("%ZOZNAM%") do (
   set "KLUC=%%a"
   set "DATABAZA=%%b"
   set "NAZOV=%%c"
+  set "PRELOM=%%d"
   call :firma
 )
 
@@ -1236,13 +1264,36 @@ for %%f in ("%ODPOVED%\\*.xml") do (
   call :log "Odlozena neodoslana odpoved z predosleho behu: %%~nxf"
 )
 
+rem Prelom rokov: najprv doklady minuleho roka do databazy minuleho roka,
+rem potom tohtorocne do beznej. Bez nej ide vsetko naraz ako doteraz.
+if not "%PRELOM%"=="" (
+  set "CAST=prelom"
+  set "DB=%PRELOM%"
+  call :prenos
+  set "CAST=bezny"
+  set "DB=%DATABAZA%"
+  call :prenos
+) else (
+  set "CAST="
+  set "DB=%DATABAZA%"
+  call :prenos
+)
+exit /b
+
+rem ===========================================================
+rem  Jeden prenos do jednej databazy
+rem ===========================================================
+:prenos
+set "URL=%ADRESA%/api/v1/pohoda/davka"
+if not "%CAST%"=="" set "URL=%URL%?cast=%CAST%"
+
 rem 1. Stiahnutie davky z Faktera. Von ide bezne HTTPS, nic sa neotvara.
 set "SUBOR=%VSTUP%\\davka.xml"
 if exist "%SUBOR%" del /q "%SUBOR%"
-for /f %%k in ('curl -sS -o "%SUBOR%" -w "%%{http_code}" -H "Authorization: Bearer %KLUC%" "%ADRESA%/api/v1/pohoda/davka"') do set "KOD=%%k"
+for /f %%k in ('curl -sS -o "%SUBOR%" -w "%%{http_code}" -H "Authorization: Bearer %KLUC%" "%URL%"') do set "KOD=%%k"
 
 if "%KOD%"=="204" (
-  call :log "%NAZOV%: nic nove na prenos."
+  call :log "%NAZOV% %CAST%: nic nove na prenos."
   if exist "%SUBOR%" del /q "%SUBOR%"
   exit /b
 )
@@ -1256,7 +1307,7 @@ call :log "%NAZOV%: davka stiahnuta."
 rem 2. Konfiguracia importu. Pise sa zakazdym, lebo databaza je ina firma od firmy.
 > "%PRIECINOK%import.ini" (
   echo [XML]
-  echo database=%DATABAZA%
+  echo database=%DB%
   echo input_dir=%VSTUP%
   echo response_dir=%ODPOVED%
   echo check_duplicity=1
@@ -1265,7 +1316,7 @@ rem 2. Konfiguracia importu. Pise sa zakazdym, lebo databaza je ina firma od fir
 )
 
 rem 3. Nacitanie do Pohody. /wait - inak by sa pokracovalo skor, nez skonci.
-call :log "%NAZOV%: spustam import do Pohody..."
+call :log "%NAZOV% %CAST%: spustam import do Pohody ^(%DB%^)..."
 start "" /wait "%POHODA%" /XML "%MENO%" "%HESLO%" "%PRIECINOK%import.ini"
 call :log "%NAZOV%: import skoncil."
 
@@ -1308,14 +1359,18 @@ exit /b
 export function zoznamFiriem(firmy: { kluc: string; firma: string; databaza: string }[]): string {
   return `# Ktore firmy sa prenasaju do Pohody.
 #
-# Jeden riadok na firmu, tri hodnoty oddelene bodkociarkou:
+# Jeden riadok na firmu, hodnoty oddelene bodkociarkou:
 #
 #   KLUC;DATABAZA;NAZOV
+#   KLUC;DATABAZA;NAZOV;DATABAZA_MINULY_ROK   (na prelome rokov)
 #
 #   KLUC      - z balicka, ktory vam poslal klient (zacina fk_live_)
 #   DATABAZA  - nazov databazy uctovnej jednotky v Pohode
 #               (Pohoda: Subor - Uctovne jednotky - stlpec Databaza)
-#   NAZOV     - lubovolne pomenovanie do protokolu
+#   NAZOV     - lubovolne pomenovanie do protokolu (bez bodkociarky)
+#   DATABAZA_MINULY_ROK - volitelne; ked je vyplnena, doklady minuleho roka
+#               idu do nej a do DATABAZA len tohtorocne. Po uzavreti roka
+#               ju z riadku zmazte.
 #
 # Bez medzier okolo bodkociarky. Riadok zacinajuci na # sa preskoci,
 # takze firmu viete docasne vypnut tym, ze pred nu date #.
@@ -1323,7 +1378,7 @@ export function zoznamFiriem(firmy: { kluc: string; firma: string; databaza: str
 # Dalsieho klienta pridate tak, ze si z jeho balicka skopirujete jeho
 # riadok sem pod tento. Priecinok, davkovy subor ani ulohu uz nemenite.
 
-${firmy.map((f) => `${f.kluc};${f.databaza};${f.firma}`).join("\n")}
+${firmy.map((f) => `${f.kluc};${f.databaza};${String(f.firma).replace(/;/g, ",")}`).join("\n")}
 `;
 }
 

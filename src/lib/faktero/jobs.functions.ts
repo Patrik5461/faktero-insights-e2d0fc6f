@@ -200,7 +200,21 @@ const ZakazkaVstup = z.object({
   planned_revenue: z.coerce.number().nonnegative().nullable().optional(),
   planned_cost: z.coerce.number().nonnegative().nullable().optional(),
   note: z.string().trim().max(2000).nullable().optional(),
+  /** Projektový manažér — môže schvaľovať doklady zákazky. */
+  manazer_id: z.string().uuid().nullable().optional(),
 });
+
+async function overManazera(supabase: any, companyId: string, userId: string | null | undefined) {
+  if (!userId) return null;
+  const { data } = await supabase
+    .from("company_users")
+    .select("user_id")
+    .eq("company_id", companyId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!data) throw new Error("Manažér zákazky musí byť členom firmy.");
+  return userId;
+}
 
 async function menoOdberatela(
   supabase: any,
@@ -237,6 +251,7 @@ export const createJob = createServerFn({ method: "POST" })
         planned_revenue: data.planned_revenue ?? null,
         planned_cost: data.planned_cost ?? null,
         note: data.note ?? null,
+        manazer_id: await overManazera(supabase, data.company_id, data.manazer_id),
         created_by: userId,
       })
       .select("*")
@@ -266,6 +281,9 @@ export const updateJob = createServerFn({ method: "POST" })
         planned_revenue: data.planned_revenue ?? null,
         planned_cost: data.planned_cost ?? null,
         note: data.note ?? null,
+        ...(data.manazer_id !== undefined
+          ? { manazer_id: await overManazera(supabase, data.company_id, data.manazer_id) }
+          : {}),
       })
       .eq("id", job.id)
       .eq("company_id", data.company_id);

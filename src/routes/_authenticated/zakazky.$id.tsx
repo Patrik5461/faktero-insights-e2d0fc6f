@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { deleteJob, getJob, setJobStatus, updateJob } from "@/lib/faktero/jobs.functions";
+import { nastavenieSchvalovaniaFn } from "@/lib/faktero/schvalovanie.functions";
 import { STAV_ZAKAZKY_POPIS, nakladZJazdy, type StavZakazky } from "@/lib/faktero/zakazky";
 import { STAV_POPIS, type StavObjednavky } from "@/lib/faktero/objednavky-dodavatel";
 import { pohybNazov } from "@/lib/faktero/stock-pohyb";
@@ -70,6 +71,15 @@ function JobDetail() {
   const [form, setForm] = useState<any>(null);
 
   const cid = useMemo(() => getActiveCompanyId(), []);
+  const nacitajLudi = useServerFn(nastavenieSchvalovaniaFn);
+  const [ludia, setLudia] = useState<{ id: string; meno: string }[]>([]);
+  useEffect(() => {
+    if (!cid) return;
+    nacitajLudi({ data: { company_id: cid } })
+      .then((r) => setLudia(r.ludia))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cid]);
 
   const nacitaj = useCallback(() => {
     if (!cid) {
@@ -109,6 +119,7 @@ function JobDetail() {
       planned_revenue: j.planned_revenue ?? "",
       planned_cost: j.planned_cost ?? "",
       note: j.note ?? "",
+      manazer_id: j.manazer_id ?? "",
     });
     setUpravujem(true);
   }
@@ -236,6 +247,7 @@ function JobDetail() {
                       form.planned_revenue === "" ? null : Number(form.planned_revenue),
                     planned_cost: form.planned_cost === "" ? null : Number(form.planned_cost),
                     note: form.note.trim() || null,
+                    manazer_id: form.manazer_id || null,
                   },
                 });
                 setUpravujem(false);
@@ -307,6 +319,24 @@ function JobDetail() {
                   onChange={(e) => setForm({ ...form, planned_cost: e.target.value })}
                 />
               </div>
+            </div>
+            <div>
+              <label className={popis}>Manažér zákazky</label>
+              <select
+                className={pole}
+                value={form.manazer_id}
+                onChange={(e) => setForm({ ...form, manazer_id: e.target.value })}
+              >
+                <option value="">— bez manažéra —</option>
+                {ludia.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.meno}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Môže schvaľovať doklady tejto zákazky, keď je v schvaľovacej ceste „manažér zákazky“.
+              </span>
             </div>
             <div>
               <label className={popis}>Poznámka</label>
