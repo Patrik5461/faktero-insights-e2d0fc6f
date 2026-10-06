@@ -117,6 +117,7 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
         hodnoty: z.record(z.string(), z.string().max(30).nullable()),
         oznaceni: z.record(z.string(), z.string().max(30)).optional().nullable(),
         blockyAgenda: z.enum(["faktura", "podla_platby"]).optional(),
+        pokladna: z.string().max(20).optional().nullable(),
       })
       .parse(d),
   )
@@ -135,6 +136,7 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
       zmena.pohoda_predkontacie_oznaceni = m.length ? Object.fromEntries(m) : null;
     }
     if (data.blockyAgenda) zmena.pohoda_blocky_agenda = data.blockyAgenda;
+    if (data.pokladna !== undefined) zmena.pohoda_pokladna = data.pokladna?.trim() || null;
     const { error } = await supabase.from("companies").update(zmena).eq("id", data.company_id);
     if (error) throw new Error(error.message);
     return { ok: true };

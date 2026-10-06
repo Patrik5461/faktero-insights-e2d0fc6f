@@ -122,13 +122,15 @@ function Predvolene({
   const uloz = useServerFn(ulozPredvoleneFn);
   const [h, setH] = useState<Record<string, string>>({});
   const [oznaceni, setOznaceni] = useState<Record<string, string>>({});
-  const [blockyAgenda, setBlockyAgenda] = useState<"faktura" | "podla_platby">("faktura");
+  const [blockyAgenda, setBlockyAgenda] = useState<"faktura" | "podla_platby">("podla_platby");
+  const [pokladna, setPokladna] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     setH(Object.fromEntries(STLPCE_PREDVOLENYCH.map((s) => [s, String(firma[s] ?? "")])));
     setOznaceni({ ...((firma.pohoda_predkontacie_oznaceni as Record<string, string> | null) ?? {}) });
-    setBlockyAgenda(firma.pohoda_blocky_agenda === "podla_platby" ? "podla_platby" : "faktura");
+    setBlockyAgenda(firma.pohoda_blocky_agenda === "faktura" ? "faktura" : "podla_platby");
+    setPokladna(String(firma.pohoda_pokladna ?? ""));
   }, [firma]);
 
   const pocetNaVyber = (kluc: string, druh: DruhCiselnika) =>
@@ -137,7 +139,7 @@ function Predvolene({
   async function ulozit() {
     setBusy(true);
     try {
-      await uloz({ data: { company_id: companyId, hodnoty: h, oznaceni, blockyAgenda } });
+      await uloz({ data: { company_id: companyId, hodnoty: h, oznaceni, blockyAgenda, pokladna } });
       toast.success("Uložené");
       onUlozene();
     } catch (e: any) {
@@ -238,12 +240,29 @@ function Predvolene({
           <span>
             Podľa spôsobu platby (ako Doklado)
             <span className="block text-xs text-muted-foreground">
-              Hotovosť ako výdavkový pokladničný doklad
-              {firma.pohoda_pokladna ? ` do pokladne ${firma.pohoda_pokladna}` : ""}, karta ako interný
-              doklad, prevod ako prijatá faktúra.
+              Hotovosť ako výdavkový pokladničný doklad, karta ako interný doklad, prevod ako prijatá
+              faktúra.
             </span>
           </span>
         </label>
+        {blockyAgenda === "podla_platby" && (
+          <label className="ml-6 mt-2 block max-w-xs">
+            <span className="text-xs text-muted-foreground">Skratka pokladne v Pohode</span>
+            <input
+              value={pokladna}
+              onChange={(e) => setPokladna(e.target.value)}
+              placeholder="napr. HP"
+              aria-label="Skratka pokladne v Pohode"
+              className={vstup}
+            />
+            {!pokladna.trim() && (
+              <span className="mt-1 block text-xs text-amber-700">
+                Bez skratky pokladne Pohoda pokladničný doklad nezaloží — hotovostné bločky pôjdu
+                zatiaľ ako prijaté faktúry.
+              </span>
+            )}
+          </label>
+        )}
         <label className="mt-2 flex items-start gap-2 text-sm">
           <input
             type="radio"

@@ -480,6 +480,13 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(x[2].invoice.invoiceHeader.invoiceType).toBe("receivedInvoice");
   });
 
+  it("hotovostný bloček bez skratky pokladne ide ako faktúra — Pohoda by ho odmietla", () => {
+    const x = posli([{ ...bloček, payment_method: "hotovost" }], { blockyPodlaPlatby: true })
+      .dataPackItem;
+    expect(x.voucher).toBeUndefined();
+    expect(x.invoice.invoiceHeader.invoiceType).toBe("receivedInvoice");
+  });
+
   it("prijatá faktúra ostáva faktúrou aj pri bločkoch podľa platby", () => {
     const h = posli([{ ...bloček, payment_method: "hotovost", _typPohody: "receivedInvoice" }], {
       blockyPodlaPlatby: true,

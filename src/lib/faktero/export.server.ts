@@ -939,7 +939,11 @@ export function polozkyDokladov(opts: {
       const p: "inv" | "vch" | "int" =
         blocek && nastavenia?.blockyPodlaPlatby
           ? platba === "hotovost"
-            ? "vch"
+            ? // Pokladničný doklad bez pokladne Pohoda nezaloží — kým firma
+              // skratku pokladne nevyplní, ide bloček ako prijatá faktúra.
+              nastavenia?.pokladna?.trim()
+              ? "vch"
+              : "inv"
             : platba === "karta"
               ? "int"
               : "inv"
