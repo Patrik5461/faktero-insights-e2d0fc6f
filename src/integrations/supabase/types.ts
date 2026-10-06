@@ -1251,6 +1251,7 @@ export type Database = {
           pohoda_predkontacia_dobropis: string | null
           pohoda_predkontacia_pokladna: string | null
           pohoda_predkontacia_prijata: string | null
+          pohoda_predkontacia_rozuctovat: string | null
           pohoda_predkontacia_zaloha: string | null
           pohoda_predkontacie_oznaceni: Json | null
           pohoda_sklad: string | null
@@ -1326,6 +1327,7 @@ export type Database = {
           pohoda_predkontacia_dobropis?: string | null
           pohoda_predkontacia_pokladna?: string | null
           pohoda_predkontacia_prijata?: string | null
+          pohoda_predkontacia_rozuctovat?: string | null
           pohoda_predkontacia_zaloha?: string | null
           pohoda_predkontacie_oznaceni?: Json | null
           pohoda_sklad?: string | null
@@ -1401,6 +1403,7 @@ export type Database = {
           pohoda_predkontacia_dobropis?: string | null
           pohoda_predkontacia_pokladna?: string | null
           pohoda_predkontacia_prijata?: string | null
+          pohoda_predkontacia_rozuctovat?: string | null
           pohoda_predkontacia_zaloha?: string | null
           pohoda_predkontacie_oznaceni?: Json | null
           pohoda_sklad?: string | null
@@ -2767,6 +2770,9 @@ export type Database = {
           vat_breakdown: Json | null
           vat_rate: number | null
           odpocet: boolean
+          rozuctovanie: Json | null
+          pohoda_predkontacia: string | null
+          pohoda_clenenie_dph: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -2803,6 +2809,9 @@ export type Database = {
           vat_breakdown?: Json | null
           vat_rate?: number | null
           odpocet?: boolean
+          rozuctovanie?: Json | null
+          pohoda_predkontacia?: string | null
+          pohoda_clenenie_dph?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -2839,6 +2848,9 @@ export type Database = {
           vat_breakdown?: Json | null
           vat_rate?: number | null
           odpocet?: boolean
+          rozuctovanie?: Json | null
+          pohoda_predkontacia?: string | null
+          pohoda_clenenie_dph?: string | null
         }
         Relationships: [
           {
@@ -4896,6 +4908,8 @@ export type Database = {
           ucet_md: string | null
           updated_at: string
           zdroj: string
+          druhy_dokladov: string[]
+          kategoria: string | null
         }
         Insert: {
           agenda?: string
@@ -4911,6 +4925,8 @@ export type Database = {
           ucet_md?: string | null
           updated_at?: string
           zdroj?: string
+          druhy_dokladov?: string[]
+          kategoria?: string | null
         }
         Update: {
           agenda?: string
@@ -4926,6 +4942,8 @@ export type Database = {
           ucet_md?: string | null
           updated_at?: string
           zdroj?: string
+          druhy_dokladov?: string[]
+          kategoria?: string | null
         }
         Relationships: []
       }
@@ -5360,6 +5378,7 @@ export type Database = {
           vat_amount_eur: number | null
           advance_invoice_id: string | null
           type: string
+          rozuctovanie: Json | null
         }
         Insert: {
           amount_total?: number
@@ -5443,6 +5462,7 @@ export type Database = {
           vat_amount_eur?: number | null
           advance_invoice_id?: string | null
           type?: string
+          rozuctovanie?: Json | null
         }
         Update: {
           amount_total?: number
@@ -5526,6 +5546,7 @@ export type Database = {
           vat_amount_eur?: number | null
           advance_invoice_id?: string | null
           type?: string
+          rozuctovanie?: Json | null
         }
         Relationships: [
           {

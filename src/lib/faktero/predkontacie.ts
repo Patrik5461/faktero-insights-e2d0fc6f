@@ -122,9 +122,11 @@ export const PREDVOLENE: {
 ];
 
 /** Stĺpce na `companies`, ktoré stránka predkontácií ukladá. */
-export const STLPCE_PREDVOLENYCH = PREDVOLENE.flatMap((p) =>
-  [p.predkontacia, p.clenenie].filter((x): x is string => !!x),
-);
+export const STLPCE_PREDVOLENYCH = [
+  ...PREDVOLENE.flatMap((p) => [p.predkontacia, p.clenenie].filter((x): x is string => !!x)),
+  // Hlavička rozúčtovaného dokladu („Rozúčtovať" v Pohode).
+  "pohoda_predkontacia_rozuctovat",
+];
 
 /* ---------------------------------------------------------------- Pohoda */
 
@@ -428,9 +430,12 @@ export function ponuka(
   zaznamy: (Pick<ZaznamCiselnika, "kod" | "popis" | "agenda" | "ucet_md" | "ucet_d"> & {
     druh: string;
     aktivne?: boolean;
+    druhy_dokladov?: string[] | null;
   })[],
   druh: DruhCiselnika,
   agendy: string[] = [],
+  /** Kľúč druhu dokladu z PREDVOLENE — kód obmedzený na iné druhy sa neponúkne. */
+  preDoklad?: string,
 ): MoznostKodu[] {
   const vhodne = (z: { agenda: string }) => {
     if (!z.agenda) return 1;
@@ -440,6 +445,7 @@ export function ponuka(
   const videne = new Set<string>();
   return zaznamy
     .filter((z) => z.druh === druh && z.aktivne !== false)
+    .filter((z) => !preDoklad || !z.druhy_dokladov?.length || z.druhy_dokladov.includes(preDoklad))
     .sort((a, b) => vhodne(a) - vhodne(b) || a.kod.localeCompare(b.kod, "sk"))
     .filter((z) => (videne.has(z.kod) ? false : (videne.add(z.kod), true)))
     .map((z) => ({

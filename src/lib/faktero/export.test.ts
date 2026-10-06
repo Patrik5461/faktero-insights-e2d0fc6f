@@ -423,6 +423,53 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(h.accounting.ids).toBe("5Fp");
   });
 
+  it("rozúčtovaný bloček ide s položkami, každá s vlastnými kódmi", () => {
+    const rozuctovanie = [
+      { predkontacia: "PHM", clenenie: "PD", sadzba: 23, zaklad: 15, dph: 3.45, text: "Nafta" },
+      { predkontacia: "1Pv", clenenie: "PN", sadzba: 23, zaklad: 3.77, dph: 0.87 },
+      { predkontacia: "1Pv", clenenie: null, sadzba: 0, zaklad: 0.9, dph: 0 },
+      { predkontacia: null, clenenie: "PD", sadzba: 19, zaklad: 0.49, dph: 0.09 },
+    ];
+    const inv = posli([{ ...bloček, rozuctovanie }], { predkontaciaDoklady: "5Fp" }).dataPackItem
+      .invoice;
+    expect(inv.invoiceHeader.accounting.ids).toBe("Rozúčtovať");
+    expect(inv.invoiceHeader.classificationVAT).toBeUndefined();
+    const pol = inv.invoiceDetail.invoiceItem;
+    expect(pol).toHaveLength(4);
+    expect(pol[0]).toMatchObject({ text: "Nafta", rateVAT: "high" });
+    expect(pol[0].accounting.ids).toBe("PHM");
+    expect(pol[1].classificationVAT.ids).toBe("PN");
+    // Riadok bez kódu dostane predvolený kód dokladu.
+    expect(pol[3].accounting.ids).toBe("5Fp");
+    expect(pol[2].rateVAT).toBe("none");
+    // Súhrn ostáva — Pohoda ho porovná s položkami.
+    expect(Number(inv.invoiceSummary.homeCurrency.priceHigh)).toBe(18.77);
+  });
+
+  it("rozúčtovanie, ktoré nesedí so súčtami, sa nepoužije", () => {
+    const zle = [
+      { predkontacia: "PHM", clenenie: "PD", sadzba: 23, zaklad: 10, dph: 2.3 },
+      { predkontacia: "1Pv", clenenie: "PD", sadzba: 23, zaklad: 1, dph: 0.23 },
+    ];
+    const inv = posli([{ ...bloček, rozuctovanie: zle }], { predkontaciaDoklady: "5Fp" })
+      .dataPackItem.invoice;
+    expect(inv.invoiceDetail).toBeUndefined();
+    expect(inv.invoiceHeader.accounting.ids).toBe("5Fp");
+  });
+
+  it("kategória nákladu dá kód, keď doklad nemá vlastný", () => {
+    const nast = {
+      predkontaciaDoklady: "5Fp",
+      podlaKategorie: { palivo: { predkontacia: "PHM", clenenie: "PN" } },
+    };
+    const h = posli([{ ...bloček, category: "palivo" }], nast).dataPackItem.invoice.invoiceHeader;
+    expect(h.accounting.ids).toBe("PHM");
+    expect(h.classificationVAT.ids).toBe("PN");
+    const vlastny = posli([{ ...bloček, category: "palivo", pohoda_predkontacia: "X1" }], nast)
+      .dataPackItem.invoice.invoiceHeader;
+    expect(vlastny.accounting.ids).toBe("X1");
+  });
+
   it("bloček má vlastné predvolené kódy, prijatá faktúra nie", () => {
     const nast = {
       predkontaciaPrijata: "5Fp",

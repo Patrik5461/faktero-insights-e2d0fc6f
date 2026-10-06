@@ -229,6 +229,8 @@ export async function zostavBalik(
     clenenieDphPrijata: company.pohoda_clenenie_dph_prijata,
     predkontaciaDoklady: company.pohoda_predkontacia_doklady,
     clenenieDphDoklady: company.pohoda_clenenie_dph_doklady,
+    predkontaciaRozuctovat: company.pohoda_predkontacia_rozuctovat,
+    podlaKategorie: await (await import("./predkontacie.server")).kodyPodlaKategorie(supabase, company.id),
     pokladna: company.pohoda_pokladna,
     predkontaciaPokladna: company.pohoda_predkontacia_pokladna,
     sklad: company.pohoda_sklad,

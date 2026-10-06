@@ -1,4 +1,9 @@
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
+import { KodPohody } from "@/components/faktero/KodPohody";
+import { RozuctovaniePanel } from "@/components/faktero/RozuctovaniePanel";
+import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
+import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
+import { rozpisBlocku } from "@/lib/faktero/rozuctovanie";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
@@ -47,6 +52,8 @@ type Form = {
   vat_rate: string;
   currency: string;
   category: string;
+  pohoda_predkontacia: string;
+  pohoda_clenenie_dph: string;
   note: string;
 };
 
@@ -69,6 +76,8 @@ const EMPTY: Form = {
   vat_rate: "23",
   currency: "EUR",
   category: "",
+  pohoda_predkontacia: "",
+  pohoda_clenenie_dph: "",
   note: "",
 };
 
@@ -112,6 +121,20 @@ function NovyDokladPage() {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const cid = getActiveCompanyId();
+  const [ulozeny, setUlozeny] = useState<any>(null);
+  const nacitajKody = useServerFn(navrhyKodovFn);
+  const [kody, setKody] = useState<Navrhy | null>(null);
+  useEffect(() => {
+    if (!cid) return;
+    nacitajKody({ data: { company_id: cid, pre: "doklad" } })
+      .then(setKody)
+      .catch(() => {});
+  }, [cid, nacitajKody]);
+  async function obnovUlozeny() {
+    if (!search.id) return;
+    const { data } = await supabase.from("expense_documents").select("*").eq("id", search.id).maybeSingle();
+    if (data) setUlozeny(data);
+  }
 
   // Načíta existujúci doklad (editácia)
   useEffect(() => {
@@ -137,8 +160,11 @@ function NovyDokladPage() {
         currency: data.currency ?? "EUR",
         payment_method: (data.payment_method ?? "") as "" | "hotovost" | "karta" | "prevod",
         category: data.category ?? "",
+        pohoda_predkontacia: (data as any).pohoda_predkontacia ?? "",
+        pohoda_clenenie_dph: (data as any).pohoda_clenenie_dph ?? "",
         note: data.note ?? "",
       });
+      setUlozeny(data);
       celkomRucne.current = data.total_amount != null;
       setStavDokladu(data.status);
       setSource(data.source as "photo" | "qr" | "upload" | "web");
@@ -387,6 +413,9 @@ function NovyDokladPage() {
         vat_rate: form.vat_rate ? Number(form.vat_rate) : null,
         currency: form.currency || "EUR",
         category: form.category || null,
+        // Predkontácia a členenie pre Pohodu; prázdne = predvolené z nastavení.
+        pohoda_predkontacia: form.pohoda_predkontacia.trim() || null,
+        pohoda_clenenie_dph: form.pohoda_clenenie_dph.trim() || null,
         note: form.note || null,
         file_path: uploadedFile?.path ?? null,
         file_mime: uploadedFile?.mime ?? null,
@@ -697,6 +726,62 @@ function NovyDokladPage() {
                 {!form.payment_method && (
                   <p className="mt-1 text-xs text-primary">
                     Bez toho sa doklad uložiť nedá — hotovosť uberá zo stavu pokladne.
+                  </p>
+                )}
+              </div>
+              <div className="sm:col-span-2 rounded-md border border-border p-3">
+                <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Zaúčtovanie (Pohoda)
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-muted-foreground">Predkontácia</span>
+                    <KodPohody
+                      ariaLabel="Predkontácia"
+                      value={form.pohoda_predkontacia}
+                      onChange={(v) => updateForm("pohoda_predkontacia", v)}
+                      moznosti={kody?.predkontacie ?? []}
+                      placeholder={kody?.predvolenaPredkontacia ?? "predvolená z nastavení"}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-muted-foreground">Členenie DPH</span>
+                    <KodPohody
+                      ariaLabel="Členenie DPH"
+                      value={form.pohoda_clenenie_dph}
+                      onChange={(v) => updateForm("pohoda_clenenie_dph", v)}
+                      moznosti={kody?.clenenia ?? []}
+                      placeholder={kody?.predvoleneClenenie ?? "predvolené z nastavení"}
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Prázdne = predvolené pre bločky z{" "}
+                  <Link to="/uctovnictvo/predkontacie" className="underline">
+                    nastavení predkontácií
+                  </Link>{" "}
+                  alebo z pravidla účtovania.
+                </p>
+                {search.id && ulozeny && cid ? (
+                  <RozuctovaniePanel
+                    companyId={cid}
+                    druh="doklad"
+                    id={search.id}
+                    rozpis={rozpisBlocku(ulozeny)}
+                    ulozene={ulozeny.rozuctovanie}
+                    navrhy={kody}
+                    kody={{
+                      predkontacia: form.pohoda_predkontacia || kody?.predvolenaPredkontacia || null,
+                      clenenie: form.pohoda_clenenie_dph || kody?.predvoleneClenenie || null,
+                    }}
+                    zamknute={!!ulozeny.exported_at}
+                    onZmena={obnovUlozeny}
+                  />
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Rozúčtovať na viac predkontácií sa dá po uložení dokladu.
                   </p>
                 )}
               </div>

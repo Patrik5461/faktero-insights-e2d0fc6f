@@ -7,6 +7,7 @@ import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { KodPohody } from "@/components/faktero/KodPohody";
 import { OZNACENIA } from "@/lib/faktero/vypis-oznacenie";
+import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import {
   AGENDY,
   PREDVOLENE,
@@ -47,6 +48,8 @@ type Zaznam = {
   ucet_d: string | null;
   zdroj: string;
   aktivne: boolean;
+  druhy_dokladov: string[];
+  kategoria: string | null;
 };
 
 const ZDROJ: Record<string, string> = { pohoda: "Pohoda", subor: "súbor", rucne: "ručne" };
@@ -126,7 +129,8 @@ function Predvolene({
     setOznaceni({ ...((firma.pohoda_predkontacie_oznaceni as Record<string, string> | null) ?? {}) });
   }, [firma]);
 
-  const clenenia = useMemo(() => ponuka(zaznamy, "clenenie_dph"), [zaznamy]);
+  const pocetNaVyber = (kluc: string, druh: DruhCiselnika) =>
+    zaznamy.filter((z) => z.druh === druh && z.aktivne && z.druhy_dokladov?.includes(kluc)).length;
 
   async function ulozit() {
     setBusy(true);
@@ -168,6 +172,12 @@ function Predvolene({
               <tr key={p.kluc} className="border-t border-border align-top">
                 <td className="py-2 pr-3">
                   {p.nazov}
+                  {pocetNaVyber(p.kluc, "predkontacia") + pocetNaVyber(p.kluc, "clenenie_dph") > 0 ? (
+                    <span className="block text-xs text-muted-foreground">
+                      na výber {pocetNaVyber(p.kluc, "predkontacia")} predkontácií,{" "}
+                      {pocetNaVyber(p.kluc, "clenenie_dph")} členení
+                    </span>
+                  ) : null}
                   {p.kluc === "doklady" && !h[p.predkontacia] && h.pohoda_predkontacia_prijata ? (
                     <span className="block text-xs text-muted-foreground">
                       prázdne = ako prijatá faktúra
@@ -180,7 +190,7 @@ function Predvolene({
                       ariaLabel={`Predkontácia — ${p.nazov}`}
                       value={h[p.predkontacia] ?? ""}
                       onChange={(v) => setH({ ...h, [p.predkontacia]: v })}
-                      moznosti={ponuka(zaznamy, "predkontacia", p.agendy)}
+                      moznosti={ponuka(zaznamy, "predkontacia", p.agendy, p.kluc)}
                       placeholder={
                         p.kluc === "doklady" ? h.pohoda_predkontacia_prijata || "napr. 5Fp" : "—"
                       }
@@ -196,7 +206,7 @@ function Predvolene({
                       ariaLabel={`Členenie DPH — ${p.nazov}`}
                       value={h[p.clenenie] ?? ""}
                       onChange={(v) => setH({ ...h, [p.clenenie!]: v })}
-                      moznosti={clenenia}
+                      moznosti={ponuka(zaznamy, "clenenie_dph", [], p.kluc)}
                       placeholder={
                         p.kluc === "doklady" ? h.pohoda_clenenie_dph_prijata || "—" : "—"
                       }
@@ -211,6 +221,24 @@ function Predvolene({
           </tbody>
         </table>
       </div>
+
+      <label className="mt-4 block max-w-md">
+        <span className="text-xs text-muted-foreground">
+          Predkontácia hlavičky pri rozúčtovanom doklade
+        </span>
+        <KodPohody
+          ariaLabel="Predkontácia hlavičky pri rozúčtovaní"
+          value={h.pohoda_predkontacia_rozuctovat ?? ""}
+          onChange={(v) => setH({ ...h, pohoda_predkontacia_rozuctovat: v })}
+          moznosti={ponuka(zaznamy, "predkontacia")}
+          placeholder="Rozúčtovať"
+          className={vstup}
+        />
+        <span className="mt-0.5 block text-xs text-muted-foreground">
+          Keď je doklad rozúčtovaný na viac predkontácií, hlavička v Pohode dostane tento kód a
+          predkontácie nesú položky. Prázdne = „Rozúčtovať“.
+        </span>
+      </label>
 
       <details className="mt-4 rounded-md border border-border p-3">
         <summary className="cursor-pointer text-sm font-medium">
@@ -423,6 +451,8 @@ const PRAZDNY = {
   ucet_md: "",
   ucet_d: "",
   aktivne: true,
+  druhy_dokladov: [] as string[],
+  kategoria: "",
 };
 
 function Ciselnik({
@@ -598,6 +628,45 @@ function Ciselnik({
           ) : (
             <div className="sm:col-span-2" />
           )}
+          <div className="sm:col-span-4">
+            <span className="text-xs text-muted-foreground">
+              Ponúkať pri dokladoch (nič nezaškrtnuté = všade)
+            </span>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+              {PREDVOLENE.filter((p) => (druh === "predkontacia" ? p.predkontacia : p.clenenie)).map((p) => (
+                <label key={p.kluc} className="flex items-center gap-1.5 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={form.druhy_dokladov.includes(p.kluc)}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        druhy_dokladov: e.target.checked
+                          ? [...form.druhy_dokladov, p.kluc]
+                          : form.druhy_dokladov.filter((k) => k !== p.kluc),
+                      })
+                    }
+                  />
+                  {p.nazov}
+                </label>
+              ))}
+            </div>
+          </div>
+          <label className="block sm:col-span-2">
+            <span className="text-xs text-muted-foreground">Použiť sám pre kategóriu nákladu</span>
+            <select
+              value={form.kategoria}
+              onChange={(e) => setForm({ ...form, kategoria: e.target.value })}
+              className={vstup}
+            >
+              <option value="">—</option>
+              {KATEGORIE_VYDAVKOV.map((k) => (
+                <option key={k.kod} value={k.kod}>
+                  {k.nazov}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="flex flex-wrap items-center justify-end gap-2 sm:col-span-6">
             <p className="mr-auto text-xs text-muted-foreground">
               Kód musí byť rovnaký ako v Pohode, inak ho Pohoda pri importe nenájde.
@@ -663,6 +732,7 @@ function Ciselnik({
                 <th className="py-1 pr-3 font-medium">Popis</th>
                 <th className="py-1 pr-3 font-medium">{druh === "predkontacia" ? "Agenda" : "Typ"}</th>
                 {druh === "predkontacia" && <th className="py-1 pr-3 font-medium">MD / D</th>}
+                <th className="py-1 pr-3 font-medium">Použitie</th>
                 <th className="py-1 pr-3 font-medium">Zdroj</th>
                 <th className="py-1 pr-3 font-medium">Aktívne</th>
                 <th className="py-1" />
@@ -681,6 +751,18 @@ function Ciselnik({
                       {z.ucet_md || z.ucet_d ? `${z.ucet_md ?? "—"} / ${z.ucet_d ?? "—"}` : "—"}
                     </td>
                   )}
+                  <td className="py-1.5 pr-3 text-xs text-muted-foreground">
+                    {z.druhy_dokladov?.length
+                      ? z.druhy_dokladov
+                          .map((k) => PREDVOLENE.find((p) => p.kluc === k)?.nazov ?? k)
+                          .join(", ")
+                      : "všade"}
+                    {z.kategoria ? (
+                      <span className="block text-foreground">
+                        kategória: {KATEGORIE_VYDAVKOV.find((k) => k.kod === z.kategoria)?.nazov ?? z.kategoria}
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="py-1.5 pr-3 text-xs text-muted-foreground">{ZDROJ[z.zdroj] ?? z.zdroj}</td>
                   <td className="py-1.5 pr-3">
                     <input
@@ -701,6 +783,8 @@ function Ciselnik({
                           ucet_md: z.ucet_md ?? "",
                           ucet_d: z.ucet_d ?? "",
                           aktivne: z.aktivne,
+                          druhy_dokladov: z.druhy_dokladov ?? [],
+                          kategoria: z.kategoria ?? "",
                         })
                       }
                       className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"

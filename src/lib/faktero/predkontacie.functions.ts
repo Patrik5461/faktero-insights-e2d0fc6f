@@ -24,7 +24,7 @@ export const predkontacieFn = createServerFn({ method: "POST" })
     const [{ data: zaznamy, error }, { data: firma }] = await Promise.all([
       supabase
         .from("predkontacie")
-        .select("id, druh, kod, popis, agenda, ucet_md, ucet_d, zdroj, aktivne, updated_at")
+        .select("id, druh, kod, popis, agenda, ucet_md, ucet_d, zdroj, aktivne, druhy_dokladov, kategoria, updated_at")
         .eq("company_id", data.company_id)
         .order("kod"),
       supabase.from("companies").select(STLPCE_FIRMY).eq("id", data.company_id).maybeSingle(),
@@ -57,12 +57,16 @@ export const ulozPredkontaciuFn = createServerFn({ method: "POST" })
         ucet_md: kratke(20),
         ucet_d: kratke(20),
         aktivne: z.boolean().optional(),
+        druhy_dokladov: z.array(z.string().max(20)).max(20).optional(),
+        kategoria: kratke(40),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const riadok = {
+      druhy_dokladov: data.druhy_dokladov ?? [],
+      kategoria: data.kategoria,
       company_id: data.company_id,
       druh: data.druh,
       kod: data.kod,

@@ -430,7 +430,7 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const { data: firma } = await supabase
       .from("companies")
       .select(
-        "ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady",
+        "ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia_rozuctovat",
       )
       .eq("id", data.company_id)
       .single();
@@ -445,6 +445,8 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
           clenenieDphPrijata: firma?.pohoda_clenenie_dph_prijata,
           predkontaciaDoklady: (firma as any)?.pohoda_predkontacia_doklady,
           clenenieDphDoklady: (firma as any)?.pohoda_clenenie_dph_doklady,
+          predkontaciaRozuctovat: (firma as any)?.pohoda_predkontacia_rozuctovat,
+          podlaKategorie: await (await import("./predkontacie.server")).kodyPodlaKategorie(supabase, data.company_id),
         },
       }),
     );

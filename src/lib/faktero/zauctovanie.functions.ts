@@ -40,7 +40,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
           .maybeSingle(),
         supabase
           .from("predkontacie")
-          .select("druh, kod, popis, agenda, ucet_md, ucet_d, aktivne")
+          .select("druh, kod, popis, agenda, ucet_md, ucet_d, aktivne, druhy_dokladov")
           .eq("company_id", data.company_id),
         supabase.from("pravidla_uctovania").select("predkontacia, clenenie_dph").eq("company_id", data.company_id),
         supabase
@@ -82,11 +82,11 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
     const agendy = doklad ? ["receivedInvoice", "cashPaid", "internalDocument"] : ["receivedInvoice"];
     return {
       predkontacie: doplnene(
-        ponuka(ciselnik ?? [], "predkontacia", agendy),
+        ponuka(ciselnik ?? [], "predkontacia", agendy, doklad ? "doklady" : "prijata"),
         pocet([predvolenaPredkontacia, ...vsetky.map((r: any) => r.predkontacia ?? r.pohoda_predkontacia)]),
       ),
       clenenia: doplnene(
-        ponuka(ciselnik ?? [], "clenenie_dph"),
+        ponuka(ciselnik ?? [], "clenenie_dph", [], doklad ? "doklady" : "prijata"),
         pocet([predvoleneClenenie, ...vsetky.map((r: any) => r.clenenie_dph ?? r.pohoda_clenenie_dph)]),
       ),
       predvolenaPredkontacia,
@@ -235,4 +235,64 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
       if (e2) throw new Error(e2.message);
     }
     return { zmenenych: ok.length, preskocenych: (riadky ?? []).length - ok.length };
+  });
+
+const riadokRozuctovania = z.object({
+  predkontacia: z.string().max(30).nullable().optional(),
+  clenenie: z.string().max(30).nullable().optional(),
+  sadzba: z.number(),
+  zaklad: z.number(),
+  dph: z.number(),
+  text: z.string().max(200).nullable().optional(),
+});
+
+/**
+ * Rozúčtovanie prijatej faktúry alebo bločku na viac riadkov.
+ *
+ * Súčty po sadzbách musia sedieť s dokladom na cent — kontrola beží tu, nie
+ * len v prehliadači. Prázdny zoznam rozúčtovanie zruší. Odovzdaný doklad sa
+ * nemení, v Pohode by sa rozišiel.
+ */
+export const ulozRozuctovanieFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        druh: z.enum(["prijata", "doklad"]),
+        id: z.string().uuid(),
+        riadky: z.array(riadokRozuctovania).max(50),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { chybaRozuctovania, ocisti, rozpisBlocku } = await import("./rozuctovanie");
+    const tabulka = data.druh === "prijata" ? "purchase_invoices" : "expense_documents";
+    const { data: d, error } = await supabase
+      .from(tabulka)
+      .select("*")
+      .eq("company_id", data.company_id)
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!d) throw new Error("Doklad sa nenašiel");
+    if (d.exported_at) throw new Error("Doklad je už odovzdaný do Pohody — rozúčtovanie meňte tam.");
+
+    let rozpis;
+    if (data.druh === "prijata") {
+      const { rozpisPrijatej } = await import("./prijate-do-pohody");
+      rozpis = rozpisPrijatej(d);
+    } else rozpis = rozpisBlocku(d);
+
+    const riadky = ocisti(data.riadky as any);
+    const chyba = chybaRozuctovania(riadky, rozpis);
+    if (chyba) throw new Error(chyba);
+    const { error: e2 } = await supabase
+      .from(tabulka)
+      .update({ rozuctovanie: riadky.length ? riadky : null })
+      .eq("id", data.id)
+      .eq("company_id", data.company_id);
+    if (e2) throw new Error(e2.message);
+    return { ok: true, riadkov: riadky.length };
   });

@@ -77,6 +77,14 @@ const sections: HelpSection[] = [
           pravidlách sa kódy potom vyberajú zo zoznamu s popisom, ako v Doklado.
         </p>
         <p>
+          Pri každom kóde v číselníku sa dá zaškrtnúť, <strong>pri ktorých dokladoch sa ponúka</strong>{" "}
+          (napr. len bločky), a <strong>kategória nákladu</strong>, pre ktorú sa použije sám — bloček
+          s kategóriou Palivo tak dostane PHM bez klikania. Poradie: kód na doklade, pravidlo
+          účtovania, kategória, predvolený kód druhu dokladu. Doklad sa dá aj{" "}
+          <strong>rozúčtovať na viac predkontácií a členení</strong>; v Pohode má potom hlavičku
+          „Rozúčtovať“ a kódy nesú položky.
+        </p>
+        <p>
           Bez predkontácií Pohoda doklady naimportuje bez chyby, ale zaúčtovanie si ku každému
           doklikáva ručne — teda presne tú prácu, ktorú mal export ušetriť.
         </p>

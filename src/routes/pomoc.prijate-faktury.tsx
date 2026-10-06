@@ -282,6 +282,14 @@ const sections: HelpSection[] = [
           a vo Fakteri sa jej zaúčtovanie už nemení. Samofaktúra sa dá zaúčtovať až po odsúhlasení
           dodávateľom.
         </p>
+        <p>
+          <strong>Rozúčtovanie na viac predkontácií:</strong> v časti Zaúčtovanie kliknite na{" "}
+          <em>Rozúčtovať na viac predkontácií</em>. Každý riadok má vlastnú predkontáciu, členenie
+          DPH, sadzbu, základ a DPH (napr. 80 € materiál 1Fp/PD a 20 € réžia 2Fp/PN). Súčty po
+          sadzbách musia sedieť s faktúrou na cent — tlačidlo <em>= zvyšok</em> doplní rozdiel. Do
+          Pohody ide faktúra s hlavičkou „Rozúčtovať“ a s položkami, z ktorých každá nesie svoje
+          kódy. Rovnako sa dá rozúčtovať aj bloček (Doklady → otvoriť doklad → Zaúčtovanie).
+        </p>
       </>
     ),
   },

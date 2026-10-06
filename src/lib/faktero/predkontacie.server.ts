@@ -99,3 +99,28 @@ export async function ulozCiselnikyZPohody(
     vypnutych: r.vypnutych,
   };
 }
+
+/**
+ * Kódy podľa kategórie nákladu z číselníka (stĺpec `kategoria`) — export ich
+ * použije, keď doklad nemá vlastnú predkontáciu ani členenie.
+ */
+export async function kodyPodlaKategorie(
+  supabase: Klient,
+  companyId: string,
+): Promise<Record<string, { predkontacia?: string | null; clenenie?: string | null }>> {
+  const { data } = await supabase
+    .from("predkontacie")
+    .select("druh, kod, kategoria")
+    .eq("company_id", companyId)
+    .eq("aktivne", true)
+    .not("kategoria", "is", null);
+  const out: Record<string, { predkontacia?: string | null; clenenie?: string | null }> = {};
+  for (const r of (data ?? []) as { druh: string; kod: string; kategoria: string }[]) {
+    const k = String(r.kategoria ?? "").trim();
+    if (!k) continue;
+    out[k] = out[k] ?? {};
+    if (r.druh === "predkontacia") out[k].predkontacia ??= r.kod;
+    else out[k].clenenie ??= r.kod;
+  }
+  return out;
+}

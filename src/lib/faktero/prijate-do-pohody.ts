@@ -44,6 +44,7 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     category: p.category,
     pohoda_predkontacia: p.pohoda_predkontacia,
     pohoda_clenenie_dph: p.pohoda_clenenie_dph,
+    rozuctovanie: p.rozuctovanie,
     total_amount: spolu,
     vat_breakdown: rozpisPrijatej(p),
     _povodneCislo: p.invoice_number,

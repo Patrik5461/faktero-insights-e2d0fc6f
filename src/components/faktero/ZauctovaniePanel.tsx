@@ -7,6 +7,8 @@ import { navrhyKodovFn, zauctujPrijateFn, zrusZauctovanieFn } from "@/lib/fakter
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import type { MoznostKodu } from "@/lib/faktero/predkontacie";
 import { KodPohody } from "./KodPohody";
+import { RozuctovaniePanel } from "./RozuctovaniePanel";
+import { rozpisPrijatej } from "@/lib/faktero/prijate-do-pohody";
 
 export type Navrhy = {
   predkontacie: MoznostKodu[];
@@ -165,6 +167,9 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
           <p>
             Predkontácia <strong>{row.pohoda_predkontacia || navrhy?.predvolenaPredkontacia || "—"}</strong>
             , členenie DPH <strong>{row.pohoda_clenenie_dph || navrhy?.predvoleneClenenie || "—"}</strong>
+            {Array.isArray(row.rozuctovanie) && row.rozuctovanie.length > 1
+              ? ` (rozúčtovaná na ${row.rozuctovanie.length} riadky)`
+              : ""}
             . Faktúra je v Pohode — zmeny robte tam.
           </p>
         ) : (
@@ -188,6 +193,19 @@ export function ZauctovaniePanel({ row, onZmena }: { row: any; onZmena: () => vo
                 "Kódy musia existovať v Pohode."
               )}
             </p>
+            <RozuctovaniePanel
+              companyId={row.company_id}
+              druh="prijata"
+              id={row.id}
+              rozpis={rozpisPrijatej(row)}
+              ulozene={row.rozuctovanie}
+              navrhy={navrhy}
+              kody={{
+                predkontacia: h.predkontacia || navrhy?.predvolenaPredkontacia || null,
+                clenenie: h.clenenie || navrhy?.predvoleneClenenie || null,
+              }}
+              onZmena={onZmena}
+            />
             <div className="mt-3 flex flex-wrap gap-2">
               {!zauctovana && (
                 <button

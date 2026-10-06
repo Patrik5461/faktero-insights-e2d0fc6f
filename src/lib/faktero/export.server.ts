@@ -1,5 +1,6 @@
 // Server-only helpers for accounting exports.
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
+import { chybaRozuctovania, nacitajRozuctovanie, rozpisBlocku } from "./rozuctovanie";
 import { nazovOznacenia, type KodOznacenia } from "./vypis-oznacenie";
 import { nazovKategorie } from "@/lib/mobile/kategorie-vydavkov";
 
@@ -151,6 +152,13 @@ export type PohodaNastavenia = {
   predkontaciaDoklady?: string | null;
   /** Členenie DPH pre bloček a výdavkový doklad; prázdne = ako prijatá faktúra. */
   clenenieDphDoklady?: string | null;
+  /**
+   * Predkontácia hlavičky rozúčtovaného dokladu — v Pohode „Rozúčtovať";
+   * kódy potom nesú položky. Prázdne = podľa krajiny firmy.
+   */
+  predkontaciaRozuctovat?: string | null;
+  /** Kódy podľa kategórie nákladu (Predkontácie → kategória), keď doklad nemá vlastné. */
+  podlaKategorie?: Record<string, { predkontacia?: string | null; clenenie?: string | null }>;
   /** Skratka pokladne v Pohode — do ktorej pokladne pohyby patria. */
   pokladna?: string | null;
   /** Predkontácia pre pokladničný doklad. */
@@ -802,21 +810,7 @@ export function polozkyBankovehoVypisu(opts: {
 type RozpisDph = { sadzba: number; zaklad: number; dph: number };
 
 function rozpisDokladu(doklad: DokladRow): RozpisDph[] {
-  const r = Array.isArray(doklad?.vat_breakdown) ? doklad.vat_breakdown : null;
-  if (r?.length) {
-    return (r as Record<string, unknown>[])
-      .map((x) => ({
-        sadzba: Number(x?.sadzba ?? 0),
-        zaklad: Number(x?.zaklad ?? 0),
-        dph: Number(x?.dph ?? 0),
-      }))
-      .filter((x) => x.zaklad || x.dph);
-  }
-  // Starší doklad má len jednu sadzbu v hlavičke.
-  const zaklad = Number(doklad?.net_amount ?? 0);
-  const dph = Number(doklad?.vat_amount ?? 0);
-  if (!zaklad && !dph) return [];
-  return [{ sadzba: Number(doklad?.vat_rate ?? 0), zaklad, dph }];
+  return rozpisBlocku(doklad);
 }
 
 /**
@@ -904,14 +898,62 @@ export function polozkyDokladov(opts: {
       // Prijatá faktúra nesie `_typPohody`; bez neho je to bloček či výdavkový
       // doklad a ten má vlastné predvolené kódy (Predkontácie → Bloček).
       const blocek = !d?._typPohody;
-      const predkontacia =
+      const podlaKat = nastavenia?.podlaKategorie?.[String(d?.category ?? "")];
+      const predkontaciaJedna =
         String(d?.pohoda_predkontacia ?? "").trim() ||
+        podlaKat?.predkontacia ||
         (blocek ? nastavenia?.predkontaciaDoklady : null) ||
         nastavenia?.predkontaciaPrijata;
-      const clenenie =
+      const clenenieJedno =
         String(d?.pohoda_clenenie_dph ?? "").trim() ||
+        podlaKat?.clenenie ||
         (blocek ? nastavenia?.clenenieDphDoklady : null) ||
         nastavenia?.clenenieDphPrijata;
+
+      /*
+        Rozúčtovaný doklad: každý riadok ide ako položka s vlastnou
+        predkontáciou a členením, hlavička nesie „Rozúčtovať". Riadky, ktoré
+        so súčtami dokladu nesedia, sa nepoužijú — radšej jeden kód než iná daň.
+      */
+      const rozuct = nacitajRozuctovanie(d?.rozuctovanie);
+      const rozuctovany = rozuct.length > 1 && !chybaRozuctovania(rozuct, rozpis);
+      const predkontacia = rozuctovany
+        ? nastavenia?.predkontaciaRozuctovat?.trim() ||
+          (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")
+        : predkontaciaJedna;
+      const clenenie = rozuctovany ? null : clenenieJedno;
+      const polozkyRozuct = rozuctovany
+        ? `
+      <inv:invoiceDetail>${rozuct
+        .map((r) => {
+          const pk = r.predkontacia || predkontaciaJedna;
+          const cl = r.clenenie || clenenieJedno;
+          return `
+        <inv:invoiceItem>${el("inv:text", skrat(r.text || popis || "Prijatý doklad", 90), "          ")}
+          <inv:quantity>1</inv:quantity>
+          <inv:payVAT>false</inv:payVAT>
+          <inv:rateVAT>${kodSadzby(r.sadzba, tab)}</inv:rateVAT>
+          <inv:homeCurrency>${elSuma("typ:unitPrice", r.zaklad, "            ")}${elSuma(
+            "typ:price",
+            r.zaklad,
+            "            ",
+          )}${elSuma("typ:priceVAT", r.dph, "            ")}${elSuma(
+            "typ:priceSum",
+            r.zaklad + r.dph,
+            "            ",
+          )}
+          </inv:homeCurrency>${
+            pk ? `\n          <inv:accounting><typ:ids>${esc(pk)}</typ:ids></inv:accounting>` : ""
+          }${
+            cl
+              ? `\n          <inv:classificationVAT><typ:ids>${esc(cl)}</typ:ids></inv:classificationVAT>`
+              : ""
+          }
+        </inv:invoiceItem>`;
+        })
+        .join("")}
+      </inv:invoiceDetail>`
+        : "";
 
       const adresa = [
         el("typ:company", skrat(d?.supplier_name, 96), "            "),
@@ -953,7 +995,7 @@ export function polozkyDokladov(opts: {
         <inv:paymentType><typ:paymentType>${
           FORMY_UHRADY[String(d?.payment_method ?? "")] ?? "draft"
         }</typ:paymentType></inv:paymentType>
-      </inv:invoiceHeader>
+      </inv:invoiceHeader>${polozkyRozuct}
       <inv:invoiceSummary>
         <inv:homeCurrency>${elSuma("typ:priceNone", zaklad(s0), "          ")}${elSuma(
           "typ:price3",
