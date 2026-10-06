@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-r
 import { KodPohody } from "@/components/faktero/KodPohody";
 import { JobPicker } from "@/components/faktero/JobPicker";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
+import { KomentarePanel } from "@/components/faktero/KomentarePanel";
 import { RozuctovaniePanel } from "@/components/faktero/RozuctovaniePanel";
 import type { Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn } from "@/lib/faktero/zauctovanie.functions";
@@ -22,6 +23,7 @@ import { useKrajinaDane } from "@/lib/faktero/krajina-firmy";
 import {
   createExpenseFn,
   updateExpenseFn,
+  poznamkySablonyFn,
   nastavStavDokladovFn,
   getExpenseFileUrlFn,
 } from "@/lib/faktero/expenses.functions";
@@ -141,6 +143,15 @@ function NovyDokladPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const cid = getActiveCompanyId();
   const [ulozeny, setUlozeny] = useState<any>(null);
+  const sablonyFn = useServerFn(poznamkySablonyFn);
+  const [sablony, setSablony] = useState<string[]>([]);
+  useEffect(() => {
+    if (!cid) return;
+    sablonyFn({ data: { company_id: cid } })
+      .then((r) => setSablony(r.zoznam))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cid]);
   const nacitajKody = useServerFn(navrhyKodovFn);
   const [kody, setKody] = useState<Navrhy | null>(null);
   useEffect(() => {
@@ -797,6 +808,9 @@ function NovyDokladPage() {
               {search.id && cid ? (
                 <div className="sm:col-span-2">
                   <SchvalovaniePanel companyId={cid} agenda="doklad" id={search.id} />
+                  <div className="mt-3">
+                    <KomentarePanel companyId={cid} agenda="doklad" id={search.id} />
+                  </div>
                 </div>
               ) : null}
               <div className="sm:col-span-2 rounded-md border border-border p-3">
@@ -960,7 +974,41 @@ function NovyDokladPage() {
                 )}
               </div>
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs text-muted-foreground">Poznámka</label>
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <label className="text-xs text-muted-foreground">Poznámka</label>
+                  {sablony.length > 0 && (
+                    <select
+                      value=""
+                      aria-label="Vložiť preddefinovanú poznámku"
+                      onChange={(e) => {
+                        if (e.target.value)
+                          updateForm("note", form.note ? `${form.note}\n${e.target.value}` : e.target.value);
+                      }}
+                      className="rounded-md border border-input bg-background px-2 py-0.5 text-xs"
+                    >
+                      <option value="">vložiť preddefinovanú…</option>
+                      {sablony.map((t) => (
+                        <option key={t} value={t}>
+                          {t.length > 60 ? `${t.slice(0, 60)}…` : t}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {form.note.trim() && !sablony.includes(form.note.trim()) && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!cid) return;
+                        const r = await sablonyFn({ data: { company_id: cid, pridat: form.note.trim() } });
+                        setSablony(r.zoznam);
+                        toast.success("Poznámka uložená medzi preddefinované");
+                      }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      uložiť ako preddefinovanú
+                    </button>
+                  )}
+                </div>
                 <textarea
                   value={form.note}
                   onChange={(e) => updateForm("note", e.target.value)}

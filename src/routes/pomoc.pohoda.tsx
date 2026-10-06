@@ -92,6 +92,24 @@ const sections: HelpSection[] = [
           bloček označený B2 ide aj vo Fakteri do časti B.2 s číslom a IČ DPH dodávateľa.
         </p>
         <p>
+          Z Pohody sa načítajú aj <strong>strediská, činnosti a číselné rady</strong> (záložky v
+          číselníku). Predvolený číselný rad pre prijaté faktúry, bločky, pokladňu a interné doklady
+          a predvolené stredisko nastavíte na tej istej stránke; doklad môže mať vlastné. Pri doklade
+          sa dá zadať aj zákazka a interná poznámka pre účtovníčku; párovací symbol sa vyplní z
+          variabilného symbolu a k bločkom aj prijatým faktúram ide odkaz na sken.
+        </p>
+        <p>
+          Predkontácia môže mať <strong>účtovanie pomerom</strong> — napríklad 80/20 alebo auto s
+          odpočtom DPH 50 % od roku 2026. Doklad s takou predkontáciou sa do Pohody rozúčtuje sám a
+          výkazy k DPH odpočítajú len príslušnú časť dane. Predkontácia s agendou
+          <em> Ostatné záväzky</em> pošle faktúru do tejto agendy.
+        </p>
+        <p>
+          Doklad z <strong>uzamknutého obdobia</strong> dostane v Pohode dátum zaúčtovania prvý deň
+          po uzávierke. Viac pokladní (záložka Pokladne) a voľbu posielať aj položky bločku nájdete
+          tiež na stránke Predkontácie.
+        </p>
+        <p>
           Bez predkontácií Pohoda doklady naimportuje bez chyby, ale zaúčtovanie si ku každému
           doklikáva ručne — teda presne tú prácu, ktorú mal export ušetriť.
         </p>

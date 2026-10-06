@@ -8,6 +8,8 @@ import {
   prepniPrijemMailom,
   obnovAdresuNaDoklady,
   nastavVlastnuAdresu,
+  zdrojovyMailFn,
+  povoleniOdosielateliaFn,
   type StavPrijmuMailom,
 } from "@/lib/faktero/mail-prijem.functions";
 import { overVlastnyLocalPart } from "@/lib/faktero/mail-prijem";
@@ -20,6 +22,7 @@ const STAVY: Record<string, { text: string; trieda: string }> = {
   bez_prilohy: { text: "Bez prílohy", trieda: "text-amber-700" },
   potvrdenie: { text: "Potvrdenie preposielania", trieda: "text-amber-700" },
   chyba: { text: "Nepodarilo sa", trieda: "text-destructive" },
+  odmietnute: { text: "Odmietnuté — nepovolený odosielateľ", trieda: "text-destructive" },
 };
 
 /**
@@ -33,6 +36,18 @@ export function PrijemMailom({
   const [otvorene, setOtvorene] = useState(predvoleneOtvorene);
   const [skopirovane, setSkopirovane] = useState(false);
   const [pracuje, setPracuje] = useState(false);
+  const [zdroj, setZdroj] = useState<Record<string, string>>({});
+  const [povoleni, setPovoleni] = useState("");
+  const nacitajZdroj = useServerFn(zdrojovyMailFn);
+  const ulozPovolenych = useServerFn(povoleniOdosielateliaFn);
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    ulozPovolenych({ data: { company_id: cid } })
+      .then((r) => setPovoleni(r.zoznam.join("\n")))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const nacitaj = useServerFn(stavPrijmuMailom);
   const prepni = useServerFn(prepniPrijemMailom);
@@ -245,6 +260,42 @@ export function PrijemMailom({
                   doklad. Ak sa dostane von, vyrobte si novú.
                 </p>
 
+                <div className="mt-4 rounded-md border border-border p-3">
+                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Povolení odosielatelia
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Jedna adresa alebo doména (napr. @dodavatel.sk) na riadok. Prázdne = doklad
+                    prijme od kohokoľvek, kto adresu pozná.
+                  </p>
+                  <textarea
+                    value={povoleni}
+                    onChange={(e) => setPovoleni(e.target.value)}
+                    rows={3}
+                    className="mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    placeholder={"fakturacia@dodavatel.sk\n@orange.sk"}
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await ulozPovolenych({
+                          data: {
+                            company_id: getActiveCompanyId()!,
+                            zoznam: povoleni.split(/[\n,;]+/).map((x) => x.trim()).filter(Boolean),
+                          },
+                        });
+                        toast.success("Uložené");
+                      } catch (e: any) {
+                        toast.error(e?.message ?? "Nepodarilo sa");
+                      }
+                    }}
+                    className="mt-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+                  >
+                    Uložiť odosielateľov
+                  </button>
+                </div>
+
                 <div className="mt-4">
                   <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Posledné maily
@@ -286,10 +337,35 @@ export function PrijemMailom({
                                 otvoriť ostatný doklad
                               </Link>
                             )}
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (zdroj[s.id] !== undefined) {
+                                  const n = { ...zdroj };
+                                  delete n[s.id];
+                                  setZdroj(n);
+                                  return;
+                                }
+                                try {
+                                  const r = await nacitajZdroj({ data: { company_id: getActiveCompanyId()!, id: s.id } });
+                                  setZdroj({ ...zdroj, [s.id]: r.text });
+                                } catch (e: any) {
+                                  toast.error(e?.message ?? "Mail sa nepodarilo načítať");
+                                }
+                              }}
+                              className="text-xs text-primary hover:underline"
+                            >
+                              {zdroj[s.id] !== undefined ? "skryť e-mail" : "zobraziť e-mail"}
+                            </button>
                             {s.detail && (
                               <span className="w-full text-xs text-muted-foreground">
                                 {s.detail}
                               </span>
+                            )}
+                            {zdroj[s.id] !== undefined && (
+                              <pre className="mt-1 w-full max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-xs">
+                                {zdroj[s.id]}
+                              </pre>
                             )}
                           </li>
                         );

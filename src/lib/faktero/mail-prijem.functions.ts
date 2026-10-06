@@ -182,3 +182,63 @@ export const nastavVlastnuAdresu = createServerFn({ method: "POST" })
       local_part: overene.hodnota,
     };
   });
+
+/** Text pôvodného e-mailu, z ktorého doklad vznikol (ako v Doklado). */
+export const zdrojovyMailFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    CompanyInput.extend({ id: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await assertMember(supabase, userId, data.company_id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: m } = await supabaseAdmin
+      .from("inbox_messages")
+      .select("provider_email_id")
+      .eq("id", data.id)
+      .eq("company_id", data.company_id)
+      .maybeSingle();
+    if (!m?.provider_email_id) throw new Error("Mail sa nenašiel.");
+    const apiKey = (process.env.RESEND_INBOUND_API_KEY || process.env.RESEND_API_KEY)?.trim();
+    if (!apiKey) throw new Error("Príjem mailov nie je nastavený.");
+    const { obsahMailu } = await import("./mail-prijem.server");
+    const o = await obsahMailu(m.provider_email_id, apiKey);
+    const text =
+      String(o.text ?? "").trim() ||
+      String(o.html ?? "")
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/p>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    return { text: text.slice(0, 20000) || "(prázdny mail)" };
+  });
+
+/** Povolení odosielatelia — prázdne = ktokoľvek s adresou. */
+export const povoleniOdosielateliaFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) =>
+    CompanyInput.extend({ zoznam: z.array(z.string().trim().max(120)).max(100).optional() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await assertMember(supabase, userId, data.company_id);
+    if (data.zoznam) {
+      const zoznam = [...new Set(data.zoznam.map((x) => x.toLowerCase()).filter(Boolean))];
+      const { error } = await supabase
+        .from("companies")
+        .update({ mail_povoleni_odosielatelia: zoznam })
+        .eq("id", data.company_id);
+      if (error) throw new Error(error.message);
+    }
+    const { data: f } = await supabase
+      .from("companies")
+      .select("mail_povoleni_odosielatelia")
+      .eq("id", data.company_id)
+      .maybeSingle();
+    return { zoznam: ((f as any)?.mail_povoleni_odosielatelia ?? []) as string[] };
+  });

@@ -616,3 +616,38 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       count: rows.length,
     };
   });
+
+/** Preddefinované poznámky firmy (ako v Doklado) — načítať, pridať, odobrať. */
+export const poznamkySablonyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) =>
+    z
+      .object({
+        company_id: z.string().uuid(),
+        pridat: z.string().trim().min(1).max(300).optional(),
+        odobrat: z.string().max(300).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { data: clen } = await supabase
+      .from("company_users")
+      .select("user_id")
+      .eq("company_id", data.company_id)
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (!clen) throw new Error("Do firmy nemáte prístup.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: f } = await supabaseAdmin
+      .from("companies")
+      .select("poznamky_sablony")
+      .eq("id", data.company_id)
+      .single();
+    let zoznam: string[] = ((f as any)?.poznamky_sablony ?? []) as string[];
+    if (data.pridat && !zoznam.includes(data.pridat)) zoznam = [...zoznam, data.pridat].slice(-50);
+    if (data.odobrat) zoznam = zoznam.filter((x) => x !== data.odobrat);
+    if (data.pridat || data.odobrat)
+      await supabaseAdmin.from("companies").update({ poznamky_sablony: zoznam }).eq("id", data.company_id);
+    return { zoznam };
+  });

@@ -8,6 +8,7 @@ import { SamofakturaPanel } from "@/components/faktero/SamofakturaPanel";
 import { PredlzitSplatnost } from "@/components/faktero/PredlzitSplatnost";
 import { ZauctovaniePanel } from "@/components/faktero/ZauctovaniePanel";
 import { SchvalovaniePanel } from "@/components/faktero/SchvalovaniePanel";
+import { KomentarePanel } from "@/components/faktero/KomentarePanel";
 import { popisSplatnosti, predlzena } from "@/lib/faktero/splatnost";
 import { zapocitatelna } from "@/lib/faktero/samofakturacia";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -436,6 +437,7 @@ function PurchaseInvoiceDetail() {
               <SchvalovaniePanel companyId={row.company_id} agenda="prijata" id={row.id} onZmena={load} />
             )}
             {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
+            {!navrh && <KomentarePanel companyId={row.company_id} agenda="prijata" id={row.id} />}
 
             <PolozkyDokladu items={row.items} mena={row.currency} samo={samo} />
 

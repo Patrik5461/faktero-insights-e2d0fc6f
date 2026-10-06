@@ -286,18 +286,88 @@ async function notifikacieOdpovediPodpory(userId: string): Promise<AppNotificati
     }));
 }
 
+/*
+  Komentár k dokladu, v ktorom kolega označil práve tohto používateľa.
+  Kľúč je id komentára — každý je samostatná notifikácia.
+*/
+async function notifikacieKomentarov(companyId: string, userId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const od = new Date(Date.now() - 30 * 86400000).toISOString();
+  const { data } = await supabaseAdmin
+    .from("komentare_dokladov" as any)
+    .select("id, agenda, doklad_id, text, created_at, user_id")
+    .eq("company_id", companyId)
+    .contains("upozornit", [userId])
+    .neq("user_id", userId)
+    .gte("created_at", od)
+    .order("created_at", { ascending: false })
+    .limit(30);
+  const cesta = (a: string, id: string) =>
+    a === "doklad" ? `/doklady/novy?id=${id}` : a === "prijata" ? `/prijate-faktury/${id}` : `/faktury/${id}`;
+  return ((data ?? []) as any[]).map((k) => ({
+    key: `komentar:${k.id}`,
+    severity: "info" as const,
+    title: "Kolega vás označil v komentári",
+    detail: String(k.text).slice(0, 140),
+    to: cesta(k.agenda, k.doklad_id),
+    date: String(k.created_at).slice(0, 10),
+  }));
+}
+
+/** Doklady, ktoré čakajú na schválenie práve týmto používateľom. */
+async function notifikaciaSchvalovania(companyId: string, userId: string): Promise<AppNotification[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [{ data: firma }, { data: clen }] = await Promise.all([
+    supabaseAdmin.from("companies").select("schvalovanie_zapnute").eq("id", companyId).maybeSingle(),
+    supabaseAdmin.from("company_users").select("role").eq("company_id", companyId).eq("user_id", userId).maybeSingle(),
+  ]);
+  if (!(firma as any)?.schvalovanie_zapnute) return [];
+  const { data } = await supabaseAdmin
+    .from("schvalovanie" as any)
+    .select("urovne, schvalena_uroven, stav")
+    .eq("company_id", companyId)
+    .eq("stav", "caka")
+    .limit(500);
+  const { mozeSchvalit, nacitajUrovne } = await import("./schvalovanie");
+  const pocet = ((data ?? []) as any[]).filter((r) =>
+    mozeSchvalit({ ...r, urovne: nacitajUrovne(r.urovne) }, userId, (clen as any)?.role),
+  ).length;
+  if (!pocet) return [];
+  const dnes = new Date().toISOString().slice(0, 10);
+  return [
+    {
+      key: `schvalovanie:${dnes}:${pocet}`,
+      severity: "warning" as const,
+      title: `${pocet} ${pocet === 1 ? "doklad čaká" : pocet < 5 ? "doklady čakajú" : "dokladov čaká"} na vaše schválenie`,
+      detail: "Do Pohody a na úhradu pôjdu až po schválení.",
+      to: "/schvalovanie",
+      date: dnes,
+    },
+  ];
+}
+
 async function vsetkyNotifikacie(companyId: string, userId: string): Promise<AppNotification[]> {
   const zoznam = await (async () => {
-    const [signaly, zamestnanci, doklady, ponuky, podpora] = await Promise.all([
+    const [signaly, zamestnanci, doklady, ponuky, podpora, komentare, schvalovanie] = await Promise.all([
       zozbierajSignaly(companyId),
       notifikacieZamestnancov(companyId).catch(() => [] as AppNotification[]),
       notifikaciaNespracovanychDokladov(companyId).catch(() => [] as AppNotification[]),
       notifikacieOdpovediNaPonuky(companyId).catch(() => [] as AppNotification[]),
       notifikacieOdpovediPodpory(userId).catch(() => [] as AppNotification[]),
+      notifikacieKomentarov(companyId, userId).catch(() => [] as AppNotification[]),
+      notifikaciaSchvalovania(companyId, userId).catch(() => [] as AppNotification[]),
     ]);
     // Rovnaké pravidlo ako `buildNotifications`: pri oznamoch najčerstvejšie hore,
     // inak najstaršie (najdlhšie po termíne).
-    return [...buildNotifications(signaly), ...zamestnanci, ...doklady, ...ponuky, ...podpora].sort(
+    return [
+      ...buildNotifications(signaly),
+      ...zamestnanci,
+      ...doklady,
+      ...ponuky,
+      ...podpora,
+      ...komentare,
+      ...schvalovanie,
+    ].sort(
       (a, b) => {
         const podlaZavaznosti = PORADIE_ZAVAZNOSTI[a.severity] - PORADIE_ZAVAZNOSTI[b.severity];
         if (podlaZavaznosti !== 0) return podlaZavaznosti;

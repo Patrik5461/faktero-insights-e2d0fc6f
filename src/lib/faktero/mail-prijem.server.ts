@@ -89,6 +89,7 @@ Vráť VÝLUČNE JSON v tvare:
  "items": [{"name": string, "quantity": number|null, "unit": string|null,
             "unit_price": number|null, "vat_rate": number|null, "total": number|null}]}
 Dodávateľ je ten, KTO doklad vystavil, nie odberateľ. Sumy uveď ako čísla s bodkou.
+Pridaj aj údaje ODBERATEĽA, ak sú na doklade: "buyer_name", "buyer_ico", "buyer_ic_dph" (inak null).
 
 Najprv rozhodni "document_type":
 - "faktura" — faktúra, zálohová faktúra, dobropis, blok, účtenka: doklad o nákupe tovaru či služby.
@@ -167,7 +168,7 @@ export type PrijatyMail = {
 };
 
 export type VysledokPrijmu = {
-  stav: "hotovo" | "bez_prilohy" | "neznama_adresa" | "potvrdenie" | "chyba";
+  stav: "hotovo" | "bez_prilohy" | "neznama_adresa" | "potvrdenie" | "chyba" | "odmietnute";
   vytvorenych: number;
   detail?: string;
 };
@@ -238,6 +239,29 @@ async function ulozPotvrdeniePreposielania(args: {
  * a z každej založí prijatú faktúru. Do `inbox_messages` zapíše, ako to dopadlo —
  * bez toho by používateľ nemal ako zistiť, prečo sa doklad neobjavil.
  */
+/** Adresa odosielateľa z „Meno <adresa>" a jej zhoda s povolenými (adresa alebo @doména). */
+export function odosielatelPovoleny(od: string | null, povoleni: string[]): boolean {
+  const m = String(od ?? "").match(/<([^>]+)>/);
+  const adresa = (m ? m[1] : String(od ?? "")).trim().toLowerCase();
+  if (!adresa) return false;
+  const domena = adresa.includes("@") ? adresa.slice(adresa.indexOf("@")) : "";
+  return povoleni.some((p) => p === adresa || (p.startsWith("@") && p === domena) || (!p.includes("@") && domena === `@${p}`));
+}
+
+/** Výstraha, keď je doklad vystavený na iného odberateľa; inak `null`. */
+export function cudziOdberatel(
+  ai: Record<string, unknown> | null,
+  firma: { ico: string; icDph: string },
+): string | null {
+  const ico = String(ai?.buyer_ico ?? "").replace(/\s/g, "");
+  const icDph = String(ai?.buyer_ic_dph ?? "").replace(/\s/g, "").toUpperCase();
+  if (ico && firma.ico && ico !== firma.ico)
+    return `Pozor: doklad je vystavený na iného odberateľa (IČO ${ico})`;
+  if (!ico && icDph && firma.icDph && icDph !== firma.icDph)
+    return `Pozor: doklad je vystavený na iného odberateľa (IČ DPH ${icDph})`;
+  return null;
+}
+
 export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPrijmu> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -273,6 +297,36 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
 
   const odosielatel = (mail.from ?? "").trim() || null;
   const predmet = (mail.subject ?? "").trim() || null;
+
+  /*
+    Povolení odosielatelia (ako v Doklado): keď si ich firma nastavila, doklad
+    od iného odosielateľa sa nezaloží — len sa zapíše, že prišiel a bol
+    odmietnutý. Potvrdenie preposielania od Gmailu a spol. ide vždy.
+  */
+  const { data: firma } = await supabaseAdmin
+    .from("companies")
+    .select("mail_povoleni_odosielatelia, ico, ic_dph, name")
+    .eq("id", adresa.company_id)
+    .maybeSingle();
+  const firmaUdaje = {
+    ico: String((firma as any)?.ico ?? "").replace(/\s/g, ""),
+    icDph: String((firma as any)?.ic_dph ?? "").replace(/\s/g, "").toUpperCase(),
+  };
+  const povoleni: string[] = ((firma as any)?.mail_povoleni_odosielatelia ?? []).map((x: string) =>
+    String(x).trim().toLowerCase(),
+  );
+  if (povoleni.length && !poskytovatelPotvrdenia(odosielatel) && !odosielatelPovoleny(odosielatel, povoleni)) {
+    await supabaseAdmin.from("inbox_messages").insert({
+      company_id: adresa.company_id,
+      address_id: adresa.id,
+      provider_email_id: mail.email_id,
+      from_email: odosielatel,
+      subject: predmet,
+      status: "odmietnute",
+      detail: "Odosielateľ nie je medzi povolenými.",
+    });
+    return { stav: "odmietnute", vytvorenych: 0 };
+  }
 
   const { data: zaznam } = await supabaseAdmin
     .from("inbox_messages")
@@ -465,6 +519,17 @@ export async function spracujPrijatyMail(mail: PrijatyMail): Promise<VysledokPri
         nazovSuboru: priloha.filename ?? null,
         dnes,
       });
+
+      /*
+        Kontrola, či doklad patrí firme (ako v Doklado): keď je na ňom
+        odberateľ s iným IČO či IČ DPH, doklad sa založí, ale s výstrahou
+        v poznámke aj v denníku mailov.
+      */
+      const cudzi = cudziOdberatel(ai, firmaUdaje);
+      if (cudzi) {
+        faktura.note = [faktura.note, cudzi].filter(Boolean).join(" · ");
+        poznamky.push(`${priloha.filename ?? "príloha"}: ${cudzi}`);
+      }
 
       const { data: vlozena, error } = await supabaseAdmin
         .from("purchase_invoices")

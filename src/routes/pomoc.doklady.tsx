@@ -360,6 +360,56 @@ const sections: HelpSection[] = [
       </>
     ),
   },
+  {
+    id: "schvalovanie",
+    title: "Schvaľovanie dokladov",
+    body: (
+      <>
+        <p>
+          V <Link to="/nastavenia/schvalovanie">Nastavenia → Schvaľovanie dokladov</Link> zapnete,
+          ktoré doklady sa schvaľujú (bločky, prijaté, vystavené faktúry), sumu, pod ktorou sa schvália
+          samy, a či sa vystavená faktúra smie odoslať až po schválení. Platí to pre doklady pridané
+          od zapnutia.
+        </p>
+        <p>
+          <strong>Schvaľovacia cesta</strong> má úrovne od najnižšej po najvyššiu, v každej jedného
+          alebo viac schvaľovateľov. Schválenie vyššou úrovňou platí aj za nižšie. Pravidlá cesty
+          (dodávateľ podľa IČO, suma od, predkontácia, druh dokladu) určia, ktorá cesta sa použije;
+          inak predvolená. Bez ciest stačí jedno schválenie majiteľom, správcom alebo účtovníkom.
+        </p>
+        <p>
+          Doklady čakajúce na vás sú v <Link to="/schvalovanie">Doklady → Na schválenie</Link> aj
+          v zvončeku; schváliť, vrátiť na opravu či zamietnuť ich viete hromadne aj na detaile
+          dokladu. Do Pohody, do mesačného balíka a do príkazu na úhradu idú len schválené. Vrátený
+          doklad sa po oprave vráti na schválenie odznova.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "kos",
+    title: "Kôš, komentáre a poznámky",
+    body: (
+      <>
+        <p>
+          Zmazaný doklad ide do <strong>koša</strong> (tlačidlo Kôš v Dokladoch). Do 90 dní sa dá
+          obnoviť aj s párovaním na pohyb v banke, potom sa kôš vysype sám aj so skenom.
+        </p>
+        <p>
+          Na detaile dokladu sú <strong>komentáre</strong> — otázka účtovníčke, vysvetlenie
+          výdavku. Označený kolega dostane upozornenie do zvončeka.
+        </p>
+        <p>
+          Pri poznámke si viete opakované texty uložiť ako <strong>preddefinované</strong> a potom
+          ich len vyberať.
+        </p>
+        <p>
+          Odovzdaný doklad je <strong>zamknutý</strong> — jeho sumy, dátumy ani zaúčtovanie sa nedajú
+          zmeniť, kým ho nevrátite z Pohody.
+        </p>
+      </>
+    ),
+  },
 ];
 
 function Page() {

@@ -1290,6 +1290,8 @@ export type Database = {
           schvalovanie_agendy: string[]
           schvalovanie_auto_pod: number | null
           schvalovanie_odoslanie: boolean
+          mail_povoleni_odosielatelia: string[]
+          poznamky_sablony: string[]
         }
         Insert: {
           city?: string | null
@@ -1379,6 +1381,8 @@ export type Database = {
           schvalovanie_agendy?: string[]
           schvalovanie_auto_pod?: number | null
           schvalovanie_odoslanie?: boolean
+          mail_povoleni_odosielatelia?: string[]
+          poznamky_sablony?: string[]
         }
         Update: {
           city?: string | null
@@ -1468,6 +1472,8 @@ export type Database = {
           schvalovanie_agendy?: string[]
           schvalovanie_auto_pod?: number | null
           schvalovanie_odoslanie?: boolean
+          mail_povoleni_odosielatelia?: string[]
+          poznamky_sablony?: string[]
         }
         Relationships: []
       }
