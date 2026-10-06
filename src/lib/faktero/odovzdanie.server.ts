@@ -227,6 +227,7 @@ export async function zostavBalik(
     clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
     banka: company.pohoda_banka,
     stredisko: company.pohoda_stredisko,
+    zamknuteDo: company.locked_until,
     predkontaciaPrijata: company.pohoda_predkontacia_prijata,
     clenenieDphPrijata: company.pohoda_clenenie_dph_prijata,
     predkontaciaDoklady: company.pohoda_predkontacia_doklady,

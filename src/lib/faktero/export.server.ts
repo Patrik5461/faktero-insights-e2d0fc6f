@@ -103,7 +103,25 @@ const FORMY_UHRADY: Record<string, string> = {
   dobierka: "delivery",
   compensation: "compensation",
   zapocet: "compensation",
+  inkaso: "encashment",
+  encashment: "encashment",
+  zaloha: "advance",
+  advance: "advance",
 };
+
+/**
+ * Dátum zaúčtovania pre doklad z uzamknutého obdobia: prvý deň po uzávierke.
+ * Pohoda by doklad do uzavretého obdobia nezaúčtovala; inak `null` (zaúčtuje
+ * sa k dátumu dokladu).
+ */
+export function datumZauctovania(datum: unknown, zamknuteDo: unknown): string | null {
+  const d = String(datum ?? "");
+  const z = String(zamknuteDo ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !/^\d{4}-\d{2}-\d{2}$/.test(z) || d > z) return null;
+  const dalsi = new Date(`${z}T12:00:00Z`);
+  dalsi.setUTCDate(dalsi.getUTCDate() + 1);
+  return dalsi.toISOString().slice(0, 10);
+}
 
 /** Typ dokladu. Zálohová faktúra **nie je** bežná faktúra — nesmie sa zaúčtovať ako výnos. */
 const TYPY_DOKLADU: Record<string, string> = {
@@ -174,6 +192,12 @@ export type PohodaNastavenia = {
   zakazkyDokladov?: Record<string, string>;
   /** Odkaz na sken podľa id prijatého dokladu (záložka Dokumenty v Pohode). */
   odkazyDokladov?: Record<string, string>;
+  /** Uzávierka obdobia (`companies.locked_until`) — doklady z neho dostanú dátum zaúčtovania. */
+  zamknuteDo?: string | null;
+  /** Predkontácie s agendou „Ostatné záväzky" — faktúra s nimi ide ako záväzok. */
+  zavazkovePredkontacie?: string[];
+  /** Bločky aj s položkami (inak len súhrn po sadzbách). */
+  polozkyBlockov?: boolean;
   /** Skratka pokladne v Pohode — do ktorej pokladne pohyby patria. */
   pokladna?: string | null;
   /** Predkontácia pre pokladničný doklad. */
@@ -561,6 +585,10 @@ export function polozkyFaktur(opts: {
           invoice.delivery_date ?? invoice.issue_date,
           "        ",
         )}${el("inv:dateDue", invoice.due_date, "        ")}${el(
+          "inv:dateAccounting",
+          datumZauctovania(invoice.issue_date, nastavenia?.zamknuteDo),
+          "        ",
+        )}${el(
           "inv:text",
           // „Text nad položkami" je to, čo sa fakturuje — patrí do textu
           // dokladu v Pohode. Poznámka ide do poznámky.
@@ -1022,7 +1050,7 @@ export function polozkyDokladov(opts: {
           ? platba === "hotovost"
             ? // Pokladničný doklad bez pokladne Pohoda nezaloží — kým firma
               // skratku pokladne nevyplní, ide bloček ako prijatá faktúra.
-              nastavenia?.pokladna?.trim()
+              String(d?.pohoda_pokladna ?? "").trim() || nastavenia?.pokladna?.trim()
               ? "vch"
               : "inv"
             : platba === "karta"
@@ -1037,6 +1065,12 @@ export function polozkyDokladov(opts: {
       };
       const kvHlavicka = rozuctovany ? "" : kv();
 
+      /*
+        Položky bločku (voľba firmy): v cenách s DPH, ako sú na bločku. Pri
+        rozúčtovaní majú prednosť riadky rozúčtovania.
+      */
+      const polozkyBlocku: any[] =
+        nastavenia?.polozkyBlockov && blocek && Array.isArray(d?.items) ? d.items : [];
       const polozkyRozuct = rozuctovany
         ? `
       <${p}:${koren}Detail>${rozuct
@@ -1073,7 +1107,22 @@ export function polozkyDokladov(opts: {
         })
         .join("")}
       </${p}:${koren}Detail>`
-        : "";
+        : polozkyBlocku.length
+          ? `
+      <${p}:${koren}Detail>${polozkyBlocku
+        .map(
+          (it: any) => `
+        <${p}:${koren}Item>${el(`${p}:text`, skrat(it?.name || "Položka", 90), "          ")}
+          <${p}:quantity>${Number(it?.quantity ?? 1) || 1}</${p}:quantity>
+          <${p}:payVAT>true</${p}:payVAT>
+          <${p}:rateVAT>${kodSadzby(Number(it?.vat_rate ?? 0), tab)}</${p}:rateVAT>
+          <${p}:homeCurrency>${elSuma("typ:unitPrice", Number(it?.unit_price ?? it?.total ?? 0), "            ")}
+          </${p}:homeCurrency>
+        </${p}:${koren}Item>`,
+        )
+        .join("")}
+      </${p}:${koren}Detail>`
+          : "";
 
       const adresa = [
         el("typ:company", skrat(d?.supplier_name, 96), "            "),
@@ -1084,15 +1133,22 @@ export function polozkyDokladov(opts: {
       // Číslo dokladu od dodávateľa: prijatá faktúra ho má vždy, bloček
       // v pokladni či internom doklade ho nesie tiež, nech sa dá dohľadať.
       const povodne = skrat(d?._povodneCislo || (p !== "inv" ? d?.document_number : ""), 32);
+      // Predkontácia s agendou „Ostatné záväzky" → doklad ide ako záväzok.
+      const typFaktury =
+        typPohody === "receivedInvoice" &&
+        predkontaciaJedna &&
+        nastavenia?.zavazkovePredkontacie?.includes(String(predkontaciaJedna))
+          ? "commitment"
+          : typPohody;
       const typ =
         p === "inv"
-          ? `\n        <inv:invoiceType>${esc(typPohody)}</inv:invoiceType>`
+          ? `\n        <inv:invoiceType>${esc(typFaktury)}</inv:invoiceType>`
           : p === "vch"
-            ? `\n        <vch:voucherType>expense</vch:voucherType>${
-                nastavenia?.pokladna
-                  ? `\n        <vch:cashAccount><typ:ids>${esc(nastavenia.pokladna)}</typ:ids></vch:cashAccount>`
-                  : ""
-              }`
+            ? `\n        <vch:voucherType>expense</vch:voucherType>${odkazIds(
+                "vch:cashAccount",
+                String(d?.pohoda_pokladna ?? "").trim() || nastavenia?.pokladna,
+                "        ",
+              )}`
             : "";
 
       /*
@@ -1132,6 +1188,10 @@ export function polozkyDokladov(opts: {
         <${p}:date>${esc(d?.issue_date ?? "")}</${p}:date>
         <${p}:dateTax>${esc(datumDph)}</${p}:dateTax>${
           p === "inv" ? el("inv:dateDue", d?._splatnost, "        ") : ""
+        }${
+          p !== "vch"
+            ? el(`${p}:dateAccounting`, datumZauctovania(d?.issue_date, nastavenia?.zamknuteDo), "        ")
+            : ""
         }${el(`${p}:text`, popis || "Prijatý doklad", "        ")}${el(
           `${p}:note`,
           skrat(d?.note, 200),

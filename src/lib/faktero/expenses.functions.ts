@@ -39,6 +39,7 @@ export type ExpenseInput = {
   cinnost?: string | null;
   pohoda_rad?: string | null;
   int_poznamka?: string | null;
+  pohoda_pokladna?: string | null;
 };
 
 const inputSchema = z.object({
@@ -66,6 +67,7 @@ const inputSchema = z.object({
   cinnost: z.string().max(30).nullable().optional(),
   pohoda_rad: z.string().max(30).nullable().optional(),
   int_poznamka: z.string().max(240).nullable().optional(),
+  pohoda_pokladna: z.string().max(20).nullable().optional(),
   note: z.string().nullable().optional(),
   file_path: z.string().nullable().optional(),
   file_mime: z.string().nullable().optional(),
@@ -548,7 +550,7 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const { data: firma } = await supabase
       .from("companies")
       .select(
-        "ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia_rozuctovat, pohoda_blocky_agenda, pohoda_pokladna, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, pohoda_rad_pokladna, pohoda_rad_interne, pohoda_posielat_zakazky, pohoda_odkaz_na_doklady, id",
+        "ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia_rozuctovat, pohoda_blocky_agenda, pohoda_pokladna, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, pohoda_rad_pokladna, pohoda_rad_interne, pohoda_posielat_zakazky, pohoda_odkaz_na_doklady, pohoda_polozky_blockov, locked_until, id",
       )
       .eq("id", data.company_id)
       .single();

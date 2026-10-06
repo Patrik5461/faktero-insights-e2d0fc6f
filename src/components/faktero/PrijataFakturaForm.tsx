@@ -527,6 +527,9 @@ export function PrijataFakturaForm({
                   <option value="hotovost">Hotovosť</option>
                   <option value="karta">Karta</option>
                   <option value="dobierka">Dobierka</option>
+                  <option value="inkaso">Inkaso</option>
+                  <option value="zaloha">Úhrada zálohou</option>
+                  <option value="zapocet">Zápočet</option>
                 </select>
               </Field>
               <Field label="Stav">

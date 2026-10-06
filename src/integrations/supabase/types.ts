@@ -1284,6 +1284,7 @@ export type Database = {
           pohoda_rad_interne: string | null
           pohoda_stredisko: string | null
           pohoda_odkaz_na_doklady: boolean
+          pohoda_polozky_blockov: boolean
         }
         Insert: {
           city?: string | null
@@ -1367,6 +1368,7 @@ export type Database = {
           pohoda_rad_interne?: string | null
           pohoda_stredisko?: string | null
           pohoda_odkaz_na_doklady?: boolean
+          pohoda_polozky_blockov?: boolean
         }
         Update: {
           city?: string | null
@@ -1450,6 +1452,7 @@ export type Database = {
           pohoda_rad_interne?: string | null
           pohoda_stredisko?: string | null
           pohoda_odkaz_na_doklady?: boolean
+          pohoda_polozky_blockov?: boolean
         }
         Relationships: []
       }
@@ -2801,6 +2804,7 @@ export type Database = {
           pohoda_rad: string | null
           int_poznamka: string | null
           pdf_token: string | null
+          pohoda_pokladna: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -2847,6 +2851,7 @@ export type Database = {
           pohoda_rad?: string | null
           int_poznamka?: string | null
           pdf_token?: string | null
+          pohoda_pokladna?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -2893,6 +2898,7 @@ export type Database = {
           pohoda_rad?: string | null
           int_poznamka?: string | null
           pdf_token?: string | null
+          pohoda_pokladna?: string | null
         }
         Relationships: [
           {

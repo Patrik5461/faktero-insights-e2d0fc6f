@@ -127,6 +127,7 @@ function Predvolene({
   const [blockyAgenda, setBlockyAgenda] = useState<"faktura" | "podla_platby">("podla_platby");
   const [pokladna, setPokladna] = useState("");
   const [odkazNaDoklady, setOdkazNaDoklady] = useState(true);
+  const [polozkyBlockov, setPolozkyBlockov] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -135,6 +136,7 @@ function Predvolene({
     setBlockyAgenda(firma.pohoda_blocky_agenda === "faktura" ? "faktura" : "podla_platby");
     setPokladna(String(firma.pohoda_pokladna ?? ""));
     setOdkazNaDoklady(firma.pohoda_odkaz_na_doklady !== false);
+    setPolozkyBlockov(Boolean(firma.pohoda_polozky_blockov));
   }, [firma]);
 
   const pocetNaVyber = (kluc: string, druh: DruhCiselnika) =>
@@ -144,7 +146,7 @@ function Predvolene({
     setBusy(true);
     try {
       await uloz({
-        data: { company_id: companyId, hodnoty: h, oznaceni, blockyAgenda, pokladna, odkazNaDoklady },
+        data: { company_id: companyId, hodnoty: h, oznaceni, blockyAgenda, pokladna, odkazNaDoklady, polozkyBlockov },
       });
       toast.success("Uložené");
       onUlozene();
@@ -281,6 +283,21 @@ function Predvolene({
             Všetky ako prijaté faktúry
             <span className="block text-xs text-muted-foreground">
               Doklad sa zaúčtuje ako záväzok a úhradu spáruje účtovníčka.
+            </span>
+          </span>
+        </label>
+        <label className="mt-3 flex items-start gap-2 border-t border-border pt-3 text-sm">
+          <input
+            type="checkbox"
+            checked={polozkyBlockov}
+            onChange={(e) => setPolozkyBlockov(e.target.checked)}
+            className="mt-1"
+          />
+          <span>
+            Posielať aj položky bločku
+            <span className="block text-xs text-muted-foreground">
+              Inak ide len súhrn po sadzbách DPH. Položky idú v cenách s DPH, tak ako sú na bločku.
+              Doklad s ďalšími pokladňami vyberiete v záložke Pokladne v číselníku nižšie.
             </span>
           </span>
         </label>
@@ -685,7 +702,9 @@ function Ciselnik({
                     ? "PD"
                     : druh === "ciselny_rad"
                       ? "26FP"
-                      : "BA"
+                      : druh === "pokladna"
+                        ? "HP"
+                        : "BA"
               }
               autoFocus
             />

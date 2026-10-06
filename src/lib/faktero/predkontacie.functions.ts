@@ -16,6 +16,7 @@ const STLPCE_FIRMY = [
   "pohoda_ciselniky_nacitane_at",
   "pohoda_blocky_agenda",
   "pohoda_odkaz_na_doklady",
+  "pohoda_polozky_blockov",
   "pohoda_pokladna",
 ].join(", ");
 
@@ -53,7 +54,7 @@ export const ulozPredkontaciuFn = createServerFn({ method: "POST" })
       .object({
         company_id: z.string().uuid(),
         id: z.string().uuid().optional().nullable(),
-        druh: z.enum(["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad"]),
+        druh: z.enum(["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad", "pokladna"]),
         kod,
         popis: kratke(200),
         agenda: z.string().trim().max(40).optional().nullable(),
@@ -120,6 +121,7 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
         blockyAgenda: z.enum(["faktura", "podla_platby"]).optional(),
         pokladna: z.string().max(20).optional().nullable(),
         odkazNaDoklady: z.boolean().optional(),
+        polozkyBlockov: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -140,6 +142,7 @@ export const ulozPredvoleneFn = createServerFn({ method: "POST" })
     if (data.blockyAgenda) zmena.pohoda_blocky_agenda = data.blockyAgenda;
     if (data.pokladna !== undefined) zmena.pohoda_pokladna = data.pokladna?.trim() || null;
     if (data.odkazNaDoklady !== undefined) zmena.pohoda_odkaz_na_doklady = data.odkazNaDoklady;
+    if (data.polozkyBlockov !== undefined) zmena.pohoda_polozky_blockov = data.polozkyBlockov;
     const { error } = await supabase.from("companies").update(zmena).eq("id", data.company_id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -175,7 +178,7 @@ export const importCiselnikaFn = createServerFn({ method: "POST" })
         company_id: z.string().uuid(),
         nazov: z.string().max(255),
         base64: z.string().max(8_000_000),
-        druh: z.enum(["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad"]).optional(),
+        druh: z.enum(["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad", "pokladna"]).optional(),
       })
       .parse(d),
   )

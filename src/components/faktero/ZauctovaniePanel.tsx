@@ -25,6 +25,7 @@ export type Navrhy = {
   podlaKategorie?: Record<string, { predkontacia?: string; clenenie?: string }>;
   strediska?: MoznostKodu[];
   cinnosti?: MoznostKodu[];
+  pokladne?: MoznostKodu[];
   rady?: MoznostKodu[];
   predvoleneStredisko?: string | null;
   predvolenyRad?: string | null;

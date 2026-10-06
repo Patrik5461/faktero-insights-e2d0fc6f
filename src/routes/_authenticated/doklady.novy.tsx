@@ -64,6 +64,7 @@ type Form = {
   cinnost: string;
   pohoda_rad: string;
   int_poznamka: string;
+  pohoda_pokladna: string;
   note: string;
 };
 
@@ -94,6 +95,7 @@ const EMPTY: Form = {
   cinnost: "",
   pohoda_rad: "",
   int_poznamka: "",
+  pohoda_pokladna: "",
   note: "",
 };
 
@@ -202,6 +204,7 @@ function NovyDokladPage() {
         cinnost: (data as any).cinnost ?? "",
         pohoda_rad: (data as any).pohoda_rad ?? "",
         int_poznamka: (data as any).int_poznamka ?? "",
+        pohoda_pokladna: (data as any).pohoda_pokladna ?? "",
         note: data.note ?? "",
       });
       setUlozeny(data);
@@ -462,6 +465,7 @@ function NovyDokladPage() {
         cinnost: form.cinnost.trim() || null,
         pohoda_rad: form.pohoda_rad.trim() || null,
         int_poznamka: form.int_poznamka.trim() || null,
+        pohoda_pokladna: form.pohoda_pokladna.trim() || null,
         note: form.note || null,
         file_path: uploadedFile?.path ?? null,
         file_mime: uploadedFile?.mime ?? null,
@@ -893,6 +897,20 @@ function NovyDokladPage() {
                     />
                   </label>
                 </div>
+                {form.payment_method === "hotovost" && (kody?.pokladne?.length ?? 0) > 0 && (
+                  <label className="mt-3 block sm:max-w-xs">
+                    <span className="mb-1 block text-xs text-muted-foreground">Pokladňa v Pohode</span>
+                    <KodPohody
+                      ariaLabel="Pokladňa v Pohode"
+                      value={form.pohoda_pokladna}
+                      onChange={(v) => updateForm("pohoda_pokladna", v)}
+                      moznosti={kody?.pokladne ?? []}
+                      placeholder="predvolená"
+                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                      vyber
+                    />
+                  </label>
+                )}
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <JobPicker value={form.job_id} onChange={(v) => updateForm("job_id", v)} label="Zákazka" />
                   <label className="block">

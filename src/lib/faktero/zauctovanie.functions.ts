@@ -121,6 +121,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
       maCiselnik: (ciselnik ?? []).length > 0,
       strediska: ponuka(ciselnik ?? [], "stredisko"),
       cinnosti: ponuka(ciselnik ?? [], "cinnost"),
+      pokladne: ponuka(ciselnik ?? [], "pokladna"),
       // Číselné rady: vhodná agenda Pohody prvá (prijaté či vydané faktúry, pokladňa…).
       rady: ponuka(ciselnik ?? [], "ciselny_rad").sort(
         (a, b) =>
@@ -274,12 +275,14 @@ export const zauctujDokladyFn = createServerFn({ method: "POST" })
         stredisko: kod,
         cinnost: kod,
         rad: kod,
+        pokladna: kod,
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
     const zmena: Record<string, unknown> = {};
+    if (data.pokladna?.trim()) zmena.pohoda_pokladna = data.pokladna.trim();
     if (data.kv?.trim()) zmena.kv_clenenie = data.kv.trim() === "auto" ? null : data.kv.trim();
     if (data.stredisko?.trim()) zmena.stredisko = data.stredisko.trim();
     if (data.cinnost?.trim()) zmena.cinnost = data.cinnost.trim();

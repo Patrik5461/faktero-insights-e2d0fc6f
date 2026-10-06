@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { XMLParser, XMLValidator } from "fast-xml-parser";
-import {
+import { datumZauctovania,
   buildPohodaInvoiceXml,
   buildPohodaExpensesXml,
   buildPohodaCashXml,
@@ -551,6 +551,34 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(i.centre.ids).toBe("KE");
     expect(x[1].intDoc.attachments).toBeUndefined();
     expect(x[2].invoice.invoiceHeader.number.ids).toBe("26FPB");
+  });
+
+  it("Ostatné záväzky, dátum zaúčtovania po uzávierke, položky bločku a pokladňa dokladu", () => {
+    const nast = {
+      blockyPodlaPlatby: true,
+      pokladna: "HP",
+      zavazkovePredkontacie: ["OZ1"],
+      zamknuteDo: "2026-08-31",
+      polozkyBlockov: true,
+    };
+    const x = posli(
+      [
+        { ...bloček, id: "a", payment_method: "prevod", _typPohody: "receivedInvoice", pohoda_predkontacia: "OZ1" },
+        { ...bloček, id: "b", payment_method: "hotovost", pohoda_pokladna: "HP2",
+          items: [{ name: "Nafta", quantity: 1, unit_price: 20, total: 20, vat_rate: 23 }] },
+      ],
+      nast,
+    ).dataPackItem;
+    expect(x[0].invoice.invoiceHeader.invoiceType).toBe("commitment");
+    expect(x[0].invoice.invoiceHeader.dateAccounting).toBe("2026-09-01");
+    expect(x[1].voucher.voucherHeader.cashAccount.ids).toBe("HP2");
+    expect(x[1].voucher.voucherDetail.voucherItem).toMatchObject({ text: "Nafta", payVAT: true, rateVAT: "high" });
+  });
+
+  it("dátum zaúčtovania len pre doklad z uzamknutého obdobia", () => {
+    expect(datumZauctovania("2026-08-15", "2026-08-31")).toBe("2026-09-01");
+    expect(datumZauctovania("2026-09-15", "2026-08-31")).toBeNull();
+    expect(datumZauctovania("2026-08-15", null)).toBeNull();
   });
 
   it("hotovostný bloček bez skratky pokladne ide ako faktúra — Pohoda by ho odmietla", () => {

@@ -9,7 +9,13 @@
   Čisté funkcie bez databázy, aby sa dali skúšať.
 */
 
-export type DruhCiselnika = "predkontacia" | "clenenie_dph" | "stredisko" | "cinnost" | "ciselny_rad";
+export type DruhCiselnika =
+  | "predkontacia"
+  | "clenenie_dph"
+  | "stredisko"
+  | "cinnost"
+  | "ciselny_rad"
+  | "pokladna";
 
 /** Druhy číselníka v poradí záložiek, s názvom pre ľudí. */
 export const DRUHY_CISELNIKA: { kod: DruhCiselnika; nazov: string; jednotne: string }[] = [
@@ -18,6 +24,7 @@ export const DRUHY_CISELNIKA: { kod: DruhCiselnika; nazov: string; jednotne: str
   { kod: "stredisko", nazov: "Strediská", jednotne: "stredisko" },
   { kod: "cinnost", nazov: "Činnosti", jednotne: "činnosť" },
   { kod: "ciselny_rad", nazov: "Číselné rady", jednotne: "číselný rad" },
+  { kod: "pokladna", nazov: "Pokladne", jednotne: "pokladňu" },
 ];
 
 export type ZaznamCiselnika = {

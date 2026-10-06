@@ -148,7 +148,18 @@ export async function nastaveniaDokladov(
     radPokladna: company.pohoda_rad_pokladna,
     radInterne: company.pohoda_rad_interne,
     podlaKategorie: await kodyPodlaKategorie(supabase, company.id),
+    zamknuteDo: company.locked_until ?? null,
+    polozkyBlockov: Boolean(company.pohoda_polozky_blockov),
   };
+  // Predkontácie s agendou Ostatné záväzky — faktúra s nimi ide ako záväzok.
+  const { data: zavazky } = await supabase
+    .from("predkontacie")
+    .select("kod")
+    .eq("company_id", company.id)
+    .eq("druh", "predkontacia")
+    .eq("agenda", "commitment")
+    .eq("aktivne", true);
+  out.zavazkovePredkontacie = (zavazky ?? []).map((r: any) => String(r.kod));
 
   // Zákazka ide len vtedy, keď ich firma do Pohody posiela — inak by doklad
   // ukázal na zákazku, ktorú Pohoda nepozná, a import by ho odmietol.
