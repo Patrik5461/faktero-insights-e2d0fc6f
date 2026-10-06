@@ -28,7 +28,7 @@ export const predkontacieFn = createServerFn({ method: "POST" })
     const [{ data: zaznamy, error }, { data: firma }] = await Promise.all([
       supabase
         .from("predkontacie")
-        .select("id, druh, kod, popis, agenda, ucet_md, ucet_d, zdroj, aktivne, druhy_dokladov, kategoria, updated_at")
+        .select("id, druh, kod, popis, agenda, ucet_md, ucet_d, zdroj, aktivne, druhy_dokladov, kategoria, pomer, updated_at")
         .eq("company_id", data.company_id)
         .order("kod"),
       supabase.from("companies").select(STLPCE_FIRMY).eq("id", data.company_id).maybeSingle(),
@@ -63,12 +63,18 @@ export const ulozPredkontaciuFn = createServerFn({ method: "POST" })
         aktivne: z.boolean().optional(),
         druhy_dokladov: z.array(z.string().max(20)).max(20).optional(),
         kategoria: kratke(40),
+        pomer: z.any().optional().nullable(),
       })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
+    const { nacitajPomer } = await import("./rozuctovanie");
+    const pomer = data.pomer ? nacitajPomer(data.pomer) : null;
+    if (data.pomer && !pomer)
+      throw new Error("Pomer nesedí — časti musia dať spolu 100 % a každá potrebuje predkontáciu.");
     const riadok = {
+      pomer,
       druhy_dokladov: data.druhy_dokladov ?? [],
       kategoria: data.kategoria,
       company_id: data.company_id,

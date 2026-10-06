@@ -6,6 +6,7 @@ import { Download, Loader2, Pencil, Plus, RefreshCw, Trash2, Upload } from "luci
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PageHeader, PageBody } from "@/components/faktero/AppShell";
 import { KodPohody } from "@/components/faktero/KodPohody";
+import { PomerEditor, type PomerHodnota } from "@/components/faktero/PomerEditor";
 import { OZNACENIA } from "@/lib/faktero/vypis-oznacenie";
 import { KATEGORIE_VYDAVKOV } from "@/lib/mobile/kategorie-vydavkov";
 import {
@@ -52,6 +53,7 @@ type Zaznam = {
   aktivne: boolean;
   druhy_dokladov: string[];
   kategoria: string | null;
+  pomer: PomerHodnota;
 };
 
 const ZDROJ: Record<string, string> = { pohoda: "Pohoda", subor: "súbor", rucne: "ručne" };
@@ -588,6 +590,7 @@ const PRAZDNY = {
   aktivne: true,
   druhy_dokladov: [] as string[],
   kategoria: "",
+  pomer: null as PomerHodnota,
 };
 
 function Ciselnik({
@@ -807,6 +810,16 @@ function Ciselnik({
               ))}
             </select>
           </label>
+          {druh === "predkontacia" && (
+            <div className="sm:col-span-6">
+              <PomerEditor
+                value={form.pomer}
+                onChange={(pomer) => setForm({ ...form, pomer })}
+                predkontacie={ponuka(zaznamy, "predkontacia")}
+                clenenia={ponuka(zaznamy, "clenenie_dph")}
+              />
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-end gap-2 sm:col-span-6">
             <p className="mr-auto text-xs text-muted-foreground">
               Kód musí byť rovnaký ako v Pohode, inak ho Pohoda pri importe nenájde.
@@ -882,7 +895,16 @@ function Ciselnik({
               {riadky.map((z) => (
                 <tr key={z.id} className={`border-t border-border ${z.aktivne ? "" : "opacity-50"}`}>
                   <td className="py-1.5 pr-3 font-mono font-medium">{z.kod}</td>
-                  <td className="py-1.5 pr-3">{z.popis ?? "—"}</td>
+                  <td className="py-1.5 pr-3">
+                    {z.popis ?? "—"}
+                    {z.pomer ? (
+                      <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-800">
+                        {z.pomer.typ === "dph5050"
+                          ? `pomer ${z.pomer.zaklad} %, DPH 50 %`
+                          : `pomer ${z.pomer.casti.map((c) => `${c.podiel}`).join("/")}`}
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="py-1.5 pr-3 text-muted-foreground">
                     {druh === "predkontacia" ? nazovAgendy(z.agenda) : z.agenda || "—"}
                   </td>
@@ -925,6 +947,7 @@ function Ciselnik({
                           aktivne: z.aktivne,
                           druhy_dokladov: z.druhy_dokladov ?? [],
                           kategoria: z.kategoria ?? "",
+                          pomer: z.pomer ?? null,
                         })
                       }
                       className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"

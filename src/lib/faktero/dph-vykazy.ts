@@ -62,6 +62,8 @@ export type PrijataFaktura = {
   riadky: SadzbovyRiadok[];
   /** Ručne zvolené členenie KV (B1, B2, X = nezahŕňať); prázdne = automaticky. */
   kv?: string | null;
+  /** Podiel odpočítateľnej DPH (účtovanie pomerom, napr. auto 50/50); chýba = celá. */
+  podielOdpoctu?: number;
 };
 
 /** Zjednodušená faktúra — bloček z registračnej pokladnice, doklad za PHM a pod. */
@@ -78,6 +80,8 @@ export type PrijatyDoklad = {
   kv?: string | null;
   cislo?: string | null;
   datum?: string | null;
+  /** Podiel odpočítateľnej DPH (účtovanie pomerom); chýba = celá. */
+  podielOdpoctu?: number;
 };
 
 export type Vstup = {
@@ -347,7 +351,7 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
         z: centy(r.zaklad),
         d: centy(r.dan),
         s: Math.round(r.sadzba),
-        o: centy(p.odpocet ? r.dan : 0),
+        o: centy(p.odpocet ? r.dan * (p.podielOdpoctu ?? 1) : 0),
       };
       if (doB1) {
         vykaz.b1.push(riadok);
@@ -410,7 +414,7 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
         z: centy(r.zaklad),
         d: centy(r.dan),
         s: Math.round(r.sadzba),
-        o: centy(r.dan),
+        o: centy(r.dan * (d.podielOdpoctu ?? 1)),
       });
     }
   }
@@ -423,7 +427,12 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
       vykaz.b31 = {
         z: centy(sOdpoctom.reduce((a, d) => a + d.riadky.reduce((b, r) => b + r.zaklad, 0), 0)),
         d: danSpolu,
-        o: danSpolu,
+        o: centy(
+          sOdpoctom.reduce(
+            (a, d) => a + d.riadky.reduce((b, r) => b + r.dan, 0) * (d.podielOdpoctu ?? 1),
+            0,
+          ),
+        ),
       };
     } else {
       const podlaDodavatela = new Map<string, KvB32>();
@@ -440,7 +449,7 @@ export function kontrolnyVykaz(vstup: Vstup): KontrolnyVykaz {
         for (const r of d.riadky) {
           s.z = centy(s.z + r.zaklad);
           s.d = centy(s.d + r.dan);
-          s.o = centy(s.o + r.dan);
+          s.o = centy(s.o + r.dan * (d.podielOdpoctu ?? 1));
         }
         podlaDodavatela.set(kluc, s);
       }
@@ -602,9 +611,10 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
       if (!p.odpocet) continue;
       const cielCelkom = znizena ? "r18" : zakladna ? "r19" : null;
       if (!cielCelkom) continue;
-      pripocitaj(cielCelkom, x.dan);
-      if (p.rezim === "tuzemsko") pripocitaj(znizena ? "r20" : "r21", x.dan);
-      if (p.rezim === "dovoz") pripocitaj(znizena ? "r22" : "r23", x.dan);
+      const odp = centy(x.dan * (p.podielOdpoctu ?? 1));
+      pripocitaj(cielCelkom, odp);
+      if (p.rezim === "tuzemsko") pripocitaj(znizena ? "r20" : "r21", odp);
+      if (p.rezim === "dovoz") pripocitaj(znizena ? "r22" : "r23", odp);
     }
   }
 
@@ -621,8 +631,9 @@ export function priznanie(vstup: Vstup, rucne: RucneRiadky = {}): Record<string,
       // dnešný cenník — historické doklady sa tým nezmenia, lebo sadzba na
       // doklade je uložená.
       const znizena = x.sadzba > 0 && x.sadzba !== sadzbyKuDnu("SK").high;
-      pripocitaj(znizena ? "r18" : "r19", x.dan);
-      pripocitaj(znizena ? "r20" : "r21", x.dan);
+      const odp = centy(x.dan * (d.podielOdpoctu ?? 1));
+      pripocitaj(znizena ? "r18" : "r19", odp);
+      pripocitaj(znizena ? "r20" : "r21", odp);
     }
   }
 

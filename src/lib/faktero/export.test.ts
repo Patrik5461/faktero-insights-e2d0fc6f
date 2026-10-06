@@ -575,6 +575,17 @@ describe("Pohoda XML — prijaté doklady", () => {
     expect(x[1].voucher.voucherDetail.voucherItem).toMatchObject({ text: "Nafta", payVAT: true, rateVAT: "high" });
   });
 
+  it("predkontácia s pomerom rozúčtuje doklad sama", () => {
+    const nast = {
+      predkontaciaDoklady: "PHM",
+      pomeryPredkontacii: { PHM: { typ: "dph5050", zaklad: 80, zdanitelna: "PHM1", lenZaklad: "PHM2", nezdanitelna: "PHM3" } },
+    };
+    const inv = posli([bloček], nast).dataPackItem.invoice;
+    expect(inv.invoiceHeader.accounting.ids).toBe("Rozúčtovať");
+    const kody = ([] as any[]).concat(inv.invoiceDetail.invoiceItem).map((p) => p.accounting.ids);
+    expect(new Set(kody)).toEqual(new Set(["PHM1", "PHM2", "PHM3"]));
+  });
+
   it("dátum zaúčtovania len pre doklad z uzamknutého obdobia", () => {
     expect(datumZauctovania("2026-08-15", "2026-08-31")).toBe("2026-09-01");
     expect(datumZauctovania("2026-09-15", "2026-08-31")).toBeNull();

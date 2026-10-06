@@ -89,3 +89,30 @@ describe("rozúčtovanie", () => {
     expect(rozpisBlocku({ net_amount: 10, vat_amount: 2.3, vat_rate: 23 })).toEqual([{ sadzba: 23, zaklad: 10, dph: 2.3 }]);
   });
 });
+
+describe("účtovanie pomerom", () => {
+  const rozpisAuto = [{ sadzba: 23, zaklad: 100, dph: 23 }];
+
+  it("50/50: zdaniteľná 50 %, len základ 30 %, nezdaniteľná 20 % a sedí na cent", async () => {
+    const { nacitajPomer, rozuctovaniePodlaPomeru, podielOdpoctu, chybaRozuctovania } = await import("./rozuctovanie");
+    const p = nacitajPomer({ typ: "dph5050", zaklad: 80, zdanitelna: "PHM", lenZaklad: "PHMZ", nezdanitelna: "SUK", clenenieBezOdpoctu: "PN" })!;
+    const r = rozuctovaniePodlaPomeru(p, rozpisAuto, "PD");
+    expect(r.map((x) => [x.predkontacia, x.zaklad, x.dph, x.clenenie])).toEqual([
+      ["PHM", 50, 11.5, "PD"],
+      ["PHMZ", 30, 6.9, "PN"],
+      ["SUK", 20, 4.6, "PN"],
+    ]);
+    expect(chybaRozuctovania(r, rozpisAuto)).toBeNull();
+    expect(podielOdpoctu(p)).toBe(0.5);
+  });
+
+  it("pomer 80/20 s odpočtom len z prvej časti; nesúci pomer sa odmietne", async () => {
+    const { nacitajPomer, rozuctovaniePodlaPomeru, podielOdpoctu } = await import("./rozuctovanie");
+    const p = nacitajPomer({ typ: "pomer", casti: [{ podiel: 80, predkontacia: "1Fp" }, { podiel: 20, predkontacia: "5Fp", odpocet: false }] })!;
+    const r = rozuctovaniePodlaPomeru(p, [{ sadzba: 23, zaklad: 10.01, dph: 2.3 }], null);
+    expect(r.reduce((a, x) => a + x.zaklad, 0)).toBeCloseTo(10.01, 2);
+    expect(r.reduce((a, x) => a + x.dph, 0)).toBeCloseTo(2.3, 2);
+    expect(podielOdpoctu(p)).toBe(0.8);
+    expect(nacitajPomer({ typ: "pomer", casti: [{ podiel: 80, predkontacia: "1Fp" }, { podiel: 10, predkontacia: "5Fp" }] })).toBeNull();
+  });
+});

@@ -204,6 +204,14 @@ describe("kontrolný výkaz", () => {
     ]);
   });
 
+  it("pomer 50/50 kráti odpočet v priznaní aj v B.3", () => {
+    const v = vstup({
+      doklady: [{ odpocet: true, podielOdpoctu: 0.5, riadky: [{ sadzba: 23, zaklad: 100, dan: 23 }] }],
+    });
+    expect(kontrolnyVykaz(v).b31).toEqual({ z: 100, d: 23, o: 11.5 });
+    expect(priznanie(v).r21).toBe(11.5);
+  });
+
   it("doklad B2 bez IČ DPH dodávateľa je výtka, nie tichý riadok", () => {
     const kv = kontrolnyVykaz(
       vstup({ doklady: [{ odpocet: true, kv: "B2", cislo: "1", riadky: [{ sadzba: 23, zaklad: 10, dan: 2.3 }] }] }),

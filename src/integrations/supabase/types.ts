@@ -5027,6 +5027,7 @@ export type Database = {
           zdroj: string
           druhy_dokladov: string[]
           kategoria: string | null
+          pomer: Json | null
         }
         Insert: {
           agenda?: string
@@ -5044,6 +5045,7 @@ export type Database = {
           zdroj?: string
           druhy_dokladov?: string[]
           kategoria?: string | null
+          pomer?: Json | null
         }
         Update: {
           agenda?: string
@@ -5061,6 +5063,7 @@ export type Database = {
           zdroj?: string
           druhy_dokladov?: string[]
           kategoria?: string | null
+          pomer?: Json | null
         }
         Relationships: []
       }

@@ -160,6 +160,7 @@ export async function nastaveniaDokladov(
     .eq("agenda", "commitment")
     .eq("aktivne", true);
   out.zavazkovePredkontacie = (zavazky ?? []).map((r: any) => String(r.kod));
+  out.pomeryPredkontacii = await pomeryPredkontacii(supabase, company.id);
 
   // Zákazka ide len vtedy, keď ich firma do Pohody posiela — inak by doklad
   // ukázal na zákazku, ktorú Pohoda nepozná, a import by ho odmietol.
@@ -193,4 +194,20 @@ export async function nastaveniaDokladov(
     out.odkazyDokladov = odkazy;
   }
   return out;
+}
+
+
+/** Predkontácie s účtovaním pomerom: kód → pomer (pre export aj výkazy DPH). */
+export async function pomeryPredkontacii(
+  supabase: Klient,
+  companyId: string,
+): Promise<Record<string, unknown>> {
+  const { data } = await supabase
+    .from("predkontacie")
+    .select("kod, pomer")
+    .eq("company_id", companyId)
+    .eq("druh", "predkontacia")
+    .eq("aktivne", true)
+    .not("pomer", "is", null);
+  return Object.fromEntries((data ?? []).map((r: any) => [String(r.kod), r.pomer]));
 }

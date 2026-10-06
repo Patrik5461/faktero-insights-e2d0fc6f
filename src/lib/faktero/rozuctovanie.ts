@@ -174,3 +174,103 @@ export function rozpisBlocku(d: any): RozpisSadzby[] {
   if (!zaklad && !dph) return [];
   return [{ sadzba: Number(d?.vat_rate ?? 0), zaklad, dph }];
 }
+
+/* ------------------------------------------------- účtovanie pomerom */
+
+export type PomerPredkontacie =
+  | {
+      typ: "pomer";
+      casti: { podiel: number; predkontacia: string; odpocet?: boolean }[];
+      clenenieBezOdpoctu?: string | null;
+    }
+  | {
+      typ: "dph5050";
+      /** Podiel nákladu na podnikanie v % (napr. 80). DPH sa odpočíta najviac 50 %. */
+      zaklad: number;
+      zdanitelna: string;
+      lenZaklad: string;
+      nezdanitelna: string;
+      clenenieBezOdpoctu?: string | null;
+    };
+
+/** Pomer z JSON stĺpca, alebo `null`, keď nedáva zmysel. */
+export function nacitajPomer(v: unknown): PomerPredkontacie | null {
+  const x = v as any;
+  if (!x || typeof x !== "object") return null;
+  if (x.typ === "pomer" && Array.isArray(x.casti)) {
+    const casti = x.casti
+      .map((c: any) => ({
+        podiel: Number(c?.podiel) || 0,
+        predkontacia: String(c?.predkontacia ?? "").trim(),
+        odpocet: c?.odpocet !== false,
+      }))
+      .filter((c: any) => c.podiel > 0 && c.predkontacia);
+    const spolu = casti.reduce((a: number, c: any) => a + c.podiel, 0);
+    if (casti.length < 2 || Math.abs(spolu - 100) > 0.001) return null;
+    return { typ: "pomer", casti, clenenieBezOdpoctu: x.clenenieBezOdpoctu ?? null };
+  }
+  if (x.typ === "dph5050") {
+    const zaklad = Math.min(100, Math.max(0, Number(x.zaklad) || 0));
+    if (!x.zdanitelna) return null;
+    return {
+      typ: "dph5050",
+      zaklad,
+      zdanitelna: String(x.zdanitelna),
+      lenZaklad: String(x.lenZaklad ?? x.zdanitelna),
+      nezdanitelna: String(x.nezdanitelna ?? x.zdanitelna),
+      clenenieBezOdpoctu: x.clenenieBezOdpoctu ?? null,
+    };
+  }
+  return null;
+}
+
+/** Časti pomeru v percentách s kódom a tým, či sa z nich odpočíta DPH. */
+function castiPomeru(p: PomerPredkontacie): { podiel: number; predkontacia: string; odpocet: boolean }[] {
+  if (p.typ === "pomer") return p.casti.map((c) => ({ ...c, odpocet: c.odpocet !== false }));
+  const odpocet = Math.min(50, p.zaklad);
+  const lenZaklad = Math.max(0, p.zaklad - odpocet);
+  return [
+    { podiel: odpocet, predkontacia: p.zdanitelna, odpocet: true },
+    { podiel: lenZaklad, predkontacia: p.lenZaklad, odpocet: false },
+    { podiel: 100 - odpocet - lenZaklad, predkontacia: p.nezdanitelna, odpocet: false },
+  ].filter((c) => c.podiel > 0);
+}
+
+/** Aký podiel DPH dokladu sa odpočíta (1 = celá). */
+export function podielOdpoctu(p: PomerPredkontacie | null): number {
+  if (!p) return 1;
+  return castiPomeru(p).reduce((a, c) => a + (c.odpocet ? c.podiel : 0), 0) / 100;
+}
+
+/**
+ * Rozúčtovanie dokladu podľa pomeru predkontácie — po sadzbách, posledná
+ * časť dorovná centy, aby súčty sedeli s dokladom.
+ */
+export function rozuctovaniePodlaPomeru(
+  p: PomerPredkontacie,
+  rozpis: RozpisSadzby[],
+  clenenie: string | null,
+): RiadokRozuctovania[] {
+  const casti = castiPomeru(p);
+  const out: RiadokRozuctovania[] = [];
+  for (const s of rozpis) {
+    let zvysokZ = r2(s.zaklad);
+    let zvysokD = r2(s.dph);
+    casti.forEach((c, i) => {
+      const posledna = i === casti.length - 1;
+      const z = posledna ? zvysokZ : r2((s.zaklad * c.podiel) / 100);
+      const d = posledna ? zvysokD : r2((s.dph * c.podiel) / 100);
+      zvysokZ = r2(zvysokZ - z);
+      zvysokD = r2(zvysokD - d);
+      out.push({
+        predkontacia: c.predkontacia,
+        clenenie: c.odpocet ? clenenie : (p.clenenieBezOdpoctu ?? clenenie),
+        sadzba: s.sadzba,
+        zaklad: z,
+        dph: d,
+        text: `${c.podiel} %`,
+      });
+    });
+  }
+  return out;
+}

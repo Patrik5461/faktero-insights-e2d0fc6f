@@ -1,6 +1,12 @@
 // Server-only helpers for accounting exports.
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
-import { chybaRozuctovania, nacitajRozuctovanie, rozpisBlocku } from "./rozuctovanie";
+import {
+  chybaRozuctovania,
+  nacitajPomer,
+  nacitajRozuctovanie,
+  rozpisBlocku,
+  rozuctovaniePodlaPomeru,
+} from "./rozuctovanie";
 import { nazovOznacenia, type KodOznacenia } from "./vypis-oznacenie";
 import { nazovKategorie } from "@/lib/mobile/kategorie-vydavkov";
 
@@ -198,6 +204,8 @@ export type PohodaNastavenia = {
   zavazkovePredkontacie?: string[];
   /** Bločky aj s položkami (inak len súhrn po sadzbách). */
   polozkyBlockov?: boolean;
+  /** Účtovanie pomerom podľa kódu predkontácie (napr. auto 50/50). */
+  pomeryPredkontacii?: Record<string, unknown>;
   /** Skratka pokladne v Pohode — do ktorej pokladne pohyby patria. */
   pokladna?: string | null;
   /** Predkontácia pre pokladničný doklad. */
@@ -1030,7 +1038,15 @@ export function polozkyDokladov(opts: {
         predkontáciou a členením, hlavička nesie „Rozúčtovať". Riadky, ktoré
         so súčtami dokladu nesedia, sa nepoužijú — radšej jeden kód než iná daň.
       */
-      const rozuct = nacitajRozuctovanie(d?.rozuctovanie);
+      /*
+        Ručné rozúčtovanie má prednosť; inak, keď má predkontácia dokladu
+        nastavený pomer (napr. auto 50/50), rozúčtuje sa podľa neho sama.
+      */
+      const rucne = nacitajRozuctovanie(d?.rozuctovanie);
+      const pomer = rucne.length
+        ? null
+        : nacitajPomer(nastavenia?.pomeryPredkontacii?.[String(predkontaciaJedna ?? "")]);
+      const rozuct = pomer ? rozuctovaniePodlaPomeru(pomer, rozpis, clenenieJedno ?? null) : rucne;
       const rozuctovany = rozuct.length > 1 && !chybaRozuctovania(rozuct, rozpis);
       const predkontacia = rozuctovany
         ? nastavenia?.predkontaciaRozuctovat?.trim() ||
