@@ -298,9 +298,16 @@ const sections: HelpSection[] = [
           Samofaktúra vie všetko, čo bežná faktúra: text nad položkami, popis a zľavu na položke,
           konštantný a špecifický symbol, jazyk faktúry (aj pre zahraničného dodávateľa — veta o
           vyhotovení odberateľom sa preloží), cudziu menu s prepočtom dane kurzom ECB a osobitnú
-          úpravu podľa § 65 a § 66. Pri <strong>prenesení daňovej povinnosti</strong> (kovový šrot
+          úpravu podľa § 65 a § 66, zľavu na celú faktúru a zúčtovanie zaplatenej zálohy (prijatej
+          zálohovej faktúry od toho istého dodávateľa). Položky sa dajú vybrať z cenníka a skladu —
+          pri skladovej karte sa ponúkne posledná nákupná cena. Pri <strong>prenesení daňovej povinnosti</strong> (kovový šrot
           a odpad, stavebné práce podľa § 69 ods. 12, alebo dodávateľ z iného štátu EÚ) daň na
-          faktúre nebude — samozdaníte ju vy a dodávateľovi platíte len základ.
+          faktúre nebude — samozdaníte ju vy a dodávateľovi platíte len základ. Pri dodávateľovi z
+          iného štátu EÚ faktúra odkazuje na smernicu (čl. 138 pri tovare, čl. 196 pri službe).
+        </p>
+        <p>
+          Dodávateľ dostane e-mail aj stránku na odsúhlasenie <strong>v jazyku faktúry</strong> —
+          po slovensky, česky, anglicky, nemecky alebo maďarsky.
         </p>
         <p>
           <strong>3. Odsúhlasenie.</strong> Na detaile faktúry kliknite na{" "}
@@ -319,7 +326,9 @@ const sections: HelpSection[] = [
           rozpísaná po sadzbách), dá sa uhradiť z banky aj hromadným príkazom a PDF v odsúhlasenej
           podobe sa uloží ako príloha. Meniť sa už nedá — chyba sa opravuje dobropisom: na detaile
           kliknite na <em>Vystaviť dobropis</em>, položky sa predvyplnia so záporným množstvom a na
-          dobropise bude číslo opravovanej faktúry. Aj dobropis musí dodávateľ odsúhlasiť. Kým nie je
+          dobropise bude číslo opravovanej faktúry. Aj dobropis musí dodávateľ odsúhlasiť. Výkup tovaru
+          na sklad prijmete z odsúhlasenej samofaktúry tlačidlom <em>Prijať na sklad</em> — nákupná
+          cena je cena z faktúry po zľavách, v pohyboch skladu je pri ňom odkaz na samofaktúru. Kým nie je
           odsúhlasená, do výkazov ani do príkazu na úhradu nevstúpi a výkaz na ňu upozorní.
         </p>
         <p>

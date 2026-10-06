@@ -390,6 +390,8 @@ export const funkcie: HubContent = {
             "Dodávateľ dostane PDF a odkaz: Súhlasím, alebo vráti s poznámkou na opravu",
             "Odsúhlasená sa sama stane prijatou faktúrou — DPH na vstupe, kontrolný výkaz, úhrada z banky",
             "Neodsúhlasená do výkazov ani do príkazu na úhradu nepustí",
+            "Prenesenie DPH (šrot, stavebné práce, dodávateľ z EÚ), cudzia mena s kurzom ECB, zľavy, zúčtovanie zálohy a dobropis",
+            "Výkup tovaru jedným klikom na sklad, dodávateľ odsúhlasuje v slovenčine, češtine, angličtine, nemčine aj maďarčine",
           ],
         },
       ],
