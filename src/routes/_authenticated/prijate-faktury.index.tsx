@@ -44,6 +44,7 @@ import { HromadnyPrikaz } from "@/components/faktero/HromadnyPrikaz";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import { navrhyKodovFn, zauctujPrijateFn } from "@/lib/faktero/zauctovanie.functions";
 import { exportPrijatychPohodaFn } from "@/lib/faktero/vratenie.functions";
+import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { useStavSchvalovania, farbaOdznaku } from "@/hooks/useStavSchvalovania";
 import { useZatvorNaEscape } from "@/hooks/useZatvorNaEscape";
 import { NAZVY_STAVOV, stavSamofaktury, zapocitatelna } from "@/lib/faktero/samofakturacia";
@@ -321,6 +322,7 @@ function PurchaseInvoicesPage() {
 
   const exportujXml = useServerFn(exportPrijatychPohodaFn);
   const program = useExportDoProgramu();
+  const [volbyExportu, setVolbyExportu] = useState(false);
   async function hromadneXml() {
     const cid = getActiveCompanyId();
     if (!cid || !selected.size) return;
@@ -328,16 +330,34 @@ function PurchaseInvoicesPage() {
       if (await program.spusti("prijata", [...selected])) await load();
       return;
     }
+    setVolbyExportu(true);
+  }
+  async function exportujSVolbami(v: VolbyExportu) {
+    const cid = getActiveCompanyId();
+    if (!cid || !selected.size) return;
     setHromadneBusy(true);
     try {
-      const r = await exportujXml({ data: { company_id: cid, ids: [...selected], oznacit: true } });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([r.xml], { type: "text/xml;charset=utf-8" }));
-      a.download = r.fileName;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      const r = await exportujXml({
+        data: {
+          company_id: cid,
+          ids: [...selected],
+          oznacit: v.oznacit,
+          datum_zauctovania: v.datumZauctovania,
+          aj_odovzdane: v.ajOdovzdane,
+        },
+      });
+      for (const f of r.subory) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([f.xml], { type: "text/xml;charset=utf-8" }));
+        a.download = f.fileName;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      }
       if (r.preskocene.length) toast.warning(`Vynechané: ${r.preskocene.join(" · ")}`);
-      else toast.success(`XML pre Pohodu: ${r.pocet} faktúr, označené ako odovzdané`);
+      else
+        toast.success(
+          `XML pre Pohodu: ${r.pocet} faktúr${r.subory.length > 1 ? ` v ${r.subory.length} súboroch podľa roka` : ""}${v.oznacit ? ", označené ako odovzdané" : ""}`,
+        );
       await load();
     } catch (e: any) {
       toast.error(e?.message ?? "Nepodarilo sa");
@@ -507,6 +527,14 @@ function PurchaseInvoicesPage() {
 
   return (
     <>
+      {volbyExportu ? (
+        <VolbyExportuOkno
+          pocet={selected.size}
+          nazov="Prijaté faktúry do Pohody (XML)"
+          onClose={() => setVolbyExportu(false)}
+          onExport={exportujSVolbami}
+        />
+      ) : null}
       <PageHeader
         title="Prijaté faktúry"
         description="Evidencia nákupných faktúr od dodávateľov."

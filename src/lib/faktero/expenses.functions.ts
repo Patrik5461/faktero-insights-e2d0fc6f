@@ -504,6 +504,10 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       ids?: string[];
       month?: string | null;
       mark_exported?: boolean;
+      /** Dátum zaúčtovania pre doklady z uzavretého obdobia. */
+      datum_zauctovania?: string | null;
+      /** `false` = už odovzdané vynechať. */
+      aj_odovzdane?: boolean;
     }) => data,
   )
   .handler(async ({ data, context }) => {
@@ -514,6 +518,11 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const { data: vsetky, error } = await q;
     if (error) throw new Error(error.message);
     if (!vsetky?.length) throw new Error("Žiadne doklady na export");
+    if (data.aj_odovzdane === false) {
+      const neodovzdane = vsetky.filter((r: any) => !r.exported_at);
+      if (!neodovzdane.length) throw new Error("Všetky vybrané doklady už boli odovzdané.");
+      vsetky.splice(0, vsetky.length, ...neodovzdane);
+    }
     /*
       Odovzdanie účtovníkovi berie len schválené (keď je schvaľovanie
       zapnuté); obyčajný ZIP na stiahnutie ostáva archívom všetkého.
@@ -582,13 +591,18 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
       )
       .eq("id", data.company_id)
       .single();
-    const { buildPohodaExpensesXml } = await import("./export.server");
+    const { buildPohodaExpensesXml, podlaRoka } = await import("./export.server");
+    const datumZ = /^\d{4}-\d{2}-\d{2}$/.test(String(data.datum_zauctovania ?? "")) ? String(data.datum_zauctovania) : null;
+    // Prelom rokov: každý rok do vlastného súboru (Pohoda importuje do jedného roka).
+    const roky = datumZ ? [{ rok: "", doklady: rows }] : podlaRoka(rows, (r: any) => r.issue_date);
+    for (const r of roky)
     zip.file(
-      "pohoda.xml",
+      roky.length > 1 ? `pohoda-${r.rok}.xml` : "pohoda.xml",
       buildPohodaExpensesXml({
         company: firma ?? {},
-        doklady: rows,
+        doklady: r.doklady,
         nastavenia: {
+          datumZauctovaniaPevny: datumZ,
           predkontaciaPrijata: firma?.pohoda_predkontacia_prijata,
           clenenieDphPrijata: firma?.pohoda_clenenie_dph_prijata,
           predkontaciaDoklady: (firma as any)?.pohoda_predkontacia_doklady,

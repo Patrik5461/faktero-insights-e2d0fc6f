@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
+import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
 import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -522,6 +523,11 @@ function Detail() {
                     </label>
                   </div>
                   {druh === "dobropis" && <p className="mt-1 text-xs text-muted-foreground">Sumy zadajte kladne — dobropis ich odpočíta sám.</p>}
+                </section>
+
+                <section className="rounded-xl border border-border bg-card p-4">
+                  <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Položky</div>
+                  <PolozkyNespracovaneho u={u} setU={setU} sadzby={sadzby} />
                 </section>
 
                 <section className="rounded-xl border border-border bg-card p-4">

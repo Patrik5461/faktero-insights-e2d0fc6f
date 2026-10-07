@@ -175,8 +175,12 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     z
       .object({
         company_id: z.string().uuid(),
-        ids: z.array(z.string().uuid()).min(1).max(500),
+        ids: z.array(z.string().uuid()).min(1).max(2000),
         oznacit: z.boolean().optional(),
+        /** Dátum zaúčtovania pre doklady z uzavretého obdobia (inak dátum dokladu). */
+        datum_zauctovania: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+        /** Aj už odovzdané — inak sa vynechajú, aby ich Pohoda nedostala dvakrát. */
+        aj_odovzdane: z.boolean().optional(),
       })
       .parse(d),
   )
@@ -198,6 +202,8 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     const kandidati = (riadky ?? []).filter((p: any) => {
       if (!p.zauctovane_at) return preskocene.push(`${p.invoice_number}: nie je zaúčtovaná`), false;
       if (!zapocitatelna(p)) return preskocene.push(`${p.invoice_number}: neodsúhlasená samofaktúra`), false;
+      if (p.exported_at && data.aj_odovzdane === false)
+        return preskocene.push(`${p.invoice_number}: už odovzdaná`), false;
       return true;
     });
     const { ok, cakaju } = await (await import("./schvalovanie.server")).lenSchvalene(
@@ -209,18 +215,29 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     if (cakaju) preskocene.push(`${cakaju} čaká na schválenie`);
     if (!ok.length) throw new Error(preskocene.join(" · ") || "Nie je čo vyviezť.");
 
-    const { buildPohodaExpensesXml } = await import("./export.server");
+    const { buildPohodaExpensesXml, podlaRoka } = await import("./export.server");
     const { nastaveniaDokladov } = await import("./predkontacie.server");
-    const xml = buildPohodaExpensesXml({
-      company: firma,
-      doklady: ok.map(prijataAkoDoklad),
-      nastavenia: {
-        predkontaciaPrijata: firma?.pohoda_predkontacia_prijata,
-        clenenieDphPrijata: firma?.pohoda_clenenie_dph_prijata,
-        predkontaciaRozuctovat: firma?.pohoda_predkontacia_rozuctovat,
-        ...(await nastaveniaDokladov(supabase, firma, ok.map(prijataAkoDoklad))),
-      },
-    });
+    const nastavenia = {
+      predkontaciaPrijata: firma?.pohoda_predkontacia_prijata,
+      clenenieDphPrijata: firma?.pohoda_clenenie_dph_prijata,
+      predkontaciaRozuctovat: firma?.pohoda_predkontacia_rozuctovat,
+      ...(await nastaveniaDokladov(supabase, firma, ok.map(prijataAkoDoklad))),
+      datumZauctovaniaPevny: data.datum_zauctovania ?? null,
+    };
+    // Prelom rokov: každý rok do vlastného súboru (Pohoda importuje do jedného roka).
+    const roky = data.datum_zauctovania ? [{ rok: "", doklady: ok }] : podlaRoka(ok, (p: any) => p.delivery_date || p.issue_date);
+    const den0 = new Date().toISOString().slice(0, 10);
+    const subory = roky.map((r) => ({
+      xml: buildPohodaExpensesXml({ company: firma, doklady: r.doklady.map(prijataAkoDoklad), nastavenia }),
+      fileName:
+        roky.length > 1
+          ? `pohoda-prijate-${r.rok}-${den0}.xml`
+          : ok.length === 1
+            ? `pohoda-${String(ok[0].invoice_number).replace(/[^\w.-]+/g, "_")}.xml`
+            : `pohoda-prijate-${den0}.xml`,
+      pocet: r.doklady.length,
+    }));
+    const xml = subory[0].xml;
     if (data.oznacit) {
       await supabase
         .from("purchase_invoices")
@@ -233,7 +250,8 @@ export const exportPrijatychPohodaFn = createServerFn({ method: "POST" })
     const den = new Date().toISOString().slice(0, 10);
     return {
       xml,
-      fileName: ok.length === 1 ? `pohoda-${String(ok[0].invoice_number).replace(/[^\w.-]+/g, "_")}.xml` : `pohoda-prijate-${den}.xml`,
+      fileName: subory[0].fileName,
+      subory,
       pocet: ok.length,
       preskocene,
     };

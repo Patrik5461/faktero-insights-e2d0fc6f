@@ -1,3 +1,4 @@
+import { VolbyExportuOkno, type VolbyExportu } from "@/components/faktero/VolbyExportuOkno";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { NastaveniaZoznamu } from "@/components/faktero/NastaveniaZoznamu";
@@ -339,7 +340,8 @@ function DokladyPage() {
     setSelected((prev) => (prev.size === rows.length ? new Set() : new Set(rows.map((r) => r.id))));
   }
 
-  async function handleExport(markExported: boolean) {
+  const [volbyExportu, setVolbyExportu] = useState(false);
+  async function handleExport(markExported: boolean, volby?: VolbyExportu) {
     if (!cid) return;
     const vyber = selected.size ? rows.filter((r) => selected.has(r.id)) : rows;
     const nesprac = vyber.filter((r) => r.status === "new").length;
@@ -362,6 +364,8 @@ function DokladyPage() {
           ids: ids ?? rows.map((r) => r.id),
           month: null,
           mark_exported: markExported,
+          datum_zauctovania: volby?.datumZauctovania ?? null,
+          aj_odovzdane: volby ? volby.ajOdovzdane : undefined,
         },
       });
       const bin = atob(res.base64);
@@ -614,6 +618,14 @@ function DokladyPage() {
               setPlatba(h.platba ?? "");
             }}
           />
+          {volbyExportu ? (
+            <VolbyExportuOkno
+              pocet={selected.size || rows.length}
+              nazov="Bločky — ZIP so XML pre Pohodu a skenmi"
+              onClose={() => setVolbyExportu(false)}
+              onExport={(v) => handleExport(v.oznacit, v)}
+            />
+          ) : null}
           <div className="ml-auto flex gap-2">
             <button
               onClick={() => handleExport(false)}
@@ -623,7 +635,7 @@ function DokladyPage() {
               <Download className="h-4 w-4" /> ZIP {selected.size ? `(${selected.size})` : "všetko"}
             </button>
             <button
-              onClick={() => handleExport(true)}
+              onClick={() => setVolbyExportu(true)}
               disabled={exporting || !rows.length || (!month && !bezMesiaca && !selected.size)}
               title={
                 !month && !bezMesiaca && !selected.size

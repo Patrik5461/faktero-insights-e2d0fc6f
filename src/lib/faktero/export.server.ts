@@ -122,6 +122,20 @@ const FORMY_UHRADY: Record<string, string> = {
  * Pohoda by doklad do uzavretého obdobia nezaúčtovala; inak `null` (zaúčtuje
  * sa k dátumu dokladu).
  */
+/**
+ * Rozdelí doklady podľa roka (dátum dodania, inak vystavenia). Pohoda
+ * importuje do účtovnej jednotky jedného roka — doklady z prelomu treba
+ * naimportovať zvlášť do starého a do nového roka.
+ */
+export function podlaRoka<T>(doklady: T[], den: (d: T) => unknown): { rok: string; doklady: T[] }[] {
+  const m = new Map<string, T[]>();
+  for (const d of doklady) {
+    const rok = String(den(d) ?? "").slice(0, 4) || "bez-datumu";
+    m.set(rok, [...(m.get(rok) ?? []), d]);
+  }
+  return [...m.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([rok, doklady]) => ({ rok, doklady }));
+}
+
 export function datumZauctovania(datum: unknown, zamknuteDo: unknown): string | null {
   const d = String(datum ?? "");
   const z = String(zamknuteDo ?? "");
@@ -204,6 +218,8 @@ export type PohodaNastavenia = {
   odkazyDokladov?: Record<string, string>;
   /** Uzávierka obdobia (`companies.locked_until`) — doklady z neho dostanú dátum zaúčtovania. */
   zamknuteDo?: string | null;
+  /** Dátum zaúčtovania zvolený pri exporte — prebije dátum dokladu aj uzávierku. */
+  datumZauctovaniaPevny?: string | null;
   /** Predkontácie s agendou „Ostatné záväzky" — faktúra s nimi ide ako záväzok. */
   zavazkovePredkontacie?: string[];
   /** Bločky aj s položkami (inak len súhrn po sadzbách). */
@@ -299,17 +315,50 @@ function odkazIds(element: string, kod: unknown, odsadenie: string): string {
 /**
  * Prečo sa doklad do Pohody vyviezť nedá, alebo `null`, keď sa dá.
  *
- * Pohoda drží rozpis po sadzbách **vždy v domácej mene** a cudziu menu berie
- * len ako celkovú sumu s kurzom (`typeCurrencyForeign`: currency, rate, amount,
- * priceSum). Kurz k faktúre neevidujeme, takže domáce základy dane nemáme z
- * čoho spočítať — a odhad by znamenal tichú chybu v priznaní k DPH. Taký doklad
- * je preto lepšie vynechať a povedať to, než ho vyviezť nesprávne.
+ * Doklad v cudzej mene ide so sumami v mene a s kurzom (`foreignCurrency` na
+ * položkách aj v súhrne); domáce sumy si Pohoda prepočíta sama — tuzemskú
+ * časť pri cudzej mene podľa schémy pri importe ignoruje. Bez kurzu by ich
+ * nemala z čoho spočítať a odhad by bol tichou chybou v priznaní, preto sa
+ * taký doklad vynechá a povie sa to.
  */
 export function pohodaPrekazka(invoice: InvoiceRow, company: CompanyRow): string | null {
   const domaca = domacaMenaFirmy(company);
   const mena = String(invoice?.currency ?? domaca).toUpperCase() || domaca;
-  if (mena !== domaca) return `${invoice?.invoice_number ?? "?"} — faktúra v mene ${mena}`;
+  if (mena !== domaca && !(Number((invoice as any)?.exchange_rate) > 0))
+    return `${invoice?.invoice_number ?? "?"} — faktúra v mene ${mena} nemá kurz`;
   return null;
+}
+
+/**
+ * Kurz pre Pohodu. U nás je kurz ECB: koľko jednotiek cudzej meny za 1 €.
+ * Pohoda chce opačne — koľko domácej meny za `amount` jednotiek cudzej. Pri
+ * „lacných" menách (CZK, HUF) ide kurz na 100 jednotiek, aby sa nestratil
+ * v zaokrúhlení.
+ */
+export function kurzPrePohodu(kurzEcb: number): { rate: number; amount: number } {
+  const amount = kurzEcb >= 10 ? 100 : 1;
+  return { rate: Math.round((amount / kurzEcb) * 1e6) / 1e6, amount };
+}
+
+/** Blok `foreignCurrency` do súhrnu dokladu. */
+export function cudziaMenaSuhrn(
+  mena: string,
+  kurzEcb: number,
+  spolu: number,
+  zaokruhlenie: number,
+  odsadenie: string,
+): string {
+  const { rate, amount } = kurzPrePohodu(kurzEcb);
+  const o = odsadenie;
+  return `
+${o}<inv:foreignCurrency>
+${o}  <typ:currency><typ:ids>${esc(mena)}</typ:ids></typ:currency>
+${o}  <typ:rate>${rate}</typ:rate>
+${o}  <typ:amount>${amount}</typ:amount>
+${o}  <typ:priceSum>${fixed2(spolu)}</typ:priceSum>${
+    zaokruhlenie ? `\n${o}  <typ:round><typ:priceRound>${fixed2(zaokruhlenie)}</typ:priceRound></typ:round>` : ""
+  }
+${o}</inv:foreignCurrency>`;
 }
 
 /**
@@ -487,6 +536,12 @@ export function polozkyFaktur(opts: {
 
       const forma = FORMY_UHRADY[String(invoice.payment_method ?? "")] ?? "draft";
 
+      // Faktúra v cudzej mene: sumy položiek idú v mene, súhrn s kurzom.
+      const domacaMena = domacaMenaFirmy(company);
+      const menaFaktury = String(invoice.currency ?? domacaMena).toUpperCase() || domacaMena;
+      const cudzia = menaFaktury !== domacaMena;
+      const menaBlok = cudzia ? "foreignCurrency" : "homeCurrency";
+
       const itemRows = items
         .map((it, i) => {
           const kod = kody[i];
@@ -502,7 +557,7 @@ export function polozkyFaktur(opts: {
               ? `\n          <inv:discountPercentage>${Number((it as any).discount_percent)}</inv:discountPercentage>`
               : ""
           }${el("inv:note", skrat((it as any).description, 240), "          ")}
-          <inv:homeCurrency>${elSuma("typ:unitPrice", it.unit_price, "            ")}${elSuma(
+          <inv:${menaBlok}>${elSuma("typ:unitPrice", it.unit_price, "            ")}${elSuma(
             "typ:price",
             zn * Number(it.subtotal ?? 0),
             "            ",
@@ -511,7 +566,7 @@ export function polozkyFaktur(opts: {
             zn * Number(it.total ?? 0),
             "            ",
           )}
-          </inv:homeCurrency>${kodyPolozky(it)}
+          </inv:${menaBlok}>${kodyPolozky(it)}
         </inv:invoiceItem>`;
         })
         .join("");
@@ -532,12 +587,12 @@ export function polozkyFaktur(opts: {
           <inv:quantity>1</inv:quantity>
           <inv:payVAT>false</inv:payVAT>
           <inv:rateVAT>${kodSadzby(zaloha.sadzba, tab)}</inv:rateVAT>
-          <inv:homeCurrency>${elSuma("typ:unitPrice", -zaloha.zaklad, "            ")}${elSuma(
+          <inv:${menaBlok}>${elSuma("typ:unitPrice", -zaloha.zaklad, "            ")}${elSuma(
             "typ:price",
             -zaloha.zaklad,
             "            ",
           )}${elSuma("typ:priceVAT", -zaloha.dph, "            ")}
-          </inv:homeCurrency>
+          </inv:${menaBlok}>
         </inv:invoiceAdvancePaymentItem>`
         : "";
 
@@ -598,7 +653,7 @@ export function polozkyFaktur(opts: {
           "        ",
         )}${el("inv:dateDue", invoice.due_date, "        ")}${el(
           "inv:dateAccounting",
-          datumZauctovania(invoice.issue_date, nastavenia?.zamknuteDo),
+          nastavenia?.datumZauctovaniaPevny || datumZauctovania(invoice.issue_date, nastavenia?.zamknuteDo),
           "        ",
         )}${el(
           "inv:text",
@@ -655,7 +710,7 @@ export function polozkyFaktur(opts: {
       </inv:invoiceHeader>
       <inv:invoiceDetail>${itemRows}${zalohaRiadok}
       </inv:invoiceDetail>
-      <inv:invoiceSummary>
+      <inv:invoiceSummary>${cudzia ? "" : `
         <inv:homeCurrency>${elSuma(
           "typ:priceNone",
           zn * (zaklad(s0) - uber("none", zalohaZaklad)),
@@ -678,7 +733,17 @@ export function polozkyFaktur(opts: {
           "          ",
         )}${elSuma("typ:priceHighVAT", zn * (dan(sHigh) - uber("high", zalohaDan)), "          ")}
           <typ:round><typ:priceRound>${fixed2(zn * zaokruhlenie)}</typ:priceRound></typ:round>
-        </inv:homeCurrency>
+        </inv:homeCurrency>`}${
+          cudzia
+            ? cudziaMenaSuhrn(
+                menaFaktury,
+                Number((invoice as any).exchange_rate),
+                zn * celkom,
+                zn * zaokruhlenie,
+                "        ",
+              )
+            : ""
+        }
       </inv:invoiceSummary>${prilohaOdkaz(
         `Faktúra ${invoice.invoice_number ?? ""} (PDF)`,
         opts.odkazy?.[String(invoice.id ?? "")],
@@ -972,8 +1037,15 @@ export function polozkyDokladov(opts: {
 }): string {
   const { company, nastavenia } = opts;
   const domaca = domacaMenaFirmy(company);
+  /*
+    Cudzia mena ide len pri prijatej faktúre s kurzom — sumy v mene, kurz
+    v súhrne, domáce sumy si Pohoda prepočíta. Bloček kurz nemá, ten ostáva
+    vynechaný.
+  */
   const doklady = opts.doklady.filter(
-    (d) => (String(d?.currency ?? domaca).toUpperCase() || domaca) === domaca,
+    (d) =>
+      (String(d?.currency ?? domaca).toUpperCase() || domaca) === domaca ||
+      (Boolean(d?._typPohody) && Number(d?._kurz) > 0),
   );
 
   return doklady
@@ -1096,6 +1168,9 @@ export function polozkyDokladov(opts: {
               : "inv"
           : "inv";
       const koren = p === "inv" ? "invoice" : p === "vch" ? "voucher" : "intDoc";
+      const menaDokladu = String(d?.currency ?? domaca).toUpperCase() || domaca;
+      const cudziaD = menaDokladu !== domaca;
+      const mb = cudziaD ? "foreignCurrency" : "homeCurrency";
       const kv = (r?: string | null) => {
         const k = String(r ?? "").trim() || String(d?.kv_clenenie ?? "").trim();
         // „Nezahŕňať" nemá v Pohode skratku — doklad ostane bez členenia KV.
@@ -1121,7 +1196,7 @@ export function polozkyDokladov(opts: {
           <${p}:quantity>${x.mnozstvo}</${p}:quantity>${el(`${p}:unit`, skrat(x.mj, 10), "          ")}
           <${p}:payVAT>false</${p}:payVAT>
           <${p}:rateVAT>${kodSadzby(x.sadzba, tab)}</${p}:rateVAT>
-          <${p}:homeCurrency>${elSuma("typ:unitPrice", x.cena, "            ")}${elSuma(
+          <${p}:${mb}>${elSuma("typ:unitPrice", x.cena, "            ")}${elSuma(
             "typ:price",
             x.zaklad,
             "            ",
@@ -1130,7 +1205,7 @@ export function polozkyDokladov(opts: {
             x.zaklad + x.dph,
             "            ",
           )}
-          </${p}:homeCurrency>${
+          </${p}:${mb}>${
             pk ? `\n          <${p}:accounting><typ:ids>${esc(pk)}</typ:ids></${p}:accounting>` : ""
           }${
             cl
@@ -1158,7 +1233,7 @@ export function polozkyDokladov(opts: {
           <${p}:quantity>1</${p}:quantity>
           <${p}:payVAT>false</${p}:payVAT>
           <${p}:rateVAT>${kodSadzby(r.sadzba, tab)}</${p}:rateVAT>
-          <${p}:homeCurrency>${elSuma("typ:unitPrice", r.zaklad, "            ")}${elSuma(
+          <${p}:${mb}>${elSuma("typ:unitPrice", r.zaklad, "            ")}${elSuma(
             "typ:price",
             r.zaklad,
             "            ",
@@ -1167,7 +1242,7 @@ export function polozkyDokladov(opts: {
             r.zaklad + r.dph,
             "            ",
           )}
-          </${p}:homeCurrency>${
+          </${p}:${mb}>${
             pk ? `\n          <${p}:accounting><typ:ids>${esc(pk)}</typ:ids></${p}:accounting>` : ""
           }${
             cl
@@ -1198,6 +1273,33 @@ export function polozkyDokladov(opts: {
         .join("")}
       </${p}:${koren}Detail>`
           : "";
+
+      /*
+        Faktúra v cudzej mene bez položiek: súhrn v cudzej mene nesie len
+        celkovú sumu, sadzby by Pohoda nepoznala — položky sa vyrobia
+        z rozpisu DPH, po jednej na sadzbu.
+      */
+      const polozkyZRozpisu = () =>
+        `
+      <${p}:${koren}Detail>${rozpis
+        .map(
+          (r) => `
+        <${p}:${koren}Item>${el(`${p}:text`, skrat(popis || "Prijatý doklad", 90), "          ")}
+          <${p}:quantity>1</${p}:quantity>
+          <${p}:payVAT>false</${p}:payVAT>
+          <${p}:rateVAT>${kodSadzby(r.sadzba, tab)}</${p}:rateVAT>
+          <${p}:foreignCurrency>${elSuma("typ:unitPrice", r.zaklad, "            ")}${elSuma(
+            "typ:price",
+            r.zaklad,
+            "            ",
+          )}${elSuma("typ:priceVAT", r.dph, "            ")}${elSuma("typ:priceSum", r.zaklad + r.dph, "            ")}
+          </${p}:foreignCurrency>${
+            predkontaciaJedna ? `\n          <${p}:accounting><typ:ids>${esc(predkontaciaJedna)}</typ:ids></${p}:accounting>` : ""
+          }${clenenieJedno ? `\n          <${p}:classificationVAT><typ:ids>${esc(clenenieJedno)}</typ:ids></${p}:classificationVAT>` : ""}
+        </${p}:${koren}Item>`,
+        )
+        .join("")}
+      </${p}:${koren}Detail>`;
 
       // Poradie prvkov podľa typ:addressType: firma, mesto, ulica, PSČ, IČO, DIČ, IČ DPH.
       const adresa = [
@@ -1270,7 +1372,11 @@ export function polozkyDokladov(opts: {
           p === "inv" ? el("inv:dateDue", d?._splatnost, "        ") : ""
         }${
           p !== "vch"
-            ? el(`${p}:dateAccounting`, datumZauctovania(d?.issue_date, nastavenia?.zamknuteDo), "        ")
+            ? el(
+                `${p}:dateAccounting`,
+                nastavenia?.datumZauctovaniaPevny || datumZauctovania(d?.issue_date, nastavenia?.zamknuteDo),
+                "        ",
+              )
             : ""
         }${el(`${p}:text`, skrat(d?._text, 240) || popis || "Prijatý doklad", "        ")}${el(
           `${p}:note`,
@@ -1303,8 +1409,8 @@ export function polozkyDokladov(opts: {
               }</typ:paymentType></inv:paymentType>`
             : ""
         }
-      </${p}:${koren}Header>${xmlPolozkyFaktury || polozkyRozuct}
-      <${p}:${koren}Summary>
+      </${p}:${koren}Header>${xmlPolozkyFaktury || polozkyRozuct || (cudziaD ? polozkyZRozpisu() : "")}
+      <${p}:${koren}Summary>${cudziaD ? cudziaMenaSuhrn(menaDokladu, Number(d?._kurz), celkom, zaokruhlenie, "        ").replace(/inv:foreignCurrency/g, `${p}:foreignCurrency`) : `
         <${p}:homeCurrency>${elSuma("typ:priceNone", zaklad(s0), "          ")}${elSuma(
           "typ:price3",
           zaklad(s3),
@@ -1319,7 +1425,7 @@ export function polozkyDokladov(opts: {
           "          ",
         )}${elSuma("typ:priceHighVAT", dan(sHigh), "          ")}
           <typ:round><typ:priceRound>${fixed2(zaokruhlenie)}</typ:priceRound></typ:round>
-        </${p}:homeCurrency>
+        </${p}:homeCurrency>`}
       </${p}:${koren}Summary>${
         // Interný doklad prílohy nemá; faktúra a pokladňa áno.
         p !== "int"

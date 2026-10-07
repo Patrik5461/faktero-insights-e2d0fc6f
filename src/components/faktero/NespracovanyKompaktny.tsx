@@ -1,3 +1,4 @@
+import { PolozkyNespracovaneho } from "./PolozkyNespracovaneho";
 import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -434,18 +435,9 @@ export function NespracovanyKompaktny({
             </Sekcia>
           ) : null}
 
-          {u.polozky.length ? (
+          {druh && druh !== "ostatny" ? (
             <Sekcia nadpis="Položky">
-              <ul className="divide-y divide-border text-sm">
-                {u.polozky.map((p, i) => (
-                  <li key={i} className="flex justify-between gap-3 py-1.5">
-                    <span className="min-w-0 truncate">{p.name}</span>
-                    <span className="shrink-0 tabular-nums text-muted-foreground">
-                      {p.quantity ?? 1} × {p.total != null ? Number(p.total).toFixed(2) : "—"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <PolozkyNespracovaneho u={u} setU={setU} sadzby={sadzby} />
             </Sekcia>
           ) : null}
         </div>

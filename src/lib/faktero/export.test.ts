@@ -318,9 +318,9 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
     expect(nove.invoiceDetail.invoiceItem.rateVAT).toBe("historyHigh");
   });
 
-  it("faktúra v cudzej mene sa radšej vynechá, než by sa vyviezla zle", async () => {
-    // Pohoda chce rozpis po sadzbách v domácej mene a kurz k faktúre nemáme —
-    // v `homeCurrency` by čítala doláre ako eurá a nikto by si to nevšimol.
+  it("faktúra v cudzej mene bez kurzu sa radšej vynechá, než by sa vyviezla zle", async () => {
+    // Bez kurzu by Pohoda nemala z čoho spočítať domáce sumy a odhad by bol
+    // tichou chybou v priznaní. S kurzom ide (export-cudzia-mena.test.ts).
     const r = await EXPORT_STRATEGIES.pohoda_xml.build({
       company: firma,
       invoices: [
@@ -330,7 +330,7 @@ describe("Pohoda XML — čo sa dá zaúčtovať zle", () => {
     });
     const d = parser.parse(r.content).dataPack;
     expect(d.dataPackItem.invoice.invoiceHeader.number.numberRequested).toBe(20250001);
-    expect(r.preskocene).toEqual(["20250009 — faktúra v mene USD"]);
+    expect(r.preskocene).toEqual(["20250009 — faktúra v mene USD nemá kurz"]);
   });
 
   it("keď by v balíku nezostalo nič, export sa nespraví", () => {

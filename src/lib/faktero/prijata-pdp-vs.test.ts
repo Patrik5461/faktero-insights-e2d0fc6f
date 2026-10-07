@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { polozkyPrijatej, rozpisPrijatej } from "./prijate-do-pohody";
-import { doplnUdaje, prazdneUdaje, prijataZUdajov, udajeZAi, vsDokladu } from "./nespracovane";
+import {
+  VYROVNAVACIA_POLOZKA,
+  doplnUdaje,
+  prazdneUdaje,
+  prijataZUdajov,
+  rozdielPoloziek,
+  udajeZAi,
+  vsDokladu,
+  vyrovnajPolozky,
+} from "./nespracovane";
 
 describe("prijatá faktúra s položkami v prenesení", () => {
   // Ako MD BUILDING: roxor v prenesení (0 %), zvyšok 23 %.
@@ -116,5 +125,29 @@ describe("prenesenie z čítania až do prijatej faktúry", () => {
     );
     expect(u.polozky.map((x) => x.pdp ?? false)).toEqual([true, false]);
     expect((prijataZUdajov("faktura", u, "2026-10-07") as any).dph_rezim).toBeUndefined();
+  });
+});
+
+describe("centový rozdiel položiek", () => {
+  const zaklad = () => {
+    const u = prazdneUdaje();
+    u.rozpis = [{ sadzba: 23, zaklad: 100, dph: 23 }];
+    u.celkom = 123;
+    return u;
+  };
+  it("sedí s DPH aj bez DPH", () => {
+    const u = zaklad();
+    u.polozky = [{ name: "A", quantity: 1, unit: null, unit_price: 123, vat_rate: 23, total: 123 }];
+    expect(rozdielPoloziek(u)).toBeNull();
+    u.polozky[0].total = 100;
+    expect(rozdielPoloziek(u)).toBeNull();
+  });
+  it("nájde rozdiel a vyrovnávacia položka ho zrovná", () => {
+    const u = zaklad();
+    u.polozky = [{ name: "A", quantity: 1, unit: null, unit_price: 122.98, vat_rate: 23, total: 122.98 }];
+    expect(rozdielPoloziek(u)).toEqual({ sucet: 122.98, rozdiel: 0.02, netto: false });
+    const v = vyrovnajPolozky(u);
+    expect(v.polozky.at(-1)).toMatchObject({ name: VYROVNAVACIA_POLOZKA, total: 0.02 });
+    expect(rozdielPoloziek(v)).toBeNull();
   });
 });

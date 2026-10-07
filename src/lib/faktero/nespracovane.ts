@@ -274,6 +274,47 @@ export function sucty(u: UdajeNespracovaneho): { zaklad: number; dph: number; ce
   return { zaklad, dph, celkom };
 }
 
+/** Názov vyrovnávacej položky — podľa neho ju export spozná. */
+export const VYROVNAVACIA_POLOZKA = "Vyrovnanie centového rozdielu";
+
+/**
+ * Nesúlad položiek so súčtom dokladu. Položky z čítania bývajú raz s DPH,
+ * raz bez — sedí, keď sa súčet položiek rovná sume s DPH alebo základu.
+ * Vráti `null`, keď sedí (alebo položky nie sú), inak rozdiel oproti sume
+ * s DPH, ktorý treba doplniť vyrovnávacou položkou.
+ */
+export function rozdielPoloziek(
+  u: UdajeNespracovaneho,
+): { sucet: number; rozdiel: number; netto: boolean } | null {
+  const p = u.polozky.filter((x) => x.name?.trim());
+  if (!p.length) return null;
+  const sucet = r2(
+    p.reduce((a, x) => a + (x.total != null ? Number(x.total) : (Number(x.quantity) || 1) * Number(x.unit_price ?? 0)), 0),
+  );
+  const s = sucty(u);
+  if (!s.celkom) return null;
+  if (Math.abs(sucet - s.celkom) < 0.005) return null;
+  if (s.zaklad && Math.abs(sucet - s.zaklad) < 0.005) return null;
+  // Bližšie k základu = položky sú bez DPH, rozdiel sa ráta voči základu.
+  const netto = s.zaklad > 0 && Math.abs(sucet - s.zaklad) < Math.abs(sucet - s.celkom);
+  return { sucet, rozdiel: r2((netto ? s.zaklad : s.celkom) - sucet), netto };
+}
+
+/** Doplní vyrovnávaciu položku tak, aby súčet položiek sedel s dokladom. */
+export function vyrovnajPolozky(u: UdajeNespracovaneho): UdajeNespracovaneho {
+  const r = rozdielPoloziek(u);
+  if (!r) return u;
+  const ina = u.polozky.filter((x) => x.name !== VYROVNAVACIA_POLOZKA);
+  const stara = u.polozky.find((x) => x.name === VYROVNAVACIA_POLOZKA);
+  const suma = r2((stara?.total != null ? Number(stara.total) : 0) + r.rozdiel);
+  return {
+    ...u,
+    polozky: suma
+      ? [...ina, { name: VYROVNAVACIA_POLOZKA, quantity: 1, unit: null, unit_price: suma, vat_rate: 0, total: suma }]
+      : ina,
+  };
+}
+
 /** Povinné polia, ktoré chýbajú — zvýraznia sa červenou, bez nich sa doklad nevytvorí. */
 export function chybajuce(druh: DruhNespracovaneho | null, u: UdajeNespracovaneho): string[] {
   const out: string[] = [];
@@ -290,6 +331,9 @@ export function chybajuce(druh: DruhNespracovaneho | null, u: UdajeNespracovaneh
     if (!u.splatnost) out.push("splatnost");
     if (druh === "dobropis" && !u.opravuje.trim()) out.push("opravuje");
   }
+  // Položky musia sedieť so sumou; pri hotovosti je rozdiel zaokrúhlenie na 5 centov.
+  const rozdiel = rozdielPoloziek(u);
+  if (rozdiel && !(u.platba === "hotovost" && Math.abs(rozdiel.rozdiel) <= 0.02)) out.push("polozky");
   return out;
 }
 
@@ -303,6 +347,7 @@ export const NAZVY_POLI: Record<string, string> = {
   cislo: "číslo dokladu",
   splatnost: "splatnosť",
   opravuje: "číslo opravovanej faktúry",
+  polozky: "súlad položiek so sumou (pridajte vyrovnávaciu položku)",
 };
 
 const prazdne = (v: string) => (v.trim() ? v.trim() : null);
