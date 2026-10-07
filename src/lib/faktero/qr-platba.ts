@@ -71,6 +71,27 @@ export async function payBySquare(u: UdajePlatby): Promise<string | null> {
   }
 }
 
+/**
+ * Odkaz PAYME (štandard platobného odkazu Slovenskej bankovej asociácie).
+ * Ťuknutím v mobile sa otvorí banková aplikácia s vyplneným príkazom —
+ * podporujú ho Tatra banka a Slovenská sporiteľňa. Len pre eurá.
+ */
+export function paymeOdkaz(u: UdajePlatby): string | null {
+  const iban = u.iban.replace(/\s+/g, "").toUpperCase();
+  if (!iban || u.mena !== "EUR" || !(u.suma > 0)) return null;
+  const p = new URLSearchParams();
+  p.set("V", "1");
+  p.set("IBAN", iban);
+  p.set("AM", u.suma.toFixed(2));
+  p.set("CC", "EUR");
+  if (u.splatnost && /^\d{4}-\d{2}-\d{2}$/.test(u.splatnost)) p.set("DT", u.splatnost.replace(/-/g, ""));
+  const vs = String(u.vs ?? "").replace(/\D/g, "").slice(0, 10);
+  if (vs) p.set("PI", `/VS${vs}/SS/KS`);
+  if (u.sprava) p.set("MSG", u.sprava.slice(0, 140));
+  if (u.prijemca) p.set("CN", u.prijemca.slice(0, 70));
+  return `https://payme.sk/?${p.toString()}`;
+}
+
 /** Text do QR podľa krajiny registrácie firmy. `null` = QR sa nekreslí. */
 export async function textQrPlatby(
   u: UdajePlatby,

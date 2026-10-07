@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -58,6 +59,23 @@ function OstatneDokladyPage() {
   const [month, setMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [druh, setDruh] = useState<DruhOstatneho | "">("");
   const [rows, setRows] = useState<any[]>([]);
+  // Priečinky (zmluvy, objednávky…) — filtrujú sa na obrazovke z načítaných dokladov.
+  const [priecinok, setPriecinok] = useState("");
+  const priecinky = [...new Set(rows.map((r) => String(r.priecinok ?? "").trim()).filter(Boolean))].sort();
+  const zobrazene = priecinok
+    ? rows.filter((r) => String(r.priecinok ?? "").trim() === (priecinok === "__bez" ? "" : priecinok))
+    : rows;
+  async function doPriecinka() {
+    const nazov = window.prompt("Do ktorého priečinka? (prázdne = bez priečinka)", priecinok && priecinok !== "__bez" ? priecinok : "");
+    if (nazov === null) return;
+    const { error } = await supabase
+      .from("other_documents")
+      .update({ priecinok: nazov.trim().slice(0, 60) || null } as any)
+      .in("id", Array.from(selected));
+    if (error) return toast.error(error.message);
+    toast.success(nazov.trim() ? `Presunuté do priečinka „${nazov.trim()}"` : "Priečinok zrušený");
+    await refresh();
+  }
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [nespracovanych, setNespracovanych] = useState<number | null>(null);
@@ -270,6 +288,31 @@ function OstatneDokladyPage() {
               ))}
             </select>
           </div>
+          <div>
+            <label className="mb-1 block text-xs text-muted-foreground">Priečinok</label>
+            <select
+              aria-label="Priečinok"
+              value={priecinok}
+              onChange={(e) => setPriecinok(e.target.value)}
+              className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+            >
+              <option value="">Všetky priečinky</option>
+              {priecinky.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+              <option value="__bez">Bez priečinka</option>
+            </select>
+          </div>
+          {selected.size > 0 && (
+            <button
+              onClick={() => void doPriecinka()}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+            >
+              <FolderOpen className="h-4 w-4" /> Do priečinka ({selected.size})
+            </button>
+          )}
           {selected.size > 0 && (zalozka === "nespracovane" || zalozka === "spracovane") && (
             <button
               onClick={() =>
@@ -353,7 +396,7 @@ function OstatneDokladyPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => {
+                  {zobrazene.map((r) => {
                     const lehota = r.status === "exported" ? null : stavLehoty(r.due_date, dnes);
                     const prilohy = [...(r.other_document_files ?? [])].sort(
                       (a: any, b: any) => a.position - b.position,
@@ -369,7 +412,14 @@ function OstatneDokladyPage() {
                           />
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">{r.received_date}</td>
-                        <td className="px-3 py-2 whitespace-nowrap">{nazovDruhu(r.kind)}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          {nazovDruhu(r.kind)}
+                          {r.priecinok ? (
+                            <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                              <FolderOpen className="h-3 w-3" /> {r.priecinok}
+                            </span>
+                          ) : null}
+                        </td>
                         <td className="min-w-0 px-3 py-2">
                           <button
                             onClick={() =>

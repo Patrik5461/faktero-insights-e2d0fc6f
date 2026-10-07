@@ -1,7 +1,7 @@
-import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, PDFString, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import QRCode from "qrcode";
-import { textQrPlatby } from "./qr-platba";
+import { paymeOdkaz, textQrPlatby } from "./qr-platba";
 import { RobotoRegularBase64 } from "./fonts/Roboto-Regular";
 import { RobotoBoldBase64 } from "./fonts/Roboto-Bold";
 import { paymentMethodLabel } from "./payment-method";
@@ -955,6 +955,43 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
           font: bold,
           color: muted,
         });
+        /*
+          Tlačidlo PAYME — v mobile otvorí bankovú aplikáciu s vyplneným
+          príkazom (Tatra banka, Slovenská sporiteľňa). Len slovenské firmy
+          a eurá; je to klikateľný odkaz v PDF.
+        */
+        const payme =
+          krajinaDane(company.country) === "SK"
+            ? paymeOdkaz({
+                iban: company.iban,
+                suma: naUhradu,
+                mena: invoice.currency,
+                vs: invoice.variable_symbol,
+                sprava: `Faktura ${invoice.invoice_number}`,
+                splatnost: invoice.due_date,
+                prijemca: company.name,
+              })
+            : null;
+        if (payme) {
+          // V riadku splatnosti, hneď za dátumom — karta sa nezväčší.
+          const datum = String(invoice.due_date ?? "—");
+          const bx = payX + 16 + 110 + bold.widthOfTextAtSize(datum, 10) + 12;
+          const by = payY - 42 - 3 * 20 - 3.5;
+          const popis = "PAYME · zaplatiť v mobile";
+          const bw = bold.widthOfTextAtSize(popis, 7.5) + 14;
+          cur.drawRectangle({ x: bx, y: by, width: bw, height: 13, color: primary });
+          cur.drawText(popis, { x: bx + 7, y: by + 3.8, size: 7.5, font: bold, color: white });
+          const odkaz = doc.context.register(
+            doc.context.obj({
+              Type: "Annot",
+              Subtype: "Link",
+              Rect: [bx, by, bx + bw, by + 13],
+              Border: [0, 0, 0],
+              A: { Type: "Action", S: "URI", URI: PDFString.of(payme) },
+            }),
+          );
+          cur.node.addAnnot(odkaz);
+        }
       } catch {
         /* ignore */
       }

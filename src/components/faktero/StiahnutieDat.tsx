@@ -22,6 +22,10 @@ function velkostSlovom(bajtov: number): string {
 export function StiahnutieDat() {
   const exportuj = useServerFn(exportFirmyFn);
   const [sPdf, setSPdf] = useState(true);
+  const [sSkenmi, setSSkenmi] = useState(false);
+  const [od, setOd] = useState("");
+  const [doDna, setDoDna] = useState("");
+  const [podla, setPodla] = useState<"vystavenia" | "dodania" | "vytvorenia">("vystavenia");
   const [bezi, setBezi] = useState(false);
   const [vysledok, setVysledok] = useState<Awaited<ReturnType<typeof exportFirmyFn>> | null>(null);
 
@@ -31,7 +35,9 @@ export function StiahnutieDat() {
     setBezi(true);
     setVysledok(null);
     try {
-      const v = await exportuj({ data: { company_id: companyId, s_pdf: sPdf } });
+      const v = await exportuj({
+        data: { company_id: companyId, s_pdf: sPdf, s_skenmi: sSkenmi, od: od || null, do: doDna || null, podla },
+      });
       setVysledok(v);
       if (v.url) window.open(v.url, "_blank", "noopener");
     } catch (e: any) {
@@ -65,6 +71,39 @@ export function StiahnutieDat() {
         </span>
       </label>
 
+      <label className="mt-3 flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={sSkenmi}
+          onChange={(e) => setSSkenmi(e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded border-input"
+        />
+        <span>
+          Priložiť aj skeny prijatých faktúr a bločkov
+          <span className="block text-xs text-muted-foreground">Digitálny archív originálov — najviac 200 naraz.</span>
+        </span>
+      </label>
+
+      <div className="mt-3 flex flex-wrap items-end gap-3 text-sm">
+        <label className="block">
+          <span className="text-xs text-muted-foreground">Doklady od</span>
+          <input type="date" value={od} onChange={(e) => setOd(e.target.value)} className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5" />
+        </label>
+        <label className="block">
+          <span className="text-xs text-muted-foreground">do</span>
+          <input type="date" value={doDna} onChange={(e) => setDoDna(e.target.value)} className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5" />
+        </label>
+        <label className="block">
+          <span className="text-xs text-muted-foreground">podľa dátumu</span>
+          <select value={podla} onChange={(e) => setPodla(e.target.value as any)} className="mt-1 block rounded-md border border-input bg-background px-2 py-1.5">
+            <option value="vystavenia">vystavenia</option>
+            <option value="dodania">dodania</option>
+            <option value="vytvorenia">vytvorenia vo Fakteri</option>
+          </select>
+        </label>
+        <span className="pb-2 text-xs text-muted-foreground">Bez dátumov sa stiahne všetko.</span>
+      </div>
+
       <button
         onClick={spusti}
         disabled={bezi}
@@ -79,6 +118,7 @@ export function StiahnutieDat() {
           <div className="font-medium">
             Balík je hotový ({velkostSlovom(vysledok.velkost)})
             {vysledok.pdfka > 0 && `, z toho ${vysledok.pdfka} PDF faktúr`}
+            {vysledok.skenov > 0 && `, ${vysledok.skenov} skenov`}
           </div>
           <ul className="mt-1 text-xs text-muted-foreground">
             {Object.entries(vysledok.pocty)
@@ -89,6 +129,11 @@ export function StiahnutieDat() {
                 </li>
               ))}
           </ul>
+          {vysledok.orezaneSkeny && (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+              Skenov je priložených prvých 200 — zúžte obdobie a stiahnite zvyšok.
+            </p>
+          )}
           {vysledok.orezanePdf && (
             <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
               PDF je priložených prvých 300 — zvyšok stiahnite zo zoznamu faktúr.

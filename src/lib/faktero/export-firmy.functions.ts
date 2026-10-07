@@ -13,7 +13,24 @@ const Vstup = z.object({
   company_id: z.string().uuid(),
   /** PDF faktúr balík nafúknu, preto sú voliteľné. */
   s_pdf: z.boolean().default(false),
+  /** Skeny prijatých faktúr a bločkov (digitálny archív). */
+  s_skenmi: z.boolean().default(false),
+  /** Obdobie dokladov — bez neho všetko. */
+  od: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+  do: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+  podla: z.enum(["vystavenia", "dodania", "vytvorenia"]).default("vystavenia"),
 });
+
+/** Stĺpec dátumu podľa voľby — pre každú tabuľku dokladov. */
+const DATUMY: Record<string, Record<"vystavenia" | "dodania" | "vytvorenia", string>> = {
+  invoices: { vystavenia: "issue_date", dodania: "delivery_date", vytvorenia: "created_at" },
+  purchase_invoices: { vystavenia: "issue_date", dodania: "delivery_date", vytvorenia: "created_at" },
+  expense_documents: { vystavenia: "issue_date", dodania: "issue_date", vytvorenia: "created_at" },
+  other_documents: { vystavenia: "received_date", dodania: "received_date", vytvorenia: "created_at" },
+};
+
+/** Strop pre skeny — sťahovanie po jednom je pomalé. */
+const MAX_SKENOV = 200;
 
 /** Strop pre PDF v balíku — nad ním by generovanie trvalo dlhšie než beh servera. */
 const MAX_PDF = 300;
@@ -42,11 +59,13 @@ export const exportFirmyFn = createServerFn({ method: "POST" })
     };
 
     const zTabulky = async (tabulka: string, stlpce = "*") => {
-      const { data: rows } = await (supabase as any)
-        .from(tabulka)
-        .select(stlpce)
-        .eq("company_id", data.company_id)
-        .limit(50_000);
+      let q = (supabase as any).from(tabulka).select(stlpce).eq("company_id", data.company_id);
+      // Obdobie platí len pre doklady; adresár, produkty a ostatné idú celé.
+      const stlpecDatumu = DATUMY[tabulka]?.[data.podla];
+      if (stlpecDatumu && data.od) q = q.gte(stlpecDatumu, data.od);
+      if (stlpecDatumu && data.do)
+        q = stlpecDatumu === "created_at" ? q.lt(stlpecDatumu, `${data.do}T23:59:59.999Z`) : q.lte(stlpecDatumu, data.do);
+      const { data: rows } = await q.limit(50_000);
       return (rows ?? []) as Record<string, unknown>[];
     };
 
@@ -121,6 +140,31 @@ export const exportFirmyFn = createServerFn({ method: "POST" })
       }
     }
 
+    let skenov = 0;
+    if (data.s_skenmi) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const zdroje: { kos: string; priecinok: string; riadky: Record<string, unknown>[]; cislo: string }[] = [
+        { kos: "purchase-invoices", priecinok: "skeny/prijate-faktury", riadky: prijate, cislo: "invoice_number" },
+        { kos: "expense-receipts", priecinok: "skeny/blocky", riadky: doklady, cislo: "document_number" },
+      ];
+      for (const z of zdroje) {
+        const priec = zip.folder(z.priecinok);
+        for (const r of z.riadky.filter((x) => x.file_path)) {
+          if (skenov >= MAX_SKENOV) break;
+          try {
+            const { data: blob } = await supabaseAdmin.storage.from(z.kos).download(String(r.file_path));
+            if (!blob) continue;
+            const pripona = String(r.file_path).split(".").pop()?.slice(0, 5) || "pdf";
+            const meno = [r.issue_date, r.supplier_name, r[z.cislo]].filter(Boolean).join("_") || String(r.id);
+            priec?.file(nazovSuboru(meno, pripona), new Uint8Array(await blob.arrayBuffer()));
+            skenov++;
+          } catch {
+            /* chýbajúci sken nezhodí balík */
+          }
+        }
+      }
+    }
+
     zip.file(
       "OBSAH.txt",
       sprievodnyText(String(firma.name ?? ""), new Date().toLocaleString("sk-SK")),
@@ -145,6 +189,8 @@ export const exportFirmyFn = createServerFn({ method: "POST" })
       velkost: obsah.byteLength,
       pocty,
       pdfka,
+      skenov,
+      orezaneSkeny: skenov >= MAX_SKENOV,
       orezanePdf: data.s_pdf && faktury.filter((f) => f.pdf_url).length > MAX_PDF,
     };
   });

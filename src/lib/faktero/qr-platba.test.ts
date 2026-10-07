@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { spd, payBySquare, textQrPlatby } from "./qr-platba";
+import { spd, payBySquare, textQrPlatby, paymeOdkaz } from "./qr-platba";
 
 const udaje = {
   iban: "SK03 7500 0000 0040 3280 9427",
@@ -58,5 +58,29 @@ describe("QR platby", () => {
   it("bez mena príjemcu sa PAY by square nezloží — doplní sa náhrada", async () => {
     const t = await textQrPlatby({ ...udaje, prijemca: null }, "SK");
     expect(t?.format).toBe("PAY by square");
+  });
+});
+
+describe("PAYME odkaz", () => {
+  it("skladá odkaz podľa štandardu SBA", () => {
+    const u = paymeOdkaz({
+      iban: "SK68 0720 0002 8919 8742 6353",
+      suma: 200.3,
+      mena: "EUR",
+      vs: "2546874464",
+      sprava: "Faktura 2026001",
+      splatnost: "2026-12-05",
+      prijemca: "Alice Cafee",
+    })!;
+    const q = new URL(u).searchParams;
+    expect(u.startsWith("https://payme.sk/?V=1&")).toBe(true);
+    expect(q.get("IBAN")).toBe("SK6807200002891987426353");
+    expect(q.get("AM")).toBe("200.30");
+    expect(q.get("DT")).toBe("20261205");
+    expect(q.get("PI")).toBe("/VS2546874464/SS/KS");
+    expect(q.get("CN")).toBe("Alice Cafee");
+  });
+  it("cudziu menu nepodporuje", () => {
+    expect(paymeOdkaz({ iban: "SK68", suma: 10, mena: "CZK" })).toBeNull();
   });
 });
