@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
+import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -51,6 +53,7 @@ function Detail() {
   const [navrhy, setNavrhy] = useState<Navrhy | null>(null);
   const [busy, setBusy] = useState(false);
   const [nenajdene, setNenajdene] = useState<string | null>(null);
+  const { vzhlad, zmen: zmenVzhlad } = useVzhladNespracovanych();
 
   async function obnov() {
     try {
@@ -163,6 +166,70 @@ function Detail() {
     }
   }
 
+  async function zmazDoklad() {
+    if (!confirm("Presunúť doklad do koša?")) return;
+    try {
+      await zmaz({ data: { id } });
+      toast.success("Doklad je v koši");
+      navigate({ to: d!.dalsiId ? "/nespracovane/$id" : "/nespracovane", params: { id: d!.dalsiId ?? "" } } as any);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    }
+  }
+
+  // Prepínač rozloženia — voľba sa pamätá v účte používateľa.
+  const prepinac = (
+    <div className="inline-flex rounded-lg border border-border p-0.5 text-xs" role="group" aria-label="Rozloženie">
+      {(
+        [
+          ["klasicky", "Klasické"],
+          ["kompaktny", "Ako v Doklado"],
+        ] as const
+      ).map(([k, n]) => (
+        <button
+          key={k}
+          type="button"
+          aria-pressed={vzhlad === k}
+          onClick={() => void zmenVzhlad(k)}
+          className={`rounded-md px-3 py-1.5 ${vzhlad === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"}`}
+        >
+          {n}
+        </button>
+      ))}
+    </div>
+  );
+  const nadpis = u.dodavatel.nazov ? `${u.dodavatel.nazov}${u.cislo ? ` — ${u.cislo}` : ""}` : "Nespracovaný doklad";
+
+  if (vzhlad === "kompaktny")
+    return (
+      <>
+        <PageHeader
+          title={nadpis}
+          description={`Nespracované doklady › ${d.subor.nazov ?? "doklad"}`}
+          action={prepinac}
+        />
+        <PageBody>
+          <NespracovanyKompaktny
+            subor={d.subor}
+            stav={d.stav}
+            chybaCitania={d.chyba}
+            druh={druh}
+            setDruh={setDruh}
+            u={u}
+            setU={setU}
+            navrhy={navrhy}
+            chyby={chyby}
+            sucty={s}
+            sadzby={sadzby}
+            busy={busy}
+            onVytvor={() => void vytvorDoklad()}
+            onUloz={() => void ulozZmeny()}
+            onZmaz={() => void zmazDoklad()}
+          />
+        </PageBody>
+      </>
+    );
+
   const hodnotyKodov = {
     predkontacia: u.kody.predkontacia,
     clenenie: u.kody.clenenie,
@@ -177,12 +244,13 @@ function Detail() {
   return (
     <>
       <PageHeader
-        title={u.dodavatel.nazov ? `${u.dodavatel.nazov}${u.cislo ? ` — ${u.cislo}` : ""}` : "Nespracovaný doklad"}
+        title={nadpis}
         description={
           d.stav === "cita"
             ? "Faktero doklad práve číta…"
             : "Určte druh dokladu, skontrolujte údaje, zaúčtujte a vytvorte. Povinné polia, ktoré chýbajú, sú červené."
         }
+        action={prepinac}
       />
       <PageBody>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -461,16 +529,7 @@ function Detail() {
               <button
                 type="button"
                 disabled={busy}
-                onClick={async () => {
-                  if (!confirm("Presunúť doklad do koša?")) return;
-                  try {
-                    await zmaz({ data: { id } });
-                    toast.success("Doklad je v koši");
-                    navigate({ to: d.dalsiId ? "/nespracovane/$id" : "/nespracovane", params: { id: d.dalsiId ?? "" } } as any);
-                  } catch (e: any) {
-                    toast.error(e?.message ?? "Nepodarilo sa");
-                  }
-                }}
+                onClick={() => void zmazDoklad()}
                 className="ml-auto inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
               >
                 <Trash2 className="h-4 w-4" /> Zmazať
