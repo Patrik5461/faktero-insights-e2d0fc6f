@@ -26,7 +26,7 @@ export function KomentarePanel({
   const [ja, setJa] = useState<string | null>(null);
   const [komentare, setKomentare] = useState<Komentar[]>([]);
   const [text, setText] = useState("");
-  const [upozornit, setUpozornit] = useState<string[]>([]);
+  const [upozornitVybrani, setUpozornit] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
   const obnov = async () => {
@@ -50,10 +50,24 @@ export function KomentarePanel({
   }, [companyId, agenda, id]);
 
   const meno = (u: string) => ludia.find((l) => l.id === u)?.meno ?? "kolega";
+  const holy = (v: string) => v.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  // „@me…“ na konci textu — ponuka kolegov na označenie.
+  const zmienka = /(^|\s)@([^\s@]*)$/.exec(text)?.[2] ?? null;
+  const ponuka =
+    zmienka === null
+      ? []
+      : ludia.filter((l) => l.id !== ja && holy(l.meno).startsWith(holy(zmienka))).slice(0, 6);
+  function oznac(l: { id: string; meno: string }) {
+    setText((t) => t.replace(/@([^\s@]*)$/, `@${l.meno} `));
+    setUpozornit((u) => (u.includes(l.id) ? u : [...u, l.id]));
+  }
 
   async function pridaj() {
     if (!text.trim()) return;
     setBusy(true);
+    // Kto je v texte označený cez @meno, dostane upozornenie aj bez zaškrtnutia.
+    const oznaceni = ludia.filter((l) => l.id !== ja && holy(text).includes(holy(`@${l.meno}`))).map((l) => l.id);
+    const upozornit = [...new Set([...upozornitVybrani, ...oznaceni])];
     try {
       const { error } = await supabase.from("komentare_dokladov" as any).insert({
         company_id: companyId,
@@ -111,9 +125,26 @@ export function KomentarePanel({
         onChange={(e) => setText(e.target.value)}
         rows={2}
         maxLength={2000}
-        placeholder="Napíšte komentár — napr. otázku pre účtovníčku"
+        placeholder="Napíšte komentár — @meno označí kolegu"
         className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
       />
+      {ponuka.length > 0 && (
+        <ul role="listbox" aria-label="Označiť kolegu" className="mt-1 rounded-md border border-border bg-popover p-1 text-xs shadow-sm">
+          {ponuka.map((l) => (
+            <li key={l.id}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={false}
+                onClick={() => oznac(l)}
+                className="w-full rounded px-2 py-1 text-left hover:bg-secondary"
+              >
+                @{l.meno}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
         {ludia.filter((l) => l.id !== ja).length > 0 && (
           <span className="text-xs text-muted-foreground">Upozorniť:</span>
@@ -124,9 +155,11 @@ export function KomentarePanel({
             <label key={l.id} className="flex items-center gap-1 text-xs">
               <input
                 type="checkbox"
-                checked={upozornit.includes(l.id)}
+                checked={upozornitVybrani.includes(l.id)}
                 onChange={(e) =>
-                  setUpozornit(e.target.checked ? [...upozornit, l.id] : upozornit.filter((x) => x !== l.id))
+                  setUpozornit(
+                    e.target.checked ? [...upozornitVybrani, l.id] : upozornitVybrani.filter((x) => x !== l.id),
+                  )
                 }
               />
               {l.meno}

@@ -148,7 +148,7 @@ function DokladyPage() {
       (r) =>
         (!platba || r.payment_method === platba) &&
         (!h ||
-          [r.supplier_name, r.supplier_ico, r.document_number, r.note]
+          [r.supplier_name, r.supplier_ico, r.document_number, r.note, ...(r.stitky ?? [])]
             .filter(Boolean)
             .some((x) => String(x).toLowerCase().includes(h))),
     );
@@ -848,6 +848,15 @@ function DokladyPage() {
                       </button>
                       {r.supplier_ico ? (
                         <div className="text-xs text-muted-foreground">IČO {r.supplier_ico}</div>
+                      ) : null}
+                      {r.stitky?.length ? (
+                        <div className="mt-0.5 flex flex-wrap gap-1">
+                          {r.stitky.map((t: string) => (
+                            <span key={t} className="rounded-full bg-secondary px-1.5 text-[11px] text-muted-foreground">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
                       ) : null}
                       {r.status === "new" && chybajuceUdaje(r).length > 0 && (
                         <div className="text-xs text-amber-700 dark:text-amber-400">

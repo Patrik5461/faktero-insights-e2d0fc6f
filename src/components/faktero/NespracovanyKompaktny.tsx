@@ -1,3 +1,5 @@
+import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
+import { getActiveCompanyId } from "@/lib/faktero/active-company";
 import { PolozkyNespracovaneho } from "./PolozkyNespracovaneho";
 import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
@@ -450,6 +452,10 @@ export function NespracovanyKompaktny({
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
                 />
                 <div className="text-right text-[11px] text-muted-foreground">{u.poznamka.length}/1000</div>
+                <PreddefinovanaPoznamka
+                  companyId={getActiveCompanyId()}
+                  onVyber={(t) => set({ poznamka: u.poznamka ? `${u.poznamka}\n${t}` : t })}
+                />
               </div>
             </Sekcia>
           ) : null}

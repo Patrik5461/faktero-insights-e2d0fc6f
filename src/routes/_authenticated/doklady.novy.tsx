@@ -1,3 +1,5 @@
+import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
+import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { PrilohyFaktury } from "@/components/faktero/PrilohyFaktury";
 import { PresunAkoPrilohuOkno } from "@/components/faktero/PresunAkoPrilohuOkno";
@@ -899,9 +901,22 @@ function NovyDokladPage() {
               </div>
               {search.id && cid ? (
                 <div className="sm:col-span-2">
+                  {ulozeny ? (
+                    <div className="mb-3">
+                      <StitkyDokladu
+                        tabulka="expense_documents"
+                        id={search.id}
+                        stitky={ulozeny.stitky ?? []}
+                        zamknute={Boolean(ulozeny.exported_at || ulozeny.locked_at)}
+                      />
+                    </div>
+                  ) : null}
                   <SchvalovaniePanel companyId={cid} agenda="doklad" id={search.id} />
                   <div className="mt-3">
                     <KomentarePanel companyId={cid} agenda="doklad" id={search.id} />
+                  </div>
+                  <div className="mt-3">
+                    <HistoriaDokladu companyId={cid} agenda="doklad" id={search.id} />
                   </div>
                   <div className="mt-3">
                     <PrilohyFaktury

@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { NespracovanyKompaktny } from "@/components/faktero/NespracovanyKompaktny";
 import { PolozkyNespracovaneho } from "@/components/faktero/PolozkyNespracovaneho";
+import { PreddefinovanaPoznamka } from "@/components/faktero/PreddefinovanaPoznamka";
 import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -594,6 +595,7 @@ function Detail() {
                 <label className="block text-sm">
                   <span className="text-xs text-muted-foreground">Poznámka</span>
                   <textarea rows={2} value={u.poznamka} onChange={(e) => set({ poznamka: e.target.value })} className={`${vstup} border-input`} />
+                  <PreddefinovanaPoznamka companyId={d.companyId} onVyber={(t) => set({ poznamka: u.poznamka ? `${u.poznamka}\n${t}` : t })} />
                 </label>
               </section>
             ) : null}

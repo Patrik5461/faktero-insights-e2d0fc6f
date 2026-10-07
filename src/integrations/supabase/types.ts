@@ -2853,6 +2853,7 @@ export type Database = {
           locked_at: string | null
           locked_by: string | null
           predmet_mailu: string | null
+          stitky: string[]
         }
         Insert: {
           processed_at?: string | null
@@ -2903,6 +2904,7 @@ export type Database = {
           locked_at?: string | null
           locked_by?: string | null
           predmet_mailu?: string | null
+          stitky?: string[]
         }
         Update: {
           processed_at?: string | null
@@ -2953,6 +2955,7 @@ export type Database = {
           locked_at?: string | null
           locked_by?: string | null
           predmet_mailu?: string | null
+          stitky?: string[]
         }
         Relationships: [
           {
@@ -5759,6 +5762,7 @@ export type Database = {
           locked_at: string | null
           locked_by: string | null
           predmet_mailu: string | null
+          stitky: string[]
         }
         Insert: {
           amount_total?: number
@@ -5854,6 +5858,7 @@ export type Database = {
           locked_at?: string | null
           locked_by?: string | null
           predmet_mailu?: string | null
+          stitky?: string[]
         }
         Update: {
           amount_total?: number
@@ -5949,6 +5954,7 @@ export type Database = {
           locked_at?: string | null
           locked_by?: string | null
           predmet_mailu?: string | null
+          stitky?: string[]
         }
         Relationships: [
           {

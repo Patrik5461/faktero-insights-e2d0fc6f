@@ -878,7 +878,18 @@ function PurchaseInvoicesPage() {
                     />
                   </td>
                   <td className="p-3 font-medium">{r.invoice_number}</td>
-                  <td className="p-3">{r.supplier_name}</td>
+                  <td className="p-3">
+                    {r.supplier_name}
+                    {r.stitky?.length ? (
+                        <div className="mt-0.5 flex flex-wrap gap-1">
+                          {r.stitky.map((t: string) => (
+                            <span key={t} className="rounded-full bg-secondary px-1.5 text-[11px] text-muted-foreground">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                  </td>
                   {je("ico") && (
                     <td className="p-3 tabular-nums text-muted-foreground">
                       {r.supplier_ico || "—"}

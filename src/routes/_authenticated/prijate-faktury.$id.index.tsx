@@ -38,6 +38,8 @@ import {
   Undo2,
 } from "lucide-react";
 import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions";
+import { HistoriaDokladu } from "@/components/faktero/HistoriaDokladu";
+import { StitkyDokladu } from "@/components/faktero/StitkyDokladu";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
@@ -440,6 +442,16 @@ function PurchaseInvoiceDetail() {
         }
       />
       <PageBody>
+        {!navrh && (
+          <div className="mb-4">
+            <StitkyDokladu
+              tabulka="purchase_invoices"
+              id={row.id}
+              stitky={(row as any).stitky ?? []}
+              zamknute={Boolean(row.exported_at || (row as any).locked_at)}
+            />
+          </div>
+        )}
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="space-y-6">
             {samo && <SamofakturaPanel row={row} onZmena={load} />}
@@ -504,6 +516,7 @@ function PurchaseInvoiceDetail() {
             )}
             {row.type === "regular" && !navrh && <ZauctovaniePanel row={row} onZmena={load} />}
             {!navrh && <KomentarePanel companyId={row.company_id} agenda="prijata" id={row.id} />}
+            {!navrh && <HistoriaDokladu companyId={row.company_id} agenda="prijata" id={row.id} />}
             <PrilohyFaktury druh="purchase_invoice" dokladId={row.id} mozeMenit={!row.exported_at} />
             {presunPrilohy && (
               <PresunAkoPrilohuOkno

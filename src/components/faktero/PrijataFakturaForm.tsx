@@ -1,3 +1,4 @@
+import { PreddefinovanaPoznamka } from "./PreddefinovanaPoznamka";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -704,6 +705,10 @@ export function PrijataFakturaForm({
                 value={form.note}
                 onChange={(e) => set("note", e.target.value)}
                 className="input"
+              />
+              <PreddefinovanaPoznamka
+                companyId={getActiveCompanyId()}
+                onVyber={(t) => set("note", form.note ? `${form.note}\n${t}` : t)}
               />
             </Field>
           </section>
