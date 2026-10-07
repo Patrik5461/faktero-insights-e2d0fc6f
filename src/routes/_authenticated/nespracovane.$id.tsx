@@ -448,7 +448,7 @@ function Detail() {
               </section>
             ) : null}
 
-            <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/95 p-3 backdrop-blur">
+            <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card/95 p-3 pr-24 backdrop-blur">
               <button type="button" disabled={busy || d.stav === "cita"} onClick={vytvorDoklad} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Vytvoriť
               </button>
