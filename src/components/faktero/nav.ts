@@ -107,10 +107,11 @@ export const NAV: NavGroup[] = [
       rozoznať vôbec. Doklady majú bloček, rovnako ako v mobilnej appke.
     */
     icon: Receipt,
-    match: ["/doklady", "/ostatne-doklady", "/schvalovanie"],
+    match: ["/doklady", "/ostatne-doklady", "/schvalovanie", "/nespracovane"],
     children: [
+      // Ako v Doklado: všetko nahraté a z e-mailu čaká najprv tu.
+      { to: "/nespracovane", label: "Nespracované doklady" },
       { to: "/doklady", label: "Prehľad dokladov" },
-      { to: "/doklady", search: { stav: "nespracovane" }, label: "Nespracované doklady" },
       { to: "/schvalovanie", label: "Na schválenie" },
       { to: "/doklady/novy", label: "Nový doklad (foto/QR/upload)" },
       { to: "/doklady/mailom", label: "Doklady e-mailom" },

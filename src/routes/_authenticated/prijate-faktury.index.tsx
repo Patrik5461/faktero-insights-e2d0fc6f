@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { UpozornenieNespracovane } from "@/components/faktero/UpozornenieNespracovane";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
@@ -529,6 +530,7 @@ function PurchaseInvoicesPage() {
         }
       />
       <PageBody>
+        <UpozornenieNespracovane />
         <PrijemMailom />
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard label="Počet faktúr" value={String(totals.count)} />

@@ -307,6 +307,11 @@ export const deleteExpenseFn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Kbelík so súborom zmazaného záznamu podľa druhu v koši. */
+function kosSuboru(druh: unknown): string {
+  return druh === "nespracovany" ? "nespracovane" : "expense-receipts";
+}
+
 /** Kôš dokladov — po 90 dňoch sa vysype sám (aj sken). */
 export const kosDokladovFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -316,12 +321,12 @@ export const kosDokladovFn = createServerFn({ method: "POST" })
     const hranica = new Date(Date.now() - 90 * 86400000).toISOString();
     const { data: stare } = await supabase
       .from("kos_dokladov")
-      .select("id, zaznam")
+      .select("id, druh, zaznam")
       .eq("company_id", data.company_id)
       .lt("zmazane_at", hranica);
     for (const r of stare ?? []) {
       const cesta = r.zaznam?.file_path;
-      if (cesta) await supabase.storage.from("expense-receipts").remove([cesta]);
+      if (cesta) await supabase.storage.from(kosSuboru(r.druh)).remove([cesta]);
       await supabase.from("kos_dokladov").delete().eq("id", r.id);
     }
     const { data: riadky, error } = await supabase
@@ -335,8 +340,13 @@ export const kosDokladovFn = createServerFn({ method: "POST" })
       id: r.id as string,
       popis: r.popis as string,
       zmazaneAt: r.zmazane_at as string,
-      datum: (r.zaznam?.issue_date ?? null) as string | null,
-      suma: r.zaznam?.total_amount != null ? Number(r.zaznam.total_amount) : null,
+      datum: (r.zaznam?.issue_date ?? r.zaznam?.udaje?.datumVystavenia ?? null) as string | null,
+      suma:
+        r.zaznam?.total_amount != null
+          ? Number(r.zaznam.total_amount)
+          : r.zaznam?.udaje?.celkom != null
+            ? Number(r.zaznam.udaje.celkom)
+            : null,
       mena: (r.zaznam?.currency ?? "EUR") as string,
     }));
   });
@@ -349,7 +359,10 @@ export const obnovZKosaFn = createServerFn({ method: "POST" })
     const supabase = context.supabase as any;
     const { data: r } = await supabase.from("kos_dokladov").select("*").eq("id", data.id).maybeSingle();
     if (!r) throw new Error("Doklad v koši nie je.");
-    const { error } = await supabase.from("expense_documents").insert(r.zaznam);
+    // Nespracovaný doklad sa vracia medzi nespracované, ostatné medzi doklady.
+    const { error } = await supabase
+      .from(r.druh === "nespracovany" ? "nespracovane_doklady" : "expense_documents")
+      .insert(r.zaznam);
     if (error) throw new Error(error.message);
     const banka: string[] = r.vazby?.banka ?? [];
     if (banka.length) {
@@ -369,9 +382,13 @@ export const zmazZKosaFn = createServerFn({ method: "POST" })
   .validator((data: { id: string }) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase as any;
-    const { data: r } = await supabase.from("kos_dokladov").select("id, zaznam").eq("id", data.id).maybeSingle();
+    const { data: r } = await supabase
+      .from("kos_dokladov")
+      .select("id, druh, zaznam")
+      .eq("id", data.id)
+      .maybeSingle();
     if (!r) throw new Error("Doklad v koši nie je.");
-    if (r.zaznam?.file_path) await supabase.storage.from("expense-receipts").remove([r.zaznam.file_path]);
+    if (r.zaznam?.file_path) await supabase.storage.from(kosSuboru(r.druh)).remove([r.zaznam.file_path]);
     const { error } = await supabase.from("kos_dokladov").delete().eq("id", r.id);
     if (error) throw new Error(error.message);
     return { ok: true };

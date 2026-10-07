@@ -30,7 +30,7 @@ const KROKY = [
   {
     icon: FileCheck2,
     nadpis: "Vy ho potvrdíte",
-    text: "Doklad čaká medzi prijatými faktúrami ako rozpracovaný. Nič sa neschváli samo — prezriete si ho a uložíte.",
+    text: "Doklad čaká v Nespracovaných dokladoch. Určíte druh, skontrolujete, zaúčtujete a vytvoríte — nič sa nezaeviduje samo.",
   },
 ];
 
@@ -85,15 +85,16 @@ function Stranka() {
               poslať druhým e-mailom.
             </li>
             <li>
-              Doklady sú vždy <strong>rozpracované</strong>. Nájdete ich v{" "}
-              <Link to="/prijate-faktury" className="text-primary underline">
-                Prijatých faktúrach
+              Doklady čakajú v{" "}
+              <Link to="/nespracovane" className="text-primary underline">
+                Nespracovaných dokladoch
               </Link>
-              . Exekúcie, predpisy poistného, listy z úradov a zmluvy rozpozná AI a uloží ich do{" "}
+              . AI navrhne druh — faktúra, zálohová, dobropis, bloček, alebo exekúcia, predpis
+              poistného, list z úradu či zmluva (tie pôjdu do{" "}
               <Link to="/ostatne-doklady" className="text-primary underline">
                 Ostatných dokladov
               </Link>
-              .
+              ) — a vy ho potvrdíte alebo zmeníte.
             </li>
             <li>
               Keď by sa adresa dostala tam, kam nemá, dá sa nižšie <strong>vypnúť</strong> alebo{" "}

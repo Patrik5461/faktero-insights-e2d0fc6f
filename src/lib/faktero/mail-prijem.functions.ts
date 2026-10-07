@@ -30,6 +30,7 @@ export type StavPrijmuMailom = {
     detail: string | null;
     created_invoice_ids: string[];
     created_other_ids: string[];
+    created_nespracovane_ids?: string[];
   }>;
 };
 
@@ -78,7 +79,7 @@ export const stavPrijmuMailom = createServerFn({ method: "POST" })
     const { data: spravy } = await supabaseAdmin
       .from("inbox_messages")
       .select(
-        "id, from_email, subject, received_at, status, detail, created_invoice_ids, created_other_ids",
+        "id, from_email, subject, received_at, status, detail, created_invoice_ids, created_other_ids, created_nespracovane_ids",
       )
       .eq("address_id", adresa.id)
       .order("received_at", { ascending: false })

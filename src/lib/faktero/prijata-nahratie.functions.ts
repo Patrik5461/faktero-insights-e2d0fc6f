@@ -32,6 +32,8 @@ const Vstup = z.object({
 });
 
 export type NahratyDoklad = {
+  /** Doklad čaká v Nespracovaných — `id` je id nespracovaného dokladu. */
+  nespracovany?: boolean;
   id: string;
   invoice_number: string;
   supplier_name: string;
@@ -74,72 +76,32 @@ export const nahrajPrijatuFakturuFn = createServerFn({ method: "POST" })
     */
     const typ = data.druh === "auto" ? faktura.type : data.druh;
 
-    // Príloha ide do úložiska prv, než vznikne riadok — bez nej je doklad
-    // len prepis a pri kontrole chýba papier.
-    const pripona = (data.nazov.split(".").pop() ?? "bin").toLowerCase().slice(0, 8);
-    const cesta = `${data.company_id}/${crypto.randomUUID()}.${pripona}`;
-    const up = await supabase.storage
-      .from("purchase-invoices")
-      .upload(cesta, bajty, { contentType: data.mime, upsert: false });
-    if (up.error) throw new Error(`Súbor sa nepodarilo uložiť: ${up.error.message}`);
-
-    const { data: vlozena, error } = await supabase
-      .from("purchase_invoices")
-      .insert({
-        ...faktura,
-        type: typ,
-        // Zo zálohovej faktúry sa daň neodpočítava — tú prinesie ostrá faktúra.
-        odpocet: typ === "regular",
-        company_id: data.company_id,
-        created_by: userId,
-        // Zdroj odlišuje nahraté doklady od ručne prepísaných aj od pošty.
-        source: "nahrate",
-        note: ai ? `Nahraté zo súboru ${data.nazov}.` : `Nahraté zo súboru ${data.nazov}. Údaje sa nepodarilo prečítať — doplňte ich ručne.`,
-        file_path: cesta,
-        file_mime: data.mime,
-        file_size: bajty.length,
-      })
-      .select("id, invoice_number, supplier_name, amount_total, currency, type")
-      .single();
-
-    if (error || !vlozena) {
-      // Súbor bez dokladu by v úložisku len ležal a nikto by sa k nemu nedostal.
-      await supabase.storage.from("purchase-invoices").remove([cesta]);
-      const { friendlyError } = await import("./plan-error");
-      throw new Error(friendlyError(error, "Doklad sa nepodarilo uložiť."));
-    }
-
-    /* Doklad v cudzej mene potrebuje kurz ECB; bez neho by chýbal vo výkaze. */
-    if (faktura.currency && faktura.currency !== "EUR") {
-      try {
-        const { prepocitajDoklad } = await import("./kurzy.server");
-        const prepocet = await prepocitajDoklad(faktura.currency, faktura.issue_date, {
-          zaklad: faktura.amount_without_vat,
-          dan: faktura.vat_amount,
-          celkom: faktura.amount_total,
-        });
-        if (prepocet) {
-          await supabase
-            .from("purchase_invoices")
-            .update({
-              exchange_rate: prepocet.kurz,
-              amount_without_vat_eur: prepocet.zaklad,
-              vat_amount_eur: prepocet.dan,
-            })
-            .eq("id", vlozena.id);
-        }
-      } catch {
-        /* Kurz je doplnok — doklad je uložený a to je podstatné. */
-      }
-    }
-
+    /*
+      Ako v Doklado: nahratý doklad nejde rovno medzi prijaté faktúry, ale do
+      Nespracovaných. Tam ho človek otvorí, určí druh, skontroluje, zaúčtuje
+      a až potom vytvorí. Zo zoznamu prijatých záloh (aj z appky) chodí druh
+      napevno — ten sa predvyplní.
+    */
+    const { zalozNespracovany } = await import("./nespracovane.server");
+    const { id } = await zalozNespracovany(supabase as any, {
+      companyId: data.company_id,
+      userId,
+      zdroj: "nahratie",
+      bajty,
+      nazov: data.nazov,
+      mime: data.mime,
+      ai,
+      druh: typ === "proforma" ? "zalohova" : undefined,
+    });
     return {
-      id: vlozena.id,
-      invoice_number: vlozena.invoice_number,
-      supplier_name: vlozena.supplier_name,
-      amount_total: Number(vlozena.amount_total ?? 0),
-      currency: vlozena.currency ?? "EUR",
-      type: (vlozena as any).type === "proforma" ? "proforma" : "regular",
+      id,
+      invoice_number: faktura.invoice_number,
+      supplier_name: faktura.supplier_name,
+      amount_total: Number(faktura.amount_total ?? 0),
+      currency: faktura.currency,
+      type: typ,
       prazdny: !ai,
+      nespracovany: true,
     };
   });
+

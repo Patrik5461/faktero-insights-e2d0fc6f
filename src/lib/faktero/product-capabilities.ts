@@ -12,7 +12,7 @@ export type CapabilityModule = {
   routes?: string[];
 };
 
-export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v4 (7. 10. 2026)";
+export const FAKTERO_KB_VERSION = "Faktero Knowledge Base v5 (7. 10. 2026)";
 
 /** Features that are explicitly NOT supported yet. AI must say "Zatiaľ nie je dostupné". */
 export const NOT_YET_SUPPORTED: string[] = [
@@ -176,7 +176,8 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Prijaté faktúry s DPH a splatnosťou",
       "Párovanie dokladov s platbami z banky",
       "Prílohy k dokladom (PDF, foto)",
-      "Nespracované doklady čakajú na kontrolu, do Pohody idú len spracované",
+      "Nespracované doklady ako v Doklado: všetko z e-mailu aj nahraté čaká v Doklady → Nespracované doklady; po otvorení sa určí druh (prijatá faktúra, zálohová, dobropis, bloček, iný doklad), skontrolujú vyťažené údaje (chýbajúce povinné polia sú červené), zaúčtuje sa a tlačidlom Vytvoriť sa doklad presunie do svojej sekcie",
+      "Nespracované bločky čakajú na kontrolu, do Pohody idú len spracované",
       "Zaúčtovanie ako v Doklado: predkontácia, členenie DPH, členenie kontrolného výkazu (B1, B2, B3, C2, nezahŕňať), rozúčtovanie na viac predkontácií, účtovanie pomerom (napr. auto 50 % DPH)",
       "Stiahnutie XML pre Pohodu priamo pri doklade, Vrátiť z Pohody na opravu, presun medzi doklady a prijaté faktúry",
       "Viacúrovňové schvaľovanie dokladov (cesty podľa dodávateľa, sumy, predkontácie; schvaľovateľom môže byť manažér zákazky); do Pohody a do príkazu na úhradu idú len schválené",
@@ -188,6 +189,7 @@ export const PRODUCT_CAPABILITIES: CapabilityModule[] = [
       "Pri doklade výber z viacerých pravidiel účtovania, doplnené kódy označené hviezdičkou",
     ],
     routes: [
+      "/nespracovane",
       "/doklady",
       "/doklady/novy",
       "/doklady/mailom",

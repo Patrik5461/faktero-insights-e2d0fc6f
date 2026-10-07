@@ -48,14 +48,10 @@ export function NahratDoklad({
         },
       });
       toast.dismiss(cakanie);
-      if (v.prazdny) {
-        toast.warning("Doklad je uložený, ale nič sa z neho nedalo prečítať — doplňte údaje.");
-      } else {
-        toast.success(
-          `${v.type === "proforma" ? "Zálohová faktúra" : "Faktúra"} ${v.invoice_number} od ${v.supplier_name} je zaevidovaná`,
-        );
-      }
-      navigate({ to: "/prijate-faktury/$id", params: { id: v.id } });
+      // Ako v Doklado: doklad čaká v Nespracovaných — rovno sa otvorí na zaradenie.
+      if (v.prazdny) toast.warning("Doklad je v Nespracovaných, ale nič sa z neho nedalo prečítať — doplňte údaje.");
+      else toast.success("Doklad je v Nespracovaných — skontrolujte, zaraďte a zaúčtujte ho.");
+      navigate({ to: "/nespracovane/$id", params: { id: v.id } } as any);
     } catch (e: any) {
       toast.dismiss(cakanie);
       toast.error(e?.message ?? "Doklad sa nepodarilo nahrať.");

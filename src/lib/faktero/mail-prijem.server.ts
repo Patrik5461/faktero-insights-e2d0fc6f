@@ -11,7 +11,6 @@ import {
   vyberLocalPart,
   jePrilohaDoklad,
   maPouzitelneUdaje,
-  zostavPrijatuFakturu,
   podomenaDokladov,
   celaAdresa,
   PODOMENA_DOKLADOV,
@@ -23,7 +22,6 @@ import {
   rozbalTelo,
   type OdosielatelPotvrdeni,
 } from "./mail-potvrdenie";
-import { bezpecneMeno, jeOstatnyZMailu, ostatnyZMailu } from "./ostatne-doklady";
 import { DRUHY_PRE_AI } from "./ostatne-doklady-citanie.server";
 
 /**
@@ -103,7 +101,8 @@ Kľúče pre "other_kind":
 ${DRUHY_PRE_AI}
 Do JSON pridaj: "document_type", "other_kind", "other_subject", "other_due_date", "summary".
 Pri "faktura" vyplň aj "document_subtype": "zalohova" pre zálohovú, proforma či preddavkovú
-faktúru (nie je daňový doklad), inak "ostra". Faktúra, ktorá len odpočítava zaplatenú zálohu,
+faktúru (nie je daňový doklad), "dobropis" pre dobropis či opravnú faktúru, "blocek" pre
+pokladničný doklad z registračnej pokladne (eKasa), účtenku či parkovací lístok, inak "ostra". Faktúra, ktorá len odpočítava zaplatenú zálohu,
 je "ostra". Do "document_title" daj nadpis dokladu tak, ako je vytlačený.
 Do "items" daj riadky tabuľky dokladu v poradí, v akom sú na papieri; keď doklad
 položky nemá, vráť prázdne pole. Súčty, zaokrúhlenie ani „spolu" nie sú položka.
@@ -408,6 +407,7 @@ export async function spracujPrijatyMail(
     pocet: number,
     faktury: string[],
     ostatne: string[] = [],
+    nespracovane: string[] = [],
   ) {
     if (zaznam?.id) {
       await supabaseAdmin
@@ -418,6 +418,7 @@ export async function spracujPrijatyMail(
           attachment_count: pocet,
           created_invoice_ids: faktury,
           created_other_ids: ostatne,
+          created_nespracovane_ids: nespracovane,
         })
         .eq("id", zaznam.id);
     }
@@ -476,7 +477,6 @@ export async function spracujPrijatyMail(
 
     const dnes = new Date().toISOString().slice(0, 10);
     const vytvorene: string[] = [];
-    const vytvoreneOstatne: string[] = [];
     const poznamky: string[] = [];
 
     for (const priloha of doklady.slice(0, MAX_PRILOH)) {
@@ -502,7 +502,6 @@ export async function spracujPrijatyMail(
 
       const mime = (priloha.content_type ?? "application/pdf").split(";")[0]!.trim();
       const pripona = (priloha.filename?.split(".").pop() ?? "pdf").toLowerCase().slice(0, 5);
-      const cesta = `${adresa.company_id}/${crypto.randomUUID()}.${pripona}`;
 
       // Čítanie ide pred uložením: od neho závisí, do ktorého kbelíka súbor patrí.
       const ai = uz ? uz.ai : await precitajDoklad(bajty.toString("base64"), mime);
@@ -519,106 +518,35 @@ export async function spracujPrijatyMail(
       }
 
       /*
-        Exekúcia, predpis poistného či list z úradu nie sú prijatá faktúra —
-        v nej by sa tvárili ako záväzok na zaplatenie. Idú medzi ostatné
-        doklady, kde ich účtovník uvidí a odklikne.
+        Ako v Doklado: príloha nejde rovno medzi prijaté faktúry ani ostatné
+        doklady, ale do Nespracovaných. AI navrhne druh (faktúra, zálohová,
+        dobropis, bloček, iný doklad) a predvyplní údaje; človek ich
+        skontroluje, zaúčtuje a vytvorí. Kontrola cudzieho odberateľa ide
+        do poznámky, aby ju videl pri spracovaní.
       */
-      if (jeOstatnyZMailu(ai)) {
-        const idOstatneho = crypto.randomUUID();
-        const meno = priloha.filename ?? `priloha.${pripona}`;
-        const cestaOstatneho = `${adresa.company_id}/${idOstatneho}/${Date.now()}-${bezpecneMeno(meno)}`;
-        const upO = await supabaseAdmin.storage
-          .from("other-docs")
-          .upload(cestaOstatneho, bajty, { contentType: mime, upsert: false });
-        if (upO.error) {
-          poznamky.push(`${meno}: uloženie zlyhalo`);
-          continue;
-        }
-        const riadok = ostatnyZMailu({ ai, odosielatel, predmet, nazovSuboru: meno, dnes });
-        // Exekúcia k zamestnancovi, leasing k zmluve — len pri jednoznačnej zhode.
-        const { navrhniVazby } = await import("./ostatne-doklady-vazby.server");
-        const vazby = await navrhniVazby(supabaseAdmin, adresa.company_id, {
-          kind: riadok.kind,
-          sender: riadok.sender,
-          subject: riadok.subject,
-          summary: riadok.note,
-        }).catch(() => ({}));
-        const { error: chybaO } = await supabaseAdmin.from("other_documents").insert({
-          id: idOstatneho,
-          company_id: adresa.company_id,
-          created_by: adresa.user_id,
-          status: "new",
-          ...riadok,
-          ...vazby,
-        });
-        if (!chybaO) {
-          await supabaseAdmin.from("other_document_files").insert({
-            document_id: idOstatneho,
-            company_id: adresa.company_id,
-            path: cestaOstatneho,
-            name: meno,
-            mime,
-            size: bajty.length,
-            position: 0,
-          });
-          vytvoreneOstatne.push(idOstatneho);
-        } else {
-          await supabaseAdmin.storage.from("other-docs").remove([cestaOstatneho]);
-          poznamky.push(`${meno}: zápis zlyhal (${chybaO.message})`);
-        }
-        continue;
-      }
-
-      const up = await supabaseAdmin.storage
-        .from("purchase-invoices")
-        .upload(cesta, bajty, { contentType: mime, upsert: false });
-      if (up.error) {
-        poznamky.push(`${priloha.filename ?? "príloha"}: uloženie zlyhalo`);
-        continue;
-      }
-
-      const faktura = zostavPrijatuFakturu({
-        ai,
-        odosielatel,
-        predmet,
-        nazovSuboru: priloha.filename ?? null,
-        dnes,
-      });
-
-      /*
-        Kontrola, či doklad patrí firme (ako v Doklado): keď je na ňom
-        odberateľ s iným IČO či IČ DPH, doklad sa založí, ale s výstrahou
-        v poznámke aj v denníku mailov.
-      */
+      const meno = priloha.filename ?? `priloha.${pripona}`;
       const cudzi = cudziOdberatel(ai, firmaUdaje);
-      if (cudzi) {
-        faktura.note = [faktura.note, cudzi].filter(Boolean).join(" · ");
-        poznamky.push(`${priloha.filename ?? "príloha"}: ${cudzi}`);
+      if (cudzi) poznamky.push(`${meno}: ${cudzi}`);
+      const odkial = [odosielatel ? `Prišlo e-mailom od ${odosielatel}` : "Prišlo e-mailom", predmet ? `predmet „${predmet.slice(0, 120)}“` : null]
+        .filter(Boolean)
+        .join(", ");
+      try {
+        const { zalozNespracovany } = await import("./nespracovane.server");
+        const n = await zalozNespracovany(supabaseAdmin, {
+          companyId: adresaFirmy.company_id,
+          userId: adresaFirmy.user_id,
+          zdroj: "mail",
+          bajty,
+          nazov: meno,
+          mime,
+          ai,
+          poznamka: [odkial + ".", cudzi].filter(Boolean).join(" "),
+          inboxMessageId: zaznam?.id ?? null,
+        });
+        vytvorene.push(n.id);
+      } catch (e: any) {
+        poznamky.push(`${meno}: zápis zlyhal (${String(e?.message ?? e).slice(0, 120)})`);
       }
-
-      const { data: vlozena, error } = await supabaseAdmin
-        .from("purchase_invoices")
-        .insert({
-          ...faktura,
-          // Zo zálohovej faktúry sa daň neodpočítava.
-          odpocet: faktura.type === "regular",
-          company_id: adresa.company_id,
-          created_by: adresa.user_id,
-          // `created_by` je majiteľ adresy, nie ten, kto doklad zapísal — bez
-          // zdroja by zoznam tvrdil, že to niekto vyplnil ručne.
-          source: "mail",
-          file_path: cesta,
-          file_mime: mime,
-          file_size: bajty.length,
-        })
-        .select("id")
-        .single();
-
-      if (error) {
-        poznamky.push(`${priloha.filename ?? "príloha"}: zápis zlyhal (${error.message})`);
-        continue;
-      }
-      vytvorene.push(vlozena!.id);
     }
 
     const preskocene = doklady.length - Math.min(doklady.length, MAX_PRILOH);
@@ -635,21 +563,15 @@ export async function spracujPrijatyMail(
         ),
       );
     }
-    if (vytvoreneOstatne.length) {
+    if (vytvorene.length) {
       poznamky.unshift(
-        vytvoreneOstatne.length === 1
-          ? "1 príloha nie je faktúra — je medzi ostatnými dokladmi"
-          : `${vytvoreneOstatne.length} príloh nie sú faktúry — sú medzi ostatnými dokladmi`,
+        vytvorene.length === 1
+          ? "Doklad čaká v Nespracovaných"
+          : `${vytvorene.length} dokladov čaká v Nespracovaných`,
       );
     }
-    const spolu = vytvorene.length + vytvoreneOstatne.length;
-    await doprav(
-      spolu ? "hotovo" : "chyba",
-      poznamky.join("; ") || null,
-      doklady.length,
-      vytvorene,
-      vytvoreneOstatne,
-    );
+    const spolu = vytvorene.length;
+    await doprav(spolu ? "hotovo" : "chyba", poznamky.join("; ") || null, doklady.length, [], [], vytvorene);
     return {
       stav: spolu ? "hotovo" : "chyba",
       vytvorenych: spolu,

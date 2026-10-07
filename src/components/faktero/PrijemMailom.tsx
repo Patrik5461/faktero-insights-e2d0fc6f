@@ -124,8 +124,11 @@ export function PrijemMailom({
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Prepošlite mail od dodávateľa na túto adresu a PDF sa samo založí ako prijatá
-                  faktúra — s vyplneným dodávateľom, číslom a sumami na kontrolu.
+                  Prepošlite mail od dodávateľa na túto adresu — doklad sa prečíta a počká v{" "}
+                  <Link to="/nespracovane" className="text-primary underline">
+                    Nespracovaných dokladoch
+                  </Link>{" "}
+                  s vyplneným dodávateľom, číslom a sumami. Tam ho zaradíte a zaúčtujete.
                 </p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -320,6 +323,15 @@ export function PrijemMailom({
                               {s.subject ?? ""}
                             </span>
                             <span className={`ml-auto ${st.trieda}`}>{st.text}</span>
+                            {(s.created_nespracovane_ids?.length ?? 0) > 0 && (
+                              <Link
+                                to="/nespracovane/$id"
+                                params={{ id: s.created_nespracovane_ids![0]! }}
+                                className="text-primary hover:underline"
+                              >
+                                otvoriť v Nespracovaných
+                              </Link>
+                            )}
                             {s.created_invoice_ids?.length > 0 && (
                               <Link
                                 to="/prijate-faktury/$id"

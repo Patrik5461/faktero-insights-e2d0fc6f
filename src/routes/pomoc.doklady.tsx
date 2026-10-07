@@ -19,6 +19,45 @@ export const Route = createFileRoute("/pomoc/doklady")({
 
 const sections: HelpSection[] = [
   {
+    id: "nespracovane",
+    title: "Nespracované doklady — všetko najprv sem",
+    body: (
+      <>
+        <p>
+          Ako v Doklado: všetko, čo príde <strong>e-mailom</strong> alebo čo <strong>nahráte</strong>{" "}
+          (tlačidlo Nahrať faktúru, appka, pretiahnutie súborov), čaká najprv v{" "}
+          <Link to="/nespracovane">Doklady → Nespracované doklady</Link>. Faktero doklad prečíta
+          a navrhne, čo to je. Kým je doklad tu, nevstupuje do DPH, pokladne ani do účtovníctva.
+        </p>
+        <ol>
+          <li>Kliknite na doklad — vľavo uvidíte samotný doklad, vpravo vyťažené údaje.</li>
+          <li>
+            Vyberte <strong>druh dokladu</strong>: prijatá faktúra, zálohová faktúra, dobropis,
+            bloček alebo iný doklad (zmluva, list, predpis).
+          </li>
+          <li>
+            Skontrolujte údaje. Povinné polia, ktoré chýbajú, sú <strong>červené</strong> — pri
+            faktúre číslo a splatnosť, pri bločku spôsob úhrady, pri dobropise opravovaná faktúra.
+          </li>
+          <li>
+            Rovno <strong>zaúčtujte</strong>: predkontácia, členenie DPH a kontrolného výkazu,
+            stredisko, činnosť, kategória.
+          </li>
+          <li>
+            Kliknite na <strong>Vytvoriť</strong> — doklad sa presunie medzi prijaté faktúry,
+            doklady alebo ostatné doklady (s vyplneným zaúčtovaním) a otvorí sa ďalší nespracovaný.
+            <strong> Uložiť zmeny</strong> ho nechá rozpracovaný na neskôr.
+          </li>
+        </ol>
+        <p>
+          Bločky odfotené v appke alebo zadané vo formulári sú v tom istom zozname — otvoria sa vo
+          formulári dokladu, kde ich spracujete tlačidlom Spracovať. Zmazaný nespracovaný doklad
+          ide do koša a dá sa obnoviť.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "naco",
     title: "Čo sú Doklady a čím sa líšia od prijatých faktúr",
     body: (
@@ -238,9 +277,9 @@ const sections: HelpSection[] = [
           sťahovať.
         </p>
         <p>
-          Doklad potom čaká medzi <Link to="/prijate-faktury">prijatými faktúrami</Link> ako{" "}
-          <strong>rozpracovaný</strong>. <strong>Nič sa neschváli samo</strong> — prezriete si ho a
-          uložíte.
+          Doklad potom čaká v <Link to="/nespracovane">Nespracovaných dokladoch</Link>.{" "}
+          <strong>Nič sa nezaeviduje samo</strong> — určíte druh, skontrolujete, zaúčtujete a
+          vytvoríte.
         </p>
         <p>Čo je dobré vedieť:</p>
         <ul>

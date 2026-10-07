@@ -3659,6 +3659,63 @@ export type Database = {
         }
         Relationships: []
       }
+      nespracovane_doklady: {
+        Row: {
+          ai: Json | null
+          chyba: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          druh: string | null
+          file_mime: string | null
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          inbox_message_id: string | null
+          stav: string
+          udaje: Json
+          updated_at: string
+          zdroj: string
+        }
+        Insert: {
+          ai?: Json | null
+          chyba?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          druh?: string | null
+          file_mime?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          inbox_message_id?: string | null
+          stav?: string
+          udaje?: Json
+          updated_at?: string
+          zdroj?: string
+        }
+        Update: {
+          ai?: Json | null
+          chyba?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          druh?: string | null
+          file_mime?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          inbox_message_id?: string | null
+          stav?: string
+          udaje?: Json
+          updated_at?: string
+          zdroj?: string
+        }
+        Relationships: []
+      }
       inbox_addresses: {
         Row: {
           active: boolean
@@ -3699,6 +3756,7 @@ export type Database = {
       }
       inbox_messages: {
         Row: {
+          created_nespracovane_ids: string[]
           address_id: string | null
           attachment_count: number
           company_id: string
@@ -3713,6 +3771,7 @@ export type Database = {
           subject: string | null
         }
         Insert: {
+          created_nespracovane_ids?: string[]
           address_id?: string | null
           attachment_count?: number
           company_id: string
@@ -3727,6 +3786,7 @@ export type Database = {
           subject?: string | null
         }
         Update: {
+          created_nespracovane_ids?: string[]
           address_id?: string | null
           attachment_count?: number
           company_id?: string
