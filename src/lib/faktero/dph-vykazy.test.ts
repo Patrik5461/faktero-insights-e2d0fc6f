@@ -476,3 +476,32 @@ describe("daňový doklad k prijatej platbe", () => {
     expect(soZalohou.r03).toBeUndefined();
   });
 });
+
+describe("ťarchopis (zvýšenie ceny)", () => {
+  const tarchopis = faktura({
+    cislo: "2026095",
+    typ: "debit_note",
+    opravujeCislo: "2026001",
+    riadky: [{ sadzba: 23, zaklad: 50, dan: 11.5 }],
+  });
+  it("priznanie: r24 a r25 so znamienkom plus", () => {
+    const p = priznanie(vstup({ vystavene: [tarchopis] }));
+    expect(p.r24).toBe(50);
+    expect(p.r25).toBe(11.5);
+  });
+  it("kontrolný výkaz: C.1 s väzbou na pôvodnú faktúru, kladne", () => {
+    const kv = kontrolnyVykaz(vstup({ vystavene: [tarchopis] }));
+    expect(kv.c1[0]).toMatchObject({ fo: "2026095", fp: "2026001", zr: 50, dr: 11.5 });
+  });
+  it("súhrnný výkaz: hodnotu zvyšuje", () => {
+    const sv = suhrnnyVykaz(
+      vstup({
+        vystavene: [
+          faktura({ odberatelIcDph: "CZ12345678", prenosDane: true, prenosTyp: "eu_b2b", euPlnenie: "sluzba", riadky: [{ sadzba: 0, zaklad: 100, dan: 0 }] }),
+          { ...tarchopis, odberatelIcDph: "CZ12345678", prenosDane: true, prenosTyp: "eu_b2b", euPlnenie: "sluzba", riadky: [{ sadzba: 0, zaklad: 20, dan: 0 }] },
+        ],
+      }),
+    );
+    expect(sv.celkom).toBe(120);
+  });
+});

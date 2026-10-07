@@ -27,6 +27,7 @@ const KDE: Record<DruhRadu, { tabulka: string; stlpec: string }> = {
   invoice: { tabulka: "invoices", stlpec: "number_series_id" },
   proforma: { tabulka: "invoices", stlpec: "number_series_id" },
   credit_note: { tabulka: "invoices", stlpec: "number_series_id" },
+  debit_note: { tabulka: "invoices", stlpec: "number_series_id" },
   advance_payment: { tabulka: "invoices", stlpec: "number_series_id" },
   quote: { tabulka: "quotes", stlpec: "number_series_id" },
   sales_order: { tabulka: "sales_orders", stlpec: "number_series_id" },

@@ -136,7 +136,9 @@ function VerejnaFaktura() {
   const nazov =
     doklad.type === "credit_note"
       ? "Dobropis"
-      : doklad.type === "proforma"
+      : doklad.type === "debit_note"
+        ? "Ťarchopis"
+        : doklad.type === "proforma"
         ? "Zálohová faktúra"
         : "Faktúra";
 

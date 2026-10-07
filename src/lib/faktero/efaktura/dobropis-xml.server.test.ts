@@ -96,3 +96,19 @@ describe("prijatý dobropis z Peppolu", () => {
     expect(p.documentKind).toBe("self_billing");
   });
 });
+
+describe("ťarchopis v Peppol BIS", () => {
+  const tarchopis: any = { ...dobropis, invoice_number: "T20260001", type: "debit_note", subtotal: 10, vat_total: 2.3, total: 12.3 };
+  const riadky: any[] = [{ name: "Doúčtovanie", quantity: 1, unit: "ks", unit_price: 10, vat_rate: 23, subtotal: 10, vat_amount: 2.3, total: 12.3 }];
+  it("je Invoice s kódom 383 a väzbou na pôvodnú faktúru", () => {
+    const r = generatePeppolBisXml(
+      mapToEN16931({ company: firma, invoice: tarchopis, items: riadky, povodnaFaktura: { cislo: "20260004", vystavena: "2026-09-01" } }),
+    );
+    expect(r.xml).toContain("<cbc:InvoiceTypeCode>383</cbc:InvoiceTypeCode>");
+    expect(r.xml).toMatch(/<cac:BillingReference>\s*<cac:InvoiceDocumentReference>\s*<cbc:ID>20260004<\/cbc:ID>/);
+  });
+  it("bez pôvodnej faktúry neprejde kontrolou", () => {
+    const r = generatePeppolBisXml(mapToEN16931({ company: firma, invoice: tarchopis, items: riadky }));
+    expect(JSON.stringify(r)).toContain("SK-BT-25");
+  });
+});

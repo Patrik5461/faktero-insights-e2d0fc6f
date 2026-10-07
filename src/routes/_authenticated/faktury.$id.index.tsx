@@ -39,6 +39,7 @@ import {
   Ban,
   AlertTriangle,
   Undo2,
+  Plus,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -77,6 +78,7 @@ import { formatujIban, sUctomFaktury } from "@/lib/faktero/platobny-ucet";
 const NAZOV_TYPU: Record<string, string> = {
   proforma: "Zálohová faktúra",
   credit_note: "Dobropis",
+  debit_note: "Ťarchopis",
   advance_payment: "Daňový doklad k platbe",
   regular: "Faktúra",
 };
@@ -837,6 +839,18 @@ function InvoiceDetail() {
               >
                 <Undo2 className="h-4 w-4" />
                 Vystaviť dobropis
+              </Link>
+            )}
+            {/* Ťarchopis — dodatočné zvýšenie ceny k tej istej faktúre (§ 25). */}
+            {inv.type === "regular" && inv.status !== "draft" && inv.status !== "cancelled" && (
+              <Link
+                to="/faktury/nova"
+                search={{ type: "debit_note", opravuje: id } as any}
+                title="Dodatočné zvýšenie ceny k tejto faktúre — opravná faktúra so zvýšením základu dane"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+              >
+                <Plus className="h-4 w-4" />
+                Vystaviť ťarchopis
               </Link>
             )}
 

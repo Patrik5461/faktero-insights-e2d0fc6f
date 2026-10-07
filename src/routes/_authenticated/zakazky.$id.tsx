@@ -465,7 +465,13 @@ function JobDetail() {
               {f.invoice_number}
             </Link>,
             f.issue_date,
-            f.type === "credit_note" ? "Dobropis" : f.type === "proforma" ? "Zálohová" : "Faktúra",
+            f.type === "credit_note"
+              ? "Dobropis"
+              : f.type === "debit_note"
+                ? "Ťarchopis"
+                : f.type === "proforma"
+                  ? "Zálohová"
+                  : "Faktúra",
             suma(Number(f.subtotal)),
           ])}
         />

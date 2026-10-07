@@ -250,6 +250,30 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "tarchopis",
+    title: "Ťarchopis — dodatočné zvýšenie ceny",
+    body: (
+      <>
+        <p>
+          Keď sa po vystavení faktúry cena <strong>zvýši</strong> (doúčtovanie, chyba v cene, dohodnutý
+          príplatok), vystavte ťarchopis: na detaile faktúry tlačidlo{" "}
+          <strong>Vystaviť ťarchopis</strong>. Otvorí sa doklad s rovnakým odberateľom, menou a
+          režimom DPH a s väzbou na pôvodnú faktúru.
+        </p>
+        <p>
+          Položky zadajte <strong>kladne</strong> — len o koľko sa cena zvyšuje, nie celú faktúru znova.
+          Ťarchopis bez väzby na faktúru ani so zápornou sumou vystaviť nejde (to je dobropis).
+        </p>
+        <p>
+          Na PDF je nadpis Ťarchopis a číslo opravovanej faktúry. Do priznania k DPH ide do r. 24 a 25
+          so znamienkom plus, do kontrolného výkazu do časti C.1, do Pohody ako „vydaný ťarchopis"
+          spárovaný s pôvodnou faktúrou a do eFaktúry ako doklad 383. Sklad sa ním nehýbe. Ťarchopis
+          sa platí ako bežná faktúra.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "zauctovanie",
     title: "Zaúčtovanie vystavenej faktúry pre Pohodu",
     body: (

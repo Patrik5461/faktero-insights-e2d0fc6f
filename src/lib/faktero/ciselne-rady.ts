@@ -12,6 +12,7 @@ export const DRUHY_RADOV = [
   "invoice",
   "proforma",
   "credit_note",
+  "debit_note",
   "advance_payment",
   "quote",
   "sales_order",
@@ -26,6 +27,7 @@ export const NAZVY_DRUHOV: Record<DruhRadu, string> = {
   invoice: "Faktúry",
   proforma: "Zálohové faktúry",
   credit_note: "Dobropisy",
+  debit_note: "Ťarchopisy",
   advance_payment: "Doklady k prijatej platbe",
   quote: "Cenové ponuky",
   sales_order: "Prijaté objednávky",
@@ -140,6 +142,8 @@ export function druhPodlaTypuFaktury(typ: string | null | undefined): DruhRadu {
       return "proforma";
     case "credit_note":
       return "credit_note";
+    case "debit_note":
+      return "debit_note";
     case "advance_payment":
       return "advance_payment";
     default:
@@ -240,6 +244,7 @@ export function predlohyRadu(kind: DruhRadu): { format: string; popis: string }[
 const PREDPONA: Record<DruhRadu, string> = {
   invoice: "",
   credit_note: "DO",
+  debit_note: "TA",
   proforma: "ZF",
   advance_payment: "DDP",
   quote: "Q",

@@ -85,6 +85,7 @@ const NAZOV_TYPU: Record<string, string> = {
   regular: "Faktúra",
   proforma: "Zálohová faktúra",
   credit_note: "Dobropis",
+  debit_note: "Ťarchopis",
   advance_payment: "Doklad k prijatej platbe",
 };
 

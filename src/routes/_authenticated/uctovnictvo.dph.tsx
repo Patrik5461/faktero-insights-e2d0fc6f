@@ -332,7 +332,7 @@ function DphPage() {
 <table><tr class="tot"><td>${rozdiel >= 0 ? "Odvod DPH" : "Nadmerný odpočet"}</td><td style="text-align:right">${fmt(Math.abs(rozdiel))}</td></tr></table>
 <h2>Vystavené faktúry (${invoices.length})</h2>
 <table><thead><tr><th>Číslo</th><th>Dátum</th><th>Odberateľ</th><th style="text-align:right">Základ</th><th style="text-align:right">DPH</th><th style="text-align:right">Spolu</th></tr></thead>
-<tbody>${invoices.map((i) => `<tr><td>${i.invoice_number}</td><td>${i.issue_date}</td><td>${i.customer_name || ""}${i.reverse_charge ? " (PDP)" : ""}${i.type === "credit_note" ? " (dobropis)" : ""}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.vat_total || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
+<tbody>${invoices.map((i) => `<tr><td>${i.invoice_number}</td><td>${i.issue_date}</td><td>${i.customer_name || ""}${i.reverse_charge ? " (PDP)" : ""}${i.type === "credit_note" ? " (dobropis)" : i.type === "debit_note" ? " (ťarchopis)" : ""}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.vat_total || 0), i.currency || "EUR")}</td><td style="text-align:right">${fmt(znamienkoDokladu(i.type) * Number(i.total || 0), i.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
 <h2>Prijaté faktúry (${purchases.length})</h2>
 <table><thead><tr><th>Číslo</th><th>Dátum</th><th>Dodávateľ</th><th style="text-align:right">Základ</th><th style="text-align:right">DPH</th><th style="text-align:right">Spolu</th></tr></thead>
 <tbody>${purchases.map((p) => `<tr><td>${p.invoice_number}</td><td>${p.issue_date}</td><td>${p.supplier_name || ""}</td><td style="text-align:right">${fmt(Number(p.amount_without_vat || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.vat_amount || 0), p.currency || "EUR")}</td><td style="text-align:right">${fmt(Number(p.amount_total || 0), p.currency || "EUR")}</td></tr>`).join("")}</tbody></table>
@@ -553,7 +553,7 @@ function DphPage() {
                     <TableCell>
                       {i.customer_name}
                       {i.reverse_charge ? " (PDP)" : ""}
-                      {i.type === "credit_note" ? " (dobropis)" : ""}
+                      {i.type === "credit_note" ? " (dobropis)" : i.type === "debit_note" ? " (ťarchopis)" : ""}
                     </TableCell>
                     <TableCell className="text-right">
                       {fmt(znamienkoDokladu(i.type) * Number(i.subtotal || 0), i.currency || "EUR")}

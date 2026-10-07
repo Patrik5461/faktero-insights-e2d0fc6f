@@ -148,6 +148,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfInput): Promise<U
     proforma: t.zalohovaFaktura,
     advance_payment: t.dokladKPlatbe,
     credit_note: t.dobropis,
+    debit_note: t.tarchopis,
   };
   // Doklad podľa § 25a nie je opravná faktúra (§ 71 ods. 2) — vlastný nadpis.
   const docLabel =

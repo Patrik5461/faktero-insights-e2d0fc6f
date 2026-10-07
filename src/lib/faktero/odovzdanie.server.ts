@@ -67,6 +67,8 @@ const TYP_DOKLADU: Record<string, string> = {
   regular: "Faktúra",
   proforma: "Zálohová faktúra",
   credit_note: "Dobropis",
+  debit_note: "Ťarchopis",
+  advance_payment: "Doklad k prijatej platbe",
 };
 
 /** Bezpečný názov súboru v ZIPe — diakritika ostáva, oddeľovače nie. */

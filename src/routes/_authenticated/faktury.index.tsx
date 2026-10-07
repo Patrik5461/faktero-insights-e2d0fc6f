@@ -122,10 +122,10 @@ export const Route = createFileRoute("/_authenticated/faktury/")({
 function InvoicesPage() {
   const navigate = useNavigate();
   const { type, status, poSplatnosti, neuhradene, q } = Route.useSearch();
-  // V databáze je dobropis `credit_note`; v adrese je kratšie `credit`.
+  // Opravné faktúry: dobropis `credit_note` a ťarchopis `debit_note`; v adrese je kratšie `credit`.
   const equals = useMemo(
     () => ({
-      ...(type === "credit" ? { type: "credit_note" } : {}),
+      ...(type === "credit" ? { type: ["credit_note", "debit_note"] } : {}),
       ...(status ? { status } : {}),
     }),
     [type, status],
@@ -558,7 +558,7 @@ function InvoicesPage() {
       <PageHeader
         title={
           type === "credit"
-            ? "Dobropisy"
+            ? "Dobropisy a ťarchopisy"
             : poSplatnosti
               ? "Faktúry po splatnosti"
               : neuhradene
@@ -573,7 +573,7 @@ function InvoicesPage() {
           q
             ? `Výsledky hľadania „${q}“.`
             : type === "credit"
-              ? "Vystavené dobropisy."
+              ? "Vystavené opravné faktúry — dobropisy cenu znižujú, ťarchopisy zvyšujú."
               : poSplatnosti
                 ? "Vystavené a odoslané faktúry, ktorým uplynula splatnosť a nie sú uhradené."
                 : neuhradene
@@ -881,6 +881,11 @@ function InvoicesPage() {
                       <td className="p-3 font-medium">
                         <span className="inline-flex items-center gap-2">
                           {i.invoice_number}
+                          {i.type === "credit_note" || i.type === "debit_note" ? (
+                            <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                              {i.type === "credit_note" ? "Dobropis" : "Ťarchopis"}
+                            </span>
+                          ) : null}
                           {reminderMap[i.id] ? (
                             <span
                               className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:text-amber-200"

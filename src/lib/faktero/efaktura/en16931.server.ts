@@ -96,6 +96,8 @@ function mapUnit(unit?: string | null): string {
 /** Map Faktero invoice type to UNCL1001 document type code. */
 function mapDocType(type: string): EN16931Invoice["documentType"] {
   if (type === "credit_note") return "381";
+  // Ťarchopis — opravná faktúra, ktorá základ zvyšuje; nesie väzbu na pôvodnú (BT-25).
+  if (type === "debit_note") return "383";
   if (type === "advance") return "386" as any; // advance invoice — kept generic
   return "380";
 }

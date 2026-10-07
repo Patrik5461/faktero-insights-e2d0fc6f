@@ -8546,7 +8546,7 @@ export type Database = {
         | "paid"
         | "overdue"
         | "cancelled"
-      invoice_type: "regular" | "proforma" | "credit_note" | "advance_payment"
+      invoice_type: "regular" | "proforma" | "credit_note" | "debit_note" | "advance_payment"
       job_status: "active" | "closed" | "cancelled"
       purchase_order_status:
         | "draft"
@@ -8748,7 +8748,7 @@ export const Constants = {
         "overdue",
         "cancelled",
       ],
-      invoice_type: ["regular", "proforma", "credit_note"],
+      invoice_type: ["regular", "proforma", "credit_note", "debit_note", "advance_payment"],
       job_status: ["active", "closed", "cancelled"],
       purchase_order_status: [
         "draft",

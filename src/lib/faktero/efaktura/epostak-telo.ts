@@ -66,6 +66,7 @@ export function jeDobropis(druh: DruhEdokladu): boolean {
  */
 export function druhZFaktury(typ: string | null | undefined, spolu?: number | null): DruhEdokladu {
   if (typ === "credit_note") return Number(spolu ?? 0) > 0 ? "debit_note" : "credit_note";
+  if (typ === "debit_note") return "debit_note";
   if (typ === "advance_payment") return "advance_payment";
   if (typ === "proforma") {
     throw new Error(

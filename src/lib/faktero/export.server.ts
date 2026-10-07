@@ -149,6 +149,7 @@ export function datumZauctovania(datum: unknown, zamknuteDo: unknown): string | 
 const TYPY_DOKLADU: Record<string, string> = {
   regular: "issuedInvoice",
   credit_note: "issuedCreditNotice",
+  debit_note: "issuedDebitNote",
   proforma: "issuedAdvanceInvoice",
 };
 
@@ -642,7 +643,8 @@ export function polozkyFaktur(opts: {
       // opravný doklad k nej, nie ako samostatný záporný doklad — vďaka tomu
       // sedí párovanie aj kontrolný výkaz. `itemTransfer="false"`, lebo položky
       // nesieme vlastné: dobropis býva čiastočný.
-      const opravovana = typ === "credit_note" ? opts.opravovane?.[String(invoice.id ?? "")] : null;
+      const opravovana =
+        typ === "credit_note" || typ === "debit_note" ? opts.opravovane?.[String(invoice.id ?? "")] : null;
       const vazba = opravovana
         ? `
       <inv:correctiveDocument itemTransfer="false">

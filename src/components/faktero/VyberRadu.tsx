@@ -71,7 +71,7 @@ export function VyberRadu({
     let zrusene = false;
     const t = setTimeout(async () => {
       const den = datum && /^\d{4}-\d{2}-\d{2}$/.test(datum) ? datum : null;
-      const faktura = ["invoice", "proforma", "advance_payment", "credit_note"].includes(druh);
+      const faktura = ["invoice", "proforma", "advance_payment", "credit_note", "debit_note"].includes(druh);
       const { data, error } = faktura
         ? await supabase.rpc("faktero_next_invoice_number", {
             _company_id: cid,

@@ -15,7 +15,8 @@ export type PagedListOptions = {
   /** Kľúč, pod ktorým sa zapamätá voľba zoradenia. Bez neho sa nepamätá. */
   sortKey?: string;
   pageSizeKey?: string; // localStorage key suffix
-  equals?: Record<string, string | number | boolean | null>;
+  /** Pole hodnôt = ktorákoľvek z nich (`in`). */
+  equals?: Record<string, string | number | boolean | null | string[]>;
 };
 
 /** Zapamätané zoradenie zoznamu — nech si to klient nemusí prestavovať zakaždým. */
@@ -97,7 +98,7 @@ export function usePagedList({
         .eq("company_id", cid);
       if (equals) {
         for (const [k, v] of Object.entries(equals)) {
-          q = v === null ? q.is(k, null) : q.eq(k, v);
+          q = v === null ? q.is(k, null) : Array.isArray(v) ? q.in(k, v) : q.eq(k, v);
         }
       }
       q = showDeleted ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);

@@ -62,9 +62,9 @@ function validate(inv: EN16931Invoice): XmlGenerationResult["validationErrors"] 
   need(!!inv.buyer?.name, "BR-07", "Buyer name is required");
   need(inv.lines.length > 0, "BR-16", "At least one invoice line is required");
   need(
-    inv.documentType !== "381" || !!inv.precedingInvoice?.id,
+    (inv.documentType !== "381" && inv.documentType !== "383") || !!inv.precedingInvoice?.id,
     "SK-BT-25",
-    "Dobropis musí obsahovať číslo pôvodnej faktúry (BT-25)",
+    "Dobropis aj ťarchopis musí obsahovať číslo pôvodnej faktúry (BT-25)",
   );
   need(!!inv.seller?.address?.countryCode, "BR-09", "Seller country code is required");
   need(!!inv.buyer?.address?.countryCode, "BR-10", "Buyer country code is required");

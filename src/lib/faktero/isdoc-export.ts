@@ -58,13 +58,11 @@ function tag(meno: string, hodnota: unknown): string {
   return v ? `<${meno}>${esc(v)}</${meno}>` : "";
 }
 
-/**
- * `1` faktúra, `2` dobropis, `4` zálohová.
- * Vrubopis (`3`) Faktero nepozná — zvýšenie ceny sa vystavuje ako nová faktúra.
- */
+/** `1` faktúra, `2` dobropis, `3` vrubopis (ťarchopis), `4` zálohová. */
 function typDokladu(typ: unknown): string {
   const t = String(typ ?? "regular");
   if (t === "credit_note") return "2";
+  if (t === "debit_note") return "3";
   if (t === "proforma") return "4";
   return "1";
 }

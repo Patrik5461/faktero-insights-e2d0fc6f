@@ -538,7 +538,7 @@ export async function nacitajVazby(
 
   const zalohoveIds = [...odpoctyPodlaFaktury.values()].flat().map((o) => o.zaloha);
   const opraveneIds = faktury
-    .filter((f: Riadok) => f.type === "credit_note" && f.opravuje_fakturu_id)
+    .filter((f: Riadok) => (f.type === "credit_note" || f.type === "debit_note") && f.opravuje_fakturu_id)
     .map((f: Riadok) => String(f.opravuje_fakturu_id));
 
   const potrebne = [...new Set([...zalohoveIds, ...opraveneIds])];
@@ -588,7 +588,7 @@ export async function nacitajVazby(
       }
     }
 
-    if (f.type === "credit_note" && f.opravuje_fakturu_id) {
+    if ((f.type === "credit_note" || f.type === "debit_note") && f.opravuje_fakturu_id) {
       const cislo = cisla.get(String(f.opravuje_fakturu_id));
       if (cislo) opravovane[String(f.id)] = cislo;
     }

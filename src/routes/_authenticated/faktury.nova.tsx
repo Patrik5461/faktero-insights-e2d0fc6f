@@ -71,7 +71,7 @@ export const Route = createFileRoute("/_authenticated/faktury/nova")({
   validateSearch: (
     s: Record<string, unknown>,
   ): {
-    type?: "proforma" | "credit_note";
+    type?: "proforma" | "credit_note" | "debit_note";
     supplier_hint?: string;
     total_hint?: string;
     /** Faktúra vystavovaná z prijatej objednávky. */
@@ -81,8 +81,8 @@ export const Route = createFileRoute("/_authenticated/faktury/nova")({
   } => ({
     opravuje: typeof s.opravuje === "string" && /^[0-9a-f-]{36}$/i.test(s.opravuje) ? s.opravuje : undefined,
     sales_order: typeof s.sales_order === "string" && s.sales_order ? s.sales_order : undefined,
-    type: (s.type === "proforma" || s.type === "credit_note" ? s.type : undefined) as
-      "proforma" | "credit_note" | undefined,
+    type: (s.type === "proforma" || s.type === "credit_note" || s.type === "debit_note" ? s.type : undefined) as
+      "proforma" | "credit_note" | "debit_note" | undefined,
     supplier_hint:
       typeof s.supplier_hint === "string" && s.supplier_hint.trim() ? s.supplier_hint : undefined,
     // Router si číselný parameter sám prevedie na number, takže "42.50" sem
@@ -156,7 +156,7 @@ function NewInvoice() {
   const [aiLoading, setAiLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
-    type: (search.type ?? "regular") as "regular" | "proforma" | "credit_note",
+    type: (search.type ?? "regular") as "regular" | "proforma" | "credit_note" | "debit_note",
     customer_id: "",
     issue_date: new Date().toISOString().slice(0, 10),
     delivery_date: new Date().toISOString().slice(0, 10),
@@ -310,7 +310,14 @@ function NewInvoice() {
   const [hladajOpravovanu, setHladajOpravovanu] = useState("");
   const [hladamOpravovanu, setHladamOpravovanu] = useState(false);
 
-  async function predvyplnDobropis(invoiceId: string, sPolozkami: boolean) {
+  async function predvyplnDobropis(
+    invoiceId: string,
+    sPolozkami: boolean,
+    druh: "credit_note" | "debit_note" = "credit_note",
+  ) {
+    // Ťarchopis nesie len zvýšenie ceny — položky pôvodnej faktúry sa nekopírujú.
+    const tarchopis = druh === "debit_note";
+    const nazovDokladu = tarchopis ? "Ťarchopis" : "Dobropis";
     const cid = getActiveCompanyId();
     if (!cid) return;
     {
@@ -322,15 +329,36 @@ function NewInvoice() {
         .eq("company_id", cid)
         .eq("id", invoiceId)
         .maybeSingle();
-      if (!f) return toast.error("Faktúru na dobropis sa nepodarilo načítať");
+      if (!f) return toast.error(`Faktúru na ${tarchopis ? "ťarchopis" : "dobropis"} sa nepodarilo načítať`);
       if ((f as any).type !== "regular")
-        return toast.error("Dobropis sa vystavuje k bežnej faktúre, nie k zálohovej ani k dobropisu.");
+        return toast.error(`${nazovDokladu} sa vystavuje k bežnej faktúre, nie k zálohovej ani k opravnej.`);
       setOpravujeCislo(String((f as any).invoice_number ?? ""));
       // Text nad položkami je povinný — pri dobropise ho dá väzba sama.
       setForm((x) =>
-        x.intro_note.trim() ? x : { ...x, intro_note: `Dobropis k faktúre č. ${(f as any).invoice_number}` },
+        x.intro_note.trim() ? x : { ...x, intro_note: `${nazovDokladu} k faktúre č. ${(f as any).invoice_number}` },
       );
-      if (!sPolozkami) {
+      if (!sPolozkami || tarchopis) {
+        if (tarchopis) {
+          const fh = f as any;
+          setForm((x) => ({
+            ...x,
+            type: "debit_note",
+            customer_id: fh.customer_id ?? x.customer_id,
+            currency: fh.currency ?? x.currency,
+            language: fh.language ?? x.language,
+            reverse_charge: !!fh.reverse_charge,
+            reverse_charge_type: fh.reverse_charge_type ?? "",
+            eu_plnenie: fh.eu_plnenie ?? x.eu_plnenie,
+            oss: !!fh.oss,
+            oss_country: fh.oss_country ?? "",
+            osobitna_uprava: fh.osobitna_uprava ?? "",
+            job_id: fh.job_id ?? "",
+            order_number: fh.order_number ?? "",
+            opravuje_fakturu_id: fh.id,
+          }));
+          toast.success(`Ťarchopis k faktúre ${fh.invoice_number} — zadajte, o koľko sa cena zvyšuje`);
+          return;
+        }
         setForm((x) => ({ ...x, opravuje_fakturu_id: (f as any).id }));
         return;
       }
@@ -405,15 +433,16 @@ function NewInvoice() {
       setHladajOpravovanu("");
       // Prázdny dobropis si rovno vezme položky faktúry so záporným množstvom.
       const prazdny = items.every((i) => !i.name.trim() && !Number(i.unit_price));
-      await predvyplnDobropis(f.id, prazdny);
-      if (!prazdny) toast.success(`Dobropis opravuje faktúru ${f.invoice_number}`);
+      await predvyplnDobropis(f.id, prazdny, form.type === "debit_note" ? "debit_note" : "credit_note");
+      if (!prazdny) toast.success(`${form.type === "debit_note" ? "Ťarchopis" : "Dobropis"} opravuje faktúru ${f.invoice_number}`);
     } finally {
       setHladamOpravovanu(false);
     }
   }
 
   useEffect(() => {
-    if (search.opravuje) void predvyplnDobropis(search.opravuje, true);
+    if (search.opravuje)
+      void predvyplnDobropis(search.opravuje, true, search.type === "debit_note" ? "debit_note" : "credit_note");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.opravuje]);
   const nacitajCennik = useServerFn(getPriceContext);
@@ -783,6 +812,11 @@ function NewInvoice() {
     }
     const bezNazvu = riadkyDokladu.find((it) => !it.name.trim());
     if (bezNazvu) return toast.error("Položka so sumou musí mať názov.");
+    // Ťarchopis zvyšuje cenu konkrétnej faktúry — bez väzby a so zápornou sumou by to bol dobropis.
+    if (form.type === "debit_note") {
+      if (!form.opravuje_fakturu_id) return toast.error("Ťarchopis musí opravovať konkrétnu faktúru — priraďte ju.");
+      if (!(totals.total > 0)) return toast.error("Ťarchopis cenu zvyšuje — sumy zadajte kladne.");
+    }
     // Dátum dodania je na faktúre platiteľa povinný a určuje obdobie DPH.
     const datumy = skontrolujDatumy({
       platitel: rezim.platitel,
@@ -1016,11 +1050,21 @@ function NewInvoice() {
   return (
     <>
       <PageHeader
-        title={form.type === "credit_note" ? "Nový dobropis" : form.type === "proforma" ? "Nová zálohová faktúra" : "Nová faktúra"}
+        title={
+          form.type === "credit_note"
+            ? "Nový dobropis"
+            : form.type === "debit_note"
+              ? "Nový ťarchopis"
+              : form.type === "proforma"
+                ? "Nová zálohová faktúra"
+                : "Nová faktúra"
+        }
         description={
           form.type === "credit_note"
             ? "Opravný doklad k vystavenej faktúre — priraďte ju podľa čísla alebo VS, alebo nechajte dobropis samostatný."
-            : "Vytvorte faktúru za menej než 30 sekúnd."
+            : form.type === "debit_note"
+              ? "Opravná faktúra, ktorá zvyšuje cenu už vystavenej faktúry (§ 25) — položky zadajte kladne, len o koľko sa cena zvyšuje."
+              : "Vytvorte faktúru za menej než 30 sekúnd."
         }
         action={
           <button
@@ -1072,6 +1116,7 @@ function NewInvoice() {
                   <option value="regular">Faktúra</option>
                   <option value="proforma">Zálohová faktúra</option>
                   <option value="credit_note">Dobropis</option>
+                  <option value="debit_note">Ťarchopis (zvýšenie ceny)</option>
                 </select>
               </div>
               <VyberRadu
@@ -1080,22 +1125,25 @@ function NewInvoice() {
                 onZmena={(id) => setForm({ ...form, number_series_id: id })}
                 datum={form.issue_date}
               />
-              {form.type === "credit_note" && (
+              {(form.type === "credit_note" || form.type === "debit_note") && (
                 <div className="col-span-full rounded-lg border border-primary/30 bg-primary/5 p-3">
                   <div className="text-[13px] font-semibold text-foreground">Opravovaná faktúra</div>
                   {form.opravuje_fakturu_id ? (
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
                       <span>
-                        Dobropis opravuje faktúru <strong>{opravujeCislo || "vybranú faktúru"}</strong> — v
-                        účtovníctve aj eFaktúre sa spárujú.
+                        {form.type === "debit_note" ? "Ťarchopis" : "Dobropis"} opravuje faktúru{" "}
+                        <strong>{opravujeCislo || "vybranú faktúru"}</strong> — v účtovníctve aj eFaktúre sa
+                        spárujú.
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => predvyplnDobropis(form.opravuje_fakturu_id, true)}
-                        className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-secondary"
-                      >
-                        Načítať jej položky (so mínusom)
-                      </button>
+                      {form.type === "credit_note" && (
+                        <button
+                          type="button"
+                          onClick={() => predvyplnDobropis(form.opravuje_fakturu_id, true)}
+                          className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-secondary"
+                        >
+                          Načítať jej položky (so mínusom)
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => setPickerOpen("opravuje")}
@@ -1103,16 +1151,18 @@ function NewInvoice() {
                       >
                         Zmeniť
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setForm({ ...form, opravuje_fakturu_id: "" });
-                          setOpravujeCislo("");
-                        }}
-                        className="text-xs text-muted-foreground hover:underline"
-                      >
-                        Samostatný dobropis
-                      </button>
+                      {form.type === "credit_note" && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm({ ...form, opravuje_fakturu_id: "" });
+                            setOpravujeCislo("");
+                          }}
+                          className="text-xs text-muted-foreground hover:underline"
+                        >
+                          Samostatný dobropis
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <>
@@ -1148,8 +1198,17 @@ function NewInvoice() {
                         </button>
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Nechajte prázdne pre <strong>samostatný dobropis</strong> bez väzby na faktúru
-                        (napr. zľava za obdobie). Sumy zadávajte so mínusom.
+                        {form.type === "debit_note" ? (
+                          <>
+                            Ťarchopis musí byť naviazaný na pôvodnú faktúru. Sumy zadávajte{" "}
+                            <strong>kladne</strong> — len o koľko sa cena zvyšuje.
+                          </>
+                        ) : (
+                          <>
+                            Nechajte prázdne pre <strong>samostatný dobropis</strong> bez väzby na faktúru
+                            (napr. zľava za obdobie). Sumy zadávajte so mínusom.
+                          </>
+                        )}
                       </p>
                     </>
                   )}
@@ -2112,7 +2171,9 @@ function NewInvoice() {
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {form.type === "credit_note"
                   ? "Vystaviť dobropis"
-                  : form.type === "proforma"
+                  : form.type === "debit_note"
+                    ? "Vystaviť ťarchopis"
+                    : form.type === "proforma"
                     ? "Vystaviť zálohovú faktúru"
                     : "Vystaviť faktúru"}
               </button>
