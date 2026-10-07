@@ -336,6 +336,18 @@ function Detail() {
                       <span className="text-xs text-muted-foreground">IBAN</span>
                       <input value={u.dodavatel.iban} onChange={(e) => setDod({ iban: e.target.value })} className={`${vstup} border-input`} />
                     </label>
+                    <label className="block text-sm sm:col-span-2">
+                      <span className="text-xs text-muted-foreground">Ulica a číslo</span>
+                      <input value={u.dodavatel.ulica} onChange={(e) => setDod({ ulica: e.target.value })} className={`${vstup} border-input`} />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="text-xs text-muted-foreground">Mesto</span>
+                      <input value={u.dodavatel.mesto} onChange={(e) => setDod({ mesto: e.target.value })} className={`${vstup} border-input`} />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="text-xs text-muted-foreground">PSČ</span>
+                      <input value={u.dodavatel.psc} onChange={(e) => setDod({ psc: e.target.value })} className={`${vstup} border-input`} />
+                    </label>
                   </>
                 )}
               </div>
@@ -373,6 +385,12 @@ function Detail() {
                       <span className="text-xs text-muted-foreground">Číslo dokladu</span>
                       <input aria-label="Číslo dokladu" value={u.cislo} onChange={(e) => set({ cislo: e.target.value })} className={`${vstup} ${ram("cislo")}`} />
                     </label>
+                    {faktura && (
+                      <label className="block text-sm sm:col-span-2">
+                        <span className="text-xs text-muted-foreground">Popis plnenia (text faktúry v Pohode)</span>
+                        <input value={u.popis ?? ""} onChange={(e) => set({ popis: e.target.value })} className={`${vstup} border-input`} />
+                      </label>
+                    )}
                     {faktura && (
                       <label className="block text-sm">
                         <span className="text-xs text-muted-foreground">Variabilný symbol</span>

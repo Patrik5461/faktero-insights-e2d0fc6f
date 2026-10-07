@@ -57,3 +57,29 @@ describe("nespracované doklady", () => {
     expect(blocekZUdajov(u)).toMatchObject({ total_amount: 12.3, vat_rate: 23, payment_method: "hotovost" });
   });
 });
+
+describe("vyťaženie adresy, popisu a dátumov", () => {
+  it("adresa dodávateľa, popis plnenia a splatnosť aj v slovenskom tvare", () => {
+    const u = udajeZAi(
+      {
+        supplier_name: "MD BUILDING, s. r. o.",
+        supplier_street: "Hlavná 12",
+        supplier_city: "Bratislava",
+        supplier_zip: "811 01",
+        description: "Stavebné práce za október",
+        issue_date: "05.10.2026",
+        due_date: "19. 10. 2026",
+      },
+      "2026-10-07",
+    );
+    expect(u.dodavatel).toMatchObject({ ulica: "Hlavná 12", mesto: "Bratislava", psc: "811 01" });
+    expect(u.popis).toBe("Stavebné práce za október");
+    expect(u.datumVystavenia).toBe("2026-10-05");
+    expect(u.splatnost).toBe("2026-10-19");
+    expect(prijataZUdajov("faktura", u, "2026-10-07")).toMatchObject({
+      supplier_street: "Hlavná 12",
+      intro_note: "Stavebné práce za október",
+      due_date: "2026-10-19",
+    });
+  });
+});

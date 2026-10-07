@@ -88,6 +88,11 @@ Vráť VÝLUČNE JSON v tvare:
             "unit_price": number|null, "vat_rate": number|null, "total": number|null}]}
 Dodávateľ je ten, KTO doklad vystavil, nie odberateľ. Sumy uveď ako čísla s bodkou.
 Pridaj aj údaje ODBERATEĽA, ak sú na doklade: "buyer_name", "buyer_ico", "buyer_ic_dph" (inak null).
+Pridaj ADRESU DODÁVATEĽA: "supplier_street" (ulica a číslo), "supplier_city", "supplier_zip",
+"supplier_country" (kód štátu, napr. SK) a "description" — jednou vetou, čo sa fakturuje
+(napr. „Stavebné práce za október"), bez názvu dodávateľa.
+Dátumy vždy v tvare YYYY-MM-DD; splatnosť ("due_date") hľadaj aj pod „Dátum splatnosti",
+„Splatné do", „Splatnosť".
 
 Najprv rozhodni "document_type":
 - "faktura" — faktúra, zálohová faktúra, dobropis, blok, účtenka: doklad o nákupe tovaru či služby.

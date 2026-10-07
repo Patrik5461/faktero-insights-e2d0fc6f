@@ -27,6 +27,18 @@ export function rozpisPrijatej(p: any): { sadzba: number; zaklad: number; dph: n
   return [{ sadzba, zaklad: r2(zaklad), dph: r2(dph) }];
 }
 
+/** Text prijatej faktúry pre Pohodu — čo sa fakturuje. */
+export function textPrijatej(p: any): string {
+  const uvod = String(p?.intro_note ?? "").trim();
+  if (uvod) return uvod.slice(0, 240);
+  const polozky = (Array.isArray(p?.items) ? p.items : [])
+    .map((x: any) => String(x?.name ?? "").trim())
+    .filter(Boolean);
+  if (polozky.length)
+    return (polozky.slice(0, 3).join(", ") + (polozky.length > 3 ? " a ďalšie" : "")).slice(0, 240);
+  return `Faktúra č. ${p?.invoice_number ?? ""}`.trim();
+}
+
 /** Riadok `purchase_invoices` → doklad pre `polozkyDokladov`. */
 export function prijataAkoDoklad(p: any): Record<string, unknown> {
   const spolu = Number(p?.amount_total ?? 0);
@@ -36,6 +48,10 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     supplier_name: p.supplier_name,
     supplier_ico: p.supplier_ico,
     supplier_ic_dph: p.supplier_ic_dph,
+    supplier_dic: p.supplier_dic,
+    supplier_street: p.supplier_street,
+    supplier_city: p.supplier_city,
+    supplier_zip: p.supplier_zip,
     document_number: p.invoice_number,
     issue_date: p.issue_date,
     currency: p.currency,
@@ -56,6 +72,11 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     total_amount: spolu,
     vat_breakdown: rozpisPrijatej(p),
     _povodneCislo: p.invoice_number,
+    /*
+      Text faktúry v Pohode je popis plnenia, nie názov dodávateľa (ten je
+      v adrese): text nad položkami, inak názvy položiek, inak číslo faktúry.
+    */
+    _text: textPrijatej(p),
     _symVar: p.variable_symbol,
     _datumDph: p.delivery_date || p.issue_date,
     _splatnost: p.due_date,

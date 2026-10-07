@@ -227,6 +227,11 @@ export function NespracovanyKompaktny({
                   )}
                 </div>
                 {faktura ? (
+                  <Pole popis="Popis plnenia (text faktúry)">
+                    <input value={u.popis ?? ""} onChange={(e) => set({ popis: e.target.value })} className={ram("")} />
+                  </Pole>
+                ) : null}
+                {faktura ? (
                   <Pole popis="Dátum dodania (DUZP)">
                     <input type="date" value={u.datumDodania} onChange={(e) => set({ datumDodania: e.target.value })} className={ram("")} />
                   </Pole>
@@ -275,11 +280,24 @@ export function NespracovanyKompaktny({
                 </div>
               ) : null}
               {faktura ? (
-                <Rozsirene>
-                  <Pole popis="DIČ">
-                    <input value={u.dodavatel.dic} onChange={(e) => setDod({ dic: e.target.value })} className={ram("")} />
+                <>
+                  <Pole popis="Ulica a číslo">
+                    <input value={u.dodavatel.ulica} onChange={(e) => setDod({ ulica: e.target.value })} className={ram("")} />
                   </Pole>
-                </Rozsirene>
+                  <div className="grid grid-cols-[2fr_1fr] gap-3">
+                    <Pole popis="Mesto">
+                      <input value={u.dodavatel.mesto} onChange={(e) => setDod({ mesto: e.target.value })} className={ram("")} />
+                    </Pole>
+                    <Pole popis="PSČ">
+                      <input value={u.dodavatel.psc} onChange={(e) => setDod({ psc: e.target.value })} className={ram("")} />
+                    </Pole>
+                  </div>
+                  <Rozsirene>
+                    <Pole popis="DIČ">
+                      <input value={u.dodavatel.dic} onChange={(e) => setDod({ dic: e.target.value })} className={ram("")} />
+                    </Pole>
+                  </Rozsirene>
+                </>
               ) : null}
             </Sekcia>
           ) : null}

@@ -13,6 +13,7 @@
 
 import { druhPrijatehoDokladu } from "./zalohova-rozpoznanie";
 import { najblizsiaSadzba } from "./vat-rates";
+import { datum as datumZAi } from "./mail-prijem";
 
 export type DruhNespracovaneho = "faktura" | "zalohova" | "dobropis" | "blocek" | "ostatny";
 
@@ -39,6 +40,8 @@ export type UdajeNespracovaneho = {
   };
   cislo: string;
   vs: string;
+  /** Čo sa fakturuje — do Pohody ide ako text faktúry. */
+  popis: string;
   datumVystavenia: string;
   datumDodania: string;
   splatnost: string;
@@ -72,10 +75,8 @@ const num = (v: unknown): number | null => {
   const n = typeof v === "number" ? v : Number(String(v).replace(/\s/g, "").replace(",", "."));
   return Number.isFinite(n) ? n : null;
 };
-const datum = (v: unknown): string => {
-  const s = t(v, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : "";
-};
+/** Dátum z vyťaženia — prijme aj „15.10.2026" či „15/10/2026", nielen RRRR-MM-DD. */
+const datum = (v: unknown): string => datumZAi(typeof v === "string" ? v : "") ?? "";
 
 /** Prázdne údaje formulára. */
 export function prazdneUdaje(): UdajeNespracovaneho {
@@ -83,6 +84,7 @@ export function prazdneUdaje(): UdajeNespracovaneho {
     dodavatel: { nazov: "", ico: "", dic: "", icDph: "", iban: "", ulica: "", mesto: "", psc: "" },
     cislo: "",
     vs: "",
+    popis: "",
     datumVystavenia: "",
     datumDodania: "",
     splatnost: "",
@@ -187,11 +189,12 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
     dic: t(ai.supplier_dic, 20),
     icDph: t(ai.supplier_ic_dph, 20).replace(/\s/g, "").toUpperCase(),
     iban: t(ai.supplier_iban, 40).replace(/\s/g, "").toUpperCase(),
-    ulica: "",
-    mesto: "",
-    psc: "",
+    ulica: t(ai.supplier_street, 120),
+    mesto: t(ai.supplier_city, 80),
+    psc: t(ai.supplier_zip, 15),
   };
   u.cislo = t(ai.invoice_number, 60);
+  u.popis = t(ai.description, 240);
   u.vs = t(ai.variable_symbol, 20);
   u.datumVystavenia = vystavenie || dnes;
   u.datumDodania = vystavenie || dnes;
@@ -292,6 +295,7 @@ export function prijataZUdajov(
     // Zo zálohovej sa daň neodpočítava.
     odpocet: druh !== "zalohova",
     opravuje_cislo: druh === "dobropis" ? prazdne(u.opravuje) : null,
+    intro_note: prazdne(u.popis ?? ""),
     category: prazdne(u.kategoria),
     note: prazdne(u.poznamka),
     items: u.polozky.length ? u.polozky : null,

@@ -1140,9 +1140,14 @@ export function polozkyDokladov(opts: {
       </${p}:${koren}Detail>`
           : "";
 
+      // Poradie prvkov podľa typ:addressType: firma, mesto, ulica, PSČ, IČO, DIČ, IČ DPH.
       const adresa = [
         el("typ:company", skrat(d?.supplier_name, 96), "            "),
+        el("typ:city", skrat(d?.supplier_city, 45), "            "),
+        el("typ:street", skrat(d?.supplier_street, 64), "            "),
+        el("typ:zip", skrat(d?.supplier_zip, 15), "            "),
         el("typ:ico", skrat(d?.supplier_ico, 15), "            "),
+        el("typ:dic", skrat(d?.supplier_dic, 18), "            "),
         el("typ:icDph", skrat(d?.supplier_ic_dph, 18), "            "),
       ].join("");
 
@@ -1208,7 +1213,7 @@ export function polozkyDokladov(opts: {
           p !== "vch"
             ? el(`${p}:dateAccounting`, datumZauctovania(d?.issue_date, nastavenia?.zamknuteDo), "        ")
             : ""
-        }${el(`${p}:text`, popis || "Prijatý doklad", "        ")}${el(
+        }${el(`${p}:text`, skrat(d?._text, 240) || popis || "Prijatý doklad", "        ")}${el(
           `${p}:note`,
           skrat(d?.note, 200),
           "        ",
