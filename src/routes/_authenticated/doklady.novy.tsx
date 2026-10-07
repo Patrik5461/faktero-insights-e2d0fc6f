@@ -678,26 +678,63 @@ function NovyDokladPage() {
                   Odstrániť položky
                 </button>
               </div>
+              {/*
+                Ako v Doklado: každá položka ukazuje sadzbu DPH a môže mať
+                vlastnú predkontáciu. Predkontácia s pomerom (napr. nafta 50/50)
+                rozúčtuje len túto položku; prázdna = predkontácia dokladu.
+              */}
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
+                <thead className="bg-muted/30 text-left text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-5 py-2 font-medium">Položka</th>
+                    <th className="px-3 py-2 text-right font-medium">Množstvo × cena</th>
+                    <th className="px-3 py-2 text-right font-medium">Sadzba DPH</th>
+                    <th className="px-3 py-2 text-right font-medium">Spolu s DPH</th>
+                    <th className="px-5 py-2 font-medium">Predkontácia</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {polozky.map((p, i) => (
-                    <tr key={i} className="border-t border-border first:border-t-0">
+                    <tr key={i} className="border-t border-border">
                       <td className="px-5 py-2">{p.name || "—"}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                         {p.quantity} ×{" "}
                         {formatovacMeny(form.currency || "EUR", "sk-SK")(p.unit_price)}
                       </td>
-                      <td className="px-3 py-2 text-right tabular-nums">{p.vat_rate} %</td>
-                      <td className="px-5 py-2 text-right tabular-nums font-medium">
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        <span className="rounded-md bg-secondary px-1.5 py-0.5 text-xs font-medium">
+                          {p.vat_rate} %
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums font-medium">
                         {formatovacMeny(
                           form.currency || "EUR",
                           "sk-SK",
                         )(p.total ?? p.quantity * p.unit_price)}
                       </td>
+                      <td className="min-w-[11rem] px-5 py-1.5">
+                        <KodPohody
+                          ariaLabel={`Predkontácia položky ${i + 1}`}
+                          value={p.predkontacia ?? ""}
+                          onChange={(v) =>
+                            setPolozky(polozky.map((x, j) => (j === i ? { ...x, predkontacia: v || null } : x)))
+                          }
+                          moznosti={kody?.predkontacie ?? []}
+                          vyber
+                          bezPopisu
+                          placeholder="ako doklad"
+                          className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+                        />
+                        {p.predkontacia && kody?.pomerove?.includes(p.predkontacia) ? (
+                          <span className="mt-0.5 block text-[11px] text-primary">rozúčtuje sa pomerom</span>
+                        ) : null}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
               {rozpisDph && rozpisDph.length > 0 && (
                 <div className="border-t border-border bg-muted/30 px-5 py-2 text-xs text-muted-foreground">
                   Rozpis DPH:{" "}

@@ -45,7 +45,7 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
           .maybeSingle(),
         supabase
           .from("predkontacie")
-          .select("druh, kod, popis, agenda, ucet_md, ucet_d, aktivne, druhy_dokladov, kategoria")
+          .select("druh, kod, popis, agenda, ucet_md, ucet_d, aktivne, druhy_dokladov, kategoria, pomer")
           .eq("company_id", data.company_id),
         supabase.from("pravidla_uctovania").select("predkontacia, clenenie_dph").eq("company_id", data.company_id),
         supabase
@@ -108,6 +108,10 @@ export const navrhyKodovFn = createServerFn({ method: "POST" })
         ? "doklady"
         : "prijata";
     return {
+      // Predkontácie s účtovaním pomerom — pri položke sa ukáže, že sa rozúčtuje.
+      pomerove: ((ciselnik ?? []) as any[])
+        .filter((r) => r.druh === "predkontacia" && r.pomer && r.aktivne !== false)
+        .map((r) => String(r.kod)),
       predkontacie: doplnene(
         ponuka(ciselnik ?? [], "predkontacia", agendy, kluc),
         pocet([predvolenaPredkontacia, ...vsetky.map((r: any) => r.predkontacia ?? r.pohoda_predkontacia)]),

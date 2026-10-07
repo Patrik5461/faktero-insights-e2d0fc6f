@@ -2,8 +2,10 @@
 // Format strategies are pluggable so we can add Omega/Money/Alfa Plus later.
 import {
   chybaRozuctovania,
+  jeRozuctovane,
   nacitajPomer,
   nacitajRozuctovanie,
+  riadkyDokladu,
   rozpisBlocku,
   rozuctovaniePodlaPomeru,
 } from "./rozuctovanie";
@@ -1042,12 +1044,19 @@ export function polozkyDokladov(opts: {
         Ručné rozúčtovanie má prednosť; inak, keď má predkontácia dokladu
         nastavený pomer (napr. auto 50/50), rozúčtuje sa podľa neho sama.
       */
-      const rucne = nacitajRozuctovanie(d?.rozuctovanie);
-      const pomer = rucne.length
-        ? null
-        : nacitajPomer(nastavenia?.pomeryPredkontacii?.[String(predkontaciaJedna ?? "")]);
-      const rozuct = pomer ? rozuctovaniePodlaPomeru(pomer, rozpis, clenenieJedno ?? null) : rucne;
-      const rozuctovany = rozuct.length > 1 && !chybaRozuctovania(rozuct, rozpis);
+      /*
+        Ako v Doklado: ručné rozúčtovanie, inak predkontácie pri položkách
+        (napr. nafta s pomerom, bageta bez), inak kód hlavičky; predkontácia
+        s pomerom sa rozvinie na celý doklad aj na jednotlivú položku.
+      */
+      const rozuct = riadkyDokladu(
+        d,
+        rozpis,
+        predkontaciaJedna ?? null,
+        clenenieJedno ?? null,
+        nastavenia?.pomeryPredkontacii,
+      );
+      const rozuctovany = jeRozuctovane(rozuct);
       const predkontacia = rozuctovany
         ? nastavenia?.predkontaciaRozuctovat?.trim() ||
           (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")

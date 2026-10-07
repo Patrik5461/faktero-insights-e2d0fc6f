@@ -64,8 +64,8 @@ export function KodPohody({
           <option value="">
             {placeholder && /^[\w.\-]{1,20}$/.test(placeholder) && placeholder !== "nemeniť"
               ? `predvolené: ${placeholder}`
-              : placeholder === "nemeniť"
-                ? "nemeniť"
+              : placeholder === "nemeniť" || placeholder?.startsWith("ako ")
+                ? placeholder
                 : "—"}
           </option>
           {neznamy ? (

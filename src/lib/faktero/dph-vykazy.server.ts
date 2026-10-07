@@ -76,7 +76,7 @@ export async function nacitajVstup(
     supabase
       .from("purchase_invoices")
       .select(
-        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia",
+        "id, invoice_number, supplier_name, supplier_ic_dph, supplier_dic, issue_date, delivery_date, currency, dph_rezim, odpocet, opravuje_cislo, amount_without_vat, vat_amount, amount_without_vat_eur, vat_amount_eur, exchange_rate, items, samofakturacia, samofakturacia_stav, discount_total, due_date, povodna_splatnost, status, payment_date, kv_clenenie, pohoda_predkontacia, rozuctovanie, amount_total",
       )
       .eq("company_id", companyId)
       /*
@@ -89,7 +89,7 @@ export async function nacitajVstup(
     supabase
       .from("expense_documents")
       .select(
-        "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet, kv_clenenie, pohoda_predkontacia, category",
+        "id, document_number, supplier_name, supplier_ic_dph, issue_date, currency, vat_rate, net_amount, vat_amount, vat_breakdown, odpocet, kv_clenenie, pohoda_predkontacia, category, items, rozuctovanie, total_amount",
       )
       .eq("company_id", companyId)
       .limit(5000),
@@ -100,7 +100,8 @@ export async function nacitajVstup(
     z predkontácie dokladu — vlastnej, podľa kategórie alebo predvolenej.
   */
   const { pomeryPredkontacii, kodyPodlaKategorie } = await import("./predkontacie.server");
-  const { nacitajPomer, podielOdpoctu } = await import("./rozuctovanie");
+  const { riadkyDokladu, podielOdpoctuRiadkov, rozpisBlocku } = await import("./rozuctovanie");
+  const { rozpisPrijatej } = await import("./prijate-do-pohody");
   const [pomery, podlaKat, { data: firmaKody }] = await Promise.all([
     pomeryPredkontacii(supabase, companyId),
     kodyPodlaKategorie(supabase, companyId),
@@ -110,10 +111,16 @@ export async function nacitajVstup(
       .eq("id", companyId)
       .maybeSingle(),
   ]);
-  const podiel = (kod: unknown): number | undefined => {
-    const k = String(kod ?? "").trim();
-    if (!k || !pomery[k]) return undefined;
-    return podielOdpoctu(nacitajPomer(pomery[k]));
+  /*
+    Podiel odpočítateľnej DPH dokladu z jeho riadkov zaúčtovania — pomer
+    predkontácie v hlavičke aj pri jednotlivých položkách (nafta 50/50 na
+    bločku s bagetou), aj ručné rozúčtovanie.
+  */
+  const podiel = (doklad: any, rozpis: { sadzba: number; zaklad: number; dph: number }[], kod: unknown): number | undefined => {
+    const k = String(kod ?? "").trim() || null;
+    const r = riadkyDokladu(doklad, rozpis, k, null, pomery);
+    const v = podielOdpoctuRiadkov(r);
+    return v === 1 ? undefined : v;
   };
 
   const vDobe = (d: string | null | undefined) => {
@@ -252,7 +259,11 @@ export async function nacitajVstup(
       opravujeCislo: p.opravuje_cislo,
       riadky: riadkyPrijatej(p, zaklad, dan, den, cudziaP),
       kv: p.kv_clenenie,
-      podielOdpoctu: podiel(p.pohoda_predkontacia || firmaKody?.pohoda_predkontacia_prijata),
+      podielOdpoctu: podiel(
+        p,
+        rozpisPrijatej(p).map((x) => ({ sadzba: x.sadzba, zaklad: Math.abs(x.zaklad), dph: Math.abs(x.dph) })),
+        p.pohoda_predkontacia || firmaKody?.pohoda_predkontacia_prijata,
+      ),
     });
     if (!p.invoice_number) {
       vytky.push({
@@ -288,6 +299,8 @@ export async function nacitajVstup(
       cislo: d.document_number,
       datum: d.issue_date,
       podielOdpoctu: podiel(
+        d,
+        rozpisBlocku(d),
         d.pohoda_predkontacia ||
           podlaKat[String(d.category ?? "")]?.predkontacia ||
           firmaKody?.pohoda_predkontacia_doklady ||

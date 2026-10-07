@@ -277,3 +277,136 @@ export function rozuctovaniePodlaPomeru(
   }
   return out;
 }
+
+/* ------------------------------------- predkontácia na položku bločku */
+
+/** Položka bločku či faktúry s vlastnou predkontáciou (ako v Doklado). */
+export type PolozkaSKodom = {
+  name?: string | null;
+  vat_rate?: number | string | null;
+  total?: number | string | null;
+  quantity?: number | string | null;
+  unit_price?: number | string | null;
+  predkontacia?: string | null;
+  clenenie?: string | null;
+};
+
+const kod = (v: unknown) => {
+  const s = String(v ?? "").trim();
+  return s || null;
+};
+
+/** Sadzba položky; bez nej, keď má doklad jedinú sadzbu, platí tá. */
+function sadzbaPolozky(p: PolozkaSKodom, rozpis: RozpisSadzby[]): number | null {
+  const s = Number(p.vat_rate);
+  if (p.vat_rate !== null && p.vat_rate !== undefined && p.vat_rate !== "" && Number.isFinite(s)) return s;
+  return rozpis.length === 1 ? rozpis[0]!.sadzba : null;
+}
+
+/**
+ * Rozúčtovanie podľa predkontácií pri položkách. Sumy sa berú z rozpisu DPH
+ * dokladu (ten sedí na cent) a rozdelia sa v pomere súm položiek s rovnakou
+ * sadzbou; posledný riadok sadzby dorovná centy. Položka bez kódu dostane kód
+ * hlavičky. Keď položky nesedia so sadzbami dokladu, vráti prázdne pole.
+ */
+export function rozuctovaniePolozkami(
+  polozky: PolozkaSKodom[] | null | undefined,
+  rozpis: RozpisSadzby[],
+  predkontacia: string | null,
+  clenenie: string | null,
+): RiadokRozuctovania[] {
+  const zoznam = Array.isArray(polozky) ? polozky : [];
+  if (!zoznam.some((p) => kod(p.predkontacia))) return [];
+  const out: RiadokRozuctovania[] = [];
+  for (const s of rozpis) {
+    const tejSadzby = zoznam.filter((p) => sadzbaPolozky(p, rozpis) === s.sadzba);
+    const vahy = new Map<string, { predkontacia: string | null; clenenie: string | null; suma: number }>();
+    for (const p of tejSadzby) {
+      const pk = kod(p.predkontacia) ?? predkontacia;
+      const cl = kod(p.clenenie) ?? clenenie;
+      const k = `${pk}|${cl}`;
+      const suma = Math.abs(Number(p.total ?? Number(p.quantity ?? 1) * Number(p.unit_price ?? 0)) || 0);
+      const v = vahy.get(k) ?? { predkontacia: pk, clenenie: cl, suma: 0 };
+      v.suma += suma;
+      vahy.set(k, v);
+    }
+    const casti = [...vahy.values()];
+    const spolu = casti.reduce((a, c) => a + c.suma, 0);
+    if (!casti.length || !spolu) {
+      out.push({ predkontacia, clenenie, sadzba: s.sadzba, zaklad: r2(s.zaklad), dph: r2(s.dph) });
+      continue;
+    }
+    let zvZ = r2(s.zaklad);
+    let zvD = r2(s.dph);
+    casti.forEach((c, i) => {
+      const posledna = i === casti.length - 1;
+      const z = posledna ? zvZ : r2((s.zaklad * c.suma) / spolu);
+      const d = posledna ? zvD : r2((s.dph * c.suma) / spolu);
+      zvZ = r2(zvZ - z);
+      zvD = r2(zvD - d);
+      out.push({ predkontacia: c.predkontacia, clenenie: c.clenenie, sadzba: s.sadzba, zaklad: z, dph: d });
+    });
+  }
+  // Položka so sadzbou, ktorú doklad nemá — rozpis a položky si odporujú.
+  if (zoznam.some((p) => !rozpis.some((s) => s.sadzba === sadzbaPolozky(p, rozpis)))) return [];
+  return out;
+}
+
+/** Riadky s predkontáciou účtovanou pomerom sa rozvinú na časti pomeru. */
+export function rozvinPomery(
+  riadky: RiadokRozuctovania[],
+  pomery: Record<string, unknown> | null | undefined,
+): RiadokRozuctovania[] {
+  const out: RiadokRozuctovania[] = [];
+  for (const r of riadky) {
+    const pomer = nacitajPomer(pomery?.[String(r.predkontacia ?? "")]);
+    if (!pomer) {
+      out.push(r);
+      continue;
+    }
+    for (const c of rozuctovaniePodlaPomeru(pomer, [{ sadzba: r.sadzba, zaklad: r.zaklad, dph: r.dph }], r.clenenie)) {
+      out.push({ ...c, kv: r.kv, text: [r.text, c.text].filter(Boolean).join(" · ") || null });
+    }
+  }
+  return out;
+}
+
+/**
+ * Riadky zaúčtovania dokladu (Doklado: „účtovanie pomerom na celý doklad"
+ * aj „na položku"): ručné rozúčtovanie, inak predkontácie pri položkách,
+ * inak kód hlavičky po sadzbách — a predkontácie s pomerom sa rozvinú.
+ */
+export function riadkyDokladu(
+  d: { rozuctovanie?: unknown; items?: unknown },
+  rozpis: RozpisSadzby[],
+  predkontacia: string | null,
+  clenenie: string | null,
+  pomery: Record<string, unknown> | null | undefined,
+): RiadokRozuctovania[] {
+  const rucne = nacitajRozuctovanie(d?.rozuctovanie);
+  let zaklad: RiadokRozuctovania[];
+  if (rucne.length && !chybaRozuctovania(rucne, rozpis)) zaklad = rucne;
+  else {
+    const zPoloziek = rozuctovaniePolozkami(d?.items as PolozkaSKodom[], rozpis, predkontacia, clenenie);
+    zaklad = zPoloziek.length
+      ? zPoloziek
+      : rozpis.map((s) => ({ predkontacia, clenenie, sadzba: s.sadzba, zaklad: r2(s.zaklad), dph: r2(s.dph) }));
+  }
+  return rozvinPomery(zaklad, pomery);
+}
+
+/** Sú riadky naozaj rozúčtované — rôzne kódy alebo časť bez odpočtu? */
+export function jeRozuctovane(riadky: RiadokRozuctovania[]): boolean {
+  return (
+    new Set(riadky.map((r) => `${r.predkontacia}|${r.clenenie}`)).size > 1 ||
+    riadky.some((r) => r.odpocet === false)
+  );
+}
+
+/** Podiel odpočítateľnej DPH z riadkov (1 = celá). */
+export function podielOdpoctuRiadkov(riadky: RiadokRozuctovania[]): number {
+  const spolu = riadky.reduce((a, r) => a + Math.abs(r.dph), 0);
+  if (!spolu) return 1;
+  const odp = riadky.filter((r) => r.odpocet !== false).reduce((a, r) => a + Math.abs(r.dph), 0);
+  return odp / spolu;
+}

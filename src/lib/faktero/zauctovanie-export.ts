@@ -13,14 +13,7 @@
   kód druhu dokladu. Čisté funkcie bez databázy.
 */
 
-import {
-  chybaRozuctovania,
-  nacitajPomer,
-  nacitajRozuctovanie,
-  rozpisBlocku,
-  rozuctovaniePodlaPomeru,
-  type RozpisSadzby,
-} from "./rozuctovanie";
+import { riadkyDokladu, rozpisBlocku, type RozpisSadzby } from "./rozuctovanie";
 import { rozpisPrijatej } from "./prijate-do-pohody";
 
 export type AgendaUctovania = "vystavena" | "prijata" | "doklad";
@@ -185,42 +178,29 @@ function rozdielneKody(riadky: RiadokUctovania[]): boolean {
   return new Set(riadky.map((r) => `${r.predkontacia}|${r.clenenie}|${r.odpocet}`)).size > 1;
 }
 
-/** Riadky z rozpisu po sadzbách s kódmi dokladu; pri pomere či ručnom rozúčtovaní podľa neho. */
+/**
+ * Riadky z rozpisu po sadzbách s kódmi dokladu — ručné rozúčtovanie, inak
+ * predkontácie pri položkách, inak hlavička; predkontácia s pomerom sa
+ * rozvinie na celý doklad aj na položku (ako v Doklado).
+ */
 function riadkyPrijatehoDokladu(
   rozpis: RozpisSadzby[],
-  rozuctovanie: unknown,
+  doklad: { rozuctovanie?: unknown; items?: unknown },
   predkontacia: string | null,
   clenenie: string | null,
   kv: string | null,
   odpocet: boolean,
   nast: NastaveniaUctovania,
 ): RiadokUctovania[] {
-  const rucne = nacitajRozuctovanie(rozuctovanie);
-  const pomer = rucne.length
-    ? null
-    : nacitajPomer(nast.pomeryPredkontacii?.[String(predkontacia ?? "")]);
-  const rozuct = pomer ? rozuctovaniePodlaPomeru(pomer, rozpis, clenenie) : rucne;
-  if (rozuct.length > 1 && !chybaRozuctovania(rozuct, rozpis)) {
-    return rozuct.map((r) => ({
-      sadzba: Number(r.sadzba) || 0,
-      zaklad: r2(r.zaklad),
-      dph: r2(r.dph),
-      predkontacia: t(r.predkontacia) ?? predkontacia,
-      clenenie: t(r.clenenie) ?? clenenie,
-      kv: t(r.kv) ?? kv,
-      odpocet: odpocet && r.odpocet !== false,
-      text: t(r.text),
-    }));
-  }
-  return rozpis.map((s) => ({
-    sadzba: Number(s.sadzba) || 0,
-    zaklad: r2(s.zaklad),
-    dph: r2(s.dph),
-    predkontacia,
-    clenenie,
-    kv,
-    odpocet,
-    text: null,
+  return riadkyDokladu(doklad, rozpis, predkontacia, clenenie, nast.pomeryPredkontacii).map((r) => ({
+    sadzba: Number(r.sadzba) || 0,
+    zaklad: r2(r.zaklad),
+    dph: r2(r.dph),
+    predkontacia: t(r.predkontacia) ?? predkontacia,
+    clenenie: t(r.clenenie) ?? clenenie,
+    kv: t(r.kv) ?? kv,
+    odpocet: odpocet && r.odpocet !== false,
+    text: t(r.text),
   }));
 }
 
@@ -256,7 +236,7 @@ export function blocekNaUctovanie(d: any, nast: NastaveniaUctovania): DokladUcto
   const odpocet = d?.odpocet !== false && kv !== "X";
   const rozpis = rozpisBlocku(d);
   const riadky = zlucRiadky(
-    riadkyPrijatehoDokladu(rozpis, d?.rozuctovanie, predkontacia, clenenie, kv, odpocet, nast),
+    riadkyPrijatehoDokladu(rozpis, d, predkontacia, clenenie, kv, odpocet, nast),
   );
   const platba = t(d?.payment_method);
   const forma: FormaUctovania = nast.blockyPodlaPlatby
@@ -343,7 +323,7 @@ export function prijataNaUctovanie(p: any, nast: NastaveniaUctovania): DokladUct
     dph: Math.abs(x.dph),
   }));
   const riadky = zlucRiadky(
-    riadkyPrijatehoDokladu(rozpis, p?.rozuctovanie, predkontacia, clenenie, kv, odpocet, nast),
+    riadkyPrijatehoDokladu(rozpis, p, predkontacia, clenenie, kv, odpocet, nast),
   );
   const zaklad = r2(riadky.reduce((a, r) => a + r.zaklad, 0));
   const dph = r2(riadky.reduce((a, r) => a + r.dph, 0));

@@ -34,6 +34,8 @@ export type Navrhy = {
   rady?: MoznostKodu[];
   predvoleneStredisko?: string | null;
   predvolenyRad?: string | null;
+  /** Kódy predkontácií, ktoré sa účtujú pomerom. */
+  pomerove?: string[];
 };
 
 type Hodnoty = {

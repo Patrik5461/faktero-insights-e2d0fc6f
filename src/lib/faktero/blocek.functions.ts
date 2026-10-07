@@ -35,6 +35,9 @@ export type BlocekPolozka = {
   unit_price: number;
   vat_rate: number;
   total?: number;
+  /** Predkontácia položky; prázdna = predkontácia dokladu. */
+  predkontacia?: string | null;
+  clenenie?: string | null;
 };
 
 export type BlocekVysledok = {

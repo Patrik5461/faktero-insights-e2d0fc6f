@@ -82,6 +82,9 @@ const inputSchema = z.object({
         unit_price: z.number(),
         vat_rate: z.number(),
         total: z.number().optional(),
+        // Predkontácia na položku (ako v Doklado) — napr. nafta s pomerom.
+        predkontacia: z.string().max(30).nullable().optional(),
+        clenenie: z.string().max(30).nullable().optional(),
       }),
     )
     .nullable()

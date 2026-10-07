@@ -101,7 +101,10 @@ const sections: HelpSection[] = [
         <p>
           Predkontácia môže mať <strong>účtovanie pomerom</strong> — napríklad 80/20 alebo auto s
           odpočtom DPH 50 % od roku 2026. Doklad s takou predkontáciou sa do Pohody rozúčtuje sám a
-          výkazy k DPH odpočítajú len príslušnú časť dane. Predkontácia s agendou
+          výkazy k DPH odpočítajú len príslušnú časť dane. Ako v Doklado ide pomer na{" "}
+          <strong>celý doklad</strong> (predkontácia v hlavičke) aj na <strong>položku</strong>: pri
+          bločku z čerpačky dáte predkontáciu s pomerom len k nafte a bageta ostane s predkontáciou
+          dokladu — v tabuľke položiek je pri každej sadzba DPH a výber predkontácie. Predkontácia s agendou
           <em> Ostatné záväzky</em> pošle faktúru do tejto agendy.
         </p>
         <p>
