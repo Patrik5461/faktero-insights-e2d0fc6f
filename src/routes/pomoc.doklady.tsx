@@ -58,6 +58,37 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "kontroly",
+    title: "Kontroly, položky, zamknutie a história",
+    body: (
+      <>
+        <p>
+          Pri spracovaní Faktero upozorní, keď doklad <strong>už v evidencii je</strong> (rovnaké
+          číslo od toho istého dodávateľa), keď je faktúra vystavená na <strong>inú firmu</strong>,
+          a keď je splatnosť skôr ako dátum vystavenia. Tlačidlo <strong>Dočítať z dokladu</strong>{" "}
+          doplní chýbajúce údaje (VS, IBAN, splatnosť, adresu) bez prepísania vyplnených.
+        </p>
+        <p>
+          <strong>Položky</strong> majú pri každej sadzbu DPH a príznak prenesenia daňovej
+          povinnosti. Keď súčet položiek nesedí so sumou dokladu, zobrazí sa rozdiel a tlačidlo{" "}
+          <strong>Pridať vyrovnávaciu položku</strong> — bez nej sa doklad nevytvorí.
+        </p>
+        <p>
+          Prijatú faktúru aj bloček môžete <strong>zamknúť</strong> — sumy, dátumy ani zaúčtovanie
+          sa potom nedajú meniť, kým ho neodomknete. Doklad odovzdaný do účtovníctva je zamknutý
+          vždy. Zle zaradenú prijatú faktúru vrátite tlačidlom{" "}
+          <strong>Vrátiť do Nespracovaných</strong>.
+        </p>
+        <p>
+          Na detaile dokladu je <strong>história zmien</strong> (kto, kedy a čo zmenil) a{" "}
+          <strong>štítky</strong> — najviac päť vlastných značiek na triedenie. V komentári
+          označíte kolegu napísaním <strong>@meno</strong>; dostane upozornenie do zvončeka.
+          Ostatné doklady sa dajú triediť do <strong>priečinkov</strong>.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "naco",
     title: "Čo sú Doklady a čím sa líšia od prijatých faktúr",
     body: (

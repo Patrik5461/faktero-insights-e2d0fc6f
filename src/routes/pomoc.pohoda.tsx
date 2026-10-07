@@ -418,7 +418,14 @@ const sections: HelpSection[] = [
         </p>
         <ul>
           <li>
-            Podmienky: časť názvu dodávateľa, IČO, spôsob úhrady. Vyplnené musia platiť naraz.
+            Podmienky: časť názvu dodávateľa, IČO, spôsob úhrady, <strong>kto doklad nahral</strong>{" "}
+            a <strong>predmet mailu</strong>, s ktorým doklad prišiel. Vyplnené musia platiť naraz;
+            pravidlo podľa dodávateľa má prednosť pred pravidlom podľa používateľa či predmetu.
+          </li>
+          <li>
+            Poznámka môže obsahovať premenné podľa dátumu dokladu: <code>#MM#</code>,{" "}
+            <code>#YYYY#</code>, <code>#MM/YYYY#</code>, <code>#MMYYYY#</code> a{" "}
+            <code>#MM-1/YYYY#</code> (predchádzajúci mesiac) — napr. „Telefón #MM-1/YYYY#".
           </li>
           <li>Platia pre bločky a doklady aj pre prijaté faktúry.</li>
           <li>
@@ -442,6 +449,55 @@ const sections: HelpSection[] = [
     ),
   },
   {
+    id: "volby-exportu",
+    title: "Voľby exportu a nastavenia prenosu",
+    body: (
+      <>
+        <p>
+          Pri exporte prijatých faktúr a bločkov sa otvorí okno s voľbami:
+        </p>
+        <ul>
+          <li>
+            <strong>Dátum zaúčtovania</strong> — pre doklady z už uzavretého obdobia. Prázdne = dátum
+            dokladu.
+          </li>
+          <li>
+            <strong>Exportovať aj už odovzdané</strong> — len keď ste ich v Pohode zmazali; inak sa
+            odovzdané vynechajú, aby v Pohode neboli dvakrát.
+          </li>
+          <li>
+            <strong>Prelom rokov</strong> — doklady z dvoch rokov idú do dvoch súborov, každý
+            naimportujte do svojho roka.
+          </li>
+        </ul>
+        <p>
+          Na stránke <Link to="/uctovnictvo/predkontacie">Predkontácie</Link> v časti{" "}
+          <em>Export a spracovanie dokladov</em> nastavíte:
+        </p>
+        <ul>
+          <li>dobropis vždy s kladnými sumami,</li>
+          <li>
+            čo ide do <strong>párovacieho symbolu</strong> — VS, číslo dodacieho listu alebo číslo
+            faktúry dodávateľa,
+          </li>
+          <li>
+            <strong>predkontáciu pre zaokrúhlenie</strong> — rozdiel medzi položkami a sumou pôjde
+            ako samostatná položka s touto predkontáciou,
+          </li>
+          <li>či bločky s QR kódom idú najprv do Nespracovaných dokladov,</li>
+          <li>povinnú zákazku, stredisko alebo činnosť pri spracovaní dokladu.</li>
+        </ul>
+        <p>
+          Prijatá faktúra nesie do Pohody aj konštantný a špecifický symbol a číslo objednávky.
+          Prenesenie daňovej povinnosti na položkách ide s členením „Prijatá faktúra — prenesenie
+          daňovej povinnosti" a kontrolným výkazom B.1. Daňový doklad k prijatej platbe ide medzi
+          interné doklady. Z Pohody sa okrem predkontácií načítajú aj <strong>zákazky</strong>{" "}
+          (založia sa aj vo Fakteri s rovnakým číslom) a <strong>bankové účty</strong>.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "co-nechodi",
     title: "Čo do Pohody zámerne nechodí",
     body: (
@@ -458,9 +514,10 @@ const sections: HelpSection[] = [
           výdajky a sklad si Pohoda dopočíta sama, tak ako má.
         </p>
         <p>
-          <strong>Faktúry v cudzej mene.</strong> Pohoda chce rozpis po sadzbách vždy v domácej mene
-          a kurz k faktúre neevidujeme — doláre by sa zaúčtovali ako eurá. Taký doklad sa preskočí,
-          povieme to a je v súpiske na ručné zadanie.
+          <strong>Faktúry v cudzej mene bez kurzu.</strong> Faktúra v cudzej mene ide do Pohody so
+          sumami v mene a s kurzom ECB — domáce sumy si Pohoda prepočíta. Keď kurz chýba, faktúra sa
+          preskočí, povieme to a je v súpiske na ručné zadanie. Bločky v cudzej mene kurz nemajú,
+          tie sa preskakujú vždy.
         </p>
       </>
     ),
