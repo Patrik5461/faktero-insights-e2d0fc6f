@@ -1040,7 +1040,15 @@ function NewInvoice() {
         }
       }
 
-      toast.success("Faktúra vytvorená");
+      toast.success(
+        form.type === "debit_note"
+          ? "Ťarchopis vytvorený"
+          : form.type === "credit_note"
+            ? "Dobropis vytvorený"
+            : form.type === "proforma"
+              ? "Zálohová faktúra vytvorená"
+              : "Faktúra vytvorená",
+      );
       navigate({ to: "/faktury/$id", params: { id: inv.id } });
     } finally {
       setSubmitting(false);
