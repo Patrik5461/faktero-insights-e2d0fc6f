@@ -144,6 +144,13 @@ function Predvolene({
   const [pokladna, setPokladna] = useState("");
   const [odkazNaDoklady, setOdkazNaDoklady] = useState(true);
   const [polozkyBlockov, setPolozkyBlockov] = useState(false);
+  const [ine, setIne] = useState({
+    dobropisKladny: false,
+    parovaciSymbol: "vs" as "vs" | "dodaci_list" | "cislo",
+    predkontaciaZaokruhlenie: "",
+    qrDoNespracovanych: false,
+    povinnePolia: [] as ("zakazka" | "stredisko" | "cinnost")[],
+  });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -155,6 +162,13 @@ function Predvolene({
     setPokladna(String(firma.pohoda_pokladna ?? ""));
     setOdkazNaDoklady(firma.pohoda_odkaz_na_doklady !== false);
     setPolozkyBlockov(Boolean(firma.pohoda_polozky_blockov));
+    setIne({
+      dobropisKladny: Boolean(firma.pohoda_dobropis_kladny),
+      parovaciSymbol: (firma.pohoda_parovaci_symbol as any) || "vs",
+      predkontaciaZaokruhlenie: String(firma.pohoda_predkontacia_zaokruhlenie ?? ""),
+      qrDoNespracovanych: Boolean(firma.qr_blocky_do_nespracovanych),
+      povinnePolia: Array.isArray(firma.povinne_polia_dokladu) ? firma.povinne_polia_dokladu : [],
+    });
   }, [firma]);
 
   const pocetNaVyber = (kluc: string, druh: DruhCiselnika) =>
@@ -172,6 +186,7 @@ function Predvolene({
           pokladna,
           odkazNaDoklady,
           polozkyBlockov,
+          ...ine,
         },
       });
       toast.success("Uložené");
@@ -329,6 +344,92 @@ function Predvolene({
             </span>
           </span>
         </label>
+      </fieldset>
+
+      <fieldset className="mt-4 space-y-3 rounded-md border border-border p-3 text-sm">
+        <legend className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Export a spracovanie dokladov
+        </legend>
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={ine.dobropisKladny}
+            onChange={(e) => setIne({ ...ine, dobropisKladny: e.target.checked })}
+          />
+          <span>
+            Exportovať dobropis vždy s kladnými sumami
+            <span className="block text-xs text-muted-foreground">Inak ide záporný, tak ako ho zakladá Pohoda.</span>
+          </span>
+        </label>
+        <label className="block">
+          <span className="text-xs text-muted-foreground">Párovací symbol v Pohode</span>
+          <select
+            value={ine.parovaciSymbol}
+            onChange={(e) => setIne({ ...ine, parovaciSymbol: e.target.value as any })}
+            className="mt-1 block w-full max-w-sm rounded-md border border-input bg-background px-2 py-1.5"
+          >
+            <option value="vs">Variabilný symbol</option>
+            <option value="dodaci_list">Číslo dodacieho listu (inak VS)</option>
+            <option value="cislo">Číslo faktúry dodávateľa (inak VS)</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-xs text-muted-foreground">Predkontácia pre zaokrúhlenie</span>
+          <input
+            value={ine.predkontaciaZaokruhlenie}
+            maxLength={30}
+            onChange={(e) => setIne({ ...ine, predkontaciaZaokruhlenie: e.target.value })}
+            placeholder="prázdne = zaokrúhlenie dokladu"
+            className="mt-1 block w-full max-w-sm rounded-md border border-input bg-background px-2 py-1.5"
+          />
+          <span className="mt-1 block text-xs text-muted-foreground">
+            Keď je vyplnená, rozdiel medzi položkami a sumou dokladu ide ako samostatná položka s touto
+            predkontáciou.
+          </span>
+        </label>
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={ine.qrDoNespracovanych}
+            onChange={(e) => setIne({ ...ine, qrDoNespracovanych: e.target.checked })}
+          />
+          <span>
+            Bločky s QR kódom ukladať do Nespracovaných dokladov
+            <span className="block text-xs text-muted-foreground">
+              Inak idú rovno medzi bločky, lebo údaje z Finančnej správy sú úradné.
+            </span>
+          </span>
+        </label>
+        <div>
+          <span className="text-xs text-muted-foreground">Povinné pri spracovaní dokladu</span>
+          <div className="mt-1 flex flex-wrap gap-4">
+            {(
+              [
+                ["zakazka", "Zákazka"],
+                ["stredisko", "Stredisko"],
+                ["cinnost", "Činnosť"],
+              ] as const
+            ).map(([k, n]) => (
+              <label key={k} className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={ine.povinnePolia.includes(k)}
+                  onChange={(e) =>
+                    setIne({
+                      ...ine,
+                      povinnePolia: e.target.checked
+                        ? [...ine.povinnePolia, k]
+                        : ine.povinnePolia.filter((x) => x !== k),
+                    })
+                  }
+                />
+                {n}
+              </label>
+            ))}
+          </div>
+        </div>
       </fieldset>
 
       <fieldset className="mt-4 rounded-md border border-border p-3">

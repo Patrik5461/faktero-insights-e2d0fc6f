@@ -173,6 +173,10 @@ export function prijataAkoDoklad(p: any): Record<string, unknown> {
     */
     _text: textPrijatej(p),
     _symVar: p.variable_symbol,
+    _symConst: p.constant_symbol,
+    _symSpec: p.specific_symbol,
+    _objednavka: p.order_number,
+    _dodaciList: p.delivery_note_number,
     // Kurz ECB (jednotky meny za 1 €) — bez neho sa faktúra v cudzej mene do Pohody nevyvezie.
     _kurz: p.exchange_rate,
     _datumDph: p.delivery_date || p.issue_date,

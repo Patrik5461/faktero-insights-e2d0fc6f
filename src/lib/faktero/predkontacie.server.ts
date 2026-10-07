@@ -154,6 +154,9 @@ export async function nastaveniaDokladov(
     podlaKategorie: await kodyPodlaKategorie(supabase, company.id),
     zamknuteDo: company.locked_until ?? null,
     polozkyBlockov: Boolean(company.pohoda_polozky_blockov),
+    dobropisKladny: Boolean(company.pohoda_dobropis_kladny),
+    parovaciSymbol: company.pohoda_parovaci_symbol ?? "vs",
+    predkontaciaZaokruhlenie: company.pohoda_predkontacia_zaokruhlenie ?? null,
   };
   // Predkontácie s agendou Ostatné záväzky — faktúra s nimi ide ako záväzok.
   const { data: zavazky } = await supabase

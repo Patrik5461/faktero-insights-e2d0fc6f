@@ -30,7 +30,7 @@ import {
   nastavStavDokladovFn,
   getExpenseFileUrlFn,
 } from "@/lib/faktero/expenses.functions";
-import { Camera, CheckCircle2, Loader2, QrCode, Save, Upload as UploadIcon } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, Lock, LockOpen, QrCode, Save, Upload as UploadIcon } from "lucide-react";
 import { TlacidloZauctovat } from "@/components/faktero/TlacidloZauctovat";
 import { toast } from "sonner";
 import { formatovacMeny } from "@/lib/faktero/mena";
@@ -182,6 +182,18 @@ function NovyDokladPage() {
     } catch (e: any) {
       toast.error(e?.message ?? "Nepodarilo sa");
     }
+  }
+  async function prepniZamok() {
+    if (!search.id) return;
+    const zamknut = !ulozeny?.locked_at;
+    const { data: u } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("expense_documents")
+      .update({ locked_at: zamknut ? new Date().toISOString() : null, locked_by: zamknut ? (u.user?.id ?? null) : null } as any)
+      .eq("id", search.id);
+    if (error) return toast.error(error.message);
+    toast.success(zamknut ? "Doklad je zamknutý" : "Doklad je odomknutý");
+    await obnovUlozeny();
   }
   async function obnovUlozeny() {
     if (!search.id) return;
@@ -548,6 +560,17 @@ function NovyDokladPage() {
           search.id ? (
             <div className="flex flex-wrap gap-2">
               <TlacidloZauctovat />
+              {ulozeny && !ulozeny.exported_at ? (
+                <button
+                  type="button"
+                  onClick={prepniZamok}
+                  title={ulozeny.locked_at ? "Odomknúť úpravy dokladu" : "Zamknúť doklad proti úpravám"}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-secondary"
+                >
+                  {ulozeny.locked_at ? <LockOpen className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                  {ulozeny.locked_at ? "Odomknúť" : "Zamknúť"}
+                </button>
+              ) : null}
               {ulozeny?.file_path && !ulozeny?.exported_at ? (
                 <button
                   type="button"

@@ -587,7 +587,7 @@ export const exportExpensesZipFn = createServerFn({ method: "POST" })
     const { data: firma } = await supabase
       .from("companies")
       .select(
-        "ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia_rozuctovat, pohoda_blocky_agenda, pohoda_pokladna, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, pohoda_rad_pokladna, pohoda_rad_interne, pohoda_posielat_zakazky, pohoda_odkaz_na_doklady, pohoda_polozky_blockov, locked_until, id",
+        "ico, default_currency, pohoda_predkontacia_prijata, pohoda_clenenie_dph_prijata, pohoda_predkontacia_doklady, pohoda_clenenie_dph_doklady, pohoda_predkontacia_rozuctovat, pohoda_blocky_agenda, pohoda_pokladna, pohoda_stredisko, pohoda_rad_prijate, pohoda_rad_doklady, pohoda_rad_pokladna, pohoda_rad_interne, pohoda_posielat_zakazky, pohoda_odkaz_na_doklady, pohoda_polozky_blockov, pohoda_dobropis_kladny, pohoda_parovaci_symbol, pohoda_predkontacia_zaokruhlenie, locked_until, id",
       )
       .eq("id", data.company_id)
       .single();

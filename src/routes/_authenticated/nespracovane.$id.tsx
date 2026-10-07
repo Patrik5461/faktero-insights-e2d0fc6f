@@ -93,7 +93,7 @@ function Detail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [d?.companyId, druh]);
 
-  const chyby = useMemo(() => (u ? chybajuce(druh || null, u) : []), [u, druh]);
+  const chyby = useMemo(() => (u ? chybajuce(druh || null, u, d?.povinne ?? []) : []), [u, druh, d?.povinne]);
   const zle = (k: string) => chyby.includes(k);
   const ram = (k: string) => (zle(k) ? "border-red-500 ring-1 ring-red-300" : "border-input");
   const s = u ? sucty(u) : { zaklad: 0, dph: 0, celkom: 0 };
@@ -245,6 +245,7 @@ function Detail() {
             subor={d.subor}
             stav={d.stav}
             chybaCitania={d.chyba}
+            varovania={d.varovania}
             druh={druh}
             setDruh={setDruh}
             u={u}
@@ -317,6 +318,11 @@ function Detail() {
               </div>
             )}
             {d.chyba && <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{d.chyba}</div>}
+            {d.varovania.map((v) => (
+              <div key={v} role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                {v}
+              </div>
+            ))}
 
             <section className="rounded-xl border border-border bg-card p-4">
               <label className="block text-sm">
@@ -427,6 +433,27 @@ function Detail() {
                       <label className="block text-sm">
                         <span className="text-xs text-muted-foreground">Variabilný symbol</span>
                         <input value={u.vs} onChange={(e) => set({ vs: e.target.value })} className={`${vstup} border-input`} />
+                      </label>
+                    )}
+                    {faktura && (
+                      <label className="block text-sm">
+                        <span className="text-xs text-muted-foreground">Konštantný / špecifický symbol</span>
+                        <div className="flex gap-2">
+                          <input aria-label="Konštantný symbol" placeholder="KS" maxLength={4} value={u.ks ?? ""} onChange={(e) => set({ ks: e.target.value })} className={`${vstup} border-input`} />
+                          <input aria-label="Špecifický symbol" placeholder="ŠS" maxLength={10} value={u.ss ?? ""} onChange={(e) => set({ ss: e.target.value })} className={`${vstup} border-input`} />
+                        </div>
+                      </label>
+                    )}
+                    {faktura && (
+                      <label className="block text-sm">
+                        <span className="text-xs text-muted-foreground">Číslo objednávky</span>
+                        <input value={u.objednavka ?? ""} onChange={(e) => set({ objednavka: e.target.value })} className={`${vstup} border-input`} />
+                      </label>
+                    )}
+                    {faktura && (
+                      <label className="block text-sm">
+                        <span className="text-xs text-muted-foreground">Číslo dodacieho listu</span>
+                        <input value={u.dodaciList ?? ""} onChange={(e) => set({ dodaciList: e.target.value })} className={`${vstup} border-input`} />
                       </label>
                     )}
                     <label className="block text-sm">

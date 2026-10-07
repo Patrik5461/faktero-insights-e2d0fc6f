@@ -261,3 +261,71 @@ export async function vytvorDoklad(
   if (r.file_path) await supabase.storage.from(KOS_NESPRACOVANYCH).remove([r.file_path]);
   return vysledok;
 }
+
+/**
+ * Upozornenia pri spracovaní: doklad, ktorý už vo firme je (rovnaké číslo od
+ * toho istého dodávateľa), a faktúra vystavená na inú firmu — odberateľ
+ * prečítaný z dokladu nemá IČO ani IČ DPH tejto firmy.
+ */
+export async function varovaniaNespracovaneho(
+  supabase: Klient,
+  r: { id: string; company_id: string; ai?: unknown },
+  u: UdajeNespracovaneho,
+  firma: { ico?: string | null; ic_dph?: string | null; dic?: string | null } | null,
+): Promise<string[]> {
+  const out: string[] = [];
+  const cislo = u.cislo.trim();
+  const ico = u.dodavatel.ico.replace(/\s/g, "");
+  const tenIstyDodavatel = (x: { supplier_ico?: string | null; supplier_name?: string | null }) =>
+    ico
+      ? String(x.supplier_ico ?? "").replace(/\s/g, "") === ico
+      : String(x.supplier_name ?? "").trim().toLowerCase() === u.dodavatel.nazov.trim().toLowerCase();
+  if (cislo) {
+    const [{ data: prijate }, { data: blocky }, { data: ine }] = await Promise.all([
+      supabase
+        .from("purchase_invoices")
+        .select("invoice_number, supplier_ico, supplier_name")
+        .eq("company_id", r.company_id)
+        .eq("invoice_number", cislo)
+        .is("deleted_at", null)
+        .limit(5),
+      supabase
+        .from("expense_documents")
+        .select("document_number, supplier_ico, supplier_name")
+        .eq("company_id", r.company_id)
+        .eq("document_number", cislo)
+        .limit(5),
+      supabase
+        .from("nespracovane_doklady")
+        .select("id, udaje")
+        .eq("company_id", r.company_id)
+        .neq("id", r.id)
+        .eq("udaje->>cislo", cislo)
+        .limit(5),
+    ]);
+    if ((prijate ?? []).some(tenIstyDodavatel))
+      out.push(`Prijatá faktúra ${cislo} od tohto dodávateľa už v evidencii je — možno ide o duplicitu.`);
+    else if ((blocky ?? []).some(tenIstyDodavatel))
+      out.push(`Doklad ${cislo} od tohto dodávateľa už je medzi bločkami — možno ide o duplicitu.`);
+    if (
+      (ine ?? []).some((x: any) =>
+        tenIstyDodavatel({ supplier_ico: x.udaje?.dodavatel?.ico, supplier_name: x.udaje?.dodavatel?.nazov }),
+      )
+    )
+      out.push(`Ten istý doklad ${cislo} čaká v Nespracovaných ešte raz.`);
+  }
+  // Odberateľ z dokladu — bloček ho nemá, vtedy sa nekontroluje.
+  const ai = (r.ai ?? {}) as Record<string, unknown>;
+  const norm = (v: unknown) => String(v ?? "").replace(/\s/g, "").toUpperCase();
+  const odbIco = norm(ai.buyer_ico);
+  const odbDph = norm(ai.buyer_ic_dph);
+  if (firma && (odbIco || odbDph)) {
+    const nase = [norm(firma.ico), norm(firma.ic_dph), norm(firma.dic)].filter(Boolean);
+    const sedi = [odbIco, odbDph].filter(Boolean).some((x) => nase.some((n) => x.includes(n) || n.includes(x)));
+    if (nase.length && !sedi)
+      out.push(
+        `Doklad nepatrí do firmy — odberateľ na ňom je ${String(ai.buyer_name ?? "") || "iná firma"} (IČO ${odbIco || "—"}${odbDph ? `, IČ DPH ${odbDph}` : ""}).`,
+      );
+  }
+  return out;
+}

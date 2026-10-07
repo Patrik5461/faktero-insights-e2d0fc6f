@@ -94,6 +94,7 @@ export function NespracovanyKompaktny({
   subor,
   stav,
   chybaCitania,
+  varovania = [],
   druh,
   setDruh,
   u,
@@ -110,6 +111,7 @@ export function NespracovanyKompaktny({
   subor: { url: string | null; nazov: string | null; mime: string | null };
   stav: string;
   chybaCitania: string | null;
+  varovania?: string[];
   druh: DruhNespracovaneho | "";
   setDruh: (d: DruhNespracovaneho) => void;
   u: UdajeNespracovaneho;
@@ -191,6 +193,11 @@ export function NespracovanyKompaktny({
             </div>
           )}
           {chybaCitania && <div className="m-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{chybaCitania}</div>}
+          {varovania.map((v) => (
+            <div key={v} role="alert" className="m-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+              {v}
+            </div>
+          ))}
 
           <Sekcia nadpis="Základné údaje">
             <Pole popis="Typ dokladu" chyba={zle("druh")}>
@@ -351,6 +358,18 @@ export function NespracovanyKompaktny({
             <Sekcia nadpis="Platobné údaje">
               <Pole popis="Variabilný symbol">
                 <input value={u.vs} onChange={(e) => set({ vs: e.target.value })} className={ram("")} />
+              </Pole>
+              <Pole popis="Konštantný symbol">
+                <input maxLength={4} value={u.ks ?? ""} onChange={(e) => set({ ks: e.target.value })} className={ram("")} />
+              </Pole>
+              <Pole popis="Špecifický symbol">
+                <input maxLength={10} value={u.ss ?? ""} onChange={(e) => set({ ss: e.target.value })} className={ram("")} />
+              </Pole>
+              <Pole popis="Číslo objednávky">
+                <input value={u.objednavka ?? ""} onChange={(e) => set({ objednavka: e.target.value })} className={ram("")} />
+              </Pole>
+              <Pole popis="Číslo dodacieho listu">
+                <input value={u.dodaciList ?? ""} onChange={(e) => set({ dodaciList: e.target.value })} className={ram("")} />
               </Pole>
               <Pole popis="IBAN" ok={ibanOk}>
                 <input value={u.dodavatel.iban} onChange={(e) => setDod({ iban: e.target.value })} className={ram("")} />

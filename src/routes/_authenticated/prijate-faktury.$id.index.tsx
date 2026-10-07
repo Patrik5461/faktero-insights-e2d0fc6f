@@ -33,7 +33,11 @@ import {
   Landmark,
   RefreshCw,
   Pencil,
+  Lock,
+  LockOpen,
+  Undo2,
 } from "lucide-react";
+import { prijataDoNespracovanychFn } from "@/lib/faktero/nespracovane.functions";
 import { formatovacMeny } from "@/lib/faktero/mena";
 
 const PAYMENT_STATUS_TEXT: Record<string, string> = {
@@ -245,6 +249,30 @@ function PurchaseInvoiceDetail() {
     await setStatus("paid", { payment_date: d });
   }
 
+  const doNespracovanych = useServerFn(prijataDoNespracovanychFn);
+  async function vratitDoNespracovanych() {
+    if (!confirm("Vrátiť faktúru do Nespracovaných dokladov? Zmizne odtiaľto a spracujete ju znova.")) return;
+    try {
+      const r = await doNespracovanych({ data: { id } });
+      toast.success("Faktúra je späť v Nespracovaných");
+      navigate({ to: "/nespracovane/$id", params: { id: r.id } });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    }
+  }
+
+  async function prepniZamok() {
+    const zamknut = !(row as any)?.locked_at;
+    const { data: u } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from("purchase_invoices")
+      .update({ locked_at: zamknut ? new Date().toISOString() : null, locked_by: zamknut ? (u.user?.id ?? null) : null } as any)
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(zamknut ? "Faktúra je zamknutá — sumy, dátumy ani zaúčtovanie sa nedajú meniť" : "Faktúra je odomknutá");
+    await load();
+  }
+
   async function del() {
     if (!confirm("Naozaj vymazať túto prijatú faktúru?")) return;
     const { error } = await supabase
@@ -379,6 +407,27 @@ function PurchaseInvoiceDetail() {
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
               >
                 <Download className="h-4 w-4" /> Stiahnuť PDF
+              </button>
+            )}
+            {!row.exported_at && !samo && (
+              <button
+                type="button"
+                onClick={prepniZamok}
+                title={(row as any).locked_at ? "Odomknúť úpravy dokladu" : "Zamknúť doklad proti úpravám"}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+              >
+                {(row as any).locked_at ? <LockOpen className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                {(row as any).locked_at ? "Odomknúť" : "Zamknúť"}
+              </button>
+            )}
+            {!row.exported_at && !(row as any).locked_at && !samo && (
+              <button
+                type="button"
+                onClick={vratitDoNespracovanych}
+                title="Zle zaradená faktúra — spracuje sa znova v Nespracovaných dokladoch"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+              >
+                <Undo2 className="h-4 w-4" /> Vrátiť do Nespracovaných
               </button>
             )}
             <button

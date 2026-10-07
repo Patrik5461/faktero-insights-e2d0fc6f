@@ -95,6 +95,8 @@ Dátumy vždy v tvare YYYY-MM-DD; splatnosť ("due_date") hľadaj aj pod „Dát
 „Splatné do", „Splatnosť".
 Variabilný symbol ("variable_symbol") hľadaj pod „Variabilný symbol", „Var. symbol", „VS",
 „Variabilní symbol" aj v platobných údajoch či pri QR kóde; vráť len číslice.
+Pridaj aj "constant_symbol" (KS), "specific_symbol" (ŠS), "order_number" (číslo objednávky)
+a "delivery_note_number" (číslo dodacieho listu) — keď na doklade nie sú, null.
 Prenesenie daňovej povinnosti: keď je na faktúre text „prenesenie daňovej povinnosti",
 „§ 69 ods. 12", „reverse charge" alebo „daň odvedie odberateľ", daj "reverse_charge": true
 pre celú faktúru, inak false. Keď sa to týka len niektorých položiek (napr. stavebné práce,

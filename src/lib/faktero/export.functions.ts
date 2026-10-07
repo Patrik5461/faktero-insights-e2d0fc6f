@@ -66,6 +66,7 @@ export const exportInvoicesFn = createServerFn({ method: "POST" })
         predkontacia: company.pohoda_predkontacia,
         predkontaciaZaloha: company.pohoda_predkontacia_zaloha,
         predkontaciaDobropis: company.pohoda_predkontacia_dobropis,
+        dobropisKladny: Boolean((company as any).pohoda_dobropis_kladny),
         clenenieDph: company.pohoda_clenenie_dph,
         clenenieDphPdp: company.pohoda_clenenie_dph_pdp,
         banka: company.pohoda_banka,

@@ -43,6 +43,10 @@ export function PrijataFakturaForm({
     supplier_ic_dph: "",
     supplier_iban: "",
     variable_symbol: "",
+    constant_symbol: "",
+    specific_symbol: "",
+    order_number: "",
+    delivery_note_number: "",
     invoice_number: "",
     issue_date: today(),
     received_date: today(),
@@ -125,6 +129,10 @@ export function PrijataFakturaForm({
         supplier_ic_dph: data.supplier_ic_dph ?? "",
         supplier_iban: data.supplier_iban ?? "",
         variable_symbol: data.variable_symbol ?? "",
+        constant_symbol: (data as any).constant_symbol ?? "",
+        specific_symbol: (data as any).specific_symbol ?? "",
+        order_number: (data as any).order_number ?? "",
+        delivery_note_number: (data as any).delivery_note_number ?? "",
         invoice_number: data.invoice_number ?? "",
         issue_date: data.issue_date ?? today(),
         received_date: data.received_date ?? today(),
@@ -226,6 +234,9 @@ export function PrijataFakturaForm({
     if (!cid) return toast.error("Vyberte firmu.");
     if (!form.supplier_name.trim()) return toast.error("Zadajte dodávateľa.");
     if (!form.invoice_number.trim()) return toast.error("Zadajte číslo faktúry.");
+    // Splatnosť pred vystavením je takmer vždy preklep v roku či mesiaci.
+    if (form.due_date && form.issue_date && form.due_date < form.issue_date)
+      return toast.error("Splatnosť je skôr ako dátum vystavenia — skontrolujte dátumy.");
 
     setBusy(true);
     try {
@@ -257,6 +268,10 @@ export function PrijataFakturaForm({
         // IBAN bez medzier, aby sa dal rovno použiť v platobnom príkaze.
         supplier_iban: form.supplier_iban.replace(/\s+/g, "").toUpperCase() || null,
         variable_symbol: form.variable_symbol.trim() || null,
+        constant_symbol: form.constant_symbol.trim() || null,
+        specific_symbol: form.specific_symbol.trim() || null,
+        order_number: form.order_number.trim() || null,
+        delivery_note_number: form.delivery_note_number.trim() || null,
         invoice_number: form.invoice_number.trim(),
         issue_date: form.issue_date,
         received_date: form.received_date,
@@ -427,6 +442,34 @@ export function PrijataFakturaForm({
                   value={form.variable_symbol}
                   onChange={(e) => set("variable_symbol", e.target.value)}
                   placeholder={form.invoice_number || "napr. 20260112"}
+                  className="input"
+                />
+              </Field>
+              <Field label="Konštantný symbol">
+                <input
+                  value={form.constant_symbol}
+                  onChange={(e) => set("constant_symbol", e.target.value)}
+                  inputMode="numeric"
+                  maxLength={4}
+                  className="input"
+                />
+              </Field>
+              <Field label="Špecifický symbol">
+                <input
+                  value={form.specific_symbol}
+                  onChange={(e) => set("specific_symbol", e.target.value)}
+                  inputMode="numeric"
+                  maxLength={10}
+                  className="input"
+                />
+              </Field>
+              <Field label="Číslo objednávky">
+                <input value={form.order_number} onChange={(e) => set("order_number", e.target.value)} className="input" />
+              </Field>
+              <Field label="Číslo dodacieho listu">
+                <input
+                  value={form.delivery_note_number}
+                  onChange={(e) => set("delivery_note_number", e.target.value)}
                   className="input"
                 />
               </Field>

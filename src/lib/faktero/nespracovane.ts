@@ -40,6 +40,10 @@ export type UdajeNespracovaneho = {
   };
   cislo: string;
   vs: string;
+  ks?: string;
+  ss?: string;
+  objednavka?: string;
+  dodaciList?: string;
   /** Čo sa fakturuje — do Pohody ide ako text faktúry. */
   popis: string;
   datumVystavenia: string;
@@ -211,7 +215,7 @@ export function doplnUdaje(povodne: UdajeNespracovaneho, nove: UdajeNespracovane
   const u = { ...povodne, dodavatel: { ...povodne.dodavatel } };
   for (const k of Object.keys(u.dodavatel) as (keyof UdajeNespracovaneho["dodavatel"])[])
     if (!u.dodavatel[k] && nove.dodavatel[k]) u.dodavatel[k] = nove.dodavatel[k];
-  for (const k of ["cislo", "popis", "splatnost", "datumVystavenia", "datumDodania"] as const)
+  for (const k of ["cislo", "popis", "splatnost", "datumVystavenia", "datumDodania", "ks", "ss", "objednavka", "dodaciList"] as const)
     if (!u[k] && nove[k]) u[k] = nove[k];
   if (!u.vs) u.vs = nove.vs || vsDokladu(null, u.cislo);
   if (!u.rozpis.length && nove.rozpis.length) u.rozpis = nove.rozpis;
@@ -238,6 +242,10 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
   u.cislo = t(ai.invoice_number, 60);
   u.popis = t(ai.description, 240);
   u.vs = vsDokladu(ai.variable_symbol, u.cislo);
+  u.ks = t(ai.constant_symbol, 4).replace(/\D/g, "");
+  u.ss = t(ai.specific_symbol, 10).replace(/\D/g, "");
+  u.objednavka = t(ai.order_number, 40);
+  u.dodaciList = t(ai.delivery_note_number, 40);
   u.datumVystavenia = vystavenie || dnes;
   u.datumDodania = vystavenie || dnes;
   u.splatnost = datum(ai.due_date) || datum(ai.other_due_date);
@@ -316,7 +324,12 @@ export function vyrovnajPolozky(u: UdajeNespracovaneho): UdajeNespracovaneho {
 }
 
 /** Povinné polia, ktoré chýbajú — zvýraznia sa červenou, bez nich sa doklad nevytvorí. */
-export function chybajuce(druh: DruhNespracovaneho | null, u: UdajeNespracovaneho): string[] {
+export function chybajuce(
+  druh: DruhNespracovaneho | null,
+  u: UdajeNespracovaneho,
+  /** Polia, ktoré firma vyžaduje: zakazka, stredisko, cinnost. */
+  povinne: string[] = [],
+): string[] {
   const out: string[] = [];
   if (!druh) return ["druh"];
   if (druh === "ostatny") return out;
@@ -330,7 +343,12 @@ export function chybajuce(druh: DruhNespracovaneho | null, u: UdajeNespracovaneh
     if (!u.cislo.trim()) out.push("cislo");
     if (!u.splatnost) out.push("splatnost");
     if (druh === "dobropis" && !u.opravuje.trim()) out.push("opravuje");
+    // Splatnosť pred vystavením je takmer vždy preklep v dátume (rok, mesiac).
+    if (u.splatnost && u.datumVystavenia && u.splatnost < u.datumVystavenia) out.push("splatnostPred");
   }
+  if (povinne.includes("zakazka") && !u.jobId.trim()) out.push("zakazka");
+  if (povinne.includes("stredisko") && !u.kody.stredisko.trim()) out.push("stredisko");
+  if (povinne.includes("cinnost") && !u.kody.cinnost.trim()) out.push("cinnost");
   // Položky musia sedieť so sumou; pri hotovosti je rozdiel zaokrúhlenie na 5 centov.
   const rozdiel = rozdielPoloziek(u);
   if (rozdiel && !(u.platba === "hotovost" && Math.abs(rozdiel.rozdiel) <= 0.02)) out.push("polozky");
@@ -348,9 +366,68 @@ export const NAZVY_POLI: Record<string, string> = {
   splatnost: "splatnosť",
   opravuje: "číslo opravovanej faktúry",
   polozky: "súlad položiek so sumou (pridajte vyrovnávaciu položku)",
+  splatnostPred: "splatnosť (je skôr ako dátum vystavenia)",
+  zakazka: "zákazka",
+  stredisko: "stredisko",
+  cinnost: "činnosť",
 };
 
 const prazdne = (v: string) => (v.trim() ? v.trim() : null);
+
+/** Údaje formulára z prijatej faktúry — pri vrátení do Nespracovaných. */
+export function udajeZPrijatej(p: Record<string, any>): { druh: DruhNespracovaneho; udaje: UdajeNespracovaneho } {
+  const u = prazdneUdaje();
+  const s = (v: unknown) => (v == null ? "" : String(v));
+  u.dodavatel = {
+    nazov: s(p.supplier_name),
+    ico: s(p.supplier_ico),
+    dic: s(p.supplier_dic),
+    icDph: s(p.supplier_ic_dph),
+    iban: s(p.supplier_iban),
+    ulica: s(p.supplier_street),
+    mesto: s(p.supplier_city),
+    psc: s(p.supplier_zip),
+  };
+  u.cislo = s(p.invoice_number);
+  u.vs = s(p.variable_symbol);
+  u.ks = s(p.constant_symbol);
+  u.ss = s(p.specific_symbol);
+  u.objednavka = s(p.order_number);
+  u.dodaciList = s(p.delivery_note_number);
+  u.popis = s(p.intro_note);
+  u.datumVystavenia = s(p.issue_date);
+  u.datumDodania = s(p.delivery_date || p.issue_date);
+  u.splatnost = s(p.due_date);
+  u.mena = s(p.currency) || "EUR";
+  const zaklad = Math.abs(Number(p.amount_without_vat ?? 0));
+  const dph = Math.abs(Number(p.vat_amount ?? 0));
+  const rozpis = Array.isArray(p.vat_breakdown) ? p.vat_breakdown : null;
+  u.rozpis = rozpis?.length
+    ? rozpis.map((r: any) => ({ sadzba: Number(r.sadzba) || 0, zaklad: Math.abs(Number(r.zaklad) || 0), dph: Math.abs(Number(r.dph) || 0) }))
+    : zaklad || dph
+      ? [{ sadzba: zaklad ? najblizsiaSadzba((dph / zaklad) * 100, "SK") : 0, zaklad, dph }]
+      : [];
+  u.celkom = p.amount_total != null ? Math.abs(Number(p.amount_total)) : null;
+  u.platba = s(p.payment_method);
+  u.kategoria = s(p.category);
+  u.poznamka = s(p.note);
+  u.polozky = Array.isArray(p.items) ? p.items : [];
+  u.opravuje = s(p.opravuje_cislo);
+  u.jobId = s(p.job_id);
+  u.prenesenie = p.reverse_charge === true && p.dph_rezim === "samozdanenie" ? true : undefined;
+  u.kody = {
+    predkontacia: s(p.pohoda_predkontacia),
+    clenenie: s(p.pohoda_clenenie_dph),
+    kv: s(p.kv_clenenie),
+    stredisko: s(p.stredisko),
+    cinnost: s(p.cinnost),
+    rad: s(p.pohoda_rad),
+    intPoznamka: s(p.int_poznamka),
+  };
+  const druh: DruhNespracovaneho =
+    p.type === "proforma" ? "zalohova" : p.opravuje_cislo || Number(p.amount_total ?? 0) < 0 ? "dobropis" : "faktura";
+  return { druh, udaje: u };
+}
 
 /** Riadok `purchase_invoices` z údajov (faktúra, zálohová, dobropis). */
 export function prijataZUdajov(
@@ -371,6 +448,10 @@ export function prijataZUdajov(
     supplier_zip: prazdne(u.dodavatel.psc),
     invoice_number: u.cislo.trim() || "bez čísla",
     variable_symbol: prazdne(u.vs),
+    constant_symbol: prazdne(u.ks ?? ""),
+    specific_symbol: prazdne(u.ss ?? ""),
+    order_number: prazdne(u.objednavka ?? ""),
+    delivery_note_number: prazdne(u.dodaciList ?? ""),
     issue_date: u.datumVystavenia || dnes,
     delivery_date: u.datumDodania || u.datumVystavenia || dnes,
     due_date: u.splatnost || u.datumVystavenia || dnes,

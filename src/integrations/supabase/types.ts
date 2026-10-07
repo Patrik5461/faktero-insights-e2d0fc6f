@@ -1295,6 +1295,11 @@ export type Database = {
           schvalovanie_odoslanie: boolean
           mail_povoleni_odosielatelia: string[]
           poznamky_sablony: string[]
+          pohoda_dobropis_kladny: boolean
+          pohoda_parovaci_symbol: string
+          pohoda_predkontacia_zaokruhlenie: string | null
+          qr_blocky_do_nespracovanych: boolean
+          povinne_polia_dokladu: string[]
         }
         Insert: {
           pohoda_clenenie_dph_prijata_pdp?: string | null
@@ -1389,6 +1394,11 @@ export type Database = {
           schvalovanie_odoslanie?: boolean
           mail_povoleni_odosielatelia?: string[]
           poznamky_sablony?: string[]
+          pohoda_dobropis_kladny?: boolean
+          pohoda_parovaci_symbol?: string
+          pohoda_predkontacia_zaokruhlenie?: string | null
+          qr_blocky_do_nespracovanych?: boolean
+          povinne_polia_dokladu?: string[]
         }
         Update: {
           pohoda_clenenie_dph_prijata_pdp?: string | null
@@ -1483,6 +1493,11 @@ export type Database = {
           schvalovanie_odoslanie?: boolean
           mail_povoleni_odosielatelia?: string[]
           poznamky_sablony?: string[]
+          pohoda_dobropis_kladny?: boolean
+          pohoda_parovaci_symbol?: string
+          pohoda_predkontacia_zaokruhlenie?: string | null
+          qr_blocky_do_nespracovanych?: boolean
+          povinne_polia_dokladu?: string[]
         }
         Relationships: []
       }
@@ -2835,6 +2850,8 @@ export type Database = {
           int_poznamka: string | null
           pdf_token: string | null
           pohoda_pokladna: string | null
+          locked_at: string | null
+          locked_by: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -2882,6 +2899,8 @@ export type Database = {
           int_poznamka?: string | null
           pdf_token?: string | null
           pohoda_pokladna?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -2929,6 +2948,8 @@ export type Database = {
           int_poznamka?: string | null
           pdf_token?: string | null
           pohoda_pokladna?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
         }
         Relationships: [
           {
@@ -5730,6 +5751,10 @@ export type Database = {
           pohoda_rad: string | null
           int_poznamka: string | null
           pdf_token: string | null
+          order_number: string | null
+          delivery_note_number: string | null
+          locked_at: string | null
+          locked_by: string | null
         }
         Insert: {
           amount_total?: number
@@ -5820,6 +5845,10 @@ export type Database = {
           pohoda_rad?: string | null
           int_poznamka?: string | null
           pdf_token?: string | null
+          order_number?: string | null
+          delivery_note_number?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
         }
         Update: {
           amount_total?: number
@@ -5910,6 +5939,10 @@ export type Database = {
           pohoda_rad?: string | null
           int_poznamka?: string | null
           pdf_token?: string | null
+          order_number?: string | null
+          delivery_note_number?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
         }
         Relationships: [
           {

@@ -122,7 +122,15 @@ export const detailNespracovanehoFn = createServerFn({ method: "POST" })
       .lt("created_at", r.created_at)
       .order("created_at", { ascending: false })
       .limit(1);
+    const { varovaniaNespracovaneho } = await import("./nespracovane.server");
+    const { data: firma } = await supabase
+      .from("companies")
+      .select("ico, ic_dph, dic, povinne_polia_dokladu")
+      .eq("id", r.company_id)
+      .maybeSingle();
     return {
+      povinne: (firma?.povinne_polia_dokladu ?? []) as string[],
+      varovania: await varovaniaNespracovaneho(supabase, r, udaje, firma),
       id: r.id as string,
       companyId: r.company_id as string,
       zdroj: r.zdroj as string,
@@ -184,10 +192,15 @@ export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
     const supabase = context.supabase as any;
     const { nacitajUdaje, chybajuce, NAZVY_POLI } = await import("./nespracovane");
     const u = nacitajUdaje(data.udaje);
-    const chyba = chybajuce(data.druh, u);
-    if (chyba.length) throw new Error(`Doplňte: ${chyba.map((k) => NAZVY_POLI[k] ?? k).join(", ")}.`);
     const { data: r } = await supabase.from("nespracovane_doklady").select("*").eq("id", data.id).maybeSingle();
     if (!r) throw new Error("Doklad sa nenašiel — možno ho už niekto spracoval.");
+    const { data: firma } = await supabase
+      .from("companies")
+      .select("povinne_polia_dokladu")
+      .eq("id", r.company_id)
+      .maybeSingle();
+    const chyba = chybajuce(data.druh, u, firma?.povinne_polia_dokladu ?? []);
+    if (chyba.length) throw new Error(`Doplňte: ${chyba.map((k) => NAZVY_POLI[k] ?? k).join(", ")}.`);
     const { assertCompanyActive } = await import("./active-check.server");
     await assertCompanyActive(r.company_id);
     const { vytvorDoklad } = await import("./nespracovane.server");
@@ -313,5 +326,67 @@ export const blocekDoNespracovanychFn = createServerFn({ method: "POST" })
       const { vytazNespracovany } = await import("./nespracovane.server");
       void vytazNespracovany(id);
     }
+    return { id };
+  });
+
+/**
+ * Prijatá faktúra späť do Nespracovaných — keď sa zle zaradila (iný druh,
+ * patrí medzi bločky) a treba ju spracovať znova. Odovzdaná, zamknutá ani
+ * spárovaná s platbou sa vrátiť nedá: párovanie aj zápis v účtovníctve by
+ * sa stratili.
+ */
+export const prijataDoNespracovanychFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { data: p } = await supabase.from("purchase_invoices").select("*").eq("id", data.id).maybeSingle();
+    if (!p || p.deleted_at) throw new Error("Faktúra sa nenašla.");
+    if (p.exported_at) throw new Error("Faktúra je odovzdaná do účtovníctva — najprv ju vráťte z Pohody.");
+    if (p.locked_at) throw new Error("Faktúra je zamknutá — najprv ju odomknite.");
+    const { data: parovany } = await supabase
+      .from("bank_transactions")
+      .select("id")
+      .eq("matched_purchase_invoice_id", p.id)
+      .limit(1);
+    if (parovany?.length) throw new Error("Faktúra je spárovaná s platbou — najprv zrušte párovanie.");
+
+    const { udajeZPrijatej } = await import("./nespracovane");
+    const { druh, udaje } = udajeZPrijatej(p);
+    const id = crypto.randomUUID();
+    let cesta: string | null = null;
+    if (p.file_path) {
+      const { data: subor } = await supabase.storage.from("purchase-invoices").download(p.file_path);
+      if (subor) {
+        const pripona = String(p.file_path).split(".").pop()?.toLowerCase().slice(0, 5) || "pdf";
+        cesta = `${p.company_id}/${id}.${pripona}`;
+        const up = await supabase.storage
+          .from("nespracovane")
+          .upload(cesta, new Uint8Array(await subor.arrayBuffer()), { contentType: p.file_mime ?? subor.type });
+        if (up.error) throw new Error(`Súbor sa nepodarilo presunúť: ${up.error.message}`);
+      }
+    }
+    const { error } = await supabase.from("nespracovane_doklady").insert({
+      id,
+      company_id: p.company_id,
+      created_by: p.created_by ?? context.userId,
+      zdroj: "nahratie",
+      stav: "vytazene",
+      druh,
+      file_path: cesta,
+      file_name: p.file_path ? String(p.file_path).split("/").pop() : null,
+      file_mime: p.file_mime,
+      file_size: p.file_size,
+      ai: null,
+      udaje,
+    });
+    if (error) {
+      if (cesta) await supabase.storage.from("nespracovane").remove([cesta]);
+      throw new Error(error.message);
+    }
+    // Faktúra zmizne; keď na ňu niečo ešte odkazuje, ostane aspoň zmazaná.
+    const { error: eDel } = await supabase.from("purchase_invoices").delete().eq("id", p.id);
+    if (eDel) await supabase.from("purchase_invoices").update({ deleted_at: new Date().toISOString() }).eq("id", p.id);
+    else if (p.file_path) await supabase.storage.from("purchase-invoices").remove([p.file_path]);
     return { id };
   });
