@@ -23,6 +23,7 @@ import {
   FileCode,
   User,
   Landmark,
+  Lock,
   X,
   Upload,
   BookCheck,
@@ -98,7 +99,17 @@ function monthOptions(): { value: string; label: string }[] {
   return opts;
 }
 
-/** Stĺpce zoznamu na výber (ako v Doklado). */
+/** Súčet súm s DPH po menách — meny sa nesčítavajú. */
+function sumyPodlaMeny(riadky: any[]): string {
+  const po = new Map<string, number>();
+  for (const r of riadky) {
+    const m = String(r.currency ?? "EUR");
+    po.set(m, (po.get(m) ?? 0) + Number(r.amount_total ?? 0));
+  }
+  return [...po.entries()].map(([m, v]) => fmtMoney(Math.round(v * 100) / 100, m)).join(" + ");
+}
+
+/** Stĺpce zoznamu na výber. */
 const STLPCE_PRIJATYCH: StlpecZoznamu[] = [
   { kluc: "cislo", nazov: "Číslo", povinny: true },
   { kluc: "dodavatel", nazov: "Dodávateľ", povinny: true },
@@ -145,6 +156,11 @@ function PurchaseInvoicesPage() {
     stav: (r: any) => r.status,
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Súčty do pätičky zoznamu — vybrané a tie, čo čakajú na odovzdanie.
+  const vybrane = rad.zoradene.filter((r: any) => selected.has(r.id));
+  const naExport = rad.zoradene.filter(
+    (r: any) => r.zauctovane_at && !r.exported_at && r.status !== "cancelled",
+  );
   const [zipBusy, setZipBusy] = useState(false);
   const [hromadneBusy, setHromadneBusy] = useState(false);
   const [mazanie, setMazanie] = useState(false);
@@ -308,6 +324,27 @@ function PurchaseInvoicesPage() {
   const nacitajKody = useServerFn(navrhyKodovFn);
   const zauctuj = useServerFn(zauctujPrijateFn);
   useZatvorNaEscape(zauctovanie ? () => setZauctovanie(false) : null);
+
+  // Predkontácie do stĺpca v riadku sa načítajú, keď je stĺpec zapnutý.
+  const stlpecPredkontacie = zobrazenie.viditelne.includes("predkontacia");
+  useEffect(() => {
+    const cid = getActiveCompanyId();
+    if (!stlpecPredkontacie || kodyNavrhy || !cid) return;
+    nacitajKody({ data: { company_id: cid } })
+      .then(setKodyNavrhy)
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stlpecPredkontacie]);
+  async function zmenPredkontaciuRiadku(id: string, kodPk: string) {
+    const cid = getActiveCompanyId();
+    if (!cid) return;
+    try {
+      await zauctuj({ data: { company_id: cid, ids: [id], predkontacia: kodPk || null, lenUlozit: true } as any });
+      setRows((rs) => rs.map((x) => (x.id === id ? { ...x, pohoda_predkontacia: kodPk || null } : x)));
+    } catch (e: any) {
+      toast.error(e?.message ?? "Predkontáciu sa nepodarilo uložiť");
+    }
+  }
 
   async function otvorZauctovanie() {
     const cid = getActiveCompanyId();
@@ -895,9 +932,32 @@ function PurchaseInvoicesPage() {
                     </td>
                   )}
                   {je("predkontacia") && (
-                    <td className="p-3 text-xs text-muted-foreground">
-                      {[r.pohoda_predkontacia, r.pohoda_clenenie_dph].filter(Boolean).join(" · ") ||
-                        "—"}
+                    <td className="p-3 text-xs text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                      {/* Predkontácia priamo v riadku — odovzdanú ani zamknutú meniť nejde. */}
+                      {kodyNavrhy?.predkontacie.length && !r.exported_at && !r.locked_at ? (
+                        <select
+                          aria-label={`Predkontácia faktúry ${r.invoice_number}`}
+                          value={r.pohoda_predkontacia ?? ""}
+                          onChange={(e) => void zmenPredkontaciuRiadku(r.id, e.target.value)}
+                          className="w-full max-w-[12rem] rounded-md border border-input bg-background px-1.5 py-1 text-xs text-foreground"
+                        >
+                          <option value="">—</option>
+                          {[
+                            ...kodyNavrhy.predkontacie,
+                            ...(r.pohoda_predkontacia &&
+                            !kodyNavrhy.predkontacie.some((k) => k.kod === r.pohoda_predkontacia)
+                              ? [{ kod: r.pohoda_predkontacia, popis: "" }]
+                              : []),
+                          ].map((k) => (
+                            <option key={k.kod} value={k.kod}>
+                              {k.kod}
+                              {k.popis ? ` — ${k.popis}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        [r.pohoda_predkontacia, r.pohoda_clenenie_dph].filter(Boolean).join(" · ") || "—"
+                      )}
                     </td>
                   )}
                   {je("zapisal") && (
@@ -908,6 +968,11 @@ function PurchaseInvoicesPage() {
                   {je("stav") && (
                     <td className="p-3" onClick={(e) => e.stopPropagation()}>
                       <StatusBadge status={r.status} />
+                      {r.locked_at ? (
+                        <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground" title="Zamknutý doklad">
+                          <Lock className="h-3 w-3" /> Zamknutá
+                        </span>
+                      ) : null}
                       {sch.stavy[r.id] ? (
                         <div
                           className={`mt-1 text-xs ${farbaOdznaku(sch.stavy[r.id].stav)}`}
@@ -970,6 +1035,21 @@ function PurchaseInvoicesPage() {
               ))}
             </tbody>
           </table>
+          {rows.length > 0 ? (
+            <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <span>
+                Vybrané: <strong className="text-foreground">{vybrane.length}</strong>
+                {vybrane.length ? ` · ${sumyPodlaMeny(vybrane)}` : ""}
+              </span>
+              <span title="Zaúčtované a ešte neodovzdané do účtovníctva">
+                Na export: <strong className="text-foreground">{naExport.length}</strong>
+                {naExport.length ? ` · ${sumyPodlaMeny(naExport)}` : ""}
+              </span>
+              <span>
+                Spolu: <strong className="text-foreground">{rad.zoradene.length}</strong> · {sumyPodlaMeny(rad.zoradene)}
+              </span>
+            </div>
+          ) : null}
         </div>
       </PageBody>
 

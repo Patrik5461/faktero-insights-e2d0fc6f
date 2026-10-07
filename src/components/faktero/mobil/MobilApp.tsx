@@ -976,6 +976,7 @@ function ObsahApky() {
         */}
         <div aria-hidden style={{ paddingTop: "var(--safe-top)" }} className="bg-black" />
         <Skener
+          companyId={firma.id}
           nastavenie={nastavenieDokladu}
           onNastavenie={setNastavenieDokladu}
           onQr={(raw) => {
@@ -1740,6 +1741,9 @@ function ZachytDokladu({
       obrazok: foto,
       uhrada: uhrada!,
       kategoria: prednastavene?.kategoria ?? null,
+      predvolby: prednastavene
+        ? { zakazka: prednastavene.zakazka, predkontacia: prednastavene.predkontacia, poznamka: prednastavene.poznamka }
+        : null,
       vysledok: vysledok,
     });
     toast.success(dovod);

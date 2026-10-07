@@ -1,3 +1,4 @@
+import { useOperacia } from "@/lib/mobile/server-most";
 import { useEffect, useState } from "react";
 import { Files, FileText, Image as ImageIcon, Mail, Receipt, SlidersHorizontal } from "lucide-react";
 import { useKameraQr } from "./KameraQr";
@@ -8,7 +9,14 @@ import {
   zapamatajKategoriu,
 } from "@/lib/mobile/kategorie-vydavkov";
 
-export type NastavenieDokladu = { uhrada: "hotovost" | "karta"; kategoria: string };
+export type NastavenieDokladu = {
+  uhrada: "hotovost" | "karta";
+  kategoria: string;
+  /** Zákazka, predkontácia a komentár — dajú sa nastaviť pred skenovaním. */
+  zakazka?: string;
+  predkontacia?: string;
+  poznamka?: string;
+};
 
 /**
  * Skener dokladu.
@@ -32,6 +40,7 @@ export function Skener({
   onInyDoklad,
   nastavenie,
   onNastavenie,
+  companyId,
 }: {
   onQr: (raw: string) => void;
   onOdfotit: () => void;
@@ -42,8 +51,17 @@ export function Skener({
   onInyDoklad?: () => void;
   nastavenie: NastavenieDokladu;
   onNastavenie: (n: NastavenieDokladu) => void;
+  companyId?: string;
 }) {
   const { t } = usePreklad();
+  const nacitajPredvolby = useOperacia<{
+    zakazky: { id: string; nazov: string }[];
+    predkontacie: { kod: string; popis: string }[];
+  }>("sken-predvolby");
+  const [predvolby, setPredvolby] = useState<{
+    zakazky: { id: string; nazov: string }[];
+    predkontacie: { kod: string; popis: string }[];
+  } | null>(null);
   /*
     Dva režimy jednej kamery. Kód sa číta v oboch — nájsť ho na fotke bločku
     je výhoda, nie prekážka. Líšia sa tým, čo obrazovka ponúka: pri doklade
@@ -55,6 +73,14 @@ export function Skener({
   */
   const [rezim, setRezim] = useState<"doklad" | "qr">("qr");
   const [nastaveniaOtvorene, setNastaveniaOtvorene] = useState(false);
+  // Zákazky a predkontácie sa načítajú až pri otvorení nastavení — bez signálu ostanú skryté.
+  useEffect(() => {
+    if (!nastaveniaOtvorene || predvolby || !companyId) return;
+    nacitajPredvolby({ data: { company_id: companyId } })
+      .then(setPredvolby)
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nastaveniaOtvorene, companyId]);
 
   /*
     Kamera beží len vtedy, keď je appka vpredu. Bez toho by po prepnutí do inej
@@ -212,6 +238,51 @@ export function Skener({
                   </option>
                 ))}
               </select>
+            </label>
+            {predvolby?.zakazky.length ? (
+              <label className="block">
+                <span className="mb-1 block text-[12px] font-medium text-white/70">{t("sken.zakazka")}</span>
+                <select
+                  value={nastavenie.zakazka ?? ""}
+                  onChange={(e) => nastav({ zakazka: e.target.value || undefined })}
+                  className="min-h-[40px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[15px] text-white"
+                >
+                  <option value="">{t("sken.ziadna")}</option>
+                  {predvolby.zakazky.map((z) => (
+                    <option key={z.id} value={z.id}>
+                      {z.nazov}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {predvolby?.predkontacie.length ? (
+              <label className="block">
+                <span className="mb-1 block text-[12px] font-medium text-white/70">{t("sken.predkontacia")}</span>
+                <select
+                  value={nastavenie.predkontacia ?? ""}
+                  onChange={(e) => nastav({ predkontacia: e.target.value || undefined })}
+                  className="min-h-[40px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[15px] text-white"
+                >
+                  <option value="">{t("sken.ziadna")}</option>
+                  {predvolby.predkontacie.map((p) => (
+                    <option key={p.kod} value={p.kod}>
+                      {p.kod}
+                      {p.popis ? ` — ${p.popis}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <label className="block">
+              <span className="mb-1 block text-[12px] font-medium text-white/70">{t("sken.komentar")}</span>
+              <input
+                value={nastavenie.poznamka ?? ""}
+                maxLength={500}
+                placeholder={t("sken.komentarPopis")}
+                onChange={(e) => nastav({ poznamka: e.target.value || undefined })}
+                className="min-h-[40px] w-full rounded-app-sm border border-white/25 bg-transparent px-2 text-[15px] text-white placeholder:text-white/40"
+              />
             </label>
           </div>
         )}

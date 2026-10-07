@@ -164,6 +164,22 @@ export const createExpenseFn = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
+    /*
+      Firma si môže zapnúť, aby aj bločky s QR kódom (údaje z Finančnej
+      správy) prešli Nespracovanými dokladmi ako všetko ostatné.
+    */
+    if (qr && data.source === "qr") {
+      const { data: firma } = await supabase
+        .from("companies")
+        .select("qr_blocky_do_nespracovanych")
+        .eq("id", data.company_id)
+        .maybeSingle();
+      if ((firma as any)?.qr_blocky_do_nespracovanych) {
+        const { presunBlocekDoNespracovanych } = await import("./nespracovane.server");
+        const n = await presunBlocekDoNespracovanych(supabase as any, row.id, userId).catch(() => ({ id: null }));
+        if (n.id) return { ...row, nespracovany_id: n.id };
+      }
+    }
     return row;
   });
 
@@ -684,4 +700,39 @@ export const poznamkySablonyFn = createServerFn({ method: "POST" })
     if (data.pridat || data.odobrat)
       await supabaseAdmin.from("companies").update({ poznamky_sablony: zoznam }).eq("id", data.company_id);
     return { zoznam };
+  });
+
+/**
+ * Čo si človek môže v appke prednastaviť pred skenovaním: otvorené zákazky
+ * a aktívne predkontácie firmy.
+ */
+export const predvolbySkenuFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: { company_id: string }) => z.object({ company_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const [{ data: zakazky }, { data: predkontacie }] = await Promise.all([
+      supabase
+        .from("jobs")
+        .select("id, job_number, name, status")
+        .eq("company_id", data.company_id)
+        .neq("status", "closed")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase
+        .from("predkontacie")
+        .select("kod, popis")
+        .eq("company_id", data.company_id)
+        .eq("druh", "predkontacia")
+        .eq("aktivne", true)
+        .order("kod")
+        .limit(300),
+    ]);
+    return {
+      zakazky: (zakazky ?? []).map((z: any) => ({
+        id: String(z.id),
+        nazov: [z.job_number, z.name].filter(Boolean).join(" · ") || "Zákazka",
+      })),
+      predkontacie: (predkontacie ?? []).map((p: any) => ({ kod: String(p.kod), popis: String(p.popis ?? "") })),
+    };
   });

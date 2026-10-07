@@ -41,9 +41,11 @@ import {
   FileInput,
   FileText,
   Plus,
+  Lock,
   Trash2,
   Upload as UploadIcon,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PredkontaciaDokladovOkno } from "@/components/faktero/PredkontaciaDokladovOkno";
 import { KosDokladovOkno } from "@/components/faktero/KosDokladovOkno";
@@ -69,6 +71,16 @@ export const Route = createFileRoute("/_authenticated/doklady/")({
 });
 
 /** Stĺpce zoznamu dokladov na výber (ako v Doklado). */
+/** Súčet súm s DPH po menách — meny sa nesčítavajú. */
+function sumyDokladov(riadky: any[]): string {
+  const po = new Map<string, number>();
+  for (const r of riadky) {
+    const m = String(r.currency ?? "EUR");
+    po.set(m, (po.get(m) ?? 0) + Number(r.total_amount ?? 0));
+  }
+  return [...po.entries()].map(([m, v]) => `${v.toFixed(2)} ${m}`).join(" + ");
+}
+
 const STLPCE_DOKLADOV: StlpecZoznamu[] = [
   { kluc: "datum", nazov: "Dátum" },
   { kluc: "dodavatel", nazov: "Dodávateľ", povinny: true },
@@ -176,6 +188,17 @@ function DokladyPage() {
     mesiac: null,
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // Súčty do pätičky — vybrané a tie, čo čakajú na odovzdanie.
+  const vybrane = rad.zoradene.filter((r: any) => selected.has(r.id));
+  const naExport = rad.zoradene.filter((r: any) => r.status === "processed" && !r.exported_at);
+  async function zmenPlatbuRiadku(id: string, platbaRiadku: string) {
+    const { error } = await supabase
+      .from("expense_documents")
+      .update({ payment_method: platbaRiadku || null } as any)
+      .eq("id", id);
+    if (error) return toast.error(error.message);
+    setRows((rs: any[]) => rs.map((x) => (x.id === id ? { ...x, payment_method: platbaRiadku || null } : x)));
+  }
   const [predkontaciaOkno, setPredkontaciaOkno] = useState(false);
   const [kos, setKos] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -870,10 +893,25 @@ function DokladyPage() {
                       </td>
                     )}
                     {je("platba") && (
-                      <td className="px-3 py-2 text-xs text-muted-foreground">
-                        {{ hotovost: "hotovosť", karta: "karta", prevod: "prevod" }[
-                          r.payment_method as string
-                        ] ?? "—"}
+                      <td className="px-3 py-2 text-xs text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+                        {/* Spôsob úhrady priamo v riadku — odovzdaný ani zamknutý doklad meniť nejde. */}
+                        {!r.exported_at && !r.locked_at ? (
+                          <select
+                            aria-label={`Spôsob úhrady dokladu ${r.document_number ?? ""}`}
+                            value={r.payment_method ?? ""}
+                            onChange={(e) => void zmenPlatbuRiadku(r.id, e.target.value)}
+                            className="rounded-md border border-input bg-background px-1.5 py-1 text-xs text-foreground"
+                          >
+                            <option value="">—</option>
+                            <option value="hotovost">hotovosť</option>
+                            <option value="karta">karta</option>
+                            <option value="prevod">prevod</option>
+                          </select>
+                        ) : (
+                          ({ hotovost: "hotovosť", karta: "karta", prevod: "prevod" } as Record<string, string>)[
+                            r.payment_method as string
+                          ] ?? "—"
+                        )}
                       </td>
                     )}
                     <td className="px-3 py-2">
@@ -888,6 +926,11 @@ function DokladyPage() {
                         >
                           {STATUS_LABEL[r.status] ?? r.status}
                         </span>
+                        {r.locked_at ? (
+                          <span title="Zamknutý doklad" className="text-muted-foreground">
+                            <Lock className="h-3.5 w-3.5" />
+                          </span>
+                        ) : null}
                         {sch.stavy[r.id] ? (
                           <span
                             className={`text-xs ${farbaOdznaku(sch.stavy[r.id].stav)}`}
@@ -986,6 +1029,21 @@ function DokladyPage() {
               </tbody>
             </table>
           )}
+          {rows.length > 0 ? (
+            <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 border-t border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <span>
+                Vybrané: <strong className="text-foreground">{vybrane.length}</strong>
+                {vybrane.length ? ` · ${sumyDokladov(vybrane)}` : ""}
+              </span>
+              <span title="Spracované a ešte neodovzdané do účtovníctva">
+                Na export: <strong className="text-foreground">{naExport.length}</strong>
+                {naExport.length ? ` · ${sumyDokladov(naExport)}` : ""}
+              </span>
+              <span>
+                Spolu: <strong className="text-foreground">{rad.zoradene.length}</strong> · {sumyDokladov(rad.zoradene)}
+              </span>
+            </div>
+          ) : null}
         </div>
         {kos && getActiveCompanyId() && (
           <KosDokladovOkno

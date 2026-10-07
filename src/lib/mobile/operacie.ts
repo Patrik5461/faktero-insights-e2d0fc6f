@@ -16,6 +16,7 @@ export const OPERACIE = [
   "blocek-precitaj",
   "vydavok-uloz",
   "vydavok-duplikat",
+  "sken-predvolby",
   /* Naskenovaná zálohová faktúra od dodávateľa — nepatrí medzi bločky. */
   "prijata-zaloha-uloz",
   "ostatny-uloz",

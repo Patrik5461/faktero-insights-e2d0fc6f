@@ -61,6 +61,8 @@ export function dokladNaZaznam(
   priloha: { path: string; mime: string; size: number } | null,
   /** Kategória nákladu vybraná pri skenovaní. Prázdna znamená nezaradené. */
   kategoria?: string | null,
+  /** Prednastavené pred skenovaním: zákazka, predkontácia, komentár. */
+  predvolby?: { zakazka?: string | null; predkontacia?: string | null; poznamka?: string | null } | null,
 ) {
   const spolu = r.total ?? null;
   const dph = r.vat_amount ?? null;
@@ -82,6 +84,9 @@ export function dokladNaZaznam(
     currency: r.currency ?? "EUR",
     payment_method: uhrada,
     category: kategoria?.trim() ? kategoria.trim() : null,
+    job_id: predvolby?.zakazka || null,
+    pohoda_predkontacia: predvolby?.predkontacia?.trim() || null,
+    note: predvolby?.poznamka?.trim() || null,
     file_path: priloha?.path ?? null,
     file_mime: priloha?.mime ?? null,
     file_size: priloha?.size ?? null,

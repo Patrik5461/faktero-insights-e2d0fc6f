@@ -26,6 +26,8 @@ export type CakajuciDoklad = {
   uhrada: "hotovost" | "karta" | "prevod";
   /** Kategória nákladu vybraná na skeneri. Bez nej by sa cestou stratila. */
   kategoria?: string | null;
+  /** Zákazka, predkontácia a komentár prednastavené na skeneri. */
+  predvolby?: { zakazka?: string | null; predkontacia?: string | null; poznamka?: string | null } | null;
   /** Keď sa doklad stihol prečítať ešte online, netreba ho čítať znova. */
   vysledok?: BlocekVysledok | null;
   ts: number;

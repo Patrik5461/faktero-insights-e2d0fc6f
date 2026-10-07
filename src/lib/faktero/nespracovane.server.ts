@@ -329,3 +329,94 @@ export async function varovaniaNespracovaneho(
   }
   return out;
 }
+
+/**
+ * Nespracovaný bloček do Nespracovaných dokladov (presun aj so skenom).
+ * Odovzdaný či spárovaný ostáva bločkom — vráti `{ id: null }`.
+ */
+export async function presunBlocekDoNespracovanych(supabase: Klient, id_: string, userId: string | null) {
+  const { data: e } = await supabase.from("expense_documents").select("*").eq("id", id_).maybeSingle();
+  if (!e) throw new Error("Doklad sa nenašiel.");
+  if (e.status !== "new" || e.exported_at) return { id: null as string | null };
+  const { data: parovany } = await supabase
+    .from("bank_transactions")
+    .select("id")
+    .eq("matched_expense_id", e.id)
+    .limit(1);
+  // Spárovaný s platbou ostáva bločkom — párovanie by sa presunom stratilo.
+  if (parovany?.length) return { id: null as string | null };
+
+  const { prazdneUdaje } = await import("./nespracovane");
+  const u = prazdneUdaje();
+  u.dodavatel.nazov = e.supplier_name ?? "";
+  u.dodavatel.ico = e.supplier_ico ?? "";
+  u.dodavatel.icDph = e.supplier_ic_dph ?? "";
+  u.cislo = e.document_number ?? "";
+  u.datumVystavenia = e.issue_date ?? "";
+  u.datumDodania = e.issue_date ?? "";
+  u.mena = e.currency ?? "EUR";
+  const rozpis = Array.isArray(e.vat_breakdown) ? e.vat_breakdown : null;
+  u.rozpis = rozpis?.length
+    ? rozpis.map((r: any) => ({ sadzba: Number(r.sadzba) || 0, zaklad: Number(r.zaklad) || 0, dph: Number(r.dph) || 0 }))
+    : e.net_amount != null || e.vat_amount != null
+      ? [{ sadzba: Number(e.vat_rate) || 0, zaklad: Number(e.net_amount) || 0, dph: Number(e.vat_amount) || 0 }]
+      : [];
+  u.celkom = e.total_amount != null ? Number(e.total_amount) : null;
+  u.platba = e.payment_method ?? "";
+  u.kategoria = e.category ?? "";
+  u.poznamka = e.note ?? "";
+  u.polozky = Array.isArray(e.items) ? e.items : [];
+  u.kody = {
+    predkontacia: e.pohoda_predkontacia ?? "",
+    clenenie: e.pohoda_clenenie_dph ?? "",
+    kv: e.kv_clenenie ?? "",
+    stredisko: e.stredisko ?? "",
+    cinnost: e.cinnost ?? "",
+    rad: e.pohoda_rad ?? "",
+    intPoznamka: e.int_poznamka ?? "",
+  };
+
+  const id = crypto.randomUUID();
+  let cesta: string | null = null;
+  if (e.file_path) {
+    const { data: subor } = await supabase.storage.from("expense-receipts").download(e.file_path);
+    if (subor) {
+      const pripona = String(e.file_path).split(".").pop()?.toLowerCase().slice(0, 5) || "jpg";
+      cesta = `${e.company_id}/${id}.${pripona}`;
+      const up = await supabase.storage
+        .from("nespracovane")
+        .upload(cesta, new Uint8Array(await subor.arrayBuffer()), { contentType: e.file_mime ?? subor.type });
+      if (up.error) throw new Error(`Súbor sa nepodarilo presunúť: ${up.error.message}`);
+    }
+  }
+  const pdf = String(e.file_mime ?? "").includes("pdf");
+  const { error } = await supabase.from("nespracovane_doklady").insert({
+    id,
+    company_id: e.company_id,
+    created_by: e.created_by ?? userId,
+    zdroj: e.source === "photo" || e.source === "qr" ? "apka" : "nahratie",
+    stav: "vytazene",
+    druh: pdf ? "faktura" : "blocek",
+    file_path: cesta,
+    file_name: e.file_path ? String(e.file_path).split("/").pop() : null,
+    file_mime: e.file_mime,
+    file_size: e.file_size,
+    ai: e.ai_raw ?? null,
+    udaje: u,
+  });
+  if (error) {
+    if (cesta) await supabase.storage.from("nespracovane").remove([cesta]);
+    throw new Error(error.message);
+  }
+  await supabase.from("expense_documents").delete().eq("id", e.id);
+  if (e.file_path) await supabase.storage.from("expense-receipts").remove([e.file_path]);
+  /*
+    Bločkové čítanie nepozná VS, IBAN, splatnosť ani adresu — faktúra zo
+    skenera ich preto nemala. Dočíta ich faktúrové čítanie na pozadí;
+    doplní len prázdne polia.
+  */
+  if (cesta) {
+    void vytazNespracovany(id);
+  }
+  return { id };
+}
