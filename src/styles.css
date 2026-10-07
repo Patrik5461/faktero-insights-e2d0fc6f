@@ -187,63 +187,21 @@
 }
 
 /*
-  Dizajn „ako v Doklado" (Nastavenia účtu → Dizajn aplikácie). Mení farby a
-  tvary, nie rozloženie obrazoviek: modrá namiesto zelenej, modrošedé
-  pozadie, väčšie zaoblenia. Tmavý režim má vlastný blok nižšie.
+  Kompaktné rozloženie (Nastavenia účtu → Rozloženie aplikácie). Mení len
+  tvary — väčšie zaoblenia, popisy polí v rámčeku. Farby ostávajú Faktero.
 */
-html[data-dizajn="doklado"] {
+html[data-dizajn="kompaktny"] {
   --radius: 0.875rem;
-  --background: oklch(0.99 0.004 255);
-  --page: oklch(0.955 0.014 255);
-  --foreground: oklch(0.24 0.03 262);
-  --card-foreground: oklch(0.24 0.03 262);
-  --popover-foreground: oklch(0.24 0.03 262);
-  --primary: oklch(0.57 0.2 262);
-  --primary-hover: oklch(0.51 0.2 262);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.955 0.016 255);
-  --secondary-foreground: oklch(0.3 0.04 262);
-  --muted: oklch(0.96 0.012 255);
-  --muted-foreground: oklch(0.55 0.03 262);
-  --accent: oklch(0.95 0.03 255);
-  --accent-foreground: oklch(0.4 0.15 262);
-  --border: oklch(0.91 0.016 255);
-  --input: oklch(0.89 0.02 255);
-  --ring: oklch(0.57 0.2 262);
-  --chart-1: oklch(0.57 0.2 262);
-  --chart-2: oklch(0.7 0.13 240);
-  --sidebar: oklch(0.99 0.004 255);
-  --sidebar-foreground: oklch(0.3 0.04 262);
-  --sidebar-primary: oklch(0.57 0.2 262);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0.03 255);
-  --sidebar-accent-foreground: oklch(0.4 0.15 262);
-  --sidebar-border: oklch(0.91 0.016 255);
-  --sidebar-ring: oklch(0.57 0.2 262);
-  --brand-gradient: linear-gradient(135deg, oklch(0.57 0.2 262), oklch(0.66 0.16 250));
-  --shadow-card: 0 1px 2px oklch(0.24 0.03 262 / 0.04), 0 6px 16px oklch(0.4 0.1 262 / 0.06);
-  --shadow-glow: 0 0 0 1px oklch(0.57 0.2 262 / 0.2), 0 16px 40px -16px oklch(0.57 0.2 262 / 0.35);
 }
-html.dark[data-dizajn="doklado"] {
-  --primary: oklch(0.68 0.17 258);
-  --primary-hover: oklch(0.62 0.17 258);
-  --primary-foreground: oklch(0.16 0.03 262);
-  --ring: oklch(0.68 0.17 258);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-}
-/* Polia formulárov ako v Doklado — vyššie a zaoblenejšie. */
-html[data-dizajn="doklado"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+/* Polia formulárov v kompaktnom rozložení — vyššie a zaoblenejšie. */
+html[data-dizajn="kompaktny"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
   border-radius: 0.6rem;
 }
-html[data-dizajn="doklado"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select) {
+html[data-dizajn="kompaktny"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select) {
   min-height: 2.5rem;
 }
 /*
-  Kompaktné polia ako v Doklado: popis poľa sedí v jeho rámčeku. Platí pre
+  Kompaktné polia: popis poľa sedí v jeho rámčeku. Platí pre
   tri vzory formulárov bez úprav každého formulára:
     A) <label><span|div>Popis</span><input/></label>
     B) <div><label>Popis</label><div><input/></div></div>
@@ -251,15 +209,15 @@ html[data-dizajn="doklado"] :is(input:not([type="checkbox"]):not([type="radio"])
   Pole musí nasledovať hneď za popisom; zaškrtávacie polia sa nemenia.
   Pozor: `:has()` sa nesmie vnárať — prehliadač by celé pravidlo zahodil.
 */
-html[data-dizajn="doklado"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)),
-html[data-dizajn="doklado"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child),
-html[data-dizajn="doklado"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) {
+html[data-dizajn="kompaktny"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)),
+html[data-dizajn="kompaktny"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child),
+html[data-dizajn="kompaktny"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) {
   position: relative;
   display: block;
 }
-html[data-dizajn="doklado"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(span, div):first-child,
-html[data-dizajn="doklado"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child) > label:first-child,
-html[data-dizajn="doklado"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > label:first-child {
+html[data-dizajn="kompaktny"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(span, div):first-child,
+html[data-dizajn="kompaktny"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child) > label:first-child,
+html[data-dizajn="kompaktny"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > label:first-child {
   position: absolute;
   /* Výška riadku s rezervou — pri `line-height: 1` orezal `overflow`
      mäkčene a dĺžne („ICO", „Clenenie"). */
@@ -281,14 +239,10 @@ html[data-dizajn="doklado"] div:has(> label:first-child + :is(input:not([type="c
   text-overflow: ellipsis;
   pointer-events: none;
 }
-html[data-dizajn="doklado"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(input, select, textarea),
-html[data-dizajn="doklado"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child) > div,
-html[data-dizajn="doklado"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(input, select, textarea) {
+html[data-dizajn="kompaktny"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(input, select, textarea),
+html[data-dizajn="kompaktny"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child) > div,
+html[data-dizajn="kompaktny"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(input, select, textarea) {
   margin-top: 0 !important;
-}
-/* Karty a tlačidlá o čosi mäkšie, tiene jemnejšie — ako v Doklado. */
-html[data-dizajn="doklado"] :is(.shadow-sm, .shadow) {
-  box-shadow: var(--shadow-card);
 }
 
 .dark {

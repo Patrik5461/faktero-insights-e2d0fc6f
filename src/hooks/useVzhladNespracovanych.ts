@@ -5,7 +5,7 @@ export type VzhladNespracovanych = "klasicky" | "kompaktny";
 
 /**
  * Rozloženie detailu nespracovaného dokladu, ktoré si používateľ vybral —
- * klasické Faktero alebo kompaktné „ako v Doklado". Ukladá sa do jeho účtu
+ * klasické Faktero alebo kompaktné. Ukladá sa do jeho účtu
  * (metadáta prihlásenia), takže platí na každom zariadení.
  */
 export function useVzhladNespracovanych() {
@@ -15,7 +15,7 @@ export function useVzhladNespracovanych() {
       const v = data.user?.user_metadata?.vzhlad_nespracovanych;
       if (v === "kompaktny" || v === "klasicky") setVzhlad(v);
       // Bez vlastnej voľby sa rozloženie riadi dizajnom aplikácie.
-      else if (data.user?.user_metadata?.dizajn === "doklado") setVzhlad("kompaktny");
+      else if (data.user?.user_metadata?.dizajn === "kompaktny" || data.user?.user_metadata?.dizajn === "doklado") setVzhlad("kompaktny");
     });
   }, []);
   async function zmen(v: VzhladNespracovanych) {

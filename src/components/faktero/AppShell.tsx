@@ -283,7 +283,7 @@ export function AppShell({
         domov={homePath}
         zbaleny={panelZbaleny}
         onZbal={prepniPanel}
-        pas={dizajn === "doklado"}
+        pas={dizajn === "kompaktny"}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -598,11 +598,11 @@ export function AppShell({
             </div>
           </div>
           {/*
-            Dizajn Doklado: podstránky aktívnej sekcie ako vodorovná lišta
+            Kompaktné rozloženie: podstránky aktívnej sekcie ako vodorovná lišta
             („Prehľad · Banka · Faktúry a Bločky · Nespracované…") — bočný
             panel je len pás ikon.
           */}
-          {dizajn === "doklado" && activeGroup && activeGroup.children.length > 1 && (
+          {dizajn === "kompaktny" && activeGroup && activeGroup.children.length > 1 && (
             <nav aria-label={activeGroup.label} className="hidden overflow-x-auto border-t border-border px-4 lg:block lg:px-6">
               <ul className="flex items-center gap-1 py-2">
                 <li className="mr-2 shrink-0 text-sm font-semibold text-foreground">{activeGroup.label}</li>

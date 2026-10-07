@@ -90,10 +90,11 @@ function SettingsPage() {
         </form>
 
         <div className="mt-8 max-w-3xl rounded-xl border border-border bg-card p-6">
-          <h2 className="text-lg font-semibold">Dizajn aplikácie</h2>
+          <h2 className="text-lg font-semibold">Rozloženie aplikácie</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Celé Faktero v pôvodnom zelenom dizajne, alebo v modrom ako v Doklado. Voľba platí pre
-            váš účet na každom zariadení a dá sa prepnúť aj v ponuke pod vaším menom.
+            Klasické Faktero, alebo kompaktné — úzky pás ikon, záložky sekcie a popisy polí
+            v rámčeku. Farby ostávajú rovnaké. Voľba platí pre váš účet na každom zariadení a dá sa
+            prepnúť aj v ponuke pod vaším menom.
           </p>
           <div className="mt-4">
             <PrepinacDizajnu velky />
@@ -101,7 +102,7 @@ function SettingsPage() {
           <div className="mt-6">
             <div className="text-sm font-medium">Rozloženie nespracovaných dokladov</div>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Klasické Faktero, alebo ako v Doklado (veľký náhľad, úzky panel s údajmi).
+              Klasické, alebo kompaktné (veľký náhľad, úzky panel s údajmi).
             </p>
             <div className="mt-2">
               <PrepinacRozlozenia />
@@ -157,7 +158,7 @@ function PrepinacRozlozenia() {
       {(
         [
           ["klasicky", "Klasické"],
-          ["kompaktny", "Ako v Doklado"],
+          ["kompaktny", "Kompaktné"],
         ] as const
       ).map(([k, n]) => (
         <button

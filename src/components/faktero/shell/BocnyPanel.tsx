@@ -75,7 +75,7 @@ export function SekcieNavigacie({
   aktivnaPolozka: string | null;
   zbaleny?: boolean;
   /**
-   * Pás ikon ako v Doklado: ikona sekcie rovno otvorí jej prvú stránku,
+   * Pás ikon (kompaktné rozloženie): ikona sekcie rovno otvorí jej prvú stránku,
    * podstránky sú vo vodorovnej lište nad obsahom.
    */
   pas?: boolean;
@@ -235,7 +235,7 @@ export function BocnyPanel({
   onZbal: (v: boolean) => void;
   /** Prepínač produktu a čokoľvek, čo patrí na dno panela. */
   pata?: React.ReactNode;
-  /** Dizajn Doklado — vždy úzky pás ikon bez rozbaľovania. */
+  /** Kompaktné rozloženie — vždy úzky pás ikon bez rozbaľovania. */
   pas?: boolean;
 }) {
   const zbaleny = pas || zbalenyVstup;

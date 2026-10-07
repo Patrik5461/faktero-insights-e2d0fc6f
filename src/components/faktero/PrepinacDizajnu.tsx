@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { nacitajDizajn, ulozDizajn, type Dizajn } from "@/lib/faktero/dizajn";
 
-const MOZNOSTI: { hodnota: Dizajn; popis: string; farba: string; pozadie: string }[] = [
-  { hodnota: "faktero", popis: "Faktero", farba: "#0F7A4D", pozadie: "#F4F3EF" },
-  { hodnota: "doklado", popis: "Ako v Doklado", farba: "#2A6BF2", pozadie: "#EAF0FA" },
+const MOZNOSTI: { hodnota: Dizajn; popis: string; farba: string; pozadie: string; pas: boolean }[] = [
+  { hodnota: "faktero", popis: "Klasické", farba: "#0F7A4D", pozadie: "#F4F3EF", pas: false },
+  { hodnota: "kompaktny", popis: "Kompaktné", farba: "#0F7A4D", pozadie: "#F4F3EF", pas: true },
 ];
 
 /**
@@ -21,7 +21,7 @@ export function PrepinacDizajnu({ velky = false }: { velky?: boolean }) {
 
   if (velky)
     return (
-      <div role="group" aria-label="Dizajn aplikácie" className="grid gap-3 sm:grid-cols-2">
+      <div role="group" aria-label="Rozloženie aplikácie" className="grid gap-3 sm:grid-cols-2">
         {MOZNOSTI.map((m) => {
           const aktivna = volba === m.hodnota;
           return (
@@ -38,7 +38,7 @@ export function PrepinacDizajnu({ velky = false }: { velky?: boolean }) {
               {/* Malý náhľad: pozadie, karta, tlačidlo vo farbe dizajnu. */}
               <div className="h-20 overflow-hidden rounded-lg border border-black/5" style={{ background: m.pozadie }}>
                 <div className="m-2 flex h-14 gap-2">
-                  <div className="w-8 rounded-md bg-white/90" />
+                  <div className={`${m.pas ? "w-3" : "w-8"} rounded-md bg-white/90`} />
                   <div className="flex flex-1 flex-col justify-between rounded-md bg-white p-1.5">
                     <div className="h-1.5 w-2/3 rounded bg-black/10" />
                     <div className="h-1.5 w-1/2 rounded bg-black/10" />
@@ -57,7 +57,7 @@ export function PrepinacDizajnu({ velky = false }: { velky?: boolean }) {
     );
 
   return (
-    <div role="group" aria-label="Dizajn aplikácie" className="flex gap-1 rounded-md border border-border p-0.5">
+    <div role="group" aria-label="Rozloženie aplikácie" className="flex gap-1 rounded-md border border-border p-0.5">
       {MOZNOSTI.map((m) => {
         const aktivna = volba === m.hodnota;
         return (

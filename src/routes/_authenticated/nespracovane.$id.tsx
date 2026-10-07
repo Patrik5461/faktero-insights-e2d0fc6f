@@ -213,7 +213,7 @@ function Detail() {
       {(
         [
           ["klasicky", "Klasické"],
-          ["kompaktny", "Ako v Doklado"],
+          ["kompaktny", "Kompaktné"],
         ] as const
       ).map(([k, n]) => (
         <button

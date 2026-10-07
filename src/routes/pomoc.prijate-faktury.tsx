@@ -273,7 +273,7 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Ako v Doklado: na detaile prijatej faktúry je časť <strong>Zaúčtovanie</strong> s
+          Na detaile prijatej faktúry je časť <strong>Zaúčtovanie</strong> s
           predkontáciou, členením DPH (plnením) a kategóriou nákladu. Kódy píšete také, aké máte v
           Pohode; Faktero ponúkne tie, ktoré už používate. Prázdne pole znamená predvolenú hodnotu z{" "}
           <Link to="/uctovnictvo/pohoda">nastavení prepojenia s Pohodou</Link>.

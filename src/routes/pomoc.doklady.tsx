@@ -24,7 +24,7 @@ const sections: HelpSection[] = [
     body: (
       <>
         <p>
-          Ako v Doklado: všetko, čo príde <strong>e-mailom</strong> alebo čo <strong>nahráte</strong>{" "}
+          Všetko, čo príde <strong>e-mailom</strong> alebo čo <strong>nahráte</strong>{" "}
           (tlačidlo Nahrať faktúru, appka, pretiahnutie súborov), čaká najprv v{" "}
           <Link to="/nespracovane">Doklady → Nespracované doklady</Link>. Faktero doklad prečíta
           a navrhne, čo to je. Kým je doklad tu, nevstupuje do DPH, pokladne ani do účtovníctva.

@@ -74,7 +74,7 @@ const sections: HelpSection[] = [
           — vydaná faktúra, zálohová, dobropis, prijatá faktúra, <strong>bloček</strong>, pokladňa a
           banka — a predkontácie pre bankové pohyby podľa označenia platby. Pri zaúčtovaní prijatej
           faktúry, v Dokladoch (tlačidlo <em>Predkontácia</em> pri vybraných bločkoch) aj v
-          pravidlách sa kódy potom vyberajú zo zoznamu s popisom, ako v Doklado.
+          pravidlách sa kódy potom vyberajú zo zoznamu s popisom.
         </p>
         <p>
           Pri každom kóde v číselníku sa dá zaškrtnúť, <strong>pri ktorých dokladoch sa ponúka</strong>{" "}
@@ -85,7 +85,7 @@ const sections: HelpSection[] = [
           „Rozúčtovať“ a kódy nesú položky.
         </p>
         <p>
-          <strong>Bločky do Pohody</strong> idú buď všetky ako prijaté faktúry, alebo ako v Doklado{" "}
+          <strong>Bločky do Pohody</strong> idú buď všetky ako prijaté faktúry, alebo{" "}
           <em>podľa spôsobu platby</em>: hotovosť ako výdavkový pokladničný doklad, karta ako interný
           doklad, prevod ako prijatá faktúra. Prepína sa to na stránke Predkontácie. Na doklade sa dá
           vybrať aj <strong>členenie kontrolného výkazu</strong> (B1, B2, B3, C2 alebo „nezahŕňať“);
@@ -101,7 +101,7 @@ const sections: HelpSection[] = [
         <p>
           Predkontácia môže mať <strong>účtovanie pomerom</strong> — napríklad 80/20 alebo auto s
           odpočtom DPH 50 % od roku 2026. Doklad s takou predkontáciou sa do Pohody rozúčtuje sám a
-          výkazy k DPH odpočítajú len príslušnú časť dane. Ako v Doklado ide pomer na{" "}
+          výkazy k DPH odpočítajú len príslušnú časť dane. Pomer ide na{" "}
           <strong>celý doklad</strong> (predkontácia v hlavičke) aj na <strong>položku</strong>: pri
           bločku z čerpačky dáte predkontáciu s pomerom len k nafte a bageta ostane s predkontáciou
           dokladu — v tabuľke položiek je pri každej sadzba DPH a výber predkontácie. Predkontácia s agendou

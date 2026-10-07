@@ -1,25 +1,30 @@
 /**
- * Dizajn aplikácie — Faktero (zelený) alebo „ako v Doklado" (modrý, väčšie
- * zaoblenia, modrošedé pozadie). Nezávisí od svetlého či tmavého režimu
- * (`motiv.ts`): ten rozhoduje o tme, toto o farbách a tvaroch.
+ * Rozloženie aplikácie — klasické Faktero alebo kompaktné (úzky pás ikon,
+ * záložky sekcie, popisy polí v rámčeku, väčšie zaoblenia). Farby ostávajú
+ * vždy Faktero. Nezávisí od svetlého či tmavého režimu (`motiv.ts`).
  *
- * Nasadzuje sa ako `data-dizajn` na `<html>`; farby prepíše `styles.css`.
+ * Nasadzuje sa ako `data-dizajn` na `<html>`; tvary prepíše `styles.css`.
  * Voľba sa drží v `localStorage` (aby sa nasadila hneď, bez bliknutia) aj
  * v účte používateľa (aby platila na každom zariadení).
  */
 
-export type Dizajn = "faktero" | "doklado";
+export type Dizajn = "faktero" | "kompaktny";
 
 export const KLUC_DIZAJNU = "faktero.dizajn";
 
 export function jeDizajn(v: unknown): v is Dizajn {
-  return v === "faktero" || v === "doklado";
+  return v === "faktero" || v === "kompaktny";
+}
+
+/** Starší názov kompaktného rozloženia, ktorý môže ešte ležať v účte či prehliadači. */
+export function normalizujDizajn(v: unknown): Dizajn | null {
+  if (v === "doklado") return "kompaktny";
+  return jeDizajn(v) ? v : null;
 }
 
 export function nacitajDizajn(): Dizajn {
   try {
-    const v = localStorage.getItem(KLUC_DIZAJNU);
-    return jeDizajn(v) ? v : "faktero";
+    return normalizujDizajn(localStorage.getItem(KLUC_DIZAJNU)) ?? "faktero";
   } catch {
     return "faktero";
   }
@@ -59,8 +64,8 @@ export async function zosuladDizajnSUctom(): Promise<void> {
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data } = await supabase.auth.getUser();
-    const v = data.user?.user_metadata?.dizajn;
-    if (jeDizajn(v) && v !== nacitajDizajn()) {
+    const v = normalizujDizajn(data.user?.user_metadata?.dizajn);
+    if (v && v !== nacitajDizajn()) {
       try {
         localStorage.setItem(KLUC_DIZAJNU, v);
       } catch {
@@ -75,4 +80,4 @@ export async function zosuladDizajnSUctom(): Promise<void> {
 }
 
 /** Kúsok do skriptu v hlavičke — nasadí dizajn pred prvým vykreslením. */
-export const SKRIPT_DIZAJNU = `(function(){try{var d=localStorage.getItem(${JSON.stringify(KLUC_DIZAJNU)});if(d==="doklado")document.documentElement.dataset.dizajn=d;}catch(e){}})();`;
+export const SKRIPT_DIZAJNU = `(function(){try{var d=localStorage.getItem(${JSON.stringify(KLUC_DIZAJNU)});if(d==="kompaktny"||d==="doklado")document.documentElement.dataset.dizajn="kompaktny";}catch(e){}})();`;

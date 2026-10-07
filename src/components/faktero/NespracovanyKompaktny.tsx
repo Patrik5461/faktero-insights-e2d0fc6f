@@ -26,7 +26,7 @@ import { DRUHY_OSTATNYCH } from "@/lib/faktero/ostatne-doklady";
 import { upravIban } from "@/lib/faktero/platobny-ucet";
 
 /*
-  Rozloženie nespracovaného dokladu „ako v Doklado": veľký náhľad s
+  Rozloženie nespracovaného dokladu kompaktné: veľký náhľad s
   nástrojmi, úzky panel s kompaktnými poľami (popis v rámčeku), zelená fajka
   pri sedieacich súčtoch a platnom IBAN-e, výkričník pri chýbajúcom poli a
   tlačidlá Uložiť zmeny / Vytvoriť stále na spodku panelu. Logika je tá istá
