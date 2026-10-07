@@ -247,16 +247,19 @@ html[data-dizajn="doklado"] :is(input:not([type="checkbox"]):not([type="radio"])
   tri vzory formulárov bez úprav každého formulára:
     A) <label><span|div>Popis</span><input/></label>
     B) <div><label>Popis</label><div><input/></div></div>
+    C) <div><label>Popis</label><input/></div>
   Pole musí nasledovať hneď za popisom; zaškrtávacie polia sa nemenia.
   Pozor: `:has()` sa nesmie vnárať — prehliadač by celé pravidlo zahodil.
 */
 html[data-dizajn="doklado"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)),
-html[data-dizajn="doklado"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child) {
+html[data-dizajn="doklado"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child),
+html[data-dizajn="doklado"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) {
   position: relative;
   display: block;
 }
 html[data-dizajn="doklado"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(span, div):first-child,
-html[data-dizajn="doklado"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child) > label:first-child {
+html[data-dizajn="doklado"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child) > label:first-child,
+html[data-dizajn="doklado"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > label:first-child {
   position: absolute;
   top: -0.45rem;
   left: 0.65rem;
@@ -277,7 +280,8 @@ html[data-dizajn="doklado"] div:has(> label:first-child + div > :is(input:not([t
   pointer-events: none;
 }
 html[data-dizajn="doklado"] label:has(> :is(span, div[class*="text-"]):first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(input, select, textarea),
-html[data-dizajn="doklado"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child) > div {
+html[data-dizajn="doklado"] div:has(> label:first-child + div > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):only-child) > div,
+html[data-dizajn="doklado"] div:has(> label:first-child + :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea)) > :is(input, select, textarea) {
   margin-top: 0 !important;
 }
 /* Karty a tlačidlá o čosi mäkšie, tiene jemnejšie — ako v Doklado. */
