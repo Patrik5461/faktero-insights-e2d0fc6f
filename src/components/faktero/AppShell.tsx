@@ -1,4 +1,5 @@
 import { Link, useRouter, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useDizajn } from "@/hooks/useDizajn";
 import { PrepinacDizajnu } from "./PrepinacDizajnu";
 import { zosuladDizajnSUctom } from "@/lib/faktero/dizajn";
 import { Logo } from "@/components/faktero/Logo";
@@ -228,6 +229,7 @@ export function AppShell({
     polozky: g.children.map((c) => ({ to: c.to, search: c.search, label: c.label })),
   }));
 
+  const dizajn = useDizajn();
   const activeGroup = nav.find((g) => isPathActive(pathname, g));
   const activeKey = activeGroup ? activeChildKey(activeGroup.children, pathname, locSearch) : null;
 
@@ -281,6 +283,7 @@ export function AppShell({
         domov={homePath}
         zbaleny={panelZbaleny}
         onZbal={prepniPanel}
+        pas={dizajn === "doklado"}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -594,6 +597,34 @@ export function AppShell({
               </DropdownMenu>
             </div>
           </div>
+          {/*
+            Dizajn Doklado: podstránky aktívnej sekcie ako vodorovná lišta
+            („Prehľad · Banka · Faktúry a Bločky · Nespracované…") — bočný
+            panel je len pás ikon.
+          */}
+          {dizajn === "doklado" && activeGroup && activeGroup.children.length > 1 && (
+            <nav aria-label={activeGroup.label} className="hidden overflow-x-auto border-t border-border px-4 lg:block lg:px-6">
+              <ul className="flex items-center gap-1 py-2">
+                <li className="mr-2 shrink-0 text-sm font-semibold text-foreground">{activeGroup.label}</li>
+                {activeGroup.children.map((c) => {
+                  const je = activeKey === c.to + c.label;
+                  return (
+                    <li key={c.to + c.label} className="shrink-0">
+                      <Link
+                        to={c.to as any}
+                        search={c.search as any}
+                        className={`block rounded-lg px-3 py-1.5 text-[13px] ${
+                          je ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        }`}
+                      >
+                        {c.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+          )}
         </header>
 
         <main className="flex min-w-0 flex-1 flex-col">

@@ -68,11 +68,17 @@ export function SekcieNavigacie({
   otvorene,
   onPrepni,
   onPrejdi,
+  pas = false,
 }: {
   sekcie: SekciaPanela[];
   aktivnaSekcia: string | null;
   aktivnaPolozka: string | null;
   zbaleny?: boolean;
+  /**
+   * Pás ikon ako v Doklado: ikona sekcie rovno otvorí jej prvú stránku,
+   * podstránky sú vo vodorovnej lište nad obsahom.
+   */
+  pas?: boolean;
   otvorene: Set<string>;
   onPrepni: (kluc: string) => void;
   /** Zavretie zásuvky po prechode. Na počítači sa nepoužíva. */
@@ -84,6 +90,26 @@ export function SekcieNavigacie({
         const aktivna = aktivnaSekcia === s.key;
         const rozbalena = !zbaleny && otvorene.has(s.key);
         const Ikona = s.icon;
+
+        if (pas) {
+          const prva = s.polozky[0];
+          return (
+            <li key={s.key}>
+              <Link
+                to={(prva?.to ?? s.cesta) as any}
+                search={prva?.search as any}
+                onClick={onPrejdi}
+                title={s.label}
+                aria-label={s.label}
+                className={`mx-auto grid h-11 w-11 place-items-center rounded-xl ${
+                  aktivna ? "bg-primary/12 text-primary" : "text-foreground/70 hover:bg-secondary"
+                }`}
+              >
+                <Ikona className="h-5 w-5" />
+              </Link>
+            </li>
+          );
+        }
 
         if (s.polozky.length === 0) {
           return (
@@ -194,9 +220,10 @@ export function BocnyPanel({
   aktivnaSekcia,
   aktivnaPolozka,
   domov,
-  zbaleny,
+  zbaleny: zbalenyVstup,
   onZbal,
   pata,
+  pas = false,
 }: {
   sekcie: SekciaPanela[];
   /** `key` sekcie, v ktorej leží otvorená stránka. */
@@ -208,7 +235,10 @@ export function BocnyPanel({
   onZbal: (v: boolean) => void;
   /** Prepínač produktu a čokoľvek, čo patrí na dno panela. */
   pata?: React.ReactNode;
+  /** Dizajn Doklado — vždy úzky pás ikon bez rozbaľovania. */
+  pas?: boolean;
 }) {
+  const zbaleny = pas || zbalenyVstup;
   const { otvorene, prepni: prepniOtvorene, setOtvorene } = useRozbalene(aktivnaSekcia);
 
   function prepni(kluc: string) {
@@ -224,7 +254,7 @@ export function BocnyPanel({
   return (
     <aside
       className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-card lg:flex ${
-        zbaleny ? "w-16" : "w-[220px]"
+        pas ? "w-[72px]" : zbaleny ? "w-16" : "w-[220px]"
       }`}
     >
       <div
@@ -235,7 +265,7 @@ export function BocnyPanel({
         <Link to={domov as any} aria-label="Faktero" className="flex min-w-0 items-center">
           {zbaleny ? <Logo variant="icon" className="h-7 w-7" /> : <Logo className="h-7" />}
         </Link>
-        {!zbaleny && (
+        {!zbaleny && !pas && (
           <button
             onClick={() => onZbal(true)}
             aria-label="Zbaliť panel"
@@ -255,12 +285,13 @@ export function BocnyPanel({
           zbaleny={zbaleny}
           otvorene={otvorene}
           onPrepni={prepni}
+          pas={pas}
         />
       </nav>
 
       <div className="shrink-0 border-t border-border p-2">
         {pata}
-        {zbaleny && (
+        {zbaleny && !pas && (
           <button
             onClick={() => onZbal(false)}
             aria-label="Rozbaliť panel"
