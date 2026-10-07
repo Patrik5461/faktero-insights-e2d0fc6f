@@ -80,10 +80,10 @@ describe("odpoveď Pohody", () => {
 });
 
 describe("žiadosť do Pohody", () => {
-  it("samostatný súbor má menný priestor list a šesť položiek", () => {
+  it("samostatný súbor má menný priestor list a osem položiek (aj bankové účty a zákazky)", () => {
     const x = ziadostCiselnikov("12345678");
     expect(x).toContain('xmlns:lst="http://www.stormware.cz/schema/version_2/list.xsd"');
-    expect(x.match(/<dat:dataPackItem /g)).toHaveLength(6);
+    expect(x.match(/<dat:dataPackItem /g)).toHaveLength(8);
   });
 
   it("do dávky sa pridá raz a s menným priestorom", () => {
@@ -189,5 +189,26 @@ describe("členenie DPH na výber", () => {
     const { ponukaClenenia } = await import("./predkontacie");
     const vlastne = [{ kod: "PDzjed", popis: "zjednodušený", agenda: "", ucty: null }];
     expect(ponukaClenenia(vlastne, "prijata")).toEqual(vlastne);
+  });
+});
+
+describe("zákazky a bankové účty z Pohody", () => {
+  it("rozoberie listContract aj listBankAccount", () => {
+    const xml = `<rsp:responsePack><rsp:responsePackItem>
+      <lCon:listContract><lCon:contract version="2.0"><con:contractDesc>
+        <con:id>7</con:id><con:number><typ:numberRequested>ZAK2026-01</typ:numberRequested></con:number>
+        <con:text>Rekonštrukcia bytu Žilina</con:text></con:contractDesc></lCon:contract></lCon:listContract>
+      <lst:listBankAccount><lst:bankAccount version="2.0"><bka:bankAccountHeader>
+        <bka:id>2</bka:id><bka:ids>TB</bka:ids><bka:numberAccount>2620000000</bka:numberAccount><bka:codeBank>1100</bka:codeBank>
+        <bka:nameBank>Tatra banka</bka:nameBank><bka:IBAN>SK3111000000002620000000</bka:IBAN><bka:analyticAccount>221001</bka:analyticAccount>
+      </bka:bankAccountHeader></lst:bankAccount></lst:listBankAccount>
+    </rsp:responsePackItem></rsp:responsePack>`;
+    const z = rozoberCiselnikyPohody(xml, new Date("2026-10-07"));
+    expect(z.find((x) => x.druh === "zakazka")).toMatchObject({ kod: "ZAK2026-01", popis: "Rekonštrukcia bytu Žilina" });
+    expect(z.find((x) => x.druh === "bankovy_ucet")).toMatchObject({
+      kod: "TB",
+      popis: "SK3111000000002620000000 · Tatra banka",
+      ucet_md: "221001",
+    });
   });
 });

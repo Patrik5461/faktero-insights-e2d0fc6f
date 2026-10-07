@@ -10,7 +10,14 @@
 */
 
 export type DruhCiselnika =
-  "predkontacia" | "clenenie_dph" | "stredisko" | "cinnost" | "ciselny_rad" | "pokladna";
+  | "predkontacia"
+  | "clenenie_dph"
+  | "stredisko"
+  | "cinnost"
+  | "ciselny_rad"
+  | "pokladna"
+  | "zakazka"
+  | "bankovy_ucet";
 
 /** Druhy číselníka v poradí záložiek, s názvom pre ľudí. */
 export const DRUHY_CISELNIKA: { kod: DruhCiselnika; nazov: string; jednotne: string }[] = [
@@ -20,6 +27,8 @@ export const DRUHY_CISELNIKA: { kod: DruhCiselnika; nazov: string; jednotne: str
   { kod: "cinnost", nazov: "Činnosti", jednotne: "činnosť" },
   { kod: "ciselny_rad", nazov: "Číselné rady", jednotne: "číselný rad" },
   { kod: "pokladna", nazov: "Pokladne", jednotne: "pokladňu" },
+  { kod: "zakazka", nazov: "Zákazky", jednotne: "zákazku" },
+  { kod: "bankovy_ucet", nazov: "Bankové účty", jednotne: "bankový účet" },
 ];
 
 export type ZaznamCiselnika = {
@@ -211,6 +220,16 @@ ${o}<dat:dataPackItem id="CIS-RADY" version="2.0">
 ${o}  <lst:listNumericalSeriesRequest version="2.0" numericalSeriesVersion="2.0">
 ${o}    <lst:requestNumericalSeries/>
 ${o}  </lst:listNumericalSeriesRequest>
+${o}</dat:dataPackItem>
+${o}<dat:dataPackItem id="CIS-BANKOVE-UCTY" version="2.0">
+${o}  <lst:listBankAccountRequest version="2.0" bankAccountVersion="2.0">
+${o}    <lst:requestBankAccount/>
+${o}  </lst:listBankAccountRequest>
+${o}</dat:dataPackItem>
+${o}<dat:dataPackItem id="CIS-ZAKAZKY" version="2.0">
+${o}  <lCon:listContractRequest xmlns:lCon="http://www.stormware.cz/schema/version_2/list_contract.xsd" version="2.0" contractVersion="2.0">
+${o}    <lCon:requestContract/>
+${o}  </lCon:listContractRequest>
 ${o}</dat:dataPackItem>`;
 }
 
@@ -373,6 +392,43 @@ export function rozoberCiselnikyPohody(xml: string, dnes = new Date()): ZaznamCi
       ucet_d: null,
       pohoda_id: orez(prvok(telo, "id"), 20),
       aktivne: !rok || Number(rok) >= dnes.getFullYear() - 1,
+    });
+  }
+  /*
+    Zákazky: zoznam `itemContract` (code, name) alebo celé zákazky
+    `contractDesc` s číslom a textom. Bankové účty: `bankAccountHeader`
+    so skratkou (ids), ktorou sa účet zadáva na doklad, a IBAN-om.
+  */
+  const reZak = /<(?:[\w.-]+:)?itemContract\b([^>]*?)\/?>/gi;
+  while ((m = reZak.exec(xml))) {
+    const a = atributy(m[1]);
+    const kod = orez(a.code, 30);
+    if (!kod) continue;
+    out.push({ druh: "zakazka", kod, popis: orez(a.name, 200), agenda: "", ucet_md: null, ucet_d: null, pohoda_id: orez(a.id, 20), aktivne: true });
+  }
+  const reZakDesc = /<(?:[\w.-]+:)?contractDesc\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?contractDesc>/gi;
+  while ((m = reZakDesc.exec(xml))) {
+    const telo = m[1];
+    const cislo = /<(?:[\w.-]+:)?number\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?number>/i.exec(telo)?.[1] ?? "";
+    const kod = orez(prvok(cislo, "numberRequested") || prvok(cislo, "ids") || cislo.replace(/<[^>]+>/g, "").trim(), 30);
+    if (!kod) continue;
+    out.push({ druh: "zakazka", kod, popis: orez(prvok(telo, "text"), 200), agenda: "", ucet_md: null, ucet_d: null, pohoda_id: orez(prvok(telo, "id"), 20), aktivne: true });
+  }
+  const reBka = /<(?:[\w.-]+:)?bankAccountHeader\b[^>]*>([\s\S]*?)<\/(?:[\w.-]+:)?bankAccountHeader>/gi;
+  while ((m = reBka.exec(xml))) {
+    const telo = m[1];
+    const kod = orez(prvok(telo, "ids"), 30);
+    if (!kod) continue;
+    const ucet = prvok(telo, "IBAN") || [prvok(telo, "numberAccount"), prvok(telo, "codeBank")].filter(Boolean).join("/");
+    out.push({
+      druh: "bankovy_ucet",
+      kod,
+      popis: orez([ucet, prvok(telo, "nameBank"), prvok(telo, "currencyBankAccount")].filter(Boolean).join(" · "), 200),
+      agenda: "",
+      ucet_md: orez(prvok(telo, "analyticAccount"), 20),
+      ucet_d: null,
+      pohoda_id: orez(prvok(telo, "id"), 20),
+      aktivne: prvok(telo, "cancelled") !== "true",
     });
   }
   return bezDuplicit(out);

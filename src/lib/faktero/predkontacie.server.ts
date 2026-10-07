@@ -84,7 +84,7 @@ export async function ulozCiselnikyZPohody(
   const { rozoberCiselnikyPohody } = await import("./predkontacie");
   const zaznamy = rozoberCiselnikyPohody(vstup.xml);
   const maZoznam =
-    /listAccounting(Double|Single)Entry\b|listClassificationVAT\b|listCentre\b|listActivity\b|listNumericalSeries\b/.test(
+    /listAccounting(Double|Single)Entry\b|listClassificationVAT\b|listCentre\b|listActivity\b|listNumericalSeries\b|listContract\b|listBankAccount\b/.test(
       vstup.xml,
     );
   if (!zaznamy.length && !maZoznam) return null;
@@ -93,8 +93,9 @@ export async function ulozCiselnikyZPohody(
     companyId: vstup.companyId,
     zaznamy,
     zdroj: "pohoda",
-    uplne: ["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad"],
+    uplne: ["predkontacia", "clenenie_dph", "stredisko", "cinnost", "ciselny_rad", "bankovy_ucet"],
   });
+  await zakazkyZCiselnika(supabase, vstup.companyId, zaznamy);
   await supabase
     .from("companies")
     .update({ pohoda_nacitat_ciselniky: false, pohoda_ciselniky_nacitane_at: new Date().toISOString() })
@@ -106,6 +107,23 @@ export async function ulozCiselnikyZPohody(
     ostatnych: zaznamy.filter((z) => !["predkontacia", "clenenie_dph"].includes(z.druh)).length,
     vypnutych: r.vypnutych,
   };
+}
+
+/**
+ * Zákazky z Pohody sa založia aj ako zákazky Faktera (číslo = kód v Pohode),
+ * aby sa dali vyberať na dokladoch a export ich poslal pod rovnakým číslom.
+ * Existujúce sa nemenia.
+ */
+export async function zakazkyZCiselnika(supabase: Klient, companyId: string, zaznamy: ZaznamCiselnika[]) {
+  const zak = zaznamy.filter((z) => z.druh === "zakazka");
+  if (!zak.length) return 0;
+  const { data: jestvujuce } = await supabase.from("jobs").select("job_number").eq("company_id", companyId);
+  const uz = new Set((jestvujuce ?? []).map((j: any) => String(j.job_number).trim().toLowerCase()));
+  const nove = zak
+    .filter((z) => !uz.has(z.kod.trim().toLowerCase()))
+    .map((z) => ({ company_id: companyId, job_number: z.kod, name: z.popis || z.kod }));
+  if (nove.length) await supabase.from("jobs").insert(nove);
+  return nove.length;
 }
 
 /**
