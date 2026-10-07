@@ -146,6 +146,7 @@ export async function nastaveniaDokladov(
   const { zakladnaAdresa } = await import("./pohoda-konektor.server");
   const out: Record<string, unknown> = {
     stredisko: company.pohoda_stredisko,
+    clenenieDphPdpPrijata: company.pohoda_clenenie_dph_prijata_pdp,
     radPrijate: company.pohoda_rad_prijate,
     radDoklady: company.pohoda_rad_doklady,
     radPokladna: company.pohoda_rad_pokladna,

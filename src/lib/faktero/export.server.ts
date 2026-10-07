@@ -173,6 +173,8 @@ export type PohodaNastavenia = {
   predkontaciaPrijata?: string | null;
   /** Členenie DPH pre prijatý doklad. */
   clenenieDphPrijata?: string | null;
+  /** Členenie DPH pre prijaté plnenie v prenesení daňovej povinnosti. */
+  clenenieDphPdpPrijata?: string | null;
   /** Predkontácia pre bloček a výdavkový doklad; prázdna = ako prijatá faktúra. */
   predkontaciaDoklady?: string | null;
   /** Členenie DPH pre bloček a výdavkový doklad; prázdne = ako prijatá faktúra. */
@@ -1057,10 +1059,21 @@ export function polozkyDokladov(opts: {
         nastavenia?.pomeryPredkontacii,
       );
       const rozuctovany = jeRozuctovane(rozuct);
-      const predkontacia = rozuctovany
-        ? nastavenia?.predkontaciaRozuctovat?.trim() ||
-          (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")
-        : predkontaciaJedna;
+      /*
+        Prijatá faktúra s položkami, ktoré sedia so súčtami, ide do Pohody
+        po položkách — so sadzbou DPH pri každej a prenesené položky
+        (§ 69 ods. 12) s vlastným členením DPH a KV B1.
+      */
+      const polozkyFaktury: any[] =
+        !rozuctovany && Array.isArray(d?._polozkyPrijatej) ? d._polozkyPrijatej : [];
+      const kodPolozky = (x: any) => x.predkontacia || predkontaciaJedna || "";
+      const rozuctovanePolozky =
+        polozkyFaktury.length > 0 && new Set(polozkyFaktury.map(kodPolozky)).size > 1;
+      const predkontacia =
+        rozuctovany || rozuctovanePolozky
+          ? nastavenia?.predkontaciaRozuctovat?.trim() ||
+            (krajinaDane(company.country) === "CZ" ? "Rozúčtovat" : "Rozúčtovať")
+          : predkontaciaJedna;
       const clenenie = rozuctovany ? null : clenenieJedno;
 
       /*
@@ -1096,6 +1109,43 @@ export function polozkyDokladov(opts: {
       */
       const polozkyBlocku: any[] =
         nastavenia?.polozkyBlockov && blocek && Array.isArray(d?.items) ? d.items : [];
+      const xmlPolozkyFaktury = polozkyFaktury.length
+        ? `
+      <${p}:${koren}Detail>${polozkyFaktury
+        .map((x: any) => {
+          const cl = x.pdp ? nastavenia?.clenenieDphPdpPrijata || x.clenenie : x.clenenie;
+          const kvx = x.pdp ? "B1" : "";
+          const pk = rozuctovanePolozky ? kodPolozky(x) : x.predkontacia;
+          return `
+        <${p}:${koren}Item>${el(`${p}:text`, skrat(x.nazov, 90), "          ")}
+          <${p}:quantity>${x.mnozstvo}</${p}:quantity>${el(`${p}:unit`, skrat(x.mj, 10), "          ")}
+          <${p}:payVAT>false</${p}:payVAT>
+          <${p}:rateVAT>${kodSadzby(x.sadzba, tab)}</${p}:rateVAT>
+          <${p}:homeCurrency>${elSuma("typ:unitPrice", x.cena, "            ")}${elSuma(
+            "typ:price",
+            x.zaklad,
+            "            ",
+          )}${elSuma("typ:priceVAT", x.dph, "            ")}${elSuma(
+            "typ:priceSum",
+            x.zaklad + x.dph,
+            "            ",
+          )}
+          </${p}:homeCurrency>${
+            pk ? `\n          <${p}:accounting><typ:ids>${esc(pk)}</typ:ids></${p}:accounting>` : ""
+          }${
+            cl
+              ? `\n          <${p}:classificationVAT><typ:ids>${esc(cl)}</typ:ids></${p}:classificationVAT>`
+              : ""
+          }${
+            kvx
+              ? `\n          <${p}:classificationKVDPH><typ:ids>${esc(kvx)}</typ:ids></${p}:classificationKVDPH>`
+              : ""
+          }
+        </${p}:${koren}Item>`;
+        })
+        .join("")}
+      </${p}:${koren}Detail>`
+        : "";
       const polozkyRozuct = rozuctovany
         ? `
       <${p}:${koren}Detail>${rozuct
@@ -1253,7 +1303,7 @@ export function polozkyDokladov(opts: {
               }</typ:paymentType></inv:paymentType>`
             : ""
         }
-      </${p}:${koren}Header>${polozkyRozuct}
+      </${p}:${koren}Header>${xmlPolozkyFaktury || polozkyRozuct}
       <${p}:${koren}Summary>
         <${p}:homeCurrency>${elSuma("typ:priceNone", zaklad(s0), "          ")}${elSuma(
           "typ:price3",

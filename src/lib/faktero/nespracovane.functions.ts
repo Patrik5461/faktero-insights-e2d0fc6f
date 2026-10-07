@@ -155,6 +155,28 @@ export const ulozNespracovaneFn = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Prečíta doklad znova a doplní, čo v údajoch chýba (VS, IBAN, splatnosť,
+ * adresa…). Vyplnené sa neprepisuje. Beží na pozadí, detail sa doptáva.
+ */
+export const docitajNespracovanyFn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const supabase = context.supabase as any;
+    const { data: r, error } = await supabase
+      .from("nespracovane_doklady")
+      .update({ stav: "cita", chyba: null })
+      .eq("id", data.id)
+      .not("file_path", "is", null)
+      .select("id");
+    if (error) throw new Error(error.message);
+    if (!r?.length) throw new Error("Doklad nemá súbor, z ktorého by sa dalo čítať.");
+    const { vytazNespracovany } = await import("./nespracovane.server");
+    void vytazNespracovany(data.id);
+    return { ok: true };
+  });
+
 export const vytvorZNespracovanehoFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((d: unknown) => z.object({ id: z.string().uuid(), druh: DRUH, udaje: UdajeVstup }).parse(d))
@@ -282,5 +304,14 @@ export const blocekDoNespracovanychFn = createServerFn({ method: "POST" })
     }
     await supabase.from("expense_documents").delete().eq("id", e.id);
     if (e.file_path) await supabase.storage.from("expense-receipts").remove([e.file_path]);
+    /*
+      Bločkové čítanie nepozná VS, IBAN, splatnosť ani adresu — faktúra zo
+      skenera ich preto nemala. Dočíta ich faktúrové čítanie na pozadí;
+      doplní len prázdne polia.
+    */
+    if (cesta) {
+      const { vytazNespracovany } = await import("./nespracovane.server");
+      void vytazNespracovany(id);
+    }
     return { id };
   });

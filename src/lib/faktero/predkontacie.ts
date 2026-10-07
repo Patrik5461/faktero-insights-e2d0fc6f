@@ -109,6 +109,14 @@ export const PREDVOLENE: {
     smer: "vstup",
   },
   {
+    kluc: "prijata_pdp",
+    nazov: "Prijatá faktúra — prenesenie daňovej povinnosti",
+    predkontacia: "",
+    clenenie: "pohoda_clenenie_dph_prijata_pdp",
+    agendy: ["receivedInvoice"],
+    smer: "vstup",
+  },
+  {
     kluc: "doklady",
     nazov: "Bloček a výdavkový doklad",
     predkontacia: "pohoda_predkontacia_doklady",

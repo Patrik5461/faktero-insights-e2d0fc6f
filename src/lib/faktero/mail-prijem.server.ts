@@ -93,6 +93,12 @@ Pridaj ADRESU DODÁVATEĽA: "supplier_street" (ulica a číslo), "supplier_city"
 (napr. „Stavebné práce za október"), bez názvu dodávateľa.
 Dátumy vždy v tvare YYYY-MM-DD; splatnosť ("due_date") hľadaj aj pod „Dátum splatnosti",
 „Splatné do", „Splatnosť".
+Variabilný symbol ("variable_symbol") hľadaj pod „Variabilný symbol", „Var. symbol", „VS",
+„Variabilní symbol" aj v platobných údajoch či pri QR kóde; vráť len číslice.
+Prenesenie daňovej povinnosti: keď je na faktúre text „prenesenie daňovej povinnosti",
+„§ 69 ods. 12", „reverse charge" alebo „daň odvedie odberateľ", daj "reverse_charge": true
+pre celú faktúru, inak false. Keď sa to týka len niektorých položiek (napr. stavebné práce,
+kovový šrot, roxor), daj "reverse_charge": true k tým položkám v "items" a celé faktúre false.
 
 Najprv rozhodni "document_type":
 - "faktura" — faktúra, zálohová faktúra, dobropis, blok, účtenka: doklad o nákupe tovaru či služby.

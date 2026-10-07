@@ -4,12 +4,13 @@ import { useVzhladNespracovanych } from "@/hooks/useVzhladNespracovanych";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Trash2, ExternalLink, RefreshCw } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { NahladPdf } from "@/components/faktero/NahladPdf";
 import { PoliaZauctovania, type Navrhy } from "@/components/faktero/ZauctovaniePanel";
 import {
   detailNespracovanehoFn,
+  docitajNespracovanyFn,
   ulozNespracovaneFn,
   vytvorZNespracovanehoFn,
   zmazNespracovaneFn,
@@ -45,6 +46,7 @@ function Detail() {
   const uloz = useServerFn(ulozNespracovaneFn);
   const vytvor = useServerFn(vytvorZNespracovanehoFn);
   const zmaz = useServerFn(zmazNespracovaneFn);
+  const docitaj = useServerFn(docitajNespracovanyFn);
   const nacitajNavrhy = useServerFn(navrhyKodovFn);
 
   const [d, setD] = useState<Awaited<ReturnType<typeof nacitaj>> | null>(null);
@@ -177,8 +179,36 @@ function Detail() {
     }
   }
 
+  // Uloží rozpracované a nechá doklad prečítať znova — doplnia sa len prázdne polia.
+  async function docitajDoklad() {
+    if (!u) return;
+    setBusy(true);
+    try {
+      await uloz({ data: { id, druh: druh || null, udaje: u as any } });
+      await docitaj({ data: { id } });
+      await obnov();
+      toast.success("Čítam doklad znova — chýbajúce údaje sa doplnia");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   // Prepínač rozloženia — voľba sa pamätá v účte používateľa.
   const prepinac = (
+    <div className="flex flex-wrap items-center gap-2">
+      {d.subor.url && d.stav !== "cita" ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void docitajDoklad()}
+          title="Prečíta doklad znova a doplní chýbajúce údaje (VS, IBAN, splatnosť, adresu). Vyplnené neprepíše."
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-secondary disabled:opacity-60"
+        >
+          <RefreshCw className="h-3.5 w-3.5" /> Dočítať z dokladu
+        </button>
+      ) : null}
     <div className="inline-flex rounded-lg border border-border p-0.5 text-xs" role="group" aria-label="Rozloženie">
       {(
         [
@@ -196,6 +226,7 @@ function Detail() {
           {n}
         </button>
       ))}
+    </div>
     </div>
   );
   const nadpis = u.dodavatel.nazov ? `${u.dodavatel.nazov}${u.cislo ? ` — ${u.cislo}` : ""}` : "Nespracovaný doklad";

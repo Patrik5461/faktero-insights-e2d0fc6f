@@ -1203,6 +1203,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          pohoda_clenenie_dph_prijata_pdp: string | null
           uctovny_program: string
           uctovanie_nastavenia: Json
           city: string | null
@@ -1296,6 +1297,7 @@ export type Database = {
           poznamky_sablony: string[]
         }
         Insert: {
+          pohoda_clenenie_dph_prijata_pdp?: string | null
           uctovny_program?: string
           uctovanie_nastavenia?: Json
           city?: string | null
@@ -1389,6 +1391,7 @@ export type Database = {
           poznamky_sablony?: string[]
         }
         Update: {
+          pohoda_clenenie_dph_prijata_pdp?: string | null
           uctovny_program?: string
           uctovanie_nastavenia?: Json
           city?: string | null

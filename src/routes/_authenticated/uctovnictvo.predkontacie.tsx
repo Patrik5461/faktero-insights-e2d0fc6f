@@ -237,7 +237,7 @@ function Predvolene({
                       vyber
                     />
                   ) : (
-                    <span className="text-xs text-muted-foreground">ako vydaná faktúra</span>
+                    <span className="text-xs text-muted-foreground">{p.smer === "vstup" ? "ako prijatá faktúra" : "ako vydaná faktúra"}</span>
                   )}
                 </td>
                 <td className="py-2">

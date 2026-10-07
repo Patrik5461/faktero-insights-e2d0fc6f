@@ -1,3 +1,4 @@
+import { sadzbyKrajiny } from "./vat-rates";
 import { riadkySoZlavou } from "./zlavy";
 import { prepocitajPolozku, sumySamofaktury, zapocitatelna } from "./samofakturacia";
 /**
@@ -248,16 +249,53 @@ export async function nacitajVstup(
       cudziaP && maPrepocet
         ? Number(p.amount_without_vat_eur ?? 0)
         : Number(p.amount_without_vat ?? 0);
+    /*
+      Zmiešaná faktúra (časť položiek v prenesení daňovej povinnosti, § 69
+      ods. 12 — napr. roxor): prenesená časť sa samozdaní základnou sadzbou
+      (r. 09/10, odpočet r. 19, KV B.1), zvyšok ide ako tuzemský nákup.
+    */
+    const rozpisP = cudziaP ? [] : rozpisPrijatej(p);
+    const prenesene = rozpisP.filter((x) => x.pdp);
+    if (prenesene.length && !p.opravuje_cislo) {
+      const zakladna = sadzbyKrajiny("SK", String(den))[0] ?? 23;
+      prijate.push({
+        cislo: String(p.invoice_number ?? ""),
+        dodavatelNazov: p.supplier_name,
+        dodavatelIcDph: p.supplier_ic_dph,
+        dodavatelDic: p.supplier_dic,
+        datumDodania: String(den),
+        rezim: "samozdanenie",
+        odpocet: p.odpocet !== false,
+        opravujeCislo: null,
+        riadky: prenesene.map((x) => {
+          const s = Number(x.sadzba) > 0 ? Number(x.sadzba) : zakladna;
+          return { sadzba: s, zaklad: x.zaklad, dan: Math.round(x.zaklad * s) / 100 };
+        }),
+        kv: "B1",
+      });
+    }
+    const tuzemske = prenesene.length ? rozpisP.filter((x) => !x.pdp) : null;
+    const rezimP = (p.dph_rezim as PrijataFaktura["rezim"]) ?? odvodRezimPrijatej(p.supplier_ic_dph, dan);
+    // Celá prenesená faktúra už ide vyššie; druhý, prázdny záznam by KV zdvojil.
+    if (tuzemske && !tuzemske.length) continue;
     prijate.push({
       cislo: String(p.invoice_number ?? ""),
       dodavatelNazov: p.supplier_name,
       dodavatelIcDph: p.supplier_ic_dph,
       dodavatelDic: p.supplier_dic,
       datumDodania: String(den),
-      rezim: (p.dph_rezim as PrijataFaktura["rezim"]) ?? odvodRezimPrijatej(p.supplier_ic_dph, dan),
+      rezim: rezimP,
       odpocet: p.odpocet !== false,
       opravujeCislo: p.opravuje_cislo,
-      riadky: riadkyPrijatej(p, zaklad, dan, den, cudziaP),
+      riadky: tuzemske
+        ? tuzemske.map((x) => ({ sadzba: x.sadzba, zaklad: x.zaklad, dan: x.dph }))
+        : rezimP === "samozdanenie" && !dan && zaklad
+          ? // Faktúra v prenesení nesie nulovú daň; odberateľ ju samozdaní základnou sadzbou.
+            (() => {
+              const sz = sadzbyKrajiny("SK", String(den))[0] ?? 23;
+              return [{ sadzba: sz, zaklad, dan: Math.round(zaklad * sz) / 100 }];
+            })()
+          : riadkyPrijatej(p, zaklad, dan, den, cudziaP),
       kv: p.kv_clenenie,
       podielOdpoctu: podiel(
         p,

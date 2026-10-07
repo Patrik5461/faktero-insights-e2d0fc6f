@@ -10,6 +10,7 @@ import {
   ostatnyZUdajov,
   prijataZUdajov,
   udajeZAi,
+  doplnUdaje,
   type DruhNespracovaneho,
   type UdajeNespracovaneho,
 } from "./nespracovane";
@@ -81,7 +82,7 @@ export async function vytazNespracovany(id: string): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: r } = await supabaseAdmin
     .from("nespracovane_doklady")
-    .select("id, file_path, file_mime, file_name, druh, udaje")
+    .select("id, file_path, file_mime, file_name, druh, udaje, ai")
     .eq("id", id)
     .maybeSingle();
   if (!r?.file_path) return;
@@ -97,11 +98,13 @@ export async function vytazNespracovany(id: string): Promise<void> {
     await supabaseAdmin
       .from("nespracovane_doklady")
       .update({
-        ai: ai as any,
-        stav: ai ? "vytazene" : "chyba",
-        chyba: ai ? null : "Z dokladu sa nič nedalo prečítať — doplňte údaje ručne.",
+        ai: (ai ?? r.ai ?? null) as any,
+        stav: ai || r.ai || povodne.cislo || povodne.dodavatel.nazov ? "vytazene" : "chyba",
+        chyba: ai || r.ai || povodne.cislo || povodne.dodavatel.nazov ? null : "Z dokladu sa nič nedalo prečítať — doplňte údaje ručne.",
         druh: r.druh ?? navrhDruhu(ai, r.file_name),
-        udaje: (povodne.dodavatel.nazov || povodne.cislo ? povodne : udajeZAi(ai, dnes)) as any,
+        udaje: (povodne.dodavatel.nazov || povodne.cislo
+          ? doplnUdaje(povodne, udajeZAi(ai, dnes))
+          : udajeZAi(ai, dnes)) as any,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id);

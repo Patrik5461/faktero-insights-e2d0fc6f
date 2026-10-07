@@ -65,7 +65,18 @@ export type UdajeNespracovaneho = {
     rad: string;
     intPoznamka: string;
   };
-  polozky: { name: string; quantity: number | null; unit: string | null; unit_price: number | null; vat_rate: number | null; total: number | null }[];
+  polozky: {
+    name: string;
+    quantity: number | null;
+    unit: string | null;
+    unit_price: number | null;
+    vat_rate: number | null;
+    total: number | null;
+    /** Položka v prenesení daňovej povinnosti (§ 69 ods. 12). */
+    pdp?: boolean;
+  }[];
+  /** Celá faktúra je v prenesení daňovej povinnosti. */
+  prenesenie?: boolean;
 };
 
 const r2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
@@ -178,6 +189,37 @@ export function rozpisZAi(ai: Record<string, unknown> | null | undefined): Riado
   return [{ sadzba: zz ? najblizsiaSadzba((dd / zz) * 100, "SK") : 0, zaklad: zz, dph: dd }];
 }
 
+/**
+ * Variabilný symbol: čo je na doklade (bez medzier, najviac 10 číslic), inak
+ * číslo faktúry, keď je celé z číslic — tak to robí väčšina slovenských
+ * dodávateľov a bez VS sa platba s faktúrou nespáruje.
+ */
+export function vsDokladu(vs: unknown, cislo: string): string {
+  const z = t(vs, 40).replace(/\s/g, "").replace(/^VS:?/i, "");
+  if (/^\d{1,10}$/.test(z)) return z;
+  if (z) return z.slice(0, 20);
+  const c = cislo.replace(/\s/g, "");
+  return /^\d{1,10}$/.test(c) ? c : "";
+}
+
+/**
+ * Doplní do už vyplnených údajov to, čo v nich chýba (VS, IBAN, splatnosť,
+ * adresa, popis…), z nového vyťaženia. Vyplnené sa neprepisuje — napríklad
+ * údaje z bločkového čítania, ktoré si človek mohol už opraviť.
+ */
+export function doplnUdaje(povodne: UdajeNespracovaneho, nove: UdajeNespracovaneho): UdajeNespracovaneho {
+  const u = { ...povodne, dodavatel: { ...povodne.dodavatel } };
+  for (const k of Object.keys(u.dodavatel) as (keyof UdajeNespracovaneho["dodavatel"])[])
+    if (!u.dodavatel[k] && nove.dodavatel[k]) u.dodavatel[k] = nove.dodavatel[k];
+  for (const k of ["cislo", "popis", "splatnost", "datumVystavenia", "datumDodania"] as const)
+    if (!u[k] && nove[k]) u[k] = nove[k];
+  if (!u.vs) u.vs = nove.vs || vsDokladu(null, u.cislo);
+  if (!u.rozpis.length && nove.rozpis.length) u.rozpis = nove.rozpis;
+  if (u.celkom == null && nove.celkom != null) u.celkom = nove.celkom;
+  if (!u.polozky.length && nove.polozky.length) u.polozky = nove.polozky;
+  return u;
+}
+
 /** Údaje formulára predvyplnené z vyťaženia. */
 export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: string): UdajeNespracovaneho {
   const u = prazdneUdaje();
@@ -195,7 +237,7 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
   };
   u.cislo = t(ai.invoice_number, 60);
   u.popis = t(ai.description, 240);
-  u.vs = t(ai.variable_symbol, 20);
+  u.vs = vsDokladu(ai.variable_symbol, u.cislo);
   u.datumVystavenia = vystavenie || dnes;
   u.datumDodania = vystavenie || dnes;
   u.splatnost = datum(ai.due_date) || datum(ai.other_due_date);
@@ -212,7 +254,9 @@ export function udajeZAi(ai: Record<string, unknown> | null | undefined, dnes: s
       unit_price: num(p.unit_price),
       vat_rate: num(p.vat_rate),
       total: num(p.total),
+      ...(p.reverse_charge === true ? { pdp: true } : {}),
     }));
+  u.prenesenie = ai.reverse_charge === true;
   u.ostatny = {
     druh: t(ai.other_kind, 30) || "ine",
     predmet: t(ai.other_subject, 500),
@@ -299,6 +343,8 @@ export function prijataZUdajov(
     category: prazdne(u.kategoria),
     note: prazdne(u.poznamka),
     items: u.polozky.length ? u.polozky : null,
+    // Celá faktúra v prenesení: odberateľ daň samozdaní (KV B.1).
+    ...(u.prenesenie ? { reverse_charge: true, dph_rezim: "samozdanenie" } : {}),
     job_id: prazdne(u.jobId),
     pohoda_predkontacia: prazdne(u.kody.predkontacia),
     pohoda_clenenie_dph: prazdne(u.kody.clenenie),
