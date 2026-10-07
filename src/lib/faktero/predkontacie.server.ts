@@ -31,7 +31,8 @@ export async function ulozCiselnik(
     ucet_md: z.ucet_md,
     ucet_d: z.ucet_d,
     pohoda_id: z.pohoda_id,
-    aktivne: z.aktivne,
+    // Predkontácie sa pri importe vždy zapnú — vypína ich len človek.
+    aktivne: z.druh === "predkontacia" ? true : z.aktivne,
     zdroj: vstup.zdroj,
     updated_at: teraz,
   }));
@@ -44,7 +45,9 @@ export async function ulozCiselnik(
   }
 
   let vypnutych = 0;
-  for (const druh of vstup.uplne ?? []) {
+  // Predkontácie sa importom nevypínajú: súbor z jednej agendy Pohody
+  // (pokladňa, interné doklady…) neobsahuje kódy ostatných agend.
+  for (const druh of (vstup.uplne ?? []).filter((d) => d !== "predkontacia")) {
     const pritomne = new Set(
       vstup.zaznamy.filter((z) => z.druh === druh).map((z) => `${z.kod}|${z.agenda}`),
     );
