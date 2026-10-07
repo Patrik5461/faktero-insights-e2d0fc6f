@@ -150,6 +150,13 @@ export async function vytvorDoklad(
   }
   const mime = r.file_mime ?? "application/pdf";
   const pripona = priponaSuboru(r.file_name, mime);
+  // Predmet mailu a kto doklad nahral — podľa nich vedia zaúčtovať pravidlá.
+  let predmetMailu: string | null = null;
+  if (r.inbox_message_id) {
+    const { data: m } = await supabase.from("inbox_messages").select("subject").eq("id", r.inbox_message_id).maybeSingle();
+    predmetMailu = m?.subject ?? null;
+  }
+  const autor = r.created_by ?? userId;
 
   let vysledok: { agenda: "prijata" | "doklad" | "ostatny"; id: string };
   if (druh === "faktura" || druh === "zalohova" || druh === "dobropis") {
@@ -165,7 +172,8 @@ export async function vytvorDoklad(
       .insert({
         ...zakl,
         company_id: r.company_id,
-        created_by: userId,
+        created_by: autor,
+        predmet_mailu: predmetMailu,
         status: "received",
         source: ZDROJ_PRIJATEJ[r.zdroj] ?? "nahrate",
         file_path: cesta,
@@ -210,8 +218,9 @@ export async function vytvorDoklad(
       .from("expense_documents")
       .insert({
         ...blocekZUdajov(u),
+        predmet_mailu: predmetMailu,
         company_id: r.company_id,
-        created_by: userId,
+        created_by: autor,
         // Človek ho práve skontroloval — je spracovaný.
         status: "processed",
         processed_at: teraz,

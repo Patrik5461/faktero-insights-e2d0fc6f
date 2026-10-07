@@ -1,3 +1,4 @@
+import { menaClenovFirmy } from "@/lib/faktero/invitations.functions";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -17,6 +18,8 @@ import {
   chybaPravidla,
   naUlozenie,
   popisPravidla,
+  PREMENNE_POZNAMKY,
+  premennePoznamky,
   pravidloSedi,
   type DokladNaPorovnanie,
   type Pravidlo,
@@ -48,6 +51,15 @@ const vstup = "mt-1 h-9 w-full rounded-md border border-input bg-background px-2
 function PravidlaPage() {
   const cid = useMemo(() => getActiveCompanyId(), []);
   const [pravidla, setPravidla] = useState<Riadok[] | null>(null);
+  const nacitajMena = useServerFn(menaClenovFirmy);
+  const [mena, setMena] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!cid) return;
+    nacitajMena({ data: { company_id: cid } })
+      .then((m) => setMena(m as Record<string, string>))
+      .catch(() => setMena({}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cid]);
   const [doklady, setDoklady] = useState<DokladNaPorovnanie[]>([]);
   const [uprava, setUprava] = useState<Pravidlo | null>(null);
   const [mazane, setMazane] = useState<Riadok | null>(null);
@@ -65,7 +77,7 @@ function PravidlaPage() {
       // Na náhľad, koľkých dokladov by sa pravidlo týkalo.
       supabase
         .from("expense_documents")
-        .select("supplier_ico, supplier_name, payment_method")
+        .select("supplier_ico, supplier_name, payment_method, created_by, predmet_mailu")
         .eq("company_id", cid)
         .order("created_at", { ascending: false })
         .limit(1000),
@@ -171,7 +183,7 @@ function PravidlaPage() {
                 </thead>
                 <tbody>
                   {pravidla.map((r) => {
-                    const { ked, doplni } = popisPravidla(r);
+                    const { ked, doplni } = popisPravidla(r, mena);
                     const pocet = doklady.filter((d) =>
                       pravidloSedi({ ...r, aktivne: true }, d),
                     ).length;
@@ -298,6 +310,14 @@ function UpravaPravidla({
       .catch(() => {});
   }, [companyId, nacitajKody]);
   const chyba = chybaPravidla(p);
+  const nacitajMenaClenov = useServerFn(menaClenovFirmy);
+  const [clenovia, setClenovia] = useState<Record<string, string>>({});
+  useEffect(() => {
+    nacitajMenaClenov({ data: { company_id: companyId } })
+      .then((m) => setClenovia(m as Record<string, string>))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
   const sedi = chybaPravidla({ ...p, nazov: p.nazov || "x" })
     ? null
     : doklady.filter((d) => pravidloSedi({ ...p, aktivne: true }, d)).length;
@@ -383,6 +403,30 @@ function UpravaPravidla({
             </select>
           </label>
           <label className="block text-sm">
+            <span className="text-xs text-muted-foreground">Doklad nahral</span>
+            <select
+              value={p.pouzivatel_id ?? ""}
+              onChange={(e) => zmen({ pouzivatel_id: e.target.value || null })}
+              className={vstup}
+            >
+              <option value="">Ktokoľvek</option>
+              {Object.entries(clenovia).map(([id, meno]) => (
+                <option key={id} value={id}>
+                  {meno}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm">
+            <span className="text-xs text-muted-foreground">Predmet mailu obsahuje</span>
+            <input
+              value={p.predmet_text ?? ""}
+              onChange={(e) => zmen({ predmet_text: e.target.value })}
+              placeholder="napr. Orange faktúra"
+              className={vstup}
+            />
+          </label>
+          <label className="block text-sm">
             <span className="text-xs text-muted-foreground">Poradie (menšie vyhráva)</span>
             <input
               type="number"
@@ -454,9 +498,20 @@ function UpravaPravidla({
             <input
               value={p.poznamka ?? ""}
               onChange={(e) => zmen({ poznamka: e.target.value })}
-              placeholder="napr. Služobné auto BA-123XY"
+              placeholder="napr. Telefón #MM-1/YYYY#"
               className={vstup}
             />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Premenné podľa dátumu dokladu:{" "}
+              {PREMENNE_POZNAMKY.map((x) => (
+                <span key={x.kod} className="mr-2 whitespace-nowrap" title={x.popis}>
+                  <code>{x.kod}</code>
+                </span>
+              ))}
+              {p.poznamka?.includes("#") ? (
+                <span className="block">Náhľad: {premennePoznamky(p.poznamka, null)}</span>
+              ) : null}
+            </span>
           </label>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">

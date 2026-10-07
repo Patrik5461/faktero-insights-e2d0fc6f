@@ -3,6 +3,7 @@ import {
   chybaPravidla,
   naUlozenie,
   popisPravidla,
+  premennePoznamky,
   pravidloSedi,
   prvePravidlo,
   type Pravidlo,
@@ -83,5 +84,24 @@ describe("formulár", () => {
       dodavatel_ico: "31322832",
       poznamka: null,
     });
+  });
+});
+
+describe("premenné v poznámke pravidla", () => {
+  it("rovnako ako faktero_premenne_poznamky v databáze", () => {
+    expect(premennePoznamky("Tel #MM-1/YYYY# | #MM/YYYY# | #MMYYYY# | #YYYY#", "2026-01-15")).toBe(
+      "Tel 12/2025 | 01/2026 | 012026 | 2026",
+    );
+    expect(premennePoznamky("#MM-1/YYYY#", "2026-10-07")).toBe("09/2026");
+  });
+  it("pravidlo podľa používateľa a predmetu mailu", () => {
+    const p: any = {
+      nazov: "Orange", poradie: 1, aktivne: true, dodavatel_ico: null, dodavatel_text: null,
+      sposob_uhrady: null, pouzivatel_id: "u1", predmet_text: "orange", kategoria: null,
+      predkontacia: "TEL", clenenie_dph: null, odpocet: null, poznamka: null,
+    };
+    expect(pravidloSedi(p, { supplier_ico: null, supplier_name: null, payment_method: null, created_by: "u1", predmet_mailu: "Faktúra Orange 10/2026" })).toBe(true);
+    expect(pravidloSedi(p, { supplier_ico: null, supplier_name: null, payment_method: null, created_by: "u2", predmet_mailu: "Orange" })).toBe(false);
+    expect(chybaPravidla({ ...p, pouzivatel_id: null, predmet_text: null })).toMatch(/podmienku/);
   });
 });

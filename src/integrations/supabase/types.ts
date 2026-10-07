@@ -2852,6 +2852,7 @@ export type Database = {
           pohoda_pokladna: string | null
           locked_at: string | null
           locked_by: string | null
+          predmet_mailu: string | null
         }
         Insert: {
           processed_at?: string | null
@@ -2901,6 +2902,7 @@ export type Database = {
           pohoda_pokladna?: string | null
           locked_at?: string | null
           locked_by?: string | null
+          predmet_mailu?: string | null
         }
         Update: {
           processed_at?: string | null
@@ -2950,6 +2952,7 @@ export type Database = {
           pohoda_pokladna?: string | null
           locked_at?: string | null
           locked_by?: string | null
+          predmet_mailu?: string | null
         }
         Relationships: [
           {
@@ -5755,6 +5758,7 @@ export type Database = {
           delivery_note_number: string | null
           locked_at: string | null
           locked_by: string | null
+          predmet_mailu: string | null
         }
         Insert: {
           amount_total?: number
@@ -5849,6 +5853,7 @@ export type Database = {
           delivery_note_number?: string | null
           locked_at?: string | null
           locked_by?: string | null
+          predmet_mailu?: string | null
         }
         Update: {
           amount_total?: number
@@ -5943,6 +5948,7 @@ export type Database = {
           delivery_note_number?: string | null
           locked_at?: string | null
           locked_by?: string | null
+          predmet_mailu?: string | null
         }
         Relationships: [
           {
