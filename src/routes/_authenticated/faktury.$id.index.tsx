@@ -1174,6 +1174,13 @@ function InvoiceDetail() {
               mozeMenit={inv.status !== "cancelled"}
               onZmena={setPocetPriloh}
             />
+
+            {/* Zaúčtovanie patrí do širokého stĺpca — v bočnom (320 px) sa polia nezmestili. */}
+            <ZauctovanieVystavenejPanel
+              inv={inv}
+              onZmena={() => void load()}
+              onStiahnut={handlePohodaExport}
+            />
           </div>
 
           <aside className="space-y-4">
@@ -1230,11 +1237,6 @@ function InvoiceDetail() {
               <SchvalovaniePanel companyId={inv.company_id} agenda="vystavena" id={inv.id} onZmena={() => void load()} />
             )}
             <KomentarePanel companyId={inv.company_id} agenda="vystavena" id={inv.id} />
-            <ZauctovanieVystavenejPanel
-              inv={inv}
-              onZmena={() => void load()}
-              onStiahnut={handlePohodaExport}
-            />
             {inv.status === "paid" ? (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100 dark:border-emerald-900/40">
                 <div className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
