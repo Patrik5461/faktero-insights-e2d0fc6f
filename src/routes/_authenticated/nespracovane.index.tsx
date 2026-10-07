@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Loader2, Upload, AlertTriangle, FileText } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/faktero/AppShell";
 import { getActiveCompanyId } from "@/lib/faktero/active-company";
-import { nahrajNespracovaneFn, nespracovaneFn } from "@/lib/faktero/nespracovane.functions";
+import { blocekDoNespracovanychFn, nahrajNespracovaneFn, nespracovaneFn } from "@/lib/faktero/nespracovane.functions";
 import { DRUHY_NESPRACOVANYCH } from "@/lib/faktero/nespracovane";
 
 export const Route = createFileRoute("/_authenticated/nespracovane/")({
@@ -42,6 +42,7 @@ function Stranka() {
   const navigate = useNavigate();
   const nacitaj = useServerFn(nespracovaneFn);
   const nahraj = useServerFn(nahrajNespracovaneFn);
+  const doNespracovanych = useServerFn(blocekDoNespracovanychFn);
   const [data, setData] = useState<Awaited<ReturnType<typeof nacitaj>> | null>(null);
   const [nahravam, setNahravam] = useState(0);
   const [nad, setNad] = useState(false);
@@ -95,7 +96,8 @@ function Stranka() {
 
   const riadky = [
     ...(data?.doklady ?? []).map((d: any) => ({ ...d, kluc: `n-${d.id}` })),
-    ...(data?.blocky ?? []).map((b: any) => ({ ...b, kluc: `b-${b.id}`, stav: "vytazene", druh: "blocek", chyba: null, subor: null })),
+    // Druh bločka zo skenu nie je istý (aj faktúra sa dá naskenovať) — určí sa po otvorení.
+    ...(data?.blocky ?? []).map((b: any) => ({ ...b, kluc: `b-${b.id}`, stav: "vytazene", druh: null, chyba: null, subor: "zo skenu" })),
   ].sort((a, b) => String(b.vytvorene).localeCompare(String(a.vytvorene)));
 
   return (
@@ -176,11 +178,17 @@ function Stranka() {
                 <tr
                   key={r.kluc}
                   className="cursor-pointer hover:bg-muted/30"
-                  onClick={() =>
-                    r.typ === "blocek"
-                      ? navigate({ to: "/doklady/novy", search: { id: r.id } as any })
-                      : navigate({ to: "/nespracovane/$id", params: { id: r.id } })
-                  }
+                  onClick={async () => {
+                    if (r.typ !== "blocek") return navigate({ to: "/nespracovane/$id", params: { id: r.id } });
+                    // Bloček zo skenu sa presunie medzi nespracované, aby sa dal zaradiť ako faktúra.
+                    try {
+                      const v = await doNespracovanych({ data: { id: r.id } });
+                      if (v.id) navigate({ to: "/nespracovane/$id", params: { id: v.id } });
+                      else navigate({ to: "/doklady/novy", search: { id: r.id } as any });
+                    } catch (e: any) {
+                      toast.error(e?.message ?? "Doklad sa nepodarilo otvoriť");
+                    }
+                  }}
                 >
                   <td className="p-3">
                     {r.druh ? (

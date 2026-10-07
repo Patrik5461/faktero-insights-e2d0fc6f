@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { getActiveCompanyId } from "@/lib/faktero/active-company";
+import { nahrajNespracovaneFn } from "@/lib/faktero/nespracovane.functions";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { nacitajBlocekFn, PRENOS_KLUC, type BlocekVysledok } from "@/lib/faktero/blocek.functions";
@@ -84,6 +86,27 @@ function ScannerPage() {
     }
     setPreview(null);
     await spracuj(res.raw);
+  }
+
+  /*
+   * Naskenovaná faktúra nepatrí medzi bločky — fotka ide do Nespracovaných,
+   * kde ju prečíta čítanie faktúr (splatnosť, IBAN, VS) a človek ju zaradí.
+   */
+  const nahrajNespracovane = useServerFn(nahrajNespracovaneFn);
+  async function doNespracovanych() {
+    const cid = getActiveCompanyId();
+    if (!cid || !preview) return;
+    const [hlavicka, b64] = preview.split(",");
+    const mime = /data:([^;]+)/.exec(hlavicka ?? "")?.[1] ?? "image/jpeg";
+    try {
+      const r = await nahrajNespracovane({
+        data: { company_id: cid, nazov: `sken.${mime.includes("png") ? "png" : "jpg"}`, mime, subor: b64 ?? "" },
+      });
+      toast.success("Doklad je v Nespracovaných — číta sa");
+      navigate({ to: "/nespracovane/$id", params: { id: r.id } });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Nepodarilo sa uložiť");
+    }
   }
 
   /*
@@ -284,6 +307,15 @@ function ScannerPage() {
               >
                 {uhrada ? "Uložiť ako výdavok" : "Vyberte spôsob úhrady"}
               </button>
+              {preview ? (
+                <button
+                  type="button"
+                  onClick={doNespracovanych}
+                  className="w-full rounded-md border border-border px-4 py-2 text-sm hover:bg-secondary"
+                >
+                  Je to faktúra — uložiť do Nespracovaných dokladov
+                </button>
+              ) : null}
             </div>
           )}
 
